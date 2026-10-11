@@ -160,6 +160,9 @@ void strategicMargGen(int nSeeds, int outerSims,
     std::mutex outMtx;
     int totalDecisions = 0;
     const double v4Threshold = g_oocStrategicMargin;
+    // Consistency of Pass 2 with Pass 1: the source-chosen replay must reach the
+    // source run's post-decision state, and the stored row must match the snapshot.
+    std::atomic<int> replayChecks{0}, replayMismatches{0}, stateRowMismatches{0};
 
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
@@ -172,6 +175,8 @@ void strategicMargGen(int nSeeds, int outerSims,
             std::vector<search::GameAction> actions;
             int decIdx, screen, gateKind, actNum, floorNum;
             std::string stateRow;
+            std::default_random_engine agentRng;   // source agent RNG before this decision
+            StratFingerprint sourcePostFp{};       // source state after this decision
         };
         std::vector<DecisionSnap> snaps;
         {
@@ -188,6 +193,7 @@ void strategicMargGen(int nSeeds, int outerSims,
                 int screen = (int)gc.screenState;
                 int gateKind = 0;
                 bool isOwned = false;
+                bool snapped = false;
                 if (screen == 1) { gateKind = 1; isOwned = true; }
                 else if (screen == 2) { auto &r = gc.info.rewardsContainer; if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; } }
                 else if (screen == 3) { gateKind = 3; isOwned = true; }
@@ -200,13 +206,17 @@ void strategicMargGen(int nSeeds, int outerSims,
                     GameContext pre = detachedCounterfactualCopy(gc);
                     auto actions = search::GameAction::getAllActionsInState(gc);
                     if (actions.size() >= 2) {
+                        // Build the row before pre is moved into the snapshot.
+                        std::string stateRow = richRow(pre, path);
                         snaps.push_back({std::move(pre), path, std::move(actions),
                                          decIdx, screen, gateKind, gc.act, gc.floorNum,
-                                         richRow(pre, path)});
+                                         std::move(stateRow), agent.rng});
+                        snapped = true;
                     }
                     ++decIdx;
                 }
                 stepFrozenV4Ooc(gc, agent);
+                if (snapped) snaps.back().sourcePostFp = stratFingerprint(gc);
             }
             t_curPath = nullptr;
         }
@@ -252,6 +262,9 @@ void strategicMargGen(int nSeeds, int outerSims,
             evalAgent.rng = std::default_random_engine(seed);
         for (auto &snap : snaps) {
             auto &pre = snap.pre; auto &prePath = snap.prePath;
+            // Pass 1 ran the policy with the run's path; Pass 2 replays it from
+            // the snapshot, and each branch evaluation clears t_curPath.
+            t_curPath = &prePath;
             auto &actions = snap.actions;
             int screen = snap.screen, gateKind = snap.gateKind;
             int actNum = snap.actNum, floorNum = snap.floorNum;
@@ -271,6 +284,9 @@ void strategicMargGen(int nSeeds, int outerSims,
 
             // Fallback via fingerprint (abbreviated — identical to existing code)
             int fallbackIdx = -1, fallbackExact = 0;
+            // The policy draws from the agent RNG (e.g. event stepRandom), so each
+            // replay starts from the source agent's RNG state at this decision.
+            evalAgent.rng = snap.agentRng;
             {
                 GameContext fbGc = detachedCounterfactualCopy(pre);
                 if (screen == 1) evalAgent.stepOutOfCombatPolicy(fbGc);
@@ -293,10 +309,20 @@ void strategicMargGen(int nSeeds, int outerSims,
 
             // Source chosen
             int chosenIdx = -1, chosenExact = 0;
+            if (t_curPath != &prePath) {
+                std::fprintf(stderr, "strategicmarggen: t_curPath not restored before source replay "
+                                     "(seed %llu decision %d)\n", (unsigned long long)seed, decIdx);
+                std::abort();
+            }
             {
                 GameContext postGc = detachedCounterfactualCopy(pre);
+                evalAgent.rng = snap.agentRng;
                 const long long firstBits = deployedOocPolicyStep(postGc, evalAgent);
-                const auto chosenMask = chosenActions(pre, actions, stratFingerprint(postGc), firstBits);
+                auto postFp = stratFingerprint(postGc);
+                if (!(postFp == snap.sourcePostFp)) ++replayMismatches;
+                if (richRow(pre, prePath) != stateRow) ++stateRowMismatches;
+                ++replayChecks;
+                const auto chosenMask = chosenActions(pre, actions, postFp, firstBits);
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     if (!chosenMask[ai]) continue;
                     if (chosenIdx < 0) { chosenIdx = ai; chosenExact = 1; }
@@ -391,6 +417,7 @@ void strategicMargGen(int nSeeds, int outerSims,
             #undef EMIT_ROW
             ++localDecisions;
         }
+        t_curPath = nullptr;
         }  // end evalAgent scope
 
         // Source outcome post-processing
@@ -419,6 +446,8 @@ void strategicMargGen(int nSeeds, int outerSims,
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
+    std::printf("source replay checks %d, replay mismatches %d, stateRow mismatches %d\n",
+                replayChecks.load(), replayMismatches.load(), stateRowMismatches.load());
 }
 
 
@@ -647,6 +676,15 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                 labelRanges.emplace_back((int)rows.size(), (int)rows.size() + (int)actions.size());
             else
                 labelRanges[labelSlot] = {(int)rows.size(), (int)rows.size() + (int)actions.size()};
+            // finishOocCounterfactual clears t_curPath on return.
+            t_curPath = &path;
+        }
+
+        // The live policy below reads the run's path history through t_curPath.
+        if (t_curPath != &path) {
+            std::fprintf(stderr, "strategicgen2: t_curPath not restored before policy step "
+                                 "(seed %llu decision %d)\n", (unsigned long long)seed, decIdx);
+            std::abort();
         }
 
         // The deployed OOC policy step (§431), unless an MCTS target forces it.

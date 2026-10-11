@@ -439,6 +439,15 @@ models for play (ADR-0020); only the parity tools use these libraries.
   expected floor/P(win) are bootstrapped from the native trees. Branches of one
   decision share a branch seed (common random numbers); `STRATEGIC_BRANCH_FUTURES`
   averages over extra seeds per action.
+  After the label branches, `runStrategicGenSeed2` re-points `t_curPath` at
+  the run's own path (the branch evaluator clears it on return) and aborts if
+  the main-trajectory policy would run without it (ctest
+  `strategicgen2_policy_keeps_path`). Before this fix (2026-10-11), the main
+  trajectory ran path-blind (`pv*`=0 for its own policy reads) from the first
+  labeled decision on; datasets produced before then carry that behavior
+  (the A20 gold and V4 A20 corpora per the §425 analysis, PR #476). Row
+  features (`richRow(pre, prePath)`) and branch continuations always used the
+  real path; the fix changes which states the main trajectory reaches.
 - Generator policy parity (§431, 2026-10-11): `strategicgen`, `strategicgen2`
   (main trajectory and Tier-B branch continuations, via
   `finishOocCounterfactual`) and `stepFrozenV4Ooc` (`strategicmarggen`,
