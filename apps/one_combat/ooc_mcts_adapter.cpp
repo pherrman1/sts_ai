@@ -2006,6 +2006,35 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     }
     return result;
 }
+nlohmann::json scoreLiveOocMctsDecision(const GameContext &gc, const PathHistory &path,
+    std::uint64_t runSeed, std::uint64_t decisionIndex) {
+    if (!liveEnabled) throw std::runtime_error("scoreLiveOocMctsDecision requires STS_OOC_MCTS=1");
+    const auto wallStart = std::chrono::steady_clock::now();
+    std::uint64_t samples = 0;
+    OocContinuationMetrics continuation;
+    std::optional<OocGameContextModel::Candidate> selected;
+    const auto result = selectOocMctsAction(gc, path, runSeed, decisionIndex, liveSimulations, liveSampler,
+                                            samples, &continuation, &selected);
+    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+    nlohmann::json actions = nlohmann::json::array();
+    if (!result.rootActions.empty()) {
+        // Candidate identities are deterministic per state; a fresh model only enumerates them.
+        ImaginedScope scope;
+        OocGameContextModel names(gc, path, liveSampler, liveOptions);
+        for (const auto &a : result.rootActions) {
+            const auto &c = names.candidate(0, a.id);
+            actions.push_back({{"id", a.id}, {"key", c.key}, {"bits", c.primitive.bits},
+                {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+        }
+    }
+    return {{"searchSeed", oocMctsSearchSeed(runSeed, decisionIndex)}, {"aborted", result.aborted},
+        {"abortReason", result.abortReason}, {"selected", selected.has_value()},
+        {"selectedKey", selected ? selected->key : ""},
+        {"selectedBits", selected ? nlohmann::json(selected->primitive.bits) : nlohmann::json(nullptr)},
+        {"simulations", result.metrics.simulations}, {"singletonBypass", result.metrics.trivialRootBypasses},
+        {"earlyStopLock", result.metrics.earlyStopLockedRoot}, {"ctmSamples", samples},
+        {"wallSeconds", wall}, {"rootActions", actions}};
+}
 bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, const sts::Card &card,
     const std::function<void(GameContext &)> &step) {
     ImaginedScope scope;

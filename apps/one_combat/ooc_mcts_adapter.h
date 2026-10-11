@@ -7,6 +7,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <nlohmann/json.hpp>
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
@@ -209,6 +210,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr);
+// Research (§425 gold scoring): one decision with the live OOC MCTS
+// configuration on a copied state; returns the root summary as JSON.
+nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,
+    std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Fresh semantic identity resolution; failure leaves live state untouched.
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
