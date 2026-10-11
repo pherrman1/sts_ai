@@ -568,6 +568,17 @@ add_test(NAME strategicmarggen_replay_keeps_path
 set_tests_properties(strategicmarggen_replay_keeps_path PROPERTIES
     ENVIRONMENT "OMP_NUM_THREADS=1;STRATEGIC_BRANCH_FIGHTS=1;STRATEGIC_BRANCH_SIMS=10"
     LABELS "integration;smoke")
+# strategicmarggen Pass 2 must reproduce Pass 1: each source replay reaches the
+# source run's post-decision state (agent RNG restored per snapshot) and each
+# stored state row matches its snapshot (row built before the snapshot move).
+add_test(NAME strategicmarggen_replay_matches_source
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash tools/seed_guard.sh $<TARGET_FILE:one_combat> strategicmarggen 1 20 0 200
+        ${CMAKE_BINARY_DIR}/strategicmarggen_replay_matches_source.csv 74000001)
+set_tests_properties(strategicmarggen_replay_matches_source PROPERTIES
+    ENVIRONMENT "OMP_NUM_THREADS=1"
+    PASS_REGULAR_EXPRESSION "source replay checks [1-9][0-9]*, replay mismatches 0, stateRow mismatches 0"
+    LABELS "integration;smoke")
 add_test(NAME vwin_refresh_seed_guard_accepts_positive
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh guard-only
         $<TARGET_FILE:one_combat> vwinrefreshgen 128 10000 0 /tmp/vwin 13000000 teacher.json 1)
