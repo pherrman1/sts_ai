@@ -109,6 +109,22 @@ bool applyChain(int chain, GameContext &gc, search::ScumSearchAgent2 &agent, lon
     return ok;
 }
 
+// Applies the chain until the copy leaves the decision's screen (another
+// screen, floor or a battle), so chains that order the same pick-ups
+// differently (relic before gold) or resolve several card groups in one step
+// compare equal. Bounded; returns false if the chain stopped (CF rest break).
+bool resolveScreen(int chain, GameContext &gc, search::ScumSearchAgent2 &agent) {
+    const ScreenState screen = gc.screenState;
+    const int floor = gc.floorNum;
+    long long ignored;
+    for (int i = 0; i < 64; ++i) {
+        if (!applyChain(chain, gc, agent, ignored)) return false;
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState != screen
+            || gc.floorNum != floor) return true;
+    }
+    return true;
+}
+
 const char *screenName(ScreenState s) {
     switch (s) {
         case ScreenState::EVENT_SCREEN: return "event";
@@ -161,6 +177,14 @@ std::string runDriftSeed(std::uint64_t seed, int sims, int asc, int mainChain) {
             ok[c] = applyChain(c, copy, copyAgent, first[c]);
             fp[c] = stratFingerprint(copy);
         }
+        StratFingerprint res[NCHAIN];
+        bool resOk[NCHAIN];
+        for (int c = 0; c < NCHAIN; ++c) {
+            GameContext copy = detachedCounterfactualCopy(pre);
+            search::ScumSearchAgent2 copyAgent = preAgent;
+            resOk[c] = resolveScreen(c, copy, copyAgent);
+            res[c] = stratFingerprint(copy);
+        }
         ok[mainChain] = applyChain(mainChain, gc, agent, first[mainChain]);
         fp[mainChain] = stratFingerprint(gc);
         out << seed << ',' << kChainName[mainChain] << ',' << decIdx << ',' << pre.act << ','
@@ -172,12 +196,14 @@ std::string runDriftSeed(std::uint64_t seed, int sims, int asc, int mainChain) {
             out << ',' << ((ok[c] && ok[CANON] && fp[c] == fp[CANON]) ? 1 : 0);
         for (int c = 1; c < NCHAIN; ++c)
             out << ',' << ((ok[c] && first[c] >= 0 && first[c] == first[CANON]) ? 1 : 0);
+        for (int c = 1; c < NCHAIN; ++c)
+            out << ',' << ((resOk[c] && resOk[CANON] && res[c] == res[CANON]) ? 1 : 0);
         out << ',' << first[CANON] << ",-1,-1,-1\n";
         ++decIdx;
         if (!ok[mainChain]) break;
     }
     t_curPath = nullptr;
-    out << seed << ',' << kChainName[mainChain] << ",-1,-1,-1,end,-1,-1,-1,-1,-1,-1,-1,-1,-1,"
+    out << seed << ',' << kChainName[mainChain] << ",-1,-1,-1,end,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,"
         << (gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0) << ',' << gc.floorNum << ','
         << gc.curHp << '\n';
     return out.str();
@@ -190,7 +216,8 @@ std::string runDriftSeed(std::uint64_t seed, int sims, int asc, int mainChain) {
 // equals the canonical successor from the same pre-state; firstSg/firstCf/
 // firstV4 = that chain's first executed action equals the canonical one
 // (a chain that resolves several card groups in one step still matches a
-// chain that resolves one group per step). One "end" row per
+// chain that resolves one group per step); resSg/resCf/resV4 = after each
+// chain resolves the whole screen on its copy, the states are equal. One "end" row per
 // seed carries won/floor/hp of the main trajectory.
 void oocPolicyDriftProbe(int nSeeds, int sims, int asc, const std::string &outFile,
                          long long seedOffset, const std::string &mainName) {
@@ -199,7 +226,7 @@ void oocPolicyDriftProbe(int nSeeds, int sims, int asc, const std::string &outFi
     if (mainChain < 0) throw std::runtime_error("oocpolicydrift: unknown main chain " + mainName);
     std::ofstream out(outFile);
     out << "seed,main,decIdx,act,floor,screen,event,nActions,sameSg,sameCf,sameV4,"
-           "firstSg,firstCf,firstV4,canonFirstBits,won,endFloor,endHp\n";
+           "firstSg,firstCf,firstV4,resSg,resCf,resV4,canonFirstBits,won,endFloor,endHp\n";
     std::vector<std::string> results(nSeeds);
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s)
