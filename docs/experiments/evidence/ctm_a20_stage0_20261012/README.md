@@ -3,6 +3,8 @@
 Raw data (shared project folder, not in Git): `/mnt/project-files/ctm-a20/`
 - `stage0-78100000-999.tgz` (sha256 `4378e54e…`): generator output, both `ctmscorerows` score files, `report.json`.
 - `g0-smoke-78009004-043.tgz` (sha256 `c83b1ad2…`): G0 smoke output, both teachers, the flag-off check.
+- `stage0-manifests.tgz`: the Stage 0 generator manifests, provenance JSON and teacher.
+- `g0-policy-check-30a3cab5.tgz`: the review-fix check below.
 - `PLAN.md` (draft plan and decision rules, written before Stage 0 ran), `STAGE0-RESULT.md`.
 
 ## Stage 0
@@ -23,6 +25,12 @@ Commit `c67ba2db`, Release `one_combat` sha256 `5cd43eca…`. Teacher: `make_tea
 
 Flag-off check: the same binary with the plain teacher (no `--deployed-ooc`), `combattransitiongen 3 10000 20` from
 78100000. All 31 rows equal the Stage 0 rows for seeds 78100000–78100002 except `teacherId` (which names the commit).
+
+Review fix (`30a3cab5`): with the flag on, the teacher must carry `ooc_policy` equal to the binary's effective
+OOC policy (`make_teacher.py --deployed-ooc` writes it), and the manifest records it as `policy`. Check
+(`check.sh` in the tarball): flag on with the plain teacher is refused (`effective OOC policy … mismatch`), a changed
+`STS_OOC_STRATEGIC_MARGIN` is refused, and the deployed teacher reproduces the G0 smoke rows for 78009004–005
+(18 rows, only `teacherId` differs).
 
 ## Results
 See ledger §443.

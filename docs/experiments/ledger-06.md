@@ -16956,7 +16956,8 @@ imagined combats with a model that sees almost no death risk.
 (act 1/2/3: 7,505 / 1,538 / 306 rows); the copied Path B map/reward chain dies early at A20.
 **Change:** opt-in `STS_CTM_GEN_DEPLOYED_OOC=1` for `combattransitiongen` plays every non-battle screen with
 `deployedOocPolicyStep` (§431) instead of the copied chain; off by default, refused in the Lizard candidate mode, recorded as
-`oocPolicy` in the manifest. With the flag off, the generator reproduces the Stage 0 rows for seeds
+`oocPolicy` in the manifest. With the flag on, the teacher must pin the effective OOC policy (`ooc_policy`: gate
+flags, margins, V4 net sha256, public futures) and the manifest records it as `policy`. With the flag off, the generator reproduces the Stage 0 rows for seeds
 78100000–78100002 exactly (31 rows, only `teacherId` differs).
 **G0 smoke** (commit `c67ba2db`, flag on with the deployed V4 settings, seeds 78009004–78009043): 40/40 completed,
 695 rows (17.4 per seed), act 1/2/3 357 / 213 / 125 (acts 2–3 49%), 76 boss rows, last floor median 33 (8–51), about
