@@ -16703,6 +16703,161 @@ more often and fall back to V4 on 37% of decisions.
 **Knowledge impact:** `LEAF_COMBATS` accepts 5 in `architecture/out-of-combat.md`; one sentence in the rollout3
 paragraph of `evaluation/current-research.md`.
 
+## §433 — fresh-seed confirmation: rollout3 at 4096 simulations with broad chance widening beats MCTS off (2026-10-12)
+
+**Question:** Philipp, 2026-10-11 21:04Z: "yes good idea, lets do that" to a fresh-seed confirmation of the two best
+§427–§430 settings combined. On fresh seeds, does rollout3 with `SIMS=4096`, `WIDEN_K=4`, `WIDEN_ALPHA=0.75` (`combo`)
+win more runs than MCTS off?
+**Design:** [PREREG](evidence/ooc_rollout3_confirm_20261011/PREREG.md), independent plan review PASS (analysis-time nits
+applied). Arms `combo`, `rollout3` (§422, 2048 simulations) and `off` (§422), all run on seeds 76000000–255 with binary
+`bab14cd5…` (code `f82eeadd` = main `07a93e36` merged with the §427–§430 code). `off` is the §411 research base with
+flat exact-10k Silver, not the production default stack, so its win rate is not the production win rate. 8 cloud workers × 32 seeds × 3 arms (Philipp chose 8 workers). Smokes 76009000–002.
+Primary: paired bootstrap 95% CI of combo − off (seed 433); CONFIRMED / WORSE_THAN_OFF / NOT_CONFIRMED.
+**Validity:** 768/768 units rc=0, 0 Silver stalls in every arm (stall-as-loss sensitivity identical), config banners
+checked by grep (`off` has none), tar hashes checked twice.
+**Result:** **CONFIRMED.** combo 224/256 (87.5%) vs off 199/256 (77.7%): +9.8 pp [+3.9, +16.0], discordant 45 vs 20,
+p = 0.003. Secondary: combo − rollout3 (213/256, 83.2%) +4.3 pp [−1.6, +10.2], p = 0.19; rollout3 − off +5.5 pp
+[−1.2, +12.1], p = 0.13. Boss deaths 15 / 32 / 42. Seconds per run 1,536 / 893 / 55; V4 fallback 27.8% / 21.6%, nearly
+all Lizard Tail support aborts.
+**Interpretation (Inference):** `combo`'s gain over off holds on fresh seeds; plain rollout3's §422 gain (+10.9 pp) did
+not reach significance here (+5.5 pp, CI includes zero). The run does not separate the combination from plain rollout3,
+which costs about half as much. All arms ran with `STS_OOC_PUBLIC_FUTURES` off, so the
+native fallback reads true upcoming encounters (#397); that favours `off`, which uses it on every decision.
+**Decision:** no default change from this run alone. A default proposal would weigh `combo` against plain rollout3 and
+the 16–28x CPU cost.
+
+**Evidence:** [packet](evidence/ooc_rollout3_confirm_20261011/README.md). Raw: `/mnt/project-files/ooc-rollout3-confirm/`
+(one tar per worker). Seeds 76000000–76000255 and 76009000–002 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §436 — Simulator and CTM speed: rollout3 −10%, default stack −2%, play bit-identical (2026-10-11)
+
+**Question:** issue #350 follow-up. Where does CPU go on the default stack and in §422 rollout3 (936 vs 57 s per
+run), and is there a speedup that keeps play bit-identical?
+**Method:** baseline `491bc21b`, Release `one_combat` (no `-march`, no FMA), §422 `off` and `rollout3` environments,
+one thread, `gprofng` PC sampling, seeds 74014000–74014011.
+**Profile:** `off` is flat as in §360; the one new item is `BattleContext()` construction for new Silver nodes
+(4.2%). In rollout3 the Silver simulator is only about 5.5% of CPU; `CompactTreeNet::predict` takes 32% (#338's
+scope), the CTM encoder 28% (almost all in `CombatTransitionRuntime::linear`), the V4 network about 25%.
+**Change:** (1) CTM `linear` keeps a transposed weight copy and computes the rows in parallel lanes, each row's sum
+in the original order, so outputs are bit-identical. (2) Silver recycles decision states through a per-thread pool
+and fills a new node with one copy instead of a three-copy `std::swap`; `nodeCount()` and the reuse cap are unchanged.
+The pool keeps freed states alive between combats: the independent review measured peak memory +27–46 MB
+(+7–12%); the worst case is 65,536 states, about 0.5 GB per thread.
+**Parity:** result CSVs, OOC decision traces, MCTS action/support traces and all non-timing MCTS columns are
+byte-identical on rollout3 seeds 74014000, 74014001, 74014003 (full) and 74014002 (act 1), on `off` seeds
+74014000–74014011, and `test silver_profile` digests match.
+**Speed:** rollout3 paired run −9.6% wall, −9.8% MCTS CPU (1,607 → 1,452 s); act 1 −10.7%. `off` paired 4 seeds
+−2.1%; `test silver_profile 10000 4` −6.4% (median of 3).
+**Decision:** adopt (pure speedup, exact parity). Batched/SIMD simulator execution not pursued: the simulator is not
+where rollout3 spends its time, and the default-stack profile stays flat.
+
+**Evidence:** [packet](evidence/sim_speed_issue350_2026-10-11/README.md). Seeds 74014000–74014011 and the reviewer's
+74014900–903 and 74014910–911 are now used.
+
+**Knowledge impact:** one sentence each in `architecture/combat-search.md` (state recycling) and the rollout3 cost
+paragraph of `evaluation/current-research.md`.
+
+## §437 — rollout3 leaf cost: the native shop planner, not `v_win` features; exact batching 1.13–1.7x, varies by seed (2026-10-11)
+
+**Question:** issue #338: can OOC MCTS leaf evaluation get cheaper with exact parity? Where does rollout3 (§422) spend
+its CPU?
+**Design:** profile one rollout3 seed with `STS_OOC_CPU_PROFILE=1` plus gdb stack samples; then paired one-seed
+`bestbench` units, baseline `main` `491bc21b` vs the candidate, §422 `rollout3` and `off` environments unchanged,
+seeds 74013000–004 (rollout3) and 74013001–008 (off). Parity = byte-identical decision and MCTS action traces and
+identical non-timing result and MCTS summary rows.
+**Profile (baseline, seed 74013000, 937 s MCTS CPU):** `v_win` features 0.37 s (0.04%), `v_win` predict 16.6 s
+(1.8%), CTM sampling 211 s (23%), V4 nets in rollout gates 146 s (16%), rollout policy steps between combats 531 s
+(57%). Half of all stack samples sit in `nativeShopPlan`, which values every affordable shop subset with a full
+1,256-tree floor-model prediction and repeats after each purchase.
+**Change:** `CompactTreeNet::predictVariants` values candidate rows that differ from the decision's base vector only
+in declared features, walking each tree once for the whole group (bitwise identical to `predict()`); used by
+`nativeShopPlan`, `nativeFloorCardPick` and `nativeFloorRemovePick`.
+**Result:** 13/13 paired units identical. rollout3 per-run time 1.19x–1.69x faster on these seeds and 1.13x on
+the independent reviewer's seed; the gain varies by seed with how much rollout time passes through shops
+(74013001–004 total 3,858 → 2,794 s, 1.38x; profiled 74013000 process CPU 1,033 → 626 s, rollout-step CPU 531 →
+142 s). `off` 1.01x.
+**Decision:** adopt (exact, no behavior change). Incremental `v_win` features stay rejected (as in §380). The largest
+remaining rollout3 buckets are CTM sampling and the V4 gates.
+
+**Evidence:** [packet](evidence/ooc_rollout_leaf_speedup_20261011/README.md). Raw:
+`/mnt/project-files/issue338-leaf-speed/raw.tar.gz`. Seeds 74013000–74013008 (and reviewer seeds 74013900–74013904) are now used.
+
+**Knowledge impact:** `predictVariants` paragraph in `architecture/out-of-combat.md`; rollout3 cost sentence in
+`evaluation/current-research.md`.
+
+## §438 — #401 feature-importance and grouped ablations of the `v_win`/`v_rich` tree inputs: relics, deck and HP carry the signal; hidden fields are recoverable; the forward map helps floor at A20 (2026-10-11)
+
+**Question:** Issue #401 Stage 1/2 for the tree value models: which semantic input groups does each model
+use, which carry unique held-out signal, and which are redundant or missing?
+**Design:** analysis only, no gameplay seeds. Models: B0 `v_win_trees.txt` (`fc52c14c…`), X2-B, and the §419
+A20 win and floor trees. Data: (a) A0, the four #334 collector returns on the share (122 non-TEST source
+seeds, 115k MAP rows; TEST seeds dropped at load); (b) A20, the frozen `2c89ed97` `strategicgen` corpus,
+half the chunks, ≤ 8 rows per run (629k rows, 78,643 runs), split by seed hash into TRAIN/ES/VAL/TEST
+62/8/15/15 with TEST never used (the A20 permutation was rerun without TEST-split rows after review). Stage 1: joint permutation of each semantic group on held-out rows.
+Stage 2: XGBoost refits per arm on A20 TRAIN (early stop on ES), scored on VAL for final floor (MSE) and
+won (NLL), seed-cluster bootstrap 95% CIs (VAL sampling only, not refit randomness), plus three
+other-seed FULL refits as the null (span 0.09 MSE / 0.0009 NLL); a small A0 refit
+cross-check on #334 TRAIN → VALIDATION.
+**Result:** A20 refits, Δ vs FULL (floor MSE 101.23; win NLL 0.1447): −relics +6.64 [+5.89, +7.32] /
++0.0118; −deck +5.50 / +0.0054; −HP +3.22 / +0.0018; −potions +0.93, −progress +0.45, −upgrades +0.43
+(floor only); dropping all ten hidden-future/queue/RNG-counter columns +0.18 [−0.08, +0.45] / −0.0005
+[−0.0014, +0.0003] (this arm also drops the four queue counters, which §371 classes as public; keeping
+them gives +0.14 [−0.15, +0.42] / −0.0005); **adding the 12 forward-map columns −2.15 [−2.51, −1.80]** / −0.0008 [−0.0016, −0.0000];
+refit null −0.04, +0.05, +0.03 / +0.0004, −0.0000, −0.0005. Bottled, keys, gold, potion slots, boss: no unique value.
+Permutation: B0 on A0 uses the hidden future encounters (+0.0155 NLL [0.013, 0.018]), as does the A20
+floor tree (+4.3 MSE). Relics are the largest permutation group in every model, spread over many relics.
+The A0 cross-check resolves nothing (training-seed spread up to 0.013 NLL; −relics points better,
+−0.033 [−0.073, +0.004]). B0 underpredicts #334 wins (mean 0.58 vs 0.76; NLL 0.611).
+**Interpretation (Inference):** B0 and the A20 floor tree use the hidden fields (the A20 win tree does
+not), but no loss from a public-only refit is detected at A20 (at most about 0.45 floor MSE), consistent
+with §371. The forward map, the only missing group tested, helps the floor target at A20; §418's A0
+result stays `INCONCLUSIVE`. All results are offline prediction-error changes on the generators' own
+runs, not win-rate changes.
+**Decision:** no model, default or contract change. Recommendations: keep relics, deck, HP, potions,
+progress, upgrades; include the forward-map block in the next A20 value-model retrain (off by default
+until gated); no cost of a public-only contract is detected at A20 (#397); test cyclic relic counters
+as presence (floor −0.19 [−0.38, +0.01]) on the next retrain; no deletions of cheap low-value groups.
+**Not done:** MLP, #379, #399, #400, CTM; live test; TEST split; feature-build timing; full #334 corpus.
+
+**Evidence:** [packet](evidence/feature_audit_401_20261011/README.md) (scripts, permutation and ablation
+JSON, scored tables). No seeds used (the 74016000–74016999 block stays unused).
+
+**Knowledge impact:** one paragraph after the #397/#396 paragraphs in `evaluation/current-research.md`.
+
+## §439 — CTM in rollout3: about a quarter of CPU, almost all DeepSets token MLPs; exact per-token memo 2.8x on the CTM, 1.20–1.24x per run (2026-10-12)
+
+**Question:** where does the combat transition model spend its time in §422 rollout3 on current `main` (after
+§436/§437), how large is its share, and can it get cheaper with bit-identical play?
+**Method:** baseline `main` `b039e846`, Release `one_combat`, §422 `rollout3`/`off` environments plus
+`STS_OOC_CPU_PROFILE=1`, `gprofng` PC sampling, seeds 74022000–74022005 (one rollout3 unit with
+`STS_OOC_MCTS_PRIOR=uniform`).
+**Profile:** CTM `combat_resolve` 150 s of 619 s process CPU (24%; uniform prior 118 of 479 s, 25%), 304k
+unprepared samples in leaf rollouts at 0.49 ms each. Each sample ran four DeepSets encoders (survival, max_hp,
+hp, potion), each a two-layer MLP per card, relic and potion token. Other large rollout3 costs:
+`predictVariants` in the native shop planner 23%, the V4 network about a quarter, real Silver combats 12%.
+**Change:** (1) a per-thread memo of each token's MLP output, keyed by runtime instance, encoder group and the
+token's integer fields, with pools still summed in token order; (2) the pathb-r2 fast artifact's `max_hp`
+encoder is a byte-identical copy of its `hp` encoder (checked at load), so the unprepared near-full sampler
+takes maxHP from the hp encoding, as the prepared path already did.
+**Parity:** result, OOC decision, MCTS action/support traces and non-timing MCTS columns byte-identical on rollout3
+74022000, 74022002, 74022003, uniform-prior 74022001 and `off` 74022004–005 (final binary re-checked on 74022002
+and `off` 74022004–005). New ctest `ctm_encoder_memo_parity`: two DeepSets artifacts, memoized and interleaved, against the
+unmemoized reference on 62 fixture inputs (1,240 bitwise comparisons); removing the encoder group, the runtime
+instance or any key field from the memo key makes it fail.
+**Speed:** CTM CPU 2.8x lower (150–193 → 42–69 s on the four rollout3 seeds); per run 1.20x (paired 74022002,
+74022003), 1.23x (74022000 process CPU, both profiled), 1.24x (uniform prior); `off` unchanged. The CTM is now about
+10% of rollout3 CPU.
+**Decision:** adopt (pure speedup, exact parity). Pointer pre-resolution for the remaining CTM `linear` calls is not
+worth a change at about 10% share; the next rollout3 levers are the shop planner and the V4 network, not the CTM.
+
+**Evidence:** [packet](evidence/ctm_encoder_memo_20261012/README.md). Raw: `/mnt/project-files/ctm-speed-439/raw.tar.gz`.
+Seeds 74022000–74022005 are now used.
+
+**Knowledge impact:** CTM cost sentence in the rollout3 paragraph of `evaluation/current-research.md`; memo sentence
+in `architecture/out-of-combat.md`.
+
 ## §435 — Lizard Tail support in the default OOC MCTS CTM stack (2026-10-11)
 
 **Question:** Philipp: "settle a lizard tail support for a0. Then we don't need the fallback." The default OOC MCTS

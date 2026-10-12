@@ -1,0 +1,36 @@
+Functions sorted by metric: Exclusive Total CPU Time
+
+Excl. Total     Incl. Total      Name
+CPU             CPU
+   sec.      %     sec.      %
+213.159 100.00  213.159 100.00   <Total>
+ 14.950   7.01   79.496  37.29   sts::BattleContext::executeActions()
+ 10.918   5.12  108.276  50.80   sts::search::SilverSearcher::rolloutToEnd(sts::BattleContext&, int)
+  9.817   4.61   16.081   7.54   sts::Action::operator()(sts::BattleContext&) const
+  9.607   4.51    9.607   4.51   sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const
+  9.066   4.25   16.892   7.92   sts::BattleContext::operator=(sts::BattleContext const&)
+  8.956   4.20  195.137  91.54   sts::search::SilverSearcher::step()
+  8.896   4.17    8.926   4.19   sts::BattleContext::BattleContext()
+  8.676   4.07   13.389   6.28   sts::BattleContext::drawCards(int)
+  6.324   2.97    9.897   4.64   <static>@0xaab1b (<libc.so.6>)
+  6.264   2.94    6.264   2.94   <static>@0x188341 (<libc.so.6>)
+  6.194   2.91   12.559   5.89   sts::BattleContext::useCard()
+  5.954   2.79    5.954   2.79   sts::search::SilverSearcher::evaluateEdge(sts::search::SilverSearcher::Node const&, int, double) const
+  5.614   2.63    8.756   4.11   void std::__sort<__gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, _
+  5.564   2.61    6.054   2.84   sts::BattleContext::BattleContext(sts::BattleContext const&)
+  4.303   2.02    4.303   2.02   sts::CardInstance::canUseOnAnyTarget(sts::BattleContext const&) const
+  4.023   1.89    6.665   3.13   sts::search::Action::execute(sts::BattleContext&) const
+  3.813   1.79    3.813   1.79   sts::Monster::calculateDamageToPlayer(sts::BattleContext const&, int) const
+  3.763   1.77   46.583  21.85   sts::search::SilverSearcher::getOrCreateNode(sts::BattleContext&&)
+  3.743   1.76    4.033   1.89   (anonymous namespace)::getBestCardToPlay(sts::BattleContext const&, sts::fixed_list<int, 10> const&, bool, std::linear_congruential_engin
+  3.572   1.68    3.572   1.68   <static>@0xa8e24 (<libc.so.6>)
+  3.142   1.47    3.372   1.58   sts::BattleContext::discardAtEndOfTurn()
+  2.792   1.31    4.253   2.00   sts::BattleContext::useAttackCard()
+  2.642   1.24    2.642   1.24   sts::ActionQueue<128>::pushBack(sts::Action)
+  2.622   1.23    2.622   1.23   sts::search::(anonymous namespace)::cardHash(sts::CardInstance const&) [clone .isra.0]
+  2.592   1.22    4.843   2.27   std::vector<sts::CardInstance, std::allocator<sts::CardInstance> >::operator=(std::vector<sts::CardInstance, std::allocator<sts::CardInst
+  2.382   1.12   10.968   5.15   sts::search::SilverSearcher::rerootAt(sts::search::SilverSearcher::Node*, bool)
+  2.252   1.06    4.873   2.29   sts::search::hashBattleState(sts::BattleContext const&)
+  2.182   1.02    4.253   2.00   (anonymous namespace)::sameGameplayScalars(sts::BattleContext const&, sts::BattleContext const&, bool) [clone .lto_priv.0]
+  2.011   0.94    7.685   3.61   free
+
