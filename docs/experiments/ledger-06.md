@@ -17220,7 +17220,7 @@ required Q gap between V4's best and second-best option. Seeds 81000000–127 (A
 smoke 81009000.
 
 **Coverage at margin 0:** V4 made every gated decision; only non-upgrade card selections (shop removal, Living
-Wall, Drug Dealer, Duplicator, Transmogrifier, Cleric, Library, Astrolabe, bottled relics; 128 in 128 runs) went
+Wall, Drug Dealer, Duplicator, Transmogrifier, Cleric, Library, Astrolabe, bottled relics; 132 in 128 runs) went
 to the heuristic; free rewards, chest opening, the reward-relic rule and the forced boss node stay rules.
 
 **Result (wins of 128):**
@@ -17238,15 +17238,15 @@ combat (Knowing Skull HP payments). The A20 margin-0 sweep arm reproduced the si
 (§422 off 101/128, §433 199/256, other seeds).
 
 **Gold decisions (Gold2, §432; A20; floors per decision, label of the picked option minus the heuristic's):**
-A0 V4 +0.28 [−0.09, +0.67] over 397 decisions: events +2.60 (Neow: heuristic option 3 vs V4 option 1, about +14
-floors on 6 decisions), shop +1.17, rest vs smith +0.62, card rewards +0.01 (214), map −0.24, upgrade target −0.54.
-V4 overrides gained only when V4's Q for its pick exceeded its Q for the heuristic's pick by ≥ 2. §419 retrains:
+A0 V4 +0.28 [−0.09, +0.67] over 397 decisions (no chest/relic rules applied): events +2.60 (Neow: heuristic option 3 vs V4 option 1, about +14
+floors on 6 decisions), shop +1.17, rest vs smith +0.62, rewards screen +0.01 (214), map −0.24, upgrade target −0.54.
+V4 overrides gained reliably only when V4's Q for its pick exceeded its Q for the heuristic's pick by ≥ 2. §419 retrains:
 +0.42 (G2) and +0.32 (G3), better on map, worse on upgrade and treasure. §425 OOC MCTS picks on the same labels
 (387 decisions, with the chest and reward-relic rules applied as in live play): `prod` +0.49 [+0.12, +0.87],
-`rollout3` +0.41 [+0.16, +0.70]; both gain on events and map, card rewards ≈ 0.
+`rollout3` +0.41 [+0.16, +0.70], A0 V4 +0.31 [−0.05, +0.71] on the same basis; both MCTS arms gain on events and map, rewards screen ≈ 0.
 
 **Interpretation (Inference):** the gate margin, not the training ascension, decides how V4 plays at A0: both V4s
-lose many runs when every argmax is played and peak at margin 2–4; the A20 retrain is not better at A0. Gold
+lose many runs when every argmax is played and peak at margin 2–4; the A20 retrain is not consistently better at A0. Gold
 single-decision gains (largest at small margins and on events) do not predict whole-run wins (as in §447; `prod`
 MCTS is also positive on gold but −21.9 pp live, §384). The map gate may cost wins at margin 1 (Inference; no
 same-seed map-off arm was run).
