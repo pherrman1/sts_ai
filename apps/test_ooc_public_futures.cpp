@@ -92,6 +92,15 @@ int main() {
                     && nativeFloorCardPick(changed, path, model, 0, -.5) == explicit8Pick,
                 "unset is not the public8 default");
         resetNativeOocPublicScorerCalls();
+        {
+            // OOC MCTS playouts already carry a resampled queue: no mixture.
+            NativeOocResampledQueueScope resampled;
+            require(nativeOocValue(base, path, model) == model.predict(raw)
+                        && nativeOocPublicScorerCalls() == 0,
+                    "resampled-queue scope still mixed futures");
+        }
+        require(nativeOocValue(base, path, model) == explicit8, "mixture not restored after scope");
+        resetNativeOocPublicScorerCalls();
 
         setenv("STS_OOC_PUBLIC_FUTURES", "8", 1);
         const auto snapshot = test::oocStateFingerprint(base);
@@ -195,7 +204,7 @@ int main() {
                 "act 4 should be scored without an encounter mixture");
         unsetenv("STS_OOC_PUBLIC_FUTURES");
         std::cout << "PASS public native OOC futures: hidden-sensitive legacy control, "
-                     "zero legacy, unset=public8 default, act-4 passthrough, 3-act suffix/RNG invariance, all fallback decisions, "
+                     "zero legacy, unset=public8 default, resampled-queue scope, act-4 passthrough, 3-act suffix/RNG invariance, all fallback decisions, "
                      "logistic mixture, source-state preservation, invalid config\n";
         return 0;
     } catch (const std::exception &error) {

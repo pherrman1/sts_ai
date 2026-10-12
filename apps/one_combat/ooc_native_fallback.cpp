@@ -18,6 +18,7 @@
 namespace one_combat {
 namespace {
 thread_local std::uint64_t publicScorerCalls = 0;
+thread_local int resampledQueueDepth = 0;
 
 void requireModels(const CompactTreeNet &model) {
     if (!model.ok) throw std::runtime_error("native OOC fallback model unavailable");
@@ -93,7 +94,8 @@ public:
         const int count = publicFutureCount();
         // Act 4 has a fixed elite and boss and no hallway queue, so its
         // encounter fields reveal nothing and are scored as they are.
-        if (count == 0 || gc.act == 4) return;
+        // Inside an OOC MCTS playout the queue is already a public sample.
+        if (count == 0 || gc.act == 4 || resampledQueueDepth > 0) return;
         const auto &idx = richIdxMap();
         hidden_ = {idx.at("nextEliteId"), idx.at("nextFight0"),
                    idx.at("nextFight1"), idx.at("nextFight2")};
@@ -157,6 +159,8 @@ public:
 }
 
 int nativeOocPublicFutureCount() { return publicFutureCount(); }
+NativeOocResampledQueueScope::NativeOocResampledQueueScope() { ++resampledQueueDepth; }
+NativeOocResampledQueueScope::~NativeOocResampledQueueScope() { --resampledQueueDepth; }
 bool nativeOocShopDeckSizeFixEnabled() { return shopDeckSizeFixEnabled(); }
 bool nativeOocCardWinRankEnabled() {
     const char *value = std::getenv("STS_OOC_CARD_WIN_RANK");

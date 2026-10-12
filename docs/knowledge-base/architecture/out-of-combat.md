@@ -1053,7 +1053,10 @@ The floor/win fallback rich vector includes realized `nextEliteId` and
 those four fields at prediction time with K common, public-history-conditioned
 native encounter samples and averages model predictions, including
 probabilities after the logistic link. Explicit `0` restores the legacy hidden
-inputs; Act 4, whose encounters are fixed, is scored without a mixture. The same sampled futures score all alternatives within a
+inputs; Act 4, whose encounters are fixed, is scored without a mixture. OOC
+MCTS playout steps that resample the queue first (`sampleNoncombat`, the live
+setting) skip the mixture through `NativeOocResampledQueueScope`; their queue
+is already a public sample. The same sampled futures score all alternatives within a
 fallback decision; the source state/RNG is unchanged. Its planner seed excludes
 the true run seed, RNG streams and queue-derived feature block. This is a
 bounded repair for the controlled native V4 profile, not a qualification of

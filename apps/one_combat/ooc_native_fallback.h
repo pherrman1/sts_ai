@@ -18,6 +18,16 @@ namespace one_combat {
 double nativeOocValue(const sts::GameContext &gc, const PathHistory &path,
                       const CompactTreeNet &model);
 int nativeOocPublicFutureCount();
+// While alive on this thread, fallback scoring uses the state's own encounter
+// fields with no mixture. For OOC MCTS playouts whose queues were already
+// resampled from public history (ADR-0028); never for real decisions.
+class NativeOocResampledQueueScope {
+public:
+    NativeOocResampledQueueScope();
+    ~NativeOocResampledQueueScope();
+    NativeOocResampledQueueScope(const NativeOocResampledQueueScope &) = delete;
+    NativeOocResampledQueueScope &operator=(const NativeOocResampledQueueScope &) = delete;
+};
 bool nativeOocShopDeckSizeFixEnabled();
 bool nativeOocCardWinRankEnabled();
 std::uint64_t nativeOocPublicScorerCalls();
