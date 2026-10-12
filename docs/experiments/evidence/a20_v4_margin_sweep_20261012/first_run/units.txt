@@ -1,0 +1,16 @@
+81000000 8 /root/a20v4a0/main
+81000008 8 /root/a20v4a0/main
+81000016 8 /root/a20v4a0/main
+81000024 8 /root/a20v4a0/main
+81000032 8 /root/a20v4a0/main
+81000040 8 /root/a20v4a0/main
+81000048 8 /root/a20v4a0/main
+81000056 8 /root/a20v4a0/main
+81000064 8 /root/a20v4a0/main
+81000072 8 /root/a20v4a0/main
+81000080 8 /root/a20v4a0/main
+81000088 8 /root/a20v4a0/main
+81000096 8 /root/a20v4a0/main
+81000104 8 /root/a20v4a0/main
+81000112 8 /root/a20v4a0/main
+81000120 8 /root/a20v4a0/main

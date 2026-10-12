@@ -1,0 +1,3 @@
+751a752,753
+>     if os.environ.get("STRAT_QDUMP"):
+>         np.save(os.environ["STRAT_QDUMP"], np.stack([sorted_raw_rows[va_perm].astype(np.float64), full_q.astype(np.float64)]))
