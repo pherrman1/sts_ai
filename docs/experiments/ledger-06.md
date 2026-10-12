@@ -16970,3 +16970,41 @@ No default play changes.
 
 **Knowledge impact:** new generator variable in `operations/environment-variables.md`; the A20 limit of the production
 CTM is recorded here (current understanding unchanged otherwise, since OOC MCTS is off by default).
+
+## §444 — X2-B without the hidden next-fight fields: the E1 public arm exported as a native win model (2026-10-12)
+
+**Question:** Philipp wants X2-B to replace `v_win` (via `STS_WIN_NET`) as the rollout3 leaf, but X2-B reads
+the four HIDDEN_FUTURE fields `nextEliteId` and `nextFight0..2` (§371, §438). Is there a public-information X2-B,
+and does it run natively with the same values as in Python?
+
+**Design:** offline, no game seeds, no retraining, TEST closed. No new model was fitted: E1 (§394) arm P0 is
+exactly the X2-B recipe on the 457 public features (X2-B's 461 minus the four hidden fields; the 12 forward-map
+columns and the public queue counters stay), seeds 0/1/2, on the frozen 1,024-source #334 corpus
+(`ae56f963…`), unchanged 696/155 TRAIN/VALIDATION split. The three checkpoints (all 21 E1 `SHA256SUMS`
+entries verified) were exported as one margin-averaged CompactTreeNet with `tools/vwin_export_ensemble.py`
+(the §396 F2 route). A forward-map variant is not separate: X2-B and P0 already contain the map block.
+
+**Result:** `models/candidates/v_win_x2b_public_trees.txt` (sha256 `e2d3aa65…ca90`, 1,006 trees, 428 used
+features, no hidden field). Native `winnettest` parity on the §379 selection (1,780 rows): max |native − Python|
+**2.46e-7** (gate < 1e-5, pass); explicit `STS_WIN_NET` load passes `oocmctsconfigselftest`. VALIDATION (141,566
+MAP rows, 155 sources):
+
+| Model | NLL | Brier | AUC |
+|---|---:|---:|---:|
+| this file (margin mean) | 0.42362 | 0.13850 | 0.7919 |
+| P0 probability mean (E1) | 0.42370 | 0.13848 | 0.7918 |
+| frozen X2-B (461) | 0.42261 | 0.13777 | 0.7907 |
+
+Paired ΔNLL vs X2-B, source-clustered bootstrap: **+0.0010 [−0.0041, +0.0058]** (reproduces E1's −0.0011 with
+the sign flipped); vs the P0 probability mean −0.00008 [−0.00031, +0.00018].
+
+**Verdict:** `PUBLIC_X2B_READY` as an engineering candidate. Dropping the hidden fields costs no resolvable
+held-out accuracy (consistent with §371, §394, §438). No gameplay effect is claimed. No default changes: the
+default `models/v_win_trees.txt` and the pinned `models/candidates/v_win_x2b_trees.txt` (anchor of the
+`screengbm` leaf and its residual GBM) are untouched. The new file is opt-in through `STS_WIN_NET` or
+`STS_OOC_MCTS_LEAF_WIN_MODEL`. A rollout3 A/B with it as the leaf needs Philipp's go.
+
+**Evidence:** [packet](evidence/vwin_x2b_public_444_20261012/README.md) (local run on Philipp's machine; bulky
+parity CSV under `~/Documents/sts/artifacts/vwin-refresh-334/x2b-public-444-20261012/`).
+
+**Knowledge impact:** candidate listed in `operations/environment-variables.md` (`STS_OOC_MCTS_LEAF_WIN_MODEL`).
