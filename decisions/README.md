@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0028](0028-public-encounter-futures-default.md) makes the native OOC
+  fallback score 8 public encounter futures by default
+  (`STS_OOC_PUBLIC_FUTURES` unset = 8; `0` restores the hidden inputs).
 - [ADR-0026](0026-learned-silver-stopping-default.md) makes learned Silver
   stopping (model `gbt-770201c31f7b`) the whole-run default budget instead of
   the #199 adaptive rule, amending ADR-0018.

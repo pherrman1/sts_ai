@@ -1,0 +1,44 @@
+{
+ "valid": true,
+ "receipts_ok": true,
+ "done": [
+  "arm=legacy lo=74015000 n=32 rc=0",
+  "arm=legacy lo=74015032 n=32 rc=0",
+  "arm=legacy lo=74015064 n=32 rc=0",
+  "arm=legacy lo=74015096 n=32 rc=0",
+  "arm=public8 lo=74015000 n=32 rc=0",
+  "arm=public8 lo=74015032 n=32 rc=0",
+  "arm=public8 lo=74015064 n=32 rc=0",
+  "arm=public8 lo=74015096 n=32 rc=0"
+ ],
+ "wins_legacy": 103,
+ "wins_public8": 104,
+ "dwin_pp": 0.78125,
+ "dwin_ci_pp": [
+  -4.6875,
+  6.25
+ ],
+ "public8_only_wins": 6,
+ "legacy_only_wins": 5,
+ "mcnemar_p": 1.0,
+ "dfloor": -0.1796875,
+ "dfloor_ci": [
+  -1.1328125,
+  0.828125
+ ],
+ "sec_per_run_legacy": 54.10499453125,
+ "sec_per_run_public8": 53.18745625,
+ "public_scorers_per_run": 23.015625,
+ "seeds_same_outcome_and_floor": 112,
+ "deaths_act_legacy": {
+  "1": 1,
+  "2": 7,
+  "3": 17
+ },
+ "deaths_act_public8": {
+  "1": 0,
+  "2": 10,
+  "3": 14
+ },
+ "label": "LEAK_NOT_SHOWN"
+}

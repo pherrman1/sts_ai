@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -283,10 +283,11 @@ environment model** or a scientifically qualified full OOC planner.
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
 loaded native V4 policy and native win models plus a compatible combat
 artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
-`selfplay/models/combat_transition_deepsets_pathb_r2.native` artifact and
+`selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native` artifact and
 automatically pairs it with the pinned standard Attention Brew fallback
-`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the #418
-pathb-r2 stack, see "Production CTM stack since #418" below). An
+`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the
+pathb-r2 stack with the §423 Lizard capabilities since §435, see "Production CTM
+stack since #418" below). An
 explicit combat-model path overrides the automatic stack; explicit artifact
 failures are fatal. Research only (§411): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
 replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
@@ -309,6 +310,15 @@ the pathb-r2 default, `e9a18951…` for the pre-#418 `lizard_t2`); the
 runtime also checks source/cohort metadata. `STS_OOC_MCTS_BREW_FALLBACK_MODEL`
 overrides the automatic fallback path. Missing or invalid required artifacts
 are fatal.
+
+DeepSets encoders memoize each card, relic and potion token's MLP output per
+thread, keyed by runtime instance, encoder group and the token's integer
+fields; pools still sum in token order, so outputs are bit-identical (§439;
+`ctm_encoder_memo_parity` checks against the unmemoized reference,
+`setEncoderMemoForTesting(false)`). When an artifact's `max_hp` encoder tensors equal
+its `hp` encoder byte for byte (`sharedHpEncoder()`, true for pathb-r2), the
+unprepared near-full sampler takes maxHP from the hp encoding, as the
+prepared path does.
 
 A retrained stack loads only as a research candidate. When
 `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and its `_SHA256` are set, an artifact
@@ -339,7 +349,16 @@ of its v3 manifest (`d9d8377e…`), so the pair loads without
 `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and default runs report identity
 `production`; the statements above about "production pins" describe the
 pre-#418 identity, which artifacts without a `researchCandidate` declaration
-still use. Rollback to the pre-#418 stack:
+still use. **Since §435** the default fast artifact is the §423 Lizard-capable
+`selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native` (`c6d56bbc…`):
+the same pathb-r2 tensors with `lizardFairy` and `lizardBrew` added to its header,
+pinned by a second built-in manifest (`64da1776…`, the §423 candidate manifest
+byte for byte). Both built-in manifests declare candidate `pathb-r2`; a load
+picks the one that lists the artifact's bytes, so the #418 fast artifact
+(`90806c25…`) still loads as `production` without a manifest. Rollback to the
+#418 stack: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
+and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
 `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_lizard_t2.native`,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native`
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418
@@ -380,9 +399,11 @@ and unchanged DeepSets tensor-payload SHA-256
 `429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`.
 Its metadata is pinned to Gate 2 PASS report SHA-256
 `1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
-Active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom remain
+On a fast artifact without Lizard capabilities (the #418 and pre-#418 stacks),
+active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom are
 explicit boundaries that use the existing fail-closed or exact-path behavior.
-A research-candidate fast artifact can lift the first two with v3 capabilities
+A fast artifact can lift the first two with v3 capabilities; the default stack
+has both since §435
 (written by `tools/ctm_lizard.py extend`; the artifact needs its own
 active-Lizard correction). `lizardBrew` (`{"rModel": ...}`) routes a Brew state's
 three classes to the standard child, whose survival gives q and the reserve
@@ -1029,20 +1050,24 @@ full-row interface (rows that differ outside the declared features take
 The native OOC research controls in this section and the campfire/removal/card
 subsections below were verified on 2026-10-08.
 
-The legacy floor/win fallback rich vector includes realized `nextEliteId` and
+The floor/win fallback rich vector includes realized `nextEliteId` and
 `nextFight0..2`, and both tracked tree ensembles split on these fields. Combat
-`STS_FAIR=1` does not remove this OOC information dependency. The default-off
-research control `STS_OOC_PUBLIC_FUTURES=K` replaces only those four fields at
-prediction time with K common, public-history-conditioned native encounter
-samples and averages model predictions, including probabilities after the
-logistic link. The same sampled futures score all alternatives within a
+`STS_FAIR=1` does not remove this OOC information dependency. Since ADR-0028
+(2026-10-12) `STS_OOC_PUBLIC_FUTURES=K` defaults to K = 8: it replaces only
+those four fields at prediction time with K common, public-history-conditioned
+native encounter samples and averages model predictions, including
+probabilities after the logistic link. Explicit `0` restores the legacy hidden
+inputs; Act 4, whose encounters are fixed, is scored without a mixture. OOC
+MCTS playout steps that resample the queue first (`sampleNoncombat`, the live
+setting) skip the mixture through `NativeOocResampledQueueScope`; their queue
+is already a public sample. The same sampled futures score all alternatives within a
 fallback decision; the source state/RNG is unchanged. Its planner seed excludes
 the true run seed, RNG streams and queue-derived feature block. This is a
 bounded repair for the controlled native V4 profile, not a qualification of
 legacy server modes or hypothetical actions already executed with actual RNG.
-The campaign keeps those routes disabled. Enabled treatments enter the
-counterfactual teacher policy specification; disabled settings preserve the
-legacy specification. Per-run public scorer counts prove actual branch use.
+The campaign keeps those routes disabled. Enabled settings (now including the
+default) enter the counterfactual teacher policy specification; explicit `0`
+preserves the legacy specification. Per-run public scorer counts prove actual branch use.
 
 `STS_OOC_SHOP_DECK_SIZE_FIX=1` independently corrects hypothetical shop bundle
 features: relics add no cards and removal subtracts one card. The default

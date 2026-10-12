@@ -11,11 +11,16 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 FAST = ROOT / 'selfplay/models/combat_transition_deepsets_lizard_t2.native'
 STANDARD = ROOT / 'selfplay/models/combat_transition_near_full_except_smoke_v2.native'
-# The production stack since #418: the pathb-r2 candidate, pinned by its built-in v3 manifest.
+# The #418 production stack: the pathb-r2 candidate, pinned by its built-in v3 manifest.
 PRODUCTION_FAST = ROOT / 'selfplay/models/combat_transition_deepsets_pathb_r2.native'
 PRODUCTION_STANDARD = ROOT / 'selfplay/models/combat_transition_near_full_escape_pathb_r2.native'
 PRODUCTION_MANIFEST = ROOT / 'tests/fixtures/ctm_production/pathb_r2_candidate_v3.json'
 PRODUCTION_MANIFEST_SHA = 'd9d8377e19a37fd3a76dc3ebae0c882706d11d4bd0b4a3df41691e3cf4d39d5d'
+# The §423 Lizard-capable pathb-r2 fast artifact, the default fast artifact since §435; the #418
+# fast artifact above stays loadable without a manifest through the previous built-in manifest.
+LIZARD_FAST = ROOT / 'selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native'
+LIZARD_MANIFEST = ROOT / 'docs/experiments/evidence/ooc_rollout3_lizard_20261010/candidate-v3-lizard.json'
+LIZARD_MANIFEST_SHA = '64da17762b08114f28ae4d182fddde82da917951f4717bb95d352c42bc4a933e'
 MAGIC = b'COMBAT_TRANSITION_RUNTIME_V2\0'
 CANDIDATE = 'test-retrain-candidate'
 
@@ -153,6 +158,31 @@ def main():
                probe(['--pair-identity', PRODUCTION_FAST, PRODUCTION_STANDARD, 1],
                      {'STS_CTM_RESEARCH_CANDIDATE_MANIFEST': str(PRODUCTION_MANIFEST),
                       'STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256': PRODUCTION_MANIFEST_SHA}), identity='pathb-r2')
+        # The Lizard-capable fast artifact is the production default and needs no manifest; the
+        # #418 fast artifact still loads as production, without the Lizard capabilities.
+        if hashlib.sha256(LIZARD_MANIFEST.read_bytes()).hexdigest() != LIZARD_MANIFEST_SHA:
+            raise RuntimeError('Lizard production manifest changed')
+        result = probe(['--pair-identity', LIZARD_FAST, PRODUCTION_STANDARD, 1])
+        expect('lizard_pair_without_manifest', result, identity='production')
+        if 'lizard_fairy=1 lizard_brew=1' not in result.stdout:
+            raise RuntimeError(f'lizard_pair_without_manifest: Lizard capabilities missing: {result.stdout!r}')
+        expect('lizard_pair_with_other_manifest',
+               probe(['--pair-identity', LIZARD_FAST, PRODUCTION_STANDARD, 1], env), identity='production')
+        expect('lizard_pair_with_own_manifest',
+               probe(['--pair-identity', LIZARD_FAST, PRODUCTION_STANDARD, 1],
+                     {'STS_CTM_RESEARCH_CANDIDATE_MANIFEST': str(LIZARD_MANIFEST),
+                      'STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256': LIZARD_MANIFEST_SHA}), identity='pathb-r2')
+        expect('lizard_fast_with_418_manifest',
+               probe(['--pair-identity', LIZARD_FAST, PRODUCTION_STANDARD, 1],
+                     {'STS_CTM_RESEARCH_CANDIDATE_MANIFEST': str(PRODUCTION_MANIFEST),
+                      'STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256': PRODUCTION_MANIFEST_SHA}),
+               error='not listed in its manifest')
+        result = probe(['--pair-identity', PRODUCTION_FAST, PRODUCTION_STANDARD, 1])
+        if 'lizard_fairy=0 lizard_brew=0' not in result.stdout:
+            raise RuntimeError(f'418_pair_without_manifest: unexpected capabilities: {result.stdout!r}')
+        lizard_tampered = directory / 'lizard-tampered.native'
+        payload = bytearray(LIZARD_FAST.read_bytes()); payload[-1] ^= 1; lizard_tampered.write_bytes(payload)
+        expect('lizard_bytes_not_listed', probe(['--identity', lizard_tampered]), error='not listed in its manifest')
         expect('promoted_fast_with_legacy_standard',
                probe(['--pair-identity', PRODUCTION_FAST, STANDARD, 1]), error='Brew fallback artifact SHA256 differs')
         expect('legacy_fast_with_promoted_standard',

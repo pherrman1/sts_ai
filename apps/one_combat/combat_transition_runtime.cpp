@@ -4,6 +4,8 @@
 #include "constants/Potions.h"
 #include "constants/Relics.h"
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -15,6 +17,7 @@
 #include <openssl/evp.h>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace one_combat {
 namespace {
@@ -157,7 +160,7 @@ const std::map<std::string,std::string> sourceHashes={
  {"potion_encoder","2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef"},
  {"relic","e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"}};
 // Identity pins of the pre-#418 production CTM stack (lizard_t2 abb2a9ea + standard e9a18951),
-// kept loadable for rollback; the default stack is now productionCandidateIdentity(). A research
+// kept loadable for rollback; the default stack is now productionCandidateIdentities(). A research
 // candidate swaps exactly these values; schema, shapes, envelope, exclusions and definitions stay pinned.
 const nlohmann::json &productionIdentity() {
     static const nlohmann::json identity={
@@ -307,12 +310,96 @@ std::unique_ptr<const nlohmann::json> loadResearchCandidateIdentity() {
     std::ostringstream text;text << file.rdbuf();
     return parseResearchCandidateIdentity(text.str());
 }
-// The production CTM stack since #418: the pathb-r2 candidate promoted with its artifact bytes
-// unchanged. These are the exact bytes of its ctm_research_candidate_v3 manifest
-// (candidate-v3.json), so a default load pins exactly what the live A/B "cand" arm pinned
-// through STS_CTM_RESEARCH_CANDIDATE_MANIFEST. Artifacts without researchCandidate metadata
-// keep productionIdentity() (the pre-#418 stack, retained for rollback).
+// The production CTM stack: the §423 Lizard-capable pathb-r2 candidate, promoted with its
+// artifact bytes unchanged. These are the exact bytes of its ctm_research_candidate_v3 manifest
+// (candidate-v3-lizard.json, 64da1776), so a default load pins exactly what the §423 and §426
+// runs pinned through STS_CTM_RESEARCH_CANDIDATE_MANIFEST. It differs from the #418 manifest
+// below only in the fast artifact (c6d56bbc) and its lizardFairy/lizardBrew capabilities.
 constexpr char kProductionCandidateManifest[]=R"json({
+  "activeLizard": {
+    "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+    "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "frozenQrArtifactSha256": "1f84297b48a44e9da7872f406f0a7c27fd3a8861fd001dc0fbb36379801b7e39",
+    "rModel": {
+      "featureMean": [
+        0.8445601195995526
+      ],
+      "featureScale": [
+        0.19684100508001456
+      ],
+      "standardizedCoefficients": [
+        2.376042280595386,
+        0.852911158290625
+      ]
+    },
+    "rModelSha256": "394d4889e66d39759cca8975a10d959f14919ce30fe18af5cffaf806c413466b"
+  },
+  "candidateId": "pathb-r2",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "d63c829c019e7e2798232e4f3bcfc5ac02a93d74c33000634d075e36bb0cc5f7"
+      },
+      "lizardBrew": {
+        "rModel": {
+          "featureMean": [
+            0.9220745124444445
+          ],
+          "featureScale": [
+            0.1254272163284112
+          ],
+          "standardizedCoefficients": [
+            1.9365468362108325,
+            0.5448779953885916
+          ]
+        }
+      },
+      "lizardFairy": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "8c5ab91fb9d88be3fedc30c0afb5ccf4839a87c8df0aa07e132301d6e11ea4ac"
+      }
+    }
+  },
+  "domainSha256": "011fd040cce01c69497af2a07c737f8f1a2e753680ab02a298939f8b90d7a4b7",
+  "fast": {
+    "artifactSha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+    "downstreamCheckpointSha256": "06709aed52532085e99a47c5c7f07174a915038227232954cc16d60fa35809d4",
+    "maxHpHpCheckpointSha256": "006a5e08fde3d634a4f4b2e482059401c0b1bba58b93c4d59d8263ee026da60f",
+    "potionSpecialistCheckpointSha256": "ccf2a504308d4b6f3c1b73d3766abbdb9a4d360e4610288f53e055ddea897811",
+    "survival": {
+      "checkpointSha256": "0a1b72ee75cb059c6c2398f69bf7aeb536c41f0a55dcaf6b193c46e28fff6a15",
+      "preparedManifestSha256": "99eef8e2cb67e2f858a39d83acf741993572baaa0dfe47e36e4eb7d6ffc3386e",
+      "preparedSha256": "719c9a44dd5aec612eb2ea76621f0bd0b39f09ab75216aaee9d7e0c7a0e62091",
+      "scalarInvSha256": "f9271e11abc2c2e3abe02fa2f96726220283a63d6f853d4f9b56144a542b8f03",
+      "scalarMeanSha256": "1f72985840a3dce838d2849834bff4876b58d3f8e4b0235ebac8565e7b60f0c4"
+    }
+  },
+  "schema": "ctm_research_candidate_v3",
+  "standard": {
+    "artifactSha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+    "sources": {
+      "HP": "9b2194fba7ff2d6c285e1ca47275afe4ff3699f98c744a42f9890be049ebf3ab",
+      "downstream": "95e07d97c34a2b220a2ed5d570b2680b190f647c5a5cca945c52a2109e8cd0f0",
+      "maxHP": "045ce23c1fe62253eb4f0f0d6ad0754e4c6455db823c0caa8225485fd20b2938",
+      "potion": "e506d8c68b73cbfcdf826d8ab3a1653f8b468d16f5ad32a50099c241ef4565ef",
+      "survival": "bb422855174d76e92c3ce7f4fa21097be154173685e05af387cc4fb527acad8e"
+    }
+  },
+  "supportCensus": {
+    "allSupportedIndexSha256": "8f8f186b07c28b1b5dd47cb02d87826b32300a5aae9367a14e7085c4f37e0d0a",
+    "testSupportedIndexSha256": "83991199cdb67f02a3a0f77e9fc75b1b6619736b37c639adf24c28d5998185b9"
+  }
+}
+)json";
+constexpr char kProductionCandidateManifestSha256[]="64da17762b08114f28ae4d182fddde82da917951f4717bb95d352c42bc4a933e";
+// The #418 production manifest (candidate-v3.json), kept built in so the pathb-r2 fast artifact
+// without Lizard capabilities (90806c25) still loads without a manifest, for rollback and for
+// reproducing runs made before the Lizard promotion. Both manifests declare candidate pathb-r2;
+// a load picks the one that lists the artifact's bytes. Artifacts without researchCandidate
+// metadata keep productionIdentity() (the pre-#418 stack).
+constexpr char kPreviousProductionCandidateManifest[]=R"json({
   "activeLizard": {
     "candidateId": "active-lizard-mechanical-q-learned-r-t2",
     "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
@@ -375,16 +462,21 @@ constexpr char kProductionCandidateManifest[]=R"json({
   }
 }
 )json";
-constexpr char kProductionCandidateManifestSha256[]="d9d8377e19a37fd3a76dc3ebae0c882706d11d4bd0b4a3df41691e3cf4d39d5d";
-const nlohmann::json &productionCandidateIdentity() {
-    static const std::unique_ptr<const nlohmann::json> identity=[] {
-        const std::string text(kProductionCandidateManifest);
-        require(sha256Text(text)==kProductionCandidateManifestSha256,
-            "embedded production CTM candidate manifest SHA256 differs");
-        return parseResearchCandidateIdentity(text);
-    }();
-    return *identity;
+constexpr char kPreviousProductionCandidateManifestSha256[]="d9d8377e19a37fd3a76dc3ebae0c882706d11d4bd0b4a3df41691e3cf4d39d5d";
+std::unique_ptr<const nlohmann::json> parseEmbeddedManifest(const char *text,const char *sha256) {
+    require(sha256Text(text)==sha256,"embedded production CTM candidate manifest SHA256 differs");
+    return parseResearchCandidateIdentity(text);
 }
+// The built-in production manifests, current first.
+const std::vector<const nlohmann::json *> &productionCandidateIdentities() {
+    static const std::unique_ptr<const nlohmann::json> current=
+        parseEmbeddedManifest(kProductionCandidateManifest,kProductionCandidateManifestSha256);
+    static const std::unique_ptr<const nlohmann::json> previous=
+        parseEmbeddedManifest(kPreviousProductionCandidateManifest,kPreviousProductionCandidateManifestSha256);
+    static const std::vector<const nlohmann::json *> identities={current.get(),previous.get()};
+    return identities;
+}
+
 // A declared HP domain (tools/ctm_hp_domain.py): the signed classes start where the
 // highest enveloped pre HP reaches 1, the maxHP deltas stay production, and the
 // SHA256 is recomputed over the sorted compact JSON exactly as Python writes it.
@@ -439,10 +531,22 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             return metadata_.at("researchCandidate")==nlohmann::json({{"candidateId",pins.at("candidateId")}});
         };
         // The promoted production candidate loads without a manifest, and beside another
-        // candidate's manifest; a manifest for the same candidate id takes precedence.
-        if((!candidateIdentity || !declares(*candidateIdentity)) && declares(productionCandidateIdentity())) {
-            candidateIdentity=&productionCandidateIdentity();
-            productionCandidate_=true;
+        // candidate's manifest; a manifest for the same candidate id takes precedence. Among the
+        // built-in manifests, the one listing this artifact's bytes wins, else the current one.
+        if(!candidateIdentity || !declares(*candidateIdentity)) {
+            const std::string bytes=sha256File(path);
+            const nlohmann::json *production=nullptr;
+            for(const auto *identity:productionCandidateIdentities()) {
+                if(!declares(*identity)) continue;
+                const auto &role=identity->at(deepsetStack?"fast":"standard");
+                const bool listed=!role.is_null() && role.at("artifactSha256")==bytes;
+                if(!production || listed) production=identity;
+                if(listed) break;
+            }
+            if(production) {
+                candidateIdentity=production;
+                productionCandidate_=true;
+            }
         }
         require(candidateIdentity!=nullptr,
             "combat runtime research candidate requires STS_CTM_RESEARCH_CANDIDATE_MANIFEST");
@@ -671,6 +775,20 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         weights.emplace(entry.first,std::move(t));
     }
     require(f.peek()==std::char_traits<char>::eof(),"combat runtime trailing bytes");
+    if(deepsetStack) {
+        size_t twins=0;sharedHpEncoder_=true;
+        for(const auto &[name,t]:weights) {
+            if(name.rfind("max_hp.encoder.",0)!=0) continue;
+            auto twin=weights.find("hp"+name.substr(6));
+            sharedHpEncoder_&=twin!=weights.end() && twin->second.shape==t.shape && twin->second.values.size()==t.values.size() &&
+                std::memcmp(twin->second.values.data(),t.values.data(),t.values.size()*sizeof(float))==0;
+            ++twins;
+        }
+        for(const auto &entry:weights) twins-=entry.first.rfind("hp.encoder.",0)==0;
+        sharedHpEncoder_&=twins==0;
+    }
+    static std::atomic<std::uint64_t> instances{0};
+    instance_=++instances;
 }
 const CombatTransitionRuntime::Tensor &CombatTransitionRuntime::tensor(const std::string &name) const {return weights.at(name);}
 Vec CombatTransitionRuntime::linear(const std::string &name,const Vec &x) const {
@@ -687,6 +805,42 @@ Vec CombatTransitionRuntime::embedding(const std::string &name,int index) const 
     const auto &w=tensor(name+".weight");require(w.shape.size()==2 && index>=0 && index<w.shape[0],"combat embedding domain");
     return Vec(w.values.begin()+index*w.shape[1],w.values.begin()+(index+1)*w.shape[1]);
 }
+namespace {
+// Per-thread memo of the DeepSets per-token MLP outputs. A token's output depends only on
+// the key below (the integer fields its embedding index and float inputs are built from),
+// so a hit returns the exact floats a fresh computation would; pools still add them in
+// token order. Keyed by runtime instance and encoder group; cleared when a table fills.
+using TokenKey=std::array<int,4>;
+struct TokenKeyHash {
+    size_t operator()(const TokenKey &k) const {
+        std::uint64_t h=1469598103934665603ull;
+        for(int v:k) { h^=std::uint32_t(v);h*=1099511628211ull; }
+        return size_t(h);
+    }
+};
+using TokenMemo=std::unordered_map<TokenKey,Vec,TokenKeyHash>;
+struct EncoderMemo { TokenMemo card,relic,potion; };
+constexpr size_t kTokenMemoLimit=1<<13;
+std::atomic<bool> encoderMemoEnabled{true};
+EncoderMemo &encoderMemo(std::uint64_t instance,const std::string &group) {
+    // A destroyed runtime's entries stay until the thread exits; runtimes live for the process in practice.
+    thread_local std::map<std::pair<std::uint64_t,std::string>,EncoderMemo> memos;
+    return memos[{instance,group}];
+}
+template<class Compute>
+const Vec &memoized(TokenMemo &memo,const TokenKey &key,Compute compute) {
+    if(!encoderMemoEnabled.load(std::memory_order_relaxed)) {
+        thread_local Vec reference;
+        reference=compute();
+        return reference;
+    }
+    auto found=memo.find(key);
+    if(found!=memo.end()) return found->second;
+    if(memo.size()>=kTokenMemoLimit) memo.clear();
+    return memo.emplace(key,compute()).first->second;
+}
+}
+void CombatTransitionRuntime::setEncoderMemoForTesting(bool enabled) { encoderMemoEnabled=enabled; }
 Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredictorInputV1 &input) const {
     require(input.cards.size()<=128 && input.relics.size()<=64 && input.potions.size()==5,"combat input token bound");
     const auto &g=input.globals;const std::string p=group+".encoder.";
@@ -701,20 +855,28 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
             return relu(linear(p+name+".2",relu(linear(p+name+".0",fields))));
         };
         Vec cardPool(64),relicPool(64),potionPool(64);
+        auto &memo=encoderMemo(instance_,group);
         for(const auto &card:input.cards) {
-            auto fields=embedding(p+"card_id",card.cardId);
-            append(fields,{float(card.upgraded),float(std::clamp(card.misc,-20,20))/20,float(card.bottleBinding+1)/3});
-            add(cardPool,transform("card_mlp",fields));
+            const int misc=std::clamp(card.misc,-20,20);
+            add(cardPool,memoized(memo.card,{card.cardId,int(card.upgraded),misc,card.bottleBinding},[&] {
+                auto fields=embedding(p+"card_id",card.cardId);
+                append(fields,{float(card.upgraded),float(misc)/20,float(card.bottleBinding+1)/3});
+                return transform("card_mlp",fields);
+            }));
         }
         for(const auto &relic:input.relics) {
-            auto fields=embedding(p+"relic_id",relic.relicId);
-            append(fields,{float(relic.data)/10,float(relic.orderIndex)/64});
-            add(relicPool,transform("relic_mlp",fields));
+            add(relicPool,memoized(memo.relic,{relic.relicId,relic.data,relic.orderIndex,0},[&] {
+                auto fields=embedding(p+"relic_id",relic.relicId);
+                append(fields,{float(relic.data)/10,float(relic.orderIndex)/64});
+                return transform("relic_mlp",fields);
+            }));
         }
         for(const auto &potion:input.potions) {
-            auto fields=embedding(p+"potion_id",potion.potionId);
-            append(fields,embedding(p+"potion_slot",potion.slot));
-            add(potionPool,transform("potion_mlp",fields));
+            add(potionPool,memoized(memo.potion,{potion.potionId,potion.slot,0,0},[&] {
+                auto fields=embedding(p+"potion_id",potion.potionId);
+                append(fields,embedding(p+"potion_slot",potion.slot));
+                return transform("potion_mlp",fields);
+            }));
         }
         append(cardPool,relicPool);append(cardPool,potionPool);
         append(cardPool,relu(linear(p+"global_mlp.0",global)));

@@ -18,6 +18,7 @@
 namespace one_combat {
 namespace {
 thread_local std::uint64_t publicScorerCalls = 0;
+thread_local int resampledQueueDepth = 0;
 
 void requireModels(const CompactTreeNet &model) {
     if (!model.ok) throw std::runtime_error("native OOC fallback model unavailable");
@@ -27,8 +28,10 @@ std::vector<float> features(const sts::GameContext &gc, const PathHistory &path)
 }
 
 int publicFutureCount() {
+    // Default 8: the fallback never reads the realized encounter queue
+    // (ledger §434). Explicit 0 restores the legacy hidden-information inputs.
     const char *value = std::getenv("STS_OOC_PUBLIC_FUTURES");
-    if (!value) return 0;
+    if (!value) return 8;
     int count = -1;
     const auto parsed = std::from_chars(value, value + std::strlen(value), count);
     if (parsed.ec != std::errc{} || *parsed.ptr != '\0' || count < 0 || count > 256)
@@ -89,7 +92,10 @@ public:
                       const CompactTreeNet &model)
         : model_(model), base_(features(gc, path)) {
         const int count = publicFutureCount();
-        if (count == 0) return;
+        // Act 4 has a fixed elite and boss and no hallway queue, so its
+        // encounter fields reveal nothing and are scored as they are.
+        // Inside an OOC MCTS playout the queue is already a public sample.
+        if (count == 0 || gc.act == 4 || resampledQueueDepth > 0) return;
         const auto &idx = richIdxMap();
         hidden_ = {idx.at("nextEliteId"), idx.at("nextFight0"),
                    idx.at("nextFight1"), idx.at("nextFight2")};
@@ -182,6 +188,8 @@ public:
 }
 
 int nativeOocPublicFutureCount() { return publicFutureCount(); }
+NativeOocResampledQueueScope::NativeOocResampledQueueScope() { ++resampledQueueDepth; }
+NativeOocResampledQueueScope::~NativeOocResampledQueueScope() { --resampledQueueDepth; }
 bool nativeOocShopDeckSizeFixEnabled() { return shopDeckSizeFixEnabled(); }
 bool nativeOocCardWinRankEnabled() {
     const char *value = std::getenv("STS_OOC_CARD_WIN_RANK");
