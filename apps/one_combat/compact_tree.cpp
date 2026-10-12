@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <functional>
 #include <fstream>
 #include <iostream>
@@ -99,6 +100,65 @@ double CompactTreeNet::predict(const std::vector<float> &raw) const {
     }
     const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
     return logistic ? std::max(0.0, std::min(1.0, out)) : out;
+}
+
+void CompactTreeNet::predictVariants(const std::vector<float> &base, const std::vector<int> &varying,
+                                     const std::vector<std::vector<float>> &rows,
+                                     std::vector<double> &out) const {
+    out.assign(rows.size(), 0.0);
+    std::vector<unsigned char> isVarying(base.size(), 0);
+    for (const int index : varying)
+        if (index >= 0 && index < static_cast<int>(base.size())) isVarying[index] = 1;
+    // Rows that differ from base outside the varying features take predict().
+    std::vector<std::size_t> exact;
+    for (std::size_t r = 0; r < rows.size(); ++r) {
+        bool same = rows[r].size() == base.size();
+        for (std::size_t i = 0; same && i < base.size(); ++i)
+            same = isVarying[i] || std::memcmp(&rows[r][i], &base[i], sizeof(float)) == 0;
+        if (same) exact.push_back(r);
+        else out[r] = predict(rows[r]);
+    }
+    if (exact.empty()) return;
+    // Walk each tree once for all exact rows together. A split on a fixed
+    // feature sends the whole group the way base goes, which is the way every
+    // exact row goes; a split on a varying feature partitions the group. Each
+    // row reaches the leaf predict() reaches and adds it in tree order.
+    std::vector<double> margins(exact.size(), baseMargin);
+    std::vector<std::size_t> group(exact.size());
+    struct Pending { int node; std::size_t begin, end; };
+    std::vector<Pending> stack;
+    for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
+        const Node *tr = nodes.data() + roots[t];
+        const int size = static_cast<int>(roots[t + 1] - roots[t]);
+        for (std::size_t k = 0; k < group.size(); ++k) group[k] = k;
+        stack.assign(1, {0, 0, group.size()});
+        int steps = 0;
+        while (!stack.empty()) {
+            auto [i, begin, end] = stack.back(); stack.pop_back();
+            while (tr[i].feat >= 0) {
+                // Every visited node is distinct in a tree, so this bounds the walk.
+                if (++steps > size) {
+                    for (const std::size_t r : exact) out[r] = predict(rows[r]);
+                    return;
+                }
+                const Node &node = tr[i];
+                if (!isVarying[node.feat]) { i = (base[node.feat] < node.thr) ? node.yes : node.no; continue; }
+                const auto split = std::partition(group.begin() + begin, group.begin() + end,
+                    [&](std::size_t k) { return rows[exact[k]][node.feat] < node.thr; });
+                const std::size_t middle = split - group.begin();
+                if (middle == begin) { i = node.no; continue; }
+                if (middle == end) { i = node.yes; continue; }
+                stack.push_back({node.no, middle, end});
+                i = node.yes; end = middle;
+            }
+            for (std::size_t k = begin; k < end; ++k) margins[group[k]] += tr[i].thr;
+        }
+    }
+    for (std::size_t k = 0; k < exact.size(); ++k) {
+        const double m = margins[k];
+        const double value = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
+        out[exact[k]] = logistic ? std::max(0.0, std::min(1.0, value)) : value;
+    }
 }
 
 double CompactTreeNet::predictMarginalized(

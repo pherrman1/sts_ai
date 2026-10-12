@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433); 2026-10-11 for the #401 tree-input audit (§438) and the rollout3 CPU profile (§436); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433); 2026-10-11 for the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -264,8 +264,9 @@ other sections retain their prior verification and linked evidence.
 OOC MCTS with the V4 prior, 2048 simulations and a native `v_win` leaf after 3 additional CTM
 combats (`STS_OOC_MCTS_LEAF_COMBATS=3`, `LEAF_VALUE=native`) won 115/128 vs 101/128 for MCTS off
 on the current pathb-r2 CTM (control: MCTS off on the §411 research base with flat exact-10k Silver,
-not the production defaults, so 78.9% is not the default stack's win rate): +10.9 pp [+2.3, +19.5], boss deaths 11 vs 23. It costs about 936 s
-per run on one CPU (off: 57 s), and about 20% of OOC decisions fall back to V4 on Lizard Tail
+not the production defaults, so 78.9% is not the default stack's win rate): +10.9 pp [+2.3, +19.5], boss deaths 11 vs 23. It cost about 936 s
+per run on one CPU (off: 57 s) at §422; exact batching of the native shop/card/removal valuation inside the
+rollouts (§437, bitwise identical play) cuts that by a seed-dependent 1.13–1.7x per run (1.38x over four seeds), and about 20% of OOC decisions fall back to V4 on Lizard Tail
 support aborts. This reproduces §277 (old V2 CTM) and contrasts with the `screengbm` leaf (§384,
 −22 pp) and the 0/1 boss-rollout leaf (§391, 9/32, saturated value). Pricing the Lizard states with a
 Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`) removes the aborts (fallback 2.4%) but

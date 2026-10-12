@@ -140,6 +140,15 @@ public:
         // E[sigmoid(margin)] rather than sigmoid(E[margin]).
         return total / scenarios_.size();
     }
+
+    // Same values as predict() on each row in turn. Rows should differ from
+    // base only at the varying raw indices; others are still valued exactly.
+    void predictVariants(const std::vector<int> &varying, const std::vector<std::vector<float>> &rows,
+                         std::vector<double> &out) const {
+        if (scenarios_.empty()) { model_.predictVariants(base_, varying, rows, out); return; }
+        out.clear();
+        for (const auto &row : rows) out.push_back(predict(row));
+    }
 };
 }
 
@@ -170,14 +179,21 @@ int nativeFloorCardPick(sts::GameContext &gc, const PathHistory &path,
     const auto &idx = richIdxMap();
     const int dsz = idx.at("deckSize");
     double best = -1e100; int bestIdx = 5;
-    const double v0 = scorer.predict(base);
+    std::vector<std::vector<float>> rows{base};
+    std::vector<int> varying{dsz};
     for (int i = 0; i < r.cardRewards[rewardIndex].size(); ++i) {
         auto row = base;
         const int cid = static_cast<int>(r.cardRewards[rewardIndex][i].getId());
         const auto it = idx.find("d" + std::to_string(cid));
-        if (it != idx.end()) row[it->second] += 1.0f;
+        if (it != idx.end()) { row[it->second] += 1.0f; varying.push_back(it->second); }
         row[dsz] += 1.0f;
-        const double marginal = scorer.predict(row) - v0;
+        rows.push_back(std::move(row));
+    }
+    std::vector<double> values;
+    scorer.predictVariants(varying, rows, values);
+    const double v0 = values[0];
+    for (int i = 0; i < r.cardRewards[rewardIndex].size(); ++i) {
+        const double marginal = values[i + 1] - v0;
         if (marginal > best) { best = marginal; bestIdx = i; }
     }
     return best < skipThreshold ? 5 : bestIdx;
@@ -267,17 +283,44 @@ std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
     }
     if (items.size() > 16) items.resize(16);
     int removeId = -1; double removeGain = 0.0;
+    std::vector<std::vector<float>> rows;
+    std::vector<double> values;
     if (sh.removeCost >= 0) {
-        const double v0 = scorer.predict(base);
+        std::vector<int> ids, varying{dsz};
+        rows.push_back(base);
         for (int id = 0; id < 372; ++id) {
             const auto it = idx.find("d" + std::to_string(id));
             if (it == idx.end() || base[it->second] <= 0) continue;
             auto row = base; row[it->second] -= 1.0f; row[dsz] -= 1.0f;
-            const double gain = scorer.predict(row) - v0;
-            if (removeId < 0 || gain > removeGain) { removeId = id; removeGain = gain; }
+            ids.push_back(id); varying.push_back(it->second); rows.push_back(std::move(row));
+        }
+        scorer.predictVariants(varying, rows, values);
+        const double v0 = values[0];
+        for (std::size_t k = 0; k < ids.size(); ++k) {
+            const double gain = values[k + 1] - v0;
+            if (removeId < 0 || gain > removeGain) { removeId = ids[k]; removeGain = gain; }
         }
     }
+    // Candidate rows are valued in batches, then compared in enumeration order.
     double best = -1e100; unsigned bestMask = 0; bool bestRemove = false;
+    struct Candidate { unsigned mask; bool remove; };
+    std::vector<Candidate> pending;
+    std::vector<int> varying{goldIdx, dsz};
+    for (const auto &item : items) {
+        const auto it = idx.find((item.kind == 'c' ? "d" : "r") + std::to_string(item.id));
+        if (it != idx.end()) varying.push_back(it->second);
+    }
+    if (removeId >= 0) {
+        const auto it = idx.find("d" + std::to_string(removeId));
+        if (it != idx.end()) varying.push_back(it->second);
+    }
+    rows.clear();
+    const auto flush = [&] {
+        scorer.predictVariants(varying, rows, values);
+        for (std::size_t k = 0; k < pending.size(); ++k)
+            if (values[k] > best) { best = values[k]; bestMask = pending[k].mask; bestRemove = pending[k].remove; }
+        rows.clear(); pending.clear();
+    };
     const unsigned total = 1u << items.size();
     for (unsigned mask = 0; mask < total; ++mask) {
         int spend = 0, adds = 0;
@@ -303,10 +346,11 @@ std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
                 const auto it = idx.find("d" + std::to_string(removeId));
                 if (it != idx.end()) row[it->second] -= 1.0f;
             }
-            const double value = scorer.predict(row);
-            if (value > best) { best = value; bestMask = mask; bestRemove = rem != 0; }
+            rows.push_back(std::move(row)); pending.push_back({mask, rem != 0});
+            if (rows.size() == 1024) flush();
         }
     }
+    if (!rows.empty()) flush();
     std::ostringstream out;
     for (unsigned k = 0; k < items.size(); ++k)
         if (bestMask & (1u << k)) out << items[k].kind << items[k].slot << ' ';
@@ -321,14 +365,21 @@ int nativeFloorRemovePick(const sts::GameContext &gc, const PathHistory &path,
     const int dsz = idx.at("deckSize");
     const PublicValueScorer scorer(gc, path, floor);
     const auto &base = scorer.base();
-    const double v0 = scorer.predict(base);
-    double best = -1e100; int bestIdx = 0;
+    std::vector<std::vector<float>> rows{base};
+    std::vector<int> varying{dsz};
     for (int i = 0; i < static_cast<int>(cardIds.size()); ++i) {
         auto row = base;
         const auto it = idx.find("d" + std::to_string(cardIds[i]));
-        if (it != idx.end()) row[it->second] -= 1.0f;
+        if (it != idx.end()) { row[it->second] -= 1.0f; varying.push_back(it->second); }
         row[dsz] -= 1.0f;
-        const double gain = scorer.predict(row) - v0;
+        rows.push_back(std::move(row));
+    }
+    std::vector<double> values;
+    scorer.predictVariants(varying, rows, values);
+    const double v0 = values[0];
+    double best = -1e100; int bestIdx = 0;
+    for (int i = 0; i < static_cast<int>(cardIds.size()); ++i) {
+        const double gain = values[i + 1] - v0;
         if (gain > best) { best = gain; bestIdx = i; }
     }
     return bestIdx;

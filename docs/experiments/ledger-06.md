@@ -16759,6 +16759,34 @@ where rollout3 spends its time, and the default-stack profile stays flat.
 **Knowledge impact:** one sentence each in `architecture/combat-search.md` (state recycling) and the rollout3 cost
 paragraph of `evaluation/current-research.md`.
 
+## §437 — rollout3 leaf cost: the native shop planner, not `v_win` features; exact batching 1.13–1.7x, varies by seed (2026-10-11)
+
+**Question:** issue #338: can OOC MCTS leaf evaluation get cheaper with exact parity? Where does rollout3 (§422) spend
+its CPU?
+**Design:** profile one rollout3 seed with `STS_OOC_CPU_PROFILE=1` plus gdb stack samples; then paired one-seed
+`bestbench` units, baseline `main` `491bc21b` vs the candidate, §422 `rollout3` and `off` environments unchanged,
+seeds 74013000–004 (rollout3) and 74013001–008 (off). Parity = byte-identical decision and MCTS action traces and
+identical non-timing result and MCTS summary rows.
+**Profile (baseline, seed 74013000, 937 s MCTS CPU):** `v_win` features 0.37 s (0.04%), `v_win` predict 16.6 s
+(1.8%), CTM sampling 211 s (23%), V4 nets in rollout gates 146 s (16%), rollout policy steps between combats 531 s
+(57%). Half of all stack samples sit in `nativeShopPlan`, which values every affordable shop subset with a full
+1,256-tree floor-model prediction and repeats after each purchase.
+**Change:** `CompactTreeNet::predictVariants` values candidate rows that differ from the decision's base vector only
+in declared features, walking each tree once for the whole group (bitwise identical to `predict()`); used by
+`nativeShopPlan`, `nativeFloorCardPick` and `nativeFloorRemovePick`.
+**Result:** 13/13 paired units identical. rollout3 per-run time 1.19x–1.69x faster on these seeds and 1.13x on
+the independent reviewer's seed; the gain varies by seed with how much rollout time passes through shops
+(74013001–004 total 3,858 → 2,794 s, 1.38x; profiled 74013000 process CPU 1,033 → 626 s, rollout-step CPU 531 →
+142 s). `off` 1.01x.
+**Decision:** adopt (exact, no behavior change). Incremental `v_win` features stay rejected (as in §380). The largest
+remaining rollout3 buckets are CTM sampling and the V4 gates.
+
+**Evidence:** [packet](evidence/ooc_rollout_leaf_speedup_20261011/README.md). Raw:
+`/mnt/project-files/issue338-leaf-speed/raw.tar.gz`. Seeds 74013000–74013008 (and reviewer seeds 74013900–74013904) are now used.
+
+**Knowledge impact:** `predictVariants` paragraph in `architecture/out-of-combat.md`; rollout3 cost sentence in
+`evaluation/current-research.md`.
+
 ## §438 — #401 feature-importance and grouped ablations of the `v_win`/`v_rich` tree inputs: relics, deck and HP carry the signal; hidden fields are recoverable; the forward map helps floor at A20 (2026-10-11)
 
 **Question:** Issue #401 Stage 1/2 for the tree value models: which semantic input groups does each model
