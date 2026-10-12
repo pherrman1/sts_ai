@@ -3,7 +3,8 @@
 Plan: [PREREG.md](PREREG.md), independent plan review PASS with analysis-time nits (applied below). Smokes:
 [SMOKE.md](SMOKE.md). Run commit `1fb2c300`, code `f82eeadd`, `one_combat` sha256 `bab14cd5…`; all 8 workers'
 `FROZEN.txt` name the same run, code and binary. Seeds 76000000–76000255 (fresh). All three arms ran in this run, on
-this binary. 8 cloud workers × 32 seeds × 3 arms, launched by the coordinator.
+this binary. `off` is the §411 research base with flat exact-10k Silver, not the production default stack, so its win
+rate is not the production win rate. 8 cloud workers × 32 seeds × 3 arms, launched by the coordinator.
 
 ## Validity
 

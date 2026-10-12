@@ -16710,7 +16710,8 @@ paragraph of `evaluation/current-research.md`.
 win more runs than MCTS off?
 **Design:** [PREREG](evidence/ooc_rollout3_confirm_20261011/PREREG.md), independent plan review PASS (analysis-time nits
 applied). Arms `combo`, `rollout3` (§422, 2048 simulations) and `off` (§422), all run on seeds 76000000–255 with binary
-`bab14cd5…` (current main `f82eeadd`). 8 cloud workers × 32 seeds × 3 arms (Philipp chose 8 workers). Smokes 76009000–002.
+`bab14cd5…` (code `f82eeadd` = main `07a93e36` merged with the §427–§430 code). `off` is the §411 research base with
+flat exact-10k Silver, not the production default stack, so its win rate is not the production win rate. 8 cloud workers × 32 seeds × 3 arms (Philipp chose 8 workers). Smokes 76009000–002.
 Primary: paired bootstrap 95% CI of combo − off (seed 433); CONFIRMED / WORSE_THAN_OFF / NOT_CONFIRMED.
 **Validity:** 768/768 units rc=0, 0 Silver stalls in every arm (stall-as-loss sensitivity identical), config banners
 checked by grep (`off` has none), tar hashes checked twice.
@@ -16718,8 +16719,9 @@ checked by grep (`off` has none), tar hashes checked twice.
 p = 0.003. Secondary: combo − rollout3 (213/256, 83.2%) +4.3 pp [−1.6, +10.2], p = 0.19; rollout3 − off +5.5 pp
 [−1.2, +12.1], p = 0.13. Boss deaths 15 / 32 / 42. Seconds per run 1,536 / 893 / 55; V4 fallback 27.8% / 21.6%, nearly
 all Lizard Tail support aborts.
-**Interpretation (Inference):** the rollout3-family gain over off holds on fresh seeds. The run does not separate the
-combination from plain rollout3, which costs about half as much. All arms ran with `STS_OOC_PUBLIC_FUTURES` off, so the
+**Interpretation (Inference):** `combo`'s gain over off holds on fresh seeds; plain rollout3's §422 gain (+10.9 pp) did
+not reach significance here (+5.5 pp, CI includes zero). The run does not separate the combination from plain rollout3,
+which costs about half as much. All arms ran with `STS_OOC_PUBLIC_FUTURES` off, so the
 native fallback reads true upcoming encounters (#397); that favours `off`, which uses it on every decision.
 **Decision:** no default change from this run alone. A default proposal would weigh `combo` against plain rollout3 and
 the 16–28x CPU cost.
