@@ -17159,3 +17159,28 @@ rollout gates (`prepareState` 20%; the shop gate now costs more than the shop pl
 
 **Knowledge impact:** `predictDeltas` paragraph and tree-storage item in `architecture/out-of-combat.md`, compact
 tree row in `CODE_MAP.md`, rollout3 cost sentence in `evaluation/current-research.md`.
+
+## §449 — V4 token network in rollout3: cached deck tokens and transposed layers, bitwise identical, 1.29–1.41x per rollout3 run (2026-10-12)
+
+**Question:** after §442 the V4 token network in the rollout gates was the largest rollout3 cost; can its forward
+pass be made faster with bitwise-identical outputs?
+**Design:** performance only. Baseline `main` `94f78fbb` (after #497). §422 `rollout3` and `off` arms unchanged, plus
+one uniform-prior, uniform-leaf rollout3 unit; seeds 74024005–74024009, one guarded one-seed `bestbench` per unit;
+`gprofng` on rollout3 74024005. Parity = §437's `compare.py`.
+**Profile (before):** 450 s process CPU: V4 `prepareState` 95.9 s inclusive (21%; deck encoder 52.4 s), card-reward
+V4 gate 78.3 s inclusive, V4 shop gate 29.6 s; GELU `tanhf` 64.3 s.
+**Change:** `OocStrategicTokNet::load()` builds derived tables: every deck token (card × upgrade × count 0–9) with
+its qkv row (about 3.8 MB) and transposed copies of the dense layers, which compute several output units side by
+side in each unit's original float order. `prepareState` also keeps the Q head's first-layer sum over the state
+inputs, as `PolicyPrefix` does for the policy head. Nets filled in directly keep the original loops.
+**Result:** new `ooc_tok_net_fast` test (400 states, 2,400 actions on the deployed model) bitwise equal; three hand
+mutations fail it. Full runs identical: rollout3 74024005–007, uniform leaf 74024009, `off` 74024008. Per-run
+time: rollout3 1.41x and 1.29x; uniform leaf 0.98x and `off` 1.02x (noise). Profiled: `prepareState` 95.9 → 34.1 s,
+card-reward gate 78.3 → 27.1 s, shop gate 29.6 → 11.3 s.
+**Decision:** adopt (exact, no behavior change). The per-action V4 encoders and GELU are now the largest V4 costs.
+
+**Evidence:** [packet](evidence/v4_net_speedup_20261012/README.md). Raw:
+`/mnt/project-files/v4-speedup-449/raw.tar.gz`. Seeds 74024005–74024009 are now used.
+
+**Knowledge impact:** derived-table paragraph in `architecture/out-of-combat.md`, rollout3 cost sentence in
+`evaluation/current-research.md`.

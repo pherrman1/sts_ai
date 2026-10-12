@@ -1,0 +1,10 @@
+r_base/off_74024008.time real 40.822 user 39.684 sys 0.210
+r_base/r3_74024006.time real 435.162 user 428.842 sys 0.326
+r_base/r3_74024007.time real 624.556 user 614.986 sys 0.430
+r_base/uu_74024009.time real 189.590 user 186.986 sys 0.328
+r_cand/off_74024008.time real 40.142 user 39.061 sys 0.208
+r_cand/r3_74024006.time real 309.270 user 303.934 sys 0.354
+r_cand/r3_74024007.time real 482.816 user 473.908 sys 0.453
+r_cand/uu_74024009.time real 192.583 user 189.704 sys 0.309
+pp_base/r3_74024005 (base = pre-#497 main 90f6df64 binary 12e881be, gprofng) real 459.857 user 444.244 sys 6.972
+pp_cand/r3_74024005 (candidate, gprofng) real 293.332 user 284.922 sys 5.111
