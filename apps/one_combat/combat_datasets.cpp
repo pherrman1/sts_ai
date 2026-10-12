@@ -5166,7 +5166,14 @@ struct RootPriorScope {
     explicit RootPriorScope(bool on) { search::g_nativeSilverRootPriorOverride = on; }
     ~RootPriorScope() { search::g_nativeSilverRootPriorOverride.reset(); }
 };
-struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; };
+struct TreePriorScope {
+    explicit TreePriorScope(int minVisits) {
+        if (minVisits > 0) search::g_nativeSilverTreePriorOverride = minVisits;
+    }
+    ~TreePriorScope() { search::g_nativeSilverTreePriorOverride.reset(); }
+};
+// treeMinVisits > 0 adds the §452 tree prior (needs prior = true).
+struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0; };
 // One forecast sample of the RAW post-combat persistent state (the fields the CTM
 // models; RNG streams excluded). The deck is written as an FNV-1a hash.
 void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const std::string &forecaster,
@@ -5230,7 +5237,23 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         candidateId = candidate->fastRuntime().identity().at("candidateId").get<std::string>();
     }
     std::vector<CtmSilverArm> arms;
-    if (!ctmOnly)
+    // STS_CTMSILVER_ARMSET=treeprior452 (§452) swaps the forecaster arms for the
+    // paired fight-level tree-prior pilot at 2k; treeprior452k8 drops the K=1 arm.
+    const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
+    const std::string armSet = armSetEnv ? armSetEnv : "";
+    if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8")
+        throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452 or treeprior452k8");
+    if (!armSet.empty() && ctmOnly)
+        throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
+    if (!armSet.empty()) {
+        arms = {
+            {"control", sims, false, false, 1},
+            {"plain2k", 2000, false, true, replicates},
+            {"root2k", 2000, true, true, replicates},
+            {"tree8_2k", 2000, true, true, replicates, 8},
+        };
+        if (armSet == "treeprior452") arms.push_back({"tree1_2k", 2000, true, true, replicates, 1});
+    } else if (!ctmOnly)
         arms = {
             {"control", sims, false, false, 1},
             {"teacher10k", sims, false, true, 2},
@@ -5257,11 +5280,12 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                   "candSampleCpuUs";
     states << '\n';
     armsOut << "stateId,sourceSeed,fightIdx,arm,k,budget,prior,redraw,redrawSeed,won,terminalHp,"
-               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason\n";
+               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason,treeMinVisits\n";
     nlohmann::json armSpec = nlohmann::json::array();
     for (const auto &a : arms)
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
-                           {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates}});
+                           {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates},
+                           {"treeMinVisits", a.treeMinVisits}});
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
     int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0;
     nlohmann::json perSeed = nlohmann::json::array();
@@ -5374,6 +5398,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     if (arm.redraw) plannerSeed = ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0x91A77E2);
                     PlannerSeedScope plannerScope(plannerSeed);
                     RootPriorScope priorScope(arm.prior);
+                    TreePriorScope treeScope(arm.treeMinVisits);
                     std::optional<one_combat::CombatTransitionPersistentState> rawPost;
                     VwinArmResult result;
                     {
@@ -5407,7 +5432,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                             << ',' << redrawSeed << ',' << result.won << ',' << result.terminalHp << ','
                             << std::setprecision(9) << result.cpuSeconds << ',' << result.simulations << ','
                             << result.decisions << ',' << (valid ? 1 : 0) << ','
-                            << (isControl ? (controlMatch ? 1 : 0) : -1) << ',' << csvQuote(reason) << '\n';
+                            << (isControl ? (controlMatch ? 1 : 0) : -1) << ',' << csvQuote(reason) << ','
+                            << arm.treeMinVisits << '\n';
                 }
             }
         }
@@ -5434,7 +5460,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             {"standard", candidateStandard}, {"standardSha256", fileSha256(candidateStandard)},
             {"manifestSha256", std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256")},
             {"activeLizard", true}, {"supported", candidateSupported}} : nlohmann::json(nullptr)},
-        {"arms", armSpec}, {"sources", std::move(perSeed)},
+        {"arms", armSpec}, {"armSet", armSet.empty() ? "forecast408" : armSet}, {"sources", std::move(perSeed)},
         {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
             {"states", nStates}, {"ctmSupported", ctmSupported}, {"controlReplayMatches", controlMatches},
             {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows}}},

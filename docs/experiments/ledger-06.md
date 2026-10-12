@@ -17256,3 +17256,55 @@ same-seed map-off arm was run).
 Seeds 81000000–127 and 81009000 are now used.
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §452 — Silver prior inside the search tree: fight score up at 2k sims, not CPU-matched (2026-10-12)
+
+**Question (Philipp, 2026-10-12):** the v1 Silver prior (§397, §406) acts only at the search root
+(`SilverSearcher::evaluateEdge` applies the bonus only when `&parent == root`). If the same prior also
+guides nodes below the root, does a 2k search play fights better than plain 2k? This is the precondition
+for an AlphaZero-style loop: prior-guided search must be a stronger teacher than plain search.
+**Design:** [PREREG](evidence/silver_tree_prior_20261012/PREREG.md), frozen after independent review
+(PASS at `655aa915`; code `17ddaa67`, binary `704b81d9…`). Research-only `SilverSearcher::nodePrior`:
+a non-root decision node with at least K simulations is scored once by the v1 prior, its visited edges
+get `400 · P / (n + 1)`, and untried edges (root included) are tried in prior order. `ctmsilvergen` with
+`STS_CTMSILVER_ARMSET=treeprior452`: an exact-10k plain source run per seed (production V4 OOC policy,
+A0, project-fair), every fight replayed by a 10k control (must reproduce the source) and by four arms at
+2k, 2 replicates each, with combat RNG redrawn per (fight, replicate) identically for all arms: `plain2k`,
+`root2k` (§406), `tree8_2k` (K = 8), `tree1_2k` (K = 1). Seeds 84000000–84000127, 16 cloud workers × 4
+cores. Metric: fight score 0 on death, else 53 + HP + 11·potions + 0.25·gold + 2·maxHP; paired per fight,
+95% CI by bootstrap over source seeds. Primary: `tree8_2k − plain2k`.
+**Result: `TREE_PRIOR_HELPS`.** 3,361 of 3,372 fights valid (the 11 control mismatches are Smoke Bomb
+escapes, quarantined).
+
+| contrast (score, all fights) | Δ [95% CI] | boss (n = 368) | elite (n = 817) |
+|---|---|---|---|
+| tree8 − plain2k (primary) | +1.17 [+0.53, +1.79] | +6.15 [+0.79, +11.33] | +1.41 [+0.67, +2.24] |
+| root2k − plain2k | +0.63 [+0.18, +1.12] | +5.58 [+1.25, +10.07] | −0.20 [−0.88, +0.39] |
+| tree8 − root2k | +0.54 [+0.01, +1.05] | +0.58 [−3.25, +4.66] | +1.61 [+0.74, +2.67] |
+| tree1 − plain2k | +1.67 [+1.15, +2.22] | +8.84 [+4.35, +13.49] | +1.55 [+0.74, +2.42] |
+| tree1 − tree8 | +0.50 [+0.12, +0.90] | +2.69 [−0.50, +5.87] | +0.14 [−0.27, +0.54] |
+
+- Death rate per fight: plain 0.64%, root 0.57%, tree8 0.51%, tree1 0.45% (tree1 − plain −0.17 pp
+  [−0.30, −0.01]; boss −1.5 pp [−2.8, −0.3]).
+- Where the score comes from (descriptive): mostly potions kept (11·potions: plain 18.27, tree8 19.06,
+  tree1 19.11 per fight) and fewer deaths; end HP is nearly unchanged (73.37 / 73.40 / 73.66).
+- CPU per fight (thread CPU, 4 runs per worker): plain 0.37 s, root 0.39 s, tree8 1.09 s (2.9x),
+  tree1 4.09 s (11x); 10k control 2.02 s.
+
+**Interpretation:**
+- The prior does guide the search usefully below the root: at equal simulations, K = 8 beats plain and the
+  root-only prior, and K = 1 beats K = 8. Part of `tree8 − root2k` is the root's untried-action order,
+  which `root2k` does not change.
+- **Not CPU-matched.** tree8 costs 2.9x and tree1 11x plain 2k per fight. No plain arm at matched CPU
+  (about 6k for tree8) was run, and §406 found plain 2k ≈ plain 10k in win rate. **Open question:** does
+  tree8 beat plain search at equal CPU? Until that is shown, this does not prove a stronger teacher per
+  unit of compute.
+- The effect is small in absolute terms: about one fight-score point per fight (≈ 0.07 potions kept and
+  0.1–0.2 pp fewer deaths); win-rate impact is **Unverified**.
+- Per the pre-registered rule the next step is an iteration-1 loop design and a run-level confirmation;
+  a CPU-matched fight-level check is the cheaper first step (Inference).
+
+**Evidence:** [packet](evidence/silver_tree_prior_20261012/README.md). Seeds 84000000–84000127 (run) and
+84009000–84009001 (smoke) are now used; reviewer seeds 74035000–74035004.
+
+**Knowledge impact:** tree-prior paragraph in `architecture/combat-search.md`.

@@ -451,6 +451,11 @@ namespace sts::search {
                 searcher->leafSamples = g_nativeSilverLeafSamples;
                 searcher->rootPrior = nativeSilverRootPrior(*searcher);
                 searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
+                searcher->nodePrior = nullptr;
+                if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
+                    searcher->nodePrior = nativeSilverPolicyPrior;
+                    searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
+                }
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -794,14 +799,19 @@ namespace sts::search {
         if (g_nativeSilverRootPriorOverride == true && g_options.rootPriorPath.empty())
             throw std::runtime_error("root prior override requires STS_SILVER_ROOT_PRIOR");
         if (g_options.rootPriorPath.empty() || searcher.prepareRootActions() < 2) return {};
-        const auto &state = searcher.rootSearchState();
+        return nativeSilverPolicyPrior(searcher.rootSearchState(), searcher.rootNode().edges);
+    }
+
+    std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
+                                                const std::vector<SilverSearcher::Edge> &edges) {
         thread_local std::vector<float> features;
         features.resize(combatPolicyFeatureCount());
         combatExtractFeatures(state, features.data());
         float *action = features.data() + combatFeatureCount();
         std::vector<double> prior;
+        prior.reserve(edges.size());
         double total = 0;
-        for (const auto &edge : searcher.rootNode().edges) {
+        for (const auto &edge : edges) {
             combatFillActionFeatures(state, edge.action, action);
             // Trained with cross-entropy on root visit shares: sigmoid(margin).
             const double p = 1.0 / (1.0 + std::exp(-g_rootPriorNet.predictVec(features.data())));
@@ -874,6 +884,7 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;

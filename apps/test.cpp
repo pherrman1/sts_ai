@@ -510,6 +510,51 @@ int testSilverSearcher() {
         std::filesystem::remove(path);
     }
 
+    // Tree prior (§452, research): an unreachable visit threshold is today's
+    // search; at K = 1 internal decision nodes get a prior sized like their
+    // edges, and the root's first try follows the root prior.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x51A7u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        auto visitsOf = [](const search::SilverSearcher &s) {
+            std::vector<std::int32_t> visits;
+            for (const auto &e : s.rootNode().edges) visits.push_back(e.visitCount);
+            return visits;
+        };
+        search::SilverSearcher plain(silverSearchRoot(bc), {});
+        plain.search(400);
+        int calls = 0;
+        bool sized = true;
+        auto uniform = [&](const BattleContext &, const std::vector<search::SilverSearcher::Edge> &edges) {
+            ++calls;
+            sized = sized && edges.size() >= 2;
+            return std::vector<double>(edges.size(), 1.0 / static_cast<double>(edges.size()));
+        };
+        search::SilverSearcher unreachable(silverSearchRoot(bc), {});
+        unreachable.nodePrior = uniform;
+        unreachable.treePriorMinVisits = 1 << 30;
+        unreachable.search(400);
+        check(visitsOf(unreachable) == visitsOf(plain) && unreachable.nodeCount() == plain.nodeCount() && calls == 0,
+              "tree prior with an unreachable threshold leaves the search unchanged");
+
+        search::SilverSearcher tree(silverSearchRoot(bc), {});
+        const auto n = tree.prepareRootActions();
+        std::vector<double> last(n, 0.0);
+        last.back() = 1.0;
+        tree.rootPrior = last;
+        tree.rootPriorWeight = 400;
+        tree.nodePrior = uniform;
+        tree.treePriorMinVisits = 1;
+        tree.search(1);
+        check(visitsOf(tree).back() == 1, "tree prior tries the highest-prior root action first");
+        tree.search(399);
+        check(calls > 0 && sized, "tree prior scores internal decision nodes with two or more edges");
+        bool tried = true;
+        for (const auto v : visitsOf(tree)) tried = tried && v >= 1;
+        check(tried, "tree prior still tries every root action");
+    }
+
     // Exact endpoint/depth fixtures and opt-in observational parity.
     {
         using Profile = search::SilverTreeProfile;
