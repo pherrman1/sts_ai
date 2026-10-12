@@ -73,6 +73,9 @@ def main():
     out, dirs = sys.argv[1], sys.argv[2:]
     states, valid, cpu, samples = load(dirs)
     arms = [a for a in ARMS if any(k[1] == a for k in samples)]
+    reps = {len(v) for (sid, a), v in samples.items() if a in arms}
+    if len(reps) != 1:
+        raise SystemExit(f"arms differ in replicate count per fight: {sorted(reps)}")
     fights = {}
     for sid, st in states.items():
         if not valid[sid]:

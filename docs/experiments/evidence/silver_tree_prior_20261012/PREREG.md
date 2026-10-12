@@ -26,7 +26,7 @@ is known (root included), untried edges are tried in descending prior order.
   with a seed of (source seed, fight index, k), identical for every arm:
   `plain2k`, `root2k` (§406 root prior), `tree8_2k` (K = 8), `tree1_2k` (K = 1).
 - Seeds 84000000–84000127 (16 workers × 4 shards × 2 seeds;
-  seed = 84000000 + 32(W−1) + 2i). Smoke used 84009000.
+  seed = 84000000 + 8(W−1) + 2i and +1). Smoke used 84009000.
 - Code commit and binary: `RUN_GIT_SHA`, `BINARY_SHA256` in this folder
   (preset `linux-gcc-release`). Prior `prior-natpert.compact.txt`, sha256
   `573305c4…c6ee`.
@@ -43,6 +43,10 @@ paired per-fight difference; 95% CI from a bootstrap over source seeds
   (prior-guided labels) and confirm at run level.
 - `TREE_PRIOR_HURTS` if the CI upper bound < 0.
 - `NOT_SHOWN` otherwise → no loop; close the line in the ledger.
+
+Note: with the tree prior on, untried root actions are also tried in prior
+order, while root2k keeps enumeration order, so tree8_2k − root2k is not a pure
+below-the-root effect.
 
 Secondary, descriptive: root2k − plain2k, tree8_2k − root2k, tree1_2k −
 plain2k (upper bound of in-tree guidance at matched sims), tree1 − tree8, death
