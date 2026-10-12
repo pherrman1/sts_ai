@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433); 2026-10-11 for the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433); 2026-10-11 for the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -2502,6 +2502,14 @@ distributions were not built.
 The A3 M1 MLP follow-up (§378) also found no qualifying family; relic
 history (relics seen but not owned) is the one direction worth re-testing on a
 larger corpus or in the replacement model.
+#401 (ledger-06 §438) audited the tree value inputs on 78,643 A20 `strategicgen` runs: relics,
+deck cards and HP carry most unique signal for both final floor and win. B0 and the A20 floor tree use
+the hidden future-encounter fields (the A20 win tree does not), but a refit without the ten hidden,
+queue and RNG-counter columns shows no detectable loss (floor +0.18 MSE [−0.08, +0.45], win −0.0005
+NLL; refit noise about ±0.05–0.15 MSE). Adding the 12 forward-map columns, the only missing group
+tested, cuts A20 floor MSE by 2.15 [1.80, 2.51] (win borderline). These are offline error changes on
+the generator's own runs, not win-rate changes; the A0 refit on the #334 fragment resolves nothing.
+No model or contract changed; the forward map is the recommended addition for the next A20 retrain.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from
