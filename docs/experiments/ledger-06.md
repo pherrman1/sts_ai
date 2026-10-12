@@ -17160,7 +17160,7 @@ rollout gates (`prepareState` 20%; the shop gate now costs more than the shop pl
 **Knowledge impact:** `predictDeltas` paragraph and tree-storage item in `architecture/out-of-combat.md`, compact
 tree row in `CODE_MAP.md`, rollout3 cost sentence in `evaluation/current-research.md`.
 
-## §449 — V4 token network in rollout3: cached deck tokens and transposed layers, bitwise identical, 1.29–1.41x per rollout3 run (2026-10-12)
+## §450 — V4 token network in rollout3: cached deck tokens and transposed layers, bitwise identical, 1.29–1.41x per rollout3 run (2026-10-12)
 
 **Question:** after §442 the V4 token network in the rollout gates was the largest rollout3 cost; can its forward
 pass be made faster with bitwise-identical outputs?
@@ -17180,7 +17180,7 @@ card-reward gate 78.3 → 27.1 s, shop gate 29.6 → 11.3 s.
 **Decision:** adopt (exact, no behavior change). The per-action V4 encoders and GELU are now the largest V4 costs.
 
 **Evidence:** [packet](evidence/v4_net_speedup_20261012/README.md). Raw:
-`/mnt/project-files/v4-speedup-449/raw.tar.gz`. Seeds 74024005–74024009 are now used.
+`/mnt/project-files/v4-speedup-450/raw.tar.gz`. Seeds 74024005–74024009 are now used.
 
 **Knowledge impact:** derived-table paragraph in `architecture/out-of-combat.md`, rollout3 cost sentence in
 `evaluation/current-research.md`.

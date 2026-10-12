@@ -149,7 +149,7 @@ leaf continuation and ordinary live fallback. Each loop rebuilds after state or
 path changes; no cache survives the loop or model reload. Candidate ordering,
 Q margins/ties, fallback dispatch and RNG consumption are unchanged. Legacy
 single-action inference entry points remain available.
-`OocStrategicTokNet::load()` also builds derived tables (`rebuildDerived()`, §449):
+`OocStrategicTokNet::load()` also builds derived tables (`rebuildDerived()`, §450):
 every deck token (card id, upgrade, count 0-9) with its GELU output and qkv row,
 and transposed copies of the deck projection, fusion, policy and Q first
 layers. The fast paths compute several output units at a time, each in its

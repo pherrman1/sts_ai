@@ -1,4 +1,4 @@
-# V4 token network inside rollout3, exact speedup (ledger §449, 2026-10-12)
+# V4 token network inside rollout3, exact speedup (ledger §450, 2026-10-12)
 
 Performance only: no gameplay, model, RNG or default change.
 
@@ -76,5 +76,5 @@ could be memoized the same way; not done here.
 
 ## Raw data
 
-`/mnt/project-files/v4-speedup-449/raw.tar.gz` (sha256 `eb88e5ed1df363951d23207b73e094dc72a40aee1a52d0433d906a9fc0ec8c91`):
+`/mnt/project-files/v4-speedup-450/raw.tar.gz` (sha256 `eb88e5ed1df363951d23207b73e094dc72a40aee1a52d0433d906a9fc0ec8c91`):
 all unit outputs and logs, both `gprofng` experiments, both binaries and the microbenchmark source.
