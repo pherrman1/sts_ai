@@ -862,6 +862,11 @@ add_test(NAME combat_transition_runtime_loader COMMAND python3
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(combat_transition_runtime_loader PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_encoder_memo_parity COMMAND $<TARGET_FILE:combat_transition_runtime_probe> --encoder-memo-parity
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_deepsets_pathb_r2.native
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_deepsets_lizard_t2.native
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/combat_transition_near_full.jsonl)
+set_tests_properties(ctm_encoder_memo_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 add_test(NAME ctm_research_candidate_loader COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_ctm_research_candidate.py
     $<TARGET_FILE:combat_transition_runtime_probe>)
