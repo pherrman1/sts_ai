@@ -17050,6 +17050,36 @@ parity CSV under `~/Documents/sts/artifacts/vwin-refresh-334/x2b-public-444-2026
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
 
+## §446 — rollout5 with the Lizard-capable CTM: no more V4 fallback, not shown better than rollout3 (2026-10-12)
+
+**Question:** Philipp: "can we try again with the lizard capable ctm? on 8 workers on the same 128 seeds?" §430 rollout5
+(`LEAF_COMBATS=5`) won 112/128 vs rollout3 115/128 on the #418 CTM but fell back to V4 on 37% of decisions, almost all
+Lizard Tail support aborts. With the Lizard-capable `pathb_r2_lizard` CTM (§423, §435), does rollout5 win more than
+rollout3 with the same CTM?
+**Design:** [PREREG](evidence/ooc_rollout5_lizard_20261012/PREREG.md). Arm `r5liz` = the §423 environment with
+`STS_OOC_MCTS_LEAF_COMBATS=5`; control `lizard` = the §423 environment rerun on the same commit; both pin
+`STS_OOC_PUBLIC_FUTURES=0`. Run commit `b6d00dd0` (code `3b06c924`, main after #496), binary `10dc2616…`, seeds
+70000000–127, 16 cloud workers (8 per arm; Philipp chose the control arm on a decision card). Launch gate: §423 seed
+70000000 diverged at OOC decision 8 on this commit; a bisect found `c7641b07` (#480, Face of Cleric now fires after
+event fights), a simulator rule fix ([note](evidence/ooc_rollout5_lizard_20261012/RERUN-423-70000000.md)), hence the
+same-commit control. Smokes 80009000–001. Primary: paired bootstrap 95% CI of `r5liz` − same-commit `lizard`;
+IMPROVED / WORSE / NOT_SHOWN.
+**Validity:** `lizard` 128/128 rc=0; `r5liz` 127/128, seed 70000087 a listed Silver stall (dropped from all pairs as
+pre-registered); tar hashes, banners and old-control hashes checked.
+**Result:** **NOT_SHOWN.** 113/127 (89.0%) vs 111/127 (87.4%), +1.6 pp [−4.7, +8.7], discordant 10 vs 8, p = 0.81.
+Boss deaths 8 vs 13; Δfloor +0.13 [−0.70, +0.94]. V4 fallback 2.9% vs 2.4% (§430: 37.1%). 887 vs 592 s per run.
+Cross-commit (descriptive): vs §430 r5 +1.6 pp, vs §422 rollout3 −1.6 pp, vs §422 off +10.2 pp [+1.6, +18.9].
+Same-commit `lizard` vs §423: 111 vs 111 wins, 2 / 2 discordant, 106/128 identical endings.
+**Interpretation (Inference):** the Lizard CTM removes rollout5's fallback, but two more rollout combats per leaf do not
+win detectably more than rollout3 at about 1.5x the CPU. The Face of Cleric fix changes individual runs, not the win
+count, on these seeds; §422-era runs are no longer byte-reproducible after #480.
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_rollout5_lizard_20261012/README.md). Raw: `/mnt/project-files/ooc-rollout5-lizard-446/`
+(one tar per worker). Seeds 80009000–80009001 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
 ## §447 — A20 GBM ranker playing every OOC decision live: floors NOT_SHOWN by the pre-registered rule, wins clearly worse (3 vs 16 of 128) (2026-10-12)
 
 **Question (Philipp, 2026-10-12 10:54Z "Live test", 11:30Z "Run it"):** does the §445 A20 GBM ranker, best learned picker on the Gold2 set (1.73 floors regret vs V4 1.98, heuristic 2.26), win more floors than the current A20 stack when it plays every out-of-combat decision?
