@@ -16925,3 +16925,47 @@ whose win-rate effect §423 left open (wide CI), so the promotion note must name
 
 **Knowledge impact:** default stack in `architecture/out-of-combat.md` and `operations/environment-variables.md`; one
 sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §443 — Production CTM at A20 (Stage 0) and the out-of-combat policy for an A20 corpus (G0) (2026-10-12)
+
+**Question:** Philipp: "Can we do the same for A20 ctm?" The production CTM (pathb-r2, A0 Path B only) gets
+`ascension` straight from the game (`combat_predictor_input.cpp`). §416 saw it predict death 0 at ASC 20. Stage 0 of
+the A20 CTM plan (`/mnt/project-files/ctm-a20/PLAN.md`, rules written before the run) asks whether clamping the input
+to 0 is enough, or whether an A20 corpus and retrain are needed. G0 asks whether the Path B generator reaches later
+acts at A20.
+**Setup:** [packet](evidence/ctm_a20_stage0_20261012/README.md). Stage 0: main `fcd253f1`, learned-stop Path B
+teacher, `combattransitiongen 10000 20` on seeds 78100000–78100999 (1000/1000 completed, 9,351 rows, about 5.4
+CPU-s and 9.35 rows per seed). Every row was scored by production `ctmscorerows` as generated and with ascension set
+to 0, against the observed Silver outcome (death = outcome 2); 9,349 scored, 2 refused
+(`writhing_ritual_intersection`).
+
+| rows | n | observed death | ASC 20 predicted | clamped predicted | clamped survival NLL | clamped win-HP bias / MAE |
+|---|---|---|---|---|---|---|
+| all | 9,349 | 0.105 | 0.005 | 0.031 | 0.268 | +4.8 / 7.2 |
+| normal | 6,104 | 0.023 | 0.004 | 0.006 | 0.079 | +3.6 / 5.3 |
+| elite | 2,431 | 0.191 | 0.007 | 0.046 | 0.548 | +9.3 / 12.6 |
+| boss | 724 | 0.493 | 0.005 | 0.191 | 0.894 | +0.1 / 10.5 |
+
+Death bias (predicted − observed), source-seed bootstrap 95% CI: ASC 20 as given [−0.104, −0.096] (win-HP bias
++15.4, survival NLL 1.447); clamped [−0.078, −0.070].
+**Stage 0 decision (rule: clamp is enough only if |bias| ≤ 0.01 overall and on elites and bosses, and HP bias within
+±3): FAILS.** Clamping underestimates death about 3.4x overall (4x on elites, 2.6x on bosses) and overestimates win HP
+by about 5. An A20-trained CTM is needed for A20 OOC MCTS. **Inference:** A20 OOC MCTS runs so far (§425, §426) priced
+imagined combats with a model that sees almost no death risk.
+**G0 (rule: switch the generator's out-of-combat policy if acts 2–3 hold under 25% of rows): FAILS** at 19.7%
+(act 1/2/3: 7,505 / 1,538 / 306 rows); the copied Path B map/reward chain dies early at A20.
+**Change:** opt-in `STS_CTM_GEN_DEPLOYED_OOC=1` for `combattransitiongen` plays every non-battle screen with
+`deployedOocPolicyStep` (§431) instead of the copied chain; off by default, refused in the Lizard candidate mode, recorded as
+`oocPolicy` in the manifest. With the flag off, the generator reproduces the Stage 0 rows for seeds
+78100000–78100002 exactly (31 rows, only `teacherId` differs).
+**G0 smoke** (commit `c67ba2db`, flag on with the deployed V4 settings, seeds 78009004–78009043): 40/40 completed,
+695 rows (17.4 per seed), act 1/2/3 357 / 213 / 125 (acts 2–3 49%), 76 boss rows, last floor median 33 (8–51), about
+10.6 CPU-s per seed (0.61 s per row, vs 0.58 with the old chain). Descriptive only.
+**Decision:** an A20 corpus uses the deployed step. At 17.4 rows per seed, a corpus the size of the A0 union (537k
+rows) is about 31k seeds and about 92 CPU-h (Inference, from 40 seeds). Stage 1 (corpus) needs Philipp's worker count.
+No default play changes.
+
+**Evidence:** raw `/mnt/project-files/ctm-a20/`. Seeds used: 78009000–78009043 (smokes), 78100000–78100999.
+
+**Knowledge impact:** new generator variable in `operations/environment-variables.md`; the A20 limit of the production
+CTM is recorded here (current understanding unchanged otherwise, since OOC MCTS is off by default).
