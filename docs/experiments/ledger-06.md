@@ -16826,7 +16826,7 @@ JSON, scored tables). No seeds used (the 74016000–74016999 block stays unused)
 
 **Knowledge impact:** one paragraph after the #397/#396 paragraphs in `evaluation/current-research.md`.
 
-## §441 — deep OOC MCTS with uniform prior and uniform leaf policy: worse than the V4-guided `combo`, ties plain rollout3 at half its CPU (2026-10-12)
+## §441 — deep OOC MCTS with uniform prior and uniform leaf policy: worse than the V4-guided `combo`, ties plain rollout3 at lower CPU (2026-10-12)
 
 **Question:** Philipp, 2026-10-12 08:51Z: "uniform prior and uniform leaf policy on 128 seeds with 4096 ooc simulations
 on 8 workers". §433's `combo` uses V4 as the tree prior and as the policy between the rollout combats; how does it play
@@ -16845,7 +16845,7 @@ McNemar p = 0.064 (borderline); Δfloor −1.54 [−3.08, −0.15]; boss deaths 
 both on the pre-§436/§437 binary); V4 fallback 23.1%.
 **Interpretation (Inference):** V4 guidance is worth wins at 4096 simulations; the run does not say whether the prior or
 the leaf policy carries it. Without V4 the search is cheaper (the uniform leaf skips the native shop planner and V4
-gates) and matches plain rollout3. `combo` did better on this half of the §433 cohort (93.0%) than on all 256 seeds (87.5%).
+gates) and matches plain rollout3 at lower cost (**Inference** across binaries: 376 s on this binary vs 811 s for rollout3 on the pre-§436/§437 binary; the gate seed ran 0.71x and §437 reports 1.13–1.7x for rollout3, so on equal binaries uniform likely costs about 0.5–0.8x of rollout3). `combo` did better on this half of the §433 cohort (93.0%) than on all 256 seeds (87.5%).
 **Decision:** no default change.
 
 **Evidence:** [packet](evidence/ooc_uniform_441_20261012/README.md). Raw: `/mnt/project-files/ooc-uniform-441/`

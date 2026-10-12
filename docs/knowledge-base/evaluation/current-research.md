@@ -279,9 +279,10 @@ combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_
 (§433) 4096 simulations with the broad widening won 87.5% vs 77.7% for off, +9.8 pp [+3.9, +16.0], CONFIRMED; plain
 rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp [−1.6, +10.2]) at about half the CPU
 (893 vs 1,536 s per run). `STS_OOC_PUBLIC_FUTURES` was off, which favours `off` (#397). Open: choosing between the two
-for a default proposal, merging variants. With the V4 prior and the V4 leaf policy both replaced by uniform choices
+for a default proposal, prior-only and merging variants. With the V4 prior and the V4 leaf policy both replaced by uniform choices
 (§441, 128 of the §433 seeds), `combo` loses wins: 85.2% vs 93.0%, −7.8 pp [−15.6, −0.8], WORSE (McNemar p = 0.064);
-that search ties plain rollout3 at about half its MCTS CPU.
+that search ties plain rollout3 at lower CPU (about 0.5–0.8x on equal binaries, **Inference**). Prior and leaf policy
+changed together, so which one carries the loss is open.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
 rollout3 run by about 10%.

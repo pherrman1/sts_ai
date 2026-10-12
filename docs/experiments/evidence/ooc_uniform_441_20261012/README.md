@@ -43,8 +43,8 @@ p = 0.064, so the evidence is borderline.
 
 - Dropping the V4 prior and the V4 leaf policy together costs `combo` wins and floors on these seeds: 10 more losses,
   boss deaths 4 → 14. Which of the two flags carries the loss is not separated (both changed at once, as requested).
-- The uniform search still ties plain rollout3 (V4 prior and leaf policy, 2048 simulations) on the same seeds, at about
-  half its MCTS CPU (the uniform leaf skips the native shop planner and the V4 gates, which §437 found to be most of the
+- The uniform search still ties plain rollout3 (V4 prior and leaf policy, 2048 simulations) on the same seeds at lower
+  MCTS CPU (**Inference** across binaries: 376 s on this binary vs 811 s for rollout3 on the pre-§436/§437 binary; the gate seed ran 0.71x and §437 reports 1.13–1.7x for rollout3, so on equal binaries uniform likely costs about 0.5–0.8x of rollout3) (the uniform leaf skips the native shop planner and the V4 gates, which §437 found to be most of the
   rollout cost), and beats off by +10.2 pp with a CI touching zero.
 - `combo` won 93.0% on this half of the §433 cohort against 87.5% on all 256 seeds, so this half favours `combo`
   (**Inference**: chance; the primary comparison is paired, but the gap to `combo` may be smaller on other seeds).
