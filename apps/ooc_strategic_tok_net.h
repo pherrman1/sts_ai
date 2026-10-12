@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cmath>
 #include <string>
+#include <vector>
 
 struct OocStrategicTokNet {
     static constexpr int NGLB = 42, NHIDDEN = 256, NHIDDEN2 = 128, NBITS = 32;
@@ -88,6 +89,22 @@ struct OocStrategicTokNet {
     // the training mean (ascension 0, keys off).
     bool constGuard = false;
     int constGuardInputs = 0;
+
+    // Tables derived from the weights by load() (rebuildDerived() after
+    // editing weights in place); a net without them takes the reference
+    // loops below. The fast paths give bitwise the same floats: tokens are
+    // pure functions of their inputs, and the transposed layers keep every
+    // output unit's float-add order, only computing units side by side.
+    static constexpr int DKCOUNTS = 10;  // deck token count inputs 0..9
+    struct Derived {
+        bool ready = false;
+        std::vector<float> deckTok;      // [id][up][count]: GELU token (32) then qkv (96)
+        std::vector<float> deckProjWT;   // [e][d]
+        std::vector<float> f0wT;         // [i][j]
+        std::vector<float> f4wT;         // [i][j]
+        std::vector<float> pol0wT;       // [i][j]
+        std::vector<float> q0wT;         // [i][j]
+    } derived;
 
     bool load(const std::string &path, bool quiet = false) {
         FILE *f = std::fopen(path.c_str(), "rb");
@@ -170,6 +187,7 @@ struct OocStrategicTokNet {
         }
         ok = true;
         this->path = path;
+        rebuildDerived();
         if (const char *v = std::getenv("STS_OOC_STRATEGIC_TOK_CONST_GUARD")) constGuard = std::atoi(v) != 0;
         constGuardInputs = 0;
         for (int i = 0; i < NGLB; ++i) if (globInv[i] >= 1e5f) ++constGuardInputs;
@@ -182,7 +200,63 @@ struct OocStrategicTokNet {
 
     // Deck tokens: GELU(Linear41->32), then 1-head self-attention (D=32) over
     // the valid tokens, LayerNorm(eps=1e-5) residual, mean-pool -> z_deck.
+    static void transpose(const float *w, int rows, int cols, std::vector<float> &out) {
+        out.resize((std::size_t)rows * cols);
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) out[(std::size_t)c * rows + r] = w[(std::size_t)r * cols + c];
+    }
+
+    // out[j] = b[j] + sum_i w[j][i] * x[i], summed in i order, from wT[i][j].
+    template <int IN, int OUT>
+    static void linearT(const float *wT, const float *b, const float *x, float *out) {
+        float s[OUT];
+        for (int j = 0; j < OUT; ++j) s[j] = b[j];
+        for (int i = 0; i < IN; ++i) {
+            const float xi = x[i];
+            const float *w = wT + (std::size_t)i * OUT;
+            for (int j = 0; j < OUT; ++j) s[j] += w[j] * xi;
+        }
+        for (int j = 0; j < OUT; ++j) out[j] = s[j];
+    }
+
+    // One deck token: GELU(Linear41->32) and its qkv row, as the reference loops.
+    void deckToken(int id, int up, float countF, float *tok, float *qkv) const {
+        float tokIn[DKTOKIN];
+        int p = 0;
+        for (int d = 0; d < DECKDIM; ++d) tokIn[p++] = eCard[id][d];
+        for (int d = 0; d < 8; ++d) tokIn[p++] = eUp[up][d];
+        tokIn[p++] = countF;
+        for (int j = 0; j < DECKDIM; ++j) {
+            float s = deckTokB[j];
+            for (int k = 0; k < DKTOKIN; ++k) s += deckTokW[j][k] * tokIn[k];
+            tok[j] = gelu(s);
+        }
+        for (int j = 0; j < QDIM; ++j) {
+            float s = deckQkvB[j];
+            for (int d = 0; d < DECKDIM; ++d) s += deckQkvW[j][d] * tok[d];
+            qkv[j] = s;
+        }
+    }
+
+    void rebuildDerived() {
+        Derived d;
+        d.deckTok.resize((std::size_t)NCARD * 2 * DKCOUNTS * (DECKDIM + QDIM));
+        float *row = d.deckTok.data();
+        for (int id = 0; id < NCARD; ++id)
+            for (int up = 0; up < 2; ++up)
+                for (int c = 0; c < DKCOUNTS; ++c, row += DECKDIM + QDIM)
+                    deckToken(id, up, c / 9.0f, row, row + DECKDIM);
+        transpose(&deckProjW[0][0], DECKDIM, DECKDIM, d.deckProjWT);
+        transpose(&f0w[0][0], NHIDDEN, FUSIN, d.f0wT);
+        transpose(&f4w[0][0], NHIDDEN2, NHIDDEN, d.f4wT);
+        transpose(&pol0w[0][0], POLHID, POLIN, d.pol0wT);
+        transpose(&q0w[0][0], POLHID, POLIN, d.q0wT);
+        d.ready = true;
+        derived = std::move(d);
+    }
+
     void encodeDeck(int nDk, const int dk[][3], float *zDeck) const {
+        if (derived.ready) { encodeDeckFast(nDk, dk, zDeck); return; }
         if (nDk > MAXDK) nDk = MAXDK;
         float tok[MAXDK][DECKDIM];
         float tokIn[DKTOKIN];
@@ -237,6 +311,67 @@ struct OocStrategicTokNet {
                 for (int e = 0; e < DECKDIM; ++e) s += deckProjW[d][e] * attn[i][e];
                 mid[d] = tok[i][d] + s;
             }
+            float mu = 0; for (int d = 0; d < DECKDIM; ++d) mu += mid[d]; mu /= DECKDIM;
+            float var = 0; for (int d = 0; d < DECKDIM; ++d) { float dd = mid[d] - mu; var += dd * dd; }
+            var = var / DECKDIM + 1e-5f;
+            const float invStd = 1.0f / std::sqrt(var);
+            for (int d = 0; d < DECKDIM; ++d)
+                tok[i][d] = (mid[d] - mu) * invStd * deckLnW[d] + deckLnB[d];
+        }
+        for (int d = 0; d < DECKDIM; ++d) {
+            float s = 0;
+            for (int i = 0; i < nDk; ++i) s += tok[i][d];
+            zDeck[d] = s / nDk;
+        }
+    }
+
+    void encodeDeckFast(int nDk, const int dk[][3], float *zDeck) const {
+        if (nDk > MAXDK) nDk = MAXDK;
+        if (nDk <= 0) {
+            for (int d = 0; d < DECKDIM; ++d) zDeck[d] = 0.0f;
+            return;
+        }
+        float tok[MAXDK][DECKDIM], qkv[MAXDK][QDIM];
+        for (int i = 0; i < nDk; ++i) {
+            const int id = clampi(dk[i][0], 0, NCARD - 1);
+            const int up = clampi(dk[i][1], 0, 1);
+            const int count = dk[i][2] > 9 ? 9 : dk[i][2];
+            if (count < 0) { deckToken(id, up, count / 9.0f, tok[i], qkv[i]); continue; }
+            const float *row = derived.deckTok.data()
+                + ((std::size_t)(id * 2 + up) * DKCOUNTS + count) * (DECKDIM + QDIM);
+            std::memcpy(tok[i], row, sizeof(tok[i]));
+            std::memcpy(qkv[i], row + DECKDIM, sizeof(qkv[i]));
+        }
+        float keyT[DECKDIM][MAXDK];
+        for (int j = 0; j < nDk; ++j)
+            for (int d = 0; d < DECKDIM; ++d) keyT[d][j] = qkv[j][DECKDIM + d];
+        const float invSqrt = 1.0f / std::sqrt((float)DECKDIM);
+        float scores[MAXDK], attn[MAXDK][DECKDIM];
+        for (int i = 0; i < nDk; ++i) {
+            for (int j = 0; j < nDk; ++j) scores[j] = 0.0f;
+            for (int d = 0; d < DECKDIM; ++d) {
+                const float q = qkv[i][d];
+                for (int j = 0; j < nDk; ++j) scores[j] += q * keyT[d][j];
+            }
+            float smax = -1e30f;
+            for (int j = 0; j < nDk; ++j) {
+                scores[j] = scores[j] * invSqrt;
+                if (scores[j] > smax) smax = scores[j];
+            }
+            float sum = 0;
+            for (int j = 0; j < nDk; ++j) { scores[j] = std::exp(scores[j] - smax); sum += scores[j]; }
+            const float inv = 1.0f / sum;
+            float acc[DECKDIM] = {};
+            for (int j = 0; j < nDk; ++j) {
+                const float w = scores[j] * inv;
+                for (int d = 0; d < DECKDIM; ++d) acc[d] += w * qkv[j][2 * DECKDIM + d];
+            }
+            for (int d = 0; d < DECKDIM; ++d) attn[i][d] = acc[d];
+        }
+        float mid[DECKDIM], proj[DECKDIM];
+        for (int i = 0; i < nDk; ++i) {
+            linearT<DECKDIM, DECKDIM>(derived.deckProjWT.data(), deckProjB, attn[i], proj);
+            for (int d = 0; d < DECKDIM; ++d) mid[d] = tok[i][d] + proj[d];
             float mu = 0; for (int d = 0; d < DECKDIM; ++d) mu += mid[d]; mu /= DECKDIM;
             float var = 0; for (int d = 0; d < DECKDIM; ++d) { float dd = mid[d] - mu; var += dd * dd; }
             var = var / DECKDIM + 1e-5f;
@@ -322,7 +457,8 @@ struct OocStrategicTokNet {
         for (int i = 0; i < RELDIM; ++i) fuse[p++] = zRel[i];
         for (int i = 0; i < POTDIM; ++i) fuse[p++] = zPot[i];
         float h[NHIDDEN];
-        for (int j = 0; j < NHIDDEN; ++j) {
+        if (derived.ready) linearT<FUSIN, NHIDDEN>(derived.f0wT.data(), f0b, fuse, h);
+        else for (int j = 0; j < NHIDDEN; ++j) {
             float s = f0b[j];
             for (int i = 0; i < FUSIN; ++i) s += f0w[j][i] * fuse[i];
             h[j] = s;
@@ -333,6 +469,12 @@ struct OocStrategicTokNet {
         const float invStd = 1.0f / std::sqrt(var);
         for (int j = 0; j < NHIDDEN; ++j) h[j] = (h[j] - mu) * invStd * lnW[j] + lnB[j];
         for (int j = 0; j < NHIDDEN; ++j) h[j] = gelu(h[j]);
+        if (derived.ready) {
+            float s[NHIDDEN2];
+            linearT<NHIDDEN, NHIDDEN2>(derived.f4wT.data(), f4b, h, s);
+            for (int j = 0; j < NHIDDEN2; ++j) zState[j] = gelu(s[j]);
+            return;
+        }
         for (int j = 0; j < NHIDDEN2; ++j) {
             float s = f4b[j];
             for (int i = 0; i < NHIDDEN; ++i) s += f4w[j][i] * h[i];
@@ -443,7 +585,13 @@ struct OocStrategicTokNet {
 
     // Value-owned and local to one immutable candidate set. Rebuild after any
     // state/path change or model reload; action/entity inputs remain per candidate.
-    struct PreparedState { float values[NHIDDEN2]; };
+    // qPrefix: the Q head's first layer over z_state (bias plus inputs
+    // 0..127 in order), filled when the derived tables are ready.
+    struct PreparedState {
+        float values[NHIDDEN2];
+        bool hasQPrefix = false;
+        float qPrefix[POLHID];
+    };
     struct PolicyPrefix { float values[POLHID]; };
     PreparedState prepareState(const float glob[NGLB], int nDk, const int dk[96][3],
                                int nRl, const int rl[64][2], int nPt, const int pt[8][2]) const {
@@ -471,6 +619,10 @@ struct OocStrategicTokNet {
                 one_combat::OocProfileScope::hasParent());
             encodeState(glob, zDeck, zRel, zPot, state.values);
         }
+        if (derived.ready) {
+            linearT<NHIDDEN2, POLHID>(derived.q0wT.data(), q0b, state.values, state.qPrefix);
+            state.hasQPrefix = true;
+        }
         return state;
     }
 
@@ -482,6 +634,10 @@ struct OocStrategicTokNet {
         one_combat::OocProfileScope profile(one_combat::OocProfileBucket::PolicyPrepare,
             one_combat::OocProfileScope::hasParent());
         PolicyPrefix prefix;
+        if (derived.ready) {
+            linearT<NHIDDEN2, POLHID>(derived.pol0wT.data(), pol0b, state.values, prefix.values);
+            return prefix;
+        }
         for (int j = 0; j < POLHID; ++j) {
             float sum = pol0b[j];
             for (int i = 0; i < NHIDDEN2; ++i)
@@ -540,7 +696,11 @@ struct OocStrategicTokNet {
         encodeStateAction(state, actionBits, cats, actionType, screen,
                           entityType, entityId, goldGePrice, z);
         float hh[POLHID];
-        for (int j = 0; j < POLHID; ++j) {
+        if (state.hasQPrefix && derived.ready) {
+            linearT<POLIN - NHIDDEN2, POLHID>(derived.q0wT.data() + (std::size_t)NHIDDEN2 * POLHID,
+                                              state.qPrefix, z + NHIDDEN2, hh);
+            for (int j = 0; j < POLHID; ++j) hh[j] = gelu(hh[j]);
+        } else for (int j = 0; j < POLHID; ++j) {
             float s = q0b[j];
             for (int i = 0; i < POLIN; ++i) s += q0w[j][i] * z[i];
             hh[j] = gelu(s);
@@ -568,7 +728,10 @@ struct OocStrategicTokNet {
                           entityType, entityId, goldGePrice, z);
         // Policy head (pol.0 -> GELU -> pol.2): Linear(184,96) -> GELU -> Linear(96,1)
         float hh[POLHID];
-        for (int j = 0; j < POLHID; ++j) {
+        if (derived.ready) {
+            linearT<POLIN, POLHID>(derived.pol0wT.data(), pol0b, z, hh);
+            for (int j = 0; j < POLHID; ++j) hh[j] = gelu(hh[j]);
+        } else for (int j = 0; j < POLHID; ++j) {
             float s = pol0b[j];
             for (int i = 0; i < POLIN; ++i) s += pol0w[j][i] * z[i];
             hh[j] = gelu(s);
@@ -586,7 +749,11 @@ struct OocStrategicTokNet {
         encodeStateAction(state, actionBits, cats, actionType, screen,
                           entityType, entityId, goldGePrice, z);
         float hh[POLHID];
-        for (int j = 0; j < POLHID; ++j) {
+        if (derived.ready) {
+            linearT<POLIN - NHIDDEN2, POLHID>(derived.pol0wT.data() + (std::size_t)NHIDDEN2 * POLHID,
+                                              prefix.values, z + NHIDDEN2, hh);
+            for (int j = 0; j < POLHID; ++j) hh[j] = gelu(hh[j]);
+        } else for (int j = 0; j < POLHID; ++j) {
             float sum = prefix.values[j];
             for (int i = NHIDDEN2; i < POLIN; ++i)
                 sum += pol0w[j][i] * z[i];
