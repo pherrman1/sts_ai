@@ -277,4 +277,28 @@ class ComposedTest(unittest.TestCase):
         self.assertEqual(result['oocContinuationRng']['miscRng']['counter'],4)
 
 
+class AscensionCentreTest(unittest.TestCase):
+    @unittest.skipIf(torch is None,'torch missing')
+    def test_recentre_makes_the_new_ascension_look_like_a0(self):
+        fields=c.base.CONTINUOUS_GLOBAL_FIELDS; index=fields.index('ascension')
+        mean=np.ones(len(fields),np.float32); mean[index]=0
+        std=np.ones(len(fields),np.float32); std[index]=0  # A0: constant ascension -> inverse std 1e6
+        net=c.attention.AttentionPointControlNet(torch,mean,std).net
+        before={k:v.clone() for k,v in net.state_dict().items()}
+        c.recentre_ascension([net],20)
+        after=net.state_dict()
+        self.assertEqual(float(after['encoder.scalar_mean'][index]),20.0)
+        self.assertEqual(float(after['encoder.scalar_inv'][index]),1e6)
+        for k in before:  # nothing else moves
+            if k!='encoder.scalar_mean': self.assertTrue(torch.equal(before[k],after[k]),k)
+        g=torch.tensor([[20.0]+[1.0]*(len(fields)-1)])
+        normalized=(g-after['encoder.scalar_mean'])*after['encoder.scalar_inv']
+        self.assertEqual(float(normalized[0,index]),0.0)
+        with self.assertRaisesRegex(ValueError,'A0 ascension statistics'):
+            c.recentre_ascension([net],20)  # already re-centred
+
+    def test_default_is_off(self):
+        self.assertIsNone(c.ASCENSION_CENTER)
+
+
 if __name__=='__main__': unittest.main()

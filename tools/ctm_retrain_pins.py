@@ -9,7 +9,8 @@ under `pending`). Each later command derives the keys one chain stage
 determines from that stage's outputs and writes a new pins file next to the
 old one; files are never overwritten. Run the commands in order:
 
-    init       after `ctm_hp_domain.py expand` (D): domain, warm starts, nulls
+    init       after `ctm_hp_domain.py expand` (D): domain, warm starts, nulls; `--ascension-center A`
+               re-centres the warm starts' ascension normalization for a corpus at ascension A (§443)
     corpus     after `ctm_corpus_adapter.py union` (U)
     phase1     after Phase-1 audit/prepare/fit (P1)
     phase2     after `combat_transition_surrogate.py prepare` (P2)
@@ -78,6 +79,7 @@ DECISIONS = {
 # Names each command derives.
 DERIVED = {
     "init": ("combat_transition_composed.ARTIFACTS", "combat_transition_composed.HP_CLASS_RANGE",
+             "combat_transition_composed.ASCENSION_CENTER",
              "combat_transition_deepset_distill.EXPECTED_HP_CLASS_COUNT", *DECISIONS),
     "corpus": ("combat_transition_attention_ablation.EXPECTED_CORPUS_SHA256",
                "combat_transition_attention_hpo.EXPECTED_CORPUS_SHA256",
@@ -144,6 +146,9 @@ KEPT = (
     "combat_transition_relic_trajectory.ENCODER_HASH", "combat_transition_stochastic_hp.CONTROL_HASH",
 )
 
+# Added after #418 (§443); pins files written before it lack them and mean the production default.
+OPTIONAL = ("combat_transition_composed.ASCENSION_CENTER",)
+
 # composed_evaluate.verify_data records these (ARTIFACTS hashes, data paths and
 # prepared hashes) and later stages re-check them: final from `phase2` on.
 VERIFY_DATA_KEYS = (
@@ -196,12 +201,12 @@ def _write(out: Path, document: dict) -> dict:
 
 def _check_complete(pins: dict) -> None:
     declared = set(ctm_pins.declared_keys())
-    if set(pins) != declared:
+    if not set(declared) - set(OPTIONAL) <= set(pins) <= declared:
         raise ValueError(f"pins differ from the declared keys: missing {sorted(declared - set(pins))}, "
                          f"unknown {sorted(set(pins) - declared)}")
 
 
-def init(domain_dir: Path, out: Path) -> dict:
+def init(domain_dir: Path, out: Path, ascension_center: int | None = None) -> dict:
     receipt = json.loads((domain_dir / "receipt.json").read_text(encoding="utf-8"))
     if receipt.get("schema") != "ctm_hp_domain_expansion_v1":
         raise ValueError("not a ctm_hp_domain expand receipt")
@@ -215,7 +220,8 @@ def init(domain_dir: Path, out: Path) -> dict:
     domain = receipt["domain"]
     pins.update({"combat_transition_composed.ARTIFACTS": artifacts,
                  "combat_transition_composed.HP_CLASS_RANGE": [domain["min"], domain["max"]],
-                 "combat_transition_deepset_distill.EXPECTED_HP_CLASS_COUNT": domain["classes"]},
+                 "combat_transition_deepset_distill.EXPECTED_HP_CLASS_COUNT": domain["classes"],
+                 "combat_transition_composed.ASCENSION_CENTER": ascension_center},
                 **DECISIONS)
     if receipt["pins"]["combat_transition_composed.HP_CLASS_RANGE"] != [domain["min"], domain["max"]]:
         raise ValueError("expansion receipt pins disagree with its domain")
@@ -572,6 +578,8 @@ def main(argv=None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("init"); p.add_argument("--domain-dir", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--ascension-center", type=int,
+                   help="re-centre the warm starts' ascension normalization at this ascension (default: off)")
     for name, flag in FOLDERS.items():
         p = sub.add_parser(name); p.add_argument("--pins", type=Path, required=True)
         p.add_argument(flag, dest="folder", type=Path, required=True)
@@ -582,7 +590,7 @@ def main(argv=None) -> None:
     p.add_argument("--previous", type=Path)
     args = parser.parse_args(argv)
     if args.command == "init":
-        result = init(args.domain_dir, args.out)
+        result = init(args.domain_dir, args.out, args.ascension_center)
         result = dict(pending=len(result["pending"]))
     elif args.command == "check":
         result = check(args.pins, args.previous)

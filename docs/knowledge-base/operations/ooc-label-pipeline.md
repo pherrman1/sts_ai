@@ -170,7 +170,8 @@ per-row TEST predictions (`test_predictions.npz`).
 paired source-seed bootstrap).
 
 For the full CTM retrain, `ctm_corpus_adapter.py union --scope-dir SCOPE=DIR
-... --out DIR` concatenates assembled scopes, in ascending seed order, into one
+... --out DIR` concatenates assembled scopes, in ascending seed order (by each
+scope's seedSpec start, not the `SCOPES` list order), into one
 corpus for `combat_transition_surrogate.py prepare`. It drops every row that
 the production candidate-contract support predicate rejects (production
 `FrozenModels`), and every winning row whose maxHP gain is not one of the
@@ -206,7 +207,14 @@ production placeholders for the rest (listed under `pending`), and null for
 the production-cohort count checks a new corpus cannot reproduce
 (`gold_evaluate.FROZEN_COUNTS`,
 `potion_trajectory_evaluate.PREVIOUS_SUPPORT_ROWS`, the specialist reference
-NLL); a null check records the count instead. `corpus`, `phase1`, `phase2`,
+NLL); a null check records the count instead. `init --ascension-center A` (§443, for a
+corpus at one other ascension, e.g. A20) sets
+`combat_transition_composed.ASCENSION_CENTER`: `FrozenModels` then moves each
+warm-start encoder's ascension mean from 0 to A (inverse std stays 1e6), so the
+new rows present ascension 0 to the A0-trained weights. Without it, A20 rows
+reach those encoders as 2e7 and the FP16 HP encoding is non-finite. Unset or
+null (the default, and every A0 run) leaves the checkpoints' buffers unchanged.
+The resulting stack is valid only at that ascension. `corpus`, `phase1`, `phase2`,
 `near-full` and `hpo` then each derive the keys that stage's outputs
 determine, into a new file, in chain order. `union` runs with the `init` pins.
 From `phase2` on, the keys `composed_evaluate.verify_data` records must not
