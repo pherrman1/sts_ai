@@ -16889,3 +16889,39 @@ information-boundary correction, not a strength change) is Philipp's call.
 **Knowledge impact:** one sentence each in the rich `v_win` information-boundary section of
 `operations/ooc-label-pipeline.md`, the `STS_OOC_PUBLIC_FUTURES` row of `operations/environment-variables.md` and the
 #397 paragraph of `evaluation/current-research.md`.
+
+## §435 — Lizard Tail support in the default OOC MCTS CTM stack (2026-10-11)
+
+**Question:** Philipp: "settle a lizard tail support for a0. Then we don't need the fallback." The default OOC MCTS
+CTM stack (#418 pathb-r2) refuses imagined combats with an unused Lizard Tail plus a Fairy Potion
+(`active_unqualified_lizard`: the correction steps aside at `fairy_potion_exact_boundary` and the ordinary CTM rejects
+the active Tail) or plus Entropic Brew (`active_lizard_entropic_brew_unsupported`). Each refusal aborts the whole root
+search and V4 decides; in §427–§430 these were 98–100% of the support aborts. §423 (A0) and §426 (A20) showed that the
+§423 candidate fast artifact prices those states and removes the aborts (NOT_SHOWN on wins and regret).
+**Change (no new model):** the §423 candidate becomes the default fast artifact of the automatic OOC MCTS stack:
+`combat_transition_deepsets_pathb_r2_lizard.native` (`c6d56bbc…`, the #418 pathb-r2 tensors with `lizardFairy` and
+`lizardBrew` in its header), pinned by a built-in copy of its manifest (`64da1776…`, byte-identical to
+`candidate-v3-lizard.json`), as #418 did for pathb-r2. The #418 manifest (`d9d8377e…`) stays built in, so the #418 fast
+artifact (`90806c25…`) still loads as `production` (rollback, reproduction of earlier runs); a load picks the built-in
+manifest that lists the artifact's bytes. The §423 env (`arm_env.sh`, explicit model plus manifest) still loads the
+same bytes, now reported as research candidate `pathb-r2` as before. OOC MCTS stays off by default (ADR-0027), so
+default play is unchanged.
+**Support census:** [packet](evidence/ooc_lizard_default_20261011/README.md). rollout3 at 256 simulations, A0, seeds
+74011000–007, old (#418 stack, explicit) vs new (automatic default): support aborts 47 → 0 (Fairy + Tail 41 → 0,
+Brew + Tail 6 → 0), V4 fallback 7.1% → 2.5%; the remaining 25 fallbacks per arm are `root_boundary`, not support
+failures. 7/8 old runs hit a Lizard abort. Wins 7/8 vs 8/8 (descriptive only).
+**Interpretation:** active Lizard Tail no longer forces a V4 fallback at A0 on the default stack. Mark of the Bloom +
+Tail stays on its exact path (supported). This settles support, not strength: §423 found no win-rate gain from
+pricing these states (−3.1 pp [−10.9, +4.7]) and §426 none on A20 regret. Other boundaries (`hp_envelope`,
+Writhing Mass + Ritual Dagger) are unchanged (#369).
+**Decision:** default OOC MCTS CTM stack switched; OOC MCTS remains off by default. Runs pinned to earlier commits are
+unaffected; a run on this commit with the automatic stack now matches the §423 arm's CTM. Reproducing §422 or
+§424–§430 on a later commit needs the explicit #418 settings (`STS_OOC_MCTS_COMBAT_MODEL=…pathb_r2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=…near_full_escape_pathb_r2.native`, `STS_OOC_MCTS_ACTIVE_LIZARD=1`). §433 also
+measures the #418 model; a rollout3 promotion on that evidence that runs on this stack also adopts the Lizard model,
+whose win-rate effect §423 left open (wide CI), so the promotion note must name the CTM.
+
+**Evidence:** raw `/mnt/project-files/ooc-lizard-default-435/`. Seeds 74011000–74011007 are now used.
+
+**Knowledge impact:** default stack in `architecture/out-of-combat.md` and `operations/environment-variables.md`; one
+sentence in the rollout3 paragraph of `evaluation/current-research.md`.

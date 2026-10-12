@@ -283,10 +283,11 @@ environment model** or a scientifically qualified full OOC planner.
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
 loaded native V4 policy and native win models plus a compatible combat
 artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
-`selfplay/models/combat_transition_deepsets_pathb_r2.native` artifact and
+`selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native` artifact and
 automatically pairs it with the pinned standard Attention Brew fallback
-`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the #418
-pathb-r2 stack, see "Production CTM stack since #418" below). An
+`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the
+pathb-r2 stack with the §423 Lizard capabilities since §435, see "Production CTM
+stack since #418" below). An
 explicit combat-model path overrides the automatic stack; explicit artifact
 failures are fatal. Research only (§411): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
 replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
@@ -348,7 +349,16 @@ of its v3 manifest (`d9d8377e…`), so the pair loads without
 `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and default runs report identity
 `production`; the statements above about "production pins" describe the
 pre-#418 identity, which artifacts without a `researchCandidate` declaration
-still use. Rollback to the pre-#418 stack:
+still use. **Since §435** the default fast artifact is the §423 Lizard-capable
+`selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native` (`c6d56bbc…`):
+the same pathb-r2 tensors with `lizardFairy` and `lizardBrew` added to its header,
+pinned by a second built-in manifest (`64da1776…`, the §423 candidate manifest
+byte for byte). Both built-in manifests declare candidate `pathb-r2`; a load
+picks the one that lists the artifact's bytes, so the #418 fast artifact
+(`90806c25…`) still loads as `production` without a manifest. Rollback to the
+#418 stack: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
+and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
 `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_lizard_t2.native`,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_except_smoke_v2.native`
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418
@@ -389,9 +399,11 @@ and unchanged DeepSets tensor-payload SHA-256
 `429f9dc018a6b9de231657df4aba787bddc2de2e4cecb2e7989e167c37813139`.
 Its metadata is pinned to Gate 2 PASS report SHA-256
 `1ecd285c78e69249b6e5f46943d84cc10bc4bb86eea4e912f1c0abe774fef1d9`.
-Active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom remain
+On a fast artifact without Lizard capabilities (the #418 and pre-#418 stacks),
+active Lizard + Entropic Brew, Fairy Potion, and Mark of the Bloom are
 explicit boundaries that use the existing fail-closed or exact-path behavior.
-A research-candidate fast artifact can lift the first two with v3 capabilities
+A fast artifact can lift the first two with v3 capabilities; the default stack
+has both since §435
 (written by `tools/ctm_lizard.py extend`; the artifact needs its own
 active-Lizard correction). `lizardBrew` (`{"rModel": ...}`) routes a Brew state's
 three classes to the standard child, whose survival gives q and the reserve

@@ -80,7 +80,9 @@ int main(int argc,char **argv) {
         }
         if(argc==5 && std::string(argv[1])=="--pair-identity") {
             EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],std::string(argv[4])=="1");
-            std::cout << "identity=" << identityName(hybrid.fastRuntime()) << "\n";
+            std::cout << "identity=" << identityName(hybrid.fastRuntime())
+                << " lizard_fairy=" << hybrid.fastRuntime().lizardFairyCapable()
+                << " lizard_brew=" << hybrid.fastRuntime().lizardBrewCapable() << "\n";
             return 0;
         }
         if(argc==6 && std::string(argv[1])=="--lizard-parity") {

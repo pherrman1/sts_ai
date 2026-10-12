@@ -1806,7 +1806,7 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_COMBAT_MODEL cannot be empty when set");
     const bool automaticDefaultStack=artifactOverride==nullptr && !silverResolver;
     const std::string artifact=silverResolver?"native_silver_root_prior":automaticDefaultStack?
-        "selfplay/models/combat_transition_deepsets_pathb_r2.native":artifactOverride;
+        "selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native":artifactOverride;
     const char *brewFallbackOverride = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
     if (brewFallbackOverride && !*brewFallbackOverride)
         throw std::runtime_error("STS_OOC_MCTS_BREW_FALLBACK_MODEL cannot be empty when set");
