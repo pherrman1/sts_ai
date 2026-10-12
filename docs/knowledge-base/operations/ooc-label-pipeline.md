@@ -806,9 +806,10 @@ The public-safe allowlist for future `v_win` training is the TRAIN-variable
 mask minus the four HIDDEN_FUTURE fields (457 of the A3 461). Removing them
 did not measurably hurt the A3 X1 recipe (ledger-06 §371, `INCONCLUSIVE`
 because XGBoost seed noise is ~0.007-0.010 VALIDATION NLL). The tracked B0
-`models/v_win_trees.txt` still reads all eight V4-excluded fields. In live play the native
-fallback feeds it the realized queue unless `STS_OOC_PUBLIC_FUTURES=8`; on the §422 off base the
-two settings won 103 vs 104 of 128 paired runs (ledger-06 §434, `LEAK_NOT_SHOWN`).
+`models/v_win_trees.txt` still reads all eight V4-excluded fields. Since ADR-0028 the native
+fallback scores 8 public encounter futures by default instead of the realized queue
+(`STS_OOC_PUBLIC_FUTURES=0` restores it); on the §422 off base the two settings won 103 vs 104
+of 128 paired runs (ledger-06 §434, `LEAK_NOT_SHOWN`).
 
 `tools/analyze_rich_domain_397.py` derives the reachable Ironclad master-deck
 card domain from simulator pools and obtain sites (127 of 371 card IDs; 75 red,
