@@ -141,13 +141,42 @@ public:
         return total / scenarios_.size();
     }
 
-    // Same values as predict() on each row in turn. Rows should differ from
-    // base only at the varying raw indices; others are still valued exactly.
-    void predictVariants(const std::vector<int> &varying, const std::vector<std::vector<float>> &rows,
-                         std::vector<double> &out) const {
-        if (scenarios_.empty()) { model_.predictVariants(base_, varying, rows, out); return; }
+    // Same values as predict() on base with each candidate's values at the
+    // distinct varying raw indices (row-major, varying.size() per candidate).
+    void predictDeltas(const std::vector<int> &varying, const std::vector<float> &values,
+                       std::vector<double> &out) const {
+        if (scenarios_.empty()) { model_.predictDeltas(base_, varying, values, out); return; }
         out.clear();
-        for (const auto &row : rows) out.push_back(predict(row));
+        auto row = base_;
+        for (std::size_t at = 0; at < values.size(); at += varying.size()) {
+            for (std::size_t j = 0; j < varying.size(); ++j) row[varying[j]] = values[at + j];
+            out.push_back(predict(row));
+        }
+    }
+};
+
+// Candidate rows that differ from a base feature row only at a few raw
+// indices, stored as those columns (row-major). Declare every column before
+// adding rows.
+class DeltaRows {
+    const std::vector<float> &base_;
+    std::vector<int> column_;
+public:
+    std::vector<int> varying;
+    std::vector<float> values;
+    explicit DeltaRows(const std::vector<float> &base) : base_(base), column_(base.size(), -1) {}
+    int column(int index) {
+        if (column_[index] < 0) {
+            column_[index] = static_cast<int>(varying.size());
+            varying.push_back(index);
+        }
+        return column_[index];
+    }
+    // Appends a copy of base at the varying columns and returns it.
+    float *addRow() {
+        const std::size_t at = values.size();
+        for (const int index : varying) values.push_back(base_[index]);
+        return values.data() + at;
     }
 };
 }
@@ -179,18 +208,22 @@ int nativeFloorCardPick(sts::GameContext &gc, const PathHistory &path,
     const auto &idx = richIdxMap();
     const int dsz = idx.at("deckSize");
     double best = -1e100; int bestIdx = 5;
-    std::vector<std::vector<float>> rows{base};
-    std::vector<int> varying{dsz};
+    DeltaRows rows(base);
+    const int deckCol = rows.column(dsz);
+    std::vector<int> cardCol;
     for (int i = 0; i < r.cardRewards[rewardIndex].size(); ++i) {
-        auto row = base;
         const int cid = static_cast<int>(r.cardRewards[rewardIndex][i].getId());
         const auto it = idx.find("d" + std::to_string(cid));
-        if (it != idx.end()) { row[it->second] += 1.0f; varying.push_back(it->second); }
-        row[dsz] += 1.0f;
-        rows.push_back(std::move(row));
+        cardCol.push_back(it != idx.end() ? rows.column(it->second) : -1);
+    }
+    rows.addRow();
+    for (int i = 0; i < r.cardRewards[rewardIndex].size(); ++i) {
+        float *row = rows.addRow();
+        if (cardCol[i] >= 0) row[cardCol[i]] += 1.0f;
+        row[deckCol] += 1.0f;
     }
     std::vector<double> values;
-    scorer.predictVariants(varying, rows, values);
+    scorer.predictDeltas(rows.varying, rows.values, values);
     const double v0 = values[0];
     for (int i = 0; i < r.cardRewards[rewardIndex].size(); ++i) {
         const double marginal = values[i + 1] - v0;
@@ -283,44 +316,47 @@ std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
     }
     if (items.size() > 16) items.resize(16);
     int removeId = -1; double removeGain = 0.0;
-    std::vector<std::vector<float>> rows;
     std::vector<double> values;
-    if (sh.removeCost >= 0) {
-        std::vector<int> ids, varying{dsz};
-        rows.push_back(base);
+    // Prices are nonnegative, so an unaffordable removal is in no candidate
+    // below and its target need not be ranked.
+    if (sh.removeCost >= 0 && sh.removeCost <= gc.gold) {
+        DeltaRows rows(base);
+        const int deckCol = rows.column(dsz);
+        std::vector<int> ids, cols;
         for (int id = 0; id < 372; ++id) {
             const auto it = idx.find("d" + std::to_string(id));
             if (it == idx.end() || base[it->second] <= 0) continue;
-            auto row = base; row[it->second] -= 1.0f; row[dsz] -= 1.0f;
-            ids.push_back(id); varying.push_back(it->second); rows.push_back(std::move(row));
+            ids.push_back(id); cols.push_back(rows.column(it->second));
         }
-        scorer.predictVariants(varying, rows, values);
+        rows.addRow();
+        for (const int col : cols) {
+            float *row = rows.addRow();
+            row[col] -= 1.0f; row[deckCol] -= 1.0f;
+        }
+        scorer.predictDeltas(rows.varying, rows.values, values);
         const double v0 = values[0];
         for (std::size_t k = 0; k < ids.size(); ++k) {
             const double gain = values[k + 1] - v0;
             if (removeId < 0 || gain > removeGain) { removeId = ids[k]; removeGain = gain; }
         }
     }
-    // Candidate rows are valued in batches, then compared in enumeration order.
-    double best = -1e100; unsigned bestMask = 0; bool bestRemove = false;
-    struct Candidate { unsigned mask; bool remove; };
-    std::vector<Candidate> pending;
-    std::vector<int> varying{goldIdx, dsz};
-    for (const auto &item : items) {
-        const auto it = idx.find((item.kind == 'c' ? "d" : "r") + std::to_string(item.id));
-        if (it != idx.end()) varying.push_back(it->second);
+    // Candidates differ from base only at gold, deck size and the items' and
+    // removed card's features: the same floats and operation order as a full
+    // row. They are compared in enumeration order.
+    DeltaRows rows(base);
+    const int goldCol = rows.column(goldIdx), deckCol = rows.column(dsz);
+    std::vector<int> itemCol(items.size(), -1);
+    for (std::size_t k = 0; k < items.size(); ++k) {
+        const auto it = idx.find((items[k].kind == 'c' ? "d" : "r") + std::to_string(items[k].id));
+        if (it != idx.end()) itemCol[k] = rows.column(it->second);
     }
+    int removeCol = -1;
     if (removeId >= 0) {
         const auto it = idx.find("d" + std::to_string(removeId));
-        if (it != idx.end()) varying.push_back(it->second);
+        if (it != idx.end()) removeCol = rows.column(it->second);
     }
-    rows.clear();
-    const auto flush = [&] {
-        scorer.predictVariants(varying, rows, values);
-        for (std::size_t k = 0; k < pending.size(); ++k)
-            if (values[k] > best) { best = values[k]; bestMask = pending[k].mask; bestRemove = pending[k].remove; }
-        rows.clear(); pending.clear();
-    };
+    struct Candidate { unsigned mask; bool remove; };
+    std::vector<Candidate> pending;
     const unsigned total = 1u << items.size();
     for (unsigned mask = 0; mask < total; ++mask) {
         int spend = 0, adds = 0;
@@ -331,26 +367,23 @@ std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
         for (int rem = 0; rem <= 1; ++rem) {
             if (rem && (sh.removeCost < 0 || removeId < 0)) continue;
             if (spend + (rem ? sh.removeCost : 0) > gc.gold) continue;
-            auto row = base; row[goldIdx] -= spend + (rem ? sh.removeCost : 0);
-            row[dsz] += adds - (fixDeckSize ? rem : 0);
-            for (unsigned k = 0; k < items.size(); ++k) if (mask & (1u << k)) {
-                if (items[k].kind == 'c') {
-                    const auto it = idx.find("d" + std::to_string(items[k].id));
-                    if (it != idx.end()) row[it->second] += 1.0f;
-                } else {
-                    const auto it = idx.find("r" + std::to_string(items[k].id));
-                    if (it != idx.end()) row[it->second] = std::max(row[it->second], 1.0f);
-                }
+            float *row = rows.addRow();
+            row[goldCol] -= spend + (rem ? sh.removeCost : 0);
+            row[deckCol] += adds - (fixDeckSize ? rem : 0);
+            for (unsigned k = 0; k < items.size(); ++k) if ((mask & (1u << k)) && itemCol[k] >= 0) {
+                if (items[k].kind == 'c') row[itemCol[k]] += 1.0f;
+                else row[itemCol[k]] = std::max(row[itemCol[k]], 1.0f);
             }
-            if (rem) {
-                const auto it = idx.find("d" + std::to_string(removeId));
-                if (it != idx.end()) row[it->second] -= 1.0f;
-            }
-            rows.push_back(std::move(row)); pending.push_back({mask, rem != 0});
-            if (rows.size() == 1024) flush();
+            if (rem && removeCol >= 0) row[removeCol] -= 1.0f;
+            pending.push_back({mask, rem != 0});
         }
     }
-    if (!rows.empty()) flush();
+    double best = -1e100; unsigned bestMask = 0; bool bestRemove = false;
+    if (!pending.empty()) {
+        scorer.predictDeltas(rows.varying, rows.values, values);
+        for (std::size_t k = 0; k < pending.size(); ++k)
+            if (values[k] > best) { best = values[k]; bestMask = pending[k].mask; bestRemove = pending[k].remove; }
+    }
     std::ostringstream out;
     for (unsigned k = 0; k < items.size(); ++k)
         if (bestMask & (1u << k)) out << items[k].kind << items[k].slot << ' ';
@@ -365,17 +398,21 @@ int nativeFloorRemovePick(const sts::GameContext &gc, const PathHistory &path,
     const int dsz = idx.at("deckSize");
     const PublicValueScorer scorer(gc, path, floor);
     const auto &base = scorer.base();
-    std::vector<std::vector<float>> rows{base};
-    std::vector<int> varying{dsz};
+    DeltaRows rows(base);
+    const int deckCol = rows.column(dsz);
+    std::vector<int> cardCol;
     for (int i = 0; i < static_cast<int>(cardIds.size()); ++i) {
-        auto row = base;
         const auto it = idx.find("d" + std::to_string(cardIds[i]));
-        if (it != idx.end()) { row[it->second] -= 1.0f; varying.push_back(it->second); }
-        row[dsz] -= 1.0f;
-        rows.push_back(std::move(row));
+        cardCol.push_back(it != idx.end() ? rows.column(it->second) : -1);
+    }
+    rows.addRow();
+    for (int i = 0; i < static_cast<int>(cardIds.size()); ++i) {
+        float *row = rows.addRow();
+        if (cardCol[i] >= 0) row[cardCol[i]] -= 1.0f;
+        row[deckCol] -= 1.0f;
     }
     std::vector<double> values;
-    scorer.predictVariants(varying, rows, values);
+    scorer.predictDeltas(rows.varying, rows.values, values);
     const double v0 = values[0];
     double best = -1e100; int bestIdx = 0;
     for (int i = 0; i < static_cast<int>(cardIds.size()); ++i) {

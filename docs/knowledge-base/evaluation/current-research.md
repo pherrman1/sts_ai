@@ -282,7 +282,10 @@ rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp
 for a default proposal, prior and merging variants.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
-rollout3 run by about 10%.
+rollout3 run by about 10%. With the V4 rollout policy the floor-model calls of the native shop plan, card pick and
+removal pick were about 20% of rollout3 CPU after §437 (8% with a uniform rollout policy, which rarely reaches the
+planner); a packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). The V4 shop gate in
+the rollouts now costs more than the shop plan itself.
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
