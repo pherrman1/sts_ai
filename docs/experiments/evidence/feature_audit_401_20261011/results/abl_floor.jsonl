@@ -19,3 +19,6 @@
 {"arm": "-upgrades", "n_feats": 334, "trees": 811, "secs": 54.3}
 {"arm": "FULL#2", "n_feats": 448, "trees": 749, "secs": 59.6}
 {"arm": "cyclic_relics->presence", "n_feats": 448, "trees": 819, "secs": 66.8}
+{"arm": "FULL#3", "n_feats": 448, "trees": 831, "secs": 384.7}
+{"arm": "FULL#4", "n_feats": 448, "trees": 868, "secs": 287.5}
+{"arm": "PUBLIC(-hidden future, -RNG; keep queue)", "n_feats": 442, "trees": 766, "secs": 256.2}

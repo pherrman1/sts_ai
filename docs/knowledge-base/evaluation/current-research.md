@@ -2484,12 +2484,6 @@ baseline was `INCONCLUSIVE` (+0.0050 NLL, CI includes 0, about twice the
 retraining null), removing `bossId` also `INCONCLUSIVE` (+0.0012). Stage 2
 richer map encodings are not pursued; no default is affected (heuristic
 pathing, tracked `v_win_trees.txt` unchanged).
-#401 (ledger-06 §438) audited the tree value inputs on 78,643 A20 `strategicgen` runs: relics,
-deck cards and HP carry most unique signal for both final floor and win; a refit without all ten
-hidden-future, queue and RNG-counter columns loses nothing measurable (floor +0.18 MSE [−0.08, +0.45],
-win −0.0005 NLL), although trained models do use them; adding the 12 forward-map columns cuts A20 floor
-MSE by 2.15 [1.80, 2.51] (win borderline). The A0 refit on the #334 fragment resolves nothing. No model or
-contract changed; the forward map is the recommended addition for the next A20 retrain.
 Stage 1b (§373) found the TRAIN mask already excludes every unreachable card,
 relic and potion column. Stage 2 (§374): raw relic/event/encounter history
 each worsened a 5-seed ensemble slightly (`INCONCLUSIVE`, none adopted);
@@ -2501,6 +2495,14 @@ distributions were not built.
 The A3 M1 MLP follow-up (§378) also found no qualifying family; relic
 history (relics seen but not owned) is the one direction worth re-testing on a
 larger corpus or in the replacement model.
+#401 (ledger-06 §438) audited the tree value inputs on 78,643 A20 `strategicgen` runs: relics,
+deck cards and HP carry most unique signal for both final floor and win. B0 and the A20 floor tree use
+the hidden future-encounter fields (the A20 win tree does not), but a refit without the ten hidden,
+queue and RNG-counter columns shows no detectable loss (floor +0.18 MSE [−0.08, +0.45], win −0.0005
+NLL; refit noise about ±0.05–0.15 MSE). Adding the 12 forward-map columns, the only missing group
+tested, cuts A20 floor MSE by 2.15 [1.80, 2.51] (win borderline). These are offline error changes on
+the generator's own runs, not win-rate changes; the A0 refit on the #334 fragment resolves nothing.
+No model or contract changed; the forward map is the recommended addition for the next A20 retrain.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from

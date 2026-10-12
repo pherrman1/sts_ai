@@ -9,6 +9,7 @@ FULL#2                       n=448 trees= 244 logloss=0.1451 d=+0.0004 [-0.0005,
 -potions                     n=415 trees= 336 logloss=0.1447 d=+0.0000 [-0.0011,+0.0011] auc=0.8321
 FULL                         n=448 trees= 431 logloss=0.1447 d=+0.0000 [+0.0000,+0.0000] auc=0.8359
 -future_encounters(hidden)   n=444 trees= 388 logloss=0.1447 d=-0.0000 [-0.0009,+0.0008] auc=0.8366
+FULL#3                       n=448 trees= 340 logloss=0.1446 d=-0.0000 [-0.0009,+0.0008] auc=0.8345
 -boss                        n=447 trees= 460 logloss=0.1445 d=-0.0001 [-0.0011,+0.0009] auc=0.8368
 -potion_slots                n=446 trees= 381 logloss=0.1445 d=-0.0001 [-0.0011,+0.0008] auc=0.8354
 -rng_counters(hidden)        n=446 trees= 403 logloss=0.1445 d=-0.0002 [-0.0012,+0.0008] auc=0.8353
@@ -16,7 +17,9 @@ FULL                         n=448 trees= 431 logloss=0.1447 d=+0.0000 [+0.0000,
 -queue_counters              n=444 trees= 319 logloss=0.1445 d=-0.0002 [-0.0011,+0.0007] auc=0.8344
 -bottled                     n=445 trees= 370 logloss=0.1442 d=-0.0004 [-0.0013,+0.0004] auc=0.8345
 -keys                        n=447 trees= 408 logloss=0.1442 d=-0.0004 [-0.0013,+0.0004] auc=0.8373
+PUBLIC(-hidden future, -RNG; keep queue) n=442 trees= 296 logloss=0.1442 d=-0.0005 [-0.0014,+0.0004] auc=0.8347
 cyclic_relics->presence      n=448 trees= 327 logloss=0.1442 d=-0.0005 [-0.0013,+0.0002] auc=0.8357
+FULL#4                       n=448 trees= 327 logloss=0.1441 d=-0.0005 [-0.0014,+0.0004] auc=0.8369
 PUBLIC+forward_map           n=450 trees= 419 logloss=0.1441 d=-0.0005 [-0.0015,+0.0003] auc=0.8373
 PUBLIC(-hidden)              n=438 trees= 391 logloss=0.1441 d=-0.0005 [-0.0014,+0.0003] auc=0.8361
 +forward_map                 n=460 trees= 426 logloss=0.1439 d=-0.0008 [-0.0016,-0.0000] auc=0.8383

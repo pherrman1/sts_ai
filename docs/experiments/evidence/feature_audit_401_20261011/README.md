@@ -24,7 +24,9 @@ feature contract changed.
   VAL 15% / TEST 15%. TEST rows were never used in any fit or metric. Packed matrix sha256 `4383fbba…`
   (not uploaded; `build_a20.py` + `pack_a20.py` rebuild it). No new gameplay seeds were run.
 - A20 permutation of the §419 A20 trees uses only rows from that training's own validation seeds
-  (`v4_a20_retrain_20261009/gold2/a20_trees/val_seeds.json.gz`): 40,640 rows, 5,080 runs.
+  (`v4_a20_retrain_20261009/gold2/a20_trees/val_seeds.json.gz`) that are not in this audit's TEST split:
+  34,424 rows, 4,303 runs. (The first pass included 6,216 TEST-split rows; it was rerun without them after
+  review. Group deltas moved by at most 1.1 MSE / 0.006 NLL; the earlier numbers are not used.)
 
 ## Method
 
@@ -41,7 +43,10 @@ are in the data and in X2-B but not in B0.
 - **Stage 2, retrain ablations (A20):** refit XGBoost per arm (eta 0.1, depth 6, subsample 0.8,
   colsample 0.5, min_child_weight 20, hist, early stop 50 on ES), score VAL; delta = arm − FULL per row,
   95% seed-cluster bootstrap (1,000). Targets: final floor (MSE, the `v_rich` target) and won (log loss,
-  the `v_win` target). `FULL#2` is FULL refit with another seed: the retraining null.
+  the `v_win` target). `FULL#2`–`FULL#4` are FULL refit with three other seeds: the retraining null.
+  The bootstrap CIs cover VAL sampling only, not refit randomness; read every delta against the refit
+  spread (four FULL fits span 0.09 floor MSE and 0.0009 win NLL; a reviewer's independent rerun suggests
+  refit noise up to about ±0.15 MSE).
 - **A0 cross-check:** same arms subset on #334 TRAIN → VALIDATION, depth 4, eta 0.05, 3 training
   seeds averaged.
 
@@ -51,23 +56,23 @@ are in the data and in X2-B but not in B0.
 
 | group | B0 on A0 (122 seeds), ΔNLL | X2-B on A0 VAL (26 seeds), ΔNLL | A20 win (§419), ΔNLL | A20 floor (§419), ΔMSE |
 |---|---|---|---|---|
-| relics | +0.083 [0.049, 0.114] | +0.047 [0.010, 0.089] | +0.049 [0.043, 0.056] | +69.5 [66.5, 72.7] |
-| progress | +0.054 [0.048, 0.059] | +0.002 | +0.004 | +17.5 |
-| deck cards | +0.050 [0.025, 0.075] | +0.019 | +0.015 | +44.8 |
+| relics | +0.083 [0.049, 0.114] | +0.047 [0.010, 0.089] | +0.055 [0.049, 0.063] | +70.6 [66.9, 74.1] |
+| progress | +0.054 [0.048, 0.059] | +0.002 | +0.003 | +17.4 |
+| deck cards | +0.050 [0.025, 0.075] | +0.019 | +0.016 | +45.7 |
 | hp | +0.037 [0.024, 0.053] | +0.035 | +0.007 | +13.8 |
-| path history | +0.023 | +0.009 (n.s.) | +0.002 | +6.2 |
-| future encounters (hidden) | **+0.0155 [0.013, 0.018]** | +0.0004 (n.s.) | −0.0001 (n.s.) | **+4.3 [3.8, 4.7]** |
-| boss | +0.003 (n.s.) | +0.004 | 0.000 | +1.3 |
-| potion slots | +0.003 | +0.003 (n.s.) | 0.000 | +1.1 |
+| path history | +0.023 | +0.009 (n.s.) | +0.001 | +6.0 |
+| future encounters (hidden) | **+0.0155 [0.013, 0.018]** | +0.0004 (n.s.) | −0.0003 (n.s.) | **+4.3 [3.9, 4.8]** |
+| boss | +0.003 (n.s.) | +0.004 | −0.000 (n.s.) | +1.5 |
+| potion slots | +0.003 | +0.003 (n.s.) | +0.000 | +1.3 |
 | queue counters | +0.001 (n.s.) | +0.002 | +0.001 | +2.1 |
-| RNG counters | +0.001 | +0.0004 (n.s.) | 0.000 | +0.2 |
+| RNG counters | +0.001 | +0.0004 (n.s.) | +0.000 | +0.2 |
 | potions | +0.000 | +0.013 | +0.001 | +2.3 |
-| upgrades | −0.001 (n.s.) | +0.016 | +0.003 | +10.6 |
+| upgrades | −0.001 (n.s.) | +0.016 | +0.004 | +10.8 |
 | bottled / keys / gold | ≈ 0 | ≈ 0 | ≈ 0 | ≤ 0.12 |
 | forward map | not an input | +0.0005 (n.s.) | not an input | not an input |
 
 Baselines: B0 on A0 NLL 0.611, AUC 0.726, mean prediction 0.577 vs win rate 0.762 (B0 underpredicts
-#334 wins); X2-B NLL 0.397, AUC 0.795; A20 win NLL 0.135, AUC 0.852; A20 floor MSE 97.5. Dead inputs:
+#334 wins); X2-B NLL 0.397, AUC 0.795; A20 win NLL 0.141, AUC 0.851; A20 floor MSE 96.9. Dead inputs:
 B0 has 16 of 448 inputs never split and 5 constant on the A0 rows. Per-relic permutation (top: Dead
 Branch, Snecko Eye, Shuriken, Brimstone in both B0 and the A20 tree) shows the relic group's weight is
 spread over many relics, not one proxy column (`results/relic_perm_*.json`).
@@ -86,13 +91,14 @@ spread over many relics, not one proxy column (`results/relic_perm_*.json`).
 | − future encounters (hidden) | +0.01 (n.s.) | −0.0000 |
 | − queue counters | +0.06 (n.s.) | −0.0002 |
 | − RNG counters | −0.09 (n.s.) | −0.0002 |
-| PUBLIC (− all three above) | +0.18 [−0.08, +0.45] | −0.0005 [−0.0014, +0.0003] |
+| PUBLIC (− all three above, 10 columns; also drops the queue counters, which §371 classes as public) | +0.18 [−0.08, +0.45] | −0.0005 [−0.0014, +0.0003] |
+| PUBLIC′ (− hidden future, − RNG; queue counters kept, 6 columns) | +0.14 [−0.15, +0.42] | −0.0005 [−0.0014, +0.0004] |
 | − bottled / − potion slots / − gold / − keys | within ±0.12 (n.s.) | within ±0.0004 (n.s.) |
 | − path history | −0.27 [−0.53, −0.04] | +0.0009 [−0.0000, +0.0017] |
 | cyclic relic counters → presence | −0.19 [−0.38, +0.01] | −0.0005 [−0.0013, +0.0002] |
 | **+ forward map** | **−2.15 [−2.51, −1.80]** | −0.0008 [−0.0016, −0.0000] |
 | PUBLIC + forward map | −2.24 [−2.63, −1.85] | −0.0005 (n.s.) |
-| FULL#2 (refit null) | −0.04 [−0.28, +0.19] | +0.0004 [−0.0005, +0.0013] |
+| FULL#2 / #3 / #4 (refit null) | −0.04 / +0.05 / +0.03 | +0.0004 / −0.0000 / −0.0005 |
 
 "Cyclic relic counters" are Happy Flower, Incense Burner, Ink Bottle, Nunchaku, Pen Nib, Sundial and Tiny
 Chest, whose `r*` value carries an in-combat cycle counter.
@@ -109,15 +115,18 @@ seed noise); −relics pointing *better* suggests the 147 relic columns overfit 
 
 - Relics, deck cards and HP carry most unique signal for both targets and every model family audited;
   potions, progress and upgrades add a little for floor only.
-- The hidden future-encounter fields are used by the trained models (B0 at A0, the A20 floor tree), but a
-  refit without them, or without all ten hidden/queue/RNG columns, loses nothing measurable at A20. The
-  signal is recoverable from public inputs. This supports a public-only contract (#397) at no accuracy
-  cost on this corpus.
-- The forward-map block is the one clearly useful *missing* group: far outside the refit null on floor (FULL#2 −0.04 [−0.28, +0.19]) at
-  A20, borderline on win (4.7% positives). This resolves §418's A0 `INCONCLUSIVE` only for A20 floor; at A0
+- The hidden future-encounter fields are used by B0 at A0 and by the A20 floor tree (not by the A20 win
+  tree). A refit without them, or without all ten hidden/queue/RNG columns, shows no loss we can detect at
+  A20: at most about 0.45 floor MSE (upper CI) on top of refit noise. The signal looks recoverable from
+  public inputs, which supports a public-only contract (#397) on this corpus.
+- The forward map is the only missing group tested, and it helps: −2.15 floor MSE at A20, far outside the
+  refit spread, borderline on win (4.7% positives). This resolves §418's A0 `INCONCLUSIVE` only for A20 floor; at A0
   it remains unresolved on the available #334 fragment.
 - Bottled ids, keys, gold, potion slots and boss id have no unique value at A20. They are cheap integer
   counters, so removal buys no runtime; no deletion recommended.
+
+All results are offline prediction-error changes on the generator's own runs (`strategicgen` v1, A20;
+#334 fragment, A0). None is a measured win-rate change.
 
 ## Not done
 

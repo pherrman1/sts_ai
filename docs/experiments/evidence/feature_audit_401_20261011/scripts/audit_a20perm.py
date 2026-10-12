@@ -5,7 +5,7 @@ from tools.analysis.vwin_tree_utils import split_counts
 from fasttrees import Forest
 from groups import group_of
 from collections import defaultdict
-Z=np.load('/tmp/claude-0/a401/work/a20.npz'); names=list(Z['names']); m419=Z['in419val']; X=Z['X'][m419]; y=Z[TGT][m419]; seeds=Z['seeds'][m419]; sp=np.array(['VALIDATION']*len(y))
+Z=np.load('/tmp/claude-0/a401/work/a20.npz'); names=list(Z['names']); m419=Z['in419val'] & (Z['splits']!='TEST'); X=Z['X'][m419]; y=Z[TGT][m419]; seeds=Z['seeds'][m419]; sp=np.array(['VALIDATION']*len(y))
 models={'A20_419':'/home/user/sts_ai/models/candidates/v_win_a20_419.txt','A20_rich419':'/home/user/sts_ai/models/candidates/v_rich_a20_419.txt','B0x':'/home/user/sts_ai/models/v_win_trees.txt','X2B':'/home/user/sts_ai/models/candidates/v_win_x2b_trees.txt','A20_419':'/home/user/sts_ai/models/candidates/v_win_a20_419.txt'}
 rng=np.random.default_rng(401)
 LG=[1]

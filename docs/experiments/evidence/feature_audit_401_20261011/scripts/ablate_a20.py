@@ -20,6 +20,9 @@ arms = {'FULL': b0, '+forward_map': b0 + fm,
 for g in groups:
     arms['-' + g] = [n for n in b0 if group_of(n) != g]
 arms['FULL#2'] = b0
+arms['FULL#3'] = b0
+arms['FULL#4'] = b0
+arms['PUBLIC(-hidden future, -RNG; keep queue)'] = [n for n in b0 if group_of(n) not in ('future_encounters(hidden)', 'rng_counters(hidden)')]
 # derived-feature test: cyclic in-combat relic counters reduced to presence
 CYCLIC = ['r26', 'r30', 'r31', 'r44', 'r52', 'r68', 'r171']  # Happy Flower, Incense Burner, Ink Bottle, Nunchaku, Pen Nib, Sundial, Tiny Chest
 arms['cyclic_relics->presence'] = b0
@@ -50,7 +53,7 @@ for arm, fl in arms.items():
     dtr = xgb.QuantileDMatrix(Xa[tr][:, idx], label=y[tr], max_bin=256)
     des = xgb.DMatrix(Xa[es][:, idx], label=y[es]); dva = xgb.DMatrix(Xa[va][:, idx])
     del Xa
-    P['seed'] = 402 if arm.endswith('#2') else 401
+    P['seed'] = 400 + int(arm[-1]) if arm[:-1].endswith('#') else 401
     b = xgb.train(P, dtr, num_boost_round=3000, evals=[(des, 'es')], early_stopping_rounds=50, verbose_eval=False)
     p = b.predict(dva, iteration_range=(0, b.best_iteration + 1))
     np.save(f'/tmp/claude-0/a401/work/pred_{target}_{arm}.npy', p.astype(np.float32))

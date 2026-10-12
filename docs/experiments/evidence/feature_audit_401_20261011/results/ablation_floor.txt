@@ -7,9 +7,12 @@ floor: VAL rows 93911, runs 11739; delta = arm - FULL MSE (positive = worse with
 -upgrades                    n=334 trees= 811 MSE=101.6585 d=+0.4316 [+0.1315,+0.7124] rmse=10.083
 -boss                        n=447 trees= 892 MSE=101.4601 d=+0.2331 [-0.0850,+0.5414] rmse=10.073
 PUBLIC(-hidden)              n=438 trees= 831 MSE=101.4093 d=+0.1824 [-0.0814,+0.4537] rmse=10.070
+PUBLIC(-hidden future, -RNG; keep queue) n=442 trees= 766 MSE=101.3624 d=+0.1354 [-0.1483,+0.4180] rmse=10.068
 -bottled                     n=445 trees= 859 MSE=101.2932 d=+0.0662 [-0.1765,+0.3244] rmse=10.064
 -queue_counters              n=444 trees= 822 MSE=101.2913 d=+0.0644 [-0.1539,+0.3123] rmse=10.064
 -potion_slots                n=446 trees= 765 MSE=101.2803 d=+0.0534 [-0.2056,+0.2894] rmse=10.064
+FULL#3                       n=448 trees= 831 MSE=101.2739 d=+0.0469 [-0.1993,+0.2836] rmse=10.063
+FULL#4                       n=448 trees= 868 MSE=101.2542 d=+0.0273 [-0.2200,+0.2820] rmse=10.063
 -future_encounters(hidden)   n=444 trees= 811 MSE=101.2394 d=+0.0124 [-0.2466,+0.2902] rmse=10.062
 FULL                         n=448 trees= 887 MSE=101.2269 d=+0.0000 [+0.0000,+0.0000] rmse=10.061
 FULL#2                       n=448 trees= 749 MSE=101.1859 d=-0.0411 [-0.2779,+0.1939] rmse=10.059
