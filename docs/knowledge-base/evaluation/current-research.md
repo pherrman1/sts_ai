@@ -296,6 +296,7 @@ changed together, so which one carries the loss is open.
 Swapping the leaf and fallback win model `STS_WIN_NET` from B0 `v_win` to the public X2-B (§444) in `combo` (§449,
 128 fresh paired seeds, `STS_OOC_PUBLIC_FUTURES=8` in both arms) is NOT_SHOWN: 114/128 vs 111/128, +2.3 pp
 [−5.5, +10.2], McNemar p = 0.70, at the same CPU. The data do not argue against X2-B, but do not show a gain either.
+Philipp made it the OOC MCTS default win model (ADR-0029); `STS_WIN_NET=1` reproduces earlier B0-based OOC MCTS results.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
 rollout3 run by about 10%. On top of §436/§437 the CTM was still about a quarter of rollout3 CPU, almost all in the
