@@ -312,8 +312,9 @@ are fatal.
 
 DeepSets encoders memoize each card, relic and potion token's MLP output per
 thread, keyed by runtime instance, encoder group and the token's integer
-fields; pools still sum in token order, so outputs are bit-identical (§439,
-`ctm_encoder_memo_parity`). When an artifact's `max_hp` encoder tensors equal
+fields; pools still sum in token order, so outputs are bit-identical (§439;
+`ctm_encoder_memo_parity` checks against the unmemoized reference,
+`setEncoderMemoForTesting(false)`). When an artifact's `max_hp` encoder tensors equal
 its `hp` encoder byte for byte (`sharedHpEncoder()`, true for pathb-r2), the
 unprepared near-full sampler takes maxHP from the hp encoding, as the
 prepared path does.

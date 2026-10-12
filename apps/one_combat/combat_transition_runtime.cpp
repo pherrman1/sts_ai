@@ -720,18 +720,26 @@ struct TokenKeyHash {
 using TokenMemo=std::unordered_map<TokenKey,Vec,TokenKeyHash>;
 struct EncoderMemo { TokenMemo card,relic,potion; };
 constexpr size_t kTokenMemoLimit=1<<13;
+std::atomic<bool> encoderMemoEnabled{true};
 EncoderMemo &encoderMemo(std::uint64_t instance,const std::string &group) {
+    // A destroyed runtime's entries stay until the thread exits; runtimes live for the process in practice.
     thread_local std::map<std::pair<std::uint64_t,std::string>,EncoderMemo> memos;
     return memos[{instance,group}];
 }
 template<class Compute>
 const Vec &memoized(TokenMemo &memo,const TokenKey &key,Compute compute) {
+    if(!encoderMemoEnabled.load(std::memory_order_relaxed)) {
+        thread_local Vec reference;
+        reference=compute();
+        return reference;
+    }
     auto found=memo.find(key);
     if(found!=memo.end()) return found->second;
     if(memo.size()>=kTokenMemoLimit) memo.clear();
     return memo.emplace(key,compute()).first->second;
 }
 }
+void CombatTransitionRuntime::setEncoderMemoForTesting(bool enabled) { encoderMemoEnabled=enabled; }
 Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredictorInputV1 &input) const {
     require(input.cards.size()<=128 && input.relics.size()<=64 && input.potions.size()==5,"combat input token bound");
     const auto &g=input.globals;const std::string p=group+".encoder.";

@@ -87,6 +87,8 @@ public:
     std::vector<float> maxHp(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHp(const std::vector<float> &encoding) const;
     bool sharedHpEncoder() const { return sharedHpEncoder_; }
+    // Test-only: false makes every encoder compute each token afresh (the unmemoized reference).
+    static void setEncoderMemoForTesting(bool enabled);
     std::vector<float> hpEncoding(const CombatPredictorInputV1 &) const;
     // escaped is -1 for an artifact without the escape capability, else 0 or 1.
     std::vector<float> signedHp(const std::vector<float> &z, int delta, int preHp, int maximum, int escaped=-1) const;

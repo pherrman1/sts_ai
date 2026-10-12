@@ -60,10 +60,18 @@ MCTS columns are byte-identical between baseline and candidate on every unit
 - Final binary `0d8852d9` (memo limit lowered from 65,536 to 8,192 after the size check) on rollout3
   74022002 and `off` 74022004–005.
 
-New ctest `ctm_encoder_memo_parity` (`combat_transition_runtime_probe --encoder-memo-parity`) compares a
-warm runtime against a fresh runtime per state on the 31 near-full fixtures plus a variant of each that
-changes every memo key field (620 bitwise comparisons) and checks the shared-encoder identity. Dropping
-any one of relic data, card misc, bottle binding or potion slot from the key makes it fail.
+New ctest `ctm_encoder_memo_parity` (`combat_transition_runtime_probe --encoder-memo-parity`) runs two DeepSets
+artifacts with different weights (pathb-r2 and `lizard_t2`), memoized and interleaved state by state over two
+passes, against the unmemoized reference (`CombatTransitionRuntime::setEncoderMemoForTesting(false)`), on the
+31 near-full fixtures plus a variant of each that changes every memo key field except the ids (1,240 bitwise
+comparisons), and checks the shared-encoder identity. Mutation check: removing the encoder group or the
+runtime instance from the memo key, or any one key field (card upgraded, misc, bottle binding; relic data,
+order index; potion id, slot), makes it fail. (The first version compared a warm runtime with fresh ones,
+which were memoized too, so a memo shared across groups or runtimes passed; the independent review caught
+this.)
+
+Review fix binary `69ec3462` (test bypass and comment only): rollout3 74022002 and `off` 74022004–005 again
+byte-identical to the baseline.
 
 ## Speed ([timings.txt](timings.txt))
 

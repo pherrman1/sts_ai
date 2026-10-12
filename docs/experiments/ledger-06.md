@@ -16843,8 +16843,9 @@ encoder is a byte-identical copy of its `hp` encoder (checked at load), so the u
 takes maxHP from the hp encoding, as the prepared path already did.
 **Parity:** result, OOC decision, MCTS action/support traces and non-timing MCTS columns byte-identical on rollout3
 74022000, 74022002, 74022003, uniform-prior 74022001 and `off` 74022004–005 (final binary re-checked on 74022002
-and `off` 74022004–005). New ctest `ctm_encoder_memo_parity`: warm vs fresh runtime on 62 fixture inputs, 620
-bitwise comparisons; dropping any key field makes it fail.
+and `off` 74022004–005). New ctest `ctm_encoder_memo_parity`: two DeepSets artifacts, memoized and interleaved, against the
+unmemoized reference on 62 fixture inputs (1,240 bitwise comparisons); removing the encoder group, the runtime
+instance or any key field from the memo key makes it fail.
 **Speed:** CTM CPU 2.8x lower (150–193 → 42–69 s on the four rollout3 seeds); per run 1.20x (paired 74022002,
 74022003), 1.23x (74022000 process CPU, both profiled), 1.24x (uniform prior); `off` unchanged. The CTM is now about
 10% of rollout3 CPU.
