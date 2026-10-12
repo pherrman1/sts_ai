@@ -209,6 +209,36 @@ int main(int argc, char **argv) {
             }
         }
         if (sensitive == 0) { std::cerr << "tree variant test found no outside-feature row\n"; return 1; }
+        // Many candidates over split features, as in the shop planner: the
+        // packed batch walk, the packed row walk and the unpacked node walk
+        // must agree bit for bit.
+        auto unpacked = current;
+        unpacked.packed.clear(); unpacked.packedRoots.clear();
+        if (unpacked.packedCurrent()) { std::cerr << "cleared packed trees still current\n"; return 1; }
+        std::vector<int> varying;
+        for (const auto &node : current.nodes)
+            if (node.feat >= 0 && std::find(varying.begin(), varying.end(), node.feat) == varying.end()
+                    && variantRng() % 64 == 0 && varying.size() < 14) varying.push_back(node.feat);
+        const auto &base = seen[variantRng() % seen.size()];
+        std::vector<float> deltas;
+        for (int r = 0; r < 2048; ++r)
+            for (const int index : varying)
+                deltas.push_back(variantRng() % 3 ? seen[variantRng() % seen.size()][index] : base[index]);
+        std::vector<double> batch, fallback;
+        current.predictDeltas(base, varying, deltas, batch);
+        unpacked.predictDeltas(base, varying, deltas, fallback);
+        auto row = base;
+        for (std::size_t r = 0; r < batch.size(); ++r) {
+            for (std::size_t j = 0; j < varying.size(); ++j) row[varying[j]] = deltas[r * varying.size() + j];
+            const double y = current.predict(row), z = unpacked.predict(row); checks += 3;
+            if (std::memcmp(&batch[r], &y, sizeof(double)) != 0 || std::memcmp(&fallback[r], &y, sizeof(double)) != 0
+                    || std::memcmp(&z, &y, sizeof(double)) != 0) {
+                std::cerr << "tree delta bitwise mismatch at row " << r << '\n'; return 1;
+            }
+        }
+        if (batch.size() != 2048 || !unpacked.pack() || !unpacked.packedCurrent()) {
+            std::cerr << "tree delta size or repack failure\n"; return 1;
+        }
     }
     std::cout << "compact tree parity: " << checks << " bitwise double comparisons\n";
     return 0;

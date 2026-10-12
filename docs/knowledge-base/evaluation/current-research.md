@@ -298,7 +298,10 @@ the V4 network about 25%, the Silver simulator only about 5%. A bit-identical ve
 rollout3 run by about 10%. On top of §436/§437 the CTM was still about a quarter of rollout3 CPU, almost all in the
 DeepSets per-token MLPs of unprepared leaf-rollout samples; an exact per-token memo plus reuse of the shared HP
 encoder (§439, bitwise identical play) makes the CTM 2.8x cheaper and a rollout3 run 1.20–1.24x faster, leaving
-the CTM at about 10%. The largest remaining rollout3 costs are the native shop planner and the V4 network.
+the CTM at about 10%. With the V4 rollout policy the floor-model calls of the native shop plan, card pick and removal pick
+were about 20% of rollout3 CPU after §437 (8% with a uniform rollout policy, which rarely reaches the planner); a
+packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). The largest remaining rollout3 cost is
+the V4 network in the rollout gates; its shop gate now costs more than the shop plan itself.
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 

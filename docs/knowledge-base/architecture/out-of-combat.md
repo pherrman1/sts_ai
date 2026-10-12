@@ -1034,14 +1034,18 @@ explicitly server-dependent path fails fast when localhost:5555 is unavailable
 instead of stalling the whole run.
 
 The native shop plan, card-reward pick and removal pick value their candidate
-rows with `CompactTreeNet::predictVariants` (verified 2026-10-11, §437). Each
-candidate row is the decision's base rich vector with a few known features
-changed (gold, deck size, the affected card and relic counts). All rows walk
-each tree together and separate only at splits on those features, so every row
-reaches the same leaf and accumulates the same margins in the same order as
-`predict()`; a row that differs elsewhere is valued with `predict()`. Values and
-decisions are bitwise unchanged. The shop plan values its subsets in batches of
-up to 1,024 rows and keeps the first strict maximum in enumeration order.
+rows with `CompactTreeNet::predictDeltas` (verified 2026-10-12, §437, §442).
+Each candidate is the decision's base rich vector with a few known features
+changed (gold, deck size, the affected card and relic counts), passed as just
+those columns. All candidates walk each tree together and separate only at
+splits on those features, so every candidate reaches the same leaf and
+accumulates the same margins in the same order as `predict()` on the full row.
+Values and decisions are bitwise unchanged. The shop plan values all affordable
+subsets in one call, keeps the first strict maximum in enumeration order, and
+skips ranking removal targets when the removal costs more than the current
+gold (no candidate could include it). `predictVariants` keeps the older
+full-row interface (rows that differ outside the declared features take
+`predict()`).
 
 The native OOC research controls in this section and the campfire/removal/card
 subsections below were verified on 2026-10-08.
@@ -1338,9 +1342,12 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
 4. Native tree models map artifact feature names to raw rich indices through
    `richIdxMap` at load time and store final raw indices in split nodes.
    `CompactTreeNet` stores nodes contiguously with root offsets and an end
-   sentinel; child indices remain relative to their tree. Traversal, float
-   thresholds/leaves, sequential double accumulation, and logistic/clamping
-   operations retain their original order. Models score state or copied
+   sentinel; child indices remain relative to their tree. `load()` also builds
+   a packed evaluation copy (8-byte nodes, each tree in preorder with the yes
+   child next to its parent; §442) that `predict()` and `predictDeltas()` walk;
+   trees filled in directly (tests) are walked from `nodes` unless `pack()` is
+   called. Traversal, float thresholds/leaves, sequential double accumulation,
+   and logistic/clamping operations retain their original order. Models score state or copied
    post-action states.
 5. Counterfactual evaluators copy `GameContext`, apply a legal action, detach
    shared map state when mutation is possible, and simulate or predict future

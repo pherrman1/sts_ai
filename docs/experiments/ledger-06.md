@@ -17127,3 +17127,35 @@ count, on these seeds; §422-era runs are no longer byte-reproducible after #480
 **Evidence:** [packet](evidence/a20_gbm_ranker_20261012/) (PREREG, parity check, smoke, `run.sh`, `analyze.py`, both result CSVs with bestbench sidecars, `result.txt`).
 
 **Knowledge impact:** this entry, its `EXPERIMENTS.md` index line and one sentence in `evaluation/current-research.md`; `STS_OOC_GBM_RANKER` is documented in `operations/environment-variables.md`.
+
+## §442 — Native shop planner and floor-model cost in rollout3: packed trees and column candidates, bitwise identical, 1.13–1.19x per rollout3 run (2026-10-12)
+
+**Question:** after §437, how much rollout3 CPU do the native shop planner and the other floor-model tree calls in
+leaf rollouts take, with the V4 and with a uniform rollout policy, and can they be made faster with bit-identical
+play?
+**Design:** performance only. Baseline `main` `b039e846` (Release `8f5edf76…`). §422 `rollout3` and `off` arms
+unchanged, plus one uniform-prior, uniform-leaf rollout3 unit; seeds 74024000–74024004, one guarded one-seed
+`bestbench` per unit; `gprofng` on 74024000 (V4 leaf) and 74024001 (uniform leaf); an offline replay of every 61st
+tree call from rollout3 74024002. Parity = byte-identical decision and MCTS action traces and identical non-timing
+result and MCTS summary rows (§437's `compare.py`).
+**Profile (baseline):** V4 leaf, 546 s process CPU: floor/`v_win` tree evaluation 110 s (20%; `nativeShopPlan`
+45.7 s, card-reward pick 51.1 s, removal pick 6.1 s inclusive), V4 shop gate 39.7 s. About 365,000 floor-model calls
+per run, 80% one-change rankings with a median of 4 rows, 20% shop subset enumerations with 66 rows on average;
+each call walked all 1,256 trees, so small calls were bound by the per-tree walk. Uniform leaf, 332 s: trees 8%, of
+which the batched floor-model calls are only 8.0 s.
+**Change:** `CompactTreeNet` keeps a packed copy of its trees (8-byte nodes, preorder with the yes child next to
+its parent) for `predict()` and a new batched `predictDeltas()`, which takes candidates as their values at the
+varying features only and follows the base path until the first varying split. The shop plan, card pick and
+removal pick pass column values instead of full 1,017-float rows; the shop plan values all subsets in one call and
+skips ranking removal targets when the removal is unaffordable (no candidate could include it).
+**Result:** 11/11 units identical across the three builds (final build: rollout3 74024002–003, uniform leaf
+74024001, `off` 74024004). Replay: 118,385 rows identical, about 1.9x faster than §437. Tree CPU 110 → 51 s on
+74024000. Per-run time: rollout3 1.19x and 1.13x (paired), 1.15x (both profiled); uniform leaf 1.04x; `off` 1.00x.
+**Decision:** adopt (exact, no behavior change). After this the largest rollout3 costs are the V4 network in the
+rollout gates (`prepareState` 20%; the shop gate now costs more than the shop plan) and the CTM (§439).
+
+**Evidence:** [packet](evidence/shop_planner_speedup_20261012/README.md). Raw:
+`/mnt/project-files/shop-planner-442/raw.tar.gz`. Seeds 74024000–74024004 are now used.
+
+**Knowledge impact:** `predictDeltas` paragraph and tree-storage item in `architecture/out-of-combat.md`, compact
+tree row in `CODE_MAP.md`, rollout3 cost sentence in `evaluation/current-research.md`.
