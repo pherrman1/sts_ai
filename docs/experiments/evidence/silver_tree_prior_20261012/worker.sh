@@ -26,7 +26,7 @@ t = json.load(open(f"{r}/teacher.json")); t["ooc_policy"] = json.load(open(f"{r}
 json.dump(t, open(f"{r}/teacher.json", "w"), indent=2)
 PY
 for i in 0 1 2 3; do
-  seed=$((84000000 + 16*PER*(W-1) + PER*i))
+  seed=$((84000000 + 4*PER*(W-1) + PER*i))
   ( s=$(date +%s)
     rc=0; tools/seed_guard.sh "$RUN/one_combat" ctmsilvergen "$PER" 0 "$OUT/shard$i" "$seed" "$RUN/teacher.json" 2 > "$OUT/shard$i.log" 2>&1 || rc=$?
     echo "shard$i seed=$seed n=$PER rc=$rc wall=$(( $(date +%s)-s ))" >> "$OUT/shards.txt" ) &
