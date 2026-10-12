@@ -333,8 +333,9 @@ heuristic (+1.01 [+0.56, +1.52]) and 1.98 for the deployed V4; A20-fit and A0 fl
 On 53.5k such labels from fresh A20 seeds (§445), the best learned picker, a GBM on the strategic row, reaches
 1.73 floors regret on the same gold set: better than the heuristic (+0.53 [+0.25, +0.84]) but not shown better
 than V4 (+0.25 [−0.20, +0.69]). V4 Q-head retrains on these labels match V4, and halving the data barely moves
-the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolve (Inference). A live A20 test
-is pre-registered as §447.
+the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolve (Inference). Played live on every OOC decision at
+A20 (§447), the GBM wins 3 of 128 runs vs 16 for the current stack (floors −2.21 [−5.29, +0.80], NOT_SHOWN by
+the pre-registered rule), so Gold2 regret did not predict whole-run play.
 
 ## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
 
