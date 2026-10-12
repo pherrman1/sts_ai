@@ -16926,6 +16926,31 @@ whose win-rate effect §423 left open (wide CI), so the promotion note must name
 **Knowledge impact:** default stack in `architecture/out-of-combat.md` and `operations/environment-variables.md`; one
 sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 
+## §441 — deep OOC MCTS with uniform prior and uniform leaf policy: worse than the V4-guided `combo`, ties plain rollout3 at lower CPU (2026-10-12)
+
+**Question:** Philipp, 2026-10-12 08:51Z: "uniform prior and uniform leaf policy on 128 seeds with 4096 ooc simulations
+on 8 workers". §433's `combo` uses V4 as the tree prior and as the policy between the rollout combats; how does it play
+with both replaced by uniform choices?
+**Design:** [PREREG](evidence/ooc_uniform_441_20261012/PREREG.md). One arm, `uniform` = §433 `combo` (4096 simulations,
+`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, 3 rollout combats, native leaf, pathb-r2 CTM, flat exact-10k Silver) with
+`STS_OOC_MCTS_PRIOR=uniform` and `STS_OOC_MCTS_LEAF_POLICY=uniform`, `STS_OOC_PUBLIC_FUTURES=0` pinned (as §433). Code
+`b039e846` (main after #494), binary `8f5edf76…`. Seeds 76000000–127, paired with the §433 `combo`, `rollout3` and `off`
+units: §433 `combo` seed 76000000 reproduces byte-identically on this binary (result row, decision, action and support
+traces). 8 cloud workers × 16 seeds. Smokes 77009000–002. Primary: paired bootstrap 95% CI of uniform − combo (seed
+441); BETTER / WORSE / NOT_SHOWN.
+**Validity:** 128/128 units rc=0, no Silver stalls, config banners checked by grep, tar hashes checked.
+**Result:** **WORSE.** uniform 109/128 (85.2%) vs combo 119/128 (93.0%): −7.8 pp [−15.6, −0.8], discordant 7 vs 17,
+McNemar p = 0.064 (borderline); Δfloor −1.54 [−3.08, −0.15]; boss deaths 14 vs 4. Secondary: vs rollout3 (109/128)
+0.0 pp [−8.6, +8.6]; vs off (96/128) +10.2 pp [0.0, +19.5], p = 0.06. MCTS CPU per run 376 s (combo 1,495, rollout3 811,
+both on the pre-§436/§437 binary); V4 fallback 23.1%.
+**Interpretation (Inference):** V4 guidance is worth wins at 4096 simulations; the run does not say whether the prior or
+the leaf policy carries it. Without V4 the search is cheaper (the uniform leaf skips the native shop planner and V4
+gates) and matches plain rollout3 at lower cost (**Inference** across binaries: 376 s on this binary vs 811 s for rollout3 on the pre-§436/§437 binary; the gate seed ran 0.71x and §437 reports 1.13–1.7x for rollout3, so on equal binaries uniform likely costs about 0.5–0.8x of rollout3). `combo` did better on this half of the §433 cohort (93.0%) than on all 256 seeds (87.5%).
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_uniform_441_20261012/README.md). Raw: `/mnt/project-files/ooc-uniform-441/`
+(one tar per worker). Seeds 77009000–002 are now used; 76000000–127 reused on purpose.
+
 ## §443 — Production CTM at A20 (Stage 0) and the out-of-combat policy for an A20 corpus (G0) (2026-10-12)
 
 **Question:** Philipp: "Can we do the same for A20 ctm?" The production CTM (pathb-r2, A0 Path B only) gets
