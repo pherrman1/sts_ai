@@ -293,6 +293,10 @@ BattleContext *search::SilverSearcher::allocDecisionState() {
 std::vector<std::unique_ptr<BattleContext>> &search::SilverSearcher::spareDecisionStates() {
     // Per thread, shared by successive searchers (one per combat): an 8 KB
     // BattleContext is otherwise freed and rebuilt for every new node.
+    // Lifetime: this pool is destroyed at thread exit, so no SilverSearcher may
+    // be owned by a global, static or thread_local object (its destructor could
+    // run after the pool is gone). Today every searcher is a local or a member
+    // of a local, and the pool holds at most kMaxSpare states (~0.5 GB).
     thread_local std::vector<std::unique_ptr<BattleContext>> spare;
     return spare;
 }

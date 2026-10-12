@@ -16715,6 +16715,8 @@ scope), the CTM encoder 28% (almost all in `CombatTransitionRuntime::linear`), t
 **Change:** (1) CTM `linear` keeps a transposed weight copy and computes the rows in parallel lanes, each row's sum
 in the original order, so outputs are bit-identical. (2) Silver recycles decision states through a per-thread pool
 and fills a new node with one copy instead of a three-copy `std::swap`; `nodeCount()` and the reuse cap are unchanged.
+The pool keeps freed states alive between combats: the independent review measured peak memory +27–46 MB
+(+7–12%); the worst case is 65,536 states, about 0.5 GB per thread.
 **Parity:** result CSVs, OOC decision traces, MCTS action/support traces and all non-timing MCTS columns are
 byte-identical on rollout3 seeds 74014000, 74014001, 74014003 (full) and 74014002 (act 1), on `off` seeds
 74014000–74014011, and `test silver_profile` digests match.
@@ -16723,7 +16725,8 @@ byte-identical on rollout3 seeds 74014000, 74014001, 74014003 (full) and 7401400
 **Decision:** adopt (pure speedup, exact parity). Batched/SIMD simulator execution not pursued: the simulator is not
 where rollout3 spends its time, and the default-stack profile stays flat.
 
-**Evidence:** [packet](evidence/sim_speed_issue350_2026-10-11/README.md). Seeds 74014000–74014011 are now used.
+**Evidence:** [packet](evidence/sim_speed_issue350_2026-10-11/README.md). Seeds 74014000–74014011 and the reviewer's
+74014900–903 and 74014910–911 are now used.
 
 **Knowledge impact:** one sentence each in `architecture/combat-search.md` (state recycling) and the rollout3 cost
 paragraph of `evaluation/current-research.md`.
