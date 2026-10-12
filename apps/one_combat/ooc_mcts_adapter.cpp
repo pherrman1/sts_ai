@@ -1306,6 +1306,10 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
             if (!applied) {
                 if (!dependencies.continuationStep)
                     throw sts::search::OocSearchUnsupported("missing_continuation_step");
+                // Resampled queues are public samples; skip the fallback's
+                // encounter mixture there (ADR-0028).
+                std::optional<NativeOocResampledQueueScope> resampled;
+                if (options.sampleNoncombat) resampled.emplace();
                 dependencies.continuationStep(child.gc, child.path, rng);
             }
         }

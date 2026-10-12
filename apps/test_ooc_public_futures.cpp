@@ -74,17 +74,33 @@ int main() {
                 "fixture needs two distinct legal hidden encounters");
         const int strike = idx.at("d" + std::to_string(static_cast<int>(CardId::STRIKE_RED)));
         const auto model = cardModel(idx.at("nextFight0"), split, strike, raw[strike] + .5f);
-        unsetenv("STS_OOC_PUBLIC_FUTURES");
-        require(nativeOocValue(base, path, model) == model.predict(raw), "unset changed model prediction");
+        setenv("STS_OOC_PUBLIC_FUTURES", "0", 1);
+        require(nativeOocValue(base, path, model) == model.predict(raw), "zero changed model prediction");
         const int legacy = nativeFloorCardPick(base, path, model, 0, -.5);
         const int legacyOther = nativeFloorCardPick(changed, path, model, 0, -.5);
         require(legacy != legacyOther, "sentinel must expose the legacy hidden-dependent action");
-        setenv("STS_OOC_PUBLIC_FUTURES", "0", 1);
-        require(nativeFloorCardPick(base, path, model, 0, -.5) == legacy,
-                "explicit zero changed legacy card action");
-        require(nativeOocValue(base, path, model) == model.predict(raw), "zero changed model prediction");
         require(nativeOocPublicScorerCalls() == 0 && nativeOocPublicFutureCount() == 0,
                 "disabled public scorer reported actual use");
+
+        // Unset is the public default: identical to an explicit 8.
+        setenv("STS_OOC_PUBLIC_FUTURES", "8", 1);
+        const double explicit8 = nativeOocValue(base, path, model);
+        const int explicit8Pick = nativeFloorCardPick(base, path, model, 0, -.5);
+        unsetenv("STS_OOC_PUBLIC_FUTURES");
+        require(nativeOocPublicFutureCount() == 8 && nativeOocValue(base, path, model) == explicit8
+                    && nativeFloorCardPick(base, path, model, 0, -.5) == explicit8Pick
+                    && nativeFloorCardPick(changed, path, model, 0, -.5) == explicit8Pick,
+                "unset is not the public8 default");
+        resetNativeOocPublicScorerCalls();
+        {
+            // OOC MCTS playouts already carry a resampled queue: no mixture.
+            NativeOocResampledQueueScope resampled;
+            require(nativeOocValue(base, path, model) == model.predict(raw)
+                        && nativeOocPublicScorerCalls() == 0,
+                    "resampled-queue scope still mixed futures");
+        }
+        require(nativeOocValue(base, path, model) == explicit8, "mixture not restored after scope");
+        resetNativeOocPublicScorerCalls();
 
         setenv("STS_OOC_PUBLIC_FUTURES", "8", 1);
         const auto snapshot = test::oocStateFingerprint(base);
@@ -179,15 +195,16 @@ int main() {
             require(threw, std::string("invalid public-future count accepted: ") + invalid);
         }
         setenv("STS_OOC_PUBLIC_FUTURES", "8", 1);
-        auto unsupported = base;
-        unsupported.act = 4;
-        bool rejectedAct = false;
-        try { (void)nativeOocValue(unsupported, path, model); }
-        catch (const std::runtime_error &) { rejectedAct = true; }
-        require(rejectedAct, "unsupported act retained true hidden inputs");
+        // Act 4 encounters are fixed and public: no mixture, plain prediction.
+        auto act4 = base;
+        act4.act = 4;
+        resetNativeOocPublicScorerCalls();
+        require(nativeOocValue(act4, path, model) == model.predict(richFeatureVec(act4, path))
+                    && nativeOocPublicScorerCalls() == 0,
+                "act 4 should be scored without an encounter mixture");
         unsetenv("STS_OOC_PUBLIC_FUTURES");
         std::cout << "PASS public native OOC futures: hidden-sensitive legacy control, "
-                     "unset/zero equivalence, 3-act suffix/RNG invariance, all fallback decisions, "
+                     "zero legacy, unset=public8 default, resampled-queue scope, act-4 passthrough, 3-act suffix/RNG invariance, all fallback decisions, "
                      "logistic mixture, source-state preservation, invalid config\n";
         return 0;
     } catch (const std::exception &error) {
