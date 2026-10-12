@@ -14,6 +14,7 @@
 4. Gold2 scoring of the V4 models: the §432 recipe (`../v4_a20_retrain_20261009/gold2/README.md`, `tsq.py` patch) applied to each `*_best_qtop1.pt`.
 5. GBM pickers: `gbm_rank.py` (log in `gbm_rank.log`) and the learning curve `gbm_lc.py` (`gbm_lc.log`).
 6. `score_gold2c.py` builds the combined table `gold2_score_sbl.txt` on the 397 common decisions.
+7. Models and per-decision Gold2 files: `/mnt/project-files/v4-a20-retrain/sbl-models-gold2.tar.gz` (sha256 `f3e8acaa…`, 55 files). It holds the SBL30/SBLC/SBLCF checkpoints, metrics and logs; the `g2eval_*` Gold2 scorings of every V4 model incl. the deployed one (`g2eval_v4final*`); `gbm_*_gold2.json` (per-decision GBM regrets incl. the learning curve); the boosters `gbm_squarederror.json` and `gbm_pairwise.json`; and `split_sbl.json`. With `score_gold2c.py` these reproduce every CI in the ledger entry, including V4 − GBM.
 
 ## Forward-map A20 trees (`a20_trees_fm/`)
 - `build_fm.py` and `train_fm.py` are `build2.py`/`train.py` from the §432 packet with feature list `feats_fm.txt`: the 448 `v_rich` features, minus `nextEliteId` and `nextFight0-2`, plus `fmDElite..fmCTreasure`, `curMapX` and `curMapY` (456 in total).

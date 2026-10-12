@@ -16929,11 +16929,11 @@ sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 ## §445 — A20 short-branch label corpus (53.5k decisions): learned OOC models beat the heuristic but are not shown better than V4; more labels barely help (2026-10-12)
 
 **Question (Philipp, 2026-10-11 20:59Z "Label run", 21:20Z "8 hours per worker"):** do short-branch labels with independent futures (§432), generated at scale on fresh A20 seeds, train an OOC model that picks better than the deployed V4?
-**Design:** 25 cloud workers, 8 h each. Brief and per-worker setup are in the packet. Frozen main `07a93e36`, Release `one_combat` sha256 `ea307e30…`.
+**Design:** 25 cloud workers, 8 h each. Brief and per-worker setup are in the packet. Frozen main `07a93e36`, Release `one_combat` sha256 `ea307e30…`. The commit and binary hash are self-reported by the workers (the provenance JSONs carry an empty git sha and no binary or tree hashes); the recorded config is identical across all 534 seeds.
 - Labels: `strategicgen2` ASC 20, Silver 2k with the natpert prior (weight 400), `STRATEGIC_SAMPLE_ALL=1`, `STRATEGIC_BRANCH_FIGHTS=3`, `FUTURES=8`, `RESEED=1`, `BRANCH_SIMS=2000`.
 - Bootstrap trees: A0 (`labelFloor`) and A20 full-data trees `v_{rich,win}_a20_full` (sha256 `d8ab1349…` / `6f5fbfd0…`; 157k `strategicgen` v1 runs; held-out floor R² 0.509, win AUC 0.851) via `STS_CF_ALT_BOOT_*` (`labelFloorAlt`).
 - Seeds: 75000000+10000*W+k; smoke 75009000-75009001. Per-seed timeout 4 h.
-- Corpus: 534 finished seeds, 252,015 rows, 53,535 labelled decisions, 42,137 with ≥2 options. 83 seeds were cut by the timeout or the 8 h stop and are excluded. 75110003 crashed with the Silver depth bound.
+- Corpus: 534 finished seeds, 252,015 rows, 53,535 labelled decisions, 42,137 with ≥2 options. 83 seeds were cut by the timeout or the 8 h stop and are excluded; this drops the longest runs, so late-run decisions are under-represented. 75110003 crashed with the Silver depth bound.
 - Training target: the A20 floor-tree label, with an 80/20 run-grouped split (428/106 seeds).
 - Models:
   - (a) V4 Q-head warm-started from the deployed checkpoint, absolute floor target (`STRAT_Q_ONLY=1`).
@@ -16961,7 +16961,7 @@ sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 - Learning curve for (d), trained on 25 / 50 / 100% of the training seeds: held-out SB regret 1.19 / 1.14 / 1.10; Gold2 regret 1.77 / 1.71 / 1.72 (406 decisions).
 - Side result: refitting the A20 floor/win trees with the 12 forward-map columns and without the 4 hidden futures (§438) on the same 157k runs and split gives floor RMSE 9.82 vs 9.90 (R² 0.517 vs 0.509). Win is unchanged (AUC 0.851, log loss 0.1440 vs 0.1439).
 
-**Interpretation (Inference):** the labels rank options well (1.25), but models that see only the pre-decision state and the action ids recover less than half of that gain over the heuristic. Doubling the data moves Gold2 regret by less than its noise, so more labels of this kind are not the bottleneck. A learned A20 OOC policy from these labels is not shown better than V4 offline. A live test was not run. **Open question:** whether scoring options online with short branches (the label procedure itself, about 45 s per decision on one core) is worth its cost at chosen decision types.
+**Interpretation (Inference):** the labels rank options well (1.25), but models that see only the pre-decision state and the action ids recover about half of that gain over the heuristic (GBM 0.53 of 1.01 floors). More labels give small held-out gains (held-out regret 1.19 / 1.14 / 1.10 at 25 / 50 / 100%) that Gold2 cannot resolve (25% vs 100%: +0.05 [−0.09, +0.20]) (Inference). Held-out label regrets use the split that picked early stopping, so they are slightly optimistic; Gold2 is unaffected. A learned A20 OOC policy from these labels is not shown better than V4 offline. A live test was not run. **Open question:** whether scoring options online with short branches (the label procedure itself, about 45 s per decision on one core) is worth its cost at chosen decision types.
 
 **Evidence:** [packet](evidence/a20_sb_labels_20261012/README.md). Raw data: `/mnt/project-files/v4-a20-retrain/sblabels-w{0..24}.tar.gz` (sha256s in the packet). Seeds 75000000–75249999 (block reserved; used k < 1000 per worker) and smoke 75009000–75009001 are now used.
 
