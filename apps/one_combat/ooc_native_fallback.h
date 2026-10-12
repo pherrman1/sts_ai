@@ -10,13 +10,24 @@
 
 namespace one_combat {
 
-// Research-only public encounter mixture. STS_OOC_PUBLIC_FUTURES unset/0
-// preserves the existing prediction exactly; a positive count replaces the
-// four unrevealed encounter identities with sampled, public-history-conditioned
-// futures. No source state or RNG is changed.
+// Public encounter mixture. STS_OOC_PUBLIC_FUTURES unset means 8: the four
+// unrevealed encounter identities are replaced with 8 sampled,
+// public-history-conditioned futures and predictions are averaged. Explicit 0
+// restores the legacy prediction exactly. Act 4 (fixed encounters) is scored
+// without a mixture. No source state or RNG is changed.
 double nativeOocValue(const sts::GameContext &gc, const PathHistory &path,
                       const CompactTreeNet &model);
 int nativeOocPublicFutureCount();
+// While alive on this thread, fallback scoring uses the state's own encounter
+// fields with no mixture. For OOC MCTS playouts whose queues were already
+// resampled from public history (ADR-0028); never for real decisions.
+class NativeOocResampledQueueScope {
+public:
+    NativeOocResampledQueueScope();
+    ~NativeOocResampledQueueScope();
+    NativeOocResampledQueueScope(const NativeOocResampledQueueScope &) = delete;
+    NativeOocResampledQueueScope &operator=(const NativeOocResampledQueueScope &) = delete;
+};
 bool nativeOocShopDeckSizeFixEnabled();
 bool nativeOocCardWinRankEnabled();
 std::uint64_t nativeOocPublicScorerCalls();

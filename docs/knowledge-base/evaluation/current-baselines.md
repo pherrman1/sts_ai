@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-10-08 for default ascending fallback REMOVE ordering; 2026-09-27 for the OOC MCTS CTM stack default when enabled; 2026-09-25 for the native one-action-root bypass (§354) and native-only Silver (ADR-0022); 2026-09-24 for the native Silver default (ADR-0021) and Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
+Last verified: 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-09-27 for the OOC MCTS CTM stack default when enabled; 2026-09-25 for the native one-action-root bypass (§354) and native-only Silver (ADR-0022); 2026-09-24 for the native Silver default (ADR-0021) and Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
 artifacts relocated from `build/` to `models/`; V4 token-net artifact =
 skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 key collection is
 explicitly opt-in — pre-32281a2 baselines are Act-3-only).
@@ -75,7 +75,11 @@ explicitly enables key collection. `STS_STOP_AFTER_ACT=3` additionally makes
 the Act-3 horizon explicit for comparisons.
 ## Baseline table
 
-**Current native OOC information-boundary caveat (2026-10-08).** At campaign
+**Native OOC information boundary (updated 2026-10-12).** Since ADR-0028 the
+default native fallback scores 8 public encounter futures
+(`STS_OOC_PUBLIC_FUTURES` unset = 8), so default runs no longer read the
+realized `nextEliteId`/`nextFight0..2`; every row below predates that default,
+and reproducing one needs `STS_OOC_PUBLIC_FUTURES=0`. Earlier caveat: at campaign
 base `a4b3df35`, `STS_FAIR=1` does not itself sanitize the native fallback's
 four unseen encounter-identity features: the caller can pass the actual
 unrevealed queue identities to the tracked floor/win trees. The overnight
@@ -91,7 +95,7 @@ and [current OOC controls](../architecture/out-of-combat.md).
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
-| **Current executable configuration**, verified 2026-10-03 | Caller-selected | Caller-selected | Caller-selected | Project-fair Silver only (ADR-0020), native only (ADR-0021, ADR-0022; the vendored model was removed); learned stopping (ADR-0026, model `gbt-770201c31f7b`) for `run`/`bestbench`/`reprobench` without a sims argument, flat caller budget otherwise | Native tracked floor/win trees; heuristic path; shop-V; win-rest; no Searcher2-era combat models; `STS_OOC_MCTS` remains off unless explicitly enabled | Configuration only; see the Silver reference row below for a measurement. |
+| **Current executable configuration**, verified 2026-10-03 | Caller-selected | Caller-selected | Caller-selected | Project-fair Silver only (ADR-0020), native only (ADR-0021, ADR-0022; the vendored model was removed); learned stopping (ADR-0026, model `gbt-770201c31f7b`) for `run`/`bestbench`/`reprobench` without a sims argument, flat caller budget otherwise | Native tracked floor/win trees with 8 public encounter futures (ADR-0028, since 2026-10-12); heuristic path; shop-V; win-rest; no Searcher2-era combat models; `STS_OOC_MCTS` remains off unless explicitly enabled | Configuration only; see the Silver reference row below for a measurement. |
 | **Opt-in OOC MCTS combat-transition default**, verified 2026-09-27 | Gate 2 integration: 991008–991015 (8 pairs); Gate 3 plumbing: 991016–991017 (2 smokes) | 0 | 10,000 real-combat Silver and 2,048 OOC MCTS simulations per run | Project-fair native Silver; paired Gate 2 controls/treatments | When `STS_OOC_MCTS=1` and `STS_OOC_MCTS_COMBAT_MODEL` is unset: tracked DeepSets + standard Attention Brew fallback + qualified active-Lizard correction | Gate 2 completed all 16 runs; treatment used the Lizard path 120,708 times with zero Lizard support failures. Gate 3 startup logs and combat telemetry showed the automatic stack in both smoke cases; the forced-Tail smoke made 17,610 preparations and 17,608 samples. Two existing `smoke_bomb` exclusions occurred. The ordinary smoke's subprocess exit code was not captured after a validator error, and the auxiliary config JSON line is malformed; startup and combat telemetry remain intact. Outcomes are plumbing evidence only; OOC MCTS remains globally off. See ledger-06 §366. |
 | **Silver default whole-run reference (ADR-0018)**, 2026-09-24 (`EXPERIMENTS.md` §340, commit `2a602f6`, 4-core local) | 126700–126827 (128) | 0 | Adaptive Silver: 500 to 10,000 sims/decision (`STS_SILVER_ADAPTIVE=1`) | Project-fair Silver, reuse cap 32,768 `allocated` | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; keys skipped | Act-3 win **64.8%** (83/128; Wilson 95% [56.2%, 72.6%]); mean floor 48.26; 38.05 CPU s/run. Vendored-backend reference; see the native row below. |
 | **Native Silver default reference (ADR-0021)**, 2026-09-24 (`EXPERIMENTS.md` §348, commit `f81eabb`, 4-core local) | 126700–126827 (128) | 0 | Adaptive Silver: 500 to 10,000 sims/decision (`STS_NATIVE_SILVER=1 STS_SILVER_ADAPTIVE=1`) | Project-fair native Silver on the main engine, reuse cap 32,768 | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; keys skipped | Act-3 win **67.2%** (86/128); mean floor 47.81; 37.37 CPU s/run. Paired with the vendored row: +2.3 pp, 95% CI [−6.2, +10.9] pp. The Runic Dome hidden-intent fix (PR #321) landed after this run. |
