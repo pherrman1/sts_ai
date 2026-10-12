@@ -16825,3 +16825,103 @@ as presence (floor −0.19 [−0.38, +0.01]) on the next retrain; no deletions o
 JSON, scored tables). No seeds used (the 74016000–74016999 block stays unused).
 
 **Knowledge impact:** one paragraph after the #397/#396 paragraphs in `evaluation/current-research.md`.
+
+## §439 — CTM in rollout3: about a quarter of CPU, almost all DeepSets token MLPs; exact per-token memo 2.8x on the CTM, 1.20–1.24x per run (2026-10-12)
+
+**Question:** where does the combat transition model spend its time in §422 rollout3 on current `main` (after
+§436/§437), how large is its share, and can it get cheaper with bit-identical play?
+**Method:** baseline `main` `b039e846`, Release `one_combat`, §422 `rollout3`/`off` environments plus
+`STS_OOC_CPU_PROFILE=1`, `gprofng` PC sampling, seeds 74022000–74022005 (one rollout3 unit with
+`STS_OOC_MCTS_PRIOR=uniform`).
+**Profile:** CTM `combat_resolve` 150 s of 619 s process CPU (24%; uniform prior 118 of 479 s, 25%), 304k
+unprepared samples in leaf rollouts at 0.49 ms each. Each sample ran four DeepSets encoders (survival, max_hp,
+hp, potion), each a two-layer MLP per card, relic and potion token. Other large rollout3 costs:
+`predictVariants` in the native shop planner 23%, the V4 network about a quarter, real Silver combats 12%.
+**Change:** (1) a per-thread memo of each token's MLP output, keyed by runtime instance, encoder group and the
+token's integer fields, with pools still summed in token order; (2) the pathb-r2 fast artifact's `max_hp`
+encoder is a byte-identical copy of its `hp` encoder (checked at load), so the unprepared near-full sampler
+takes maxHP from the hp encoding, as the prepared path already did.
+**Parity:** result, OOC decision, MCTS action/support traces and non-timing MCTS columns byte-identical on rollout3
+74022000, 74022002, 74022003, uniform-prior 74022001 and `off` 74022004–005 (final binary re-checked on 74022002
+and `off` 74022004–005). New ctest `ctm_encoder_memo_parity`: two DeepSets artifacts, memoized and interleaved, against the
+unmemoized reference on 62 fixture inputs (1,240 bitwise comparisons); removing the encoder group, the runtime
+instance or any key field from the memo key makes it fail.
+**Speed:** CTM CPU 2.8x lower (150–193 → 42–69 s on the four rollout3 seeds); per run 1.20x (paired 74022002,
+74022003), 1.23x (74022000 process CPU, both profiled), 1.24x (uniform prior); `off` unchanged. The CTM is now about
+10% of rollout3 CPU.
+**Decision:** adopt (pure speedup, exact parity). Pointer pre-resolution for the remaining CTM `linear` calls is not
+worth a change at about 10% share; the next rollout3 levers are the shop planner and the V4 network, not the CTM.
+
+**Evidence:** [packet](evidence/ctm_encoder_memo_20261012/README.md). Raw: `/mnt/project-files/ctm-speed-439/raw.tar.gz`.
+Seeds 74022000–74022005 are now used.
+
+**Knowledge impact:** CTM cost sentence in the rollout3 paragraph of `evaluation/current-research.md`; memo sentence
+in `architecture/out-of-combat.md`.
+
+## §434 — #397 live: the hidden encounter queue in the native OOC fallback is not shown to change wins (2026-10-11)
+
+**Question:** when the V4 gates decline a card, shop, removal or campfire choice, the native fallback scores it with
+the tracked floor/win trees on a rich row that holds the realized unrevealed `nextEliteId` and `nextFight0..2`;
+`STS_FAIR=1` does not remove them (§371 left this live dependence untested). How much playing strength does that
+hidden information carry on the current research base?
+**Design:** [PREREG](evidence/vwin_hidden_queue_live_397_20261011/PREREG.md), frozen at launch (share copy 21:46:21Z, first unit
+21:46:17Z, about 54 s per seed; its "~21:55Z" line is wrong). Code main
+`491bc21b`, Release binary `bab14cd5…`. Both arms are the §422 `off` environment (exact-10k fair Silver, V4 gates
+margin 1.0, OOC MCTS off, `STS_REST_WIN=0`, keys off, act-3 stop); sole difference `STS_OOC_PUBLIC_FUTURES` 0
+(legacy) vs 8 (public8: average over 8 public-history-conditioned encounter samples). Seeds 74015000–127, smoke
+74015900, one 4-CPU cloud container. Primary: paired bootstrap 95% CI of Δwin (public8 − legacy); LEAK_HELPS if the
+upper bound < 0, PUBLIC8_BETTER if the lower bound > 0, else LEAK_NOT_SHOWN.
+**Validity:** 8/8 units rc=0, every seed once per arm; public scorer receipts `futures=8` on all 128 public8 seeds
+(mean 23 scorer calls per run), none in legacy.
+**Result:** **`LEAK_NOT_SHOWN`.** legacy 103/128 (80.5%), public8 104/128 (81.2%); Δwin +0.8 pp [−4.7, +6.3],
+discordant 6 vs 5 (McNemar p = 1.0); Δfloor −0.18 [−1.13, +0.83]; 54.1 vs 53.2 s per run. 73/128 trajectories
+diverged, but 112/128 seeds ended with the same outcome and floor. Deaths by act legacy 1/7/17, public8 0/10/14.
+**Interpretation (Inference):** the hidden queue changes many fallback choices but no strength advantage is visible;
+128 pairs cannot resolve effects below about ±8 pp (pre-registered); the observed CI still allows the leak to be
+worth up to 4.7 pp. Public8 costs no measurable time. Baselines measured with the legacy fallback (e.g. the §422
+`off` arm) are therefore not shown to be inflated by it, within that bound.
+**Decision:** no default change in this entry. Making `STS_OOC_PUBLIC_FUTURES=8` the default (an
+information-boundary correction, not a strength change) is Philipp's call.
+
+**Evidence:** [packet](evidence/vwin_hidden_queue_live_397_20261011/README.md). Raw:
+`/mnt/project-files/vwin-hidden-397/s434-raw.tar.gz`. Seeds 74015000–127 and 74015900 are now used.
+
+**Knowledge impact:** one sentence each in the rich `v_win` information-boundary section of
+`operations/ooc-label-pipeline.md`, the `STS_OOC_PUBLIC_FUTURES` row of `operations/environment-variables.md` and the
+#397 paragraph of `evaluation/current-research.md`.
+
+## §435 — Lizard Tail support in the default OOC MCTS CTM stack (2026-10-11)
+
+**Question:** Philipp: "settle a lizard tail support for a0. Then we don't need the fallback." The default OOC MCTS
+CTM stack (#418 pathb-r2) refuses imagined combats with an unused Lizard Tail plus a Fairy Potion
+(`active_unqualified_lizard`: the correction steps aside at `fairy_potion_exact_boundary` and the ordinary CTM rejects
+the active Tail) or plus Entropic Brew (`active_lizard_entropic_brew_unsupported`). Each refusal aborts the whole root
+search and V4 decides; in §427–§430 these were 98–100% of the support aborts. §423 (A0) and §426 (A20) showed that the
+§423 candidate fast artifact prices those states and removes the aborts (NOT_SHOWN on wins and regret).
+**Change (no new model):** the §423 candidate becomes the default fast artifact of the automatic OOC MCTS stack:
+`combat_transition_deepsets_pathb_r2_lizard.native` (`c6d56bbc…`, the #418 pathb-r2 tensors with `lizardFairy` and
+`lizardBrew` in its header), pinned by a built-in copy of its manifest (`64da1776…`, byte-identical to
+`candidate-v3-lizard.json`), as #418 did for pathb-r2. The #418 manifest (`d9d8377e…`) stays built in, so the #418 fast
+artifact (`90806c25…`) still loads as `production` (rollback, reproduction of earlier runs); a load picks the built-in
+manifest that lists the artifact's bytes. The §423 env (`arm_env.sh`, explicit model plus manifest) still loads the
+same bytes, now reported as research candidate `pathb-r2` as before. OOC MCTS stays off by default (ADR-0027), so
+default play is unchanged.
+**Support census:** [packet](evidence/ooc_lizard_default_20261011/README.md). rollout3 at 256 simulations, A0, seeds
+74011000–007, old (#418 stack, explicit) vs new (automatic default): support aborts 47 → 0 (Fairy + Tail 41 → 0,
+Brew + Tail 6 → 0), V4 fallback 7.1% → 2.5%; the remaining 25 fallbacks per arm are `root_boundary`, not support
+failures. 7/8 old runs hit a Lizard abort. Wins 7/8 vs 8/8 (descriptive only).
+**Interpretation:** active Lizard Tail no longer forces a V4 fallback at A0 on the default stack. Mark of the Bloom +
+Tail stays on its exact path (supported). This settles support, not strength: §423 found no win-rate gain from
+pricing these states (−3.1 pp [−10.9, +4.7]) and §426 none on A20 regret. Other boundaries (`hp_envelope`,
+Writhing Mass + Ritual Dagger) are unchanged (#369).
+**Decision:** default OOC MCTS CTM stack switched; OOC MCTS remains off by default. Runs pinned to earlier commits are
+unaffected; a run on this commit with the automatic stack now matches the §423 arm's CTM. Reproducing §422 or
+§424–§430 on a later commit needs the explicit #418 settings (`STS_OOC_MCTS_COMBAT_MODEL=…pathb_r2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=…near_full_escape_pathb_r2.native`, `STS_OOC_MCTS_ACTIVE_LIZARD=1`). §433 also
+measures the #418 model; a rollout3 promotion on that evidence that runs on this stack also adopts the Lizard model,
+whose win-rate effect §423 left open (wide CI), so the promotion note must name the CTM.
+
+**Evidence:** raw `/mnt/project-files/ooc-lizard-default-435/`. Seeds 74011000–74011007 are now used.
+
+**Knowledge impact:** default stack in `architecture/out-of-combat.md` and `operations/environment-variables.md`; one
+sentence in the rollout3 paragraph of `evaluation/current-research.md`.

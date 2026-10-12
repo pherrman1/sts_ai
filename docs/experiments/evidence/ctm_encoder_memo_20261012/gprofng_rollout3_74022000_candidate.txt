@@ -1,0 +1,36 @@
+Functions sorted by metric: Exclusive Total CPU Time
+
+Excl. Total     Incl. Total      Name
+CPU             CPU
+   sec.      %     sec.      %
+503.332 100.00  503.332 100.00   <Total>
+132.573  26.34  132.893  26.40   one_combat::CompactTreeNet::predictVariants(std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > con
+ 39.147   7.78   39.147   7.78   expm1f
+ 26.639   5.29   79.305  15.76   OocStrategicTokNet::prepareState(float const*, int, int const (*) [3], int, int const (*) [2], int, int const (*) [2]) const [clone .cons
+ 23.607   4.69   36.686   7.29   OocStrategicTokNet::encodeDeck(int, int const (*) [3], float*) const [clone .constprop.1]
+ 23.376   4.64   23.426   4.65   one_combat::CompactTreeNet::predict(std::vector<float, std::allocator<float> > const&) const [clone .isra.0]
+ 17.172   3.41   62.053  12.33   one_combat::takeQualifiedV4CardReward(sts::GameContext&, one_combat::PathHistory const&, OocStrategicTokNet const&, double) [clone .const
+ 16.472   3.27   19.634   3.90   one_combat::CombatTransitionRuntime::linear(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::
+ 13.880   2.76   53.027  10.54   tanhf
+ 13.089   2.60   28.930   5.75   one_combat::oocOnePlyUpgradeSelectPolicy(sts::GameContext&, sts::search::ScumSearchAgent2 const&)
+ 11.468   2.28   37.846   7.52   one_combat::oocOnePlyShopPolicy(sts::GameContext&, sts::search::ScumSearchAgent2 const&)
+ 10.157   2.02   10.157   2.02   <static>@0x188341 (<libc.so.6>)
+  9.066   1.80   17.532   3.48   <static>@0xaab1b (<libc.so.6>)
+  8.416   1.67    8.416   1.67   <static>@0xa8e24 (<libc.so.6>)
+  7.105   1.41   21.825   4.34   OocStrategicTokNet::encodeStateAction(OocStrategicTokNet::PreparedState const&, unsigned int, int const*, int, int, float const*, int, fl
+  6.224   1.24    6.224   1.24   <static>@0x7f85d98b57c0 ([vdso])
+  6.194   1.23   11.298   2.24   one_combat::(anonymous namespace)::sampleNoncombatFuture(sts::GameContext&, std::mersenne_twister_engine<unsigned long, 64ul, 312ul, 156u
+  5.244   1.04   30.491   6.06   sts::BattleContext::executeActions()
+  4.673   0.93    4.673   0.93   std::_Hashtable<std::array<int, 4ul>, std::pair<std::array<int, 4ul> const, std::vector<float, std::allocator<float> > >, std::allocator<
+  4.593   0.91   44.471   8.84   sts::search::SilverSearcher::rolloutToEnd(sts::BattleContext&, int)
+  4.303   0.85    9.176   1.82   sts::BattleContext::operator=(sts::BattleContext const&)
+  4.093   0.81    4.093   0.81   sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const
+  3.683   0.73   17.963   3.57   malloc
+  3.572   0.71    5.794   1.15   sts::BattleContext::drawCards(int)
+  3.322   0.66   68.778  13.66   sts::search::SilverSearcher::step()
+  3.282   0.65   62.614  12.44   one_combat::nativeShopPlan[abi:cxx11](sts::GameContext&, one_combat::PathHistory const&, one_combat::CompactTreeNet const&)
+  3.262   0.65    5.254   1.04   sts::Action::operator()(sts::BattleContext&) const
+  3.052   0.61   14.000   2.78   one_combat::oocOnePlyRestPolicy(sts::GameContext&, sts::search::ScumSearchAgent2 const&)
+  2.802   0.56   27.369   5.44   one_combat::CombatTransitionRuntime::encode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, one_c
+  2.552   0.51    2.882   0.57   std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<cha
+

@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433); 2026-10-11 for the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -270,7 +270,14 @@ rollouts (§437, bitwise identical play) cuts that by a seed-dependent 1.13–1.
 support aborts. This reproduces §277 (old V2 CTM) and contrasts with the `screengbm` leaf (§384,
 −22 pp) and the 0/1 boss-rollout leaf (§391, 9/32, saturated value). Pricing the Lizard states with a
 Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`) removes the aborts (fallback 2.4%) but
-does not win more: 86.7% vs 89.8%, −3.1 pp [−10.9, +4.7], NOT_SHOWN. At 512 simulations (§424, 331 s per run)
+does not win more: 86.7% vs 89.8%, −3.1 pp [−10.9, +4.7], NOT_SHOWN. Since §435 that Lizard-capable artifact is the default OOC MCTS CTM, so
+rollout3 on the automatic stack no longer aborts on active Lizard Tail states (A0 census: 47 aborts → 0 on 8 seeds). §422 and §424–§430
+ran the automatic stack when it was the #418 model; to reproduce them on a commit after §435, add
+`STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native` and
+`STS_OOC_MCTS_ACTIVE_LIZARD=1` (or run their recorded commits). Likewise a rollout3 promotion based on §433 rests
+on the #418 model; enabling rollout3 after §435 also brings in the Lizard model, whose win-rate effect §423 did
+not show either way, so a promotion note must name the CTM it was measured with. At 512 simulations (§424, 331 s per run)
 rollout3 lands between off and 2048: 84.4% wins, +5.5 pp [−3.9, +14.8] over off and −5.5 pp [−12.5, +1.6] vs 2048,
 both NOT_SHOWN. One-setting variants on the same seeds (§427–§430): fewer sampled outcomes per chance node
 (`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3] (p = 0.02 uncorrected, 0.08 Bonferroni over four arms), back to the off win rate; 4096 simulations
@@ -282,7 +289,10 @@ rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp
 for a default proposal, prior and merging variants.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
-rollout3 run by about 10%.
+rollout3 run by about 10%. On top of §436/§437 the CTM was still about a quarter of rollout3 CPU, almost all in the
+DeepSets per-token MLPs of unprepared leaf-rollout samples; an exact per-token memo plus reuse of the shared HP
+encoder (§439, bitwise identical play) makes the CTM 2.8x cheaper and a rollout3 run 1.20–1.24x faster, leaving
+the CTM at about 10%. The largest remaining rollout3 costs are the native shop planner and the V4 network.
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
@@ -1372,8 +1382,10 @@ runtime's built-in manifest `d9d8377e…`, so default runs report identity
 `STS_OOC_MCTS_COMBAT_MODEL` to this `lizard_t2` file,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL` to the `except_smoke_v2` file and
 `STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418 stack. `STS_OOC_MCTS` itself remains
-off by default. Active Lizard + Entropic Brew, Fairy Potion, and Mark of the
-Bloom remain excluded or exact-path boundaries. The original invalid cohort
+off by default. On those stacks active Lizard + Entropic Brew, Fairy Potion, and
+Mark of the Bloom are excluded or exact-path boundaries; since §435 the default
+stack prices Brew and Fairy (`lizardBrew`, `lizardFairy`), and Bloom stays on
+its exact path. The original invalid cohort
 remains preserved separately from the successful follow-up.
 
 Two no-model-override Gate 3 smokes on frozen implementation
@@ -2484,8 +2496,10 @@ counts are public. Retraining the A3 X1 recipe without the four hidden fields
 was `INCONCLUSIVE` (3-seed mean VALIDATION NLL 0.4458 versus 0.4485 with them),
 with no sign the leak helps. XGBoost seed noise (~0.007-0.010 NLL) exceeds the
 question's 0.002 materiality and the A3 X1 grid spread, so single-seed A3
-selection should not be over-interpreted. Public-history/derived-probability
-stages of #397 remain open on the 457-feature public-safe baseline.
+selection should not be over-interpreted. The public-history/derived-probability
+stages of #397 were tested on that baseline in §§374–376 and §378; no family was adopted.
+Live (ledger-06 §434): the native fallback's use of the realized queue is not shown to
+change wins; legacy 103/128 vs `STS_OOC_PUBLIC_FUTURES=8` 104/128, Δ +0.8 pp [−4.7, +6.3].
 #396 Stage 1 (ledger-06 §418): removing the forward-map block from that
 baseline was `INCONCLUSIVE` (+0.0050 NLL, CI includes 0, about twice the
 retraining null), removing `bossId` also `INCONCLUSIVE` (+0.0012). Stage 2
