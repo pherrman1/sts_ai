@@ -664,6 +664,10 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         Tensor t;t.shape=entry.second;size_t count=1;for(int dim:t.shape) { require(dim>0 && dim<=4096,"combat tensor dimension");count*=dim; }
         t.values.resize(count);
         for(float &value:t.values) { uint32_t bits=u32();std::memcpy(&value,&bits,4);require(std::isfinite(value),"combat runtime nonfinite weight"); }
+        if(t.shape.size()==2) {
+            const int rows=t.shape[0],cols=t.shape[1];t.transposed.resize(count);
+            for(int i=0;i<rows;++i)for(int j=0;j<cols;++j)t.transposed[size_t(j)*rows+i]=t.values[size_t(i)*cols+j];
+        }
         weights.emplace(entry.first,std::move(t));
     }
     require(f.peek()==std::char_traits<char>::eof(),"combat runtime trailing bytes");
@@ -671,8 +675,12 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
 const CombatTransitionRuntime::Tensor &CombatTransitionRuntime::tensor(const std::string &name) const {return weights.at(name);}
 Vec CombatTransitionRuntime::linear(const std::string &name,const Vec &x) const {
     const auto &w=tensor(name+".weight"),&b=tensor(name+".bias");require(w.shape.size()==2 && size_t(w.shape[1])==x.size(),"combat linear dimension");
+    // Bit-identical to sum_j w[i][j]*x[j] per row (same order, starting at 0,
+    // then added to the bias), but vectorizable across rows.
+    const size_t rows=w.shape[0];Vec sum(rows,0.f);const float *wt=w.transposed.data();
+    for(size_t j=0;j<x.size();++j) {const float xj=x[j];const float *col=wt+j*rows;for(size_t i=0;i<rows;++i) sum[i]+=col[i]*xj;}
     Vec out=b.values;
-    for(int i=0;i<w.shape[0];++i) {float sum=0;for(size_t j=0;j<x.size();++j) sum+=w.values[i*x.size()+j]*x[j];out[i]+=sum;}
+    for(size_t i=0;i<rows;++i) out[i]+=sum[i];
     return out;
 }
 Vec CombatTransitionRuntime::embedding(const std::string &name,int index) const {

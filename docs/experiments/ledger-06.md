@@ -16731,6 +16731,34 @@ the 16–28x CPU cost.
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 
+## §436 — Simulator and CTM speed: rollout3 −10%, default stack −2%, play bit-identical (2026-10-11)
+
+**Question:** issue #350 follow-up. Where does CPU go on the default stack and in §422 rollout3 (936 vs 57 s per
+run), and is there a speedup that keeps play bit-identical?
+**Method:** baseline `491bc21b`, Release `one_combat` (no `-march`, no FMA), §422 `off` and `rollout3` environments,
+one thread, `gprofng` PC sampling, seeds 74014000–74014011.
+**Profile:** `off` is flat as in §360; the one new item is `BattleContext()` construction for new Silver nodes
+(4.2%). In rollout3 the Silver simulator is only about 5.5% of CPU; `CompactTreeNet::predict` takes 32% (#338's
+scope), the CTM encoder 28% (almost all in `CombatTransitionRuntime::linear`), the V4 network about 25%.
+**Change:** (1) CTM `linear` keeps a transposed weight copy and computes the rows in parallel lanes, each row's sum
+in the original order, so outputs are bit-identical. (2) Silver recycles decision states through a per-thread pool
+and fills a new node with one copy instead of a three-copy `std::swap`; `nodeCount()` and the reuse cap are unchanged.
+The pool keeps freed states alive between combats: the independent review measured peak memory +27–46 MB
+(+7–12%); the worst case is 65,536 states, about 0.5 GB per thread.
+**Parity:** result CSVs, OOC decision traces, MCTS action/support traces and all non-timing MCTS columns are
+byte-identical on rollout3 seeds 74014000, 74014001, 74014003 (full) and 74014002 (act 1), on `off` seeds
+74014000–74014011, and `test silver_profile` digests match.
+**Speed:** rollout3 paired run −9.6% wall, −9.8% MCTS CPU (1,607 → 1,452 s); act 1 −10.7%. `off` paired 4 seeds
+−2.1%; `test silver_profile 10000 4` −6.4% (median of 3).
+**Decision:** adopt (pure speedup, exact parity). Batched/SIMD simulator execution not pursued: the simulator is not
+where rollout3 spends its time, and the default-stack profile stays flat.
+
+**Evidence:** [packet](evidence/sim_speed_issue350_2026-10-11/README.md). Seeds 74014000–74014011 and the reviewer's
+74014900–903 and 74014910–911 are now used.
+
+**Knowledge impact:** one sentence each in `architecture/combat-search.md` (state recycling) and the rollout3 cost
+paragraph of `evaluation/current-research.md`.
+
 ## §437 — rollout3 leaf cost: the native shop planner, not `v_win` features; exact batching 1.13–1.7x, varies by seed (2026-10-11)
 
 **Question:** issue #338: can OOC MCTS leaf evaluation get cheaper with exact parity? Where does rollout3 (§422) spend
