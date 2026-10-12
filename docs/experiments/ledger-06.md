@@ -17049,3 +17049,26 @@ parity CSV under `~/Documents/sts/artifacts/vwin-refresh-334/x2b-public-444-2026
 **Evidence:** [packet](evidence/a20_sb_labels_20261012/README.md). Raw data: `/mnt/project-files/v4-a20-retrain/sblabels-w{0..24}.tar.gz` (sha256s in the packet). Seeds 75000000–75249999 (block reserved; used k < 1000 per worker) and smoke 75009000–75009001 are now used.
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §447 — A20 GBM ranker playing every OOC decision live: floors NOT_SHOWN by the pre-registered rule, wins clearly worse (3 vs 16 of 128) (2026-10-12)
+
+**Question (Philipp, 2026-10-12 10:54Z "Live test", 11:30Z "Run it"):** does the §445 A20 GBM ranker, best learned picker on the Gold2 set (1.73 floors regret vs V4 1.98, heuristic 2.26), win more floors than the current A20 stack when it plays every out-of-combat decision?
+**Design:** [PREREG](evidence/a20_gbm_ranker_20261012/PREREG.md), pushed before the run (`77c85b52`, renumbered `ef5af7c7`). Code `5cb1e86d`, Release `one_combat` sha256 `752e1e76…`. Model `models/candidates/ooc_gbm_ranker_a20_sbl.txt` (sha256 `372431c1…`, 1,157 trees). Both arms: the §419 stack (`silver_learned_stop/live_env.sh` V4 gates, learned stop, keys off, `STS_STOP_AFTER_ACT=3`), `bestbench 10000 128 20 79000000`. Treatment adds `STS_OOC_GBM_RANKER`, which takes every real OOC decision with ≥ 2 candidates after the chest, reward-relic and Match and Keep rules. Primary: mean paired floor difference with a 95% paired bootstrap CI (10,000 reps, RNG 20261012).
+**Parity:** on 628 live decisions of 8 smoke seeds the C++ scores match xgboost within 4.2e-6 and the argmax agrees everywhere.
+
+**Result:**
+
+| Arm | Wins | Mean floor | Reached Act 3 | Deaths Act 1 / 2 / 3 | s per run |
+|---|---|---|---|---|---|
+| Current stack (C) | 16/128 | 35.09 | 59 | 23 / 46 / 43 | 14.2 |
+| GBM ranker (T) | 3/128 | 32.88 | 43 | 13 / 72 / 40 | 10.7 |
+
+- Floor T − C: −2.21 [−5.29, +0.80]. Verdict by the pre-registered rule: `NOT_SHOWN`. Play differs on 118 of 128 seeds.
+- Wins (secondary, not pre-registered as a decision rule): T − C −10.2 pp [−16.4, −3.9]. Discordant pairs 16 C-only vs 3 T-only, exact binomial p = 0.004.
+
+**Interpretation (Inference):** the ranker survives Act 1 more often but loses far more runs in Act 2 and almost never wins. A one-step argmax over Gold2-style short-branch labels (three fights, then a value-tree bootstrap) does not price long-horizon run strength, and Gold2 regret on single decisions did not predict play over a whole run. The live result is worse than the offline ranking suggested; the GBM should not replace the V4 gates or the heuristic.
+**Decision:** no default change. `STS_OOC_GBM_RANKER` stays off. Seeds 79000000–79000127 and smokes 79009000–79009008 are now used.
+
+**Evidence:** [packet](evidence/a20_gbm_ranker_20261012/) (PREREG, parity check, smoke, `run.sh`, `analyze.py`, both result CSVs with bestbench sidecars, `result.txt`).
+
+**Knowledge impact:** this entry, its `EXPERIMENTS.md` index line and one sentence in `evaluation/current-research.md`; `STS_OOC_GBM_RANKER` is documented in `operations/environment-variables.md`.
