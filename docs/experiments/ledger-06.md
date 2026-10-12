@@ -16703,6 +16703,34 @@ more often and fall back to V4 on 37% of decisions.
 **Knowledge impact:** `LEAF_COMBATS` accepts 5 in `architecture/out-of-combat.md`; one sentence in the rollout3
 paragraph of `evaluation/current-research.md`.
 
+## §433 — fresh-seed confirmation: rollout3 at 4096 simulations with broad chance widening beats MCTS off (2026-10-12)
+
+**Question:** Philipp, 2026-10-11 21:04Z: "yes good idea, lets do that" to a fresh-seed confirmation of the two best
+§427–§430 settings combined. On fresh seeds, does rollout3 with `SIMS=4096`, `WIDEN_K=4`, `WIDEN_ALPHA=0.75` (`combo`)
+win more runs than MCTS off?
+**Design:** [PREREG](evidence/ooc_rollout3_confirm_20261011/PREREG.md), independent plan review PASS (analysis-time nits
+applied). Arms `combo`, `rollout3` (§422, 2048 simulations) and `off` (§422), all run on seeds 76000000–255 with binary
+`bab14cd5…` (code `f82eeadd` = main `07a93e36` merged with the §427–§430 code). `off` is the §411 research base with
+flat exact-10k Silver, not the production default stack, so its win rate is not the production win rate. 8 cloud workers × 32 seeds × 3 arms (Philipp chose 8 workers). Smokes 76009000–002.
+Primary: paired bootstrap 95% CI of combo − off (seed 433); CONFIRMED / WORSE_THAN_OFF / NOT_CONFIRMED.
+**Validity:** 768/768 units rc=0, 0 Silver stalls in every arm (stall-as-loss sensitivity identical), config banners
+checked by grep (`off` has none), tar hashes checked twice.
+**Result:** **CONFIRMED.** combo 224/256 (87.5%) vs off 199/256 (77.7%): +9.8 pp [+3.9, +16.0], discordant 45 vs 20,
+p = 0.003. Secondary: combo − rollout3 (213/256, 83.2%) +4.3 pp [−1.6, +10.2], p = 0.19; rollout3 − off +5.5 pp
+[−1.2, +12.1], p = 0.13. Boss deaths 15 / 32 / 42. Seconds per run 1,536 / 893 / 55; V4 fallback 27.8% / 21.6%, nearly
+all Lizard Tail support aborts.
+**Interpretation (Inference):** `combo`'s gain over off holds on fresh seeds; plain rollout3's §422 gain (+10.9 pp) did
+not reach significance here (+5.5 pp, CI includes zero). The run does not separate the combination from plain rollout3,
+which costs about half as much. All arms ran with `STS_OOC_PUBLIC_FUTURES` off, so the
+native fallback reads true upcoming encounters (#397); that favours `off`, which uses it on every decision.
+**Decision:** no default change from this run alone. A default proposal would weigh `combo` against plain rollout3 and
+the 16–28x CPU cost.
+
+**Evidence:** [packet](evidence/ooc_rollout3_confirm_20261011/README.md). Raw: `/mnt/project-files/ooc-rollout3-confirm/`
+(one tar per worker). Seeds 76000000–76000255 and 76009000–002 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
 ## §436 — Simulator and CTM speed: rollout3 −10%, default stack −2%, play bit-identical (2026-10-11)
 
 **Question:** issue #350 follow-up. Where does CPU go on the default stack and in §422 rollout3 (936 vs 57 s per

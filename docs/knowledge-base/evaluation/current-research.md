@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-11 for the rollout3 CPU profile (§436), the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433); 2026-10-11 for the rollout3 CPU profile (§436); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -274,8 +274,11 @@ rollout3 lands between off and 2048: 84.4% wins, +5.5 pp [−3.9, +14.8] over of
 both NOT_SHOWN. One-setting variants on the same seeds (§427–§430): fewer sampled outcomes per chance node
 (`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3] (p = 0.02 uncorrected, 0.08 Bonferroni over four arms), back to the off win rate; 4096 simulations
 (+3.1 pp, about 1.9x CPU), more outcomes (`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, +1.6 pp, about the same CPU) and 5 rollout
-combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. Open: prior and merging variants, and a
-fresh-seed confirmation before any default change.
+combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. On 256 fresh seeds
+(§433) 4096 simulations with the broad widening won 87.5% vs 77.7% for off, +9.8 pp [+3.9, +16.0], CONFIRMED; plain
+rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp [−1.6, +10.2]) at about half the CPU
+(893 vs 1,536 s per run). `STS_OOC_PUBLIC_FUTURES` was off, which favours `off` (#397). Open: choosing between the two
+for a default proposal, prior and merging variants.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
 rollout3 run by about 10%.
