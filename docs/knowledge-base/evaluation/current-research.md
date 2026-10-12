@@ -282,7 +282,10 @@ rollout3 lands between off and 2048: 84.4% wins, +5.5 pp [−3.9, +14.8] over of
 both NOT_SHOWN. One-setting variants on the same seeds (§427–§430): fewer sampled outcomes per chance node
 (`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3] (p = 0.02 uncorrected, 0.08 Bonferroni over four arms), back to the off win rate; 4096 simulations
 (+3.1 pp, about 1.9x CPU), more outcomes (`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, +1.6 pp, about the same CPU) and 5 rollout
-combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. On 256 fresh seeds
+combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. With the Lizard-capable CTM (§446, rollout5
+vs rollout3 both rerun on one commit after #496) rollout5's fallback drops to 2.9% but it is still NOT_SHOWN: 113/127 vs
+111/127, +1.6 pp [−4.7, +8.7], at about 1.5x the CPU. Runs from §422–§430 do not rerun byte for byte on commits after
+#480 (Face of Cleric fix `c7641b07`), so later comparisons rerun their controls. On 256 fresh seeds
 (§433) 4096 simulations with the broad widening won 87.5% vs 77.7% for off, +9.8 pp [+3.9, +16.0], CONFIRMED; plain
 rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp [−1.6, +10.2]) at about half the CPU
 (893 vs 1,536 s per run). `STS_OOC_PUBLIC_FUTURES` was off, which favours `off` (#397). Open: choosing between the two
