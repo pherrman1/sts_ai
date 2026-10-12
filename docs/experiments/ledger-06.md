@@ -16758,3 +16758,42 @@ where rollout3 spends its time, and the default-stack profile stays flat.
 
 **Knowledge impact:** one sentence each in `architecture/combat-search.md` (state recycling) and the rollout3 cost
 paragraph of `evaluation/current-research.md`.
+
+## §438 — #401 feature-importance and grouped ablations of the `v_win`/`v_rich` tree inputs: relics, deck and HP carry the signal; hidden fields are recoverable; the forward map helps floor at A20 (2026-10-11)
+
+**Question:** Issue #401 Stage 1/2 for the tree value models: which semantic input groups does each model
+use, which carry unique held-out signal, and which are redundant or missing?
+**Design:** analysis only, no gameplay seeds. Models: B0 `v_win_trees.txt` (`fc52c14c…`), X2-B, and the §419
+A20 win and floor trees. Data: (a) A0, the four #334 collector returns on the share (122 non-TEST source
+seeds, 115k MAP rows; TEST seeds dropped at load); (b) A20, the frozen `2c89ed97` `strategicgen` corpus,
+half the chunks, ≤ 8 rows per run (629k rows, 78,643 runs), split by seed hash into TRAIN/ES/VAL/TEST
+62/8/15/15 with TEST never used (the A20 permutation was rerun without TEST-split rows after review). Stage 1: joint permutation of each semantic group on held-out rows.
+Stage 2: XGBoost refits per arm on A20 TRAIN (early stop on ES), scored on VAL for final floor (MSE) and
+won (NLL), seed-cluster bootstrap 95% CIs (VAL sampling only, not refit randomness), plus three
+other-seed FULL refits as the null (span 0.09 MSE / 0.0009 NLL); a small A0 refit
+cross-check on #334 TRAIN → VALIDATION.
+**Result:** A20 refits, Δ vs FULL (floor MSE 101.23; win NLL 0.1447): −relics +6.64 [+5.89, +7.32] /
++0.0118; −deck +5.50 / +0.0054; −HP +3.22 / +0.0018; −potions +0.93, −progress +0.45, −upgrades +0.43
+(floor only); dropping all ten hidden-future/queue/RNG-counter columns +0.18 [−0.08, +0.45] / −0.0005
+[−0.0014, +0.0003] (this arm also drops the four queue counters, which §371 classes as public; keeping
+them gives +0.14 [−0.15, +0.42] / −0.0005); **adding the 12 forward-map columns −2.15 [−2.51, −1.80]** / −0.0008 [−0.0016, −0.0000];
+refit null −0.04, +0.05, +0.03 / +0.0004, −0.0000, −0.0005. Bottled, keys, gold, potion slots, boss: no unique value.
+Permutation: B0 on A0 uses the hidden future encounters (+0.0155 NLL [0.013, 0.018]), as does the A20
+floor tree (+4.3 MSE). Relics are the largest permutation group in every model, spread over many relics.
+The A0 cross-check resolves nothing (training-seed spread up to 0.013 NLL; −relics points better,
+−0.033 [−0.073, +0.004]). B0 underpredicts #334 wins (mean 0.58 vs 0.76; NLL 0.611).
+**Interpretation (Inference):** B0 and the A20 floor tree use the hidden fields (the A20 win tree does
+not), but no loss from a public-only refit is detected at A20 (at most about 0.45 floor MSE), consistent
+with §371. The forward map, the only missing group tested, helps the floor target at A20; §418's A0
+result stays `INCONCLUSIVE`. All results are offline prediction-error changes on the generators' own
+runs, not win-rate changes.
+**Decision:** no model, default or contract change. Recommendations: keep relics, deck, HP, potions,
+progress, upgrades; include the forward-map block in the next A20 value-model retrain (off by default
+until gated); no cost of a public-only contract is detected at A20 (#397); test cyclic relic counters
+as presence (floor −0.19 [−0.38, +0.01]) on the next retrain; no deletions of cheap low-value groups.
+**Not done:** MLP, #379, #399, #400, CTM; live test; TEST split; feature-build timing; full #334 corpus.
+
+**Evidence:** [packet](evidence/feature_audit_401_20261011/README.md) (scripts, permutation and ablation
+JSON, scored tables). No seeds used (the 74016000–74016999 block stays unused).
+
+**Knowledge impact:** one paragraph after the #397/#396 paragraphs in `evaluation/current-research.md`.
