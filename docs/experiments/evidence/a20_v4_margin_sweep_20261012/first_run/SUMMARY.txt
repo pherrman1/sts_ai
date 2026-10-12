@@ -1,0 +1,54 @@
+runs 128 wins 55 (43.0%) mean floor 43.86 cpu/run 57s
+by ('chain', 'BOSS_RELIC') 218
+by ('chain', 'CARD_SELECT') 495
+by ('chain', 'EVENT') 771
+by ('chain', 'MAP') 5341
+by ('chain', 'REST') 840
+by ('chain', 'REWARDS') 8761
+by ('chain', 'SHOP') 1188
+by ('chain', 'TREASURE') 27
+by ('chest_rule', 'TREASURE') 348
+by ('match_and_keep', 'EVENT') 120
+by ('relic_rule', 'REWARDS') 701
+chain decisions by kind:
+   BOSS_RELIC 218
+   CARD_SELECT@BOSS_TREASURE 18
+   CARD_SELECT@ELITE 10
+   CARD_SELECT@EVENT 81
+   CARD_SELECT@REST 359
+   CARD_SELECT@SHOP 20
+   CARD_SELECT@TREASURE 7
+   EVENT 771
+   MAP 5026
+   MAP:boss node 315
+   REST 840
+   REWARDS:card 3209
+   REWARDS:gold 3421
+   REWARDS:potion 1246
+   REWARDS:relic 40
+   REWARDS:skip(no cards) 845
+   SHOP 1188
+   TREASURE 27
+V4 gate rows by screen: {'EVENT': 771, 'MAP': 5026, 'REWARDS': 3209, 'REST': 840, 'SHOP': 1188, 'BOSS_RELIC': 218, 'CARD_SELECT': 363, 'TREASURE': 27}
+chain decisions with no matching V4 row: {'CARD_SELECT@EVENT': 77, 'CARD_SELECT@BOSS_TREASURE': 18, 'CARD_SELECT@TREASURE': 7, 'CARD_SELECT@ELITE': 10, 'CARD_SELECT@SHOP': 20}
+deaths:
+   (3, 'BOSS', 'DONU_AND_DECA') 8
+   (3, 'BOSS', 'AWAKENED_ONE') 8
+   (3, 'BOSS', 'TIME_EATER') 8
+   (2, 'BOSS', 'COLLECTOR') 7
+   (2, 'BOSS', 'AUTOMATON') 5
+   (2, 'ELITE', 'SLAVERS') 4
+   (2, 'BOSS', 'CHAMP') 4
+   (3, 'MONSTER', 'SPIRE_GROWTH') 4
+   (3, 'MONSTER', 'MAW') 3
+   (2, 'ELITE', 'BOOK_OF_STABBING') 3
+   (2, 'MONSTER', 'SNAKE_PLANT') 3
+   (3, 'ELITE', 'GIANT_HEAD') 3
+   (2, 'ELITE', 'GREMLIN_LEADER') 2
+   (3, 'ELITE', 'REPTOMANCER') 2
+   (2, 'MONSTER', 'SHELLED_PARASITE_AND_FUNGI') 1
+   (2, 'MONSTER', 'SNECKO') 1
+   (2, 'MONSTER', 'CULTIST_AND_CHOSEN') 1
+   (1, 'BOSS', 'SLIME_BOSS') 1
+   (1, 'BOSS', 'HEXAGHOST') 1
+   (3, 'ELITE', 'NEMESIS') 1

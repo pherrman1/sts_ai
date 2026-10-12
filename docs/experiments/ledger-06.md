@@ -17208,6 +17208,55 @@ A gain is not shown. Swapping costs no CPU.
 
 **Knowledge impact:** rollout3 paragraph in `evaluation/current-research.md`.
 
+## §448 — A20 V4 at A0 with V4 deciding everything, a V4 margin sweep, and where V4 and OOC MCTS beat the heuristic on the gold decisions (2026-10-12)
+
+**Question (Philipp):** play 128 A0 seeds with the A20-trained V4, no OOC search, no fallback to the heuristic;
+then sweep the gate margin; then show on the gold decisions where V4 (and OOC MCTS) choose better or worse than
+the heuristic. Descriptive, not pre-registered.
+**Design:** [evidence packet](evidence/a20_v4_margin_sweep_20261012/README.md). Main `4a407a0c`, binary `f085352b`.
+A20 V4 = §419 round 1 + 2 Q-head retrain `v4_a20_r12.native` (`08d239f9`); A0 V4 = deployed (`e62abd83`).
+§422 `off` base with every V4 gate on **including the map gate** (not part of the default stack); margin =
+required Q gap between V4's best and second-best option. Seeds 81000000–127 (A0), paired across all arms;
+smoke 81009000.
+
+**Coverage at margin 0:** V4 made every gated decision; only non-upgrade card selections (shop removal, Living
+Wall, Drug Dealer, Duplicator, Transmogrifier, Cleric, Library, Astrolabe, bottled relics; 132 in 128 runs) went
+to the heuristic; free rewards, chest opening, the reward-relic rule and the forced boss node stay rules.
+
+**Result (wins of 128):**
+
+| margin | 0 | 0.25 | 0.5 | 1 | 2 | 4 |
+|---|---|---|---|---|---|---|
+| A20 V4 | 55 | 64 | 83 | 94 | 98 | 90 |
+| A0 V4 | 70 | 76 | 78 | 78 | 96 | 98 |
+
+Heuristic only (margin 1e6): 86. Best arms vs heuristic only: A20 margin 2 and A0 margin 4, both +9.4 pp
+[+0.8, +18.0]. A20 − A0 at equal margin: −11.7 pp [−21.9, −1.6] at 0, +12.5 pp [+1.6, +23.4] at 1, within
+±10 pp elsewhere (13 arms; no multiplicity correction). At margin 0, 3 (A20) and 4 (A0) runs died outside
+combat (Knowing Skull HP payments). The A20 margin-0 sweep arm reproduced the single-container first run on all
+128 seeds. A0 V4 at margin 1 with the map gate (78/128) is below the usual default-stack rate without it
+(§422 off 101/128, §433 199/256, other seeds).
+
+**Gold decisions (Gold2, §432; A20; floors per decision, label of the picked option minus the heuristic's):**
+A0 V4 +0.28 [−0.09, +0.67] over 397 decisions (no chest/relic rules applied): events +2.60 (Neow: heuristic option 3 vs V4 option 1, about +14
+floors on 6 decisions), shop +1.17, rest vs smith +0.62, rewards screen +0.01 (214), map −0.24, upgrade target −0.54.
+V4 overrides gained reliably only when V4's Q for its pick exceeded its Q for the heuristic's pick by ≥ 2. §419 retrains:
++0.42 (G2) and +0.32 (G3), better on map, worse on upgrade and treasure. §425 OOC MCTS picks on the same labels
+(387 decisions, with the chest and reward-relic rules applied as in live play): `prod` +0.49 [+0.12, +0.87],
+`rollout3` +0.41 [+0.16, +0.70], A0 V4 +0.31 [−0.05, +0.71] on the same basis; both MCTS arms gain on events and map, rewards screen ≈ 0.
+
+**Interpretation (Inference):** the gate margin, not the training ascension, decides how V4 plays at A0: both V4s
+lose many runs when every argmax is played and peak at margin 2–4; the A20 retrain is not consistently better at A0. Gold
+single-decision gains (largest at small margins and on events) do not predict whole-run wins (as in §447; `prod`
+MCTS is also positive on gold but −21.9 pp live, §384). The map gate may cost wins at margin 1 (Inference; no
+same-seed map-off arm was run).
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/a20_v4_margin_sweep_20261012/README.md). Raw: `/mnt/project-files/a20-v4-at-a0-448/`.
+Seeds 81000000–127 and 81009000 are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
 ## §452 — Silver prior inside the search tree: fight score up at 2k sims, not CPU-matched (2026-10-12)
 
 **Question (Philipp, 2026-10-12):** the v1 Silver prior (§397, §406) acts only at the search root

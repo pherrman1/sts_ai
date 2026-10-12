@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -526,7 +526,11 @@ prior for Read; its revealed cards become a qualified public OBTAIN selector.
 Mushrooms and Mysterious Sphere use the same hidden reward prior; their native
 leave effects now match vanilla (Parasite plus healing, and no reward,
 respectively).
-The default native win artifact remains B0, `models/v_win_trees.txt`.
+The default native win artifact is B0, `models/v_win_trees.txt`, except under
+live OOC MCTS: with `STS_OOC_MCTS=1` and `STS_WIN_NET` unset the process win
+model (native leaf, fallback rest/upgrade, `vStateWin`) is the public X2-B
+`models/candidates/v_win_x2b_public_trees.txt` (§444 export, §449 A/B NOT_SHOWN
+at equal CPU; ADR-0029). `STS_WIN_NET=1` restores B0 there.
 The default-off X2-B candidate is `models/candidates/v_win_x2b_trees.txt`,
 selected explicitly with `STS_WIN_NET` for simulator policies. Its adjacent
 identity JSON binds the exact frozen UBJ, ordered features and exported bytes;
