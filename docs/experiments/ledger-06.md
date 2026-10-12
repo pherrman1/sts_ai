@@ -17184,3 +17184,26 @@ card-reward gate 78.3 → 27.1 s, shop gate 29.6 → 11.3 s.
 
 **Knowledge impact:** derived-table paragraph in `architecture/out-of-combat.md`, rollout3 cost sentence in
 `evaluation/current-research.md`.
+
+## §449 — rollout3 `combo` with the public X2-B as win model instead of B0 `v_win`: NOT_SHOWN, same CPU (2026-10-12)
+
+**Question:** Philipp, 2026-10-12: "x2-b should be exchanged", then "lets go?" (17:46Z) for the offered paired run;
+"128 pairs, 8 workers" on the size card (19:55Z). Does `combo` play differently when `STS_WIN_NET`, the win model behind
+the native leaf, the native fallback rest/upgrade scorer and `vStateWin`, is the §444 public X2-B instead of B0?
+**Design:** [PREREG](evidence/ooc_x2b_vwin_449_20261012/PREREG.md). Arms `vwin` (§433 `combo`, `STS_WIN_NET` pinned to
+`models/v_win_trees.txt`) and `x2bpub` (`models/candidates/v_win_x2b_public_trees.txt`); the environments differ in that
+one line. Both pin `STS_OOC_PUBLIC_FUTURES=8`. Current production CTM (`pathb_r2_lizard` with the brew fallback). Code
+`94f78fbb` (main after #497), binary `85b1482b…`. Fresh seeds 82000000–127, both arms on every seed; 8 cloud workers.
+Smokes 82009000–001. Primary: paired bootstrap 95% CI of x2bpub − vwin (seed 449); BETTER / WORSE / NOT_SHOWN.
+**Validity:** 256/256 units rc=0, no Silver stalls, environments and config banners checked by grep, tar hashes checked.
+**Result:** **NOT_SHOWN.** x2bpub 114/128 (89.1%) vs vwin 111/128 (86.7%): +2.3 pp [−5.5, +10.2], discordant 15 vs 12,
+McNemar p = 0.70; Δfloor +0.84 [−0.59, +2.36]; boss deaths 10 vs 12. Seconds per run 790 vs 795, MCTS CPU 713 vs 721 s,
+V4 fallback 2.6% vs 2.4%.
+**Interpretation (Inference):** no sign that the public X2-B hurts `combo`; the CI rules out losses beyond about 5.5 pp.
+A gain is not shown. Swapping costs no CPU.
+**Decision:** no default change from this run; replacing `v_win_trees.txt` is Philipp's call (#397).
+
+**Evidence:** [packet](evidence/ooc_x2b_vwin_449_20261012/README.md). Raw: `/mnt/project-files/ooc-x2b-vwin-449/`
+(one tar per worker). Seeds 82000000–127 and 82009000–001 are now used.
+
+**Knowledge impact:** rollout3 paragraph in `evaluation/current-research.md`.

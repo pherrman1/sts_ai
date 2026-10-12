@@ -1,0 +1,80 @@
+{
+  "cohort": [
+    82000000,
+    82000127
+  ],
+  "units": {
+    "x2bpub": 128,
+    "vwin": 128
+  },
+  "seed_failures": {
+    "x2bpub": [],
+    "vwin": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "x2bpub": [],
+    "vwin": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "x2bpub": 128,
+    "vwin": 128
+  },
+  "pairs": 128,
+  "win": {
+    "x2bpub": 0.890625,
+    "vwin": 0.8671875
+  },
+  "wins": {
+    "x2bpub": 114,
+    "vwin": 111
+  },
+  "x2bpub_vs_vwin": {
+    "delta_win": 0.0234375,
+    "delta_win_ci95": [
+      -0.0546875,
+      0.1015625
+    ],
+    "discordant_x2bpub_only": 15,
+    "discordant_vwin_only": 12,
+    "mcnemar_p": 0.7011080384254456,
+    "delta_floor": 0.8359375,
+    "delta_floor_ci95": [
+      -0.59375,
+      2.359570312499997
+    ],
+    "delta_hp_end": -1.46875
+  },
+  "boss_deaths": {
+    "x2bpub": 10,
+    "vwin": 12
+  },
+  "mean_floor": {
+    "x2bpub": 49.546875,
+    "vwin": 48.7109375
+  },
+  "sec_per_run": {
+    "x2bpub": 789.6351171875001,
+    "vwin": 794.7311328124999
+  },
+  "label": "NOT_SHOWN",
+  "search": {
+    "x2bpub": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 712.5645231963047,
+      "owned_share": 0.9743327799770144,
+      "fallback_share": 0.02566722002298557,
+      "support_aborts_per_run": 0.2109375,
+      "simulations_per_run": 245850.171875
+    },
+    "vwin": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 720.8722588394844,
+      "owned_share": 0.9762981141823818,
+      "fallback_share": 0.023701885817618187,
+      "support_aborts_per_run": 0.0,
+      "simulations_per_run": 244308.4765625
+    }
+  }
+}
