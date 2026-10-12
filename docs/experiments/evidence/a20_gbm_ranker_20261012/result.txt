@@ -1,0 +1,6 @@
+n=128 C wins 16 floor 35.09 act3 59 | T wins 3 floor 32.88 act3 43
+T-C floor -2.21 [-5.29, +0.80] NOT_SHOWN; seeds differ 118
+deaths act 1 C 23 T 13
+deaths act 2 C 46 T 72
+deaths act 3 C 43 T 40
+sec/run C 14.2 T 10.7
