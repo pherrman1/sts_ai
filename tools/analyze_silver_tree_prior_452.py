@@ -20,9 +20,10 @@ import random
 import sys
 from collections import defaultdict
 
-ARMS = ["plain2k", "root2k", "tree8_2k", "tree1_2k"]
+ARMS = ["plain2k", "root2k", "tree8_2k", "tree1_2k", "plain6k"]
 CONTRASTS = [("tree8_2k", "plain2k"), ("root2k", "plain2k"), ("tree8_2k", "root2k"),
-             ("tree1_2k", "plain2k"), ("tree1_2k", "tree8_2k")]
+             ("tree1_2k", "plain2k"), ("tree1_2k", "tree8_2k"),
+             ("tree8_2k", "plain6k"), ("plain6k", "plain2k")]
 
 
 def score(row):
@@ -114,7 +115,10 @@ def main():
                 m, lo, hi = boot(per_seed)
                 result["contrasts"][f"{x}-{y}/{name}/{metric}"] = {
                     "mean": m, "ci95": [lo, hi], "fights": sum(len(v) for v in per_seed.values())}
-    primary = result["contrasts"].get("tree8_2k-plain2k/all/score")
+    # §452 primary is tree8 - plain2k; §453 (arms include plain6k) is tree8 - plain6k.
+    key = "tree8_2k-plain6k/all/score" if "plain6k" in arms else "tree8_2k-plain2k/all/score"
+    primary = result["contrasts"].get(key)
+    result["primaryContrast"] = key
     result["primaryLabel"] = ("TREE_PRIOR_HELPS" if primary and primary["ci95"][0] > 0
                               else "TREE_PRIOR_HURTS" if primary and primary["ci95"][1] < 0
                               else "NOT_SHOWN")
