@@ -16925,3 +16925,127 @@ whose win-rate effect §423 left open (wide CI), so the promotion note must name
 
 **Knowledge impact:** default stack in `architecture/out-of-combat.md` and `operations/environment-variables.md`; one
 sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §443 — Production CTM at A20 (Stage 0) and the out-of-combat policy for an A20 corpus (G0) (2026-10-12)
+
+**Question:** Philipp: "Can we do the same for A20 ctm?" The production CTM (pathb-r2, A0 Path B only) gets
+`ascension` straight from the game (`combat_predictor_input.cpp`). §416 saw it predict death 0 at ASC 20. Stage 0 of
+the A20 CTM plan (`/mnt/project-files/ctm-a20/PLAN.md`, rules written before the run) asks whether clamping the input
+to 0 is enough, or whether an A20 corpus and retrain are needed. G0 asks whether the Path B generator reaches later
+acts at A20.
+**Setup:** [packet](evidence/ctm_a20_stage0_20261012/README.md). Stage 0: main `fcd253f1`, learned-stop Path B
+teacher, `combattransitiongen 10000 20` on seeds 78100000–78100999 (1000/1000 completed, 9,351 rows, about 5.4
+CPU-s and 9.35 rows per seed). Every row was scored by production `ctmscorerows` as generated and with ascension set
+to 0, against the observed Silver outcome (death = outcome 2); 9,349 scored, 2 refused
+(`writhing_ritual_intersection`).
+
+| rows | n | observed death | ASC 20 predicted | clamped predicted | clamped survival NLL | clamped win-HP bias / MAE |
+|---|---|---|---|---|---|---|
+| all | 9,349 | 0.105 | 0.005 | 0.031 | 0.268 | +4.8 / 7.2 |
+| normal | 6,104 | 0.023 | 0.004 | 0.006 | 0.079 | +3.6 / 5.3 |
+| elite | 2,431 | 0.191 | 0.007 | 0.046 | 0.548 | +9.3 / 12.6 |
+| boss | 724 | 0.493 | 0.005 | 0.191 | 0.894 | +0.1 / 10.5 |
+
+Death bias (predicted − observed), source-seed bootstrap 95% CI: ASC 20 as given [−0.104, −0.096] (win-HP bias
++15.4, survival NLL 1.447); clamped [−0.078, −0.070].
+**Stage 0 decision (rule: clamp is enough only if |bias| ≤ 0.01 overall and on elites and bosses, and HP bias within
+±3): FAILS.** Clamping underestimates death about 3.4x overall (4x on elites, 2.6x on bosses) and overestimates win HP
+by about 5. An A20-trained CTM is needed for A20 OOC MCTS. **Inference:** A20 OOC MCTS runs so far (§425, §426) priced
+imagined combats with a model that sees almost no death risk.
+**G0 (rule: switch the generator's out-of-combat policy if acts 2–3 hold under 25% of rows): FAILS** at 19.7%
+(act 1/2/3: 7,505 / 1,538 / 306 rows); the copied Path B map/reward chain dies early at A20.
+**Change:** opt-in `STS_CTM_GEN_DEPLOYED_OOC=1` for `combattransitiongen` plays every non-battle screen with
+`deployedOocPolicyStep` (§431) instead of the copied chain; off by default, refused in the Lizard candidate mode, recorded as
+`oocPolicy` in the manifest. With the flag on, the teacher must pin the effective OOC policy (`ooc_policy`: gate
+flags, margins, V4 net sha256, public futures) and the manifest records it as `policy`. With the flag off, the generator reproduces the Stage 0 rows for seeds
+78100000–78100002 exactly (31 rows, only `teacherId` differs).
+**G0 smoke** (commit `c67ba2db`, flag on with the deployed V4 settings, seeds 78009004–78009043): 40/40 completed,
+695 rows (17.4 per seed), act 1/2/3 357 / 213 / 125 (acts 2–3 49%), 76 boss rows, last floor median 33 (8–51), about
+10.6 CPU-s per seed (0.61 s per row, vs 0.58 with the old chain). Descriptive only.
+**Decision:** an A20 corpus uses the deployed step. At 17.4 rows per seed, a corpus the size of the A0 union (537k
+rows) is about 31k seeds and about 92 CPU-h (Inference, from 40 seeds). Stage 1 (corpus) needs Philipp's worker count.
+No default play changes.
+
+**Evidence:** raw `/mnt/project-files/ctm-a20/`. Seeds used: 78009000–78009043 (smokes), 78100000–78100999.
+
+**Knowledge impact:** new generator variable in `operations/environment-variables.md`; the A20 limit of the production
+CTM is recorded here (current understanding unchanged otherwise, since OOC MCTS is off by default).
+
+## §444 — X2-B without the hidden next-fight fields: the E1 public arm exported as a native win model (2026-10-12)
+
+**Question:** Philipp wants X2-B to replace `v_win` (via `STS_WIN_NET`) as the rollout3 leaf, but X2-B reads
+the four HIDDEN_FUTURE fields `nextEliteId` and `nextFight0..2` (§371, §438). Is there a public-information X2-B,
+and does it run natively with the same values as in Python?
+
+**Design:** offline, no game seeds, no retraining, TEST closed. No new model was fitted: E1 (§394) arm P0 is
+exactly the X2-B recipe on the 457 public features (X2-B's 461 minus the four hidden fields; the 12 forward-map
+columns and the public queue counters stay), seeds 0/1/2, on the frozen 1,024-source #334 corpus
+(`ae56f963…`), unchanged 696/155 TRAIN/VALIDATION split. The three checkpoints (all 21 E1 `SHA256SUMS`
+entries verified) were exported as one margin-averaged CompactTreeNet with `tools/vwin_export_ensemble.py`
+(the §396 F2 route). A forward-map variant is not separate: X2-B and P0 already contain the map block.
+
+**Result:** `models/candidates/v_win_x2b_public_trees.txt` (sha256 `e2d3aa65…ca90`, 1,006 trees, 428 used
+features, no hidden field). Native `winnettest` parity on the §379 selection (1,780 rows): max |native − Python|
+**2.46e-7** (gate < 1e-5, pass); explicit `STS_WIN_NET` load passes `oocmctsconfigselftest`. VALIDATION (141,566
+MAP rows, 155 sources):
+
+| Model | NLL | Brier | AUC |
+|---|---:|---:|---:|
+| this file (margin mean) | 0.42362 | 0.13850 | 0.7919 |
+| P0 probability mean (E1) | 0.42370 | 0.13848 | 0.7918 |
+| frozen X2-B (461) | 0.42261 | 0.13777 | 0.7907 |
+
+Paired ΔNLL vs X2-B, source-clustered bootstrap: **+0.0010 [−0.0041, +0.0058]** (reproduces E1's −0.0011 with
+the sign flipped); vs the P0 probability mean −0.00008 [−0.00031, +0.00018].
+
+**Verdict:** `PUBLIC_X2B_READY` as an engineering candidate. Dropping the hidden fields costs no resolvable
+held-out accuracy (consistent with §371, §394, §438). No gameplay effect is claimed. No default changes: the
+default `models/v_win_trees.txt` and the pinned `models/candidates/v_win_x2b_trees.txt` (anchor of the
+`screengbm` leaf and its residual GBM) are untouched. The new file is opt-in through `STS_WIN_NET` or
+`STS_OOC_MCTS_LEAF_WIN_MODEL`. A rollout3 A/B with it as the leaf needs Philipp's go.
+
+**Evidence:** [packet](evidence/vwin_x2b_public_444_20261012/README.md) (local run on Philipp's machine; bulky
+parity CSV under `~/Documents/sts/artifacts/vwin-refresh-334/x2b-public-444-20261012/`).
+
+**Knowledge impact:** candidate listed in `operations/environment-variables.md` (`STS_OOC_MCTS_LEAF_WIN_MODEL`).
+
+## §445 — A20 short-branch label corpus (53.5k decisions): learned OOC models beat the heuristic but are not shown better than V4; more labels barely help (2026-10-12)
+
+**Question (Philipp, 2026-10-11 20:59Z "Label run", 21:20Z "8 hours per worker"):** do short-branch labels with independent futures (§432), generated at scale on fresh A20 seeds, train an OOC model that picks better than the deployed V4?
+**Design:** 25 cloud workers, 8 h each. Brief and per-worker setup are in the packet. Frozen main `07a93e36`, Release `one_combat` sha256 `ea307e30…`. The commit and binary hash are self-reported by the workers (the provenance JSONs carry an empty git sha and no binary or tree hashes); the recorded config is identical across all 534 seeds.
+- Labels: `strategicgen2` ASC 20, Silver 2k with the natpert prior (weight 400), `STRATEGIC_SAMPLE_ALL=1`, `STRATEGIC_BRANCH_FIGHTS=3`, `FUTURES=8`, `RESEED=1`, `BRANCH_SIMS=2000`.
+- Bootstrap trees: A0 (`labelFloor`) and A20 full-data trees `v_{rich,win}_a20_full` (sha256 `d8ab1349…` / `6f5fbfd0…`; 157k `strategicgen` v1 runs; held-out floor R² 0.509, win AUC 0.851) via `STS_CF_ALT_BOOT_*` (`labelFloorAlt`).
+- Seeds: 75000000+10000*W+k; smoke 75009000-75009001. Per-seed timeout 4 h.
+- Corpus: 534 finished seeds, 252,015 rows, 53,535 labelled decisions, 42,137 with ≥2 options. 83 seeds were cut by the timeout or the 8 h stop and are excluded; this drops the longest runs, so late-run decisions are under-represented. 75110003 crashed with the Silver depth bound.
+- Training target: the A20 floor-tree label, with an 80/20 run-grouped split (428/106 seeds).
+- Models:
+  - (a) V4 Q-head warm-started from the deployed checkpoint, absolute floor target (`STRAT_Q_ONLY=1`).
+  - (b) Same as (a) with `STRAT_Q_TARGET=fallback_centered`.
+  - (c) Full network with the centered target.
+  - (d) XGBoost on 1,015 strategic-row columns: all except label/meta columns and 10 encounter or chance fields (`nextEliteId`, `nextFight0-2`, `remElites`, `remFights`, `monOffset`, `eliteOffset`, `potionChance`, `cardRarityFactor`). Regression on the within-decision centered label.
+  - (e) Same features as (d), `rank:pairwise` on within-decision ranks.
+- Scoring: the §432 Gold2 set (16 independent futures, 260 seeds), mean floor regret on the 397 decisions every picker covers, paired decision bootstrap (10,000 samples).
+
+**Result (Gold2 regret in floors; heuristic minus picker):**
+
+| Picker | Regret | Heuristic − picker |
+|---|---|---|
+| SB labels themselves, A20 floor trees (§432) | 1.25 | +1.01 [+0.56, +1.52] |
+| (d) GBM, centered regression | 1.73 | +0.53 [+0.25, +0.84] |
+| (e) GBM, pairwise ranking | 1.76 | +0.50 [+0.18, +0.87] |
+| (c) V4 full net, centered | 1.86 | +0.40 [+0.03, +0.81] |
+| (b) V4 Q-head, centered | 1.96 | +0.30 [−0.04, +0.67] |
+| (a) V4 Q-head, absolute | 1.98 | +0.28 [−0.06, +0.66] |
+| deployed V4 | 1.98 | +0.28 [−0.09, +0.68] |
+| heuristic (path-blind, §425) | 2.26 | 0 |
+
+- V4 minus GBM (d): +0.25 [−0.20, +0.69]; V4 minus (e): +0.22 [−0.18, +0.64]. Not shown.
+- The absolute-target Q-head does not learn the ranking: on held-out SB labels its strict Q top-1 stays at 0.33, versus 0.36 with the centered target.
+- Learning curve for (d), trained on 25 / 50 / 100% of the training seeds: held-out SB regret 1.19 / 1.14 / 1.10; Gold2 regret 1.77 / 1.71 / 1.72 (406 decisions).
+- Side result: refitting the A20 floor/win trees with the 12 forward-map columns and without the 4 hidden futures (§438) on the same 157k runs and split gives floor RMSE 9.82 vs 9.90 (R² 0.517 vs 0.509). Win is unchanged (AUC 0.851, log loss 0.1440 vs 0.1439).
+
+**Interpretation (Inference):** the labels rank options well (1.25), but models that see only the pre-decision state and the action ids recover about half of that gain over the heuristic (GBM 0.53 of 1.01 floors). More labels give small held-out gains (held-out regret 1.19 / 1.14 / 1.10 at 25 / 50 / 100%) that Gold2 cannot resolve (25% vs 100%: +0.05 [−0.09, +0.20]) (Inference). Held-out label regrets use the split that picked early stopping, so they are slightly optimistic; Gold2 is unaffected. A learned A20 OOC policy from these labels is not shown better than V4 offline. A live test was not run. **Open question:** whether scoring options online with short branches (the label procedure itself, about 45 s per decision on one core) is worth its cost at chosen decision types.
+
+**Evidence:** [packet](evidence/a20_sb_labels_20261012/README.md). Raw data: `/mnt/project-files/v4-a20-retrain/sblabels-w{0..24}.tar.gz` (sha256s in the packet). Seeds 75000000–75249999 (block reserved; used k < 1000 per worker) and smoke 75009000–75009001 are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.

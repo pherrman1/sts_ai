@@ -1,0 +1,6 @@
+[CompactTreeNet: 1006 trees, 428 feats from models/candidates/v_win_x2b_public_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]
+[Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+PASS live OOC MCTS configuration startup
