@@ -282,7 +282,10 @@ rollout3 lands between off and 2048: 84.4% wins, +5.5 pp [−3.9, +14.8] over of
 both NOT_SHOWN. One-setting variants on the same seeds (§427–§430): fewer sampled outcomes per chance node
 (`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3] (p = 0.02 uncorrected, 0.08 Bonferroni over four arms), back to the off win rate; 4096 simulations
 (+3.1 pp, about 1.9x CPU), more outcomes (`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, +1.6 pp, about the same CPU) and 5 rollout
-combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. On 256 fresh seeds
+combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. With the Lizard-capable CTM (§446, rollout5
+vs rollout3 both rerun on one commit after #496) rollout5's fallback drops to 2.9% but it is still NOT_SHOWN: 113/127 vs
+111/127, +1.6 pp [−4.7, +8.7], at about 1.5x the CPU. Runs from §422–§430 do not rerun byte for byte on commits after
+#480 (Face of Cleric fix `c7641b07`), so later comparisons rerun their controls. On 256 fresh seeds
 (§433) 4096 simulations with the broad widening won 87.5% vs 77.7% for off, +9.8 pp [+3.9, +16.0], CONFIRMED; plain
 rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp [−1.6, +10.2]) at about half the CPU
 (893 vs 1,536 s per run). `STS_OOC_PUBLIC_FUTURES` was off, which favours `off` (#397). Open: choosing between the two
@@ -330,8 +333,9 @@ heuristic (+1.01 [+0.56, +1.52]) and 1.98 for the deployed V4; A20-fit and A0 fl
 On 53.5k such labels from fresh A20 seeds (§445), the best learned picker, a GBM on the strategic row, reaches
 1.73 floors regret on the same gold set: better than the heuristic (+0.53 [+0.25, +0.84]) but not shown better
 than V4 (+0.25 [−0.20, +0.69]). V4 Q-head retrains on these labels match V4, and halving the data barely moves
-the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolve (Inference). A live A20 test
-is pre-registered as §447.
+the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolve (Inference). Played live on every OOC decision at
+A20 (§447), the GBM wins 3 of 128 runs vs 16 for the current stack (floors −2.21 [−5.29, +0.80], NOT_SHOWN by
+the pre-registered rule), so Gold2 regret did not predict whole-run play.
 
 ## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
 

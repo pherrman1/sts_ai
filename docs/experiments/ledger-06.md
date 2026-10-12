@@ -17050,6 +17050,59 @@ parity CSV under `~/Documents/sts/artifacts/vwin-refresh-334/x2b-public-444-2026
 
 **Knowledge impact:** one paragraph in `evaluation/current-research.md`.
 
+## §446 — rollout5 with the Lizard-capable CTM: no more V4 fallback, not shown better than rollout3 (2026-10-12)
+
+**Question:** Philipp: "can we try again with the lizard capable ctm? on 8 workers on the same 128 seeds?" §430 rollout5
+(`LEAF_COMBATS=5`) won 112/128 vs rollout3 115/128 on the #418 CTM but fell back to V4 on 37% of decisions, almost all
+Lizard Tail support aborts. With the Lizard-capable `pathb_r2_lizard` CTM (§423, §435), does rollout5 win more than
+rollout3 with the same CTM?
+**Design:** [PREREG](evidence/ooc_rollout5_lizard_20261012/PREREG.md). Arm `r5liz` = the §423 environment with
+`STS_OOC_MCTS_LEAF_COMBATS=5`; control `lizard` = the §423 environment rerun on the same commit; both pin
+`STS_OOC_PUBLIC_FUTURES=0`. Run commit `b6d00dd0` (code `3b06c924`, main after #496), binary `10dc2616…`, seeds
+70000000–127, 16 cloud workers (8 per arm; Philipp chose the control arm on a decision card). Launch gate: §423 seed
+70000000 diverged at OOC decision 8 on this commit; a bisect found `c7641b07` (#480, Face of Cleric now fires after
+event fights), a simulator rule fix ([note](evidence/ooc_rollout5_lizard_20261012/RERUN-423-70000000.md)), hence the
+same-commit control. Smokes 80009000–001. Primary: paired bootstrap 95% CI of `r5liz` − same-commit `lizard`;
+IMPROVED / WORSE / NOT_SHOWN.
+**Validity:** `lizard` 128/128 rc=0; `r5liz` 127/128, seed 70000087 a listed Silver stall (dropped from all pairs as
+pre-registered); tar hashes, banners and old-control hashes checked.
+**Result:** **NOT_SHOWN.** 113/127 (89.0%) vs 111/127 (87.4%), +1.6 pp [−4.7, +8.7], discordant 10 vs 8, p = 0.81.
+Boss deaths 8 vs 13; Δfloor +0.13 [−0.70, +0.94]. V4 fallback 2.9% vs 2.4% (§430: 37.1%). 887 vs 592 s per run.
+Cross-commit (descriptive): vs §430 r5 +1.6 pp, vs §422 rollout3 −1.6 pp, vs §422 off +10.2 pp [+1.6, +18.9].
+Same-commit `lizard` vs §423: 111 vs 111 wins, 2 / 2 discordant, 106/128 identical endings.
+**Interpretation (Inference):** the Lizard CTM removes rollout5's fallback, but two more rollout combats per leaf do not
+win detectably more than rollout3 at about 1.5x the CPU. The Face of Cleric fix changes individual runs, not the win
+count, on these seeds; §422-era runs are no longer byte-reproducible after #480.
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_rollout5_lizard_20261012/README.md). Raw: `/mnt/project-files/ooc-rollout5-lizard-446/`
+(one tar per worker). Seeds 80009000–80009001 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §447 — A20 GBM ranker playing every OOC decision live: floors NOT_SHOWN by the pre-registered rule, wins clearly worse (3 vs 16 of 128) (2026-10-12)
+
+**Question (Philipp, 2026-10-12 10:54Z "Live test", 11:30Z "Run it"):** does the §445 A20 GBM ranker, best learned picker on the Gold2 set (1.73 floors regret vs V4 1.98, heuristic 2.26), win more floors than the current A20 stack when it plays every out-of-combat decision?
+**Design:** [PREREG](evidence/a20_gbm_ranker_20261012/PREREG.md), pushed before the run (`77c85b52`, renumbered `ef5af7c7`). Code `5cb1e86d`, Release `one_combat` sha256 `752e1e76…`. Model `models/candidates/ooc_gbm_ranker_a20_sbl.txt` (sha256 `372431c1…`, 1,157 trees). Both arms: the §419 stack (`silver_learned_stop/live_env.sh` V4 gates, learned stop, keys off, `STS_STOP_AFTER_ACT=3`), `bestbench 10000 128 20 79000000`. Treatment adds `STS_OOC_GBM_RANKER`, which takes every real OOC decision with ≥ 2 candidates after the chest, reward-relic and Match and Keep rules. Primary: mean paired floor difference with a 95% paired bootstrap CI (10,000 reps, RNG 20261012).
+**Parity:** on 628 live decisions of 8 smoke seeds the C++ scores match xgboost within 4.2e-6 and the argmax agrees everywhere.
+
+**Result:**
+
+| Arm | Wins | Mean floor | Reached Act 3 | Deaths Act 1 / 2 / 3 | s per run |
+|---|---|---|---|---|---|
+| Current stack (C) | 16/128 | 35.09 | 59 | 23 / 46 / 43 | 14.2 |
+| GBM ranker (T) | 3/128 | 32.88 | 43 | 13 / 72 / 40 | 10.7 |
+
+- Floor T − C: −2.21 [−5.29, +0.80]. Verdict by the pre-registered rule: `NOT_SHOWN`. Play differs on 118 of 128 seeds.
+- Wins (secondary, not pre-registered as a decision rule): T − C −10.2 pp [−16.4, −3.9]. Discordant pairs 16 C-only vs 3 T-only, exact binomial p = 0.004.
+
+**Interpretation (Inference):** the ranker survives Act 1 more often but loses far more runs in Act 2 and almost never wins. A one-step argmax over Gold2-style short-branch labels (three fights, then a value-tree bootstrap) does not price long-horizon run strength, and Gold2 regret on single decisions did not predict play over a whole run. The live result is worse than the offline ranking suggested; the GBM should not replace the V4 gates or the heuristic.
+**Decision:** no default change. `STS_OOC_GBM_RANKER` stays off. Seeds 79000000–79000127 and smokes 79009000–79009008 are now used.
+
+**Evidence:** [packet](evidence/a20_gbm_ranker_20261012/) (PREREG, parity check, smoke, `run.sh`, `analyze.py`, both result CSVs with bestbench sidecars, `result.txt`).
+
+**Knowledge impact:** this entry, its `EXPERIMENTS.md` index line and one sentence in `evaluation/current-research.md`; `STS_OOC_GBM_RANKER` is documented in `operations/environment-variables.md`.
+
 ## §442 — Native shop planner and floor-model cost in rollout3: packed trees and column candidates, bitwise identical, 1.13–1.19x per rollout3 run (2026-10-12)
 
 **Question:** after §437, how much rollout3 CPU do the native shop planner and the other floor-model tree calls in
