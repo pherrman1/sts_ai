@@ -1,0 +1,16 @@
+{
+ "out": "models/candidates/v_win_x2b_public_trees.txt",
+ "sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+ "inputs": {
+  "../artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/model.ubj": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5",
+  "../artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s1/model.ubj": "227a110ea579657f9f843f0f7197977c7ad25863efb5c9b6491024b1acc13410",
+  "../artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s2/model.ubj": "e74b7740065742caf06c50abf0dff4dfe8080de78a70d57eb73c66f1f7e35e9c"
+ },
+ "trees": 1006,
+ "features": 457,
+ "check": {
+  "rows": 762,
+  "max_abs_vs_margin_mean": 1.5051239221630652e-07,
+  "max_abs_vs_prob_mean": 0.0064454923816125165
+ }
+}

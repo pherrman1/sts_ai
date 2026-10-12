@@ -285,6 +285,8 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
         return;
     }
     if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return;
+    if (!t_oocHypotheticalStep && !t_oocContinuation && t_curPath
+        && one_combat::oocGbmRankerPolicy(gc, *t_curPath)) return;
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                 && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     t_shopV = shopV;
