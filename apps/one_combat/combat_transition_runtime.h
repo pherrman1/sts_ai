@@ -28,7 +28,9 @@ struct ActiveLizardPrediction {
 
 // CPU FP32 only. Construction is explicit and throws on any incompatible artifact.
 class CombatTransitionRuntime {
-    struct Tensor { std::vector<int> shape; std::vector<float> values; };
+    // `transposed` (column-major copy of a 2-D weight) lets linear() run
+    // its rows in parallel lanes with each row's sum in the original order.
+    struct Tensor { std::vector<int> shape; std::vector<float> values; std::vector<float> transposed; };
     std::map<std::string, Tensor> weights;
     nlohmann::json metadata_;
     nlohmann::json lizardCorrection_;

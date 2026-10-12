@@ -244,6 +244,14 @@ instructions, node dedup about 11%, and state copies the bulk of the rest.
 The profile is flat, with no function above about 6% exclusive.
 `ActionQueue` copies only its queued slots. The 128-slot ring is 6.2 KB of
 `BattleContext`, and slots outside the queue are never read.
+Decision states freed by compaction or by a finished searcher go to a
+per-thread pool that the next searcher reuses, and a new node takes one copy
+of the expansion scratch instead of a `std::swap` (`BattleContext` has no move
+operations, so the swap made three copies). `nodeCount()`, which drives the
+reuse cap, is unchanged; play is bit-identical (ledger §436). The pool keeps
+up to 65,536 states (about 0.5 GB) per thread; measured peak memory rose by
+27–46 MB. It dies at thread exit, so a searcher must never be owned by a
+global, static or thread_local object.
 
 `one_combat silversynthgen N SIMS ASC OUT_PREFIX SEED TEACHER natural|perturbed`
 is a research-only corpus producer for a learned Silver root prior and leaf
