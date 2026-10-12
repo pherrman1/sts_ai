@@ -270,6 +270,7 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
         n->outcomesGenerated = 0;
         n->randomnessBase = 0;
         n->stochasticAction = Action{};
+        n->prior.clear();
         return n;
     }
     allNodes.push_back(std::make_unique<Node>());
@@ -462,6 +463,12 @@ void search::SilverSearcher::step() {
             }
         }
 
+        if (nodePrior && cur != root && cur->prior.empty() && cur->edges.size() >= 2
+                && cur->simulationCount >= treePriorMinVisits) {
+            cur->prior = nodePrior(*cur->state, cur->edges);
+            if (cur->prior.size() != cur->edges.size())
+                throw std::runtime_error("SilverSearcher: tree prior size differs from the node's edges");
+        }
         const int selectIdx = selectBestEdgeToSearch(*cur);
         if (cur == root) currentRootEdge = selectIdx;
         Edge &edge = cur->edges[selectIdx];
@@ -552,12 +559,27 @@ double search::SilverSearcher::evaluateEdge(const Node &parent, int edgeIdx, dou
     if (rootPriorWeight != 0 && &parent == root && edgeIdx < static_cast<int>(rootPrior.size())) {
         return value + rootPriorWeight * rootPrior[edgeIdx] / (edge.visitCount + 1);
     }
+    if (rootPriorWeight != 0 && &parent != root && !parent.prior.empty()) {
+        return value + rootPriorWeight * parent.prior[edgeIdx] / (edge.visitCount + 1);
+    }
     return value;
 }
 
 int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
     if (cur.edges.size() == 1) {
         return 0;
+    }
+    if (nodePrior) {
+        // Tree prior: the first untried edge is the one with the highest prior.
+        const auto &prior = &cur == root ? rootPrior : cur.prior;
+        if (prior.size() == cur.edges.size()) {
+            int best = -1;
+            for (int i = 0; i < static_cast<int>(cur.edges.size()); ++i) {
+                const auto &e = cur.edges[i];
+                if ((e.visitCount == 0 || e.node == nullptr) && (best < 0 || prior[i] > prior[best])) best = i;
+            }
+            if (best >= 0) return best;
+        }
     }
     const double logParentVisits = std::log(cur.simulationCount + 1);
     int bestEdge = 0;

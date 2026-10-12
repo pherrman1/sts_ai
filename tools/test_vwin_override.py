@@ -14,6 +14,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 B0 = 'models/v_win_trees.txt'
 CANDIDATE = 'models/candidates/v_win_x2b_trees.txt'
+PUBLIC = 'models/candidates/v_win_x2b_public_trees.txt'
 MODEL = ('nfeat 2\nfeat floor\nfeat act\nlogistic 1\nbase_score 0.5\n'
          'ntrees 1\ntree 0 3\nS 0 5 1 2\nL -1\nL 1\n')
 
@@ -31,8 +32,11 @@ def main():
            if not k.startswith(('STS_', 'STRATEGIC_'))}
     env.update(STS_NATIVE_OOC='1', STS_OOC_MCTS='0')
 
-    def run(label, override=None, *, success=True, message='', mode=None):
+    def run(label, override=None, *, success=True, message='', mode=None, mcts=False):
         case_env = env.copy()
+        if mcts:
+            case_env.update(STS_OOC_MCTS='1', STS_OOC_MCTS_SIMS='128',
+                            STS_OOC_STRATEGIC_TOK_NN=str(ROOT / 'selfplay/models/ooc_strategic_tok_final.native'))
         if override is not None:
             case_env['STS_WIN_NET'] = override
         result = subprocess.run([binary] + (mode or ['oocmctsconfigselftest']),
@@ -52,6 +56,13 @@ def main():
     run('legacy 1 uses B0', '1', message=f'from {B0}]')
     candidate_output = run('explicit X2-B', CANDIDATE, message=f'from {CANDIDATE}]')
     assert f'from {B0}]' not in candidate_output, candidate_output
+    # Live OOC MCTS without STS_WIN_NET uses the public X2-B (§449, ADR-0029).
+    public_output = run('OOC MCTS unset uses public X2-B', mcts=True, message=f'from {PUBLIC}]')
+    assert f'from {B0}]' not in public_output, public_output
+    assert f'[OOC MCTS default win model: {PUBLIC}]' in public_output, public_output
+    b0_output = run('OOC MCTS legacy 1 uses B0', '1', mcts=True, message=f'from {B0}]')
+    assert f'from {PUBLIC}]' not in b0_output and 'default win model' not in b0_output, b0_output
+    run('OOC MCTS explicit X2-B', CANDIDATE, mcts=True, message=f'from {CANDIDATE}]')
     with tempfile.TemporaryDirectory(prefix='vwin-override-') as temporary:
         directory = Path(temporary)
         run('missing model', str(directory / 'missing.txt'), success=False)
