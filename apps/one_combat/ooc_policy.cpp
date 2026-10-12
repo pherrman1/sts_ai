@@ -1194,7 +1194,7 @@ int chooseMapAction(const GameContext &gc) {
     return bestX;
 }
 
-// Opt-in A20 GBM action ranker (ledger §446, default off):
+// Opt-in A20 GBM action ranker (ledger §447, default off):
 // STS_OOC_GBM_RANKER=<CompactTreeNet trees> takes every real OOC decision
 // that has at least two candidates.  Candidates are strategicgen2's (deduped
 // getAllActionsInState plus the skip-card action), and each candidate's

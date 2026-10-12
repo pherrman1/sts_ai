@@ -1,4 +1,4 @@
-# §446: A20 GBM ranker in live play (pre-registration)
+# §447: A20 GBM ranker in live play (pre-registration)
 
 Question (Philipp, 2026-10-12 10:54Z, "Live test"): does the §445 A20 GBM ranker,
 which beat the heuristic on the Gold2 regret benchmark (1.73 vs 2.26 floors) and was
