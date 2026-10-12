@@ -5,7 +5,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <mutex>
+#include <stdexcept>
 #include <memory>
 #include <sstream>
 #include <unordered_set>
@@ -1188,6 +1192,119 @@ int chooseMapAction(const GameContext &gc) {
         for (int i = 0; i < n.edgeCount; ++i) consider(n.edges[i]);
     }
     return bestX;
+}
+
+// Opt-in A20 GBM action ranker (ledger §446, default off):
+// STS_OOC_GBM_RANKER=<CompactTreeNet trees> takes every real OOC decision
+// that has at least two candidates.  Candidates are strategicgen2's (deduped
+// getAllActionsInState plus the skip-card action), and each candidate's
+// features are its strategicgen2 row: screen, actionType, c1..cand3, then
+// richRow(gc, path), parsed from the same text the training CSV held.
+// STS_OOC_GBM_RANKER_DUMP=<file> appends one line per scored candidate
+// (seed,floor,decision,candidate,score,features) for the offline parity check.
+namespace {
+struct GbmRanker {
+    CompactTreeNet net;
+    std::string dumpPath;
+    std::mutex dumpMutex;
+};
+const std::vector<std::string> &gbmRankerColumns() {
+    static const std::vector<std::string> cols = [] {
+        std::vector<std::string> c{"screen", "actionType", "c1", "c2", "c3", "cand1", "cand2", "cand3"};
+        std::string h = richStateHeader(), cur;
+        for (char ch : h) { if (ch == ',') { c.push_back(cur); cur.clear(); } else cur += ch; }
+        c.push_back(cur);
+        return c;
+    }();
+    return cols;
+}
+GbmRanker *gbmRanker() {
+    static GbmRanker *ranker = []() -> GbmRanker * {
+        const char *p = std::getenv("STS_OOC_GBM_RANKER");
+        if (!p || !*p) return nullptr;
+        auto *r = new GbmRanker;
+        std::unordered_map<std::string, int> idx;
+        const auto &cols = gbmRankerColumns();
+        for (int i = 0; i < (int)cols.size(); ++i) idx[cols[i]] = i;
+        if (!r->net.load(p, idx, "STS_OOC_GBM_RANKER") || r->net.logistic)
+            throw std::runtime_error("STS_OOC_GBM_RANKER: cannot load a regression tree model");
+        if (const char *d = std::getenv("STS_OOC_GBM_RANKER_DUMP")) r->dumpPath = d;
+        std::cerr << "[OOC GBM ranker: " << p << ", " << r->net.featureNames.size()
+                  << " features, " << r->net.roots.size() - 1 << " trees]\n";
+        return r;
+    }();
+    return ranker;
+}
+// A floor that keeps asking the ranker is a loop (e.g. a select screen the
+// ranker toggles); the deployed chain finishes that floor instead.
+thread_local std::uint64_t t_gbmSeed = 0;
+thread_local int t_gbmFloor = -1, t_gbmFloorSteps = 0;
+thread_local std::uint64_t t_gbmDecision = 0;
+constexpr int kGbmFloorStepCap = 200;
+}  // namespace
+
+bool oocGbmRankerEnabled() { return gbmRanker() != nullptr; }
+
+bool oocGbmRankerPolicy(GameContext &gc, const PathHistory &path) {
+    GbmRanker *ranker = gbmRanker();
+    if (!ranker) return false;
+    using RT = search::GameAction::RewardsActionType;
+    std::vector<search::GameAction> actions;
+    for (const auto &a : search::GameAction::getAllActionsInState(gc)) {
+        bool dup = false;
+        for (const auto &b : actions) if (b.bits == a.bits) { dup = true; break; }
+        if (!dup) actions.push_back(a);
+    }
+    if (gc.screenState == ScreenState::REWARDS && gc.info.rewardsContainer.cardRewardCount > 0) {
+        const search::GameAction skipCard(RT::CARD, gc.info.rewardsContainer.cardRewardCount - 1, 5);
+        bool dup = false;
+        for (const auto &b : actions) if (b.bits == skipCard.bits) { dup = true; break; }
+        if (!dup) actions.push_back(skipCard);
+    }
+    if (actions.size() < 2) return false;
+    if (gc.seed != t_gbmSeed || gc.floorNum != t_gbmFloor) {
+        if (gc.seed != t_gbmSeed) t_gbmDecision = 0;
+        t_gbmSeed = gc.seed; t_gbmFloor = gc.floorNum; t_gbmFloorSteps = 0;
+    }
+    if (++t_gbmFloorSteps > kGbmFloorStepCap) return false;
+
+    const std::string state = richRow(gc, path);
+    std::vector<float> raw(gbmRankerColumns().size(), 0.0f);
+    {
+        const char *s = state.c_str();
+        for (std::size_t i = 8; i < raw.size(); ++i) {
+            char *end = nullptr;
+            raw[i] = std::strtof(s, &end);
+            if (end == s) throw std::runtime_error("STS_OOC_GBM_RANKER: malformed richRow");
+            s = *end == ',' ? end + 1 : end;
+        }
+    }
+    raw[0] = (float)(int)gc.screenState;
+    int best = -1;
+    double bestScore = 0.0;
+    std::ostringstream dump;
+    for (int a = 0; a < (int)actions.size(); ++a) {
+        int actionType, c1, c2, c3, cand1, cand2, cand3;
+        strategicCands(gc, actions[a], actionType, c1, c2, c3, cand1, cand2, cand3);
+        raw[1] = (float)actionType; raw[2] = (float)c1; raw[3] = (float)c2; raw[4] = (float)c3;
+        raw[5] = (float)cand1; raw[6] = (float)cand2; raw[7] = (float)cand3;
+        const double score = ranker->net.predict(raw);
+        if (best < 0 || score > bestScore) { best = a; bestScore = score; }
+        if (!ranker->dumpPath.empty()) {
+            dump << gc.seed << ',' << gc.floorNum << ',' << t_gbmDecision << ',' << a << ','
+                 << actions[a].bits << ',' << std::setprecision(17) << score;
+            for (int i = 0; i < 8; ++i) dump << ',' << (int)raw[i];
+            dump << ',' << state << '\n';
+        }
+    }
+    if (!ranker->dumpPath.empty()) {
+        std::lock_guard<std::mutex> lock(ranker->dumpMutex);
+        std::ofstream f(ranker->dumpPath, std::ios::app);
+        if (!f || !(f << dump.str())) throw std::runtime_error("STS_OOC_GBM_RANKER_DUMP write failed");
+    }
+    ++t_gbmDecision;
+    actions[best].execute(gc);
+    return true;
 }
 
 } // namespace one_combat
