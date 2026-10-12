@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -1025,20 +1025,21 @@ up to 1,024 rows and keeps the first strict maximum in enumeration order.
 The native OOC research controls in this section and the campfire/removal/card
 subsections below were verified on 2026-10-08.
 
-The legacy floor/win fallback rich vector includes realized `nextEliteId` and
+The floor/win fallback rich vector includes realized `nextEliteId` and
 `nextFight0..2`, and both tracked tree ensembles split on these fields. Combat
-`STS_FAIR=1` does not remove this OOC information dependency. The default-off
-research control `STS_OOC_PUBLIC_FUTURES=K` replaces only those four fields at
-prediction time with K common, public-history-conditioned native encounter
-samples and averages model predictions, including probabilities after the
-logistic link. The same sampled futures score all alternatives within a
+`STS_FAIR=1` does not remove this OOC information dependency. Since ADR-0028
+(2026-10-12) `STS_OOC_PUBLIC_FUTURES=K` defaults to K = 8: it replaces only
+those four fields at prediction time with K common, public-history-conditioned
+native encounter samples and averages model predictions, including
+probabilities after the logistic link. Explicit `0` restores the legacy hidden
+inputs; Act 4, whose encounters are fixed, is scored without a mixture. The same sampled futures score all alternatives within a
 fallback decision; the source state/RNG is unchanged. Its planner seed excludes
 the true run seed, RNG streams and queue-derived feature block. This is a
 bounded repair for the controlled native V4 profile, not a qualification of
 legacy server modes or hypothetical actions already executed with actual RNG.
-The campaign keeps those routes disabled. Enabled treatments enter the
-counterfactual teacher policy specification; disabled settings preserve the
-legacy specification. Per-run public scorer counts prove actual branch use.
+The campaign keeps those routes disabled. Enabled settings (now including the
+default) enter the counterfactual teacher policy specification; explicit `0`
+preserves the legacy specification. Per-run public scorer counts prove actual branch use.
 
 `STS_OOC_SHOP_DECK_SIZE_FIX=1` independently corrects hypothetical shop bundle
 features: relics add no cards and removal subtracts one card. The default
