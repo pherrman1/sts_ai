@@ -688,7 +688,11 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
         require(metadata_.at("supportExclusions")==supportExclusions(escape_,writhingRitual_),"combat runtime support exclusions");
         const auto qualification=metadata_.at("qualification").value("classification",std::string{});
-        require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" ||
+        // §443: a research candidate (never production or a built-in manifest) may carry a
+        // final-support exposure gate waived by a recorded override (export --exposure-override).
+        const bool overridden=qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE" &&
+            researchCandidate() && isSha256(metadata_.at("qualification").value("exposureOverrideSha256",nlohmann::json{}));
+        require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" || overridden ||
             (promotedLizard && qualification=="DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED"),
             "combat runtime qualification");
         const auto &census=identity_.at("supportCensus");
@@ -1215,7 +1219,9 @@ EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitio
         !standardMetadata.contains("experimentalDeepSets") &&
         standardMetadata.at("sources")==currentStandardSources &&
         standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable(),standard_->runtime().writhingRitualCapable()) &&
-        standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
+        (standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" ||
+         (standard_->runtime().researchCandidate() &&
+          standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE")),
         "Brew fallback must be the current standard Attention CTM artifact");
     // A Brew state with a Smoke Bomb falls back to the standard artifact, so both must agree.
     require(fast_->runtime().escapeCapable()==standard_->runtime().escapeCapable(),
