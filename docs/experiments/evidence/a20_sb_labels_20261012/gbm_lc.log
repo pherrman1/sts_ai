@@ -1,0 +1,22 @@
+[0]	va-rmse:1.89974
+[200]	va-rmse:1.81818
+[400]	va-rmse:1.81390
+[502]	va-rmse:1.81405
+/tmp/claude-0/-home-user-sts-ai/b94b232e-4edc-561a-9463-dedf147e0ad5/scratchpad/gbm_lc.py:26: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  g2['pred']=b.predict(xgb.DMatrix(g2[feats].to_numpy(np.float32),feature_names=feats),iteration_range=(0,b.best_iteration+1))
+/tmp/claude-0/-home-user-sts-ai/b94b232e-4edc-561a-9463-dedf147e0ad5/scratchpad/gbm_lc.py:28: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  for name,x,pc in [('val_sb',d[va].assign(pred=b.predict(dva,iteration_range=(0,b.best_iteration+1))),'labelFloor'),('gold2',g2,'labelFloor')]:
+0.25 val_sb regret 1.186 n=8227
+0.25 gold2 regret 1.772 n=406
+[0]	va-rmse:1.89914
+[200]	va-rmse:1.80318
+[400]	va-rmse:1.79670
+[600]	va-rmse:1.79546
+[708]	va-rmse:1.79571
+/tmp/claude-0/-home-user-sts-ai/b94b232e-4edc-561a-9463-dedf147e0ad5/scratchpad/gbm_lc.py:26: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  g2['pred']=b.predict(xgb.DMatrix(g2[feats].to_numpy(np.float32),feature_names=feats),iteration_range=(0,b.best_iteration+1))
+/tmp/claude-0/-home-user-sts-ai/b94b232e-4edc-561a-9463-dedf147e0ad5/scratchpad/gbm_lc.py:28: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  for name,x,pc in [('val_sb',d[va].assign(pred=b.predict(dva,iteration_range=(0,b.best_iteration+1))),'labelFloor'),('gold2',g2,'labelFloor')]:
+0.5 val_sb regret 1.137 n=8227
+0.5 gold2 regret 1.709 n=406
+LC_EXIT 0
