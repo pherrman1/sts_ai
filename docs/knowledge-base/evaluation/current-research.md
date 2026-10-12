@@ -2496,8 +2496,10 @@ counts are public. Retraining the A3 X1 recipe without the four hidden fields
 was `INCONCLUSIVE` (3-seed mean VALIDATION NLL 0.4458 versus 0.4485 with them),
 with no sign the leak helps. XGBoost seed noise (~0.007-0.010 NLL) exceeds the
 question's 0.002 materiality and the A3 X1 grid spread, so single-seed A3
-selection should not be over-interpreted. Public-history/derived-probability
-stages of #397 remain open on the 457-feature public-safe baseline.
+selection should not be over-interpreted. The public-history/derived-probability
+stages of #397 were tested on that baseline in §§374–376 and §378; no family was adopted.
+Live (ledger-06 §434): the native fallback's use of the realized queue is not shown to
+change wins; legacy 103/128 vs `STS_OOC_PUBLIC_FUTURES=8` 104/128, Δ +0.8 pp [−4.7, +6.3].
 #396 Stage 1 (ledger-06 §418): removing the forward-map block from that
 baseline was `INCONCLUSIVE` (+0.0050 NLL, CI includes 0, about twice the
 retraining null), removing `bossId` also `INCONCLUSIVE` (+0.0012). Stage 2
