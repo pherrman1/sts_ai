@@ -227,6 +227,28 @@ def main():
         path, case_env = altered_standard('census', lambda h: h['supportCensus']['all'].update(supportedIndexSha256='ef' * 32))
         expect('candidate_census_not_in_manifest', probe(['--identity', path], case_env), error='qualified cohort')
 
+        # An exposure override (export --exposure-override) qualifies only a research candidate.
+        override = 'FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE'
+        def by_override(h, sha='ab' * 32):
+            h['qualification'] = dict(h['qualification'], classification=override, waivedEntries=['hp.recursiveBrew'])
+            if sha is not None:
+                h['qualification']['overrideSha256'] = sha
+        path, case_env = altered_standard('override', by_override)
+        expect('candidate_override_standard', probe(['--identity', path], case_env), identity=CANDIDATE)
+        override_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+        override_fast = directory / 'override-fast.native'
+        override_fast_sha = write(override_fast, fast_version, fast_header_for(override_sha), fast_body)
+        pair_manifest = json.loads(Path(case_env['STS_CTM_RESEARCH_CANDIDATE_MANIFEST']).read_text())
+        pair_env = manifest(directory / 'override-pair.json', standard=pair_manifest['standard'],
+                            fast=dict(pair_manifest['fast'], artifactSha256=override_fast_sha))
+        expect('candidate_override_pair', probe(['--pair-identity', override_fast, path, 1], pair_env), identity=CANDIDATE)
+        path, case_env = altered_standard('override_unbound', lambda h: by_override(h, None))
+        expect('candidate_override_without_sha', probe(['--identity', path], case_env), error='combat runtime qualification')
+        production_override = directory / 'production-override.native'
+        header = json.loads(json.dumps(std_header)); by_override(header)
+        write(production_override, std_version, header, std_body)
+        expect('production_override_refused', probe(['--identity', production_override]), error='combat runtime qualification')
+
         tampered = directory / 'tampered.native'
         payload = bytearray(standard_path.read_bytes()); payload[-1] ^= 1; tampered.write_bytes(payload)
         expect('candidate_bytes_not_listed', probe(['--identity', tampered], env), error='not listed in its manifest')

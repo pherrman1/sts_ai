@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-12 for the CTM exposure override (§443); 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -327,7 +327,14 @@ against that `ctm_research_candidate_v1` manifest instead of the production
 pins (`tools/ctm_candidate.py` stamps exports and writes the manifest). The swapped values are artifact bytes, source and checkpoint hashes,
 support-census indices and the active-Lizard q/r identity. Schema, shapes, the
 HP envelope, support exclusions, the qualification class and the Lizard
-definitions stay pinned. A candidate cannot claim the production default or a
+definitions stay pinned. The one exception to the qualification class: a
+candidate under a manifest (not production, not a built-in manifest) may carry
+`FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE` with an `overrideSha256`,
+written by `tools/export_combat_transition_near_full.py --exposure-override`
+from a `ctm_gate_override_v1` JSON (stage `final-support-exposure`) that binds
+the exposure report's sha256, names exactly its failing gated
+`component.cohort` entries, and carries the approval, reason and evidence.
+Zero-exact-mass rows and whole-support validity are never waived. A candidate cannot claim the production default or a
 promoted Lizard. The Brew fallback is pinned by the fast artifact's identity, so
 a candidate fast artifact needs its own standard artifact. Without the variables
 nothing changes, and artifacts without the declaration always use the
