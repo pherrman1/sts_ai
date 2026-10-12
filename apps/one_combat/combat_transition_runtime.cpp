@@ -4,6 +4,8 @@
 #include "constants/Potions.h"
 #include "constants/Relics.h"
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -15,6 +17,7 @@
 #include <openssl/evp.h>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace one_combat {
 namespace {
@@ -671,6 +674,20 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         weights.emplace(entry.first,std::move(t));
     }
     require(f.peek()==std::char_traits<char>::eof(),"combat runtime trailing bytes");
+    if(deepsetStack) {
+        size_t twins=0;sharedHpEncoder_=true;
+        for(const auto &[name,t]:weights) {
+            if(name.rfind("max_hp.encoder.",0)!=0) continue;
+            auto twin=weights.find("hp"+name.substr(6));
+            sharedHpEncoder_&=twin!=weights.end() && twin->second.shape==t.shape && twin->second.values.size()==t.values.size() &&
+                std::memcmp(twin->second.values.data(),t.values.data(),t.values.size()*sizeof(float))==0;
+            ++twins;
+        }
+        for(const auto &entry:weights) twins-=entry.first.rfind("hp.encoder.",0)==0;
+        sharedHpEncoder_&=twins==0;
+    }
+    static std::atomic<std::uint64_t> instances{0};
+    instance_=++instances;
 }
 const CombatTransitionRuntime::Tensor &CombatTransitionRuntime::tensor(const std::string &name) const {return weights.at(name);}
 Vec CombatTransitionRuntime::linear(const std::string &name,const Vec &x) const {
@@ -687,6 +704,42 @@ Vec CombatTransitionRuntime::embedding(const std::string &name,int index) const 
     const auto &w=tensor(name+".weight");require(w.shape.size()==2 && index>=0 && index<w.shape[0],"combat embedding domain");
     return Vec(w.values.begin()+index*w.shape[1],w.values.begin()+(index+1)*w.shape[1]);
 }
+namespace {
+// Per-thread memo of the DeepSets per-token MLP outputs. A token's output depends only on
+// the key below (the integer fields its embedding index and float inputs are built from),
+// so a hit returns the exact floats a fresh computation would; pools still add them in
+// token order. Keyed by runtime instance and encoder group; cleared when a table fills.
+using TokenKey=std::array<int,4>;
+struct TokenKeyHash {
+    size_t operator()(const TokenKey &k) const {
+        std::uint64_t h=1469598103934665603ull;
+        for(int v:k) { h^=std::uint32_t(v);h*=1099511628211ull; }
+        return size_t(h);
+    }
+};
+using TokenMemo=std::unordered_map<TokenKey,Vec,TokenKeyHash>;
+struct EncoderMemo { TokenMemo card,relic,potion; };
+constexpr size_t kTokenMemoLimit=1<<13;
+std::atomic<bool> encoderMemoEnabled{true};
+EncoderMemo &encoderMemo(std::uint64_t instance,const std::string &group) {
+    // A destroyed runtime's entries stay until the thread exits; runtimes live for the process in practice.
+    thread_local std::map<std::pair<std::uint64_t,std::string>,EncoderMemo> memos;
+    return memos[{instance,group}];
+}
+template<class Compute>
+const Vec &memoized(TokenMemo &memo,const TokenKey &key,Compute compute) {
+    if(!encoderMemoEnabled.load(std::memory_order_relaxed)) {
+        thread_local Vec reference;
+        reference=compute();
+        return reference;
+    }
+    auto found=memo.find(key);
+    if(found!=memo.end()) return found->second;
+    if(memo.size()>=kTokenMemoLimit) memo.clear();
+    return memo.emplace(key,compute()).first->second;
+}
+}
+void CombatTransitionRuntime::setEncoderMemoForTesting(bool enabled) { encoderMemoEnabled=enabled; }
 Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredictorInputV1 &input) const {
     require(input.cards.size()<=128 && input.relics.size()<=64 && input.potions.size()==5,"combat input token bound");
     const auto &g=input.globals;const std::string p=group+".encoder.";
@@ -701,20 +754,28 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
             return relu(linear(p+name+".2",relu(linear(p+name+".0",fields))));
         };
         Vec cardPool(64),relicPool(64),potionPool(64);
+        auto &memo=encoderMemo(instance_,group);
         for(const auto &card:input.cards) {
-            auto fields=embedding(p+"card_id",card.cardId);
-            append(fields,{float(card.upgraded),float(std::clamp(card.misc,-20,20))/20,float(card.bottleBinding+1)/3});
-            add(cardPool,transform("card_mlp",fields));
+            const int misc=std::clamp(card.misc,-20,20);
+            add(cardPool,memoized(memo.card,{card.cardId,int(card.upgraded),misc,card.bottleBinding},[&] {
+                auto fields=embedding(p+"card_id",card.cardId);
+                append(fields,{float(card.upgraded),float(misc)/20,float(card.bottleBinding+1)/3});
+                return transform("card_mlp",fields);
+            }));
         }
         for(const auto &relic:input.relics) {
-            auto fields=embedding(p+"relic_id",relic.relicId);
-            append(fields,{float(relic.data)/10,float(relic.orderIndex)/64});
-            add(relicPool,transform("relic_mlp",fields));
+            add(relicPool,memoized(memo.relic,{relic.relicId,relic.data,relic.orderIndex,0},[&] {
+                auto fields=embedding(p+"relic_id",relic.relicId);
+                append(fields,{float(relic.data)/10,float(relic.orderIndex)/64});
+                return transform("relic_mlp",fields);
+            }));
         }
         for(const auto &potion:input.potions) {
-            auto fields=embedding(p+"potion_id",potion.potionId);
-            append(fields,embedding(p+"potion_slot",potion.slot));
-            add(potionPool,transform("potion_mlp",fields));
+            add(potionPool,memoized(memo.potion,{potion.potionId,potion.slot,0,0},[&] {
+                auto fields=embedding(p+"potion_id",potion.potionId);
+                append(fields,embedding(p+"potion_slot",potion.slot));
+                return transform("potion_mlp",fields);
+            }));
         }
         append(cardPool,relicPool);append(cardPool,potionPool);
         append(cardPool,relu(linear(p+"global_mlp.0",global)));

@@ -1,0 +1,15 @@
+unit | binary | sec/run (result CSV) | process CPU s | MCTS CPU s | combat_resolve CPU s (calls)
+r3-74022000 | base | 625.673 | 619.1 | 542.8 | 150.1 (304246)
+r3-74022000 | candidate ea55f36b | 505.318 | 499.0 | 423.7 | 53.4 (304246)
+r3u-74022001 | base | 483.86 | 478.7 | 390.6 | 117.8 (265634)
+r3u-74022001 | candidate ea55f36b | 390.611 | 385.3 | 297.7 | 41.8 (265634)
+r3-74022002 | base | 717.463 | 686.8 | 640.5 | 163.9 (366114)
+r3-74022002 | candidate ea55f36b | 595.66 | 567.5 | 520.8 | 56.2 (366114)
+r3-74022002 | final 0d8852d9 | 594.508 | 585.9 | 536.7 | 58.0 (366114)
+r3-74022003 | base | 838.088 | 807.2 | 748.6 | 192.8 (390534)
+r3-74022003 | candidate ea55f36b | 696.798 | 668.9 | 611.9 | 68.9 (390534)
+off-74022004 | base | 53.994 + 59.721
+off-74022004 | candidate ea55f36b | 51.6911 + 61.4345
+off-74022004 | final 0d8852d9 | 51.6856 + 60.8767
+base r3-74022000 and r3u-74022001 ran under gprofng (one process each, 2 at a time); all other units ran
+4 at a time on the same 4-vCPU container, base and candidate of a seed concurrently. final ran 2 at a time.

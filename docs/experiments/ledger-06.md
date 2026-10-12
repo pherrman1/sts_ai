@@ -16825,3 +16825,35 @@ as presence (floor −0.19 [−0.38, +0.01]) on the next retrain; no deletions o
 JSON, scored tables). No seeds used (the 74016000–74016999 block stays unused).
 
 **Knowledge impact:** one paragraph after the #397/#396 paragraphs in `evaluation/current-research.md`.
+
+## §439 — CTM in rollout3: about a quarter of CPU, almost all DeepSets token MLPs; exact per-token memo 2.8x on the CTM, 1.20–1.24x per run (2026-10-12)
+
+**Question:** where does the combat transition model spend its time in §422 rollout3 on current `main` (after
+§436/§437), how large is its share, and can it get cheaper with bit-identical play?
+**Method:** baseline `main` `b039e846`, Release `one_combat`, §422 `rollout3`/`off` environments plus
+`STS_OOC_CPU_PROFILE=1`, `gprofng` PC sampling, seeds 74022000–74022005 (one rollout3 unit with
+`STS_OOC_MCTS_PRIOR=uniform`).
+**Profile:** CTM `combat_resolve` 150 s of 619 s process CPU (24%; uniform prior 118 of 479 s, 25%), 304k
+unprepared samples in leaf rollouts at 0.49 ms each. Each sample ran four DeepSets encoders (survival, max_hp,
+hp, potion), each a two-layer MLP per card, relic and potion token. Other large rollout3 costs:
+`predictVariants` in the native shop planner 23%, the V4 network about a quarter, real Silver combats 12%.
+**Change:** (1) a per-thread memo of each token's MLP output, keyed by runtime instance, encoder group and the
+token's integer fields, with pools still summed in token order; (2) the pathb-r2 fast artifact's `max_hp`
+encoder is a byte-identical copy of its `hp` encoder (checked at load), so the unprepared near-full sampler
+takes maxHP from the hp encoding, as the prepared path already did.
+**Parity:** result, OOC decision, MCTS action/support traces and non-timing MCTS columns byte-identical on rollout3
+74022000, 74022002, 74022003, uniform-prior 74022001 and `off` 74022004–005 (final binary re-checked on 74022002
+and `off` 74022004–005). New ctest `ctm_encoder_memo_parity`: two DeepSets artifacts, memoized and interleaved, against the
+unmemoized reference on 62 fixture inputs (1,240 bitwise comparisons); removing the encoder group, the runtime
+instance or any key field from the memo key makes it fail.
+**Speed:** CTM CPU 2.8x lower (150–193 → 42–69 s on the four rollout3 seeds); per run 1.20x (paired 74022002,
+74022003), 1.23x (74022000 process CPU, both profiled), 1.24x (uniform prior); `off` unchanged. The CTM is now about
+10% of rollout3 CPU.
+**Decision:** adopt (pure speedup, exact parity). Pointer pre-resolution for the remaining CTM `linear` calls is not
+worth a change at about 10% share; the next rollout3 levers are the shop planner and the V4 network, not the CTM.
+
+**Evidence:** [packet](evidence/ctm_encoder_memo_20261012/README.md). Raw: `/mnt/project-files/ctm-speed-439/raw.tar.gz`.
+Seeds 74022000–74022005 are now used.
+
+**Knowledge impact:** CTM cost sentence in the rollout3 paragraph of `evaluation/current-research.md`; memo sentence
+in `architecture/out-of-combat.md`.
