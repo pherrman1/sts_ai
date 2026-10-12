@@ -2,8 +2,10 @@
 """Freeze the #418 Path B learned-stop teacher for one built binary.
 usage: python3 make_teacher.py FROZEN_SHA BINARY REPO_ROOT OUT.json [--deployed-ooc]
 --deployed-ooc adds STS_CTM_GEN_DEPLOYED_OOC=1 and the deployed V4 OOC settings (§443 G0) to the
-environment the generator checks; run the generator with exactly that environment."""
-import hashlib, json, sys
+environment the generator checks and writes the binary's effective OOC policy under that environment
+(`vwinrefreshpolicyspec`) as `ooc_policy`, which the generator then requires. Run it from the repo root and run
+the generator with exactly the teacher's environment."""
+import hashlib, json, os, subprocess, sys, tempfile
 from pathlib import Path
 sha_frozen, binary, repo, out = sys.argv[1:5]
 deployed = sys.argv[5:] == ["--deployed-ooc"]
@@ -38,4 +40,9 @@ if deployed:
         "STS_OOC_STRATEGIC_REST": "1", "STS_OOC_STRATEGIC_EVENT": "1", "STS_OOC_STRATEGIC_SHOP": "1",
         "STS_OOC_STRATEGIC_TREASURE": "1", "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
         "STS_OOC_STRATEGIC_MARGIN": "1.0", "STS_COLLECT_KEYS": "0"})
+    env = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"], "OMP_NUM_THREADS": "1", **teacher["environment"]}
+    with tempfile.TemporaryDirectory() as d:
+        spec = Path(d) / "policy.json"
+        subprocess.run([binary, "vwinrefreshpolicyspec", str(spec)], cwd=repo, env=env, check=True)
+        teacher["ooc_policy"] = json.loads(spec.read_text())
 Path(out).write_text(json.dumps(teacher, indent=2) + "\n")

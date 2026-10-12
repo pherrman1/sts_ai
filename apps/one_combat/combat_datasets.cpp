@@ -5760,11 +5760,12 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     // Only the Lizard candidate mode passes stale provenance; it keeps the
     // frozen exact-10k teacher.
     const bool lizardCandidateMode = allowStaleProvenance;
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
-                                                false, !lizardCandidateMode);
     const bool deployedOoc = ctmGenDeployedOoc();
     if (deployedOoc && lizardCandidateMode)
         throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC is only for combattransitiongen/forcedgen");
+    // The deployed step reads the global OOC settings, so its teacher must pin them (ooc_policy).
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
+                                                deployedOoc, !lizardCandidateMode);
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
@@ -5797,6 +5798,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
                         {"quarantinedSeeds", nSeeds - completed}, {"rows", rows}}}
     };
+    if (deployedOoc) manifest["policy"] = effectiveOocPolicySpecification();
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
