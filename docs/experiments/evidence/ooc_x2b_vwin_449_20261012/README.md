@@ -12,9 +12,8 @@ by the coordinator on Philipp's card answer "128 pairs, 8 workers".
 `STS_WIN_NET=models/candidates/v_win_x2b_public_trees.txt`. All 256 logs print `[ooc-mcts-config]` with
 `"prior":"policy"`, `"wideningK":4,"wideningAlpha":0.75`, `"leafValue":"native","leafWinModel":null,"leafCombats":3,
 "leafPolicy":"v4","simulations":4096`. Hashes: [data-sha256.txt](data-sha256.txt).
-The coordinator re-verified all 8 tars from a second container. Each tar's `out/` also holds about 78 leftover files of one
-§448 margin-sweep seed (8100xxxx; arms `heur`, `a0_m*`, `a20_m*`) from an earlier run in the same worker container; the
-analysis reads only `vwin-*` and `x2bpub-*` files, and every arm has exactly the 128 cohort seeds.
+The coordinator re-verified all 8 tars from a second container. Each tar holds 292 entries: `out/`, `FROZEN.txt`, `DONE.txt`,
+`units.txt` and the 288 `vwin-*`/`x2bpub-*` unit files, nothing else.
 
 ## Result ([report.json](report.json), `tools/analyze_ooc_x2b_449.py`)
 
