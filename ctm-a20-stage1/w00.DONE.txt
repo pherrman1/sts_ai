@@ -1,0 +1,37 @@
+finished=2026-10-12T13:54:10Z
+worker=0 run=90f6df64c87ad9b298e06d1a19bb4e69fc577296 binary=12e881be13ee6b7df0fd6d6810cb8e6cc34dd54c82cc842e6a889c16e27cc05b g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+unit=high_maxhp-78303000 setup=high_maxhp n=50 rc=0 sec=1723 completed=50/50 quarantined=0 rows=1351
+unit=high_maxhp-78303050 setup=high_maxhp n=50 rc=0 sec=1595 completed=50/50 quarantined=0 rows=1340
+unit=lizard_brew-78301000 setup=lizard_brew n=50 rc=0 sec=1357 completed=50/50 quarantined=0 rows=1256
+unit=lizard_brew-78301050 setup=lizard_brew n=50 rc=0 sec=1190 completed=50/50 quarantined=0 rows=1206
+unit=lizard_brew-78301100 setup=lizard_brew n=50 rc=0 sec=1237 completed=50/50 quarantined=0 rows=1186
+unit=lizard_brew-78301150 setup=lizard_brew n=50 rc=0 sec=1279 completed=50/50 quarantined=0 rows=1218
+unit=lizard_brew-78301200 setup=lizard_brew n=50 rc=0 sec=1120 completed=50/50 quarantined=0 rows=1231
+unit=lizard_brew-78301250 setup=lizard_brew n=50 rc=0 sec=1192 completed=50/50 quarantined=0 rows=1247
+unit=lizard_brew-78301300 setup=lizard_brew n=50 rc=0 sec=1203 completed=50/50 quarantined=0 rows=1225
+unit=lizard_brew-78301350 setup=lizard_brew n=50 rc=0 sec=1163 completed=50/50 quarantined=0 rows=1263
+unit=lizard_brew-78301400 setup=lizard_brew n=50 rc=0 sec=1051 completed=50/50 quarantined=0 rows=1201
+unit=lizard_brew-78301450 setup=lizard_brew n=50 rc=0 sec=1144 completed=50/50 quarantined=0 rows=1206
+unit=lizard_brew-78301500 setup=lizard_brew n=50 rc=0 sec=1398 completed=50/50 quarantined=0 rows=1233
+unit=lizard_brew-78301550 setup=lizard_brew n=50 rc=0 sec=1177 completed=50/50 quarantined=0 rows=1227
+unit=lizard_fairy-78300000 setup=lizard_fairy n=50 rc=0 sec=1046 completed=50/50 quarantined=0 rows=1228
+unit=lizard_fairy-78300050 setup=lizard_fairy n=50 rc=0 sec=1038 completed=50/50 quarantined=0 rows=1263
+unit=lizard_fairy-78300100 setup=lizard_fairy n=50 rc=0 sec=983 completed=50/50 quarantined=0 rows=1146
+unit=lizard_fairy-78300150 setup=lizard_fairy n=50 rc=0 sec=1122 completed=50/50 quarantined=0 rows=1229
+unit=lizard_fairy-78300200 setup=lizard_fairy n=50 rc=0 sec=1144 completed=50/50 quarantined=0 rows=1263
+unit=lizard_fairy-78300250 setup=lizard_fairy n=50 rc=0 sec=972 completed=50/50 quarantined=0 rows=1221
+unit=lizard_fairy-78300300 setup=lizard_fairy n=50 rc=0 sec=955 completed=50/50 quarantined=0 rows=1207
+unit=lizard_fairy-78300350 setup=lizard_fairy n=50 rc=0 sec=1048 completed=50/50 quarantined=0 rows=1229
+unit=lizard_fairy-78300400 setup=lizard_fairy n=50 rc=0 sec=966 completed=50/50 quarantined=0 rows=1243
+unit=lizard_fairy-78300450 setup=lizard_fairy n=50 rc=0 sec=1186 completed=50/50 quarantined=0 rows=1300
+unit=lizard_fairy-78300500 setup=lizard_fairy n=50 rc=0 sec=980 completed=50/50 quarantined=0 rows=1219
+unit=lizard_fairy-78300550 setup=lizard_fairy n=50 rc=0 sec=1094 completed=50/50 quarantined=0 rows=1221
+unit=ritual_writhing-78302000 setup=ritual_writhing n=50 rc=0 sec=675 completed=50/50 quarantined=0 rows=991
+unit=ritual_writhing-78302050 setup=ritual_writhing n=50 rc=0 sec=820 completed=50/50 quarantined=0 rows=1034
+unit=ritual_writhing-78302100 setup=ritual_writhing n=50 rc=0 sec=724 completed=50/50 quarantined=0 rows=989
+unit=ritual_writhing-78302150 setup=ritual_writhing n=50 rc=0 sec=611 completed=50/50 quarantined=0 rows=983
+unit=ritual_writhing-78302200 setup=ritual_writhing n=50 rc=0 sec=803 completed=50/50 quarantined=0 rows=995
+unit=ritual_writhing-78302250 setup=ritual_writhing n=50 rc=0 sec=765 completed=50/50 quarantined=0 rows=995
+unit=ritual_writhing-78302300 setup=ritual_writhing n=50 rc=0 sec=785 completed=50/50 quarantined=0 rows=1049
+unit=ritual_writhing-78302350 setup=ritual_writhing n=50 rc=0 sec=720 completed=50/50 quarantined=0 rows=1026
+tar_sha256=53192a657761130795492974174cd1e64d43fac6e179b6742470dda131d8dd4b
