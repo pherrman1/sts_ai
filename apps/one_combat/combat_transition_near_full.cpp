@@ -128,7 +128,7 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
     auto uniform=[&](){return std::generate_canonical<double,53>(rng);};
     auto category=[&](const Vec &p){double u=uniform(),sum=0;int last=-1;for(size_t i=0;i<p.size();++i){require(std::isfinite(p[i])&&p[i]>=0,"near-full probability");sum+=p[i];if(p[i]>0)last=int(i);if(u<sum)return int(i);}require(last>=0&&std::abs(sum-1)<1e-6,"near-full probability total");return last;};
     if(!survivalAlreadyWon && uniform()>=survival)return {CombatRuntimeSample::Outcome::DEATH,{}};
-    auto maximumProb=givenMaximum.empty()?net.maxHp(pi):givenMaximum;auto z=givenZ.empty()?net.hpEncoding(pi):givenZ;auto zp=givenZp.empty()?net.potionEncoding(pi):givenZp;
+    auto z=givenZ.empty()?net.hpEncoding(pi):givenZ;auto maximumProb=!givenMaximum.empty()?givenMaximum:net.sharedHpEncoder()?net.maxHp(z):net.maxHp(pi);auto zp=givenZp.empty()?net.potionEncoding(pi):givenZp;
     auto post=pre;int d=category(maximumProb);post.maxHp+=domain.maxHpClasses.at(d);
     const bool bossFight=boss(pi.globals.encounter);
     // Escape capability: the escape is drawn before HP, and HP and the potion trajectory are

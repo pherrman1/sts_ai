@@ -7,6 +7,8 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <array>
+#include <cstring>
 using namespace one_combat;
 using json=nlohmann::json;
 CombatPredictorInputV1 predictor(const json &j) {
@@ -78,7 +80,9 @@ int main(int argc,char **argv) {
         }
         if(argc==5 && std::string(argv[1])=="--pair-identity") {
             EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3],std::string(argv[4])=="1");
-            std::cout << "identity=" << identityName(hybrid.fastRuntime()) << "\n";
+            std::cout << "identity=" << identityName(hybrid.fastRuntime())
+                << " lizard_fairy=" << hybrid.fastRuntime().lizardFairyCapable()
+                << " lizard_brew=" << hybrid.fastRuntime().lizardBrewCapable() << "\n";
             return 0;
         }
         if(argc==6 && std::string(argv[1])=="--lizard-parity") {
@@ -299,6 +303,51 @@ int main(int argc,char **argv) {
         }
         // Escape capability (#418 PR7): the escape head, both escape-conditioned HP heads, the
         // conditioned potion masks, and sampled escapes against their invariants.
+        if(argc==5 && std::string(argv[1])=="--encoder-memo-parity") {
+            // Two DeepSets artifacts with different weights, memoized and interleaved state by state
+            // over two passes, against the unmemoized reference: every encoder output and the maxHP
+            // head must match bit for bit. A memo shared across runtimes or encoder groups, or a key
+            // missing a field, returns another token's floats.
+            NativeCombatTransitionSampler first(argv[2]),second(argv[3]);
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("fixture file");
+            std::vector<CombatPredictorInputV1> inputs;std::string line;
+            while(std::getline(file,line)) {
+                // Each state plus a variant that changes every memo key field but the ids.
+                auto p=predictor(json::parse(line).at("predictorInput")),v=p;
+                for(auto &c:v.cards){c.upgraded=!c.upgraded;c.misc+=3;c.bottleBinding=c.bottleBinding<0?0:-1;}
+                for(auto &r:v.relics){++r.data;r.orderIndex=int(v.relics.size())-1-r.orderIndex;}
+                for(size_t i=0;i<v.potions.size();++i)v.potions[i].potionId=p.potions[v.potions.size()-1-i].potionId;
+                inputs.push_back(p);inputs.push_back(v);
+            }
+            if(inputs.empty())throw std::runtime_error("no fixture states");
+            using Outputs=std::vector<std::vector<float>>;
+            auto outputs=[](const CombatTransitionRuntime &net,const CombatPredictorInputV1 &p) {
+                return Outputs{{net.survival(p)},net.hpEncoding(p),net.maxHpEncoding(p),net.potionEncoding(p),net.maxHp(p)};
+            };
+            auto same=[](const std::vector<float> &a,const std::vector<float> &b) {
+                return a.size()==b.size() && std::memcmp(a.data(),b.data(),a.size()*sizeof(float))==0;
+            };
+            const std::array<const CombatTransitionRuntime*,2> nets{&first.runtime(),&second.runtime()};
+            std::array<std::vector<Outputs>,2> reference;
+            CombatTransitionRuntime::setEncoderMemoForTesting(false);
+            for(int n=0;n<2;++n)for(const auto &p:inputs)reference[n].push_back(outputs(*nets[n],p));
+            CombatTransitionRuntime::setEncoderMemoForTesting(true);
+            bool differ=false;int comparisons=0;
+            for(size_t k=0;k<inputs.size();++k)differ|=!same(reference[0][k][1],reference[1][k][1]);
+            if(!differ)throw std::runtime_error("encoder memo parity needs artifacts with different encoders");
+            for(int pass=0;pass<2;++pass)for(size_t i=0;i<inputs.size();++i)for(int n=0;n<2;++n) {
+                const size_t k=pass?inputs.size()-1-i:i;const auto &net=*nets[n];
+                const auto a=outputs(net,inputs[k]);
+                for(size_t j=0;j<a.size();++j,++comparisons)
+                    if(!same(a[j],reference[n][k][j]))throw std::runtime_error("encoder memo parity: artifact "+std::to_string(n)+
+                        " output "+std::to_string(j)+" state "+std::to_string(k));
+                if(net.sharedHpEncoder() && (!same(a[1],a[2]) || !same(net.maxHp(a[1]),a[4])))
+                    throw std::runtime_error("shared HP encoder parity");
+            }
+            std::cout<<json{{"states",inputs.size()},{"comparisons",comparisons},
+                {"sharedHpEncoder",{first.runtime().sharedHpEncoder(),second.runtime().sharedHpEncoder()}}}.dump()<<'\n';
+            return 0;
+        }
         if(argc==4 && std::string(argv[1])=="--escape") {
             NativeCombatTransitionSampler sampler(argv[2]);const auto &net=sampler.runtime();
             std::ifstream file(argv[3]);if(!file)throw std::runtime_error("fixture file");

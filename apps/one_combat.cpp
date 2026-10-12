@@ -130,7 +130,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
                           "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
-                          "STS_OOC_STRATEGIC_TOK_CONST_GUARD",
+                          "STS_OOC_STRATEGIC_TOK_CONST_GUARD", "STS_OOC_GBM_RANKER",
                           "STS_CF_ALT_BOOT_FLOOR_TREES", "STS_CF_ALT_BOOT_WIN_TREES",
                           "STRATEGIC_BRANCH_FUTURE_OFFSET", "STRATEGIC_BRANCH_RESEED",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
@@ -1337,6 +1337,10 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.oocStrategicTokNet = g_oocStrategicTokNet.path;
             meta.oocStrategicTokNetSha256 = fileSha256(meta.oocStrategicTokNet);
             meta.oocStrategicTokConstGuard = g_oocStrategicTokNet.constGuard;
+        }
+        if (one_combat::oocGbmRankerEnabled()) {
+            meta.oocGbmRanker = std::getenv("STS_OOC_GBM_RANKER");
+            meta.oocGbmRankerSha256 = fileSha256(meta.oocGbmRanker);
         }
         meta.oocMcts = one_combat::liveOocMctsEnabled();
         meta.stopAfterAct = g_stopAfterAct;

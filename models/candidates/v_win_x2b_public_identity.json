@@ -1,0 +1,15 @@
+{
+  "tree_count": 1006,
+  "base_score": 0.7728025,
+  "logistic": true,
+  "objective": "binary:logistic",
+  "ensemble": "margin_mean",
+  "source_sha256": [
+    "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5",
+    "227a110ea579657f9f843f0f7197977c7ad25863efb5c9b6491024b1acc13410",
+    "e74b7740065742caf06c50abf0dff4dfe8080de78a70d57eb73c66f1f7e35e9c"
+  ],
+  "native_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+  "ordered_names_sha256": "f92b487b62ec25f097b72c37791441cd9a9759cdbb8a93087dda819eb8bf0739",
+  "freeze_sha256": "9742cf6356bb38806672b0720ebdcc88b4572d38e0e496f61bfb1a232e041064"
+}
