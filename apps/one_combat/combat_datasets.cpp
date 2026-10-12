@@ -9,6 +9,7 @@
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
 #include "one_combat/ooc_native_fallback.h"
+#include "run_driver.h"
 
 #include <regex>
 #include <cstdio>
@@ -5544,9 +5545,21 @@ static void applyForcedCtmSetupPerFight(ForcedCtmSetup setup, GameContext &gc) {
     }
 }
 
+// Off by default: the Path B corpus (§386, #418) used the copied map/reward chain below.
+// STS_CTM_GEN_DEPLOYED_OOC=1 plays every non-battle screen with the deployed OOC step
+// (§431) instead, so A20 runs reach later acts (§443 Stage 0: 80% of rows were act 1).
+static bool ctmGenDeployedOoc() {
+    const char *v = std::getenv("STS_CTM_GEN_DEPLOYED_OOC");
+    if (!v) return false;
+    if (std::string(v) == "0") return false;
+    if (std::string(v) == "1") return true;
+    throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC must be 0 or 1 when set");
+}
+
 static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
                                               const WholeCombatTeacher &teacher,
-                                              ForcedCtmSetup setup = ForcedCtmSetup::NONE) {
+                                              ForcedCtmSetup setup = ForcedCtmSetup::NONE,
+                                              bool deployedOoc = false) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -5598,6 +5611,8 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
                 predictorInput);
             out << row.dump() << '\n';
+        } else if (deployedOoc) {
+            deployedOocPolicyStep(gc, agent);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -5747,13 +5762,16 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     const bool lizardCandidateMode = allowStaleProvenance;
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
                                                 false, !lizardCandidateMode);
+    const bool deployedOoc = ctmGenDeployedOoc();
+    if (deployedOoc && lizardCandidateMode)
+        throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC is only for combattransitiongen/forcedgen");
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
     int completed = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup);
+        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup, deployedOoc);
         #pragma omp critical(combat_transition_write)
         {
             f << generated;
@@ -5772,6 +5790,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"combatTeacher", teacher.specification},
         {"forcedSetup", forcedSetup.empty() ? "none" : forcedSetup},
+        {"oocPolicy", deployedOoc ? "deployed" : "pathb_chain"},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
         {"csv", {{"path", std::filesystem::absolute(outfile).string()},
                   {"sha256", fileSha256(outfile)}}},
