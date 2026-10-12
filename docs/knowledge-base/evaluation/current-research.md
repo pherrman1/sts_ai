@@ -301,7 +301,8 @@ encoder (§439, bitwise identical play) makes the CTM 2.8x cheaper and a rollout
 the CTM at about 10%. With the V4 rollout policy the floor-model calls of the native shop plan, card pick and removal pick
 were about 20% of rollout3 CPU after §437 (8% with a uniform rollout policy, which rarely reaches the planner); a
 packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). The largest remaining rollout3 cost is
-the V4 network in the rollout gates; its shop gate now costs more than the shop plan itself.
+the V4 network in the rollout gates (about 21%); cached deck tokens and transposed dense layers cut it about
+2.8x, bitwise identically, 1.29–1.41x per run (§450).
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
