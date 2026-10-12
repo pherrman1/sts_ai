@@ -172,6 +172,7 @@ int main(int argc, char **argv) {
         // Variant rows must reproduce the one-row predictions bit for bit,
         // including rows that differ outside the declared varying features.
         std::mt19937 variantRng(338);
+        std::uint64_t sensitive = 0;
         for (int trial = 0; trial < 64; ++trial) {
             const auto &base = seen[variantRng() % seen.size()];
             std::vector<int> varying;
@@ -185,6 +186,18 @@ int main(int argc, char **argv) {
                 if (r % 16 == 15) row[variantRng() % row.size()] += 1.0f;
                 rows.push_back(std::move(row));
             }
+            // Rows that change a split feature outside the varying set must
+            // still get predict(); valuing them as base would differ here.
+            for (const auto &node : current.nodes) {
+                if (node.feat < 0 || std::find(varying.begin(), varying.end(), node.feat) != varying.end()) continue;
+                for (const float value : {-std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()}) {
+                    auto row = base; row[node.feat] = value;
+                    auto asBase = row; asBase[node.feat] = base[node.feat];
+                    const double y = current.predict(row), z = current.predict(asBase);
+                    if (std::memcmp(&y, &z, sizeof(double)) != 0) { rows.push_back(std::move(row)); ++sensitive; break; }
+                }
+                if (rows.size() > 56) break;
+            }
             std::vector<double> values;
             current.predictVariants(base, varying, rows, values);
             if (values.size() != rows.size()) { std::cerr << "tree variant size mismatch\n"; return 1; }
@@ -195,6 +208,7 @@ int main(int argc, char **argv) {
                 }
             }
         }
+        if (sensitive == 0) { std::cerr << "tree variant test found no outside-feature row\n"; return 1; }
     }
     std::cout << "compact tree parity: " << checks << " bitwise double comparisons\n";
     return 0;

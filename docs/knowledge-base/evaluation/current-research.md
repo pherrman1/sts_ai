@@ -266,7 +266,7 @@ combats (`STS_OOC_MCTS_LEAF_COMBATS=3`, `LEAF_VALUE=native`) won 115/128 vs 101/
 on the current pathb-r2 CTM (control: MCTS off on the §411 research base with flat exact-10k Silver,
 not the production defaults, so 78.9% is not the default stack's win rate): +10.9 pp [+2.3, +19.5], boss deaths 11 vs 23. It cost about 936 s
 per run on one CPU (off: 57 s) at §422; exact batching of the native shop/card/removal valuation inside the
-rollouts (§437, bitwise identical play) cuts that by 1.2–1.7x per run (1.38x over four seeds), and about 20% of OOC decisions fall back to V4 on Lizard Tail
+rollouts (§437, bitwise identical play) cuts that by a seed-dependent 1.13–1.7x per run (1.38x over four seeds), and about 20% of OOC decisions fall back to V4 on Lizard Tail
 support aborts. This reproduces §277 (old V2 CTM) and contrasts with the `screengbm` leaf (§384,
 −22 pp) and the 0/1 boss-rollout leaf (§391, 9/32, saturated value). Pricing the Lizard states with a
 Lizard-capable research CTM (§423, `lizardFairy` + `lizardBrew`) removes the aborts (fallback 2.4%) but

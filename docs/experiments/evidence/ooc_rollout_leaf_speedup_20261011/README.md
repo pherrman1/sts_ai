@@ -12,6 +12,10 @@ Issue #338. Performance only: no gameplay, model, RNG or default change.
   per unit ([run.sh](run.sh)); A0, exact 10k Silver, 2048 OOC MCTS simulations, 3 CTM leaf combats.
 - Seeds 74013000–74013008 (rollout3 74013000–004, off 74013001–008). 4-CPU cloud container,
   3–4 units at a time; baseline and candidate units ran under similar load.
+- Provenance: the run metadata (`STS_EXECUTABLE_GIT_SHA`) of every unit, candidate included, names
+  `491bc21b`, because the candidate binaries were built from the uncommitted working tree. The binary
+  sha256 values in `binaries.sha256` (raw data) identify which build each unit ran; the candidate hash
+  `696cdbc7…` is the build of the PR head's code, and the independent review reproduced it.
 - Parity check [compare.py](compare.py): byte-identical decision trace (`.trace.jsonl`) and MCTS
   action trace (`.mcts.csv.actions.jsonl`); identical result row and MCTS summary row except the
   timing columns (`sec`, `*Sec`).
@@ -66,7 +70,9 @@ Seconds are `bestbench` `sec` (steady-clock per run). rollout3 74013001–004 to
 531 → 142 s; CTM 202 s and V4 146 s are unchanged and are now the largest buckets.
 The batching-only build gave 1.13x on seed 74013000.
 
-**Inference:** the speedup varies with how much of a run's rollouts pass through shops. The `off`
+The independent review reproduced bit-identity on its own seed, with a 1.13x speedup there.
+
+**Inference:** the speedup varies by seed with how much of a run's rollouts pass through shops. The `off`
 arm (no OOC MCTS) spends little time in the planner and is unchanged within noise.
 
 ## Raw data
