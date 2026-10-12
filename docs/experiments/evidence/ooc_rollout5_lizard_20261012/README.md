@@ -33,7 +33,7 @@ the §423, §430 or §422 files read. Hashes (tars, then the extracted files the
 | support aborts per run | 0.6 | 0 | 0 | 43.8 | 21.9 | – |
 
 **Primary label: NOT_SHOWN** (r5liz − same-commit `lizard`, CI spans zero). Counting the stalled seed 70000087 as an
-`r5liz` loss instead (every control lost it at floor 33) gives 113/128 vs 111/128, the same +2 runs.
+`r5liz` loss instead (the three rollout3 controls lost it at floor 33; §430 `r5` and §422 off won it) gives 113/128 vs 111/128, the same +2 runs.
 
 Same-commit `lizard` vs §423 `lizard` (descriptive, how far the `c7641b07` fix moved rollout3 on these seeds): 111 vs
 111 wins on 128 seeds, 2 / 2 discordant; 106/128 runs end with the same won, floor and end HP.
