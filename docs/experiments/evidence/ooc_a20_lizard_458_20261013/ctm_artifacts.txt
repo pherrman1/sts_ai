@@ -1,0 +1,5 @@
+data_commit c507cebb000cbb308e9ad833721c85ea357af0f1
+fast ctm-a20-stage4/candidate-lizard/FAST4L.native ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b
+standard ctm-a20-stage4/candidate-lizard/STD2.native e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d
+manifest ctm-a20-stage4/candidate-lizard/candidate-pathb-a20-lizard.json 704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0
+active_lizard 1
