@@ -340,6 +340,10 @@ with `STS_CTMSILVER_ARMSET=mlpprior` runs `plain2k`, `plain_cpu` (budget
 `STS_CTMSILVER_MLP_PRIOR` through the thread override
 `g_nativeSilverPriorNetOverride`; `STS_CTMSILVER_MLP_PRIOR_PREV` adds
 `mlp_prev8_2k`); `STS_SILVER_ROOT_PRIOR` and its weight must still be set.
+The generation-1 model (`/mnt/project-files/silver-az-mlp/gen1/`) at K = 8 and
+2k costs about 1.05x plain 2k per fight and beat plain 2,300 simulations
+(1.16x) by +0.91 fight score [+0.43, +1.40] on 3,409 paired fights (§455), the
+first prior shown to help at matched CPU; it stays opt-in.
 
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
