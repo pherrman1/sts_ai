@@ -17518,7 +17518,7 @@ cores. Primary: `mlp8_2k − plain_cpu`, all fights, score; kill if the CI lower
 
 **Knowledge impact:** one sentence in the MLP prior paragraph of `architecture/combat-search.md`.
 
-## §457 — OOC MCTS `combo` at A20: with today's CTM it loses 6 floors; with the A20 CTM it mostly falls back to V4 and ties off (2026-10-13)
+## §457 — OOC MCTS `combo` at A20: with today's CTM it loses 6 floors; with the A20 CTM it mostly falls back to V4 and is not shown different from off (2026-10-13)
 
 **Question (Philipp, 2026-10-13 16:05Z):** "How the ooc MCTS A20 doing? Can we try 128 seeds A/B?" (16:06Z "Just do it
 on your own, use 8 workers"; 16:56Z "Just upload the files for the ctm?? Then do it in the cloud?"). Every earlier live
@@ -17558,10 +17558,16 @@ does; tar hashes checked.
 - **Inference:** the default CTM's blindness to A20 death risk is the likely cause. `combo_def` dies far more often in
   acts 1–2 (97 vs 73) and reaches act 3 in 31 runs vs 55, consistent with a search that treats risky fights as safe.
   Its fewer boss deaths only reflect fewer runs reaching bosses.
-- The A20 CTM undoes that loss (+5.7 floors over `combo_def`), but the search owned only 35% of decisions. Imagined
-  futures that pick up a Lizard Tail reach a refused combat and abort the whole root search (51 aborts per run, even
-  on runs that never own a Tail), so `combo` mostly played V4 and tied `off`. This run says nothing about OOC MCTS
-  with a fully supported A20 CTM.
+- The A20 CTM package as it stands (mostly V4 fallback) avoids that loss (+5.7 floors over `combo_def`,
+  descriptive); this cannot separate a better-calibrated CTM from simply searching less. The search owned only 35% of
+  decisions: imagined futures that pick up a Lizard Tail reach a refused combat and abort the whole root search (51
+  aborts per run, even on runs that never own a Tail), so `combo` mostly played V4 and is not shown different from
+  `off`. This run says nothing about OOC MCTS with a fully supported A20 CTM.
+- The searched decisions are not a random subset. Share of decisions the search kept, by screen (from
+  `*.mcts.csv.actions.jsonl`, `executed`): map 57% (2,210 of 3,909), rewards 23%, shop 32%, rest 24%, events 20%,
+  card select 8%, boss relic 6%, treasure 0%; map decisions are 60% of all searched decisions.
+- "How many decisions differ between arms" (a PREREG descriptive) was not computed at decision level; 60 of 128
+  seeds reach a different floor in `combo` than in `off`, 115 in `combo_def`.
 - Floors are a better metric than wins here: 7–12 wins of 128 per arm.
 
 **Decision:** no default change; OOC MCTS stays off (ADR-0027). A meaningful A20 test needs Lizard support in the A20

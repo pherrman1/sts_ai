@@ -301,8 +301,8 @@ On 128 fresh paired seeds (§451, B0 leaf) neither 8192 simulations (117 vs 118 
 MCTS CPU) nor `WIDEN_K=8`, which samples a fresh chance outcome on every visit (119 vs 118, +0.8 pp [−5.5, +7.0], same
 CPU), is shown better than `combo`; `combo` won 92.2% there.
 At A20 (§457, 128 paired seeds, floors reached) `combo` with today's default CTM, which sees almost no A20 death risk,
-is WORSE than off by 6.2 floors [−9.4, −2.9]; with the §443 A20 candidate CTM it ties off (−0.5 [−2.7, +1.6]) because
-missing Lizard Tail support aborts 65% of its searches to V4.
+is WORSE than off by 6.2 floors [−9.4, −2.9]; with the §443 A20 candidate CTM it is not shown different from off (−0.5
+[−2.7, +1.6]), but missing Lizard Tail support sends 65% of its decisions to V4.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
 rollout3 run by about 10%. On top of §436/§437 the CTM was still about a quarter of rollout3 CPU, almost all in the
