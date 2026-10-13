@@ -321,6 +321,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
 // (apps/one_combat/silver_synth_gen.cpp). VARIANT is natural or perturbed.
 void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
                     const std::string &teacherPath, const std::string &variant);
+// Silver AZ MLP loop self-play (silver_synth_gen.cpp): silversynthgen root and
+// fight rows at SIMS with the STS_SILVER_ROOT_PRIOR MLP as tree prior.
+void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
+                 const std::string &variant, int treeMinVisits, int rootBonus);
 // Offline harness for the silversynthgen corpus (apps/one_combat/silver_synth_replay.cpp):
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);

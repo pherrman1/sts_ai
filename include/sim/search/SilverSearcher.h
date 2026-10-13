@@ -166,6 +166,10 @@ namespace sts::search {
         // so with weight 0 or a uniform prior the search is today's Silver.
         std::vector<double> rootPrior;
         double rootPriorWeight = 0;
+        // Research-only (Silver AZ self-play teacher): false drops the root
+        // bonus only; tree-prior nodes keep rootPriorWeight and the root still
+        // tries untried edges in prior order.
+        bool rootPriorBonus = true;
         // Research-only tree prior (off while nodePrior is empty; ledger §452).
         // A non-root decision node with at least treePriorMinVisits simulations
         // and two or more edges is scored once by nodePrior (probabilities

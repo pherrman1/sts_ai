@@ -16,6 +16,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["silverstopreplaygen"]=2
   ["ctmsilvergen"]=2
   ["silversynthgen"]=2
+  ["silverazgen"]=2
   ["vwinrefreshbranchselftest"]=2
   ["vwinrefreshfatalcountselftest"]=2
   ["oocnextgen"]=2

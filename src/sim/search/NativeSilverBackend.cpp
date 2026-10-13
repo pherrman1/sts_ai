@@ -452,6 +452,7 @@ namespace sts::search {
                 searcher->leafSamples = g_nativeSilverLeafSamples;
                 searcher->rootPrior = nativeSilverRootPrior(*searcher);
                 searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
+                searcher->rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
                 searcher->nodePrior = nullptr;
                 if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
                     searcher->nodePrior = nativeSilverPolicyPrior;
@@ -929,6 +930,7 @@ namespace sts::search {
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
