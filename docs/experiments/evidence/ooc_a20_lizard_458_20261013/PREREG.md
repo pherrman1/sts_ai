@@ -2,8 +2,8 @@
 
 Philipp, 2026-10-13 19:31Z: "Okay add the lizard support then? I want no fallbacks to v4"; 19:58Z he chose "Rerun anyway"
 on the card "Use the Lizard A20 CTM for the 128-seed rerun even though its keep rule failed?". Frozen with the run commit
-before launch; independent pre-launch review by the coordinator. 8 cloud workers × 16 seeds × 1 arm (the §457 worker
-count, Philipp 16:06Z "use 8 workers").
+before launch; independent pre-launch review by the coordinator. 16 cloud workers × 8 seeds × 1 arm (Philipp's pick
+on the coordinator's worker-count card, 20:08Z).
 
 ## Baseline (§457, merged 64aae668)
 - Same seeds 87000000–87000127, same binary (code `52e605fd`, Release `one_combat` `fdc44395…`).

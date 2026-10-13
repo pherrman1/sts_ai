@@ -2,24 +2,25 @@
 # §458 cloud worker. From a clean checkout of the run commit:
 #   bash worker.sh setup W    build one_combat from a detached checkout of CODE_COMMIT (the §457 code; main has moved),
 #                             check the binary hash, return to the run commit, stage it in $HOME/a458-wWW, write OUT/FROZEN.txt
-#   bash worker.sh run W      this worker's 16 seeds in the arm combo_liz (16 one-seed units at ascension 20), 4 at a time,
+#   bash worker.sh run W      this worker's 8 seeds in the arm combo_liz (8 one-seed units at ascension 20), 4 at a time,
 #                             into the local OUT; when all 48 are done, upload SHARE/wWW.tar and then SHARE/wWW.DONE.txt
 #   bash worker.sh status W
-# W = 1..NPAIRS/16; worker W runs seeds 87000000+16(W-1) .. +15 in the arm `combo_liz` (off/combo_def: §457 rows).
+# W = 1..NPAIRS/8 (16 workers, Philipp's card); worker W runs seeds 87000000+8(W-1) .. +7 in the arm `combo_liz`
+# (off/combo_def: §457 rows).
 # Units write to local disk; the share gets two files per worker (the shared folder has a file-count limit).
 set -uo pipefail
 CMD=${1:-} W=${2:-0}
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
 D=docs/experiments/evidence/ooc_a20_lizard_458_20261013
-NPAIRS=$(cat "$D/NPAIRS") NWORKERS=$(( $(cat "$D/NPAIRS") / 16 ))
+PER=8 NPAIRS=$(cat "$D/NPAIRS") NWORKERS=$(( $(cat "$D/NPAIRS") / 8 ))
 stop() { echo "STOP: $*"; exit 1; }
 [[ "$W" =~ ^[0-9]+$ ]] && [ "$W" -ge 1 ] && [ "$W" -le "$NWORKERS" ] || stop "W must be 1..$NWORKERS"
 TAG=w$(printf %02d "$W")
 SHARE=/mnt/project-files/ooc-a20-lizard
 RUN=$HOME/a458-$TAG OUT=$HOME/a458-$TAG/out
 EXPECT_BIN=$(cat "$D/binary.sha256")
-LO=$((87000000 + 16*(W-1)))
-NUNITS=16
+LO=$((87000000 + PER*(W-1)))
+NUNITS=$PER
 case $CMD in
 setup)
   case "$REPO" in /mnt/project-files*) stop "checkout must not be on /mnt/project-files (noexec)";; esac
@@ -55,7 +56,7 @@ setup)
   echo "setup ok: $(head -1 "$OUT/FROZEN.txt")" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"
-  for k in $(seq 0 15); do echo "combo_liz $((LO+k)) 1"; done > "$OUT/units.txt"
+  for k in $(seq 0 $((PER-1))); do echo "combo_liz $((LO+k)) 1"; done > "$OUT/units.txt"
   xargs -P 4 -L 1 bash "$D/run_unit.sh" "$REPO" "$RUN" "$OUT" < "$OUT/units.txt"
   n=$(ls "$OUT"/*.done 2>/dev/null | wc -l)
   if [ "$n" = $NUNITS ]; then
