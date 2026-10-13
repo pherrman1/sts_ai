@@ -2,6 +2,8 @@
 #include "sim/search/NativeSilverStopModel.h"
 
 #include <algorithm>
+#include <array>
+#include <iostream>
 #include <atomic>
 #include <charconv>
 #include <cstdlib>
@@ -54,6 +56,10 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            // No-progress loop guard: after this many consecutive free player
+            // decisions in one turn that change nothing tracked by
+            // NoProgressFingerprint, End Turn is forced (0 = off).
+            int loopGuardCap = 50;
         };
         Options g_options;
         CombatValueNet g_rootPriorNet;
@@ -228,6 +234,40 @@ namespace sts::search {
         std::atomic<std::int64_t> g_singletonSkips {0};
         std::atomic<std::int64_t> g_equivalentCopyReroots {0};
         std::atomic<std::int64_t> g_learnedStops {0};
+        std::atomic<std::int64_t> g_loopGuardEndTurns {0};
+
+        // What a free decision must change to count as progress: the player's
+        // HP and strength, an energy drop, and every monster's HP, block,
+        // liveness, strength, Vulnerable, Weak, Artifact and status flags.
+        // Piles, hand, exhaust pile and player block (capped at 999) are left
+        // out, so a free loop such as Medical Kit + Dazed + Dark Embrace +
+        // Chosen's Hex counts as no progress.
+        struct NoProgressFingerprint {
+            static constexpr int kPerMonster = 8;
+            int turn = -1, playerHp = 0, playerStrength = 0, energy = 0;
+            std::array<std::int64_t, kPerMonster * 5> monsters{};
+            static NoProgressFingerprint of(const BattleContext &bc) {
+                NoProgressFingerprint f;
+                f.turn = bc.turn;
+                f.playerHp = bc.player.curHp;
+                f.playerStrength = bc.player.strength;
+                f.energy = bc.player.energy;
+                for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+                    const Monster &m = bc.monsters.arr[i];
+                    auto *x = &f.monsters[kPerMonster * i];
+                    x[0] = m.curHp; x[1] = m.block; x[2] = m.isAlive() ? 1 + m.halfDead : 0;
+                    x[3] = m.strength; x[4] = m.vulnerable; x[5] = m.weak; x[6] = m.artifact;
+                    x[7] = static_cast<std::int64_t>(m.statusBits);
+                }
+                return f;
+            }
+            // Same turn and nothing tracked changed; energy may rise but not fall.
+            bool noProgressSince(const NoProgressFingerprint &before) const {
+                return turn == before.turn && playerHp == before.playerHp
+                    && playerStrength == before.playerStrength && energy >= before.energy
+                    && monsters == before.monsters;
+            }
+        };
 
         int stopRoomCode(Room room) {
             switch (room) {
@@ -405,12 +445,31 @@ namespace sts::search {
 
             std::unique_ptr<SilverSearcher> searcher;
             int decision = 0;
+            NoProgressFingerprint previous;
+            int noProgressRun = 0;
             while (bc.outcome == Outcome::UNDECIDED) {
                 if (++decision > 1000) fail(gc, bc, "stall: exceeded 1000 decisions");
                 if (g_onCombatDecision) g_onCombatDecision(bc);
                 knowledge.reconcilePublicDrawPileCardinality(bc);
                 if (knowledge.consistencyFailureCount != 0) {
                     fail(gc, bc, "knowledge tracker lost consistency");
+                }
+
+                // No-progress loop guard. Observes only the live state, so a
+                // combat that never reaches the cap is unchanged.
+                const auto current = NoProgressFingerprint::of(bc);
+                noProgressRun = decision > 1 && current.noProgressSince(previous) ? noProgressRun + 1 : 0;
+                previous = current;
+                const Action endTurn(ActionType::END_TURN);
+                if (g_options.loopGuardCap > 0 && noProgressRun >= g_options.loopGuardCap
+                    && bc.inputState == InputState::PLAYER_NORMAL && endTurn.isValidAction(bc)) {
+                    ++g_loopGuardEndTurns;
+                    std::cerr << "native Silver loop guard: forced End Turn after " << noProgressRun
+                              << " free no-progress decisions seed=" << gc.seed << " floor=" << bc.floorNum
+                              << " turn=" << bc.turn << " decision=" << decision << '\n';
+                    noProgressRun = 0;
+                    agent.takeAction(bc, endTurn);
+                    continue;
                 }
 
                 BattleContext root;
@@ -691,6 +750,13 @@ namespace sts::search {
         }
         g_options = Options{};
         g_options.installed = true;
+        if (const char *raw = std::getenv("STS_SILVER_LOOP_GUARD"); raw && *raw) {
+            char *end = nullptr;
+            const long cap = std::strtol(raw, &end, 10);
+            if (end == raw || *end != '\0' || cap < 0 || cap > 1000)
+                throw std::runtime_error("STS_SILVER_LOOP_GUARD must be an integer in [0, 1000] (0 = off)");
+            g_options.loopGuardCap = static_cast<int>(cap);
+        }
         if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE")) {
             g_options.adaptive = std::atoi(raw) != 0;
         }

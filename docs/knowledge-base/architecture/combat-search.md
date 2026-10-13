@@ -119,6 +119,21 @@ agent. The knowledge observer is detached while searching.
 `g_nativeSilverCombatStats` holds the current thread's decisions and
 simulations for its latest combat.
 
+A live combat that exceeds 1,000 decisions fails with `stall: exceeded 1000
+decisions`. Free loops can reach it: with Medical Kit, Dark Embrace, Feel No
+Pain and the Chosen's Hex, playing a Dazed costs nothing, draws a card,
+gains block (capped at 999) and shuffles a new Dazed in, and Silver scores
+that play slightly above End Turn at every root (seed 86001271, floor 18).
+`STS_SILVER_LOOP_GUARD` (default 50) counts consecutive live decisions in one
+player turn whose state differs from the previous decision's only outside a
+progress fingerprint (player HP and strength, an energy drop, and each
+monster's HP, block, liveness, strength, Vulnerable, Weak, Artifact and status
+flags; piles, hand and player block are excluded). At the cap, in a
+`PLAYER_NORMAL` state where End Turn is legal, End Turn is committed without
+search and the count resets. The guard only reads the live state, so a combat
+that never reaches the cap plays exactly as without it; the skipped root is
+not passed to root observers or traces.
+
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
 post-Mug choice) are deferred in `Monster::pendingMoveRolls` until the move is
