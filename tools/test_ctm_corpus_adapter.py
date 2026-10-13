@@ -142,6 +142,23 @@ class TestCtmCorpusAdapter(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "overwrite"):
                 union({"none": root / "none"}, root / "union", drop)
 
+    def test_union_writes_scopes_in_seed_order(self):
+        # §443 A20 plan: lizard_fairy seeds precede high_maxhp although SCOPES lists high_maxhp first.
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); index = self.build(root)
+            data = json.loads(index.read_text())
+            data["units"].append({"unit": "lizard_fairy-300-2", "setup": "lizard_fairy", "files": [
+                write_unit(root / "part-a" / "lizard_fairy-300-2.jsonl", 300, 2, "lizard_fairy")]})
+            index.write_text(json.dumps(data))
+            for scope, name in (("none", "none"), ("high_maxhp", "high"), ("lizard_fairy", "fairy")):
+                assemble(index, root, scope, root / name)
+            summary = union({"high_maxhp": root / "high", "lizard_fairy": root / "fairy", "none": root / "none"},
+                            root / "union", lambda row: [])
+            self.assertEqual({k: (v["firstRow"], v["rows"]) for k, v in summary["scopes"].items()},
+                             {"none": (0, 14), "lizard_fairy": (14, 4), "high_maxhp": (18, 4)})
+            seeds = [json.loads(l)["sourceSeed"] for l in (root / "union" / "corpus.jsonl").read_text().splitlines()]
+            self.assertEqual(seeds, sorted(seeds))
+
     def test_label_reasons_reject_unrepresentable_winning_maxhp_gain(self):
         values = [0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         row = lambda outcome, gain: {"combatOutcome": outcome, "pre": {"maxHp": 84}, "post": {"maxHp": 84 + gain}}

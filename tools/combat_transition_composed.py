@@ -36,6 +36,12 @@ ARTIFACTS = {k: (Path(v[0]), v[1]) for k, v in _pins.value('combat_transition_co
 # Signed HP classes [min, max]; a declared retrain domain (tools/ctm_hp_domain.py) replaces them.
 HP_CLASS_RANGE = _pins.value('combat_transition_composed.HP_CLASS_RANGE', [-160, 143])
 CLASSES = np.arange(HP_CLASS_RANGE[0], HP_CLASS_RANGE[1] + 1, dtype=np.int64)
+# §443 A20 retrain (opt-in, research pins only): the frozen warm starts were fit on ascension 0 alone, so their
+# encoders normalize ascension with mean 0 and inverse std 1e6. A retrain on one other ascension re-centres that
+# mean so its rows present ascension 0 to the warm-started weights, exactly as the A0 rows did. None keeps the
+# checkpoints' own buffers (production and every A0 run).
+ASCENSION_CENTER = _pins.value('combat_transition_composed.ASCENSION_CENTER', None, required=False)
+A0_ASCENSION_INV = 1e6
 TRAINED_GROUPS = ('turns', 'attacks', 'cards', 'shuffles')
 INPUT_KEYS = ('globals_continuous', 'global_categories', 'cards', 'relics', 'potions', 'card_mask', 'relic_mask')
 RECIPE = dict(schema='offline_composed_transition_v1', baseline=BASELINE,
@@ -182,6 +188,17 @@ def classify(exposure_gaps,validity,provenance=True,reproduction=True):
     return 'COMPOSED_TRANSITION_QUALIFIED'
 
 
+def recentre_ascension(nets, center):
+    """Set each encoder's ascension mean to `center` (ASCENSION_CENTER). Every encoder must carry the A0
+    statistics (mean 0, inverse std 1e6); the inverse std is kept."""
+    index = base.CONTINUOUS_GLOBAL_FIELDS.index('ascension')
+    for net in nets:
+        mean, inverse = net.get_buffer('encoder.scalar_mean'), net.get_buffer('encoder.scalar_inv')
+        if float(mean[index]) != 0.0 or float(inverse[index]) != A0_ASCENSION_INV:
+            raise ValueError('ascension re-centring needs A0 ascension statistics (mean 0, inverse std 1e6)')
+        mean[index] = float(center)
+
+
 @dataclass
 class Transition:
     outcome: str
@@ -219,6 +236,9 @@ class FrozenModels:
                                 (self.relic_net,'relic','state_dict')):
             model.load_state_dict(payload[key][field],strict=True)
         self.potion_net.load_state_dict(payload['potion'],strict=True)
+        self.ascension_center=ASCENSION_CENTER
+        if ASCENSION_CENTER is not None:
+            recentre_ascension((self.survival_net,self.max_net,self.hp_net,self.potion_encoder),ASCENSION_CENTER)
         self.to(device)
         self.ready=True
 

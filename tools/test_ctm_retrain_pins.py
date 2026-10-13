@@ -74,6 +74,14 @@ class TestCtmRetrainPins(unittest.TestCase):
                              production["combat_transition_composed.ARTIFACTS"]["survival"])
             self.assertIsNone(pins["combat_transition_gold_evaluate.FROZEN_COUNTS"])
             self.assertEqual(pins["combat_transition_deepset_distill.EXPECTED_HP_CLASS_COUNT"], 451)
+            # Ascension re-centring is off unless requested (§443).
+            self.assertIsNone(pins["combat_transition_composed.ASCENSION_CENTER"])
+            a20 = staged.init(dom, d / "pins-a20.json", ascension_center=20)
+            self.assertEqual(a20["pins"]["combat_transition_composed.ASCENSION_CENTER"], 20)
+            # A pins file written before the key existed (#418) still checks complete.
+            legacy = dict(first, pins={k: v for k, v in pins.items() if k != "combat_transition_composed.ASCENSION_CENTER"})
+            write(d / "pins-legacy.json", legacy)
+            staged.check(d / "pins-legacy.json")
 
             union = d / "union"
             data = write(union / "corpus.jsonl", b"{}\n")

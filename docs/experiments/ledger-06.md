@@ -17309,6 +17309,89 @@ escapes, quarantined).
 
 **Knowledge impact:** tree-prior paragraph in `architecture/combat-search.md`.
 
+## §453 — Silver tree prior vs plain Silver at matched CPU: not shown (2026-10-12)
+
+**Question (Philipp, 2026-10-12, "Run check"):** §452 found the in-tree v1 prior (K = 8) better than plain
+2k at equal simulations, at 2.9x the CPU. Does it still beat plain Silver given the same CPU? Only then is
+prior-guided search a stronger teacher per unit of compute, which an AlphaZero-style loop needs.
+**Design:** [PREREG](evidence/silver_cpumatch_20261012/PREREG.md), frozen after independent review
+(PASS at run commit `94110b53`; code `9b74de14`, binary `d459a654…`). Same harness, sources, pairing and
+metric as §452, with `STS_CTMSILVER_ARMSET=cpumatch453`: arms `plain2k`, `tree8_2k` (K = 8, w = 400) and
+`plain6k`, 2 replicates each, combat RNG redrawn per (fight, replicate) identically for all arms. Fresh
+seeds 84000200–84000327, 16 cloud workers × 4 cores. Primary: `tree8_2k − plain6k`, all fights, score.
+**Result: `NOT_SHOWN`.** 3,325 of 3,345 fights valid; the 20 excluded are escape states (the 17 control
+mismatches are Smoke Bomb escapes with an invalid source, the rest escape-quarantined arm rows).
+
+| contrast (score) | all (n = 3,325) | boss (n = 368) | elite (n = 818) |
+|---|---|---|---|
+| tree8 − plain6k (primary) | +0.46 [−0.02, +0.97] | +3.88 [+0.38, +7.69] | +0.10 [−0.85, +1.20] |
+| tree8 − plain2k (§452 replication) | +1.84 [+1.40, +2.30] | +11.41 [+7.76, +15.25] | +1.39 [+0.37, +2.45] |
+| plain6k − plain2k | +1.38 [+0.94, +1.82] | +7.53 [+4.28, +10.86] | +1.29 [+0.51, +2.10] |
+
+- CPU per fight (thread CPU): plain2k 0.41 s, tree8 1.17 s, plain6k 1.30 s (tree8 / plain6k = 0.90,
+  within the pre-registered 20%); 10k control 2.21 s.
+- Death rate per fight: plain2k 0.84%, plain6k 0.71%, tree8 0.54% (tree8 − plain6k −0.2 pp
+  [−0.3, −0.0]; boss −1.4 pp [−2.6, −0.3]).
+
+**Interpretation:**
+- §452 replicates on fresh seeds (tree8 − plain2k +1.84, larger than §452's +1.17).
+- Most of that gain is what the same CPU buys plain search: plain 6k recovers about three quarters of it
+  (+1.38). The rest, +0.46, has a CI that just touches zero, so by the pre-registered rule the prior is
+  not shown to beat plain search at matched CPU, and no loop design follows.
+- The leftover points the same way as before: fewer deaths, concentrated in boss fights (boss +3.88,
+  CI above zero; a secondary subset, not the decision). **Inference:** if the prior's per-node cost
+  fell, the same search could beat plain at matched CPU; whether profiling can make that happen is §454.
+- Contrary to §406's win-rate result (plain 2k ≈ plain 10k), more plain sims still raise the fight score
+  from 2k to 6k, mostly in boss fights. Win-rate impact is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_cpumatch_20261012/README.md). Seeds 84000200–84000327 (run) and
+84009002 (smoke) are now used.
+
+**Knowledge impact:** one sentence in the tree-prior paragraph of `architecture/combat-search.md`.
+
+## §454 — Silver tree prior cost: batched exact prior scoring, bitwise identical, K = 8 from 2.7x to 1.7x of plain 2k (2026-10-13)
+
+**Question:** §452's tree prior (K = 8) cost 2.9x the CPU of plain 2k per fight. Where does the overhead go, and how
+much can be removed without changing search results?
+**Design:** performance only. Baseline `main` `33d03b25` (#508 head; rebased on merge `93011ed1`, no Silver code
+change). Native Silver 2k with the §452 environment (`env.sh`, prior `prior-natpert.compact.txt`, weight 400),
+`ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452k8` (seed 74038000) and `treeprior452` (74038001–74038002),
+R = 1, one guarded one-seed run per binary; old and new binaries ran side by side on the same 4-core machine.
+Parity: `arms.csv` and `states.csv` without CPU columns, `samples.csv` whole. Profile: `gprof` (-O3, no LTO)
+with one arm at a time, and walk-step counters in a throwaway build.
+**Profile (before):** tree8 65 ms vs plain 28 ms per 2k decision. Almost all of the difference is the prior: at
+K = 8 about 74 nodes per decision are scored, 5.6 distinct edges each, every edge walking all 1,997 trees
+(depth about 9.5, 23% of splits on the 22 action features; 53% of trees reach a leaf on state features alone).
+Search-shape effects (copies, node creation, rollouts) were below 1 s of the 14 s extra in the profile.
+**Change:** `CombatValueNet::predictPolicyActions` scores all edges of one state: `load()` keeps a compact copy of
+a policy tree ensemble (8-byte nodes, siblings adjacent, canonical feature indices), each tree's state-only prefix
+is walked once per state, and the edges then finish that tree in lockstep. Per-edge sums keep `predictVec`'s tree
+order, so scores are bit for bit equal. `nativeSilverPolicyPrior` extracts the state once and scores edges with
+bit-identical action features once. Ensembles whose children do not follow their parents keep `predictVec`.
+Tried and dropped: walking blocks of 8 trees in lockstep (slower than per-tree lockstep).
+**Result:** new `silver_searcher` checks (batched equals `predictVec` on a mixed state/action fixture and on the
+fallback) pass; three hand mutations fail them. All three seeds identical in every non-CPU field, including on the
+rebased binary. CPU per decision relative to plain 2k in the same run
+([timing.csv](evidence/silver_tree_prior_speedup_20261013/timing.csv)):
+
+| arm | 74038001–002 before (57 fights) | after | 74038000 before (27 fights, 2 runs) | after (3 runs) |
+|---|---|---|---|---|
+| tree8_2k | 2.73x | 1.67x | 2.35x, 2.44x | 1.57x–1.61x |
+| tree1_2k | 10.5x | 4.8x | — | — |
+| root2k | 1.01x | 1.01x | 0.99x–1.01x | 0.96x–0.97x |
+
+The ratio varies by seed (74038001: tree8 3.69x → 2.10x); about 55–60% of the extra cost over plain 2k is removed for both K.
+
+**Decision:** adopt (exact, no behavior change; the tree prior itself stays research only). **Inference**
+(plain cost about linear in simulations): at equal CPU a tree8 search now matches about plain 3.3k instead of
+5.5k; §453 matched tree8 against plain 6k at the old cost. Further gains need a cheaper prior (fewer or shallower trees, a higher K), which changes results and would
+need its own test.
+
+**Evidence:** [packet](evidence/silver_tree_prior_speedup_20261013/README.md). Raw:
+`/mnt/project-files/silver-tree-prior-speedup-454/raw.tar.gz`. Seeds 74038000–74038002 are now used.
+
+**Knowledge impact:** prior-scoring sentences in the tree-prior paragraph of `architecture/combat-search.md`.
+
 ## §451 — rollout3 `combo` at 8192 simulations and with a fresh chance outcome on every visit: both NOT_SHOWN vs the same-commit `combo` (2026-10-12)
 
 **Question:** Philipp, 2026-10-12 19:58Z: "Can we do rollout3 with the parameters that won 224/256 games but with 8192

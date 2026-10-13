@@ -164,7 +164,8 @@ def production_support_reasons():
 def union(scope_dirs: dict[str, Path], out: Path, reasons=None) -> dict:
     """Concatenate assembled scopes into one corpus the Phase-2 chain can prepare.
 
-    Scopes are written in SCOPES order, which is also ascending seed order.
+    Scopes are written in ascending seed order (their seedSpec starts; the #418
+    A0 seed plan already follows SCOPES order, the §443 A20 plan does not).
     Rows the frozen support predicate rejects are dropped, so every kept row
     is a candidate-supported row and later caches satisfy ids == arange(N).
     `row_scopes.json` records each scope's row range so gates can report
@@ -181,10 +182,12 @@ def union(scope_dirs: dict[str, Path], out: Path, reasons=None) -> dict:
     ranges, dropped, seeds, quarantined = {}, {}, set(), []
     rows = 0
     last_seed = None
+    manifests = {s: json.loads((scope_dirs[s] / "corpus.jsonl.manifest.json").read_text(encoding="utf-8"))
+                 for s in SCOPES if s in scope_dirs}
     with merged.open("w", encoding="utf-8") as sink:
-        for scope in [s for s in SCOPES if s in scope_dirs]:
+        for scope in sorted(manifests, key=lambda s: int(manifests[s]["seedSpec"]["start"])):
             manifest_path = scope_dirs[scope] / "corpus.jsonl.manifest.json"
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest = manifests[scope]
             validate_manifest(manifest)
             if manifest.get("forcedSetup") != scope:
                 raise ValueError(f"{scope}: assembled scope has forcedSetup {manifest.get('forcedSetup')!r}")
