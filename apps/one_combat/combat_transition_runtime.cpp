@@ -499,7 +499,6 @@ std::vector<int> declaredHpClasses(const nlohmann::json &domain,const nlohmann::
     std::vector<int> classes;for(int i=low;i<=high;++i) classes.push_back(i);
     return classes;
 }
-constexpr char kExposurePassByOverride[]="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE";
 const nlohmann::json *researchCandidateIdentity() {
     static const std::unique_ptr<const nlohmann::json> identity=loadResearchCandidateIdentity();
     return identity.get();
@@ -689,11 +688,11 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
         require(metadata_.at("supportExclusions")==supportExclusions(escape_,writhingRitual_),"combat runtime support exclusions");
         const auto qualification=metadata_.at("qualification").value("classification",std::string{});
-        // A recorded exposure override (tools/export_combat_transition_near_full.py --exposure-override)
-        // qualifies only a research candidate under its manifest, never production or a built-in manifest.
-        const bool passByOverride=qualification==kExposurePassByOverride && candidate && !productionCandidate_ &&
-            metadata_.at("qualification").value("overrideSha256",std::string{}).size()==64;
-        require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" || passByOverride ||
+        // §443: a research candidate (never production or a built-in manifest) may carry a
+        // final-support exposure gate waived by a recorded override (export --exposure-override).
+        const bool overridden=qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE" &&
+            researchCandidate() && isSha256(metadata_.at("qualification").value("exposureOverrideSha256",nlohmann::json{}));
+        require(qualification=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" || overridden ||
             (promotedLizard && qualification=="DEEPSETS_BREW_LIZARD_T2_PRODUCTION_QUALIFIED"),
             "combat runtime qualification");
         const auto &census=identity_.at("supportCensus");
@@ -1222,7 +1221,7 @@ EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitio
         standardMetadata.at("supportExclusions")==CombatTransitionRuntime::supportExclusions(standard_->runtime().escapeCapable(),standard_->runtime().writhingRitualCapable()) &&
         (standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS" ||
          (standard_->runtime().researchCandidate() &&
-          standardMetadata.at("qualification").at("classification")==kExposurePassByOverride)),
+          standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE")),
         "Brew fallback must be the current standard Attention CTM artifact");
     // A Brew state with a Smoke Bomb falls back to the standard artifact, so both must agree.
     require(fast_->runtime().escapeCapable()==standard_->runtime().escapeCapable(),

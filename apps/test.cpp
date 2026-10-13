@@ -508,6 +508,88 @@ int testSilverSearcher() {
         }
         check(sawEnd && sawOther, "policy trees score each root action from its action features");
         std::filesystem::remove(path);
+
+        // predictPolicyActions (batched, state prefix walked once) equals
+        // predictVec bit for bit, on the flattened path and on the fallback
+        // used when a tree's children do not follow their parent.
+        const auto mixed = std::filesystem::temp_directory_path() / "silver_policy_batch_test.txt";
+        auto batchMatches = [&](const std::string &trees) {
+            std::ofstream(mixed) << "combat_policy_trees_v1\nnfeat 3\nfeat curHp\nfeat aCardCost\nfeat turn\n"
+                                    "base_score 0.1\n" << trees;
+            search::CombatValueNet m;
+            if (!m.load(mixed.string())) return std::make_pair(false, false);
+            const int stateCount = search::combatFeatureCount();
+            const int actionCount = search::combatPolicyFeatureCount() - stateCount;
+            std::vector<float> state(search::combatPolicyFeatureCount(), 0.f), actions(4 * actionCount, 0.f);
+            bool same = true;
+            for (int trial = 0; trial < 64; ++trial) {
+                state[3] = static_cast<float>(trial % 9) * 10.f;     // curHp
+                state[2] = static_cast<float>(trial % 4);            // turn
+                for (int i = 0; i < 4; ++i) actions[i * actionCount + 5] = static_cast<float>((trial + i) % 4);
+                double batch[4];
+                m.predictPolicyActions(state.data(), actions.data(), 4, batch);
+                for (int i = 0; i < 4; ++i) {
+                    std::copy(actions.begin() + i * actionCount, actions.begin() + (i + 1) * actionCount,
+                              state.begin() + stateCount);
+                    same = same && batch[i] == m.predictVec(state.data());
+                }
+            }
+            return std::make_pair(same, !m.flatRoots.empty());
+        };
+        const auto flat = batchMatches("ntrees 4\n"
+            "tree 0 5\nS 0 40 1 2\nS 1 2 3 4\nL 0.3\nL -0.7\nL 1.1\n"
+            "tree 1 5\nS 1 1 1 2\nS 2 1.5 3 4\nL 0.01\nL 0.2\nL -0.4\n"
+            "tree 2 1\nL 0.125\n"
+            "tree 3 3\nS 2 2.5 1 2\nL 0.9\nL -0.33\n");
+        check(flat.first && flat.second, "batched policy trees match predictVec on the flattened path");
+        const auto fallback = batchMatches("ntrees 1\ntree 0 3\nS 1 1.5 2 1\nL 0.75\nS 0 40 1 1\n");
+        check(fallback.first && !fallback.second, "batched policy trees fall back to predictVec for unordered trees");
+        std::filesystem::remove(mixed);
+    }
+
+    // Tree prior (§452, research): an unreachable visit threshold is today's
+    // search; at K = 1 internal decision nodes get a prior sized like their
+    // edges, and the root's first try follows the root prior.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x51A7u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        auto visitsOf = [](const search::SilverSearcher &s) {
+            std::vector<std::int32_t> visits;
+            for (const auto &e : s.rootNode().edges) visits.push_back(e.visitCount);
+            return visits;
+        };
+        search::SilverSearcher plain(silverSearchRoot(bc), {});
+        plain.search(400);
+        int calls = 0;
+        bool sized = true;
+        auto uniform = [&](const BattleContext &, const std::vector<search::SilverSearcher::Edge> &edges) {
+            ++calls;
+            sized = sized && edges.size() >= 2;
+            return std::vector<double>(edges.size(), 1.0 / static_cast<double>(edges.size()));
+        };
+        search::SilverSearcher unreachable(silverSearchRoot(bc), {});
+        unreachable.nodePrior = uniform;
+        unreachable.treePriorMinVisits = 1 << 30;
+        unreachable.search(400);
+        check(visitsOf(unreachable) == visitsOf(plain) && unreachable.nodeCount() == plain.nodeCount() && calls == 0,
+              "tree prior with an unreachable threshold leaves the search unchanged");
+
+        search::SilverSearcher tree(silverSearchRoot(bc), {});
+        const auto n = tree.prepareRootActions();
+        std::vector<double> last(n, 0.0);
+        last.back() = 1.0;
+        tree.rootPrior = last;
+        tree.rootPriorWeight = 400;
+        tree.nodePrior = uniform;
+        tree.treePriorMinVisits = 1;
+        tree.search(1);
+        check(visitsOf(tree).back() == 1, "tree prior tries the highest-prior root action first");
+        tree.search(399);
+        check(calls > 0 && sized, "tree prior scores internal decision nodes with two or more edges");
+        bool tried = true;
+        for (const auto v : visitsOf(tree)) tried = tried && v >= 1;
+        check(tried, "tree prior still tries every root action");
     }
 
     // Exact endpoint/depth fixtures and opt-in observational parity.

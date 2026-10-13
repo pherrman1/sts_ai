@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-12 for the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -282,17 +282,34 @@ rollout3 lands between off and 2048: 84.4% wins, +5.5 pp [−3.9, +14.8] over of
 both NOT_SHOWN. One-setting variants on the same seeds (§427–§430): fewer sampled outcomes per chance node
 (`WIDEN_K=1`, `WIDEN_ALPHA=0.25`) is WORSE, −10.9 pp [−19.5, −2.3] (p = 0.02 uncorrected, 0.08 Bonferroni over four arms), back to the off win rate; 4096 simulations
 (+3.1 pp, about 1.9x CPU), more outcomes (`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, +1.6 pp, about the same CPU) and 5 rollout
-combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. On 256 fresh seeds
+combats (−2.3 pp, 37% V4 fallback, mostly Lizard Tail support aborts) are NOT_SHOWN against 2048. With the Lizard-capable CTM (§446, rollout5
+vs rollout3 both rerun on one commit after #496) rollout5's fallback drops to 2.9% but it is still NOT_SHOWN: 113/127 vs
+111/127, +1.6 pp [−4.7, +8.7], at about 1.5x the CPU. Runs from §422–§430 do not rerun byte for byte on commits after
+#480 (Face of Cleric fix `c7641b07`), so later comparisons rerun their controls. On 256 fresh seeds
 (§433) 4096 simulations with the broad widening won 87.5% vs 77.7% for off, +9.8 pp [+3.9, +16.0], CONFIRMED; plain
 rollout3 won 83.2% (+5.5 pp [−1.2, +12.1] over off, combo − rollout3 +4.3 pp [−1.6, +10.2]) at about half the CPU
 (893 vs 1,536 s per run). `STS_OOC_PUBLIC_FUTURES` was off, which favours `off` (#397). Open: choosing between the two
-for a default proposal, prior and merging variants.
+for a default proposal, prior-only and merging variants. With the V4 prior and the V4 leaf policy both replaced by uniform choices
+(§441, 128 of the §433 seeds), `combo` loses wins: 85.2% vs 93.0%, −7.8 pp [−15.6, −0.8], WORSE (McNemar p = 0.064);
+that search ties plain rollout3 at lower CPU (about 0.5–0.8x on equal binaries, **Inference**). Prior and leaf policy
+changed together, so which one carries the loss is open.
+Swapping the leaf and fallback win model `STS_WIN_NET` from B0 `v_win` to the public X2-B (§444) in `combo` (§449,
+128 fresh paired seeds, `STS_OOC_PUBLIC_FUTURES=8` in both arms) is NOT_SHOWN: 114/128 vs 111/128, +2.3 pp
+[−5.5, +10.2], McNemar p = 0.70, at the same CPU. The data do not argue against X2-B, but do not show a gain either.
+Philipp made it the OOC MCTS default win model (ADR-0029); `STS_WIN_NET=1` reproduces earlier B0-based OOC MCTS results.
+On 128 fresh paired seeds (§451, B0 leaf) neither 8192 simulations (117 vs 118 wins, −0.8 pp [−7.0, +5.5], 2x
+MCTS CPU) nor `WIDEN_K=8`, which samples a fresh chance outcome on every visit (119 vs 118, +0.8 pp [−5.5, +7.0], same
+CPU), is shown better than `combo`; `combo` won 92.2% there.
 Where the CPU goes (§436, one seed, `gprofng`): `CompactTreeNet::predict` about 32%, the CTM encoder about 28%,
 the V4 network about 25%, the Silver simulator only about 5%. A bit-identical vectorized CTM `linear` cuts a
 rollout3 run by about 10%. On top of §436/§437 the CTM was still about a quarter of rollout3 CPU, almost all in the
 DeepSets per-token MLPs of unprepared leaf-rollout samples; an exact per-token memo plus reuse of the shared HP
 encoder (§439, bitwise identical play) makes the CTM 2.8x cheaper and a rollout3 run 1.20–1.24x faster, leaving
-the CTM at about 10%. The largest remaining rollout3 costs are the native shop planner and the V4 network.
+the CTM at about 10%. With the V4 rollout policy the floor-model calls of the native shop plan, card pick and removal pick
+were about 20% of rollout3 CPU after §437 (8% with a uniform rollout policy, which rarely reaches the planner); a
+packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). The largest remaining rollout3 cost is
+the V4 network in the rollout gates (about 21%); cached deck tokens and transposed dense layers cut it about
+2.8x, bitwise identically, 1.29–1.41x per run (§450).
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
@@ -315,6 +332,13 @@ overrides (strict Q top-1 0.30 vs 0.34). **Inference:** these labels are too noi
 route; a better A20 OOC policy needs a different label source, not more of the same data.
 §432 found one reason: the corpus's 4 branch futures shared their combats and differed only in out-of-combat choices.
 
+At A0 (§448, map gate on, 128 paired seeds) the gate margin matters more than the training ascension: A20 V4 wins
+55/64/83/94/98/90 and A0 V4 70/76/78/78/96/98 of 128 at margins 0/0.25/0.5/1/2/4, heuristic only 86; playing every
+V4 argmax (margin 0) loses runs, including to Knowing Skull HP payments. On the Gold2 decisions V4's gains over the
+heuristic come from events (mostly Neow), shop and rest-vs-smith, its losses from map and upgrade targets;
+§425 OOC MCTS picks also gain on the map. **Open question:** whether the map gate costs wins at margin 1 (no
+same-seed map-off arm).
+
 ## Independent branch futures and short-branch labels at A20 (§432)
 
 `strategicgen2` branch futures only varied the agent RNG, so `STRATEGIC_BRANCH_FUTURES>1` shared encounters
@@ -323,6 +347,13 @@ encounters. On a rerun of the 262 gold seeds with 16 independent futures, short-
 8 independent futures, then the floor value trees) pick options with 1.25 floors regret vs 2.26 for the
 heuristic (+1.01 [+0.56, +1.52]) and 1.98 for the deployed V4; A20-fit and A0 floor trees tie in this role.
 **Open question:** whether a policy trained on such labels plays better live.
+
+On 53.5k such labels from fresh A20 seeds (§445), the best learned picker, a GBM on the strategic row, reaches
+1.73 floors regret on the same gold set: better than the heuristic (+0.53 [+0.25, +0.84]) but not shown better
+than V4 (+0.25 [−0.20, +0.69]). V4 Q-head retrains on these labels match V4, and halving the data barely moves
+the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolve (Inference). Played live on every OOC decision at
+A20 (§447), the GBM wins 3 of 128 runs vs 16 for the current stack (floors −2.21 [−5.29, +0.80], NOT_SHOWN by
+the pre-registered rule), so Gold2 regret did not predict whole-run play.
 
 ## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
 

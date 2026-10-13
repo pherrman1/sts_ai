@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <functional>
 #include <fstream>
@@ -9,6 +10,7 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <unordered_set>
 
 namespace one_combat {
@@ -82,21 +84,80 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
     roots.push_back(nodes.size());
     if (f >> tok) { std::cerr << kind << ": trailing data after " << ntrees << " trees in " << path << "\n"; return false; }
     if (!f.eof()) { std::cerr << kind << ": read failure in " << path << "\n"; return false; }
+    if (!pack()) { std::cerr << kind << ": cannot pack trees of " << path << "\n"; return false; }
     ok = true;
     std::cout << "[" << kind << ": " << ntrees << " trees, " << nfeat << " feats from " << path << "]\n";
     return true;
 }
 
-double CompactTreeNet::predict(const std::vector<float> &raw) const {
-    double m = baseMargin;
+bool CompactTreeNet::pack() {
+    packed.clear(); packedRoots.clear();
+    if (roots.empty()) return true;
+    if (roots.front() != 0 || roots.back() != nodes.size()) return false;
+    std::vector<PackedNode> out;
+    std::vector<std::uint32_t> outRoots;
+    struct Visit { int node; std::size_t parent; };
+    std::vector<Visit> todo;
     for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
+        if (roots[t] > roots[t + 1] || roots[t + 1] > nodes.size()) return false;
         const Node *tr = nodes.data() + roots[t];
         const int size = static_cast<int>(roots[t + 1] - roots[t]);
-        int i = 0, steps = 0;
-        while (tr[i].feat >= 0 && ++steps <= size)
-            i = (raw[tr[i].feat] < tr[i].thr) ? tr[i].yes : tr[i].no;
-        if (steps > size) return std::numeric_limits<double>::quiet_NaN();
-        m += tr[i].thr;
+        if (size < 1 || size >= kPackedLeaf) return false;
+        const std::size_t start = out.size();
+        outRoots.push_back(static_cast<std::uint32_t>(start));
+        std::vector<unsigned char> seen(size, 0);
+        // Preorder: a node's yes subtree follows it; its no child's offset is
+        // patched in when that child is emitted.
+        todo.assign(1, {0, SIZE_MAX});
+        while (!todo.empty()) {
+            const Visit v = todo.back(); todo.pop_back();
+            if (v.node < 0 || v.node >= size || seen[v.node]) return false;
+            seen[v.node] = 1;
+            const std::size_t at = out.size();
+            if (at - start >= kPackedLeaf) return false;
+            if (v.parent != SIZE_MAX) out[v.parent].no = static_cast<std::uint16_t>(at - start);
+            const Node &nd = tr[v.node];
+            if (nd.feat < 0) {
+                out.push_back({kPackedLeaf, 0, nd.thr});
+                continue;
+            }
+            if (nd.feat >= kPackedLeaf) return false;
+            out.push_back({static_cast<std::uint16_t>(nd.feat), 0, nd.thr});
+            todo.push_back({nd.no, at});
+            todo.push_back({nd.yes, SIZE_MAX});
+        }
+        if (out.size() - start != static_cast<std::size_t>(size)) return false; // unreachable node
+    }
+    outRoots.push_back(static_cast<std::uint32_t>(out.size()));
+    packed = std::move(out); packedRoots = std::move(outRoots);
+    return true;
+}
+
+bool CompactTreeNet::packedCurrent() const {
+    return packedRoots.size() == roots.size() && packed.size() == nodes.size();
+}
+
+double CompactTreeNet::predict(const std::vector<float> &raw) const {
+    double m = baseMargin;
+    if (!packedCurrent()) {
+        // Trees filled in directly (tests): walk nodes, with the cycle guard.
+        for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
+            const Node *tr = nodes.data() + roots[t];
+            const int size = static_cast<int>(roots[t + 1] - roots[t]);
+            int i = 0, steps = 0;
+            while (tr[i].feat >= 0 && ++steps <= size)
+                i = (raw[tr[i].feat] < tr[i].thr) ? tr[i].yes : tr[i].no;
+            if (steps > size) return std::numeric_limits<double>::quiet_NaN();
+            m += tr[i].thr;
+        }
+    } else {
+        for (std::size_t t = 0; t + 1 < packedRoots.size(); ++t) {
+            const PackedNode *tr = packed.data() + packedRoots[t];
+            int i = 0;
+            while (tr[i].feat != kPackedLeaf)
+                i = (raw[tr[i].feat] < tr[i].thr) ? i + 1 : tr[i].no;
+            m += tr[i].thr;
+        }
     }
     const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
     return logistic ? std::max(0.0, std::min(1.0, out)) : out;
@@ -107,57 +168,113 @@ void CompactTreeNet::predictVariants(const std::vector<float> &base, const std::
                                      std::vector<double> &out) const {
     out.assign(rows.size(), 0.0);
     std::vector<unsigned char> isVarying(base.size(), 0);
+    std::vector<int> distinct;
     for (const int index : varying)
-        if (index >= 0 && index < static_cast<int>(base.size())) isVarying[index] = 1;
+        if (index >= 0 && index < static_cast<int>(base.size()) && !isVarying[index]) {
+            isVarying[index] = 1;
+            distinct.push_back(index);
+        }
     // Rows that differ from base outside the varying features take predict().
     std::vector<std::size_t> exact;
+    std::vector<float> values;
     for (std::size_t r = 0; r < rows.size(); ++r) {
         bool same = rows[r].size() == base.size();
         for (std::size_t i = 0; same && i < base.size(); ++i)
             same = isVarying[i] || std::memcmp(&rows[r][i], &base[i], sizeof(float)) == 0;
-        if (same) exact.push_back(r);
-        else out[r] = predict(rows[r]);
+        if (!same) { out[r] = predict(rows[r]); continue; }
+        exact.push_back(r);
+        for (const int index : distinct) values.push_back(rows[r][index]);
     }
     if (exact.empty()) return;
-    // Walk each tree once for all exact rows together. A split on a fixed
-    // feature sends the whole group the way base goes, which is the way every
-    // exact row goes; a split on a varying feature partitions the group. Each
-    // row reaches the leaf predict() reaches and adds it in tree order.
-    std::vector<double> margins(exact.size(), baseMargin);
-    std::vector<std::size_t> group(exact.size());
+    if (distinct.empty()) {
+        for (const std::size_t r : exact) out[r] = predict(rows[r]);
+        return;
+    }
+    std::vector<double> exactOut;
+    predictDeltas(base, distinct, values, exactOut);
+    for (std::size_t k = 0; k < exact.size(); ++k) out[exact[k]] = exactOut[k];
+}
+
+void CompactTreeNet::predictDeltas(const std::vector<float> &base, const std::vector<int> &varying,
+                                   const std::vector<float> &values, std::vector<double> &out) const {
+    const std::size_t width = varying.size();
+    const std::size_t count = width ? values.size() / width : 0;
+    if (width == 0 || values.size() % width != 0)
+        throw std::invalid_argument("CompactTreeNet::predictDeltas: values do not match varying");
+    out.assign(count, 0.0);
+    if (count == 0) return;
+    // Column of each varying raw feature; -1 marks features fixed at base.
+    thread_local std::vector<int> column;
+    column.assign(base.size(), -1);
+    for (std::size_t j = 0; j < width; ++j) {
+        const int index = varying[j];
+        if (index < 0 || index >= static_cast<int>(base.size()) || column[index] >= 0)
+            throw std::invalid_argument("CompactTreeNet::predictDeltas: invalid or repeated varying index");
+        column[index] = static_cast<int>(j);
+    }
+    if (!packedCurrent()) {
+        std::vector<float> row = base;
+        for (std::size_t k = 0; k < count; ++k) {
+            for (std::size_t j = 0; j < width; ++j) row[varying[j]] = values[k * width + j];
+            out[k] = predict(row);
+        }
+        return;
+    }
+    // Column-major copy so a split on a varying feature reads one contiguous column.
+    thread_local std::vector<float> columns;
+    columns.resize(width * count);
+    for (std::size_t k = 0; k < count; ++k)
+        for (std::size_t j = 0; j < width; ++j) columns[j * count + k] = values[k * width + j];
+    thread_local std::vector<double> margins;
+    margins.assign(count, baseMargin);
+    // Partitions only permute the rows, and any order works for the next
+    // tree, so this is filled once per call.
+    thread_local std::vector<std::uint32_t> group;
+    group.resize(count);
+    for (std::size_t k = 0; k < count; ++k) group[k] = static_cast<std::uint32_t>(k);
     struct Pending { int node; std::size_t begin, end; };
-    std::vector<Pending> stack;
-    for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
-        const Node *tr = nodes.data() + roots[t];
-        const int size = static_cast<int>(roots[t + 1] - roots[t]);
-        for (std::size_t k = 0; k < group.size(); ++k) group[k] = k;
-        stack.assign(1, {0, 0, group.size()});
-        int steps = 0;
+    thread_local std::vector<Pending> stack;
+    const int *fixedOrColumn = column.data();
+    for (std::size_t t = 0; t + 1 < packedRoots.size(); ++t) {
+        const PackedNode *tr = packed.data() + packedRoots[t];
+        // Every row follows base until the first split on a varying feature.
+        int i = 0;
+        while (tr[i].feat != kPackedLeaf && fixedOrColumn[tr[i].feat] < 0)
+            i = (base[tr[i].feat] < tr[i].thr) ? i + 1 : tr[i].no;
+        if (tr[i].feat == kPackedLeaf) {
+            const double leaf = tr[i].thr;
+            for (std::size_t k = 0; k < count; ++k) margins[k] += leaf;
+            continue;
+        }
+        // From there a split on a fixed feature sends the whole group the way
+        // base goes, which is the way every row goes; a split on a varying
+        // feature partitions the group. Each row reaches the leaf predict()
+        // reaches and adds it in tree order.
+        stack.assign(1, {i, 0, count});
         while (!stack.empty()) {
-            auto [i, begin, end] = stack.back(); stack.pop_back();
-            while (tr[i].feat >= 0) {
-                // Every visited node is distinct in a tree, so this bounds the walk.
-                if (++steps > size) {
-                    for (const std::size_t r : exact) out[r] = predict(rows[r]);
-                    return;
-                }
-                const Node &node = tr[i];
-                if (!isVarying[node.feat]) { i = (base[node.feat] < node.thr) ? node.yes : node.no; continue; }
-                const auto split = std::partition(group.begin() + begin, group.begin() + end,
-                    [&](std::size_t k) { return rows[exact[k]][node.feat] < node.thr; });
-                const std::size_t middle = split - group.begin();
-                if (middle == begin) { i = node.no; continue; }
-                if (middle == end) { i = node.yes; continue; }
-                stack.push_back({node.no, middle, end});
-                i = node.yes; end = middle;
+            auto [node, begin, end] = stack.back(); stack.pop_back();
+            while (tr[node].feat != kPackedLeaf) {
+                const PackedNode &split = tr[node];
+                const int c = fixedOrColumn[split.feat];
+                if (c < 0) { node = (base[split.feat] < split.thr) ? node + 1 : split.no; continue; }
+                const float *col = columns.data() + static_cast<std::size_t>(c) * count;
+                const float thr = split.thr;
+                const auto mid = std::partition(group.begin() + begin, group.begin() + end,
+                    [&](std::uint32_t k) { return col[k] < thr; });
+                const std::size_t middle = mid - group.begin();
+                if (middle == begin) { node = split.no; continue; }
+                if (middle == end) { node = node + 1; continue; }
+                stack.push_back({split.no, middle, end});
+                node = node + 1; end = middle;
             }
-            for (std::size_t k = begin; k < end; ++k) margins[group[k]] += tr[i].thr;
+            const double leaf = tr[node].thr;
+            for (std::size_t k = begin; k < end; ++k) margins[group[k]] += leaf;
         }
     }
-    for (std::size_t k = 0; k < exact.size(); ++k) {
+    for (std::size_t k = 0; k < count; ++k) {
         const double m = margins[k];
         const double value = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
-        out[exact[k]] = logistic ? std::max(0.0, std::min(1.0, value)) : value;
+        out[k] = logistic ? std::max(0.0, std::min(1.0, value)) : value;
     }
 }
 

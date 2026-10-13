@@ -182,6 +182,8 @@ bool oocOnePlyTreasurePolicy(GameContext &, const ScumSearchAgent2 &);
 bool oocOnePlyBossRelicPolicy(GameContext &, const ScumSearchAgent2 &);
 bool oocOnePlyMapPolicy(GameContext &, const ScumSearchAgent2 &);
 bool oocMapRouteSearchPolicy(GameContext &, const ScumSearchAgent2 &);
+bool oocGbmRankerEnabled();
+bool oocGbmRankerPolicy(GameContext &, const PathHistory &);
 
 } // namespace one_combat
 

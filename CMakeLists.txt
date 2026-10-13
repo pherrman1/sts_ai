@@ -336,6 +336,12 @@ add_test(NAME one_combat_tree_parity COMMAND $<TARGET_FILE:one_combat_tree_test>
     ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt ${CMAKE_SOURCE_DIR}/models/v_rich_trees.txt
     ${CMAKE_SOURCE_DIR}/models/v_runwin_e2c_v2.txt)
 
+add_executable(ooc_tok_net_fast_test apps/ooc_tok_net_fast_test.cpp)
+target_include_directories(ooc_tok_net_fast_test PRIVATE apps)
+add_test(NAME ooc_tok_net_fast COMMAND $<TARGET_FILE:ooc_tok_net_fast_test>
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+set_tests_properties(ooc_tok_net_fast PROPERTIES LABELS "integration;smoke")
+
 add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
 target_include_directories(parity_test PUBLIC json/include)
@@ -687,8 +693,8 @@ add_test(NAME ctm_near_full_inputs_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
 add_test(NAME ctm_retrain_pins_selftest COMMAND python3 -m unittest tools.test_ctm_retrain_pins)
 set_tests_properties(ctm_retrain_pins_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_test(NAME ctm_near_full_export_override_selftest COMMAND python3 -m unittest tools.test_export_combat_transition_near_full_override)
-set_tests_properties(ctm_near_full_export_override_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME export_combat_transition_near_full_override_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_combat_transition_near_full.py)
 add_test(NAME ctm_exposure_cohorts_selftest COMMAND python3 -m unittest tools.test_ctm_exposure_cohorts)
 set_tests_properties(ctm_exposure_cohorts_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_support_census_check_selftest COMMAND python3 -m unittest tools.test_ctm_support_census_check)
