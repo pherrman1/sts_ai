@@ -4,10 +4,12 @@
 usage: python3 tools/analyze_ooc_a20_457.py OUT.json RUN_DIR [RUN_DIR ...]
        python3 tools/analyze_ooc_a20_457.py selftest
 
-RUN_DIRs hold bestbench units ``ARM-SEED.{csv,mcts.csv,done,log}`` of the arms ``off`` (control) and ``combo``. The
-cohort is 87000000 .. 87000000+NPAIRS-1, NPAIRS from the evidence directory. Pairs: cohort seeds with a result row in
-both arms. Primary: mean paired floor difference combo - off with a paired seed bootstrap 95% CI (10,000 resamples,
-seed 457); IMPROVED when the CI lower bound > 0, WORSE when the upper bound < 0, otherwise NOT_SHOWN. Key secondary:
+RUN_DIRs hold bestbench units ``ARM-SEED.{csv,mcts.csv,done,log}`` of the arms ``off`` (control), ``combo`` (A20
+candidate CTM) and ``combo_def`` (default CTM stack). The cohort is 87000000 .. 87000000+NPAIRS-1, NPAIRS from the
+evidence directory. Pairs: cohort seeds with a result row in all three arms. Two primary comparisons, each vs ``off``:
+mean paired floor difference with a paired seed bootstrap 95% CI (10,000 resamples, seed 457, the same resample
+indices for all); IMPROVED when the CI lower bound > 0, WORSE when the upper bound < 0, otherwise NOT_SHOWN.
+combo vs combo_def is reported descriptively the same way. Key secondary:
 win difference with its CI (same resample indices) and exact McNemar. Descriptive: end-HP difference, deaths by act,
 boss deaths, mean floor, seconds and MCTS CPU per run, owned and fallback share, support aborts and simulations.
 
@@ -22,8 +24,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from analyze_rollout3_confirm import mcnemar, read_rows  # noqa: E402
 
 REPS, RNG_SEED = 10000, 457
-ARMS = ("off", "combo")
-VARIANTS = ("combo",)
+ARMS = ("off", "combo", "combo_def")
+VARIANTS = ("combo", "combo_def")
 BOSS_FLOORS = {16, 33, 50}
 EVIDENCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "experiments", "evidence",
                         "ooc_a20_ab_457_20261013")
@@ -63,7 +65,7 @@ def analyze(arms, done, cohort):
     bad = [d["line"] for a in ARMS for d in done[a] if not re.search(r"\brc=0\b", d["line"]) and not d["seed_failures"]]
     # the combo arm must have loaded the A20 candidate CTM; off must not load any CTM candidate
     bad += [d["line"] + " (candidate banner missing)" for d in done["combo"] if not d["candidate_banner"]]
-    bad += [d["line"] + " (unexpected candidate banner)" for d in done["off"] if d["candidate_banner"]]
+    bad += [d["line"] + " (unexpected candidate banner)" for a in ("off", "combo_def") for d in done[a] if d["candidate_banner"]]
     missing = {a: sorted(set(cohort) - set(rows[a]) - set(failed[a])) for a in ARMS}
     extra = sorted(set().union(*(set(rows[a]) for a in ARMS)) - set(cohort))
     seeds = sorted(set(cohort).intersection(*(set(rows[a]) for a in ARMS)))
@@ -93,6 +95,9 @@ def analyze(arms, done, cohort):
         lo, hi = cmp["delta_floor_ci95"]
         cmp["label"] = "IMPROVED" if lo > 0 else "WORSE" if hi < 0 else "NOT_SHOWN"
         out[f"{v}_vs_off"] = cmp
+    dd = col("combo", "floor") - col("combo_def", "floor")
+    out["combo_vs_combo_def"] = {"delta_floor": float(dd.mean()), "delta_floor_ci95": ci(dd),
+                                 "delta_win": float((col("combo", "won") - col("combo_def", "won")).mean())}
     out.update({
         "win": {a: float(col(a, "won").mean()) for a in ARMS},
         "wins": {a: int(col(a, "won").sum()) for a in ARMS},
@@ -102,7 +107,7 @@ def analyze(arms, done, cohort):
         "deaths_by_act": {a: {act: sum(1 for s in seeds if int(rows[a][s]["won"]) == 0 and int(rows[a][s]["act"]) == act)
                               for act in (1, 2, 3)} for a in ARMS},
         "sec_per_run": {a: float(col(a, "sec").mean()) for a in ARMS},
-        "label": out["combo_vs_off"]["label"],
+        "label": {v: out[f"{v}_vs_off"]["label"] for v in VARIANTS},
     })
     search = {}
     for a in ARMS:
@@ -126,7 +131,9 @@ def selftest():
     mh = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,mctsCpuSec,mctsSupportAborts\n"
     cohort = range(100)
     with tempfile.TemporaryDirectory() as t:
-        for arm, p in (("off", .1), ("combo", .6)):
+        for arm, p in (("off", .1), ("combo", .6), ("combo_def", .1)):
+            if arm == "combo_def":                                   # same play as off: NOT_SHOWN by construction
+                rng = np.random.default_rng(1)
             with open(os.path.join(t, f"{arm}-0.csv"), "w") as f:
                 f.write(hdr)
                 for s in cohort:
@@ -137,7 +144,7 @@ def selftest():
             open(os.path.join(t, f"{arm}-0.done"), "w").write(f"tag={arm}-0 rc=0")
             open(os.path.join(t, f"{arm}-0.log"), "w").write(CANDIDATE_BANNER + "\n" if arm == "combo" else "")
         r = analyze(*load([t]), cohort)
-        assert r["pairs"] == 100 and r["label"] == "IMPROVED", r
+        assert r["pairs"] == 100 and r["label"] == {"combo": "IMPROVED", "combo_def": "NOT_SHOWN"}, r
         assert r["deaths_by_act"]["off"][2] == 100 - r["wins"]["off"], r
         assert r["search"]["combo"]["simulations_per_run"] == 4096
         assert analyze(*load([t]), range(101))["label"] == "INVALID"            # seed 100 missing in both arms
@@ -158,6 +165,7 @@ if __name__ == "__main__":
         res = analyze(*load(sys.argv[2:]), cohort_from_file())
         json.dump(res, open(sys.argv[1], "w"), indent=2)
         print(json.dumps({k: res.get(k) for k in ("pairs", "wins", "mean_floor", "label")}))
-        if "combo_vs_off" in res:
-            print(json.dumps({j: res["combo_vs_off"][j] for j in ("delta_floor", "delta_floor_ci95", "delta_win",
-                                                                  "delta_win_ci95", "mcnemar_p")}))
+        for v in VARIANTS:
+            if f"{v}_vs_off" in res:
+                print(v, json.dumps({j: res[f"{v}_vs_off"][j] for j in ("delta_floor", "delta_floor_ci95", "delta_win",
+                                                                        "delta_win_ci95", "mcnemar_p")}))

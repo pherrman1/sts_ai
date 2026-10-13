@@ -2,10 +2,10 @@
 # §457 cloud worker. From a clean checkout of the run commit:
 #   bash worker.sh setup W    build one_combat (build inputs and models must equal CODE_COMMIT), check the binary
 #                             hash, stage it in $HOME/a457-wWW, write OUT/FROZEN.txt
-#   bash worker.sh run W      this worker's 16 seeds in both arms (32 one-seed units at ascension 20), 4 at a time, into
-#                             the local OUT; when all 32 are done, upload SHARE/wWW.tar and then SHARE/wWW.DONE.txt
+#   bash worker.sh run W      this worker's 16 seeds in all three arms (48 one-seed units at ascension 20), 4 at a time,
+#                             into the local OUT; when all 48 are done, upload SHARE/wWW.tar and then SHARE/wWW.DONE.txt
 #   bash worker.sh status W
-# W = 1..NPAIRS/16; worker W runs seeds 87000000+16(W-1) .. +15 in the arms `off` and `combo`.
+# W = 1..NPAIRS/16; worker W runs seeds 87000000+16(W-1) .. +15 in the arms `off`, `combo` and `combo_def`.
 # Units write to local disk; the share gets two files per worker (the shared folder has a file-count limit).
 set -uo pipefail
 CMD=${1:-} W=${2:-0}
@@ -19,7 +19,7 @@ SHARE=/mnt/project-files/ooc-a20-ab
 RUN=$HOME/a457-$TAG OUT=$HOME/a457-$TAG/out
 EXPECT_BIN=$(cat "$D/binary.sha256")
 LO=$((87000000 + 16*(W-1)))
-NUNITS=32
+NUNITS=48
 case $CMD in
 setup)
   case "$REPO" in /mnt/project-files*) stop "checkout must not be on /mnt/project-files (noexec)";; esac
@@ -54,7 +54,7 @@ setup)
   echo "setup ok: $(head -1 "$OUT/FROZEN.txt")" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"
-  for k in $(seq 0 15); do echo "combo $((LO+k)) 1"; echo "off $((LO+k)) 1"; done > "$OUT/units.txt"
+  for k in $(seq 0 15); do echo "combo $((LO+k)) 1"; echo "combo_def $((LO+k)) 1"; echo "off $((LO+k)) 1"; done > "$OUT/units.txt"
   xargs -P 4 -L 1 bash "$D/run_unit.sh" "$REPO" "$RUN" "$OUT" < "$OUT/units.txt"
   n=$(ls "$OUT"/*.done 2>/dev/null | wc -l)
   if [ "$n" = $NUNITS ]; then

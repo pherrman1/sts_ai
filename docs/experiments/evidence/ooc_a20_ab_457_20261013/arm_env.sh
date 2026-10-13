@@ -3,6 +3,7 @@
 #   combo   §433 combo unchanged (4096 simulations, WIDEN_K=4, WIDEN_ALPHA=0.75, LEAF_COMBATS=3, native leaf, V4 prior
 #           and leaf policy) with the A20 research-candidate CTM pathb-a20 that worker.sh setup stages in RUN/ctm/
 #           from the pinned claude/ctm-a20-data commit (ctm_artifacts.txt: fast, standard, manifest, active_lizard)
+#   combo_def §433 combo unchanged with the automatic default CTM stack (no CTM variables set)
 # Both arms pin STS_OOC_PUBLIC_FUTURES=8 (the default since #496). STS_WIN_NET stays unset (ADR-0029 default leaf
 # model under OOC MCTS). Ascension 20 is the bestbench argument in run_unit.sh, not an environment variable.
 R457_REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
@@ -10,9 +11,10 @@ source "$R457_REPO/docs/experiments/evidence/ooc_rollout3_confirm_20261011/arm_e
 eval "$(declare -f arm_env_args | sed '1s/^arm_env_args/arm_env_args_433/')"
 arm_env_args() {
   local arm=$1 base=$2 run=$3 lines k
-  case $arm in off|combo) ;; *) echo "unknown arm $arm" >&2; return 1 ;; esac
-  lines=$(arm_env_args_433 "$arm" "$base" "$run") || return 1
-  if [ "$arm" = combo ]; then
+  case $arm in off|combo|combo_def) ;; *) echo "unknown arm $arm" >&2; return 1 ;; esac
+  if [ "$arm" = off ]; then lines=$(arm_env_args_433 off "$base" "$run") || return 1
+  else lines=$(arm_env_args_433 combo "$base" "$run") || return 1; fi
+  if [ "$arm" != off ]; then
     for k in STS_OOC_MCTS=1 STS_OOC_MCTS_PRIOR=policy STS_OOC_MCTS_LEAF_POLICY=v4 STS_OOC_MCTS_SIMS=4096 \
              STS_OOC_MCTS_WIDEN_K=4 STS_OOC_MCTS_WIDEN_ALPHA=0.75 STS_OOC_MCTS_LEAF_COMBATS=3 STS_OOC_MCTS_LEAF_VALUE=native; do
       [ "$(grep -cx "$k" <<< "$lines")" = 1 ] || { echo "§433 combo env lacks $k" >&2; return 1; }

@@ -2,7 +2,7 @@
 
 Philipp, 2026-10-13 16:05Z: "How the ooc MCTS A20 doing? Can we try 128 seeds A/B?", then 16:06Z: "Just do it on your
 own, use 8 workers", then 16:56Z: "Just upload the files for the ctm?? Then do it in the cloud?". Frozen with the run commit and binary hash before launch; independent pre-launch review by the
-coordinator. 8 cloud workers × 16 seeds × 2 arms.
+coordinator. 8 cloud workers × 16 seeds × 3 arms.
 
 ## What is known at A20 (baseline)
 - OOC MCTS has never played whole A20 runs. Every live OOC MCTS A/B (§384, §412, §422–§424, §427–§433, §441, §446,
@@ -24,6 +24,9 @@ coordinator. 8 cloud workers × 16 seeds × 2 arms.
   `STS_STOP_AFTER_ACT=3`, `STS_OOC_MCTS=0`), at ascension 20.
 - `combo`: §433 `combo` unchanged (rollout3, 4096 simulations, `WIDEN_K=4`, `WIDEN_ALPHA=0.75`, 3 leaf combats, native
   leaf, V4 prior and leaf policy), at ascension 20, with the A20 CTM below.
+- `combo_def`: the same `combo` with today's automatic default CTM stack (§435 Lizard-capable pathb-r2 fast
+  `c6d56bbc…`, standard Brew fallback `b9188de0…`; no CTM variables). It gets raw ascension 20, so it prices imagined
+  fights with almost no death risk (§443 Stage 0), but it has full Lizard support.
 - Both arms pin `STS_OOC_PUBLIC_FUTURES=8` (the default since #496), as §451 did. `STS_WIN_NET` stays unset, so the
   leaf win model is today's default under OOC MCTS (public X2-B, ADR-0029; §449 found no difference from `v_win`).
 
@@ -35,11 +38,16 @@ coordinator. 8 cloud workers × 16 seeds × 2 arms.
   correction enabled without its frozen artifact metadata", because the fast artifact has no `activeLizardCorrection`
   header (chain B skipped s23). Adding one is a new pre-registered step. The candidate therefore refuses every imagined
   combat with an active Lizard Tail.
+- **Smoke finding (added before freezing):** the refusals are not limited to runs that own a Tail. On smoke seeds
+  74047001 and 74047002 (no Lizard Tail in the real run) 20/30 and 87/129 OOC decisions fell back to V4, all
+  `active_unqualified_lizard`; on the forced-Tail seed 74047003, 32/127. **Inference:** imagined futures that pick
+  up a Lizard Tail (sampled relic rewards inside the search tree) reach a refused combat and abort the whole root
+  search. So `combo` is largely V4 play; that is why `combo_def` was added (Philipp's decision card, or its
+  recommended option while he had not answered).
 - **How those fights fall back (as §435 describes for the pre-§435 stack):** a refused imagined combat aborts that
   decision's whole root search, and the deployed V4 OOC policy decides that decision instead. Real combats are
   unaffected (Silver plays them). The share of OOC decisions decided this way (`mctsFallback`, `mctsSupportAborts`)
-  is reported for `combo`. **Inference:** this happens mainly on runs that own an unused Lizard Tail, and §423 found
-  such V4 fallbacks did not limit rollout3 at A0.
+  is reported per arm.
 - **Why:** the production CTM gets raw ascension 20 and predicts 0.5% deaths against 10.5% observed (§443 Stage 0), so
   a `combo` arm with it would search over a model that sees almost no death risk. The A20 candidate is the only model
   calibrated near A20 outcomes; its offline failures (boss bias 0.015, Lizard refusals) are small next to
@@ -51,17 +59,20 @@ coordinator. 8 cloud workers × 16 seeds × 2 arms.
   every `combo` log shows `[ctm-research-candidate] candidate_id=pathb-a20` and no `off` log does.
 
 ## Seeds and runs
-- Seeds 87000000–87000127, one `bestbench 10000 1 20 SEED` unit per seed and arm (256 units). Smokes 74047000–099
+- Seeds 87000000–87000127, one `bestbench 10000 1 20 SEED` unit per seed and arm (384 units). Smokes 74047000–099
   (this thread).
-- Smoke (before launch): seed 74047000 in both arms with the frozen worker scripts. It checks that both arms run at
-  ascension 20, `combo` shows its OOC MCTS banner and the A20 candidate banner, and both complete; it reports s per run.
+- Smoke (before launch): seeds 74047000–003 with `run_unit.sh` (74047000 `off` and default-CTM combo; 74047001
+  `off`, `combo`, `combo_def`; 74047002 `combo`; 74047003 `combo` with `STS_FORCE_RELIC=LIZARD_TAIL`). It checks that
+  every arm runs at ascension 20, `combo` shows the A20 candidate banner and `combo_def` does not, and all complete.
 - Stalls: a native Silver stall in a live combat is a `[bestbench-seed-failure]` (unit rc 1, no result row). Such a
   seed is dropped from both arms and listed; any other gap or nonzero rc makes the analysis INVALID
   (`tools/analyze_ooc_a20_457.py`).
 
 ## Analysis
-- Primary: mean paired floor difference `combo − off`, with a 95% paired bootstrap CI (10,000 reps, RNG seed 457).
-  **IMPROVED** if the lower CI > 0, **WORSE** if the upper CI < 0, **NOT_SHOWN** otherwise. Floors are primary
+- Primary: two comparisons, `combo − off` and `combo_def − off`, each the mean paired floor difference with a 95%
+  paired bootstrap CI (10,000 reps, RNG seed 457, same resample indices). Per comparison **IMPROVED** if the lower
+  CI > 0, **WORSE** if the upper CI < 0, **NOT_SHOWN** otherwise. No multiplicity correction; both are reported.
+  `combo − combo_def` is descriptive. Floors are primary
   because at A20 most runs lose, so wins carry little information on 128 seeds (§447 used floors for the same
   reason).
 - Key secondary: wins (paired bootstrap CI of the difference, discordant pairs, exact McNemar p).
