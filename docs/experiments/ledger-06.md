@@ -17739,3 +17739,41 @@ README. Seed 87000000 was reused for diagnostics and cannot become a holdout.
 
 **Knowledge impact:** update the maintained #507 status in `evaluation/current-research.md`;
 no production default or model change.
+
+## §462 — A20 one-leaf inherited-memory replay: exact parity PASS (2026-10-14)
+
+**Question:** before measuring #507 target stability, can one actual internal
+MAP leaf reproduce its scheduled teacher evaluation from the same complete
+inherited process state? §461 JSONL is an incomplete observation, not a replay
+snapshot; reconstructing it as root zero would change evaluator semantics.
+
+**Design:** independently reviewed [protocol and evidence](evidence/ooc_leaf_replay_462_20261014/README.md).
+Source `1125d07db5f5d6597759af291d2fdc4c6981f066`, Release binary `abd6f14d…`.
+Historical seed 87000000, A20, decision 0, ordinal 1025; initially nonterminal
+MAP required, no replacement. Exact §461 / PR #524 CTM and teacher settings,
+with unrelated trace/profile outputs disabled. One additional child evaluation
+forked before the parent's scheduled evaluation preserves the original model,
+state ID, path, callbacks, policy, caches and RNG. Verified single OS thread;
+child evaluates and exits before parent evaluates. A private completion signal
+stops the root prefix before real action execution. Limits: parent 20 plus
+child 10 CPU seconds, 60 wall seconds; bounded 64 KiB transport and 10-second
+child wall timeout. No retries or independent-future repetitions.
+
+**Result: PASS**, independently checked against the frozen raw report. Both
+evaluations returned exactly **0.6771143269743937**, nonterminal, with endpoint
+floor 5 / HP 66 / max HP 75, three resolved CTM combats and 21 projection steps.
+Complete final planner RNG matched and source state/path stayed unchanged.
+State ID, initial/final RNG and all recorded target fields also matched the
+historical §461 sample (descriptive cross-build check, not another pass gate).
+One header and one replay report were written; no completed root or game result.
+Return code 0; total CPU **0.907232 s**, wall **0.966319 s**. All loaded CTM,
+effective policy, full STS environment, binary/source and artifact checks passed.
+
+**Decision:** inherited-memory deterministic repeatability is demonstrated for
+this single leaf. This is not serialized replay, target stability, public-input
+sufficiency, CTM qualification or gameplay quality. Next preregister a bounded
+independent-future stability study before fitting a student. No training,
+teacher/default promotion, additional seed or #506 contract change occurred.
+
+**Knowledge impact:** document the diagnostic interface in the OOC architecture
+and CODE_MAP; update #507's current status in `evaluation/current-research.md`.

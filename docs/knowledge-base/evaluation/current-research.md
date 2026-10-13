@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-14 for one-leaf replay (#507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -326,7 +326,7 @@ OOC MCTS with A0-trained models picks options with mean floor regret 4.35 (`prod
 whether A20-trained leaf/prior models change this; the replay tooling (`STRATEGIC_MCTS_TARGETS`) reruns
 the same decisions with any model environment.
 
-## A20 rollout-leaf compression (#507) — collector canary PASS; stability untested
+## A20 rollout-leaf compression (#507) — collector and one-leaf replay PASS; stability untested
 
 The selected research teacher is PR #524's §458 `combo_liz`: the A20
 Lizard-capable CTM pinned by
@@ -352,14 +352,21 @@ Five continuations ended terminal; their inputs were still decision boundaries.
 Observed CPU was 267.8 vs 270.9 seconds (+1.18% in one pair, descriptive only).
 This reused historical seed is diagnostic, not a holdout or a quality comparison.
 
-The next prerequisite is same-state/same-RNG in-process replay for one observed
-family; MAP is the largest at 112 samples. Preserve the original model/state ID
-and pre-evaluation policy state. The JSONL is not a replay snapshot, and equal
-serialized candidate inputs are not proof of equal full states. Independent-
-future stability, a seed-disjoint student fit, ranking/calibration, latency and
-matched-CPU gameplay remain untested. Public-input completion/live parity (#506)
-remains separate; seeds/RNG/endpoint values must never enter student predictors.
-The teacher remains NOT_QUALIFIED and no scientific compression verdict exists.
+The [§462 one-leaf replay](../../experiments/evidence/ooc_leaf_replay_462_20261014/README.md)
+also passed: decision 0, sampled ordinal 1025, an initially nonterminal MAP
+leaf, returned exactly `0.6771143269743937` in the parent and isolated child.
+Forking before evaluation preserved the original model/state ID, callbacks,
+policy, caches and RNG; endpoint, combat/step counts and final RNG matched,
+with source state/path unchanged. The diagnostic stopped before a real action
+and used 0.907 CPU seconds. This proves only one inherited-memory replay;
+the JSONL remains an incomplete observation, not a serialized replay snapshot.
+
+The next gate is a separately bounded independent-future stability protocol
+for MAP leaves, the largest observed family at 112 samples. A seed-disjoint
+student fit, ranking/calibration, latency and matched-CPU gameplay remain
+untested. Public-input completion/live parity (#506) remains separate;
+seeds/RNG/endpoint values must never enter student predictors. The teacher
+remains NOT_QUALIFIED and no scientific compression verdict exists.
 
 ## V4 OOC token net at A20 (§419) — keep the A0-trained net
 
