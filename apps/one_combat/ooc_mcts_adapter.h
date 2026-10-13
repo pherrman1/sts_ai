@@ -30,6 +30,22 @@ struct OocContinuationMetrics {
 class ScreenLeafNet;
 class ScreenLeafGbm;
 struct CompactTreeNet;
+// Borrowed inputs/results for a synchronous diagnostic. References must not be
+// retained after the observer returns; hidden state/RNG are replay metadata.
+struct OocLeafObservation {
+    const GameContext &initialState;
+    const PathHistory &initialPath;
+    sts::search::OocStateId stateId;
+    std::uint64_t ordinal;
+    const std::mt19937_64 &rngBefore;
+    const std::mt19937_64 &rngAfter;
+    std::optional<double> value;
+    bool terminal;
+    sts::search::OocEndpoint endpoint;
+    std::uint64_t actualCombats;
+    std::uint64_t projectionSteps;
+    std::string error;
+};
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
     // Live histories must qualify both room chances and future relic pools
@@ -69,6 +85,11 @@ struct OocAdapterOptions {
     std::uint64_t priorTraceRunSeed = 0;
     std::uint64_t priorTraceDecisionIndex = 0;
     std::uint64_t priorTraceSearchSeed = 0;
+    // Observation only: ordinals 1, 1+stride, ... up to limit per model.
+    // Unset does not count leaves or copy RNG/state for diagnostics.
+    std::function<void(const OocLeafObservation &)> leafObserver;
+    std::uint64_t leafCaptureStride = 1;
+    std::uint64_t leafCaptureLimit = 8;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -136,6 +157,8 @@ private:
     std::shared_ptr<const CombatTransitionSampler> combatSampler;
     std::deque<Snapshot> states;
     std::uint64_t combatSamples_ = 0;
+    std::uint64_t leafCalls_ = 0, leafObservationCount_ = 0;
+    std::string observationError_;
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
@@ -149,6 +172,8 @@ private:
     double anchorValue(const GameContext &, const PathHistory &) const;
     double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                             sts::search::OocEndpoint &endpoint);
+    double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
+                                 sts::search::OocEndpoint &endpoint);
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
         const PreparedCombatTransition * = nullptr);
 public:
@@ -161,6 +186,9 @@ public:
     // Separate combat-support qualification must exclude every intentional abort path.
     bool searchGuaranteedNonAborting() const override { return false; }
     std::uint64_t combatSamples() const { return combatSamples_; }
+    std::uint64_t leafCalls() const { return leafCalls_; }
+    std::uint64_t leafObservationCount() const { return leafObservationCount_; }
+    const std::string &observationError() const { return observationError_; }
     std::size_t storedStates() const { return states.size(); }
     const OocContinuationMetrics &continuationMetrics() const { return continuation_; }
     const GameContext &state(sts::search::OocStateId id) const;
@@ -202,6 +230,8 @@ struct LiveOocMctsMetrics {
 };
 // Parse once after native policy/win loading. OFF never loads the combat model.
 void configureLiveOocMcts();
+// Complete capture provenance after all driver policy flags/models are parsed.
+void finalizeLiveOocMctsCapture();
 bool liveOocMctsEnabled();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();

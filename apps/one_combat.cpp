@@ -3600,6 +3600,11 @@ int main(int argc, char **argv) {
         g_forceRelic = (RelicId)id;
         std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
     }
+    try { one_combat::finalizeLiveOocMctsCapture(); }
+    catch (const std::exception &error) {
+        std::cerr << "[OOC leaf capture startup failure] " << error.what() << '\n';
+        return 1;
+    }
     if (mode == "strategicmarggen") {
         // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.
         // Tier-B branch contract frozen at K=3 fights, 150/100/50 sims, bootstrap=true.
