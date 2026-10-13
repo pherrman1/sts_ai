@@ -44,6 +44,8 @@ bool installRunForcedRelic(sts::GameContext &, sts::RelicId);
 // screens so specialized combat capture can remain local to the caller.
 void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &,
                              bool restV, bool shopV);
+// Diagnostic: name of the chain layer that handled the latest step on this thread.
+const char *lastOocChainHandler();
 
 // The deployed OOC policy: the non-battle step bestbench plays through
 // runFullRunOOC with live OOC MCTS off (shop value on, rest value from

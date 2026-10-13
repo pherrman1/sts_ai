@@ -473,9 +473,7 @@ std::string graphEntityName(const sts::search::OocEntity &entity) {
     if (std::get_if<sts::Key>(&entity)) return "key";
     return "";
 }
-std::string graphActionLabel(const OocGameContextModel &model, const sts::search::OocTreeNode &node) {
-    const auto &source = model.state(node.state);
-    const auto &action = model.candidate(node.state, node.action);
+std::string candidateLabel(const GameContext &source, const OocGameContextModel::Candidate &action) {
     if (!action.semantic) {
         if (source.screenState == sts::ScreenState::MAP_SCREEN) {
             const int x = action.primitive.getIdx1(), y = source.curMapNodeY + 1;
@@ -517,6 +515,80 @@ std::string graphActionLabel(const OocGameContextModel &model, const sts::search
     if (!target.empty()) label = action.semantic->effect == sts::search::OocSemanticEffect::TAKE_GOLD
         ? "Collect " + target : label + ": " + target;
     return label;
+}
+std::string graphActionLabel(const OocGameContextModel &model, const sts::search::OocTreeNode &node) {
+    return candidateLabel(model.state(node.state), model.candidate(node.state, node.action));
+}
+
+// Diagnostic decision log (STS_OOC_MCTS_DECISION_LOG): what one live search
+// treated as a decision inside its tree, at its leaves and in its rollouts.
+// Observation only; nothing here feeds back into search or play.
+struct OocDecisionLog {
+    std::map<std::string, std::map<std::string, std::uint64_t>> counts;
+    nlohmann::json sampleRollouts = nlohmann::json::array();
+    nlohmann::json *rollout = nullptr;   // sampled rollout being recorded
+    bool inRollout = false;
+    std::size_t sampleLimit = 3;
+    void add(const std::string &section, const std::string &key) { ++counts[section][key]; }
+};
+thread_local OocDecisionLog *t_decisionLog = nullptr;
+std::string decisionLogPath;
+constexpr const char *kLogScreens[] = {"INVALID", "EVENT", "REWARDS", "BOSS_RELIC",
+    "CARD_SELECT", "MAP", "TREASURE", "REST", "SHOP", "BATTLE"};
+std::string logScreen(const GameContext &gc) {
+    const auto screen = static_cast<unsigned>(gc.screenState);
+    std::string out = screen < std::size(kLogScreens) ? kLogScreens[screen] : "UNKNOWN";
+    if (gc.screenState == sts::ScreenState::EVENT_SCREEN)
+        out += std::string(":") + sts::eventIdStrings[static_cast<int>(gc.curEvent)];
+    if (gc.screenState == sts::ScreenState::CARD_SELECT)
+        out += ":select" + std::to_string(static_cast<int>(gc.info.selectScreenType));
+    if (gc.screenState != sts::ScreenState::MAP_SCREEN)
+        out += std::string("@") + sts::roomStrings[static_cast<int>(gc.curRoom)];
+    return out;
+}
+std::string logEffect(const std::string &label) {
+    const auto colon = label.find(':');
+    return colon == std::string::npos ? label : label.substr(0, colon);
+}
+// Public summary of what one rollout step changed (no RNG, no copies of hidden state).
+struct LogSnapshot {
+    std::multiset<std::string> deck, relics, potions;
+    int gold, hp, maxHp, floor;
+    sts::ScreenState screen;
+    sts::Room room;
+    explicit LogSnapshot(const GameContext &gc) : gold(gc.gold), hp(gc.curHp), maxHp(gc.maxHp),
+            floor(gc.floorNum), screen(gc.screenState), room(gc.curRoom) {
+        for (const auto &c : gc.deck.cards) deck.insert(std::string(c.getName()) + (c.isUpgraded() ? "+" : ""));
+        for (const auto &r : gc.relics.relics) relics.insert(sts::getRelicName(r.id));
+        for (int i = 0; i < gc.potionCapacity && i < int(gc.potions.size()); ++i)
+            if (gc.potions[i] != sts::Potion::EMPTY_POTION_SLOT && gc.potions[i] != sts::Potion::INVALID)
+                potions.insert(sts::getPotionName(gc.potions[i]));
+    }
+};
+std::pair<std::string, std::string> logDiff(const LogSnapshot &a, const LogSnapshot &b) {
+    std::vector<std::string> detail;
+    std::set<std::string> kinds;
+    const auto sets = [&](const std::multiset<std::string> &x, const std::multiset<std::string> &y, const char *kind) {
+        std::vector<std::string> added, removed;
+        std::set_difference(y.begin(), y.end(), x.begin(), x.end(), std::back_inserter(added));
+        std::set_difference(x.begin(), x.end(), y.begin(), y.end(), std::back_inserter(removed));
+        for (const auto &v : added) { detail.push_back(std::string("+") + kind + ":" + v); kinds.insert(std::string("+") + kind); }
+        for (const auto &v : removed) { detail.push_back(std::string("-") + kind + ":" + v); kinds.insert(std::string("-") + kind); }
+    };
+    sets(a.deck, b.deck, "card");
+    sets(a.relics, b.relics, "relic");
+    sets(a.potions, b.potions, "potion");
+    if (b.gold != a.gold) { detail.push_back("gold:" + std::to_string(b.gold - a.gold)); kinds.insert(b.gold > a.gold ? "+gold" : "-gold"); }
+    if (b.hp != a.hp) { detail.push_back("hp:" + std::to_string(b.hp - a.hp)); kinds.insert(b.hp > a.hp ? "+hp" : "-hp"); }
+    if (b.maxHp != a.maxHp) { detail.push_back("maxHp:" + std::to_string(b.maxHp - a.maxHp)); kinds.insert("maxHp"); }
+    if (a.screen == sts::ScreenState::MAP_SCREEN && b.floor != a.floor) {
+        const std::string room = sts::roomStrings[static_cast<int>(b.room)];
+        detail.push_back("enter:" + room); kinds.insert("enter:" + room);
+    }
+    std::string d, k;
+    for (const auto &x : detail) d += (d.empty() ? "" : " ") + x;
+    for (const auto &x : kinds) k += (k.empty() ? "" : " ") + x;
+    return {d.empty() ? "no visible change" : d, k.empty() ? "no visible change" : k};
 }
 }
 void annotateOocTree(const OocGameContextModel &model, sts::search::OocTreeSnapshot &tree) {
@@ -903,6 +975,12 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     auto &cached = mutableMetadata(id);
     if (cached.priors) return *cached.priors;
     const auto &actions = cached.candidates;
+    if (t_decisionLog) {
+        const auto n = actions.size();
+        const std::string width = n == 1 ? "1 option" : n <= 3 ? "2-3 options" : n <= 9 ? "4-9 options" : "10+ options";
+        t_decisionLog->add(id == 0 ? "root_node" : "tree_node", logScreen(state(id)) + " | " + width
+            + (n > 1 && (options.uniformPrior || !cached.sourcePriorCovered) ? " | uniform prior" : ""));
+    }
     OocProfileScope singletonPrior(OocProfileBucket::SingletonPrior, actions.size() == 1);
     if (actions.size() == 1) {
         std::vector<sts::search::OocPlannerAction> result{{actions.front().id, 1.0}};
@@ -995,6 +1073,17 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
         }
     }
     if (!options.sampleNoncombat && options.checkpointLeaves && !enteredCombat) edge.deterministic = states.size();
+    if (t_decisionLog) {
+        const auto &source = state(id);
+        std::string label = logEffect(candidateLabel(source, *it));
+        if (source.screenState == sts::ScreenState::MAP_SCREEN)
+            label = std::string("Travel to ") + sts::roomStrings[static_cast<int>(child.gc.curRoom)];
+        t_decisionLog->add("tree_action", logScreen(source) + " | " + label);
+        if (enteredCombat)
+            t_decisionLog->add("tree_combat", std::string(sts::monsterEncounterEnumNames[static_cast<int>(encounter)])
+                + " -> " + (child.combatPrediction.used ? child.combatPrediction.outcome : "unsupported"));
+        t_decisionLog->add("tree_successor", logScreen(child.gc));
+    }
     states.push_back(std::move(child));
     return states.size()-1;
 }
@@ -1077,13 +1166,26 @@ CombatRuntimeSample::Outcome OocGameContextModel::resolveCombat(Snapshot &child,
         if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED) {
             sampledOutcome = sampled.outcome;
             ++combatSamples_;
-            if (sampled.outcome == CombatRuntimeSample::Outcome::DEATH) {
-                child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
-                return sampledOutcome;
+            if (sampled.outcome != CombatRuntimeSample::Outcome::DEATH) {
+                applySampledCombatExit(child.gc, sampled);
+                victory = true;
             }
-            applySampledCombatExit(child.gc, sampled);
-            victory = true;
         } else reason = "sample_returned_unsupported";
+    }
+    if (t_decisionLog && t_decisionLog->inRollout) {
+        const std::string encounter = sts::monsterEncounterEnumNames[static_cast<int>(child.gc.info.encounter)];
+        const std::string outcome = sampledOutcome == CombatRuntimeSample::Outcome::DEATH ? "death"
+            : sampledOutcome == CombatRuntimeSample::Outcome::ESCAPE ? "escape"
+            : sampledOutcome == CombatRuntimeSample::Outcome::VICTORY ? "victory" : "unsupported:" + reason;
+        t_decisionLog->add("rollout_combat", encounter + " -> " + outcome);
+        if (t_decisionLog->rollout)
+            t_decisionLog->rollout->at("steps").push_back({{"floor", child.gc.floorNum}, {"screen", "BATTLE"},
+                {"by", "CTM sample"}, {"result", encounter + " -> " + outcome
+                    + (victory ? " (HP " + std::to_string(child.gc.curHp) + "/" + std::to_string(child.gc.maxHp) + ")" : "")}});
+    }
+    if (sampledOutcome == CombatRuntimeSample::Outcome::DEATH) {
+        child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
+        return sampledOutcome;
     }
     if (!victory) {
         ++continuation_.unsupportedCombats;
@@ -1220,6 +1322,33 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     terminal = terminalValue(id).has_value();
     endpoint = endpointOf(state(id));
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
+    struct RolloutLog {
+        OocDecisionLog *log = t_decisionLog;
+        ~RolloutLog() { if (log) { log->inRollout = false; log->rollout = nullptr; } }
+    } rolloutLog;
+    if (t_decisionLog) {
+        const auto &leaf = state(id);
+        std::string start = terminal ? (leaf.outcome == sts::GameOutcome::PLAYER_LOSS ? "terminal: death" : "terminal: victory")
+            : logScreen(leaf);
+        if (!terminal && metadata(id).boundary) {
+            std::string reason = "no candidates";
+            if (leaf.screenState == sts::ScreenState::MAP_SCREEN) reason = v4DecisionSupported(leaf)
+                ? "map candidates not unique" : "map step without a V4 decision (boss node)";
+            else {
+                const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(leaf);
+                if (!enumeration.error.empty()) reason = enumeration.error;
+            }
+            start += " | not searchable: " + reason;
+        }
+        t_decisionLog->add("leaf_start", start);
+        t_decisionLog->inRollout = true;
+        if (!terminal && t_decisionLog->sampleRollouts.size() < t_decisionLog->sampleLimit) {
+            t_decisionLog->sampleRollouts.push_back({{"leafStateId", id}, {"start", start},
+                {"floor", leaf.floorNum}, {"hp", leaf.curHp}, {"maxHp", leaf.maxHp}, {"gold", leaf.gold},
+                {"steps", nlohmann::json::array()}});
+            t_decisionLog->rollout = &t_decisionLog->sampleRollouts.back();
+        }
+    }
     if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
             && options.stopAtMapCheckpoint)
         return leafValue(id);
@@ -1273,7 +1402,24 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
         }
         return std::nullopt;
     };
-    return boundedContinuation(maxSteps,checkpoint,[&] {
+    const int startFloor = child.gc.floorNum;
+    const auto loggedCheckpoint = [&]() -> std::optional<double> {
+        const auto value = checkpoint();
+        if (value && t_decisionLog) {
+            std::string end = child.gc.outcome == sts::GameOutcome::PLAYER_LOSS ? "death"
+                : child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY ? "victory"
+                : "value model at " + logScreen(child.gc);
+            t_decisionLog->add("rollout_end", end + " | after " + std::to_string(additionalCombats) + " rollout combats");
+            t_decisionLog->add("rollout_floors_advanced", std::to_string(child.gc.floorNum - startFloor));
+            if (t_decisionLog->rollout) {
+                (*t_decisionLog->rollout)["end"] = end;
+                (*t_decisionLog->rollout)["value"] = *value;
+                (*t_decisionLog->rollout)["endFloor"] = child.gc.floorNum;
+            }
+        }
+        return value;
+    };
+    return boundedContinuation(maxSteps,loggedCheckpoint,[&] {
         ++continuation_.projectionSteps;
         if (child.gc.screenState == sts::ScreenState::BATTLE) {
             try { resolveCombat(child,rng); }
@@ -1312,7 +1458,20 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
                 if (options.sampleNoncombat) resampled.emplace();
                 std::optional<NativeOocGreedyShopScope> greedyShop;
                 if (options.greedyRolloutShop) greedyShop.emplace();
+                std::optional<LogSnapshot> before;
+                std::string screen;
+                if (t_decisionLog) { before.emplace(child.gc); screen = logScreen(child.gc); }
                 dependencies.continuationStep(child.gc, child.path, rng);
+                if (t_decisionLog) {
+                    const auto [detail, kinds] = logDiff(*before, LogSnapshot(child.gc));
+                    const std::string handler = lastOocChainHandler();
+                    t_decisionLog->add("rollout_step", screen + " | " + handler + " | " + kinds);
+                    if (t_decisionLog->rollout)
+                        t_decisionLog->rollout->at("steps").push_back({{"floor", before->floor},
+                            {"screen", screen}, {"by", handler}, {"result", detail}});
+                }
+            } else if (t_decisionLog) {
+                t_decisionLog->add("rollout_step", logScreen(child.gc) + " | uniform leaf policy");
             }
         }
     });
@@ -1687,6 +1846,8 @@ void configureLiveOocMcts() {
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     if (!liveEnabled) return;
+    decisionLogPath.clear();
+    if (const char *path = std::getenv("STS_OOC_MCTS_DECISION_LOG"); path && *path) decisionLogPath = path;
     if (const char *path = std::getenv("STS_OOC_MCTS_GRAPH_FILE")) liveGraphPath = path;
     if (const char *index = std::getenv("STS_OOC_MCTS_GRAPH_DECISION_INDEX")) {
         const std::string value(index);
@@ -1936,7 +2097,46 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             reuseRow["public"] = reuseMatchJson(prior, prior.publicState, reusePublicFingerprint(gc, path, false));
         }
     }
-    auto result = searchWithSoleRootShortcut(model, config, sole, simulations);
+    std::optional<OocDecisionLog> decisionLog;
+    if (!decisionLogPath.empty()) decisionLog.emplace();
+    struct DecisionLogScope {
+        explicit DecisionLogScope(OocDecisionLog *log) { t_decisionLog = log; }
+        ~DecisionLogScope() { t_decisionLog = nullptr; }
+    };
+    auto result = [&] {
+        DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
+        return searchWithSoleRootShortcut(model, config, sole, simulations);
+    }();
+    if (decisionLog) {
+        nlohmann::json candidates = nlohmann::json::array();
+        for (const auto &action : result.rootActions) {
+            const auto &c = model.candidate(0, action.id);
+            candidates.push_back({{"label", candidateLabel(gc, c)}, {"prior", action.prior},
+                {"visits", action.visits}, {"q", action.q},
+                {"selected", result.selectedAction && *result.selectedAction == action.id}});
+        }
+        if (sole) {   // the singleton bypass runs no search and reports no visits
+            candidates = nlohmann::json::array({{{"label", candidateLabel(gc, model.candidate(0, *sole))},
+                {"prior", 1.0}, {"visits", 0}, {"selected", true}}});
+        }
+        const auto &m = result.metrics;
+        nlohmann::json counts = nlohmann::json::object();
+        for (const auto &[section, keys] : decisionLog->counts) counts[section] = keys;
+        const nlohmann::json row = {{"schema", 1}, {"seed", seed}, {"decisionIndex", index},
+            {"act", gc.act}, {"floor", gc.floorNum}, {"screen", logScreen(gc)},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
+            {"singletonBypass", sole.has_value()}, {"aborted", result.aborted}, {"abortReason", result.abortReason},
+            {"requestedSimulations", simulations}, {"completedSimulations", m.simulations},
+            {"earlyStopLock", m.earlyStopLockedRoot}, {"maxTreeDepth", m.maxDepthReached}, {"depthSum", m.depthSum},
+            {"decisionNodes", m.decisionNodes}, {"transitionSamples", m.transitionSamples},
+            {"leafEvaluations", m.leafEvaluations},
+            {"selected", result.selectedAction ? candidateLabel(gc, model.candidate(0, *result.selectedAction)) : ""},
+            {"rootCandidates", candidates}, {"counts", counts}, {"sampleRollouts", decisionLog->sampleRollouts}};
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(decisionLogPath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_DECISION_LOG write failed");
+    }
     if (reuseObserved) {
         reuseRow["searched"] = !result.metrics.trivialRootBypasses;
         reuseRow["aborted"] = result.aborted;
