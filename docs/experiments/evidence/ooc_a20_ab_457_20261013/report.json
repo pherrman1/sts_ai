@@ -1,0 +1,137 @@
+{
+  "cohort": [
+    87000000,
+    87000127
+  ],
+  "units": {
+    "off": 128,
+    "combo": 128,
+    "combo_def": 128
+  },
+  "seed_failures": {
+    "off": [],
+    "combo": [],
+    "combo_def": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "off": [],
+    "combo": [],
+    "combo_def": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "off": 128,
+    "combo": 128,
+    "combo_def": 128
+  },
+  "pairs": 128,
+  "combo_vs_off": {
+    "delta_floor": -0.5,
+    "delta_floor_ci95": [
+      -2.6875,
+      1.6484375
+    ],
+    "delta_win": 0.0234375,
+    "delta_win_ci95": [
+      -0.0234375,
+      0.0703125
+    ],
+    "discordant_combo_only": 6,
+    "discordant_off_only": 3,
+    "mcnemar_p": 0.5078125,
+    "delta_hp_end": 0.4140625,
+    "seeds_with_different_floor": 60,
+    "label": "NOT_SHOWN"
+  },
+  "combo_def_vs_off": {
+    "delta_floor": -6.203125,
+    "delta_floor_ci95": [
+      -9.3986328125,
+      -2.8984375
+    ],
+    "delta_win": -0.015625,
+    "delta_win_ci95": [
+      -0.0703125,
+      0.0390625
+    ],
+    "discordant_combo_def_only": 5,
+    "discordant_off_only": 7,
+    "mcnemar_p": 0.7744140625,
+    "delta_hp_end": -2.0625,
+    "seeds_with_different_floor": 115,
+    "label": "WORSE"
+  },
+  "combo_vs_combo_def": {
+    "delta_floor": 5.703125,
+    "delta_floor_ci95": [
+      2.2185546875,
+      9.1015625
+    ],
+    "delta_win": 0.0390625
+  },
+  "win": {
+    "off": 0.0703125,
+    "combo": 0.09375,
+    "combo_def": 0.0546875
+  },
+  "wins": {
+    "off": 9,
+    "combo": 12,
+    "combo_def": 7
+  },
+  "boss_deaths": {
+    "off": 43,
+    "combo": 37,
+    "combo_def": 24
+  },
+  "mean_floor": {
+    "off": 32.515625,
+    "combo": 32.015625,
+    "combo_def": 26.3125
+  },
+  "deaths_by_act": {
+    "off": {
+      "1": 35,
+      "2": 38,
+      "3": 46
+    },
+    "combo": {
+      "1": 34,
+      "2": 42,
+      "3": 40
+    },
+    "combo_def": {
+      "1": 42,
+      "2": 55,
+      "3": 24
+    }
+  },
+  "sec_per_run": {
+    "off": 35.836631015625,
+    "combo": 96.811753125,
+    "combo_def": 284.01481015624995
+  },
+  "label": {
+    "combo": "NOT_SHOWN",
+    "combo_def": "WORSE"
+  },
+  "search": {
+    "combo": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 59.4258864043125,
+      "owned_share": 0.3535189776845318,
+      "fallback_share": 0.6464810223154682,
+      "support_aborts_per_run": 51.2890625,
+      "simulations_per_run": 37124.046875
+    },
+    "combo_def": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 247.96373803203906,
+      "owned_share": 0.9806553016563898,
+      "fallback_share": 0.019344698343610203,
+      "support_aborts_per_run": 0.0234375,
+      "simulations_per_run": 129978.1171875
+    }
+  }
+}
