@@ -17578,3 +17578,60 @@ on these seeds.
 per worker, smoke tar). Seeds 87000000–87000127 and smokes 74047000–74047003 are now used.
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §458 — OOC MCTS `combo` at A20 with a Lizard-capable A20 CTM: +6.0 floors over off, V4 fallback 2% (2026-10-13)
+
+**Question (Philipp, 2026-10-13 19:31Z):** "Okay add the lizard support then? I want no fallbacks to v4". §457's A20
+CTM lacked Lizard Tail support, so 64.6% of `combo`'s decisions fell back to V4.
+**Lizard step (§443 Stage 4 Step 1b, pre-registered in `/mnt/project-files/ctm-a20/lizard/PREREG-LIZARD.md`, built on
+Philipp's machine, CPU only):** the A20 fast artifact got the mechanical-q `activeLizardCorrection` header
+(`package_deepsets_lizard_artifact.py`, the step chain B skipped), was restamped, and its escape head was refit on the new
+file (amended before any Lizard output, because `ctm_escape.py extend` refuses a checkpoint fit on another file; the
+refit reproduced the old escape weights byte for byte). Both artifacts got the Writhing+Ritual capability; `ctm_lizard.py`
+refit r at A20 on the Stage 1 Lizard slices and main corpus and added Fairy and Brew. Output on `claude/ctm-a20-data`
+`c507cebb`: fast `ae785ec2…`, standard `e338506d…`, manifest `704f2a58…`.
+- Keep rule: criterion 1 PASS (VALIDATION r NLL vs the TRAIN base rate: fast 0.300 vs 0.384, standard 0.244 vs 0.327);
+  criterion 2 FAIL as written (composed survival on Tail-fired VALIDATION rows: fairy +0.070 on 44 rows, brew −0.014
+  on 21 rows, bar ±0.01; over all VALIDATION rows of each cohort −0.0003 and −0.0013). **Inference:** a 0.01 bar on
+  21–44 rows is far inside the noise (about ±0.07), so criterion 2 was badly chosen; it stands as NOT_QUALIFIED. Philipp
+  chose "Rerun anyway" (19:58Z) for a research arm. The §443 re-gate stays blocked.
+- Writhing+Ritual has no cohort gate at A20 (too few rows).
+
+**Design:** [PREREG](evidence/ooc_a20_lizard_458_20261013/PREREG.md), independent pre-launch review PASS. One arm,
+`combo_liz` = §457 `combo` with the CTM above and `STS_OOC_MCTS_ACTIVE_LIZARD=1`; run commit `800fe39f`, built at the
+§457 code `52e605fd` (binary `fdc44395…`, checked by every worker), 16 cloud workers × 8 seeds, seeds 87000000–127,
+ascension 20. `off`, `combo` and `combo_def` are §457's rows (same binary and seeds). Primary: `combo_liz − off` mean
+paired floor difference, paired bootstrap 95% CI (10,000 reps, seed 458).
+**Validity:** 128/128 units rc=0, no seed failures; every `combo_liz` log shows `candidate_id=pathb-a20` and
+`"activeLizardEnabled":true`; tar hashes checked.
+
+| arm | wins | mean floor | reached act 3 | deaths act 1 / 2 / 3 | boss deaths | V4 fallback | s per run |
+|---|---|---|---|---|---|---|---|
+| off (§457) | 9 | 32.5 | 55 | 35 / 38 / 46 | 43 | — | 36 |
+| combo, A20 CTM without Lizard (§457) | 12 | 32.0 | 52 | 34 / 42 / 40 | 37 | 64.6% | 97 |
+| combo_def, default CTM (§457) | 7 | 26.3 | 31 | 42 / 55 / 24 | 24 | 1.9% | 284 |
+| **combo_liz, Lizard A20 CTM** | **12** | **38.5** | **72** | **14 / 42 / 60** | 50 | **2.2%** | 387 |
+
+- `combo_liz − off`: floors **+6.03 [+2.69, +9.37], IMPROVED**; wins +2.3 pp [−3.9, +9.4], discordant 11 vs 8,
+  p = 0.65.
+- Descriptive: vs `combo_def` floors +12.23 [+9.07, +15.33]; vs §457 `combo` +6.53 [+3.40, +9.71], wins equal (11 vs 11
+  discordant).
+- Support aborts: 0 in all 128 runs. The 2.2% fallback is 277 `root_boundary` decisions (no model refusal).
+
+**Interpretation:**
+- With a CTM that is calibrated for A20 and supports every imagined combat, OOC MCTS at A20 reaches 6 floors further
+  than off. Most of the gain is surviving act 1 (14 vs 35 deaths); 72 vs 55 runs reach act 3.
+- Wins are not separated (12 vs 9 of 128): at A20 most runs die in act 3 or at its boss, and the win difference
+  would need far more seeds.
+- **Inference:** §457's −6.2 floors with the default CTM and this +6.0 with the A20 CTM point at CTM calibration as
+  what decides OOC MCTS at A20; this run does not isolate it (the CTMs also differ in training data and Lizard r).
+- Cost: about 11x the CPU of `off` per run (387 vs 36 s).
+
+**Decision:** no default change. OOC MCTS stays off by default (ADR-0027), and the A20 CTM stays a research candidate
+(Stage 3a NOT_QUALIFIED on boss bias; Lizard keep rule criterion 2 failed as written). A default for A20 would need the
+§443 re-gate on the fresh Stage 4 corpus, which Lizard support now makes possible except for the keep-rule decision.
+
+**Evidence:** [packet](evidence/ooc_a20_lizard_458_20261013/README.md). Raw: `/mnt/project-files/ooc-a20-lizard/` (one
+tar per worker). Seeds 87000000–87000127 reused; smokes 74047010–74047011 and reviewer seeds 74055000–099 used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
