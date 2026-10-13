@@ -28,11 +28,18 @@ coordinator. 8 cloud workers × 16 seeds × 2 arms.
   leaf win model is today's default under OOC MCTS (public X2-B, ADR-0029; §449 found no difference from `v_win`).
 
 ## Treatment CTM: the A20 candidate, not the production CTM
-- **Choice:** `pathb-a20` with escape, extended with the §443 Stage 4 Step 1 Lizard Fairy/Brew refit when that refit
-  passes its keep rule (Stage 4 pre-registration); otherwise the escape candidate as is (fast `34870815…`, standard
-  `b489e537…`, manifest `7274c5c3…`) with `STS_OOC_MCTS_ACTIVE_LIZARD=0`, so active-Lizard states fall back to V4 for
-  that decision. `ctm_artifacts.txt` pins the data-branch commit, the three files and their sha256, and the
-  active-Lizard setting; Philipp's machine pushed them to `claude/ctm-a20-data`.
+- **Choice:** the `pathb-a20` escape candidate as is: fast `34870815…`, standard `b489e537…`, manifest `7274c5c3…`,
+  with `STS_OOC_MCTS_ACTIVE_LIZARD=0`. `ctm_artifacts.txt` pins the data-branch commit (`34d4dfac`, pushed from
+  Philipp's machine), the three files with their sha256, and the active-Lizard setting.
+- **No Lizard refit.** §443 Stage 4 Step 1 could not run: `one_combat ctmlizardfeatures` aborts with "active-Lizard
+  correction enabled without its frozen artifact metadata", because the fast artifact has no `activeLizardCorrection`
+  header (chain B skipped s23). Adding one is a new pre-registered step. The candidate therefore refuses every imagined
+  combat with an active Lizard Tail.
+- **How those fights fall back (as §435 describes for the pre-§435 stack):** a refused imagined combat aborts that
+  decision's whole root search, and the deployed V4 OOC policy decides that decision instead. Real combats are
+  unaffected (Silver plays them). The share of OOC decisions decided this way (`mctsFallback`, `mctsSupportAborts`)
+  is reported for `combo`. **Inference:** this happens mainly on runs that own an unused Lizard Tail, and §423 found
+  such V4 fallbacks did not limit rollout3 at A0.
 - **Why:** the production CTM gets raw ascension 20 and predicts 0.5% deaths against 10.5% observed (§443 Stage 0), so
   a `combo` arm with it would search over a model that sees almost no death risk. The A20 candidate is the only model
   calibrated near A20 outcomes; its offline failures (boss bias 0.015, Lizard refusals) are small next to
