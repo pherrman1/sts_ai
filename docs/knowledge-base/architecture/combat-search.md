@@ -359,6 +359,10 @@ The generation-1 model (`/mnt/project-files/silver-az-mlp/gen1/`) at K = 8 and
 2k costs about 1.05x plain 2k per fight and beat plain 2,300 simulations
 (1.16x) by +0.91 fight score [+0.43, +1.40] on 3,409 paired fights (§455), the
 first prior shown to help at matched CPU; it stays opt-in.
+Generation 3 (self-play with gen 2, then gen 3 as prior;
+`/mnt/project-files/silver-az-mlp/gen3/model/`) beat plain 2,300 by +1.50
+[+0.94, +2.09] on 3,275 fights at 1.06x plain 2k but was not shown better than
+generation 1 (+0.14 [−0.39, +0.66]) (§460).
 Self-play data for later generations comes from `one_combat silverazgen N SIMS
 ASC OUT_PREFIX SEED natural|perturbed TREE_MIN_VISITS ROOT_BONUS`: the
 `silversynthgen` runs and root/fight rows without the second teacher,

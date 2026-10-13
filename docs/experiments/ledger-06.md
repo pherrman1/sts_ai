@@ -17636,6 +17636,62 @@ tar per worker). Seeds 87000000–87000127 reused; smokes 74047010–74047011 an
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 
+## §460 — Silver AZ MLP prior generation 3: still beats plain Silver at matched CPU, not shown better than generation 1; loop continues (2026-10-13)
+
+**Question (Philipp, 2026-10-13, "Can we do a gen 3 silver prior?"):** the generation-3 milestone
+of the Silver AlphaZero-style loop (`/mnt/project-files/silver-az-mlp/PLAN.md` §2.5, §7). Generation
+2 and generation 3 each came from 1,024 self-play runs at 2k with the previous MLP as tree prior
+(root bonus off) plus warm-started training on the window
+([gen-2 packet](evidence/silver_az_mlp_gen2_20261013/README.md),
+[gen-3 packet](evidence/silver_az_mlp_gen3_20261013/README.md); offline gen 3 vs gen 2: orig
+fold-4 CE 1.2192 vs 1.2196, own held-out teacher 1.3313 vs 1.3375, mean TV 0.036). Does gen 3
+still beat plain Silver at matched CPU, and does iteration beat gen 1?
+**Design:** [PREREG](evidence/silver_az_mlp_gen3_eval_20261013/PREREG.md), frozen after independent
+review (code `37b7d33e`, binary `9098ee11…b0f7`, gen 3 `f57b7fdd…5315`, gen 1 `a5f4505a…64d2`).
+§455 harness and metric with an added arm `mlp_prev8_2k` (gen 1): arms `plain2k`, `plain_cpu`
+(plain 2,300), `mlp8_2k` (gen 3) and `mlp_prev8_2k`, all MLP arms at 2k, K = 8, w = 400, 2
+replicates each on a shared combat-RNG redraw. Fresh seeds 90000000–90000127, 16 cloud workers ×
+4 cores. Primary: `mlp8_2k − plain_cpu`; iteration: `mlp8_2k − mlp_prev8_2k`, both all fights,
+score. Rule: continue to gen 6 unless the primary is NOT_SHOWN/HURTS and the iteration contrast
+is not GEN3_BEATS_GEN1.
+**Result: primary `MLP_PRIOR_HELPS`, iteration `NOT_SHOWN`; loop continues.** 3,275 of 3,303
+fights valid (24 escape-quarantined, 4 with invalid control replays; no stall, all shards rc 0).
+
+| contrast (score) | all (n = 3,275) | boss (n = 367) | elite (n = 791) |
+|---|---|---|---|
+| gen3 − plain_cpu (primary) | +1.50 [+0.94, +2.09] | +8.31 [+3.82, +13.04] | +1.24 [+0.53, +2.04] |
+| gen3 − gen1 (iteration) | +0.14 [−0.39, +0.66] | −0.18 [−4.39, +4.14] | +0.03 [−0.47, +0.62] |
+| gen1 − plain_cpu | +1.36 [+0.87, +1.88] | +8.49 [+4.63, +12.64] | +1.21 [+0.59, +1.93] |
+| gen3 − plain2k | +1.76 [+1.18, +2.39] | +9.89 [+5.18, +14.91] | +1.18 [+0.37, +2.01] |
+| plain_cpu − plain2k | +0.27 [−0.25, +0.78] | +1.58 [−2.73, +5.97] | −0.06 [−0.82, +0.65] |
+
+- Realised CPU per fight: plain2k 0.386 s, gen 3 0.409 s (1.06x), gen 1 0.404 s (1.04x),
+  plain_cpu 0.448 s (1.16x); 10k control 2.13 s. Plain at 2,300 again had about 10% more CPU
+  than the MLP arms.
+- Death rate per fight: plain2k 1.10%, plain_cpu 1.07%, gen 3 0.81%, gen 1 0.85% (gen3 −
+  plain_cpu −0.26 pp [−0.45, −0.09]; boss −1.8 pp [−3.3, −0.4]; gen3 − gen1 boss 0.0 pp
+  [−1.2, +1.2]).
+- PLAN §2.6 "converged" rule (iteration point estimate < +0.3 with CI including 0, and offline
+  TV < 0.03): not met, because TV is 0.036.
+
+**Interpretation:**
+- The §455 result replicates on fresh seeds: both MLP generations beat plain Silver given more
+  CPU, with the gain concentrated in boss fights.
+- Two generations of self-play did not measurably improve play over the bootstrap-trained gen
+  1 (+0.14, CI ±0.5). **Inference:** consistent with the small offline gains (orig fold-4 CE
+  1.2204 → 1.2192); the iteration signal, if any, is below this design's resolution.
+- By the pre-registered rule the loop continues toward the gen-6 milestone. **Open question:**
+  whether to keep the PLAN recipe or change it (for example a stronger teacher or a larger
+  model), since the policy is close to converged offline (TV 0.055 → 0.036).
+- Fight score, not run win rate; win-rate impact is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen3_eval_20261013/README.md). Raw:
+`/mnt/project-files/silver-az-mlp/gen3-eval/` (one tar per worker); self-play and models in
+`/mnt/project-files/silver-az-mlp/gen2/` and `gen3/`. Seeds 90000000–90000127, 88000000–88000511,
+88001000–88001511, 86000000–86000511, 86001000–86001511 and smokes 74053000–74053001, 74053010–74053011,
+74057000–74057003, 74058000–74058003 are now used.
+
+**Knowledge impact:** one sentence in the MLP prior paragraph of `architecture/combat-search.md`.
 
 ## §461 — A20 internal leaf capture: one-seed observational parity PASS (2026-10-13)
 
