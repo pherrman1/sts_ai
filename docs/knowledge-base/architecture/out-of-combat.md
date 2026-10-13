@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-13 for the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -666,6 +666,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
+| `ROLLOUT_SHOP` |planner|`planner` (first item of the best affordable bundle) or `greedy` (single best purchase or leave per decision) for shops in leaf rollouts|
 | `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
@@ -1093,12 +1094,27 @@ The campaign keeps those routes disabled. Enabled settings (now including the
 default) enter the counterfactual teacher policy specification; explicit `0`
 preserves the legacy specification. Per-run public scorer counts prove actual branch use.
 
-`STS_OOC_SHOP_DECK_SIZE_FIX=1` independently corrects hypothetical shop bundle
-features: relics add no cards and removal subtracts one card. The default
-legacy calculation counts each purchased item as a card and omits removal's
-deck-size decrement. Synthetic model regressions distinguish the defect from
-its playing-strength effect. Both controls remain opt-in pending review and
-qualification; evidence is routed through the overnight campaign ledger.
+Shop bundle deck-size accounting is corrected by default since ADR-0030
+(2026-10-13): relics add no cards and removal subtracts one card.
+`STS_OOC_SHOP_DECK_SIZE_FIX=0` restores the legacy calculation, which counts
+each purchased item as a card and omits removal's deck-size decrement.
+Synthetic model regressions distinguish the defect from its playing-strength
+effect; the playing-strength effect itself was not measured before the default
+changed.
+
+`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (default `planner`, verified 2026-10-13)
+changes only shops reached inside OOC MCTS leaf rollouts: `nativeShopPlan`
+scores leaving, each affordable item alone and the best removal alone, and
+returns the single best one (leave on ties). The step executes it and the next
+decision asks again, so purchases repeat greedily. It uses the same
+deck-size accounting as the bundle planner (`STS_OOC_SHOP_DECK_SIZE_FIX`). Live shop roots and the MCTS-off chain keep the
+bundle planner. Its playing strength is not yet measured.
+
+OOC MCTS shop roots split the V4 removal prior across targets: every removal
+target maps to the one `CARD_REMOVE` primitive and `legalActions` divides each
+candidate weight by the number of candidates sharing its primitive, so removal
+gets the mass V4 gave it, not that mass times the number of distinct cards
+(same for smith targets; verified 2026-10-13).
 
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers

@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0030](0030-shop-deck-size-accounting-default.md) makes the native shop
+  planner's corrected deck-size accounting the default
+  (`STS_OOC_SHOP_DECK_SIZE_FIX=0` restores the legacy accounting).
 - [ADR-0029](0029-public-x2b-ooc-mcts-win-model.md) makes the §444 public X2-B
   the default win model when `STS_OOC_MCTS=1` and `STS_WIN_NET` is unset
   (`STS_WIN_NET=1` restores B0; runs without OOC MCTS keep B0).

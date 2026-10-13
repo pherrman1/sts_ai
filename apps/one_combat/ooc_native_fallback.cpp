@@ -19,6 +19,7 @@ namespace one_combat {
 namespace {
 thread_local std::uint64_t publicScorerCalls = 0;
 thread_local int resampledQueueDepth = 0;
+thread_local int greedyShopDepth = 0;
 
 void requireModels(const CompactTreeNet &model) {
     if (!model.ok) throw std::runtime_error("native OOC fallback model unavailable");
@@ -39,10 +40,11 @@ int publicFutureCount() {
     return count;
 }
 
+// On by default (ADR-0030); explicit 0 restores the legacy accounting.
 bool shopDeckSizeFixEnabled() {
     const char *value = std::getenv("STS_OOC_SHOP_DECK_SIZE_FIX");
-    if (!value || std::strcmp(value, "0") == 0) return false;
-    if (std::strcmp(value, "1") == 0) return true;
+    if (!value || std::strcmp(value, "1") == 0) return true;
+    if (std::strcmp(value, "0") == 0) return false;
     throw std::runtime_error("STS_OOC_SHOP_DECK_SIZE_FIX must be 0 or 1");
 }
 
@@ -190,6 +192,8 @@ public:
 int nativeOocPublicFutureCount() { return publicFutureCount(); }
 NativeOocResampledQueueScope::NativeOocResampledQueueScope() { ++resampledQueueDepth; }
 NativeOocResampledQueueScope::~NativeOocResampledQueueScope() { --resampledQueueDepth; }
+NativeOocGreedyShopScope::NativeOocGreedyShopScope() { ++greedyShopDepth; }
+NativeOocGreedyShopScope::~NativeOocGreedyShopScope() { --greedyShopDepth; }
 bool nativeOocShopDeckSizeFixEnabled() { return shopDeckSizeFixEnabled(); }
 bool nativeOocCardWinRankEnabled() {
     const char *value = std::getenv("STS_OOC_CARD_WIN_RANK");
@@ -362,6 +366,39 @@ std::string nativeShopPlan(sts::GameContext &gc, const PathHistory &path,
     if (removeId >= 0) {
         const auto it = idx.find("d" + std::to_string(removeId));
         if (it != idx.end()) removeCol = rows.column(it->second);
+    }
+    if (greedyShopDepth > 0) {
+        // Greedy: leaving and each affordable single purchase (one item, or the
+        // best removal alone), scored against the current state. The caller
+        // executes the winner and asks again, so purchases repeat greedily.
+        std::vector<int> choices{-1}; // -1 leave, k item k, items.size() removal
+        rows.addRow();
+        for (std::size_t k = 0; k < items.size(); ++k) {
+            if (items[k].price > gc.gold) continue;
+            float *row = rows.addRow();
+            row[goldCol] -= items[k].price;
+            if (!fixDeckSize || items[k].kind == 'c') row[deckCol] += 1.0f;
+            if (itemCol[k] >= 0) {
+                if (items[k].kind == 'c') row[itemCol[k]] += 1.0f;
+                else row[itemCol[k]] = std::max(row[itemCol[k]], 1.0f);
+            }
+            choices.push_back(static_cast<int>(k));
+        }
+        if (removeId >= 0) {
+            float *row = rows.addRow();
+            row[goldCol] -= sh.removeCost;
+            if (fixDeckSize) row[deckCol] -= 1.0f;
+            if (removeCol >= 0) row[removeCol] -= 1.0f;
+            choices.push_back(static_cast<int>(items.size()));
+        }
+        scorer.predictDeltas(rows.varying, rows.values, values);
+        double best = -1e100; int bestChoice = -1;
+        for (std::size_t k = 0; k < choices.size(); ++k)
+            if (values[k] > best) { best = values[k]; bestChoice = choices[k]; }
+        std::ostringstream out;
+        if (bestChoice == static_cast<int>(items.size())) out << 'x';
+        else if (bestChoice >= 0) out << items[bestChoice].kind << items[bestChoice].slot;
+        return out.str();
     }
     struct Candidate { unsigned mask; bool remove; };
     std::vector<Candidate> pending;

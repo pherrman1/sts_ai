@@ -33,7 +33,7 @@ static void require(bool value, const char *message) {
 int main() {
     try {
         unsetenv("STS_OOC_PUBLIC_FUTURES");
-        setenv("STS_OOC_SHOP_DECK_SIZE_FIX", "1", 1);
+        unsetenv("STS_OOC_SHOP_DECK_SIZE_FIX"); // default on (ADR-0030)
         const auto &idx = richIdxMap();
         PathHistory path;
         auto relic = emptyShop();
@@ -56,10 +56,35 @@ int main() {
         auto largeDeck = stump(idx.at("deckSize"), card.deck.size() + 0.5f, 0, 10);
         require(nativeShopPlan(card, path, largeDeck) == "c0 ", "card purchase fails to increase deck size");
 
-        unsetenv("STS_OOC_SHOP_DECK_SIZE_FIX");
-        require(nativeShopPlan(relic, path, model).empty(), "unset flag changed legacy relic plan");
-        require(nativeShopPlan(removal, path, smallDeck).empty(), "unset flag changed legacy removal plan");
-        std::cout << "native_ooc_shop_features PASS: relic, removal, card, default-off\n";
+        auto pair = emptyShop();
+        pair.info.shop.cards[0] = Card(CardId::ANGER);
+        pair.info.shop.cardPrice(0) = 50;
+        pair.info.shop.cards[1] = Card(CardId::CLOTHESLINE);
+        pair.info.shop.cardPrice(1) = 50;
+        auto both = stump(idx.at("d" + std::to_string(int(CardId::ANGER))), 0.5f, 0, 0.5f);
+        auto second = stump(idx.at("d" + std::to_string(int(CardId::CLOTHESLINE))), 0.5f, 0, 1);
+        both.nodes.insert(both.nodes.end(), second.nodes.begin(), second.nodes.end());
+        both.roots.push_back(6);
+        require(nativeShopPlan(pair, path, both) == "c0 c1 ", "bundle plan does not buy both cards");
+        {
+            NativeOocGreedyShopScope greedy;
+            require(nativeShopPlan(pair, path, both) == "c1", "greedy plan does not take the best single card");
+            require(nativeShopPlan(relic, path, model) == "r0", "greedy relic purchase incorrectly adds a card");
+            require(nativeShopPlan(removal, path, smallDeck) == "x", "greedy removal fails to reduce deck size");
+            auto poor = pair;
+            poor.gold = 40;
+            require(nativeShopPlan(poor, path, both).empty(), "greedy plan buys an unaffordable card");
+            auto bad = stump(idx.at("d" + std::to_string(int(CardId::ANGER))), 0.5f, 0, -1);
+            require(nativeShopPlan(card, path, bad).empty(), "greedy plan buys a value-losing card");
+        }
+        require(nativeShopPlan(pair, path, both) == "c0 c1 ", "greedy scope leaked past its lifetime");
+
+        setenv("STS_OOC_SHOP_DECK_SIZE_FIX", "0", 1);
+        require(nativeShopPlan(relic, path, model).empty(), "explicit 0 changed legacy relic plan");
+        require(nativeShopPlan(removal, path, smallDeck).empty(), "explicit 0 changed legacy removal plan");
+        setenv("STS_OOC_SHOP_DECK_SIZE_FIX", "1", 1);
+        require(nativeShopPlan(relic, path, model) == "r0 ", "explicit 1 lost the correction");
+        std::cout << "native_ooc_shop_features PASS: relic, removal, card, greedy, default-on, explicit-0 legacy\n";
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return 1;
