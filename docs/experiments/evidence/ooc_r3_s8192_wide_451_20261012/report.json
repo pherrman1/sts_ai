@@ -1,0 +1,118 @@
+{
+  "cohort": [
+    83000000,
+    83000127
+  ],
+  "units": {
+    "combo": 128,
+    "s8192": 128,
+    "wide": 128
+  },
+  "seed_failures": {
+    "combo": [],
+    "s8192": [],
+    "wide": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "combo": [],
+    "s8192": [],
+    "wide": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "combo": 128,
+    "s8192": 128,
+    "wide": 128
+  },
+  "pairs": 128,
+  "s8192_vs_combo": {
+    "delta_win": -0.0078125,
+    "delta_win_ci95": [
+      -0.0703125,
+      0.0546875
+    ],
+    "discordant_s8192_only": 8,
+    "discordant_combo_only": 9,
+    "mcnemar_p": 1.0,
+    "delta_floor": 0.4609375,
+    "delta_floor_ci95": [
+      -0.6171875,
+      1.6171875
+    ],
+    "delta_hp_end": 0.5390625,
+    "label": "NOT_SHOWN"
+  },
+  "wide_vs_combo": {
+    "delta_win": 0.0078125,
+    "delta_win_ci95": [
+      -0.0546875,
+      0.0703125
+    ],
+    "discordant_wide_only": 8,
+    "discordant_combo_only": 7,
+    "mcnemar_p": 1.0,
+    "delta_floor": 0.3671875,
+    "delta_floor_ci95": [
+      -0.8125,
+      1.6173828124999972
+    ],
+    "delta_hp_end": 0.25,
+    "label": "NOT_SHOWN"
+  },
+  "win": {
+    "combo": 0.921875,
+    "s8192": 0.9140625,
+    "wide": 0.9296875
+  },
+  "wins": {
+    "combo": 118,
+    "s8192": 117,
+    "wide": 119
+  },
+  "boss_deaths": {
+    "combo": 9,
+    "s8192": 8,
+    "wide": 7
+  },
+  "mean_floor": {
+    "combo": 49.3125,
+    "s8192": 49.7734375,
+    "wide": 49.6796875
+  },
+  "sec_per_run": {
+    "combo": 546.419228125,
+    "s8192": 1054.40790625,
+    "wide": 542.477171875
+  },
+  "label": {
+    "s8192": "NOT_SHOWN",
+    "wide": "NOT_SHOWN"
+  },
+  "search": {
+    "combo": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 476.9095024344219,
+      "owned_share": 0.97479633401222,
+      "fallback_share": 0.025203665987780042,
+      "support_aborts_per_run": 0.171875,
+      "simulations_per_run": 248338.4765625
+    },
+    "s8192": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 976.5589198076797,
+      "owned_share": 0.9742961287078934,
+      "fallback_share": 0.025703871292106585,
+      "support_aborts_per_run": 0.265625,
+      "simulations_per_run": 500713.5546875
+    },
+    "wide": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 471.8553978209922,
+      "owned_share": 0.9750536819502337,
+      "fallback_share": 0.024946318049766325,
+      "support_aborts_per_run": 0.1484375,
+      "simulations_per_run": 248533.328125
+    }
+  }
+}

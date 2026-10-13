@@ -17391,3 +17391,32 @@ need its own test.
 `/mnt/project-files/silver-tree-prior-speedup-454/raw.tar.gz`. Seeds 74038000–74038002 are now used.
 
 **Knowledge impact:** prior-scoring sentences in the tree-prior paragraph of `architecture/combat-search.md`.
+
+## §451 — rollout3 `combo` at 8192 simulations and with a fresh chance outcome on every visit: both NOT_SHOWN vs the same-commit `combo` (2026-10-12)
+
+**Question:** Philipp, 2026-10-12 19:58Z: "Can we do rollout3 with the parameters that won 224/256 games but with 8192
+sims? And another one which has even more chance nodes but with 4096 nodes? Do 128 seeds. On 8 workers." Does
+§433 `combo` win more runs with (a) 8192 simulations (`s8192`) or (b) broader chance widening at 4096 (`wide`)?
+**Design:** [PREREG](evidence/ooc_r3_s8192_wide_451_20261012/PREREG.md), committed before any cohort seed. `wide` sets
+`STS_OOC_MCTS_WIDEN_K=8` (α stays 0.75): twice wbroad's outcome cap, so at ≤4096 visits every chance-node visit samples
+a fresh outcome (0 particle revisits in the run vs 9.7M for `combo`). Same-commit control `combo` on the same seeds
+(§433 runs do not reproduce after #480). Code `19cfc1ae`, binary `015c90e2…`, `STS_OOC_PUBLIC_FUTURES=8`, B0 `v_win`
+leaf (before ADR-0029). Seeds 83000000–127, 8 cloud workers × 16 seeds × 3 arms. Smokes 83009000–001.
+Primary, per variant: paired bootstrap 95% CI of Δwin vs `combo` (seed 451); BETTER / WORSE / NOT_SHOWN.
+**Validity:** 384/384 units rc=0, no Silver stalls, all configs checked in `.env` and `[ooc-mcts-config]`, tar and CSV
+hashes checked; one container restart (worker 6) reran four interrupted units whole.
+**Result:** **both NOT_SHOWN.** `combo` 118/128 (92.2%), `s8192` 117/128 (91.4%), `wide` 119/128 (93.0%).
+s8192 − combo −0.8 pp [−7.0, +5.5], discordant 8 vs 9; wide − combo +0.8 pp [−5.5, +7.0], 8 vs 7; McNemar p = 1.0
+for both. Δfloor +0.46 [−0.62, +1.62] and +0.37 [−0.81, +1.62]. Boss deaths 9 / 8 / 7. MCTS CPU per run 477 / 977 /
+472 s.
+**Interpretation (Inference):** more search than 4096 simulations buys nothing visible at twice the CPU, and drawing a
+fresh chance outcome on every visit is neither better nor more expensive than wbroad. With §428 (fewer outcomes WORSE)
+the widening knob matters only on the narrow side. `combo` won 92.2% here, so the room above it is small and 128 pairs
+resolve about ±6 pp; NOT_SHOWN does not mean equal.
+**Decision:** no change; `combo` (4096, wbroad) stays the reference rollout3 configuration.
+
+**Evidence:** [packet](evidence/ooc_r3_s8192_wide_451_20261012/README.md). Raw:
+`/mnt/project-files/rollout3-8192-wide-451/` (one tar per worker). Seeds 83000000–83000127 and 83009000–001 are now
+used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
