@@ -590,6 +590,25 @@ int testSilverSearcher() {
         bool tried = true;
         for (const auto v : visitsOf(tree)) tried = tried && v >= 1;
         check(tried, "tree prior still tries every root action");
+
+        // Silver AZ self-play teacher: without the root bonus and without a
+        // tree prior, a root prior changes nothing; with the tree prior the
+        // root still tries its highest-prior action first.
+        search::SilverSearcher noBonus(silverSearchRoot(bc), {});
+        noBonus.prepareRootActions();
+        noBonus.rootPrior = last;
+        noBonus.rootPriorWeight = 400;
+        noBonus.rootPriorBonus = false;
+        noBonus.search(400);
+        check(visitsOf(noBonus) == visitsOf(plain), "root prior without its bonus leaves the search unchanged");
+        search::SilverSearcher noBonusTree(silverSearchRoot(bc), {});
+        noBonusTree.prepareRootActions();
+        noBonusTree.rootPrior = last;
+        noBonusTree.rootPriorWeight = 400;
+        noBonusTree.rootPriorBonus = false;
+        noBonusTree.nodePrior = uniform;
+        noBonusTree.search(1);
+        check(visitsOf(noBonusTree).back() == 1, "tree prior without the root bonus keeps prior-ordered first tries");
     }
 
     // combat_policy_mlp_v1 (Silver AZ MLP prior): one hand-computed edge with

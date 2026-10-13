@@ -117,6 +117,10 @@ namespace sts::search {
     // root prior also scores non-root decision nodes with at least K simulations
     // (SilverSearcher::nodePrior) and tries untried edges in prior order.
     extern thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    // Research-only (Silver AZ self-play, silverazgen): true drops the root
+    // prior bonus of the current thread's searches (SilverSearcher::rootPriorBonus);
+    // the tree prior and prior-ordered first tries stay. False elsewhere.
+    extern thread_local bool g_nativeSilverRootPriorBonusOff;
     // Research-only (Silver AZ MLP loop): when set, nativeSilverPolicyPrior
     // scores with this policy model instead of the STS_SILVER_ROOT_PRIOR one
     // (which must still be configured: it turns the prior on and sets its

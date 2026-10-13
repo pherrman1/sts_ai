@@ -3929,6 +3929,11 @@ int main(int argc, char **argv) {
                                      "  VARIANT: natural | perturbed (flat exact-10k teacher)\n"; return 2; }
         silverSynthGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                        argv[5], std::stoll(argv[6]), argv[7], argv[8]);
+    } else if (mode == "silverazgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat silverazgen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET VARIANT TREE_MIN_VISITS ROOT_BONUS\n"
+                                      "  VARIANT: natural | perturbed; prior: STS_SILVER_ROOT_PRIOR (combat_policy_mlp_v1); ROOT_BONUS: 0 | 1\n"; return 2; }
+        silverAzGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]),
+                    argv[7], std::stoi(argv[8]), std::stoi(argv[9]));
     } else if (mode == "silversynthfeatures") {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);

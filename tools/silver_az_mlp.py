@@ -25,7 +25,7 @@ with two or more actions.
 
 usage:
   silver_az_mlp.py featurize ONE_COMBAT OUT_DIR TAG=CORPUS_DIR [TAG=CORPUS_DIR ...]
-  silver_az_mlp.py pack      FEAT_DIR OUT.npz TAG=CORPUS_DIR [TAG=CORPUS_DIR ...]
+  silver_az_mlp.py pack      FEAT_DIR OUT.npz TAG=CORPUS_DIR [TAG=CORPUS_DIR ...] [--drop-no-fight TAG ...]
   silver_az_mlp.py train     PACK.npz OUT_DIR [--h1 128 --h2 64 --epochs 40 --patience 4 --seed 0
                                                --wd 1e-2 --dropout 0.35 --lr-decay --no-test
                                                --init CKPT.pt --gbm-ref LIGHTGBM_MODEL.txt]
@@ -33,6 +33,11 @@ usage:
 Training defaults are generation 1's (AdamW lr 5e-4, batch 1,024 roots, early stopping on
 fold 3 with patience 4). The plan's recipe (wd 1e-4, no dropout) overfit; wd 1e-2 and
 dropout 0.35 were picked on fold 3 (docs/experiments/evidence/silver_az_mlp_gen1_20261013).
+Generations >= 2 (PLAN §2.4) warm start with --init: the checkpoint's input scales are kept
+(the new window does not refit them), and the report adds monitor 2 (fold-4 CE per source; the
+newest generation's held-out seeds) and monitor 3 (mean total variation between the --init
+model and the trained one on all fold-4 roots). `pack --drop-no-fight TAG` drops that source's
+roots whose fight has no fight row (a run aborted mid-fight, e.g. the native Silver stall).
   silver_az_mlp.py export    CKPT.pt OUT.txt NAMES.json
   silver_az_mlp.py parity    MODEL.txt FEATURE_PREFIX CPP_LOGITS.txt OUT.json
 """
@@ -111,8 +116,9 @@ def fight_values(corpus_dirs):
     return vals
 
 
-def cmd_pack(feat_dir, out_path, corpora):
+def cmd_pack(feat_dir, out_path, corpora, drop_no_fight=()):
     corpora = corpus_args(corpora)
+    dropped = {}
     tags = [t for t, _ in corpora]
     values = fight_values(corpora)
     st_idx, st_val, st_ptr = [], [], [0]
@@ -134,6 +140,9 @@ def cmd_pack(feat_dir, out_path, corpora):
                 if cur is None or len(acts) < 2:
                     return
                 m, row = cur
+                if tag in drop_no_fight and (m["variant"], m["seed"], m["fight"]) not in values:
+                    dropped[tag] = dropped.get(tag, 0) + 1
+                    return
                 sl = slice(ptr[row], ptr[row + 1])
                 st_idx.append(idx[sl].astype(np.int16)); st_val.append(val[sl])
                 st_ptr.append(st_ptr[-1] + int(nnz[row]))
@@ -174,6 +183,7 @@ def cmd_pack(feat_dir, out_path, corpora):
              r_nedge=np.array(r_nedge, np.int32), e_act=np.stack(e_act), e_tgt=np.array(e_tgt, np.int8),
              e_vis=np.array(e_vis, np.float32), tags=np.array(tags))
     print(json.dumps({"roots": len(r_seed), "edges": len(e_tgt), "missingValue": missing_value,
+                      "droppedNoFight": dropped,
                       "roots_by_source": {t: int(np.sum(np.array(r_src) == i)) for i, t in enumerate(tags)}}))
 
 
@@ -325,6 +335,21 @@ def evaluate(torch, net, data, roots, scales, bs=4096):
     return res
 
 
+def policy_tv(torch, net_a, net_b, data, roots, scales, bs=4096):
+    """Monitor 3: mean total variation between two priors' softmax over each root's edges."""
+    net_a.eval(); net_b.eval()
+    tv, n = 0.0, 0
+    with torch.no_grad():
+        for i in range(0, len(roots), bs):
+            b = data.batch(roots[i:i + bs], scales, torch)
+            pa = torch.exp(group_log_softmax(torch, net_a(b)[0], b["eroot"], b["nroot"]))
+            pb = torch.exp(group_log_softmax(torch, net_b(b)[0], b["eroot"], b["nroot"]))
+            tv += float(torch.zeros(b["nroot"]).index_add_(0, b["eroot"], (pa - pb).abs()).sum()) / 2
+            n += b["nroot"]
+    net_b.train()
+    return {"roots": n, "mean_tv": tv / n}
+
+
 def gbm_reference(model_path, data, roots):
     """v1 GBM (LightGBM text) on the same roots: sigmoid(margin) normalized, as in the game."""
     import lightgbm as lgb
@@ -363,12 +388,16 @@ def cmd_train(pack, out_dir, args):
     data = Data(pack)
     train = data.roots(TRAIN); val = data.roots((VAL,))
     test_orig = data.roots((TEST,), data.tags[0]); test_all = data.roots((TEST,))
-    scales = data.fit_scales(train)
+    init = torch.load(args.init) if args.init else None
+    # Warm start keeps the previous generation's input scales (its weights assume them).
+    scales = tuple(np.array(x, np.float32) for x in init["scales"]) if init else data.fit_scales(train)
     print(f"loaded {data.n} roots in {time.time() - t0:.0f}s: train {len(train)} val {len(val)} "
           f"test(orig) {len(test_orig)} test(all) {len(test_all)}", flush=True)
     net = make_net(torch, args.h1, args.h2, args.dropout)
-    if args.init:
-        net.load_state_dict(torch.load(args.init)["state"])
+    if init:
+        if (init["h1"], init["h2"]) != (args.h1, args.h2):
+            raise SystemExit("--init checkpoint has other layer sizes")
+        net.load_state_dict(init["state"])
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=args.wd)
     report = {"args": vars(args), "pack": os.path.abspath(pack), "tags": data.tags,
               "roots": {"train": len(train), "val": len(val), "test_orig": len(test_orig),
@@ -412,6 +441,14 @@ def cmd_train(pack, out_dir, args):
     if not args.no_test:
         report["test_fold4_orig"] = evaluate(torch, net, data, test_orig, scales)
         report["test_fold4_all"] = evaluate(torch, net, data, test_all, scales)
+        report["test_fold4_by_source"] = {t: evaluate(torch, net, data, data.roots((TEST,), t), scales)
+                                          for t in data.tags}
+        if init:
+            prev = make_net(torch, args.h1, args.h2)
+            prev.load_state_dict(init["state"])
+            report["init_test_fold4_by_source"] = {t: evaluate(torch, prev, data, data.roots((TEST,), t), scales)
+                                                   for t in data.tags}
+            report["tv_vs_init_fold4_all"] = policy_tv(torch, prev, net, data, test_all, scales)
         report["kill_rule_ce_vs_v1"] = {"mlp_ce": report["test_fold4_orig"]["ce"],
                                         "v1_ce": REFERENCE["v1_gbm"]["ce"],
                                         "pass": report["test_fold4_orig"]["ce"] <= REFERENCE["v1_gbm"]["ce"]}
@@ -530,6 +567,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     f = sub.add_parser("featurize"); f.add_argument("binary"); f.add_argument("out"); f.add_argument("corpora", nargs="+")
     k = sub.add_parser("pack"); k.add_argument("feat"); k.add_argument("out"); k.add_argument("corpora", nargs="+")
+    k.add_argument("--drop-no-fight", nargs="*", default=[])
     t = sub.add_parser("train"); t.add_argument("pack"); t.add_argument("out")
     t.add_argument("--h1", type=int, default=128); t.add_argument("--h2", type=int, default=64)
     t.add_argument("--epochs", type=int, default=40); t.add_argument("--patience", type=int, default=4)
@@ -545,7 +583,7 @@ def main():
     if a.cmd == "featurize":
         cmd_featurize(a.binary, a.out, a.corpora)
     elif a.cmd == "pack":
-        cmd_pack(a.feat, a.out, a.corpora)
+        cmd_pack(a.feat, a.out, a.corpora, set(a.drop_no_fight))
     elif a.cmd == "train":
         cmd_train(a.pack, a.out, a)
     elif a.cmd == "export":
