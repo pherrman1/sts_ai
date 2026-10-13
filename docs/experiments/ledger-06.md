@@ -17474,3 +17474,46 @@ resolve about ±6 pp; NOT_SHOWN does not mean equal.
 used.
 
 **Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §455 — Silver AZ MLP prior generation 1 vs plain Silver at matched CPU: helps, loop continues (2026-10-13)
+
+**Question (Philipp, 2026-10-13, "Could we now throw some compute at 'build MLP prior gen 1'?"):** the
+generation-1 kill gate of the Silver AlphaZero-style loop (`/mnt/project-files/silver-az-mlp/PLAN.md`
+§2.6). Does the random-init MLP tree prior trained on the §397 + §404 corpora (#517, offline fold-4 CE
+1.220 vs v1 GBM 1.230) at 2k simulations beat plain Silver given at least the same CPU?
+**Design:** [PREREG](evidence/silver_az_mlp_gen1_eval_20261013/PREREG.md), frozen after independent
+review (code `4f0cfb4c`, binary `fdc44395…a52f`, model `a5f4505a…64d2`). §452/§453 harness and metric
+with `STS_CTMSILVER_ARMSET=mlpprior`: arms `plain2k`, `plain_cpu` (plain 2,300 sims, chosen above the
+reviewer's measured CPU match of about 2,100-2,150) and `mlp8_2k` (MLP prior at 2k, K = 8, w = 400),
+2 replicates each on a shared combat-RNG redraw. Fresh seeds 85000000–85000127, 16 cloud workers × 4
+cores. Primary: `mlp8_2k − plain_cpu`, all fights, score; kill if the CI lower bound is ≤ 0.
+**Result: `MLP_PRIOR_HELPS`, kill rule `CONTINUE`.** 3,409 of 3,423 fights valid (9 escape-quarantined,
+5 invalid control replays; counts by reason in the packet).
+
+| contrast (score) | all (n = 3,409) | boss (n = 374) | elite (n = 825) |
+|---|---|---|---|
+| mlp8 − plain_cpu (primary) | +0.91 [+0.43, +1.40] | +3.33 [−0.49, +7.31] | +1.41 [+0.66, +2.25] |
+| mlp8 − plain2k | +1.38 [+0.89, +1.88] | +7.17 [+3.19, +11.12] | +1.41 [+0.64, +2.25] |
+| plain_cpu − plain2k | +0.46 [−0.06, +0.98] | +3.84 [−0.38, +8.00] | −0.00 [−0.65, +0.68] |
+
+- Realised CPU per fight (thread CPU): plain2k 0.450 s, mlp8 0.472 s (1.05x), plain_cpu 0.523 s
+  (1.16x); 10k control 2.43 s. The plain comparison arm had about 11% more CPU than the MLP arm.
+- Death rate per fight: plain2k 0.70%, plain_cpu 0.59%, mlp8 0.53% (mlp8 − plain_cpu −0.06 pp
+  [−0.20, +0.09]; mlp8 − plain2k −0.18 pp [−0.33, −0.03], boss −1.3 pp [−2.6, −0.1]).
+
+**Interpretation:**
+- The gen-1 MLP is the first Silver prior shown to beat plain search at matched CPU (§453's GBM tree
+  prior: +0.46 [−0.02, +0.97] vs plain 6k at 2.9x CPU). By the pre-registered rule the loop continues
+  past generation 1.
+- **Inference:** the gain comes mostly from cost, not a sharper prior: the MLP is offline only slightly
+  better than v1 GBM, and its gain over plain 2k (+1.38) is below the GBM tree prior's on §453's seeds
+  (+1.84; different seeds, not a paired comparison), but it costs 1.05x instead of 2.9x.
+- The offline margin over GBM came from one training run (review retrains 1.2299 / 1.2230); this live
+  result is for the frozen file only.
+- Fight score, not run win rate; win-rate impact is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen1_eval_20261013/README.md). Raw:
+`/mnt/project-files/silver-az-mlp/gen1-eval/` (one tar per worker). Seeds 85000000–85000127 and 74043003
+(worker smoke) are now used.
+
+**Knowledge impact:** one sentence in the MLP prior paragraph of `architecture/combat-search.md`.
