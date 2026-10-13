@@ -1,0 +1,14 @@
+finished=2026-10-13T15:52:45Z
+worker=4 run=90f6df64c87ad9b298e06d1a19bb4e69fc577296 binary=12e881be13ee6b7df0fd6d6810cb8e6cc34dd54c82cc842e6a889c16e27cc05b g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+unit=lizard_brew-78611050 setup=lizard_brew n=50 rc=0 sec=1161 completed=50/50 quarantined=0 rows=1245
+unit=main-78601500 setup=none n=50 rc=0 sec=632 completed=50/50 quarantined=0 rows=982
+unit=main-78601550 setup=none n=50 rc=0 sec=608 completed=50/50 quarantined=0 rows=934
+unit=main-78601600 setup=none n=50 rc=0 sec=582 completed=50/50 quarantined=0 rows=834
+unit=main-78601650 setup=none n=50 rc=0 sec=644 completed=50/50 quarantined=0 rows=928
+unit=main-78601700 setup=none n=50 rc=0 sec=660 completed=50/50 quarantined=0 rows=921
+unit=main-78601750 setup=none n=50 rc=0 sec=692 completed=50/50 quarantined=0 rows=990
+unit=main-78601800 setup=none n=50 rc=0 sec=619 completed=50/50 quarantined=0 rows=911
+unit=main-78601850 setup=none n=50 rc=0 sec=589 completed=50/50 quarantined=0 rows=879
+unit=main-78601900 setup=none n=50 rc=0 sec=684 completed=50/50 quarantined=0 rows=947
+unit=main-78601950 setup=none n=50 rc=0 sec=693 completed=50/50 quarantined=0 rows=951
+tar_sha256=3f018a98179ff754414ce272be73e3c8dd343ec89647969f787da392d5bdf885
