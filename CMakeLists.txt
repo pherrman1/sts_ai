@@ -693,6 +693,8 @@ add_test(NAME ctm_near_full_inputs_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ctm_near_full_inputs.py)
 add_test(NAME ctm_retrain_pins_selftest COMMAND python3 -m unittest tools.test_ctm_retrain_pins)
 set_tests_properties(ctm_retrain_pins_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME export_combat_transition_near_full_override_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_combat_transition_near_full.py)
 add_test(NAME ctm_exposure_cohorts_selftest COMMAND python3 -m unittest tools.test_ctm_exposure_cohorts)
 set_tests_properties(ctm_exposure_cohorts_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_support_census_check_selftest COMMAND python3 -m unittest tools.test_ctm_support_census_check)
