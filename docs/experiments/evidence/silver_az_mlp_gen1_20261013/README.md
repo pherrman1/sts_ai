@@ -36,7 +36,13 @@ authorized; seeds 85000000-85000127 and ledger §455 are reserved for it.
   The retrain is not bit-identical to the sweep run (validation 1.2409, best
   epoch 31 vs 22): multithreaded CPU training is not deterministic.
 - Gen 1 clears the offline kill line by 0.010 CE; it stays well below the 6x
-  GBM v2 and encoder references.
+  GBM v2 and encoder references. The margin comes from one training run.
+  Independent review retrains of the chosen settings (wd 1e-2, dropout 0.35,
+  other seeds): seed 1 stopped at epoch 14, fold-3 CE 1.2507, fold-4 1.2299
+  (on the kill line); seed 2 stopped at epoch 31, fold-3 1.2432, fold-4 1.2230.
+  Early stopping with patience 4 is fragile at this flat a validation curve;
+  later generations should use more patience or learning-rate decay
+  (`--lr-decay`).
 - All folds, both corpora (190,394 fold-4 roots): CE 1.244, top-1 55.0%.
 - Auxiliary value head (weight 0.1, not exported): fold-4 MSE 0.023 vs
   target variance 0.100.
@@ -46,13 +52,20 @@ authorized; seeds 85000000-85000127 and ledger §455 are reserved for it.
   file on two full feature files (3,525 + 3,461 roots): max |logit diff|
   1.8e-6. Pass threshold 1e-3.
 - Per root, all edges, same files: MLP 8.6-9.0 µs, GBM v1 (1,997 trees,
-  `predictPolicyActions`) 180-188 µs.
+  `predictPolicyActions`) 180-188 µs. The optional GBM argument of
+  `silverpolicymlpcheck` must be a compact `combat_policy_trees_v1` file
+  (e.g. `/mnt/project-files/silver-tree-prior-452/inputs/prior-natpert.compact.txt`),
+  not the LightGBM text model.
 - In search (`smoke-cpu.json`, ctmsilvergen, 47 fights x 2 replicates, seeds
   74043001-74043002 run side by side): `mlp8_2k` 1.117x the CPU per decision of
   `plain2k` (1.145x per fight); `plain_cpu` at 2,200 sims 1.098x. The GBM
   `tree8_2k` on seed 74043000 was 1.76x. **Inference:** a CPU-matched plain
   budget for this model is about 2,250-2,300 simulations; it should be
   measured on more fights before it is frozen in the pre-registration.
+- Independent review CPU match (106 fights, seeds 74044000-74044003): MLP K=8
+  1.058x plain 2k per fight, so a matched plain budget is about 2,100-2,150
+  simulations. Pre-registering `plain_cpu` = 2,300 is conservative (it favours
+  the plain arm); the eval should record realised CPU per arm.
 
 ## Default paths unchanged
 - `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452k8` on seed 74043000:
