@@ -37,7 +37,8 @@ On 2026-10-13 Philipp chose to turn it on ("Deck size should be on").
 - Every native-OOC run that visits a shop can play differently from before,
   with or without OOC MCTS. Earlier results need `STS_OOC_SHOP_DECK_SIZE_FIX=0`
   to reproduce.
-- Comparisons against controls run before 2026-10-13 must either set
+- Comparisons against controls run on a binary without ADR-0030 (before
+  #523) must either set
   `STS_OOC_SHOP_DECK_SIZE_FIX=0` in the new arm or rerun the controls.
 - The counterfactual teacher identity now carries
   `native_ooc_shop_deck_size_fix` by default (`combat_datasets.cpp`), so
