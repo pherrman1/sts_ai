@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "sim/search/SilverSearcher.h"
+
 namespace sts {
     class BattleContext;
     struct GameContext;
@@ -34,6 +36,9 @@ namespace sts::search {
     // set on every searched root as SilverSearcher::rootPrior. Empty when off
     // or for a root with fewer than two actions.
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher);
+    // The same model's normalized prior over `edges` of any decision state.
+    std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
+                                                const std::vector<SilverSearcher::Edge> &edges);
     const std::string &nativeSilverRootPriorPath();
     double nativeSilverRootPriorWeight();
     bool nativeSilverAdaptiveEnabled();
@@ -108,6 +113,10 @@ namespace sts::search {
     // STS_SILVER_ROOT_PRIOR bonus off (false) or requires it on (true) for the
     // current thread's combats. Unset elsewhere; unset keeps the process option.
     extern thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    // Research-only (§452 tree prior): when set to K, every search that has a
+    // root prior also scores non-root decision nodes with at least K simulations
+    // (SilverSearcher::nodePrior) and tries untried edges in prior order.
+    extern thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 

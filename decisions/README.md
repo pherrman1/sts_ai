@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0029](0029-public-x2b-ooc-mcts-win-model.md) makes the §444 public X2-B
+  the default win model when `STS_OOC_MCTS=1` and `STS_WIN_NET` is unset
+  (`STS_WIN_NET=1` restores B0; runs without OOC MCTS keep B0).
 - [ADR-0028](0028-public-encounter-futures-default.md) makes the native OOC
   fallback score 8 public encounter futures by default
   (`STS_OOC_PUBLIC_FUTURES` unset = 8; `0` restores the hidden inputs).

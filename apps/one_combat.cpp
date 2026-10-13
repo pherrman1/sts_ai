@@ -130,7 +130,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
                           "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
-                          "STS_OOC_STRATEGIC_TOK_CONST_GUARD",
+                          "STS_OOC_STRATEGIC_TOK_CONST_GUARD", "STS_OOC_GBM_RANKER",
                           "STS_CF_ALT_BOOT_FLOOR_TREES", "STS_CF_ALT_BOOT_WIN_TREES",
                           "STRATEGIC_BRANCH_FUTURE_OFFSET", "STRATEGIC_BRANCH_RESEED",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
@@ -1337,6 +1337,10 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.oocStrategicTokNet = g_oocStrategicTokNet.path;
             meta.oocStrategicTokNetSha256 = fileSha256(meta.oocStrategicTokNet);
             meta.oocStrategicTokConstGuard = g_oocStrategicTokNet.constGuard;
+        }
+        if (one_combat::oocGbmRankerEnabled()) {
+            meta.oocGbmRanker = std::getenv("STS_OOC_GBM_RANKER");
+            meta.oocGbmRankerSha256 = fileSha256(meta.oocGbmRanker);
         }
         meta.oocMcts = one_combat::liveOocMctsEnabled();
         meta.stopAfterAct = g_stopAfterAct;
@@ -3324,7 +3328,13 @@ int main(int argc, char **argv) {
         const char *d = std::getenv("STS_NATIVE_OOC");
         g_nativeOoc = !d || std::atoi(d) != 0;
         if (g_nativeOoc) {
-            if (!g_winNet.ok) g_winNet.load("models/v_win_trees.txt", richIdxMap());
+            // Without STS_WIN_NET, live OOC MCTS uses the public X2-B win
+            // model (§449, ADR-0029); every other run keeps B0. STS_WIN_NET=1
+            // restores B0 under OOC MCTS.
+            const char *mcts = std::getenv("STS_OOC_MCTS");
+            const std::string defaultWin = mcts && std::string(mcts) == "1"
+                ? "models/candidates/v_win_x2b_public_trees.txt" : "models/v_win_trees.txt";
+            if (!g_winNet.ok) g_winNet.load(defaultWin, richIdxMap());
             g_floorNet.load("models/v_rich_trees.txt", richIdxMap());
             if (!g_floorNet.ok) {
                 std::cerr << "[native OOC] failed to load models/v_rich_trees.txt\n";
@@ -3333,10 +3343,12 @@ int main(int argc, char **argv) {
             // Without V_win the win-rate rest policy reads 0 gains from the
             // absent v_server and always rests (audit 2026-10-11, finding 2).
             if (!g_winNet.ok) {
-                std::cerr << "[native OOC] failed to load models/v_win_trees.txt\n";
+                std::cerr << "[native OOC] failed to load " << defaultWin << "\n";
                 return 1;
             }
             std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
+            if (!std::getenv("STS_WIN_NET") && mcts && std::string(mcts) == "1")
+                std::cout << "[OOC MCTS default win model: " << defaultWin << "]\n";
         }
     }
     try {

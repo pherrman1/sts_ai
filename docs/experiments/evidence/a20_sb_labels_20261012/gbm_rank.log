@@ -1,0 +1,5 @@
+rank:pairwise val_sb regret 1.094 n=8227
+rank:pairwise gold2 regret 1.748 n=406
+reg:squarederror val_sb regret 1.098 n=8227
+reg:squarederror gold2 regret 1.720 n=406
+GBM_EXIT 0

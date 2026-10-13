@@ -140,6 +140,27 @@ namespace sts::search {
         void encodePolicyStateVec(const float *canonFeatures, float *state64) const;
         [[nodiscard]] double predictPolicyActionVec(const float *canonFeatures,
                                                     const float *state64) const;
+        // Policy tree ensembles (combat_policy_trees_v1): score n candidate
+        // actions of one state at once. `canonFeatures` holds the state block
+        // (its action block is ignored); `actionBlocks` holds n consecutive
+        // action blocks. out[i] equals predictVec on the state block followed by
+        // action block i, bit for bit: each tree's state-only prefix is walked
+        // once and the per-action sums keep predictVec's tree order.
+        void predictPolicyActions(const float *canonFeatures, const float *actionBlocks,
+                                  int n, double *out) const;
+
+        // Compact copy of `trees` for predictPolicyActions, built by load for
+        // policy tree ensembles whose children follow their parents (empty
+        // otherwise, which keeps predictPolicyActions on predictVec). Each tree
+        // starts at flatRoots[t]; a split's children sit at left (yes) and
+        // left + 1 (no), relative to that start.
+        struct FlatNode {
+            float         thresh;   // leaf value when feat == -1
+            std::int16_t  feat;     // canonical feature index, -1 = leaf
+            std::uint16_t left;
+        };
+        std::vector<FlatNode> flatNodes;
+        std::vector<int> flatRoots;
     };
 
     extern CombatValueNet g_combatVNet;   // loaded value model (if any)

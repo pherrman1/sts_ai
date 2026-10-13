@@ -336,6 +336,12 @@ add_test(NAME one_combat_tree_parity COMMAND $<TARGET_FILE:one_combat_tree_test>
     ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt ${CMAKE_SOURCE_DIR}/models/v_rich_trees.txt
     ${CMAKE_SOURCE_DIR}/models/v_runwin_e2c_v2.txt)
 
+add_executable(ooc_tok_net_fast_test apps/ooc_tok_net_fast_test.cpp)
+target_include_directories(ooc_tok_net_fast_test PRIVATE apps)
+add_test(NAME ooc_tok_net_fast COMMAND $<TARGET_FILE:ooc_tok_net_fast_test>
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+set_tests_properties(ooc_tok_net_fast PROPERTIES LABELS "integration;smoke")
+
 add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
 target_include_directories(parity_test PUBLIC json/include)

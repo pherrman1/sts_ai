@@ -16926,6 +16926,31 @@ whose win-rate effect §423 left open (wide CI), so the promotion note must name
 **Knowledge impact:** default stack in `architecture/out-of-combat.md` and `operations/environment-variables.md`; one
 sentence in the rollout3 paragraph of `evaluation/current-research.md`.
 
+## §441 — deep OOC MCTS with uniform prior and uniform leaf policy: worse than the V4-guided `combo`, ties plain rollout3 at lower CPU (2026-10-12)
+
+**Question:** Philipp, 2026-10-12 08:51Z: "uniform prior and uniform leaf policy on 128 seeds with 4096 ooc simulations
+on 8 workers". §433's `combo` uses V4 as the tree prior and as the policy between the rollout combats; how does it play
+with both replaced by uniform choices?
+**Design:** [PREREG](evidence/ooc_uniform_441_20261012/PREREG.md). One arm, `uniform` = §433 `combo` (4096 simulations,
+`WIDEN_K=4`, `WIDEN_ALPHA=0.75`, 3 rollout combats, native leaf, pathb-r2 CTM, flat exact-10k Silver) with
+`STS_OOC_MCTS_PRIOR=uniform` and `STS_OOC_MCTS_LEAF_POLICY=uniform`, `STS_OOC_PUBLIC_FUTURES=0` pinned (as §433). Code
+`b039e846` (main after #494), binary `8f5edf76…`. Seeds 76000000–127, paired with the §433 `combo`, `rollout3` and `off`
+units: §433 `combo` seed 76000000 reproduces byte-identically on this binary (result row, decision, action and support
+traces). 8 cloud workers × 16 seeds. Smokes 77009000–002. Primary: paired bootstrap 95% CI of uniform − combo (seed
+441); BETTER / WORSE / NOT_SHOWN.
+**Validity:** 128/128 units rc=0, no Silver stalls, config banners checked by grep, tar hashes checked.
+**Result:** **WORSE.** uniform 109/128 (85.2%) vs combo 119/128 (93.0%): −7.8 pp [−15.6, −0.8], discordant 7 vs 17,
+McNemar p = 0.064 (borderline); Δfloor −1.54 [−3.08, −0.15]; boss deaths 14 vs 4. Secondary: vs rollout3 (109/128)
+0.0 pp [−8.6, +8.6]; vs off (96/128) +10.2 pp [0.0, +19.5], p = 0.06. MCTS CPU per run 376 s (combo 1,495, rollout3 811,
+both on the pre-§436/§437 binary); V4 fallback 23.1%.
+**Interpretation (Inference):** V4 guidance is worth wins at 4096 simulations; the run does not say whether the prior or
+the leaf policy carries it. Without V4 the search is cheaper (the uniform leaf skips the native shop planner and V4
+gates) and matches plain rollout3 at lower cost (**Inference** across binaries: 376 s on this binary vs 811 s for rollout3 on the pre-§436/§437 binary; the gate seed ran 0.71x and §437 reports 1.13–1.7x for rollout3, so on equal binaries uniform likely costs about 0.5–0.8x of rollout3). `combo` did better on this half of the §433 cohort (93.0%) than on all 256 seeds (87.5%).
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_uniform_441_20261012/README.md). Raw: `/mnt/project-files/ooc-uniform-441/`
+(one tar per worker). Seeds 77009000–002 are now used; 76000000–127 reused on purpose.
+
 ## §443 — Production CTM at A20 (Stage 0) and the out-of-combat policy for an A20 corpus (G0) (2026-10-12)
 
 **Question:** Philipp: "Can we do the same for A20 ctm?" The production CTM (pathb-r2, A0 Path B only) gets
@@ -16970,3 +16995,399 @@ No default play changes.
 
 **Knowledge impact:** new generator variable in `operations/environment-variables.md`; the A20 limit of the production
 CTM is recorded here (current understanding unchanged otherwise, since OOC MCTS is off by default).
+
+## §444 — X2-B without the hidden next-fight fields: the E1 public arm exported as a native win model (2026-10-12)
+
+**Question:** Philipp wants X2-B to replace `v_win` (via `STS_WIN_NET`) as the rollout3 leaf, but X2-B reads
+the four HIDDEN_FUTURE fields `nextEliteId` and `nextFight0..2` (§371, §438). Is there a public-information X2-B,
+and does it run natively with the same values as in Python?
+
+**Design:** offline, no game seeds, no retraining, TEST closed. No new model was fitted: E1 (§394) arm P0 is
+exactly the X2-B recipe on the 457 public features (X2-B's 461 minus the four hidden fields; the 12 forward-map
+columns and the public queue counters stay), seeds 0/1/2, on the frozen 1,024-source #334 corpus
+(`ae56f963…`), unchanged 696/155 TRAIN/VALIDATION split. The three checkpoints (all 21 E1 `SHA256SUMS`
+entries verified) were exported as one margin-averaged CompactTreeNet with `tools/vwin_export_ensemble.py`
+(the §396 F2 route). A forward-map variant is not separate: X2-B and P0 already contain the map block.
+
+**Result:** `models/candidates/v_win_x2b_public_trees.txt` (sha256 `e2d3aa65…ca90`, 1,006 trees, 428 used
+features, no hidden field). Native `winnettest` parity on the §379 selection (1,780 rows): max |native − Python|
+**2.46e-7** (gate < 1e-5, pass); explicit `STS_WIN_NET` load passes `oocmctsconfigselftest`. VALIDATION (141,566
+MAP rows, 155 sources):
+
+| Model | NLL | Brier | AUC |
+|---|---:|---:|---:|
+| this file (margin mean) | 0.42362 | 0.13850 | 0.7919 |
+| P0 probability mean (E1) | 0.42370 | 0.13848 | 0.7918 |
+| frozen X2-B (461) | 0.42261 | 0.13777 | 0.7907 |
+
+Paired ΔNLL vs X2-B, source-clustered bootstrap: **+0.0010 [−0.0041, +0.0058]** (reproduces E1's −0.0011 with
+the sign flipped); vs the P0 probability mean −0.00008 [−0.00031, +0.00018].
+
+**Verdict:** `PUBLIC_X2B_READY` as an engineering candidate. Dropping the hidden fields costs no resolvable
+held-out accuracy (consistent with §371, §394, §438). No gameplay effect is claimed. No default changes: the
+default `models/v_win_trees.txt` and the pinned `models/candidates/v_win_x2b_trees.txt` (anchor of the
+`screengbm` leaf and its residual GBM) are untouched. The new file is opt-in through `STS_WIN_NET` or
+`STS_OOC_MCTS_LEAF_WIN_MODEL`. A rollout3 A/B with it as the leaf needs Philipp's go.
+
+**Evidence:** [packet](evidence/vwin_x2b_public_444_20261012/README.md) (local run on Philipp's machine; bulky
+parity CSV under `~/Documents/sts/artifacts/vwin-refresh-334/x2b-public-444-20261012/`).
+
+**Knowledge impact:** candidate listed in `operations/environment-variables.md` (`STS_OOC_MCTS_LEAF_WIN_MODEL`).
+
+## §445 — A20 short-branch label corpus (53.5k decisions): learned OOC models beat the heuristic but are not shown better than V4; more labels barely help (2026-10-12)
+
+**Question (Philipp, 2026-10-11 20:59Z "Label run", 21:20Z "8 hours per worker"):** do short-branch labels with independent futures (§432), generated at scale on fresh A20 seeds, train an OOC model that picks better than the deployed V4?
+**Design:** 25 cloud workers, 8 h each. Brief and per-worker setup are in the packet. Frozen main `07a93e36`, Release `one_combat` sha256 `ea307e30…`. The commit and binary hash are self-reported by the workers (the provenance JSONs carry an empty git sha and no binary or tree hashes); the recorded config is identical across all 534 seeds.
+- Labels: `strategicgen2` ASC 20, Silver 2k with the natpert prior (weight 400), `STRATEGIC_SAMPLE_ALL=1`, `STRATEGIC_BRANCH_FIGHTS=3`, `FUTURES=8`, `RESEED=1`, `BRANCH_SIMS=2000`.
+- Bootstrap trees: A0 (`labelFloor`) and A20 full-data trees `v_{rich,win}_a20_full` (sha256 `d8ab1349…` / `6f5fbfd0…`; 157k `strategicgen` v1 runs; held-out floor R² 0.509, win AUC 0.851) via `STS_CF_ALT_BOOT_*` (`labelFloorAlt`).
+- Seeds: 75000000+10000*W+k; smoke 75009000-75009001. Per-seed timeout 4 h.
+- Corpus: 534 finished seeds, 252,015 rows, 53,535 labelled decisions, 42,137 with ≥2 options. 83 seeds were cut by the timeout or the 8 h stop and are excluded; this drops the longest runs, so late-run decisions are under-represented. 75110003 crashed with the Silver depth bound.
+- Training target: the A20 floor-tree label, with an 80/20 run-grouped split (428/106 seeds).
+- Models:
+  - (a) V4 Q-head warm-started from the deployed checkpoint, absolute floor target (`STRAT_Q_ONLY=1`).
+  - (b) Same as (a) with `STRAT_Q_TARGET=fallback_centered`.
+  - (c) Full network with the centered target.
+  - (d) XGBoost on 1,015 strategic-row columns: all except label/meta columns and 10 encounter or chance fields (`nextEliteId`, `nextFight0-2`, `remElites`, `remFights`, `monOffset`, `eliteOffset`, `potionChance`, `cardRarityFactor`). Regression on the within-decision centered label.
+  - (e) Same features as (d), `rank:pairwise` on within-decision ranks.
+- Scoring: the §432 Gold2 set (16 independent futures, 260 seeds), mean floor regret on the 397 decisions every picker covers, paired decision bootstrap (10,000 samples).
+
+**Result (Gold2 regret in floors; heuristic minus picker):**
+
+| Picker | Regret | Heuristic − picker |
+|---|---|---|
+| SB labels themselves, A20 floor trees (§432) | 1.25 | +1.01 [+0.56, +1.52] |
+| (d) GBM, centered regression | 1.73 | +0.53 [+0.25, +0.84] |
+| (e) GBM, pairwise ranking | 1.76 | +0.50 [+0.18, +0.87] |
+| (c) V4 full net, centered | 1.86 | +0.40 [+0.03, +0.81] |
+| (b) V4 Q-head, centered | 1.96 | +0.30 [−0.04, +0.67] |
+| (a) V4 Q-head, absolute | 1.98 | +0.28 [−0.06, +0.66] |
+| deployed V4 | 1.98 | +0.28 [−0.09, +0.68] |
+| heuristic (path-blind, §425) | 2.26 | 0 |
+
+- V4 minus GBM (d): +0.25 [−0.20, +0.69]; V4 minus (e): +0.22 [−0.18, +0.64]. Not shown.
+- The absolute-target Q-head does not learn the ranking: on held-out SB labels its strict Q top-1 stays at 0.33, versus 0.36 with the centered target.
+- Learning curve for (d), trained on 25 / 50 / 100% of the training seeds: held-out SB regret 1.19 / 1.14 / 1.10; Gold2 regret 1.77 / 1.71 / 1.72 (406 decisions).
+- Side result: refitting the A20 floor/win trees with the 12 forward-map columns and without the 4 hidden futures (§438) on the same 157k runs and split gives floor RMSE 9.82 vs 9.90 (R² 0.517 vs 0.509). Win is unchanged (AUC 0.851, log loss 0.1440 vs 0.1439).
+
+**Interpretation (Inference):** the labels rank options well (1.25), but models that see only the pre-decision state and the action ids recover about half of that gain over the heuristic (GBM 0.53 of 1.01 floors). More labels give small held-out gains (held-out regret 1.19 / 1.14 / 1.10 at 25 / 50 / 100%) that Gold2 cannot resolve (25% vs 100%: +0.05 [−0.09, +0.20]) (Inference). Held-out label regrets use the split that picked early stopping, so they are slightly optimistic; Gold2 is unaffected. A learned A20 OOC policy from these labels is not shown better than V4 offline. A live test was not run. **Open question:** whether scoring options online with short branches (the label procedure itself, about 45 s per decision on one core) is worth its cost at chosen decision types.
+
+**Evidence:** [packet](evidence/a20_sb_labels_20261012/README.md). Raw data: `/mnt/project-files/v4-a20-retrain/sblabels-w{0..24}.tar.gz` (sha256s in the packet). Seeds 75000000–75249999 (block reserved; used k < 1000 per worker) and smoke 75009000–75009001 are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §446 — rollout5 with the Lizard-capable CTM: no more V4 fallback, not shown better than rollout3 (2026-10-12)
+
+**Question:** Philipp: "can we try again with the lizard capable ctm? on 8 workers on the same 128 seeds?" §430 rollout5
+(`LEAF_COMBATS=5`) won 112/128 vs rollout3 115/128 on the #418 CTM but fell back to V4 on 37% of decisions, almost all
+Lizard Tail support aborts. With the Lizard-capable `pathb_r2_lizard` CTM (§423, §435), does rollout5 win more than
+rollout3 with the same CTM?
+**Design:** [PREREG](evidence/ooc_rollout5_lizard_20261012/PREREG.md). Arm `r5liz` = the §423 environment with
+`STS_OOC_MCTS_LEAF_COMBATS=5`; control `lizard` = the §423 environment rerun on the same commit; both pin
+`STS_OOC_PUBLIC_FUTURES=0`. Run commit `b6d00dd0` (code `3b06c924`, main after #496), binary `10dc2616…`, seeds
+70000000–127, 16 cloud workers (8 per arm; Philipp chose the control arm on a decision card). Launch gate: §423 seed
+70000000 diverged at OOC decision 8 on this commit; a bisect found `c7641b07` (#480, Face of Cleric now fires after
+event fights), a simulator rule fix ([note](evidence/ooc_rollout5_lizard_20261012/RERUN-423-70000000.md)), hence the
+same-commit control. Smokes 80009000–001. Primary: paired bootstrap 95% CI of `r5liz` − same-commit `lizard`;
+IMPROVED / WORSE / NOT_SHOWN.
+**Validity:** `lizard` 128/128 rc=0; `r5liz` 127/128, seed 70000087 a listed Silver stall (dropped from all pairs as
+pre-registered); tar hashes, banners and old-control hashes checked.
+**Result:** **NOT_SHOWN.** 113/127 (89.0%) vs 111/127 (87.4%), +1.6 pp [−4.7, +8.7], discordant 10 vs 8, p = 0.81.
+Boss deaths 8 vs 13; Δfloor +0.13 [−0.70, +0.94]. V4 fallback 2.9% vs 2.4% (§430: 37.1%). 887 vs 592 s per run.
+Cross-commit (descriptive): vs §430 r5 +1.6 pp, vs §422 rollout3 −1.6 pp, vs §422 off +10.2 pp [+1.6, +18.9].
+Same-commit `lizard` vs §423: 111 vs 111 wins, 2 / 2 discordant, 106/128 identical endings.
+**Interpretation (Inference):** the Lizard CTM removes rollout5's fallback, but two more rollout combats per leaf do not
+win detectably more than rollout3 at about 1.5x the CPU. The Face of Cleric fix changes individual runs, not the win
+count, on these seeds; §422-era runs are no longer byte-reproducible after #480.
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/ooc_rollout5_lizard_20261012/README.md). Raw: `/mnt/project-files/ooc-rollout5-lizard-446/`
+(one tar per worker). Seeds 80009000–80009001 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
+
+## §447 — A20 GBM ranker playing every OOC decision live: floors NOT_SHOWN by the pre-registered rule, wins clearly worse (3 vs 16 of 128) (2026-10-12)
+
+**Question (Philipp, 2026-10-12 10:54Z "Live test", 11:30Z "Run it"):** does the §445 A20 GBM ranker, best learned picker on the Gold2 set (1.73 floors regret vs V4 1.98, heuristic 2.26), win more floors than the current A20 stack when it plays every out-of-combat decision?
+**Design:** [PREREG](evidence/a20_gbm_ranker_20261012/PREREG.md), pushed before the run (`77c85b52`, renumbered `ef5af7c7`). Code `5cb1e86d`, Release `one_combat` sha256 `752e1e76…`. Model `models/candidates/ooc_gbm_ranker_a20_sbl.txt` (sha256 `372431c1…`, 1,157 trees). Both arms: the §419 stack (`silver_learned_stop/live_env.sh` V4 gates, learned stop, keys off, `STS_STOP_AFTER_ACT=3`), `bestbench 10000 128 20 79000000`. Treatment adds `STS_OOC_GBM_RANKER`, which takes every real OOC decision with ≥ 2 candidates after the chest, reward-relic and Match and Keep rules. Primary: mean paired floor difference with a 95% paired bootstrap CI (10,000 reps, RNG 20261012).
+**Parity:** on 628 live decisions of 8 smoke seeds the C++ scores match xgboost within 4.2e-6 and the argmax agrees everywhere.
+
+**Result:**
+
+| Arm | Wins | Mean floor | Reached Act 3 | Deaths Act 1 / 2 / 3 | s per run |
+|---|---|---|---|---|---|
+| Current stack (C) | 16/128 | 35.09 | 59 | 23 / 46 / 43 | 14.2 |
+| GBM ranker (T) | 3/128 | 32.88 | 43 | 13 / 72 / 40 | 10.7 |
+
+- Floor T − C: −2.21 [−5.29, +0.80]. Verdict by the pre-registered rule: `NOT_SHOWN`. Play differs on 118 of 128 seeds.
+- Wins (secondary, not pre-registered as a decision rule): T − C −10.2 pp [−16.4, −3.9]. Discordant pairs 16 C-only vs 3 T-only, exact binomial p = 0.004.
+
+**Interpretation (Inference):** the ranker survives Act 1 more often but loses far more runs in Act 2 and almost never wins. A one-step argmax over Gold2-style short-branch labels (three fights, then a value-tree bootstrap) does not price long-horizon run strength, and Gold2 regret on single decisions did not predict play over a whole run. The live result is worse than the offline ranking suggested; the GBM should not replace the V4 gates or the heuristic.
+**Decision:** no default change. `STS_OOC_GBM_RANKER` stays off. Seeds 79000000–79000127 and smokes 79009000–79009008 are now used.
+
+**Evidence:** [packet](evidence/a20_gbm_ranker_20261012/) (PREREG, parity check, smoke, `run.sh`, `analyze.py`, both result CSVs with bestbench sidecars, `result.txt`).
+
+**Knowledge impact:** this entry, its `EXPERIMENTS.md` index line and one sentence in `evaluation/current-research.md`; `STS_OOC_GBM_RANKER` is documented in `operations/environment-variables.md`.
+
+## §442 — Native shop planner and floor-model cost in rollout3: packed trees and column candidates, bitwise identical, 1.13–1.19x per rollout3 run (2026-10-12)
+
+**Question:** after §437, how much rollout3 CPU do the native shop planner and the other floor-model tree calls in
+leaf rollouts take, with the V4 and with a uniform rollout policy, and can they be made faster with bit-identical
+play?
+**Design:** performance only. Baseline `main` `b039e846` (Release `8f5edf76…`). §422 `rollout3` and `off` arms
+unchanged, plus one uniform-prior, uniform-leaf rollout3 unit; seeds 74024000–74024004, one guarded one-seed
+`bestbench` per unit; `gprofng` on 74024000 (V4 leaf) and 74024001 (uniform leaf); an offline replay of every 61st
+tree call from rollout3 74024002. Parity = byte-identical decision and MCTS action traces and identical non-timing
+result and MCTS summary rows (§437's `compare.py`).
+**Profile (baseline):** V4 leaf, 546 s process CPU: floor/`v_win` tree evaluation 110 s (20%; `nativeShopPlan`
+45.7 s, card-reward pick 51.1 s, removal pick 6.1 s inclusive), V4 shop gate 39.7 s. About 365,000 floor-model calls
+per run, 80% one-change rankings with a median of 4 rows, 20% shop subset enumerations with 66 rows on average;
+each call walked all 1,256 trees, so small calls were bound by the per-tree walk. Uniform leaf, 332 s: trees 8%, of
+which the batched floor-model calls are only 8.0 s.
+**Change:** `CompactTreeNet` keeps a packed copy of its trees (8-byte nodes, preorder with the yes child next to
+its parent) for `predict()` and a new batched `predictDeltas()`, which takes candidates as their values at the
+varying features only and follows the base path until the first varying split. The shop plan, card pick and
+removal pick pass column values instead of full 1,017-float rows; the shop plan values all subsets in one call and
+skips ranking removal targets when the removal is unaffordable (no candidate could include it).
+**Result:** 11/11 units identical across the three builds (final build: rollout3 74024002–003, uniform leaf
+74024001, `off` 74024004). Replay: 118,385 rows identical, about 1.9x faster than §437. Tree CPU 110 → 51 s on
+74024000. Per-run time: rollout3 1.19x and 1.13x (paired), 1.15x (both profiled); uniform leaf 1.04x; `off` 1.00x.
+**Decision:** adopt (exact, no behavior change). After this the largest rollout3 costs are the V4 network in the
+rollout gates (`prepareState` 20%; the shop gate now costs more than the shop plan) and the CTM (§439).
+
+**Evidence:** [packet](evidence/shop_planner_speedup_20261012/README.md). Raw:
+`/mnt/project-files/shop-planner-442/raw.tar.gz`. Seeds 74024000–74024004 are now used.
+
+**Knowledge impact:** `predictDeltas` paragraph and tree-storage item in `architecture/out-of-combat.md`, compact
+tree row in `CODE_MAP.md`, rollout3 cost sentence in `evaluation/current-research.md`.
+
+## §450 — V4 token network in rollout3: cached deck tokens and transposed layers, bitwise identical, 1.29–1.41x per rollout3 run (2026-10-12)
+
+**Question:** after §442 the V4 token network in the rollout gates was the largest rollout3 cost; can its forward
+pass be made faster with bitwise-identical outputs?
+**Design:** performance only. Baseline `main` `94f78fbb` (after #497). §422 `rollout3` and `off` arms unchanged, plus
+one uniform-prior, uniform-leaf rollout3 unit; seeds 74024005–74024009, one guarded one-seed `bestbench` per unit;
+`gprofng` on rollout3 74024005. Parity = §437's `compare.py`.
+**Profile (before):** 450 s process CPU: V4 `prepareState` 95.9 s inclusive (21%; deck encoder 52.4 s), card-reward
+V4 gate 78.3 s inclusive, V4 shop gate 29.6 s; GELU `tanhf` 64.3 s.
+**Change:** `OocStrategicTokNet::load()` builds derived tables: every deck token (card × upgrade × count 0–9) with
+its qkv row (about 3.8 MB) and transposed copies of the dense layers, which compute several output units side by
+side in each unit's original float order. `prepareState` also keeps the Q head's first-layer sum over the state
+inputs, as `PolicyPrefix` does for the policy head. Nets filled in directly keep the original loops.
+**Result:** new `ooc_tok_net_fast` test (400 states, 2,400 actions on the deployed model) bitwise equal; three hand
+mutations fail it. Full runs identical: rollout3 74024005–007, uniform leaf 74024009, `off` 74024008. Per-run
+time: rollout3 1.41x and 1.29x; uniform leaf 0.98x and `off` 1.02x (noise). Profiled: `prepareState` 95.9 → 34.1 s,
+card-reward gate 78.3 → 27.1 s, shop gate 29.6 → 11.3 s.
+**Decision:** adopt (exact, no behavior change). The per-action V4 encoders and GELU are now the largest V4 costs.
+
+**Evidence:** [packet](evidence/v4_net_speedup_20261012/README.md). Raw:
+`/mnt/project-files/v4-speedup-450/raw.tar.gz`. Seeds 74024005–74024009 are now used.
+
+**Knowledge impact:** derived-table paragraph in `architecture/out-of-combat.md`, rollout3 cost sentence in
+`evaluation/current-research.md`.
+
+## §449 — rollout3 `combo` with the public X2-B as win model instead of B0 `v_win`: NOT_SHOWN, same CPU (2026-10-12)
+
+**Question:** Philipp, 2026-10-12: "x2-b should be exchanged", then "lets go?" (17:46Z) for the offered paired run;
+"128 pairs, 8 workers" on the size card (19:55Z). Does `combo` play differently when `STS_WIN_NET`, the win model behind
+the native leaf, the native fallback rest/upgrade scorer and `vStateWin`, is the §444 public X2-B instead of B0?
+**Design:** [PREREG](evidence/ooc_x2b_vwin_449_20261012/PREREG.md). Arms `vwin` (§433 `combo`, `STS_WIN_NET` pinned to
+`models/v_win_trees.txt`) and `x2bpub` (`models/candidates/v_win_x2b_public_trees.txt`); the environments differ in that
+one line. Both pin `STS_OOC_PUBLIC_FUTURES=8`. Current production CTM (`pathb_r2_lizard` with the brew fallback). Code
+`94f78fbb` (main after #497), binary `85b1482b…`. Fresh seeds 82000000–127, both arms on every seed; 8 cloud workers.
+Smokes 82009000–001. Primary: paired bootstrap 95% CI of x2bpub − vwin (seed 449); BETTER / WORSE / NOT_SHOWN.
+**Validity:** 256/256 units rc=0, no Silver stalls, environments and config banners checked by grep, tar hashes checked.
+**Result:** **NOT_SHOWN.** x2bpub 114/128 (89.1%) vs vwin 111/128 (86.7%): +2.3 pp [−5.5, +10.2], discordant 15 vs 12,
+McNemar p = 0.70; Δfloor +0.84 [−0.59, +2.36]; boss deaths 10 vs 12. Seconds per run 790 vs 795, MCTS CPU 713 vs 721 s,
+V4 fallback 2.6% vs 2.4%.
+**Interpretation (Inference):** no sign that the public X2-B hurts `combo`; the CI rules out losses beyond about 5.5 pp.
+A gain is not shown. Swapping costs no CPU.
+**Decision:** no default change from this run; replacing `v_win_trees.txt` is Philipp's call (#397).
+
+**Evidence:** [packet](evidence/ooc_x2b_vwin_449_20261012/README.md). Raw: `/mnt/project-files/ooc-x2b-vwin-449/`
+(one tar per worker). Seeds 82000000–127 and 82009000–001 are now used.
+
+**Knowledge impact:** rollout3 paragraph in `evaluation/current-research.md`.
+
+## §448 — A20 V4 at A0 with V4 deciding everything, a V4 margin sweep, and where V4 and OOC MCTS beat the heuristic on the gold decisions (2026-10-12)
+
+**Question (Philipp):** play 128 A0 seeds with the A20-trained V4, no OOC search, no fallback to the heuristic;
+then sweep the gate margin; then show on the gold decisions where V4 (and OOC MCTS) choose better or worse than
+the heuristic. Descriptive, not pre-registered.
+**Design:** [evidence packet](evidence/a20_v4_margin_sweep_20261012/README.md). Main `4a407a0c`, binary `f085352b`.
+A20 V4 = §419 round 1 + 2 Q-head retrain `v4_a20_r12.native` (`08d239f9`); A0 V4 = deployed (`e62abd83`).
+§422 `off` base with every V4 gate on **including the map gate** (not part of the default stack); margin =
+required Q gap between V4's best and second-best option. Seeds 81000000–127 (A0), paired across all arms;
+smoke 81009000.
+
+**Coverage at margin 0:** V4 made every gated decision; only non-upgrade card selections (shop removal, Living
+Wall, Drug Dealer, Duplicator, Transmogrifier, Cleric, Library, Astrolabe, bottled relics; 132 in 128 runs) went
+to the heuristic; free rewards, chest opening, the reward-relic rule and the forced boss node stay rules.
+
+**Result (wins of 128):**
+
+| margin | 0 | 0.25 | 0.5 | 1 | 2 | 4 |
+|---|---|---|---|---|---|---|
+| A20 V4 | 55 | 64 | 83 | 94 | 98 | 90 |
+| A0 V4 | 70 | 76 | 78 | 78 | 96 | 98 |
+
+Heuristic only (margin 1e6): 86. Best arms vs heuristic only: A20 margin 2 and A0 margin 4, both +9.4 pp
+[+0.8, +18.0]. A20 − A0 at equal margin: −11.7 pp [−21.9, −1.6] at 0, +12.5 pp [+1.6, +23.4] at 1, within
+±10 pp elsewhere (13 arms; no multiplicity correction). At margin 0, 3 (A20) and 4 (A0) runs died outside
+combat (Knowing Skull HP payments). The A20 margin-0 sweep arm reproduced the single-container first run on all
+128 seeds. A0 V4 at margin 1 with the map gate (78/128) is below the usual default-stack rate without it
+(§422 off 101/128, §433 199/256, other seeds).
+
+**Gold decisions (Gold2, §432; A20; floors per decision, label of the picked option minus the heuristic's):**
+A0 V4 +0.28 [−0.09, +0.67] over 397 decisions (no chest/relic rules applied): events +2.60 (Neow: heuristic option 3 vs V4 option 1, about +14
+floors on 6 decisions), shop +1.17, rest vs smith +0.62, rewards screen +0.01 (214), map −0.24, upgrade target −0.54.
+V4 overrides gained reliably only when V4's Q for its pick exceeded its Q for the heuristic's pick by ≥ 2. §419 retrains:
++0.42 (G2) and +0.32 (G3), better on map, worse on upgrade and treasure. §425 OOC MCTS picks on the same labels
+(387 decisions, with the chest and reward-relic rules applied as in live play): `prod` +0.49 [+0.12, +0.87],
+`rollout3` +0.41 [+0.16, +0.70], A0 V4 +0.31 [−0.05, +0.71] on the same basis; both MCTS arms gain on events and map, rewards screen ≈ 0.
+
+**Interpretation (Inference):** the gate margin, not the training ascension, decides how V4 plays at A0: both V4s
+lose many runs when every argmax is played and peak at margin 2–4; the A20 retrain is not consistently better at A0. Gold
+single-decision gains (largest at small margins and on events) do not predict whole-run wins (as in §447; `prod`
+MCTS is also positive on gold but −21.9 pp live, §384). The map gate may cost wins at margin 1 (Inference; no
+same-seed map-off arm was run).
+**Decision:** no default change.
+
+**Evidence:** [packet](evidence/a20_v4_margin_sweep_20261012/README.md). Raw: `/mnt/project-files/a20-v4-at-a0-448/`.
+Seeds 81000000–127 and 81009000 are now used.
+
+**Knowledge impact:** one paragraph in `evaluation/current-research.md`.
+
+## §452 — Silver prior inside the search tree: fight score up at 2k sims, not CPU-matched (2026-10-12)
+
+**Question (Philipp, 2026-10-12):** the v1 Silver prior (§397, §406) acts only at the search root
+(`SilverSearcher::evaluateEdge` applies the bonus only when `&parent == root`). If the same prior also
+guides nodes below the root, does a 2k search play fights better than plain 2k? This is the precondition
+for an AlphaZero-style loop: prior-guided search must be a stronger teacher than plain search.
+**Design:** [PREREG](evidence/silver_tree_prior_20261012/PREREG.md), frozen after independent review
+(PASS at `655aa915`; code `17ddaa67`, binary `704b81d9…`). Research-only `SilverSearcher::nodePrior`:
+a non-root decision node with at least K simulations is scored once by the v1 prior, its visited edges
+get `400 · P / (n + 1)`, and untried edges (root included) are tried in prior order. `ctmsilvergen` with
+`STS_CTMSILVER_ARMSET=treeprior452`: an exact-10k plain source run per seed (production V4 OOC policy,
+A0, project-fair), every fight replayed by a 10k control (must reproduce the source) and by four arms at
+2k, 2 replicates each, with combat RNG redrawn per (fight, replicate) identically for all arms: `plain2k`,
+`root2k` (§406), `tree8_2k` (K = 8), `tree1_2k` (K = 1). Seeds 84000000–84000127, 16 cloud workers × 4
+cores. Metric: fight score 0 on death, else 53 + HP + 11·potions + 0.25·gold + 2·maxHP; paired per fight,
+95% CI by bootstrap over source seeds. Primary: `tree8_2k − plain2k`.
+**Result: `TREE_PRIOR_HELPS`.** 3,361 of 3,372 fights valid (the 11 control mismatches are Smoke Bomb
+escapes, quarantined).
+
+| contrast (score, all fights) | Δ [95% CI] | boss (n = 368) | elite (n = 817) |
+|---|---|---|---|
+| tree8 − plain2k (primary) | +1.17 [+0.53, +1.79] | +6.15 [+0.79, +11.33] | +1.41 [+0.67, +2.24] |
+| root2k − plain2k | +0.63 [+0.18, +1.12] | +5.58 [+1.25, +10.07] | −0.20 [−0.88, +0.39] |
+| tree8 − root2k | +0.54 [+0.01, +1.05] | +0.58 [−3.25, +4.66] | +1.61 [+0.74, +2.67] |
+| tree1 − plain2k | +1.67 [+1.15, +2.22] | +8.84 [+4.35, +13.49] | +1.55 [+0.74, +2.42] |
+| tree1 − tree8 | +0.50 [+0.12, +0.90] | +2.69 [−0.50, +5.87] | +0.14 [−0.27, +0.54] |
+
+- Death rate per fight: plain 0.64%, root 0.57%, tree8 0.51%, tree1 0.45% (tree1 − plain −0.17 pp
+  [−0.30, −0.01]; boss −1.5 pp [−2.8, −0.3]).
+- Where the score comes from (descriptive): mostly potions kept (11·potions: plain 18.27, tree8 19.06,
+  tree1 19.11 per fight) and fewer deaths; end HP is nearly unchanged (73.37 / 73.40 / 73.66).
+- CPU per fight (thread CPU, 4 runs per worker): plain 0.37 s, root 0.39 s, tree8 1.09 s (2.9x),
+  tree1 4.09 s (11x); 10k control 2.02 s.
+
+**Interpretation:**
+- The prior does guide the search usefully below the root: at equal simulations, K = 8 beats plain and the
+  root-only prior, and K = 1 beats K = 8. Part of `tree8 − root2k` is the root's untried-action order,
+  which `root2k` does not change.
+- **Not CPU-matched.** tree8 costs 2.9x and tree1 11x plain 2k per fight. No plain arm at matched CPU
+  (about 6k for tree8) was run, and §406 found plain 2k ≈ plain 10k in win rate. **Open question:** does
+  tree8 beat plain search at equal CPU? Until that is shown, this does not prove a stronger teacher per
+  unit of compute.
+- The effect is small in absolute terms: about one fight-score point per fight (≈ 0.07 potions kept and
+  0.1–0.2 pp fewer deaths); win-rate impact is **Unverified**.
+- Per the pre-registered rule the next step is an iteration-1 loop design and a run-level confirmation;
+  a CPU-matched fight-level check is the cheaper first step (Inference).
+
+**Evidence:** [packet](evidence/silver_tree_prior_20261012/README.md). Seeds 84000000–84000127 (run) and
+84009000–84009001 (smoke) are now used; reviewer seeds 74035000–74035004.
+
+**Knowledge impact:** tree-prior paragraph in `architecture/combat-search.md`.
+
+## §453 — Silver tree prior vs plain Silver at matched CPU: not shown (2026-10-12)
+
+**Question (Philipp, 2026-10-12, "Run check"):** §452 found the in-tree v1 prior (K = 8) better than plain
+2k at equal simulations, at 2.9x the CPU. Does it still beat plain Silver given the same CPU? Only then is
+prior-guided search a stronger teacher per unit of compute, which an AlphaZero-style loop needs.
+**Design:** [PREREG](evidence/silver_cpumatch_20261012/PREREG.md), frozen after independent review
+(PASS at run commit `94110b53`; code `9b74de14`, binary `d459a654…`). Same harness, sources, pairing and
+metric as §452, with `STS_CTMSILVER_ARMSET=cpumatch453`: arms `plain2k`, `tree8_2k` (K = 8, w = 400) and
+`plain6k`, 2 replicates each, combat RNG redrawn per (fight, replicate) identically for all arms. Fresh
+seeds 84000200–84000327, 16 cloud workers × 4 cores. Primary: `tree8_2k − plain6k`, all fights, score.
+**Result: `NOT_SHOWN`.** 3,325 of 3,345 fights valid; the 20 excluded are escape states (the 17 control
+mismatches are Smoke Bomb escapes with an invalid source, the rest escape-quarantined arm rows).
+
+| contrast (score) | all (n = 3,325) | boss (n = 368) | elite (n = 818) |
+|---|---|---|---|
+| tree8 − plain6k (primary) | +0.46 [−0.02, +0.97] | +3.88 [+0.38, +7.69] | +0.10 [−0.85, +1.20] |
+| tree8 − plain2k (§452 replication) | +1.84 [+1.40, +2.30] | +11.41 [+7.76, +15.25] | +1.39 [+0.37, +2.45] |
+| plain6k − plain2k | +1.38 [+0.94, +1.82] | +7.53 [+4.28, +10.86] | +1.29 [+0.51, +2.10] |
+
+- CPU per fight (thread CPU): plain2k 0.41 s, tree8 1.17 s, plain6k 1.30 s (tree8 / plain6k = 0.90,
+  within the pre-registered 20%); 10k control 2.21 s.
+- Death rate per fight: plain2k 0.84%, plain6k 0.71%, tree8 0.54% (tree8 − plain6k −0.2 pp
+  [−0.3, −0.0]; boss −1.4 pp [−2.6, −0.3]).
+
+**Interpretation:**
+- §452 replicates on fresh seeds (tree8 − plain2k +1.84, larger than §452's +1.17).
+- Most of that gain is what the same CPU buys plain search: plain 6k recovers about three quarters of it
+  (+1.38). The rest, +0.46, has a CI that just touches zero, so by the pre-registered rule the prior is
+  not shown to beat plain search at matched CPU, and no loop design follows.
+- The leftover points the same way as before: fewer deaths, concentrated in boss fights (boss +3.88,
+  CI above zero; a secondary subset, not the decision). **Inference:** if the prior's per-node cost
+  fell, the same search could beat plain at matched CPU; whether profiling can make that happen is §454.
+- Contrary to §406's win-rate result (plain 2k ≈ plain 10k), more plain sims still raise the fight score
+  from 2k to 6k, mostly in boss fights. Win-rate impact is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_cpumatch_20261012/README.md). Seeds 84000200–84000327 (run) and
+84009002 (smoke) are now used.
+
+**Knowledge impact:** one sentence in the tree-prior paragraph of `architecture/combat-search.md`.
+
+## §454 — Silver tree prior cost: batched exact prior scoring, bitwise identical, K = 8 from 2.7x to 1.7x of plain 2k (2026-10-13)
+
+**Question:** §452's tree prior (K = 8) cost 2.9x the CPU of plain 2k per fight. Where does the overhead go, and how
+much can be removed without changing search results?
+**Design:** performance only. Baseline `main` `33d03b25` (#508 head; rebased on merge `93011ed1`, no Silver code
+change). Native Silver 2k with the §452 environment (`env.sh`, prior `prior-natpert.compact.txt`, weight 400),
+`ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452k8` (seed 74038000) and `treeprior452` (74038001–74038002),
+R = 1, one guarded one-seed run per binary; old and new binaries ran side by side on the same 4-core machine.
+Parity: `arms.csv` and `states.csv` without CPU columns, `samples.csv` whole. Profile: `gprof` (-O3, no LTO)
+with one arm at a time, and walk-step counters in a throwaway build.
+**Profile (before):** tree8 65 ms vs plain 28 ms per 2k decision. Almost all of the difference is the prior: at
+K = 8 about 74 nodes per decision are scored, 5.6 distinct edges each, every edge walking all 1,997 trees
+(depth about 9.5, 23% of splits on the 22 action features; 53% of trees reach a leaf on state features alone).
+Search-shape effects (copies, node creation, rollouts) were below 1 s of the 14 s extra in the profile.
+**Change:** `CombatValueNet::predictPolicyActions` scores all edges of one state: `load()` keeps a compact copy of
+a policy tree ensemble (8-byte nodes, siblings adjacent, canonical feature indices), each tree's state-only prefix
+is walked once per state, and the edges then finish that tree in lockstep. Per-edge sums keep `predictVec`'s tree
+order, so scores are bit for bit equal. `nativeSilverPolicyPrior` extracts the state once and scores edges with
+bit-identical action features once. Ensembles whose children do not follow their parents keep `predictVec`.
+Tried and dropped: walking blocks of 8 trees in lockstep (slower than per-tree lockstep).
+**Result:** new `silver_searcher` checks (batched equals `predictVec` on a mixed state/action fixture and on the
+fallback) pass; three hand mutations fail them. All three seeds identical in every non-CPU field, including on the
+rebased binary. CPU per decision relative to plain 2k in the same run
+([timing.csv](evidence/silver_tree_prior_speedup_20261013/timing.csv)):
+
+| arm | 74038001–002 before (57 fights) | after | 74038000 before (27 fights, 2 runs) | after (3 runs) |
+|---|---|---|---|---|
+| tree8_2k | 2.73x | 1.67x | 2.35x, 2.44x | 1.57x–1.61x |
+| tree1_2k | 10.5x | 4.8x | — | — |
+| root2k | 1.01x | 1.01x | 0.99x–1.01x | 0.96x–0.97x |
+
+The ratio varies by seed (74038001: tree8 3.69x → 2.10x); about 55–60% of the extra cost over plain 2k is removed for both K.
+
+**Decision:** adopt (exact, no behavior change; the tree prior itself stays research only). **Inference**
+(plain cost about linear in simulations): at equal CPU a tree8 search now matches about plain 3.3k instead of
+5.5k; §453 matched tree8 against plain 6k at the old cost. Further gains need a cheaper prior (fewer or shallower trees, a higher K), which changes results and would
+need its own test.
+
+**Evidence:** [packet](evidence/silver_tree_prior_speedup_20261013/README.md). Raw:
+`/mnt/project-files/silver-tree-prior-speedup-454/raw.tar.gz`. Seeds 74038000–74038002 are now used.
+
+**Knowledge impact:** prior-scoring sentences in the tree-prior paragraph of `architecture/combat-search.md`.

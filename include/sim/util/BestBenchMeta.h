@@ -79,6 +79,8 @@ struct BenchConfigSidecar {
     std::string oocStrategicTokNet;         // "" when the V4 token net is not loaded
     std::string oocStrategicTokNetSha256;
     bool oocStrategicTokConstGuard = false; // STS_OOC_STRATEGIC_TOK_CONST_GUARD
+    std::string oocGbmRanker;               // STS_OOC_GBM_RANKER ("" when off)
+    std::string oocGbmRankerSha256;
     bool oocMcts = false;                   // STS_OOC_MCTS=1
     int stopAfterAct = 0;                   // STS_STOP_AFTER_ACT (0: full run)
     std::string forceRelic;                 // STS_FORCE_RELIC ("" when unforced)
@@ -190,6 +192,8 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"oocStrategicTokNet\":\"" << detail::jsonEscape(c.oocStrategicTokNet) << '\"';
     o << ",\"oocStrategicTokNetSha256\":\"" << detail::jsonEscape(c.oocStrategicTokNetSha256) << '\"';
     o << ",\"oocStrategicTokConstGuard\":" << (c.oocStrategicTokConstGuard ? "true" : "false");
+    o << ",\"oocGbmRanker\":\"" << detail::jsonEscape(c.oocGbmRanker) << '\"';
+    o << ",\"oocGbmRankerSha256\":\"" << detail::jsonEscape(c.oocGbmRankerSha256) << '\"';
     o << ",\"oocMcts\":" << (c.oocMcts ? "true" : "false");
     o << ",\"stopAfterAct\":" << c.stopAfterAct;
     o << ",\"forceRelic\":\"" << detail::jsonEscape(c.forceRelic) << '\"';

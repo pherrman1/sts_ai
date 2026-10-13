@@ -9,6 +9,7 @@
 #include <fstream>
 #include <mutex>
 #include <cmath>
+#include <cstring>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -451,6 +452,11 @@ namespace sts::search {
                 searcher->leafSamples = g_nativeSilverLeafSamples;
                 searcher->rootPrior = nativeSilverRootPrior(*searcher);
                 searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
+                searcher->nodePrior = nullptr;
+                if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
+                    searcher->nodePrior = nativeSilverPolicyPrior;
+                    searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
+                }
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -794,17 +800,42 @@ namespace sts::search {
         if (g_nativeSilverRootPriorOverride == true && g_options.rootPriorPath.empty())
             throw std::runtime_error("root prior override requires STS_SILVER_ROOT_PRIOR");
         if (g_options.rootPriorPath.empty() || searcher.prepareRootActions() < 2) return {};
-        const auto &state = searcher.rootSearchState();
-        thread_local std::vector<float> features;
-        features.resize(combatPolicyFeatureCount());
+        return nativeSilverPolicyPrior(searcher.rootSearchState(), searcher.rootNode().edges);
+    }
+
+    std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
+                                                const std::vector<SilverSearcher::Edge> &edges) {
+        // The state block is extracted once; edges with bit-identical action
+        // blocks (e.g. two copies of a card) are scored once. Same values as
+        // predictVec per edge (CombatValueNet::predictPolicyActions).
+        const int stateCount = combatFeatureCount();
+        const int actionCount = combatPolicyFeatureCount() - stateCount;
+        const int n = static_cast<int>(edges.size());
+        thread_local std::vector<float> features, actions;
+        thread_local std::vector<int> distinctOf;
+        thread_local std::vector<double> scores;
+        features.resize(stateCount);
         combatExtractFeatures(state, features.data());
-        float *action = features.data() + combatFeatureCount();
+        actions.resize(static_cast<std::size_t>(n) * actionCount);
+        distinctOf.resize(n);
+        int distinct = 0;
+        for (int i = 0; i < n; ++i) {
+            float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
+            combatFillActionFeatures(state, edges[i].action, block);
+            int match = 0;
+            while (match < distinct && std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
+                                                   block, sizeof(float) * actionCount) != 0) ++match;
+            distinctOf[i] = match;
+            if (match == distinct) ++distinct;
+        }
+        scores.resize(distinct);
+        g_rootPriorNet.predictPolicyActions(features.data(), actions.data(), distinct, scores.data());
         std::vector<double> prior;
+        prior.reserve(edges.size());
         double total = 0;
-        for (const auto &edge : searcher.rootNode().edges) {
-            combatFillActionFeatures(state, edge.action, action);
+        for (int i = 0; i < n; ++i) {
             // Trained with cross-entropy on root visit shares: sigmoid(margin).
-            const double p = 1.0 / (1.0 + std::exp(-g_rootPriorNet.predictVec(features.data())));
+            const double p = 1.0 / (1.0 + std::exp(-scores[distinctOf[i]]));
             prior.push_back(p);
             total += p;
         }
@@ -874,6 +905,7 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;

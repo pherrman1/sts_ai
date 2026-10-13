@@ -1,0 +1,141 @@
+{
+ "schema": "vwin_x2b_public_444_v1",
+ "model": "models/candidates/v_win_x2b_public_trees.txt",
+ "model_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+ "tree_count": 1006,
+ "used_features": 428,
+ "public_features": 457,
+ "hidden_future_lines_in_file": 0,
+ "inputs": {
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/model.ubj": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5",
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s1/model.ubj": "227a110ea579657f9f843f0f7197977c7ad25863efb5c9b6491024b1acc13410",
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s2/model.ubj": "e74b7740065742caf06c50abf0dff4dfe8080de78a70d57eb73c66f1f7e35e9c",
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/validation-predictions.npz": "8a1ec54fbf5a14db48d25f9eee5bfa31035732eb73052b592517658b7d1d5633",
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a3-final1024-x2b-finalist-20261003-49c28d80/tune/X2/model.ubj": "99dbac6b5b082c46fe07242d2d15d8ccc6818041cb851efa79d6b423cdcb52dd",
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/corpus-mixed-1024.json": "ae56f9633ce8da8a72e341978d707c9f145c1f1b6479afa438067af5570dfa00",
+  "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a4-mlp-structured-screen-20261003/cache-seal.json": "7b4ed6e19615b1d7746297be31c649ed2189c443f56d02a316c91f34ba26a019"
+ },
+ "validation_rows": 141566,
+ "validation_sources": 155,
+ "bootstrap": {
+  "reps": 2000,
+  "seed": 0,
+  "cluster": "sourceSeed"
+ },
+ "TEST_accessed": false,
+ "game_seeds_driven": 0,
+ "parity": {
+  "rows": 1780,
+  "map_rows": 1024,
+  "hp_sweep_rows": 756,
+  "native_vs_xgb_margin_mean": {
+   "max": 2.458569892116458e-07,
+   "mean": 3.187616638238599e-08,
+   "p99": 1.2061263156892824e-07,
+   "worst_row": 966,
+   "python": 0.6697001881430108,
+   "native": 0.669700434
+  },
+  "native_vs_python_tree_file_max": 2.9573049564746157e-09,
+  "python_tree_file_vs_xgb_max": 2.4834662559758414e-07,
+  "gate": 1e-05,
+  "passed": true
+ },
+ "consistency": {
+  "export_vs_xgb_margin_mean_max": 2.894030948219495e-07,
+  "prob_mean_recomputed_vs_e1_npz_P0_max": 1.4842255957603356e-07,
+  "export_vs_prob_mean_max": 0.03122687284777692,
+  "export_vs_prob_mean_mean": 0.0010469507767002794
+ },
+ "metrics": {
+  "export_margin_mean": {
+   "n": 141566,
+   "nll": 0.4236233262528481,
+   "brier": 0.13849824313627437,
+   "roc_auc": 0.7919238053260083,
+   "ece": 0.031640286960737875
+  },
+  "P0_prob_mean_e1": {
+   "n": 141566,
+   "nll": 0.42370011356323345,
+   "brier": 0.13847585944676966,
+   "roc_auc": 0.7918063026197941,
+   "ece": 0.030946849467034118
+  },
+  "X2B_frozen": {
+   "n": 141566,
+   "nll": 0.4226083643848224,
+   "brier": 0.13776757739563644,
+   "roc_auc": 0.7907088245421227,
+   "ece": 0.027741896938576528
+  }
+ },
+ "paired_deltas": {
+  "export_margin_mean_minus_X2B": {
+   "nll": {
+    "mean": 0.001014961868025686,
+    "n": 141566,
+    "source_seeds": 155,
+    "ci95": [
+     -0.00410934723338808,
+     0.005765282630541747
+    ],
+    "status": "ok"
+   },
+   "brier": {
+    "mean": 0.000730665740637925,
+    "n": 141566,
+    "source_seeds": 155,
+    "ci95": [
+     -0.0009034986196230632,
+     0.002343148920854977
+    ],
+    "status": "ok"
+   }
+  },
+  "P0_prob_mean_e1_minus_X2B": {
+   "nll": {
+    "mean": 0.0010917491784109368,
+    "n": 141566,
+    "source_seeds": 155,
+    "ci95": [
+     -0.004083531096971204,
+     0.005877548142756772
+    ],
+    "status": "ok"
+   },
+   "brier": {
+    "mean": 0.0007082820511332067,
+    "n": 141566,
+    "source_seeds": 155,
+    "ci95": [
+     -0.0009444049444807154,
+     0.0023186356827405697
+    ],
+    "status": "ok"
+   }
+  },
+  "export_margin_mean_minus_P0_prob_mean": {
+   "nll": {
+    "mean": -7.678731038525066e-05,
+    "n": 141566,
+    "source_seeds": 155,
+    "ci95": [
+     -0.0003070397953864615,
+     0.0001843765071610967
+    ],
+    "status": "ok"
+   },
+   "brier": {
+    "mean": 2.238368950471845e-05,
+    "n": 141566,
+    "source_seeds": 155,
+    "ci95": [
+     -4.26976200701728e-05,
+     9.920940193263334e-05
+    ],
+    "status": "ok"
+   }
+  }
+ }
+}

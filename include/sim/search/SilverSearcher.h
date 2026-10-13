@@ -2,6 +2,7 @@
 #define STS_LIGHTSPEED_SILVERSEARCHER_H
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <array>
 #include <map>
@@ -144,6 +145,7 @@ namespace sts::search {
             Node *parent = nullptr;           // chance node: its decision parent
             int outcomesGenerated = 0;
             std::uint64_t randomnessBase = 0;
+            std::vector<double> prior;        // tree prior (research), indexed like edges; empty = none
         };
 
         double explorationParameter = 25.0;
@@ -164,6 +166,15 @@ namespace sts::search {
         // so with weight 0 or a uniform prior the search is today's Silver.
         std::vector<double> rootPrior;
         double rootPriorWeight = 0;
+        // Research-only tree prior (off while nodePrior is empty; ledger §452).
+        // A non-root decision node with at least treePriorMinVisits simulations
+        // and two or more edges is scored once by nodePrior (probabilities
+        // indexed like its edges, cached on the node). Its visited edges then get
+        // the root bonus rootPriorWeight * P / (visits + 1). Wherever a prior is
+        // known (rootPrior at the root), unvisited edges are tried in descending
+        // prior order instead of enumeration order.
+        std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePrior;
+        int treePriorMinVisits = 1;
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();

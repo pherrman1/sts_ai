@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -149,6 +149,15 @@ leaf continuation and ordinary live fallback. Each loop rebuilds after state or
 path changes; no cache survives the loop or model reload. Candidate ordering,
 Q margins/ties, fallback dispatch and RNG consumption are unchanged. Legacy
 single-action inference entry points remain available.
+`OocStrategicTokNet::load()` also builds derived tables (`rebuildDerived()`, §450):
+every deck token (card id, upgrade, count 0-9) with its GELU output and qkv row,
+and transposed copies of the deck projection, fusion, policy and Q first
+layers. The fast paths compute several output units at a time, each in its
+original float order, and `PreparedState::qPrefix` holds the Q head's
+first-layer sum over the 128 state inputs; outputs are bitwise those of the
+reference loops (`ooc_tok_net_fast` ctest). A net whose weights are set or
+edited directly must call `rebuildDerived()`; without tables it runs the
+reference loops.
 Subsequent queries for the same immutable state reuse cached logits/priors.
 A prepared native combat transition computes support and encodings for one
 fixed precombat input; each draw retains the native conditional heads and RNG
@@ -528,7 +537,11 @@ prior for Read; its revealed cards become a qualified public OBTAIN selector.
 Mushrooms and Mysterious Sphere use the same hidden reward prior; their native
 leave effects now match vanilla (Parasite plus healing, and no reward,
 respectively).
-The default native win artifact remains B0, `models/v_win_trees.txt`.
+The default native win artifact is B0, `models/v_win_trees.txt`, except under
+live OOC MCTS: with `STS_OOC_MCTS=1` and `STS_WIN_NET` unset the process win
+model (native leaf, fallback rest/upgrade, `vStateWin`) is the public X2-B
+`models/candidates/v_win_x2b_public_trees.txt` (§444 export, §449 A/B NOT_SHOWN
+at equal CPU; ADR-0029). `STS_WIN_NET=1` restores B0 there.
 The default-off X2-B candidate is `models/candidates/v_win_x2b_trees.txt`,
 selected explicitly with `STS_WIN_NET` for simulator policies. Its adjacent
 identity JSON binds the exact frozen UBJ, ordered features and exported bytes;
@@ -1045,14 +1058,18 @@ explicitly server-dependent path fails fast when localhost:5555 is unavailable
 instead of stalling the whole run.
 
 The native shop plan, card-reward pick and removal pick value their candidate
-rows with `CompactTreeNet::predictVariants` (verified 2026-10-11, §437). Each
-candidate row is the decision's base rich vector with a few known features
-changed (gold, deck size, the affected card and relic counts). All rows walk
-each tree together and separate only at splits on those features, so every row
-reaches the same leaf and accumulates the same margins in the same order as
-`predict()`; a row that differs elsewhere is valued with `predict()`. Values and
-decisions are bitwise unchanged. The shop plan values its subsets in batches of
-up to 1,024 rows and keeps the first strict maximum in enumeration order.
+rows with `CompactTreeNet::predictDeltas` (verified 2026-10-12, §437, §442).
+Each candidate is the decision's base rich vector with a few known features
+changed (gold, deck size, the affected card and relic counts), passed as just
+those columns. All candidates walk each tree together and separate only at
+splits on those features, so every candidate reaches the same leaf and
+accumulates the same margins in the same order as `predict()` on the full row.
+Values and decisions are bitwise unchanged. The shop plan values all affordable
+subsets in one call, keeps the first strict maximum in enumeration order, and
+skips ranking removal targets when the removal costs more than the current
+gold (no candidate could include it). `predictVariants` keeps the older
+full-row interface (rows that differ outside the declared features take
+`predict()`).
 
 The native OOC research controls in this section and the campfire/removal/card
 subsections below were verified on 2026-10-08.
@@ -1349,9 +1366,12 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
 4. Native tree models map artifact feature names to raw rich indices through
    `richIdxMap` at load time and store final raw indices in split nodes.
    `CompactTreeNet` stores nodes contiguously with root offsets and an end
-   sentinel; child indices remain relative to their tree. Traversal, float
-   thresholds/leaves, sequential double accumulation, and logistic/clamping
-   operations retain their original order. Models score state or copied
+   sentinel; child indices remain relative to their tree. `load()` also builds
+   a packed evaluation copy (8-byte nodes, each tree in preorder with the yes
+   child next to its parent; §442) that `predict()` and `predictDeltas()` walk;
+   trees filled in directly (tests) are walked from `nodes` unless `pack()` is
+   called. Traversal, float thresholds/leaves, sequential double accumulation,
+   and logistic/clamping operations retain their original order. Models score state or copied
    post-action states.
 5. Counterfactual evaluators copy `GameContext`, apply a legal action, detach
    shared map state when mutation is possible, and simulate or predict future
