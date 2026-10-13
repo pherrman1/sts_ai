@@ -1,0 +1,56 @@
+{
+ "approval": "Philipp (pherrman1), \u00a7443 project thread: 'Override the smoke bomb.', 2026-10-13T12:07:39Z, after the Stage 2 report listing the E1 misses (relic.smoke +0.33 [0.14,0.52], relic.gold +0.82 [0.34,1.26])",
+ "candidateId": "pathb-a20",
+ "capability": "escape",
+ "e1Classification": "SLICE_EXPOSURE_DEVELOPMENT_FAIL",
+ "escapeCheckpoint": "fed45e004991422ea676fae3b8749586e8c7f56400eaa3901f652d23762c3b3b",
+ "escapeFitValidation": {
+  "constantNll": 0.4308978620669232,
+  "modelNll": 0.28376875842839966
+ },
+ "exposure": {
+  "exposure-escape-smoke.json": "b59189068bb7f87ad7cd607c19657605ab1677a73ce7fe02ef023abfd19fd597",
+  "exposure-writhing-ritual.json": "de824fb4a123de8769f154c289515e02b7fd03e00939e8f51514287ec1503c59"
+ },
+ "failedEntries": {
+  "components.relic.entireFinalUnion": {
+   "ci95": [
+    0.13959883559505384,
+    0.5190092655208229
+   ],
+   "mean": 0.3285794534179798,
+   "rows": 140,
+   "sources": 105
+  },
+  "components.relic.gold": {
+   "ci95": [
+    0.33774770182165187,
+    1.2594316179480463
+   ],
+   "mean": 0.8222287091652103,
+   "rows": 37,
+   "sources": 23
+  },
+  "components.relic.recovered": {
+   "ci95": [
+    0.13959883559505384,
+    0.5190092655208229
+   ],
+   "mean": 0.3285794534179798,
+   "rows": 140,
+   "sources": 105
+  },
+  "components.relic.smoke": {
+   "ci95": [
+    0.13959883559505384,
+    0.5190092655208229
+   ],
+   "mean": 0.3285794534179798,
+   "rows": 140,
+   "sources": 105
+  }
+ },
+ "schema": "ctm_exposure_decision_v1",
+ "standardArtifact": "f215b5596a3cfbff0a918e858315e0edd0875860b7fab0919fbea29cfa1ea33e",
+ "writhingRitual": "dropped: E2 overall FULL_UNION_EXPOSURE_DEVELOPMENT_FAIL (only via the export-waived hp.recursiveBrew and writhing.transmutationPlus; all 6 writhingRitual entries pass); not part of this decision"
+}
