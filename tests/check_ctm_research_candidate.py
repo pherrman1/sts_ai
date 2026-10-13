@@ -247,6 +247,13 @@ def main():
         path, case_env = altered_standard('override_nosha', overridden(None))
         expect('candidate_exposure_override_without_record', probe(['--identity', path], case_env),
                error='combat runtime qualification')
+        # Production (no researchCandidate declaration) never loads the override class.
+        production_override = directory / 'production-override.native'
+        header = json.loads(json.dumps(std_header))
+        overridden('ab' * 32)(header)
+        write(production_override, std_version, header, std_body)
+        expect('production_override_refused', probe(['--identity', production_override]),
+               error='combat runtime qualification')
         path, case_env = altered_standard('fail', lambda h: h['qualification'].update(
             classification='FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_FAIL'))
         expect('candidate_exposure_fail', probe(['--identity', path], case_env), error='combat runtime qualification')
