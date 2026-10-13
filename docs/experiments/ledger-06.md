@@ -17517,3 +17517,58 @@ cores. Primary: `mlp8_2k − plain_cpu`, all fights, score; kill if the CI lower
 (worker smoke) are now used.
 
 **Knowledge impact:** one sentence in the MLP prior paragraph of `architecture/combat-search.md`.
+
+## §457 — OOC MCTS `combo` at A20: with today's CTM it loses 6 floors; with the A20 CTM it mostly falls back to V4 and ties off (2026-10-13)
+
+**Question (Philipp, 2026-10-13 16:05Z):** "How the ooc MCTS A20 doing? Can we try 128 seeds A/B?" (16:06Z "Just do it
+on your own, use 8 workers"; 16:56Z "Just upload the files for the ctm?? Then do it in the cloud?"). Every earlier live
+OOC MCTS A/B ran at A0; §425/§426 only scored single A20 decisions.
+**Design:** [PREREG](evidence/ooc_a20_ab_457_20261013/PREREG.md), independent pre-launch and delta review PASS. Run
+commit `6679d0cd` (code `52e605fd`, binary `fdc44395…`), 8 cloud workers, seeds 87000000–87000127, ascension 20,
+`STS_OOC_PUBLIC_FUTURES=8`, `STS_WIN_NET` unset (public X2-B leaf, ADR-0029). Arms, all with the §433 base:
+- `off`: §433 `off` (exact-10k Silver, V4 OOC gates, act-3 stop).
+- `combo`: §433 `combo` with the §443 A20 escape candidate `pathb-a20` (fast `34870815…`, standard `b489e537…`,
+  manifest `7274c5c3…`, from `claude/ctm-a20-data` `34d4dfac`), `STS_OOC_MCTS_ACTIVE_LIZARD=0`. The §443 Stage 4 Lizard
+  refit could not run (the fast artifact has no `activeLizardCorrection` header), so this CTM refuses every combat
+  with an active Lizard Tail.
+- `combo_def`: §433 `combo` with today's default CTM stack (§435 Lizard-capable pathb-r2, which gets raw ascension 20;
+  §443 Stage 0: it predicts 0.5% deaths where 10.5% happen). Added before launch, after the smoke showed `combo`
+  falling back to V4 on 25–67% of decisions (Philipp's decision card, recommended option; unanswered at launch).
+
+Primary, per treatment vs `off`: mean paired floor difference, paired bootstrap 95% CI (10,000 reps, seed 457);
+IMPROVED / WORSE / NOT_SHOWN. Wins are the key secondary.
+**Validity:** 384/384 units rc=0, no seed failures; every `combo` log shows `candidate_id=pathb-a20`, no other arm's
+does; tar hashes checked.
+
+| arm | wins | mean floor | reached act 3 | deaths act 1 / 2 / 3 | boss deaths | V4 fallback | s per run |
+|---|---|---|---|---|---|---|---|
+| off | 9 | 32.5 | 55 | 35 / 38 / 46 | 43 | — | 36 |
+| combo (A20 CTM) | 12 | 32.0 | 52 | 34 / 42 / 40 | 37 | 64.6% | 97 |
+| combo_def (default CTM) | 7 | 26.3 | 31 | 42 / 55 / 24 | 24 | 1.9% | 284 |
+
+- `combo − off`: floors −0.50 [−2.69, +1.65], **NOT_SHOWN**; wins +2.3 pp [−2.3, +7.0], discordant 6 vs 3, p = 0.51.
+- `combo_def − off`: floors −6.20 [−9.40, −2.90], **WORSE**; wins −1.6 pp [−7.0, +3.9], discordant 5 vs 7, p = 0.77.
+- `combo − combo_def` (descriptive): floors +5.70 [+2.22, +9.10].
+- Support aborts: `combo` 51.3 per run (6,556 `active_unqualified_lizard`, 9 `writhing_ritual_intersection`);
+  `combo_def` 3 `hp_envelope` in all 128 runs.
+
+**Interpretation:**
+- OOC MCTS as it exists today does not help at A20; with the default CTM it is clearly worse (−6.2 floors) at about
+  8x the CPU of `off`.
+- **Inference:** the default CTM's blindness to A20 death risk is the likely cause. `combo_def` dies far more often in
+  acts 1–2 (97 vs 73) and reaches act 3 in 31 runs vs 55, consistent with a search that treats risky fights as safe.
+  Its fewer boss deaths only reflect fewer runs reaching bosses.
+- The A20 CTM undoes that loss (+5.7 floors over `combo_def`), but the search owned only 35% of decisions. Imagined
+  futures that pick up a Lizard Tail reach a refused combat and abort the whole root search (51 aborts per run, even
+  on runs that never own a Tail), so `combo` mostly played V4 and tied `off`. This run says nothing about OOC MCTS
+  with a fully supported A20 CTM.
+- Floors are a better metric than wins here: 7–12 wins of 128 per arm.
+
+**Decision:** no default change; OOC MCTS stays off (ADR-0027). A meaningful A20 test needs Lizard support in the A20
+CTM (an `activeLizardCorrection` header and an A20 refit, a new pre-registered §443 step) and then a rerun of `combo`
+on these seeds.
+
+**Evidence:** [packet](evidence/ooc_a20_ab_457_20261013/README.md). Raw: `/mnt/project-files/ooc-a20-ab/` (one tar
+per worker, smoke tar). Seeds 87000000–87000127 and smokes 74047000–74047003 are now used.
+
+**Knowledge impact:** one sentence in the rollout3 paragraph of `evaluation/current-research.md`.
