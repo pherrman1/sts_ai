@@ -16996,6 +16996,60 @@ No default play changes.
 **Knowledge impact:** new generator variable in `operations/environment-variables.md`; the A20 limit of the production
 CTM is recorded here (current understanding unchanged otherwise, since OOC MCTS is off by default).
 
+### §443 (continued) — A20 corpus, A20 retrain and the offline gate (2026-10-12 to 2026-10-13)
+
+**Stage 1 (corpus, Philipp: 16 workers):** run commit `90f6df64` (#498), Release `one_combat` `12e881be…`, deployed-OOC
+teacher, `combattransitiongen 10000 20`. Main seeds 78200000–78231999 (16 × 2000): 609,555 rows from 31,995 seeds.
+Forced slices (lizard_fairy, lizard_brew, ritual_writhing, high_maxhp, starting at 78300000, 78301000, 78302000 and
+78303000): 40,221 rows. Five 50-seed units aborted on native Silver stalls (rc 134); they were rerun one seed at a
+time (4,709 rows), and five seeds that abort again are excluded: 78217905 (`SilverSearcher::step descent exceeded depth
+bound`), 78218250, 78220424, 78220620, 78225246 (`stall: exceeded 1000 decisions`). Rows are on the data-only branch
+`claude/ctm-a20-data` (never merged).
+**Pre-registration:** `ctm-a20-stage3/PREREG-GATES.md` on that branch (sha256 `4134ef35…`, frozen when training
+started), with run notes in `GATE3A-NOTES.md` (escape candidate; production scored on a copy of the rows with ascension
+set to 0, as in Stage 0).
+**Stage 2 (retrain, on Philipp's RTX 3060 Ti):** the #418 chain at #504 (`2cb43780`, warm starts with the ascension
+input re-centred to 20). Union 609,883 rows; #418 source-seed hash split TRAIN 486,628 / VALIDATION 59,685 / TEST
+63,570 (these are not sums of the Stage 1 counts; **Inference:** the difference is rows the production support
+predicate drops, not reconciled row by row). Phase 1 picked Attention again (A20 TEST survival Brier 0.0236, AUC 0.973, win-HP MAE 0.091; DeepSets 0.0239 /
+0.972 / 0.093; XGBoost 0.0253 / 0.967 / 0.095). Every near-full refit beat its A0 warm start. Deviations: s07 resumed after a CUDA OOM with
+`PYTORCH_NO_CUDA_MEMORY_CACHING=1` (allocator only); export, qualification and the DeepSets chain ran at #514
+(`643a4892`) because the export needed the override path.
+Three gates failed and Philipp overrode each one, recorded with the artifacts:
+- Final-support exposure (limit 0.1 nats): `hp.recursiveBrew` 10 rows, gap +0.247 [−0.000003, +0.60] (two rows carry
+  it); `writhing.transmutationPlus` 3 rows, +0.248 [−0.10, +0.82] (one row). Waived through #514
+  (`FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS_BY_OVERRIDE`). Whole-union HP gap +0.017 [0.015, 0.019].
+- DeepSets downstream (s19): cards singleton exact-label accuracy −0.70 pp [−2.05, +0.68] against the 0.5 pp limit
+  (A0 had −0.68 pp); cards NLL 2.290 vs 2.288.
+- Escape exposure (E1): `relic.smoke` 140 rows +0.33 [0.14, 0.52], `relic.gold` 37 rows +0.82 [0.34, 1.26]. Unlike
+  the other two, these CIs exclude 0: the escape capability is kept on a real miss.
+Writhing + Ritual Dagger was dropped (its own entries pass; the overall E2 report fails only on the waived slices). No
+Lizard Fairy/Brew capability. Candidate `pathb-a20` with escape: standard `b489e537…`, fast `34870815…`, manifest
+`7274c5c3…` (artifacts on Philipp's machine, `build/ctm-a20/run/`).
+**Stage 3a (offline gate):** frozen `gate3a.py` `25f7dc00…`, `one_combat` `e59727ca…` at `40db7d62`. Main-corpus TEST
+rows (63,648 rows, 3,314 source seeds); 62,208 rows scored by both arms. Production = today's default stack (fast
+`c6d56bbc…`, standard `b9188de0…`) on the ascension-0 copy. Source-seed bootstrap, 2000 reps, seed 443.
+
+| criterion (bar) | candidate − production | result |
+|---|---|---|
+| 1 survival NLL (upper CI < 0) | −0.048 [−0.051, −0.045] (0.128 → 0.080; boss −0.20) | PASS |
+| 2 death bias (\|bias\| ≤ 0.01, overall and per room) | all +0.003, normal +0.0003, elite +0.0035, **boss +0.0153 [+0.008, +0.023]** (production boss −0.151, all −0.032) | FAIL |
+| 3 win-HP bias (±3 HP) | all +0.17, normal +0.35, elite −0.07, boss −0.10 (production +3.31 / +2.91 / +5.93 / −2.41) | PASS |
+| 4 HP NLL (upper CI < 0) | −0.373 [−0.382, −0.364] (3.32 → 2.95) | PASS |
+| 5 refusals ≤ production | candidate 1,440 (2.3%, all `active_unqualified_lizard`), production 0 | FAIL |
+
+**Result: NOT_QUALIFIED.** No live gate (3b), no runtime switch, no default change. **Inference:** the A20 model
+prices A20 combats far better than the clamped production model (which hands out free boss wins); it fails on a
+small boss pessimism and on the missing Lizard capability, which production has had since §435. Any rescue (for
+example an A20 Lizard refit and a re-gate on fresh seeds) needs a new pre-registration.
+
+**Evidence:** `build/ctm-a20/gate3a-20261013.tgz` (sha256 `db1de2a0…`; freeze record, script, logs, scores, results)
+and the run folder on Philipp's machine; corpus on `claude/ctm-a20-data`. Seeds used: 78200000–78231999, the forced
+slices above.
+
+**Knowledge impact:** the exposure override is documented in `architecture/out-of-combat.md` (#514); no A20 CTM is
+deployed, so current understanding is unchanged apart from this entry.
+
 ## §444 — X2-B without the hidden next-fight fields: the E1 public arm exported as a native win model (2026-10-12)
 
 **Question:** Philipp wants X2-B to replace `v_win` (via `STS_WIN_NET`) as the rollout3 leaf, but X2-B reads
