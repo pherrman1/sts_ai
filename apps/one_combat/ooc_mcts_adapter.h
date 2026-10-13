@@ -57,6 +57,10 @@ struct OocAdapterOptions {
     std::string leafWinPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
+    // Research option (default off, STS_OOC_MCTS_ROLLOUT_SHOP=greedy): shops in
+    // leaf rollouts buy the single best item per decision instead of the first
+    // item of the best affordable bundle.
+    bool greedyRolloutShop = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
     // False (live runs with STS_COLLECT_KEYS off) drops TAKE_KEY and

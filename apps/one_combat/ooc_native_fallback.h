@@ -28,6 +28,16 @@ public:
     NativeOocResampledQueueScope(const NativeOocResampledQueueScope &) = delete;
     NativeOocResampledQueueScope &operator=(const NativeOocResampledQueueScope &) = delete;
 };
+// While alive on this thread, nativeShopPlan returns the single best purchase
+// (or leave) instead of the first item of the best affordable bundle. Set by
+// OOC MCTS leaf rollouts under STS_OOC_MCTS_ROLLOUT_SHOP=greedy.
+class NativeOocGreedyShopScope {
+public:
+    NativeOocGreedyShopScope();
+    ~NativeOocGreedyShopScope();
+    NativeOocGreedyShopScope(const NativeOocGreedyShopScope &) = delete;
+    NativeOocGreedyShopScope &operator=(const NativeOocGreedyShopScope &) = delete;
+};
 bool nativeOocShopDeckSizeFixEnabled();
 bool nativeOocCardWinRankEnabled();
 std::uint64_t nativeOocPublicScorerCalls();
