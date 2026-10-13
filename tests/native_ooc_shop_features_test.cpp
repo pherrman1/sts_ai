@@ -33,7 +33,7 @@ static void require(bool value, const char *message) {
 int main() {
     try {
         unsetenv("STS_OOC_PUBLIC_FUTURES");
-        setenv("STS_OOC_SHOP_DECK_SIZE_FIX", "1", 1);
+        unsetenv("STS_OOC_SHOP_DECK_SIZE_FIX"); // default on (ADR-0030)
         const auto &idx = richIdxMap();
         PathHistory path;
         auto relic = emptyShop();
@@ -79,10 +79,12 @@ int main() {
         }
         require(nativeShopPlan(pair, path, both) == "c0 c1 ", "greedy scope leaked past its lifetime");
 
-        unsetenv("STS_OOC_SHOP_DECK_SIZE_FIX");
-        require(nativeShopPlan(relic, path, model).empty(), "unset flag changed legacy relic plan");
-        require(nativeShopPlan(removal, path, smallDeck).empty(), "unset flag changed legacy removal plan");
-        std::cout << "native_ooc_shop_features PASS: relic, removal, card, greedy, default-off\n";
+        setenv("STS_OOC_SHOP_DECK_SIZE_FIX", "0", 1);
+        require(nativeShopPlan(relic, path, model).empty(), "explicit 0 changed legacy relic plan");
+        require(nativeShopPlan(removal, path, smallDeck).empty(), "explicit 0 changed legacy removal plan");
+        setenv("STS_OOC_SHOP_DECK_SIZE_FIX", "1", 1);
+        require(nativeShopPlan(relic, path, model) == "r0 ", "explicit 1 lost the correction");
+        std::cout << "native_ooc_shop_features PASS: relic, removal, card, greedy, default-on, explicit-0 legacy\n";
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return 1;

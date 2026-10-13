@@ -40,10 +40,11 @@ int publicFutureCount() {
     return count;
 }
 
+// On by default (ADR-0030); explicit 0 restores the legacy accounting.
 bool shopDeckSizeFixEnabled() {
     const char *value = std::getenv("STS_OOC_SHOP_DECK_SIZE_FIX");
-    if (!value || std::strcmp(value, "0") == 0) return false;
-    if (std::strcmp(value, "1") == 0) return true;
+    if (!value || std::strcmp(value, "1") == 0) return true;
+    if (std::strcmp(value, "0") == 0) return false;
     throw std::runtime_error("STS_OOC_SHOP_DECK_SIZE_FIX must be 0 or 1");
 }
 
