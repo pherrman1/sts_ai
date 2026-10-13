@@ -145,6 +145,8 @@ set_tests_properties(ooc_public_futures PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
+    apps/one_combat/ooc_leaf_capture.cpp
+    apps/one_combat/ooc_leaf_capture_sink.cpp
     apps/one_combat/screen_leaf_snapshot.cpp
     apps/one_combat/screen_leaf_continuations.cpp
     apps/one_combat/screen_leaf_s0.cpp
@@ -852,6 +854,10 @@ add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard
     $<TARGET_FILE:one_combat> oocmctsselftest)
 set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;STS_OOC_STRATEGIC_TOK_NN=${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native")
+add_test(NAME ooc_leaf_capture_startup COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/test_ooc_leaf_capture_startup.py $<TARGET_FILE:one_combat>)
+set_tests_properties(ooc_leaf_capture_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration")
 
 # Captured-state probability probe; no gameplay or default integration.
 add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_probe.cpp

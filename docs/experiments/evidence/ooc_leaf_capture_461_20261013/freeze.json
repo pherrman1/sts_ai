@@ -1,0 +1,8 @@
+{
+  "../../../tools/agent/check_benchmark_canary.py": "838a43937b1b07d64ed7e5c8f9a1907361d84a5236bfa1102d381237c654fdc8",
+  "../../../tools/seed_guard.sh": "1acd63f439cd1ca8b516e7f55a47c81740623d12e5d0fe459213d473db4a6c4e",
+  "../analyze.py": "0d492b6443f17a5066e6df69ececac71cc7ff5120e73c305bd50d008e74c3790",
+  "../run_arm.py": "db6c1f564ee1ef58bc4a81af2e25d07b53f90b0d82cadbe8d78b8e6de686acfc",
+  "PROTOCOL.md": "27d235623f3ef628247c18f58d4ebc1190e12cf73713dd4c8416ce3f0b09e8db",
+  "manifest.json": "b2dba4a6f37b5891dafb6407a9093080ce863cf3d2a6b8401b13e80826c8a57b"
+}

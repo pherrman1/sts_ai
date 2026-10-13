@@ -17692,3 +17692,50 @@ fights valid (24 escape-quarantined, 4 with invalid control replays; no stall, a
 74057000–74057003, 74058000–74058003 are now used.
 
 **Knowledge impact:** one sentence in the MLP prior paragraph of `architecture/combat-search.md`.
+
+## §461 — A20 internal leaf capture: one-seed observational parity PASS (2026-10-13)
+
+**Question:** can #507 capture genuine internal leaf input/target pairs without
+changing the search? Existing §458 run summaries, §445 decision-root labels and
+CTM transition/gate corpora do not contain these pairs.
+
+**Design:** independently reviewed, frozen [protocol and evidence](evidence/ooc_leaf_capture_461_20261013/README.md).
+One sequential capture-off/on pair on historical seed 87000000, A20 Act 3/no keys,
+fair play, exact-10k native Silver, 4096 OOC simulations, K=4/alpha=.75, three CTM
+combats, V4 prior/continuation and public X2-B. Source `252db2a7`, Release binary
+`b4586cfc…`, exact PR #524 / §458 CTM from data commit `c507cebb` (NOT_QUALIFIED).
+Both arms pin old shop deck-size behavior, planner rollout shops and Silver loop
+guard off. This is current-source parity with the selected historical settings,
+not historical reproduction. One worker, 900 CPU / 1200 wall seconds per arm;
+no retries, extra seeds or training. §459 remains reserved for the separate
+preregistered greedy-shop experiment.
+
+**Result: collector-canary PASS**, independently reproduced from raw artifacts.
+Both runs rc=0 and runtime/backend provenance validated. All deterministic
+results, decision/action/support traces and 136 root / 54 floor profiles match;
+only preregistered timing fields are excluded. The first 64 roots produced
+286 structurally valid samples, with zero input/evaluation/observer errors or
+captured-root aborts. Coverage: 207 Act 1 and 79 Act 2, no Act 3; MAP 112, rewards
+111, rest/shop 18 each, boss relic 10, treasure 8, event 6, card select 3. All
+inputs were decision boundaries; five continuations ended terminal. 285 samples
+completed three CTM combats and one completed one. Capture size: 4,509,533 bytes.
+
+CPU off/on: 267.779914 / 270.934469 seconds, ratio 1.01178; wall 267.815354 /
+270.948831 seconds. This is descriptive timing from one ordered pair alongside
+an unrelated Debug test process, not a qualified overhead estimate. Both
+trajectories died at floor 51; their matching outcome is parity evidence only.
+
+**Decision:** bounded collector behavior is demonstrated on this seed. No
+compression, stability, training-suitability or gameplay verdict. Next inspect
+MAP inputs and prove exact in-process replay with original state ID, full initial
+state/path, pre-evaluation policy state and copied RNG; JSONL does not supply
+replay custody. Then separately bound independent-future repeats. Keep #506's
+public-input/belief qualification and the research teacher's gates separate.
+
+**Evidence:** the packet includes the frozen manifest/protocol, machine-readable
+report and compressed raw observations/traces/receipts/analyzer with hashes.
+The complete executable/model bundle is retained locally at the path in its
+README. Seed 87000000 was reused for diagnostics and cannot become a holdout.
+
+**Knowledge impact:** update the maintained #507 status in `evaluation/current-research.md`;
+no production default or model change.
