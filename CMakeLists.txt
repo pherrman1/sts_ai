@@ -392,6 +392,7 @@ add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest
 set_tests_properties(semantic_confirmation_analysis PROPERTIES
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" LABELS "research-repro;tooling")
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
+add_test(NAME py_compile_silver_az_mlp COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/silver_az_mlp.py)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)

@@ -320,6 +320,27 @@ K = 1 about 4.8x the CPU of plain 2k per decision. The remaining overhead is
 almost all tree walking (about 74 scored nodes per 2k-simulation decision at
 K = 8, about 2,000 trees each).
 
+The same prior hook also takes a factorized MLP (`combat_policy_mlp_v1`,
+research, default off; the Silver AlphaZero-style loop,
+`/mnt/project-files/silver-az-mlp/PLAN.md`). `CombatValueNet::load` accepts it
+for `STS_SILVER_ROOT_PRIOR`, and `nativeSilverPolicyPrior` then scores edges
+with `predictPolicyMlp` and normalizes with a softmax instead of
+sigmoid-then-normalize (the tree path is unchanged). The state layer runs once
+per node over the nonzero state features; per edge the net adds the action
+block, a card-embedding row for `aCardId` and the targeted monster's nine slot
+features (`combatActionTargetSlot`), then two ReLU layers; edges with equal
+action blocks and target are scored once. `tools/silver_az_mlp.py` featurizes
+the synthetic corpus (`silversynthfeatures` action rows carry `tgt`), trains
+from random initialization, and exports the model with input scales and the
+embedding projection folded in. `one_combat silverpolicymlpcheck MODEL PREFIX
+OUT [GBM]` writes the native logits of a feature file for the Python parity
+check and times the MLP (and optionally a tree prior) per root. `ctmsilvergen`
+with `STS_CTMSILVER_ARMSET=mlpprior` runs `plain2k`, `plain_cpu` (budget
+`STS_CTMSILVER_PLAIN_CPU_SIMS`) and `mlp8_2k` (K = 8, scored by
+`STS_CTMSILVER_MLP_PRIOR` through the thread override
+`g_nativeSilverPriorNetOverride`; `STS_CTMSILVER_MLP_PRIOR_PREV` adds
+`mlp_prev8_2k`); `STS_SILVER_ROOT_PRIOR` and its weight must still be set.
+
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
 `effectiveCombatBackend="native_silver"`.

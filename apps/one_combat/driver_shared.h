@@ -325,6 +325,10 @@ void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);
 void silverSynthReplay(const std::string &namesPath = "");
+// combat_policy_mlp_v1 logits of every root in a silversynthfeatures file
+// (Python parity check) plus per-root timing, optionally against a GBM prior.
+void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefix, const std::string &outPath,
+                          const std::string &gbmPath);
 int vwinRefreshPolicySpec(const std::string &outputPath);
 int vwinRefreshSelfTest();
 int vwinRefreshCompoundSelfTest();

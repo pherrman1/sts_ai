@@ -10,6 +10,8 @@
 // value) and a probe child with four independent SilverRolloutAgent rollouts.
 // Every root action row is followed by an "after" row: the state features of
 // one sampled outcome of that action.
+// Each action row's meta carries "tgt", the targeted monster slot
+// (combatActionTargetSlot, -1 when none), for the MLP prior's target gather.
 // Rows are sparse: OUT.nnz (uint32 per row), OUT.idx (uint16 per value),
 // OUT.val (float32 per value) and one OUT.meta.jsonl line per row.
 //
@@ -19,6 +21,11 @@
 // "prior": "native" uses the backend's STS_SILVER_ROOT_PRIOR model (its
 // normalized prior is echoed). `silversynthreplay names OUT.json` instead
 // writes the policy feature names (for the model exporter) and exits.
+//
+// silverpolicymlpcheck MODEL FEATURE_PREFIX OUT.txt [GBM_MODEL]: scores every
+// root of a silversynthfeatures file with a combat_policy_mlp_v1 model (one
+// logit per action row, in file order, for the Python parity check) and times
+// the MLP, and optionally a combat_policy_trees_v1 model, per root.
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/silver_synth_keys.h"
@@ -128,7 +135,8 @@ void featurizeRoot(const nlohmann::json &row, SparseRows &out, std::map<std::str
     const auto &edges = scorer.rootNode().edges;
     for (std::size_t e = 0; e < edges.size(); ++e) {
         nlohmann::json a = {{"k", "act"}, {"e", e}, {"bits", bits[e]}, {"visits", recorded[e].at("visits")},
-                            {"q", recorded[e].at("q")}};
+                            {"q", recorded[e].at("q")},
+                            {"tgt", search::combatActionTargetSlot(state.bc, edges[e].action)}};
         if (hasSecond) {
             a["q2"] = edgeQ(row.at("second"), bits[e]);
             for (const auto &s : row.at("second"))
@@ -259,4 +267,95 @@ void silverSynthReplay(const std::string &namesPath) {
         }
         std::cout << result.dump() << '\n';
     }
+}
+
+void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefix, const std::string &outPath,
+                          const std::string &gbmPath) {
+    search::CombatValueNet net;
+    if (!net.load(modelPath) || !net.isPolicyMlp)
+        throw std::runtime_error("silverpolicymlpcheck: cannot load a combat_policy_mlp_v1 model from " + modelPath);
+    const int S = search::combatFeatureCount();
+    const int A = search::combatPolicyFeatureCount() - S;
+    auto readAll = [&](const std::string &suffix, std::size_t width) {
+        std::ifstream f(prefix + suffix, std::ios::binary | std::ios::ate);
+        if (!f) throw std::runtime_error("silverpolicymlpcheck: cannot open " + prefix + suffix);
+        std::string bytes(static_cast<std::size_t>(f.tellg()), '\0');
+        f.seekg(0);
+        f.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+        if (bytes.size() % width) throw std::runtime_error("silverpolicymlpcheck: truncated " + suffix);
+        return bytes;
+    };
+    const auto nnzBytes = readAll(".nnz", 4), idxBytes = readAll(".idx", 2), valBytes = readAll(".val", 4);
+    const auto *nnz = reinterpret_cast<const std::uint32_t *>(nnzBytes.data());
+    const auto *idx = reinterpret_cast<const std::uint16_t *>(idxBytes.data());
+    const auto *val = reinterpret_cast<const float *>(valBytes.data());
+    struct Root { std::vector<float> state; std::vector<float> actions; std::vector<int> targets; };
+    std::vector<Root> roots;
+    std::ifstream meta(prefix + ".meta.jsonl");
+    std::string line;
+    std::size_t off = 0, rows = nnzBytes.size() / 4;
+    Root *cur = nullptr;
+    for (std::size_t r = 0; r < rows; ++r) {
+        if (!std::getline(meta, line)) throw std::runtime_error("silverpolicymlpcheck: meta shorter than rows");
+        const auto m = nlohmann::json::parse(line);
+        const auto k = m.at("k").get<std::string>();
+        if (k == "state") {
+            roots.push_back({std::vector<float>(S, 0.f), {}, {}});
+            cur = &roots.back();
+            for (std::uint32_t j = 0; j < nnz[r]; ++j) cur->state.at(idx[off + j]) = val[off + j];
+        } else if (k == "act" && cur) {
+            const std::size_t b = cur->actions.size();
+            cur->actions.resize(b + A, 0.f);
+            for (std::uint32_t j = 0; j < nnz[r]; ++j) cur->actions.at(b + idx[off + j] - S) = val[off + j];
+            cur->targets.push_back(m.at("tgt").get<int>());
+        } else if (k == "leaf") {
+            cur = nullptr;
+        }
+        off += nnz[r];
+    }
+    std::vector<double> out;
+    std::ofstream dump(outPath);
+    dump.precision(9);
+    using Clock = std::chrono::steady_clock;
+    std::size_t edges = 0, scored = 0;
+    for (const auto &root : roots) if (!root.targets.empty()) { edges += root.targets.size(); ++scored; }
+    double bestMlp = 1e300;
+    for (int rep = 0; rep < 3; ++rep) {
+        double sink = 0;
+        const auto t0 = Clock::now();
+        for (const auto &root : roots) {
+            const int n = static_cast<int>(root.targets.size());
+            if (!n) continue;
+            out.resize(n);
+            net.predictPolicyMlp(root.state.data(), root.actions.data(), root.targets.data(), n, out.data());
+            sink += out[0];
+            if (rep == 0) for (const double x : out) dump << x << '\n';
+        }
+        const double us = std::chrono::duration<double, std::micro>(Clock::now() - t0).count() / scored;
+        bestMlp = std::min(bestMlp, us + 0 * sink);
+    }
+    nlohmann::json report = {{"roots", scored}, {"edges", edges}, {"mlp", net.description()},
+                             {"mlpUsPerRoot", bestMlp}};
+    if (!gbmPath.empty()) {
+        search::CombatValueNet gbm;
+        if (!gbm.load(gbmPath) || !gbm.isPolicy || gbm.trees.empty())
+            throw std::runtime_error("silverpolicymlpcheck: cannot load policy trees from " + gbmPath);
+        double best = 1e300;
+        for (int rep = 0; rep < 3; ++rep) {
+            double sink = 0;
+            const auto t0 = Clock::now();
+            for (const auto &root : roots) {
+                const int n = static_cast<int>(root.targets.size());
+                if (!n) continue;
+                out.resize(n);
+                gbm.predictPolicyActions(root.state.data(), root.actions.data(), n, out.data());
+                sink += out[0];
+            }
+            const double us = std::chrono::duration<double, std::micro>(Clock::now() - t0).count() / scored;
+            best = std::min(best, us + 0 * sink);
+        }
+        report["gbmUsPerRoot"] = best;
+        report["gbmTrees"] = gbm.trees.size();
+    }
+    std::cout << report.dump() << '\n';
 }

@@ -592,6 +592,47 @@ int testSilverSearcher() {
         check(tried, "tree prior still tries every root action");
     }
 
+    // combat_policy_mlp_v1 (Silver AZ MLP prior): one hand-computed edge with
+    // a state weight, the action block, the card table and the target gather,
+    // and one edge without card or target.
+    {
+        const auto &names = search::combatPolicyFeatureNames();
+        const int S = search::combatFeatureCount(), A = static_cast<int>(names.size()) - S;
+        const auto path = std::filesystem::temp_directory_path() / "sts_policy_mlp_test.txt";
+        {
+            std::ofstream f(path);
+            f << "combat_policy_mlp_v1\nh1 2\nh2 1\nnstate " << S << "\nnaction " << A << "\nncard 372\nntarget 9\n";
+            for (const auto &n : names) f << "feat " << n << '\n';
+            auto rows = [&](const char *key, int nrows, std::map<int, std::pair<float, float>> set) {
+                f << key << '\n';
+                for (int r = 0; r < nrows; ++r) {
+                    const auto it = set.find(r);
+                    f << (it == set.end() ? 0.f : it->second.first) << ' ' << (it == set.end() ? 0.f : it->second.second) << ' ';
+                }
+                f << '\n';
+            };
+            rows("state_w", S, {{3, {0.01f, 0.f}}});
+            rows("action_w", A, {{0, {1.f, -1.f}}});
+            rows("card", 372, {{6, {0.5f, 0.f}}});
+            rows("target_w", 9, {{1, {0.1f, 0.f}}});
+            f << "b1\n0 2\nw2\n1 1\nb2\n0\nw3\n2\nb3\n0.25\n";
+        }
+        search::CombatValueNet mlp;
+        const bool loaded = mlp.load(path.string()) && mlp.isPolicyMlp && mlp.isPolicy;
+        check(loaded, "combat_policy_mlp_v1 loads");
+        std::vector<float> state(S, 0.f), actions(2 * A, 0.f);
+        state[3] = 10.f;                                       // curHp
+        state[search::combatMonsterSlotOffset() + search::kCombatMonsterSlotFeatures + 1] = 7.f;   // m1Hp
+        actions[0] = 1.f; actions[4] = 5.f;                    // aIsCard, aCardId 5 -> card row 6
+        actions[A + 4] = -1.f;                                 // no card -> card row 0
+        const int targets[2] = {1, -1};
+        double out[2] = {0, 0};
+        if (loaded) mlp.predictPolicyMlp(state.data(), actions.data(), targets, 2, out);
+        check(std::abs(out[0] - 6.85) < 1e-5 && std::abs(out[1] - 4.45) < 1e-5,
+              "combat_policy_mlp_v1 logits match the hand computation");
+        std::filesystem::remove(path);
+    }
+
     // Exact endpoint/depth fixtures and opt-in observational parity.
     {
         using Profile = search::SilverTreeProfile;
