@@ -1,0 +1,5 @@
+payload_sha256 36853140f99140d0e9be3c14c9e9f9e20b320efc027f51ebe270617fa640dfcc /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
+payload_sha256 36853140f99140d0e9be3c14c9e9f9e20b320efc027f51ebe270617fa640dfcc /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/FAST1-escape.native
+PAYLOAD_EQUAL
+tensor escape.escape.bias shape [1] max_abs_diff 0
+tensor escape.escape.weight shape [1, 64] max_abs_diff 0

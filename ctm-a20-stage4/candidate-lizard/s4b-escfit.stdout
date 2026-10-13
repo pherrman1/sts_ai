@@ -1,0 +1,285 @@
+{
+  "baseArtifactSha256": "6090417f25458907dfdcbfe1c6b128edf1406c8127028989d44dd5f845f0369f",
+  "batch": 4096,
+  "checkpointSha256": "9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0",
+  "eligibleRows": {
+    "TEST": 419,
+    "TRAIN": 3073,
+    "VALIDATION": 389
+  },
+  "epochs": 40,
+  "escapeHead": {
+    "TEST": {
+      "constant": {
+        "brier": 0.11227253714940857,
+        "meanProbability": 0.8730881874389844,
+        "nll": 0.3842661628034389,
+        "rate": 0.8711217183770883,
+        "rows": 419
+      },
+      "model": {
+        "brier": 0.06882383272024975,
+        "meanProbability": 0.8749093196872039,
+        "nll": 0.23357819246480813,
+        "rate": 0.8711217183770883,
+        "rows": 419
+      }
+    },
+    "TRAIN": {
+      "constant": {
+        "brier": 0.11080520439349303,
+        "meanProbability": 0.8730881874389848,
+        "nll": 0.38047374047406113,
+        "rate": 0.8730881874389848,
+        "rows": 3073
+      },
+      "model": {
+        "brier": 0.06310945859263649,
+        "meanProbability": 0.8730876999505004,
+        "nll": 0.21922154376339684,
+        "rate": 0.8730881874389848,
+        "rows": 3073
+      }
+    },
+    "VALIDATION": {
+      "constant": {
+        "brier": 0.13119807987106516,
+        "meanProbability": 0.8730881874389846,
+        "nll": 0.4331805283581149,
+        "rate": 0.8457583547557841,
+        "rows": 389
+      },
+      "model": {
+        "brier": 0.0791039586446823,
+        "meanProbability": 0.8461965343329602,
+        "nll": 0.25742547367163415,
+        "rate": 0.8457583547557841,
+        "rows": 389
+      }
+    }
+  },
+  "escapeRows": {
+    "TEST": 365,
+    "TRAIN": 2683,
+    "VALIDATION": 329
+  },
+  "featuresSha256": {
+    "csv": "5bbae4212ab827be26feb9449a9069a985632c6d796acabf0708f9cc8a533214",
+    "f32": "dd7a211dcf8de35442adb4ad17bef0e9183f10a19d7cfc501a605c75d8f9ce82"
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "validationNll": 2.932753324508667
+    },
+    {
+      "epoch": 2,
+      "validationNll": 2.9327011108398438
+    },
+    {
+      "epoch": 3,
+      "validationNll": 2.9326601028442383
+    },
+    {
+      "epoch": 4,
+      "validationNll": 2.932630777359009
+    },
+    {
+      "epoch": 5,
+      "validationNll": 2.9326040744781494
+    },
+    {
+      "epoch": 6,
+      "validationNll": 2.932584762573242
+    },
+    {
+      "epoch": 7,
+      "validationNll": 2.9325642585754395
+    },
+    {
+      "epoch": 8,
+      "validationNll": 2.932551383972168
+    },
+    {
+      "epoch": 9,
+      "validationNll": 2.932539224624634
+    },
+    {
+      "epoch": 10,
+      "validationNll": 2.9325289726257324
+    },
+    {
+      "epoch": 11,
+      "validationNll": 2.932521104812622
+    },
+    {
+      "epoch": 12,
+      "validationNll": 2.9325129985809326
+    },
+    {
+      "epoch": 13,
+      "validationNll": 2.9325056076049805
+    },
+    {
+      "epoch": 14,
+      "validationNll": 2.9324982166290283
+    },
+    {
+      "epoch": 15,
+      "validationNll": 2.9324936866760254
+    },
+    {
+      "epoch": 16,
+      "validationNll": 2.932487726211548
+    },
+    {
+      "epoch": 17,
+      "validationNll": 2.932485342025757
+    },
+    {
+      "epoch": 18,
+      "validationNll": 2.9324793815612793
+    },
+    {
+      "epoch": 19,
+      "validationNll": 2.9324755668640137
+    },
+    {
+      "epoch": 20,
+      "validationNll": 2.9324727058410645
+    },
+    {
+      "epoch": 21,
+      "validationNll": 2.9324705600738525
+    },
+    {
+      "epoch": 22,
+      "validationNll": 2.9324684143066406
+    },
+    {
+      "epoch": 23,
+      "validationNll": 2.9324660301208496
+    },
+    {
+      "epoch": 24,
+      "validationNll": 2.932465076446533
+    },
+    {
+      "epoch": 25,
+      "validationNll": 2.9324638843536377
+    },
+    {
+      "epoch": 26,
+      "validationNll": 2.9324612617492676
+    },
+    {
+      "epoch": 27,
+      "validationNll": 2.9324584007263184
+    },
+    {
+      "epoch": 28,
+      "validationNll": 2.9324562549591064
+    },
+    {
+      "epoch": 29,
+      "validationNll": 2.932455062866211
+    },
+    {
+      "epoch": 30,
+      "validationNll": 2.9324514865875244
+    },
+    {
+      "epoch": 31,
+      "validationNll": 2.9324522018432617
+    },
+    {
+      "epoch": 32,
+      "validationNll": 2.9324512481689453
+    },
+    {
+      "epoch": 33,
+      "validationNll": 2.9324493408203125
+    },
+    {
+      "epoch": 34,
+      "validationNll": 2.9324471950531006
+    },
+    {
+      "epoch": 35,
+      "validationNll": 2.932446241378784
+    },
+    {
+      "epoch": 36,
+      "validationNll": 2.9324443340301514
+    },
+    {
+      "epoch": 37,
+      "validationNll": 2.9324424266815186
+    },
+    {
+      "epoch": 38,
+      "validationNll": 2.9324429035186768
+    },
+    {
+      "epoch": 39,
+      "validationNll": 2.9324400424957275
+    },
+    {
+      "epoch": 40,
+      "validationNll": 2.9324393272399902
+    }
+  ],
+  "hpClasses": [
+    -219,
+    231
+  ],
+  "hpNll": {
+    "after": {
+      "TEST": {
+        "all": 2.934282064437866,
+        "escaped": 0.28963375091552734
+      },
+      "TRAIN": {
+        "all": 2.9209840297698975,
+        "escaped": 0.2204858511686325
+      },
+      "VALIDATION": {
+        "all": 2.9324393272399902,
+        "escaped": 0.19527970254421234
+      }
+    },
+    "before": {
+      "TEST": {
+        "all": 2.9345285892486572,
+        "escaped": 0.33028507232666016
+      },
+      "TRAIN": {
+        "all": 2.9213171005249023,
+        "escaped": 0.27756157517433167
+      },
+      "VALIDATION": {
+        "all": 2.932830810546875,
+        "escaped": 0.2623703181743622
+      }
+    }
+  },
+  "l2": 0.0001,
+  "l2Grid": [
+    0.0001,
+    0.001,
+    0.01,
+    0.1
+  ],
+  "lr": 0.001,
+  "mode": "column",
+  "note": "hpNll.before scores the base head with the bit ignored (zero column).",
+  "rows": {
+    "TEST": 60136,
+    "TRAIN": 460260,
+    "VALIDATION": 56387
+  },
+  "schema": "ctm_escape_fit_v1",
+  "seed": 20261008,
+  "selectedEpoch": 40,
+  "unrepresentableEscapes": 0
+}

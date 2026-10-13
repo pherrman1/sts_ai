@@ -1,0 +1,11 @@
+{
+  "artifact": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native",
+  "artifactSha256": "6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9",
+  "baseArtifactSha256": "560a6ad92e5d3f193c501bcd8ff38770122a5b578b3bd817aa3061cacee1a290",
+  "capabilities": {
+    "escape": {
+      "checkpointSha256": "9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0"
+    },
+    "writhingRitual": {}
+  }
+}

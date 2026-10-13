@@ -1,0 +1,169 @@
+{
+  "children": {
+    "fast": {
+      "l2": 0.0,
+      "rModelSha256": "fa8170f9b0c36be814f7ad1178a5f135664cef82c98e8715d35080eeb4292456",
+      "validationNll": {
+        "0.0": 0.2998317040139053,
+        "0.01": 0.2998320932629717,
+        "0.1": 0.29983560719288166,
+        "1.0": 0.29987179180447565,
+        "10.0": 0.30032659269516926
+      }
+    },
+    "standard": {
+      "l2": 0.0,
+      "rModelSha256": "6623c736cf6d2ef0d53dfb1699b7fc739c10392caa288f69fe5b9f76019e5c78",
+      "validationNll": {
+        "0.0": 0.2444364362010289,
+        "0.01": 0.24447605132505612,
+        "0.1": 0.24483044458760178,
+        "1.0": 0.24817949551990534,
+        "10.0": 0.270422496691727
+      }
+    }
+  },
+  "evaluation": {
+    "TEST/brew": {
+      "classNll": 0.07824912221415496,
+      "meanQ": 0.04272695891169714,
+      "observedTailRate": 0.03655352480417755,
+      "rNll": {
+        "constant": 0.410272846240708,
+        "model": 0.2790514862641936
+      },
+      "rows": 383,
+      "tailFired": 14
+    },
+    "TEST/fairy": {
+      "classNll": 0.07209413196746796,
+      "meanQ": 0.03774785498375691,
+      "observedTailRate": 0.030939226519337018,
+      "rNll": {
+        "constant": 0.4695608228495039,
+        "model": 0.5033585536099626
+      },
+      "rows": 1810,
+      "tailFired": 56
+    },
+    "TEST/plain": {
+      "classNll": 0.15527526096023236,
+      "meanQ": 0.0693305612761708,
+      "observedTailRate": 0.08080808080808081,
+      "rNll": {
+        "constant": 0.43849532355021364,
+        "model": 0.3800076883121897
+      },
+      "rows": 2178,
+      "tailFired": 176
+    },
+    "TRAIN/brew": {
+      "classNll": 0.08934922065396694,
+      "meanQ": 0.03611927769001743,
+      "observedTailRate": 0.0397489539748954,
+      "rNll": {
+        "constant": 0.42118448555428667,
+        "model": 0.3598130986382425
+      },
+      "rows": 2868,
+      "tailFired": 114
+    },
+    "TRAIN/fairy": {
+      "classNll": 0.07187433267613519,
+      "meanQ": 0.03394214354366872,
+      "observedTailRate": 0.030116358658453114,
+      "rNll": {
+        "constant": 0.5426941857832496,
+        "model": 0.484715628970527
+      },
+      "rows": 11688,
+      "tailFired": 352
+    },
+    "TRAIN/plain": {
+      "classNll": 0.16612621322039997,
+      "meanQ": 0.07218674601705873,
+      "observedTailRate": 0.08149087833756191,
+      "rNll": {
+        "constant": 0.4306771345123271,
+        "model": 0.34657180971567997
+      },
+      "rows": 16554,
+      "tailFired": 1349
+    },
+    "VALIDATION/brew": {
+      "classNll": 0.0894870247427901,
+      "meanQ": 0.04040917787505827,
+      "observedTailRate": 0.04895104895104895,
+      "rNll": {
+        "constant": 0.3273443874575095,
+        "model": 0.2444364362010289
+      },
+      "rows": 429,
+      "tailFired": 21
+    },
+    "VALIDATION/fairy": {
+      "classNll": 0.06921284434943395,
+      "meanQ": 0.039678265805359665,
+      "observedTailRate": 0.031029619181946404,
+      "rNll": {
+        "constant": 0.5472245710977295,
+        "model": 0.4115323283893817
+      },
+      "rows": 1418,
+      "tailFired": 44
+    },
+    "VALIDATION/plain": {
+      "classNll": 0.15194685448177433,
+      "meanQ": 0.06203625904334291,
+      "observedTailRate": 0.07471264367816093,
+      "rNll": {
+        "constant": 0.33812986427558384,
+        "model": 0.2683263997028735
+      },
+      "rows": 2088,
+      "tailFired": 156
+    }
+  },
+  "features": [
+    {
+      "path": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_fairy.csv",
+      "sha256": "3b6add54a30af7cdbf9f66bfa904cf68f4f18c759a3d6f0ffce9e87773c88ad9"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_brew.csv",
+      "sha256": "8f3e2ee2d09c9c30cbf1710cc8bdc58b5840ca55c55962cbfa6d381aa1d2393f"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-none.csv",
+      "sha256": "f0cc4c7a7d71fb002191d5ac5f1196cf9f1b6dcecf58060ba7de9d1e62e8dd3e"
+    }
+  ],
+  "rModels": {
+    "fast": {
+      "featureMean": [
+        0.7381432442056437
+      ],
+      "featureScale": [
+        0.25821602861152476
+      ],
+      "standardizedCoefficients": [
+        1.9390933205559342,
+        1.0438830448425434
+      ]
+    },
+    "standard": {
+      "featureMean": [
+        0.7107754880552632
+      ],
+      "featureScale": [
+        0.26616081999875596
+      ],
+      "standardizedCoefficients": [
+        2.073495688086136,
+        0.9809218525066958
+      ]
+    }
+  },
+  "rule": "r per child on Tail-fired rows; L2 on the standardized slope chosen on VALIDATION; q = 1 - pOrdinaryWin",
+  "schema": "ctm_lizard_fit_v1"
+}

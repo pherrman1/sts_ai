@@ -36,3 +36,130 @@ CODE_SHA 37b7d33eb1ab342eeb6fbe701b54f1d05b7d5a08 one_combat 9098ee11ca3e7b75c4c
   outputs:
     MISSING  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
 STOPPED_AT s4-escextend 2026-10-13T19:39:33Z
+=== CONTINUATION (amended PREREG-LIZARD d2ea9904...) 2026-10-13T19:41:47Z HEAD 37b7d33eb1ab342eeb6fbe701b54f1d05b7d5a08 one_combat 9098ee11ca3e7b75c4c5f71d9bb990d7e46f8a19e53ebc996357a668d72eb0f7
+=== s4b-manifest START 2026-10-13T19:41:47Z
+  cmd: python3 tools/ctm_candidate.py manifest --standard /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native --fast /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json
+  env: STS_CTM_PINS= MANIFEST= MANIFEST_SHA256=
+  inputs:
+    e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native
+    6090417f25458907dfdcbfe1c6b128edf1406c8127028989d44dd5f845f0369f  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native
+  rc=0 END 2026-10-13T19:41:47Z
+  outputs:
+    b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json
+usem /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd
+=== s4b-escfeatures START 2026-10-13T19:41:47Z
+  cmd: /home/philippherrmann/Documents/sts/wt-lizard-s23/build/linux-gcc-release/one_combat ctmescapefeatures /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/union/corpus.jsonl /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast/features
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json MANIFEST_SHA256=b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd
+  inputs:
+    bc6732442ecec25e4760d52bbf5796d20d4a18a9d5b63bb31f3d9d76a390fbe0  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/union/corpus.jsonl
+    6090417f25458907dfdcbfe1c6b128edf1406c8127028989d44dd5f845f0369f  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native
+  rc=0 END 2026-10-13T19:42:38Z
+  outputs:
+    5bbae4212ab827be26feb9449a9069a985632c6d796acabf0708f9cc8a533214  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast/features.csv
+    dd7a211dcf8de35442adb4ad17bef0e9183f10a19d7cfc501a605c75d8f9ce82  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast/features.f32
+=== s4b-escfit START 2026-10-13T19:42:38Z
+  cmd: python3 tools/ctm_escape.py fit --artifact /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native --features /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast/features --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast-fit
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json MANIFEST_SHA256=b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd
+  inputs:
+    6090417f25458907dfdcbfe1c6b128edf1406c8127028989d44dd5f845f0369f  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native
+    5bbae4212ab827be26feb9449a9069a985632c6d796acabf0708f9cc8a533214  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast/features.csv
+    dd7a211dcf8de35442adb4ad17bef0e9183f10a19d7cfc501a605c75d8f9ce82  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast/features.f32
+  rc=0 END 2026-10-13T19:43:19Z
+  outputs:
+    9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast-fit/escape.pt
+    c6e2bcca8c1a9915a699d4b596dc4e2583031746233a654bc4f76c1c7bb1de07  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast-fit/fit.json
+GATE escape VALIDATION model nll 0.25742547367163415 constant nll 0.4331805283581149
+GATE hpClasses [('hpClasses', [-219, 231])] [('hpClasses', [-219, 231])]
+=== s4b-escextend START 2026-10-13T19:43:19Z
+  cmd: python3 tools/ctm_escape.py extend --artifact /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native --checkpoint /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast-fit/escape.pt --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json MANIFEST_SHA256=b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd
+  inputs:
+    6090417f25458907dfdcbfe1c6b128edf1406c8127028989d44dd5f845f0369f  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native
+    9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/esc-fast-fit/escape.pt
+  rc=0 END 2026-10-13T19:43:20Z
+  outputs:
+    560a6ad92e5d3f193c501bcd8ff38770122a5b578b3bd817aa3061cacee1a290  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
+  step4 diagnostic rc=0
+payload_sha256 36853140f99140d0e9be3c14c9e9f9e20b320efc027f51ebe270617fa640dfcc /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
+payload_sha256 36853140f99140d0e9be3c14c9e9f9e20b320efc027f51ebe270617fa640dfcc /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/FAST1-escape.native
+PAYLOAD_EQUAL
+tensor escape.escape.bias shape [1] max_abs_diff 0
+tensor escape.escape.weight shape [1, 64] max_abs_diff 0
+=== s5-writhing START 2026-10-13T19:43:20Z
+  cmd: python3 tools/ctm_capabilities.py writhing-ritual --artifact /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+  env: STS_CTM_PINS= MANIFEST= MANIFEST_SHA256=
+  inputs:
+    560a6ad92e5d3f193c501bcd8ff38770122a5b578b3bd817aa3061cacee1a290  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
+  rc=0 END 2026-10-13T19:43:20Z
+  outputs:
+    6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+=== s5-manifest START 2026-10-13T19:43:20Z
+  cmd: python3 tools/ctm_candidate.py manifest --standard /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native --fast /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json
+  env: STS_CTM_PINS= MANIFEST= MANIFEST_SHA256=
+  inputs:
+    e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native
+    6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+  rc=0 END 2026-10-13T19:43:20Z
+  outputs:
+    d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json
+usem /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+=== s6-features-lizard_fairy START 2026-10-13T19:43:20Z
+  cmd: /home/philippherrmann/Documents/sts/wt-lizard-s23/build/linux-gcc-release/one_combat ctmlizardfeatures /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-lizard_fairy/corpus.jsonl /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_fairy.csv
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json MANIFEST_SHA256=d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+  inputs:
+    23ef02d5f503edbc6b60d309ae1f87fc31a6748b3e279053766744cc4009dfaa  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-lizard_fairy/corpus.jsonl
+    6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+    e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native
+  rc=0 END 2026-10-13T19:43:22Z
+  outputs:
+    3b6add54a30af7cdbf9f66bfa904cf68f4f18c759a3d6f0ffce9e87773c88ad9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_fairy.csv
+=== s6-features-lizard_brew START 2026-10-13T19:43:22Z
+  cmd: /home/philippherrmann/Documents/sts/wt-lizard-s23/build/linux-gcc-release/one_combat ctmlizardfeatures /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-lizard_brew/corpus.jsonl /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_brew.csv
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json MANIFEST_SHA256=d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+  inputs:
+    5e0d0553cb775ffbb4c9ede200c95c5b70b5385fb10805bfe20cbd0f7996bcfd  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-lizard_brew/corpus.jsonl
+    6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+    e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native
+  rc=0 END 2026-10-13T19:43:27Z
+  outputs:
+    8f3e2ee2d09c9c30cbf1710cc8bdc58b5840ca55c55962cbfa6d381aa1d2393f  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_brew.csv
+=== s6-features-none START 2026-10-13T19:43:27Z
+  cmd: /home/philippherrmann/Documents/sts/wt-lizard-s23/build/linux-gcc-release/one_combat ctmlizardfeatures /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-none/corpus.jsonl /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-none.csv
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json MANIFEST_SHA256=d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+  inputs:
+    7ba1ed2b18829c226998ff3981c5ed49cd09787eb8a9037e9c99a0fefb689494  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-none/corpus.jsonl
+    6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+    e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native
+  rc=0 END 2026-10-13T19:44:00Z
+  outputs:
+    f0cc4c7a7d71fb002191d5ac5f1196cf9f1b6dcecf58060ba7de9d1e62e8dd3e  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-none.csv
+=== s7-fit START 2026-10-13T19:44:00Z
+  cmd: python3 tools/ctm_lizard.py fit --features /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_fairy.csv /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_brew.csv /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-none.csv --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/lizfit
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json MANIFEST_SHA256=d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+  inputs:
+    3b6add54a30af7cdbf9f66bfa904cf68f4f18c759a3d6f0ffce9e87773c88ad9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_fairy.csv
+    8f3e2ee2d09c9c30cbf1710cc8bdc58b5840ca55c55962cbfa6d381aa1d2393f  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_brew.csv
+    f0cc4c7a7d71fb002191d5ac5f1196cf9f1b6dcecf58060ba7de9d1e62e8dd3e  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-none.csv
+  rc=0 END 2026-10-13T19:44:00Z
+  outputs:
+  lizfit:
+    3ca66c941904fa86ec9caec87210529a207eabaa39851f565c773605b8b9ca4c  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/lizfit/fit.json
+=== s7-extend START 2026-10-13T19:44:00Z
+  cmd: python3 tools/ctm_lizard.py extend --artifact /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native --fit /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/lizfit/fit.json --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST4L.native --fast-r --brew --fairy
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json MANIFEST_SHA256=d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+  inputs:
+    6ff285fa7131854278bce7f3a1cfce9c6cffe5d3c3c25a59db79fed062c94fb9  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST3L.native
+    3ca66c941904fa86ec9caec87210529a207eabaa39851f565c773605b8b9ca4c  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/lizfit/fit.json
+  rc=0 END 2026-10-13T19:44:01Z
+  outputs:
+    ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST4L.native
+=== s7-manifest START 2026-10-13T19:44:01Z
+  cmd: python3 tools/ctm_candidate.py manifest --standard /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native --fast /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST4L.native --out /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/candidate-pathb-a20-lizard.json
+  env: STS_CTM_PINS= MANIFEST=/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json MANIFEST_SHA256=d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+  inputs:
+    e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/STD2.native
+    ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST4L.native
+  rc=0 END 2026-10-13T19:44:01Z
+  outputs:
+    704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/candidate-pathb-a20-lizard.json
+ALL_DONE 2026-10-13T19:44:01Z

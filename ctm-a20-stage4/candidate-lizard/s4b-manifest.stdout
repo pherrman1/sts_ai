@@ -1,0 +1,19 @@
+{
+  "candidateId": "pathb-a20",
+  "capabilities": {
+    "fast": {},
+    "standard": {
+      "escape": {
+        "checkpointSha256": "fed45e004991422ea676fae3b8749586e8c7f56400eaa3901f652d23762c3b3b"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "env": {
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json",
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256": "b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd"
+  },
+  "interim": false,
+  "manifest": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json",
+  "manifestSha256": "b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd"
+}

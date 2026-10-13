@@ -1,0 +1,50 @@
+=== CONTINUATION (amended PREREG-LIZARD d2ea9904...) 2026-10-13T19:41:47Z HEAD 37b7d33eb1ab342eeb6fbe701b54f1d05b7d5a08 one_combat 9098ee11ca3e7b75c4c5f71d9bb990d7e46f8a19e53ebc996357a668d72eb0f7
+=== s4b-manifest rc=0
+usem /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim-fast1l.json b2089e2b77d5369515e8309b430e1dc1d7448b3f139b50056e2e6ed08f3b6cbd
+=== s4b-escfeatures rc=0
+=== s4b-escfit rc=0
+GATE escape VALIDATION model nll 0.25742547367163415 constant nll 0.4331805283581149
+GATE hpClasses [('hpClasses', [-219, 231])] [('hpClasses', [-219, 231])]
+=== s4b-escextend rc=0
+payload_sha256 36853140f99140d0e9be3c14c9e9f9e20b320efc027f51ebe270617fa640dfcc /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST2L.native
+payload_sha256 36853140f99140d0e9be3c14c9e9f9e20b320efc027f51ebe270617fa640dfcc /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/FAST1-escape.native
+PAYLOAD_EQUAL
+tensor escape.escape.bias shape [1] max_abs_diff 0
+tensor escape.escape.weight shape [1, 64] max_abs_diff 0
+=== s5-writhing rc=0
+=== s5-manifest rc=0
+{
+  "candidateId": "pathb-a20",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0"
+      },
+      "writhingRitual": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "fed45e004991422ea676fae3b8749586e8c7f56400eaa3901f652d23762c3b3b"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "env": {
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json",
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256": "d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a"
+  },
+  "interim": false,
+  "manifest": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json",
+  "manifestSha256": "d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a"
+}
+usem /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/interim.json d14f505b97e0c0e6da2c0ba7e76edcd51da78cc768dcc25d5b3ba918adb1da8a
+=== s6-features-lizard_fairy rc=0
+  lizard_fairy: ctmlizardfeatures activeLizardRows=13558 supported=13553 -> /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_fairy.csv [Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+=== s6-features-lizard_brew rc=0
+  lizard_brew: ctmlizardfeatures activeLizardRows=12566 supported=12566 -> /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-lizard_brew.csv [Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+=== s6-features-none rc=0
+  none: ctmlizardfeatures activeLizardRows=13303 supported=13297 -> /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/features-none.csv [Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+=== s7-fit rc=0
+=== s7-extend rc=0
+=== s7-manifest rc=0
+ALL_DONE 2026-10-13T19:44:01Z
