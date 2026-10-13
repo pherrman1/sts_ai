@@ -378,7 +378,7 @@ bool CombatValueNet::load(const std::string &path) {
     isDeepSets = false;
     encounterModels.clear();
     hasEncounterModels = false;
-    trees.clear(); sel.clear();
+    trees.clear(); sel.clear(); flatNodes.clear(); flatRoots.clear();
     quantileTrees.clear(); quantileBase.clear(); nQuantiles = 0;
     xMean.clear(); xInvStd.clear(); w1.clear(); b1.clear();
     w2.clear(); b2.clear(); w3.clear();
@@ -709,6 +709,40 @@ bool CombatValueNet::load(const std::string &path) {
         if (!readTrees(trees, baseScore)) return false;
     }
     if (!f) return false;
+    flatNodes.clear(); flatRoots.clear();
+    if (isPolicy && !trees.empty()) {
+        // Re-lay each tree so a split's two children are adjacent (yes, then
+        // no): the walk becomes left + !(x < thresh), as predictVec branches.
+        // Requires children after their parent (bounded walks, no step guard),
+        // feature indices and tree sizes that fit the compact node.
+        bool ok = true;
+        for (const auto &nodes : trees) {
+            const int size = (int)nodes.size();
+            if (size < 1 || size > 65535) { ok = false; break; }
+            const int base = (int)flatNodes.size();
+            flatRoots.push_back(base);
+            flatNodes.resize(base + size);
+            std::vector<std::pair<int, int>> queue{{0, 0}};   // (source node, local slot)
+            int next = 1;
+            for (std::size_t q = 0; q < queue.size() && ok; ++q) {
+                const auto [n, slot] = queue[q];
+                const auto &node = nodes[n];
+                auto &flat = flatNodes[base + slot];
+                flat.thresh = node.thresh;
+                if (node.featIdx < 0) { flat.feat = -1; flat.left = 0; continue; }
+                if (node.featIdx >= (int)sel.size() || sel[node.featIdx] > 32767
+                        || node.yes <= n || node.no <= n || node.yes >= size || node.no >= size
+                        || next + 1 >= size) { ok = false; break; }
+                flat.feat = (std::int16_t)sel[node.featIdx];
+                flat.left = (std::uint16_t)next;
+                queue.push_back({node.yes, next});
+                queue.push_back({node.no, next + 1});
+                next += 2;
+            }
+            if (!ok) break;
+        }
+        if (!ok) { flatNodes.clear(); flatRoots.clear(); }
+    }
     isLoaded = true;
     this->path = path;
     return true;
@@ -1097,6 +1131,57 @@ double CombatValueNet::predictVec(const float *canonFeatures) const {
         sum += nodes[n].thresh;   // leaf value
     }
     return sum;
+}
+
+void CombatValueNet::predictPolicyActions(const float *canonFeatures, const float *actionBlocks,
+                                          int n, double *out) const {
+    if (n <= 0) return;
+    if (flatRoots.empty()) {
+        thread_local std::vector<float> features;
+        features.assign(canonFeatures, canonFeatures + kStateCount);
+        features.resize(kStateCount + kNumAction);
+        for (int i = 0; i < n; ++i) {
+            std::copy(actionBlocks + i * kNumAction, actionBlocks + (i + 1) * kNumAction,
+                      features.begin() + kStateCount);
+            out[i] = predictVec(features.data());
+        }
+        return;
+    }
+    // One full feature vector per action, so a walk reads features[feat].
+    constexpr int kWidth = kStateCount + kNumAction;
+    thread_local std::vector<float> features;
+    thread_local std::vector<int> cursor;
+    features.resize(static_cast<std::size_t>(n) * kWidth);
+    for (int i = 0; i < n; ++i) {
+        float *f = features.data() + static_cast<std::size_t>(i) * kWidth;
+        std::copy(canonFeatures, canonFeatures + kStateCount, f);
+        std::copy(actionBlocks + i * kNumAction, actionBlocks + (i + 1) * kNumAction, f + kStateCount);
+    }
+    for (int i = 0; i < n; ++i) out[i] = baseScore;
+    for (const int root : flatRoots) {
+        const FlatNode *nodes = flatNodes.data() + root;
+        // State-only prefix: identical for every action of this state.
+        int s = 0;
+        while (nodes[s].feat >= 0 && nodes[s].feat < kStateCount)
+            s = nodes[s].left + !(canonFeatures[nodes[s].feat] < nodes[s].thresh);
+        if (nodes[s].feat < 0) {
+            for (int i = 0; i < n; ++i) out[i] += nodes[s].thresh;
+            continue;
+        }
+        // Walk the actions in lockstep so their node loads overlap.
+        cursor.assign(n, s);
+        for (bool active = true; active;) {
+            active = false;
+            for (int i = 0; i < n; ++i) {
+                const FlatNode &node = nodes[cursor[i]];
+                if (node.feat < 0) continue;
+                const float *f = features.data() + static_cast<std::size_t>(i) * kWidth;
+                cursor[i] = node.left + !(f[node.feat] < node.thresh);
+                active = true;
+            }
+        }
+        for (int i = 0; i < n; ++i) out[i] += nodes[cursor[i]].thresh;
+    }
 }
 
 // §132: EV of the terminal utility distribution = mean over quantiles of
