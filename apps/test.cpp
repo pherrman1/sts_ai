@@ -508,6 +508,43 @@ int testSilverSearcher() {
         }
         check(sawEnd && sawOther, "policy trees score each root action from its action features");
         std::filesystem::remove(path);
+
+        // predictPolicyActions (batched, state prefix walked once) equals
+        // predictVec bit for bit, on the flattened path and on the fallback
+        // used when a tree's children do not follow their parent.
+        const auto mixed = std::filesystem::temp_directory_path() / "silver_policy_batch_test.txt";
+        auto batchMatches = [&](const std::string &trees) {
+            std::ofstream(mixed) << "combat_policy_trees_v1\nnfeat 3\nfeat curHp\nfeat aCardCost\nfeat turn\n"
+                                    "base_score 0.1\n" << trees;
+            search::CombatValueNet m;
+            if (!m.load(mixed.string())) return std::make_pair(false, false);
+            const int stateCount = search::combatFeatureCount();
+            const int actionCount = search::combatPolicyFeatureCount() - stateCount;
+            std::vector<float> state(search::combatPolicyFeatureCount(), 0.f), actions(4 * actionCount, 0.f);
+            bool same = true;
+            for (int trial = 0; trial < 64; ++trial) {
+                state[3] = static_cast<float>(trial % 9) * 10.f;     // curHp
+                state[2] = static_cast<float>(trial % 4);            // turn
+                for (int i = 0; i < 4; ++i) actions[i * actionCount + 5] = static_cast<float>((trial + i) % 4);
+                double batch[4];
+                m.predictPolicyActions(state.data(), actions.data(), 4, batch);
+                for (int i = 0; i < 4; ++i) {
+                    std::copy(actions.begin() + i * actionCount, actions.begin() + (i + 1) * actionCount,
+                              state.begin() + stateCount);
+                    same = same && batch[i] == m.predictVec(state.data());
+                }
+            }
+            return std::make_pair(same, !m.flatRoots.empty());
+        };
+        const auto flat = batchMatches("ntrees 4\n"
+            "tree 0 5\nS 0 40 1 2\nS 1 2 3 4\nL 0.3\nL -0.7\nL 1.1\n"
+            "tree 1 5\nS 1 1 1 2\nS 2 1.5 3 4\nL 0.01\nL 0.2\nL -0.4\n"
+            "tree 2 1\nL 0.125\n"
+            "tree 3 3\nS 2 2.5 1 2\nL 0.9\nL -0.33\n");
+        check(flat.first && flat.second, "batched policy trees match predictVec on the flattened path");
+        const auto fallback = batchMatches("ntrees 1\ntree 0 3\nS 1 1.5 2 1\nL 0.75\nS 0 40 1 1\n");
+        check(fallback.first && !fallback.second, "batched policy trees fall back to predictVec for unordered trees");
+        std::filesystem::remove(mixed);
     }
 
     // Tree prior (§452, research): an unreachable visit threshold is today's

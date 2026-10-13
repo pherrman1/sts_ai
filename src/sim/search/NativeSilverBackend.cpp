@@ -9,6 +9,7 @@
 #include <fstream>
 #include <mutex>
 #include <cmath>
+#include <cstring>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -804,17 +805,37 @@ namespace sts::search {
 
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges) {
-        thread_local std::vector<float> features;
-        features.resize(combatPolicyFeatureCount());
+        // The state block is extracted once; edges with bit-identical action
+        // blocks (e.g. two copies of a card) are scored once. Same values as
+        // predictVec per edge (CombatValueNet::predictPolicyActions).
+        const int stateCount = combatFeatureCount();
+        const int actionCount = combatPolicyFeatureCount() - stateCount;
+        const int n = static_cast<int>(edges.size());
+        thread_local std::vector<float> features, actions;
+        thread_local std::vector<int> distinctOf;
+        thread_local std::vector<double> scores;
+        features.resize(stateCount);
         combatExtractFeatures(state, features.data());
-        float *action = features.data() + combatFeatureCount();
+        actions.resize(static_cast<std::size_t>(n) * actionCount);
+        distinctOf.resize(n);
+        int distinct = 0;
+        for (int i = 0; i < n; ++i) {
+            float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
+            combatFillActionFeatures(state, edges[i].action, block);
+            int match = 0;
+            while (match < distinct && std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
+                                                   block, sizeof(float) * actionCount) != 0) ++match;
+            distinctOf[i] = match;
+            if (match == distinct) ++distinct;
+        }
+        scores.resize(distinct);
+        g_rootPriorNet.predictPolicyActions(features.data(), actions.data(), distinct, scores.data());
         std::vector<double> prior;
         prior.reserve(edges.size());
         double total = 0;
-        for (const auto &edge : edges) {
-            combatFillActionFeatures(state, edge.action, action);
+        for (int i = 0; i < n; ++i) {
             // Trained with cross-entropy on root visit shares: sigmoid(margin).
-            const double p = 1.0 / (1.0 + std::exp(-g_rootPriorNet.predictVec(features.data())));
+            const double p = 1.0 / (1.0 + std::exp(-scores[distinctOf[i]]));
             prior.push_back(p);
             total += p;
         }

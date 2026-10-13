@@ -17308,3 +17308,46 @@ escapes, quarantined).
 84009000–84009001 (smoke) are now used; reviewer seeds 74035000–74035004.
 
 **Knowledge impact:** tree-prior paragraph in `architecture/combat-search.md`.
+
+## §454 — Silver tree prior cost: batched exact prior scoring, bitwise identical, K = 8 from 2.7x to 1.7x of plain 2k (2026-10-13)
+
+**Question:** §452's tree prior (K = 8) cost 2.9x the CPU of plain 2k per fight. Where does the overhead go, and how
+much can be removed without changing search results?
+**Design:** performance only. Baseline `main` `33d03b25` (#508 head; rebased on merge `93011ed1`, no Silver code
+change). Native Silver 2k with the §452 environment (`env.sh`, prior `prior-natpert.compact.txt`, weight 400),
+`ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452k8` (seed 74038000) and `treeprior452` (74038001–74038002),
+R = 1, one guarded one-seed run per binary; old and new binaries ran side by side on the same 4-core machine.
+Parity: `arms.csv` and `states.csv` without CPU columns, `samples.csv` whole. Profile: `gprof` (-O3, no LTO)
+with one arm at a time, and walk-step counters in a throwaway build.
+**Profile (before):** tree8 65 ms vs plain 28 ms per 2k decision. Almost all of the difference is the prior: at
+K = 8 about 74 nodes per decision are scored, 5.6 distinct edges each, every edge walking all 1,997 trees
+(depth about 9.5, 23% of splits on the 22 action features; 53% of trees reach a leaf on state features alone).
+Search-shape effects (copies, node creation, rollouts) were below 1 s of the 14 s extra in the profile.
+**Change:** `CombatValueNet::predictPolicyActions` scores all edges of one state: `load()` keeps a compact copy of
+a policy tree ensemble (8-byte nodes, siblings adjacent, canonical feature indices), each tree's state-only prefix
+is walked once per state, and the edges then finish that tree in lockstep. Per-edge sums keep `predictVec`'s tree
+order, so scores are bit for bit equal. `nativeSilverPolicyPrior` extracts the state once and scores edges with
+bit-identical action features once. Ensembles whose children do not follow their parents keep `predictVec`.
+Tried and dropped: walking blocks of 8 trees in lockstep (slower than per-tree lockstep).
+**Result:** new `silver_searcher` checks (batched equals `predictVec` on a mixed state/action fixture and on the
+fallback) pass; three hand mutations fail them. All three seeds identical in every non-CPU field, including on the
+rebased binary. CPU per decision relative to plain 2k in the same run
+([timing.csv](evidence/silver_tree_prior_speedup_20261013/timing.csv)):
+
+| arm | 74038001–002 before (57 fights) | after | 74038000 before (27 fights, 2 runs) | after (3 runs) |
+|---|---|---|---|---|
+| tree8_2k | 2.73x | 1.67x | 2.35x, 2.44x | 1.57x–1.61x |
+| tree1_2k | 10.5x | 4.8x | — | — |
+| root2k | 1.01x | 1.01x | 0.99x–1.01x | 0.96x–0.97x |
+
+The ratio varies by seed (74038001: tree8 3.69x → 2.10x); about 55–60% of the extra cost over plain 2k is removed for both K.
+
+**Decision:** adopt (exact, no behavior change; the tree prior itself stays research only). **Inference**
+(plain cost about linear in simulations): at equal CPU a tree8 search now matches about plain 3.3k instead of
+5.5k; §453 matched tree8 against plain 6k at the old cost. Further gains need a cheaper prior (fewer or shallower trees, a higher K), which changes results and would
+need its own test.
+
+**Evidence:** [packet](evidence/silver_tree_prior_speedup_20261013/README.md). Raw:
+`/mnt/project-files/silver-tree-prior-speedup-454/raw.tar.gz`. Seeds 74038000–74038002 are now used.
+
+**Knowledge impact:** prior-scoring sentences in the tree-prior paragraph of `architecture/combat-search.md`.
