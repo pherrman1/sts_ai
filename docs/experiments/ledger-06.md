@@ -17010,9 +17010,9 @@ started), with run notes in `GATE3A-NOTES.md` (escape candidate; production scor
 set to 0, as in Stage 0).
 **Stage 2 (retrain, on Philipp's RTX 3060 Ti):** the #418 chain at #504 (`2cb43780`, warm starts with the ascension
 input re-centred to 20). Union 609,883 rows; #418 source-seed hash split TRAIN 486,628 / VALIDATION 59,685 / TEST
-63,570. Phase 1 picked Attention again (A20 TEST survival Brier 0.0236, AUC 0.973, win-HP MAE 0.091; DeepSets 0.0239 /
-0.972 / 0.093; XGBoost 0.0253 / 0.967 / 0.095). Every near-full refit beat its A0 warm start (for example survival
-NLL 0.115 A0 VALIDATION → 0.079 A20 TEST). Deviations: s07 resumed after a CUDA OOM with
+63,570 (these are not sums of the Stage 1 counts; **Inference:** the difference is rows the production support
+predicate drops, not reconciled row by row). Phase 1 picked Attention again (A20 TEST survival Brier 0.0236, AUC 0.973, win-HP MAE 0.091; DeepSets 0.0239 /
+0.972 / 0.093; XGBoost 0.0253 / 0.967 / 0.095). Every near-full refit beat its A0 warm start. Deviations: s07 resumed after a CUDA OOM with
 `PYTORCH_NO_CUDA_MEMORY_CACHING=1` (allocator only); export, qualification and the DeepSets chain ran at #514
 (`643a4892`) because the export needed the override path.
 Three gates failed and Philipp overrode each one, recorded with the artifacts:
