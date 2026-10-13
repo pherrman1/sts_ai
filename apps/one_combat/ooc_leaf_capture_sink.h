@@ -24,6 +24,8 @@ public:
         std::uint64_t searchSeed, std::uint64_t simulations, unsigned horizon);
     void finish(OocLeafCaptureRoot &, const sts::search::OocMctsResult &,
         const OocGameContextModel &);
+    // A stopped root prefix is not an ordinary successful capture root.
+    void replayProbe(nlohmann::json report);
 };
 // Called only after the teacher models loaded successfully.
 nlohmann::json oocLeafCaptureProvenance(const nlohmann::json &loadedCtm,

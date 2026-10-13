@@ -7,6 +7,13 @@
 #include "screen_leaf_s0.h"
 #include "ooc_leaf_capture.h"
 #include "ooc_leaf_capture_sink.h"
+#include <cerrno>
+#include <csignal>
+#include <dirent.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
 #endif
 #include "ooc_profile.h"
 #include "combat_transition_runtime.h"
@@ -49,6 +56,173 @@ namespace {
 std::string liveGraphPath;
 std::uint64_t liveGraphDecisionIndex = 1;
 std::mutex liveTraceMutex;
+#ifndef STS_LIVE_ADVISOR
+using ReplayJson = nlohmann::json;
+constexpr std::uint64_t leafReplayOrdinal = 1025;
+constexpr std::size_t leafReplayByteLimit = 64 * 1024;
+struct LeafReplayMode { std::uint64_t seed; bool rootActive = false; };
+// Only the explicit diagnostic command (and its synthetic test) sets this.
+LeafReplayMode *leafReplayMode = nullptr;
+// Intentionally not std::exception: the driver must not publish an ordinary
+// failed-run/profile result for this deliberate, pre-action diagnostic stop.
+struct LeafReplayComplete { ReplayJson report; };
+ReplayJson replayReport(const std::string &status, const std::string &reason) {
+    return {{"status", status}, {"reason", reason}, {"decisionIndex", 0},
+        {"ordinal", leafReplayOrdinal}, {"runSeed", leafReplayMode ? leafReplayMode->seed : 0},
+        {"scope", "single_same_model_id_map_leaf"}, {"rootPrefixStopped", true},
+        {"gameplayResult", nullptr}, {"childWallLimitMs", 10000}, {"childCpuLimitSeconds", 10},
+        {"transportByteLimit", leafReplayByteLimit}};
+}
+void requireReplaySingleThread() {
+#ifdef __linux__
+    DIR *directory = opendir("/proc/self/task");
+    if (!directory) throw std::runtime_error("cannot_inspect_process_threads");
+    unsigned count = 0;
+    while (const auto *entry = readdir(directory)) if (entry->d_name[0] != '.') ++count;
+    closedir(directory);
+    if (count != 1) throw std::runtime_error("replay_requires_exactly_one_os_thread");
+#else
+    throw std::runtime_error("replay_requires_linux");
+#endif
+}
+std::string replayRngString(const std::mt19937_64 &rng) {
+    std::ostringstream out; out << rng; return out.str();
+}
+std::string replayPathString(const PathHistory &path) {
+    return ReplayJson{{"roomVisits", path.roomVisits}, {"lastNodeKey", path.lastNodeKey}}.dump();
+}
+std::string replayStateString(const GameContext &gc) {
+    // Test fingerprint is a structured exact string, not an object-byte hash.
+    // Add the two newer visible fields omitted by that fixture helper.
+    return sts::test::oocStateFingerprint(gc) + "|keysEnabled=" + std::to_string(gc.keysEnabled)
+        + "|restRoomResolved=" + std::to_string(gc.restRoomResolved);
+}
+std::string replayFingerprint(const std::string &value) {
+    // Compact report identity only. Source nonmutation uses full-string ==.
+    std::uint64_t hash = 14695981039346656037ull;
+    for (unsigned char byte : value) { hash ^= byte; hash *= 1099511628211ull; }
+    std::ostringstream out; out << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return out.str();
+}
+ReplayJson replayEvaluation(std::optional<double> value, const std::string &error, bool terminal,
+        const sts::search::OocEndpoint &endpoint, std::uint64_t combats, std::uint64_t steps,
+        const std::mt19937_64 &rng, bool unchanged) {
+    return {{"value", value ? ReplayJson(*value) : ReplayJson(nullptr)}, {"error", error},
+        {"terminal", terminal}, {"endpoint", {{"hp", endpoint.hp}, {"maxHp", endpoint.maxHp},
+        {"floor", endpoint.floor}}}, {"actualCombats", combats}, {"projectionSteps", steps},
+        {"finalRng", replayRngString(rng)}, {"sourceUnchanged", unchanged}};
+}
+ReplayJson compareReplay(const ReplayJson &parent, const ReplayJson &child) {
+    auto report = replayReport("PASS", "exact_same_state_rng_evaluation");
+    report["parent"] = parent; report["child"] = child;
+    report["differentFields"] = ReplayJson::array();
+    const auto valid = [](const ReplayJson &value) {
+        return value.is_object() && value.contains("error") && value.at("error") == ""
+            && value.contains("value") && value.at("value").is_number()
+            && std::isfinite(value.at("value").get<double>())
+            && value.at("value").get<double>() >= 0 && value.at("value").get<double>() <= 1;
+    };
+    if (!valid(parent) || !valid(child)) {
+        report["status"] = "INVALID"; report["reason"] = "unsupported_or_invalid_evaluation";
+        return report;
+    }
+    for (const char *key : {"value", "error", "terminal", "endpoint", "actualCombats",
+                            "projectionSteps", "finalRng", "sourceUnchanged"})
+        if (!parent.contains(key) || !child.contains(key) || parent.at(key) != child.at(key))
+            report["differentFields"].push_back(key);
+    if (!parent.value("sourceUnchanged", false) || !child.value("sourceUnchanged", false)) {
+        report["status"] = "INVALID"; report["reason"] = "source_mutation";
+    } else if (!report["differentFields"].empty()) {
+        report["status"] = "FAIL"; report["reason"] = "replay_mismatch";
+    }
+    return report;
+}
+// Fork before either evaluation. Only the child sees replay cache/metric and
+// callback mutations; the parent waits before doing its scheduled evaluation.
+ReplayJson forkLeafReplay(const std::function<ReplayJson()> &evaluate, int timeoutMs = 10000) {
+    requireReplaySingleThread();
+    int channel[2];
+    if (pipe(channel) != 0) throw std::runtime_error("replay_pipe_failed");
+    struct Channel { int read, write; ~Channel() { if (read >= 0) close(read); if (write >= 0) close(write); } }
+        pipeEnds{channel[0], channel[1]};
+    if (channel[0] <= 2 || channel[1] <= 2)
+        throw std::runtime_error("replay_requires_standard_descriptors");
+    // Enumerate in the single-threaded parent; never leave capture/model/socket
+    // descriptors writable in the child. Do not flush inherited stdio buffers.
+    std::vector<int> inherited;
+    DIR *directory = opendir("/proc/self/fd");
+    if (!directory) throw std::runtime_error("cannot_inspect_process_fds");
+    const int scanFd = dirfd(directory);
+    while (const auto *entry = readdir(directory)) {
+        char *end = nullptr;
+        const long fd = std::strtol(entry->d_name, &end, 10);
+        if (*entry->d_name && end && !*end && fd > 2 && fd != channel[1] && fd != scanFd)
+            inherited.push_back(static_cast<int>(fd));
+    }
+    closedir(directory);
+    const auto started = std::chrono::steady_clock::now();
+    const pid_t child = fork();
+    if (child < 0) throw std::runtime_error("replay_fork_failed");
+    if (child == 0) {
+        for (int fd : inherited) close(fd);
+        const int nullFd = open("/dev/null", O_RDWR);
+        if (nullFd < 0) _exit(121);
+        for (int fd = 0; fd < 3; ++fd) if (dup2(nullFd, fd) < 0) _exit(121);
+        if (nullFd > 2) close(nullFd);
+        const rlimit cpu{10, 10};
+        if (setrlimit(RLIMIT_CPU, &cpu) != 0) _exit(122);
+        try {
+            const auto payload = evaluate().dump();
+            if (payload.size() > leafReplayByteLimit) _exit(123);
+            std::size_t at = 0;
+            while (at < payload.size()) {
+                const ssize_t count = write(channel[1], payload.data() + at, payload.size() - at);
+                if (count < 0 && errno == EINTR) continue;
+                if (count <= 0) _exit(124);
+                at += static_cast<std::size_t>(count);
+            }
+            close(channel[1]);
+            _exit(0);
+        } catch (...) { _exit(125); }
+    }
+    close(pipeEnds.write); pipeEnds.write = -1;
+    struct Reap {
+        pid_t pid; bool done = false;
+        ~Reap() { if (!done) { kill(pid, SIGKILL); while (waitpid(pid, nullptr, 0) < 0 && errno == EINTR) {} } }
+    } reap{child};
+    std::string payload;
+    int status = 0;
+    bool eof = false, exited = false;
+    while (!eof || !exited) {
+        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - started).count();
+        if (elapsed >= timeoutMs) throw std::runtime_error("replay_child_timeout");
+        pollfd fd{eof ? -1 : pipeEnds.read, POLLIN | POLLHUP, 0};
+        const int ready = poll(&fd, 1, std::min<int>(50, timeoutMs - elapsed));
+        if (ready < 0 && errno != EINTR) throw std::runtime_error("replay_pipe_poll_failed");
+        if (ready > 0 && (fd.revents & (POLLIN | POLLHUP))) {
+            char buffer[4096];
+            const ssize_t count = read(pipeEnds.read, buffer, sizeof(buffer));
+            if (count == 0) eof = true;
+            else if (count < 0 && errno != EINTR) throw std::runtime_error("replay_pipe_read_failed");
+            else if (count > 0) {
+                payload.append(buffer, static_cast<std::size_t>(count));
+                if (payload.size() > leafReplayByteLimit) throw std::runtime_error("replay_payload_limit");
+            }
+        }
+        if (!exited) {
+            const auto waited = waitpid(child, &status, WNOHANG);
+            if (waited == child) { exited = true; reap.done = true; }
+            else if (waited < 0 && errno != EINTR) throw std::runtime_error("replay_wait_failed");
+        }
+    }
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+        throw std::runtime_error("replay_child_failed_status_" + std::to_string(status));
+    auto result = ReplayJson::parse(payload);
+    if (!result.is_object()) throw std::runtime_error("replay_child_result_not_object");
+    return result;
+}
+#endif
 GameContext detachedCopy(const GameContext &parent) {
     GameContext child = parent;
     if (parent.map) child.map = std::make_shared<sts::Map>(*parent.map);
@@ -1232,6 +1406,10 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
             || (ordinal - 1) % options.leafCaptureStride != 0)
         return evaluateLeafUnobserved(id, rng, terminal, endpoint);
     ++leafObservationCount_;
+#ifndef STS_LIVE_ADVISOR
+    if (leafReplayMode && leafReplayMode->rootActive && ordinal == leafReplayOrdinal)
+        replaySelectedLeaf(id, rng);
+#endif
     const auto rngBefore = rng;
     const auto combatsBefore = combatSamples_;
     const auto stepsBefore = continuation_.projectionSteps;
@@ -1257,6 +1435,65 @@ double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
     observe(value, {});
     return value;
 }
+
+#ifndef STS_LIVE_ADVISOR
+[[noreturn]] void OocGameContextModel::replaySelectedLeaf(sts::search::OocStateId id,
+        std::mt19937_64 &rng) {
+    auto report = replayReport("INVALID", "replay_not_completed");
+    report["stateId"] = id;
+    report["initialScreen"] = int(state(id).screenState);
+    report["initialTerminal"] = terminalValue(id).has_value();
+    if (state(id).screenState != sts::ScreenState::MAP_SCREEN || terminalValue(id)) {
+        report["status"] = "NOT_REACHED";
+        report["reason"] = "scheduled_leaf_is_not_nonterminal_map";
+        throw LeafReplayComplete{std::move(report)};
+    }
+    try {
+        const auto rngBefore = rng;
+        const auto policyBefore = captureOocPolicyThreadState();
+        const auto sourceBefore = replayStateString(state(id));
+        const auto pathBefore = replayPathString(pathHistory(id));
+        report["plannerRngBefore"] = replayRngString(rngBefore);
+        report["fingerprintAlgorithm"] = "fnv1a64-report-only; source checks compare full structured strings";
+        report["stateFingerprint"] = replayFingerprint(sourceBefore);
+        report["pathFingerprint"] = replayFingerprint(pathBefore);
+        report["keysEnabled"] = state(id).keysEnabled;
+        report["restRoomResolved"] = state(id).restRoomResolved;
+        report["callbackCustody"] = "fork-inherited callable and captures; not serialized";
+        const auto evaluate = [&](std::mt19937_64 &stream) {
+            const auto combatsBefore = combatSamples_;
+            const auto stepsBefore = continuation_.projectionSteps;
+            bool terminal = false;
+            sts::search::OocEndpoint endpoint;
+            std::optional<double> value;
+            std::string error;
+            try { value = evaluateLeafUnobserved(id, stream, terminal, endpoint); }
+            catch (const std::exception &e) { error = e.what(); }
+            catch (...) { error = "nonstandard_leaf_failure"; }
+            return replayEvaluation(value, error, terminal, endpoint,
+                combatSamples_ - combatsBefore, continuation_.projectionSteps - stepsBefore,
+                stream, replayStateString(state(id)) == sourceBefore
+                    && replayPathString(pathHistory(id)) == pathBefore);
+        };
+        // Fork happens at the exact pre-evaluation boundary. Policy, callbacks,
+        // model id/root context and caches are copied by process isolation.
+        const auto child = forkLeafReplay([&] {
+            restoreOocPolicyThreadState(policyBefore);
+            auto replayRng = rngBefore;
+            return evaluate(replayRng);
+        });
+        // Child was reaped before this ordinary scheduled teacher evaluation.
+        const auto parent = evaluate(rng);
+        const auto compared = compareReplay(parent, child);
+        report.update(compared);
+        report["stateId"] = id;
+    } catch (const std::exception &error) {
+        report["status"] = "INVALID";
+        report["reason"] = error.what();
+    }
+    throw LeafReplayComplete{std::move(report)};
+}
+#endif
 
 double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         std::mt19937_64 &rng, bool &terminal, sts::search::OocEndpoint &endpoint) {
@@ -1973,11 +2210,222 @@ void finalizeLiveOocMctsCapture() {
     pendingLeafCaptureProvenance = nullptr;
     std::cout << "[ooc-leaf-capture ON roots=64 leaves_per_root=8 research_only=1]\n";
 }
+int oocLeafReplayProbe(std::uint64_t seed, int ascension) {
+    auto report = replayReport("INVALID", "startup_not_validated");
+    report["runSeed"] = seed;
+    report["ascension"] = ascension;
+    try {
+        if (leafReplayMode) throw std::runtime_error("replay_probe_already_active");
+        if (!liveLeafCapture || !pendingLeafCapturePath.empty())
+            throw std::runtime_error("replay_requires_finalized_capture_sink");
+        if (ascension != 20 || !liveEnabled || liveSimulations != 4096
+                || liveOptions.leafCombats != 3 || !liveOptions.checkpointLeaves
+                || !liveOptions.sampleNoncombat || liveOptions.stopAtMapCheckpoint
+                || liveOptions.uniformLeafPolicy || liveOptions.uniformPrior
+                || liveOptions.constantLeaf || liveOptions.directLeaf || liveOptions.screenLeaf
+                || liveOptions.bossLeaf || liveOptions.bossRollout)
+            throw std::runtime_error("replay_requires_a20_native_4096_rollout3_v4_teacher");
+        if (!std::dynamic_pointer_cast<const NativeCombatTransitionSampler>(liveSampler)
+                && !std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSampler))
+            throw std::runtime_error("replay_requires_native_ctm_sampler");
+        if (!g_nativeOoc || !nativeFloorPolicyAvailable() || !nativeWinPolicyAvailable()
+                || !g_oocStrategicTokNet.ok)
+            throw std::runtime_error("replay_requires_loaded_native_floor_win_and_v4");
+        // The diagnostic permits the frozen native fallback/V4 teacher only.
+        // Server policy branches and experimental nested planners must not open
+        // new sockets/files after inherited descriptors have been closed.
+        const auto policy = effectiveOocPolicySpecification();
+        for (const char *key : {"ooc_action_nn", "act_fight_probe_all_ooc", "act_fight_probe_draft",
+                "act_fight_probe_predict", "ooc_map_route", "ooc_shop_beam", "boss_draft",
+                "card_nn", "card_action", "boss_v", "shop_win", "path_v", "event_v",
+                "boss_relic_v", "neow_v"}) {
+            const auto &flag = policy.at("flags").at(key);
+            if (flag.is_boolean() ? flag.get<bool>() : flag.get<int>() != 0)
+                throw std::runtime_error(std::string("replay_excludes_policy_") + key);
+        }
+        for (const char *key : {"STS_PATH_GRAPH", "STS_PATH_ACTION", "STS_OOC_GBM_RANKER"})
+            if (const char *value = std::getenv(key); value && *value && std::string(value) != "0")
+                throw std::runtime_error(std::string("replay_excludes_") + key);
+        for (char **entry = environ; entry && *entry; ++entry) {
+            const std::string item(*entry);
+            const auto equals = item.find('=');
+            const auto key = item.substr(0, equals);
+            const auto value = equals == std::string::npos ? "" : item.substr(equals + 1);
+            if (key.rfind("STS_", 0) == 0 && !value.empty()
+                    && (key.find("TRACE") != std::string::npos || key.find("PROFILE") != std::string::npos
+                        || key.find("PROBE") != std::string::npos || key == "STS_OOC_MCTS_GRAPH_FILE"))
+                throw std::runtime_error("replay_excludes_output_or_probe_" + key);
+        }
+        if (sts::search::g_onGameActionExecute || sts::search::g_onCombatDecision
+                || sts::g_onBattleExitPersistent || t_bossEntryHook)
+            throw std::runtime_error("replay_excludes_external_observers");
+        requireReplaySingleThread();
+        const auto previousPolicy = captureOocPolicyThreadState();
+        const auto *previousPath = t_curPath;
+        LeafReplayMode mode{seed};
+        struct Restore {
+            OocPolicyThreadState policy; const PathHistory *path;
+            ~Restore() { leafReplayMode = nullptr; restoreOocPolicyThreadState(policy); t_curPath = path; }
+        } restore{previousPolicy, previousPath};
+        leafReplayMode = &mode;
+        try {
+            // Direct call: no bestbench/OpenMP team, no root action after probe.
+            (void)runFullRunOOC(seed, 10000, ascension, false, true);
+            report = replayReport("NOT_REACHED", "run_ended_before_scheduled_root_leaf");
+        } catch (const LeafReplayComplete &completed) { report = completed.report; }
+    } catch (const std::exception &error) {
+        report["status"] = "INVALID"; report["reason"] = error.what();
+    } catch (...) {
+        report["status"] = "INVALID"; report["reason"] = "unexpected_nonstandard_probe_failure";
+    }
+    report["runSeed"] = seed;
+    report["ascension"] = ascension;
+    try { if (liveLeafCapture) liveLeafCapture->replayProbe(report); }
+    catch (const std::exception &error) {
+        std::cerr << "ooc_leaf_replay INVALID capture_write_failed: " << error.what() << '\n';
+        return 2;
+    }
+    std::cout << "ooc_leaf_replay " << report.at("status").get<std::string>()
+        << " reason=" << report.at("reason").get<std::string>() << '\n';
+    return report.at("status") == "PASS" ? 0 : report.at("status") == "FAIL" ? 1 : 2;
+}
+int oocLeafReplaySelfTest() {
+    const auto require = [](bool ok, const char *why) {
+        if (!ok) throw std::runtime_error(std::string("leaf replay selftest: ") + why);
+    };
+    const auto rejects = [&](const std::function<void()> &call, const char *why) {
+        bool rejected = false;
+        try { call(); } catch (const std::exception &) { rejected = true; }
+        require(rejected, why);
+    };
+    const auto savedPolicy = captureOocPolicyThreadState();
+    const auto *savedPath = t_curPath;
+    struct Restore {
+        OocPolicyThreadState policy; const PathHistory *path; LeafReplayMode *mode;
+        ~Restore() { leafReplayMode = mode; restoreOocPolicyThreadState(policy); t_curPath = path; }
+    } restore{savedPolicy, savedPath, leafReplayMode};
+    require(!leafReplayMode, "diagnostic mode initially off");
+    std::mt19937_64 stream(11);
+    const auto expected = replayEvaluation(.625, "", false, {50, 80, 4}, 3, 6, stream, true);
+    int childWrites = 0;
+    const auto copied = forkLeafReplay([&] { ++childWrites; return expected; });
+    require(childWrites == 0 && copied == expected, "fork isolates mutations and transports exact result");
+    require(compareReplay(expected, copied).at("status") == "PASS", "exact comparator pass");
+    for (const char *key : {"value", "terminal", "endpoint", "actualCombats", "projectionSteps", "finalRng"}) {
+        auto altered = expected;
+        if (std::string(key) == "value") altered[key] = .626;
+        else if (std::string(key) == "terminal") altered[key] = true;
+        else if (std::string(key) == "endpoint") altered[key]["hp"] = 49;
+        else if (std::string(key) == "finalRng") altered[key] = "different";
+        else altered[key] = 99;
+        require(compareReplay(expected, altered).at("status") == "FAIL", "comparator catches changed field");
+    }
+    auto unsupported = expected; unsupported["value"] = nullptr; unsupported["error"] = "unsupported_fixture";
+    require(compareReplay(expected, unsupported).at("status") == "INVALID", "unsupported is not an ordinary fallback");
+    auto mutated = expected; mutated["sourceUnchanged"] = false;
+    require(compareReplay(mutated, mutated).at("status") == "INVALID", "source mutation invalidates replay custody");
+    rejects([&] { forkLeafReplay([] { return ReplayJson{{"large", std::string(leafReplayByteLimit + 1, 'x')}}; }); },
+        "oversize child output rejected");
+    rejects([&] { forkLeafReplay([]() -> ReplayJson { _exit(0); }); }, "empty child output rejected");
+    rejects([&] { forkLeafReplay([]() -> ReplayJson { for (;;) pause(); }, 20); }, "child wall timeout enforced");
+    const int nullFd = open("/dev/null", O_WRONLY);
+    require(nullFd >= 0, "open descriptor fixture");
+    const int inherited = fcntl(nullFd, F_DUPFD, 100);
+    close(nullFd);
+    require(inherited >= 100, "reserve inherited descriptor fixture");
+    const auto fdResult = forkLeafReplay([&] {
+        errno = 0;
+        const bool closed = write(inherited, "x", 1) == -1 && errno == EBADF;
+        return ReplayJson{{"closed", closed}};
+    });
+    close(inherited);
+    require(fdResult.at("closed") == true, "child closes inherited output descriptors");
+
+    // A directly constructed MAP family with genuine adapter continuation,
+    // RNG-consuming combat samples, callback writes and a nonconstant target.
+    // There is no generated game/run or model qualification in this fixture.
+    struct ReplaySampler final : CombatTransitionSampler {
+        mutable unsigned calls = 0;
+        CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+            return {true, "supported"};
+        }
+        CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &,
+                std::mt19937_64 &rng) const override {
+            ++calls;
+            auto post = captureCombatTransitionState(gc);
+            post.curHp -= 1 + rng() % 4;
+            return {CombatRuntimeSample::Outcome::VICTORY, std::move(post)};
+        }
+    };
+    GameContext gc{};
+    gc.seed = 0; gc.cc = sts::CharacterClass::IRONCLAD;
+    gc.ascension = 20; gc.curHp = 70; gc.maxHp = 80;
+    gc.screenState = sts::ScreenState::MAP_SCREEN;
+    gc.curRoom = sts::Room::MONSTER;
+    gc.info.encounter = sts::MonsterEncounter::CULTIST;
+    gc.keysEnabled = false; gc.restRoomResolved = true;
+    unsigned callbacks = 0;
+    gc.regainControlAction = [&](GameContext &state) {
+        ++callbacks; ++state.floorNum; state.screenState = sts::ScreenState::MAP_SCREEN;
+    };
+    OocMctsDependencies deps;
+    deps.policyAvailable = [] { return true; };
+    deps.policyLogits = [](const GameContext &, const PathHistory &, const std::vector<GameAction> &actions) {
+        return std::vector<double>(actions.size(), 0);
+    };
+    deps.leafValue = [](const GameContext &state, const PathHistory &) { return state.curHp / 100.0; };
+    deps.continuationStep = [](GameContext &state, PathHistory &, std::mt19937_64 &) {
+        auto policy = captureOocPolicyThreadState(); ++policy.pathActionUses;
+        restoreOocPolicyThreadState(policy);
+        state.screenState = sts::ScreenState::BATTLE;
+    };
+    OocAdapterOptions options;
+    options.checkpointLeaves = true; options.leafCombats = 3;
+    options.leafCaptureStride = 512; options.leafCaptureLimit = 8;
+    unsigned observations = 0;
+    options.leafObserver = [&](const OocLeafObservation &) { ++observations; };
+    auto sampler = std::make_shared<ReplaySampler>();
+    OocGameContextModel model(gc, PathHistory{}, sampler, options, deps);
+    for (unsigned i = 0; i < 1024; ++i) model.evaluateLeafWithOutcome(0, stream);
+    const auto parentCalls = sampler->calls;
+    const auto parentCallbacks = callbacks;
+    const auto parentPolicy = captureOocPolicyThreadState();
+    LeafReplayMode mode{0, true}; leafReplayMode = &mode;
+    ReplayJson report;
+    try { model.evaluateLeafWithOutcome(0, stream); }
+    catch (const LeafReplayComplete &complete) { report = complete.report; }
+    leafReplayMode = nullptr;
+    require(report.value("status", "") == "PASS" && report.at("ordinal") == 1025
+            && report.at("stateId") == 0 && report.at("parent").at("value") != .5
+            && report.at("parent").at("actualCombats") == 3
+            && report.at("parent").at("projectionSteps") == 6
+            && report.at("parent").at("finalRng") == replayRngString(stream),
+        "actual wrapper replays selected MAP nonconstant target and final RNG");
+    require(sampler->calls == parentCalls + 3 && callbacks == parentCallbacks + 3
+            && captureOocPolicyThreadState().pathActionUses == parentPolicy.pathActionUses + 3
+            && model.leafCalls() == 1025 && model.leafObservationCount() == 3 && observations == 2
+            && report.at("keysEnabled") == false && report.at("restRoomResolved") == true,
+        "child changes do not enter parent sampler, callback, policy or observation counters");
+    std::cout << "ooc_leaf_replay_selftest PASS transport bounds, isolation, exact comparator, MAP target\n";
+    return 0;
+}
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected) {
     ImaginedScope scope;
+    struct ReplayRootScope {
+        bool active = false;
+        ~ReplayRootScope() { if (active) leafReplayMode->rootActive = false; }
+    } replayRoot;
+    if (leafReplayMode) {
+        if (index != 0 || seed != leafReplayMode->seed)
+            throw LeafReplayComplete{replayReport("NOT_REACHED", "first_decision_root_not_searched")};
+        if (leafReplayMode->rootActive)
+            throw LeafReplayComplete{replayReport("INVALID", "nested_replay_root")};
+        leafReplayMode->rootActive = true;
+        replayRoot.active = true;
+    }
     auto config = liveConfig;
     config.seed = oocMctsSearchSeed(seed, index);
     auto options = liveOptions;
@@ -1997,6 +2445,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     samples = 0;
     if (selected) selected->reset();
     if (model.terminalValue(0) || model.isLeafBoundary(0)) {
+        if (leafReplayMode)
+            throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_not_searchable")};
         if (capture) liveLeafCapture->finish(*capture, {}, model);
         return {};
     }
@@ -2030,6 +2480,15 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         }
     }
     auto result = searchWithSoleRootShortcut(model, config, sole, simulations);
+    if (leafReplayMode) {
+        auto report = result.aborted ? replayReport("INVALID", "decision0_search_aborted")
+            : replayReport("NOT_REACHED", "decision0_search_finished_before_scheduled_leaf");
+        report["leafCalls"] = model.leafCalls();
+        report["completedSimulations"] = result.metrics.simulations;
+        report["rootAborted"] = result.aborted;
+        report["abortReason"] = result.abortReason;
+        throw LeafReplayComplete{std::move(report)};
+    }
     if (capture) liveLeafCapture->finish(*capture, result, model);
     if (reuseObserved) {
         reuseRow["searched"] = !result.metrics.trivialRootBypasses;
@@ -2186,19 +2645,36 @@ bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, co
 }
 bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
     std::uint64_t index, LiveOocMctsMetrics &metrics) {
+    if (leafReplayMode && index != 0)
+        throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_bypassed_mcts")};
     ++metrics.decisions;
-    if (!liveEnabled) return false;
+    if (!liveEnabled) {
+        if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", "mcts_disabled_during_probe")};
+        return false;
+    }
     const auto wallStart = std::chrono::steady_clock::now();
     const double cpuStart = threadCpuSeconds();
     std::uint64_t samples = 0;
     OocContinuationMetrics continuation;
     OocProfileScope profile(OocProfileBucket::Mcts);
     if (sts::search::g_onGameActionExecute && gc.screenState != sts::ScreenState::MAP_SCREEN) {
+        if (leafReplayMode)
+            throw LeafReplayComplete{replayReport("NOT_REACHED", "semantic_observer_blocks_decision0")};
         ++metrics.fallback; ++metrics.continuation.supportReasons["semantic_observer_active"]; return false;
     }
     collectForcedRewardGold(gc);
     std::optional<OocGameContextModel::Candidate> selected;
-    const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation, &selected);
+    const auto result = [&] {
+        try {
+            return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler,
+                samples, &continuation, &selected);
+        } catch (const std::exception &error) {
+            if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", error.what())};
+            throw;
+        }
+    }();
+    if (leafReplayMode)
+        throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_returned_without_replay")};
     profile.stop();
     const double wallElapsed = std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     const double cpuElapsed = threadCpuSeconds()-cpuStart;
