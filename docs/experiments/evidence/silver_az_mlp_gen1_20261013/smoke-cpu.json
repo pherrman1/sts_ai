@@ -1,0 +1,64 @@
+{
+ "mlpprior_74043001-002": {
+  "control": {
+   "rows": 47,
+   "valid": 47,
+   "cpuPerFightS": 2.0174707730212766,
+   "cpuPerDecisionMs": 131.87917431432544,
+   "perDecisionVsPlain2k": 5.705228302394074
+  },
+  "plain2k": {
+   "rows": 94,
+   "valid": 94,
+   "cpuPerFightS": 0.3373878581170213,
+   "cpuPerDecisionMs": 23.115494652332362,
+   "perDecisionVsPlain2k": 1.0
+  },
+  "plain_cpu": {
+   "rows": 94,
+   "valid": 94,
+   "cpuPerFightS": 0.37462975398936166,
+   "cpuPerDecisionMs": 25.389471431146355,
+   "perDecisionVsPlain2k": 1.0983745670605647
+  },
+  "mlp8_2k": {
+   "rows": 94,
+   "valid": 94,
+   "cpuPerFightS": 0.3861730114255319,
+   "cpuPerDecisionMs": 25.81811029445235,
+   "perDecisionVsPlain2k": 1.1169179237895863
+  }
+ },
+ "treeprior452k8_74043000_new": {
+  "control": {
+   "rows": 25,
+   "valid": 25,
+   "cpuPerFightS": 1.6165526683999998,
+   "cpuPerDecisionMs": 104.69900702072536,
+   "perDecisionVsPlain2k": 5.469659669617933
+  },
+  "plain2k": {
+   "rows": 50,
+   "valid": 50,
+   "cpuPerFightS": 0.31124529806,
+   "cpuPerDecisionMs": 19.141777248462486,
+   "perDecisionVsPlain2k": 1.0
+  },
+  "root2k": {
+   "rows": 50,
+   "valid": 50,
+   "cpuPerFightS": 0.31296320914,
+   "cpuPerDecisionMs": 19.176667226715686,
+   "perDecisionVsPlain2k": 1.0018227136279108
+  },
+  "tree8_2k": {
+   "rows": 50,
+   "valid": 50,
+   "cpuPerFightS": 0.5457540180199999,
+   "cpuPerDecisionMs": 33.77190705569306,
+   "perDecisionVsPlain2k": 1.7643036285152527
+  }
+ },
+ "note": "mlpprior: two single-seed runs in parallel on a 4-core cloud container, STS_CTMSILVER_PLAIN_CPU_SIMS=2200 (smoke value, not a frozen budget); treeprior452k8: the bit-identity run, same container, run next to the main-build twin.",
+ "bitIdentity_treeprior452k8_74043000": "arms/states/samples CSVs identical to main 4110fdbc except cpuSeconds and CTM timing columns (175 arm rows, 25 states, 975 samples)"
+}

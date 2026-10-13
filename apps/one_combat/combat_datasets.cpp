@@ -5173,7 +5173,14 @@ struct TreePriorScope {
     ~TreePriorScope() { search::g_nativeSilverTreePriorOverride.reset(); }
 };
 // treeMinVisits > 0 adds the §452 tree prior (needs prior = true).
-struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0; };
+// priorModel (non-empty) scores this arm's prior with that policy model instead
+// of the STS_SILVER_ROOT_PRIOR one (Silver AZ MLP armset).
+struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0;
+                      std::string priorModel; };
+struct PriorNetScope {
+    explicit PriorNetScope(const search::CombatValueNet *net) { search::g_nativeSilverPriorNetOverride = net; }
+    ~PriorNetScope() { search::g_nativeSilverPriorNetOverride = nullptr; }
+};
 // One forecast sample of the RAW post-combat persistent state (the fields the CTM
 // models; RNG streams excluded). The deck is written as an FNV-1a hash.
 void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const std::string &forecaster,
@@ -5239,13 +5246,42 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     std::vector<CtmSilverArm> arms;
     // STS_CTMSILVER_ARMSET=treeprior452 (§452) swaps the forecaster arms for the
     // paired fight-level tree-prior pilot at 2k; treeprior452k8 drops the K=1 arm.
+    // mlpprior (Silver AZ MLP loop milestone): plain2k, plain_cpu at
+    // STS_CTMSILVER_PLAIN_CPU_SIMS, and the MLP tree prior (K = 8, 2k) scored by
+    // STS_CTMSILVER_MLP_PRIOR; STS_CTMSILVER_MLP_PRIOR_PREV adds a second MLP arm.
     const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
     const std::string armSet = armSetEnv ? armSetEnv : "";
-    if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453")
-        throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8 or cpumatch453");
+    if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
+            && armSet != "mlpprior")
+        throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
+                                 "cpumatch453 or mlpprior");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
-    if (armSet == "cpumatch453") {
+    std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
+    if (armSet == "mlpprior") {
+        const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+        const std::string cpuSims = env("STS_CTMSILVER_PLAIN_CPU_SIMS");
+        const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR"), prev = env("STS_CTMSILVER_MLP_PRIOR_PREV");
+        char *end = nullptr;
+        const long plainCpu = cpuSims.empty() ? 0 : std::strtol(cpuSims.c_str(), &end, 10);
+        if (cpuSims.empty() || *end != '\0' || plainCpu < 1 || plainCpu > 100000)
+            throw std::runtime_error("ctm vs silver: mlpprior requires STS_CTMSILVER_PLAIN_CPU_SIMS (1..100000)");
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: mlpprior requires STS_CTMSILVER_MLP_PRIOR");
+        for (const auto &path : {mlp, prev}) {
+            if (path.empty() || priorNets.count(path)) continue;
+            auto net = std::make_unique<search::CombatValueNet>();
+            if (!net->load(path) || !net->isPolicyMlp)
+                throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp_v1 model from " + path);
+            priorNets[path] = std::move(net);
+        }
+        arms = {
+            {"control", sims, false, false, 1},
+            {"plain2k", 2000, false, true, replicates},
+            {"plain_cpu", static_cast<int>(plainCpu), false, true, replicates},
+            {"mlp8_2k", 2000, true, true, replicates, 8, mlp},
+        };
+        if (!prev.empty()) arms.push_back({"mlp_prev8_2k", 2000, true, true, replicates, 8, prev});
+    } else if (armSet == "cpumatch453") {
         // §453: plain search at about tree8_2k's CPU per fight.
         arms = {
             {"control", sims, false, false, 1},
@@ -5293,7 +5329,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     for (const auto &a : arms)
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
                            {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates},
-                           {"treeMinVisits", a.treeMinVisits}});
+                           {"treeMinVisits", a.treeMinVisits},
+                           {"priorModel", a.priorModel.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.priorModel)},
+                           {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
+                                                                     : nlohmann::json(fileSha256(a.priorModel))}});
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
     int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0;
     nlohmann::json perSeed = nlohmann::json::array();
@@ -5407,6 +5446,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     PlannerSeedScope plannerScope(plannerSeed);
                     RootPriorScope priorScope(arm.prior);
                     TreePriorScope treeScope(arm.treeMinVisits);
+                    PriorNetScope netScope(arm.priorModel.empty() ? nullptr : priorNets.at(arm.priorModel).get());
                     std::optional<one_combat::CombatTransitionPersistentState> rawPost;
                     VwinArmResult result;
                     {

@@ -250,6 +250,19 @@ void combatFillActionFeatures(const BattleContext &bc, const Action &action, flo
     }
 }
 
+int combatActionTargetSlot(const BattleContext &bc, const Action &action) {
+    // Same condition as aTargetsEnemy in combatFillActionFeatures.
+    if (action.getActionType() != ActionType::CARD) return -1;
+    const int src = action.getSourceIdx();
+    if (src < 0 || src >= bc.cards.cardsInHand) return -1;
+    const int tgt = action.getTargetIdx();
+    if (tgt >= 0 && tgt < bc.monsters.monsterCount && tgt < kNumMonSlots && bc.monsters.arr[tgt].curHp > 0)
+        return tgt;
+    return -1;
+}
+
+int combatMonsterSlotOffset() { return kMonOff; }
+
 void combatExtractPolicyFeatures(const BattleContext &bc, const Action &action, float *out) {
     combatExtractFeatures(bc, out);                              // state block
     combatFillActionFeatures(bc, action, out + combatFeatureCount());  // action block
@@ -403,9 +416,53 @@ bool CombatValueNet::load(const std::string &path) {
     dsCardE.clear(); dsRelicE.clear(); dsPotionE.clear(); dsEncE.clear();
     dsMonW1.clear(); dsMonB1.clear(); dsMonW2.clear(); dsMonB2.clear();
 
+    isPolicyMlp = false;
+    pmH1 = pmH2 = 0; pmB3 = 0.f;
+    pmStateW.clear(); pmActionW.clear(); pmCard.clear(); pmTargetW.clear();
+    pmB1.clear(); pmW2.clear(); pmW2T.clear(); pmB2.clear(); pmW3.clear();
+
     f >> tok;
     int nfeat = 0;
-    if (tok == "combat_policy_entity_v1") {
+    if (tok == "combat_policy_mlp_v1") {
+        // tools/silver_az_mlp.py export. The feature list must equal the
+        // canonical policy layout exactly (state block, then action block).
+        auto readVec = [&](const char *want, std::vector<float> &v, std::size_t n) {
+            f >> tok; if (tok != want) return false;
+            v.resize(n); for (float &x : v) f >> x; return bool(f);
+        };
+        int ns = 0, na = 0, nc = 0, nt = 0;
+        f >> tok >> pmH1; if (tok != "h1" || pmH1 < 1) return false;
+        f >> tok >> pmH2; if (tok != "h2" || pmH2 < 1) return false;
+        f >> tok >> ns; if (tok != "nstate" || ns != kStateCount) return false;
+        f >> tok >> na; if (tok != "naction" || na != kNumAction) return false;
+        f >> tok >> nc; if (tok != "ncard" || nc != kNumCards + 1) return false;
+        f >> tok >> nt; if (tok != "ntarget" || nt != kMonFeats) return false;
+        const auto &canon = combatPolicyFeatureNames();
+        for (int i = 0; i < ns + na; ++i) {
+            std::string name; f >> tok >> name;
+            if (tok != "feat" || name != canon[i]) return false;
+        }
+        const std::size_t H1 = pmH1, H2 = pmH2;
+        std::vector<float> one;
+        if (!readVec("state_w", pmStateW, ns * H1) || !readVec("action_w", pmActionW, na * H1)
+                || !readVec("card", pmCard, nc * H1) || !readVec("target_w", pmTargetW, nt * H1)
+                || !readVec("b1", pmB1, H1) || !readVec("w2", pmW2, H2 * H1)
+                || !readVec("b2", pmB2, H2) || !readVec("w3", pmW3, H2)
+                || !readVec("b3", one, 1)) return false;
+        pmB3 = one[0];
+        if (!f) return false;
+        // Layer 2 runs input-major (axpy over active h1 units), which -O3
+        // vectorizes without reassociating a float reduction.
+        pmW2T.resize(H1 * H2);
+        for (std::size_t i = 0; i < H2; ++i)
+            for (std::size_t j = 0; j < H1; ++j) pmW2T[j * H2 + i] = pmW2[i * H1 + j];
+        isPolicyMlp = true;
+        isPolicy = true;
+        g_richCombatFeatures = true;
+        isLoaded = true;
+        this->path = path;
+        return true;
+    } else if (tok == "combat_policy_entity_v1") {
         isEntityPolicy = true;
         isPolicy = true;
         auto readVec = [&](const char *want, std::vector<float> &v, std::size_t n) {
@@ -1212,9 +1269,61 @@ double CombatValueNet::predictQuantileEV(const float *canonFeatures) const {
     return sum / (double)nQuantiles;
 }
 
+void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
+                                      const int *targetSlots, int n, double *out) const {
+    if (n <= 0) return;
+    const int H1 = pmH1, H2 = pmH2;
+    thread_local std::vector<float> base, h, z;
+    base.assign(pmB1.begin(), pmB1.end());
+    h.resize(H1);
+    z.resize(H2);
+    // Sparse state layer, once per node (about 40 nonzeros of 1,766).
+    for (int i = 0; i < kStateCount; ++i) {
+        const float v = stateFeatures[i];
+        if (v == 0.f) continue;
+        const float *w = &pmStateW[(std::size_t)i * H1];
+        for (int j = 0; j < H1; ++j) base[j] += v * w[j];
+    }
+    for (int e = 0; e < n; ++e) {
+        const float *a = actionBlocks + (std::size_t)e * kNumAction;
+        for (int j = 0; j < H1; ++j) h[j] = base[j];
+        for (int k = 0; k < kNumAction; ++k) {
+            const float v = a[k];
+            if (v == 0.f) continue;
+            const float *w = &pmActionW[(std::size_t)k * H1];
+            for (int j = 0; j < H1; ++j) h[j] += v * w[j];
+        }
+        int card = (int)a[4] + 1;   // aCardId; -1 (no card) -> row 0
+        if (card < 0 || card > kNumCards) card = 0;
+        const float *c = &pmCard[(std::size_t)card * H1];
+        for (int j = 0; j < H1; ++j) h[j] += c[j];
+        const int slot = targetSlots ? targetSlots[e] : -1;
+        if (slot >= 0 && slot < kNumMonSlots) {
+            const float *t = stateFeatures + kMonOff + slot * kMonFeats;
+            for (int k = 0; k < kMonFeats; ++k) {
+                const float v = t[k];
+                if (v == 0.f) continue;
+                const float *w = &pmTargetW[(std::size_t)k * H1];
+                for (int j = 0; j < H1; ++j) h[j] += v * w[j];
+            }
+        }
+        for (int i = 0; i < H2; ++i) z[i] = pmB2[i];
+        for (int j = 0; j < H1; ++j) {
+            const float v = h[j];
+            if (v <= 0.f) continue;   // ReLU
+            const float *w = &pmW2T[(std::size_t)j * H2];
+            for (int i = 0; i < H2; ++i) z[i] += v * w[i];
+        }
+        float o = pmB3;
+        for (int i = 0; i < H2; ++i) if (z[i] > 0.f) o += pmW3[i] * z[i];
+        out[e] = o;
+    }
+}
+
 std::string CombatValueNet::description() const {
     std::string base;
-    if (isEntityPolicy) base = "shared entity policy 64d";
+    if (isPolicyMlp) base = "policy mlp " + std::to_string(pmH1) + "/" + std::to_string(pmH2);
+    else if (isEntityPolicy) base = "shared entity policy 64d";
     else if (isDeepSets) base = "deepsets " + std::to_string(d_card) + "d";
     else if (isEntity) base = "entity multi-head (bonus " + std::to_string(entityWinBonus) + ")";
     else if (isMlp) base = std::string(isSparseMlp ? "sparse MLP " : "MLP ")

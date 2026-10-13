@@ -47,6 +47,15 @@ namespace sts::search {
     // Fill only the per-action feature block (out points at the action sub-vector).
     // Lets a caller extract the shared state block once and refill this per edge.
     void combatFillActionFeatures(const BattleContext &bc, const Action &action, float *actionOut);
+    // Monster slot an action targets: the card's target index when the action
+    // block marks it as targeting a living enemy (aTargetsEnemy = 1), else -1.
+    int  combatActionTargetSlot(const BattleContext &bc, const Action &action);
+    // Per-monster slot block of the state layout: slot s's kCombatMonsterSlotFeatures
+    // values (Id, Hp, Block, Str, Intent, Atk, Vuln, Weak, Poison) start at
+    // combatMonsterSlotOffset() + s * kCombatMonsterSlotFeatures.
+    constexpr int kCombatMonsterSlotFeatures = 9;
+    constexpr int kCombatMonsterSlots = 5;
+    int  combatMonsterSlotOffset();
 
     // Compact XGBoost regression-tree ensemble (loaded from export_combat_model.py).
     struct CombatValueNet {
@@ -148,6 +157,24 @@ namespace sts::search {
         // once and the per-action sums keep predictVec's tree order.
         void predictPolicyActions(const float *canonFeatures, const float *actionBlocks,
                                   int n, double *out) const;
+
+        // Factorized MLP policy prior (combat_policy_mlp_v1, research; Silver
+        // tree prior). Per node: base = b1 + sum over nonzero state features of
+        // x_i * pmStateW row i (computed once). Per edge: h1 = relu(base +
+        // action block * pmActionW + pmCard row (aCardId + 1) + target slot
+        // features * pmTargetW), h2 = relu(pmW2 h1 + pmB2), logit = pmW3.h2 + pmB3.
+        // Input scaling and the card embedding's projection are folded into the
+        // exported weights. Callers normalize logits with a softmax over edges.
+        bool isPolicyMlp = false;
+        int pmH1 = 0, pmH2 = 0;
+        std::vector<float> pmStateW, pmActionW, pmCard, pmTargetW, pmB1, pmW2, pmB2, pmW3;
+        std::vector<float> pmW2T;   // pmW2 transposed (h1 x h2), built by load
+        float pmB3 = 0.f;
+        // Logits of n edges of one state. `stateFeatures` is the state block
+        // (combatFeatureCount values), `actionBlocks` n consecutive action
+        // blocks, `targetSlots[i]` combatActionTargetSlot of edge i (or -1).
+        void predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
+                              const int *targetSlots, int n, double *out) const;
 
         // Compact copy of `trees` for predictPolicyActions, built by load for
         // policy tree ensembles whose children follow their parents (empty

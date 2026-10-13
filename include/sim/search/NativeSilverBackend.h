@@ -117,6 +117,12 @@ namespace sts::search {
     // root prior also scores non-root decision nodes with at least K simulations
     // (SilverSearcher::nodePrior) and tries untried edges in prior order.
     extern thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    // Research-only (Silver AZ MLP loop): when set, nativeSilverPolicyPrior
+    // scores with this policy model instead of the STS_SILVER_ROOT_PRIOR one
+    // (which must still be configured: it turns the prior on and sets its
+    // weight). Unset elsewhere.
+    struct CombatValueNet;
+    extern thread_local const CombatValueNet *g_nativeSilverPriorNetOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 

@@ -742,8 +742,9 @@ namespace sts::search {
             if (end == weight || *end != '\0' || !(g_options.rootPriorWeight > 0))
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_WEIGHT must be a positive number");
             g_rootPriorNet = CombatValueNet{};
-            if (!g_rootPriorNet.load(path) || !g_rootPriorNet.isPolicy || g_rootPriorNet.trees.empty())
-                throw std::runtime_error(std::string("STS_SILVER_ROOT_PRIOR: cannot load policy trees from ") + path);
+            if (!g_rootPriorNet.load(path) || !g_rootPriorNet.isPolicy
+                    || (g_rootPriorNet.trees.empty() && !g_rootPriorNet.isPolicyMlp))
+                throw std::runtime_error(std::string("STS_SILVER_ROOT_PRIOR: cannot load a policy model from ") + path);
             g_options.rootPriorPath = path;
         }
         // STS_SILVER_ROOT_PRIOR_SCOPE=override keeps the prior off unless a thread
@@ -808,28 +809,50 @@ namespace sts::search {
         // The state block is extracted once; edges with bit-identical action
         // blocks (e.g. two copies of a card) are scored once. Same values as
         // predictVec per edge (CombatValueNet::predictPolicyActions).
+        // A combat_policy_mlp_v1 model (or a per-thread override) also keys
+        // edges by target slot and normalizes logits with a softmax.
+        const CombatValueNet &net = g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet;
+        const bool mlp = net.isPolicyMlp;
         const int stateCount = combatFeatureCount();
         const int actionCount = combatPolicyFeatureCount() - stateCount;
         const int n = static_cast<int>(edges.size());
         thread_local std::vector<float> features, actions;
-        thread_local std::vector<int> distinctOf;
+        thread_local std::vector<int> distinctOf, targets;
         thread_local std::vector<double> scores;
         features.resize(stateCount);
         combatExtractFeatures(state, features.data());
         actions.resize(static_cast<std::size_t>(n) * actionCount);
         distinctOf.resize(n);
+        targets.resize(n);
         int distinct = 0;
         for (int i = 0; i < n; ++i) {
             float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
             combatFillActionFeatures(state, edges[i].action, block);
+            const int target = mlp ? combatActionTargetSlot(state, edges[i].action) : -1;
             int match = 0;
-            while (match < distinct && std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
-                                                   block, sizeof(float) * actionCount) != 0) ++match;
+            while (match < distinct && (targets[match] != target
+                       || std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
+                                      block, sizeof(float) * actionCount) != 0)) ++match;
             distinctOf[i] = match;
-            if (match == distinct) ++distinct;
+            if (match == distinct) targets[distinct++] = target;
         }
         scores.resize(distinct);
-        g_rootPriorNet.predictPolicyActions(features.data(), actions.data(), distinct, scores.data());
+        if (mlp) {
+            net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, scores.data());
+            double top = scores[0];
+            for (int d = 1; d < distinct; ++d) top = std::max(top, scores[d]);
+            std::vector<double> prior;
+            prior.reserve(edges.size());
+            double total = 0;
+            for (int i = 0; i < n; ++i) {
+                const double p = std::exp(scores[distinctOf[i]] - top);
+                prior.push_back(p);
+                total += p;
+            }
+            for (auto &p : prior) p /= total;
+            return prior;
+        }
+        net.predictPolicyActions(features.data(), actions.data(), distinct, scores.data());
         std::vector<double> prior;
         prior.reserve(edges.size());
         double total = 0;
@@ -906,6 +929,7 @@ namespace sts::search {
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
