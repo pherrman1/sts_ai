@@ -1,0 +1,8 @@
+{
+  "artifact": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/lizard-s23/FAST1L.native",
+  "artifactSha256": "6090417f25458907dfdcbfe1c6b128edf1406c8127028989d44dd5f845f0369f",
+  "baseArtifactSha256": "d8064294904a206668d844967e99a9c54b4f999204d3f0ef8019188bb81d4b7e",
+  "candidateId": "pathb-a20",
+  "controlSha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+  "role": "fast"
+}

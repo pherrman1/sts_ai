@@ -1,0 +1,90 @@
+[  0%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/Actions.cpp.o
+[  3%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/BattleContext.cpp.o
+[  3%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/CardInstance.cpp.o
+[  6%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/CardManager.cpp.o
+[  6%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/CardQueue.cpp.o
+[  6%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/Monster.cpp.o
+[ 10%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/MonsterGroup.cpp.o
+[ 10%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/MonsterSpecific.cpp.o
+[ 10%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/MonsterMoveDamage.cpp.o
+[ 13%] Building CXX object CMakeFiles/sts_core_objects.dir/src/combat/Player.cpp.o
+[ 13%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/Card.cpp.o
+[ 17%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/CombatReward.cpp.o
+[ 17%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/Deck.cpp.o
+[ 17%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/Game.cpp.o
+[ 20%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/Map.cpp.o
+[ 20%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/GameContext.cpp.o
+[ 20%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/Neow.cpp.o
+[ 24%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/SaveFile.cpp.o
+[ 24%] Building CXX object CMakeFiles/sts_core_objects.dir/src/game/Shop.cpp.o
+[ 24%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/BattleSimulator.cpp.o
+[ 27%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/ConsoleSimulator.cpp.o
+[ 31%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/Action.cpp.o
+[ 31%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/SimHelpers.cpp.o
+[ 31%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/PrintHelpers.cpp.o
+[ 31%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatCpsiNet.cpp.o
+[ 34%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatDistValueNet.cpp.o
+[ 34%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatKnowledge.cpp.o
+[ 34%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatObservation.cpp.o
+[ 37%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatValueNet.cpp.o
+[ 37%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/ExpertKnowledge.cpp.o
+[ 41%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/GameAction.cpp.o
+[ 41%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/MatchAndKeepPolicy.cpp.o
+[ 41%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/NativeSilverBackend.cpp.o
+[ 44%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/NativeSilverStopModel.cpp.o
+[ 44%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/OocMctsPlanner.cpp.o
+[ 44%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/OocSemanticAction.cpp.o
+[ 48%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/ScumSearchAgent2.cpp.o
+[ 48%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SearchRng.cpp.o
+[ 51%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SearchStateHash.cpp.o
+[ 51%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverConversion.cpp.o
+[ 51%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverRolloutAgent.cpp.o
+[ 55%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverSearcher.cpp.o
+[ 55%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverSemanticAction.cpp.o
+[ 55%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverUselessAction.cpp.o
+[ 58%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SilverWireState.cpp.o
+[ 58%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SimHealth.cpp.o
+[ 58%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/SimpleAgent.cpp.o
+[ 58%] Built target sts_core_objects
+[ 58%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat.cpp.o
+[ 58%] Building CXX object CMakeFiles/one_combat.dir/apps/combat_model_diagnostics.cpp.o
+[ 62%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/screen_leaf_snapshot.cpp.o
+[ 62%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/screen_leaf_s0.cpp.o
+[ 62%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/screen_leaf_continuations.cpp.o
+[ 65%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/screen_leaf_probes.cpp.o
+[ 65%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/screen_leaf_gbm.cpp.o
+[ 65%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/screen_leaf_net.cpp.o
+[ 68%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_features.cpp.o
+[ 68%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/compact_tree.cpp.o
+[ 72%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_predictor_input.cpp.o
+[ 72%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition.cpp.o
+[ 72%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/e2c_capture.cpp.o
+[ 75%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 75%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_native_fallback.cpp.o
+/home/philippherrmann/Documents/sts/wt-lizard-s23/apps/one_combat.cpp: In function ‘RunResult runFullRun(uint64_t, int, int, bool)’:
+/home/philippherrmann/Documents/sts/wt-lizard-s23/apps/one_combat.cpp:269:58: warning: narrowing conversion of ‘std::chrono::duration<double>(std::chrono::operator-<_V2::steady_clock, duration<long int, std::ratio<1, 1000000000> >, duration<long int, std::ratio<1, 1000000000> > >(t1, t0)).std::chrono::duration<double>::count()’ from ‘std::chrono::duration<double>::rep’ {aka ‘double’} to ‘int’ [-Wnarrowing]
+  269 |              std::chrono::duration<double>(t1 - t0).count() };
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/home/philippherrmann/Documents/sts/wt-lizard-s23/apps/one_combat.cpp:269:58: warning: narrowing conversion of ‘std::chrono::duration<double>(std::chrono::operator-<_V2::steady_clock, duration<long int, std::ratio<1, 1000000000> >, duration<long int, std::ratio<1, 1000000000> > >(t1, t0)).std::chrono::duration<double>::count()’ from ‘std::chrono::duration<double>::rep’ {aka ‘double’} to ‘int’ [-Wnarrowing]
+[ 75%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition_near_full.cpp.o
+[ 79%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition_runtime.cpp.o
+[ 79%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_transition_native_contract.cpp.o
+[ 82%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_policy.cpp.o
+[ 82%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_v4_encoding.cpp.o
+[ 82%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_driver.cpp.o
+[ 86%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/differential_state.cpp.o
+[ 86%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/differential_replay_native.cpp.o
+[ 86%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_trace.cpp.o
+[ 89%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/semantic_pilot.cpp.o
+[ 89%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_datasets.cpp.o
+[ 93%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/silver_synth_gen.cpp.o
+[ 93%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/silver_synth_replay.cpp.o
+[ 93%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ctm_offline_score.cpp.o
+[ 96%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_factor_eval.cpp.o
+[ 96%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/strategic_gen.cpp.o
+[ 96%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/counterfactual_gen.cpp.o
+[100%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_checkpoint_policy.cpp.o
+[100%] Linking CXX executable one_combat
+lto-wrapper: warning: using serial compilation of 95 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target one_combat

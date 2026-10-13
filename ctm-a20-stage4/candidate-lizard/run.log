@@ -1,0 +1,10 @@
+=== s1-std2 rc=0
+=== s2-package rc=0
+=== s3-stamp rc=0
+=== s4-escextend rc=1
+    result = extend(args.artifact, args.checkpoint, args.out)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/Documents/sts/wt-lizard-s23/tools/ctm_escape.py", line 305, in extend
+    raise ValueError('escape fit was made on a different artifact')
+ValueError: escape fit was made on a different artifact
+STOPPED_AT s4-escextend 2026-10-13T19:39:33Z

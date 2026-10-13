@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/philippherrmann/Documents/sts/wt-lizard-s23/tools/ctm_escape.py", line 349, in <module>
+    main()
+  File "/home/philippherrmann/Documents/sts/wt-lizard-s23/tools/ctm_escape.py", line 344, in main
+    result = extend(args.artifact, args.checkpoint, args.out)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/Documents/sts/wt-lizard-s23/tools/ctm_escape.py", line 305, in extend
+    raise ValueError('escape fit was made on a different artifact')
+ValueError: escape fit was made on a different artifact
