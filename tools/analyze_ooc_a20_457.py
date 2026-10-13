@@ -28,6 +28,7 @@ BOSS_FLOORS = {16, 33, 50}
 EVIDENCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "experiments", "evidence",
                         "ooc_a20_ab_457_20261013")
 FAIL_RE = re.compile(r"\[bestbench-seed-failure\] seed=(\d+)")
+CANDIDATE_BANNER = "[ctm-research-candidate] candidate_id=pathb-a20"
 
 
 def cohort_from_file():
@@ -48,8 +49,10 @@ def load(run_dirs):
                 if not re.fullmatch(rf"{a}-\d+\.done", os.path.basename(path)):
                     continue
                 log = path[:-5] + ".log"
-                fails = [int(x) for x in FAIL_RE.findall(open(log).read())] if os.path.exists(log) else []
-                done[a].append({"line": open(path).read().strip(), "seed_failures": fails})
+                text = open(log).read() if os.path.exists(log) else ""
+                fails = [int(x) for x in FAIL_RE.findall(text)]
+                done[a].append({"line": open(path).read().strip(), "seed_failures": fails,
+                                "candidate_banner": CANDIDATE_BANNER in text})
     return arms, done
 
 
@@ -58,6 +61,9 @@ def analyze(arms, done, cohort):
     rows = {a: arms[a][0] for a in ARMS}
     failed = {a: sorted({s for d in done[a] for s in d["seed_failures"]}) for a in ARMS}
     bad = [d["line"] for a in ARMS for d in done[a] if not re.search(r"\brc=0\b", d["line"]) and not d["seed_failures"]]
+    # the combo arm must have loaded the A20 candidate CTM; off must not load any CTM candidate
+    bad += [d["line"] + " (candidate banner missing)" for d in done["combo"] if not d["candidate_banner"]]
+    bad += [d["line"] + " (unexpected candidate banner)" for d in done["off"] if d["candidate_banner"]]
     missing = {a: sorted(set(cohort) - set(rows[a]) - set(failed[a])) for a in ARMS}
     extra = sorted(set().union(*(set(rows[a]) for a in ARMS)) - set(cohort))
     seeds = sorted(set(cohort).intersection(*(set(rows[a]) for a in ARMS)))
@@ -129,12 +135,16 @@ def selftest():
             with open(os.path.join(t, f"{arm}-0.mcts.csv"), "w") as f:
                 f.write(mh + "".join(f"{s},100,90,10,4096,5,1\n" for s in cohort))
             open(os.path.join(t, f"{arm}-0.done"), "w").write(f"tag={arm}-0 rc=0")
+            open(os.path.join(t, f"{arm}-0.log"), "w").write(CANDIDATE_BANNER + "\n" if arm == "combo" else "")
         r = analyze(*load([t]), cohort)
         assert r["pairs"] == 100 and r["label"] == "IMPROVED", r
         assert r["deaths_by_act"]["off"][2] == 100 - r["wins"]["off"], r
         assert r["search"]["combo"]["simulations_per_run"] == 4096
         assert analyze(*load([t]), range(101))["label"] == "INVALID"            # seed 100 missing in both arms
         assert analyze(*load([t]), range(99))["label"] == "INVALID"             # seed 99 outside the cohort
+        open(os.path.join(t, "combo-0.log"), "w").write("")
+        assert analyze(*load([t]), cohort)["label"] == "INVALID"                # combo without the A20 CTM
+        open(os.path.join(t, "combo-0.log"), "w").write(CANDIDATE_BANNER + "\n")
         open(os.path.join(t, "combo-0.done"), "w").write("tag=combo-0 rc=1")
         assert analyze(*load([t]), cohort)["label"] == "INVALID"                # failed unit
     assert len(cohort_from_file()) % 16 == 0

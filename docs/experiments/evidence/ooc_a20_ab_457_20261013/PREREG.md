@@ -1,7 +1,7 @@
 # §457 OOC MCTS `combo` vs OOC off at ascension 20, 128 paired seeds (pre-registration, 2026-10-13)
 
 Philipp, 2026-10-13 16:05Z: "How the ooc MCTS A20 doing? Can we try 128 seeds A/B?", then 16:06Z: "Just do it on your
-own, use 8 workers". Frozen with the run commit and binary hash before launch; independent pre-launch review by the
+own, use 8 workers", then 16:56Z: "Just upload the files for the ctm?? Then do it in the cloud?". Frozen with the run commit and binary hash before launch; independent pre-launch review by the
 coordinator. 8 cloud workers × 16 seeds × 2 arms.
 
 ## What is known at A20 (baseline)
@@ -23,26 +23,31 @@ coordinator. 8 cloud workers × 16 seeds × 2 arms.
 - `off`: §433 `off` unchanged (the §422 base: exact-10k Silver, V4 OOC gates at margin 1.0, keys off,
   `STS_STOP_AFTER_ACT=3`, `STS_OOC_MCTS=0`), at ascension 20.
 - `combo`: §433 `combo` unchanged (rollout3, 4096 simulations, `WIDEN_K=4`, `WIDEN_ALPHA=0.75`, 3 leaf combats, native
-  leaf, V4 prior and leaf policy), at ascension 20, with today's automatic default CTM stack (below).
+  leaf, V4 prior and leaf policy), at ascension 20, with the A20 CTM below.
 - Both arms pin `STS_OOC_PUBLIC_FUTURES=8` (the default since #496), as §451 did. `STS_WIN_NET` stays unset, so the
   leaf win model is today's default under OOC MCTS (public X2-B, ADR-0029; §449 found no difference from `v_win`).
 
-## Treatment CTM: today's default stack (changed from the draft)
-- The draft picked the A20 candidate `pathb-a20`. Its files exist only on Philipp's machine, and Philipp asked for the
-  run to go ahead without him, so `combo` uses the automatic default CTM stack: the production §435 Lizard-capable
-  pathb-r2 fast artifact (`c6d56bbc…`) and standard Brew fallback (`b9188de0…`), no CTM variables set. That is what
-  OOC MCTS does at A20 today.
-- Consequence (**Inference**, from Stage 0): imagined fights are priced with almost no death risk (the model gets raw
-  ascension 20; predicted death 0.5% vs 10.5% observed). This run answers "does the current OOC MCTS help at A20",
-  not "does OOC MCTS with an A20 CTM help".
-- A third arm, `combo` with the A20 candidate, can be added later on the same seeds as a paired extension; it needs its
-  own pre-registration addendum, and its result never promotes the A20 CTM (it is NOT_QUALIFIED offline, §443).
+## Treatment CTM: the A20 candidate, not the production CTM
+- **Choice:** `pathb-a20` with escape, extended with the §443 Stage 4 Step 1 Lizard Fairy/Brew refit when that refit
+  passes its keep rule (Stage 4 pre-registration); otherwise the escape candidate as is (fast `34870815…`, standard
+  `b489e537…`, manifest `7274c5c3…`) with `STS_OOC_MCTS_ACTIVE_LIZARD=0`, so active-Lizard states fall back to V4 for
+  that decision. `ctm_artifacts.txt` pins the data-branch commit, the three files and their sha256, and the
+  active-Lizard setting; Philipp's machine pushed them to `claude/ctm-a20-data`.
+- **Why:** the production CTM gets raw ascension 20 and predicts 0.5% deaths against 10.5% observed (§443 Stage 0), so
+  a `combo` arm with it would search over a model that sees almost no death risk. The A20 candidate is the only model
+  calibrated near A20 outcomes; its offline failures (boss bias 0.015, Lizard refusals) are small next to
+  production's 0.15–0.49.
+- **Scope:** this is a research arm. It does not qualify the A20 CTM and is not the §443 Stage 3b live gate; no CTM
+  default changes whatever the result.
+- Loading: `STS_OOC_MCTS_COMBAT_MODEL` = fast, `STS_OOC_MCTS_BREW_FALLBACK_MODEL` = standard,
+  `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and `_SHA256` = the manifest (`arm_env.sh`). The analysis is INVALID unless
+  every `combo` log shows `[ctm-research-candidate] candidate_id=pathb-a20` and no `off` log does.
 
 ## Seeds and runs
 - Seeds 87000000–87000127, one `bestbench 10000 1 20 SEED` unit per seed and arm (256 units). Smokes 74047000–099
   (this thread).
 - Smoke (before launch): seed 74047000 in both arms with the frozen worker scripts. It checks that both arms run at
-  ascension 20, `combo` shows its OOC MCTS banner and the default CTM stack, and both complete; it reports s per run.
+  ascension 20, `combo` shows its OOC MCTS banner and the A20 candidate banner, and both complete; it reports s per run.
 - Stalls: a native Silver stall in a live combat is a `[bestbench-seed-failure]` (unit rc 1, no result row). Such a
   seed is dropped from both arms and listed; any other gap or nonzero rc makes the analysis INVALID
   (`tools/analyze_ooc_a20_457.py`).

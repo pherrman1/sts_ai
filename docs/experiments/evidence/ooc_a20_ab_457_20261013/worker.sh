@@ -35,9 +35,22 @@ setup)
   got=$(sha256sum "$RUN/one_combat" | cut -d' ' -f1)
   [ "$got" = "$EXPECT_BIN" ] || stop "binary sha256 $got != $EXPECT_BIN ($(g++ --version | head -1))"
   echo "$CODE" > "$RUN/GITSHA"
+  # A20 CTM (combo arm): copy fast/standard/manifest from the pinned data-branch commit, check each sha256
+  DATAC=$(awk '$1=="data_commit"{print $2}' "$D/ctm_artifacts.txt")
+  git fetch -q origin claude/ctm-a20-data || stop "cannot fetch claude/ctm-a20-data"
+  git cat-file -e "$DATAC^{commit}" || stop "data commit $DATAC not found"
+  mkdir -p "$RUN/ctm"
+  for role in fast standard manifest; do
+    read -r _ path sha < <(awk -v r=$role '$1==r' "$D/ctm_artifacts.txt")
+    [ -n "$path" ] && [ -n "$sha" ] || stop "ctm_artifacts.txt lacks $role"
+    ext=native; [ $role = manifest ] && ext=json
+    git show "$DATAC:$path" > "$RUN/ctm/$role.$ext" || stop "cannot read $path at $DATAC"
+    got=$(sha256sum "$RUN/ctm/$role.$ext" | cut -d' ' -f1)
+    [ "$got" = "$sha" ] || stop "$role sha256 $got != $sha"
+  done
   python3 tools/analyze_ooc_a20_457.py selftest >/dev/null || stop "analysis selftest"
   { echo "worker=$W run=$RUNC code=$CODE binary=$EXPECT_BIN $(g++ --version | head -1)"
-    sha256sum "$D"/*.sh "$D"/PREREG.md "$D"/NPAIRS tools/analyze_ooc_a20_457.py models/v_win_trees.txt; } > "$OUT/FROZEN.txt"
+    sha256sum "$D"/*.sh "$D"/PREREG.md "$D"/NPAIRS "$D"/ctm_artifacts.txt "$RUN"/ctm/* tools/analyze_ooc_a20_457.py models/v_win_trees.txt; } > "$OUT/FROZEN.txt"
   echo "setup ok: $(head -1 "$OUT/FROZEN.txt")" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"
