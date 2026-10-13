@@ -17308,3 +17308,43 @@ escapes, quarantined).
 84009000–84009001 (smoke) are now used; reviewer seeds 74035000–74035004.
 
 **Knowledge impact:** tree-prior paragraph in `architecture/combat-search.md`.
+
+## §453 — Silver tree prior vs plain Silver at matched CPU: not shown (2026-10-12)
+
+**Question (Philipp, 2026-10-12, "Run check"):** §452 found the in-tree v1 prior (K = 8) better than plain
+2k at equal simulations, at 2.9x the CPU. Does it still beat plain Silver given the same CPU? Only then is
+prior-guided search a stronger teacher per unit of compute, which an AlphaZero-style loop needs.
+**Design:** [PREREG](evidence/silver_cpumatch_20261012/PREREG.md), frozen after independent review
+(PASS at run commit `94110b53`; code `9b74de14`, binary `d459a654…`). Same harness, sources, pairing and
+metric as §452, with `STS_CTMSILVER_ARMSET=cpumatch453`: arms `plain2k`, `tree8_2k` (K = 8, w = 400) and
+`plain6k`, 2 replicates each, combat RNG redrawn per (fight, replicate) identically for all arms. Fresh
+seeds 84000200–84000327, 16 cloud workers × 4 cores. Primary: `tree8_2k − plain6k`, all fights, score.
+**Result: `NOT_SHOWN`.** 3,325 of 3,345 fights valid; the 20 excluded are escape states (the 17 control
+mismatches are Smoke Bomb escapes with an invalid source, the rest escape-quarantined arm rows).
+
+| contrast (score) | all (n = 3,325) | boss (n = 368) | elite (n = 818) |
+|---|---|---|---|
+| tree8 − plain6k (primary) | +0.46 [−0.02, +0.97] | +3.88 [+0.38, +7.69] | +0.10 [−0.85, +1.20] |
+| tree8 − plain2k (§452 replication) | +1.84 [+1.40, +2.30] | +11.41 [+7.76, +15.25] | +1.39 [+0.37, +2.45] |
+| plain6k − plain2k | +1.38 [+0.94, +1.82] | +7.53 [+4.28, +10.86] | +1.29 [+0.51, +2.10] |
+
+- CPU per fight (thread CPU): plain2k 0.41 s, tree8 1.17 s, plain6k 1.30 s (tree8 / plain6k = 0.90,
+  within the pre-registered 20%); 10k control 2.21 s.
+- Death rate per fight: plain2k 0.84%, plain6k 0.71%, tree8 0.54% (tree8 − plain6k −0.2 pp
+  [−0.3, −0.0]; boss −1.4 pp [−2.6, −0.3]).
+
+**Interpretation:**
+- §452 replicates on fresh seeds (tree8 − plain2k +1.84, larger than §452's +1.17).
+- Most of that gain is what the same CPU buys plain search: plain 6k recovers about three quarters of it
+  (+1.38). The rest, +0.46, has a CI that just touches zero, so by the pre-registered rule the prior is
+  not shown to beat plain search at matched CPU, and no loop design follows.
+- The leftover points the same way as before: fewer deaths, concentrated in boss fights (boss +3.88,
+  CI above zero; a secondary subset, not the decision). **Inference:** if the prior's per-node cost
+  fell, the same search could beat plain at matched CPU; whether profiling can make that happen is §454.
+- Contrary to §406's win-rate result (plain 2k ≈ plain 10k), more plain sims still raise the fight score
+  from 2k to 6k, mostly in boss fights. Win-rate impact is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_cpumatch_20261012/README.md). Seeds 84000200–84000327 (run) and
+84009002 (smoke) are now used.
+
+**Knowledge impact:** one sentence in the tree-prior paragraph of `architecture/combat-search.md`.

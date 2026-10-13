@@ -5241,11 +5241,19 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // paired fight-level tree-prior pilot at 2k; treeprior452k8 drops the K=1 arm.
     const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
     const std::string armSet = armSetEnv ? armSetEnv : "";
-    if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8")
-        throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452 or treeprior452k8");
+    if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453")
+        throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8 or cpumatch453");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
-    if (!armSet.empty()) {
+    if (armSet == "cpumatch453") {
+        // §453: plain search at about tree8_2k's CPU per fight.
+        arms = {
+            {"control", sims, false, false, 1},
+            {"plain2k", 2000, false, true, replicates},
+            {"tree8_2k", 2000, true, true, replicates, 8},
+            {"plain6k", 6000, false, true, replicates},
+        };
+    } else if (!armSet.empty()) {
         arms = {
             {"control", sims, false, false, 1},
             {"plain2k", 2000, false, true, replicates},
