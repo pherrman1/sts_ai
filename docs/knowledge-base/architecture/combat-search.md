@@ -344,8 +344,16 @@ sigmoid-then-normalize (the tree path is unchanged). The state layer runs once
 per node over the nonzero state features; per edge the net adds the action
 block, a card-embedding row for `aCardId` and the targeted monster's nine slot
 features (`combatActionTargetSlot`), then two ReLU layers; edges with equal
-action blocks and target are scored once. `tools/silver_az_mlp.py` featurizes
-the synthetic corpus (`silversynthfeatures` action rows carry `tgt`), trains
+action blocks and target are scored once. A `combat_policy_mlp_v2` file adds
+optional tables (`enc`, `mon_id`, `mon_dmg`, 128 x h1 each) after the v1 body:
+one per-node row for the encounter id and, per occupied monster slot, rows for
+id + 1 and for its incoming damage (feature `mKIntent`, which is the damage, not
+an intent category). Without them the state layer sees these values only as
+plain numbers. Loaders older than v2 reject the header instead of dropping the
+tables, and a v1 file with tables does not load; v1 files score as before
+(`docs/experiments/evidence/silver_prior_arch_20261014/`).
+`tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
+action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the
 embedding projection folded in. `one_combat silverpolicymlpcheck MODEL PREFIX
 OUT [GBM]` writes the native logits of a feature file for the Python parity

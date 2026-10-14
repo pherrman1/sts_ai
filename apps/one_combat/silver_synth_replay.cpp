@@ -273,7 +273,7 @@ void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefi
                           const std::string &gbmPath) {
     search::CombatValueNet net;
     if (!net.load(modelPath) || !net.isPolicyMlp)
-        throw std::runtime_error("silverpolicymlpcheck: cannot load a combat_policy_mlp_v1 model from " + modelPath);
+        throw std::runtime_error("silverpolicymlpcheck: cannot load a combat_policy_mlp_v1/v2 model from " + modelPath);
     const int S = search::combatFeatureCount();
     const int A = search::combatPolicyFeatureCount() - S;
     auto readAll = [&](const std::string &suffix, std::size_t width) {
