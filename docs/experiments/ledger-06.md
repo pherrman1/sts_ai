@@ -17883,6 +17883,8 @@ paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
 - Boss deaths 13 vs 20 and the top-Q share are descriptive, not pre-registered.
 - Rules and merging changed together, so their effects cannot be split from this run.
 - No default change (prereg); both flags stay opt-in. Philipp decides what comes next.
+- **Decision (Philipp, 2026-10-14 09:58Z):** "both flags should be default" → [ADR-0031](../../decisions/0031-ooc-mcts-tree-rules-merge-default.md),
+  live OOC MCTS defaults to tree rules and outcome merging.
 
 **Evidence:** [packet](evidence/ooc_tree_rules_464_20261014/README.md). Raw: `/mnt/project-files/ooc-tree-rules-464/`
 (one tar per worker). Trace that motivated it: `/mnt/project-files/ooc-decision-trace/REPORT.md`. Seeds

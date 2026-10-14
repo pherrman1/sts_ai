@@ -598,7 +598,8 @@ in visible state in all but a handful of event cases
 ([#384](https://github.com/pherrman1/sts_ai/issues/384)). A paired 128-seed
 gameplay comparison (§367) was inconclusive: `floor + 10*won` difference
 -0.25, 95% interval [-2.46, +1.96], wins 86 vs 83, about 13% more time per
-run. The option stays off.
+run. Since ADR-0031 (§464, together with `STS_OOC_MCTS_TREE_RULES`) live OOC MCTS
+merges by default; `STS_OOC_MCTS_MERGE_OUTCOMES=0` restores independent particles.
 
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
@@ -667,8 +668,8 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
 | `ROLLOUT_SHOP` |planner|`planner` (first item of the best affordable bundle) or `greedy` (single best purchase or leave per decision) for shops in leaf rollouts|
-| `TREE_RULES` |0|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
-| `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
+| `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
+| `MERGE_OUTCOMES` |1 (ADR-0031)|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
 for unsupported/nonunique selectors; all transitions keep the same combat

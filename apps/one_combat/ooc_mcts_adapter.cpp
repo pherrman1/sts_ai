@@ -1770,7 +1770,11 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                 dependencies.continuationStep(child.gc, child.path, rng);
                 if (t_decisionLog) {
                     const auto [detail, kinds] = logDiff(*before, LogSnapshot(child.gc));
+#ifndef STS_LIVE_ADVISOR
                     const std::string handler = lastOocChainHandler();
+#else
+                    const std::string handler = "advisor";
+#endif
                     t_decisionLog->add("rollout_step", screen + " | " + handler + " | " + kinds);
                     if (t_decisionLog->rollout)
                         t_decisionLog->rollout->at("steps").push_back({{"floor", before->floor},
@@ -2202,6 +2206,10 @@ void configureLiveOocMcts() {
         if (!out) throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE cannot open output");
     }
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
+    // ADR-0031 (§464): live tree rules and outcome merging are the defaults;
+    // STS_OOC_MCTS_TREE_RULES=0 / STS_OOC_MCTS_MERGE_OUTCOMES=0 restore the old tree.
+    liveConfig.mergeEquivalentOutcomes = true;
+    liveOptions.treeRules = true;
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
     // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
