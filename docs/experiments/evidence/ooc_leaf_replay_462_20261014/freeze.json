@@ -1,0 +1,10 @@
+{
+  "PROTOCOL.md": "d329555b4dac56d80d94f60d452b7970c180fff04889c69b4aa5b96ccbcb450d",
+  "analyze.py": "7924e6d518b02314221349170f7aed188ced22d9505fb6d1be3cd6a647cc88b4",
+  "historical-reference.json": "ac1a69e350f438147fd9e58a006a563a53318b36293edef4cf56facb1a78eb4f",
+  "implementation-review.json": "577242feeb78482855de941c9f20f673db25bf34ef0e57d35ae970a341df56b7",
+  "manifest.json": "20d5b5302413bfb8ff923d172fea768244b7265a01ade2dc5a04a67bb5ef8a24",
+  "one_combat": "abd6f14d42668cc67ebda3604687300feaef36e234fb38812db96f6bf8ef1bed",
+  "run_probe.py": "bff9ed7fc4ffe4f804f7643842c4494a0622259424e880a518ce4b84970c84c5",
+  "seed_guard.sh": "8a44e26a69d5fabf17b441f9718a635863f40ec0e6df550bdc99757675ff637e"
+}
