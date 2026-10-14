@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -598,7 +598,8 @@ in visible state in all but a handful of event cases
 ([#384](https://github.com/pherrman1/sts_ai/issues/384)). A paired 128-seed
 gameplay comparison (§367) was inconclusive: `floor + 10*won` difference
 -0.25, 95% interval [-2.46, +1.96], wins 86 vs 83, about 13% more time per
-run. The option stays off.
+run. Since ADR-0031 (§464, together with `STS_OOC_MCTS_TREE_RULES`) live OOC MCTS
+merges by default; `STS_OOC_MCTS_MERGE_OUTCOMES=0` restores independent particles.
 
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
@@ -666,8 +667,9 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
-| `ROLLOUT_SHOP` |planner|`planner` (first item of the best affordable bundle) or `greedy` (single best purchase or leave per decision) for shops in leaf rollouts|
-| `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
+| `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
+| `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
+| `MERGE_OUTCOMES` |1 (ADR-0031)|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
 for unsupported/nonunique selectors; all transitions keep the same combat
@@ -1161,15 +1163,15 @@ effect. §463 (128 fresh paired seeds, §433 `combo` with planner rollout shops)
 found no playing-strength difference: 110 vs 110 wins, 0.0 pp [−7.1, +7.8],
 NOT_SHOWN; the default stays on.
 
-`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (default `planner`, verified 2026-10-13)
+`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (live default since ADR-0032; `planner` restores the bundle planner; verified 2026-10-14)
 changes only shops reached inside OOC MCTS leaf rollouts: `nativeShopPlan`
 scores leaving, each affordable item alone and the best removal alone, and
 returns the single best one (leave on ties). The step executes it and the next
 decision asks again, so purchases repeat greedily. It uses the same
 deck-size accounting as the bundle planner (`STS_OOC_SHOP_DECK_SIZE_FIX`). Live shop roots and the MCTS-off chain keep the
 bundle planner. §459 (128 fresh paired seeds, `combo`): wins 103 vs 101,
-+1.6 pp [−5.5, +8.6], NOT_SHOWN, at about 11% less wall time per run; it stays
-opt-in pending Philipp's call.
++1.6 pp [−5.5, +8.6], NOT_SHOWN, at about 11% less wall time per run. Philipp
+made it the default on 2026-10-14 (ADR-0032).
 
 OOC MCTS shop roots split the V4 removal prior across targets: every removal
 target maps to the one `CARD_REMOVE` primitive and `legalActions` divides each
