@@ -36,6 +36,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <atomic>
 #include <iomanip>
 #include <iostream>
 #include <set>
@@ -1814,6 +1815,14 @@ std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
+// STS_OOC_MCTS_A20_CTM=1 (§470, off by default): the bundled A20 stack, used for ascension-20 decisions.
+std::shared_ptr<const CombatTransitionSampler> liveSamplerA20;
+std::shared_ptr<const CombatTransitionSampler> liveSamplerFor(const GameContext &gc) {
+    if (!liveSamplerA20 || gc.ascension < 20) return liveSampler;
+    static std::atomic<bool> announced{false};
+    if (!announced.exchange(true)) std::cout << "[ctm-a20] ascension-20 decisions use pathb-a20\n";
+    return liveSamplerA20;
+}
 std::unique_ptr<OocLeafCaptureSink> liveLeafCapture;
 std::string pendingLeafCapturePath;
 nlohmann::json pendingLeafCaptureProvenance;
@@ -2147,6 +2156,7 @@ std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
     return splitMix64(seed ^ splitMix64(index));
 }
 void configureLiveOocMcts() {
+    liveSamplerA20.reset();
     const char *enabled = std::getenv("STS_OOC_MCTS");
     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
         throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
@@ -2339,6 +2349,28 @@ void configureLiveOocMcts() {
     // Research candidates are named in the log; production output is unchanged.
     if(!researchCandidate.empty())
         std::cout << "[ctm-research-candidate] candidate_id=" << researchCandidate << "\n";
+    // §470: the bundled A20 Lizard CTM with its boss calibration, for ascension-20 decisions only; below A20 the
+    // stack above stays in use. Only beside the automatic default stack, so no override can mix into it.
+    const char *a20Ctm = std::getenv("STS_OOC_MCTS_A20_CTM");
+    if (a20Ctm && std::string(a20Ctm) != "0" && std::string(a20Ctm) != "1")
+        throw std::runtime_error("STS_OOC_MCTS_A20_CTM must be 0 or 1 when set");
+    if (a20Ctm && std::string(a20Ctm) == "1") {
+        if (!automaticDefaultStack || brewFallbackOverride || !activeLizardEnabled
+                || std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 requires the default CTM stack: no STS_OOC_MCTS_COMBAT_MODEL, "
+                "STS_OOC_MCTS_BREW_FALLBACK_MODEL, STS_OOC_MCTS_ACTIVE_LIZARD=0, STS_OOC_MCTS_COMBAT_RESOLVER, "
+                "STS_CTM_RESEARCH_CANDIDATE_MANIFEST or STS_OOC_MCTS_LEAF_CAPTURE");
+        auto a20 = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
+            "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+            "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", true);
+        const auto &identity = a20->fastRuntime().identity();
+        if (identity.at("candidateId") != "pathb-a20" || !identity.contains("bossSurvivalLogitShift"))
+            throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 did not load the calibrated pathb-a20 stack");
+        liveSamplerA20 = a20;
+        std::cout << std::setprecision(17) << "[ctm-research-candidate] candidate_id=pathb-a20 scope=ascension20"
+            << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
+            << " active_lizard_correction=1\n" << std::setprecision(6);
+    }
     if (const char *capturePath = std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")) {
         if (silverResolver || liveOptions.screenLeaf || liveOptions.bossLeaf
                 || liveOptions.bossRollout || liveOptions.directLeaf || liveOptions.constantLeaf)
@@ -2836,14 +2868,14 @@ nlohmann::json scoreLiveOocMctsDecision(const GameContext &gc, const PathHistory
     std::uint64_t samples = 0;
     OocContinuationMetrics continuation;
     std::optional<OocGameContextModel::Candidate> selected;
-    const auto result = selectOocMctsAction(gc, path, runSeed, decisionIndex, liveSimulations, liveSampler,
+    const auto result = selectOocMctsAction(gc, path, runSeed, decisionIndex, liveSimulations, liveSamplerFor(gc),
                                             samples, &continuation, &selected);
     const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
     nlohmann::json actions = nlohmann::json::array();
     if (!result.rootActions.empty()) {
         // Candidate identities are deterministic per state; a fresh model only enumerates them.
         ImaginedScope scope;
-        OocGameContextModel names(gc, path, liveSampler, liveOptions);
+        OocGameContextModel names(gc, path, liveSamplerFor(gc), liveOptions);
         for (const auto &a : result.rootActions) {
             const auto &c = names.candidate(0, a.id);
             actions.push_back({{"id", a.id}, {"key", c.key}, {"bits", c.primitive.bits},
@@ -2904,7 +2936,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     std::optional<OocGameContextModel::Candidate> selected;
     const auto result = [&] {
         try {
-            return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler,
+            return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSamplerFor(gc),
                 samples, &continuation, &selected);
         } catch (const std::exception &error) {
             if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", error.what())};
@@ -2954,7 +2986,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         ImaginedScope scope;
         auto shadowOptions = liveOptions;
         shadowOptions.priorTracePath.clear();
-        OocGameContextModel shadow(gc, path, liveSampler, std::move(shadowOptions));
+        OocGameContextModel shadow(gc, path, liveSamplerFor(gc), std::move(shadowOptions));
         if (!shadow.terminalValue(0) && !shadow.isLeafBoundary(0)) {
             auto config=liveConfig;
             config.seed=oocMctsSearchSeed(seed,index);
@@ -3090,6 +3122,11 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     EntropicBrewFallbackCombatTransitionSampler::Metrics brewMetrics;
     const auto hybridSampler=std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSampler);
     if (hybridSampler) brewMetrics=hybridSampler->takeMetrics();
+    // With STS_OOC_MCTS_A20_CTM=1 a run uses one stack (its ascension decides); report the one that prepared.
+    if (const auto a20=std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSamplerA20)) {
+        const auto a20Metrics=a20->takeMetrics();
+        if (a20Metrics.preparations) brewMetrics=a20Metrics;
+    }
     if (oocProfileEnabled()) {
         static const char *names[] = {"mcts", "real_combat", "metadata", "policy_logits",
             "policy_prepare", "policy_predict", "successor", "combat_prepare", "combat_resolve",
@@ -5426,11 +5463,13 @@ void oocMctsAdapterSelfTest() {
         bool enabled = liveEnabled;
         std::uint64_t simulations = liveSimulations;
         std::shared_ptr<const CombatTransitionSampler> sampler = liveSampler;
+        std::shared_ptr<const CombatTransitionSampler> samplerA20 = liveSamplerA20;
         sts::search::OocMctsConfig config = liveConfig;
         OocAdapterOptions options = liveOptions;
         ~LiveConfigScope() { liveEnabled=enabled; liveSimulations=simulations; liveSampler=sampler;
-            liveConfig=config; liveOptions=options; }
+            liveSamplerA20=samplerA20; liveConfig=config; liveOptions=options; }
     } liveScope;
+    liveSamplerA20.reset();
     auto live=GameContext(CharacterClass::IRONCLAD, 42, 0);
     live.screenState=ScreenState::MAP_SCREEN;
     live.curEvent=Event::INVALID;

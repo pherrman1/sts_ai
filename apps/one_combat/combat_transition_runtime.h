@@ -40,6 +40,8 @@ class CombatTransitionRuntime {
     bool escape_ = false;
     bool writhingRitual_ = false;
     bool lizardFairy_ = false;
+    // Manifest bossSurvivalLogitShift (§470): added to the death logit of boss encounters.
+    float bossDeathLogitShift_ = 0;
     // Every max_hp.encoder.* tensor equals its hp.encoder.* twin byte for byte, so
     // encode("max_hp",p) and encode("hp",p) are the same computation.
     bool sharedHpEncoder_ = false;
