@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "scope": "one inherited in-memory MAP leaf; no stability or quality verdict",
+  "receipt": {
+    "returncode": 0,
+    "wallSeconds": 0.9663188220001757,
+    "cpuSeconds": 0.9072319999999999,
+    "wallLimitExceeded": false,
+    "controllerFailure": null,
+    "automaticRetryAllowed": false
+  },
+  "reason": "exact_same_state_rng_evaluation",
+  "sourceRevision": "1125d07db5f5d6597759af291d2fdc4c6981f066",
+  "binarySha256": "abd6f14d42668cc67ebda3604687300feaef36e234fb38812db96f6bf8ef1bed",
+  "differentFields": [],
+  "evaluation": {
+    "actualCombats": 3,
+    "endpoint": {
+      "floor": 5,
+      "hp": 66,
+      "maxHp": 75
+    },
+    "error": "",
+    "projectionSteps": 21,
+    "sourceUnchanged": true,
+    "terminal": false,
+    "value": 0.6771143269743937
+  },
+  "historicalComparison": {
+    "stateId": true,
+    "initialPlannerRng": true,
+    "finalPlannerRng": true,
+    "target": true,
+    "terminal": true,
+    "endpoint": true,
+    "actualCombats": true,
+    "projectionSteps": true
+  }
+}

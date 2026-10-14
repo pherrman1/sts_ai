@@ -17692,3 +17692,130 @@ fights valid (24 escape-quarantined, 4 with invalid control replays; no stall, a
 74057000–74057003, 74058000–74058003 are now used.
 
 **Knowledge impact:** one sentence in the MLP prior paragraph of `architecture/combat-search.md`.
+
+## §461 — A20 internal leaf capture: one-seed observational parity PASS (2026-10-13)
+
+**Question:** can #507 capture genuine internal leaf input/target pairs without
+changing the search? Existing §458 run summaries, §445 decision-root labels and
+CTM transition/gate corpora do not contain these pairs.
+
+**Design:** independently reviewed, frozen [protocol and evidence](evidence/ooc_leaf_capture_461_20261013/README.md).
+One sequential capture-off/on pair on historical seed 87000000, A20 Act 3/no keys,
+fair play, exact-10k native Silver, 4096 OOC simulations, K=4/alpha=.75, three CTM
+combats, V4 prior/continuation and public X2-B. Source `252db2a7`, Release binary
+`b4586cfc…`, exact PR #524 / §458 CTM from data commit `c507cebb` (NOT_QUALIFIED).
+Both arms pin old shop deck-size behavior, planner rollout shops and Silver loop
+guard off. This is current-source parity with the selected historical settings,
+not historical reproduction. One worker, 900 CPU / 1200 wall seconds per arm;
+no retries, extra seeds or training. §459 remains reserved for the separate
+preregistered greedy-shop experiment.
+
+**Result: collector-canary PASS**, independently reproduced from raw artifacts.
+Both runs rc=0 and runtime/backend provenance validated. All deterministic
+results, decision/action/support traces and 136 root / 54 floor profiles match;
+only preregistered timing fields are excluded. The first 64 roots produced
+286 structurally valid samples, with zero input/evaluation/observer errors or
+captured-root aborts. Coverage: 207 Act 1 and 79 Act 2, no Act 3; MAP 112, rewards
+111, rest/shop 18 each, boss relic 10, treasure 8, event 6, card select 3. All
+inputs were decision boundaries; five continuations ended terminal. 285 samples
+completed three CTM combats and one completed one. Capture size: 4,509,533 bytes.
+
+CPU off/on: 267.779914 / 270.934469 seconds, ratio 1.01178; wall 267.815354 /
+270.948831 seconds. This is descriptive timing from one ordered pair alongside
+an unrelated Debug test process, not a qualified overhead estimate. Both
+trajectories died at floor 51; their matching outcome is parity evidence only.
+
+**Decision:** bounded collector behavior is demonstrated on this seed. No
+compression, stability, training-suitability or gameplay verdict. Next inspect
+MAP inputs and prove exact in-process replay with original state ID, full initial
+state/path, pre-evaluation policy state and copied RNG; JSONL does not supply
+replay custody. Then separately bound independent-future repeats. Keep #506's
+public-input/belief qualification and the research teacher's gates separate.
+
+**Evidence:** the packet includes the frozen manifest/protocol, machine-readable
+report and compressed raw observations/traces/receipts/analyzer with hashes.
+The complete executable/model bundle is retained locally at the path in its
+README. Seed 87000000 was reused for diagnostics and cannot become a holdout.
+
+**Knowledge impact:** update the maintained #507 status in `evaluation/current-research.md`;
+no production default or model change.
+
+## §459 — Greedy rollout shops in rollout3 `combo`: wins not shown different, about 11% less CPU (2026-10-13)
+
+**Question (Philipp, 2026-10-13):** "I think we can just buy the best greedily in the rollout", then "test
+on fresh seeds with 8 workers". Inside OOC MCTS leaf rollouts, does replacing the bundle planner
+(`nativeShopPlan` scores every affordable subset and executes the first item of the best bundle) with
+`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (#523: single best purchase, removal or leave per decision) change how
+§433 `combo` plays, in wins and in CPU?
+**Design:** [PREREG](evidence/ooc_greedy_shop_459_20261013/PREREG.md), frozen after independent review
+(code `440cf556`, binary `16426481…7527`). Arms `planner` and `greedy`: §433 `combo` with pinned
+`STS_OOC_PUBLIC_FUTURES=8`, X2-B public `STS_WIN_NET` and `STS_OOC_SHOP_DECK_SIZE_FIX=1`, differing only
+in `STS_OOC_MCTS_ROLLOUT_SHOP`. Fresh seeds 89000000–89000127, 8 cloud workers. Primary: Δwin greedy −
+planner, paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | greedy | planner | greedy − planner |
+|---|---|---|---|
+| wins / 128 | 103 | 101 | +1.6 pp [−5.5, +8.6]; McNemar p = 0.83 (12 vs 10 discordant) |
+| mean floor | 48.41 | 49.12 | −0.70 [−1.77, +0.23] |
+| boss deaths | 21 | 23 | |
+| seconds per run | 496.5 | 558.2 | paired ratio 0.889 [0.859, 0.922] |
+
+- MCTS CPU per run 426 vs 483 s; simulations per run 241.5k vs 248.1k; owned share 97.6% in both.
+- Live shops (descriptive, per run): greedy buys fewer cards (1.62 vs 1.88), potions (1.06 vs 1.24) and
+  removals (0.44 vs 0.55), slightly more relics (2.33 vs 2.20).
+
+**Interpretation:**
+- Greedy rollout shops cost about 11% less wall time per run at no detectable win-rate cost; the CI
+  excludes a loss larger than 5.5 pp. NOT_SHOWN does not mean equal.
+- The CPU ratio was not a pre-registered statistic. **Inference:** most of the saving is the bundle
+  planner's subset enumeration that §437/§442 measured inside rollouts.
+- `combo` with planner shops won 78.9% here, below §433's 87.5% and §449's 86.7–89.1% on other seeds.
+  **Open question:** seed-cohort variance or the ADR-0030 deck-size default; this run cannot separate
+  them, as both arms carry the fix.
+- No default change from this run alone (prereg); Philipp decides whether greedy becomes the rollout
+  default.
+
+**Evidence:** [packet](evidence/ooc_greedy_shop_459_20261013/README.md). Raw:
+`/mnt/project-files/ooc-greedy-shop-459/` (one tar per worker). Seeds 89000000–89000127 and smokes
+74050003–74050004 are now used.
+
+**Knowledge impact:** the greedy paragraph in `architecture/out-of-combat.md` now cites §459.
+
+## §462 — A20 one-leaf inherited-memory replay: exact parity PASS (2026-10-14)
+
+**Question:** before measuring #507 target stability, can one actual internal
+MAP leaf reproduce its scheduled teacher evaluation from the same complete
+inherited process state? §461 JSONL is an incomplete observation, not a replay
+snapshot; reconstructing it as root zero would change evaluator semantics.
+
+**Design:** independently reviewed [protocol and evidence](evidence/ooc_leaf_replay_462_20261014/README.md).
+Source `1125d07db5f5d6597759af291d2fdc4c6981f066`, Release binary `abd6f14d…`.
+Historical seed 87000000, A20, decision 0, ordinal 1025; initially nonterminal
+MAP required, no replacement. Exact §461 / PR #524 CTM and teacher settings,
+with unrelated trace/profile outputs disabled. One additional child evaluation
+forked before the parent's scheduled evaluation preserves the original model,
+state ID, path, callbacks, policy, caches and RNG. Verified single OS thread;
+child evaluates and exits before parent evaluates. A private completion signal
+stops the root prefix before real action execution. Limits: parent 20 plus
+child 10 CPU seconds, 60 wall seconds; bounded 64 KiB transport and 10-second
+child wall timeout. No retries or independent-future repetitions.
+
+**Result: PASS**, independently checked against the frozen raw report. Both
+evaluations returned exactly **0.6771143269743937**, nonterminal, with endpoint
+floor 5 / HP 66 / max HP 75, three resolved CTM combats and 21 projection steps.
+Complete final planner RNG matched and source state/path stayed unchanged.
+State ID, initial/final RNG and all recorded target fields also matched the
+historical §461 sample (descriptive cross-build check, not another pass gate).
+One header and one replay report were written; no completed root or game result.
+Return code 0; total CPU **0.907232 s**, wall **0.966319 s**. All loaded CTM,
+effective policy, full STS environment, binary/source and artifact checks passed.
+
+**Decision:** inherited-memory deterministic repeatability is demonstrated for
+this single leaf. This is not serialized replay, target stability, public-input
+sufficiency, CTM qualification or gameplay quality. Next preregister a bounded
+independent-future stability study before fitting a student. No training,
+teacher/default promotion, additional seed or #506 contract change occurred.
+
+**Knowledge impact:** document the diagnostic interface in the OOC architecture
+and CODE_MAP; update #507's current status in `evaluation/current-research.md`.

@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-13 for the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-14 for bounded leaf replay (#507); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -709,6 +709,64 @@ reconstruction, candidate order, finite values and exact raw planner weights
 before writing. It does not create a second search or change search RNG,
 candidate ordering or returned priors; use a fresh path for each capture.
 
+`STS_OOC_MCTS_LEAF_CAPTURE=<new.jsonl>` is a default-off, simulator-only
+observational canary for #507. It requires enabled MCTS with the native CTM
+rollout leaf and exclusively creates its output (an existing file is an error).
+One header binds the running binary hash, source revision declaration, loaded
+CTM identity, artifact hashes, effective OOC policy and environment. Source
+revision is the declared/current checkout, not proof of binary provenance;
+scientific collection must bind it to a clean, reviewed build externally.
+Each completed root record includes up to eight already scheduled leaf calls,
+at ordinals `1 + k * max(1, requestedSimulations/8)`, `k < 8`. Capture stops
+after the first 64 root calls per process, including singleton/boundary calls.
+Use one worker per capture file for reproducible prefix coverage. This sampling
+is deliberately bounded, biased toward early roots, and not IID.
+
+The target is the exact single stochastic rollout return; requested horizon,
+successful combat resolutions, projection steps, terminal flag, endpoint
+HP/maxHP/floor and final root abort status accompany it. Unsupported
+evaluations retain a null target and the original support failure. All samples
+from an aborted root are structurally invalid. Unsupported input reconstruction
+retains an explicit input error, not a fake empty screen. Observer errors are
+reported after search; file failures stop the run rather than triggering a
+policy fallback. With capture unset, no input serialization or diagnostic RNG
+copy occurs. Capture consumes no planner RNG and does not add continuations.
+
+`candidate-public-leaf-v1` contains current visible resources, deck, bottle
+flags, potion slots, relic IDs, forward-map summary, room history and supported
+semantic screen contents/candidates (or current battle/terminal identity).
+It omits private RNG, future queues, second boss, pity and relic counters.
+It is a **candidate, incomplete observation**, marked
+`publicParityQualified:false`; semantic candidate completeness does not prove
+all visible event parameters or histories are represented. Simulator copied
+hidden counters still affect the teacher. `structurallyValidSample` therefore
+does not establish training suitability or #506 live parity. Seeds and full
+planner RNG states are diagnostic fields outside `input`. No full callback
+snapshot is stored: `replayability:unavailable`. Capture cannot establish
+independent-repeat label variance or reproducible full-state replay. The
+teacher remains `NOT_QUALIFIED` for this research milestone; no learned leaf,
+training loop or default change is enabled.
+
+`one_combat oocleafreplayprobe 1 SEED 20`, through `tools/seed_guard.sh`, is
+a separate disposable Linux diagnostic for that collector. It requires a
+native teacher with 4096 simulations, three continuation combats and a fresh
+capture file. It selects only decision 0, sampled leaf ordinal 1025, and
+requires a nonterminal MAP input; unavailable selection stops without a
+replacement. At the original pre-evaluation boundary it verifies exactly one
+OS thread and forks the complete model/state/callback/RNG context. The child
+closes unrelated descriptors, evaluates once and exits through a bounded
+pipe; after reaping it, the parent performs its scheduled evaluation. A child
+timeout, support error or transport error invalidates the diagnostic.
+
+The two evaluations must agree exactly on value, terminal status, endpoint,
+combat/step counts and final planner RNG, with the source state/path unchanged.
+The command writes one `replay_probe` result and stops before selecting or
+executing a real root action. It does not emit a completed root or gameplay
+result. This establishes only inherited in-memory repeatability for the
+selected leaf; capture JSONL still has `replayability:unavailable`. It is not a
+serialized replay format, an independent-future stability estimate or a
+public-input qualification. Ordinary search never enables this diagnostic.
+
 `STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
 the full-run trace boundary. Defaults remain off. Thread-local CPU scopes
 record calls, inclusive CPU and exclusive CPU after subtracting timed children;
@@ -1109,7 +1167,9 @@ scores leaving, each affordable item alone and the best removal alone, and
 returns the single best one (leave on ties). The step executes it and the next
 decision asks again, so purchases repeat greedily. It uses the same
 deck-size accounting as the bundle planner (`STS_OOC_SHOP_DECK_SIZE_FIX`). Live shop roots and the MCTS-off chain keep the
-bundle planner. Its playing strength is not yet measured.
+bundle planner. §459 (128 fresh paired seeds, `combo`): wins 103 vs 101,
++1.6 pp [−5.5, +8.6], NOT_SHOWN, at about 11% less wall time per run; it stays
+opt-in pending Philipp's call.
 
 OOC MCTS shop roots split the V4 removal prior across targets: every removal
 target maps to the one `CARD_REMOVE` primitive and `legalActions` divides each

@@ -1,0 +1,80 @@
+{
+  "cohort": [
+    89000000,
+    89000127
+  ],
+  "units": {
+    "greedy": 128,
+    "planner": 128
+  },
+  "seed_failures": {
+    "greedy": [],
+    "planner": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "greedy": [],
+    "planner": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "greedy": 128,
+    "planner": 128
+  },
+  "pairs": 128,
+  "win": {
+    "greedy": 0.8046875,
+    "planner": 0.7890625
+  },
+  "wins": {
+    "greedy": 103,
+    "planner": 101
+  },
+  "greedy_vs_planner": {
+    "delta_win": 0.015625,
+    "delta_win_ci95": [
+      -0.0546875,
+      0.0859375
+    ],
+    "discordant_greedy_only": 12,
+    "discordant_planner_only": 10,
+    "mcnemar_p": 0.8318119049072266,
+    "delta_floor": -0.703125,
+    "delta_floor_ci95": [
+      -1.7734375,
+      0.234375
+    ],
+    "delta_hp_end": 0.171875
+  },
+  "boss_deaths": {
+    "greedy": 21,
+    "planner": 23
+  },
+  "mean_floor": {
+    "greedy": 48.4140625,
+    "planner": 49.1171875
+  },
+  "sec_per_run": {
+    "greedy": 496.51746875,
+    "planner": 558.242828125
+  },
+  "label": "NOT_SHOWN",
+  "search": {
+    "greedy": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 426.10715432967186,
+      "owned_share": 0.9760756192959583,
+      "fallback_share": 0.02392438070404172,
+      "support_aborts_per_run": 0.0078125,
+      "simulations_per_run": 241518.6953125
+    },
+    "planner": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 482.7140436804141,
+      "owned_share": 0.9763885334015869,
+      "fallback_share": 0.023611466598413105,
+      "support_aborts_per_run": 0.0,
+      "simulations_per_run": 248126.5390625
+    }
+  }
+}

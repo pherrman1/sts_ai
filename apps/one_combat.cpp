@@ -3600,6 +3600,11 @@ int main(int argc, char **argv) {
         g_forceRelic = (RelicId)id;
         std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
     }
+    try { one_combat::finalizeLiveOocMctsCapture(); }
+    catch (const std::exception &error) {
+        std::cerr << "[OOC leaf capture startup failure] " << error.what() << '\n';
+        return 1;
+    }
     if (mode == "strategicmarggen") {
         // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.
         // Tier-B branch contract frozen at K=3 fights, 150/100/50 sims, bootstrap=true.
@@ -3676,6 +3681,28 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
+    } else if (mode == "oocleafreplayprobe") {
+        if (argc != 5 || std::string(argv[2]) != "1") {
+            std::cerr << "usage: one_combat oocleafreplayprobe 1 SEED ASC\n";
+            return 2;
+        }
+        try {
+            for (int i : {3, 4}) {
+                const std::string value(argv[i]);
+                if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+                    throw std::runtime_error("seed and ascension must be nonnegative integers");
+            }
+            return one_combat::oocLeafReplayProbe(std::stoull(argv[3]), std::stoi(argv[4]));
+        } catch (const std::exception &error) {
+            std::cerr << "oocleafreplayprobe: " << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "oocleafreplayselftest") {
+        try { return one_combat::oocLeafReplaySelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     } else if (mode == "oocmctsconfigselftest") {
         std::cout << "PASS live OOC MCTS configuration startup\n";
     } else if (mode == "oocmctsselftest") {
