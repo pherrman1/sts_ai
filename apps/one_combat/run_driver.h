@@ -44,6 +44,10 @@ bool installRunForcedRelic(sts::GameContext &, sts::RelicId);
 // screens so specialized combat capture can remain local to the caller.
 void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &,
                              bool restV, bool shopV);
+// STS_OOC_MCTS_TREE_RULES: one fixed step shared by the OOC MCTS tree and the
+// live root (chest without Cursed Key, unreviewed reward relic, gold, potion
+// with belt space, leave an empty reward screen). False when none applies.
+bool oocTreeRuleStep(sts::GameContext &);
 // Diagnostic: name of the chain layer that handled the latest step on this thread.
 const char *lastOocChainHandler();
 

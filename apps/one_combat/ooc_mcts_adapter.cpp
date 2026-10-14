@@ -442,6 +442,9 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
     auto root = detachedCopy(gc);
     collectForcedRewardGold(root);
+#ifndef STS_LIVE_ADVISOR
+    if (options.treeRules) while (oocTreeRuleStep(root)) {}
+#endif
     auto history = path;
     history.update(root);
     states.push_back({std::move(root), history, {}});
@@ -636,6 +639,22 @@ void annotateOocTree(const OocGameContextModel &model, sts::search::OocTreeSnaps
         edge.combatOutcome = prediction.outcome;
     }
 }
+namespace {
+// Search choice key; with tree rules, copies of one card are also a single
+// choice for bottle, duplicate and bonfire (as for upgrade/remove/transform).
+std::string mctsChoiceKey(sts::search::OocSemanticAction action, const GameContext &gc, bool treeRules) {
+    using E = sts::search::OocSemanticEffect;
+    if (treeRules && (action.effect == E::BOTTLE_CARD || action.effect == E::DUPLICATE_CARD
+            || action.effect == E::SACRIFICE_CARD)) {
+        if (auto *card = std::get_if<sts::search::OocCardTarget>(&action.target)) card->occurrence = 0;
+        else if (auto *transaction = std::get_if<sts::search::OocTransactionTarget>(&action.target))
+            transaction->card.occurrence = 0;
+        else if (auto *selector = std::get_if<sts::search::OocSelectorTarget>(&action.target))
+            if (auto *card = std::get_if<sts::search::OocCardTarget>(&selector->card)) card->occurrence = 0;
+    }
+    return sts::search::canonicalOocMctsChoiceKey(action, &gc);
+}
+}
 std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId id) const {
     switch (state(id).outcome) {
         case sts::GameOutcome::PLAYER_LOSS: return 0;
@@ -678,7 +697,7 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                             && !options.rootPrimitiveBits->count(binding.primitiveBits)) continue;
                     const auto key = sts::search::canonicalOocSemanticActionKey(binding.semantic);
                     if (!keys.insert(key).second) { value.candidates.clear(); break; }
-                    const auto choiceKey = sts::search::canonicalOocMctsChoiceKey(binding.semantic, &gc);
+                    const auto choiceKey = mctsChoiceKey(binding.semantic, gc, options.treeRules);
                     groups[choiceKey].push_back(GameAction(binding.primitiveBits));
                     sources.insert(binding.primitiveBits);
                     if (!cardChoices.insert(choiceKey).second) continue;
@@ -688,7 +707,7 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 if (!value.candidates.empty())
                     for (const auto &candidate : value.candidates)
                         value.priorSourceGroups.push_back(groups.at(
-                            sts::search::canonicalOocMctsChoiceKey(*candidate.semantic, &gc)));
+                            mctsChoiceKey(*candidate.semantic, gc, options.treeRules)));
                 if (v4DecisionSupported(gc)) {
                     std::set<std::uint32_t> qualified;
                     auto primitives = v4CandidateActions(gc);
@@ -1072,6 +1091,13 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
             }
         }
     }
+#ifndef STS_LIVE_ADVISOR
+    if (options.treeRules && child.gc.outcome == sts::GameOutcome::UNDECIDED) {
+        bool applied = false;
+        while (oocTreeRuleStep(child.gc)) applied = true;
+        if (applied) child.path.update(child.gc);
+    }
+#endif
     if (!options.sampleNoncombat && options.checkpointLeaves && !enteredCombat) edge.deterministic = states.size();
     if (t_decisionLog) {
         const auto &source = state(id);
@@ -1614,6 +1640,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
     else if (key == "STS_OOC_MCTS_ROLLOUT_SHOP") opts.greedyRolloutShop = choice("planner", "greedy");
+    else if (key == "STS_OOC_MCTS_TREE_RULES") opts.treeRules = choice("0", "1");
     else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
     else if (key == "STS_OOC_MCTS_GAP_STOP_20") config.stopAt512VisitGap20 = choice("0", "1");
     else if (key == "STS_OOC_MCTS_MERGE_OUTCOMES") config.mergeEquivalentOutcomes = choice("0", "1");
@@ -1631,7 +1658,7 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
-    "STS_OOC_MCTS_ROLLOUT_SHOP"
+    "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -1800,6 +1827,7 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
+bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
 nlohmann::json liveOocMctsSpecification() {
     if (!liveEnabled) return nullptr;
     // Every control the search reads, as set: STS_OOC_MCTS*, the combat
@@ -4799,6 +4827,39 @@ void oocMctsAdapterSelfTest() {
             + " bypass=" + std::to_string(goldAndCardMetrics.search.trivialRootBypasses)
             + " sims=" + std::to_string(goldAndCardMetrics.search.simulations)
             + " fallback=" + std::to_string(goldAndCardMetrics.fallback));
+
+    // STS_OOC_MCTS_TREE_RULES: gold and a potion with belt space are taken
+    // before the root, so only the card choice remains; off keeps both.
+    for (const bool rules : {false, true}) {
+        auto rewardRoot = makeRewardRoot();
+        rewardRoot.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
+        CardReward cards;
+        cards.push_back(Card(CardId::BASH));
+        cards.push_back(Card(CardId::CLEAVE));
+        rewardRoot.info.rewardsContainer.addCardReward(cards);
+        PathHistory rewardPath;
+        rewardPath.update(rewardRoot);
+        OocAdapterOptions ruleOptions;
+        ruleOptions.treeRules = rules;
+        OocGameContextModel rewardModel(rewardRoot, rewardPath, {}, ruleOptions);
+        bool goldOrPotion = false;
+        for (const auto &a : rewardModel.legalActions(0)) {
+            const auto effect = rewardModel.candidate(0, a.id).semantic->effect;
+            goldOrPotion |= effect == OocSemanticEffect::TAKE_GOLD || effect == OocSemanticEffect::TAKE_POTION;
+        }
+        require(goldOrPotion != rules && (rewardModel.state(0).potionCount == (rules ? 1 : 0)),
+            "tree rules take gold and a potion with belt space before the root");
+    }
+    {
+        OocSemanticAction first{OocSemanticEffect::BOTTLE_CARD, OocSemanticSource::SELECTOR,
+            OocSelectorTarget{CardSelectScreenType::BOTTLE, 1, 0, OocCardTarget{CardId::DEFEND_RED, 0, false, -1, 0}}};
+        auto second = first;
+        std::get<OocCardTarget>(std::get<OocSelectorTarget>(second.target).card).occurrence = 1;
+        const auto probe = makeRewardRoot();
+        require(mctsChoiceKey(first, probe, false) != mctsChoiceKey(second, probe, false)
+            && mctsChoiceKey(first, probe, true) == mctsChoiceKey(second, probe, true),
+            "tree rules make copies of one card a single bottle choice");
+    }
     liveOptions = optionsBeforeGoldRoots;
 
     // Wheel has one legal primitive, but its existing fallback calls stepRandom:

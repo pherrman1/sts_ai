@@ -61,6 +61,12 @@ struct OocAdapterOptions {
     // leaf rollouts buy the single best item per decision instead of the first
     // item of the best affordable bundle.
     bool greedyRolloutShop = false;
+    // Research option (default off, STS_OOC_MCTS_TREE_RULES=1): the tree and the
+    // live root apply the same fixed steps as the rollout chain (gold after
+    // tree combats, unreviewed reward relics, potions with belt space, chests
+    // without Cursed Key, leave an empty reward screen), and bottle, duplicate
+    // and bonfire selectors offer one choice per distinct card.
+    bool treeRules = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
     // False (live runs with STS_COLLECT_KEYS off) drops TAKE_KEY and
@@ -207,6 +213,8 @@ struct LiveOocMctsMetrics {
 // Parse once after native policy/win loading. OFF never loads the combat model.
 void configureLiveOocMcts();
 bool liveOocMctsEnabled();
+// True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
+bool liveOocMctsTreeRules();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);

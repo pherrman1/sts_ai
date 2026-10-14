@@ -279,6 +279,22 @@ static bool takeRewardRelicRuleStep(GameContext &gc) {
 thread_local const char *t_oocChainHandler = "";
 const char *lastOocChainHandler() { return t_oocChainHandler; }
 
+bool oocTreeRuleStep(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return true;
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    auto &r = gc.info.rewardsContainer;
+    if (r.goldRewardCount > 0) { search::GameAction(RT::GOLD, 0).execute(gc); return true; }
+    if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity && !gc.hasRelic(RelicId::SOZU)) {
+        search::GameAction(RT::POTION, 0).execute(gc); return true;
+    }
+    // Nothing left but keys (off): leaving is the only sensible action.
+    if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0) {
+        search::GameAction(RT::SKIP).execute(gc); return true;
+    }
+    return false;
+}
+
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
     // Diagnostic only (STS_OOC_MCTS_DECISION_LOG, STS_OOC_DECISION_TRACE): the
@@ -496,6 +512,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceBy = "chest_rule";
             } else if (takeRewardRelicRuleStep(gc)) {
                 traceBy = "relic_rule";
+            } else if (one_combat::liveOocMctsTreeRules() && oocTreeRuleStep(gc)) {
+                traceBy = "tree_rule";
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
