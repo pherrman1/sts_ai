@@ -189,9 +189,18 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     const bool binaryObjectiveEnabled = binaryObjective && std::string(binaryObjective) == "1";
     if (s.value("final_boss_binary", false) != binaryObjectiveEnabled)
         throw std::runtime_error("wholecombatgen: final-boss objective differs from teacher");
-    const char *finalLeaf = std::getenv("STS_SILVER_FINAL_FIGHT_LEAF");
-    if (s.value("final_fight_leaf", false) != (finalLeaf && std::string(finalLeaf) == "1"))
-        throw std::runtime_error("wholecombatgen: final-fight leaf differs from teacher");
+    // ADR-0035 leaf terms default on. A teacher that records a term must match the
+    // effective option; older teachers do not record them and are not checked.
+    const auto leafOption = [](const char *name, bool fallback) {
+        const char *raw = std::getenv(name);
+        return raw ? std::string(raw) == "1" : fallback;
+    };
+    for (const auto &[field, name, fallback] : {std::tuple<const char *, const char *, bool>
+             {"final_fight_leaf", "STS_SILVER_FINAL_FIGHT_LEAF", !binaryObjectiveEnabled},
+             {"no_loss_potion_credit", "STS_SILVER_NO_LOSS_POTION_CREDIT", true},
+             {"relic_heal_leaf", "STS_SILVER_RELIC_HEAL_LEAF", true}})
+        if (s.contains(field) && s[field].get<bool>() != leafOption(name, fallback))
+            throw std::runtime_error(std::string("wholecombatgen: ") + field + " differs from teacher");
     // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
     // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
     // that opt in; it pins the compiled stop model and threshold.

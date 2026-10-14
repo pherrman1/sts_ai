@@ -43,9 +43,10 @@ namespace sts::search {
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
             bool finalBossBinary = false;
-            bool finalFightLeaf = false;     // STS_SILVER_FINAL_FIGHT_LEAF
-            bool noLossPotionCredit = false; // STS_SILVER_NO_LOSS_POTION_CREDIT
-            bool relicHealLeaf = false;      // STS_SILVER_RELIC_HEAL_LEAF
+            // ADR-0035: the situational leaf terms are on by default; =0 restores the legacy leaf.
+            bool finalFightLeaf = true;      // STS_SILVER_FINAL_FIGHT_LEAF (off when FINAL_BOSS_BINARY=1 and unset)
+            bool noLossPotionCredit = true;  // STS_SILVER_NO_LOSS_POTION_CREDIT
+            bool relicHealLeaf = true;       // STS_SILVER_RELIC_HEAL_LEAF
             bool a20BossHealFix = true;      // STS_SILVER_A20_BOSS_HEAL_FIX (0 restores the old credit)
             bool stopAfterAct3 = false;      // STS_STOP_AFTER_ACT=3: the act-3 boss ends the run
             double topGap = kDefaultTopGap;
@@ -854,6 +855,8 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_FINAL_BOSS_BINARY must be 0 or 1");
             g_options.finalBossBinary = value == "1";
         }
+        // The research A0 binary objective replaces the final-fight leaf unless both are requested.
+        g_options.finalFightLeaf = !g_options.finalBossBinary;
         if (const char *raw = std::getenv("STS_SILVER_FINAL_FIGHT_LEAF")) {
             const std::string value(raw);
             if (value != "0" && value != "1")

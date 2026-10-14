@@ -583,6 +583,12 @@ namespace sts::search {
         // The first A20 act-3 boss (floor 50) goes straight into the second (floor 51).
         context.actHealFollows = !(wire.act == 3 && wire.ascension >= 20 && wire.floorNum < 51);
         context.omamoriCharged = wire.omamoriOwned && wire.omamoriValue > 0;
+        // ADR-0035 leaf defaults. The wire carries no keys, so the final-fight leaf
+        // applies only to the Heart here (an act-3 boss may still lead to Act 4).
+        context.noLossPotionCredit = true;
+        context.relicHealLeaf = true;
+        context.finalFightLeaf = wire.act == 4
+            && static_cast<MonsterEncounter>(wire.encounter) == MonsterEncounter::THE_HEART;
         return context;
     }
 

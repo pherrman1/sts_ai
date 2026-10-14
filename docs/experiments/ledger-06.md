@@ -18212,5 +18212,7 @@ heal leaf), since the `end` arm leaves play before floor 50 unchanged.
 **Decision (pre-registered):** NOT_SHOWN in both cohorts: no default change; the A20 heal fix stays default on (A20
 not WORSE), the final-fight leaf and the two every-fight options stay off.
 
+**Later decision:** Philipp made all four leaf terms the default the same day (ADR-0035), not on a passed gate.
+
 **Knowledge impact:** investigation page updated with §474. Seeds 100000000–100000999 and smokes 74070450–74070451
 are used.

@@ -36,8 +36,8 @@ The question is which run circumstances make parts of that score meaningless.
   tested separately.~~ *Answered by §474.*
 - **End-of-run parts alone (§474, 500 paired seeds each).** Heal fix + final-fight leaf vs legacy:
   A0 Δwin +0.8 pp [−1.2, +3.0], A20 Δfloor 0.00 (wins 42 → 47), both NOT_SHOWN; play is identical
-  before floor 50. **Inference:** so the §468 act-1 losses came from the every-fight terms. The heal fix stays
-  default on; the three opt-ins stay off.
+  before floor 50. **Inference:** so the §468 act-1 losses came from the every-fight terms. All four terms are now on by default by Philipp's
+  decision (ADR-0035), without a passed gate.
 - **Eliminated / not proposed:** dynamic potion keep-value before hard fights (ledger-02, §35,
   `STS_POTION_SAVE`: −3..−9 pp); v_win terminal pricing (§385, −8.6 pp); HP before a rest site
   (needs route knowledge the leaf lacks).

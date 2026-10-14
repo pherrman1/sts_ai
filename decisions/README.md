@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0035](0035-silver-situational-leaf-default.md) turns Silver's situational leaf terms on by
+  default (final-fight leaf, no loss potion credit, relic heal leaf, A20 boss heal fix; each `=0` restores the
+  legacy term).
 - [ADR-0033](0033-ooc-mcts-a20-ctm-default.md) makes live OOC MCTS use the calibrated
   A20 CTM (`pathb-a20`, §470) for ascension-20 searches on the automatic CTM stack
   (`STS_OOC_MCTS_A20_CTM=0` restores the default stack at A20).
