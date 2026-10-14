@@ -17819,3 +17819,37 @@ teacher/default promotion, additional seed or #506 contract change occurred.
 
 **Knowledge impact:** document the diagnostic interface in the OOC architecture
 and CODE_MAP; update #507's current status in `evaluation/current-research.md`.
+
+## §466 — Final-fight Silver leaf: potions no longer hoarded, act-3 boss win rate unchanged (2026-10-14)
+
+**Question:** in the run-ending fight Silver's leaf still pays 11 per potion on a win and 5.5 on a
+loss. Does a leaf that values nothing after that fight (`STS_SILVER_FINAL_FIGHT_LEAF=1`: every win
+scores `winBonus + root maxHp`, a loss keeps damage/survival/energy/draw shaping without potion or
+cheat-death credit) win the act-3 boss more often? Background (descriptive, §460 replays): 8/18
+act-3 boss deaths of exact-10k Silver still held potions.
+
+**Design:** pre-registered fight-level replay ([evidence](evidence/silver_final_fight_leaf_466_20261014/README.md)).
+Run commit `8d8eeb3c`, binary `c92c0297…`. `ctmsilvergen` arm set `finalleaf`: one plain exact-10k
+A0 source run per seed (frozen V4 OOC policy, MCTS off), then every act-3 boss state replayed by
+`base10k` (default leaf) and `final10k` (final-fight leaf), R = 8 paired redraws of the six combat
+RNG streams. Seeds 96000000-96000255, 8 workers × 4 cores. Primary: paired per-fight win-rate
+difference, 95% bootstrap over source seeds (10,000 resamples, RNG 0).
+
+**Result: `NOT_SHOWN`.** 236 act-3 boss fights, none excluded (control replay 236/236, 32/32 shards
+rc 0). Win rate base 0.8633, final 0.8639: **+0.05 pp [−1.27, +1.38]**. Per boss: Awakened One −1.21
+(62), Donu and Deca +0.88 (85), Time Eater +0.14 (89). The option changed behavior as intended:
+deaths holding a potion 105/258 → 0/257, potions held per win 1.19 → 0.14. CPU per fight 9.18 →
+10.05 s.
+
+**Interpretation:** **Inference:** the potions Silver kept in losing final fights were not what
+decided those fights; spending all of them leaves the act-3 boss win rate within ±1.3 pp. A gain
+larger than about 1.4 pp per act-3 boss fight is excluded at exact 10k. Production learned-stop
+Silver and A20 were not tested.
+**Decision:** no default change; the option stays default off and this candidate stops per the
+pre-registration (no whole-run confirmation).
+
+**Knowledge impact:** `STS_SILVER_FINAL_FIGHT_LEAF` documented in
+`operations/environment-variables.md`; the situational-leaf investigation (including an A20
+first-boss heal mis-credit, not fixed here) recorded in
+`knowledge-base/investigations/2026-10-14-silver-situational-leaf.md`.
+
