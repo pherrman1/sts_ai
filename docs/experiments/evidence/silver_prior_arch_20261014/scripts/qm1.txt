@@ -1,0 +1,1 @@
+c_mon_s1 --seed 1 --dropout 0.15 --enc-emb 16 --teacher runs/t512/logp.npy --alpha 0.5 --lr 1e-3 --sched cosine --epochs 25 --patience 25 --mon-emb 16

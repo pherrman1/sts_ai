@@ -169,6 +169,9 @@ namespace sts::search {
         int pmH1 = 0, pmH2 = 0;
         std::vector<float> pmStateW, pmActionW, pmCard, pmTargetW, pmB1, pmW2, pmB2, pmW3;
         std::vector<float> pmW2T;   // pmW2 transposed (h1 x h2), built by load
+        // Optional per-node embedding tables (kPolicyMlpEmbRows x h1, empty when
+        // absent): encounter id, monster id + 1 and monster intent per slot.
+        std::vector<float> pmEnc, pmMonId, pmMonIntent;
         float pmB3 = 0.f;
         // Logits of n edges of one state. `stateFeatures` is the state block
         // (combatFeatureCount values), `actionBlocks` n consecutive action

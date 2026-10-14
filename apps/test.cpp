@@ -649,6 +649,33 @@ int testSilverSearcher() {
         if (loaded) mlp.predictPolicyMlp(state.data(), actions.data(), targets, 2, out);
         check(std::abs(out[0] - 6.85) < 1e-5 && std::abs(out[1] - 4.45) < 1e-5,
               "combat_policy_mlp_v1 logits match the hand computation");
+        // Optional embedding tables: encounter 5 -> enc row 5, m0 id 7 -> mon_id
+        // row 8, m0 intent 3 -> mon_intent row 3; the empty slot m1 (id -1,
+        // intent 9) must add nothing, so rows 0 and 9 carry large poison values.
+        {
+            std::ofstream f(path, std::ios::app);
+            auto table = [&](const char *key, std::map<int, std::pair<float, float>> set) {
+                f << key << " 128\n";
+                for (int r = 0; r < 128; ++r) {
+                    const auto it = set.find(r);
+                    f << (it == set.end() ? 0.f : it->second.first) << ' ' << (it == set.end() ? 0.f : it->second.second) << ' ';
+                }
+                f << '\n';
+            };
+            table("enc", {{5, {1.f, 0.f}}});
+            table("mon_id", {{0, {100.f, 100.f}}, {8, {0.5f, 0.f}}});
+            table("mon_intent", {{3, {0.f, 0.25f}}, {9, {100.f, 100.f}}});
+        }
+        search::CombatValueNet emb;
+        const bool embLoaded = emb.load(path.string()) && emb.isPolicyMlp;
+        check(embLoaded, "combat_policy_mlp_v1 with embedding tables loads");
+        const int mon = search::combatMonsterSlotOffset(), mf = search::kCombatMonsterSlotFeatures;
+        state[1] = 5.f;                                        // encounter
+        state[mon] = 7.f; state[mon + 4] = 3.f;                // m0Id, m0Intent
+        state[mon + mf] = -1.f; state[mon + mf + 4] = 9.f;     // m1: empty slot
+        if (embLoaded) emb.predictPolicyMlp(state.data(), actions.data(), targets, 2, out);
+        check(std::abs(out[0] - 10.35) < 1e-5 && std::abs(out[1] - 7.95) < 1e-5,
+              "policy MLP embedding tables add per node and skip empty slots");
         std::filesystem::remove(path);
     }
 

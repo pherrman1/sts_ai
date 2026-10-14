@@ -1,0 +1,22 @@
+{
+ "c_dist_s0": {
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 2.5927257232827294e-06
+ },
+ "c_encdist_s0": {
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 1.6718621824729496e-06
+ },
+ "c_mon_s0": {
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 1.6673382567944373e-06
+ },
+ "c_mon_s1": {
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 2.8618121339363256e-06
+ },
+ "gen4_legacy_file_first300roots": {
+  "edges": 1797,
+  "max_abs_diff_vs_float64_reference": 9.883849299008318e-07
+ }
+}
