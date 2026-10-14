@@ -580,6 +580,8 @@ namespace sts::search {
         SilverSearchContext context;
         context.act = wire.act;
         context.actBossRoom = isBossEncounter(static_cast<MonsterEncounter>(wire.encounter));
+        // The first A20 act-3 boss (floor 50) goes straight into the second (floor 51).
+        context.actHealFollows = !(wire.act == 3 && wire.ascension >= 20 && wire.floorNum < 51);
         context.omamoriCharged = wire.omamoriOwned && wire.omamoriValue > 0;
         return context;
     }

@@ -403,6 +403,39 @@ int testSilverSearcher() {
         check(lowWin > value(ended, finalFight), "final-fight leaf victory dominates a loss");
     }
 
+    // Research opt-ins STS_SILVER_RELIC_HEAL_LEAF / STS_SILVER_NO_LOSS_POTION_CREDIT
+    // and the A20 first act-3 boss heal fix (actHealFollows).
+    {
+        const auto value = [](const BattleContext &bc, const search::SilverSearchContext &ctx) {
+            search::SilverSearcher s(bc, ctx);
+            return s.rootNode().evaluationSum;
+        };
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext won; won.init(gc, MonsterEncounter::JAW_WORM);
+        won.outcome = Outcome::PLAYER_VICTORY;
+        won.potionCount = 0; won.turn = 5;
+        won.player.curHp = won.player.maxHp - 2;   // Burning Blood would heal to full
+        search::SilverSearchContext plain, relic; relic.relicHealLeaf = true;
+        check(value(won, relic) - value(won, plain) == 2.0, "relic heal leaf credits the Burning Blood heal up to max HP");
+        won.player.curHp = 20;
+        check(value(won, relic) - value(won, plain) == 6.0, "relic heal leaf credits the full Burning Blood heal");
+
+        BattleContext lost = won; lost.outcome = Outcome::PLAYER_LOSS; lost.player.curHp = 0; lost.potionCount = 2;
+        search::SilverSearchContext noCredit; noCredit.noLossPotionCredit = true;
+        check(value(lost, plain) - value(lost, noCredit) == 11.0, "no-loss-potion-credit drops 5.5 per held potion");
+        check(value(won, noCredit) == value(won, plain), "no-loss-potion-credit leaves victories unchanged");
+
+        GameContext gc20(CharacterClass::IRONCLAD, 91, 20);
+        BattleContext boss; boss.init(gc20, MonsterEncounter::TIME_EATER);
+        boss.outcome = Outcome::PLAYER_VICTORY; boss.potionCount = 0; boss.turn = 10;
+        boss.player.curHp = 20;
+        search::SilverSearchContext heal; heal.act = 3; heal.actBossRoom = true;
+        auto noHeal = heal; noHeal.actHealFollows = false;
+        const int healed = 20 + static_cast<int>(std::round((boss.player.maxHp - 20) * 0.75f));
+        check(value(boss, heal) - value(boss, noHeal) == healed - 20,
+              "first A20 act-3 boss earns no act-transition heal credit");
+    }
+
     // Final choice is edge visits only; even Q ties keep enumeration order.
     {
         GameContext gc(CharacterClass::IRONCLAD, 91, 0);

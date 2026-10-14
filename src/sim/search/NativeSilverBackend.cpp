@@ -44,6 +44,9 @@ namespace sts::search {
             bool searchSingletonRoots = false;
             bool finalBossBinary = false;
             bool finalFightLeaf = false;     // STS_SILVER_FINAL_FIGHT_LEAF
+            bool noLossPotionCredit = false; // STS_SILVER_NO_LOSS_POTION_CREDIT
+            bool relicHealLeaf = false;      // STS_SILVER_RELIC_HEAL_LEAF
+            bool a20BossHealFix = true;      // STS_SILVER_A20_BOSS_HEAL_FIX (0 restores the old credit)
             bool stopAfterAct3 = false;      // STS_STOP_AFTER_ACT=3: the act-3 boss ends the run
             double topGap = kDefaultTopGap;
             double escapePenalty = 0;
@@ -433,6 +436,11 @@ namespace sts::search {
                     || (gc.act == 4 && bc.encounter == MonsterEncounter::THE_HEART);
                 const bool leafOn = g_nativeSilverFinalFightLeafOverride.value_or(g_options.finalFightLeaf);
                 context.finalFightLeaf = leafOn && runEnding;
+                // The first A20 act-3 boss goes straight into the second: no act heal.
+                context.actHealFollows = !(g_options.a20BossHealFix && gc.act == 3 && gc.ascension >= 20
+                    && gc.curRoom == Room::BOSS && bc.encounter != gc.secondBoss);
+                context.noLossPotionCredit = g_options.noLossPotionCredit;
+                context.relicHealLeaf = g_options.relicHealLeaf;
             }
 
             // Budget policy: the process options, or this thread's override.
@@ -851,6 +859,16 @@ namespace sts::search {
             if (value != "0" && value != "1")
                 throw std::runtime_error("STS_SILVER_FINAL_FIGHT_LEAF must be 0 or 1");
             g_options.finalFightLeaf = value == "1";
+        }
+        for (const auto &[name, flag] : {std::pair<const char *, bool *>{"STS_SILVER_NO_LOSS_POTION_CREDIT", &g_options.noLossPotionCredit},
+                                          {"STS_SILVER_RELIC_HEAL_LEAF", &g_options.relicHealLeaf},
+                                          {"STS_SILVER_A20_BOSS_HEAL_FIX", &g_options.a20BossHealFix}}) {
+            if (const char *raw = std::getenv(name)) {
+                const std::string value(raw);
+                if (value != "0" && value != "1")
+                    throw std::runtime_error(std::string(name) + " must be 0 or 1");
+                *flag = value == "1";
+            }
         }
         {
             const char *horizon = std::getenv("STS_STOP_AFTER_ACT");
