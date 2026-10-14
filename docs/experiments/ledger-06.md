@@ -18116,3 +18116,40 @@ promotion follows. The CTM remains NOT_QUALIFIED.
 **Knowledge impact:** document the explicit stability command in OOC
 architecture/CODE_MAP and update #507's current status in the maintained
 research page. This entry and its evidence packet retain the frozen experiment.
+
+## §472 — OOC MCTS without leaf rollout combats vs rollout3 on the current defaults: WORSE, −12.5 pp (2026-10-14)
+
+**Question (Philipp, 2026-10-14 14:59Z):** "With the new ooc MCTS, we explore deeper. Maybe we don't need the
+rollouts anymore. Can we test on 128 seeds rollout 3 vs no rollout?" With tree rules and outcome merging on
+(ADR-0031) and the greedy rollout shop (ADR-0032), does `STS_OOC_MCTS_LEAF_COMBATS=0` (leaf valued at the next map
+screen, no extra combats) win as many runs as `LEAF_COMBATS=3`?
+**Design:** [PREREG](evidence/ooc_rollout0_472_20261014/PREREG.md), frozen after independent pre-launch review
+(code `aedbd473`, binary `207ddb6a…`, run commit `1e386af2`). Arms `rollout3` (§433 `combo` with the ADR-0028 to
+ADR-0032 defaults pinned) and `rollout0` (only `LEAF_COMBATS=0`). Ironclad A0, fresh seeds 101000000–101000127,
+16 cloud workers. Primary: Δwin rollout0 − rollout3, paired seed bootstrap; BETTER / WORSE / NOT_SHOWN; secondary
+non-inferiority at 10 pp.
+**Result: WORSE.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | rollout0 | rollout3 | rollout0 − rollout3 |
+|---|---|---|---|
+| wins / 128 | 92 | 108 | −12.5 pp [−21.9, −3.1]; McNemar p = 0.014 (11 vs 27 discordant) |
+| mean floor | 47.41 | 48.95 | −1.54 [−3.23, +0.04] |
+| boss deaths | 30 | 16 | |
+| seconds per run | 237 | 639 | sum ratio 0.37 |
+| MCTS CPU per run | 165 s | 561 s | ratio 0.29 |
+| per-search max depth, median / p90 / max | 4 / 8 / 12 | 4 / 8 / 13 | |
+| pick = top prior / top Q | 78.2% / 50.2% | 75.9% / 50.8% | |
+
+**Interpretation:**
+- The leaf combats are still worth their cost: dropping them loses runs (NOT_NONINFERIOR_AT_10PP too) while saving
+  about 63% of wall time.
+- The tree is equally deep in both arms (same depth, simulations and pick agreement), so the rollouts do not shape
+  the search; they improve the leaf value. **Inference:** the native win model at the next map screen misses
+  consequences that show in the next few fights. Boss deaths 30 vs 16 are descriptive, not pre-registered.
+- No change; `LEAF_COMBATS=3` stays in the OOC MCTS research configuration (the code default of the knob remains 0,
+  and OOC MCTS stays off by default, ADR-0027). Philipp decides what comes next.
+
+**Evidence:** [packet](evidence/ooc_rollout0_472_20261014/README.md). Raw: `/mnt/project-files/ooc-rollout0-472/`
+(one tar per worker). Seeds 101000000–101000127 and smoke 74070600 are now used.
+
+**Knowledge impact:** the `LEAF_COMBATS` row in `architecture/out-of-combat.md` now cites §472.
