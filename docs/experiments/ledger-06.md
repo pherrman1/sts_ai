@@ -18155,3 +18155,46 @@ non-inferiority at 10 pp.
 (one tar per worker). Seeds 101000000–101000127 and smoke 74070600 are now used.
 
 **Knowledge impact:** the `LEAF_COMBATS` row in `architecture/out-of-combat.md` now cites §472.
+
+## §473 — Silver Smoke Bomb escape penalty 12,35 vs escape scored as a win: NOT_SHOWN at A0 and A20 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 15:26Z, after the default-off flag audit):** "5 können wir gerne testen". Silver
+scores a Smoke Bomb escape like a win although the escape forfeits the fight's rewards. Does charging them
+(`STS_SILVER_ESCAPE_PENALTY=12,35`, normal and elite-trigger fights, capped at half the HP left) play better whole
+runs?
+**Design:** [PREREG](evidence/silver_escape_penalty_473_20261014/PREREG.md), committed before any cohort seed ran
+(code `e221fcac`, binary `bafcdf80…`, run commit `ef53c823`, 8 cloud workers). Both arms are the §422/§433 `off`
+stack (exact-10k live Silver, V4 OOC policy, OOC MCTS off) on the ADR-0034 defaults; `base` sets `0,0`, `escape`
+sets `12,35`. The values were fixed from Silver's own weights, not tuned. Fresh seeds: A0 102000000–102000499, A20
+102000500–102000999. Primary: A0 Δwin, A20 Δfloor, paired seed bootstrap (10,000 resamples); BETTER / WORSE /
+NOT_SHOWN.
+**Precondition found while preparing:** before PR #540, `one_combat` rejected any `STS_SILVER_ESCAPE_PENALTY` value at
+startup because the name was missing from its accepted `STS_SILVER_*` list, so no earlier game run can have used the
+penalty. PR #540 (`e221fcac`) accepts it; the first smoke failed with rc=2 before that fix.
+**Result: NOT_SHOWN in both cohorts.** 500/500 pairs valid per cohort, all 2,000 units rc=0, no dropped seed, no
+stall. All 8 worker tars were verified against their DONE hashes and frozen provenance from a second container.
+
+| | A0 base | A0 escape | A20 base | A20 escape |
+|---|---|---|---|---|
+| wins / 500 | 414 | 414 | 67 | 66 |
+| Δwin (escape − base) | | 0.0 pp [−1.0, +1.0]; 3 vs 3 discordant, McNemar p = 1.0 | | −0.2 pp [−1.0, +0.4]; 1 vs 2 discordant, p = 1.0 |
+| mean floor | 49.59 | 49.57 | 36.11 | 36.13 |
+| Δfloor | | −0.018 [−0.128, +0.088] | | +0.024 [−0.168, +0.234] |
+| boss deaths | 67 | 66 | 257 | 256 |
+| reached floor 50 | 459 | 458 | 209 | 209 |
+| seconds per run | 58.4 | 58.2 | 38.9 | 38.8 |
+| pairs whose rows differ at all | | 46 | | 21 |
+
+**Interpretation:**
+- No effect is detectable. The penalty changes a run only after an escape decision; 46 of 500 A0 pairs and 21 of 500
+  A20 pairs differ at all, and among them wins and floors move both ways. The intervals are much narrower than the
+  prereg's power estimate because most pairs are identical, so they bound the average effect over all runs, not the
+  effect on runs that hold a Smoke Bomb. Escape counts per arm were not measured. No CPU difference.
+- Per the prereg decision rule, Philipp decides on principle whether `12,35` becomes the default; the values are not
+  tuned further on these seeds. Until then the default stays `0,0`.
+
+**Evidence:** [packet](evidence/silver_escape_penalty_473_20261014/PREREG.md), analyzer
+`tools/analyze_silver_escape_473.py`. Raw: `/mnt/project-files/silver-escape-473/` (one tar and DONE file per
+worker). Seeds 102000000–102000999 and smokes 74070750–74070767 are now used.
+
+**Knowledge impact:** the escape-penalty paragraph in `architecture/combat-search.md` now cites §473.
