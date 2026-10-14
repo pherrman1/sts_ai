@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-14 for the opt-in A20 CTM stack and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the opt-in A20 CTM stack and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -771,6 +771,8 @@ OS thread and forks the complete model/state/callback/RNG context. The child
 closes unrelated descriptors, evaluates once and exits through a bounded
 pipe; after reaping it, the parent performs its scheduled evaluation. A child
 timeout, support error or transport error invalidates the diagnostic.
+Replay and stability probes reject unrelated trace/profile/probe outputs and
+`STS_OOC_MCTS_DECISION_LOG` before starting a game.
 
 The two evaluations must agree exactly on value, terminal status, endpoint,
 combat/step counts and final planner RNG, with the source state/path unchanged.
@@ -780,6 +782,40 @@ result. This establishes only inherited in-memory repeatability for the
 selected leaf; capture JSONL still has `replayability:unavailable`. It is not a
 serialized replay format, an independent-future stability estimate or a
 public-input qualification. Ordinary search never enables this diagnostic.
+
+`one_combat oocleafstabilityprobe 1 87000000 20 PLAN.json` is a separate,
+fixed-cohort conditional-target diagnostic, also guarded by `tools/seed_guard.sh`.
+Its strict `ooc-leaf-stability-v1` plan contains exactly four selectors
+`(decisionIndex, ordinal)`: `(0,1025)`, `(0,2049)`, `(1,1)`, `(1,513)`.
+Each binds its complete expected candidate input and sixteen distinct uint64
+RNG seeds; all 64 seeds must differ. Selection requires nonterminal MAP leaves
+and the native A20 4096-simulation, three-combat V4 teacher. These are requested
+simulations; normal visit-lock early stopping remains active.
+
+Before each selected parent evaluation, one fresh fork evaluates the original
+RNG as a control and sixteen more evaluate the supplied independent streams.
+The parent then evaluates once with its unchanged original RNG. Exact control
+parity, supported evaluations and unchanged source state/path are required.
+Children share a cumulative 30 CPU-second allocation; before each child the
+remaining budget must cover its existing 10 CPU-second cap. Child wall time is
+capped at ten seconds and transport at 64 KiB. Scientific execution must also
+use a frozen outer runner to enforce parent and whole-attempt limits.
+
+Root 0's ordinary action may execute to reach root 1. After the complete root 1
+search, the command stops before executing its action. It emits up to 68
+provisional `stability_progress` records, two ordinary root records, and one
+`stability_probe` summary. Only a complete valid cohort returns
+`STABILITY_MEASURED`; any missing selection, unsupported result, parity failure,
+abort or resource failure produces `INVALID` and retains partial records.
+The external scientific analyzer must additionally verify complete historical
+parent-root parity, producer/artifact custody and frozen stream derivation.
+
+This measures the existing teacher's iterative future-redraw kernel conditional
+on four complete inherited snapshots, including fixed hidden counters and pool
+membership. It does not estimate a value conditioned only on the public input.
+It supplies neither a portable snapshot nor CTM, public-input, training or
+gameplay qualification. The command and its synthetic selftest are unavailable
+in the live-advisor build and are inactive during ordinary search.
 
 `STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
 the full-run trace boundary. Defaults remain off. Thread-local CPU scopes

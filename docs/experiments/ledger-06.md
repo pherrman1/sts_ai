@@ -18058,3 +18058,61 @@ at ascension 20 and keeps the default stack below. Smokes at A20 (seeds 74070351
 
 **Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_A20_CTM`) and
 `architecture/out-of-combat.md` (A20 stack, manifest boss calibration).
+
+## §471 — A20 four-leaf conditional target stability: STABILITY_MEASURED (2026-10-14)
+
+**Question:** how variable are repeated outputs of the existing three-combat
+CTM teacher from four fixed inherited MAP snapshots? This extends §462 exact
+same-RNG repeatability to new planner streams; it does not establish a value
+conditioned only on public input.
+
+**Design:** independently reviewed [protocol and evidence](evidence/ooc_leaf_stability_471_20261014/README.md).
+Reviewed producer `c822cfbf6e4a03fba512c6a081442ec856f03691`, actual Release
+binary `36127ba9…`. Exact §461 / PR #524 teacher, historical seed 87000000,
+A20, first four distinct candidate MAP inputs in the first two roots:
+`(0,1025)`, `(0,2049)`, `(1,1)`, `(1,513)`. All are Act 1/floor 0
+Neow-transform variants, selected on inputs before new results. Each fresh
+child inherits the unchanged original full state/callback/policy/cache context.
+One original-RNG control and sixteen independently seeded children precede
+one original parent evaluation. All 64 uint64 seeds were frozen from SHA256
+of the specified selector/replicate string. Root 0's ordinary action executes;
+root 1 completes and stops before its real action. No actual combat or full
+run result is collected. Limits: 30 parent plus 30 cumulative child CPU
+seconds, 90 wall seconds; each child 10 CPU/wall seconds and 64 KiB transport.
+No retries, replacement leaves, extra samples or seed extension.
+
+**Result: STABILITY_MEASURED.** All four same-RNG controls matched exactly;
+all original leaf identities, results and RNG strings matched §461, and both
+complete ordinary parent-root records were identical (2519 and 3903 completed
+simulations, preserving visit-lock early stopping). All 64 planned new-stream
+results were valid and nonterminal. Exactly 72 records were emitted. Source,
+binary, full environment, effective teacher policy, loaded CTM identity and
+artifact custody passed. Return code 0; aggregate CPU **4.389738 s**, including
+**0.167306 s** in diagnostic children; wall **7.777792 s**. Concurrent regression
+checks and one narrow cohort make timing descriptive only.
+
+| Decision / ordinal | K | Mean | Sample SD | Estimated SE16 | Min–max | Terminal |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 / 1025 | 16 | 0.698576 | 0.087282 | 0.021820 | 0.566860–0.908407 | 0/16 |
+| 0 / 2049 | 16 | 0.692093 | 0.043348 | 0.010837 | 0.620063–0.805293 | 0/16 |
+| 1 / 1 | 16 | 0.711904 | 0.050231 | 0.012558 | 0.569240–0.782159 | 0/16 |
+| 1 / 513 | 16 | 0.712064 | 0.063552 | 0.015888 | 0.564222–0.819237 | 0/16 |
+
+All four meet the preregistered descriptive `SE16 <= 0.05` flag. Across-leaf
+mean range is **0.01997094**, sample SD **0.00997039**; these describe four
+correlated selected snapshots, with no confidence interval or significance
+test. The full report retains unbiased sample variance and subgroup counts.
+Zero observed terminals does not establish rare-event coverage.
+
+**Decision:** target precision is now measured for this narrow conditional
+teacher kernel. Single draws vary materially; sixteen-draw mean estimates
+have roughly 0.01–0.02 estimated standard error here. The small between-leaf
+mean spread does not show reliable action ranking. Broader coverage across
+independent source runs/later MAP states, terminal/support boundaries and
+public-input sufficiency need their own reviewed protocol before a student
+fit. No broader run, training, CTM qualification, gameplay quality or default
+promotion follows. The CTM remains NOT_QUALIFIED.
+
+**Knowledge impact:** document the explicit stability command in OOC
+architecture/CODE_MAP and update #507's current status in the maintained
+research page. This entry and its evidence packet retain the frozen experiment.
