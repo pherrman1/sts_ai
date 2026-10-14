@@ -675,29 +675,18 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
     return &chance.edges.back();
 }
 
-namespace {
-    // STS_SILVER_ROLLOUT_UNIFORM=k swaps the greedy rollout policy for uniform random
-    // legal actions and averages k independent playouts per leaf. 0 (default) is the
-    // greedy policy; read once per process.
-    int uniformRolloutCount() {
-        static const int count = [] {
-            const char *raw = std::getenv("STS_SILVER_ROLLOUT_UNIFORM");
-            const int k = raw != nullptr ? std::atoi(raw) : 0;
-            return k < 0 ? 0 : std::min(k, 64);
-        }();
-        return count;
-    }
-
-    // STS_SILVER_ROLLOUTS_PER_LEAF=k (research): average k greedy playouts per leaf.
-    // 1 (default) is the production single rollout; ignored when uniform rollouts are on.
-    int greedyRolloutCount() {
-        static const int count = [] {
-            const char *raw = std::getenv("STS_SILVER_ROLLOUTS_PER_LEAF");
-            const int k = raw != nullptr && *raw != '\0' ? std::atoi(raw) : 1;
-            return std::clamp(k, 1, 64);
-        }();
-        return count;
-    }
+const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutConfig() {
+    static const RolloutConfig config = [] {
+        RolloutConfig c;
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_UNIFORM"); raw && *raw)
+            c.uniform = std::clamp(std::atoi(raw), 0, 64);
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUTS_PER_LEAF"); raw && *raw)
+            c.perLeaf = std::clamp(std::atoi(raw), 1, 64);
+        if (const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE"); path && *path)
+            c.cardTable = SilverRolloutAgent::loadPlayTable(path);
+        return c;
+    }();
+    return config;
 }
 
 double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
@@ -712,8 +701,9 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         ++profile->rolloutCalls;
         if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
     }
-    const int uniform = uniformRolloutCount();
-    const int playouts = uniform > 0 ? uniform : greedyRolloutCount();
+    rolloutAgent.playTable = rolloutConfig.cardTable;
+    const int uniform = rolloutConfig.uniform;
+    const int playouts = uniform > 0 ? uniform : rolloutConfig.perLeaf;
     double value = 0;
     if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
         value = playoutToEnd(bc, treeDepth, uniform > 0);
@@ -749,8 +739,10 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
             break;
         }
         action.execute(bc);
-        if (profile) ++rolloutDepth;
+        ++rolloutDepth;
     }
+    ++stats.rolloutPlayouts;
+    stats.rolloutActions += rolloutDepth;
     recordEndpoint(bc, treeDepth, rolloutDepth);
     return evaluateEndState(bc);
 }

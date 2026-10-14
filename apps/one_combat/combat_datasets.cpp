@@ -10,6 +10,7 @@
 #include "screen_leaf_s0.h"
 #include "one_combat/ooc_native_fallback.h"
 #include "run_driver.h"
+#include "sim/search/SilverRolloutAgent.h"
 
 #include <regex>
 #include <cstdio>
@@ -445,6 +446,7 @@ struct VwinArmResult {
     double signedOutcome = 0.0, cpuSeconds = 0.0;
     std::uint64_t simulations = 0, decisions = 0;
     std::int64_t lockStops = 0, modelStops = 0;
+    std::int64_t rolloutPlayouts = 0, rolloutActions = 0;
     bool valid = false;
     std::string outcome, quarantineReason;
 };
@@ -3102,6 +3104,8 @@ static VwinArmResult vwinRunBossArm(const VwinBossEntry &entry, int budget,
     result.decisions = static_cast<std::uint64_t>(decisionScope.hooks);
     result.lockStops = search::g_nativeSilverCombatStats.lockStops;
     result.modelStops = search::g_nativeSilverCombatStats.modelStops;
+    result.rolloutPlayouts = search::g_nativeSilverCombatStats.rolloutPlayouts;
+    result.rolloutActions = search::g_nativeSilverCombatStats.rolloutActions;
     result.valid = label.labelValid && bc.outcome != Outcome::UNDECIDED;
     if (!result.valid) result.quarantineReason = !label.healthOk ? "simulator_health_failure"
         : decisionScope.hooks == 0 && !initializationTerminal ? "missing_combat_decision_hook"
@@ -5187,8 +5191,17 @@ struct TreePriorScope {
 // treeMinVisits > 0 adds the §452 tree prior (needs prior = true).
 // priorModel (non-empty) scores this arm's prior with that policy model instead
 // of the STS_SILVER_ROOT_PRIOR one (Silver AZ MLP armset).
+// rollout (rollout479 armset): leaf rollout options for this arm's replays only; the source run
+// and the control keep the production rollouts.
 struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0;
-                      std::string priorModel; bool finalFightLeaf = false; };
+                      std::string priorModel; bool finalFightLeaf = false;
+                      search::SilverSearcher::RolloutConfig rollout = {}; std::string cardTable; };
+struct RolloutScope {
+    explicit RolloutScope(const search::SilverSearcher::RolloutConfig &config) {
+        search::g_nativeSilverRolloutOverride = config;
+    }
+    ~RolloutScope() { search::g_nativeSilverRolloutOverride.reset(); }
+};
 struct FinalFightLeafScope {
     explicit FinalFightLeafScope(bool on) { search::g_nativeSilverFinalFightLeafOverride = on; }
     ~FinalFightLeafScope() { search::g_nativeSilverFinalFightLeafOverride.reset(); }
@@ -5225,10 +5238,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     constexpr int sims = 10000;
     // Ascension 20 is allowed only for the mlpsweep armset (§476); every earlier armset is A0.
     const char *armSetEarly = std::getenv("STS_CTMSILVER_ARMSET");
-    const bool sweepArmSet = armSetEarly && std::string(armSetEarly) == "mlpsweep";
+    const bool sweepArmSet = armSetEarly
+        && (std::string(armSetEarly) == "mlpsweep" || std::string(armSetEarly) == "rollout479");
     if (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0)
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
-                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep)");
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep or rollout479)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5276,18 +5290,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
     const std::string armSet = armSetEnv ? armSetEnv : "";
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
-            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep")
+            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479")
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453, mlpprior, finalleaf or mlpsweep");
+                                 "cpumatch453, mlpprior, finalleaf, mlpsweep or rollout479");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
     int hallwayEvery = 1;
     std::vector<int> sweepSims;
-    if (armSet == "mlpsweep") {
+    if (armSet == "mlpsweep" || armSet == "rollout479") {
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR"), prev = env("STS_CTMSILVER_MLP_PRIOR_PREV");
-        if (mlp.empty()) throw std::runtime_error("ctm vs silver: mlpsweep requires STS_CTMSILVER_MLP_PRIOR");
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: " + armSet + " requires STS_CTMSILVER_MLP_PRIOR");
         std::stringstream list(env("STS_CTMSILVER_SWEEP_SIMS"));
         for (std::string item; std::getline(list, item, ',');) {
             char *end = nullptr;
@@ -5297,7 +5311,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 throw std::runtime_error("ctm vs silver: STS_CTMSILVER_SWEEP_SIMS must list distinct budgets 1..100000");
             sweepSims.push_back(static_cast<int>(b));
         }
-        if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: mlpsweep requires STS_CTMSILVER_SWEEP_SIMS");
+        if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: " + armSet + " requires STS_CTMSILVER_SWEEP_SIMS");
         const std::string every = env("STS_CTMSILVER_HALLWAY_EVERY");
         if (!every.empty()) {
             char *end = nullptr;
@@ -5319,6 +5333,26 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             arms.push_back({"plain" + tag, b, false, true, replicates});
             arms.push_back({"mlp" + tag, b, true, true, replicates, 8, mlp});
             if (!prev.empty()) arms.push_back({"mlpprev" + tag, b, true, true, replicates, 8, prev});
+        }
+        if (armSet == "rollout479") {
+            // §479: the source run and control must play production rollouts.
+            const auto &envRollout = search::SilverSearcher::envRolloutConfig();
+            if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != nullptr)
+                throw std::runtime_error("ctm vs silver: rollout479 requires the STS_SILVER_ROLLOUT_* options unset");
+            const std::string table = env("STS_CTMSILVER_CARD_TABLE");
+            if (table.empty()) throw std::runtime_error("ctm vs silver: rollout479 requires STS_CTMSILVER_CARD_TABLE");
+            const int *tablePtr = search::SilverRolloutAgent::loadPlayTable(table);
+            const auto add = [&](const std::string &name, int b, search::SilverSearcher::RolloutConfig r,
+                                 const std::string &tablePath) {
+                arms.push_back({name + std::to_string(b), b, false, true, replicates});
+                arms.back().rollout = r; arms.back().cardTable = tablePath;
+                arms.push_back({name + "mlp" + std::to_string(b), b, true, true, replicates, 8, mlp});
+                arms.back().rollout = r; arms.back().cardTable = tablePath;
+            };
+            for (const int b : sweepSims) add("uniform", b, {1, 1, nullptr}, "");
+            add("perleaf2_", 1250, {0, 2, nullptr}, "");
+            add("perleaf4_", 625, {0, 4, nullptr}, "");
+            add("table", 2500, {0, 1, tablePtr}, table);
         }
     } else if (armSet == "mlpprior") {
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
@@ -5395,12 +5429,17 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                   "candSampleCpuUs";
     states << '\n';
     armsOut << "stateId,sourceSeed,fightIdx,arm,k,budget,prior,redraw,redrawSeed,won,terminalHp,"
-               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason,treeMinVisits\n";
+               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason,treeMinVisits,"
+               "rolloutPlayouts,rolloutActions\n";
     nlohmann::json armSpec = nlohmann::json::array();
     for (const auto &a : arms)
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
                            {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates},
                            {"treeMinVisits", a.treeMinVisits}, {"finalFightLeaf", a.finalFightLeaf},
+                           {"rolloutUniform", a.rollout.uniform}, {"rolloutsPerLeaf", a.rollout.perLeaf},
+                           {"rolloutCardTable", a.cardTable.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.cardTable)},
+                           {"rolloutCardTableSha256", a.cardTable.empty() ? nlohmann::json(nullptr)
+                                                                          : nlohmann::json(fileSha256(a.cardTable))},
                            {"priorModel", a.priorModel.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.priorModel)},
                            {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
                                                                      : nlohmann::json(fileSha256(a.priorModel))}});
@@ -5526,6 +5565,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     TreePriorScope treeScope(arm.treeMinVisits);
                     PriorNetScope netScope(arm.priorModel.empty() ? nullptr : priorNets.at(arm.priorModel).get());
                     FinalFightLeafScope leafScope(arm.finalFightLeaf);
+                    std::optional<RolloutScope> rolloutScope;
+                    if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
                     std::optional<one_combat::CombatTransitionPersistentState> rawPost;
                     VwinArmResult result;
                     {
@@ -5560,7 +5601,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                             << std::setprecision(9) << result.cpuSeconds << ',' << result.simulations << ','
                             << result.decisions << ',' << (valid ? 1 : 0) << ','
                             << (isControl ? (controlMatch ? 1 : 0) : -1) << ',' << csvQuote(reason) << ','
-                            << arm.treeMinVisits << '\n';
+                            << arm.treeMinVisits << ',' << result.rolloutPlayouts << ',' << result.rolloutActions << '\n';
                 }
             }
         }

@@ -6,8 +6,9 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
-#include <cstdlib>
 #include <fstream>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -312,10 +313,7 @@ constexpr std::array<CardId,13>  defensiveCards = {
 
     int cardPriorityMap[372] {};
     int cardPlayMap[372] {};
-    // Research (STS_SILVER_ROLLOUT_CARD_TABLE=<file>): learned play priority per (card id, upgraded),
-    // replacing the cardPlayPriorities order; lower plays first. Default off.
-    bool useLearnedPlayTable = false;
-    int learnedPlayPriority[372 * 2] {};
+
     std::bitset<372> isAoeCard;
     std::bitset<372> isDefensiveCard;
 
@@ -335,20 +333,6 @@ constexpr std::array<CardId,13>  defensiveCards = {
             isAoeCard.set(static_cast<int>(CardId::IMMOLATE));
             isAoeCard.set(static_cast<int>(CardId::THUNDERCLAP));
             isAoeCard.set(static_cast<int>(CardId::WHIRLWIND));
-            // File lines: "<card id> <upgraded 0|1> <score>"; higher score plays first, unlisted
-            // cards score 0.
-            if (const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE"); path && *path) {
-                std::ifstream in(path);
-                if (!in) throw std::runtime_error(std::string("STS_SILVER_ROLLOUT_CARD_TABLE: cannot open ") + path);
-                int id = 0, upgraded = 0;
-                double score = 0;
-                while (in >> id >> upgraded >> score) {
-                    if (id < 0 || id >= 372 || (upgraded != 0 && upgraded != 1))
-                        throw std::runtime_error("STS_SILVER_ROLLOUT_CARD_TABLE: bad row");
-                    learnedPlayPriority[id * 2 + upgraded] = static_cast<int>(-score * 1000.0);
-                }
-                useLearnedPlayTable = true;
-            }
         });
     }
 
@@ -420,14 +404,16 @@ constexpr std::array<CardId,13>  defensiveCards = {
         return dmg >= bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
     }
 
+    // playTable (research): learned play priority per card id * 2 + upgraded, lower plays first;
+    // nullptr keeps the cardPlayPriorities order.
     int getBestCardToPlay(const BattleContext &bc, const fixed_list<int,10> &handIdxs, bool randomize,
-                          std::default_random_engine &rng) {
+                          std::default_random_engine &rng, const int *playTable) {
         int bestPriority = 1 << 30;
         fixed_list<int,10> bestHandIdxs;
         for (int i = 0; i < handIdxs.size(); ++i) {
             const auto c = bc.cards.hand[handIdxs[i]];
-            const int priority = useLearnedPlayTable
-                    ? learnedPlayPriority[static_cast<int>(c.getId()) * 2 + (c.isUpgraded() ? 1 : 0)]
+            const int priority = playTable != nullptr
+                    ? playTable[static_cast<int>(c.getId()) * 2 + (c.isUpgraded() ? 1 : 0)]
                     : 2 * cardPlayMap[static_cast<int>(c.getId())] + (c.isUpgraded() ? -1 : 0);
             if (priority < bestPriority) {
                 bestPriority = priority;
@@ -457,6 +443,31 @@ constexpr std::array<CardId,13>  defensiveCards = {
 
     constexpr auto anyCard = [](const CardInstance &) { return true; };
 
+}
+
+const int *search::SilverRolloutAgent::loadPlayTable(const std::string &path) {
+    // File lines: "<card id> <upgraded 0|1> <score>"; higher score plays first, unlisted cards
+    // score 0. Tables are loaded once per path and live for the process.
+    static std::mutex mutex;
+    static std::map<std::string, std::unique_ptr<std::array<int, 372 * 2>>> tables;
+    std::lock_guard<std::mutex> lock(mutex);
+    auto &table = tables[path];
+    if (!table) {
+        std::ifstream in(path);
+        if (!in) throw std::runtime_error("SilverRolloutAgent: cannot open card table " + path);
+        auto loaded = std::make_unique<std::array<int, 372 * 2>>();
+        loaded->fill(0);
+        int id = 0, upgraded = 0;
+        double score = 0;
+        while (in >> id >> upgraded >> score) {
+            if (id < 0 || id >= 372 || (upgraded != 0 && upgraded != 1))
+                throw std::runtime_error("SilverRolloutAgent: bad card table row in " + path);
+            (*loaded)[id * 2 + upgraded] = static_cast<int>(-score * 1000.0);
+        }
+        if (!in.eof()) throw std::runtime_error("SilverRolloutAgent: unreadable card table " + path);
+        table = std::move(loaded);
+    }
+    return table->data();
 }
 
 search::SilverRolloutAgent::SilverRolloutAgent() {
@@ -564,7 +575,7 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
     const fixed_list<int,10> *chosen = nullptr;
     for (auto *list : priority) {
         if (!list->empty()) {
-            bestCardIdx = getBestCardToPlay(bc, *list, randomize, rng);
+            bestCardIdx = getBestCardToPlay(bc, *list, randomize, rng, playTable);
             chosen = list;
             break;
         }
@@ -575,7 +586,7 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
     if (chosen == &nonZeroCostCards && !aoeCards.empty()
             && bc.monsters.monstersAlive >= kAoeMin
             && bc.cards.hand[bestCardIdx].getType() == CardType::ATTACK) {
-        bestCardIdx = getBestCardToPlay(bc, aoeCards, randomize, rng);
+        bestCardIdx = getBestCardToPlay(bc, aoeCards, randomize, rng, playTable);
     }
 
     const auto &c = bc.cards.hand[bestCardIdx];
