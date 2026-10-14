@@ -1,0 +1,12 @@
+{
+ "label": "lizard_fairy_test",
+ "census": {
+  "rows": 1763,
+  "seeds": 72,
+  "valid": 1763,
+  "both": 184,
+  "prodRefused": 0,
+  "candRefused": 1579
+ },
+ "decision": null
+}

@@ -1,0 +1,27 @@
+frozen 2026-10-13T14:23:16Z before any ctmscorerows call
+checkout 40db7d62b89e6d2ef52c91cda167e7f0e698e42a (= tree merged into main as dcea7646; CTM C++ identical to 643a4892)
+data branch 00c828eb637147c14cb9758ff0140234b120a2ec
+4134ef359003d5d640be782f75c7bab7d519f2323f0038ba93a995c96038a824  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/gate3a/PREREG-GATES.md
+5cccc277082b0047376068312634c1e7ba7ed91f816a0fac3d71c3d5a1aa93cb  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/gate3a/GATE3A-NOTES.md
+25f7dc0020b2b6874e55f29b4a508ac38bd245e94b5372e0fe93d07751838bd7  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/gate3a/gate3a.py
+ff71cf537a95729018053e50bffd9e95903b1697a1a12f358565fe76b7d70005  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/gate3a/offline_ab_compare_418.py
+e59727cae6b5d2b77a614e18ca9a16c541158ecbdddfa1a830cfa0bd14abc173  build/linux-gcc-release/one_combat
+b489e537adcbfa754884288d73732870902af2a8705adac1104534dffa0c2179  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/STD1-escape.native
+348708153534153fe690a453e08c1e17867a7029cac67b6be52815e28770c0eb  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/FAST1-escape.native
+7274c5c3386166be23cae19a28d792d43b237bc8d612277f4b1c7173308ebdc5  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/candidate-pathb-a20-escape.json
+c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c  selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native
+b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf  selfplay/models/combat_transition_near_full_escape_pathb_r2.native
+bc6732442ecec25e4760d52bbf5796d20d4a18a9d5b63bb31f3d9d76a390fbe0  /home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/union/corpus.jsonl
+numpy 2.5.1
+python3 -P -E (user site-packages needed for numpy; as #418 DEVIATIONS)
+Interpretation fixed before scoring (recorded in PREREG-FROZEN.txt):
+- Gate rows: scope `none` (main corpus) TEST rows (split_for_seed bucket >= 90) from the assembled scope corpus, i.e.
+  including rows the union dropped (as #418). Forced scopes are reported as secondary.
+- valid = run_valid and outcome in {win, loss}; metrics 1-4 on rows both stacks score ("both").
+- 1: survival NLL (p_death clipped to [1e-6, 1-1e-6]) delta candidate - production, 95% CI upper < 0.
+- 2: candidate death bias = mean(p_death - died); |point estimate| <= 0.01 overall and on NORMAL, ELITE, BOSS rows.
+- 3: candidate win-HP bias = mean(expected_win_hp - post_hp) on wins; |point estimate| <= 3 overall and per class.
+- 4: HP NLL (-max(log_p_post_hp, log 1e-6), wins) delta, 95% CI upper < 0.
+- 5: candidate refusals (valid rows it does not score) <= production refusals; per-reason counts reported.
+- CIs: paired source-seed bootstrap, 2000 reps, numpy default_rng(443), 95% percentile.
+PASS iff 1-5 all hold, else NOT_QUALIFIED.

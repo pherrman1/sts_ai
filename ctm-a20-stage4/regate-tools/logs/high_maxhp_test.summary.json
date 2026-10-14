@@ -1,0 +1,12 @@
+{
+ "label": "high_maxhp_test",
+ "census": {
+  "rows": 210,
+  "seeds": 8,
+  "valid": 210,
+  "both": 194,
+  "prodRefused": 10,
+  "candRefused": 16
+ },
+ "decision": null
+}

@@ -1,0 +1,21 @@
+{
+ "label": "main_test",
+ "census": {
+  "rows": 63648,
+  "seeds": 3314,
+  "valid": 63648,
+  "both": 62208,
+  "prodRefused": 0,
+  "candRefused": 1440
+ },
+ "decision": {
+  "criteria": {
+   "1_survival_nll_upper_ci_lt_0": true,
+   "2_death_bias_abs_le_0.01": false,
+   "3_win_hp_bias_abs_le_3": true,
+   "4_hp_nll_upper_ci_lt_0": true,
+   "5_refusals_le_production": false
+  },
+  "verdict": "NOT_QUALIFIED"
+ }
+}

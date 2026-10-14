@@ -1,0 +1,62 @@
+{
+ "rowScopesSha256": "25e43281a94b9d742856588d229503c1903d75d045736747a72922ffc78fddd8",
+ "schema": "ctm_offline_ab_v1_extract",
+ "scopes": {
+  "high_maxhp": {
+   "corpus": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-high_maxhp/corpus.jsonl",
+   "corpusSha256": "66c5c79f62df99ba54b6cf4814b79f3fa1d2d56e3bbfbe59b7c6a91b1c634176",
+   "escaped": 0,
+   "inUnion": 194,
+   "rowsSha256": "5697ed53e6e5f4e4452f41bde83c63e070d74aefdcc6ef8c11ffc9c0399ced57",
+   "smokeHeld": 0,
+   "tagsSha256": "ffd8e4eaedc9217bff5ae6b4524c0605a7b0ea6b4990007a2b6b4237ca8c375e",
+   "testRows": 210,
+   "testSeeds": 8
+  },
+  "lizard_brew": {
+   "corpus": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-lizard_brew/corpus.jsonl",
+   "corpusSha256": "5e0d0553cb775ffbb4c9ede200c95c5b70b5385fb10805bfe20cbd0f7996bcfd",
+   "escaped": 11,
+   "inUnion": 214,
+   "rowsSha256": "6c2cacbfc0d25814bfe54242f8acccb7ceb73d80780f6eabff456fa24f2ad69a",
+   "smokeHeld": 6,
+   "tagsSha256": "3c620541389082dbbd310c8540b09f4711310cb8a266f26fd1dc4748758faf18",
+   "testRows": 1566,
+   "testSeeds": 63
+  },
+  "lizard_fairy": {
+   "corpus": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-lizard_fairy/corpus.jsonl",
+   "corpusSha256": "23ef02d5f503edbc6b60d309ae1f87fc31a6748b3e279053766744cc4009dfaa",
+   "escaped": 13,
+   "inUnion": 184,
+   "rowsSha256": "1ac2810a50b2961e28593a95e8dbcaccc95f306bb29907c60131dfaa36b7e4be",
+   "smokeHeld": 15,
+   "tagsSha256": "3ad74a45e83d6d8ac5764efac6ab26157d77bdee6baefae38c9ca3351fd66df3",
+   "testRows": 1763,
+   "testSeeds": 72
+  },
+  "none": {
+   "corpus": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-none/corpus.jsonl",
+   "corpusSha256": "7ba1ed2b18829c226998ff3981c5ed49cd09787eb8a9037e9c99a0fefb689494",
+   "escaped": 368,
+   "inUnion": 62208,
+   "rowsSha256": "0bf7231c17de01153b44152070ec38da135a484ae8d4278dfb8cad04a9199c2c",
+   "smokeHeld": 456,
+   "tagsSha256": "c598508355d5745c45c1f0a7d22634264dc153caedf58325d4befb2f01db68ba",
+   "testRows": 63648,
+   "testSeeds": 3314
+  },
+  "ritual_writhing": {
+   "corpus": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/scope-ritual_writhing/corpus.jsonl",
+   "corpusSha256": "00f6c844474f0ac25d5467f982cda5e3483096fd68a379233f79aef8b536032b",
+   "escaped": 4,
+   "inUnion": 770,
+   "rowsSha256": "9a184dd0391ccdc80f76de313aef1dac4c2af4b75b322225c96c98be9f3ae6cf",
+   "smokeHeld": 5,
+   "tagsSha256": "405cc6739521d45868c903fcf9cde88edb037014fe3ac3ae8942aa12bdec3344",
+   "testRows": 786,
+   "testSeeds": 37
+  }
+ },
+ "union": "/home/philippherrmann/Documents/sts/wt-ctm-a20/build/ctm-a20/run/union"
+}

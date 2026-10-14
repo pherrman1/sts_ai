@@ -1,0 +1,12 @@
+{
+ "label": "lizard_brew_test",
+ "census": {
+  "rows": 1566,
+  "seeds": 63,
+  "valid": 1566,
+  "both": 214,
+  "prodRefused": 0,
+  "candRefused": 1352
+ },
+ "decision": null
+}

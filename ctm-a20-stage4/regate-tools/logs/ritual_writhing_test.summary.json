@@ -1,0 +1,12 @@
+{
+ "label": "ritual_writhing_test",
+ "census": {
+  "rows": 786,
+  "seeds": 37,
+  "valid": 786,
+  "both": 724,
+  "prodRefused": 49,
+  "candRefused": 62
+ },
+ "decision": null
+}
