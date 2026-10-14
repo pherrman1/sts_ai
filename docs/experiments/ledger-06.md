@@ -17852,3 +17852,54 @@ Primary: Δwin fixon − fixoff, paired seed bootstrap; BETTER / WORSE / NOT_SHO
 (one tar per worker). Seeds 92000000–92000127 and smokes 74063000–74063001 are now used.
 
 **Knowledge impact:** the deck-size paragraph in `architecture/out-of-combat.md` and an evidence note in ADR-0030.
+
+### §443 (continued) — Lizard support and the fresh-seed re-gate: NOT_QUALIFIED again on boss death bias (2026-10-13 to 2026-10-14)
+
+**Context:** Stage 3a (above) was NOT_QUALIFIED on boss death bias (+0.0153) and 2.3% Lizard refusals. Philipp chose
+"Plan Lizard + regate" (2026-10-13 14:40Z); Stage 4 pre-registration
+[PREREG-REGATE](evidence/ctm_a20_regate_443_20261014/PREREG-REGATE.md): a Lizard refit, a fresh A20 corpus and the
+unchanged Stage 3a gate on it.
+- **Fresh corpus (Step 2):** seeds 78600000–78603999 (8 cloud workers, Philipp "Approve 8 workers"), 76,406 rows from
+  3,999 seeds (78600595 excluded: it hits the native "descent exceeded depth bound" abort again), plus Lizard slices
+  78610000–199 (4,905 rows) and 78611000–199 (4,992 rows). Not used for training, model choice or any plan.
+- **Lizard support (Step 1b, [PREREG-LIZARD](evidence/ctm_a20_regate_443_20261014/PREREG-LIZARD.md)):** Step 1 could
+  not run because the A20 fast artifact had no `activeLizardCorrection` header. Step 1b added it (the skipped
+  `package_deepsets_lizard_artifact.py` step), restamped, refit the escape head (byte-identical weights), added
+  Writhing+Ritual to both artifacts and refit r at A20 with Fairy and Brew; artifacts `claude/ctm-a20-data` `c507cebb`
+  (fast `ae785ec2…`, standard `e338506d…`, manifest `704f2a58…`). Keep rule: r NLL PASS; composed survival on
+  Tail-fired rows FAIL as written (fairy +0.070 on 44 rows, brew −0.014 on 21, bar ±0.01; all-row cohorts −0.0003 and
+  −0.0013). **Philipp overrode the failed check** (2026-10-14 09:38Z, "Override, re-gate"). §458 used this candidate
+  live.
+- **Re-gate (Step 3):** frozen `gate3a.py` (25f7dc00) and the Stage 3a binary (rebuilt at 40db7d62 in the cloud,
+  sha256 e59727ca, identical to Stage 3a's) on every fresh main row, no TEST filter (the filter sits in the Stage 3a
+  extract step, not in `gate3a.py`, so no code changed). Candidate = the Step 1b artifacts with active Lizard on;
+  production call unchanged (ascension clamped to 0). Inputs frozen before scoring
+  ([FROZEN](evidence/ctm_a20_regate_443_20261014/FROZEN.txt)).
+
+| criterion | candidate | bar | result |
+|---|---|---|---|
+| 1 survival NLL Δ vs production | −0.0489 [−0.0516, −0.0463] | upper CI < 0 | PASS |
+| 2 death bias, overall / normal / elite / **boss** | +0.0025 / +0.0001 / +0.0027 / **+0.0151 [+0.0085, +0.0213]** | \|point\| ≤ 0.01 each | **FAIL (boss)** |
+| 3 win-HP bias, overall | +0.17 HP (per class −0.55 to +0.39) | \|point\| ≤ 3 | PASS |
+| 4 HP NLL Δ | −0.375 [−0.383, −0.367] | upper CI < 0 | PASS |
+| 5 refusals | 0 vs production 1 (`writhing_ritual_intersection`) | ≤ production | PASS |
+
+Production for reference: death bias −0.032 overall, −0.147 on boss rows; win-HP bias +3.35. Lizard slices
+(diagnostic): the candidate scores all 4,905 Fairy and 4,992 Brew rows (production refuses 1).
+
+**Interpretation:**
+- Lizard support fixed criterion 5 (refusals 2.3% → 0). Criteria 1, 3 and 4 replicate on fresh seeds.
+- The boss death bias replicates almost exactly (+0.0151 vs +0.0153 on the old TEST split) with a CI that excludes the
+  bar, so it is not noise: the candidate overpredicts boss deaths by about 1.5 points. It is still about ten times
+  closer than production (−0.147).
+- As pre-registered, no recalibration is added after seeing fresh results.
+
+**Decision:** §443 ends **NOT_QUALIFIED**. The A20 CTM stays a research candidate (it is what §458 used, +6.0 floors vs
+off); no default changes and the live gate (3b) does not run. A boss calibrator would be a new pre-registered step with
+a runtime change.
+
+**Evidence:** [packet](evidence/ctm_a20_regate_443_20261014/README.md). Seeds 78600000–78603999, 78610000–199 and
+78611000–199 used for this gate.
+
+**Knowledge impact:** none beyond this entry and the `EXPERIMENTS.md` index: no maintained page states the A20 CTM's
+qualification status, and nothing changes in code or defaults.
