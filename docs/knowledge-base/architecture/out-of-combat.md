@@ -667,7 +667,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
 | `ROLLOUT_SHOP` |planner|`planner` (first item of the best affordable bundle) or `greedy` (single best purchase or leave per decision) for shops in leaf rollouts|
-| `TREE_RULES` |0|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card|
+| `TREE_RULES` |0|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
 | `MERGE_OUTCOMES` |0|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
