@@ -1,0 +1,4 @@
+t512 --h1 512 --h2 256 --dump-logp
+s_tower --tower 256
+s_3l --h2 64 --h3 32
+e_enc16 --dropout 0.15 --enc-emb 16
