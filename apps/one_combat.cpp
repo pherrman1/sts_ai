@@ -3966,6 +3966,11 @@ int main(int argc, char **argv) {
                                       "  ENCOUNTER: MonsterEncounter enum name, e.g. COLLECTOR (a boss is forced as its act's boss)\n"; return 2; }
         silverAzFocusGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]),
                          argv[7], std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]), std::stoi(argv[11]));
+    } else if (mode == "silverfocusevalgen") {
+        if (argc < 13) { std::cerr << "usage: one_combat silverfocusevalgen N_SEEDS ASC OUT_PREFIX SEED_OFFSET ENCOUNTER REPLICATES OTHER_SIMS ARM_SIMS TREE_MIN_VISITS PRIOR_A PRIOR_B\n"; return 2; }
+        silverFocusEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],
+                           std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]),
+                           argv[11], argv[12]);
     } else if (mode == "silversynthfeatures") {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);

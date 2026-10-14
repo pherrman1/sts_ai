@@ -381,6 +381,13 @@ detached copies at `SIMS` (copy 0 unperturbed, the rest perturbed as in
 `silversynthgen`; fight id = fight + 1000 × copy), and the run then ends. A boss
 encounter is forced as its act's boss by overwriting `gc.boss` (no game RNG is
 drawn). The manifest adds a `focus` block.
+`one_combat silverfocusevalgen N ASC OUT_PREFIX SEED ENCOUNTER REPLICATES OTHER_SIMS
+ARM_SIMS TREE_MIN_VISITS PRIOR_A PRIOR_B` is the paired online check for such a prior: it reaches the
+encounter the same way (root bonus on), then plays `REPLICATES` copies of the fight per arm at
+`ARM_SIMS` with that arm's MLP as root and tree prior (via `g_nativeSilverPriorNetOverride`). Copy r
+of both arms shares one battle seed (copy 0 the natural one; the battle reseeds its combat streams
+from `gc.seed + floor`, so copies r ≥ 1 set a fresh `gc.seed`) and one Silver planner seed, so the arms
+differ only in the prior; with `PRIOR_A = PRIOR_B` the rows match exactly.
 
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
