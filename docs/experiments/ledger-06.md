@@ -18446,3 +18446,71 @@ stall. All 8 worker tars were verified against their DONE hashes and frozen prov
 worker). Seeds 102000000–102000999 and smokes 74070750–74070767 are now used.
 
 **Knowledge impact:** the escape-penalty paragraph in `architecture/combat-search.md` now cites §473.
+
+## §476 — Silver AZ MLP prior generation 6 at A20 with a simulation sweep: helps at 2,500 and 625, not shown at 10,000 or vs gen 5 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 17:46Z):** "can we evaluate the gen 6 prior on A20? also maybe how it performs with
+fewer simulations? maybe dont do full runs, just select a few hundred / 1000 fights". §478 chose gen 6 (v2 net E,
+offline orig fold-4 CE 1.1749 vs gen 5 1.1954) on offline evidence only; no generation after gen 3 (§460, A0) had
+been played.
+**Design:** [PREREG](evidence/silver_gen6_a20_sweep_476_20261014/PREREG.md), frozen after independent pre-launch
+review and a delta review (code `339da3b1`, binary `1c774367…520b`, gen 6 E `ca9bd7f2…3228`, gen 5 `5e9f975a…9e8a`).
+New `ctmsilvergen` armset `mlpsweep` at Ascension 20: one plain exact-10k source run per seed (§460 OOC policy and
+teacher), every boss, elite and event fight plus about one normal fight in three replayed by a 10k control and by
+`plain<b>`, `mlp<b>` (gen 6) and `mlpprev<b>` (gen 5) at b = 10,000, 2,500 and 625 (tree prior K = 8, weight 400,
+root bonus on), 2 replicates each on a shared combat-RNG redraw. Fresh seeds 104000000–104000095, one cloud
+container. §460 fight score, paired per fight, bootstrap over seeds. Primary: `mlp<b> − plain<b>` (G6_HELPS /
+G6_HURTS / NOT_SHOWN) and `mlp<b> − mlpprev<b>` (G6_BETTER / G6_WORSE / NOT_SHOWN), all fights, score; six labels,
+no multiplicity correction. Every arm used the legacy Silver terminal score (the run predates ADR-0035).
+**Result: gen 6 vs plain G6_HELPS at 2,500 and 625, NOT_SHOWN at 10,000; gen 6 vs gen 5 NOT_SHOWN at all three
+budgets.** 1,080 of 1,088 fights valid (8 with escape-quarantined or control-state-invalid rows); 96/96 seeds, all
+shards rc 0, no stall. Fights: 194 boss, 510 elite, 339 normal, 37 event.
+
+| contrast (all fights) | score | win rate, pp | HP lost |
+|---|---|---|---|
+| gen6 − plain, 10k | +0.73 [−1.45, +2.91] | +0.0 [−0.8, +0.8] | −0.10 [−0.49, +0.29] |
+| gen6 − plain, 2.5k | **+3.85 [+1.23, +6.52]** | +1.1 [+0.2, +2.0] | −0.31 [−0.76, +0.12] |
+| gen6 − plain, 625 | **+2.56 [+0.40, +4.74]** | +0.5 [−0.2, +1.3] | −0.33 [−0.72, +0.04] |
+| gen6 − gen5, 10k | +0.57 [−1.40, +2.49] | +0.2 [−0.5, +0.9] | −0.02 [−0.42, +0.40] |
+| gen6 − gen5, 2.5k | +1.34 [−0.79, +3.55] | +0.4 [−0.3, +1.2] | −0.27 [−0.67, +0.12] |
+| gen6 − gen5, 625 | −0.80 [−2.93, +1.30] | −0.4 [−1.1, +0.3] | −0.10 [−0.52, +0.32] |
+| gen5 − plain, 2.5k | +2.51 [+0.19, +4.85] | +0.6 [−0.2, +1.5] | −0.04 [−0.44, +0.35] |
+| gen5 − plain, 625 | +3.36 [+1.01, +5.73] | +0.9 [+0.1, +1.8] | −0.23 [−0.65, +0.18] |
+| gen6 2.5k − plain 10k | +1.04 [−1.43, +3.46] | +0.1 [−0.7, +1.0] | +0.09 [−0.35, +0.54] |
+| plain 2.5k − plain 10k | −2.81 [−5.15, −0.62] | −0.9 [−1.8, −0.1] | +0.40 [−0.02, +0.82] |
+| plain 625 − plain 10k | −5.82 [−8.54, −3.12] | −1.5 [−2.5, −0.6] | +1.61 [+1.15, +2.08] |
+
+- Boss fights (n = 194): gen6 − plain +3.22 [−7.09, +13.04] at 10k, +15.96 [+3.89, +28.34] at 2.5k (win
+  +4.6 pp [+0.5, +8.9], HP lost −2.32 [−4.00, −0.73]), +4.78 [−3.78, +13.46] at 625. Boss win rate per replicate:
+  plain 75.5 / 70.9 / 70.9%, gen 6 76.0 / 75.5 / 71.6%, gen 5 75.3 / 74.2 / 73.5% at 10k / 2.5k / 625 (control
+  77.8%). Boss fights contribute about 0.58 of +0.73 (10k), 2.87 of +3.85 (2.5k) and 0.86 of +2.56 (625) to the
+  all-fight gen6 − plain score; at 625 elites contribute about 1.48 (+3.14 [−0.09, +6.15]). Among the prior − plain
+  and gen6 − gen5 score contrasts, no elite or normal CI excludes 0 except gen5 − plain elite at 625 (+3.47
+  [+0.59, +6.59]); the budget contrasts and some win-rate contrasts do.
+- Mean win rate per fight: plain 93.0 / 92.1 / 91.5%, gen 6 93.0 / 93.1 / 92.0%, gen 5 92.8 / 92.7 / 92.4%.
+- CPU per fight vs plain at the same budget: gen 6 1.046x / 1.040x / 1.045x, gen 5 1.038x / 1.044x / 1.051x; plain
+  at 10k 2.72 s, 2.5k 0.62 s, 625 0.15 s per fight. Contrasts are at equal simulations, not equal CPU.
+
+**Interpretation:**
+- At A20 the gen-6 prior helps plain Silver at reduced budgets. At 2,500 it is not distinguishable from plain
+  10,000 (+1.04 [−1.43, +3.46]; equivalence was not tested, and the CI is as wide as the plain 2.5k − 10k gap of
+  −2.81) at about 0.24x the CPU per fight; gen 5 shows the same pattern at 2,500 (+2.51 vs plain 2.5k). At 2,500 the
+  gain sits mainly in boss fights, as at A0 (§460); at 625 it is spread over bosses and elites.
+  **Inference:** a strong prior substitutes for simulations; at 10,000 the search no longer needs it, so an effect
+  there, if any, is below this design's resolution (±2.2 score).
+- Gen 6 is not shown better than gen 5 in play, at any budget, despite the offline CE gain; at 625 the point estimate
+  favours gen 5. **Open question:** whether the offline gains of gens 4–6 transfer to play at all; no fight-level
+  comparison against gen 3 or gen 4 has been run.
+- `NOT_SHOWN` at about 1,000 A20 fights means inconclusive, not "no effect". Six labels at 95% without correction;
+  both HELPS CIs exclude 0 (the 625 one narrowly, lower bound +0.40) and agree with gen 5's vs plain, so they are not
+  a single borderline result.
+- Fight score and per-fight win rate, not run win rate: the run-level effect of a lower combat budget with the prior
+  is **Unverified**. The source policy is A0-trained, so the fight mix is where that policy reaches at A20. No default
+  changes; the MLP prior stays opt-in.
+
+**Evidence:** [packet](evidence/silver_gen6_a20_sweep_476_20261014/README.md). Raw:
+`/mnt/project-files/silver-gen6-a20-476/x476-run.tar` (sha256 `e93b58d0…520a`, checked from a second container).
+Seeds 104000000–104000095 and smokes 74071200–74071207 (and reviewer smokes 74071300–74071303) are now used.
+
+**Knowledge impact:** the MLP prior paragraph of `architecture/combat-search.md` now states the §476 A20 result and
+documents the `mlpsweep` armset.
