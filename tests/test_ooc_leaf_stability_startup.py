@@ -107,6 +107,10 @@ def main():
         teacher_error = "replay_requires_a20_native_4096_rollout3_v4_teacher"
         reject("wrong-sims", teacher_error, env_change={"STS_OOC_MCTS_SIMS": "1024"})
         reject("wrong-horizon", teacher_error, env_change={"STS_OOC_MCTS_LEAF_COMBATS": "1"})
+        decision_log = Path(directory) / "unexpected-decision.jsonl"
+        reject("decision-log", "replay_excludes_output_or_probe_STS_OOC_MCTS_DECISION_LOG",
+               env_change={"STS_OOC_MCTS_DECISION_LOG": str(decision_log)})
+        assert not decision_log.exists(), "diagnostic opened an unrelated decision log"
     print(f"PASS stability startup: {cases} argument/plan/teacher refusals, no gameplay output")
 
 

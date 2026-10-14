@@ -1,4 +1,4 @@
-# §463 — Four early A20 MAP targets: conditional stability measured
+# §471 — Four early A20 MAP targets: conditional stability measured
 
 The fixed pilot returned **STABILITY_MEASURED**. All four exact-RNG controls
 and both complete historical parent-root records matched. All 64 planned new
@@ -6,6 +6,10 @@ planner-stream evaluations were valid. Sixteen-sample means had estimated
 standard errors of **0.0108–0.0218** on the teacher's 0–1 return scale.
 This is conditional teacher-target precision, not observed win probability,
 compression quality or reliable action ranking.
+
+The draft PR initially used §463. Concurrent main work had already published
+that identifier before integration, so this entry is finalized as §471. Original
+frozen files and raw review records retain their bytes and draft-era references.
 
 ## Design and custody
 
@@ -132,7 +136,7 @@ are not duplicated in the raw archive; their hashes are preserved. The original
 analyzer creates its report exclusively. Reanalysis must use a scratch copy;
 do not rerun the game command or overwrite the completed attempt.
 
-Knowledge impact: this packet and §463 retain experiment evidence; the
+Knowledge impact: this packet and §471 retain experiment evidence; the
 maintained research page records the limited result and next gate;
 architecture/CODE_MAP document the opt-in diagnostic. Model/runtime defaults
 are unchanged.

@@ -1,0 +1,10 @@
+25f7dc0020b2b6874e55f29b4a508ac38bd245e94b5372e0fe93d07751838bd7  gate3a.py
+e59727cae6b5d2b77a614e18ca9a16c541158ecbdddfa1a830cfa0bd14abc173  one_combat
+944bd712d7cfae80f843c8353f045c5b800dbe235afd5d9e472a8a4be44b4f82  run_regate.sh
+ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b  ctm/FAST4L.native
+e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d  ctm/STD2.native
+704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0  ctm/candidate-pathb-a20-lizard.json
+05937639193b1f2dc027136c39906cd7ae9d373918bb0928c035bab3bcc9c2c4  rows/lizard_brew.jsonl
+c617bcbcf7a09064cb5f605310971bb5bfc01036a008ace1b4d2c736ce35bdbc  rows/lizard_fairy.jsonl
+690eef7249b3bab649ce08b399f72b6ed7f71ca30dd89989565b4a3667762021  rows/none.jsonl
+frozen 2026-10-14T10:06:02Z before any ctmscorerows call; numpy 2.5.3 (Stage 3a 2.5.1); rows: all Stage 4 main units rc=0 + w02 per-seed rerun rc=0 (78600595 excluded)

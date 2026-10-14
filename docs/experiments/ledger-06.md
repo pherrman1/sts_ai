@@ -17820,14 +17820,253 @@ teacher/default promotion, additional seed or #506 contract change occurred.
 **Knowledge impact:** document the diagnostic interface in the OOC architecture
 and CODE_MAP; update #507's current status in `evaluation/current-research.md`.
 
-## §463 — A20 four-leaf conditional target stability: STABILITY_MEASURED (2026-10-14)
+## §463 — Shop deck-size accounting on vs off in §433 `combo`: no difference, default stays (2026-10-14)
+
+**Question (Philipp, 2026-10-14, "Paired check" on the card "Test the deck-size default on/off before keeping it,
+or revert it now?"):** ADR-0030 (#523) made the corrected shop deck-size accounting the default without a game test.
+After §459, review noticed (post hoc, different seeds and binaries) that the §459 `planner` arm won 101/128 against
+§449 `x2bpub`'s 114/128 in an otherwise matching `combo` environment. Does the correction change how `combo` plays on
+the same seeds?
+**Design:** [PREREG](evidence/ooc_deck_size_fix_463_20261014/PREREG.md), frozen after independent pre-launch review
+(code `06ff0e75`, binary `b4586cfc…95e1`). Arms `fixon` (the §459 `planner` arm: §433 `combo`, pinned
+`STS_OOC_PUBLIC_FUTURES=8`, X2-B public `STS_WIN_NET`, `STS_OOC_MCTS_ROLLOUT_SHOP=planner`,
+`STS_OOC_SHOP_DECK_SIZE_FIX=1`) and `fixoff` (the same with `=0`). Fresh seeds 92000000–92000127, 8 cloud workers.
+Primary: Δwin fixon − fixoff, paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | fixon | fixoff | fixon − fixoff |
+|---|---|---|---|
+| wins / 128 | 110 | 110 | 0.0 pp [−7.1, +7.8]; McNemar p = 1.0 (12 vs 12 discordant) |
+| mean floor | 50.08 | 49.84 | +0.24 [−0.44, +0.98] |
+| boss deaths | 16 | 14 | |
+| seconds per run | 583.6 | 590.7 | |
+
+**Interpretation:**
+- No playing-strength effect of the deck-size correction is detectable; the CI excludes a loss larger than 7.1 pp.
+  By the prereg the ADR-0030 default stays on.
+- Both arms won 85.9% on these seeds, in line with §433/§449/§451. **Inference:** the §459 cohort's 78.9% was seed
+  variance, not the deck-size default. This binary also carries the #522 loop guard that §459's did not; it is
+  shared by both arms and does not affect this comparison.
+
+**Evidence:** [packet](evidence/ooc_deck_size_fix_463_20261014/README.md). Raw: `/mnt/project-files/ooc-deck-size-463/`
+(one tar per worker). Seeds 92000000–92000127 and smokes 74063000–74063001 are now used.
+
+**Knowledge impact:** the deck-size paragraph in `architecture/out-of-combat.md` and an evidence note in ADR-0030.
+
+### §443 (continued) — Lizard support and the fresh-seed re-gate: NOT_QUALIFIED again on boss death bias (2026-10-13 to 2026-10-14)
+
+**Context:** Stage 3a (above) was NOT_QUALIFIED on boss death bias (+0.0153) and 2.3% Lizard refusals. Philipp chose
+"Plan Lizard + regate" (2026-10-13 14:40Z); Stage 4 pre-registration
+[PREREG-REGATE](evidence/ctm_a20_regate_443_20261014/PREREG-REGATE.md): a Lizard refit, a fresh A20 corpus and the
+unchanged Stage 3a gate on it.
+- **Fresh corpus (Step 2):** seeds 78600000–78603999 (8 cloud workers, Philipp "Approve 8 workers"), 76,406 rows from
+  3,999 seeds (78600595 excluded: it hits the native "descent exceeded depth bound" abort again), plus Lizard slices
+  78610000–199 (4,905 rows) and 78611000–199 (4,992 rows). Not used for training, model choice or any plan.
+- **Lizard support (Step 1b, [PREREG-LIZARD](evidence/ctm_a20_regate_443_20261014/PREREG-LIZARD.md)):** Step 1 could
+  not run because the A20 fast artifact had no `activeLizardCorrection` header. Step 1b added it (the skipped
+  `package_deepsets_lizard_artifact.py` step), restamped, refit the escape head (byte-identical weights), added
+  Writhing+Ritual to both artifacts and refit r at A20 with Fairy and Brew; artifacts `claude/ctm-a20-data` `c507cebb`
+  (fast `ae785ec2…`, standard `e338506d…`, manifest `704f2a58…`). Keep rule: r NLL PASS; composed survival on
+  Tail-fired rows FAIL as written (fairy +0.070 on 44 rows, brew −0.014 on 21, bar ±0.01; all-row cohorts −0.0003 and
+  −0.0013). **Philipp overrode the failed check** (2026-10-14 09:38Z, "Override, re-gate"). §458 used this candidate
+  live.
+- **Re-gate (Step 3):** frozen `gate3a.py` (25f7dc00) and the Stage 3a binary (rebuilt at 40db7d62 in the cloud,
+  sha256 e59727ca, identical to Stage 3a's) on every fresh main row, no TEST filter (the filter sits in the Stage 3a
+  extract step, not in `gate3a.py`, so no code changed). Candidate = the Step 1b artifacts with active Lizard on;
+  production call unchanged (ascension clamped to 0). Inputs frozen before scoring
+  ([FROZEN](evidence/ctm_a20_regate_443_20261014/FROZEN.txt)).
+
+| criterion | candidate | bar | result |
+|---|---|---|---|
+| 1 survival NLL Δ vs production | −0.0489 [−0.0516, −0.0463] | upper CI < 0 | PASS |
+| 2 death bias, overall / normal / elite / **boss** | +0.0025 / +0.0001 / +0.0027 / **+0.0151 [+0.0085, +0.0213]** | \|point\| ≤ 0.01 each | **FAIL (boss)** |
+| 3 win-HP bias, overall | +0.17 HP (per class −0.55 to +0.39) | \|point\| ≤ 3 | PASS |
+| 4 HP NLL Δ | −0.375 [−0.383, −0.367] | upper CI < 0 | PASS |
+| 5 refusals | 0 vs production 1 (`writhing_ritual_intersection`) | ≤ production | PASS |
+
+Production for reference: death bias −0.032 overall, −0.147 on boss rows; win-HP bias +3.35. Lizard slices
+(diagnostic): the candidate scores all 4,905 Fairy and 4,992 Brew rows (production refuses 1).
+
+**Interpretation:**
+- Lizard support fixed criterion 5 (refusals 2.3% → 0). Criteria 1, 3 and 4 replicate on fresh seeds.
+- The boss death bias replicates almost exactly (+0.0151 vs +0.0153 on the old TEST split) with a CI that excludes the
+  bar, so it is not noise: the candidate overpredicts boss deaths by about 1.5 points. It is still about ten times
+  closer than production (−0.147).
+- As pre-registered, no recalibration is added after seeing fresh results.
+
+**Decision:** §443 ends **NOT_QUALIFIED**. The A20 CTM stays a research candidate (it is what §458 used, +6.0 floors vs
+off); no default changes and the live gate (3b) does not run. A boss calibrator would be a new pre-registered step with
+a runtime change.
+
+**Evidence:** [packet](evidence/ctm_a20_regate_443_20261014/README.md). Seeds 78600000–78603999, 78610000–199 and
+78611000–199 used for this gate.
+
+**Knowledge impact:** none beyond this entry and the `EXPERIMENTS.md` index: no maintained page states the A20 CTM's
+qualification status, and nothing changes in code or defaults.
+
+## §464 — OOC MCTS tree rules plus outcome merging vs §433 `combo`: deeper tree, wins not shown different (2026-10-14)
+
+**Question (Philipp, 2026-10-14):** after the decision trace of seed 74060000 showed the `combo` tree is about one
+decision deep (maximum depth 2, visit lock at about 2,050 simulations, pick = top V4 prior in 72/87 searches), he
+asked for the tree to follow live rules and to "do the merge and tree rules on 128 seeds with 16 workers". Does
+`STS_OOC_MCTS_TREE_RULES=1` (forced chest, relic, gold and potion pickups and empty-reward leave inside the tree;
+one bottle/duplicate/bonfire candidate per distinct card) together with `STS_OOC_MCTS_MERGE_OUTCOMES=1` (§367) win
+more runs than `combo`?
+**Design:** [PREREG](evidence/ooc_tree_rules_464_20261014/PREREG.md), frozen after independent pre-launch review
+(code `8f0b77b1`, binary `9dd31c4e…`). Arms `combo` (the §459/§463 planner environment, deck-size fix at its default 1)
+and `rulesmerge` (plus both flags). Fresh seeds 93000000–93000127, 16 cloud workers. Primary: Δwin rulesmerge − combo,
+paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | rulesmerge | combo | rulesmerge − combo |
+|---|---|---|---|
+| wins / 128 | 107 | 104 | +2.3 pp [−6.3, +10.2]; McNemar p = 0.71 (16 vs 13 discordant) |
+| mean floor | 48.74 | 48.91 | −0.17 [−1.38, +0.95] |
+| boss deaths | 13 | 20 | |
+| seconds per run | 692 | 652 | sum ratio 1.061 |
+| per-search max depth, median / p90 / max | 4 / 8 / 14 | 2 / 2 / 2 | |
+| mean simulation depth | 5.21 | 1.60 | |
+| pick = top prior / top Q | 76.2% / 51.3% | 78.8% / 46.0% | |
+
+**Interpretation:**
+- The pair makes the search deeper as intended, at about 6% more wall time, but deeper search did not produce a
+  detectable win gain; the CI excludes a loss larger than 6.3 pp. NOT_SHOWN does not mean equal.
+- Boss deaths 13 vs 20 and the top-Q share are descriptive, not pre-registered.
+- Rules and merging changed together, so their effects cannot be split from this run.
+- No default change (prereg); both flags stay opt-in. Philipp decides what comes next.
+- **Decision (Philipp, 2026-10-14 09:58Z):** "both flags should be default" → [ADR-0031](../../decisions/0031-ooc-mcts-tree-rules-merge-default.md),
+  live OOC MCTS defaults to tree rules and outcome merging.
+
+**Evidence:** [packet](evidence/ooc_tree_rules_464_20261014/README.md). Raw: `/mnt/project-files/ooc-tree-rules-464/`
+(one tar per worker). Trace that motivated it: `/mnt/project-files/ooc-decision-trace/REPORT.md`. Seeds
+93000000–93000127 and smokes 74060000, 74065000 are now used.
+
+**Knowledge impact:** the `STS_OOC_MCTS_TREE_RULES` row in `architecture/out-of-combat.md` now cites §464.
+
+## §467 — Collector-specific Silver MLP prior (fine-tuned gen 4): offline CANDIDATE, −0.0125 CE on held-out Collector roots (2026-10-14)
+
+**Question (Philipp, 2026-10-14, "investigating fight specific silver prior … fine tune a net to a specific
+hard fight"):** does a Silver tree prior fine-tuned on one hard fight beat the general gen-4 MLP on that fight?
+**Pilot (no new data):** fine-tuning gen 4 on the gen-4 window's own roots of one boss gave only −0.002 to
+−0.003 fold-4 CE on each act-2/3 boss (Collector −0.0030 [−0.0039, −0.0020]); half the Collector seeds gave
+−0.0010, a Collector-only net from scratch +0.059. On the Collector, gen 3 → gen 4 was −0.0062. The encounter
+reaches the MLP only as a raw scalar id (state feature 1).
+**Design:** [PREREG](evidence/silver_fight_specific_collector_20261014/PREREG.md), reviewed before launch.
+New mode `one_combat silverazfocusgen` (PR #531, code `1518989b`, binary `ad90e698…5493`): the Collector is
+forced as act-2 boss, earlier fights play unrecorded at 2k with the gen-4 prior, the first Collector fight is
+recorded at 10k with the gen-4 prior (K = 8, w = 400, root bonus off) as 4 copies (1 unperturbed, 3 perturbed),
+then the run ends. Seeds 95000000–95002559, 4 cloud workers (Philipp 09:23Z). Fine-tune gen 4 on old + new
+Collector roots (folds seed % 5; lr 2e-4, wd 1e-2, dropout 0.35, LR halving, patience 8). Primary: fold-4 CE
+on the 9,711 old Collector test roots, fine-tuned − gen 4, seed-cluster bootstrap; CANDIDATE if ≤ −0.0062 with
+CI below 0.
+**Result: CANDIDATE.** 640/640 units rc 0, no stalls; 282,417 roots in 7,968 Collector fights (0 invalid);
+261,348 multi-action roots.
+
+| fine-tune | old Collector fold 4 (9,711) | new fold 4 (53,867) |
+|---|---|---|
+| **primary, lr 2e-4, all new data** | **−0.0125 [−0.0157, −0.0094]** (1.4411 → 1.4287; top-1 46.3 → 46.8%) | −0.0189 [−0.0207, −0.0173] |
+| lr 1e-4 / 5e-4 | −0.0123 / −0.0110 | −0.0188 / −0.0193 |
+| 25% / 50% of new train seeds | −0.0063 / −0.0086 | −0.0108 / −0.0135 |
+| no new data (pilot) | −0.0030 | — |
+
+- The gain keeps growing with fight-specific data (−0.003 → −0.006 → −0.009 → −0.0125); not flat at 260k roots.
+- New-root CIs count unperturbed and perturbed copies of a seed as 2 clusters, so they are slightly narrow.
+- Earlier fights at 2k change the HP/deck distribution at the Collector relative to the 10k-teacher old roots.
+- Native export `combat_policy_mlp_collector467.txt` passes parity (164 roots, max |Δlogit| 1.3e-6).
+
+**Interpretation:** fight-specific data, not specialization alone, is what moves the prior: about two
+generations' worth of offline gain on the Collector for ~20 core-hours. **Open question:** whether it shows in
+play; offline gains of a similar order have not always transferred (§460). The pre-registered next step is an
+online Collector-only paired check (needs Philipp's go). No default change.
+
+**Evidence:** [packet](evidence/silver_fight_specific_collector_20261014/README.md). Raw:
+`/mnt/project-files/silver-prior-fight-specific/`. Seeds 95000000–95002559 and smokes 74067000–74067055
+(author) and 74069050–74069062 (reviewer) are now used.
+
+**Knowledge impact:** `architecture/combat-search.md` documents `silverazfocusgen`.
+
+## §469 — Collector-specific Silver MLP prior online: NOT_SHOWN, +0.43 fight score [−1.39, +2.28] vs gen 4 (2026-10-14)
+
+**Question (Philipp 12:27Z, "Online check"):** does the §467 Collector prior (`combat_policy_mlp_collector467.txt`,
+d78f80c9…, offline CANDIDATE) play the Collector fight better than the general gen-4 MLP (3ebeab9d…)?
+**Design:** [PREREG](evidence/silver_fight_specific_collector_20261014/eval469/PREREG.md), reviewed before launch.
+New mode `one_combat silverfocusevalgen` (PR #531, code `0ce7bc4e`, binary `755be7be…02a7`): the Collector is
+forced as act-2 boss and reached with the gen-4 prior at 2k (root bonus on); at the Collector, 8 copies of the
+fight (copy 0 natural, copies 1–7 a fresh battle seed), each played by both arms at 2k flat exact Silver, K = 8,
+w = 400, with the same battle seed and planner seed per copy (A = B smoke gives identical rows). Seeds
+99000000–99000999, 4 cloud workers (Philipp 13:11Z). Fight score as §460, per-seed mean over copies, B − A paired
+per seed, bootstrap over seeds; HELPS / HURTS if the CI excludes 0, else NOT_SHOWN.
+**Result: NOT_SHOWN.** 250/250 units rc 0, no stalls, no dropped units; 1,000 seeds completed, 795 reached the
+Collector; 6,360 paired copies, 0 invalid.
+
+| metric (795 seeds) | gen 4 (A) | Collector prior (B) | B − A [95% CI] |
+|---|---|---|---|
+| **fight score** | 215.19 | 215.62 | **+0.43 [−1.39, +2.28]** |
+| death rate | 20.57% | 20.50% | −0.06 pp [−0.79, +0.66] |
+| CPU s per fight | 1.405 | 1.409 | +0.004 [−0.005, +0.014] |
+
+**Interpretation:** the −0.0125 CE offline gain (about two loop generations on this fight) is not shown in play at
+2k. The CI excludes gains above about +2.3 fight score but not a gain the size of §460's gen 3 vs plain at matched
+CPU (+1.50). This matches §460, where gen 3 vs gen 1, two loop generations apart, was +0.14 NOT_SHOWN online.
+**Inference:** CE gains of about 0.01 on visit-share targets move fight outcomes by at most a few fight-score
+points; a per-fight net would need a much larger offline gain to show online. Not tested: 10k play, other
+bosses. No default change.
+
+**Evidence:** [packet](evidence/silver_fight_specific_collector_20261014/eval469/README.md). Raw:
+`/mnt/project-files/silver-prior-fight-specific/eval469/`. Seeds 99000000–99000999 and smokes 74070250–74070277
+(author) and 74070300–74070319 (reviewer) are now used.
+
+**Knowledge impact:** `architecture/combat-search.md` documents `silverfocusevalgen`.
+
+## §470 — Boss calibration for the A20 Lizard CTM and an opt-in A20 stack: offline PASS
+
+**Date:** 2026-10-14. **Question:** §443 ended NOT_QUALIFIED twice on one criterion: the A20 Lizard candidate
+`pathb-a20` overestimates boss deaths (+0.0151 [+0.0085, +0.0213] on the fresh Stage 4 corpus, bar |bias| ≤ 0.01),
+while it passes the other four. Philipp (12:33Z): "i just want a functiononing a20 ctm"; he then picked "Calibrate"
+on the card (12:44Z). Does one boss shift on the survival logit, fit without the fresh corpus, make the candidate pass
+all five Stage 3a criteria?
+**Design:** [PREREG](evidence/ctm_a20_boss_calib_470_20261014/PREREG-470.md), written before the fit. One parameter δ,
+added to the death logit of boss encounters in both children, MLE on Stage 1 VALIDATION boss rows (the candidate was
+trained on TRAIN). Checked on the fresh Stage 4 corpus with the frozen `gate3a.py`, same production arm and bars.
+**Honest label:** the fresh corpus had been looked at once (the §443 re-gate), so its boss bias was known when this
+step was chosen; δ itself was fit without it.
+**Result: PASS.** δ = −0.18325 (validation boss bias +0.0193 → 0).
+
+| fresh Stage 4 corpus, 76,406 rows | calibrated | uncalibrated (§443) | production, ascension clamped to 0 |
+|---|---|---|---|
+| death bias, boss | −0.0041 [−0.0107, +0.0021] | +0.0151 [+0.0085, +0.0213] | −0.1471 |
+| death bias, all / normal / elite | +0.0003 / +0.0001 / +0.0027 | +0.0025 / +0.0001 / +0.0027 | −0.0316 / −0.0061 / −0.0368 |
+| survival NLL Δ vs production, all / boss | −0.0490 / −0.1995 | −0.0489 / −0.1984 | |
+| HP NLL Δ vs production, all | −0.3749 | −0.3749 | |
+| win-HP bias, all / boss | +0.17 / −0.54 | +0.17 / −0.55 | +3.35 / −2.63 |
+| refusals | 0 | 0 | 1 |
+
+**Runtime:** an optional `bossSurvivalLogitShift` in a v3 research-candidate manifest (absent: byte-identical
+scores, checked). The calibrated `pathb-a20` manifest is built into the binary and both artifacts are bundled in
+`selfplay/models/`. `STS_OOC_MCTS_A20_CTM=1` (off by default) uses that stack, active Lizard on, for OOC MCTS searches
+at ascension 20 and keeps the default stack below. Smokes at A20 (seeds 74070351, 74070352): 2/68 and 2/112 V4 fallbacks, 0 support aborts.
+**Interpretation:**
+- The boss shift fixes the one failing criterion and leaves the others unchanged within rounding; boss survival NLL
+  improves slightly. Old TEST split (seen at Stage 3a, descriptive): boss bias +0.0133 → −0.0059.
+- The runtime rule counts act-1 bosses fought from an act-3 event as bosses (389 VALIDATION rows); the fit used
+  `room_class == BOSS`. Recorded deviation from the prereg wording; it does not affect the gate classes.
+- Offline only. No live A/B of the calibrated stack yet; §458 (+6.03 floors vs CTM off at A20) used the
+  uncalibrated candidate. Whether `STS_OOC_MCTS_A20_CTM` becomes the A20 default is Philipp's call.
+
+**Evidence:** [packet](evidence/ctm_a20_boss_calib_470_20261014/README.md). Fit and scoring files:
+`/mnt/project-files/ctm-a20/calib470/`. Smoke seeds 74070350 (killed, script fix), 74070351 and 74070352 are now used.
+
+**Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_A20_CTM`) and
+`architecture/out-of-combat.md` (A20 stack, manifest boss calibration).
+
+## §471 — A20 four-leaf conditional target stability: STABILITY_MEASURED (2026-10-14)
 
 **Question:** how variable are repeated outputs of the existing three-combat
 CTM teacher from four fixed inherited MAP snapshots? This extends §462 exact
 same-RNG repeatability to new planner streams; it does not establish a value
 conditioned only on public input.
 
-**Design:** independently reviewed [protocol and evidence](evidence/ooc_leaf_stability_463_20261014/README.md).
+**Design:** independently reviewed [protocol and evidence](evidence/ooc_leaf_stability_471_20261014/README.md).
 Reviewed producer `c822cfbf6e4a03fba512c6a081442ec856f03691`, actual Release
 binary `36127ba9…`. Exact §461 / PR #524 teacher, historical seed 87000000,
 A20, first four distinct candidate MAP inputs in the first two roots:

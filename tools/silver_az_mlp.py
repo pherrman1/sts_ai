@@ -124,6 +124,7 @@ def cmd_pack(feat_dir, out_path, corpora, drop_no_fight=()):
     st_idx, st_val, st_ptr = [], [], [0]
     r_src, r_seed, r_fight, r_var, r_val, r_nedge = [], [], [], [], [], []
     e_act, e_tgt, e_vis = [], [], []
+    unit_act = []
     missing_value = 0
     for tag, d in corpora:
         for path in units(d):
@@ -153,11 +154,11 @@ def cmd_pack(feat_dir, out_path, corpora, drop_no_fight=()):
                     missing_value += 1
                 r_val.append(np.nan if v is None else v)
                 r_nedge.append(len(acts))
-                for a_row in acts:
-                    a = np.zeros(A, np.float32)
+                blk = np.zeros((len(acts), A), np.float32)
+                for j, a_row in enumerate(acts):
                     s2 = slice(ptr[a_row], ptr[a_row + 1])
-                    a[idx[s2].astype(np.int64) - S] = val[s2]
-                    e_act.append(a)
+                    blk[j, idx[s2].astype(np.int64) - S] = val[s2]
+                unit_act.append(blk)
                 e_tgt.extend(tgts); e_vis.extend(vis)
 
             with open(prefix + ".meta.jsonl") as f:
@@ -175,12 +176,14 @@ def cmd_pack(feat_dir, out_path, corpora, drop_no_fight=()):
                         cur = None
             flush()
             cur = None
+            if unit_act:
+                e_act.append(np.concatenate(unit_act)); unit_act.clear()
         print(f"packed {tag}: roots so far {len(r_seed)}", flush=True)
     np.savez(out_path, st_idx=np.concatenate(st_idx), st_val=np.concatenate(st_val),
              st_ptr=np.array(st_ptr, np.int64), r_src=np.array(r_src, np.int8),
              r_seed=np.array(r_seed, np.int64), r_fight=np.array(r_fight, np.int32),
              r_var=np.array(r_var, np.int8), r_val=np.array(r_val, np.float32),
-             r_nedge=np.array(r_nedge, np.int32), e_act=np.stack(e_act), e_tgt=np.array(e_tgt, np.int8),
+             r_nedge=np.array(r_nedge, np.int32), e_act=np.concatenate(e_act), e_tgt=np.array(e_tgt, np.int8),
              e_vis=np.array(e_vis, np.float32), tags=np.array(tags))
     print(json.dumps({"roots": len(r_seed), "edges": len(e_tgt), "missingValue": missing_value,
                       "droppedNoFight": dropped,

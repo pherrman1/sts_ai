@@ -73,10 +73,17 @@ struct OocAdapterOptions {
     std::string leafWinPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
-    // Research option (default off, STS_OOC_MCTS_ROLLOUT_SHOP=greedy): shops in
-    // leaf rollouts buy the single best item per decision instead of the first
-    // item of the best affordable bundle.
+    // STS_OOC_MCTS_ROLLOUT_SHOP=greedy: shops in leaf rollouts buy the single
+    // best item per decision instead of the first item of the best affordable
+    // bundle. Live OOC MCTS turns it on by default (ADR-0032); the struct
+    // default stays off for offline tools and tests.
     bool greedyRolloutShop = false;
+    // Research option (default off, STS_OOC_MCTS_TREE_RULES=1): the tree and the
+    // live root apply the same fixed steps as the rollout chain (gold after
+    // tree combats, unreviewed reward relics, potions with belt space, chests
+    // without Cursed Key, leave an empty reward screen), and bottle, duplicate
+    // and bonfire selectors offer one choice per distinct card.
+    bool treeRules = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
     // False (live runs with STS_COLLECT_KEYS off) drops TAKE_KEY and
@@ -248,6 +255,8 @@ int oocLeafReplaySelfTest();
 int oocLeafStabilityProbe(std::uint64_t seed, int ascension, const std::string &planPath);
 int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
+// True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
+bool liveOocMctsTreeRules();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
