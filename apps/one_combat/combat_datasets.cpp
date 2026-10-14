@@ -5444,8 +5444,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     constexpr int sims = 10000;
     const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
     const std::string armSet = armSetEnv ? armSetEnv : "";
-    const bool teacherA20 = armSet == "teacher_a20";
-    if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, replicates);
+    const bool teacherLarge = armSet == "teacher_a20_large";
+    const bool teacherA20 = armSet == "teacher_a20" || teacherLarge;
+    if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
+    if (teacherLarge && replicates != 16)
+        throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
     if (!teacherA20 && (nSeeds < 1 || asc != 0 || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
@@ -5465,11 +5468,14 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // for reproducibility after the #418 swap to pathb-r2.
     const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
     const std::string candidateManifest = teacherA20 ? env("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") : "";
+    const std::string manifestHash = teacherLarge
+        ? "00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea"
+        : "704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0";
     if (teacherA20 && (env("STS_CTMSILVER_CANDIDATE_FAST").empty()
             || env("STS_CTMSILVER_CANDIDATE_STANDARD").empty() || candidateManifest.empty()
             || env("STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256")
-                != "704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0"))
-        throw std::runtime_error("ctm vs silver: teacher_a20 requires explicit PR524 candidate paths and frozen manifest SHA256");
+                != manifestHash))
+        throw std::runtime_error("ctm vs silver: A20 teacher requires explicit candidate paths and its frozen manifest SHA256");
     const std::string fastModel = teacherA20 ? env("STS_CTMSILVER_CANDIDATE_FAST")
         : "selfplay/models/combat_transition_deepsets_lizard_t2.native";
     const std::string standardModel = teacherA20 ? env("STS_CTMSILVER_CANDIDATE_STANDARD")
@@ -5477,8 +5483,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const one_combat::EntropicBrewFallbackCombatTransitionSampler ctm(fastModel, standardModel, true);
     if (teacherA20 && (!ctm.fastRuntime().researchCandidate()
             || ctm.fastRuntime().identity().value("candidateId", std::string{}) != "pathb-a20"
-            || ctm.fastRuntime().identity().contains("bossSurvivalLogitShift")))
-        throw std::runtime_error("ctm vs silver: teacher_a20 did not load the uncalibrated PR524 research candidate");
+            || ctm.fastRuntime().identity().contains("bossSurvivalLogitShift") != teacherLarge))
+        throw std::runtime_error("ctm vs silver: A20 teacher loaded the wrong calibration identity");
     if (!teacherA20 && ctm.fastRuntime().researchCandidate())
         throw std::runtime_error("ctm vs silver: expected the production CTM stack, not a research candidate");
     std::unique_ptr<const one_combat::EntropicBrewFallbackCombatTransitionSampler> candidate;
@@ -5515,6 +5521,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         auto net = std::make_unique<search::CombatValueNet>();
         if (!net->load(mlp) || !net->isPolicyMlp)
             throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp_v1 model from " + mlp);
+        if (teacherLarge && fileSha256(mlp) != "ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228")
+            throw std::runtime_error("ctm vs silver: teacher_a20_large requires frozen gen6 E");
         priorNets[mlp] = std::move(net);
         arms = {
             {"control", sims, false, false, 1},
@@ -5523,6 +5531,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             {"plain10k", 10000, false, true, 4},
             {"prior10k", 10000, true, true, 4, 8, mlp},
         };
+        if (teacherLarge) {
+            const auto anchor = env("STS_CTMSILVER_LARGE_ANCHOR");
+            if (anchor != "0" && anchor != "1")
+                throw std::runtime_error("ctm vs silver: teacher_a20_large requires explicit anchor 0/1");
+            for (auto &arm : arms) if (arm.redraw) arm.replicates = 16;
+            if (anchor == "0") arms.resize(3); // control plus the two main 2k conditions
+        }
     } else if (armSet == "mlpprior") {
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const std::string cpuSims = env("STS_CTMSILVER_PLAIN_CPU_SIMS");
@@ -5894,7 +5909,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                      {"samplesSha256", fileSha256(samplesPath)}}}
     };
     if (teacherA20) {
-        manifest["schemaVersion"] = "ctm_vs_silver_teacher_a20_v2";
+        manifest["schemaVersion"] = teacherLarge ? "ctm_vs_silver_teacher_a20_large_v1" : "ctm_vs_silver_teacher_a20_v2";
         manifest["producerExecutablePath"] = std::filesystem::absolute(g_mainBinaryPath).string();
         manifest["teacherPath"] = std::filesystem::absolute(teacherPath).string();
         manifest["ctm"]["candidateId"] = ctm.fastRuntime().identity().at("candidateId");
@@ -5931,6 +5946,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 "STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256", "STS_CTMSILVER_MLP_PRIOR",
                 "STS_SILVER_ROOT_PRIOR", "STS_SILVER_ROOT_PRIOR_WEIGHT"})
             manifest["environment"][name] = env(name);
+        if (teacherLarge) manifest["environment"]["STS_CTMSILVER_LARGE_ANCHOR"] = env("STS_CTMSILVER_LARGE_ANCHOR");
         manifest["integrity"]["capturedStates"] = capturedStates;
         manifest["integrity"]["selectedStates"] = nStates;
         manifest["integrity"]["ctmUnsupported"] = nStates - ctmSupported;

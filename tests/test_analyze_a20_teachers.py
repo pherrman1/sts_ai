@@ -43,7 +43,7 @@ class Fixture:
         packet.mkdir(parents=True)
         (self.repo / "tools").mkdir()
         paths = [root / "one_combat", root / "prior.txt", root / "fast.native", root / "standard.native",
-                 self.repo / "tools/seed_guard.sh", packet / "run_pilot.py", packet / "PROTOCOL-V2.md", packet / "PROTOCOL.md", packet / "ANALYSIS-CONTRACT.md"]
+                 self.repo / "tools/seed_guard.sh", packet / a.RUNNER_FILE, packet / a.PROTOCOL_FILE, packet / "PROTOCOL.md", packet / "ANALYSIS-CONTRACT.md"]
         for path in paths:
             path.write_text("SYNTHETIC FIXTURE ONLY " + path.name)
         self.identity = {"candidateId": "pathb-a20", "synthetic": True}
@@ -52,7 +52,7 @@ class Fixture:
         env = {"OMP_NUM_THREADS": "1", "OMP_DYNAMIC": "FALSE", "STS_FAIR": "1", "STS_SEARCHER3": "0",
                "STS_SILVER_SEARCH": "1", "STS_SILVER_EXACT_ROOT_BUDGETS": "1", "STS_SILVER_ADAPTIVE": "0",
                "STS_SILVER_LEARNED_STOP": "0", "STS_SILVER_LOOP_GUARD": "0", "STS_SILVER_ROOT_PRIOR_WEIGHT": "400",
-               "STS_CTMSILVER_ARMSET": "teacher_a20", "STS_OOC_MCTS": "0", "STS_COLLECT_KEYS": "0",
+               "STS_CTMSILVER_ARMSET": a.ARM_SET, "STS_OOC_MCTS": "0", "STS_COLLECT_KEYS": "0",
                "STS_STOP_AFTER_ACT": "3", "STS_EXECUTABLE_GIT_SHA": "a" * 40,
                "STS_CTMSILVER_CANDIDATE_FAST": str(root / "fast.native"),
                "STS_CTMSILVER_CANDIDATE_STANDARD": str(root / "standard.native"),
@@ -64,18 +64,17 @@ class Fixture:
                         "combat_backend": "native_silver", "rng_regime": "project_fair", "model_artifacts": [],
                         "ooc_policy": {"model_artifacts": []}, "teacher_id": "synthetic-teacher"}
         dump(root / "teacher.json", self.teacher)
-        self.freeze = {"schemaVersion": "a20_teacher_comparison_freeze_v2", "producerGitSha": "a" * 40,
+        self.freeze = {"schemaVersion": a.FREEZE_SCHEMA, "producerGitSha": "a" * 40,
                        "repository": str(self.repo), "binary": str(root / "one_combat"),
                        "binarySha256": a.sha(root / "one_combat"), "teacher": str(root / "teacher.json"),
                        "environment": env, "canarySeed": a.CANARY, "cohortSeeds": a.COHORT,
                        "outputs": {str(seed): str(root / ("canary" if seed == a.CANARY else f"s{seed}"))
                                    for seed in (a.CANARY, *a.COHORT)},
-                       "resourceLimits": {"cpuSecondsPerSource": 600, "wallSecondsPerSource": 900,
-                                          "maxConcurrentSources": 2, "maxAttemptedSources": 5},
+                       "resourceLimits": a.RESOURCE_LIMITS,
                        "priorIdentity": {"sha256": a.sha(root / "prior.txt"), "generation": 5,
                                          "source": "synthetic://completed-fixture", "treeMinVisits": 8, "weight": 400, "rootBonus": True},
                        "ctmIdentity": self.ctm_hashes,
-                       "arms": [{"name": name, "budget": budget, "prior": prior, "replicates": 4}
+                       "arms": [{"name": name, "budget": budget, "prior": prior, "replicates": a.REPLICATES}
                                 for name, (budget, prior) in a.ARM_CONFIG.items()], "buildCommands": [],
                        "artifactFiles": {str(path): a.sha(path) for path in
                                          [*paths, root / "manifest.json", root / "teacher.json", REPO / "tools/analyze_a20_teachers.py"]}}
@@ -111,8 +110,8 @@ class Fixture:
             for k in range(32):
                 samples.append(sample(sid, "ctm", k, hp=80 if k % 2 else 0, dead=k % 2 == 0))
             for name, (budget, prior) in {"control": (10000, False), **a.ARM_CONFIG}.items():
-                for k in range(1 if name == "control" else 4):
-                    hp = 40 if name == "control" else 10 * (k + 1) + (5 if prior else 0)
+                for k in range(1 if name == "control" else a.REPLICATES):
+                    hp = 40 if name == "control" else 10 * (k % 4 + 1) + (5 if prior else 0)
                     samples.append(sample(sid, name, k, hp))
                     redraw = a.replicate_seed(seed, fight, k, 0xC0FFEE07) if name != "control" else 0
                     planner = a.replicate_seed(seed, fight, k, 0x91A77E2) if name != "control" else 0
@@ -127,8 +126,8 @@ class Fixture:
         for name, cols, rows in (("states", a.STATE_COLUMNS, states), ("arms", a.ARM_COLUMNS, arms), ("samples", a.SAMPLE_COLUMNS, samples)):
             csv_write(prefix + f".{name}.csv", cols, rows)
         env = self.freeze["environment"]
-        manifest = {"schemaVersion": "ctm_vs_silver_teacher_a20_v2", "producerGitSha": "a" * 40,
-                    "producerExecutableSha256": self.freeze["binarySha256"], "teacherId": "synthetic-teacher",
+        manifest = {"schemaVersion": a.RUNTIME_SCHEMA, "producerGitSha": "a" * 40,
+                    "producerExecutableSha256": self.freeze["binarySha256"], "teacherId": self.teacher["teacher_id"],
                     "teacherManifestSha256": a.sha(self.freeze["teacher"]), "combatTeacher": self.teacher,
                     "policy": self.teacher["ooc_policy"], "seedSpec": {"start": seed, "count": 1, "ascension": 20},
                     "rootPrior": {"path": env["STS_SILVER_ROOT_PRIOR"], "sha256": self.freeze["priorIdentity"]["sha256"], "weight": 400},
@@ -137,7 +136,7 @@ class Fixture:
                             "activeLizard": True, "timingReps": 20, "forecastSamples": 32, "candidateId": "pathb-a20",
                             "manifestPath": env["STS_CTM_RESEARCH_CANDIDATE_MANIFEST"], "manifestSha256": self.ctm_hashes["manifest.json"],
                             "loadedIdentity": self.identity}, "redraw": a.REDRAW, "ctmOnly": False, "candidate": None,
-                    "arms": a.expected_runtime_arms(self.freeze), "armSet": "teacher_a20",
+                    "arms": a.expected_runtime_arms(self.freeze), "armSet": a.ARM_SET,
                     "sources": [{"seed": seed, "complete": True, "valid": True, "fights": 3, "finalFloor": 4, "won": False,
                                  "captured": [{"stateId": f"s{seed}-f{i}", "fightIdx": i, "act": 1,
                                                "roomClass": "ELITE" if i == 2 else "NORMAL", "floor": i + 1} for i in range(3)],
@@ -176,8 +175,8 @@ class Fixture:
                                    progressSha256=a.sha(prefix + ".progress.jsonl"))
         dump(prefix + ".manifest.json", manifest)
         argv = ["bash", str(self.repo / "tools/seed_guard.sh"), self.freeze["binary"], "ctmsilvergen", "1", "20", prefix,
-                str(seed), self.freeze["teacher"], "4"]
-        dump(prefix + ".receipt.json", {"returncode": 0, "cpuSeconds": 1., "wallSeconds": 2., "timedOut": False,
+                str(seed), self.freeze["teacher"], str(a.REPLICATES)]
+        dump(prefix + ".receipt.json", {"returncode": 0, "cpuSeconds": 1. if a.REPLICATES == 4 else 3., "wallSeconds": 4., "timedOut": False,
                                         "argv": argv, "seed": seed, "binarySha256": self.freeze["binarySha256"], "freezeSha256": self.freeze_hash})
         dump(prefix + ".started.json", {"argv": argv, "freezeSha256": self.freeze_hash})
         Path(prefix + ".log").write_text("SYNTHETIC ONLY\n")

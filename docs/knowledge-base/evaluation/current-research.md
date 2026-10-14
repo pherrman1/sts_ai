@@ -455,6 +455,15 @@ OOC decision-value or promotion conclusion follows. Plain2k is an inexpensive
 candidate for a subsequent selective Silver decision-value audit, not a
 qualified teacher replacement.
 
+The prospective [larger-study contract](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL-LARGE.md)
+compares the calibrated A20 CTM with plain2k and gen6 E prior2k on 32 fresh
+source clusters and 16 paired futures per fight. Eight fixed sources also
+compare both 10k settings. Source-cluster bootstrap intervals and explicit
+later-act coverage gates supersede pilot-only point estimates for this new
+panel; the pilot remains preserved separately. The old uncalibrated CTM RMSE
+does not describe the calibrated manifest. This contract makes no training,
+OOC decision-value, gameplay or default-promotion claim.
+
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every

@@ -16,6 +16,14 @@ import statistics
 import sys
 
 
+FREEZE_SCHEMA = "a20_teacher_comparison_freeze_v2"
+RUNTIME_SCHEMA = "ctm_vs_silver_teacher_a20_v2"
+ARM_SET = "teacher_a20"
+RUNNER_FILE = "run_pilot.py"
+PROTOCOL_FILE = "PROTOCOL-V2.md"
+REPLICATES = 4
+RESOURCE_LIMITS = {"cpuSecondsPerSource": 600, "wallSecondsPerSource": 900,
+                   "maxConcurrentSources": 2, "maxAttemptedSources": 5}
 CANARY = 97150801
 COHORT = [97150810, 97150811, 97150812, 97150813]
 ARM_CONFIG = {"plain2k": (2000, False), "prior2k": (2000, True),
@@ -169,11 +177,10 @@ def validate_freeze(freeze):
     keys(freeze, ("schemaVersion", "producerGitSha", "repository", "binary", "binarySha256", "teacher",
                   "environment", "canarySeed", "cohortSeeds", "outputs", "resourceLimits", "priorIdentity",
                   "ctmIdentity", "arms", "buildCommands", "artifactFiles"), "freeze")
-    require(freeze["schemaVersion"] == "a20_teacher_comparison_freeze_v2", "unknown freeze schema")
+    require(freeze["schemaVersion"] == FREEZE_SCHEMA, "unknown freeze schema")
     require(freeze["canarySeed"] == CANARY and freeze["cohortSeeds"] == COHORT, "wrong frozen seed panel")
     require(re.fullmatch(r"[0-9a-f]{40}", freeze["producerGitSha"]) is not None, "invalid source revision")
-    require(freeze["resourceLimits"] == {"cpuSecondsPerSource": 600, "wallSecondsPerSource": 900,
-                                        "maxConcurrentSources": 2, "maxAttemptedSources": 5}, "wrong resource caps")
+    require(freeze["resourceLimits"] == RESOURCE_LIMITS, "wrong resource caps")
     require(freeze["ctmIdentity"] == CTM_HASHES, "wrong PR524 CTM identity")
     keys(freeze["priorIdentity"], ("sha256", "generation", "source", "treeMinVisits", "weight", "rootBonus"), "prior identity")
     prior_hash = freeze["priorIdentity"]["sha256"]
@@ -184,7 +191,7 @@ def validate_freeze(freeze):
     require(freeze["priorIdentity"] == {"sha256": prior_hash, "generation": generation, "source": origin,
                                         "treeMinVisits": 8, "weight": 400,
                                         "rootBonus": True}, "wrong prior settings")
-    expected_arms = [{"name": name, "budget": budget, "prior": prior, "replicates": 4}
+    expected_arms = [{"name": name, "budget": budget, "prior": prior, "replicates": REPLICATES}
                      for name, (budget, prior) in ARM_CONFIG.items()]
     require(freeze["arms"] == expected_arms, "wrong frozen arm panel")
     require(isinstance(freeze["environment"], dict)
@@ -198,13 +205,13 @@ def validate_freeze(freeze):
     repo = Path(freeze["repository"])
     packet = repo / "docs/experiments/evidence/a20_teacher_comparison_20261014"
     for path in (freeze["binary"], freeze["teacher"], str(Path(__file__).resolve()),
-                 str(repo / "tools/seed_guard.sh"), str(packet / "run_pilot.py"),
-                 str(packet / "PROTOCOL-V2.md"), str(packet / "PROTOCOL.md"), str(packet / "ANALYSIS-CONTRACT.md")):
+                 str(repo / "tools/seed_guard.sh"), str(packet / RUNNER_FILE),
+                 str(packet / PROTOCOL_FILE), str(packet / "PROTOCOL.md"), str(packet / "ANALYSIS-CONTRACT.md")):
         require(path in freeze["artifactFiles"], f"required file absent from freeze: {path}")
     require(freeze["artifactFiles"][freeze["binary"]] == freeze["binarySha256"], "binary hash mismatch")
     keys(freeze["outputs"], map(str, (CANARY, *COHORT)), "frozen output prefixes")
     prefixes = list(freeze["outputs"].values())
-    require(len(set(prefixes)) == 5 and all(isinstance(p, str) and Path(p).is_absolute() for p in prefixes),
+    require(len(set(prefixes)) == len(COHORT) + 1 and all(isinstance(p, str) and Path(p).is_absolute() for p in prefixes),
             "invalid frozen output prefixes")
     teacher = read_json(freeze["teacher"])
     require(teacher["git_sha"] == freeze["producerGitSha"]
@@ -220,7 +227,7 @@ def validate_freeze(freeze):
     fixed_env = {"OMP_NUM_THREADS": "1", "OMP_DYNAMIC": "FALSE", "STS_FAIR": "1", "STS_SEARCHER3": "0",
                  "STS_SILVER_SEARCH": "1", "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
                  "STS_SILVER_ADAPTIVE": "0", "STS_SILVER_LEARNED_STOP": "0", "STS_SILVER_LOOP_GUARD": "0",
-                 "STS_SILVER_ROOT_PRIOR_WEIGHT": "400", "STS_CTMSILVER_ARMSET": "teacher_a20",
+                 "STS_SILVER_ROOT_PRIOR_WEIGHT": "400", "STS_CTMSILVER_ARMSET": ARM_SET,
                  "STS_OOC_MCTS": "0", "STS_COLLECT_KEYS": "0", "STS_STOP_AFTER_ACT": "3",
                  "STS_EXECUTABLE_GIT_SHA": freeze["producerGitSha"]}
     require(all(env.get(key) == value for key, value in fixed_env.items()), "incorrect frozen study environment")
@@ -302,7 +309,7 @@ def validate_rows(states, arms, samples, seed):
         supported.append(state)
         expected_samples.update((sid, "ctm", str(k)) for k in range(32))
         for name, (budget, prior) in {"control": (10000, False), **ARM_CONFIG}.items():
-            for k in range(1 if name == "control" else 4):
+            for k in range(1 if name == "control" else REPLICATES):
                 key = (sid, name, str(k))
                 expected_arms.add(key)
                 expected_samples.add(key)
@@ -381,7 +388,7 @@ def mean_objects(objects):
 def state_metrics(state, arm_rows, samples):
     def draws(name):
         return [samples[(state["stateId"], name, str(k))]
-                for k in range(32 if name == "ctm" else 1 if name == "control" else 4)]
+                for k in range(32 if name == "ctm" else 1 if name == "control" else REPLICATES)]
     reference = draws("control")[0]
     target = sample_values(reference)
     target_fields = categorical_values(reference)
@@ -403,10 +410,10 @@ def state_metrics(state, arm_rows, samples):
             costs[name] = {"expectationCpuSeconds": float(state["ctmForecastCpuUs"]) / 1e6,
                            "prepareAndSampleCpuSeconds": float(state["ctmSampleCpuUs"]) / 1e6}
         else:
-            rows = [arm_rows[(state["stateId"], name, str(k))] for k in range(4)]
+            rows = [arm_rows[(state["stateId"], name, str(k))] for k in range(REPLICATES)]
             cpu = sum(float(row["cpuSeconds"]) for row in rows)
             decisions = sum(int(row["decisions"]) for row in rows)
-            costs[name] = {"forecastCpuSeconds": cpu, "fightCpuSeconds": cpu / 4,
+            costs[name] = {"forecastCpuSeconds": cpu, "fightCpuSeconds": cpu / REPLICATES,
                            "decisions": decisions, "simulations": sum(int(row["simulations"]) for row in rows),
                            "cpuSecondsPerDecision": cpu / decisions if decisions else None}
     paired = {}
@@ -455,7 +462,7 @@ def expected_runtime_arms(freeze):
     result = []
     for name, (budget, prior) in {"control": (10000, False), **ARM_CONFIG}.items():
         result.append({"name": name, "budget": budget, "rootPrior": prior,
-                       "redrawCombatFuture": name != "control", "replicates": 1 if name == "control" else 4,
+                       "redrawCombatFuture": name != "control", "replicates": 1 if name == "control" else REPLICATES,
                        "treeMinVisits": 8 if prior else 0,
                        "priorModel": freeze["environment"]["STS_SILVER_ROOT_PRIOR"] if prior else None,
                        "priorModelSha256": freeze["priorIdentity"]["sha256"] if prior else None})
@@ -478,7 +485,7 @@ def validate_progress(path, seed, source, states, arm_rows, cpu_seconds):
                          ("phaseCpuSeconds",)))
         if state["ctmSupported"] == "1":
             for name, (budget, _) in {"control": (10000, False), **ARM_CONFIG}.items():
-                for k in range(1 if name == "control" else 4):
+                for k in range(1 if name == "control" else REPLICATES):
                     row = arm_rows[(sid, name, str(k))]
                     identity = {"stateId": sid, "arm": name, "k": k, "budget": budget}
                     expected.append(("arm_start", identity, ()))
@@ -523,14 +530,14 @@ def validate_job(prefix, seed, freeze, freeze_hash, teacher):
     keys(receipt, ("returncode", "cpuSeconds", "wallSeconds", "timedOut", "argv", "seed",
                    "binarySha256", "freezeSha256"), "runner receipt")
     argv = ["bash", str(Path(freeze["repository"]) / "tools/seed_guard.sh"), freeze["binary"],
-            "ctmsilvergen", "1", "20", prefix, str(seed), freeze["teacher"], "4"]
+            "ctmsilvergen", "1", "20", prefix, str(seed), freeze["teacher"], str(REPLICATES)]
     require(receipt["argv"] == argv and receipt["seed"] == seed, "runner command/seed mismatch")
     require(integer(receipt["returncode"], "process return code") == 0 and receipt["timedOut"] is False,
             "source process failed or timed out")
     require(receipt["binarySha256"] == freeze["binarySha256"] and receipt["freezeSha256"] == freeze_hash,
             "runner custody mismatch")
-    number(receipt["cpuSeconds"], "job CPU", 0, 600)
-    number(receipt["wallSeconds"], "job wall time", 0, 900)
+    number(receipt["cpuSeconds"], "job CPU", 0, RESOURCE_LIMITS["cpuSecondsPerSource"])
+    number(receipt["wallSeconds"], "job wall time", 0, RESOURCE_LIMITS["wallSecondsPerSource"])
     started = read_json(prefix + ".started.json")
     require(started == {"argv": argv, "freezeSha256": freeze_hash}, "job launch latch mismatch")
     require(Path(prefix + ".log").is_file(), "missing source log")
@@ -539,7 +546,7 @@ def validate_job(prefix, seed, freeze, freeze_hash, teacher):
                     "combatTeacher", "policy", "seedSpec", "rootPrior", "ctm", "redraw", "ctmOnly", "candidate",
                     "arms", "armSet", "sources", "integrity", "outputs", "producerExecutablePath", "teacherPath",
                     "selection", "redrawKernel", "sourceControl", "environment"), "runtime manifest")
-    require(manifest["schemaVersion"] == "ctm_vs_silver_teacher_a20_v2" and manifest["armSet"] == "teacher_a20"
+    require(manifest["schemaVersion"] == RUNTIME_SCHEMA and manifest["armSet"] == ARM_SET
             and manifest["ctmOnly"] is False and manifest["candidate"] is None, "wrong runtime mode")
     require(manifest["producerGitSha"] == freeze["producerGitSha"]
             and manifest["producerExecutableSha256"] == freeze["binarySha256"]
