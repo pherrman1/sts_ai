@@ -18169,7 +18169,7 @@ sets `12,35`. The values were fixed from Silver's own weights, not tuned. Fresh 
 102000500–102000999. Primary: A0 Δwin, A20 Δfloor, paired seed bootstrap (10,000 resamples); BETTER / WORSE /
 NOT_SHOWN.
 **Precondition found while preparing:** before PR #540, `one_combat` rejected any `STS_SILVER_ESCAPE_PENALTY` value at
-startup because the name was missing from its accepted `STS_SILVER_*` list, so no earlier game run can have used the
+startup because the name was missing from its accepted `STS_SILVER_*` list, so no earlier `one_combat` run can have used the
 penalty. PR #540 (`e221fcac`) accepts it; the first smoke failed with rc=2 before that fix.
 **Result: NOT_SHOWN in both cohorts.** 500/500 pairs valid per cohort, all 2,000 units rc=0, no dropped seed, no
 stall. All 8 worker tars were verified against their DONE hashes and frozen provenance from a second container.
