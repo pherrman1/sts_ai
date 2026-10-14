@@ -18483,21 +18483,27 @@ shards rc 0, no stall. Fights: 194 boss, 510 elite, 339 normal, 37 event.
 - Boss fights (n = 194): gen6 − plain +3.22 [−7.09, +13.04] at 10k, +15.96 [+3.89, +28.34] at 2.5k (win
   +4.6 pp [+0.5, +8.9], HP lost −2.32 [−4.00, −0.73]), +4.78 [−3.78, +13.46] at 625. Boss win rate per replicate:
   plain 75.5 / 70.9 / 70.9%, gen 6 76.0 / 75.5 / 71.6%, gen 5 75.3 / 74.2 / 73.5% at 10k / 2.5k / 625 (control
-  77.8%). Elite and normal contrasts have no CI excluding 0 except gen5 − plain elite at 625 (+3.47 [+0.59, +6.59]).
+  77.8%). Boss fights contribute about 0.58 of +0.73 (10k), 2.87 of +3.85 (2.5k) and 0.86 of +2.56 (625) to the
+  all-fight gen6 − plain score; at 625 elites contribute about 1.48 (+3.14 [−0.09, +6.15]). Among the prior − plain
+  and gen6 − gen5 score contrasts, no elite or normal CI excludes 0 except gen5 − plain elite at 625 (+3.47
+  [+0.59, +6.59]); the budget contrasts and some win-rate contrasts do.
 - Mean win rate per fight: plain 93.0 / 92.1 / 91.5%, gen 6 93.0 / 93.1 / 92.0%, gen 5 92.8 / 92.7 / 92.4%.
 - CPU per fight vs plain at the same budget: gen 6 1.046x / 1.040x / 1.045x, gen 5 1.038x / 1.044x / 1.051x; plain
   at 10k 2.72 s, 2.5k 0.62 s, 625 0.15 s per fight. Contrasts are at equal simulations, not equal CPU.
 
 **Interpretation:**
-- At A20 the gen-6 prior helps plain Silver at reduced budgets: at 2,500 it plays about as well as plain 10,000
-  (+1.04, CI ±2.5) at about a quarter of the CPU, and the gain sits mainly in boss fights, as at A0 (§460).
+- At A20 the gen-6 prior helps plain Silver at reduced budgets. At 2,500 it is not distinguishable from plain
+  10,000 (+1.04 [−1.43, +3.46]; equivalence was not tested, and the CI is as wide as the plain 2.5k − 10k gap of
+  −2.81) at about 0.24x the CPU per fight; gen 5 shows the same pattern at 2,500 (+2.51 vs plain 2.5k). At 2,500 the
+  gain sits mainly in boss fights, as at A0 (§460); at 625 it is spread over bosses and elites.
   **Inference:** a strong prior substitutes for simulations; at 10,000 the search no longer needs it, so an effect
   there, if any, is below this design's resolution (±2.2 score).
 - Gen 6 is not shown better than gen 5 in play, at any budget, despite the offline CE gain; at 625 the point estimate
   favours gen 5. **Open question:** whether the offline gains of gens 4–6 transfer to play at all; no fight-level
   comparison against gen 3 or gen 4 has been run.
 - `NOT_SHOWN` at about 1,000 A20 fights means inconclusive, not "no effect". Six labels at 95% without correction;
-  the two HELPS labels have CIs well clear of 0 and agree with gen 5's, so they are not a single borderline result.
+  both HELPS CIs exclude 0 (the 625 one narrowly, lower bound +0.40) and agree with gen 5's vs plain, so they are not
+  a single borderline result.
 - Fight score and per-fight win rate, not run win rate: the run-level effect of a lower combat budget with the prior
   is **Unverified**. The source policy is A0-trained, so the fight mix is where that policy reaches at A20. No default
   changes; the MLP prior stays opt-in.
