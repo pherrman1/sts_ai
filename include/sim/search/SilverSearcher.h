@@ -287,6 +287,7 @@ namespace sts::search {
         int wideningCap(int category, std::int64_t visits);
         Edge *selectChanceOutcome(Node &chance);
         double rolloutToEnd(BattleContext &state, int treeDepth);
+        double playoutToEnd(BattleContext &state, int treeDepth, bool uniformPolicy);
         // Research (STS_SILVER_ROLLOUT_UNIFORM=1): a uniformly random legal action,
         // including potions and END_TURN, instead of SilverRolloutAgent's greedy pick.
         Action chooseUniformRolloutAction(BattleContext &bc);
