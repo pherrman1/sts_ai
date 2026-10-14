@@ -61,9 +61,9 @@ auch.") after a flag audit
   `STS_OOC_SKIP_OPTIONAL_RECALL=0`.
 - `cardselect_parity` pins the full mask contract with
   `STS_MULTISELECT_CANONICAL=0`; `cardselect_canonical` covers the default.
-- **Unverified:** the playing-strength effect of either change. Both were
-  chosen because they remove a wasted or duplicate action, not because a game
-  test passed.
+- **Unverified:** the playing-strength effect of either change. No game test
+  supports either change; the flag audit classed both as removing a wasted or
+  duplicate action.
 
 ## Evidence
 
