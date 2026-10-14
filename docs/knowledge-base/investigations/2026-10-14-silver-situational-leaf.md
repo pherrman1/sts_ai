@@ -1,6 +1,6 @@
 # Situational Silver leaf evaluation
 
-**Status:** open (four candidates implemented, tested alone (§466) and as a bundle (§468)). **Last verified:** 2026-10-14
+**Status:** open (four candidates implemented, tested alone (§466), as a bundle (§468) and the end-of-run pair (§471)). **Last verified:** 2026-10-14
 against `f41ec4d3`.
 
 ## Symptom and scope
@@ -33,14 +33,18 @@ The question is which run circumstances make parts of that score meaningless.
   the every-fight terms (loss potion credit, relic heal) cost early fights, the end-of-run terms
   (heal fix, final-fight leaf) help at the A20 final bosses. **Open question:** the terms were not
   tested separately.
+- **End-of-run parts alone (§471, 500 paired seeds each).** Heal fix + final-fight leaf vs legacy:
+  A0 Δwin +0.8 pp [−1.2, +3.0], A20 Δfloor 0.00 (wins 42 → 47), both NOT_SHOWN; play is identical
+  before floor 50. So the §468 act-1 losses came from the every-fight terms. The heal fix stays
+  default on; the three opt-ins stay off.
 - **Eliminated / not proposed:** dynamic potion keep-value before hard fights (ledger-02, §35,
   `STS_POTION_SAVE`: −3..−9 pp); v_win terminal pricing (§385, −8.6 pp); HP before a rest site
   (needs route knowledge the leaf lacks).
 
 ## Reproduction
 
-§466 evidence packet `docs/experiments/evidence/silver_final_fight_leaf_466_20261014/`; §468 evidence
-packet `docs/experiments/evidence/silver_leaf_combo_468_20261014/` (bestbench whole runs);
+§466 evidence packet `docs/experiments/evidence/silver_final_fight_leaf_466_20261014/`; §468 and §471 evidence
+packets `docs/experiments/evidence/silver_leaf_combo_468_20261014/`, `silver_leaf_split_471_20261014/` (bestbench whole runs);
 (`ctmsilvergen`, `STS_CTMSILVER_ARMSET=finalleaf`). Descriptive §460 statistics came from
 `/mnt/project-files/silver-az-mlp/gen3-eval/w*.tar`.
 

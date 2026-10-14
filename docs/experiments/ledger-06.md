@@ -17958,3 +17958,32 @@ fix whose A20 cohort was WORSE in the bundle, so whether it stays default on is 
 **Knowledge impact:** situational-leaf investigation page updated with the §468 result; option rows in
 `operations/environment-variables.md` unchanged (defaults unchanged pending the decision). Seeds 98000000–98000999 and
 smokes 74070100–74070101 are used.
+
+## §471 — End-of-run Silver leaf parts alone (A20 heal fix + final-fight leaf): not shown at A0 or A20 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 13:43Z, card "Split test" after §468):** do the two end-of-run leaf changes alone
+(`STS_SILVER_A20_BOSS_HEAL_FIX=1`, `STS_SILVER_FINAL_FIGHT_LEAF=1`) play better whole runs than the legacy leaf?
+
+**Design:** as §468 ([evidence](evidence/silver_leaf_split_471_20261014/README.md)), arms `base` (all four leaf options
+0) vs `end` (those two 1, `NO_LOSS_POTION_CREDIT` and `RELIC_HEAL_LEAF` 0). Code `7a6c6bb9` (§468 code plus main with
+#532; OOC MCTS off in both arms), run commit `965000fa`, binary `6b2bca17…`. Fresh A0 seeds 100000000–100000499 and A20
+seeds 100000500–100000999, 8 workers (Philipp's pick). Primary A0 Δwin, A20 Δfloor, paired seed bootstrap 95% CI.
+
+**Result:** valid, 2,000/2,000 units rc=0, 500 pairs per cohort.
+- **A0: `NOT_SHOWN`.** Wins 402 → 406, **Δwin +0.8 pp [−1.2, +3.0]** (discordant 17 vs 13).
+- **A20: `NOT_SHOWN`.** **Δfloor 0.00 [−0.02, +0.02]**; wins 42 → 47, +1.0 pp [−0.4, +2.4] (discordant 10 vs 5,
+  McNemar p = 0.30).
+- Descriptive: both arms play every seed identically until floor 50 (the options act only in the A20 first act-3
+  boss and the run-ending fight). At A20, deaths at floor 50 rise 52 → 57 and second-boss deaths fall 66 → 56.
+
+**Interpretation:** the end-of-run parts change only the final one or two fights, and their effect there is at most a
+few wins per 500 runs. **Inference:** the §468 act-1 deaths (paired 50 vs 26) came from the every-fight parts (no
+loss potion credit, relic heal leaf), since the `end` arm leaves play before floor 50 unchanged; most of §468's A20
+win gain (+19) did not come from the end-of-run parts (+5 here), so it was the every-fight parts' changed trajectories
+or noise.
+
+**Decision (pre-registered):** NOT_SHOWN in both cohorts: no default change; the A20 heal fix stays default on (A20
+not WORSE), the final-fight leaf and the two every-fight options stay off.
+
+**Knowledge impact:** investigation page updated with §471. Seeds 100000000–100000999 and smokes 74070450–74070451
+are used.
