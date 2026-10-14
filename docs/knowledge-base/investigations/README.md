@@ -7,6 +7,8 @@ investigation is evidence collection, not a decision or a speculative design.
 
 ## Current investigations
 
+- [Situational Silver leaf evaluation (2026-10-14)](2026-10-14-silver-situational-leaf.md) — which run circumstances Silver's terminal score ignores; post-boss heal already modeled; final-fight potion credit tested in §466 (NOT_SHOWN); open: A20 first act-3 boss heal mis-credit, loss-branch potion credit, Burning Blood heal.
+
 - [Silver retained-search queue-item audit (2026-09-21)](2026-09-21-silver-retained-search-audit.md) — bounded opportunity and native boundary audit for `curCardQueueItem`-only retained-state merging; narrow candidate remains unqualified and no search behavior changed.
 
 - [Stale implementation audit (2026-08-11)](2026-08-11-stale-implementation-audit.md) —

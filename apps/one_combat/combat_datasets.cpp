@@ -189,6 +189,18 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     const bool binaryObjectiveEnabled = binaryObjective && std::string(binaryObjective) == "1";
     if (s.value("final_boss_binary", false) != binaryObjectiveEnabled)
         throw std::runtime_error("wholecombatgen: final-boss objective differs from teacher");
+    // ADR-0035 leaf terms default on. A teacher that records a term must match the
+    // effective option; older teachers do not record them and are not checked.
+    const auto leafOption = [](const char *name, bool fallback) {
+        const char *raw = std::getenv(name);
+        return raw ? std::string(raw) == "1" : fallback;
+    };
+    for (const auto &[field, name, fallback] : {std::tuple<const char *, const char *, bool>
+             {"final_fight_leaf", "STS_SILVER_FINAL_FIGHT_LEAF", !binaryObjectiveEnabled},
+             {"no_loss_potion_credit", "STS_SILVER_NO_LOSS_POTION_CREDIT", true},
+             {"relic_heal_leaf", "STS_SILVER_RELIC_HEAL_LEAF", true}})
+        if (s.contains(field) && s[field].get<bool>() != leafOption(name, fallback))
+            throw std::runtime_error(std::string("wholecombatgen: ") + field + " differs from teacher");
     // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
     // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
     // that opt in; it pins the compiled stop model and threshold.
@@ -5176,7 +5188,11 @@ struct TreePriorScope {
 // priorModel (non-empty) scores this arm's prior with that policy model instead
 // of the STS_SILVER_ROOT_PRIOR one (Silver AZ MLP armset).
 struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0;
-                      std::string priorModel; };
+                      std::string priorModel; bool finalFightLeaf = false; };
+struct FinalFightLeafScope {
+    explicit FinalFightLeafScope(bool on) { search::g_nativeSilverFinalFightLeafOverride = on; }
+    ~FinalFightLeafScope() { search::g_nativeSilverFinalFightLeafOverride.reset(); }
+};
 struct PriorNetScope {
     explicit PriorNetScope(const search::CombatValueNet *net) { search::g_nativeSilverPriorNetOverride = net; }
     ~PriorNetScope() { search::g_nativeSilverPriorNetOverride = nullptr; }
@@ -5252,9 +5268,9 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
     const std::string armSet = armSetEnv ? armSetEnv : "";
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
-            && armSet != "mlpprior")
+            && armSet != "mlpprior" && armSet != "finalleaf")
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453 or mlpprior");
+                                 "cpumatch453, mlpprior or finalleaf");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
@@ -5281,6 +5297,15 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             {"mlp8_2k", 2000, true, true, replicates, 8, mlp},
         };
         if (!prev.empty()) arms.push_back({"mlp_prev8_2k", 2000, true, true, replicates, 8, prev});
+    } else if (armSet == "finalleaf") {
+        // Final-fight leaf replay: only act-3 boss fights (the run-ending fight
+        // without keys) are replayed, by plain exact-10k Silver with the default
+        // leaf and with STS_SILVER_FINAL_FIGHT_LEAF's, on the same redraws.
+        arms = {
+            {"control", sims, false, false, 1},
+            {"base10k", sims, false, true, replicates},
+            {"final10k", sims, false, true, replicates, 0, "", true},
+        };
     } else if (armSet == "cpumatch453") {
         // §453: plain search at about tree8_2k's CPU per fight.
         arms = {
@@ -5329,7 +5354,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     for (const auto &a : arms)
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
                            {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates},
-                           {"treeMinVisits", a.treeMinVisits},
+                           {"treeMinVisits", a.treeMinVisits}, {"finalFightLeaf", a.finalFightLeaf},
                            {"priorModel", a.priorModel.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.priorModel)},
                            {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
                                                                      : nlohmann::json(fileSha256(a.priorModel))}});
@@ -5355,6 +5380,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                            {"finalFloor", source.finalFloor},
                            {"won", source.finalOutcome == GameOutcome::PLAYER_VICTORY}});
         for (auto &entry : capture.bossEntries) {
+            if (armSet == "finalleaf" && !(entry.act == 3 && entry.roomClass == "BOSS")) continue;
             const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
             const GameContext &pre = *entry.pre;
             const auto encounter = pre.info.encounter;
@@ -5447,6 +5473,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     RootPriorScope priorScope(arm.prior);
                     TreePriorScope treeScope(arm.treeMinVisits);
                     PriorNetScope netScope(arm.priorModel.empty() ? nullptr : priorNets.at(arm.priorModel).get());
+                    FinalFightLeafScope leafScope(arm.finalFightLeaf);
                     std::optional<one_combat::CombatTransitionPersistentState> rawPost;
                     VwinArmResult result;
                     {

@@ -1,0 +1,88 @@
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=1 N=8 base=96000000 per=8 shards=4 R=8
+tar_sha256 f99fffbcc9dc98d9aab060dd29e1f44c5e08be7d782fb665e3db23453fd4a3e7
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard3 seed=96000024 n=8 rc=0 wall=1702
+shard0 seed=96000000 n=8 rc=0 wall=1872
+shard2 seed=96000016 n=8 rc=0 wall=1900
+shard1 seed=96000008 n=8 rc=0 wall=2303
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w01/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w01/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w01/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w01/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=2 N=8 base=96000032 per=8 shards=4 R=8
+tar_sha256 1af533d6a236457e3d2ea5245e13f3d0d034c50b327cf3b4115c58587c19ba26
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard1 seed=96000040 n=8 rc=0 wall=1274
+shard0 seed=96000032 n=8 rc=0 wall=1498
+shard3 seed=96000056 n=8 rc=0 wall=1510
+shard2 seed=96000048 n=8 rc=0 wall=2275
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=6 ctmSupported=6 control-replay=6/6 -> /root/leaf466-w02/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=6 ctmSupported=6 control-replay=6/6 -> /root/leaf466-w02/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w02/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=6 ctmSupported=5 control-replay=6/6 -> /root/leaf466-w02/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=3 N=8 base=96000064 per=8 shards=4 R=8
+tar_sha256 7144a0ef8fdd30833d507b4a4565347e9e95f6dc0519332e87d7c0e1799dad44
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard0 seed=96000064 n=8 rc=0 wall=1416
+shard3 seed=96000088 n=8 rc=0 wall=1695
+shard2 seed=96000080 n=8 rc=0 wall=1868
+shard1 seed=96000072 n=8 rc=0 wall=1967
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=7 ctmSupported=7 control-replay=7/7 -> /root/leaf466-w03/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w03/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=7 ctmSupported=7 control-replay=7/7 -> /root/leaf466-w03/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w03/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=4 N=8 base=96000096 per=8 shards=4 R=8
+tar_sha256 9e70c64803ab3d8b839d34bd1534a452128120e76c2990bbbc61d6de5f87415d
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard0 seed=96000096 n=8 rc=0 wall=1648
+shard3 seed=96000120 n=8 rc=0 wall=1662
+shard1 seed=96000104 n=8 rc=0 wall=1897
+shard2 seed=96000112 n=8 rc=0 wall=2179
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w04/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w04/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=6 ctmSupported=6 control-replay=6/6 -> /root/leaf466-w04/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w04/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=5 N=8 base=96000128 per=8 shards=4 R=8
+tar_sha256 d3bc913fa936c7982dd7f89c2345da1aef6805bf504e6e9732073331c32c0e2c
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard1 seed=96000136 n=8 rc=0 wall=1082
+shard3 seed=96000152 n=8 rc=0 wall=1697
+shard0 seed=96000128 n=8 rc=0 wall=1981
+shard2 seed=96000144 n=8 rc=0 wall=2139
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w05/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=7 ctmSupported=7 control-replay=7/7 -> /root/leaf466-w05/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w05/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w05/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=6 N=8 base=96000160 per=8 shards=4 R=8
+tar_sha256 6edbb2467a405ff881c6243c62426ccc7c541e108c766cfe60b0528df8d5011a
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard1 seed=96000168 n=8 rc=0 wall=1569
+shard0 seed=96000160 n=8 rc=0 wall=1579
+shard3 seed=96000184 n=8 rc=0 wall=1834
+shard2 seed=96000176 n=8 rc=0 wall=1990
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w06/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=5 ctmSupported=5 control-replay=5/5 -> /root/leaf466-w06/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=6 control-replay=8/8 -> /root/leaf466-w06/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w06/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=7 N=8 base=96000192 per=8 shards=4 R=8
+tar_sha256 df630848a097edd69389f1b771f3279023cf3247204664e90c6bcf41e27c52c9
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard1 seed=96000200 n=8 rc=0 wall=1147
+shard2 seed=96000208 n=8 rc=0 wall=1213
+shard0 seed=96000192 n=8 rc=0 wall=1738
+shard3 seed=96000216 n=8 rc=0 wall=1950
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w07/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=5 ctmSupported=5 control-replay=5/5 -> /root/leaf466-w07/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=7 ctmSupported=7 control-replay=7/7 -> /root/leaf466-w07/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w07/shard3
+FROZEN commit=8d8eeb3ceff6ad23399eabfb6d5b8ef34d987146 W=8 N=8 base=96000224 per=8 shards=4 R=8
+tar_sha256 14a47e3bff39e89341e8a1aaed0deefcb327b9680fc685ffa988016aecb5b132
+binary_sha256 c92c029705a231a14655266d8815bbc5bbc941590e1b4f4eade32a4bd8a8a5f9
+shard2 seed=96000240 n=8 rc=0 wall=1481
+shard0 seed=96000224 n=8 rc=0 wall=1520
+shard1 seed=96000232 n=8 rc=0 wall=1643
+shard3 seed=96000248 n=8 rc=0 wall=1691
+shard0.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=7 ctmSupported=7 control-replay=7/7 -> /root/leaf466-w08/shard0
+shard1.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w08/shard1
+shard2.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=7 ctmSupported=7 control-replay=7/7 -> /root/leaf466-w08/shard2
+shard3.log: ctm vs silver teacher=silver-flat-exact10k-synth-8d8eeb3c sourceValid=8/8 states=8 ctmSupported=8 control-replay=8/8 -> /root/leaf466-w08/shard3

@@ -18156,6 +18156,106 @@ non-inferiority at 10 pp.
 
 **Knowledge impact:** the `LEAF_COMBATS` row in `architecture/out-of-combat.md` now cites §472.
 
+## §466 — Final-fight Silver leaf: potions no longer hoarded, act-3 boss win rate unchanged (2026-10-14)
+
+**Question:** in the run-ending fight Silver's leaf still pays 11 per potion on a win and 5.5 on a
+loss. Does a leaf that values nothing after that fight (`STS_SILVER_FINAL_FIGHT_LEAF=1`: every win
+scores `winBonus + root maxHp`, a loss keeps damage/survival/energy/draw shaping without potion or
+cheat-death credit) win the act-3 boss more often? Background (descriptive, §460 replays): 8/18
+act-3 boss deaths of exact-10k Silver still held potions.
+
+**Design:** pre-registered fight-level replay ([evidence](evidence/silver_final_fight_leaf_466_20261014/README.md)).
+Run commit `8d8eeb3c`, binary `c92c0297…`. `ctmsilvergen` arm set `finalleaf`: one plain exact-10k
+A0 source run per seed (frozen V4 OOC policy, MCTS off), then every act-3 boss state replayed by
+`base10k` (default leaf) and `final10k` (final-fight leaf), R = 8 paired redraws of the six combat
+RNG streams. Seeds 96000000-96000255, 8 workers × 4 cores. Primary: paired per-fight win-rate
+difference, 95% bootstrap over source seeds (10,000 resamples, RNG 0).
+
+**Result: `NOT_SHOWN`.** 236 act-3 boss fights, none excluded (control replay 236/236, 32/32 shards
+rc 0). Win rate base 0.8633, final 0.8639: **+0.05 pp [−1.27, +1.38]**. Per boss: Awakened One −1.21
+(62), Donu and Deca +0.88 (85), Time Eater +0.14 (89). The option changed behavior as intended:
+deaths holding a potion 105/258 → 0/257, potions held per win 1.19 → 0.14. CPU per fight 9.18 →
+10.05 s.
+
+**Interpretation:** **Inference:** the potions Silver kept in losing final fights were not what
+decided those fights; spending all of them leaves the act-3 boss win rate within ±1.3 pp. A gain
+larger than about 1.4 pp per act-3 boss fight is excluded at exact 10k. Production learned-stop
+Silver and A20 were not tested.
+**Decision:** no default change; the option stays default off and this candidate stops per the
+pre-registration (no whole-run confirmation).
+
+**Knowledge impact:** `STS_SILVER_FINAL_FIGHT_LEAF` documented in
+`operations/environment-variables.md`; the situational-leaf investigation (including an A20
+first-boss heal mis-credit, not fixed here) recorded in
+`knowledge-base/investigations/2026-10-14-silver-situational-leaf.md`.
+
+## §468 — Situational Silver leaf bundle in whole runs: A0 not shown, A20 floors worse but more wins (2026-10-14)
+
+**Question (Philipp, 2026-10-14 11:18Z, after §466):** "Keep it in. Fix the bug for the A20 boss. Add the smaller idea
+and test again with all those things." Does Silver with all situational leaf changes together play better whole runs
+than the legacy leaf?
+
+**Design:** pre-registered paired whole runs ([evidence](evidence/silver_leaf_combo_468_20261014/README.md)). Code
+`f41ec4d3`, run commit `7fc41609`, binary `a45ef01e…`. Both arms are the §422 `off` environment (exact-10k live Silver,
+V4 OOC policy, OOC MCTS off, `STS_STOP_AFTER_ACT=3`). `base` sets `STS_SILVER_A20_BOSS_HEAL_FIX`,
+`STS_SILVER_FINAL_FIGHT_LEAF`, `STS_SILVER_NO_LOSS_POTION_CREDIT` and `STS_SILVER_RELIC_HEAL_LEAF` to 0, `all` sets all
+four to 1. A0 seeds 98000000–98000499 and A20 seeds 98000500–98000999, 8 workers (Philipp's pick). Primary A0: Δwin;
+primary A20: Δfloor; paired seed bootstrap 95% CI (10,000 resamples).
+
+**Result:** valid, 2,000/2,000 units rc=0, 500 pairs per cohort, no seed dropped.
+- **A0: `NOT_SHOWN`.** Wins 370 → 357, **Δwin −2.6 pp [−6.4, +1.2]** (discordant 41 vs 54, McNemar p = 0.22);
+  Δfloor −0.18 [−0.74, +0.39]; deaths at the act-3 boss 59 → 69.
+- **A20: `WORSE` on the primary.** **Δfloor −1.29 [−2.42, −0.19]**. Wins 52 → 71, Δwin +3.8 pp [+0.6, +7.0]
+  (discordant 44 vs 25, McNemar p = 0.029).
+- Descriptive (not pre-registered): at A20 the bundle dies more in act 1 (96 → 120; paired 50 vs 26, p = 0.008) and
+  less at the two final bosses (floor 50 deaths 51 → 42, second boss 74 → 48). Of the 113 seeds where both arms reached
+  floor 50, wins 38 → 52. Cost unchanged (42.8 vs 41.1 s per A20 run, 62.4 vs 62.8 s per A0 run).
+
+**Interpretation:** **Inference:** the bundle mixes two kinds of change. The end-of-run parts (A20 heal fix, final-fight
+leaf) act only at floors 50–51, where the A20 bundle wins more often. The every-fight parts (no loss potion credit, relic
+heal leaf) are the only ones active in act 1, where the A20 bundle dies more, so they likely cause the floor loss; this
+run cannot separate the terms. At A0 the every-fight parts may also cost wins (point estimate −2.6 pp, not shown).
+
+**Decision (pre-registered):** A0 NOT_SHOWN and A20 WORSE: all three opt-ins stay off. The A20 heal fix is a correctness
+fix whose A20 cohort was WORSE in the bundle, so whether it stays default on is Philipp's call.
+
+**Knowledge impact:** situational-leaf investigation page updated with the §468 result; option rows in
+`operations/environment-variables.md` unchanged (defaults unchanged pending the decision). Seeds 98000000–98000999 and
+smokes 74070100–74070101 are used.
+
+## §474 — End-of-run Silver leaf parts alone (A20 heal fix + final-fight leaf): not shown at A0 or A20 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 13:43Z, card "Split test" after §468):** do the two end-of-run leaf changes alone
+(`STS_SILVER_A20_BOSS_HEAL_FIX=1`, `STS_SILVER_FINAL_FIGHT_LEAF=1`) play better whole runs than the legacy leaf?
+
+**Design:** as §468 ([evidence](evidence/silver_leaf_split_471_20261014/README.md); the evidence folder, analyzer
+`tools/analyze_silver_leaf_471.py` and pre-registration carry the planning number 471, renumbered to §474 after main's
+§471 landed), arms `base` (all four leaf options
+0) vs `end` (those two 1, `NO_LOSS_POTION_CREDIT` and `RELIC_HEAL_LEAF` 0). Code `7a6c6bb9` (§468 code plus main with
+#532; OOC MCTS off in both arms), run commit `965000fa`, binary `6b2bca17…`. Fresh A0 seeds 100000000–100000499 and A20
+seeds 100000500–100000999, 8 workers (Philipp's pick). Primary A0 Δwin, A20 Δfloor, paired seed bootstrap 95% CI.
+
+**Result:** valid, 2,000/2,000 units rc=0, 500 pairs per cohort.
+- **A0: `NOT_SHOWN`.** Wins 402 → 406, **Δwin +0.8 pp [−1.2, +3.0]** (discordant 17 vs 13).
+- **A20: `NOT_SHOWN`.** **Δfloor 0.00 [−0.02, +0.02]**; wins 42 → 47, +1.0 pp [−0.4, +2.4] (discordant 10 vs 5,
+  McNemar p = 0.30).
+- Descriptive: both arms play every seed identically until floor 50 (the options act only in the A20 first act-3
+  boss and the run-ending fight). At A20, deaths at floor 50 rise 52 → 57 and second-boss deaths fall 66 → 56.
+
+**Interpretation:** the end-of-run parts change only the final one or two fights. The intervals exclude gains above
+about 3.0 pp (A0) and 2.4 pp (A20); the point estimate (+5 A20 wins) is about a quarter of §468's A20 win gain (+19),
+but the intervals (and the different seeds) cannot rule out that the end-of-run parts made up most of it.
+**Inference:** the §468 act-1 deaths (paired 50 vs 26) came from the every-fight parts (no loss potion credit, relic
+heal leaf), since the `end` arm leaves play before floor 50 unchanged.
+
+**Decision (pre-registered):** NOT_SHOWN in both cohorts: no default change; the A20 heal fix stays default on (A20
+not WORSE), the final-fight leaf and the two every-fight options stay off.
+
+**Later decision:** Philipp made all four leaf terms the default the same day (ADR-0035), not on a passed gate.
+
+**Knowledge impact:** investigation page updated with §474. Seeds 100000000–100000999 and smokes 74070450–74070451
+are used.
+
 ## §473 — Silver Smoke Bomb escape penalty 12,35 vs escape scored as a win: NOT_SHOWN at A0 and A20 (2026-10-14)
 
 **Question (Philipp, 2026-10-14 15:26Z, after the default-off flag audit):** "5 können wir gerne testen". Silver
