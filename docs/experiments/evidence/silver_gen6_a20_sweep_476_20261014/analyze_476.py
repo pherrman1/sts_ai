@@ -12,6 +12,9 @@ the replicate mean; contrasts are paired per fight; 95% CIs are a bootstrap over
 source seeds (10,000 resamples, RNG seed 0). A fight counts only when every arm row
 is valid and every arm has R = 2 replicates. Also reported: win rate per fight
 (1 - death) and HP lost per fight (preHp - post-combat curHp, a death loses all preHp).
+A CSV that does not end in a newline (shard killed mid-write) loses its last line, counted
+under `truncatedRows`. Per-shard manifests (absent after a kill) are summarized under
+`shards`.
 """
 import csv
 import glob
@@ -40,25 +43,44 @@ def score(row):
             + 0.25 * float(row["gold"]) + 2.0 * float(row["maxHp"]))
 
 
+TRUNCATED = defaultdict(int)
+
+
+def rows(path):
+    """csv.DictReader rows of PATH without a final line cut off mid-write."""
+    with open(path, newline="") as f:
+        text = f.read()
+    if text and not text.endswith("\n"):
+        text = text[: text.rfind("\n") + 1]
+        TRUNCATED[os.path.basename(path).split(".", 1)[1]] += 1
+    return list(csv.DictReader(text.splitlines()))
+
+
 def load(dirs):
     states, valid, cpu, dec, samples = {}, defaultdict(lambda: True), defaultdict(list), defaultdict(int), defaultdict(list)
+    shards = []
     for d in dirs:
         for path in sorted(glob.glob(os.path.join(d, "**", "*.states.csv"), recursive=True)):
             prefix = path[: -len(".states.csv")]
-            with open(path) as f:
-                for r in csv.DictReader(f):
-                    if r["stateId"] in states:
-                        raise SystemExit(f"duplicate state {r['stateId']}")
-                    states[r["stateId"]] = r
-            with open(prefix + ".arms.csv") as f:
-                for r in csv.DictReader(f):
-                    valid[r["stateId"]] = valid[r["stateId"]] and r["valid"] == "1"
-                    cpu[r["arm"]].append(float(r["cpuSeconds"]))
-                    dec[r["arm"]] += int(r["decisions"])
-            with open(prefix + ".samples.csv") as f:
-                for r in csv.DictReader(f):
-                    samples[(r["stateId"], r["forecaster"])].append(r)
-    return states, valid, cpu, dec, samples
+            for r in rows(path):
+                if r["stateId"] in states:
+                    raise SystemExit(f"duplicate state {r['stateId']}")
+                states[r["stateId"]] = r
+            for r in rows(prefix + ".arms.csv"):
+                valid[r["stateId"]] = valid[r["stateId"]] and r["valid"] == "1"
+                cpu[r["arm"]].append(float(r["cpuSeconds"]))
+                dec[r["arm"]] += int(r["decisions"])
+            for r in rows(prefix + ".samples.csv"):
+                samples[(r["stateId"], r["forecaster"])].append(r)
+            shard = {"prefix": os.path.relpath(prefix, d), "manifest": os.path.exists(prefix + ".manifest.json")}
+            if shard["manifest"]:
+                with open(prefix + ".manifest.json") as f:
+                    m = json.load(f)
+                shard.update(requestedSeeds=m["seedSpec"]["count"], finishedSeeds=len(m["sources"]),
+                             **{k: m["integrity"][k] for k in ("states", "controlReplayMismatches",
+                                                               "invalidArmRows", "hallwaySkipped")})
+            shards.append(shard)
+    return states, valid, cpu, dec, samples, shards
 
 
 def boot(per_seed, n=10000, rng_seed=0):
@@ -85,7 +107,7 @@ def label(c, pos, neg):
 
 def main():
     out, dirs = sys.argv[1], sys.argv[2:]
-    states, valid, cpu, dec, samples = load(dirs)
+    states, valid, cpu, dec, samples, shards = load(dirs)
     missing = [a for a in ARMS if a not in cpu]
     if missing:
         raise SystemExit(f"missing arms: {missing}")
@@ -117,6 +139,8 @@ def main():
         rooms[st["roomClass"]] += 1
     mean_cpu = {a: sum(v) / len(v) for a, v in cpu.items()}
     result = {"states": len(states), "validFights": len(fights), "excluded": dict(excluded),
+              "truncatedRows": dict(TRUNCATED), "shards": shards,
+              "seedsWithStates": len({st["sourceSeed"] for st in states.values()}),
               "roomClasses": dict(rooms),
               "sourceSeeds": len({st["sourceSeed"] for st, _ in fights.values()}),
               "meanCpuSecondsPerFight": mean_cpu,
@@ -149,7 +173,8 @@ def main():
         result["labels"][f"{x}-{y}"] = label(result["contrasts"][f"{x}-{y}/all/score"], "G6_BETTER", "G6_WORSE")
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
-    print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "roomClasses", "labels",
+    print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "truncatedRows", "shards",
+                                             "roomClasses", "labels",
                                              "cpuPerFightVsPlainSameBudget")}))
     for k, v in result["contrasts"].items():
         if "/all/" in k or "/boss/" in k:

@@ -34,8 +34,9 @@ few hundred / 1000 fights".
   elites are a larger share than in a full run. The source policy is A0-trained (as in the §403 A20
   corpus), so A20 runs mostly end in Acts 1–3 and the fight mix follows where they die.
 - Seeds: 104000000–104000095 (96 source seeds; coordinator block 104M), `run.sh OUT` in one cloud
-  container, 4 shards × 24 seeds. Expected about 1,000 fights (smoke: 10.5 fights per seed) and
-  about 8 core-hours.
+  container, 4 shards × 24 seeds. Expected about 1,000 fights (smoke: 10.5 fights per seed). Cost:
+  my smokes took about 310 core-s per seed, the pre-launch reviewer's 660 s per seed with 4 shards
+  (about 200 s of it the source run), so 8–17 core-hours, about 2–4.5 h wall per shard.
 
 ## Metric and analysis (`analyze_476.py`, frozen here)
 Fight score and pairing as §460: per replicate 0 on death, else 53 + curHp + 11 potions + 0.25 gold +
@@ -55,14 +56,31 @@ source) and every arm has R = 2 replicates. Also per fight: win rate (1 − deat
   elite, normal (NORMAL + OTHER); CPU per fight and per decision per arm. The prior arms cost a few
   percent more CPU than plain at the same budget (smoke: 1.02–1.06x); no matched-CPU plain arm is run,
   so a primary HELPS is "at equal simulations", not "at equal CPU" (§460 is the matched-CPU A0 check).
+- At about 1,000 A20 fights a `NOT_SHOWN` label means inconclusive at this resolution, not "no effect".
 - **Decision:** none on defaults (the MLP prior stays opt-in). The labels feed Philipp's call on
   whether to use gen 6 at A20 and at lower budgets.
 
 ## Validity
 A shard rc != 0 or a sha mismatch is reported, not rerun with changed settings. Fights finished before
-a shard abort (for example a native Silver stall, or the 6 h per-shard timeout) count; a fight with
+a shard abort (for example a native Silver stall, or the 12 h per-shard timeout) count; a fight with
 fewer than R = 2 replicates in some arm is excluded as `incomplete_shard_abort` and the rest of that
-shard's seeds are lost and reported, with no rerun. Excluded fights are counted by reason.
+shard's seeds are lost and reported, with no rerun. Excluded fights are counted by reason; a CSV
+line cut off mid-write is dropped and counted (`truncatedRows`), and per-shard manifests give seeds
+requested vs finished, control mismatches and skipped hallway fights.
+
+## Operation
+`run.sh` is launched detached (`setsid nohup bash run.sh OUT > OUT.log 2>&1 &`), and the thread keeps a
+background watcher armed for the whole run (re-armed whenever it fires or expires, since one
+background command lasts at most 2 h) that checks `shards.txt` and the shard processes. A shard
+killed by losing the container (not by a stall, a throw or the timeout) is rerun unchanged with
+`run.sh NEW_OUT 96 104000000 "<shard>"` into a fresh folder; reruns are deterministic, so this
+reproduces the same fights. The analysis then uses the rerun folder for that shard and leaves out
+the lost shard's partial files.
+
+## Delivery
+When all shards end: `tar -cf x476-run.tar OUT` (CSVs, manifests, logs, FROZEN.txt), copy it to
+`/mnt/project-files/silver-gen6-a20-476/` with its sha256, and verify the sha256 of the share copy
+from a second container (an Agent worker or another thread) before the write-up cites it.
 
 ## Write-up
 Ledger §476 with this file, the analysis output and the sha256 of the raw tar on the share
