@@ -83,6 +83,14 @@ J stats(const S::OocMctsResult &r, const OocGameContextModel &model) {
 }
 }
 nlohmann::json selectiveAuditSourcePolicy() { SourceScope scope; return effectiveOocPolicySpecification(); }
+int oocSelectiveSilverAccountingSelfTest() {
+    const double before = usage(RUSAGE_CHILDREN);
+    const auto digest = fileSha256(g_mainBinaryPath);
+    const double provenance = usage(RUSAGE_CHILDREN) - before;
+    check(digest.size() == 64 && provenance > 0., "hash utility must contribute measured child CPU");
+    std::puts("PASS selective Silver provenance utility accounting (no game seeds)");
+    return 0;
+}
 int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, const std::string &out,
     std::shared_ptr<const CombatTransitionSampler> ctm, OocAdapterOptions options, S::OocMctsConfig config,
     const AuditFork &fork) {
@@ -104,7 +112,8 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
         auto ctmNonce = auditNonceSampler(ctm);
         auto silver = auditNonceSampler(auditNativeSilverSampler(2000, &net, true));
         auto reference = auditNonceSampler(auditNativeSilverSampler(10000, nullptr, false));
-        const double startedParent = usage(RUSAGE_SELF), startedChildren = usage(RUSAGE_CHILDREN);
+        // Include startup and provenance utility subprocesses in whole-source caps.
+        constexpr double startedParent = 0., startedChildren = 0.;
         auto child = [&](const std::function<J()> &fn, int cpu = 60, int wall = 90000) {
             check(usage(RUSAGE_SELF) - startedParent <= 200, "parent CPU cap");
             check(usage(RUSAGE_CHILDREN) - startedChildren + cpu <= 1200, "child reservation exhausted");
@@ -115,8 +124,11 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
             return J{{"result", result}, {"parentCpuSeconds", pc}, {"childCpuSeconds", cc}};
         };
         SourceScope sourceConfiguration;
-        writer.write({{"type", "header"}, {"seed", seed}, {"planSha256", fileSha256(planPath)},
-            {"producerGitSha", std::getenv("STS_EXECUTABLE_GIT_SHA")}, {"policy", effectiveOocPolicySpecification()}, {"ctmLoadedIdentity", hybrid->fastRuntime().identity()}});
+        J header{{"type", "header"}, {"seed", seed}, {"planSha256", fileSha256(planPath)},
+            {"producerGitSha", std::getenv("STS_EXECUTABLE_GIT_SHA")}, {"policy", effectiveOocPolicySpecification()}, {"ctmLoadedIdentity", hybrid->fastRuntime().identity()}};
+        // fileSha256 uses reaped utility children; retain their cost before any game or audit fork.
+        header["provenanceChildCpuSeconds"] = usage(RUSAGE_CHILDREN);
+        writer.write(std::move(header));
         const auto initialPolicy = captureOocPolicyThreadState();
         auto runSource = [&](bool audit) {
             restoreOocPolicyThreadState(initialPolicy); SourceScope sourceScope;

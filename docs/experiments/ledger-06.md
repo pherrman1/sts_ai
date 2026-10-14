@@ -18312,3 +18312,44 @@ retained CSV control/source fields independently agree.
 
 **Knowledge impact:** evidence ledger/current research and opt-in dataset
 interface. Earlier attempts remain unchanged and excluded; defaults unchanged.
+
+
+## §475 Selective calibrated CTM/gen6 E2k OOC-choice audit: invalid canary (2026-10-14)
+
+**Verdict:** `INVALID_OR_INSUFFICIENT`. Authorized prospective follow-up to §474,
+using two actual competing MAP choices, CTM4096 baseline, CTM8/gen6 E2k Silver8
+rescoring, extra CTM continuations with CPU matching and disjoint plain10k
+reference futures. [Evidence and diagnosis](evidence/ooc_selective_silver_audit_20261014/run-1/RESULTS.md).
+Only excluded canary97151001 launched; cohort97151010–97151017 was never
+started. No replacement, retry, cap change or quality conclusion.
+
+Frozen independently reviewed producer695e95a590125218d244c884a48c74b96bde228c,
+binaryb3e89dca6bc15fbec3a9faa156366a58122800d47b42e8e71392fcb8df6c7bd5,
+freezed2ce0084d7f885f49f1a549461c693d3ec9f1dcc912aff663cf52bdfd16467a8.
+All16 artifact identities and111,051 allocated streams were verified before
+launch. Calibrated manifest00bb4da6…/gen6 Eca9bd7f2…; A20/no keys/Act3,
+fixed V4 source with MCTS off, native plain10k, two one-thread workers planned,
+parent200CPU/children1200CPU/source1800wall, no retries.
+
+Canary exited0, without timeout, at219.82 process CPU/223.506 wall seconds.
+Source/control117-action/20-RAW-battle/end traces and both4096 baseline
+controls match exactly. Two eligible roots (Act1/floor3,Act2/floor19) completed.
+Frozen analysis rejects **source child settlement**: retained fork wrappers
+sum204.717603s but scoped RUSAGE_CHILDREN records204.729388s, leaving0.011785s.
+The header's plan/policy hashes call fileSha256's popen/pclose utility children
+outside the itemized wrappers. Omitted subprocess category confirmed; exact
+per-utility microsecond attribution is inference. No failed canary rescue.
+
+Separately reviewed narrow tooling repair records measured startup/provenance
+child CPU, includes it in unchanged caps, and reconciles that bucket plus all
+forks at the unchanged tolerance. Seed-free real hash-utility and synthetic
+regressions cover the defect. Original16 frozen inputs copied and hash-verified
+before edits; raw data, latches, original analysis/runner/protocol and verdict
+preserved in the evidence packet. No new scientific freeze or seeds after repair.
+The first root's matched CTM reached4096 pairs at0.474× Silver cost, so that
+root also precludes a matched-CPU claim. No efficacy interval from canary data.
+
+**Knowledge impact:** experiment evidence/current research; default-off audit
+interface and whole-process CPU-accounting contract. No model, runtime default,
+training qualification or gameplay promotion. Future execution requires a newly
+authorized freeze/canary; the eight-source cohort remains unopened.

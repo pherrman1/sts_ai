@@ -67,7 +67,7 @@ def fixture(root):
     source = {'roots': [root_row], 'actions': [{'act': 1, 'floor': 3, 'screen': 2, 'bits': 11, 'legalCount': 2, 'realCombatsInAct': 1}],
               'battles': [{'synthetic': True}], 'summary': {'synthetic': True}}
     control_source = copy.deepcopy(source); control_source['roots'] = []
-    rows = [{'type': 'header', 'seed': seed, 'planSha256': a.sha(plan), 'producerGitSha': f['producerGitSha'], **f['spec']},
+    rows = [{'type': 'header', 'seed': seed, 'planSha256': a.sha(plan), 'producerGitSha': f['producerGitSha'], 'provenanceChildCpuSeconds': .015, **f['spec']},
             {'type': 'source_control_start'}, {'type': 'source_control_complete', 'result': {'result': control_source, 'parentCpuSeconds': .1, 'childCpuSeconds': 1.}},
             {'type': 'root_start', 'act': 1, 'seed': seed, 'decisionOrdinal': 0}]
     rows[0]['policy'] = rows[0].pop('sourcePolicy')
@@ -76,7 +76,7 @@ def fixture(root):
         for row in root_row[name]['rows']:
             rows.append({'type': 'evaluation_start', 'act': 1, 'selector': name, 'k': row['k'], 'candidate': row['candidate']})
             rows.append({'type': 'evaluation_complete', 'act': 1, 'selector': name, 'row': row})
-    rows += [root_row, {'type': 'source_complete', 'seed': seed, 'source': source, 'parentCpuSeconds': 5.3, 'childCpuSeconds': 44.01}]
+    rows += [root_row, {'type': 'source_complete', 'seed': seed, 'source': source, 'parentCpuSeconds': 5.3, 'childCpuSeconds': 44.025}]
     def save(): Path(prefix + '.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
     save(); return f, rows, root_row, save
 
@@ -128,6 +128,13 @@ class Tests(unittest.TestCase):
         self.rows[-1]['childCpuSeconds'] -= 1; self.save()
         Path(self.f['outputs'][str(a.CANARY)] + '.time').write_text('99 0 120\n')
         with self.assertRaisesRegex(ValueError, 'GNU-time'): a.job(self.f, a.CANARY, 'synthetic')
+
+    def test_unitemized_provenance_children_fail_closed(self):
+        # Hash utilities are children too: keep a measured dedicated bucket,
+        # rather than tolerating an arbitrary resource-accounting residual.
+        self.rows[0]['provenanceChildCpuSeconds'] = 0.; self.save()
+        with self.assertRaisesRegex(ValueError, 'source child settlement'):
+            a.job(self.f, a.CANARY, 'synthetic')
 
     def test_cpu_wrappers_and_matched_stop(self):
         self.root['baseline']['childCpuSeconds'] = 61.; self.save()

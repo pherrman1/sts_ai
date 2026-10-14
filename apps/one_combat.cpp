@@ -3699,7 +3699,9 @@ int main(int argc, char **argv) {
         catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
     } else if (mode == "oocselectivesilverselftest") {
         try { const int samplerStatus = one_combat::auditNativeSilverSamplerSelfTest();
-            return samplerStatus ? samplerStatus : one_combat::oocSelectiveSilverHorizonSelfTest(); }
+            if (samplerStatus) return samplerStatus;
+            const int horizonStatus = one_combat::oocSelectiveSilverHorizonSelfTest();
+            return horizonStatus ? horizonStatus : one_combat::oocSelectiveSilverAccountingSelfTest(); }
         catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
     } else if (mode == "oocleafreplayprobe" || mode == "oocleafstabilityprobe") {
         const bool stability = mode == "oocleafstabilityprobe";

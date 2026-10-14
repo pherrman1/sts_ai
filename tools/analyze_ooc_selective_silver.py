@@ -173,7 +173,7 @@ def job(f, seed, digest):
     require(end['parentCpuSeconds'] + end['childCpuSeconds'] <= receipt['cpuSeconds'] + .05, 'process CPU sum mismatch')
     roots = [r for r in rows if r['type'] == 'root_complete']
     require(roots == end['source']['roots'] and 1 <= len(roots) <= 3, 'zero/mismatched source root panel')
-    settled_children = 0.
+    settled_children = number(header['provenanceChildCpuSeconds'], 'provenance child CPU', 0, 1200)
     settled_parent = 0.
     seen, expected = set(), []
     for i, action in enumerate(end['source']['actions']):

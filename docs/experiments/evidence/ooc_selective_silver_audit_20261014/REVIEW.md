@@ -30,3 +30,19 @@ excluded canary and never retries a failed latch.
 Knowledge impact: narrow default-off diagnostic interfaces documented in
 CODE_MAP/out-of-combat; prospective scientific contract in PROTOCOL. Outcomes
 belong to the experiment ledger and maintained current research after execution.
+
+## Failed canary and separately reviewed accounting repair
+
+Run-1 remains INVALID_OR_INSUFFICIENT/source child settlement; no cohort
+launched. Independent failed-outcome audit verified all16 preserved dependency
+copies and all8196 producer-source blobs, source/baseline/prefix controls,
+GNU-time receipts,204.717603s itemized versus204.729388s total child CPU,
+and absent cohort latches/artifacts. No quality analysis or rescue was done.
+
+The narrow measured provenance-child bucket repair passes independent code/
+protocol review. Whole-process clocks include startup utilities inside existing
+caps; no tolerance increase. Final Release rebuild exit0;15 synthetic tests
+PASS0.284s; affected guarded CTests5/5PASS2.84s, including the actual
+fileSha256 utility selftest. git diff --check exit0. No scientific retry, new
+freeze, training, default promotion or merge after this repair. Current tooling
+and original frozen producer695e95a5 are separate evidence identities.

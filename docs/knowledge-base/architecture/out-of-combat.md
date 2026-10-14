@@ -782,7 +782,8 @@ The default-empty thread-local `t_realRunContextObserver` observes the real
 `runFullRunOOC` context after each path update and before policy execution.
 The audit uses that address to exclude action/RAW callbacks from hypothetical
 copies; child scopes clear it and restore all inherited observers afterward.
-Ordinary runs leave this observer unset. The audit-only nonce wrapper consumes
+Ordinary runs leave this observer unset. Whole-source CPU accounting includes
+startup/provenance hashing utilities, retained separately from evaluator forks. The audit-only nonce wrapper consumes
 one outer RNG draw per combat and puts resolver draws in a private substream;
 ordinary CTM baseline search retains its original sampler.
 

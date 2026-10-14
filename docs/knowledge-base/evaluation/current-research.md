@@ -481,6 +481,17 @@ audit; do not infer training-teacher qualification or increased run wins.
 Total CPU including excluded canary was 5,074.70s; largest source 918.11s
 under the 1200s cap. Earlier attempts remain separately preserved and excluded.
 
+The subsequent [selective MAP-choice audit](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-1/RESULTS.md)
+(§475) is **INVALID_OR_INSUFFICIENT**: the excluded canary completed two roots
+with exact source and baseline controls, but provenance hashing utility children
+left0.011785s outside itemized child CPU settlement. The analyzer rejected it;
+the eight-source cohort never launched. A narrow tested accounting repair
+records measured utility-child CPU inside unchanged caps and tolerance.
+The failed canary remains excluded/invalid, without a decision-quality result
+or retry. The first matched CTM arm also hit4096 paired futures at0.474× Silver
+cost, leaving matched compute unresolved. A newly authorized freeze/canary
+must precede future cohort execution; no training or default change follows.
+
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every

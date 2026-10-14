@@ -123,7 +123,9 @@ are excluded from both selectors and recorded separately. Thus CPU-stop
 overhead may cause the actual gate to fail; never silently retune the deadline.
 Before each child reserve its full pinned CPU allowance from remaining1200s;
 settle against wait4 or cumulative RUSAGE_CHILDREN delta after successful reap,
-including failed children. Parent CPU is checked independently. No concurrent
+including failed children. Whole-process accounting includes startup/provenance
+utility children; retain their measured pre-game CPU in a separate header bucket
+and reconcile it with all diagnostic forks. Parent CPU is checked independently. No concurrent
 children inside one source process. Failed reservations/children invalidate.
 
 A source with no eligible root is valid source accounting but makes this
