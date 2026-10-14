@@ -26,6 +26,8 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0037](0037-live-advisor-escape-penalty.md) gives the live-game advisor the same `12,35` escape penalty
+  (no environment override on the live path; elite fights from the wire encounter).
 - [ADR-0036](0036-silver-escape-penalty-default.md) makes native Silver charge a Smoke Bomb
   escape for the forfeited rewards by default (`12,35`, §473 NOT_SHOWN; `STS_SILVER_ESCAPE_PENALTY=0,0` restores
   escape scored as a win).

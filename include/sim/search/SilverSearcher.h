@@ -60,6 +60,9 @@ namespace sts::search {
         double escapePenalty = 0;
         double eliteEscapePenalty = 0;
     };
+    // ADR-0036 defaults (§473 values), used by native Silver and the live advisor.
+    inline constexpr double kDefaultEscapePenalty = 12;
+    inline constexpr double kDefaultEliteEscapePenalty = 35;
 
     struct SilverSearchStats {
         std::int64_t steps = 0;
