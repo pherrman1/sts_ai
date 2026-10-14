@@ -3017,6 +3017,20 @@ int testSilverEscapePenalty() {
     // The HP cap keeps a low-HP emergency escape preferred.
     if (!flees(10, MonsterEncounter::GREMLIN_NOB, true, 40)) return fail("low-HP elite escape suppressed");
     if (!flees(10, MonsterEncounter::JAW_WORM, false, 15)) return fail("low-HP escape suppressed");
+    // The live wire path has no room: elite-trigger fights come from the encounter.
+    auto wireElite = [](Room room, MonsterEncounter encounter) {
+        GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
+        gc.curRoom = room;
+        BattleContext bc;
+        bc.init(gc, encounter);
+        search::CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(bc);
+        const auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        return search::searchContextFromWire(wire).eliteRewards;
+    };
+    if (!wireElite(Room::ELITE, MonsterEncounter::GREMLIN_NOB)) return fail("wire elite fight not elite");
+    if (wireElite(Room::MONSTER, MonsterEncounter::JAW_WORM)) return fail("wire normal fight marked elite");
+    if (!wireElite(Room::EVENT, MonsterEncounter::LAGAVULIN_EVENT)) return fail("wire Dead Adventurer fight not elite");
     std::cout << "silver_escape_penalty PASS\n";
     return 0;
 }

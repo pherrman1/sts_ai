@@ -51,8 +51,8 @@ namespace sts::search {
             bool stopAfterAct3 = false;      // STS_STOP_AFTER_ACT=3: the act-3 boss ends the run
             double topGap = kDefaultTopGap;
             // ADR-0036: a Smoke Bomb escape forfeits the fight's rewards (§473 values); "0,0" restores escape = win.
-            double escapePenalty = 12;
-            double eliteEscapePenalty = 35;
+            double escapePenalty = kDefaultEscapePenalty;
+            double eliteEscapePenalty = kDefaultEliteEscapePenalty;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
