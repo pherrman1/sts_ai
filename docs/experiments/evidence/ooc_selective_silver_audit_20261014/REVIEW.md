@@ -46,3 +46,20 @@ PASS0.284s; affected guarded CTests5/5PASS2.84s, including the actual
 fileSha256 utility selftest. git diff --check exit0. No scientific retry, new
 freeze, training, default promotion or merge after this repair. Current tooling
 and original frozen producer695e95a5 are separate evidence identities.
+
+## Authorized run-2 budget renewal
+
+Philipp authorized a fresh canary and cohort, citing PR547's gen6 E2500 A20
+fight evidence. Bounded independent implementation/prospective delta reviewPASS:
+only prior combat budget2500 and fresh excluded canary97151101 differ; unopened
+cohort streams, CTM/source/plain10k reference, horizon, caps and4096 matched
+sample ceiling stay fixed. Spec/plan/header/analyzer all bind the budget.
+PR547's same gen6 E bytes were independently fetched and hash-verified at
+80687eb4b4392f41e9b91d9e0c01f527ad4a7a00:ca9bd7f2…3228. No code/scoring
+from PR547 is imported; legacy fight-level evidence is budget motivation only.
+
+Release rebuildexit0;16synthetic testsPASS0.298s;guarded affected CTests
+5/5PASS2.80s;git diff --checkPASS. Raw checks:build-run2.log,
+python-run2.log,ctest-run2.log in build/ooc-selective-silver-audit/checks.
+Run-1 is still invalid and excluded. No game seeds for run-2 before committing
+and freezing this independently reviewed producer.

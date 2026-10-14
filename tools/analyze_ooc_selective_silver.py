@@ -8,7 +8,7 @@ from pathlib import Path
 import random
 import statistics
 
-CANARY = 97151001
+CANARY = 97151101
 COHORT = list(range(97151010, 97151018))
 PRIOR = 'ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228'
 NATIVE_CTM_HASHES = {'combat_transition_deepsets_pathb_a20_lizard.native': 'ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b',
@@ -102,10 +102,11 @@ def validate_freeze(path):
         require(sha(artifact) == digest, f'frozen artifact changed: {artifact}')
     require(f['artifactFiles'][f['binary']] == f['binarySha256'], 'binary custody')
     require(f['artifactFiles'][f['environment']['STS_SILVER_ROOT_PRIOR']] == PRIOR, 'prior custody')
+    require(f['spec']['silverSimulations'] == 2500, 'wrong Silver budget')
     require(f['ctmManifestSha256'] == CTM, 'CTM custody')
     validate_model_custody(f)
     plan = read(f['plan'])
-    require(plan == {'schemaVersion': 'ooc_selective_silver_plan_v1', 'canarySeed': CANARY,
+    require(plan == {'schemaVersion': 'ooc_selective_silver_plan_v1', 'canarySeed': CANARY, 'silverSimulations': 2500,
                      'streams': streams(), 'ctmLoadedIdentity': f['spec']['ctmLoadedIdentity']}, 'wrong stream plan')
     return f
 
@@ -164,6 +165,7 @@ def job(f, seed, digest):
     rows = [decode(s) for s in raw.splitlines()]
     require(rows and rows[0]['type'] == 'header' and rows[-1]['type'] == 'source_complete', 'incomplete source')
     header, end = rows[0], rows[-1]
+    require(header['silverSimulations'] == f['spec']['silverSimulations'] == 2500, 'loaded Silver budget mismatch')
     require(header['seed'] == seed and header['planSha256'] == sha(f['plan'])
             and header['producerGitSha'] == f['producerGitSha']
             and header['policy'] == f['spec']['sourcePolicy']

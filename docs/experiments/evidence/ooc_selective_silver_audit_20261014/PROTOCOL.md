@@ -2,12 +2,37 @@
 
 Authorized by Philipp's request to execute the next step after §474. Bounded
 pilot only: no training, production change or whole-run gameplay qualification.
-Baseline source commit:37594e3bab761408cf255621be31dc72d75cc96e; implementation
+Renewed run-2 baseline:ff1d3253a121c4be0a23cad7e2be008ed925c525; implementation
 is stacked on draft PR539, which is not merged by this request.
+
+## Run-2 authorization and preserved boundary
+
+Philipp authorized a fresh canary and subsequent eight-source comparison with
+“lets go”, citing PR547's A20 gen6 E result at2500 simulations. Run-1 remains
+INVALID_OR_INSUFFICIENT, is excluded and is never pooled/reclassified. Its full
+freeze and original protocol are preserved under run-1. Use fresh excluded
+canary97151101; the eight original cohort seeds remain unopened/unused.
+This renewal permits exactly one new canary plus those eight sources, with the
+same caps, no retries within run-2, and unchanged conditional decision rule.
+The measured provenance-child accounting repair is already independently reviewed.
+
+PR547 head80687eb4b4392f41e9b91d9e0c01f527ad4a7a00 records1080 paired A20
+fights:gen6 E2500 versus plain2500 score+3.85[+1.23,+6.52], while gen6 E2500
+versus plain10k+1.04[−1.43,+3.46] remains unresolved. Same model hash,
+K8/weight400/root bonus. These are nominal fight-level legacy-score results
+with eight exclusions and no multiplicity correction; they motivate this
+budget, not OOC utility, equivalence, whole-run wins or training qualification.
+No PR547 runtime code or new terminal objective is imported into the pinned
+producer. CTM, plain10k source/reference, seeds/streams for the still-unopened
+cohort, endpoint value/horizon, candidate selection and inference rules are fixed.
+
+The4096 matched-CTM sample ceiling remains unchanged. Run-1's excluded Act1
+root underfilled Silver cost at this ceiling; if it occurs in run-2, the
+matched-compute gate remains unresolved. No outcome-driven ceiling increase.
 
 ## Question and evidence inventory
 
-Does selective gen6 E2k rescoring of two actual MAP choices improve a held-out
+Does selective gen6 E2500 rescoring of two actual MAP choices improve a held-out
 native requested-three-combat continuation return, relative to the calibrated CTM's
 ordinary choice and to further CTM rescoring at the same measured CPU cost?
 Competing explanations: native evaluation corrects CTM ranking bias; any gain
@@ -25,7 +50,7 @@ features are never treated as replayable GameContext snapshots.
 
 ## Fixed source panel and selection
 
-- Excluded canary97151001. Cohort97151010–97151017 inclusive,8 fresh sources.
+- Excluded canary97151101. Cohort97151010–97151017 inclusive,8 fresh sources.
 - Ironclad A20, no keys, stop after Act3; source uses V4 OOC policy, MCTS off,
   original-future plain Silver10k, exact flat budgets, no singleton skipping.
 - At most3 roots/source: the first MAP decision in each act after at least one
@@ -54,7 +79,7 @@ actual combat/step counts are retained. Every arm uses the identical rule. This 
 Use the identical fixed V4 continuation and X2-B endpoint value in every arm.
 Returns are surrogate continuation values, not observed eventual run wins.
 
-Four selectors: baseline CTM MCTS choice; CTM8 rescoring; gen6 E2k Silver8
+Four selectors: baseline CTM MCTS choice; CTM8 rescoring; gen6 E2500 Silver8
 rescoring; extra calibrated CTM rescoring with measured CPU matched to Silver8.
 Each fixed rescorer uses8 paired futures per candidate. Ties retain baseline.
 Additional CTM uses complete paired batches, stopping solely on CPU after at
@@ -86,7 +111,7 @@ research Silver resolver is left unchanged. Existing OOC noncombat sampling
 already redraws gc.seed; no blanket old-OOC leakage claim is made.
 
 Gen6 E hashca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228;
-K8, weight400, root bonus on, flat2k with singleton skipping off and search
+K8, weight400, root bonus on, flat2500 with singleton skipping off and search
 parameter overrides reset. Reference uses flat10k/prior off. Calibrated A20
 manifest00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea;
 FASTae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b;

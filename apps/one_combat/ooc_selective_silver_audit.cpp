@@ -97,7 +97,7 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
     Writer writer(out);
     try {
         std::ifstream input(planPath); check(bool(input), "plan unavailable"); J plan; input >> plan;
-        check(plan.at("schemaVersion") == "ooc_selective_silver_plan_v1", "wrong plan schema");
+        check(plan.at("schemaVersion") == "ooc_selective_silver_plan_v1" && plan.at("silverSimulations") == 2500, "wrong plan schema/budget");
         const auto seeds = plan.at("streams").at(std::to_string(seed));
         const auto hybrid = std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(ctm);
         check(hybrid && hybrid->fastRuntime().identity() == plan.at("ctmLoadedIdentity"), "wrong loaded CTM identity");
@@ -110,7 +110,7 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
         check(prior && fileSha256(prior) == "ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228", "wrong gen6 E");
         S::CombatValueNet net; check(net.load(prior) && net.isPolicyMlp, "prior load failure");
         auto ctmNonce = auditNonceSampler(ctm);
-        auto silver = auditNonceSampler(auditNativeSilverSampler(2000, &net, true));
+        auto silver = auditNonceSampler(auditNativeSilverSampler(2500, &net, true));
         auto reference = auditNonceSampler(auditNativeSilverSampler(10000, nullptr, false));
         // Include startup and provenance utility subprocesses in whole-source caps.
         constexpr double startedParent = 0., startedChildren = 0.;
@@ -124,7 +124,7 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
             return J{{"result", result}, {"parentCpuSeconds", pc}, {"childCpuSeconds", cc}};
         };
         SourceScope sourceConfiguration;
-        J header{{"type", "header"}, {"seed", seed}, {"planSha256", fileSha256(planPath)},
+        J header{{"type", "header"}, {"seed", seed}, {"silverSimulations", 2500}, {"planSha256", fileSha256(planPath)},
             {"producerGitSha", std::getenv("STS_EXECUTABLE_GIT_SHA")}, {"policy", effectiveOocPolicySpecification()}, {"ctmLoadedIdentity", hybrid->fastRuntime().identity()}};
         // fileSha256 uses reaped utility children; retain their cost before any game or audit fork.
         header["provenanceChildCpuSeconds"] = usage(RUSAGE_CHILDREN);

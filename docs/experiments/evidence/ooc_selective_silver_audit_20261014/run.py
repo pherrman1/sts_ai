@@ -65,7 +65,7 @@ def prepare(out):
     manifest = REPO / 'build/a20-teacher-comparison/calibrated-ctm/manifest.json'
     a.require(a.sha(manifest) == a.CTM and identity['ctmLoadedIdentity'] == a.read(manifest), 'calibrated loaded identity mismatch')
     plan = out / 'plan.json'
-    write(plan, {'schemaVersion': 'ooc_selective_silver_plan_v1', 'canarySeed': a.CANARY,
+    write(plan, {'schemaVersion': 'ooc_selective_silver_plan_v1', 'canarySeed': a.CANARY, 'silverSimulations': 2500,
                  'streams': a.streams(), 'ctmLoadedIdentity': identity['ctmLoadedIdentity']})
     files = [binary, frozen_prior, plan, out / 'spec.json', out / 'spec.log', out / 'build.log',
              Path(__file__).resolve(), REPO / 'tools/analyze_ooc_selective_silver.py', REPO / 'tools/seed_guard.sh', PACKET / 'PROTOCOL.md', manifest]

@@ -26,7 +26,7 @@ def fixture(root):
     dump(plan, {'streams': STREAMS})
     f = {'outputs': {str(seed): prefix}, 'repository': str(REPO), 'binary': '/SYNTHETIC/one_combat',
          'producerGitSha': '0' * 40, 'plan': str(plan), 'mapScreenEnum': 2,
-         'spec': {'sourcePolicy': {'synthetic': True}, 'ctmLoadedIdentity': {'synthetic': True}}}
+         'spec': {'silverSimulations': 2500, 'sourcePolicy': {'synthetic': True}, 'ctmLoadedIdentity': {'synthetic': True}}}
     argv = ['bash', str(REPO / 'tools/seed_guard.sh'), f['binary'], 'oocselectivesilvergen', '1', str(seed), str(plan), prefix + '.jsonl']
     Path(prefix + '.time').write_text('99.00 1.00 120.00\n')
     dump(prefix + '.started.json', {'argv': argv, 'freezeSha256': 'synthetic'})
@@ -93,6 +93,10 @@ class Tests(unittest.TestCase):
         self.assertAlmostEqual(r['referenceUtility']['silver8'] - r['referenceUtility']['baseline'], .6)
         self.assertTrue(r['matchedCostValid'])
         self.assertEqual(report['absentActs'], [2, 3])
+
+    def test_wrong_loaded_silver_budget_rejected(self):
+        self.rows[0]['silverSimulations'] = 2000; self.save()
+        with self.assertRaisesRegex(ValueError, 'Silver budget'): a.job(self.f, a.CANARY, 'synthetic')
 
     def test_wrong_pairing_rejected(self):
         self.root['silver8']['rows'][0]['futureSeed'] += 1; self.save()

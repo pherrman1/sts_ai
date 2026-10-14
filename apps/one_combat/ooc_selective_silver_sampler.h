@@ -6,7 +6,7 @@ namespace sts::search { struct CombatValueNet; }
 
 namespace one_combat {
 
-// Audit only: prior E2k or plain10k. The caller pins the model identity and
+// Audit only: prior E2500 or plain10k. The caller pins the model identity and
 // keeps the borrowed policy net alive for the lifetime of the sampler.
 std::shared_ptr<const CombatTransitionSampler> auditNativeSilverSampler(
     int simulations, const sts::search::CombatValueNet *net, bool prior);

@@ -203,8 +203,8 @@ public:
 
 std::shared_ptr<const CombatTransitionSampler> auditNativeSilverSampler(
         int simulations, const S::CombatValueNet *net, bool prior) {
-    if (!((simulations == 2000 && prior) || (simulations == 10000 && !prior)))
-        throw std::invalid_argument("audit_native_silver:requires_prior2k_or_plain10k");
+    if (!((simulations == 2500 && prior) || (simulations == 10000 && !prior)))
+        throw std::invalid_argument("audit_native_silver:requires_prior2500_or_plain10k");
     if (!S::nativeSilverBackendInstalled() || !S::nativeSilverExactRootBudgets())
         throw std::runtime_error("audit_native_silver:requires_native_exact_backend");
     if (prior && (!net || !net->loaded() || !net->isPolicy || S::nativeSilverRootPriorPath().empty()

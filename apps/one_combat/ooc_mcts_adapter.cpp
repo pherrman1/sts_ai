@@ -2721,7 +2721,7 @@ nlohmann::json oocSelectiveSilverAuditSpec() {
     struct EnabledScope { bool saved = liveEnabled; ~EnabledScope() { liveEnabled = saved; } } scope;
     liveEnabled = false;
     return {{"sourcePolicy", selectiveAuditSourcePolicy()}, {"ctmLoadedIdentity", hybrid->fastRuntime().identity()},
-        {"mcts", mcts}, {"mapScreenEnum", int(sts::ScreenState::MAP_SCREEN)}};
+        {"mcts", mcts}, {"mapScreenEnum", int(sts::ScreenState::MAP_SCREEN)}, {"silverSimulations", 2500}};
 }
 int oocSelectiveSilverAuditGen(std::uint64_t seed, const std::string &plan, const std::string &out) {
     requireReplaySingleThread();
