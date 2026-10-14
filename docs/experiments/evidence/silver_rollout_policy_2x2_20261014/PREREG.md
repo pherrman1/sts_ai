@@ -30,10 +30,20 @@ production budget and is reported with the same labels.
 - `*-g6`: gen-6 tree prior (`combat_policy_mlp_g6_E.txt`, sha256 `ca9bd7f2…3228`), K = 8, weight 400,
   settings as §476. `*-none`: no prior.
 
-**Required code change before freeze:** the flag is read once per process (`static` in
-`SilverSearcher.cpp`). `ctmsilvergen` runs all arms in one process, so the rollout policy must become a
-per-searcher option (set per arm) before the arms can be compared in one run. Until then the harness
-cannot run `U-*` and `G-*` together. This is the only code change planned.
+**Rollouts-per-leaf arms (added 2026-10-14 22:35Z, Philipp's card choice "Both"):** greedy policy with k
+independent playouts averaged per leaf (`STS_SILVER_ROLLOUTS_PER_LEAF=k`, commit `d5e60d64`), at budgets that keep
+the number of rollouts per decision equal to `G-none` at 2500: `G2-*` = k 2 at 1250 sims and `G4-*` = k 4 at 625
+sims (with and without the gen-6 prior, as the harness pairs them). Secondary contrasts: `G2-none − G-none@2500`
+and `G4-none − G-none@2500` (score, win rate, HP lost, CPU per fight). Smoke hint only (32 full A20 runs,
+74071458–489, not evidence): k 4 at 625 matched k 1 at 2500 on mean floor (30.5 vs 30.5) at about 55% CPU;
+k 1 at 10000 did not beat k 1 at 2500 there either, so full runs at that size do not resolve these arms.
+
+**Process layout (no per-searcher option needed):** the rollout settings are process-wide, so each setting runs
+as its own `ctmsilvergen` process on the same seeds: (UNIFORM 0, PER_LEAF 1, sims 10000,2500), (UNIFORM 1,
+sims 10000,2500), (PER_LEAF 2, sims 1250), (PER_LEAF 4, sims 625). The coordinator reports that pairing holds
+across processes because redraw and planner seeds depend only on (seed, fightIdx, k); the smoke checks it by
+requiring every process's control replay to reproduce the same source fights. If it does not, the run is not
+launched.
 
 ## Frozen inputs (to fill at freeze)
 - Code: branch `claude/project-thread-8vmyta`, commit = freeze SHA (per-arm option commit on top of
@@ -42,9 +52,9 @@ cannot run `U-*` and `G-*` together. This is the only code change planned.
 - Environment: as `silver_gen6_a20_sweep_476_20261014/env.sh` (§476), with `STS_CTMSILVER_ARMSET` set to the
   new armset name, and `STS_SILVER_ESCAPE_PENALTY` / ADR-0035 leaf terms at their defaults (pinned in the
   frozen env file; ADR-0036 escape penalty `12,35` if #549 has merged, else the default at freeze).
-- Teacher: the flat exact-10k teacher used by §476 (`tools/silver_synth_teacher.py`). **Blocker:** the §476
-  teacher file (sha256 in its FROZEN.txt, `775245…db`) is not in this container. Its path is requested from the
-  §476 thread; the coordinator relays it.
+- Teacher: generated per binary with `tools/silver_synth_teacher.py <code sha> <one_combat> teacher.json`, then
+  `ooc_policy` filled from `one_combat vwinrefreshpolicyspec` under the frozen env, as §476's `run.sh`
+  (teacher_id `silver-flat-exact10k-synth-<sha8>`; `STS_EXECUTABLE_GIT_SHA` must equal the code sha).
 - Seeds: run seeds **105000000–105000999** (coordinator block 105M, reserved; §479 for the write-up).
   Smoke seeds **74071450–74071457** already used (2026-10-14 CPU smoke, not evidence). Remaining smoke
   seeds: 74071458–74071499.
