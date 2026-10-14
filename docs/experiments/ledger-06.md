@@ -17933,3 +17933,35 @@ online Collector-only paired check (needs Philipp's go). No default change.
 (author) and 74069050–74069062 (reviewer) are now used.
 
 **Knowledge impact:** `architecture/combat-search.md` documents `silverazfocusgen`.
+
+## §469 — Collector-specific Silver MLP prior online: NOT_SHOWN, +0.43 fight score [−1.39, +2.28] vs gen 4 (2026-10-14)
+
+**Question (Philipp 12:27Z, "Online check"):** does the §467 Collector prior (`combat_policy_mlp_collector467.txt`,
+d78f80c9…, offline CANDIDATE) play the Collector fight better than the general gen-4 MLP (3ebeab9d…)?
+**Design:** [PREREG](evidence/silver_fight_specific_collector_20261014/eval469/PREREG.md), reviewed before launch.
+New mode `one_combat silverfocusevalgen` (PR #531, code `0ce7bc4e`, binary `755be7be…02a7`): the Collector is
+forced as act-2 boss and reached with the gen-4 prior at 2k (root bonus on); at the Collector, 8 copies of the
+fight (copy 0 natural, copies 1–7 a fresh battle seed), each played by both arms at 2k flat exact Silver, K = 8,
+w = 400, with the same battle seed and planner seed per copy (A = B smoke gives identical rows). Seeds
+99000000–99000999, 4 cloud workers (Philipp 13:11Z). Fight score as §460, per-seed mean over copies, B − A paired
+per seed, bootstrap over seeds; HELPS / HURTS if the CI excludes 0, else NOT_SHOWN.
+**Result: NOT_SHOWN.** 250/250 units rc 0, no stalls, no dropped units; 1,000 seeds completed, 795 reached the
+Collector; 6,360 paired copies, 0 invalid.
+
+| metric (795 seeds) | gen 4 (A) | Collector prior (B) | B − A [95% CI] |
+|---|---|---|---|
+| **fight score** | 215.19 | 215.62 | **+0.43 [−1.39, +2.28]** |
+| death rate | 20.57% | 20.50% | −0.06 pp [−0.79, +0.66] |
+| CPU s per fight | 1.405 | 1.409 | +0.004 [−0.005, +0.014] |
+
+**Interpretation:** the −0.0125 CE offline gain (about two loop generations on this fight) does not show in play at
+2k; the CI rules out gains above about +2.3 fight score (§460's gen 3 vs plain at matched CPU was +1.50). This
+matches §460, where gen 3 vs gen 1, two loop generations apart, was +0.14 NOT_SHOWN online. **Inference:** at this
+size, CE gains of about 0.01 on visit-share targets are too small to move fight outcomes measurably; the
+fight-specific line is not worth a per-fight net. Not tested: 10k play, other bosses. No default change.
+
+**Evidence:** [packet](evidence/silver_fight_specific_collector_20261014/eval469/README.md). Raw:
+`/mnt/project-files/silver-prior-fight-specific/eval469/`. Seeds 99000000–99000999 and smokes 74070250–74070277
+(author) and 74070300–74070319 (reviewer) are now used.
+
+**Knowledge impact:** `architecture/combat-search.md` documents `silverfocusevalgen`.
