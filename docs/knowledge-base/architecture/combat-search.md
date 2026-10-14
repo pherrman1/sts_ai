@@ -372,6 +372,11 @@ Generation 3 (self-play with gen 2, then gen 3 as prior;
 `/mnt/project-files/silver-az-mlp/gen3/model/`) beat plain 2,300 by +1.50
 [+0.94, +2.09] on 3,275 fights at 1.06x plain 2k but was not shown better than
 generation 1 (+0.14 [−0.39, +0.66]) (§460).
+Generations 4–6 raised the self-play teacher to 10k, 20k and 40k simulations and were gated offline
+only (orig fold-4 CE 1.2103, 1.1954, then 1.1749); generation 6 is the v2 model with encounter and
+monster tables, trained from scratch with distillation from a 512/256 net
+(`/mnt/project-files/silver-az-mlp/gen6/model/combat_policy_mlp_g6_E.txt`; §465, §477, §478). Their
+play strength is not measured.
 Self-play data for later generations comes from `one_combat silverazgen N SIMS
 ASC OUT_PREFIX SEED natural|perturbed TREE_MIN_VISITS ROOT_BONUS`: the
 `silversynthgen` runs and root/fight rows without the second teacher,
