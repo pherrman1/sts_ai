@@ -508,8 +508,9 @@ health failure. With that fixed, the authorized
 on fresh seeds completed: Silver8 beats the baseline OOC MAP choice on the
 plain10k-Silver surrogate reference (+0.0225 [+0.0064,+0.0404], 8 sources,
 15 roots). CTM rescoring with up to 4096 futures reaches nearly the same
-(Silver8−matched +0.0038, interval includes zero) at about half the CPU, so a
-compute-matched Silver advantage is not shown. Pre-ADR-0035/0036 Silver.
+(Silver8−matched +0.0038, interval includes zero) at about 0.6× the CPU, so a
+compute-matched Silver advantage is not shown. The reference is plain10k Silver
+and may share Silver's biases. Pre-ADR-0035/0036 Silver.
 No training/default promotion.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver

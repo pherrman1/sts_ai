@@ -42,9 +42,13 @@ matched CTM arm hit its 4096-pair ceiling at 0.44–1.01× Silver cost (14 of 15
 roots below 0.9), and Silver8 − matched CTM includes zero.
 
 **Inference:** much of Silver8's edge over CTM8 looks like 8-future sampling
-noise in CTM. CTM rescoring with up to 4096 futures, at roughly half of
-Silver's CPU, nearly reaches Silver8. The effect sits on few roots: two roots
-contribute +0.12 and +0.13, and three roots are negative.
+noise in CTM. CTM rescoring with up to 4096 futures, at about 0.6× Silver's
+CPU (0.44–1.01×, median 0.63×), nearly reaches Silver8.
+
+The effect is not carried by one root. Raw root differences reach +0.12 and
++0.13, but under equal source weighting those roots add only +0.005 and
++0.008 to the +0.0225. The largest single contribution is source
+106000001's only root (raw +0.074, weighted +0.009). Three roots are negative.
 
 ## Limitations
 

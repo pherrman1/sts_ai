@@ -18406,13 +18406,29 @@ health count changed. Exact-prefix cloud replay of 97151011/97151010 only.
 Fix accepts it like source/live combats; both sources then complete. Run-2
 verdict unchanged; a new cohort needs a new freeze and authorization.
 
-Run 3 ([results](evidence/ooc_selective_silver_audit_20261014/run-3/RESULTS.md)),
-authorized by Philipp 22:34Z after the fix: producer 68684054 (reviewed), freeze
-05187c0e, fresh canary 106000000 (CANARY_VALID) and cohort 106000001–106000008,
-all complete, 3361.62 CPU s total; reports reproduce exactly. Verdict
-`DECISION_AUDIT_MEASURED`, 15 roots (8/5/2 by act). Silver8−baseline +0.0225
-[+0.0064,+0.0404] (directional improvement shown); CTM8−baseline +0.0014
-[−0.0156,+0.0175]; matched CTM−baseline +0.0186 [+0.0045,+0.0371];
-Silver8−matched +0.0038 [−0.0026,+0.0135]. Matched-CPU not resolved (4096-pair
-ceiling below 0.9× Silver cost at 14/15 roots). Surrogate utility, Silver
-reference, pre-ADR-0035/0036 Silver; no training/default claim.
+## §485 Selective A20 OOC-choice audit, gen6 E2500 run 3 after the Discovery fix (2026-10-14)
+
+**Verdict:** `DECISION_AUDIT_MEASURED`; directional improvement of Silver8 over
+the baseline choice shown, matched-CPU claim not resolved.
+[Results](evidence/ooc_selective_silver_audit_20261014/run-3/RESULTS.md).
+Philipp authorized the rerun (22:34Z) after the §479 root cause (played
+Discovery rejected as a health failure). Protocol as §479 plus the run-3
+addendum: Discovery terminal fix, fresh seeds. Runs 1/2 stay excluded.
+
+Producer 686840547577c5ff55ad77de28da4a4700c81584 (reviewed), binary
+ae05716b…, freeze 05187c0e…; PR539-chain base, so Silver has no ADR-0035 leaf
+terms or ADR-0036 escape penalty. Canary 106000000 CANARY_VALID; cohort
+106000001–106000008 all complete, no failure or retry; 3361.62 CPU s including
+canary. Canary and cohort reports reproduce byte-exactly (also independently).
+
+15 roots (Act1/2/3 = 8/5/2). Equal-source plain10k-reference utility, 5000
+source-cluster bootstrap resamples: Silver8−baseline +0.0225 [+0.0064,+0.0404];
+CTM8−baseline +0.0014 [−0.0156,+0.0175]; matched CTM−baseline +0.0186
+[+0.0045,+0.0371]; Silver8−CTM8 +0.0210 [+0.0018,+0.0443]; Silver8−matched
++0.0038 [−0.0026,+0.0135]. Matched CTM hit its 4096-pair ceiling at 0.44–1.01×
+Silver cost (median 0.63×; 14/15 roots below 0.9). Largest single equal-weight
+contribution +0.009 (one Act1 root). The reference is plain10k Silver and may
+share Silver's biases; surrogate checkpoint utility, not run wins; eight-source
+pilot with nominal intervals. No training, default or gameplay claim.
+
+**Knowledge impact:** current research updated; measured evidence packet.
