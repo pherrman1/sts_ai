@@ -18141,11 +18141,13 @@ non-inferiority at 10 pp.
 | pick = top prior / top Q | 78.2% / 50.2% | 75.9% / 50.8% | |
 
 **Interpretation:**
-- The leaf combats are still worth their cost: dropping them loses runs (NOT_NONINFERIOR_AT_10PP too) while saving
-  about 63% of wall time.
-- The tree is equally deep in both arms (same depth, simulations and pick agreement), so the rollouts do not shape
-  the search; they improve the leaf value. **Inference:** the native win model at the next map screen misses
-  consequences that show in the next few fights. Boss deaths 30 vs 16 are descriptive, not pre-registered.
+- Dropping the leaf combats loses runs (NOT_NONINFERIOR_AT_10PP too) while saving about 63% of wall time; rollout3
+  stays, per the prereg rule.
+- Aggregate tree depth, simulations per run and root pick agreement are about the same in both arms, so the loss does
+  not come from a shallower search. **Inference:** the leaf value at the next map screen, without the three combats,
+  is the likely cause; it misses consequences that show up in the next few fights. Leaf-value quality was not
+  measured, and on the 38 discordant seeds the arms play different games. Boss deaths 30 vs 16 are descriptive, not
+  pre-registered.
 - No change; `LEAF_COMBATS=3` stays in the OOC MCTS research configuration (the code default of the knob remains 0,
   and OOC MCTS stays off by default, ADR-0027). Philipp decides what comes next.
 

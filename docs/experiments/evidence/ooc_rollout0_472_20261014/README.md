@@ -40,10 +40,11 @@ and `=3` in all 128 `rollout3` units. All logs print `"simulations":4096` and th
 ## Reading
 
 - Dropping the three leaf combats costs runs: the CI excludes zero and excludes a loss smaller than 3.1 pp.
-- It saves a lot of CPU (wall-time sum ratio 0.37, MCTS CPU ratio 0.29), but the search is not shallower or
-  differently shaped without them: tree depth, simulations and pick agreement are almost the same. So the rollout
-  combats matter for the quality of the leaf value, not for how deep the tree gets. **Inference:** the native win
-  model valued at the next map screen misjudges states whose consequences show only in the next few fights.
+- It saves a lot of CPU (wall-time sum ratio 0.37, MCTS CPU ratio 0.29). Aggregate tree depth, simulations per run
+  and root pick agreement are about the same in both arms, so the loss does not come from a shallower search.
+  **Inference:** the leaf value at the next map screen, without the three combats, is the likely cause; it misses
+  consequences that show up in the next few fights. Leaf-value quality was not measured, and on the 38 discordant
+  seeds the arms play different games.
 - Descriptive only: rollout0 lost 14 more runs on boss floors (30 vs 16 boss deaths), most at the Act 2 and Act 3
   bosses.
 - `rollout3` won 84.4% here (§464 `rulesmerge` 83.6% on 93M seeds with the planner rollout shop).

@@ -679,7 +679,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `MAX_DEPTH` |512|integer1..512; fail-closed technical safety cap, not a value horizon|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
-| `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint; with the ADR-0031/0032 defaults at §433 `combo` settings, 0 loses runs vs 3 (−12.5 pp [−21.9, −3.1], about 0.37x wall time, same tree depth; §472)|
+| `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint; at A0 with the ADR-0031/0032 defaults at §433 `combo` settings, 0 loses runs vs 3 (−12.5 pp [−21.9, −3.1], about 0.37x wall time, same tree depth; §472)|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
 | `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
 | `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
