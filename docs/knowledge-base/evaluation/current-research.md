@@ -500,8 +500,11 @@ with the underlying exception erased. Six remaining sources never launch.
 No teacher-quality conclusion or gen6-specific attribution is supported.
 The audit-only fork callback now transports bounded errors and retains failure
 cost/candidate/future metadata, with real seed-free tests. Original data and
-verdict stay sealed; one separately authorized diagnostic replay is the next
-useful evidence before another cohort. No training/default promotion.
+verdict stay sealed. A later exact-prefix replay of the two failed sources
+[found the cause](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-2/ROOT_CAUSE.md):
+the audit sampler rejected a played Discovery (`undefinedBehaviorEvoked`) as a
+health failure. With that fixed both sources complete; another cohort still
+needs a new freeze and authorization. No training/default promotion.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production

@@ -89,7 +89,9 @@ struct NativeScope {
 };
 
 Outcome terminalOutcome(const sts::BattleContext &bc, int decisions, int before, int after) {
-    if (before != after || bc.undefinedBehaviorEvoked) unsupported("simulator_health_failure");
+    // undefinedBehaviorEvoked only marks a played Discovery (known card
+    // limitation, not a health failure); source and live combats accept it.
+    if (before != after) unsupported("simulator_health_failure");
     if (bc.outcome == sts::Outcome::UNDECIDED) unsupported("undecided_combat");
     // A valid start-of-combat effect may finish before the first decision.
     if (decisions == 0 && bc.turn != 0) unsupported("missing_combat_decision_hook");
@@ -271,6 +273,9 @@ int auditNativeSilverSamplerSelfTest() {
             require(rejected, message);
         };
         rejects([&] { terminalOutcome(control, 1, 0, 1); }, "health failures rejected");
+        control.undefinedBehaviorEvoked = true;
+        require(terminalOutcome(control, 1, 0, 0) == Outcome::ESCAPE, "played Discovery accepted");
+        control.undefinedBehaviorEvoked = false;
         rejects([&] { checkedRaw(Outcome::ESCAPE, control, {}, 0); }, "missing RAW rejected");
 
         NativeScope restore(false, nullptr, 0);

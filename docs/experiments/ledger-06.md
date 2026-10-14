@@ -18398,3 +18398,10 @@ is proposed but requires new authorization; no further game seeds executed.
 
 **Knowledge impact:**failed evidence/current research and maintained opt-in
 error transport. No conditional utility result, OOC teacher winner or promotion.
+
+Root cause (later replay, [details](evidence/ooc_selective_silver_audit_20261014/run-2/ROOT_CAUSE.md)):
+both failures are the audit sampler rejecting `undefinedBehaviorEvoked`, set
+only when a continuation plays Discovery, as `simulator_health_failure`; no
+health count changed. Exact-prefix cloud replay of 97151011/97151010 only.
+Fix accepts it like source/live combats; both sources then complete. Run-2
+verdict unchanged; a new cohort needs a new freeze and authorization.
