@@ -379,8 +379,15 @@ generation 1 (+0.14 [−0.39, +0.66]) (§460).
 Generations 4–6 raised the self-play teacher to 10k, 20k and 40k simulations and were gated offline
 only (orig fold-4 CE 1.2103, 1.1954, then 1.1749); generation 6 is the v2 model with encounter and
 monster tables, trained from scratch with distillation from a 512/256 net
-(`/mnt/project-files/silver-az-mlp/gen6/model/combat_policy_mlp_g6_E.txt`; §465, §477, §478). Their
-play strength is not measured.
+(`/mnt/project-files/silver-az-mlp/gen6/model/combat_policy_mlp_g6_E.txt`; §465, §477, §478). At A20, gen 6
+at K = 8 beat plain Silver at equal simulations at 2,500 (+3.85 fight score [+1.23, +6.52]) and
+625 (+2.56 [+0.40, +4.74]) but not at 10,000 (+0.73 [−1.45, +2.91]), and was not shown better
+than gen 5 at any budget (§476).
+`STS_CTMSILVER_ARMSET=mlpsweep` (§476) instead runs, for every budget in
+`STS_CTMSILVER_SWEEP_SIMS`, `plain<b>`, `mlp<b>` (K = 8, `STS_CTMSILVER_MLP_PRIOR`)
+and `mlpprev<b>` (`STS_CTMSILVER_MLP_PRIOR_PREV`); it is the only armset that
+accepts Ascension 20, and `STS_CTMSILVER_HALLWAY_EVERY = n` replays only about
+one normal fight in n (hash of seed and fight index).
 Self-play data for later generations comes from `one_combat silverazgen N SIMS
 ASC OUT_PREFIX SEED natural|perturbed TREE_MIN_VISITS ROOT_BONUS`: the
 `silversynthgen` runs and root/fight rows without the second teacher,
