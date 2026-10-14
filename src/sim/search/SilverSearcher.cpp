@@ -687,6 +687,17 @@ namespace {
         }();
         return count;
     }
+
+    // STS_SILVER_ROLLOUTS_PER_LEAF=k (research): average k greedy playouts per leaf.
+    // 1 (default) is the production single rollout; ignored when uniform rollouts are on.
+    int greedyRolloutCount() {
+        static const int count = [] {
+            const char *raw = std::getenv("STS_SILVER_ROLLOUTS_PER_LEAF");
+            const int k = raw != nullptr && *raw != '\0' ? std::atoi(raw) : 1;
+            return std::clamp(k, 1, 64);
+        }();
+        return count;
+    }
 }
 
 double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
@@ -702,17 +713,18 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
     }
     const int uniform = uniformRolloutCount();
+    const int playouts = uniform > 0 ? uniform : greedyRolloutCount();
     double value = 0;
-    if (uniform <= 1 || bc.outcome != Outcome::UNDECIDED) {
-        value = playoutToEnd(bc, treeDepth, uniform == 1);
+    if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
+        value = playoutToEnd(bc, treeDepth, uniform > 0);
     } else {
-        // Research: average `uniform` independent uniform-random playouts from this leaf.
+        // Research: average `playouts` independent playouts from this leaf.
         const BattleContext start = bc;
-        for (int i = 0; i < uniform; ++i) {
+        for (int i = 0; i < playouts; ++i) {
             BattleContext run = start;
-            value += playoutToEnd(run, treeDepth, true);
+            value += playoutToEnd(run, treeDepth, uniform > 0);
         }
-        value /= uniform;
+        value /= playouts;
     }
     if (leafSample >= 0) leafSamples->samples[leafSample].value = value;
     return value;
