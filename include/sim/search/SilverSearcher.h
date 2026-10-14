@@ -24,6 +24,19 @@ namespace sts::search {
         // Research-only, supplied by the backend only for an A0 Act-3 cutoff.
         // Final boss wins have no subsequent run-resource utility.
         bool finalBossBinary = false;
+        // Research-only (STS_SILVER_FINAL_FIGHT_LEAF), set by the backend only
+        // when a victory ends the run: no HP, potion, gold, max-HP, speed or
+        // cheat-death utility after the fight, and a loss keeps no potion credit.
+        bool finalFightLeaf = false;
+        // False when no act-transition heal follows the act-boss room: the
+        // first of the two A20 act-3 bosses goes straight into the second.
+        bool actHealFollows = true;
+        // Research-only (STS_SILVER_NO_LOSS_POTION_CREDIT): a loss earns no
+        // credit for potions still held.
+        bool noLossPotionCredit = false;
+        // Research-only (STS_SILVER_RELIC_HEAL_LEAF): victory HP includes the
+        // post-combat relic heals (Meat on the Bone, Burning Blood, Black Blood).
+        bool relicHealLeaf = false;
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
