@@ -43,6 +43,12 @@ namespace sts::search {
             bool exactRootBudgets = false;   // flat budget without the boss multiplier
             bool searchSingletonRoots = false;
             bool finalBossBinary = false;
+            // ADR-0035: the situational leaf terms are on by default; =0 restores the legacy leaf.
+            bool finalFightLeaf = true;      // STS_SILVER_FINAL_FIGHT_LEAF (off when FINAL_BOSS_BINARY=1 and unset)
+            bool noLossPotionCredit = true;  // STS_SILVER_NO_LOSS_POTION_CREDIT
+            bool relicHealLeaf = true;       // STS_SILVER_RELIC_HEAL_LEAF
+            bool a20BossHealFix = true;      // STS_SILVER_A20_BOSS_HEAL_FIX (0 restores the old credit)
+            bool stopAfterAct3 = false;      // STS_STOP_AFTER_ACT=3: the act-3 boss ends the run
             double topGap = kDefaultTopGap;
             double escapePenalty = 0;
             double eliteEscapePenalty = 0;
@@ -420,6 +426,23 @@ namespace sts::search {
             context.eliteRewards = gc.isEliteTriggerCombat();
             context.finalBossBinary = g_options.finalBossBinary && gc.ascension == 0
                 && gc.act == 3 && gc.curRoom == Room::BOSS;
+            {
+                // A victory ends the run: the Heart, or the last act-3 boss
+                // (the second at A20) when no Act 4 follows.
+                const bool lastAct3Boss = gc.act == 3 && gc.curRoom == Room::BOSS
+                    && (gc.ascension < 20 || bc.encounter == gc.secondBoss);
+                const bool act4Follows = !g_options.stopAfterAct3 && gc.hasKey(Key::RUBY_KEY)
+                    && gc.hasKey(Key::EMERALD_KEY) && gc.hasKey(Key::SAPPHIRE_KEY);
+                const bool runEnding = (lastAct3Boss && !act4Follows)
+                    || (gc.act == 4 && bc.encounter == MonsterEncounter::THE_HEART);
+                const bool leafOn = g_nativeSilverFinalFightLeafOverride.value_or(g_options.finalFightLeaf);
+                context.finalFightLeaf = leafOn && runEnding;
+                // The first A20 act-3 boss goes straight into the second: no act heal.
+                context.actHealFollows = !(g_options.a20BossHealFix && gc.act == 3 && gc.ascension >= 20
+                    && gc.curRoom == Room::BOSS && bc.encounter != gc.secondBoss);
+                context.noLossPotionCredit = g_options.noLossPotionCredit;
+                context.relicHealLeaf = g_options.relicHealLeaf;
+            }
 
             // Budget policy: the process options, or this thread's override.
             const auto &budgetOverride = g_nativeSilverBudgetOverride;
@@ -832,6 +855,30 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_FINAL_BOSS_BINARY must be 0 or 1");
             g_options.finalBossBinary = value == "1";
         }
+        // The research A0 binary objective replaces the final-fight leaf unless both are requested.
+        g_options.finalFightLeaf = !g_options.finalBossBinary;
+        if (const char *raw = std::getenv("STS_SILVER_FINAL_FIGHT_LEAF")) {
+            const std::string value(raw);
+            if (value != "0" && value != "1")
+                throw std::runtime_error("STS_SILVER_FINAL_FIGHT_LEAF must be 0 or 1");
+            g_options.finalFightLeaf = value == "1";
+        }
+        for (const auto &[name, flag] : {std::pair<const char *, bool *>{"STS_SILVER_NO_LOSS_POTION_CREDIT", &g_options.noLossPotionCredit},
+                                          {"STS_SILVER_RELIC_HEAL_LEAF", &g_options.relicHealLeaf},
+                                          {"STS_SILVER_A20_BOSS_HEAL_FIX", &g_options.a20BossHealFix}}) {
+            if (const char *raw = std::getenv(name)) {
+                const std::string value(raw);
+                if (value != "0" && value != "1")
+                    throw std::runtime_error(std::string(name) + " must be 0 or 1");
+                *flag = value == "1";
+            }
+        }
+        {
+            const char *horizon = std::getenv("STS_STOP_AFTER_ACT");
+            g_options.stopAfterAct3 = horizon && std::string(horizon) == "3";
+        }
+        if (g_options.finalBossBinary && g_options.finalFightLeaf)
+            throw std::runtime_error("STS_SILVER_FINAL_BOSS_BINARY and STS_SILVER_FINAL_FIGHT_LEAF are exclusive");
         if (g_options.finalBossBinary) {
             const char *horizon = std::getenv("STS_STOP_AFTER_ACT");
             if (!horizon || std::string(horizon) != "3" || !g_options.exactRootBudgets
@@ -998,6 +1045,7 @@ namespace sts::search {
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
+    thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
