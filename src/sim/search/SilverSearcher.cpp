@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
+#include <random>
 #include <limits>
 #include <stdexcept>
 #include <unordered_set>
@@ -673,6 +675,18 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
     return &chance.edges.back();
 }
 
+namespace {
+    // STS_SILVER_ROLLOUT_UNIFORM=1 swaps the greedy rollout policy for uniform random
+    // legal actions. Default off; read once per process.
+    bool uniformRolloutPolicy() {
+        static const bool enabled = [] {
+            const char *raw = std::getenv("STS_SILVER_ROLLOUT_UNIFORM");
+            return raw != nullptr && *raw != '\0' && std::atoi(raw) != 0;
+        }();
+        return enabled;
+    }
+}
+
 double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     int rolloutDepth = 0;
     int leafSample = -1;
@@ -688,7 +702,10 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     }
     while (bc.outcome == Outcome::UNDECIDED) {
         Action action;
-        if (bc.inputState == InputState::PLAYER_NORMAL) {
+        if (uniformRolloutPolicy() && (bc.inputState == InputState::PLAYER_NORMAL
+                || bc.inputState == InputState::CARD_SELECT)) {
+            action = chooseUniformRolloutAction(bc);
+        } else if (bc.inputState == InputState::PLAYER_NORMAL) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
             // the hidden intent through its END_TURN chance node.
@@ -706,6 +723,21 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     const double value = evaluateEndState(bc);
     if (leafSample >= 0) leafSamples->samples[leafSample].value = value;
     return value;
+}
+
+search::Action search::SilverSearcher::chooseUniformRolloutAction(BattleContext &bc) {
+    if (bc.inputState == InputState::PLAYER_NORMAL) {
+        rolloutAgent.materializeHiddenIntents(bc);
+    }
+    Node scratch;
+    enumerateActionsForNode(scratch, bc);
+    if (scratch.edges.empty()) {
+        return bc.inputState == InputState::CARD_SELECT
+                ? Action(ActionType::MULTI_CARD_SELECT, 0)
+                : Action(ActionType::END_TURN);
+    }
+    std::uniform_int_distribution<std::size_t> dist(0, scratch.edges.size() - 1);
+    return scratch.edges[dist(rolloutAgent.rng)].action;
 }
 
 void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleContext &bc) {
