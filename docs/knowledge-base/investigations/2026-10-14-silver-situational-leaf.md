@@ -1,7 +1,7 @@
 # Situational Silver leaf evaluation
 
 **Status:** open (four candidates implemented, tested alone (§466), as a bundle (§468) and the end-of-run pair (§474)). **Last verified:** 2026-10-14
-against `f41ec4d3`.
+against `7a6c6bb9` (§474 code).
 
 ## Symptom and scope
 
@@ -30,12 +30,13 @@ The question is which run circumstances make parts of that score meaningless.
 - **Bundle of all four (§468, whole runs, 500 paired seeds each).** A0 Δwin −2.6 pp [−6.4, +1.2]
   NOT_SHOWN; A20 Δfloor −1.29 [−2.42, −0.19] WORSE, but A20 wins 52 → 71 (+3.8 pp [+0.6, +7.0]).
   The A20 bundle dies more in act 1 (paired 50 vs 26) and less at the final bosses. **Inference:**
-  the every-fight terms (loss potion credit, relic heal) cost early fights, the end-of-run terms
-  (heal fix, final-fight leaf) help at the A20 final bosses. **Open question:** the terms were not
-  tested separately.
+  the every-fight terms (loss potion credit, relic heal) cost early fights. ~~The end-of-run terms
+  (heal fix, final-fight leaf) help at the A20 final bosses.~~ *Superseded by §474:* alone they gave
+  only +5 A20 wins (n.s.), and floor-50 deaths rose 52 → 57. ~~**Open question:** the terms were not
+  tested separately.~~ *Answered by §474.*
 - **End-of-run parts alone (§474, 500 paired seeds each).** Heal fix + final-fight leaf vs legacy:
   A0 Δwin +0.8 pp [−1.2, +3.0], A20 Δfloor 0.00 (wins 42 → 47), both NOT_SHOWN; play is identical
-  before floor 50. So the §468 act-1 losses came from the every-fight terms. The heal fix stays
+  before floor 50. **Inference:** so the §468 act-1 losses came from the every-fight terms. The heal fix stays
   default on; the three opt-ins stay off.
 - **Eliminated / not proposed:** dynamic potion keep-value before hard fights (ledger-02, §35,
   `STS_POTION_SAVE`: −3..−9 pp); v_win terminal pricing (§385, −8.6 pp); HP before a rest site

@@ -18203,11 +18203,11 @@ seeds 100000500–100000999, 8 workers (Philipp's pick). Primary A0 Δwin, A20 �
 - Descriptive: both arms play every seed identically until floor 50 (the options act only in the A20 first act-3
   boss and the run-ending fight). At A20, deaths at floor 50 rise 52 → 57 and second-boss deaths fall 66 → 56.
 
-**Interpretation:** the end-of-run parts change only the final one or two fights, and their effect there is at most a
-few wins per 500 runs. **Inference:** the §468 act-1 deaths (paired 50 vs 26) came from the every-fight parts (no
-loss potion credit, relic heal leaf), since the `end` arm leaves play before floor 50 unchanged; most of §468's A20
-win gain (+19) did not come from the end-of-run parts (+5 here), so it was the every-fight parts' changed trajectories
-or noise.
+**Interpretation:** the end-of-run parts change only the final one or two fights. The intervals exclude gains above
+about 3.0 pp (A0) and 2.4 pp (A20); the point estimate (+5 A20 wins) is about a quarter of §468's A20 win gain (+19),
+but the intervals (and the different seeds) cannot rule out that the end-of-run parts made up most of it.
+**Inference:** the §468 act-1 deaths (paired 50 vs 26) came from the every-fight parts (no loss potion credit, relic
+heal leaf), since the `end` arm leaves play before floor 50 unchanged.
 
 **Decision (pre-registered):** NOT_SHOWN in both cohorts: no default change; the A20 heal fix stays default on (A20
 not WORSE), the final-fight leaf and the two every-fight options stay off.
