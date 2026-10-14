@@ -45,7 +45,8 @@ If the watcher ends on `units done: n/m` with n < m, or on `STOP`, report the la
 ## 3. Stalls, crashes, restarts
 
 * **Stall:** a unit's `.log` has not grown for 60 min while its `one_combat` runs: take a backtrace
-  (`gdb -p <pid> -batch -ex "thread apply all bt" > $HOME/x468-wWW/out/stall-<unit>.txt`; find the pid of the
+  (`gdb -p <pid> -batch -ex "thread apply all bt" > $HOME/x468-wWW/out/stall-<unit>.txt`, where `<unit>` is the
+  unit's file stem, e.g. `all-a20-98000507`; this file is how the analysis drops the seed; find the pid of the
   `one_combat` process, not `seed_guard`, with `pgrep -af "one_combat.*bestbench"` and match the seed), then kill that
   one `one_combat`. No rerun, no replacement seed. The unit then gets a `.done` with its rc and the run finishes normally.
 * **Crash or nonzero rc:** do not retry. The unit's rc is in its `.done` and in `DONE.txt`; report it.
@@ -56,6 +57,15 @@ If the watcher ends on `units done: n/m` with n < m, or on `STOP`, report the la
 ## 4. Report
 
 Reply once in your thread with the first line of `FROZEN.txt` and the content of
-`/mnt/project-files/silver-leaf-468/wWW.DONE.txt` up to the `.csv` hash lines plus its `tar_sha256` line. Keep your
-session alive (re-arm the watcher, or a plain `sleep 3600` loop after the upload) until the planning thread or
-coordinator confirms the tar is readable from another container. Do not analyze.
+`/mnt/project-files/silver-leaf-468/wWW.DONE.txt` up to the `.csv` hash lines plus its `tar_sha256` line. Do not
+analyze.
+
+## 5. Stay alive until told to stop
+
+Right after the report, start this with `run_in_background: true` and the maximum timeout (2 h), and re-arm it every
+time it hits its limit:
+```sh
+until [ -f $HOME/x468-stop ]; do sleep 60; done
+```
+Keep doing that until the coordinator or planning thread tells you to create `$HOME/x468-stop` (after they verified
+your tar from another container). Then run `touch $HOME/x468-stop`, let the watcher end, and stop.

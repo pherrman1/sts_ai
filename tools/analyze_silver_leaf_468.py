@@ -11,8 +11,10 @@ Primary A0: win-rate difference all - base. Primary A20: floor-reached differenc
 seed bootstrap 95% CI (10,000 resamples, seed 468): BETTER when the lower bound > 0, WORSE when the upper bound < 0,
 otherwise NOT_SHOWN. Secondary (descriptive): the other metric per cohort, exact McNemar, end HP, boss deaths, seconds.
 
-Validity: a unit with rc != 0 is allowed only when its log names a ``[bestbench-seed-failure]``; such seeds drop out of
-that cohort's pairs. Any other gap, failure or non-cohort row labels the result INVALID.
+Validity: a unit with rc != 0 is allowed only when its log names a ``[bestbench-seed-failure]``, it hit the 4 h
+timeout (rc=124), or the worker recorded a stall (``stall-ARM-aASC-SEED.txt`` next to it, then killed it); such seeds
+drop out of that cohort's pairs and are counted. Every unit's ``.env`` must set the four leaf options to its arm's
+value. Any other gap, failure, wrong ``.env`` or non-cohort row labels the result INVALID.
 """
 import glob, json, os, re, sys
 import numpy as np
@@ -27,6 +29,17 @@ EVIDENCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs"
                         "silver_leaf_combo_468_20261014")
 FAIL_RE = re.compile(r"\[bestbench-seed-failure\] seed=(\d+)")
 UNIT_RE = re.compile(r"(base|all)-a(0|20)-(\d+)\.(csv|done)")
+LEAF_OPTS = ("STS_SILVER_A20_BOSS_HEAL_FIX", "STS_SILVER_FINAL_FIGHT_LEAF", "STS_SILVER_NO_LOSS_POTION_CREDIT",
+             "STS_SILVER_RELIC_HEAL_LEAF")
+
+
+def env_ok(path, arm):
+    want = "1" if arm == "all" else "0"
+    try:
+        env = dict(l.strip().split("=", 1) for l in open(path) if "=" in l)
+    except OSError:
+        return False
+    return all(env.get(k) == want for k in LEAF_OPTS)
 
 
 def cohorts_from_file():
@@ -46,9 +59,12 @@ def load(run_dirs):
             if m.group(4) == "csv":
                 read_rows(path, rows[key])
             else:
-                log = path[:-5] + ".log"
+                log, line, seed = path[:-5] + ".log", open(path).read().strip(), int(m.group(3))
                 fails = [int(x) for x in FAIL_RE.findall(open(log).read())] if os.path.exists(log) else []
-                done[key].append({"line": open(path).read().strip(), "seed_failures": fails})
+                stalled = os.path.exists(os.path.join(d, f"stall-{os.path.basename(path)[:-5]}.txt"))
+                done[key].append({"line": line, "seed": seed, "seed_failures": fails,
+                                  "timeout": bool(re.search(r"\brc=124\b", line)), "stalled": stalled,
+                                  "env_ok": env_ok(path[:-5] + ".env", m.group(1))})
     return rows, done
 
 
@@ -57,12 +73,19 @@ def analyze(rows, done, cohorts):
     invalid = False
     for asc, cohort in cohorts.items():
         r = {a: rows[(a, asc)] for a in ARMS}
-        failed = {a: sorted({s for d in done[(a, asc)] for s in d["seed_failures"]}) for a in ARMS}
-        bad = [d["line"] for a in ARMS for d in done[(a, asc)] if not re.search(r"\brc=0\b", d["line"]) and not d["seed_failures"]]
+        dropped = lambda d: d["timeout"] or d["stalled"]
+        failed = {a: sorted({s for d in done[(a, asc)] for s in d["seed_failures"]}
+                            | {d["seed"] for d in done[(a, asc)] if dropped(d)}) for a in ARMS}
+        bad = [d["line"] for a in ARMS for d in done[(a, asc)]
+               if not re.search(r"\brc=0\b", d["line"]) and not d["seed_failures"] and not dropped(d)]
+        bad += [d["line"] + " (wrong .env)" for a in ARMS for d in done[(a, asc)] if not d["env_ok"]]
+        drop_seeds = set().union(*(set(failed[a]) for a in ARMS))
         missing = {a: sorted(set(cohort) - set(r[a]) - set(failed[a])) for a in ARMS}
         extra = sorted(set().union(*(set(r[a]) for a in ARMS)) - set(cohort))
-        seeds = sorted(set(cohort).intersection(*(set(r[a]) for a in ARMS)))
-        c = {"cohort": [cohort.start, cohort.stop - 1] if len(cohort) else [], "seed_failures": failed,
+        seeds = sorted(set(cohort).intersection(*(set(r[a]) for a in ARMS)) - drop_seeds)
+        c = {"cohort": [cohort.start, cohort.stop - 1] if len(cohort) else [], "dropped_seeds": failed,
+             "timeouts": [d["line"] for a in ARMS for d in done[(a, asc)] if d["timeout"]],
+             "stalls": [d["line"] for a in ARMS for d in done[(a, asc)] if d["stalled"]],
              "invalid_units": bad, "missing_cohort_seeds": missing, "non_cohort_seeds": extra, "pairs": len(seeds)}
         out[f"a{asc}"] = c
         if not len(cohort):
@@ -91,6 +114,7 @@ def analyze(rows, done, cohorts):
             "boss_deaths": {a: sum(1 for s in seeds if int(r[a][s]["won"]) == 0 and int(r[a][s]["floor"]) in BOSS_FLOORS)
                             for a in ARMS},
             "sec_per_run": {a: float(col(a, "sec").mean()) for a in ARMS},
+            "reached_floor_50": {a: int((col(a, "floor") >= 50).sum()) for a in ARMS},
         })
         lo, hi = c["delta_win_ci95"] if asc == 0 else c["delta_floor_ci95"]
         out["label"][f"a{asc}"] = "BETTER" if lo > 0 else "WORSE" if hi < 0 else "NOT_SHOWN"
@@ -112,10 +136,21 @@ def selftest():
                     with open(os.path.join(t, f"{arm}-a{asc}-{s}.csv"), "w") as f:
                         f.write(hdr + f"{s},{w},{51 if w else 33},3,50,80,0,-1,-1,10\n")
                     open(os.path.join(t, f"{arm}-a{asc}-{s}.done"), "w").write(f"tag={arm}-a{asc}-{s} rc=0")
+                    v = "1" if arm == "all" else "0"
+                    open(os.path.join(t, f"{arm}-a{asc}-{s}.env"), "w").write("".join(f"{k}={v}\n" for k in LEAF_OPTS))
         res = analyze(*load([t]), cohorts)
         assert res["a0"]["pairs"] == 100 and res["label"] == {"a0": "WORSE", "a20": "WORSE"}, res
         assert analyze(*load([t]), {0: range(101), 20: range(0)})["label"] == "INVALID"   # seed 100 missing
         assert analyze(*load([t]), {0: range(99), 20: range(1000, 1050)})["label"] == "INVALID"  # seed 99 extra
+        open(os.path.join(t, "base-a0-7.done"), "w").write("tag=base-a0-7 rc=124")      # timeout: seed dropped
+        open(os.path.join(t, "stall-all-a0-8.txt"), "w").write("bt")
+        open(os.path.join(t, "all-a0-8.done"), "w").write("tag=all-a0-8 rc=143")       # stall kill: seed dropped
+        res = analyze(*load([t]), cohorts)
+        assert res["a0"]["pairs"] == 98 and res["label"] != "INVALID", res
+        assert res["a0"]["dropped_seeds"] == {"base": [7], "all": [8]}, res
+        open(os.path.join(t, "all-a20-1000.env"), "w").write("STS_SILVER_FINAL_FIGHT_LEAF=0\n")
+        assert analyze(*load([t]), cohorts)["label"] == "INVALID"                       # wrong .env
+        open(os.path.join(t, "all-a20-1000.env"), "w").write("".join(f"{k}=1\n" for k in LEAF_OPTS))
         open(os.path.join(t, "base-a0-5.done"), "w").write("tag=base-a0-5 rc=1")
         assert analyze(*load([t]), cohorts)["label"] == "INVALID"                       # failed unit
     c = cohorts_from_file()
