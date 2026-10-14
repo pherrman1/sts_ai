@@ -178,6 +178,9 @@ private:
                             sts::search::OocEndpoint &endpoint);
     double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                                  sts::search::OocEndpoint &endpoint);
+#ifndef STS_LIVE_ADVISOR
+    [[noreturn]] void replaySelectedLeaf(sts::search::OocStateId, std::mt19937_64 &);
+#endif
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
         const PreparedCombatTransition * = nullptr);
 public:
@@ -236,6 +239,10 @@ struct LiveOocMctsMetrics {
 void configureLiveOocMcts();
 // Complete capture provenance after all driver policy flags/models are parsed.
 void finalizeLiveOocMctsCapture();
+// Explicit, disposable diagnostic: one root-prefix MAP leaf, one isolated
+// replay, then stop before selecting/executing a real root action.
+int oocLeafReplayProbe(std::uint64_t seed, int ascension);
+int oocLeafReplaySelfTest();
 bool liveOocMctsEnabled();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();

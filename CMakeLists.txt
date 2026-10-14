@@ -858,6 +858,14 @@ add_test(NAME ooc_leaf_capture_startup COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/test_ooc_leaf_capture_startup.py $<TARGET_FILE:one_combat>)
 set_tests_properties(ooc_leaf_capture_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration")
+add_test(NAME ooc_leaf_replay COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:one_combat> oocleafreplayselftest)
+set_tests_properties(ooc_leaf_replay PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;OMP_NUM_THREADS=1")
+add_test(NAME ooc_leaf_replay_startup COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/test_ooc_leaf_replay_startup.py $<TARGET_FILE:one_combat>)
+set_tests_properties(ooc_leaf_replay_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration")
 
 # Captured-state probability probe; no gameplay or default integration.
 add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_probe.cpp

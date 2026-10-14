@@ -53,6 +53,13 @@ OocLeafCaptureSink::OocLeafCaptureSink(const std::string &path, const Json &prov
     } catch (...) { std::fclose(file_); file_ = nullptr; throw; }
 }
 OocLeafCaptureSink::~OocLeafCaptureSink() { if (file_) std::fclose(file_); }
+void OocLeafCaptureSink::replayProbe(Json report) {
+    report["type"] = "replay_probe";
+    report["publicParityQualified"] = false;
+    report["replayability"] = "unavailable";
+    std::lock_guard<std::mutex> lock(mutex_);
+    write(report);
+}
 std::shared_ptr<OocLeafCaptureRoot> OocLeafCaptureSink::begin(std::uint64_t seed,
         std::uint64_t decision, std::uint64_t searchSeed, std::uint64_t simulations, unsigned horizon) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -154,6 +161,12 @@ void oocLeafCaptureSinkSelfTest() {
                 || saved.at("leaves").at(0).at("structurallyValidSample") != false
                 || saved.at("leaves").at(0).at("input").at("ascension") != gc.ascension)
             throw std::runtime_error("leaf capture lost target, input or final abort status");
+        sink.replayProbe({{"status", "INVALID"}, {"reason", "fixture_not_reached"}});
+        std::getline(in, line);
+        const auto probe = Json::parse(line);
+        if (probe.at("type") != "replay_probe" || probe.at("status") != "INVALID"
+                || probe.at("publicParityQualified") != false || probe.at("replayability") != "unavailable")
+            throw std::runtime_error("leaf replay report changed capture qualification or row type");
         auto bad = gc; bad.outcome = sts::GameOutcome::UNDECIDED; bad.screenState = sts::ScreenState::INVALID;
         OocLeafCaptureRoot invalid(1, 1, 2, 16, 3);
         invalid.observe({bad, model.pathHistory(0), 0, 1, rng, rng, .5, false, {}, 0, 0, ""});
