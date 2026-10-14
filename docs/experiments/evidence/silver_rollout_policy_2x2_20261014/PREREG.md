@@ -38,8 +38,13 @@ and `G4-none − G-none@2500` (score, win rate, HP lost, CPU per fight). Smoke h
 74071458–489, not evidence): k 4 at 625 matched k 1 at 2500 on mean floor (30.5 vs 30.5) at about 55% CPU;
 k 1 at 10000 did not beat k 1 at 2500 there either, so full runs at that size do not resolve these arms.
 
+**Learned card-table arm (added 2026-10-14, Philipp's card choice "Both"):** `T-none` and `T-g6` = greedy policy
+with the play-priority order replaced by `card_table/card_table_g6.txt` (`STS_SILVER_ROLLOUT_CARD_TABLE`), at
+2500 sims. Secondary contrast `T-none − G-none@2500` (score, win rate, HP lost, CPU per fight). Offline basis and
+smoke in `card_table/README.md`.
+
 **Process layout (no per-searcher option needed):** the rollout settings are process-wide, so each setting runs
-as its own `ctmsilvergen` process on the same seeds: (UNIFORM 0, PER_LEAF 1, sims 10000,2500), (UNIFORM 1,
+as its own `ctmsilvergen` process on the same seeds: (UNIFORM 0, PER_LEAF 1, sims 10000,2500), (CARD_TABLE, sims 2500), (UNIFORM 1,
 sims 10000,2500), (PER_LEAF 2, sims 1250), (PER_LEAF 4, sims 625). The coordinator reports that pairing holds
 across processes because redraw and planner seeds depend only on (seed, fightIdx, k); the smoke checks it by
 requiring every process's control replay to reproduce the same source fights. If it does not, the run is not

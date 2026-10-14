@@ -6,7 +6,11 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <cstdlib>
+#include <fstream>
 #include <mutex>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -308,6 +312,10 @@ constexpr std::array<CardId,13>  defensiveCards = {
 
     int cardPriorityMap[372] {};
     int cardPlayMap[372] {};
+    // Research (STS_SILVER_ROLLOUT_CARD_TABLE=<file>): learned play priority per (card id, upgraded),
+    // replacing the cardPlayPriorities order; lower plays first. Default off.
+    bool useLearnedPlayTable = false;
+    int learnedPlayPriority[372 * 2] {};
     std::bitset<372> isAoeCard;
     std::bitset<372> isDefensiveCard;
 
@@ -327,6 +335,20 @@ constexpr std::array<CardId,13>  defensiveCards = {
             isAoeCard.set(static_cast<int>(CardId::IMMOLATE));
             isAoeCard.set(static_cast<int>(CardId::THUNDERCLAP));
             isAoeCard.set(static_cast<int>(CardId::WHIRLWIND));
+            // File lines: "<card id> <upgraded 0|1> <score>"; higher score plays first, unlisted
+            // cards score 0.
+            if (const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE"); path && *path) {
+                std::ifstream in(path);
+                if (!in) throw std::runtime_error(std::string("STS_SILVER_ROLLOUT_CARD_TABLE: cannot open ") + path);
+                int id = 0, upgraded = 0;
+                double score = 0;
+                while (in >> id >> upgraded >> score) {
+                    if (id < 0 || id >= 372 || (upgraded != 0 && upgraded != 1))
+                        throw std::runtime_error("STS_SILVER_ROLLOUT_CARD_TABLE: bad row");
+                    learnedPlayPriority[id * 2 + upgraded] = static_cast<int>(-score * 1000.0);
+                }
+                useLearnedPlayTable = true;
+            }
         });
     }
 
@@ -400,11 +422,13 @@ constexpr std::array<CardId,13>  defensiveCards = {
 
     int getBestCardToPlay(const BattleContext &bc, const fixed_list<int,10> &handIdxs, bool randomize,
                           std::default_random_engine &rng) {
-        int bestPriority = 10000;
+        int bestPriority = 1 << 30;
         fixed_list<int,10> bestHandIdxs;
         for (int i = 0; i < handIdxs.size(); ++i) {
             const auto c = bc.cards.hand[handIdxs[i]];
-            const int priority = 2 * cardPlayMap[static_cast<int>(c.getId())] + (c.isUpgraded() ? -1 : 0);
+            const int priority = useLearnedPlayTable
+                    ? learnedPlayPriority[static_cast<int>(c.getId()) * 2 + (c.isUpgraded() ? 1 : 0)]
+                    : 2 * cardPlayMap[static_cast<int>(c.getId())] + (c.isUpgraded() ? -1 : 0);
             if (priority < bestPriority) {
                 bestPriority = priority;
                 bestHandIdxs.clear();
