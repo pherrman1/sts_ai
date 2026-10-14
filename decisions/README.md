@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0034](0034-recall-filter-and-multiselect-canonical-default.md) turns on the
+  keys-off optional Ruby Recall filter and canonical multi-select masks by default
+  (`STS_OOC_SKIP_OPTIONAL_RECALL=0`, `STS_MULTISELECT_CANONICAL=0` restore the old behavior).
 - [ADR-0032](0032-ooc-mcts-greedy-rollout-shop-default.md) makes live OOC MCTS leaf
   rollouts shop greedily by default (`STS_OOC_MCTS_ROLLOUT_SHOP=planner` restores the
   bundle planner).

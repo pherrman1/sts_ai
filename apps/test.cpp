@@ -4642,8 +4642,10 @@ int testCardSelectParity() {
 
     // The parity test pins the full validity contract (`all`): restricted
     // deployment modes intentionally prune the action space, so they must
-    // not leak into this check via STS_MULTISELECT_MODE.
+    // not leak into this check via STS_MULTISELECT_MODE. Canonicalization
+    // (default on, ADR-0034) is checked by cardselect_canonical instead.
     setenv("STS_MULTISELECT_MODE", "all", 1);
+    setenv("STS_MULTISELECT_CANONICAL", "0", 1);
 
     std::cout << "cardselect_parity: CARD_SELECT tasks\n";
     for (int t = 0; t <= (int)CardSelectTask::WARCRY; ++t) {

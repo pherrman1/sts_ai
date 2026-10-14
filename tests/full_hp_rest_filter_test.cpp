@@ -72,7 +72,7 @@ static void randomMatches(GameContext gc, const char *flag, const std::vector<in
 int main() {
     try {
         g_collectKeys = false;
-        unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+        setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "0", 1);
         setenv("STS_OOC_SKIP_FULL_HP_REST", "1", 1);
         const auto ordinary = campfire();
         require(oocFullHpRestExclusionApplies(ordinary), "legal full-health REST/SMITH root was not recognized");
@@ -90,7 +90,7 @@ int main() {
         filterOptionalRecallActions(special, combined);
         filterFullHpRestActions(special, combined);
         require(indices(combined) == std::vector<int>({1, 3, 4, 5}), "Recall/full-health filter composition changed ordering");
-        unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+        setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "0", 1);
 
         // A supplied candidate subset must itself contain both legal alternatives.
         for (const auto &subset : std::vector<std::vector<GameAction>>{{}, {GameAction(0)},
@@ -171,7 +171,7 @@ int main() {
         setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "1", 1);
         randomMatches(keyed, "0", {0, 1}, states);
         randomMatches(keyed, "1", {1}, states);
-        unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+        setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "0", 1);
         for (const char *invalid : {"", "2", "-1", "true", "01", " 1"}) {
             setenv("STS_OOC_SKIP_FULL_HP_REST", invalid, 1);
             bool rejected = false;

@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-14 for the opt-in A20 CTM stack and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for the opt-in A20 CTM stack and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -1613,7 +1613,7 @@ null for early-stopped, singleton, boundary or aborted searches. Full-budget
 cross-tabs use only uncensored searches and can be selection-biased. Neither
 statistic qualifies an adaptive stopping policy on independent future searches.
 
-### Optional Ruby Recall under keys-off research profiles
+### Optional Ruby Recall under keys off
 
 `STS_COLLECT_KEYS=0` alone does not remove Ruby Recall from the V4 campfire
 candidate set or the random fallback. `GameAction::getAllRestActions` uses the
@@ -1621,12 +1621,13 @@ simulator's `keysEnabled` and owned-key state; the fallback at intermediate HP
 can sample Recall even when the run policy does not seek Act 4. This is a
 reproduced policy eligibility defect, not an engine rule change.
 
-The default-off `STS_OOC_SKIP_OPTIONAL_RECALL=1` applies one shared filter to
+Since ADR-0034 the filter is on by default (`STS_OOC_SKIP_OPTIONAL_RECALL`
+unset or `1`; `0` restores the legacy eligibility). It applies one shared filter to
 V4 REST candidates before scoring and to `ScumSearchAgent2::stepRandom`.
 When keys are off and another legal action exists, it removes only Recall,
 keeping the remaining action order. This can change the V4 margin and gate
 ownership as well as the fallback's uniform action distribution. With the
-flag unset or zero, legacy choices and RNG progression are unchanged. Enabled
+flag `0`, legacy choices and RNG progression are unchanged. Enabled
 sampling uses the existing single uniform-distribution invocation on the
 filtered set; its underlying engine consumption may change with the bound.
 

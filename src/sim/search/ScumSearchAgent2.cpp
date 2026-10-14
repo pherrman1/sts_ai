@@ -99,7 +99,7 @@ void search::ScumSearchAgent2::playoutBattle(GameContext &gc, BattleContext &bc)
 
 bool search::oocSkipOptionalRecallEnabled() {
     const char *raw = std::getenv("STS_OOC_SKIP_OPTIONAL_RECALL");
-    if (!raw) return false;
+    if (!raw) return true;   // default on (ADR-0034); `0` restores legacy Recall eligibility
     const std::string value(raw);
     if (value == "0") return false;
     if (value == "1") return true;
