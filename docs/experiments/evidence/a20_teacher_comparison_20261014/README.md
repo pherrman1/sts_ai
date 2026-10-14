@@ -1,8 +1,9 @@
-# A20 teacher comparison: gen6 E canary passed, cohort incomplete
+# A20 teacher comparison: gen6 E follow-up complete
 
-The [gen6 E attempt](gen6E-attempt-1/RESULTS.md) is complete: the canary passed,
-but one of four cohort sources hit the fixed 180-second CPU limit. The exact
-verdict is **INVALID_OR_INSUFFICIENT**; no teacher ranking is reported.
+The [fresh v2 follow-up](gen6E-attempt-2/RESULTS.md) completed all four sources,
+14 supported states and 14 exact controls: **DESCRIPTIVE_COMPARISON_MEASURED**.
+The [first attempt](gen6E-attempt-1/RESULTS.md) remains **INVALID_OR_INSUFFICIENT**
+after one source hit its 180-second CPU cap; it is not pooled into v2.
 The user authorized an observability/resource follow-up under
 [PROTOCOL-V2.md](PROTOCOL-V2.md): flushed per-replay progress, 600 CPU/900 wall
 seconds per source and a fresh fixed panel. The first attempt is not pooled
@@ -103,7 +104,9 @@ runner dispatch. No game is executed by these fixtures. Logs are in `checks/`.
 Independent implementation and analysis reviews addressed the initialized-RNG
 coupling, RAW source/control equality, legitimate escape classification and
 runner/analyzer schema agreement. Real-model loading of gen6 E, independent
-synthetic parity and the scientific canary passed. The cohort did not complete.
+synthetic parity and the first scientific canary passed; the first cohort did
+not complete. The v2 canary and full fresh cohort passed all progress and
+data checks; see `gen6E-attempt-2/RESULTS.md` and `checks/v2-outcome-review.txt`.
 The integrated Release
 producer and unit-test builds passed; seven focused CTests passed (the six
 above plus `silver_searcher`, 1.63 seconds). Independent review of the merged
@@ -111,14 +114,14 @@ v2 inference support passed; see `checks/gen6E-main-review.txt`. The
 full repository test suite and gameplay were not run for this preparation.
 
 Knowledge impact: the ledger/index and maintained research page correct the
-historical forecast interpretation and record the incomplete A20 comparison.
-The protocol and analysis contract specify the opt-in research interface.
+historical forecast interpretation and record both A20 attempts.
+The protocols and analysis contract specify the opt-in research interface.
 
 ## Authorized v2 execution
 
-Prepare `build/a20-teacher-comparison/gen6E-run-2` from a clean reviewed commit
+The completed follow-up prepared `build/a20-teacher-comparison/gen6E-run-2` from a clean reviewed commit
 with the same E model, generation, SHA256, source URL and CTM paths above;
-then run `canary` and, only after it passes, `cohort` with that new directory.
+then executed `canary` and, after it passed, `cohort` with that new directory.
 The current runner fixes canary `97150801`, cohort `97150810–97150813`,
 600 CPU/900 wall seconds per source and two concurrent jobs. Every completed
 replay flushes CSV data and a JSONL timing/progress record; each start record
@@ -128,4 +131,4 @@ The new runtime schema is `ctm_vs_silver_teacher_a20_v2`; the new freeze schema
 is `a20_teacher_comparison_freeze_v2`. The analyzer checks ordered progress
 against the selected panel and each replay's budget, decisions, simulations
 and combat CPU. Its scientific metrics/decision rule are unchanged. Do not
-relax this attempt or overwrite previous outputs after launch.
+relax this attempt or overwrite its completed outputs.

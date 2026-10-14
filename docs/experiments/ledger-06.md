@@ -18175,3 +18175,67 @@ unchanged. This run does not settle #507's OOC decision value or student route.
 **Knowledge impact:** maintained research status records the incomplete
 comparison; this ledger and its evidence packet retain the executed protocol,
 artifact identity, canary success and bounded failure.
+
+
+## §473 — Fresh A20 CTM/Silver teacher pilot with gen6 E: DESCRIPTIVE_COMPARISON_MEASURED (2026-10-14)
+
+**Question and authorization:** after §472 hit its resource cap, the user
+accepted a larger fixed cap and flushed per-replay timing/progress, then
+instructed continuing. The [v2 protocol](evidence/a20_teacher_comparison_20261014/PROTOCOL-V2.md)
+fixes fresh canary `97150801` and four sources `97150810–97150813`, with
+600 CPU/900 wall seconds/source, two concurrent jobs, no retry/extension or
+pooling of §472. All model, controller, source/reference, selection, RNG and
+analysis settings are unchanged. The [complete results and raw evidence](evidence/a20_teacher_comparison_20261014/gen6E-attempt-2/RESULTS.md)
+retain the full schema, metrics, progress and custody records.
+
+**Identity:** producer `48f0c0e51bf8742cdbf0fbaa6b4f38ff34667311`, binary
+`c6c8b7f146cdb932daa641b00bfee28c74fce4496389ad339feabf7e809b2944`,
+freeze `c2457a2415e239e26144efe91eeb4e6978a131b697ebe008a25bf001caa437be`,
+gen6 E `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
+Unchanged PR #524 CTM; plain/prior Silver at 2k/10k per decision, four shared
+redrawn futures, K=8/weight400/root bonus; original-future plain10k reference.
+
+**Checks and execution:** Release build and seven focused CTests passed;
+final affected Python checks passed (21 analyzer/seven runner tests).
+Independent implementation/protocol review passed before freeze. Fresh canary
+**CANARY_VALID**, four supported states. All four sources completed with
+**14 supported states (6/4/2/2), 224 forecast fights and 14 exact controls**;
+no unsupported/invalid rows or control mismatches. Process CPU: 88.16, 52.77,
+8.94 and 23.92 seconds, plus excluded canary 62.37; total 236.16s. The new cap
+was available but not needed. Complete progress, source/model custody and
+reports passed independent outcome/scientific audit, including raw-CSV checks
+of the principal equal-source aggregation.
+
+**Principal descriptive metrics:** CTM/plain2k/prior2k/plain10k/prior10k
+HP RMSE **9.246/6.605/8.171/6.397/8.276**; death Brier
+0.014558/0.002604/0.013021/0.016927/0.005208. CTM analytic expectation CPU
+0.0795ms; four-future Silver search CPU **0.587/0.622/3.279/3.275s**.
+Timers have different documented scopes; no exact end-to-end ratio is claimed.
+Paired prior-minus-plain HP/death: **−0.286/+2.083pp at 2k** and
+**+0.495/−2.604pp at 10k**. Plain10k-minus-plain2k HP/death:
+−0.995/+3.646pp. These are descriptive point estimates without significance
+claims, not population controller ordering.
+
+**Verdict and interpretation:** exactly **DESCRIPTIVE_COMPARISON_MEASURED**.
+Plain2k has lower HP error than CTM on this panel. Plain10k costs 5.59x the
+four-future search CPU for only −0.208 HP RMSE; prior effects are mixed by budget.
+Inference: plain2k is the first inexpensive Silver candidate for a separate
+selective OOC decision-value audit; the pilot gives no reason to routinely pay
+10k or assume a prior gain at 2k. CTM remains a plausible bulk sampling tool.
+No qualified teacher replacement, optimal budget, OOC action-value, training
+or default-promotion conclusion follows. There are only four source clusters;
+two early Act 1 sources have half the principal weight, and only one source
+reaches Act 3. The reference is plain10k behavior, not optimal play, and four
+Silver futures have Monte Carlo uncertainty.
+
+**Progress diagnosis:** the longest source spent 20.97 CPU seconds on its
+original trajectory, 0.0209s in CTM blocks and 66.79s in replay phases. Its
+slowest replay was plain10k Donu/Deca repeat 0: 2.69s, 32 decisions/320k sims.
+Per-replay CSV checkpoints and active identities were visible during the run;
+this does not reconstruct §472's failed source. All 54 raw top-level runtime
+files and reports are archived; models/binary remain preserved locally.
+
+**Knowledge impact:** maintained current research status records the completed
+comparison, and the environment interface documents durable v2 progress.
+This entry and the evidence packet preserve the prospective design and results;
+§472 remains incomplete and excluded. No production defaults changed.

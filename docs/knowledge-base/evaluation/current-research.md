@@ -441,7 +441,19 @@ The user authorized a separately frozen [v2 follow-up](../../experiments/evidenc
 with flushed replay progress, 600 CPU/900 wall seconds per source, canary
 `97150801` and four fresh sources `97150810–97150813`. It preserves the model,
 controller settings, source/reference and analysis, and does not pool §472.
-This follow-up is pending collection; no new teacher conclusion yet.
+The [completed follow-up](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-2/RESULTS.md)
+(§473) is **DESCRIPTIVE_COMPARISON_MEASURED**: 14 supported states (6/4/2/2
+per source), all exact controls/progress/custody checks pass. Principal
+equal-source HP RMSE: CTM 9.246, plain2k 6.605, prior2k 8.171, plain10k
+6.397, prior10k 8.276. Four-future search CPU is 0.587/0.622/3.279/3.275s
+for the Silver conditions; CTM expectation is 0.0795ms, with different timer
+scopes. Prior-minus-plain HP/death contrasts are −0.286/+2.083pp at 2k and
++0.495/−2.604pp at 10k. The cost/prior effects remain descriptive and mixed;
+two early Act 1 sources carry half the fixed equal-source weight, and only
+one source has Act 3 coverage. No population winner, optimal budget, training,
+OOC decision-value or promotion conclusion follows. Plain2k is an inexpensive
+candidate for a subsequent selective Silver decision-value audit, not a
+qualified teacher replacement.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
