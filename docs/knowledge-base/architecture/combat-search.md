@@ -216,9 +216,9 @@ dying. Elite-trigger fights (`GameContext::isEliteTriggerCombat`) use the elite
 penalty. Native Silver uses 12 and 35 by default (ADR-0036);
 `STS_SILVER_ESCAPE_PENALTY=0,0` restores the historical escape-as-win score
 (#370). The `SilverEvalWeights` struct defaults stay 0, so the live-game
-advisor (`native_silver_advisor.cpp`) and the synthetic-prior generator
-(`silver_synth_gen.cpp`), which build their own searchers, still score an
-escape as a win. Before PR #540
+advisor (`native_silver_advisor.cpp`), which builds its own searcher, still
+scores an escape as a win; the synthetic-prior generator copies the backend's
+weights and follows the effective penalty. Before PR #540
 `one_combat` rejected the variable at startup. The only gameplay gate, ledger-06
 §473 (`12,35` vs `0,0` on the `off` stack, 500 paired seeds per cohort), is
 NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
