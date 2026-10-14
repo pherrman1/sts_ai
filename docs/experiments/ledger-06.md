@@ -18405,3 +18405,14 @@ only when a continuation plays Discovery, as `simulator_health_failure`; no
 health count changed. Exact-prefix cloud replay of 97151011/97151010 only.
 Fix accepts it like source/live combats; both sources then complete. Run-2
 verdict unchanged; a new cohort needs a new freeze and authorization.
+
+Run 3 ([results](evidence/ooc_selective_silver_audit_20261014/run-3/RESULTS.md)),
+authorized by Philipp 22:34Z after the fix: producer 68684054 (reviewed), freeze
+05187c0e, fresh canary 106000000 (CANARY_VALID) and cohort 106000001–106000008,
+all complete, 3361.62 CPU s total; reports reproduce exactly. Verdict
+`DECISION_AUDIT_MEASURED`, 15 roots (8/5/2 by act). Silver8−baseline +0.0225
+[+0.0064,+0.0404] (directional improvement shown); CTM8−baseline +0.0014
+[−0.0156,+0.0175]; matched CTM−baseline +0.0186 [+0.0045,+0.0371];
+Silver8−matched +0.0038 [−0.0026,+0.0135]. Matched-CPU not resolved (4096-pair
+ceiling below 0.9× Silver cost at 14/15 roots). Surrogate utility, Silver
+reference, pre-ADR-0035/0036 Silver; no training/default claim.

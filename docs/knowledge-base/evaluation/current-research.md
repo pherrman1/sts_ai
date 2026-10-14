@@ -503,8 +503,14 @@ cost/candidate/future metadata, with real seed-free tests. Original data and
 verdict stay sealed. A later exact-prefix replay of the two failed sources
 [found the cause](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-2/ROOT_CAUSE.md):
 the audit sampler rejected a played Discovery (`undefinedBehaviorEvoked`) as a
-health failure. With that fixed both sources complete; another cohort still
-needs a new freeze and authorization. No training/default promotion.
+health failure. With that fixed, the authorized
+[run 3](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-3/RESULTS.md)
+on fresh seeds completed: Silver8 beats the baseline OOC MAP choice on the
+plain10k-Silver surrogate reference (+0.0225 [+0.0064,+0.0404], 8 sources,
+15 roots). CTM rescoring with up to 4096 futures reaches nearly the same
+(Silver8−matched +0.0038, interval includes zero) at about half the CPU, so a
+compute-matched Silver advantage is not shown. Pre-ADR-0035/0036 Silver.
+No training/default promotion.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
