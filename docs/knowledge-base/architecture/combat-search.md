@@ -372,6 +372,11 @@ Generation 3 (self-play with gen 2, then gen 3 as prior;
 `/mnt/project-files/silver-az-mlp/gen3/model/`) beat plain 2,300 by +1.50
 [+0.94, +2.09] on 3,275 fights at 1.06x plain 2k but was not shown better than
 generation 1 (+0.14 [−0.39, +0.66]) (§460).
+`STS_CTMSILVER_ARMSET=mlpsweep` (§476) instead runs, for every budget in
+`STS_CTMSILVER_SWEEP_SIMS`, `plain<b>`, `mlp<b>` (K = 8, `STS_CTMSILVER_MLP_PRIOR`)
+and `mlpprev<b>` (`STS_CTMSILVER_MLP_PRIOR_PREV`); it is the only armset that
+accepts Ascension 20, and `STS_CTMSILVER_HALLWAY_EVERY = n` replays only about
+one normal fight in n (hash of seed and fight index).
 Self-play data for later generations comes from `one_combat silverazgen N SIMS
 ASC OUT_PREFIX SEED natural|perturbed TREE_MIN_VISITS ROOT_BONUS`: the
 `silversynthgen` runs and root/fight rows without the second teacher,
