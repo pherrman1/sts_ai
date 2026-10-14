@@ -1,12 +1,12 @@
 """Export an arch.py checkpoint (128/64-style 2-layer net, optional --enc-emb/--mon-emb) to the
-combat_policy_mlp_v1 text format with optional trailing tables (enc / mon_id / mon_intent), write a
+combat_policy_mlp_v1 text format, or v2 with trailing tables (enc / mon_id / mon_dmg), write a
 silversynthfeatures-style prefix for the bench roots, and torch reference logits for parity.
 usage: export_native.py CKPT.pt OUT.txt NAMES.json ROOTS.bin PREFIX"""
 import sys, json, struct, argparse, numpy as np, torch
 sys.path.insert(0, "/root/arch"); sys.path.insert(0, "/home/user/sts_ai/tools")
 import silver_az_mlp as M, arch
 ck_path, out, names_path, roots_path, prefix = sys.argv[1:6]
-ck = torch.load(ck_path, weights_only=False)
+ck = torch.load(ck_path, map_location="cpu", weights_only=False)
 a = argparse.Namespace(**ck["args"])
 assert not a.tower and not a.h3 and not a.dot, "only the factorized 2-layer layout exports"
 st = {k: v.double().numpy() for k, v in ck["state"].items()}
@@ -21,10 +21,10 @@ if getattr(a, "enc_emb", 0):
 if getattr(a, "mon_emb", 0):
     d = a.mon_emb
     extra.append(("mon_id", st["monid.weight"] @ st["monproj.weight"][:, :d].T))
-    extra.append(("mon_intent", st["monint.weight"] @ st["monproj.weight"][:, d:].T))
+    extra.append(("mon_dmg", st["monint.weight"] @ st["monproj.weight"][:, d:].T))   # arch.py "intent" = incoming damage
 names = json.load(open(names_path))
 with open(out, "w") as f:
-    f.write(f"combat_policy_mlp_v1\nh1 {a.h1}\nh2 {a.h2}\nnstate {M.S}\nnaction {M.A}\nncard {M.NCARD}\nntarget {M.NT}\n")
+    f.write(f"combat_policy_mlp_{'v2' if extra else 'v1'}\nh1 {a.h1}\nh2 {a.h2}\nnstate {M.S}\nnaction {M.A}\nncard {M.NCARD}\nntarget {M.NT}\n")
     for n in names: f.write(f"feat {n}\n")
     for key in ("state_w", "action_w", "card", "target_w", "b1", "w2", "b2", "w3", "b3"):
         f.write(key + "\n" + " ".join(f"{x:.9g}" for x in np.asarray(W[key], np.float32).ravel()) + "\n")

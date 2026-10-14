@@ -12,7 +12,9 @@ ledger entry. A later online test gets its own § with a pre-registration.
 - **Trainer:** `scripts/arch.py` imports `tools/silver_az_mlp.py` (main d45864a) for data, batching
   and metrics, and generalizes the net:
   - optional state tower, third layer, card embedding width and dot head;
-  - `--enc-emb`: encounter id embedding; `--mon-emb`: monster id and intent embedding per slot;
+  - `--enc-emb`: encounter id embedding; `--mon-emb`: per-slot embeddings of the monster id and of
+    the `mKIntent` feature, which is the incoming damage, not an intent category (`arch.py` calls it
+    intent);
   - `--teacher LOGP --alpha`: distillation; `--sched cosine`.
   - All runs are from scratch: AdamW, batch 1,024, value weight 0.1.
 - **Paths:** the scripts write to `/root/arch` (cloud container). Queues `scripts/q*.txt` with
@@ -32,11 +34,11 @@ ledger entry. A later online test gets its own § with a pre-registration.
 |---|---|---|---|---|
 | gen 4 as deployed (warm start, LR halving) | 1.2678 (gen-4 report) | 1.2103 | 57.2% | 9.3 |
 | dropout 0.35 | 1.2692 / 1.2763 | 1.2137 / - | 56.9% | |
-| dropout 0.15 | 1.2597 / 1.2630 | 1.1980 / - | 57.6% | |
+| dropout 0.15 | 1.2597 / 1.2630 | 1.1980 / 1.2000 | 57.6% | |
 | dropout 0.15 + distillation | 1.2550 / 1.2556 | 1.1949 / - | 57.9% | 9.8 |
 | dropout 0.15 + encounter embedding | 1.2544 / 1.2557 | 1.1891 / - | 57.9% | |
-| dropout 0.15 + distillation + encounter | 1.2510 / 1.2506 | 1.1892 / 1.1892 | 58.3% | 9.9 |
-| … + monster id and intent embeddings | 1.2484 / 1.2504 | 1.1871 / 1.1899 | 58.4% / 58.6% | 9.9 / 10.2 |
+| dropout 0.15 + distillation + encounter | 1.2510 / 1.2506 | 1.1893 / 1.1892 | 58.3% | 9.9 |
+| … + monster id and incoming-damage embeddings | 1.2484 / 1.2504 | 1.1871 / 1.1899 | 58.4% / 58.6% | 9.9 / 10.2 |
 | 512/256 teacher (dropout 0.35, LR halving) | 1.2610 | 1.1965 | 57.7% | 3.9x (bench) |
 
 - **Distillation:** the target is 0.5 × visit shares + 0.5 × the 512/256 teacher's softmax, on
@@ -44,6 +46,8 @@ ledger entry. A later online test gets its own § with a pre-registration.
 - **Encounter embedding:** a 16-d embedding of state column 1 (`encounter`). Raw it enters only as
   one number times one weight vector, so the net cannot treat fights as categories.
 - **Monster embedding:** 16-d embeddings of `mKId + 1` and `mKIntent` for each occupied slot.
+  `mKIntent` is the slot's incoming damage (0 when it is not attacking); the features carry no
+  intent category (buff, debuff, defend).
   Its gain over encounter + distillation is small and not consistent: val −0.0026 / −0.0002,
   fold-4 −0.0021 / +0.0007. **Inconclusive.**
 - **Cost:** the embeddings add one table row per node, with no measurable cost.
@@ -65,24 +69,31 @@ ledger entry. A later online test gets its own § with a pre-registration.
   dropout is lower. 64/32 at dropout 0.15 matches the gen-4 recipe at 128/64 for 0.62x the cost.
 
 ## Native support for the embedding tables (this PR)
-`combat_policy_mlp_v1` files may end with optional `enc 128`, `mon_id 128` and `mon_intent 128`
-tables (128 × h1, projection folded in).
+A new header `combat_policy_mlp_v2` takes the v1 body plus optional `enc 128`, `mon_id 128` and
+`mon_dmg 128` tables (128 × h1, projection folded in).
+- Loaders older than this PR reject the v2 header instead of silently dropping the tables (review
+  finding on 12d90213); the new loader rejects tables under a v1 header. Files without tables stay v1.
 - `predictPolicyMlp` adds them once per node:
   - the encounter row is the rounded value, clipped to 0..127;
-  - per slot, `id + 1` and the intent count only when the id is nonzero and not −1, matching the
-    sparse training rows.
+  - per slot, `id + 1` and the incoming damage count only when the id is nonzero and not −1
+    (empty or dead slot), matching the sparse training rows.
 - Files without tables load and score as before. The gen-4 file stays within 1e-6 of the float64
   reference.
 - `scripts/export_native.py` writes these files and checks them:
   - exported files match torch within 3e-6 (`parity-native.json`);
-  - the unit test `test silver_searcher` covers a hand-computed case, including an empty slot.
+  - the unit test `test silver_searcher` covers a hand-computed v2 case, including an empty slot,
+    and the rejection of tables under the v1 header.
 
 ## Files
 - `summary.json`: every run. `runs/*.json`: per-run training reports. `fold4.json`: the shortlist
   on fold 4.
 - `models/`: native files `combat_policy_mlp_c_*.txt`.
-  - `c_dist_s0` needs no new code.
-  - `c_encdist_s0` and `c_mon_s*` need this PR's loader.
+  - `c_dist_s0` (v1) needs no new code.
+  - `c_encdist_s0` and `c_mon_s*` (v2) need this PR's loader.
+  - `gen6/`: the gen-6 thread's GPU arms E (enc + mon, distilled) and Eenc (enc only), trained on the
+    gen-6 pack (branch `claude/silver-gen6-gpu-data` at cf900813), exported here as v2 with parity in
+    `parity-native.json`. Their reported val / fold-4 orig: E 1.1937 / 1.1749, Eenc 1.1955 / 1.1769,
+    against D (distilled, no embeddings, v1) 1.2029 / 1.1831. One seed each.
   - Torch checkpoints for the shortlist, the teacher `t512` and `b0` (`SHA256SUMS`).
 
 Knowledge impact: `docs/knowledge-base/architecture/combat-search.md` documents the optional
