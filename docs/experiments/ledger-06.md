@@ -17819,3 +17819,75 @@ teacher/default promotion, additional seed or #506 contract change occurred.
 
 **Knowledge impact:** document the diagnostic interface in the OOC architecture
 and CODE_MAP; update #507's current status in `evaluation/current-research.md`.
+
+## §463 — Shop deck-size accounting on vs off in §433 `combo`: no difference, default stays (2026-10-14)
+
+**Question (Philipp, 2026-10-14, "Paired check" on the card "Test the deck-size default on/off before keeping it,
+or revert it now?"):** ADR-0030 (#523) made the corrected shop deck-size accounting the default without a game test.
+After §459, review noticed (post hoc, different seeds and binaries) that the §459 `planner` arm won 101/128 against
+§449 `x2bpub`'s 114/128 in an otherwise matching `combo` environment. Does the correction change how `combo` plays on
+the same seeds?
+**Design:** [PREREG](evidence/ooc_deck_size_fix_463_20261014/PREREG.md), frozen after independent pre-launch review
+(code `06ff0e75`, binary `b4586cfc…95e1`). Arms `fixon` (the §459 `planner` arm: §433 `combo`, pinned
+`STS_OOC_PUBLIC_FUTURES=8`, X2-B public `STS_WIN_NET`, `STS_OOC_MCTS_ROLLOUT_SHOP=planner`,
+`STS_OOC_SHOP_DECK_SIZE_FIX=1`) and `fixoff` (the same with `=0`). Fresh seeds 92000000–92000127, 8 cloud workers.
+Primary: Δwin fixon − fixoff, paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | fixon | fixoff | fixon − fixoff |
+|---|---|---|---|
+| wins / 128 | 110 | 110 | 0.0 pp [−7.1, +7.8]; McNemar p = 1.0 (12 vs 12 discordant) |
+| mean floor | 50.08 | 49.84 | +0.24 [−0.44, +0.98] |
+| boss deaths | 16 | 14 | |
+| seconds per run | 583.6 | 590.7 | |
+
+**Interpretation:**
+- No playing-strength effect of the deck-size correction is detectable; the CI excludes a loss larger than 7.1 pp.
+  By the prereg the ADR-0030 default stays on.
+- Both arms won 85.9% on these seeds, in line with §433/§449/§451. **Inference:** the §459 cohort's 78.9% was seed
+  variance, not the deck-size default. This binary also carries the #522 loop guard that §459's did not; it is
+  shared by both arms and does not affect this comparison.
+
+**Evidence:** [packet](evidence/ooc_deck_size_fix_463_20261014/README.md). Raw: `/mnt/project-files/ooc-deck-size-463/`
+(one tar per worker). Seeds 92000000–92000127 and smokes 74063000–74063001 are now used.
+
+**Knowledge impact:** the deck-size paragraph in `architecture/out-of-combat.md` and an evidence note in ADR-0030.
+
+## §464 — OOC MCTS tree rules plus outcome merging vs §433 `combo`: deeper tree, wins not shown different (2026-10-14)
+
+**Question (Philipp, 2026-10-14):** after the decision trace of seed 74060000 showed the `combo` tree is about one
+decision deep (maximum depth 2, visit lock at about 2,050 simulations, pick = top V4 prior in 72/87 searches), he
+asked for the tree to follow live rules and to "do the merge and tree rules on 128 seeds with 16 workers". Does
+`STS_OOC_MCTS_TREE_RULES=1` (forced chest, relic, gold and potion pickups and empty-reward leave inside the tree;
+one bottle/duplicate/bonfire candidate per distinct card) together with `STS_OOC_MCTS_MERGE_OUTCOMES=1` (§367) win
+more runs than `combo`?
+**Design:** [PREREG](evidence/ooc_tree_rules_464_20261014/PREREG.md), frozen after independent pre-launch review
+(code `8f0b77b1`, binary `9dd31c4e…`). Arms `combo` (the §459/§463 planner environment, deck-size fix at its default 1)
+and `rulesmerge` (plus both flags). Fresh seeds 93000000–93000127, 16 cloud workers. Primary: Δwin rulesmerge − combo,
+paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | rulesmerge | combo | rulesmerge − combo |
+|---|---|---|---|
+| wins / 128 | 107 | 104 | +2.3 pp [−6.3, +10.2]; McNemar p = 0.71 (16 vs 13 discordant) |
+| mean floor | 48.74 | 48.91 | −0.17 [−1.38, +0.95] |
+| boss deaths | 13 | 20 | |
+| seconds per run | 692 | 652 | sum ratio 1.061 |
+| per-search max depth, median / p90 / max | 4 / 8 / 14 | 2 / 2 / 2 | |
+| mean simulation depth | 5.21 | 1.60 | |
+| pick = top prior / top Q | 76.2% / 51.3% | 78.8% / 46.0% | |
+
+**Interpretation:**
+- The pair makes the search deeper as intended, at about 6% more wall time, but deeper search did not produce a
+  detectable win gain; the CI excludes a loss larger than 6.3 pp. NOT_SHOWN does not mean equal.
+- Boss deaths 13 vs 20 and the top-Q share are descriptive, not pre-registered.
+- Rules and merging changed together, so their effects cannot be split from this run.
+- No default change (prereg); both flags stay opt-in. Philipp decides what comes next.
+- **Decision (Philipp, 2026-10-14 09:58Z):** "both flags should be default" → [ADR-0031](../../decisions/0031-ooc-mcts-tree-rules-merge-default.md),
+  live OOC MCTS defaults to tree rules and outcome merging.
+
+**Evidence:** [packet](evidence/ooc_tree_rules_464_20261014/README.md). Raw: `/mnt/project-files/ooc-tree-rules-464/`
+(one tar per worker). Trace that motivated it: `/mnt/project-files/ooc-decision-trace/REPORT.md`. Seeds
+93000000–93000127 and smokes 74060000, 74065000 are now used.
+
+**Knowledge impact:** the `STS_OOC_MCTS_TREE_RULES` row in `architecture/out-of-combat.md` now cites §464.

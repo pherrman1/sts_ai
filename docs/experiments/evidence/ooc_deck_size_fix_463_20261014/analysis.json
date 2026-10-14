@@ -1,0 +1,80 @@
+{
+  "cohort": [
+    92000000,
+    92000127
+  ],
+  "units": {
+    "fixon": 128,
+    "fixoff": 128
+  },
+  "seed_failures": {
+    "fixon": [],
+    "fixoff": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "fixon": [],
+    "fixoff": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "fixon": 128,
+    "fixoff": 128
+  },
+  "pairs": 128,
+  "win": {
+    "fixon": 0.859375,
+    "fixoff": 0.859375
+  },
+  "wins": {
+    "fixon": 110,
+    "fixoff": 110
+  },
+  "fixon_vs_fixoff": {
+    "delta_win": 0.0,
+    "delta_win_ci95": [
+      -0.07050781249999982,
+      0.078125
+    ],
+    "discordant_fixon_only": 12,
+    "discordant_fixoff_only": 12,
+    "mcnemar_p": 1.0,
+    "delta_floor": 0.2421875,
+    "delta_floor_ci95": [
+      -0.4375,
+      0.9845703124999972
+    ],
+    "delta_hp_end": -0.25
+  },
+  "boss_deaths": {
+    "fixon": 16,
+    "fixoff": 14
+  },
+  "mean_floor": {
+    "fixon": 50.078125,
+    "fixoff": 49.8359375
+  },
+  "sec_per_run": {
+    "fixon": 583.6093828125,
+    "fixoff": 590.736640625
+  },
+  "label": "NOT_SHOWN",
+  "search": {
+    "fixon": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 502.2449973691641,
+      "owned_share": 0.9748372004804957,
+      "fallback_share": 0.02516279951950433,
+      "support_aborts_per_run": 0.1484375,
+      "simulations_per_run": 244610.0234375
+    },
+    "fixoff": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 508.230761897375,
+      "owned_share": 0.9749446377728567,
+      "fallback_share": 0.02505536222714331,
+      "support_aborts_per_run": 0.15625,
+      "simulations_per_run": 244571.71875
+    }
+  }
+}

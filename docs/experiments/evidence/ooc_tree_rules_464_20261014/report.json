@@ -1,0 +1,96 @@
+{
+  "cohort": [
+    93000000,
+    93000127
+  ],
+  "units": {
+    "rulesmerge": 128,
+    "combo": 128
+  },
+  "seed_failures": {
+    "rulesmerge": [],
+    "combo": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "rulesmerge": [],
+    "combo": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "rulesmerge": 128,
+    "combo": 128
+  },
+  "pairs": 128,
+  "win": {
+    "rulesmerge": 0.8359375,
+    "combo": 0.8125
+  },
+  "wins": {
+    "rulesmerge": 107,
+    "combo": 104
+  },
+  "rulesmerge_vs_combo": {
+    "delta_win": 0.0234375,
+    "delta_win_ci95": [
+      -0.0625,
+      0.1015625
+    ],
+    "discordant_rulesmerge_only": 16,
+    "discordant_combo_only": 13,
+    "mcnemar_p": 0.711071103811264,
+    "delta_floor": -0.171875,
+    "delta_floor_ci95": [
+      -1.375,
+      0.953125
+    ],
+    "delta_hp_end": -0.6484375
+  },
+  "boss_deaths": {
+    "rulesmerge": 13,
+    "combo": 20
+  },
+  "mean_floor": {
+    "rulesmerge": 48.7421875,
+    "combo": 48.9140625
+  },
+  "sec_per_run": {
+    "rulesmerge": 691.58329921875,
+    "combo": 651.8496632812501
+  },
+  "label": "NOT_SHOWN",
+  "search": {
+    "rulesmerge": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 607.5076226233203,
+      "owned_share": 0.9716485306092235,
+      "fallback_share": 0.02835146939077652,
+      "support_aborts_per_run": 0.1484375,
+      "simulations_per_run": 219661.546875,
+      "max_depth_mean_per_run": 9.7109375,
+      "mean_simulation_depth": 5.211708047444296,
+      "searches": 9268,
+      "search_max_depth_median": 4.0,
+      "search_max_depth_p90": 8.0,
+      "search_max_depth_max": 14,
+      "pick_top_prior_share": 0.7616529995684074,
+      "pick_top_q_share": 0.5127319810099267
+    },
+    "combo": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 570.1267868825547,
+      "owned_share": 0.9762962962962963,
+      "fallback_share": 0.023703703703703703,
+      "support_aborts_per_run": 0.0,
+      "simulations_per_run": 245229.015625,
+      "max_depth_mean_per_run": 2.0,
+      "mean_simulation_depth": 1.5974427475541517,
+      "searches": 10723,
+      "search_max_depth_median": 2.0,
+      "search_max_depth_p90": 2.0,
+      "search_max_depth_max": 2,
+      "pick_top_prior_share": 0.7877459666138208,
+      "pick_top_q_share": 0.46031894059498274
+    }
+  }
+}
