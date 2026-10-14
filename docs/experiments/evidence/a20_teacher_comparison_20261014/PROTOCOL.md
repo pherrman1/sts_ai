@@ -60,10 +60,10 @@ analyses. None establishes OOC decision quality or student learning.
   Downloaded bytes match published SHA256
   `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
   This is E (encounter and monster embeddings), not Eenc or the generic gen6
-  version-D export. Per the user's instruction, obtain PR #541's v2 support
-  by updating from `main` after that PR merges, then review and verify the
-  integrated producer before freezing. Do not maintain a separate copy of
-  its runtime change. The exact v2 file is loaded without conversion.
+  version-D export. Per the user's instruction, PR #541's v2 support is
+  integrated from `main` merge `531db3e33d5c38674b123932f0d701b066ef21a7`;
+  there is no separate copy of its runtime change. Review and verify the
+  integrated producer before freezing. The exact v2 file is loaded without conversion.
   K=8, weight 400 and root bonus stay fixed.
 
 No qualifying preserved A20 matched transition panel was found. New collection

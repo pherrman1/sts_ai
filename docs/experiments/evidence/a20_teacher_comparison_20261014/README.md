@@ -17,8 +17,8 @@ published gen6 E at commit `0f1b70f278fbc188d9ab96688d67004855d88db8`.
 Its `combat_policy_mlp_g6_E.txt` bytes were recovered and verified against
 SHA256 `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
 The [protocol](PROTOCOL.md) records its exact path and the v2 inference
-dependency. The user requested obtaining that support from `main` after
-#541 merges, rather than carrying a separate runtime copy in this branch.
+dependency, now integrated from `main` merge
+`531db3e33d5c38674b123932f0d701b066ef21a7` as requested by the user.
 Eenc and the generic gen6 version-D export are different models and are not used.
 
 ## Why these settings
@@ -57,8 +57,7 @@ failures remain invalid. Historical modes retain their behavior.
 
 ## Execution with the selected artifact
 
-After integrating #541 from `main` and verifying the clean reviewed producer,
-use the recovered E export:
+After verifying the clean reviewed producer, use the recovered E export:
 
 ```sh
 python3 docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py \
@@ -93,7 +92,10 @@ runner dispatch. No game is executed by these fixtures. Logs are in `checks/`.
 Independent implementation and analysis reviews addressed the initialized-RNG
 coupling, RAW source/control equality, legitimate escape classification and
 runner/analyzer schema agreement. Real-model loading of gen6 E and scientific
-canary behavior remain unverified until the merged v2 support is integrated. The
+canary behavior remain unverified until the canary. The integrated Release
+producer and unit-test builds passed; seven focused CTests passed (the six
+above plus `silver_searcher`, 1.63 seconds). Independent review of the merged
+v2 inference support passed; see `checks/gen6E-main-review.txt`. The
 full repository test suite and gameplay were not run for this preparation.
 
 Knowledge impact: the ledger/index and maintained research page correct the

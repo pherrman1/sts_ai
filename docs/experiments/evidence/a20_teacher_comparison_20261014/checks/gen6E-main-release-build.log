@@ -1,0 +1,32 @@
+[  0%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatValueNet.cpp.o
+[  0%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/CombatDistValueNet.cpp.o
+[  3%] Building CXX object CMakeFiles/sts_core_objects.dir/src/sim/search/NativeSilverBackend.cpp.o
+[ 56%] Built target sts_core_objects
+[ 56%] Building CXX object CMakeFiles/one_combat.dir/apps/combat_model_diagnostics.cpp.o
+[ 59%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat.cpp.o
+[ 62%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_datasets.cpp.o
+../../apps/one_combat.cpp: In function ‘RunResult runFullRun(uint64_t, int, int, bool)’:
+../../apps/one_combat.cpp:269:58: warning: narrowing conversion of ‘std::chrono::duration<double>(std::chrono::operator-<_V2::steady_clock, duration<long int, std::ratio<1, 1000000000> >, duration<long int, std::ratio<1, 1000000000> > >(t1, t0)).std::chrono::duration<double>::count()’ from ‘std::chrono::duration<double>::rep’ {aka ‘double’} to ‘int’ [-Wnarrowing]
+  269 |              std::chrono::duration<double>(t1 - t0).count() };
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+../../apps/one_combat.cpp:269:58: warning: narrowing conversion of ‘std::chrono::duration<double>(std::chrono::operator-<_V2::steady_clock, duration<long int, std::ratio<1, 1000000000> >, duration<long int, std::ratio<1, 1000000000> > >(t1, t0)).std::chrono::duration<double>::count()’ from ‘std::chrono::duration<double>::rep’ {aka ‘double’} to ‘int’ [-Wnarrowing]
+[ 65%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/counterfactual_gen.cpp.o
+[ 68%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ctm_offline_score.cpp.o
+[ 68%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_factor_eval.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_leaf_capture_sink.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_trace.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/semantic_pilot.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/silver_synth_gen.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/silver_synth_replay.cpp.o
+[ 71%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/strategic_gen.cpp.o
+[ 75%] Linking CXX executable one_combat
+lto-wrapper: warning: using serial compilation of 101 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target one_combat
+[ 85%] Built target sts_core_objects
+[ 85%] Building CXX object CMakeFiles/unit-test.dir/apps/test.cpp.o
+[ 90%] Linking CXX executable test
+lto-wrapper: warning: using serial compilation of 35 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target unit-test
