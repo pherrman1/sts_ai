@@ -17925,3 +17925,36 @@ pre-registration (no whole-run confirmation).
 first-boss heal mis-credit, not fixed here) recorded in
 `knowledge-base/investigations/2026-10-14-silver-situational-leaf.md`.
 
+## §468 — Situational Silver leaf bundle in whole runs: A0 not shown, A20 floors worse but more wins (2026-10-14)
+
+**Question (Philipp, 2026-10-14 11:18Z, after §466):** "Keep it in. Fix the bug for the A20 boss. Add the smaller idea
+and test again with all those things." Does Silver with all situational leaf changes together play better whole runs
+than the legacy leaf?
+
+**Design:** pre-registered paired whole runs ([evidence](evidence/silver_leaf_combo_468_20261014/README.md)). Code
+`f41ec4d3`, run commit `7fc41609`, binary `a45ef01e…`. Both arms are the §422 `off` environment (exact-10k live Silver,
+V4 OOC policy, OOC MCTS off, `STS_STOP_AFTER_ACT=3`). `base` sets `STS_SILVER_A20_BOSS_HEAL_FIX`,
+`STS_SILVER_FINAL_FIGHT_LEAF`, `STS_SILVER_NO_LOSS_POTION_CREDIT` and `STS_SILVER_RELIC_HEAL_LEAF` to 0, `all` sets all
+four to 1. A0 seeds 98000000–98000499 and A20 seeds 98000500–98000999, 8 workers (Philipp's pick). Primary A0: Δwin;
+primary A20: Δfloor; paired seed bootstrap 95% CI (10,000 resamples).
+
+**Result:** valid, 2,000/2,000 units rc=0, 500 pairs per cohort, no seed dropped.
+- **A0: `NOT_SHOWN`.** Wins 370 → 357, **Δwin −2.6 pp [−6.4, +1.2]** (discordant 41 vs 54, McNemar p = 0.22);
+  Δfloor −0.18 [−0.74, +0.39]; deaths at the act-3 boss 59 → 69.
+- **A20: `WORSE` on the primary.** **Δfloor −1.29 [−2.42, −0.19]**. Wins 52 → 71, Δwin +3.8 pp [+0.6, +7.0]
+  (discordant 44 vs 25, McNemar p = 0.029).
+- Descriptive (not pre-registered): at A20 the bundle dies more in act 1 (96 → 120; paired 50 vs 26, p = 0.008) and
+  less at the two final bosses (floor 50 deaths 51 → 42, second boss 74 → 48). Of the 113 seeds where both arms reached
+  floor 50, wins 38 → 52. Cost unchanged (42.8 vs 41.1 s per A20 run, 62.4 vs 62.8 s per A0 run).
+
+**Interpretation:** **Inference:** the bundle mixes two kinds of change. The end-of-run parts (A20 heal fix, final-fight
+leaf) act only at floors 50–51, where the A20 bundle wins more often. The every-fight parts (no loss potion credit, relic
+heal leaf) are the only ones active in act 1, where the A20 bundle dies more, so they likely cause the floor loss; this
+run cannot separate the terms. At A0 the every-fight parts may also cost wins (point estimate −2.6 pp, not shown).
+
+**Decision (pre-registered):** A0 NOT_SHOWN and A20 WORSE: all three opt-ins stay off. The A20 heal fix is a correctness
+fix whose A20 cohort was WORSE in the bundle, so whether it stays default on is Philipp's call.
+
+**Knowledge impact:** situational-leaf investigation page updated with the §468 result; option rows in
+`operations/environment-variables.md` unchanged (defaults unchanged pending the decision). Seeds 98000000–98000999 and
+smokes 74070100–74070101 are used.

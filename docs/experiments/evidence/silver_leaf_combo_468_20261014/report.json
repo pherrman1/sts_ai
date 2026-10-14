@@ -1,0 +1,112 @@
+{
+  "label": {
+    "a0": "NOT_SHOWN",
+    "a20": "WORSE"
+  },
+  "a0": {
+    "cohort": [
+      98000000,
+      98000499
+    ],
+    "dropped_seeds": {
+      "base": [],
+      "all": []
+    },
+    "timeouts": [],
+    "stalls": [],
+    "invalid_units": [],
+    "missing_cohort_seeds": {
+      "base": [],
+      "all": []
+    },
+    "non_cohort_seeds": [],
+    "pairs": 500,
+    "wins": {
+      "base": 370,
+      "all": 357
+    },
+    "delta_win": -0.026,
+    "delta_win_ci95": [
+      -0.064,
+      0.012
+    ],
+    "discordant_all_only": 41,
+    "discordant_base_only": 54,
+    "mcnemar_p": 0.21805368187049984,
+    "mean_floor": {
+      "base": 48.536,
+      "all": 48.36
+    },
+    "delta_floor": -0.176,
+    "delta_floor_ci95": [
+      -0.74205,
+      0.3860499999999993
+    ],
+    "delta_hp_end": 4.31,
+    "boss_deaths": {
+      "base": 94,
+      "all": 104
+    },
+    "sec_per_run": {
+      "base": 62.35443120000001,
+      "all": 62.774857000000004
+    },
+    "reached_floor_50": {
+      "base": 429,
+      "all": 426
+    }
+  },
+  "a20": {
+    "cohort": [
+      98000500,
+      98000999
+    ],
+    "dropped_seeds": {
+      "base": [],
+      "all": []
+    },
+    "timeouts": [],
+    "stalls": [],
+    "invalid_units": [],
+    "missing_cohort_seeds": {
+      "base": [],
+      "all": []
+    },
+    "non_cohort_seeds": [],
+    "pairs": 500,
+    "wins": {
+      "base": 52,
+      "all": 71
+    },
+    "delta_win": 0.038,
+    "delta_win_ci95": [
+      0.006,
+      0.07
+    ],
+    "discordant_all_only": 44,
+    "discordant_base_only": 25,
+    "mcnemar_p": 0.029493493531317288,
+    "mean_floor": {
+      "base": 35.254,
+      "all": 33.962
+    },
+    "delta_floor": -1.292,
+    "delta_floor_ci95": [
+      -2.424,
+      -0.18795000000000073
+    ],
+    "delta_hp_end": 0.5,
+    "boss_deaths": {
+      "base": 263,
+      "all": 241
+    },
+    "sec_per_run": {
+      "base": 42.76747178,
+      "all": 41.077292979999996
+    },
+    "reached_floor_50": {
+      "base": 177,
+      "all": 161
+    }
+  }
+}
