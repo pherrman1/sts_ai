@@ -543,12 +543,13 @@ static MultiSelectMode multiSelectMode() {
 }
 
 // Multi-select mask canonicalization (env STS_MULTISELECT_CANONICAL, default
-// off): collapse bitmask choices that select the same multiset of identical
-// hand cards (e.g. exhausting Strikes at hand positions {0,1} vs {0,2}).
+// on since ADR-0034; `0` restores the full mask list): collapse bitmask
+// choices that select the same multiset of identical hand cards (e.g.
+// exhausting Strikes at hand positions {0,1} vs {0,2}).
 static bool multiSelectCanonical() {
     static const bool c = [] {
         const char *e = std::getenv("STS_MULTISELECT_CANONICAL");
-        return e && std::atoi(e) != 0;
+        return !e || std::atoi(e) != 0;
     }();
     return c;
 }

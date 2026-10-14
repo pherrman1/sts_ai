@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-14 for default canonical multi-select masks (ADR-0034); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -218,8 +218,9 @@ decides; `STS_SILVER_ESCAPE_PENALTY` enables them (#370).
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
-selections; `none` keeps only empty. `STS_MULTISELECT_CANONICAL=1` optionally
-collapses masks selecting the same multiset of effect-equivalent hand cards.
+selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
+same multiset of effect-equivalent hand cards collapse to one;
+`STS_MULTISELECT_CANONICAL=0` restores every valid mask.
 Identity includes id, upgrade, turn cost, free-to-play state, and special data,
 so materially distinct copies remain distinct.
 
