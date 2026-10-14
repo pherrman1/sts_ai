@@ -417,10 +417,23 @@ the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolv
 A20 (§447), the GBM wins 3 of 128 runs vs 16 for the current stack (floors −2.21 [−5.29, +0.80], NOT_SHOWN by
 the pre-registered rule), so Gold2 regret did not predict whole-run play.
 
-## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
+## CTM vs low-sim Silver as a combat model (§408) — forecast accuracy needs a corrected comparison
+
+**2026-10-14 mechanism correction:** the §408 producer changed six
+`GameContext` RNG streams but retained `gc.seed`. Both the frozen producer
+revision and current `BattleContext::init` initialize four ordinary combat
+streams from `gc.seed + floorNum`, overwriting those redraws. Silver forecasts
+therefore shared part of the reference fight's hidden future, unlike the CTM's
+marginal prediction. The historical numbers below remain as-run measurements;
+their accuracy advantage does not establish independent-future forecasting
+superiority. This finding does not reclassify §411 gameplay without checking
+its separate OOC future resampling. The bounded [A20 teacher protocol](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
+uses a corrected, A20-only initialization kernel and keeps the old modes
+unchanged. Its comparison remains unrun pending the completed gen5/gen6 prior
+artifact requested by the user; generation and hash must be frozen first.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
-outcome, four low-sim Silver playouts on redrawn combat RNG beat the production
+outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every
 post-combat field (potions, relic counters, max HP, gold, deck), and tie it on
 deaths. The CTM costs 0.6 ms per forecast, versus 64 ms per prior-256 playout

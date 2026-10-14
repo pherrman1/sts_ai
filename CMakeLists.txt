@@ -622,6 +622,14 @@ add_test(NAME teacher_schema_compat COMMAND $<TARGET_FILE:one_combat> teacher_sc
 set_tests_properties(teacher_schema_compat PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME a20_teacher_runner COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/test_a20_teacher_runner.py)
+set_tests_properties(a20_teacher_runner PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME a20_teacher_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/test_analyze_a20_teachers.py)
+set_tests_properties(a20_teacher_analysis PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME learned_stop_teacher_contract COMMAND $<TARGET_FILE:one_combat> learnedstopteacherselftest)
 set_tests_properties(learned_stop_teacher_contract PROPERTIES
     LABELS "core;research-repro"

@@ -15746,6 +15746,18 @@ here.
 
 ## §408 — CTM vs low-sim Silver as combat-outcome forecasters: Silver more accurate on every field, CTM about 400x cheaper (2026-10-09)
 
+**Mechanism correction, 2026-10-14:** inspection of frozen producer
+`ccc3d62a6aa1645097df6040111d8df72056014f` and current code found that
+`ctmSilverRedrawCombatFuture` retains `gc.seed`, while `BattleContext::init`
+resets ai/monsterHp/shuffle/cardRandom from `gc.seed + floorNum`. The claimed
+six-stream redraw below therefore did not survive ordinary battle
+initialization. Silver and the reference shared part of the hidden future;
+the CTM did not receive that information. Preserve all as-run results, but
+do not interpret the reported forecast advantage as independent-future
+superiority. The same caveat applies to §410's comparison against these Silver
+rows. The [A20 pilot protocol](evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
+records a separate corrected kernel; it does not alter these historical modes.
+
 **Question (Philipp, 2026-10-09):** could low-sim Silver with the synthetic
 root prior (§406) replace the CTM stack in OOC planning? Compare speed and
 accuracy on the same job.
