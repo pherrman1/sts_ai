@@ -816,6 +816,20 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
         // credit for damage, turns survived, or unspent resources.
         return bc.outcome == Outcome::PLAYER_VICTORY ? 100.0 : 0.0;
     }
+    if (context.finalFightLeaf) {
+        // The run ends on victory: every win is worth the same (a full-HP
+        // win at the root's max HP); a loss keeps Silver's damage, survival,
+        // energy and draw shaping but no credit for unspent potions.
+        if (bc.outcome == Outcome::PLAYER_VICTORY)
+            return evalWeights.winBonus + rootState->player.maxHp;
+        const bool spikers = bc.encounter == MonsterEncounter::THREE_SHAPES
+            || bc.encounter == MonsterEncounter::FOUR_SHAPES;
+        return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
+            - bc.monsters.monstersAlive * evalWeights.aliveWeight
+            - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
+            + bc.cardsDrawn * evalWeights.drawWeight
+            + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
+    }
     const double potionScore = bc.potionCount * evalWeights.potionWeight;
     // Held "cheat death" effects count at the HP they would restore.
     double deathSaveValue = 0.0;

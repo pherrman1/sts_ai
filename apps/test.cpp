@@ -372,6 +372,37 @@ int testSilverSearcher() {
               "default final-boss evaluator retains handcrafted score");
     }
 
+    // Research opt-in (STS_SILVER_FINAL_FIGHT_LEAF): in a run-ending fight
+    // every victory scores the same and a loss earns no potion credit.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext ended; ended.init(gc, MonsterEncounter::TIME_EATER);
+        search::SilverSearchContext finalFight;
+        finalFight.act = 3;
+        finalFight.actBossRoom = true;
+        finalFight.finalFightLeaf = true;
+        const auto value = [](const BattleContext &bc, const search::SilverSearchContext &ctx) {
+            search::SilverSearcher s(bc, ctx);
+            return s.rootNode().evaluationSum;
+        };
+        ended.outcome = Outcome::PLAYER_VICTORY;
+        ended.player.curHp = 1; ended.potionCount = 0; ended.turn = 20;
+        const double lowWin = value(ended, finalFight);
+        check(lowWin == 53.0 + ended.player.maxHp, "final-fight leaf victory scores win bonus plus max HP");
+        ended.player.curHp = ended.player.maxHp; ended.potionCount = 3; ended.turn = 1;
+        ended.player.gold += 1000;
+        check(value(ended, finalFight) == lowWin, "final-fight leaf ignores HP, potions, gold and speed");
+        ended.outcome = Outcome::PLAYER_LOSS;
+        ended.player.curHp = 0; ended.turn = 10;
+        auto noPotions = ended; noPotions.potionCount = 0;
+        check(value(ended, finalFight) == value(noPotions, finalFight), "final-fight leaf loss has no potion credit");
+        auto original = finalFight; original.finalFightLeaf = false;
+        check(value(ended, original) > value(noPotions, original), "default loss keeps potion credit");
+        check(value(ended, original) - value(ended, finalFight) == 3 * 11.0 / 2,
+              "final-fight leaf loss differs from default only by the potion credit");
+        check(lowWin > value(ended, finalFight), "final-fight leaf victory dominates a loss");
+    }
+
     // Final choice is edge visits only; even Q ties keep enumeration order.
     {
         GameContext gc(CharacterClass::IRONCLAD, 91, 0);

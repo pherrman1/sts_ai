@@ -24,6 +24,10 @@ namespace sts::search {
         // Research-only, supplied by the backend only for an A0 Act-3 cutoff.
         // Final boss wins have no subsequent run-resource utility.
         bool finalBossBinary = false;
+        // Research-only (STS_SILVER_FINAL_FIGHT_LEAF), set by the backend only
+        // when a victory ends the run: no HP, potion, gold, max-HP, speed or
+        // cheat-death utility after the fight, and a loss keeps no potion credit.
+        bool finalFightLeaf = false;
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
