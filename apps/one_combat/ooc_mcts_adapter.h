@@ -187,6 +187,8 @@ private:
                                  sts::search::OocEndpoint &endpoint);
 #ifndef STS_LIVE_ADVISOR
     [[noreturn]] void replaySelectedLeaf(sts::search::OocStateId, std::mt19937_64 &);
+    double stabilitySelectedLeaf(sts::search::OocStateId, std::uint64_t ordinal,
+        std::mt19937_64 &, bool &terminal, sts::search::OocEndpoint &endpoint);
 #endif
     CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
         const PreparedCombatTransition * = nullptr);
@@ -250,6 +252,8 @@ void finalizeLiveOocMctsCapture();
 // replay, then stop before selecting/executing a real root action.
 int oocLeafReplayProbe(std::uint64_t seed, int ascension);
 int oocLeafReplaySelfTest();
+int oocLeafStabilityProbe(std::uint64_t seed, int ascension, const std::string &planPath);
+int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();

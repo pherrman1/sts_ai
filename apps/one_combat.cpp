@@ -3681,9 +3681,11 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
-    } else if (mode == "oocleafreplayprobe") {
-        if (argc != 5 || std::string(argv[2]) != "1") {
-            std::cerr << "usage: one_combat oocleafreplayprobe 1 SEED ASC\n";
+    } else if (mode == "oocleafreplayprobe" || mode == "oocleafstabilityprobe") {
+        const bool stability = mode == "oocleafstabilityprobe";
+        if (argc != (stability ? 6 : 5) || std::string(argv[2]) != "1") {
+            std::cerr << "usage: one_combat " << mode << " 1 SEED ASC"
+                << (stability ? " PLAN.json" : "") << '\n';
             return 2;
         }
         try {
@@ -3692,9 +3694,17 @@ int main(int argc, char **argv) {
                 if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
                     throw std::runtime_error("seed and ascension must be nonnegative integers");
             }
-            return one_combat::oocLeafReplayProbe(std::stoull(argv[3]), std::stoi(argv[4]));
+            return stability
+                ? one_combat::oocLeafStabilityProbe(std::stoull(argv[3]), std::stoi(argv[4]), argv[5])
+                : one_combat::oocLeafReplayProbe(std::stoull(argv[3]), std::stoi(argv[4]));
         } catch (const std::exception &error) {
-            std::cerr << "oocleafreplayprobe: " << error.what() << '\n';
+            std::cerr << mode << ": " << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "oocleafstabilityselftest") {
+        try { return one_combat::oocLeafStabilitySelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
             return 1;
         }
     } else if (mode == "oocleafreplayselftest") {
