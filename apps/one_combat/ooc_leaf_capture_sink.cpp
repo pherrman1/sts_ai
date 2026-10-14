@@ -60,6 +60,19 @@ void OocLeafCaptureSink::replayProbe(Json report) {
     std::lock_guard<std::mutex> lock(mutex_);
     write(report);
 }
+void OocLeafCaptureSink::stabilityProgress(Json report) {
+    report["type"] = "stability_progress";
+    report["provisional"] = true;
+    std::lock_guard<std::mutex> lock(mutex_);
+    write(report);
+}
+void OocLeafCaptureSink::stabilityProbe(Json report) {
+    report["type"] = "stability_probe";
+    report["publicParityQualified"] = false;
+    report["replayability"] = "unavailable";
+    std::lock_guard<std::mutex> lock(mutex_);
+    write(report);
+}
 std::shared_ptr<OocLeafCaptureRoot> OocLeafCaptureSink::begin(std::uint64_t seed,
         std::uint64_t decision, std::uint64_t searchSeed, std::uint64_t simulations, unsigned horizon) {
     std::lock_guard<std::mutex> lock(mutex_);
