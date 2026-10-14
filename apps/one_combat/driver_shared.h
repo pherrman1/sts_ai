@@ -325,6 +325,10 @@ void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 // fight rows at SIMS with the STS_SILVER_ROOT_PRIOR MLP as tree prior.
 void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
                  const std::string &variant, int treeMinVisits, int rootBonus);
+// One encounter only (silverazfocusgen): REPLICATES recorded copies of its first
+// fight per run at SIMS, other fights unrecorded at OTHER_SIMS; a boss is forced.
+void silverAzFocusGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
+                      const std::string &encounter, int replicates, int otherSims, int treeMinVisits, int rootBonus);
 // Offline harness for the silversynthgen corpus (apps/one_combat/silver_synth_replay.cpp):
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);

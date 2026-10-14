@@ -373,6 +373,14 @@ continuations or leaf samples, where every fight of the run searches with the
 (`SilverSearcher::rootPriorBonus`); the tree bonus and the prior-ordered first
 tries at the root stay. The manifest records the model hash, K, the weight,
 the `STS_*` environment and the OOC policy.
+`one_combat silverazfocusgen N SIMS ASC OUT_PREFIX SEED ENCOUNTER REPLICATES
+OTHER_SIMS TREE_MIN_VISITS ROOT_BONUS` records one encounter only (data for a
+fight-specific prior): other fights play unrecorded at `OTHER_SIMS` with the
+same prior; the first `ENCOUNTER` fight of the run is recorded as `REPLICATES`
+detached copies at `SIMS` (copy 0 unperturbed, the rest perturbed as in
+`silversynthgen`; fight id = fight + 1000 × copy), and the run then ends. A boss
+encounter is forced as its act's boss by overwriting `gc.boss` (no game RNG is
+drawn). The manifest adds a `focus` block.
 
 Producers must record fair regime, models and relevant flags so incompatible
 rows are not combined; bestbench metadata records
