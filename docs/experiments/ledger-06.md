@@ -18256,6 +18256,119 @@ not WORSE), the final-fight leaf and the two every-fight options stay off.
 **Knowledge impact:** investigation page updated with §474. Seeds 100000000–100000999 and smokes 74070450–74070451
 are used.
 
+## §465 — Silver AZ MLP prior generation 4: 10k teacher, offline orig CE 1.2192 → 1.2103; a bigger net is not worth its cost (2026-10-14)
+
+**Question (Philipp, 2026-10-13 22:04Z, "if the bigger net doesn't give us anything, do a stronger teacher for
+10k sims"):** after §460 showed no measurable gain from gen 1 to gen 3, does a larger net or a stronger self-play
+teacher move the prior?
+**Design:** first an offline net-size check on the gen-3 window (fold-3 validation CE). Then generation 4 as in §460
+but with a 10k flat exact Silver teacher: frozen brief and worker (main `f73e6ad7`, binary `b4586cfc…`, gen-3 prior,
+K = 8, weight 400, root bonus off), 1,024 A0 runs on 4 cloud workers, warm-started 128/64 training on the window
+orig + x5 + g2 + g3 + g4 with arms written down before the data. Offline monitors only.
+**Result: generation 4 passes every monitor; the gain is the largest so far.**
+- Net size on the gen-3 window: 512/256 1.2838 vs 128/64 1.2869 at 4.5x native cost per root (28.5 vs 6.4 µs).
+  Judged not worth it, so the 10k teacher ran.
+- Self-play: 255/256 units, 400,128 roots. Unit natural-91000228 was lost: seed 91000228 looped forever in
+  `SilverSearcher::rolloutToEnd` (draw/shuffle; not covered by the #522 decision loop guard), killed after 1 h 40 min,
+  not rerun.
+- Training window 2,124,899 roots. Run B (40 epochs, patience 8, LR halving) 1.2678 vs A (2 passes) 1.2730; B is gen 4.
+
+| fold-4 monitor | gen 3 | gen 4 |
+|---|---|---|
+| orig (plain 10k teacher) CE / top-1 | 1.2192 / 56.8% | **1.2103** / 57.2% |
+| g4 held-out self-play | 1.2148 | 1.2052 |
+| x5 | 1.2420 | 1.2363 |
+| mean TV vs previous generation | 0.036 | 0.041 |
+
+- Native parity max |logit diff| 1.3e-6; same 128/64 cost.
+- Net sizes on the gen-4 window, from scratch (validation CE; µs per root): 32/16 1.3123 (3.4), 64/32 1.2891 (4.7),
+  128/64 1.2718 (8.8), 512/256 1.2616 (29.8); warm-started gen 4 1.2678.
+
+**Interpretation:**
+- The per-generation orig CE change went from −0.0008 and −0.0004 (2k teacher) to −0.0089 with the 10k teacher.
+  **Inference:** teacher strength, not more iterations at 2k, is what moves this prior.
+- Play strength of gen 4 was not measured online (PLAN changed to offline gating per generation, Philipp
+  2026-10-14 07:40Z); it is **Unverified**.
+- The `rolloutToEnd` loop is a native bug, reported separately (GitHub issue).
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen4_20261014/README.md). Raw: `/mnt/project-files/silver-az-mlp/gen4/`.
+Seeds 91000000–91000511 and 91001000–91001511 are now used.
+
+**Knowledge impact:** covered by the sentence for §465, §477 and §478 in `architecture/combat-search.md`.
+
+## §477 — Silver AZ MLP prior generation 5: 20k teacher, offline orig CE 1.2103 → 1.1954 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 07:40Z, "Maybe do gen 5 at 20k in the same net"):** does doubling the teacher to 20k
+keep improving the 128/64 prior, gated offline (orig fold-4 CE must improve on the previous generation)?
+**Design:** as §465 with a 20k teacher and the gen-4 prior: frozen brief and worker (per-unit timeout 9,000 s),
+seeds 94000000–94000511 natural and 94001000–94001511 perturbed, 8 workers (Philipp's choice). Window orig + x5 +
+g2–g5. Arms written before training, all warm-started from gen 4: A 2 passes, B the gen-4 recipe (dropout 0.35),
+C as B with dropout 0.15 (from the net-architecture thread); lowest fold-3 validation CE wins.
+**Result: gate PASS.** 256/256 units, 393,757 roots; window 2,518,656 roots (the repo packer ran out of memory at
+this size; the fix is #535, identical output).
+
+| arm | validation CE | orig fold-4 CE | TV vs gen 4 |
+|---|---|---|---|
+| A | 1.2557 | | |
+| B (dropout 0.35) | 1.2496 | 1.2051 | 0.041 |
+| **C (dropout 0.15), gen 5** | **1.2439** | **1.1954** | 0.060 |
+
+- Gen 4 on the same split: 1.2103. Own held-out g5: C 1.1543 vs gen 4 1.1763. Native parity 1.6e-6; same cost.
+
+**Interpretation:**
+- Teacher alone (B): −0.0052 on orig; with the dropout change (C): −0.0149. The net-architecture thread later found
+  that dropout 0.15 vs 0.35 differs by about seed-to-seed noise, so the single-seed B vs C split is not evidence that
+  dropout helped.
+- Play strength **Unverified** (offline only).
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen5_20261014/README.md). Raw: `/mnt/project-files/silver-az-mlp/gen5/`.
+Seeds 94000000–94000511 and 94001000–94001511 are now used.
+
+**Knowledge impact:** covered by the sentence for §465, §477 and §478 in `architecture/combat-search.md`.
+
+## §478 — Silver AZ MLP prior generation 6: 40k teacher; recipe now matters more than data; embedding net E chosen (2026-10-14)
+
+**Question (Philipp, 2026-10-14 11:14Z, "Yeh let's do gen 6 with 40k"):** generation 6 with a 40k teacher, gated
+offline as §477.
+**Design:** as §477 with a 40k teacher and the gen-5 prior (worker: gdb backtrace and kill after 7,200 s), seeds
+97000000–97000511 and 97001000–97001511, 8 workers. Window orig + x5 + g3–g6 (2,531,313 roots). Arms written before
+the data: A/B/C as §477, warm-started from gen 5 on CPU. Arm D was added before any gen-6 data arrived, from the
+net-architecture sweep (`silver_prior_arch_20261014`): 128/64 from scratch, dropout 0.15, cosine LR 1e-3, 25 epochs,
+target 0.5 visit shares + 0.5 softmax of a 512/256 teacher net trained on the same pack. On Philipp's request the
+teacher and D ran on his GPU (about 20x faster than 4 CPU cores), together with the offline-only embedding arms E
+(encounter + monster id + monster incoming damage tables) and Eenc (encounter only), which need the v2 loader (#541).
+Selection among the current-format arms: lowest fold-3 validation CE.
+**Result: 256/256 units, 407,179 roots, no stalls. Gate PASS with D; Philipp chose E (17:13Z, "yes switch to E").**
+
+| arm | validation CE | orig fold-4 CE | all fold-4 CE | TV vs gen 5 |
+|---|---|---|---|---|
+| gen 5 | 1.2128 | 1.1954 | 1.2091 | 0 |
+| A | 1.2104 | 1.1927 | 1.2072 | 0.045 |
+| B (dropout 0.35) | 1.2135 | 1.1964 | 1.2104 | 0.055 |
+| C (dropout 0.15) | 1.2056 | 1.1877 | 1.2026 | 0.064 |
+| D (distilled, cosine) | 1.2029 | 1.1831 | 1.1982 | 0.078 |
+| teacher 512/256 | 1.2044 | 1.1852 | 1.2012 | |
+| **E (enc + monster tables), gen 6** | **1.1937** | **1.1749** | **1.1905** | |
+| Eenc (enc table) | 1.1955 | 1.1769 | 1.1929 | |
+
+- All rows evaluated on the same pack and splits; teacher, E and Eenc by the training script, which reproduces D's
+  values exactly. Native parity: D 2.3e-6; E 2.4e-6 (v2 export, #541). Same per-root cost within noise.
+- Each arm is a single seed.
+
+**Interpretation:**
+- B, the recipe of gens 4 and 5, no longer improves on gen 5 (+0.0010 orig). **Inference:** at this point the
+  training recipe (distillation, cosine schedule, encounter and monster embeddings) moves the prior more than another
+  generation of stronger-teacher data.
+- Gen 6 is E (`combat_policy_mlp_v2`); it loads only in binaries built from main `531db3e3` or later. D stays as the
+  current-format fallback.
+- No online evaluation since §460 (gen 3); whether gens 4–6 play better is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen6_20261014/README.md). Raw and models:
+`/mnt/project-files/silver-az-mlp/gen6/`; pack on branch `claude/silver-gen6-gpu-data` (never merged). Seeds
+97000000–97000511 and 97001000–97001511 are now used.
+
+**Knowledge impact:** one sentence on generations 4–6 in the MLP prior paragraph of `architecture/combat-search.md`.
+
 ## §475 — OOC MCTS without leaf rollout combats at 16384 simulations vs rollout3 at 4096: WORSE, −10.2 pp (2026-10-14)
 
 **Question (Philipp, 2026-10-14 17:12Z, after §472):** "what if we would use our extra time with more mcts
