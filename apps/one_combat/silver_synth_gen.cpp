@@ -16,6 +16,14 @@
 // with the STS_SILVER_ROOT_PRIOR policy model as tree prior at nodes with
 // TREE_MIN_VISITS simulations; ROOT_BONUS 0 drops the bonus at the root, whose
 // visit shares are the label (untried root edges still go in prior order).
+//
+// silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
+// /mnt/project-files/silver-prior-fight-specific/): the run plays every other
+// fight unrecorded at OTHER_SIMS with the same prior, and at the first fight of
+// ENCOUNTER records REPLICATES detached copies at SIMS (replicate 0 unperturbed,
+// the others perturbed as above), then ends. Fight ids are fight + 1000 *
+// replicate. A boss ENCOUNTER is forced as its act's boss (gc.boss is
+// overwritten when the act starts; no game RNG is drawn).
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/silver_synth_keys.h"
@@ -243,8 +251,27 @@ struct AzPrior {
     bool rootBonus = true;
 };
 
+// silverazfocusgen: record only `target`, then end the run.
+struct AzFocus {
+    MonsterEncounter target = MonsterEncounter::INVALID;
+    int replicates = 1;
+    int otherSims = 0;
+    int bossAct = 0;   // act whose boss is forced to `target`; 0 = not a boss
+};
+
+int focusBossAct(MonsterEncounter e) {
+    using ME = MonsterEncounter;
+    switch (e) {
+        case ME::THE_GUARDIAN: case ME::HEXAGHOST: case ME::SLIME_BOSS: return 1;
+        case ME::AUTOMATON: case ME::COLLECTOR: case ME::CHAMP: return 2;
+        case ME::AWAKENED_ONE: case ME::TIME_EATER: case ME::DONU_AND_DECA: return 3;
+        default: return 0;
+    }
+}
+
 SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string &teacherId,
-                        bool perturbed, const std::optional<AzPrior> &az = std::nullopt) {
+                        bool perturbed, const std::optional<AzPrior> &az = std::nullopt,
+                        const std::optional<AzFocus> &focus = std::nullopt) {
     SeedResult result;
     std::ostringstream out;
     FightRecorder recorder;
@@ -298,15 +325,39 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
         trainingRunStart();
         GameContext gc(CharacterClass::IRONCLAD, seed, asc);
         search::ScumSearchAgent2 agent;
-        agent.simulationCountBase = sims;
+        agent.simulationCountBase = focus ? focus->otherSims : sims;
         agent.rng = std::default_random_engine(seed);
         PathHistory path;
         t_curPath = &path;
         using RT = search::GameAction::RewardsActionType;
         while (gc.outcome == GameOutcome::UNDECIDED) {
+            if (focus && focus->bossAct == gc.act) gc.boss = focus->target;
             path.update(gc);
             if (gc.screenState == ScreenState::BATTLE) {
-                if (perturbed) {
+                if (focus && gc.info.encounter == focus->target) {
+                    const int base = recorder.fightIdx;
+                    for (int r = 0; r < focus->replicates; ++r) {
+                        GameContext shadow = detachedCounterfactualCopy(gc);
+                        const auto applied = r == 0 ? nlohmann::json(nullptr)
+                                                    : applyPerturbation(shadow, key(seed, base, 0x9e57, r));
+                        search::ScumSearchAgent2 shadowAgent;
+                        shadowAgent.simulationCountBase = sims;
+                        shadowAgent.rng = std::default_random_engine(key(seed, base, 1, r));
+                        recorder.variant = r == 0 ? "natural" : "perturbed";
+                        recorder.fightIdx = base + 1000 * r;
+                        BattleContext shadowBc;
+                        record(shadow, shadowBc, shadowAgent, applied);
+                    }
+                    break;
+                } else if (focus) {
+                    BattleContext bc;
+                    agent.playoutBattle(gc, bc);
+                    if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
+                        result.error = "natural_fight_invalid";
+                        break;
+                    }
+                    bc.exitBattle(gc);
+                } else if (perturbed) {
                     GameContext shadow = detachedCounterfactualCopy(gc);
                     const auto applied = applyPerturbation(shadow, key(seed, recorder.fightIdx, 0x9e57));
                     search::ScumSearchAgent2 shadowAgent;
@@ -427,9 +478,11 @@ void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                             g_trainingHealthFailures.load(), roots + leaves, seedOffset, sims, asc);
 }
 
-void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
-                 const std::string &variant, int treeMinVisits, int rootBonus) {
-    if (variant != "natural" && variant != "perturbed")
+namespace {
+
+void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
+                 const std::string &variant, int treeMinVisits, int rootBonus, const std::optional<AzFocus> &focus) {
+    if (variant != "natural" && variant != "perturbed" && !focus)
         throw std::runtime_error("silverazgen: variant must be natural or perturbed");
     if (nSeeds < 1 || seedOffset < 0 || sims < 1)
         throw std::runtime_error("silverazgen: requires positive seed count, budget and offset");
@@ -477,7 +530,7 @@ void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
         const auto seed = static_cast<std::uint64_t>(seedOffset + s);
-        const auto result = runSynthSeed(seed, sims, asc, teacherId, variant == "perturbed", az);
+        const auto result = runSynthSeed(seed, sims, asc, teacherId, variant == "perturbed", az, focus);
         #pragma omp critical(silver_az_write)
         {
             rows << result.rows;
@@ -501,6 +554,10 @@ void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         {"environment", environment}, {"oocPolicy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"simulationsPerDecision", sims},
+        {"focus", focus ? nlohmann::json{{"encounter", monsterEncounterEnumNames[static_cast<int>(focus->target)]},
+                                         {"replicates", focus->replicates}, {"otherSims", focus->otherSims},
+                                         {"forcedBossAct", focus->bossAct}}
+                        : nlohmann::json(nullptr)},
         {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed}, {"fights", fights},
                        {"invalidFights", invalidFights}, {"roots", roots}}},
         {"seeds", seeds},
@@ -512,4 +569,229 @@ void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
               << '/' << nSeeds << " fights=" << fights << " roots=" << roots << " -> " << rowsPath << '\n';
     writeTrainingProvenance(rowsPath, "silverazgen", nSeeds, completed, nSeeds - completed,
                             g_trainingHealthFailures.load(), roots, seedOffset, sims, asc);
+}
+
+}  // namespace
+
+void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
+                 const std::string &variant, int treeMinVisits, int rootBonus) {
+    silverAzRun(nSeeds, sims, asc, outPrefix, seedOffset, variant, treeMinVisits, rootBonus, std::nullopt);
+}
+
+void silverAzFocusGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
+                      const std::string &encounter, int replicates, int otherSims, int treeMinVisits, int rootBonus) {
+    AzFocus focus;
+    for (int i = 1; i < static_cast<int>(std::size(monsterEncounterEnumNames)); ++i)
+        if (encounter == monsterEncounterEnumNames[i]) focus.target = static_cast<MonsterEncounter>(i);
+    if (focus.target == MonsterEncounter::INVALID)
+        throw std::runtime_error("silverazfocusgen: unknown encounter " + encounter);
+    if (replicates < 1 || otherSims < 1)
+        throw std::runtime_error("silverazfocusgen: REPLICATES and OTHER_SIMS must be >= 1");
+    focus.replicates = replicates;
+    focus.otherSims = otherSims;
+    focus.bossAct = focusBossAct(focus.target);
+    silverAzRun(nSeeds, sims, asc, outPrefix, seedOffset, "focus", treeMinVisits, rootBonus, focus);
+}
+
+// silverfocusevalgen (§469): paired online check of two combat_policy_mlp_v1 tree priors on one
+// encounter. Each run reaches the first ENCOUNTER fight as silverazfocusgen does (other fights
+// unrecorded at OTHER_SIMS with the STS_SILVER_ROOT_PRIOR model as tree prior, boss forced), then
+// plays REPLICATES detached copies of that fight per arm at ARM_SIMS with the arm's model as root
+// and tree prior (K = TREE_MIN_VISITS, root bonus on, as the ctmsilvergen mlpprior arms). Copy r of
+// both arms shares one combat-future redraw and one search RNG seed, so the arms differ only in the
+// prior. One CSV row per (run, replicate, arm); the run ends after the target fight's copies.
+namespace {
+
+std::uint64_t threadCpuNanos() {
+    timespec ts{};
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+    return static_cast<std::uint64_t>(ts.tv_sec) * 1000000000ULL + static_cast<std::uint64_t>(ts.tv_nsec);
+}
+
+void redrawCombatFuture(GameContext &gc, std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng, &gc.potionRng, &gc.shuffleRng}) {
+        const auto counter = stream->counter;
+        *stream = sts::Random(rng());
+        stream->counter = counter;
+    }
+}
+
+struct FocusEvalArm { std::string name; const search::CombatValueNet *net; };
+
+std::string runFocusEvalSeed(std::uint64_t seed, int asc, const AzFocus &focus, int armSims, int treeMinVisits,
+                             const std::vector<FocusEvalArm> &arms, std::string &error, bool &reached) {
+    std::ostringstream out;
+    reached = false;
+    struct HookScope {
+        ~HookScope() {
+            search::g_nativeSilverRootPriorOverride.reset();
+            search::g_nativeSilverTreePriorOverride.reset();
+            search::g_nativeSilverPriorNetOverride = nullptr;
+            search::g_nativeSilverPlannerSeedOverride.reset();
+        }
+    } hooks;
+    search::g_nativeSilverRootPriorOverride = true;
+    search::g_nativeSilverTreePriorOverride = treeMinVisits;
+    try {
+        trainingRunStart();
+        GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = focus.otherSims;
+        agent.rng = std::default_random_engine(seed);
+        PathHistory path;
+        t_curPath = &path;
+        using RT = search::GameAction::RewardsActionType;
+        int fightIdx = 0;
+        while (gc.outcome == GameOutcome::UNDECIDED) {
+            if (focus.bossAct == gc.act) gc.boss = focus.target;
+            path.update(gc);
+            if (gc.screenState == ScreenState::BATTLE) {
+                if (gc.info.encounter == focus.target) {
+                    reached = true;
+                    for (int r = 0; r < focus.replicates; ++r) {
+                        for (const auto &arm : arms) {
+                            // Same detached copy, combat future and search seed for both arms. The
+                            // battle reseeds its own streams from gc.seed + floor, so copy r >= 1 gets a
+                            // fresh battle seed; the planner seed varies Silver's randomness per copy.
+                            GameContext copy = detachedCounterfactualCopy(gc);
+                            redrawCombatFuture(copy, key(seed, fightIdx, 0xC0FFEE07, r));
+                            if (r > 0) copy.seed = key(seed, fightIdx, 0xBA77, r);
+                            search::g_nativeSilverPlannerSeedOverride = key(seed, fightIdx, 0x91A77E2, r);
+                            search::ScumSearchAgent2 armAgent;
+                            armAgent.simulationCountBase = armSims;
+                            armAgent.rng = std::default_random_engine(key(seed, fightIdx, 2, r));
+                            search::g_nativeSilverPriorNetOverride = arm.net;
+                            BattleContext bc;
+                            const int preHp = copy.curHp, preMaxHp = copy.maxHp, prePotions = copy.potionCount;
+                            const auto t0 = threadCpuNanos();
+                            armAgent.playoutBattle(copy, bc);
+                            const double cpu = static_cast<double>(threadCpuNanos() - t0) / 1e9;
+                            search::g_nativeSilverPriorNetOverride = nullptr;
+                            search::g_nativeSilverPlannerSeedOverride.reset();
+                            const bool decided = bc.outcome != Outcome::UNDECIDED;
+                            const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+                            const bool valid = trainingRunValid(decided);
+                            if (won) bc.exitBattle(copy);
+                            out << seed << ',' << fightIdx << ',' << gc.act << ',' << gc.floorNum << ',' << r << ','
+                                << arm.name << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ','
+                                << (valid ? 1 : 0) << ',' << (won ? 1 : 0) << ',' << (won ? copy.curHp : 0) << ','
+                                << copy.maxHp << ',' << copy.potionCount << ',' << copy.gold << ',' << bc.turn << ','
+                                << std::setprecision(6) << cpu << '\n';
+                        }
+                    }
+                    break;
+                }
+                BattleContext bc;
+                agent.playoutBattle(gc, bc);
+                if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) { error = "natural_fight_invalid"; break; }
+                bc.exitBattle(gc);
+                ++fightIdx;
+            } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+                search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
+            } else if (gc.screenState == ScreenState::REWARDS) {
+                auto &r = gc.info.rewardsContainer;
+                if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+                else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
+                else if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity) search::GameAction(RT::POTION, 0).execute(gc);
+                else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+                else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+                else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+                else evalCardRewardPolicy(gc);
+            } else {
+                agent.stepOutOfCombatPolicy(gc);
+            }
+        }
+    } catch (const std::exception &e) {
+        error = e.what();
+    }
+    t_curPath = nullptr;
+    return out.str();
+}
+
+}  // namespace
+
+void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
+                        const std::string &encounter, int replicates, int otherSims, int armSims, int treeMinVisits,
+                        const std::string &priorA, const std::string &priorB) {
+    AzFocus focus;
+    for (int i = 1; i < static_cast<int>(std::size(monsterEncounterEnumNames)); ++i)
+        if (encounter == monsterEncounterEnumNames[i]) focus.target = static_cast<MonsterEncounter>(i);
+    if (focus.target == MonsterEncounter::INVALID)
+        throw std::runtime_error("silverfocusevalgen: unknown encounter " + encounter);
+    if (nSeeds < 1 || seedOffset < 0 || replicates < 1 || otherSims < 1 || armSims < 1 || treeMinVisits < 1)
+        throw std::runtime_error("silverfocusevalgen: counts, budgets and TREE_MIN_VISITS must be positive");
+    focus.replicates = replicates;
+    focus.otherSims = otherSims;
+    focus.bossAct = focusBossAct(focus.target);
+    trainingCampaignStart();
+    const std::map<std::string, std::string> required = {
+        {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+        {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+        {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"}};
+    nlohmann::json environment = nlohmann::json::object();
+    for (const auto &[name, value] : required) {
+        const char *actual = std::getenv(name.c_str());
+        if (!actual || value != actual) throw std::runtime_error("silverfocusevalgen: requires " + name + "=" + value);
+    }
+    for (char **env = environ; env && *env; ++env) {
+        const std::string entry(*env);
+        const auto eq = entry.find('=');
+        if (entry.rfind("STS_", 0) == 0 && eq != std::string::npos) environment[entry.substr(0, eq)] = entry.substr(eq + 1);
+    }
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
+        throw std::runtime_error("silverfocusevalgen: requires flat exact-budget native Silver");
+    const std::string envPrior = search::nativeSilverRootPriorPath();
+    search::CombatValueNet envNet, netA, netB;
+    if (envPrior.empty() || !envNet.load(envPrior) || !envNet.isPolicyMlp)
+        throw std::runtime_error("silverfocusevalgen: STS_SILVER_ROOT_PRIOR must be a combat_policy_mlp_v1 model");
+    if (!netA.load(priorA) || !netA.isPolicyMlp || !netB.load(priorB) || !netB.isPolicyMlp)
+        throw std::runtime_error("silverfocusevalgen: PRIOR_A and PRIOR_B must be combat_policy_mlp_v1 models");
+    const std::vector<FocusEvalArm> arms = {{"A", &netA}, {"B", &netB}};
+    const std::string rowsPath = outPrefix + ".csv", manifestPath = outPrefix + ".manifest.json";
+    for (const auto &path : {rowsPath, manifestPath})
+        if (std::filesystem::exists(path)) throw std::runtime_error("silverfocusevalgen: refusing to overwrite " + path);
+    std::ofstream rows(rowsPath);
+    if (!rows) throw std::runtime_error("silverfocusevalgen: cannot open " + rowsPath);
+    rows << "seed,fightIdx,act,floor,replicate,arm,preHp,preMaxHp,prePotions,valid,won,curHp,maxHp,potionCount,gold,"
+            "turns,cpuSeconds\n";
+    int completed = 0, reachedCount = 0;
+    nlohmann::json seeds = nlohmann::json::array();
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        const auto seed = static_cast<std::uint64_t>(seedOffset + s);
+        std::string error;
+        bool reached = false;
+        const auto text = runFocusEvalSeed(seed, asc, focus, armSims, treeMinVisits, arms, error, reached);
+        #pragma omp critical(silver_focus_eval_write)
+        {
+            rows << text;
+            rows.flush();
+            if (error.empty()) ++completed;
+            if (reached) ++reachedCount;
+            seeds.push_back({{"seed", seed}, {"complete", error.empty()}, {"error", error}, {"reached", reached}});
+        }
+    }
+    rows.close();
+    const nlohmann::json manifest = {
+        {"schemaVersion", "silver_focus_eval_v1"}, {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"focus", {{"encounter", encounter}, {"replicates", replicates}, {"otherSims", otherSims},
+                   {"forcedBossAct", focus.bossAct}}},
+        {"arms", {{"A", {{"path", priorA}, {"sha256", fileSha256(priorA)}}},
+                  {"B", {{"path", priorB}, {"sha256", fileSha256(priorB)}}}}},
+        {"armSims", armSims}, {"treeMinVisits", treeMinVisits},
+        {"reachPrior", {{"path", envPrior}, {"sha256", fileSha256(envPrior)},
+                        {"weight", search::nativeSilverRootPriorWeight()}}},
+        {"environment", environment}, {"oocPolicy", effectiveOocPolicySpecification()},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
+        {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed}, {"reachedSeeds", reachedCount}}},
+        {"seeds", seeds},
+        {"rows", {{"path", std::filesystem::absolute(rowsPath).string()}, {"sha256", fileSha256(rowsPath)}}}};
+    std::ofstream mf(manifestPath);
+    if (!mf) throw std::runtime_error("silverfocusevalgen: cannot write manifest");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "silverfocusevalgen encounter=" << encounter << " completed=" << completed << '/' << nSeeds
+              << " reached=" << reachedCount << " -> " << rowsPath << '\n';
 }

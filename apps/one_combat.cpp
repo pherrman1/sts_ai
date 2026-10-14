@@ -3681,9 +3681,11 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
-    } else if (mode == "oocleafreplayprobe") {
-        if (argc != 5 || std::string(argv[2]) != "1") {
-            std::cerr << "usage: one_combat oocleafreplayprobe 1 SEED ASC\n";
+    } else if (mode == "oocleafreplayprobe" || mode == "oocleafstabilityprobe") {
+        const bool stability = mode == "oocleafstabilityprobe";
+        if (argc != (stability ? 6 : 5) || std::string(argv[2]) != "1") {
+            std::cerr << "usage: one_combat " << mode << " 1 SEED ASC"
+                << (stability ? " PLAN.json" : "") << '\n';
             return 2;
         }
         try {
@@ -3692,9 +3694,17 @@ int main(int argc, char **argv) {
                 if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
                     throw std::runtime_error("seed and ascension must be nonnegative integers");
             }
-            return one_combat::oocLeafReplayProbe(std::stoull(argv[3]), std::stoi(argv[4]));
+            return stability
+                ? one_combat::oocLeafStabilityProbe(std::stoull(argv[3]), std::stoi(argv[4]), argv[5])
+                : one_combat::oocLeafReplayProbe(std::stoull(argv[3]), std::stoi(argv[4]));
         } catch (const std::exception &error) {
-            std::cerr << "oocleafreplayprobe: " << error.what() << '\n';
+            std::cerr << mode << ": " << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "oocleafstabilityselftest") {
+        try { return one_combat::oocLeafStabilitySelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
             return 1;
         }
     } else if (mode == "oocleafreplayselftest") {
@@ -3961,6 +3971,16 @@ int main(int argc, char **argv) {
                                       "  VARIANT: natural | perturbed; prior: STS_SILVER_ROOT_PRIOR (combat_policy_mlp_v1); ROOT_BONUS: 0 | 1\n"; return 2; }
         silverAzGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]),
                     argv[7], std::stoi(argv[8]), std::stoi(argv[9]));
+    } else if (mode == "silverazfocusgen") {
+        if (argc < 12) { std::cerr << "usage: one_combat silverazfocusgen N_SEEDS SIMS ASC OUT_PREFIX SEED_OFFSET ENCOUNTER REPLICATES OTHER_SIMS TREE_MIN_VISITS ROOT_BONUS\n"
+                                      "  ENCOUNTER: MonsterEncounter enum name, e.g. COLLECTOR (a boss is forced as its act's boss)\n"; return 2; }
+        silverAzFocusGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]),
+                         argv[7], std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]), std::stoi(argv[11]));
+    } else if (mode == "silverfocusevalgen") {
+        if (argc < 13) { std::cerr << "usage: one_combat silverfocusevalgen N_SEEDS ASC OUT_PREFIX SEED_OFFSET ENCOUNTER REPLICATES OTHER_SIMS ARM_SIMS TREE_MIN_VISITS PRIOR_A PRIOR_B\n"; return 2; }
+        silverFocusEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],
+                           std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]),
+                           argv[11], argv[12]);
     } else if (mode == "silversynthfeatures") {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);

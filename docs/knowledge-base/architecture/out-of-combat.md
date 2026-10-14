@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the opt-in A20 CTM stack and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -384,6 +384,19 @@ and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418
 stack (open follow-up). OOC MCTS stays off by default.
 
+**A20 stack (§470, opt-in).** `STS_OOC_MCTS_A20_CTM=1` adds a second hybrid
+sampler beside the default one: the §443 Stage 4 `pathb-a20` Lizard candidate,
+bundled in `selfplay/models/` and pinned by a third built-in manifest
+(`kA20CandidateManifest`, `00bb4da6…`). `liveSamplerFor(gc)` hands it to every
+OOC MCTS search whose root state is at ascension 20; other ascensions keep the
+default stack. That manifest carries `bossSurvivalLogitShift` (−0.18325, fit on
+Stage 1 VALIDATION boss rows): every runtime loaded under a manifest with this
+optional v3 field adds it to the death logit of boss encounters
+(`sts::isBossEncounter`, which includes act-1 bosses fought from an event). An
+artifact declaring `pathb-a20` with no research manifest naming that candidate
+now loads under this built-in manifest. Offline on the fresh Stage 4 corpus the
+calibrated stack passes all five Stage 3a criteria (ledger §470).
+
 A `ctm_research_candidate_v3` manifest also lists each artifact's
 `capabilities` (`{"standard": {...}, "fast": {...}}`), and an artifact's
 metadata `capabilities` must equal its role's entry; production has none.
@@ -667,7 +680,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
-| `ROLLOUT_SHOP` |planner|`planner` (first item of the best affordable bundle) or `greedy` (single best purchase or leave per decision) for shops in leaf rollouts|
+| `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
 | `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
 | `MERGE_OUTCOMES` |1 (ADR-0031)|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
 
@@ -758,6 +771,8 @@ OS thread and forks the complete model/state/callback/RNG context. The child
 closes unrelated descriptors, evaluates once and exits through a bounded
 pipe; after reaping it, the parent performs its scheduled evaluation. A child
 timeout, support error or transport error invalidates the diagnostic.
+Replay and stability probes reject unrelated trace/profile/probe outputs and
+`STS_OOC_MCTS_DECISION_LOG` before starting a game.
 
 The two evaluations must agree exactly on value, terminal status, endpoint,
 combat/step counts and final planner RNG, with the source state/path unchanged.
@@ -767,6 +782,40 @@ result. This establishes only inherited in-memory repeatability for the
 selected leaf; capture JSONL still has `replayability:unavailable`. It is not a
 serialized replay format, an independent-future stability estimate or a
 public-input qualification. Ordinary search never enables this diagnostic.
+
+`one_combat oocleafstabilityprobe 1 87000000 20 PLAN.json` is a separate,
+fixed-cohort conditional-target diagnostic, also guarded by `tools/seed_guard.sh`.
+Its strict `ooc-leaf-stability-v1` plan contains exactly four selectors
+`(decisionIndex, ordinal)`: `(0,1025)`, `(0,2049)`, `(1,1)`, `(1,513)`.
+Each binds its complete expected candidate input and sixteen distinct uint64
+RNG seeds; all 64 seeds must differ. Selection requires nonterminal MAP leaves
+and the native A20 4096-simulation, three-combat V4 teacher. These are requested
+simulations; normal visit-lock early stopping remains active.
+
+Before each selected parent evaluation, one fresh fork evaluates the original
+RNG as a control and sixteen more evaluate the supplied independent streams.
+The parent then evaluates once with its unchanged original RNG. Exact control
+parity, supported evaluations and unchanged source state/path are required.
+Children share a cumulative 30 CPU-second allocation; before each child the
+remaining budget must cover its existing 10 CPU-second cap. Child wall time is
+capped at ten seconds and transport at 64 KiB. Scientific execution must also
+use a frozen outer runner to enforce parent and whole-attempt limits.
+
+Root 0's ordinary action may execute to reach root 1. After the complete root 1
+search, the command stops before executing its action. It emits up to 68
+provisional `stability_progress` records, two ordinary root records, and one
+`stability_probe` summary. Only a complete valid cohort returns
+`STABILITY_MEASURED`; any missing selection, unsupported result, parity failure,
+abort or resource failure produces `INVALID` and retains partial records.
+The external scientific analyzer must additionally verify complete historical
+parent-root parity, producer/artifact custody and frozen stream derivation.
+
+This measures the existing teacher's iterative future-redraw kernel conditional
+on four complete inherited snapshots, including fixed hidden counters and pool
+membership. It does not estimate a value conditioned only on the public input.
+It supplies neither a portable snapshot nor CTM, public-input, training or
+gameplay qualification. The command and its synthetic selftest are unavailable
+in the live-advisor build and are inactive during ordinary search.
 
 `STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
 the full-run trace boundary. Defaults remain off. Thread-local CPU scopes
@@ -1163,15 +1212,15 @@ effect. §463 (128 fresh paired seeds, §433 `combo` with planner rollout shops)
 found no playing-strength difference: 110 vs 110 wins, 0.0 pp [−7.1, +7.8],
 NOT_SHOWN; the default stays on.
 
-`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (default `planner`, verified 2026-10-13)
+`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (live default since ADR-0032; `planner` restores the bundle planner; verified 2026-10-14)
 changes only shops reached inside OOC MCTS leaf rollouts: `nativeShopPlan`
 scores leaving, each affordable item alone and the best removal alone, and
 returns the single best one (leave on ties). The step executes it and the next
 decision asks again, so purchases repeat greedily. It uses the same
 deck-size accounting as the bundle planner (`STS_OOC_SHOP_DECK_SIZE_FIX`). Live shop roots and the MCTS-off chain keep the
 bundle planner. §459 (128 fresh paired seeds, `combo`): wins 103 vs 101,
-+1.6 pp [−5.5, +8.6], NOT_SHOWN, at about 11% less wall time per run; it stays
-opt-in pending Philipp's call.
++1.6 pp [−5.5, +8.6], NOT_SHOWN, at about 11% less wall time per run. Philipp
+made it the default on 2026-10-14 (ADR-0032).
 
 OOC MCTS shop roots split the V4 removal prior across targets: every removal
 target maps to the one `CARD_REMOVE` primitive and `legalActions` divides each

@@ -6,6 +6,7 @@ set -euo pipefail
 declare -A ONE_COMBAT_SEED_INDEX=(
   ["bestbench"]=3
   ["oocleafreplayprobe"]=2
+  ["oocleafstabilityprobe"]=2
   ["datagen3"]=2
   ["e2cgen"]=2
   ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionforcedgen"]=2 ["combattransitionlizardtargetcandidategen"]=2
@@ -18,6 +19,8 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["ctmsilvergen"]=2
   ["silversynthgen"]=2
   ["silverazgen"]=2
+  ["silverazfocusgen"]=2
+  ["silverfocusevalgen"]=2
   ["vwinrefreshbranchselftest"]=2
   ["vwinrefreshfatalcountselftest"]=2
   ["oocnextgen"]=2
@@ -53,8 +56,8 @@ check_seed_counts() {
       fi
       if [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
-        if [ "$mode" = "oocleafreplayprobe" ] && [ "$seeds" != 1 ]; then
-          echo "SEED_GUARD: oocleafreplayprobe requires exactly one source seed" >&2
+        if { [ "$mode" = "oocleafreplayprobe" ] || [ "$mode" = "oocleafstabilityprobe" ]; } && [ "$seeds" != 1 ]; then
+          echo "SEED_GUARD: $mode requires exactly one source seed" >&2
           exit 1
         fi
         # Semantic label pilot is deliberately bounded independently of the

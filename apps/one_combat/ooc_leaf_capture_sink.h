@@ -26,6 +26,8 @@ public:
         const OocGameContextModel &);
     // A stopped root prefix is not an ordinary successful capture root.
     void replayProbe(nlohmann::json report);
+    void stabilityProgress(nlohmann::json report);
+    void stabilityProbe(nlohmann::json report);
 };
 // Called only after the teacher models loaded successfully.
 nlohmann::json oocLeafCaptureProvenance(const nlohmann::json &loadedCtm,
