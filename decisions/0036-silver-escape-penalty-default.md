@@ -25,8 +25,11 @@ answered: "yes keep it on and merge 545".
 - Native Silver (`NativeSilverBackend`) uses an escape penalty of 12 in normal fights and 35 in elite-trigger fights
   when `STS_SILVER_ESCAPE_PENALTY` is unset or empty. `0,0` restores the legacy escape-as-win score; any other
   `<normal>,<elite>` value overrides the default; malformed or negative values stay fatal.
-- `SilverEvalWeights` struct defaults stay 0, so code that builds its own `SilverSearcher` (unit tests, the wire
-  replay tools) is unchanged.
+- `SilverEvalWeights` struct defaults stay 0, so code that builds its own `SilverSearcher` never reads the variable
+  and keeps escape scored as a win. That covers unit tests, the wire replay tools, the live-game advisor
+  (`apps/one_combat/native_silver_advisor.cpp`) and the Silver synthetic-prior generator
+  (`apps/one_combat/silver_synth_gen.cpp`). Live play therefore scores escapes differently from native simulator
+  runs, and synthetic-prior labels stay at `0,0` while native self-play labels use `12,35`.
 
 ## Consequences
 
