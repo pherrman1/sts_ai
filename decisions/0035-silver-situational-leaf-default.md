@@ -31,7 +31,8 @@ merge."
 - With `STS_SILVER_FINAL_BOSS_BINARY=1` and `STS_SILVER_FINAL_FIGHT_LEAF` unset, the final-fight leaf is off (the
   binary objective replaces it); setting both to 1 stays fatal.
 - The live wire path (`searchContextFromWire`) applies the heal fix, no loss potion credit and the relic heal leaf.
-  The wire carries no keys, so it applies the final-fight leaf only to the Heart.
+  The wire carries no keys, so it applies the final-fight leaf only to the Heart. The wire path reads no environment:
+  the `=0` opt-outs do not reach it.
 - `SilverSearchContext` struct defaults stay off, so unit tests and tools that build their own context are unchanged.
 - Teacher manifests (`wholecombatgen` loader): a `final_fight_leaf`, `no_loss_potion_credit` or `relic_heal_leaf`
   field, when present, must match the effective option. Older teachers record none of them and are not checked.
