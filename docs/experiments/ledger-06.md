@@ -18239,3 +18239,76 @@ files and reports are archived; models/binary remain preserved locally.
 comparison, and the environment interface documents durable v2 progress.
 This entry and the evidence packet preserve the prospective design and results;
 §472 remains incomplete and excluded. No production defaults changed.
+
+## §474 Larger calibrated A20 CTM/gen6 E Silver teacher comparison (2026-10-14)
+
+**Verdict:** `DESCRIPTIVE_COMPARISON_MEASURED`. User-authorized prospective
+follow-up to §473: 32 fresh sources (`97150910–97150941`), excluded canary
+`97150901`, 16 paired Silver futures per selected fight, eight predetermined
+sources also running both 10k conditions. The calibrated A20 CTM replaces the
+pilot's uncalibrated manifest; neither earlier attempt is pooled. Protocol,
+full tables, nominal intervals, raw evidence and reviews:
+[larger study](evidence/a20_teacher_comparison_20261014/gen6E-large-1/RESULTS.md).
+
+**Freeze:** clean independently reviewed producer
+`aa10fe8dfb6d4f63ba26f18a755b5f3f3a725117`, binary SHA256
+`f3f98d84ef57faba177ebcb3842ece31b65c9524cb168fb3f516b2641e8afa5f`, freeze
+`8e7ff63a781a94013ad79ca9fdb1bcd1525121abfff0ee120dec33c200cbd1aa`.
+Exact gen6 E prior `ca9bd7f2…`, calibrated manifest `00bb4da6…`; FAST/STD
+native weights unchanged. A20 Ironclad, V4 OOC policy, OOC MCTS off, no keys,
+stop after Act 3, original-future plain10k source/control. Fixed six-slot
+selection before support/outcome filtering, corrected independent native
+combat future kernel, K8/weight400/root bonus for prior arms. Four one-thread
+workers, 1200 CPU/1800 wall seconds/source, at most 33 attempts, no retries,
+replacements or cap extensions. The canary passes all six slots before cohort.
+
+**Integrity/coverage:** 574 captured fights,147 selected/supported fights,
+5,696 redrawn forecast fights and147 exact controls; zero unsupported/invalid
+rows or control mismatches. Forty-five absent slots remain skipped. Source
+state-count distribution: 4×2,3×3,8×4,4×5,13×6. Main later-act coverage gates
+pass with 17 Act 2 boss and13 Act 3 boss source clusters; anchor coverage is
+only 2/2. Source sampling paths end in 28 deaths and 4 victories, not a gameplay
+A/B. Total process CPU including canary **5,074.70s**, largest source918.11s.
+All 33 receipts and resource/concurrency/progress/custody checks pass.
+
+Principal equal-source results, with 5,000 paired source-cluster bootstrap
+resamples (analysis seed 97150999, nominal 95% percentile intervals):
+
+| Main forecaster (32 sources/147 fights) | RAW HP RMSE [95% interval] | CPU per forecast |
+| --- | ---: | ---: |
+| Calibrated CTM |12.017 [10.441,13.511]|0.101ms analytic expectation|
+| Plain2k |11.853 [10.011,13.606]|5.116s/16 futures|
+| Gen6 E2k |11.599 [9.692,13.396]|5.211s/16 futures|
+
+All main paired forecast MSE/death-Brier intervals include zero: no resolved
+fidelity superiority, equivalence or noninferiority. The paired prior2k
+controller improves RAW HP by **+0.796 [0.247,1.348]** and death by
+**−0.921 [−1.784,−0.068]pp**, for +0.00597s/fight search CPU. Those are nominal
+secondary conditional comparisons, without multiplicity adjustment; the death
+bound is near zero. They do not establish whole-run wins or OOC ranking.
+
+The eight-source/31-fight anchors have HP RMSE CTM 11.326, plain2k 11.225,
+prior2k 8.797, plain10k 9.786, prior10k 9.357. Plain10k−plain2k forecast MSE is
+−30.25 [−66.66,−3.08] HP², but controller HP/death differences include zero.
+Prior10k−prior2k fidelity/controller gains remain unresolved. Both 10k forecasts
+cost 28.59–29.59s/16 futures (about 5.4–5.6× the same-subset 2k cost). Only two
+anchor sources reach each later boss, limiting cross-act budget conclusions.
+
+**Interpretation (Inference):** retain calibrated CTM for cheap bulk evaluation
+and nominate gen6 E2k for a separately registered selective OOC decision-value
+and matched-CPU audit. Single original-future references retain stochastic
+noise; Silver finite 16 means and CTM analytic expectation have different
+precision. Timing scopes differ. No training corpus for OOC leaf states,
+public-input qualification, OOC gameplay, optimal budget or default promotion.
+
+**Verification:** Release one_combat/probe builds PASS; final affected 8/8 CTests
+PASS (initial missing-probe failure preserved and repaired); core 21/new 4
+synthetic tests PASS. Independent implementation review before freeze and
+independent raw-CSV/custody/all-interval outcome audit afterward PASS, including
+exact saved-report reproduction. All 314 original top-level output/metadata
+files and 13 producer source/tool files archived; originals/binary/models remain
+local with hashes. Full RAW/RNG equality is producer-checked and code-verified;
+retained CSV control/source fields independently agree.
+
+**Knowledge impact:** evidence ledger/current research and opt-in dataset
+interface. Earlier attempts remain unchanged and excluded; defaults unchanged.

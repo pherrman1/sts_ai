@@ -1,0 +1,25 @@
+{
+  "verdict": "PASS",
+  "producerGitSha": "aa10fe8dfb6d4f63ba26f18a755b5f3f3a725117",
+  "freezeSha256": "8e7ff63a781a94013ad79ca9fdb1bcd1525121abfff0ee120dec33c200cbd1aa",
+  "cohortReportSha256": "92e97cf03bcee72e5df6b9042d71b64931ac1ea446d2ad3abded2a1e21c18cb6",
+  "reviewers": [
+    "recent_ooc_evidence",
+    "ooc_architecture"
+  ],
+  "checks": [
+    "All27 frozen artifact hashes and14 tracked artifacts versus producer bytes",
+    "All33 job manifests/identities/receipts/latches/progress/RNG/control/caps",
+    "Independent raw-CSV principal forecast/cost/controller calculations",
+    "Every preregistered source-bootstrap interval independently reconstructed",
+    "Exact in-memory reproduction of canary and cohort reports"
+  ],
+  "interpretation": [
+    "No resolved main CTM-vs-Silver fidelity difference; no equivalence/noninferiority proof",
+    "Nominal conditional prior2k controller benefit; not whole-run wins/OOC qualification",
+    "Main later-act gates pass17/13, anchors only2/2 boss sources",
+    "CTM bulk and gen6 E2k selective OOC audit are defensible next candidates; no training/default promotion"
+  ],
+  "fullRawControlAudit": "Equality is checked by frozen producer, implementation verified; retained CSV source/control fields independently agree",
+  "noSeedsOrReportChangesByReviewers": true
+}

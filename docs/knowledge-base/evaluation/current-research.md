@@ -464,6 +464,23 @@ panel; the pilot remains preserved separately. The old uncalibrated CTM RMSE
 does not describe the calibrated manifest. This contract makes no training,
 OOC decision-value, gameplay or default-promotion claim.
 
+The [completed larger study](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-large-1/RESULTS.md)
+(§474) is **DESCRIPTIVE_COMPARISON_MEASURED**: 32 sources, 147 matched fights,
+5,696 forecast replays, all controls/custody/progress/caps pass. Main later-act
+coverage passes (17 Act 2 boss / 13 Act 3 boss sources). Equal-source HP RMSE
+is CTM 12.017 [10.441,13.511], plain2k 11.853 [10.011,13.606], prior2k
+11.599 [9.692,13.396]; all paired main fidelity intervals include zero.
+Neither superiority nor equivalence is established. Gen6 E2k has a nominal
+paired controller benefit: +0.796 [0.247,1.348] RAW HP and −0.921
+[−1.784,−0.068]pp death, for +0.00597s/fight search CPU. The eight-source
+10k subset has 31 states but only two sources at each later boss; its
+28.6–29.6s/16-future forecast cost is about 5.4–5.6× the 2k conditions,
+with incremental controller benefit unresolved. **Inference:** retain CTM
+for bulk evaluation and nominate gen6 E2k for a selective OOC decision-value
+audit; do not infer training-teacher qualification or increased run wins.
+Total CPU including excluded canary was 5,074.70s; largest source 918.11s
+under the 1200s cap. Earlier attempts remain separately preserved and excluded.
+
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every

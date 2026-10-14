@@ -1,4 +1,15 @@
-# A20 teacher comparison: gen6 E follow-up complete
+# A20 teacher comparison: larger calibrated study complete
+
+The [larger calibrated study](gen6E-large-1/RESULTS.md) completed **32 sources,
+147 matched fights and 5,696 forecast replays** under [PROTOCOL-LARGE.md](PROTOCOL-LARGE.md).
+Exact verdict: **DESCRIPTIVE_COMPARISON_MEASURED**. Main forecast-fidelity
+contrasts are unresolved; gen6 E at 2k shows a small conditional controller
+benefit. Later-act main coverage passes, while the eight-source 10k subset
+has limited boss coverage. Independent implementation and outcome audits pass.
+No training, OOC gameplay qualification or default change follows.
+`run_large.py` / `tools/analyze_a20_teachers_large.py` implement this contract;
+`run_pilot.py` and the core analyzer retain their v2 defaults. Both prior
+attempts and their exact source archives remain preserved separately.
 
 The [fresh v2 follow-up](gen6E-attempt-2/RESULTS.md) completed all four sources,
 14 supported states and 14 exact controls: **DESCRIPTIVE_COMPARISON_MEASURED**.
@@ -8,7 +19,7 @@ The user authorized an observability/resource follow-up under
 [PROTOCOL-V2.md](PROTOCOL-V2.md): flushed per-replay progress, 600 CPU/900 wall
 seconds per source and a fresh fixed panel. The first attempt is not pooled
 into it. Its original frozen tooling is archived in
-`gen6E-attempt-1/frozen-source.tar.gz`; the current runner/analyzer implement v2.
+`gen6E-attempt-1/frozen-source.tar.gz`; the pilot runner/core analyzer retain v2 defaults.
 The bounded diagnostic compares
 the unchanged PR #524 A20 CTM with plain/prior Silver at **2k and 10k**
 simulations per combat decision. The user selected the completed
