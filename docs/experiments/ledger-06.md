@@ -17820,6 +17820,39 @@ teacher/default promotion, additional seed or #506 contract change occurred.
 **Knowledge impact:** document the diagnostic interface in the OOC architecture
 and CODE_MAP; update #507's current status in `evaluation/current-research.md`.
 
+## §463 — Shop deck-size accounting on vs off in §433 `combo`: no difference, default stays (2026-10-14)
+
+**Question (Philipp, 2026-10-14, "Paired check" on the card "Test the deck-size default on/off before keeping it,
+or revert it now?"):** ADR-0030 (#523) made the corrected shop deck-size accounting the default without a game test.
+After §459, review noticed (post hoc, different seeds and binaries) that the §459 `planner` arm won 101/128 against
+§449 `x2bpub`'s 114/128 in an otherwise matching `combo` environment. Does the correction change how `combo` plays on
+the same seeds?
+**Design:** [PREREG](evidence/ooc_deck_size_fix_463_20261014/PREREG.md), frozen after independent pre-launch review
+(code `06ff0e75`, binary `b4586cfc…95e1`). Arms `fixon` (the §459 `planner` arm: §433 `combo`, pinned
+`STS_OOC_PUBLIC_FUTURES=8`, X2-B public `STS_WIN_NET`, `STS_OOC_MCTS_ROLLOUT_SHOP=planner`,
+`STS_OOC_SHOP_DECK_SIZE_FIX=1`) and `fixoff` (the same with `=0`). Fresh seeds 92000000–92000127, 8 cloud workers.
+Primary: Δwin fixon − fixoff, paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | fixon | fixoff | fixon − fixoff |
+|---|---|---|---|
+| wins / 128 | 110 | 110 | 0.0 pp [−7.1, +7.8]; McNemar p = 1.0 (12 vs 12 discordant) |
+| mean floor | 50.08 | 49.84 | +0.24 [−0.44, +0.98] |
+| boss deaths | 16 | 14 | |
+| seconds per run | 583.6 | 590.7 | |
+
+**Interpretation:**
+- No playing-strength effect of the deck-size correction is detectable; the CI excludes a loss larger than 7.1 pp.
+  By the prereg the ADR-0030 default stays on.
+- Both arms won 85.9% on these seeds, in line with §433/§449/§451. **Inference:** the §459 cohort's 78.9% was seed
+  variance, not the deck-size default. This binary also carries the #522 loop guard that §459's did not; it is
+  shared by both arms and does not affect this comparison.
+
+**Evidence:** [packet](evidence/ooc_deck_size_fix_463_20261014/README.md). Raw: `/mnt/project-files/ooc-deck-size-463/`
+(one tar per worker). Seeds 92000000–92000127 and smokes 74063000–74063001 are now used.
+
+**Knowledge impact:** the deck-size paragraph in `architecture/out-of-combat.md` and an evidence note in ADR-0030.
+
 ## §466 — Final-fight Silver leaf: potions no longer hoarded, act-3 boss win rate unchanged (2026-10-14)
 
 **Question:** in the run-ending fight Silver's leaf still pays 11 per potion on a win and 5.5 on a
