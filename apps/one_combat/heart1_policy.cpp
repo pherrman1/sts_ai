@@ -974,6 +974,14 @@ int replayCommand(int argc, char **argv) {
     int step = 0;
     for (const auto &s : plan) {
         nlohmann::json row = {{"step", step}};
+        // silverbot keeps a reward screen open with only "proceed" left after
+        // a Neow card or potion pick; ours has already left it. Skip that step.
+        if (s.value("proceed_only", false) && gc.screenState != ScreenState::REWARDS) {
+            row["skipped"] = "proceed_absent";
+            out << row.dump() << '\n';
+            ++step;
+            continue;
+        }
         if (s.value("record", false)) {
             Choice choice;
             std::string reason;

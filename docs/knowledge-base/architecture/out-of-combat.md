@@ -1768,9 +1768,14 @@ exclusive with live OOC MCTS.
 - Parity: `tools/heart1/heart1_reference.py score` runs silverbot's own
   `collate_fn` and `NN` on our records; `tools/heart1/heart1_parity_seeds.py
   early` replays silverbot's engine's early-game decisions (Neow to the first
-  combat) in our engine and compares records and logits.
+  combat) in our engine and compares records and logits. It compares each
+  branch up to its first divergence, attributes that divergence to a known
+  engine difference (below), and fails on any argmax disagreement or an
+  unexplained divergence.
 - Engine differences silverbot's policy sees through this adapter:
   - Neow "transform two cards" also adds a random curse in our engine.
+  - After a Neow card or potion pick, silverbot's engine keeps the reward
+    screen open with only "proceed" left; ours goes straight to the map.
   - Our engine offers a reward potion only with a free slot; silverbot's always
     does. Singing Bowl is not enumerated by our `getAllActionsInState`, so the
     adapter adds it.
