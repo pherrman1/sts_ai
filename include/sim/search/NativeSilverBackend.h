@@ -127,6 +127,10 @@ namespace sts::search {
     // weight). Unset elsewhere.
     struct CombatValueNet;
     extern thread_local const CombatValueNet *g_nativeSilverPriorNetOverride;
+    // Research-only (final-fight leaf replay): when set, replaces
+    // STS_SILVER_FINAL_FIGHT_LEAF for the current thread's combats (it still
+    // applies only to fights whose victory ends the run). Unset elsewhere.
+    extern thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 

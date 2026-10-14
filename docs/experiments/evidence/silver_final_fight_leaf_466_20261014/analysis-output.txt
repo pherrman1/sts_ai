@@ -1,0 +1,7 @@
+replicates R=8; valid act-3 boss fights 236; excluded {}
+base10k: win 0.8633; deaths 258 (holding potions 105); potions held per win 1.191; cpu/fight 9.18s
+final10k: win 0.8639; deaths 257 (holding potions 0); potions held per win 0.135; cpu/fight 10.05s
+PRIMARY final10k - base10k win rate: +0.05 pp [-1.27, +1.38] over 236 source seeds -> NOT_SHOWN
+  Awakened One: fights 62, mean diff -1.21 pp
+  Donu And Deca: fights 85, mean diff +0.88 pp
+  Time Eater: fights 89, mean diff +0.14 pp
