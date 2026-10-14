@@ -276,66 +276,99 @@ static bool takeRewardRelicRuleStep(GameContext &gc) {
     return false;
 }
 
+thread_local const char *t_oocChainHandler = "";
+const char *lastOocChainHandler() { return t_oocChainHandler; }
+
+bool oocTreeRuleStep(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return true;
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    auto &r = gc.info.rewardsContainer;
+    if (r.goldRewardCount > 0) { search::GameAction(RT::GOLD, 0).execute(gc); return true; }
+    if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity && !gc.hasRelic(RelicId::SOZU)) {
+        search::GameAction(RT::POTION, 0).execute(gc); return true;
+    }
+    // Nothing left (keys only count when STS_COLLECT_KEYS is on): leaving is the only sensible action.
+    if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0
+        && !(g_collectKeys && (r.emeraldKey || r.sapphireKey))) {
+        search::GameAction(RT::SKIP).execute(gc); return true;
+    }
+    return false;
+}
+
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
+    // Diagnostic only (STS_OOC_MCTS_DECISION_LOG, STS_OOC_DECISION_TRACE): the
+    // chain layer that handled this step. Never read by any policy.
+    const auto tag = [](const char *name) { t_oocChainHandler = name; return true; };
+    tag("unknown");
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
+        tag("match_and_keep");
         static const one_combat::PathHistory emptyPath;
         matchAndKeepPolicyStep(gc, agent, restV, shopV, t_curPath ? *t_curPath : emptyPath,
                                gc.seed, 0, nullptr);
         return;
     }
-    if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return;
+    if ((openTreasureChestRuleStep(gc) && tag("chest_rule")) || (takeRewardRelicRuleStep(gc) && tag("relic_rule"))) return;
     if (!t_oocHypotheticalStep && !t_oocContinuation && t_curPath
-        && one_combat::oocGbmRankerPolicy(gc, *t_curPath)) return;
+        && one_combat::oocGbmRankerPolicy(gc, *t_curPath) && tag("gbm_ranker")) return;
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                 && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     t_shopV = shopV;
-    if (one_combat::oocActionNNPolicy(gc)) {
-    } else if (actFightProbeAllOocPolicy(gc)) {
-    } else if (one_combat::oocMapRouteSearchPolicy(gc, agent)) {
-    } else if (one_combat::oocOnePlyMapPolicy(gc, agent)) {
+    if (one_combat::oocActionNNPolicy(gc) && tag("action_nn")) {
+    } else if (actFightProbeAllOocPolicy(gc) && tag("act_fight_probe")) {
+    } else if (one_combat::oocMapRouteSearchPolicy(gc, agent) && tag("map_route_search")) {
+    } else if (one_combat::oocOnePlyMapPolicy(gc, agent) && tag("v4_map")) {
     } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+        tag(g_pathV ? "map_path_v" : "map_heuristic");
         if (g_pathV) one_combat::pathVPolicy(gc);
         else search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-    } else if (one_combat::oocOnePlyEventPolicy(gc, agent)) {
+    } else if (one_combat::oocOnePlyEventPolicy(gc, agent) && tag("v4_event")) {
     } else if (g_eventV && gc.screenState == ScreenState::EVENT_SCREEN
-               && gc.curEvent != Event::NEOW && one_combat::eventVPolicy(gc)) {
+               && gc.curEvent != Event::NEOW && one_combat::eventVPolicy(gc) && tag("event_v")) {
     } else if (gc.screenState == ScreenState::REWARDS) {
         if (!t_oocHypotheticalStep && !t_oocContinuation) { // a hypothetical or branch reward is not a real one
             one_combat::captureE2cPost(gc);
             one_combat::recordE2cScreenState(gc.screenState);
         }
-        if (one_combat::collectFreeOocReward(gc, g_collectKeys)) {}
-        else if (actFightProbeDraftPolicy(gc)) {}
-        else if (bossGatedDraftPolicy(gc)) {}
-        else if (one_combat::oocOnePlyCardRewardPolicy(gc, agent)) {}
-        else one_combat::serverCardRewardPolicy(gc);
-    } else if (oocShopBeamPolicy(gc)) {
-    } else if (one_combat::oocOnePlyShopPolicy(gc, agent)) {
+        if (one_combat::collectFreeOocReward(gc, g_collectKeys)) { tag("free_reward"); }
+        else if (actFightProbeDraftPolicy(gc)) { tag("act_fight_probe_draft"); }
+        else if (bossGatedDraftPolicy(gc)) { tag("boss_gated_draft"); }
+        else if (one_combat::oocOnePlyCardRewardPolicy(gc, agent)) { tag("v4_card_reward"); }
+        else { tag("card_reward_heuristic"); one_combat::serverCardRewardPolicy(gc); }
+    } else if (oocShopBeamPolicy(gc) && tag("shop_beam")) {
+    } else if (one_combat::oocOnePlyShopPolicy(gc, agent) && tag("v4_shop")) {
     } else if (shopV && gc.screenState == ScreenState::SHOP_ROOM) {
+        tag("shop_v_planner");
         one_combat::shopVPolicy(gc);
     } else if (shopV && gc.curRoom == Room::SHOP && inRemoveSelect) {
+        tag("shop_remove_v");
         one_combat::removeSelectVPolicy(gc);
-    } else if (one_combat::oocOnePlyRestPolicy(gc, agent)) {
+    } else if (one_combat::oocOnePlyRestPolicy(gc, agent) && tag("v4_rest")) {
     } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM
-               && one_combat::restWinPolicy(gc)) {
-    } else if (one_combat::oocOnePlyUpgradeSelectPolicy(gc, agent)) {
+               && one_combat::restWinPolicy(gc) && tag("rest_win")) {
+    } else if (one_combat::oocOnePlyUpgradeSelectPolicy(gc, agent) && tag("v4_upgrade_select")) {
     } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+        tag("upgrade_select_win");
         one_combat::upgradeSelectWinPolicy(gc);
     } else if (restV && gc.screenState == ScreenState::REST_ROOM
-               && one_combat::restVPolicy(gc)) {
+               && one_combat::restVPolicy(gc) && tag("rest_v")) {
     } else if (restV && gc.screenState == ScreenState::CARD_SELECT
                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+        tag("upgrade_select_v");
         one_combat::upgradeSelectVPolicy(gc);
-    } else if (one_combat::oocOnePlyBossRelicPolicy(gc, agent)) {
+    } else if (one_combat::oocOnePlyBossRelicPolicy(gc, agent) && tag("v4_boss_relic")) {
     } else if (g_bossRelicV && gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
+        tag("boss_relic_v");
         one_combat::bossRelicVPolicy(gc);
-    } else if (one_combat::oocOnePlyTreasurePolicy(gc, agent)) {
+    } else if (one_combat::oocOnePlyTreasurePolicy(gc, agent) && tag("v4_treasure")) {
     } else if (g_neowV && gc.screenState == ScreenState::EVENT_SCREEN
                && gc.curEvent == Event::NEOW) {
+        tag("neow_v");
         one_combat::neowVPolicy(gc);
     } else {
+        tag("agent_default");
         agent.stepOutOfCombatPolicy(gc);
     }
 }
@@ -480,6 +513,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceBy = "chest_rule";
             } else if (takeRewardRelicRuleStep(gc)) {
                 traceBy = "relic_rule";
+            } else if (one_combat::liveOocMctsTreeRules() && oocTreeRuleStep(gc)) {
+                traceBy = "tree_rule";
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
@@ -488,6 +523,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             else traceBy = "mcts";
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
+                              {"handler", std::string(traceBy) == "chain" ? t_oocChainHandler : ""},
                               {"pre", tracePre}, {"offer", traceOffer}, {"post", oocTraceState(gc)}});
         }
     }
