@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-09-27 for the OOC MCTS CTM stack default when enabled; 2026-09-25 for the native one-action-root bypass (§354) and native-only Silver (ADR-0022); 2026-09-24 for the native Silver default (ADR-0021) and Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
+Last verified: 2026-10-14 for the ADR-0034 Recall/multi-select defaults; 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-09-27 for the OOC MCTS CTM stack default when enabled; 2026-09-25 for the native one-action-root bypass (§354) and native-only Silver (ADR-0022); 2026-09-24 for the native Silver default (ADR-0021) and Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
 artifacts relocated from `build/` to `models/`; V4 token-net artifact =
 skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 key collection is
 explicitly opt-in — pre-32281a2 baselines are Act-3-only).
@@ -30,6 +30,10 @@ every Searcher2/Searcher3 row below is historical and needs a binary built
 before the respective ADR to reproduce. The Searcher2-era combat models
 (compact policy prior, V_combat leaf, PVNet, DistVNet) are no longer loaded for
 play.
+Since ADR-0034 (2026-10-14) the keys-off campfire chain no longer takes
+optional Ruby Recall and hand multi-selects enumerate one mask per selected
+card multiset (`STS_OOC_SKIP_OPTIONAL_RECALL=0`, `STS_MULTISELECT_CANONICAL=0`
+restore the old behavior for earlier baselines).
 Fallback card removal now ranks lowest acquisition weight first by default
 (user-authorized promotion following §395). Unset and
 `STS_OOC_REMOVE_LOW_OBTAIN_WEIGHT=1` use the corrected ordering; explicit `0`

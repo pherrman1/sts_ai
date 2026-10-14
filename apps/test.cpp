@@ -14,6 +14,7 @@
 #include <csignal>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <initializer_list>
 #include <sstream>
 #include <sys/wait.h>
@@ -713,6 +714,42 @@ int testSilverSearcher() {
         if (loaded) mlp.predictPolicyMlp(state.data(), actions.data(), targets, 2, out);
         check(std::abs(out[0] - 6.85) < 1e-5 && std::abs(out[1] - 4.45) < 1e-5,
               "combat_policy_mlp_v1 logits match the hand computation");
+        // combat_policy_mlp_v2 embedding tables: encounter 5 -> enc row 5, m0 id 7
+        // -> mon_id row 8, m0 incoming damage 3 -> mon_dmg row 3; the empty slot
+        // m1 (id -1, damage 9) must add nothing, so rows 0 and 9 carry large
+        // poison values. The same tables under the v1 header must not load.
+        {
+            std::ofstream f(path, std::ios::app);
+            auto table = [&](const char *key, std::map<int, std::pair<float, float>> set) {
+                f << key << " 128\n";
+                for (int r = 0; r < 128; ++r) {
+                    const auto it = set.find(r);
+                    f << (it == set.end() ? 0.f : it->second.first) << ' ' << (it == set.end() ? 0.f : it->second.second) << ' ';
+                }
+                f << '\n';
+            };
+            table("enc", {{5, {1.f, 0.f}}});
+            table("mon_id", {{0, {100.f, 100.f}}, {8, {0.5f, 0.f}}});
+            table("mon_dmg", {{3, {0.f, 0.25f}}, {9, {100.f, 100.f}}});
+        }
+        search::CombatValueNet v1Tables;
+        check(!v1Tables.load(path.string()), "combat_policy_mlp_v1 with embedding tables is rejected");
+        {
+            std::ifstream in(path);
+            std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+            text.replace(0, std::string("combat_policy_mlp_v1").size(), "combat_policy_mlp_v2");
+            std::ofstream(path) << text;
+        }
+        search::CombatValueNet emb;
+        const bool embLoaded = emb.load(path.string()) && emb.isPolicyMlp;
+        check(embLoaded, "combat_policy_mlp_v2 with embedding tables loads");
+        const int mon = search::combatMonsterSlotOffset(), mf = search::kCombatMonsterSlotFeatures;
+        state[1] = 5.f;                                        // encounter
+        state[mon] = 7.f; state[mon + 4] = 3.f;                // m0Id, m0 incoming damage
+        state[mon + mf] = -1.f; state[mon + mf + 4] = 9.f;     // m1: empty slot
+        if (embLoaded) emb.predictPolicyMlp(state.data(), actions.data(), targets, 2, out);
+        check(std::abs(out[0] - 10.35) < 1e-5 && std::abs(out[1] - 7.95) < 1e-5,
+              "policy MLP embedding tables add per node and skip empty slots");
         std::filesystem::remove(path);
     }
 
@@ -4706,8 +4743,10 @@ int testCardSelectParity() {
 
     // The parity test pins the full validity contract (`all`): restricted
     // deployment modes intentionally prune the action space, so they must
-    // not leak into this check via STS_MULTISELECT_MODE.
+    // not leak into this check via STS_MULTISELECT_MODE. Canonicalization
+    // (default on, ADR-0034) is checked by cardselect_canonical instead.
     setenv("STS_MULTISELECT_MODE", "all", 1);
+    setenv("STS_MULTISELECT_CANONICAL", "0", 1);
 
     std::cout << "cardselect_parity: CARD_SELECT tasks\n";
     for (int t = 0; t <= (int)CardSelectTask::WARCRY; ++t) {

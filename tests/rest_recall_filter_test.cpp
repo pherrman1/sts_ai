@@ -44,8 +44,7 @@ static std::default_random_engine recallEngine() {
 static void matchesOrderedUniform(GameContext gc, bool enabled, bool collect,
                                   std::default_random_engine engine) {
     g_collectKeys = collect;
-    if (enabled) setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "1", 1);
-    else unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+    setenv("STS_OOC_SKIP_OPTIONAL_RECALL", enabled ? "1" : "0", 1);
     auto actions = GameAction::getAllActionsInState(gc);
     if (enabled && !collect && gc.screenState == ScreenState::REST_ROOM && actions.size() > 1)
         actions.erase(std::remove_if(actions.begin(), actions.end(), [](GameAction action) {
@@ -97,10 +96,22 @@ int main() {
         require(agent.gameActionHistory.size() == 1 && agent.gameActionHistory[0] != 2,
                 "enabled fallback did not exclude optional Recall");
 
-        // Unset and explicit zero retain the exact legacy action and engine.
-        for (const char *value : {static_cast<const char *>(nullptr), "0"}) {
-            if (value) setenv("STS_OOC_SKIP_OPTIONAL_RECALL", value, 1);
-            else unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+        // Unset is the default-on filter (ADR-0034).
+        unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
+        {
+            auto defaulted = restFixture();
+            ScumSearchAgent2 fallback;
+            fallback.recordActions = true;
+            fallback.rng = recallEngine();
+            fallback.stepOutOfCombatPolicy(defaulted);
+            require(!defaulted.hasKey(Key::RUBY_KEY) && fallback.gameActionHistory.size() == 1
+                    && fallback.gameActionHistory[0] != 2,
+                    "unset flag did not exclude optional Recall");
+        }
+
+        // Explicit zero retains the exact legacy action and engine.
+        for (const char *value : {"0"}) {
+            setenv("STS_OOC_SKIP_OPTIONAL_RECALL", value, 1);
             auto legacy = restFixture();
             auto expected = recallEngine();
             (void)std::uniform_int_distribution<int>(0, 2)(expected);
@@ -109,8 +120,8 @@ int main() {
             control.rng = recallEngine();
             control.stepOutOfCombatPolicy(legacy);
             require(legacy.hasKey(Key::RUBY_KEY) && control.gameActionHistory == std::vector<int>{2},
-                    "default-off legacy Recall action changed");
-            require(control.rng == expected, "default-off legacy engine state changed");
+                    "explicit-zero legacy Recall action changed");
+            require(control.rng == expected, "explicit-zero legacy engine state changed");
         }
 
         std::default_random_engine states(73);
@@ -149,14 +160,14 @@ int main() {
             require(rejected, "malformed optional Recall flag was accepted");
         }
         unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
-        require(!oocSkipOptionalRecallEnabled(), "unset optional Recall flag is enabled");
+        require(oocSkipOptionalRecallEnabled(), "unset optional Recall flag is disabled");
         setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "0", 1);
         require(!oocSkipOptionalRecallEnabled(), "zero optional Recall flag is enabled");
         setenv("STS_OOC_SKIP_OPTIONAL_RECALL", "1", 1);
         require(oocSkipOptionalRecallEnabled(), "one optional Recall flag is disabled");
         unsetenv("STS_OOC_SKIP_OPTIONAL_RECALL");
         g_collectKeys = false;
-        std::cout << "rest_recall_filter PASS: synthetic acquisition, default-off parity, ordered uniform, keys-on, no-key, non-rest, forced-Recall exception\n";
+        std::cout << "rest_recall_filter PASS: synthetic acquisition, default-on, explicit-zero parity, ordered uniform, keys-on, no-key, non-rest, forced-Recall exception\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
