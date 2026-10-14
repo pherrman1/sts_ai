@@ -71,6 +71,9 @@ namespace {
     constexpr int kRelicCtrOff = kMiscOff + kNumMisc;
     constexpr int kNumRelicCtr = 8;
     constexpr int kStateCount  = kRelicCtrOff + kNumRelicCtr;
+    constexpr int kEncounterIdx = 1;                        // "encounter" in kBaseNames
+    constexpr int kMonDmgOff    = 4;                        // "mKIntent" = incoming damage (0 if not attacking)
+    constexpr int kPolicyMlpEmbRows = 128;                  // policy-MLP embedding table rows
 
     int powerVal(const Player &p, PlayerStatus s) {
         switch (s) {
@@ -420,10 +423,12 @@ bool CombatValueNet::load(const std::string &path) {
     pmH1 = pmH2 = 0; pmB3 = 0.f;
     pmStateW.clear(); pmActionW.clear(); pmCard.clear(); pmTargetW.clear();
     pmB1.clear(); pmW2.clear(); pmW2T.clear(); pmB2.clear(); pmW3.clear();
+    pmEnc.clear(); pmMonId.clear(); pmMonDmg.clear();
 
     f >> tok;
     int nfeat = 0;
-    if (tok == "combat_policy_mlp_v1") {
+    if (tok == "combat_policy_mlp_v1" || tok == "combat_policy_mlp_v2") {
+        const bool v2 = tok == "combat_policy_mlp_v2";
         // tools/silver_az_mlp.py export. The feature list must equal the
         // canonical policy layout exactly (state block, then action block).
         auto readVec = [&](const char *want, std::vector<float> &v, std::size_t n) {
@@ -451,6 +456,19 @@ bool CombatValueNet::load(const std::string &path) {
                 || !readVec("b3", one, 1)) return false;
         pmB3 = one[0];
         if (!f) return false;
+        // combat_policy_mlp_v2 (silver-prior-arch, 2026-10-14) appends optional
+        // tables `enc N`, `mon_id N`, `mon_dmg N` (N x h1, embedding projection
+        // folded in). The new header keeps older loaders from reading such a
+        // file as v1 and silently dropping the tables; v1 files must end at b3.
+        while (f >> tok) {
+            std::vector<float> *dst = tok == "enc" ? &pmEnc : tok == "mon_id" ? &pmMonId
+                                    : tok == "mon_dmg" ? &pmMonDmg : nullptr;
+            int rows = 0;
+            if (!v2 || !dst || !(f >> rows) || rows != kPolicyMlpEmbRows || !dst->empty()) return false;
+            dst->resize((std::size_t)rows * H1);
+            for (float &x : *dst) f >> x;
+            if (!f) return false;
+        }
         // Layer 2 runs input-major (axpy over active h1 units), which -O3
         // vectorizes without reassociating a float reduction.
         pmW2T.resize(H1 * H2);
@@ -1275,6 +1293,33 @@ void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *a
     const int H1 = pmH1, H2 = pmH2;
     thread_local std::vector<float> base, h, z;
     base.assign(pmB1.begin(), pmB1.end());
+    // v2 embedding tables (raw ids otherwise enter the state layer as plain
+    // numbers). Row = rounded value clipped to the table. A monster slot counts
+    // only when its id is nonzero and not -1 (empty or dead slots are -1; id 0
+    // is absent from the sparse training rows); its rows are id + 1 and its
+    // incoming damage (feature mKIntent).
+    auto row = [](float v) {
+        const int r = (int)std::lround(v);
+        return r < 0 ? 0 : (r >= kPolicyMlpEmbRows ? kPolicyMlpEmbRows - 1 : r);
+    };
+    if (!pmEnc.empty()) {
+        const float *w = &pmEnc[(std::size_t)row(stateFeatures[kEncounterIdx]) * H1];
+        for (int j = 0; j < H1; ++j) base[j] += w[j];
+    }
+    if (!pmMonId.empty() || !pmMonDmg.empty()) {
+        for (int k = 0; k < kNumMonSlots; ++k) {
+            const float id = stateFeatures[kMonOff + k * kMonFeats];
+            if (id == 0.f || std::lround(id) + 1 <= 0) continue;    // id 0 or empty slot (-1)
+            if (!pmMonId.empty()) {
+                const float *w = &pmMonId[(std::size_t)row(id + 1.f) * H1];
+                for (int j = 0; j < H1; ++j) base[j] += w[j];
+            }
+            if (!pmMonDmg.empty()) {
+                const float *w = &pmMonDmg[(std::size_t)row(stateFeatures[kMonOff + k * kMonFeats + kMonDmgOff]) * H1];
+                for (int j = 0; j < H1; ++j) base[j] += w[j];
+            }
+        }
+    }
     h.resize(H1);
     z.resize(H2);
     // Sparse state layer, once per node (about 40 nonzeros of 1,766).

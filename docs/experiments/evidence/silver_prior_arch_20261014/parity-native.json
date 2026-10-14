@@ -1,0 +1,42 @@
+{
+ "c_dist_s0": {
+  "header": "combat_policy_mlp_v1",
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 2.5927257232827294e-06,
+  "native_us_per_root_min3": 10.00334275
+ },
+ "c_encdist_s0": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 1.6718621824729496e-06,
+  "native_us_per_root_min3": 10.15093525
+ },
+ "c_mon_s0": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 1.6673382567944373e-06,
+  "native_us_per_root_min3": 10.365161749999999
+ },
+ "c_mon_s1": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 2.8618121339363256e-06,
+  "native_us_per_root_min3": 10.44242575
+ },
+ "g6_E": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 2.379862060308824e-06,
+  "native_us_per_root_min3": 10.8016045
+ },
+ "g6_Eenc": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 23773,
+  "max_abs_diff_vs_torch": 1.9029855347074687e-06,
+  "native_us_per_root_min3": 11.386368749999999
+ },
+ "gen4_legacy_file_first300roots": {
+  "edges": 1797,
+  "max_abs_diff_vs_float64_reference": 9.883849299008318e-07
+ }
+}
