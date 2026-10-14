@@ -39,3 +39,11 @@ Gen 6 = D: `combat_policy_mlp_gen6.txt` sha fe23a54e0e79cca420913e16e0d35807b899
 Cost: same 128/64 net as gen 5, ~8-9 µs/root (noisy, machine busy).
 All arms single seed. Notes: B (gen-4 recipe) no longer improves on gen 5; recipe gains (C over B, D over C) now exceed
 the gen-to-gen data gain. E beats D by 0.008 on fold-4 orig; the format change is Philipp's decision.
+
+## Decision (Philipp 17:13Z: "yes switch to E")
+Gen 6 = **E**: `model/combat_policy_mlp_g6_E.txt` (header `combat_policy_mlp_v2`, enc + mon_id + mon_dmg tables),
+sha ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228, exported by the net-arch thread in PR #541
+(branch claude/project-thread-i1z756 at 0f1b70f, native vs torch max |diff| 2.4e-6). arch.py checkpoint
+`model/model-g6_E-arch.pt`. Needs a binary built with #541 (old binaries reject v2). D
+(`combat_policy_mlp_gen6.txt`, v1) stays as the current-format fallback. Note: the "intent" table is incoming damage
+(mKIntent), renamed mon_dmg.
