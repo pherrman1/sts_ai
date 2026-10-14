@@ -18368,3 +18368,38 @@ Selection among the current-format arms: lowest fold-3 validation CE.
 97000000–97000511 and 97001000–97001511 are now used.
 
 **Knowledge impact:** one sentence on generations 4–6 in the MLP prior paragraph of `architecture/combat-search.md`.
+
+## §475 — OOC MCTS without leaf rollout combats at 16384 simulations vs rollout3 at 4096: WORSE, −10.2 pp (2026-10-14)
+
+**Question (Philipp, 2026-10-14 17:12Z, after §472):** "what if we would use our extra time with more mcts
+simulations?" Does `LEAF_COMBATS=0` with `STS_OOC_MCTS_SIMS=16384` (roughly rollout3's MCTS CPU) win as many runs
+as rollout3 at 4096?
+**Design:** [PREREG](evidence/ooc_rollout0_sims_475_20261014/PREREG.md), frozen after independent pre-launch review
+(code `e8410510` = main after #542, so on the ADR-0034 defaults; binary `ec42a8ea…`; run commit `9bd5b848`). Arms
+`rollout3` (the §472 `rollout3` environment) and `r0s16k` (only `LEAF_COMBATS=0` and `SIMS=16384`). Ironclad A0,
+fresh seeds 103000000–103000127, 16 cloud workers. Primary: Δwin r0s16k − rollout3, paired seed bootstrap;
+BETTER / WORSE / NOT_SHOWN; secondary non-inferiority at 10 pp.
+**Result: WORSE.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | r0s16k | rollout3 | r0s16k − rollout3 |
+|---|---|---|---|
+| wins / 128 | 102 | 115 | −10.2 pp [−18.8, −1.6]; McNemar p = 0.029 (9 vs 22 discordant) |
+| mean floor | 48.74 | 49.93 | −1.19 [−2.38, −0.02] |
+| boss deaths | 22 | 10 | |
+| MCTS CPU per run | 633 s | 574 s | ratio 1.10 |
+| simulations per run | 846k | 223k | |
+| per-search max depth, median / p90 / max | 5 / 9 / 14 | 4 / 8 / 13 | |
+
+**Interpretation:**
+- At about matched CPU (r0s16k used 1.10x, so the match slightly favours it), four times the simulations do not make
+  up for the missing leaf combats (NOT_NONINFERIOR_AT_10PP too); rollout3 stays, per the prereg rule.
+- The r0s16k searches are a little deeper (median depth 5 vs 4), without a win gain. **Inference:** the leaf
+  value without the three combats is the likely cause and more simulations do not correct it; leaf-value quality
+  was not measured, and on the 31 discordant seeds the arms play different games. Boss deaths 22 vs 10 are
+  descriptive, not pre-registered.
+- Not byte-comparable to §472 (ADR-0034 changed A0 defaults in between); both arms were run here.
+
+**Evidence:** [packet](evidence/ooc_rollout0_sims_475_20261014/README.md). Raw: `/mnt/project-files/ooc-rollout0-sims-475/`
+(one tar per worker). Seeds 103000000–103000127 and smokes 74071100–74071103 are now used.
+
+**Knowledge impact:** the `LEAF_COMBATS` row in `architecture/out-of-combat.md` now cites §475.
