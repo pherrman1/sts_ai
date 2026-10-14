@@ -2210,6 +2210,8 @@ void configureLiveOocMcts() {
     // STS_OOC_MCTS_TREE_RULES=0 / STS_OOC_MCTS_MERGE_OUTCOMES=0 restore the old tree.
     liveConfig.mergeEquivalentOutcomes = true;
     liveOptions.treeRules = true;
+    // ADR-0032 (§459): greedy rollout shops are the default; STS_OOC_MCTS_ROLLOUT_SHOP=planner restores the bundle planner.
+    liveOptions.greedyRolloutShop = true;
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
     // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
