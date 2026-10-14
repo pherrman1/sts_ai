@@ -30,7 +30,8 @@ public:
 };
 // While alive on this thread, nativeShopPlan returns the single best purchase
 // (or leave) instead of the first item of the best affordable bundle. Set by
-// OOC MCTS leaf rollouts under STS_OOC_MCTS_ROLLOUT_SHOP=greedy.
+// OOC MCTS leaf rollouts under STS_OOC_MCTS_ROLLOUT_SHOP=greedy (the live default,
+// ADR-0032).
 class NativeOocGreedyShopScope {
 public:
     NativeOocGreedyShopScope();

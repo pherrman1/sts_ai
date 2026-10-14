@@ -73,9 +73,10 @@ struct OocAdapterOptions {
     std::string leafWinPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
-    // Research option (default off, STS_OOC_MCTS_ROLLOUT_SHOP=greedy): shops in
-    // leaf rollouts buy the single best item per decision instead of the first
-    // item of the best affordable bundle.
+    // STS_OOC_MCTS_ROLLOUT_SHOP=greedy: shops in leaf rollouts buy the single
+    // best item per decision instead of the first item of the best affordable
+    // bundle. Live OOC MCTS turns it on by default (ADR-0032); the struct
+    // default stays off for offline tools and tests.
     bool greedyRolloutShop = false;
     // Research option (default off, STS_OOC_MCTS_TREE_RULES=1): the tree and the
     // live root apply the same fixed steps as the rollout chain (gold after

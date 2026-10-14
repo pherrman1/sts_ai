@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0032](0032-ooc-mcts-greedy-rollout-shop-default.md) makes live OOC MCTS leaf
+  rollouts shop greedily by default (`STS_OOC_MCTS_ROLLOUT_SHOP=planner` restores the
+  bundle planner).
 - [ADR-0031](0031-ooc-mcts-tree-rules-merge-default.md) makes live OOC MCTS apply the
   live forced-step rules in the tree and merge equivalent outcomes by default
   (`STS_OOC_MCTS_TREE_RULES=0`, `STS_OOC_MCTS_MERGE_OUTCOMES=0` restore the old tree).
