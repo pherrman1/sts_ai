@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-14 for default canonical multi-select masks (ADR-0034); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate; 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -213,8 +213,12 @@ seeded unit fixture shows Silver fleeing even Cultist and Jaw Worm at full HP.
 rewards, capped at half the HP left when escaping, because a death also scores
 positively and an uncapped penalty could make a low-HP escape look worse than
 dying. Elite-trigger fights (`GameContext::isEliteTriggerCombat`) use the elite
-penalty. Both default to 0 (historical behavior) until a paired gameplay gate
-decides; `STS_SILVER_ESCAPE_PENALTY` enables them (#370).
+penalty. Both default to 0 (historical behavior); `STS_SILVER_ESCAPE_PENALTY`
+enables them (#370). Before PR #540 `one_combat` rejected the variable at
+startup. The only gameplay gate, ledger-06 §473 (`12,35` vs `0,0` on the `off`
+stack, 500 paired seeds per cohort), is NOT_SHOWN at A0 (414 vs 414 wins) and at
+A20 (floor +0.024 [−0.168, +0.234]); only 46 and 21 pairs differ at all. The
+default is Philipp's call.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
@@ -372,6 +376,13 @@ Generation 3 (self-play with gen 2, then gen 3 as prior;
 `/mnt/project-files/silver-az-mlp/gen3/model/`) beat plain 2,300 by +1.50
 [+0.94, +2.09] on 3,275 fights at 1.06x plain 2k but was not shown better than
 generation 1 (+0.14 [−0.39, +0.66]) (§460).
+Generations 4–6 raised the self-play teacher to 10k, 20k and 40k simulations and were gated offline
+only (orig fold-4 CE 1.2103, 1.1954, then 1.1749); generation 6 is the v2 model with encounter and
+monster tables, trained from scratch with distillation from a 512/256 net
+(`/mnt/project-files/silver-az-mlp/gen6/model/combat_policy_mlp_g6_E.txt`; §465, §477, §478). At A20, gen 6
+at K = 8 beat plain Silver at equal simulations at 2,500 (+3.85 fight score [+1.23, +6.52]) and
+625 (+2.56 [+0.40, +4.74]) but not at 10,000 (+0.73 [−1.45, +2.91]), and was not shown better
+than gen 5 at any budget (§476).
 `STS_CTMSILVER_ARMSET=mlpsweep` (§476) instead runs, for every budget in
 `STS_CTMSILVER_SWEEP_SIMS`, `plain<b>`, `mlp<b>` (K = 8, `STS_CTMSILVER_MLP_PRIOR`)
 and `mlpprev<b>` (`STS_CTMSILVER_MLP_PRIOR_PREV`); it is the only armset that

@@ -123,18 +123,31 @@ namespace {
     }
 
     // HP after a victory, including the act-transition heal that follows the act
-    // boss room fight.
+    // boss room fight (and, opt-in, the post-combat relic heals before it).
     int postBattleHealedHp(const BattleContext &bc, const search::SilverSearchContext &context) {
-        const bool actBossFight = isBossEncounter(bc.encounter) && context.actBossRoom;
-        if (!actBossFight || bc.player.hasRelic<RelicId::MARK_OF_THE_BLOOM>()) {
+        if (bc.player.hasRelic<RelicId::MARK_OF_THE_BLOOM>()) {
             return bc.player.curHp;
+        }
+        int hp = bc.player.curHp;
+        const int maxHp = bc.player.maxHp;
+        if (context.relicHealLeaf) {
+            // BattleContext::updateRelicsOnExit order: Meat on the Bone first.
+            if (bc.player.hasRelic<RelicId::MEAT_ON_THE_BONE>() && hp > 0 && hp <= maxHp / 2) {
+                hp = std::min(hp + 12, maxHp);
+            }
+            if (bc.player.hasRelic<RelicId::BURNING_BLOOD>()) hp = std::min(hp + 6, maxHp);
+            if (bc.player.hasRelic<RelicId::BLACK_BLOOD>()) hp = std::min(hp + 12, maxHp);
+        }
+        const bool actBossFight = isBossEncounter(bc.encounter) && context.actBossRoom && context.actHealFollows;
+        if (!actBossFight) {
+            return hp;
         }
         if (bc.ascension >= 5) {
             const int healAmount = static_cast<int>(
-                std::round(static_cast<float>(bc.player.maxHp - bc.player.curHp) * 0.75f));
-            return std::min(bc.player.curHp + healAmount, bc.player.maxHp);
+                std::round(static_cast<float>(maxHp - hp) * 0.75f));
+            return std::min(hp + healAmount, maxHp);
         }
-        return bc.player.maxHp;
+        return maxHp;
     }
 
 }
@@ -816,6 +829,20 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
         // credit for damage, turns survived, or unspent resources.
         return bc.outcome == Outcome::PLAYER_VICTORY ? 100.0 : 0.0;
     }
+    if (context.finalFightLeaf) {
+        // The run ends on victory: every win is worth the same (a full-HP
+        // win at the root's max HP); a loss keeps Silver's damage, survival,
+        // energy and draw shaping but no credit for unspent potions.
+        if (bc.outcome == Outcome::PLAYER_VICTORY)
+            return evalWeights.winBonus + rootState->player.maxHp;
+        const bool spikers = bc.encounter == MonsterEncounter::THREE_SHAPES
+            || bc.encounter == MonsterEncounter::FOUR_SHAPES;
+        return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
+            - bc.monsters.monstersAlive * evalWeights.aliveWeight
+            - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
+            + bc.cardsDrawn * evalWeights.drawWeight
+            + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
+    }
     const double potionScore = bc.potionCount * evalWeights.potionWeight;
     // Held "cheat death" effects count at the HP they would restore.
     double deathSaveValue = 0.0;
@@ -862,7 +889,8 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     // No survival credit for the engine's turn-cap loss, or stalling would pay.
     const double survivalScore = bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight;
     return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight + aliveScore
-        + energyPenalty + drawBonus + potionScore / 2 + survivalScore + deathSaveValue;
+        + energyPenalty + drawBonus + (context.noLossPotionCredit ? 0 : potionScore / 2) + survivalScore
+        + deathSaveValue;
 }
 
 namespace {

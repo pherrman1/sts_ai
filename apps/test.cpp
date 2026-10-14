@@ -373,6 +373,70 @@ int testSilverSearcher() {
               "default final-boss evaluator retains handcrafted score");
     }
 
+    // Research opt-in (STS_SILVER_FINAL_FIGHT_LEAF): in a run-ending fight
+    // every victory scores the same and a loss earns no potion credit.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext ended; ended.init(gc, MonsterEncounter::TIME_EATER);
+        search::SilverSearchContext finalFight;
+        finalFight.act = 3;
+        finalFight.actBossRoom = true;
+        finalFight.finalFightLeaf = true;
+        const auto value = [](const BattleContext &bc, const search::SilverSearchContext &ctx) {
+            search::SilverSearcher s(bc, ctx);
+            return s.rootNode().evaluationSum;
+        };
+        ended.outcome = Outcome::PLAYER_VICTORY;
+        ended.player.curHp = 1; ended.potionCount = 0; ended.turn = 20;
+        const double lowWin = value(ended, finalFight);
+        check(lowWin == 53.0 + ended.player.maxHp, "final-fight leaf victory scores win bonus plus max HP");
+        ended.player.curHp = ended.player.maxHp; ended.potionCount = 3; ended.turn = 1;
+        ended.player.gold += 1000;
+        check(value(ended, finalFight) == lowWin, "final-fight leaf ignores HP, potions, gold and speed");
+        ended.outcome = Outcome::PLAYER_LOSS;
+        ended.player.curHp = 0; ended.turn = 10;
+        auto noPotions = ended; noPotions.potionCount = 0;
+        check(value(ended, finalFight) == value(noPotions, finalFight), "final-fight leaf loss has no potion credit");
+        auto original = finalFight; original.finalFightLeaf = false;
+        check(value(ended, original) > value(noPotions, original), "default loss keeps potion credit");
+        check(value(ended, original) - value(ended, finalFight) == 3 * 11.0 / 2,
+              "final-fight leaf loss differs from default only by the potion credit");
+        check(lowWin > value(ended, finalFight), "final-fight leaf victory dominates a loss");
+    }
+
+    // Research opt-ins STS_SILVER_RELIC_HEAL_LEAF / STS_SILVER_NO_LOSS_POTION_CREDIT
+    // and the A20 first act-3 boss heal fix (actHealFollows).
+    {
+        const auto value = [](const BattleContext &bc, const search::SilverSearchContext &ctx) {
+            search::SilverSearcher s(bc, ctx);
+            return s.rootNode().evaluationSum;
+        };
+        GameContext gc(CharacterClass::IRONCLAD, 91, 0);
+        BattleContext won; won.init(gc, MonsterEncounter::JAW_WORM);
+        won.outcome = Outcome::PLAYER_VICTORY;
+        won.potionCount = 0; won.turn = 5;
+        won.player.curHp = won.player.maxHp - 2;   // Burning Blood would heal to full
+        search::SilverSearchContext plain, relic; relic.relicHealLeaf = true;
+        check(value(won, relic) - value(won, plain) == 2.0, "relic heal leaf credits the Burning Blood heal up to max HP");
+        won.player.curHp = 20;
+        check(value(won, relic) - value(won, plain) == 6.0, "relic heal leaf credits the full Burning Blood heal");
+
+        BattleContext lost = won; lost.outcome = Outcome::PLAYER_LOSS; lost.player.curHp = 0; lost.potionCount = 2;
+        search::SilverSearchContext noCredit; noCredit.noLossPotionCredit = true;
+        check(value(lost, plain) - value(lost, noCredit) == 11.0, "no-loss-potion-credit drops 5.5 per held potion");
+        check(value(won, noCredit) == value(won, plain), "no-loss-potion-credit leaves victories unchanged");
+
+        GameContext gc20(CharacterClass::IRONCLAD, 91, 20);
+        BattleContext boss; boss.init(gc20, MonsterEncounter::TIME_EATER);
+        boss.outcome = Outcome::PLAYER_VICTORY; boss.potionCount = 0; boss.turn = 10;
+        boss.player.curHp = 20;
+        search::SilverSearchContext heal; heal.act = 3; heal.actBossRoom = true;
+        auto noHeal = heal; noHeal.actHealFollows = false;
+        const int healed = 20 + static_cast<int>(std::round((boss.player.maxHp - 20) * 0.75f));
+        check(value(boss, heal) - value(boss, noHeal) == healed - 20,
+              "first A20 act-3 boss earns no act-transition heal credit");
+    }
+
     // Final choice is edge visits only; even Q ties keep enumeration order.
     {
         GameContext gc(CharacterClass::IRONCLAD, 91, 0);

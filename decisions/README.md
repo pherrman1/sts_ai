@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0035](0035-silver-situational-leaf-default.md) turns Silver's situational leaf terms on by
+  default (final-fight leaf, no loss potion credit, relic heal leaf, A20 boss heal fix; each `=0` restores the
+  legacy term).
 - [ADR-0034](0034-recall-filter-and-multiselect-canonical-default.md) turns on the
   keys-off optional Ruby Recall filter and canonical multi-select masks by default
   (`STS_OOC_SKIP_OPTIONAL_RECALL=0`, `STS_MULTISELECT_CANONICAL=0` restore the old behavior).

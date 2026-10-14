@@ -18155,3 +18155,356 @@ non-inferiority at 10 pp.
 (one tar per worker). Seeds 101000000–101000127 and smoke 74070600 are now used.
 
 **Knowledge impact:** the `LEAF_COMBATS` row in `architecture/out-of-combat.md` now cites §472.
+
+## §466 — Final-fight Silver leaf: potions no longer hoarded, act-3 boss win rate unchanged (2026-10-14)
+
+**Question:** in the run-ending fight Silver's leaf still pays 11 per potion on a win and 5.5 on a
+loss. Does a leaf that values nothing after that fight (`STS_SILVER_FINAL_FIGHT_LEAF=1`: every win
+scores `winBonus + root maxHp`, a loss keeps damage/survival/energy/draw shaping without potion or
+cheat-death credit) win the act-3 boss more often? Background (descriptive, §460 replays): 8/18
+act-3 boss deaths of exact-10k Silver still held potions.
+
+**Design:** pre-registered fight-level replay ([evidence](evidence/silver_final_fight_leaf_466_20261014/README.md)).
+Run commit `8d8eeb3c`, binary `c92c0297…`. `ctmsilvergen` arm set `finalleaf`: one plain exact-10k
+A0 source run per seed (frozen V4 OOC policy, MCTS off), then every act-3 boss state replayed by
+`base10k` (default leaf) and `final10k` (final-fight leaf), R = 8 paired redraws of the six combat
+RNG streams. Seeds 96000000-96000255, 8 workers × 4 cores. Primary: paired per-fight win-rate
+difference, 95% bootstrap over source seeds (10,000 resamples, RNG 0).
+
+**Result: `NOT_SHOWN`.** 236 act-3 boss fights, none excluded (control replay 236/236, 32/32 shards
+rc 0). Win rate base 0.8633, final 0.8639: **+0.05 pp [−1.27, +1.38]**. Per boss: Awakened One −1.21
+(62), Donu and Deca +0.88 (85), Time Eater +0.14 (89). The option changed behavior as intended:
+deaths holding a potion 105/258 → 0/257, potions held per win 1.19 → 0.14. CPU per fight 9.18 →
+10.05 s.
+
+**Interpretation:** **Inference:** the potions Silver kept in losing final fights were not what
+decided those fights; spending all of them leaves the act-3 boss win rate within ±1.3 pp. A gain
+larger than about 1.4 pp per act-3 boss fight is excluded at exact 10k. Production learned-stop
+Silver and A20 were not tested.
+**Decision:** no default change; the option stays default off and this candidate stops per the
+pre-registration (no whole-run confirmation).
+
+**Knowledge impact:** `STS_SILVER_FINAL_FIGHT_LEAF` documented in
+`operations/environment-variables.md`; the situational-leaf investigation (including an A20
+first-boss heal mis-credit, not fixed here) recorded in
+`knowledge-base/investigations/2026-10-14-silver-situational-leaf.md`.
+
+## §468 — Situational Silver leaf bundle in whole runs: A0 not shown, A20 floors worse but more wins (2026-10-14)
+
+**Question (Philipp, 2026-10-14 11:18Z, after §466):** "Keep it in. Fix the bug for the A20 boss. Add the smaller idea
+and test again with all those things." Does Silver with all situational leaf changes together play better whole runs
+than the legacy leaf?
+
+**Design:** pre-registered paired whole runs ([evidence](evidence/silver_leaf_combo_468_20261014/README.md)). Code
+`f41ec4d3`, run commit `7fc41609`, binary `a45ef01e…`. Both arms are the §422 `off` environment (exact-10k live Silver,
+V4 OOC policy, OOC MCTS off, `STS_STOP_AFTER_ACT=3`). `base` sets `STS_SILVER_A20_BOSS_HEAL_FIX`,
+`STS_SILVER_FINAL_FIGHT_LEAF`, `STS_SILVER_NO_LOSS_POTION_CREDIT` and `STS_SILVER_RELIC_HEAL_LEAF` to 0, `all` sets all
+four to 1. A0 seeds 98000000–98000499 and A20 seeds 98000500–98000999, 8 workers (Philipp's pick). Primary A0: Δwin;
+primary A20: Δfloor; paired seed bootstrap 95% CI (10,000 resamples).
+
+**Result:** valid, 2,000/2,000 units rc=0, 500 pairs per cohort, no seed dropped.
+- **A0: `NOT_SHOWN`.** Wins 370 → 357, **Δwin −2.6 pp [−6.4, +1.2]** (discordant 41 vs 54, McNemar p = 0.22);
+  Δfloor −0.18 [−0.74, +0.39]; deaths at the act-3 boss 59 → 69.
+- **A20: `WORSE` on the primary.** **Δfloor −1.29 [−2.42, −0.19]**. Wins 52 → 71, Δwin +3.8 pp [+0.6, +7.0]
+  (discordant 44 vs 25, McNemar p = 0.029).
+- Descriptive (not pre-registered): at A20 the bundle dies more in act 1 (96 → 120; paired 50 vs 26, p = 0.008) and
+  less at the two final bosses (floor 50 deaths 51 → 42, second boss 74 → 48). Of the 113 seeds where both arms reached
+  floor 50, wins 38 → 52. Cost unchanged (42.8 vs 41.1 s per A20 run, 62.4 vs 62.8 s per A0 run).
+
+**Interpretation:** **Inference:** the bundle mixes two kinds of change. The end-of-run parts (A20 heal fix, final-fight
+leaf) act only at floors 50–51, where the A20 bundle wins more often. The every-fight parts (no loss potion credit, relic
+heal leaf) are the only ones active in act 1, where the A20 bundle dies more, so they likely cause the floor loss; this
+run cannot separate the terms. At A0 the every-fight parts may also cost wins (point estimate −2.6 pp, not shown).
+
+**Decision (pre-registered):** A0 NOT_SHOWN and A20 WORSE: all three opt-ins stay off. The A20 heal fix is a correctness
+fix whose A20 cohort was WORSE in the bundle, so whether it stays default on is Philipp's call.
+
+**Knowledge impact:** situational-leaf investigation page updated with the §468 result; option rows in
+`operations/environment-variables.md` unchanged (defaults unchanged pending the decision). Seeds 98000000–98000999 and
+smokes 74070100–74070101 are used.
+
+## §474 — End-of-run Silver leaf parts alone (A20 heal fix + final-fight leaf): not shown at A0 or A20 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 13:43Z, card "Split test" after §468):** do the two end-of-run leaf changes alone
+(`STS_SILVER_A20_BOSS_HEAL_FIX=1`, `STS_SILVER_FINAL_FIGHT_LEAF=1`) play better whole runs than the legacy leaf?
+
+**Design:** as §468 ([evidence](evidence/silver_leaf_split_471_20261014/README.md); the evidence folder, analyzer
+`tools/analyze_silver_leaf_471.py` and pre-registration carry the planning number 471, renumbered to §474 after main's
+§471 landed), arms `base` (all four leaf options
+0) vs `end` (those two 1, `NO_LOSS_POTION_CREDIT` and `RELIC_HEAL_LEAF` 0). Code `7a6c6bb9` (§468 code plus main with
+#532; OOC MCTS off in both arms), run commit `965000fa`, binary `6b2bca17…`. Fresh A0 seeds 100000000–100000499 and A20
+seeds 100000500–100000999, 8 workers (Philipp's pick). Primary A0 Δwin, A20 Δfloor, paired seed bootstrap 95% CI.
+
+**Result:** valid, 2,000/2,000 units rc=0, 500 pairs per cohort.
+- **A0: `NOT_SHOWN`.** Wins 402 → 406, **Δwin +0.8 pp [−1.2, +3.0]** (discordant 17 vs 13).
+- **A20: `NOT_SHOWN`.** **Δfloor 0.00 [−0.02, +0.02]**; wins 42 → 47, +1.0 pp [−0.4, +2.4] (discordant 10 vs 5,
+  McNemar p = 0.30).
+- Descriptive: both arms play every seed identically until floor 50 (the options act only in the A20 first act-3
+  boss and the run-ending fight). At A20, deaths at floor 50 rise 52 → 57 and second-boss deaths fall 66 → 56.
+
+**Interpretation:** the end-of-run parts change only the final one or two fights. The intervals exclude gains above
+about 3.0 pp (A0) and 2.4 pp (A20); the point estimate (+5 A20 wins) is about a quarter of §468's A20 win gain (+19),
+but the intervals (and the different seeds) cannot rule out that the end-of-run parts made up most of it.
+**Inference:** the §468 act-1 deaths (paired 50 vs 26) came from the every-fight parts (no loss potion credit, relic
+heal leaf), since the `end` arm leaves play before floor 50 unchanged.
+
+**Decision (pre-registered):** NOT_SHOWN in both cohorts: no default change; the A20 heal fix stays default on (A20
+not WORSE), the final-fight leaf and the two every-fight options stay off.
+
+**Later decision:** Philipp made all four leaf terms the default the same day (ADR-0035), not on a passed gate.
+
+**Knowledge impact:** investigation page updated with §474. Seeds 100000000–100000999 and smokes 74070450–74070451
+are used.
+
+## §465 — Silver AZ MLP prior generation 4: 10k teacher, offline orig CE 1.2192 → 1.2103; a bigger net is not worth its cost (2026-10-14)
+
+**Question (Philipp, 2026-10-13 22:04Z, "if the bigger net doesn't give us anything, do a stronger teacher for
+10k sims"):** after §460 showed no measurable gain from gen 1 to gen 3, does a larger net or a stronger self-play
+teacher move the prior?
+**Design:** first an offline net-size check on the gen-3 window (fold-3 validation CE). Then generation 4 as in §460
+but with a 10k flat exact Silver teacher: frozen brief and worker (main `f73e6ad7`, binary `b4586cfc…`, gen-3 prior,
+K = 8, weight 400, root bonus off), 1,024 A0 runs on 4 cloud workers, warm-started 128/64 training on the window
+orig + x5 + g2 + g3 + g4 with arms written down before the data. Offline monitors only.
+**Result: generation 4 passes every monitor; the gain is the largest so far.**
+- Net size on the gen-3 window: 512/256 1.2838 vs 128/64 1.2869 at 4.5x native cost per root (28.5 vs 6.4 µs).
+  Judged not worth it, so the 10k teacher ran.
+- Self-play: 255/256 units, 400,128 roots. Unit natural-91000228 was lost: seed 91000228 looped forever in
+  `SilverSearcher::rolloutToEnd` (draw/shuffle; not covered by the #522 decision loop guard), killed after 1 h 40 min,
+  not rerun.
+- Training window 2,124,899 roots. Run B (40 epochs, patience 8, LR halving) 1.2678 vs A (2 passes) 1.2730; B is gen 4.
+
+| fold-4 monitor | gen 3 | gen 4 |
+|---|---|---|
+| orig (plain 10k teacher) CE / top-1 | 1.2192 / 56.8% | **1.2103** / 57.2% |
+| g4 held-out self-play | 1.2148 | 1.2052 |
+| x5 | 1.2420 | 1.2363 |
+| mean TV vs previous generation | 0.036 | 0.041 |
+
+- Native parity max |logit diff| 1.3e-6; same 128/64 cost.
+- Net sizes on the gen-4 window, from scratch (validation CE; µs per root): 32/16 1.3123 (3.4), 64/32 1.2891 (4.7),
+  128/64 1.2718 (8.8), 512/256 1.2616 (29.8); warm-started gen 4 1.2678.
+
+**Interpretation:**
+- The per-generation orig CE change went from −0.0008 and −0.0004 (2k teacher) to −0.0089 with the 10k teacher.
+  **Inference:** teacher strength, not more iterations at 2k, is what moves this prior.
+- Play strength of gen 4 was not measured online (PLAN changed to offline gating per generation, Philipp
+  2026-10-14 07:40Z); it is **Unverified**.
+- The `rolloutToEnd` loop is a native bug, reported separately (GitHub issue).
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen4_20261014/README.md). Raw: `/mnt/project-files/silver-az-mlp/gen4/`.
+Seeds 91000000–91000511 and 91001000–91001511 are now used.
+
+**Knowledge impact:** covered by the sentence for §465, §477 and §478 in `architecture/combat-search.md`.
+
+## §477 — Silver AZ MLP prior generation 5: 20k teacher, offline orig CE 1.2103 → 1.1954 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 07:40Z, "Maybe do gen 5 at 20k in the same net"):** does doubling the teacher to 20k
+keep improving the 128/64 prior, gated offline (orig fold-4 CE must improve on the previous generation)?
+**Design:** as §465 with a 20k teacher and the gen-4 prior: frozen brief and worker (per-unit timeout 9,000 s),
+seeds 94000000–94000511 natural and 94001000–94001511 perturbed, 8 workers (Philipp's choice). Window orig + x5 +
+g2–g5. Arms written before training, all warm-started from gen 4: A 2 passes, B the gen-4 recipe (dropout 0.35),
+C as B with dropout 0.15 (from the net-architecture thread); lowest fold-3 validation CE wins.
+**Result: gate PASS.** 256/256 units, 393,757 roots; window 2,518,656 roots (the repo packer ran out of memory at
+this size; the fix is #535, identical output).
+
+| arm | validation CE | orig fold-4 CE | TV vs gen 4 |
+|---|---|---|---|
+| A | 1.2557 | | |
+| B (dropout 0.35) | 1.2496 | 1.2051 | 0.041 |
+| **C (dropout 0.15), gen 5** | **1.2439** | **1.1954** | 0.060 |
+
+- Gen 4 on the same split: 1.2103. Own held-out g5: C 1.1543 vs gen 4 1.1763. Native parity 1.6e-6; same cost.
+
+**Interpretation:**
+- Teacher alone (B): −0.0052 on orig; with the dropout change (C): −0.0149. The net-architecture thread later found
+  that dropout 0.15 vs 0.35 differs by about seed-to-seed noise, so the single-seed B vs C split is not evidence that
+  dropout helped.
+- Play strength **Unverified** (offline only).
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen5_20261014/README.md). Raw: `/mnt/project-files/silver-az-mlp/gen5/`.
+Seeds 94000000–94000511 and 94001000–94001511 are now used.
+
+**Knowledge impact:** covered by the sentence for §465, §477 and §478 in `architecture/combat-search.md`.
+
+## §478 — Silver AZ MLP prior generation 6: 40k teacher; recipe now matters more than data; embedding net E chosen (2026-10-14)
+
+**Question (Philipp, 2026-10-14 11:14Z, "Yeh let's do gen 6 with 40k"):** generation 6 with a 40k teacher, gated
+offline as §477.
+**Design:** as §477 with a 40k teacher and the gen-5 prior (worker: gdb backtrace and kill after 7,200 s), seeds
+97000000–97000511 and 97001000–97001511, 8 workers. Window orig + x5 + g3–g6 (2,531,313 roots). Arms written before
+the data: A/B/C as §477, warm-started from gen 5 on CPU. Arm D was added before any gen-6 data arrived, from the
+net-architecture sweep (`silver_prior_arch_20261014`): 128/64 from scratch, dropout 0.15, cosine LR 1e-3, 25 epochs,
+target 0.5 visit shares + 0.5 softmax of a 512/256 teacher net trained on the same pack. On Philipp's request the
+teacher and D ran on his GPU (about 20x faster than 4 CPU cores), together with the offline-only embedding arms E
+(encounter + monster id + monster incoming damage tables) and Eenc (encounter only), which need the v2 loader (#541).
+Selection among the current-format arms: lowest fold-3 validation CE.
+**Result: 256/256 units, 407,179 roots, no stalls. Gate PASS with D; Philipp chose E (17:13Z, "yes switch to E").**
+
+| arm | validation CE | orig fold-4 CE | all fold-4 CE | TV vs gen 5 |
+|---|---|---|---|---|
+| gen 5 | 1.2128 | 1.1954 | 1.2091 | 0 |
+| A | 1.2104 | 1.1927 | 1.2072 | 0.045 |
+| B (dropout 0.35) | 1.2135 | 1.1964 | 1.2104 | 0.055 |
+| C (dropout 0.15) | 1.2056 | 1.1877 | 1.2026 | 0.064 |
+| D (distilled, cosine) | 1.2029 | 1.1831 | 1.1982 | 0.078 |
+| teacher 512/256 | 1.2044 | 1.1852 | 1.2012 | |
+| **E (enc + monster tables), gen 6** | **1.1937** | **1.1749** | **1.1905** | |
+| Eenc (enc table) | 1.1955 | 1.1769 | 1.1929 | |
+
+- All rows evaluated on the same pack and splits; teacher, E and Eenc by the training script, which reproduces D's
+  values exactly. Native parity: D 2.3e-6; E 2.4e-6 (v2 export, #541). Same per-root cost within noise.
+- Each arm is a single seed.
+
+**Interpretation:**
+- B, the recipe of gens 4 and 5, no longer improves on gen 5 (+0.0010 orig). **Inference:** at this point the
+  training recipe (distillation, cosine schedule, encounter and monster embeddings) moves the prior more than another
+  generation of stronger-teacher data.
+- Gen 6 is E (`combat_policy_mlp_v2`); it loads only in binaries built from main `531db3e3` or later. D stays as the
+  current-format fallback.
+- No online evaluation since §460 (gen 3); whether gens 4–6 play better is **Unverified**.
+
+**Evidence:** [packet](evidence/silver_az_mlp_gen6_20261014/README.md). Raw and models:
+`/mnt/project-files/silver-az-mlp/gen6/`; pack on branch `claude/silver-gen6-gpu-data` (never merged). Seeds
+97000000–97000511 and 97001000–97001511 are now used.
+
+**Knowledge impact:** one sentence on generations 4–6 in the MLP prior paragraph of `architecture/combat-search.md`.
+
+## §475 — OOC MCTS without leaf rollout combats at 16384 simulations vs rollout3 at 4096: WORSE, −10.2 pp (2026-10-14)
+
+**Question (Philipp, 2026-10-14 17:12Z, after §472):** "what if we would use our extra time with more mcts
+simulations?" Does `LEAF_COMBATS=0` with `STS_OOC_MCTS_SIMS=16384` (roughly rollout3's MCTS CPU) win as many runs
+as rollout3 at 4096?
+**Design:** [PREREG](evidence/ooc_rollout0_sims_475_20261014/PREREG.md), frozen after independent pre-launch review
+(code `e8410510` = main after #542, so on the ADR-0034 defaults; binary `ec42a8ea…`; run commit `9bd5b848`). Arms
+`rollout3` (the §472 `rollout3` environment) and `r0s16k` (only `LEAF_COMBATS=0` and `SIMS=16384`). Ironclad A0,
+fresh seeds 103000000–103000127, 16 cloud workers. Primary: Δwin r0s16k − rollout3, paired seed bootstrap;
+BETTER / WORSE / NOT_SHOWN; secondary non-inferiority at 10 pp.
+**Result: WORSE.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | r0s16k | rollout3 | r0s16k − rollout3 |
+|---|---|---|---|
+| wins / 128 | 102 | 115 | −10.2 pp [−18.8, −1.6]; McNemar p = 0.029 (9 vs 22 discordant) |
+| mean floor | 48.74 | 49.93 | −1.19 [−2.38, −0.02] |
+| boss deaths | 22 | 10 | |
+| MCTS CPU per run | 633 s | 574 s | ratio 1.10 |
+| simulations per run | 846k | 223k | |
+| per-search max depth, median / p90 / max | 5 / 9 / 14 | 4 / 8 / 13 | |
+
+**Interpretation:**
+- At about matched CPU (r0s16k used 1.10x, so the match slightly favours it), four times the simulations do not make
+  up for the missing leaf combats (NOT_NONINFERIOR_AT_10PP too); rollout3 stays, per the prereg rule.
+- The r0s16k searches are a little deeper (median depth 5 vs 4), without a win gain. **Inference:** the leaf
+  value without the three combats is the likely cause and more simulations do not correct it; leaf-value quality
+  was not measured, and on the 31 discordant seeds the arms play different games. Boss deaths 22 vs 10 are
+  descriptive, not pre-registered.
+- Not byte-comparable to §472 (ADR-0034 changed A0 defaults in between); both arms were run here.
+
+**Evidence:** [packet](evidence/ooc_rollout0_sims_475_20261014/README.md). Raw: `/mnt/project-files/ooc-rollout0-sims-475/`
+(one tar per worker). Seeds 103000000–103000127 and smokes 74071100–74071103 are now used.
+
+**Knowledge impact:** the `LEAF_COMBATS` row in `architecture/out-of-combat.md` now cites §475.
+
+## §473 — Silver Smoke Bomb escape penalty 12,35 vs escape scored as a win: NOT_SHOWN at A0 and A20 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 15:26Z, after the default-off flag audit):** "5 können wir gerne testen". Silver
+scores a Smoke Bomb escape like a win although the escape forfeits the fight's rewards. Does charging them
+(`STS_SILVER_ESCAPE_PENALTY=12,35`, normal and elite-trigger fights, capped at half the HP left) play better whole
+runs?
+**Design:** [PREREG](evidence/silver_escape_penalty_473_20261014/PREREG.md), committed before any cohort seed ran
+(code `e221fcac`, binary `bafcdf80…`, run commit `ef53c823`, 8 cloud workers). Both arms are the §422/§433 `off`
+stack (exact-10k live Silver, V4 OOC policy, OOC MCTS off) on the ADR-0034 defaults; `base` sets `0,0`, `escape`
+sets `12,35`. The values were fixed from Silver's own weights, not tuned. Fresh seeds: A0 102000000–102000499, A20
+102000500–102000999. Primary: A0 Δwin, A20 Δfloor, paired seed bootstrap (10,000 resamples); BETTER / WORSE /
+NOT_SHOWN.
+**Precondition found while preparing:** before PR #540, `one_combat` rejected any `STS_SILVER_ESCAPE_PENALTY` value at
+startup because the name was missing from its accepted `STS_SILVER_*` list, so no earlier `one_combat` run can have used the
+penalty. PR #540 (`e221fcac`) accepts it; the first smoke failed with rc=2 before that fix.
+**Result: NOT_SHOWN in both cohorts.** 500/500 pairs valid per cohort, all 2,000 units rc=0, no dropped seed, no
+stall. All 8 worker tars were verified against their DONE hashes and frozen provenance from a second container.
+
+| | A0 base | A0 escape | A20 base | A20 escape |
+|---|---|---|---|---|
+| wins / 500 | 414 | 414 | 67 | 66 |
+| Δwin (escape − base) | | 0.0 pp [−1.0, +1.0]; 3 vs 3 discordant, McNemar p = 1.0 | | −0.2 pp [−1.0, +0.4]; 1 vs 2 discordant, p = 1.0 |
+| mean floor | 49.59 | 49.57 | 36.11 | 36.13 |
+| Δfloor | | −0.018 [−0.128, +0.088] | | +0.024 [−0.168, +0.234] |
+| boss deaths | 67 | 66 | 257 | 256 |
+| reached floor 50 | 459 | 458 | 209 | 209 |
+| seconds per run | 58.4 | 58.2 | 38.9 | 38.8 |
+| pairs whose rows differ at all | | 46 | | 21 |
+
+**Interpretation:**
+- No effect is detectable. The penalty changes a run only after an escape decision; 46 of 500 A0 pairs and 21 of 500
+  A20 pairs differ at all, and among them wins and floors move both ways. The intervals are much narrower than the
+  prereg's power estimate because most pairs are identical, so they bound the average effect over all runs, not the
+  effect on runs that hold a Smoke Bomb. Escape counts per arm were not measured. No CPU difference.
+- Per the prereg decision rule, Philipp decides on principle whether `12,35` becomes the default; the values are not
+  tuned further on these seeds. Until then the default stays `0,0`.
+
+**Evidence:** [packet](evidence/silver_escape_penalty_473_20261014/PREREG.md), analyzer
+`tools/analyze_silver_escape_473.py`. Raw: `/mnt/project-files/silver-escape-473/` (one tar and DONE file per
+worker). Seeds 102000000–102000999 and smokes 74070750–74070767 are now used.
+
+**Knowledge impact:** the escape-penalty paragraph in `architecture/combat-search.md` now cites §473.
+
+## §476 — Silver AZ MLP prior generation 6 at A20 with a simulation sweep: helps at 2,500 and 625, not shown at 10,000 or vs gen 5 (2026-10-14)
+
+**Question (Philipp, 2026-10-14 17:46Z):** "can we evaluate the gen 6 prior on A20? also maybe how it performs with
+fewer simulations? maybe dont do full runs, just select a few hundred / 1000 fights". §478 chose gen 6 (v2 net E,
+offline orig fold-4 CE 1.1749 vs gen 5 1.1954) on offline evidence only; no generation after gen 3 (§460, A0) had
+been played.
+**Design:** [PREREG](evidence/silver_gen6_a20_sweep_476_20261014/PREREG.md), frozen after independent pre-launch
+review and a delta review (code `339da3b1`, binary `1c774367…520b`, gen 6 E `ca9bd7f2…3228`, gen 5 `5e9f975a…9e8a`).
+New `ctmsilvergen` armset `mlpsweep` at Ascension 20: one plain exact-10k source run per seed (§460 OOC policy and
+teacher), every boss, elite and event fight plus about one normal fight in three replayed by a 10k control and by
+`plain<b>`, `mlp<b>` (gen 6) and `mlpprev<b>` (gen 5) at b = 10,000, 2,500 and 625 (tree prior K = 8, weight 400,
+root bonus on), 2 replicates each on a shared combat-RNG redraw. Fresh seeds 104000000–104000095, one cloud
+container. §460 fight score, paired per fight, bootstrap over seeds. Primary: `mlp<b> − plain<b>` (G6_HELPS /
+G6_HURTS / NOT_SHOWN) and `mlp<b> − mlpprev<b>` (G6_BETTER / G6_WORSE / NOT_SHOWN), all fights, score; six labels,
+no multiplicity correction. Every arm used the legacy Silver terminal score (the run predates ADR-0035).
+**Result: gen 6 vs plain G6_HELPS at 2,500 and 625, NOT_SHOWN at 10,000; gen 6 vs gen 5 NOT_SHOWN at all three
+budgets.** 1,080 of 1,088 fights valid (8 with escape-quarantined or control-state-invalid rows); 96/96 seeds, all
+shards rc 0, no stall. Fights: 194 boss, 510 elite, 339 normal, 37 event.
+
+| contrast (all fights) | score | win rate, pp | HP lost |
+|---|---|---|---|
+| gen6 − plain, 10k | +0.73 [−1.45, +2.91] | +0.0 [−0.8, +0.8] | −0.10 [−0.49, +0.29] |
+| gen6 − plain, 2.5k | **+3.85 [+1.23, +6.52]** | +1.1 [+0.2, +2.0] | −0.31 [−0.76, +0.12] |
+| gen6 − plain, 625 | **+2.56 [+0.40, +4.74]** | +0.5 [−0.2, +1.3] | −0.33 [−0.72, +0.04] |
+| gen6 − gen5, 10k | +0.57 [−1.40, +2.49] | +0.2 [−0.5, +0.9] | −0.02 [−0.42, +0.40] |
+| gen6 − gen5, 2.5k | +1.34 [−0.79, +3.55] | +0.4 [−0.3, +1.2] | −0.27 [−0.67, +0.12] |
+| gen6 − gen5, 625 | −0.80 [−2.93, +1.30] | −0.4 [−1.1, +0.3] | −0.10 [−0.52, +0.32] |
+| gen5 − plain, 2.5k | +2.51 [+0.19, +4.85] | +0.6 [−0.2, +1.5] | −0.04 [−0.44, +0.35] |
+| gen5 − plain, 625 | +3.36 [+1.01, +5.73] | +0.9 [+0.1, +1.8] | −0.23 [−0.65, +0.18] |
+| gen6 2.5k − plain 10k | +1.04 [−1.43, +3.46] | +0.1 [−0.7, +1.0] | +0.09 [−0.35, +0.54] |
+| plain 2.5k − plain 10k | −2.81 [−5.15, −0.62] | −0.9 [−1.8, −0.1] | +0.40 [−0.02, +0.82] |
+| plain 625 − plain 10k | −5.82 [−8.54, −3.12] | −1.5 [−2.5, −0.6] | +1.61 [+1.15, +2.08] |
+
+- Boss fights (n = 194): gen6 − plain +3.22 [−7.09, +13.04] at 10k, +15.96 [+3.89, +28.34] at 2.5k (win
+  +4.6 pp [+0.5, +8.9], HP lost −2.32 [−4.00, −0.73]), +4.78 [−3.78, +13.46] at 625. Boss win rate per replicate:
+  plain 75.5 / 70.9 / 70.9%, gen 6 76.0 / 75.5 / 71.6%, gen 5 75.3 / 74.2 / 73.5% at 10k / 2.5k / 625 (control
+  77.8%). Elite and normal contrasts have no CI excluding 0 except gen5 − plain elite at 625 (+3.47 [+0.59, +6.59]).
+- Mean win rate per fight: plain 93.0 / 92.1 / 91.5%, gen 6 93.0 / 93.1 / 92.0%, gen 5 92.8 / 92.7 / 92.4%.
+- CPU per fight vs plain at the same budget: gen 6 1.046x / 1.040x / 1.045x, gen 5 1.038x / 1.044x / 1.051x; plain
+  at 10k 2.72 s, 2.5k 0.62 s, 625 0.15 s per fight. Contrasts are at equal simulations, not equal CPU.
+
+**Interpretation:**
+- At A20 the gen-6 prior helps plain Silver at reduced budgets: at 2,500 it plays about as well as plain 10,000
+  (+1.04, CI ±2.5) at about a quarter of the CPU, and the gain sits mainly in boss fights, as at A0 (§460).
+  **Inference:** a strong prior substitutes for simulations; at 10,000 the search no longer needs it, so an effect
+  there, if any, is below this design's resolution (±2.2 score).
+- Gen 6 is not shown better than gen 5 in play, at any budget, despite the offline CE gain; at 625 the point estimate
+  favours gen 5. **Open question:** whether the offline gains of gens 4–6 transfer to play at all; no fight-level
+  comparison against gen 3 or gen 4 has been run.
+- `NOT_SHOWN` at about 1,000 A20 fights means inconclusive, not "no effect". Six labels at 95% without correction;
+  the two HELPS labels have CIs well clear of 0 and agree with gen 5's, so they are not a single borderline result.
+- Fight score and per-fight win rate, not run win rate: the run-level effect of a lower combat budget with the prior
+  is **Unverified**. The source policy is A0-trained, so the fight mix is where that policy reaches at A20. No default
+  changes; the MLP prior stays opt-in.
+
+**Evidence:** [packet](evidence/silver_gen6_a20_sweep_476_20261014/README.md). Raw:
+`/mnt/project-files/silver-gen6-a20-476/x476-run.tar` (sha256 `e93b58d0…520a`, checked from a second container).
+Seeds 104000000–104000095 and smokes 74071200–74071207 (and reviewer smokes 74071300–74071303) are now used.
+
+**Knowledge impact:** the MLP prior paragraph of `architecture/combat-search.md` now states the §476 A20 result and
+documents the `mlpsweep` armset.
