@@ -6,11 +6,13 @@ usage: python3 analyze_479.py OUT.json DIR [DIR ...]
 Reads every `*.states.csv`, `*.arms.csv` and `*.samples.csv` written by
 `one_combat ctmsilvergen N 20 ...` with STS_CTMSILVER_ARMSET=rollout479 under the given
 directories. Fight score, pairing, bootstrap and exclusions as §476 (`analyze_476.py`): per
-replicate 0 on death, else 53 + curHp + 11 * potionCount + 0.25 * gold + 2 * maxHp (an ESCAPE
-is scored like a survived fight and counted under `escapes`); arm value per fight is the
+replicate 0 on death, else 53 + curHp + 11 * potionCount + 0.25 * gold + 2 * maxHp; arm value per fight is the
 replicate mean; contrasts are paired per fight; 95% CIs are a bootstrap over source seeds
 (10,000 resamples, RNG seed 0). A fight counts only when every arm row is valid and every arm
-has R = 2 replicates. Also per arm: CPU per fight, CPU per simulation (sum cpuSeconds / sum
+has R = 2 replicates. The harness marks an escaped replicate (Smoke Bomb, fleeing enemy) invalid, so
+a fight with an escape in any arm is excluded; excluded fights are counted by root reason (the
+first quarantine reason other than `control_state_invalid`) and ESCAPE replicates are counted per
+arm over all replayed fights. Also per arm: CPU per fight, CPU per simulation (sum cpuSeconds / sum
 simulations), mean rollout length (sum rolloutActions / sum rolloutPlayouts) and playouts per
 simulation, over valid fights only; CPU ratios get the same seed bootstrap.
 """
@@ -67,7 +69,7 @@ def rows(path):
 def load(dirs):
     states, valid, cpu, dec, samples = {}, defaultdict(lambda: True), defaultdict(list), defaultdict(int), defaultdict(list)
     work = defaultdict(lambda: [0.0, 0, 0, 0])   # (stateId, arm) -> cpuSeconds, simulations, playouts, actions
-    shards = []
+    shards, reasons = [], defaultdict(lambda: defaultdict(int))   # stateId -> quarantineReason -> rows
     for d in dirs:
         for path in sorted(glob.glob(os.path.join(d, "**", "*.states.csv"), recursive=True)):
             prefix = path[: -len(".states.csv")]
@@ -77,6 +79,8 @@ def load(dirs):
                 states[r["stateId"]] = r
             for r in rows(prefix + ".arms.csv"):
                 valid[r["stateId"]] = valid[r["stateId"]] and r["valid"] == "1"
+                if r["valid"] != "1":
+                    reasons[r["stateId"]][r["quarantineReason"] or "unspecified"] += 1
                 cpu[r["arm"]].append(float(r["cpuSeconds"]))
                 dec[r["arm"]] += int(r["decisions"])
                 w = work[(r["stateId"], r["arm"])]
@@ -92,7 +96,7 @@ def load(dirs):
                              **{k: m["integrity"][k] for k in ("states", "controlReplayMismatches",
                                                                "invalidArmRows", "hallwaySkipped")})
             shards.append(shard)
-    return states, valid, cpu, dec, samples, shards, work
+    return states, valid, cpu, dec, samples, shards, work, reasons
 
 
 def boot(per_seed, n=10000, rng_seed=0):
@@ -131,7 +135,7 @@ def label(c, pos, neg):
 
 def main():
     out, dirs = sys.argv[1], sys.argv[2:]
-    states, valid, cpu, dec, samples, shards, work = load(dirs)
+    states, valid, cpu, dec, samples, shards, work, reasons = load(dirs)
     missing = [a for a in ARMS if a not in cpu]
     if missing:
         raise SystemExit(f"missing arms: {missing}")
@@ -139,9 +143,18 @@ def main():
     if over:
         raise SystemExit(f"more than R={R} replicates per fight: {sorted(over)}")
     fights, excluded, escapes = {}, defaultdict(int), defaultdict(int)
+    by_reason, rows_by_reason, escapes_all = defaultdict(int), defaultdict(int), defaultdict(int)
+    for (sid, a), rs in samples.items():
+        if a in ARMS:
+            escapes_all[a] += sum(r["outcome"] == "ESCAPE" for r in rs)
     for sid, st in states.items():
         if not valid[sid]:
             excluded["invalid_arm_row"] += 1
+            rs = reasons[sid]
+            for k, v in rs.items():
+                rows_by_reason[k] += v
+            root = sorted(k for k in rs if k != "control_state_invalid") or ["control_state_invalid"]
+            by_reason[root[0]] += 1
             continue
         pre = float(st["preHp"])
         per = {}
@@ -171,6 +184,9 @@ def main():
               "meanCpuSecondsPerFight": mean_cpu,
               "cpuMsPerDecision": {a: 1000 * sum(v) / max(1, dec[a]) for a, v in cpu.items()},
               "escapes": dict(escapes),
+              "excludedFightsByRootReason": dict(by_reason),
+              "invalidArmRowsByReason": dict(rows_by_reason),
+              "escapeReplicatesAllFights": dict(escapes_all),
               "arms": {}, "contrasts": {}, "cpuRatios": {}, "labels": {}}
     for a in ARMS:
         w = [sum(work[(sid, a)][i] for sid in fights) for i in range(4)]
@@ -209,7 +225,9 @@ def main():
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "truncatedRows", "shards",
-                                             "roomClasses", "labels", "cpuRatios", "escapes")}))
+                                             "roomClasses", "labels", "cpuRatios", "escapes",
+                                             "excludedFightsByRootReason", "invalidArmRowsByReason",
+                                             "escapeReplicatesAllFights")}))
     for a, v in result["arms"].items():
         print(a, {k: round(x, 3) for k, x in v.items()})
     for k, v in result["contrasts"].items():

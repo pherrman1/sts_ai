@@ -31,6 +31,9 @@ Out of scope: a prior that guides rollout actions (cost estimated below, not run
   env var is set, so the source game cannot change. All arms therefore replay the same captured fights from the
   same pre-fight states with the same redraw and planner seeds (§476 pairing). The first review showed that
   separate processes per rollout setting do **not** pair (the source game changes), so that layout is dropped.
+- Default parity: with the rollout env vars unset, the branch binary reproduces main's (`2195b648`) A20 Silver
+  `bestbench` rows on seeds 74071494–74071495 and main's `mlpsweep` arms rows (all columns before
+  `cpuSeconds`) on seeds 74071491–74071492.
 - The arms CSV records, per arm row: `cpuSeconds`, `simulations`, `decisions`, `rolloutPlayouts` and
   `rolloutActions` (counted in every search, no profiler needed).
 
@@ -53,8 +56,8 @@ Out of scope: a prior that guides rollout actions (cost estimated below, not run
 
 ## Frozen inputs (filled at freeze)
 - Code: commit `<freeze>` on `claude/project-thread-8vmyta`, which merges main `2195b648` (includes §476's
-  harness, ADR-0035 and ADR-0036). `run.sh` refuses a checkout whose `apps/`, `src/` or `CMakeLists.txt` differ
-  from the frozen code commit, and a binary with another sha256 (`BINARY_SHA256`).
+  harness, ADR-0035 and ADR-0036). `run.sh` refuses a checkout whose `apps/`, `src/`, `include/` or `CMakeLists.txt` differ
+  from code commit `34c9678f`, and a binary with another sha256 (`BINARY_SHA256`).
 - Environment (`env.sh`): §476's settings with `STS_CTMSILVER_ARMSET=rollout479`,
   `STS_CTMSILVER_SWEEP_SIMS=2500,10000`, `STS_CTMSILVER_HALLWAY_EVERY=3`, `STS_CTMSILVER_MLP_PRIOR` and
   `STS_CTMSILVER_CARD_TABLE`. Silver scoring defaults are those of the frozen binary: ADR-0035 leaf terms on,
@@ -69,8 +72,7 @@ Out of scope: a prior that guides rollout actions (cost estimated below, not run
 
 ## Metrics
 - **Fight score** per replicate: 0 on death, else 53 + curHp + 11 potions + 0.25 gold + 2 maxHp; arm value per
-  fight = replicate mean (§476/§460). An ESCAPE (Smoke Bomb) is scored like any survived fight from the
-  post-combat state and counted per arm (`escapes`).
+  fight = replicate mean (§476/§460).
 - **Win rate** (1 − death share) and **HP lost** (preHp − post-combat curHp; a death loses all preHp).
 - **CPU per fight**, **CPU per simulation** (Σ cpuSeconds / Σ simulations), **mean rollout length**
   (Σ rolloutActions / Σ rolloutPlayouts) and **playouts per simulation**, per arm over valid fights.
@@ -111,15 +113,46 @@ boss, elite and normal (NORMAL + OTHER) subsets.
   control replay mismatch, source trajectory invalid).
 - `incomplete_shard_abort`: an arm has fewer than R = 2 replicates (shard ended mid-fight).
 - `truncatedRows`: a CSV line cut off mid-write is dropped.
-- Escapes are not excluded (scored as above).
+- Escapes: the harness marks an escaped replicate (Smoke Bomb or a fleeing enemy) invalid with reason `escape`,
+  so a fight with an escape in any arm is excluded as `invalid_arm_row` (§476: 7 such fights of 1,088). The
+  analysis reports excluded fights by root reason (`excludedFightsByRootReason`: the first reason other than
+  `control_state_invalid`), invalid rows by reason, and ESCAPE replicates per arm over all replayed fights
+  (`escapeReplicatesAllFights`). If one arm escapes much more often than `plain2500`, the write-up says so,
+  because exclusion then depends on the arm.
 
 ## Cost
-Matched smoke (seeds 74071490–74071493, 1 seed per shard on 4 cores): <filled from the smoke below>. The run
-size is chosen at freeze so that it gives about 1,000 valid fights, or fewer if Philipp caps the CPU.
+Matched smoke at code `34c9678f` (binary sha256 `1b3f76ed…6fb6c5`), seeds 74071490–74071493, one seed per shard
+on 4 cores, `rollout479`, `SWEEP_SIMS=2500,10000`: 65 fights replayed, 63 valid (2 excluded, both control-replay
+mismatches on the act-3 boss Donu and Deca), no escapes. Both mismatches reproduce with main's binary (`2195b648`)
+under §476's `mlpsweep` armset on the same seeds, so they predate this change. Shard wall times 288, 452, 938 and 1,432 s (mean
+778 s per seed, of which about 170 s is the source run). Replay CPU per arm (both replicates, all 65 fights):
+
+| Arm | CPU s | Share | CPU s per valid fight | µs per simulation | Mean rollout length |
+|---|---|---|---|---|---|
+| `mlp10000` / `plain10000` | 390 / 376 | 16.0 / 15.4% | 5.86 / 5.66 | 14.8 / 14.5 | 14.9 / 15.2 |
+| `uniformmlp10000` / `uniform10000` | 370 / 353 | 15.2 / 14.5% | 5.51 / 5.31 | 15.6 / 14.8 | 12.5 / 12.5 |
+| `control` (10k, 1 replicate) | 182 | 7.5% | | | |
+| `mlp2500` / `plain2500` | 91 / 88 | 3.7 / 3.6% | 1.37 / 1.33 | 13.9 / 13.3 | 15.2 / 15.3 |
+| `uniformmlp2500` / `uniform2500` | 85 / 89 | 3.5 / 3.6% | 1.28 / 1.33 | 14.8 / 14.4 | 12.6 / 12.6 |
+| `tablemlp2500` / `table2500` | 84 / 83 | 3.4 / 3.4% | 1.25 / 1.24 | 12.9 / 12.4 | 13.9 / 13.8 |
+| `perleaf2_mlp1250` / `perleaf2_1250` | 71 / 70 | 2.9 / 2.9% | 1.07 / 1.05 | 21.1 / 20.5 | 15.8 / 15.5 |
+| `perleaf4_mlp625` / `perleaf4_625` | 51 / 53 | 2.1 / 2.2% | 0.76 / 0.79 | 31.0 / 30.4 | 15.7 / 15.8 |
+
+Smoke CPU ratios (seed bootstrap, 4 seeds): uniform/greedy per simulation 1.09 [0.93, 1.18] at 2,500 and
+1.02 [0.90, 1.11] at 10,000. Uniform playouts are shorter (12.6 vs 15.3 actions) but each step enumerates every
+legal action, so in this implementation uniform rollouts save no CPU. Table/greedy per fight 0.93
+[0.90, 0.95]; 2 per leaf at 1,250 0.79 [0.68, 0.82] and 4 per leaf at 625 0.59 [0.53, 0.64] of `plain2500`.
+These smoke numbers are not evidence for any contrast.
+
+Run size: about 15.75 valid fights per seed, so **64 seeds** (105000000–105000063) give about 1,000 valid fights,
+at about 64 × 780 s ≈ 14 CPU hours. Default layout: 4 containers × 4 shards × 4 seeds (`run.sh OUT 16 BASE`
+with BASE = 105000000, 105000016, 105000032, 105000048); expected shard time about 50 min, with the heavy
+seeds up to about 1.5 h. Per-shard timeout 6 h (≥ 3× the slowest expected shard). The seed count, layout and
+timeout are confirmed at freeze; Philipp may cap the CPU, which lowers the seed count and the resolution.
 
 ## Operation and delivery
-As §476: `run.sh OUT TOTAL BASE "<shards>"`, launched detached with a re-armed background watcher; 4 shards per
-container; per-shard timeout set at freeze from the smoke cost (at least 3× the expected shard time). A shard
+As §476: `run.sh OUT TOTAL BASE "<shards>" 6h`, launched detached with a re-armed background watcher; 4 shards
+per container. A shard
 lost with its container is rerun unchanged into a fresh folder. Raw tar with sha256 to
 `/mnt/project-files/silver-rollout-2x2/`, verified from a second container before the write-up cites it.
 
