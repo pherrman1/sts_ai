@@ -50,6 +50,9 @@ NativeSilverDecision NativeSilverAdvisorSession::decide(const silver_bridge::Bat
     if (!searcher_) {
         context_ = sts::search::searchContextFromWire(wire);
         searcher_ = std::make_unique<SilverSearcher>(root, context_);
+        // ADR-0036 escape penalty; the live path reads no environment.
+        searcher_->evalWeights.escapePenalty = sts::search::kDefaultEscapePenalty;
+        searcher_->evalWeights.eliteEscapePenalty = sts::search::kDefaultEliteEscapePenalty;
         lastFallbackReason_ = "no_predecessor";
     } else if (node != nullptr && !node->isRandomNode) {
         const std::int64_t inherited = node->simulationCount;

@@ -53,12 +53,16 @@ namespace sts::search {
         double maxHpWeight = 2.0;
         double parasitePenalty = 12;
         // A Smoke Bomb escape ends combat as PLAYER_VICTORY but forfeits the
-        // combat rewards. Both default to 0 (the historical escape-as-victory
-        // valuation); STS_SILVER_ESCAPE_PENALTY=<normal>,<elite> enables them.
+        // combat rewards. Both default to 0 here (the historical escape-as-victory
+        // valuation); native Silver sets 12,35 by default (ADR-0036) and
+        // STS_SILVER_ESCAPE_PENALTY=<normal>,<elite> overrides it.
         // The applied penalty is capped at half the HP left when escaping.
         double escapePenalty = 0;
         double eliteEscapePenalty = 0;
     };
+    // ADR-0036 defaults (§473 values), used by native Silver and the live advisor.
+    inline constexpr double kDefaultEscapePenalty = 12;
+    inline constexpr double kDefaultEliteEscapePenalty = 35;
 
     struct SilverSearchStats {
         std::int64_t steps = 0;
