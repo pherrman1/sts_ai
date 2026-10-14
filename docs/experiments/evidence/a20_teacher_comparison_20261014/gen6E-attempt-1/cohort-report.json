@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "a20_teacher_comparison_analysis_v1",
+  "verdict": "INVALID_OR_INSUFFICIENT",
+  "reasons": [
+    "Invalid: source process failed or timed out"
+  ],
+  "sourcePrefixes": [
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/s97150710",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/s97150711",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/s97150712",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/s97150713"
+  ],
+  "freezeSha256": "135f3c11f90528283d385b52c9f603e792bf73bd67b4c232ee40837e3b50bd1f"
+}

@@ -429,10 +429,13 @@ their accuracy advantage does not establish independent-future forecasting
 superiority. This finding does not reclassify §411 gameplay without checking
 its separate OOC future resampling. The bounded [A20 teacher protocol](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
 uses a corrected, A20-only initialization kernel and keeps the old modes
-unchanged. Its comparison remains unrun; the user selected completed gen6 E,
-now recovered from PR #541 and pinned in the protocol. Per the user's
-instruction, its v2 support is integrated from `main` merge `531db3e3`.
-Focused checks precede the clean producer freeze/canary.
+unchanged. The user selected completed gen6 E from PR #541; its v2 support is
+integrated from `main` merge `531db3e3`. The [bounded A20 attempt](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/RESULTS.md)
+(§472) passed actual-model parity and its excluded canary, but one of four
+cohort sources hit the fixed 180-second CPU cap. The exact verdict is
+**INVALID_OR_INSUFFICIENT**. The completed sources are not a replacement panel;
+there is no teacher-quality or optimal-budget conclusion. All outputs are
+preserved, with no retry, extension, training or default change.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production

@@ -18128,3 +18128,50 @@ promotion follows. The CTM remains NOT_QUALIFIED.
 **Knowledge impact:** document the explicit stability command in OOC
 architecture/CODE_MAP and update #507's current status in the maintained
 research page. This entry and its evidence packet retain the frozen experiment.
+
+
+## §472 — A20 CTM/Silver teachers with gen6 E: INVALID_OR_INSUFFICIENT (2026-10-14)
+
+**Question:** compare the unchanged PR #524 A20 CTM with plain/prior Silver
+at 2k and 10k simulations, separating forecasting fidelity, paired controller
+outcomes and cost. The user selected completed gen6 version E, obtained from
+PR #541; its required v2 inference support came from merged main, with no
+separate runtime copy or default change.
+
+**Frozen design and identity:** [protocol](evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
+and [complete attempt record](evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/RESULTS.md).
+Producer `dc9411562c72fb1828229b95aec0bd4c9fffbee6`, binary
+`f065c3be3f6d9e73cebf03beb117e27ef8afb76d5590b244d0e1589d577be4c7`,
+prior `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
+A20, fixed V4 source policy, OOC MCTS off, fair mode, original-future plain10k
+reference, four shared redrawn futures per Silver condition; prior K=8,
+weight 400 and root bonus on. Four sources `97150710–97150713`, six possible
+chronological fight slots each, excluded canary `97150701`. Hard limits:
+180 CPU/240 wall seconds/source, two concurrent jobs, no replacements/retries.
+
+**Checks and execution:** merged Release builds and seven focused CTests
+passed. Independent implementation review passed. Actual E/frozen-binary
+parity against NumPy passed on eight synthetic roots/40 actions, max absolute
+logit error 1.16007e-6. Canary **CANARY_VALID**: five supported states, five
+exact source/control matches, no invalid arm rows, 95.90 CPU seconds.
+Three cohort sources completed in 69.68, 57.25 and 89.70 CPU seconds. Source
+`97150713` was killed at the CPU cap (return code 137, GNU time signal 9,
+180.10 measured CPU seconds, 180.18 wall seconds), leaving no final manifest
+and incomplete buffered CSVs. Total measured CPU including canary: 492.63s.
+
+**Verdict:** exactly **INVALID_OR_INSUFFICIENT**, reason
+`Invalid: source process failed or timed out`. The analyzer emits no partial
+comparison metrics. An independent evidence audit confirmed custody and the
+interpretation. All raw outputs, including empty/truncated files, are
+preserved; the three completed sources are not a replacement cohort. No
+retry, cap increase, replacement seed, training or promotion occurred.
+
+**Interpretation:** gen6 E inference and canary mechanics work; the chosen
+resource cap was insufficient for one source. There is no A20 teacher-quality,
+prior-benefit or optimal-simulation-budget conclusion. Any subsequent attempt
+requires a separate prospective resource/attempt design; this freeze remains
+unchanged. This run does not settle #507's OOC decision value or student route.
+
+**Knowledge impact:** maintained research status records the incomplete
+comparison; this ledger and its evidence packet retain the executed protocol,
+artifact identity, canary success and bounded failure.

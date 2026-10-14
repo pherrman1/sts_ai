@@ -1,6 +1,9 @@
-# A20 teacher comparison: gen6 E artifact recovered
+# A20 teacher comparison: gen6 E canary passed, cohort incomplete
 
-No scientific canary or comparison has run. The bounded diagnostic compares
+The [gen6 E attempt](gen6E-attempt-1/RESULTS.md) is complete: the canary passed,
+but one of four cohort sources hit the fixed 180-second CPU limit. The exact
+verdict is **INVALID_OR_INSUFFICIENT**; no teacher ranking is reported.
+The bounded diagnostic compares
 the unchanged PR #524 A20 CTM with plain/prior Silver at **2k and 10k**
 simulations per combat decision. The user selected the completed
 **generation 6 version E** general MLP, pinned before any outcomes.
@@ -57,12 +60,13 @@ failures remain invalid. Historical modes retain their behavior.
 
 ## Execution with the selected artifact
 
-After verifying the clean reviewed producer, use the recovered E export:
+The attempt used the following commands. These output paths now exist and
+must not be overwritten or retried:
 
 ```sh
 python3 docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py \
   prepare build/a20-teacher-comparison/gen6E-run-1 \
-  --prior build/a20-teacher-comparison/gen6E-artifact/combat_policy_mlp_g6_E.txt \
+  --prior docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt \
   --prior-generation 6 \
   --prior-sha256 ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228 \
   --prior-source https://github.com/pherrman1/sts_ai/blob/0f1b70f278fbc188d9ab96688d67004855d88db8/docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt \
@@ -78,7 +82,8 @@ the complete environment. The canary must pass before the cohort command
 will launch. Every seed command goes through the seed guard. Outputs and
 attempt latches are exclusive; failed attempts are preserved without retry.
 Keep the checks, review, freeze, receipts and raw outputs with the eventual
-evidence packet. This preparation packet is not a completed experiment.
+evidence packet. The first attempt's complete and partial outputs are now
+preserved under `gen6E-attempt-1/`.
 
 ## Verification
 
@@ -91,13 +96,14 @@ runner dispatch. No game is executed by these fixtures. Logs are in `checks/`.
 
 Independent implementation and analysis reviews addressed the initialized-RNG
 coupling, RAW source/control equality, legitimate escape classification and
-runner/analyzer schema agreement. Real-model loading of gen6 E and scientific
-canary behavior remain unverified until the canary. The integrated Release
+runner/analyzer schema agreement. Real-model loading of gen6 E, independent
+synthetic parity and the scientific canary passed. The cohort did not complete.
+The integrated Release
 producer and unit-test builds passed; seven focused CTests passed (the six
 above plus `silver_searcher`, 1.63 seconds). Independent review of the merged
 v2 inference support passed; see `checks/gen6E-main-review.txt`. The
 full repository test suite and gameplay were not run for this preparation.
 
 Knowledge impact: the ledger/index and maintained research page correct the
-historical forecast interpretation and identify the pending A20 comparison.
+historical forecast interpretation and record the incomplete A20 comparison.
 The protocol and analysis contract specify the opt-in research interface.
