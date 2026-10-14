@@ -17954,11 +17954,12 @@ Collector; 6,360 paired copies, 0 invalid.
 | death rate | 20.57% | 20.50% | −0.06 pp [−0.79, +0.66] |
 | CPU s per fight | 1.405 | 1.409 | +0.004 [−0.005, +0.014] |
 
-**Interpretation:** the −0.0125 CE offline gain (about two loop generations on this fight) does not show in play at
-2k; the CI rules out gains above about +2.3 fight score (§460's gen 3 vs plain at matched CPU was +1.50). This
-matches §460, where gen 3 vs gen 1, two loop generations apart, was +0.14 NOT_SHOWN online. **Inference:** at this
-size, CE gains of about 0.01 on visit-share targets are too small to move fight outcomes measurably; the
-fight-specific line is not worth a per-fight net. Not tested: 10k play, other bosses. No default change.
+**Interpretation:** the −0.0125 CE offline gain (about two loop generations on this fight) is not shown in play at
+2k. The CI excludes gains above about +2.3 fight score but not a gain the size of §460's gen 3 vs plain at matched
+CPU (+1.50). This matches §460, where gen 3 vs gen 1, two loop generations apart, was +0.14 NOT_SHOWN online.
+**Inference:** CE gains of about 0.01 on visit-share targets move fight outcomes by at most a few fight-score
+points; a per-fight net would need a much larger offline gain to show online. Not tested: 10k play, other
+bosses. No default change.
 
 **Evidence:** [packet](evidence/silver_fight_specific_collector_20261014/eval469/README.md). Raw:
 `/mnt/project-files/silver-prior-fight-specific/eval469/`. Seeds 99000000–99000999 and smokes 74070250–74070277
