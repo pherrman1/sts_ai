@@ -1815,7 +1815,8 @@ std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
-// STS_OOC_MCTS_A20_CTM=1 (§470, off by default): the bundled A20 stack, used for ascension-20 decisions.
+// STS_OOC_MCTS_A20_CTM (§470; on by default with the automatic stack, ADR-0033): the bundled A20 stack, used for
+// ascension-20 decisions.
 std::shared_ptr<const CombatTransitionSampler> liveSamplerA20;
 std::shared_ptr<const CombatTransitionSampler> liveSamplerFor(const GameContext &gc) {
     if (!liveSamplerA20 || gc.ascension < 20) return liveSampler;
@@ -2161,6 +2162,9 @@ void configureLiveOocMcts() {
     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
         throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
     liveEnabled = enabled && std::string(enabled) == "1";
+    const char *a20Ctm = std::getenv("STS_OOC_MCTS_A20_CTM");
+    if (a20Ctm && std::string(a20Ctm) != "0" && std::string(a20Ctm) != "1")
+        throw std::runtime_error("STS_OOC_MCTS_A20_CTM must be 0 or 1 when set");
     if (const char *trace = std::getenv("STS_OOC_MCTS_TRACE")) liveTrace = trace;
     if (!liveTrace.empty()) {
         std::ofstream out(liveTrace, std::ios::app);
@@ -2350,13 +2354,13 @@ void configureLiveOocMcts() {
     if(!researchCandidate.empty())
         std::cout << "[ctm-research-candidate] candidate_id=" << researchCandidate << "\n";
     // §470: the bundled A20 Lizard CTM with its boss calibration, for ascension-20 decisions only; below A20 the
-    // stack above stays in use. Only beside the automatic default stack, so no override can mix into it.
-    const char *a20Ctm = std::getenv("STS_OOC_MCTS_A20_CTM");
-    if (a20Ctm && std::string(a20Ctm) != "0" && std::string(a20Ctm) != "1")
-        throw std::runtime_error("STS_OOC_MCTS_A20_CTM must be 0 or 1 when set");
-    if (a20Ctm && std::string(a20Ctm) == "1") {
-        if (!automaticDefaultStack || brewFallbackOverride || !activeLizardEnabled
-                || std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+    // stack above stays in use. Only beside the automatic default stack, so no override can mix into it. Unset, it
+    // follows that stack (ADR-0033): on with it, off with any CTM override; 0 turns it off, 1 requires the stack.
+    const bool a20Compatible = automaticDefaultStack && !brewFallbackOverride && activeLizardEnabled
+        && !std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") && !std::getenv("STS_OOC_MCTS_LEAF_CAPTURE");
+    const bool a20Requested = a20Ctm ? std::string(a20Ctm) == "1" : a20Compatible;
+    if (a20Requested) {
+        if (!a20Compatible)
             throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 requires the default CTM stack: no STS_OOC_MCTS_COMBAT_MODEL, "
                 "STS_OOC_MCTS_BREW_FALLBACK_MODEL, STS_OOC_MCTS_ACTIVE_LIZARD=0, STS_OOC_MCTS_COMBAT_RESOLVER, "
                 "STS_CTM_RESEARCH_CANDIDATE_MANIFEST or STS_OOC_MCTS_LEAF_CAPTURE");
@@ -2367,7 +2371,7 @@ void configureLiveOocMcts() {
         if (identity.at("candidateId") != "pathb-a20" || !identity.contains("bossSurvivalLogitShift"))
             throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 did not load the calibrated pathb-a20 stack");
         liveSamplerA20 = a20;
-        std::cout << std::setprecision(17) << "[ctm-research-candidate] candidate_id=pathb-a20 scope=ascension20"
+        std::cout << std::setprecision(17) << "[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20"
             << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
             << " active_lizard_correction=1\n" << std::setprecision(6);
     }
