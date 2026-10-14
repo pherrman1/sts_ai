@@ -34,8 +34,8 @@ On 2026-10-14 Philipp chose to make it the default ("Greedy rollout also should 
   need `STS_OOC_MCTS_ROLLOUT_SHOP=planner` to reproduce; comparisons against controls from a binary without ADR-0032
   must set it in the new arm or rerun the controls.
 - The `[live OOC MCTS ON …]` banner carries `rollout_shop=greedy` by default.
-- **Unverified:** a playing-strength gain. §459 did not show one; the default was chosen for the lower CPU cost at
-  no detectable win-rate cost.
+- **Unverified:** a playing-strength gain. §459 did not show one (NOT_SHOWN; paired wall-time ratio 0.889, not
+  pre-registered).
 
 ## Evidence
 
