@@ -52,3 +52,6 @@ On 2026-10-13 Philipp chose to turn it on ("Deck size should be on").
 `tests/native_ooc_shop_features_test.cpp` (relic, removal and card cases;
 explicit 0 keeps the legacy plans). Overnight campaign worked case:
 `docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/SHOP_WORKED_CASE.md`.
+
+Playing strength, measured after acceptance: ledger §463 (2026-10-14, 128 fresh paired seeds, §433 `combo`)
+found 110 vs 110 wins with the correction on vs off, 0.0 pp [−7.1, +7.8], NOT_SHOWN. The default stays.
