@@ -7,7 +7,11 @@ Research input for `STS_SILVER_ROLLOUT_CARD_TABLE` (off by default). Not evidenc
   label = the (card id, upgraded) whose card-play edges have the most visits (summed over targets).
 - `extract_card_choices.py` builds the rows (302,528); `fit_card_table.py` fits a conditional-logit score per
   (card id, upgraded) on workers w01–w06 and tests on w07–w08 (split by seed block).
-- `card_table_g6.txt`: `<card id> <upgraded> <score>`, higher plays first; unlisted cards score 0.
+- `card_table_fit.json` is `fit_card_table.py`'s full output (held-out result and every nonzero weight, keyed
+  card id * 2 + upgraded). `make_table.py card_table_fit.json card_table_g6.txt` writes the table from it, and the
+  regenerated file is byte-identical to the committed one (sha256 `fa93269f…`).
+- `card_table_g6.txt`: `<card id> <upgraded> <score>`, higher plays first; unlisted cards score 0. The rollout
+  agent ranks by `-score * 1000` truncated to an integer (`SilverRolloutAgent::loadPlayTable`).
 - Held-out top-1 agreement with Silver's choice (`fit_result.json`): learned table 45.7%, greedy
   `cardPlayPriorities` order alone 32.3%, uniform over options 31.0% (mean 3.7 options).
 
