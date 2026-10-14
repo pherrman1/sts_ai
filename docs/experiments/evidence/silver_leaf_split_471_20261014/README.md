@@ -1,4 +1,7 @@
-# §471 evidence: end-of-run Silver leaf parts vs legacy leaf, paired whole runs (split of §468)
+# §474 evidence: end-of-run Silver leaf parts vs legacy leaf, paired whole runs (split of §468)
+
+Ledger §474. Planned and run as "§471" (folder, analyzer, PREREG, brief and share path keep that number because the
+workers' FROZEN provenance cites them); renumbered after main's §471 (Codex PR #529) landed first.
 
 - Pre-registration: [PREREG.md](PREREG.md). Smoke: [SMOKE.md](SMOKE.md). Worker brief: [BRIEF-worker.md](BRIEF-worker.md)
   (sha256 `2cb82661…`, pre-launch review PASS).
