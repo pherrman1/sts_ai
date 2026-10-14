@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate; 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and default (ADR-0036); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -213,12 +213,16 @@ seeded unit fixture shows Silver fleeing even Cultist and Jaw Worm at full HP.
 rewards, capped at half the HP left when escaping, because a death also scores
 positively and an uncapped penalty could make a low-HP escape look worse than
 dying. Elite-trigger fights (`GameContext::isEliteTriggerCombat`) use the elite
-penalty. Both default to 0 (historical behavior); `STS_SILVER_ESCAPE_PENALTY`
-enables them (#370). Before PR #540 `one_combat` rejected the variable at
-startup. The only gameplay gate, ledger-06 §473 (`12,35` vs `0,0` on the `off`
-stack, 500 paired seeds per cohort), is NOT_SHOWN at A0 (414 vs 414 wins) and at
-A20 (floor +0.024 [−0.168, +0.234]); only 46 and 21 pairs differ at all. The
-default is Philipp's call.
+penalty. Native Silver uses 12 and 35 by default (ADR-0036);
+`STS_SILVER_ESCAPE_PENALTY=0,0` restores the historical escape-as-win score
+(#370). The `SilverEvalWeights` struct defaults stay 0, so the live-game
+advisor (`native_silver_advisor.cpp`), which builds its own searcher, still
+scores an escape as a win; the synthetic-prior generator copies the backend's
+weights and follows the effective penalty. Before PR #540
+`one_combat` rejected the variable at startup. The only gameplay gate, ledger-06
+§473 (`12,35` vs `0,0` on the `off` stack, 500 paired seeds per cohort), is
+NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
+only 46 and 21 pairs differ at all. The default follows Philipp's decision.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

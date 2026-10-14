@@ -50,8 +50,9 @@ namespace sts::search {
             bool a20BossHealFix = true;      // STS_SILVER_A20_BOSS_HEAL_FIX (0 restores the old credit)
             bool stopAfterAct3 = false;      // STS_STOP_AFTER_ACT=3: the act-3 boss ends the run
             double topGap = kDefaultTopGap;
-            double escapePenalty = 0;
-            double eliteEscapePenalty = 0;
+            // ADR-0036: a Smoke Bomb escape forfeits the fight's rewards (§473 values); "0,0" restores escape = win.
+            double escapePenalty = 12;
+            double eliteEscapePenalty = 35;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;

@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0036](0036-silver-escape-penalty-default.md) makes native Silver charge a Smoke Bomb
+  escape for the forfeited rewards by default (`12,35`, §473 NOT_SHOWN; `STS_SILVER_ESCAPE_PENALTY=0,0` restores
+  escape scored as a win).
 - [ADR-0035](0035-silver-situational-leaf-default.md) turns Silver's situational leaf terms on by
   default (final-fight leaf, no loss potion credit, relic heal leaf, A20 boss heal fix; each `=0` restores the
   legacy term).
