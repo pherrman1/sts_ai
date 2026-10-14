@@ -52,6 +52,19 @@ analyses. None establishes OOC decision quality or student learning.
   completion and custody before seeing any pilot outcome, not by pilot scores.
   The §460 result motivates the architecture/settings only; it does not
   qualify gen5/gen6 at A20.
+- **Final artifact selection before any pilot outcome:** the user explicitly
+  selected **generation 6 version E**. Its completed export is published in
+  [PR #541](https://github.com/pherrman1/sts_ai/pull/541), commit
+  `0f1b70f278fbc188d9ab96688d67004855d88db8`, at
+  `docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt`.
+  Downloaded bytes match published SHA256
+  `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
+  This is E (encounter and monster embeddings), not Eenc or the generic gen6
+  version-D export. Per the user's instruction, obtain PR #541's v2 support
+  by updating from `main` after that PR merges, then review and verify the
+  integrated producer before freezing. Do not maintain a separate copy of
+  its runtime change. The exact v2 file is loaded without conversion.
+  K=8, weight 400 and root bonus stay fixed.
 
 No qualifying preserved A20 matched transition panel was found. New collection
 uses full in-memory fight entries, including path, agent state and RNG, rather
@@ -63,7 +76,7 @@ than reconstructing a fight from model input features.
 | --- | ---: | --- | ---: |
 | CTM | analytic expectation; 32 persistent-state samples | not applicable | model samples |
 | plain2k | 2,000 | off | 4 |
-| prior2k | 2,000 | frozen gen5 or gen6 MLP, root bonus and tree K=8, weight 400 | 4 |
+| prior2k | 2,000 | frozen gen6 E MLP, root bonus and tree K=8, weight 400 | 4 |
 | plain10k | 10,000 | off | 4 |
 | prior10k | 10,000 | same frozen prior settings | 4 |
 | control | 10,000 | off | original source future, one replay |

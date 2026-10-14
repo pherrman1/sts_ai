@@ -429,8 +429,10 @@ their accuracy advantage does not establish independent-future forecasting
 superiority. This finding does not reclassify §411 gameplay without checking
 its separate OOC future resampling. The bounded [A20 teacher protocol](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
 uses a corrected, A20-only initialization kernel and keeps the old modes
-unchanged. Its comparison remains unrun pending the completed gen5/gen6 prior
-artifact requested by the user; generation and hash must be frozen first.
+unchanged. Its comparison remains unrun; the user selected completed gen6 E,
+now recovered from PR #541 and pinned in the protocol. Per the user's
+instruction, integrate its v2 support from `main` after #541 merges, then run
+focused checks before the clean producer freeze/canary.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production

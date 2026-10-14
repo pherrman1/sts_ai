@@ -1,9 +1,9 @@
-# A20 teacher comparison: harness prepared, artifact access pending
+# A20 teacher comparison: gen6 E artifact recovered
 
 No scientific canary or comparison has run. The bounded diagnostic compares
 the unchanged PR #524 A20 CTM with plain/prior Silver at **2k and 10k**
-simulations per combat decision. The prior will be the newest completed,
-exported general MLP from **generation 5 or 6**, pinned before any outcomes.
+simulations per combat decision. The user selected the completed
+**generation 6 version E** general MLP, pinned before any outcomes.
 There is no trained student or production-default change.
 
 The initial gen3 choice was amended before collection at the user's request.
@@ -12,9 +12,14 @@ window in `/mnt/project-files/silver-az-mlp/gen5/train/`, but the inspected
 repository/loop branch, releases, Actions artifacts and accessible local
 directories contain no gen5/gen6 model file or published hash. The documented
 source is the [existing Claude session](https://claude.ai/code/session_017opPEhx2VSme8yGQdArarV).
-The next prerequisite is to export the completed model and its SHA256 from
-that environment to an accessible file or repository artifact. An in-progress
-gen6 checkpoint or an older-model substitution does not satisfy this design.
+That earlier access blocker is now resolved: [PR #541](https://github.com/pherrman1/sts_ai/pull/541)
+published gen6 E at commit `0f1b70f278fbc188d9ab96688d67004855d88db8`.
+Its `combat_policy_mlp_g6_E.txt` bytes were recovered and verified against
+SHA256 `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
+The [protocol](PROTOCOL.md) records its exact path and the v2 inference
+dependency. The user requested obtaining that support from `main` after
+#541 merges, rather than carrying a separate runtime copy in this branch.
+Eenc and the generic gen6 version-D export are different models and are not used.
 
 ## Why these settings
 
@@ -50,22 +55,23 @@ combat RNG; RAW HP consistently includes combat-end healing. Legitimate
 Smoke Bomb escapes are explicit outcomes, while health, hook and capture
 failures remain invalid. Historical modes retain their behavior.
 
-## Execution after artifact recovery
+## Execution with the selected artifact
 
-From the clean reviewed repository commit, replace the artifact placeholders
-with the completed gen5/gen6 export and its verified source hash:
+After integrating #541 from `main` and verifying the clean reviewed producer,
+use the recovered E export:
 
 ```sh
 python3 docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py \
-  prepare build/a20-teacher-comparison/run-1 \
-  --prior /absolute/path/to/combat_policy_mlp_gen5.txt \
-  --prior-generation 5 --prior-sha256 VERIFIED_SHA256 \
-  --prior-source EXPORT_SOURCE \
+  prepare build/a20-teacher-comparison/gen6E-run-1 \
+  --prior build/a20-teacher-comparison/gen6E-artifact/combat_policy_mlp_g6_E.txt \
+  --prior-generation 6 \
+  --prior-sha256 ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228 \
+  --prior-source https://github.com/pherrman1/sts_ai/blob/0f1b70f278fbc188d9ab96688d67004855d88db8/docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt \
   --ctm-dir build/issue507-pilot/run/ctm
 python3 docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py \
-  canary build/a20-teacher-comparison/run-1
+  canary build/a20-teacher-comparison/gen6E-run-1
 python3 docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py \
-  cohort build/a20-teacher-comparison/run-1
+  cohort build/a20-teacher-comparison/gen6E-run-1
 ```
 
 Preparation builds Release and freezes actual binary/model/tooling hashes and
@@ -86,8 +92,8 @@ runner dispatch. No game is executed by these fixtures. Logs are in `checks/`.
 
 Independent implementation and analysis reviews addressed the initialized-RNG
 coupling, RAW source/control equality, legitimate escape classification and
-runner/analyzer schema agreement. Real-model loading of the newer prior and
-scientific canary behavior remain unverified until artifact recovery. The
+runner/analyzer schema agreement. Real-model loading of gen6 E and scientific
+canary behavior remain unverified until the merged v2 support is integrated. The
 full repository test suite and gameplay were not run for this preparation.
 
 Knowledge impact: the ledger/index and maintained research page correct the
