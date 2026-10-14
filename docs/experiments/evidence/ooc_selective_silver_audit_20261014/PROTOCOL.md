@@ -5,6 +5,20 @@ pilot only: no training, production change or whole-run gameplay qualification.
 Renewed run-2 baseline:ff1d3253a121c4be0a23cad7e2be008ed925c525; implementation
 is stacked on draft PR539, which is not merged by this request.
 
+## Run-3 authorization (Discovery fix)
+
+Philipp: “lets go with run 2 if the stuff is fixed” (2026-10-14 22:34Z), after
+the run-2 [root cause](run-2/ROOT_CAUSE.md): the audit sampler rejected a played
+Discovery (`undefinedBehaviorEvoked`) as a health failure. Run-3 repeats the
+run-2 protocol below unchanged except: (1) producer includes that one-line
+terminal fix and the error transport; (2) fresh coordinator-assigned seeds,
+excluded canary 106000000 and cohort 106000001–106000008, because run-2's seeds
+were opened by the failed run and its diagnostic replays. Streams derive from
+these seeds by the same rule. Caps, workers, budgets, models, CTM manifest,
+analysis seed and decision rules are unchanged. Run-1/run-2 stay invalid,
+excluded and unpooled. Base remains the PR539 chain, before ADR-0035 Silver
+leaf terms and ADR-0036 escape penalty on main; results describe that Silver.
+
 ## Run-2 authorization and preserved boundary
 
 Philipp authorized a fresh canary and subsequent eight-source comparison with

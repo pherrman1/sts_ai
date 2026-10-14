@@ -8,8 +8,8 @@ from pathlib import Path
 import random
 import statistics
 
-CANARY = 97151101
-COHORT = list(range(97151010, 97151018))
+CANARY = 106000000  # run-3; run-2 used 97151101 / 97151010-97151017
+COHORT = list(range(106000001, 106000009))
 PRIOR = 'ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228'
 NATIVE_CTM_HASHES = {'combat_transition_deepsets_pathb_a20_lizard.native': 'ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b',
                     'combat_transition_near_full_escape_pathb_a20.native': 'e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d'}
