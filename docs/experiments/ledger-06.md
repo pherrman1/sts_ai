@@ -17891,3 +17891,45 @@ paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
 93000000–93000127 and smokes 74060000, 74065000 are now used.
 
 **Knowledge impact:** the `STS_OOC_MCTS_TREE_RULES` row in `architecture/out-of-combat.md` now cites §464.
+
+## §467 — Collector-specific Silver MLP prior (fine-tuned gen 4): offline CANDIDATE, −0.0125 CE on held-out Collector roots (2026-10-14)
+
+**Question (Philipp, 2026-10-14, "investigating fight specific silver prior … fine tune a net to a specific
+hard fight"):** does a Silver tree prior fine-tuned on one hard fight beat the general gen-4 MLP on that fight?
+**Pilot (no new data):** fine-tuning gen 4 on the gen-4 window's own roots of one boss gave only −0.002 to
+−0.003 fold-4 CE on each act-2/3 boss (Collector −0.0030 [−0.0039, −0.0020]); half the Collector seeds gave
+−0.0010, a Collector-only net from scratch +0.059. On the Collector, gen 3 → gen 4 was −0.0062. The encounter
+reaches the MLP only as a raw scalar id (state feature 1).
+**Design:** [PREREG](evidence/silver_fight_specific_collector_20261014/PREREG.md), reviewed before launch.
+New mode `one_combat silverazfocusgen` (PR #531, code `1518989b`, binary `ad90e698…5493`): the Collector is
+forced as act-2 boss, earlier fights play unrecorded at 2k with the gen-4 prior, the first Collector fight is
+recorded at 10k with the gen-4 prior (K = 8, w = 400, root bonus off) as 4 copies (1 unperturbed, 3 perturbed),
+then the run ends. Seeds 95000000–95002559, 4 cloud workers (Philipp 09:23Z). Fine-tune gen 4 on old + new
+Collector roots (folds seed % 5; lr 2e-4, wd 1e-2, dropout 0.35, LR halving, patience 8). Primary: fold-4 CE
+on the 9,711 old Collector test roots, fine-tuned − gen 4, seed-cluster bootstrap; CANDIDATE if ≤ −0.0062 with
+CI below 0.
+**Result: CANDIDATE.** 640/640 units rc 0, no stalls; 282,417 roots in 7,968 Collector fights (0 invalid);
+261,348 multi-action roots.
+
+| fine-tune | old Collector fold 4 (9,711) | new fold 4 (53,867) |
+|---|---|---|
+| **primary, lr 2e-4, all new data** | **−0.0125 [−0.0157, −0.0094]** (1.4411 → 1.4287; top-1 46.3 → 46.8%) | −0.0189 [−0.0207, −0.0173] |
+| lr 1e-4 / 5e-4 | −0.0123 / −0.0110 | −0.0188 / −0.0193 |
+| 25% / 50% of new train seeds | −0.0063 / −0.0086 | −0.0108 / −0.0135 |
+| no new data (pilot) | −0.0030 | — |
+
+- The gain keeps growing with fight-specific data (−0.003 → −0.006 → −0.009 → −0.0125); not flat at 260k roots.
+- New-root CIs count unperturbed and perturbed copies of a seed as 2 clusters, so they are slightly narrow.
+- Earlier fights at 2k change the HP/deck distribution at the Collector relative to the 10k-teacher old roots.
+- Native export `combat_policy_mlp_collector467.txt` passes parity (164 roots, max |Δlogit| 1.3e-6).
+
+**Interpretation:** fight-specific data, not specialization alone, is what moves the prior: about two
+generations' worth of offline gain on the Collector for ~20 core-hours. **Open question:** whether it shows in
+play; offline gains of a similar order have not always transferred (§460). The pre-registered next step is an
+online Collector-only paired check (needs Philipp's go). No default change.
+
+**Evidence:** [packet](evidence/silver_fight_specific_collector_20261014/README.md). Raw:
+`/mnt/project-files/silver-prior-fight-specific/`. Seeds 95000000–95002559 and smokes 74067000–74067055
+(author) and 74069050–74069062 (reviewer) are now used.
+
+**Knowledge impact:** `architecture/combat-search.md` documents `silverazfocusgen`.
