@@ -1,0 +1,15 @@
+{
+  "PROTOCOL.md": "9f007d5476bf1e28638c1f81712f4e2a8d9923642773366ae77d31d2cfb8bcc3",
+  "analyze.py": "41b1caee979239d691e58c3665cea67a5b6e54e3435cd7f8c6036bc79bae56de",
+  "analyzer-fixture-results.json": "d16ee65f4aff58ccb9cb9ae2e42e4e42388681fecbe3ae552cf07390eda56624",
+  "checks.txt": "27326aad6e6c4e11af58574028e00305a633f8f47a2ee666c37d26e329c51be3",
+  "historical-reference.json": "a5cefc7384d2acd0f63b0ee2562006034d6567fe32cc23e58a0b8e31385cfd21",
+  "implementation-review.txt": "c6eb2978a4ace1550ab119f9e9e8523e04b8fa44808b020e93d9598604b2d8fc",
+  "manifest.json": "5d6545b331a97b8a783f57464a34cbb00149c7b5589288f72f5da23a6edfefdf",
+  "one_combat": "36127ba9cc7ff3ab12369437d1926f5317c6d591bad5e11f46e96772585fdc82",
+  "plan.json": "4c3c824d4cefe0508c117a42ab0a25994dcb51f14d940ded34df54b4daf0675d",
+  "run_probe.py": "802a1cbf41988df9353bc78ec251ee1a6b3e75325d2f47eba5a659f5a77771e3",
+  "scientific-review.txt": "acb6d07c4b63b0e2a8487a1833ec93b736b995376cef769f51b3de433dd413ca",
+  "selection.json": "107f1e0418e3ca8b112e3056874be4a96fcff8a8b8849f2dbf6dab0442ee69c0",
+  "test_analyzer_fixtures.py": "df7692fc37ba90f3a4f78a42d9abc7a90efb9375d3cbd3443b08a261e91c3212"
+}
