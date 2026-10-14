@@ -18180,7 +18180,7 @@ BETTER / WORSE / NOT_SHOWN; secondary non-inferiority at 10 pp.
 **Interpretation:**
 - At about matched CPU (r0s16k used 1.10x, so the match slightly favours it), four times the simulations do not make
   up for the missing leaf combats (NOT_NONINFERIOR_AT_10PP too); rollout3 stays, per the prereg rule.
-- The extra simulations deepen the search a little (median depth 5 vs 4) without a win gain. **Inference:** the leaf
+- The r0s16k searches are a little deeper (median depth 5 vs 4), without a win gain. **Inference:** the leaf
   value without the three combats is the likely cause and more simulations do not correct it; leaf-value quality
   was not measured, and on the 31 discordant seeds the arms play different games. Boss deaths 22 vs 10 are
   descriptive, not pre-registered.

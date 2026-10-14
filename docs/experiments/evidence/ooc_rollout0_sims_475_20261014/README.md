@@ -39,12 +39,13 @@ rules 1 and merging 1; `STS_OOC_MCTS_SIMS=16384` and `STS_OOC_MCTS_LEAF_COMBATS=
 
 - Spending rollout3's CPU on four times the simulations instead of leaf combats still loses runs. The CPU match is
   close but not exact: `r0s16k` used 1.10x the MCTS CPU (wall time 1.09x), so the comparison slightly favours it.
-- The extra simulations make the search somewhat deeper (median per-search depth 5 vs 4, mean simulation depth 6.0 vs
-  5.3) and the pick follows the top-Q candidate more often, without a win gain. **Inference:** the loss comes from
+- The r0s16k searches are a little deeper (median per-search depth 5 vs 4, mean simulation depth 6.0 vs 5.3) and
+  their pick follows the top-Q candidate more often, without a win gain. **Inference:** the loss comes from
   the leaf value without the three combats, which more simulations do not correct; leaf-value quality was not
   measured, and on the 31 discordant seeds the arms play different games.
 - Descriptive only: 22 vs 10 boss deaths.
-- `rollout3` won 89.8% here, on the ADR-0034 defaults (§472's `rollout3` 84.4% on other seeds and older code).
+- `rollout3` won 89.8% here, on the ADR-0034 defaults (§472's `rollout3` 84.4% on other seeds and older code; not a measured effect: the seeds
+  differ and the gap is within noise).
 
 No change (prereg decision): `rollout3` stays the research configuration. Raw data:
 `/mnt/project-files/ooc-rollout0-sims-475/wNN.tar` (extract to `wNN/out/`).
