@@ -253,8 +253,17 @@ void requireCapabilities(const nlohmann::json &value,const char *why) {
 // Validates a ctm_research_candidate_v1/v2/v3 manifest and returns its identity pins.
 std::unique_ptr<const nlohmann::json> parseResearchCandidateIdentity(const std::string &text) {
     auto manifest=std::make_unique<nlohmann::json>(nlohmann::json::parse(text));
-    const auto &m=*manifest;
     const char *why="research candidate manifest schema";
+    // Optional v3 field (§470): an additive shift on the death logit of boss encounters, applied by every
+    // runtime that loads under this manifest. Checked here and set aside so the key checks below stay exact.
+    nlohmann::json bossShift=nullptr;
+    if(manifest->is_object() && manifest->contains("bossSurvivalLogitShift")) {
+        bossShift=manifest->at("bossSurvivalLogitShift");
+        require(manifest->value("schema",std::string{})=="ctm_research_candidate_v3" && bossShift.is_number() &&
+            std::isfinite(bossShift.get<double>()) && std::abs(bossShift.get<double>())<=2,why);
+        manifest->erase("bossSurvivalLogitShift");
+    }
+    const auto &m=*manifest;
     // v1 keeps the production HP domain; v2 also pins a declared domain by its SHA256;
     // v3 also lists each artifact's capabilities.
     const std::string schema=m.is_object()?m.value("schema",std::string{}):std::string{};
@@ -294,6 +303,7 @@ std::unique_ptr<const nlohmann::json> parseResearchCandidateIdentity(const std::
             require(isSha256(lizard.at(key)),why);
         requireRModel(lizard.at("rModel"),why);
     }
+    if(!bossShift.is_null()) (*manifest)["bossSurvivalLogitShift"]=bossShift;
     return manifest;
 }
 // Off by default. STS_CTM_RESEARCH_CANDIDATE_MANIFEST names a ctm_research_candidate_v1
@@ -499,6 +509,96 @@ std::vector<int> declaredHpClasses(const nlohmann::json &domain,const nlohmann::
     std::vector<int> classes;for(int i=low;i<=high;++i) classes.push_back(i);
     return classes;
 }
+// The bundled A20 stack (§470): the §443 Stage 4 Lizard candidate pathb-a20 (fast ae785ec2, standard e338506d,
+// manifest 704f2a58) plus the boss calibration fit on Stage 1 VALIDATION rows. Loaded by STS_OOC_MCTS_A20_CTM=1 at
+// ascension 20, or by any artifact declaring pathb-a20 when no research manifest names that candidate.
+constexpr char kA20CandidateManifest[]=R"json({
+  "activeLizard": {
+    "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+    "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "frozenQrArtifactSha256": "3ca66c941904fa86ec9caec87210529a207eabaa39851f565c773605b8b9ca4c",
+    "rModel": {
+      "featureMean": [
+        0.7381432442056437
+      ],
+      "featureScale": [
+        0.25821602861152476
+      ],
+      "standardizedCoefficients": [
+        1.9390933205559342,
+        1.0438830448425434
+      ]
+    },
+    "rModelSha256": "fa8170f9b0c36be814f7ad1178a5f135664cef82c98e8715d35080eeb4292456"
+  },
+  "bossSurvivalLogitShift": -0.18325317250506112,
+  "candidateId": "pathb-a20",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0"
+      },
+      "lizardBrew": {
+        "rModel": {
+          "featureMean": [
+            0.7107754880552632
+          ],
+          "featureScale": [
+            0.26616081999875596
+          ],
+          "standardizedCoefficients": [
+            2.073495688086136,
+            0.9809218525066958
+          ]
+        }
+      },
+      "lizardFairy": {},
+      "writhingRitual": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "fed45e004991422ea676fae3b8749586e8c7f56400eaa3901f652d23762c3b3b"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "domainSha256": "011fd040cce01c69497af2a07c737f8f1a2e753680ab02a298939f8b90d7a4b7",
+  "fast": {
+    "artifactSha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+    "downstreamCheckpointSha256": "43242a584e6c6aa1c3e50f215deec98933d5d383c94abe32eeb6b4a968cb3c40",
+    "maxHpHpCheckpointSha256": "c789b494307bac7dd23d89838a8de886481aea5aef5d5a8bec8711bfcd9b763a",
+    "potionSpecialistCheckpointSha256": "3a41c06be0db9912089c1454b01790155ce0700d460eeb4c650899854e8151c8",
+    "survival": {
+      "checkpointSha256": "c316276143ca745e690af92f8fe9acb569e1913835289eb7227c6c6e5ccbf9c7",
+      "preparedManifestSha256": "4ba23afdc466b2957806885ae5ad6cca934c3ef3d7508a2d7d8bef2224b2ac95",
+      "preparedSha256": "fe4254710f4eb21f204c3af461ada8e208dc009bc78c9c9a23be84802fa20581",
+      "scalarInvSha256": "6875d1f18ca03137eda8c5d67c0713418fadad426936f42333d9a5b357721ebc",
+      "scalarMeanSha256": "7547f89f25f170e97e4424ba41733931c8f1af3080eebb325c0824ee1052d8ba"
+    }
+  },
+  "schema": "ctm_research_candidate_v3",
+  "standard": {
+    "artifactSha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+    "sources": {
+      "HP": "8f96a517b381d8bccce4ccceb758da07916e4a8110a58f65e1a2e0a57e9f184c",
+      "downstream": "9bbb1a5657aad4ff9b0dce0cf257037db204f8396dc32c9c97b65bc5b285f9ea",
+      "maxHP": "f2e6f6901b08e19c01eeff5054a0d7c36c8af67998f9b3a224bb24a111b8d539",
+      "potion": "d52457133790b9c0766d5e604dc92fbe6337f286e0e2e450690d175eb802e04d",
+      "survival": "125fd3d76359527e515f25c70994b2ac900f8f419c03c6dd53271a8f34b49e41"
+    }
+  },
+  "supportCensus": {
+    "allSupportedIndexSha256": "1069df0b968aab886c653292a5b8fd81e045f5d3ffd6d88dfd4c61dfc4b91bcf",
+    "testSupportedIndexSha256": "8c5cdbfa4d23b57d24bbfff5d66a17289539c1aeb656017bae94ce2abb41de8f"
+  }
+}
+)json";
+constexpr char kA20CandidateManifestSha256[]="00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea";
+const nlohmann::json &a20CandidateIdentity() {
+    static const std::unique_ptr<const nlohmann::json> identity=
+        parseEmbeddedManifest(kA20CandidateManifest,kA20CandidateManifestSha256);
+    return *identity;
+}
 const nlohmann::json *researchCandidateIdentity() {
     static const std::unique_ptr<const nlohmann::json> identity=loadResearchCandidateIdentity();
     return identity.get();
@@ -546,7 +646,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             if(production) {
                 candidateIdentity=production;
                 productionCandidate_=true;
-            }
+            } else if(declares(a20CandidateIdentity())) candidateIdentity=&a20CandidateIdentity();
         }
         require(candidateIdentity!=nullptr,
             "combat runtime research candidate requires STS_CTM_RESEARCH_CANDIDATE_MANIFEST");
@@ -561,6 +661,8 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         require(!metadata_.value("defaultForOocMcts",false),
             "combat runtime research candidate cannot claim production default");
     } else identity_=productionIdentity();
+    if(identity_.contains("bossSurvivalLogitShift"))
+        bossDeathLogitShift_=identity_.at("bossSurvivalLogitShift").get<float>();
     const auto &capabilities=identity_.at("capabilities").at(deepsetStack?"fast":"standard");
     require(metadata_.value("capabilities",nlohmann::json::object())==capabilities,
         "combat runtime capabilities are not listed in its manifest");
@@ -932,7 +1034,14 @@ double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin)
     require(lizardBrewCapable(),"Brew r model on an artifact without the lizardBrew capability");
     return reserveProbability(lizardBrewRModel_,pReserveWin);
 }
-float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {float logit=linear("survival.survival",encode("survival",p))[0];require(std::isfinite(logit),"nonfinite survival");return 1/(1+std::exp(-logit));}
+float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {
+    float logit=linear("survival.survival",encode("survival",p))[0];
+    require(std::isfinite(logit),"nonfinite survival");
+    // §470: boss calibration from the manifest, as a shift on the death logit (absent: no change).
+    if(bossDeathLogitShift_!=0 && sts::isBossEncounter(static_cast<sts::MonsterEncounter>(p.globals.encounter)))
+        logit-=bossDeathLogitShift_;
+    return 1/(1+std::exp(-logit));
+}
 Vec CombatTransitionRuntime::maxHpEncoding(const CombatPredictorInputV1 &p) const {return encode("max_hp",p);}
 Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {return softmax(linear("max_hp.max_hp_delta",encode("max_hp",p)));}
 Vec CombatTransitionRuntime::maxHp(const Vec &encoding) const {return softmax(linear("max_hp.max_hp_delta",encoding));}
