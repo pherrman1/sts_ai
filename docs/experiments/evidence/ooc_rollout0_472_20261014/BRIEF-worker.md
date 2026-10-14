@@ -25,7 +25,7 @@ wait for an answer there.
 `setup` builds `one_combat`, refuses a binary whose sha256 differs from `$D/binary.sha256`, and writes
 `$HOME/x472-wWW/out/FROZEN.txt`.
 
-## 2. Run (about 1 h with 8 workers; 4 units at a time)
+## 2. Run (about 30 min with 16 workers; 4 units at a time)
 
 ```sh
 cd /home/user/sts_ai; setsid nohup bash $D/worker.sh run W > $HOME/x472-wWW.run.log 2>&1 < /dev/null &

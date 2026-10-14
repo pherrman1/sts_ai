@@ -15,4 +15,4 @@ logs print `"simulations":4096` and their arm's `"leafCombats"`, and `[native OO
 seed; wall-time ratio 0.44, MCTS CPU ratio 0.36) and its selftest passes. Decision logs are 0.5–1.5 MB per run.
 
 Cost estimate (**Inference** from this one seed): about 850 s per seed for both arms, so about 1 h per worker with
-8 workers at 4 units at a time.
+8 workers at 4 units at a time (about 30 min with 16).
