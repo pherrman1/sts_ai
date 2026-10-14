@@ -17942,3 +17942,44 @@ paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
 93000000–93000127 and smokes 74060000, 74065000 are now used.
 
 **Knowledge impact:** the `STS_OOC_MCTS_TREE_RULES` row in `architecture/out-of-combat.md` now cites §464.
+
+## §470 — Boss calibration for the A20 Lizard CTM and an opt-in A20 stack: offline PASS
+
+**Date:** 2026-10-14. **Question:** §443 ended NOT_QUALIFIED twice on one criterion: the A20 Lizard candidate
+`pathb-a20` overestimates boss deaths (+0.0151 [+0.0085, +0.0213] on the fresh Stage 4 corpus, bar |bias| ≤ 0.01),
+while it passes the other four. Philipp (12:33Z): "i just want a functiononing a20 ctm"; he then picked "Calibrate"
+on the card (12:44Z). Does one boss shift on the survival logit, fit without the fresh corpus, make the candidate pass
+all five Stage 3a criteria?
+**Design:** [PREREG](evidence/ctm_a20_boss_calib_470_20261014/PREREG-470.md), written before the fit. One parameter δ,
+added to the death logit of boss encounters in both children, MLE on Stage 1 VALIDATION boss rows (the candidate was
+trained on TRAIN). Checked on the fresh Stage 4 corpus with the frozen `gate3a.py`, same production arm and bars.
+**Honest label:** the fresh corpus had been looked at once (the §443 re-gate), so its boss bias was known when this
+step was chosen; δ itself was fit without it.
+**Result: PASS.** δ = −0.18325 (validation boss bias +0.0193 → 0).
+
+| fresh Stage 4 corpus, 76,406 rows | calibrated | uncalibrated (§443) | production, ascension clamped to 0 |
+|---|---|---|---|
+| death bias, boss | −0.0041 [−0.0107, +0.0021] | +0.0151 [+0.0085, +0.0213] | −0.1471 |
+| death bias, all / normal / elite | +0.0003 / +0.0001 / +0.0027 | +0.0025 / +0.0001 / +0.0027 | −0.0316 / −0.0061 / −0.0368 |
+| survival NLL Δ vs production, all / boss | −0.0490 / −0.1995 | −0.0489 / −0.1984 | |
+| HP NLL Δ vs production, all | −0.3749 | −0.3749 | |
+| win-HP bias, all / boss | +0.17 / −0.54 | +0.17 / −0.55 | +3.35 / −2.63 |
+| refusals | 0 | 0 | 1 |
+
+**Runtime:** an optional `bossSurvivalLogitShift` in a v3 research-candidate manifest (absent: byte-identical
+scores, checked). The calibrated `pathb-a20` manifest is built into the binary and both artifacts are bundled in
+`selfplay/models/`. `STS_OOC_MCTS_A20_CTM=1` (off by default) uses that stack, active Lizard on, for OOC MCTS searches
+at ascension 20 and keeps the default stack below. Smokes at A20 (seeds 74070351, 74070352): 2/68 and 2/112 V4 fallbacks, 0 support aborts.
+**Interpretation:**
+- The boss shift fixes the one failing criterion and leaves the others unchanged within rounding; boss survival NLL
+  improves slightly. Old TEST split (seen at Stage 3a, descriptive): boss bias +0.0133 → −0.0059.
+- The runtime rule counts act-1 bosses fought from an act-3 event as bosses (389 VALIDATION rows); the fit used
+  `room_class == BOSS`. Recorded deviation from the prereg wording; it does not affect the gate classes.
+- Offline only. No live A/B of the calibrated stack yet; §458 (+6.03 floors vs CTM off at A20) used the
+  uncalibrated candidate. Whether `STS_OOC_MCTS_A20_CTM` becomes the A20 default is Philipp's call.
+
+**Evidence:** [packet](evidence/ctm_a20_boss_calib_470_20261014/README.md). Fit and scoring files:
+`/mnt/project-files/ctm-a20/calib470/`. Smoke seeds 74070350 (killed, script fix), 74070351 and 74070352 are now used.
+
+**Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_A20_CTM`) and
+`architecture/out-of-combat.md` (A20 stack, manifest boss calibration).
