@@ -1166,7 +1166,9 @@ scores leaving, each affordable item alone and the best removal alone, and
 returns the single best one (leave on ties). The step executes it and the next
 decision asks again, so purchases repeat greedily. It uses the same
 deck-size accounting as the bundle planner (`STS_OOC_SHOP_DECK_SIZE_FIX`). Live shop roots and the MCTS-off chain keep the
-bundle planner. Its playing strength is not yet measured.
+bundle planner. §459 (128 fresh paired seeds, `combo`): wins 103 vs 101,
++1.6 pp [−5.5, +8.6], NOT_SHOWN, at about 11% less wall time per run; it stays
+opt-in pending Philipp's call.
 
 OOC MCTS shop roots split the V4 removal prior across targets: every removal
 target maps to the one `CARD_REMOVE` primitive and `legalActions` divides each

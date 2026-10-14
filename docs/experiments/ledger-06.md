@@ -17740,6 +17740,48 @@ README. Seed 87000000 was reused for diagnostics and cannot become a holdout.
 **Knowledge impact:** update the maintained #507 status in `evaluation/current-research.md`;
 no production default or model change.
 
+## §459 — Greedy rollout shops in rollout3 `combo`: wins not shown different, about 11% less CPU (2026-10-13)
+
+**Question (Philipp, 2026-10-13):** "I think we can just buy the best greedily in the rollout", then "test
+on fresh seeds with 8 workers". Inside OOC MCTS leaf rollouts, does replacing the bundle planner
+(`nativeShopPlan` scores every affordable subset and executes the first item of the best bundle) with
+`STS_OOC_MCTS_ROLLOUT_SHOP=greedy` (#523: single best purchase, removal or leave per decision) change how
+§433 `combo` plays, in wins and in CPU?
+**Design:** [PREREG](evidence/ooc_greedy_shop_459_20261013/PREREG.md), frozen after independent review
+(code `440cf556`, binary `16426481…7527`). Arms `planner` and `greedy`: §433 `combo` with pinned
+`STS_OOC_PUBLIC_FUTURES=8`, X2-B public `STS_WIN_NET` and `STS_OOC_SHOP_DECK_SIZE_FIX=1`, differing only
+in `STS_OOC_MCTS_ROLLOUT_SHOP`. Fresh seeds 89000000–89000127, 8 cloud workers. Primary: Δwin greedy −
+planner, paired seed bootstrap; BETTER / WORSE / NOT_SHOWN.
+**Result: NOT_SHOWN.** 128/128 pairs valid, all units rc=0, no stall.
+
+| | greedy | planner | greedy − planner |
+|---|---|---|---|
+| wins / 128 | 103 | 101 | +1.6 pp [−5.5, +8.6]; McNemar p = 0.83 (12 vs 10 discordant) |
+| mean floor | 48.41 | 49.12 | −0.70 [−1.77, +0.23] |
+| boss deaths | 21 | 23 | |
+| seconds per run | 496.5 | 558.2 | paired ratio 0.889 [0.859, 0.922] |
+
+- MCTS CPU per run 426 vs 483 s; simulations per run 241.5k vs 248.1k; owned share 97.6% in both.
+- Live shops (descriptive, per run): greedy buys fewer cards (1.62 vs 1.88), potions (1.06 vs 1.24) and
+  removals (0.44 vs 0.55), slightly more relics (2.33 vs 2.20).
+
+**Interpretation:**
+- Greedy rollout shops cost about 11% less wall time per run at no detectable win-rate cost; the CI
+  excludes a loss larger than 5.5 pp. NOT_SHOWN does not mean equal.
+- The CPU ratio was not a pre-registered statistic. **Inference:** most of the saving is the bundle
+  planner's subset enumeration that §437/§442 measured inside rollouts.
+- `combo` with planner shops won 78.9% here, below §433's 87.5% and §449's 86.7–89.1% on other seeds.
+  **Open question:** seed-cohort variance or the ADR-0030 deck-size default; this run cannot separate
+  them, as both arms carry the fix.
+- No default change from this run alone (prereg); Philipp decides whether greedy becomes the rollout
+  default.
+
+**Evidence:** [packet](evidence/ooc_greedy_shop_459_20261013/README.md). Raw:
+`/mnt/project-files/ooc-greedy-shop-459/` (one tar per worker). Seeds 89000000–89000127 and smokes
+74050003–74050004 are now used.
+
+**Knowledge impact:** the greedy paragraph in `architecture/out-of-combat.md` now cites §459.
+
 ## §462 — A20 one-leaf inherited-memory replay: exact parity PASS (2026-10-14)
 
 **Question:** before measuring #507 target stability, can one actual internal
