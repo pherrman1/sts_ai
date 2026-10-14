@@ -288,8 +288,9 @@ bool oocTreeRuleStep(GameContext &gc) {
     if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity && !gc.hasRelic(RelicId::SOZU)) {
         search::GameAction(RT::POTION, 0).execute(gc); return true;
     }
-    // Nothing left but keys (off): leaving is the only sensible action.
-    if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0) {
+    // Nothing left (keys only count when STS_COLLECT_KEYS is on): leaving is the only sensible action.
+    if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0
+        && !(g_collectKeys && (r.emeraldKey || r.sapphireKey))) {
         search::GameAction(RT::SKIP).execute(gc); return true;
     }
     return false;

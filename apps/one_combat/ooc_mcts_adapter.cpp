@@ -5630,6 +5630,19 @@ void oocMctsAdapterSelfTest() {
             && mctsChoiceKey(first, probe, true) == mctsChoiceKey(second, probe, true),
             "tree rules make copies of one card a single bottle choice");
     }
+    // A reward screen holding only a key is left by the rule step unless keys
+    // are collected; then the key stays for the chain's free-reward step.
+    for (const bool keys : {false, true}) {
+        auto keyRoot = makeRewardRoot();
+        keyRoot.info.rewardsContainer.clear();
+        keyRoot.info.rewardsContainer.emeraldKey = true;
+        const bool savedKeys = g_collectKeys;
+        g_collectKeys = keys;
+        const bool stepped = oocTreeRuleStep(keyRoot);
+        g_collectKeys = savedKeys;
+        require(stepped != keys && (keyRoot.screenState == ScreenState::REWARDS) == keys,
+            "tree rules leave a key-only reward screen only when keys are not collected");
+    }
     liveOptions = optionsBeforeGoldRoots;
 
     // Wheel has one legal primitive, but its existing fallback calls stepRandom:
