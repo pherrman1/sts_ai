@@ -67,6 +67,36 @@ sts::GameContext copied(const sts::GameContext &source) {
     if (source.map) result.map = std::make_shared<sts::Map>(*source.map);
     return result;
 }
+// Audit-only envelope: ordinary replay callers retain their existing failure behavior.
+std::string boundedError(const char *message) {
+    std::string result;
+    if (!message) return "missing_exception_message";
+    for (std::size_t i = 0; message[i] && i < 1024; ++i) {
+        const unsigned char c = message[i];
+        result.push_back(c >= 32 && c <= 126 ? char(c) : '?');
+    }
+    return result;
+}
+J childEnvelope(const std::function<J()> &fn) {
+    try { return {{"ok", true}, {"payload", fn()}}; }
+    catch (const std::exception &e) {
+        return {{"ok", false}, {"category", "std_exception"}, {"message", boundedError(e.what())}};
+    } catch (...) { return {{"ok", false}, {"category", "nonstandard_exception"}, {"message", "nonstandard exception"}}; }
+}
+J unpackChild(const J &envelope) {
+    check(envelope.is_object() && envelope.contains("ok") && envelope.at("ok").is_boolean(), "malformed child envelope");
+    if (envelope.at("ok").get<bool>()) {
+        check(envelope.size() == 2 && envelope.contains("payload") && envelope.at("payload").is_object(), "malformed child success");
+        return envelope.at("payload");
+    }
+    check(envelope.size() == 3 && envelope.contains("category") && envelope.contains("message")
+        && envelope.at("category").is_string() && envelope.at("message").is_string(), "malformed child error");
+    const auto category = envelope.at("category").get<std::string>();
+    const auto message = envelope.at("message").get<std::string>();
+    check((category == "std_exception" || category == "nonstandard_exception") && message.size() <= 1024
+        && std::all_of(message.begin(), message.end(), [](unsigned char c) { return c >= 32 && c <= 126; }), "malformed child error text");
+    throw std::runtime_error("selective_audit:child_exception:" + category + ":" + message);
+}
 J stats(const S::OocMctsResult &r, const OocGameContextModel &model) {
     check(!r.aborted && r.selectedAction && r.metrics.simulations == 4096, "baseline search invalid/incomplete");
     J actions = J::array();
@@ -83,12 +113,26 @@ J stats(const S::OocMctsResult &r, const OocGameContextModel &model) {
 }
 }
 nlohmann::json selectiveAuditSourcePolicy() { SourceScope scope; return effectiveOocPolicySpecification(); }
-int oocSelectiveSilverAccountingSelfTest() {
+int selectiveSilverAccountingSelfTest(const AuditFork &fork) {
     const double before = usage(RUSAGE_CHILDREN);
     const auto digest = fileSha256(g_mainBinaryPath);
     const double provenance = usage(RUSAGE_CHILDREN) - before;
     check(digest.size() == 64 && provenance > 0., "hash utility must contribute measured child CPU");
     std::puts("PASS selective Silver provenance utility accounting (no game seeds)");
+    const auto isolated = [&](const std::function<J()> &fn) { return fork([&] { return childEnvelope(fn); }, 10000, 10); };
+    check(unpackChild(isolated([] { return J{{"value", .4}}; })) == J{{"value", .4}}, "child success passthrough");
+    const auto standard = isolated([]() -> J { throw std::runtime_error("native-sentinel"); });
+    check(standard.at("category") == "std_exception" && standard.at("message") == "native-sentinel", "standard child exception retained");
+    const auto other = isolated([]() -> J { throw 42; });
+    check(other.at("category") == "nonstandard_exception", "nonstandard child exception retained");
+    const auto oversized = isolated([]() -> J { throw std::runtime_error(std::string(1, char(255)) + std::string(4096, 'a')); });
+    check(oversized.at("message").get<std::string>().size() == 1024 && oversized.at("message").get<std::string>().front() == '?', "error message bounded and printable");
+    for (const auto &bad : {standard, other, oversized, J{{"ok", "false"}}, J{{"ok", true}}, J{{"ok", false}, {"message", "x"}}, J{{"ok", true}, {"payload", J::array()}}}) {
+        bool rejected = false;
+        try { (void)unpackChild(bad); } catch (const std::exception &) { rejected = true; }
+        check(rejected, "child error/malformed envelope rejected");
+    }
+    std::puts("PASS selective Silver child exception transport (real seed-free forks)");
     return 0;
 }
 int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, const std::string &out,
@@ -118,10 +162,15 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
             check(usage(RUSAGE_SELF) - startedParent <= 200, "parent CPU cap");
             check(usage(RUSAGE_CHILDREN) - startedChildren + cpu <= 1200, "child reservation exhausted");
             const double p = usage(RUSAGE_SELF), c = usage(RUSAGE_CHILDREN);
-            auto result = fork(fn, wall, cpu);
+            const auto envelope = fork([&] { return childEnvelope(fn); }, wall, cpu);
             const double pc = usage(RUSAGE_SELF) - p, cc = usage(RUSAGE_CHILDREN) - c;
             check(cc <= cpu + .02 && usage(RUSAGE_CHILDREN) - startedChildren <= 1200, "child CPU cap");
-            return J{{"result", result}, {"parentCpuSeconds", pc}, {"childCpuSeconds", cc}};
+            try {
+                return J{{"result", unpackChild(envelope)}, {"parentCpuSeconds", pc}, {"childCpuSeconds", cc}};
+            } catch (const std::exception &e) {
+                writer.write({{"type", "child_failure"}, {"reason", e.what()}, {"parentCpuSeconds", pc}, {"childCpuSeconds", cc}});
+                throw;
+            }
         };
         SourceScope sourceConfiguration;
         J header{{"type", "header"}, {"seed", seed}, {"silverSimulations", 2500}, {"planSha256", fileSha256(planPath)},
@@ -206,7 +255,7 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
                     std::array<double, 2> sums{};
                     for (int k = 0; k < count; ++k) for (int a = 0; a < 2; ++a) {
                         const auto future = stream.at(phase).at(k).template get<std::uint64_t>();
-                        writer.write({{"type", "evaluation_start"}, {"act", act}, {"selector", name}, {"k", k}, {"candidate", a}});
+                        writer.write({{"type", "evaluation_start"}, {"act", act}, {"selector", name}, {"k", k}, {"candidate", a}, {"futureSeed", future}, {"candidateKey", pair[a].key}, {"candidateBits", pair[a].primitive.bits}});
                         auto r = child([&] { return evaluate(sampler, a, future); });
                         sums[a] += r.at("result").at("value").template get<double>();
                         r.update({{"k", k}, {"candidate", a}, {"futureSeed", future}}); rows.push_back(r);

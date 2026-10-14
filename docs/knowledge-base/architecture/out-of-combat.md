@@ -785,7 +785,15 @@ copies; child scopes clear it and restore all inherited observers afterward.
 Ordinary runs leave this observer unset. Whole-source CPU accounting includes
 startup/provenance hashing utilities, retained separately from evaluator forks. The audit-only nonce wrapper consumes
 one outer RNG draw per combat and puts resolver draws in a private substream;
-ordinary CTM baseline search retains its original sampler.
+ordinary CTM baseline search retains its original sampler. The audit-only fork
+callback transports a tagged success/error envelope. Standard messages are
+bounded to1024 printable ASCII bytes; nonstandard exceptions have an explicit
+category. The parent rejects error/malformed envelopes, retains failed-child
+CPU, and invalidates the source. Ordinary replay-fork behavior is unchanged; serialization/transport errors
+outside the callback envelope can still produce generic fork status.
+Fixed evaluation-start records include candidate key/bits and future seed
+before launch, so a failed branch remains identifiable. These records are
+diagnostics, never deployable features or substitute replay snapshots.
 
 `one_combat oocleafreplayprobe 1 SEED 20`, through `tools/seed_guard.sh`, is
 a separate disposable Linux diagnostic for that collector. It requires a

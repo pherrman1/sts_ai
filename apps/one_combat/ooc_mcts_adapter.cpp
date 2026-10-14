@@ -2723,6 +2723,11 @@ nlohmann::json oocSelectiveSilverAuditSpec() {
     return {{"sourcePolicy", selectiveAuditSourcePolicy()}, {"ctmLoadedIdentity", hybrid->fastRuntime().identity()},
         {"mcts", mcts}, {"mapScreenEnum", int(sts::ScreenState::MAP_SCREEN)}, {"silverSimulations", 2500}};
 }
+int oocSelectiveSilverAccountingSelfTest() {
+    return selectiveSilverAccountingSelfTest([](const std::function<nlohmann::json()> &fn, int wall, int cpu) {
+        return forkLeafReplay(fn, wall, cpu, 2 * 1024 * 1024);
+    });
+}
 int oocSelectiveSilverAuditGen(std::uint64_t seed, const std::string &plan, const std::string &out) {
     requireReplaySingleThread();
     if (!liveEnabled || !liveSamplerA20 || liveLeafCapture || leafReplayMode || leafStabilityMode

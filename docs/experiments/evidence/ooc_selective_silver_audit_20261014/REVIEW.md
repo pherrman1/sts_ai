@@ -63,3 +63,20 @@ Release rebuildexit0;16synthetic testsPASS0.298s;guarded affected CTests
 python-run2.log,ctest-run2.log in build/ooc-selective-silver-audit/checks.
 Run-1 is still invalid and excluded. No game seeds for run-2 before committing
 and freezing this independently reviewed producer.
+
+## Run-2 outcome and child-exception diagnostics
+
+Fresh canaryCANARY_VALID and exact independent report reproductionPASS;
+provenance-child CPU settles with zero residual. CohortINVALID_OR_INSUFFICIENT:
+only97151010/11 launched, both child exit125 without timeout/source_complete;
+remaining six unused. Total606.77CPU seconds. Independent failed-outcome
+custody/report/no-further-dispatch auditPASS; no partial efficacy conclusion.
+
+Audit-only error-envelope and durable candidate/future-start metadata repair
+passed independent code review, Release rebuild and5/5 focused CTests3.00s.
+Real seed-free forks test success,std/nonstandard exceptions,bounded printable
+messages and malformed rejection. Ordinary fork/RNG/models/budgets unchanged.
+Generic serializer/transport failures outside the envelope remain possible.
+Original run-2 freeze/data/reports remain preserved; no diagnostic replay/new
+scientific freeze/seeds after repair. A one-source proposed diagnostic boundary
+is documented separately; not an automatic restart of the failed cohort.

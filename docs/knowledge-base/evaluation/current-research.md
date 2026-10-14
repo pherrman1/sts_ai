@@ -492,6 +492,17 @@ or retry. The first matched CTM arm also hit4096 paired futures at0.474× Silver
 cost, leaving matched compute unresolved. A newly authorized freeze/canary
 must precede future cohort execution; no training or default change follows.
 
+The authorized [renewed E2500 audit](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-2/RESULTS.md)
+(§479) has a valid fresh canary with exact provenance CPU settlement, but an
+**INVALID_OR_INSUFFICIENT** cohort. Both initially dispatched sources fail:
+one Act2 Silver evaluation and one Act3 plain10k reference, normal child exit125
+with the underlying exception erased. Six remaining sources never launch.
+No teacher-quality conclusion or gen6-specific attribution is supported.
+The audit-only fork callback now transports bounded errors and retains failure
+cost/candidate/future metadata, with real seed-free tests. Original data and
+verdict stay sealed; one separately authorized diagnostic replay is the next
+useful evidence before another cohort. No training/default promotion.
+
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every

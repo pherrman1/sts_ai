@@ -18353,3 +18353,48 @@ root also precludes a matched-CPU claim. No efficacy interval from canary data.
 interface and whole-process CPU-accounting contract. No model, runtime default,
 training qualification or gameplay promotion. Future execution requires a newly
 authorized freeze/canary; the eight-source cohort remains unopened.
+
+
+## §479 Selective A20 OOC-choice audit with gen6 E2500: invalid cohort (2026-10-14)
+
+**Verdict:**`INVALID_OR_INSUFFICIENT`, reason`failed source process`.
+[Full evidence/diagnosis](evidence/ooc_selective_silver_audit_20261014/run-2/RESULTS.md).
+Philipp authorized a fresh canary/comparison after §475 and cited PR547's
+nominal1080-fight A20 evidence for gen6 E2500. Budget alone moves2000→2500;
+CTM/source/plain10k reference, horizon/V4/X2-B, unopened cohort streams,
+resource caps and4096 matched-CTM ceiling remain fixed. No PR547 code/new
+terminal score, default change, training or gameplay qualification imported.
+
+Freeze:independently reviewed d3e33b46856155d65d382db5ae4351a9f00e8d45,
+binaryca14a43ce7f9f86ba39e7647304f4ada14c8539d71e61e5cc5ca63fc60c91e1e,
+freeze9ec9b834589f7fedbd717f4ce74176af4783a841e01a461cbd9a3e9fdcb4913c.
+All16 input hashes and111051 streams verified; fresh excluded canary97151101,
+original unopened cohort97151010–97151017. Earlier run remains invalid/excluded.
+
+CanaryCANARY_VALID:exact source25actions/7battles/summary control, baseline
+repeat and CTM prefixes;193.25CPU/195.102wall seconds. Measured0.016525s
+provenance CPU plus forks equals184.297805s total child CPU, zero residual.
+Independent saved-report reproduction exact. Matched4096-pair CTM reaches
+only0.176025× Silver cost, correctly unresolved as registered.
+
+Both initial cohort sources failed normal child exit125 (wait status32000),
+not signal termination:97151011 Act2/floor19 Silver8 future1/candidate1
+(97.05CPU/99.400wall);97151010 Act3 plain10k reference future1/candidate0
+(316.47CPU/321.281wall). Generic fork catch-all erases exceptions from
+evaluation/result construction/serialization. Underlying cause unknown; no
+unsupported-encounter, gen6-specific or CPU-cap attribution. Completed roots
+1/2 remain incomplete source captures, without quality inference. Dispatch
+stops, already active source drains; six later seeds never launch. Total606.77
+CPU including excluded canary. No scientific retry, cap extension or pooling.
+
+Narrow diagnostic repair transports bounded callback errors and records failed
+child CPU; fixed evaluation starts retain candidate/future identity. Ordinary
+replay behavior/model/RNG/budgets remain unchanged. ReleasePASS,16synthetic
+checksPASS,5/5 affected CTestsPASS with actual seed-free fork-error tests;
+independent implementation/custody/canary/invalid-outcome/repair reviewsPASS.
+Original16 dependencies and raw data/receipts/latches/reports archived and
+hash-bound separately from repaired tooling. A one-source diagnostic replay
+is proposed but requires new authorization; no further game seeds executed.
+
+**Knowledge impact:**failed evidence/current research and maintained opt-in
+error transport. No conditional utility result, OOC teacher winner or promotion.

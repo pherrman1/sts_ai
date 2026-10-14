@@ -9,5 +9,6 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &plan, const s
 nlohmann::json selectiveAuditSourcePolicy();
 nlohmann::json oocSelectiveSilverAuditSpec();
 int oocSelectiveSilverAccountingSelfTest();
+int selectiveSilverAccountingSelfTest(const AuditFork &);
 int oocSelectiveSilverAuditGen(std::uint64_t seed, const std::string &plan, const std::string &out);
 }

@@ -167,6 +167,14 @@ fork, close inherited descriptors, redirect stdio, bounded pipe, wait4/reap,
 _exit. Parent is the sole writer of exclusive flushed progress/data outputs.
 Check copied source/path/policy bookkeeping are unchanged; duplicate baseline
 same-state/search-seed controls must exactly match choice/root stats/work.
+The audit-only fork callback transports tagged success/error envelopes; bounded
+printable standard messages and nonstandard categories are rejected in the
+parent before evaluation aggregation. Serialization/transport failures outside
+that envelope may still produce generic fork errors. Failed-child CPU remains diagnostic
+accounting. Fixed evaluation-start records retain candidate key/bits and future
+seed before launch. These diagnostic repairs do not rescue already frozen
+failures or authorize a retry; the original run-2 protocol is archived.
+
 Check native smoke escapes, RAW victory transfer before regainControl and
 healthy terminal detection; unsupported, stalled, nonfinite, malformed or
 missing work is invalid, never a zero target or a dropped branch.
