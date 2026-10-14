@@ -43,7 +43,7 @@ class Fixture:
         packet.mkdir(parents=True)
         (self.repo / "tools").mkdir()
         paths = [root / "one_combat", root / "prior.txt", root / "fast.native", root / "standard.native",
-                 self.repo / "tools/seed_guard.sh", packet / "run_pilot.py", packet / "PROTOCOL.md", packet / "ANALYSIS-CONTRACT.md"]
+                 self.repo / "tools/seed_guard.sh", packet / "run_pilot.py", packet / "PROTOCOL-V2.md", packet / "PROTOCOL.md", packet / "ANALYSIS-CONTRACT.md"]
         for path in paths:
             path.write_text("SYNTHETIC FIXTURE ONLY " + path.name)
         self.identity = {"candidateId": "pathb-a20", "synthetic": True}
@@ -64,13 +64,13 @@ class Fixture:
                         "combat_backend": "native_silver", "rng_regime": "project_fair", "model_artifacts": [],
                         "ooc_policy": {"model_artifacts": []}, "teacher_id": "synthetic-teacher"}
         dump(root / "teacher.json", self.teacher)
-        self.freeze = {"schemaVersion": "a20_teacher_comparison_freeze_v1", "producerGitSha": "a" * 40,
+        self.freeze = {"schemaVersion": "a20_teacher_comparison_freeze_v2", "producerGitSha": "a" * 40,
                        "repository": str(self.repo), "binary": str(root / "one_combat"),
                        "binarySha256": a.sha(root / "one_combat"), "teacher": str(root / "teacher.json"),
                        "environment": env, "canarySeed": a.CANARY, "cohortSeeds": a.COHORT,
                        "outputs": {str(seed): str(root / ("canary" if seed == a.CANARY else f"s{seed}"))
                                    for seed in (a.CANARY, *a.COHORT)},
-                       "resourceLimits": {"cpuSecondsPerSource": 180, "wallSecondsPerSource": 240,
+                       "resourceLimits": {"cpuSecondsPerSource": 600, "wallSecondsPerSource": 900,
                                           "maxConcurrentSources": 2, "maxAttemptedSources": 5},
                        "priorIdentity": {"sha256": a.sha(root / "prior.txt"), "generation": 5,
                                          "source": "synthetic://completed-fixture", "treeMinVisits": 8, "weight": 400, "rootBonus": True},
@@ -127,7 +127,7 @@ class Fixture:
         for name, cols, rows in (("states", a.STATE_COLUMNS, states), ("arms", a.ARM_COLUMNS, arms), ("samples", a.SAMPLE_COLUMNS, samples)):
             csv_write(prefix + f".{name}.csv", cols, rows)
         env = self.freeze["environment"]
-        manifest = {"schemaVersion": "ctm_vs_silver_teacher_a20_v1", "producerGitSha": "a" * 40,
+        manifest = {"schemaVersion": "ctm_vs_silver_teacher_a20_v2", "producerGitSha": "a" * 40,
                     "producerExecutableSha256": self.freeze["binarySha256"], "teacherId": "synthetic-teacher",
                     "teacherManifestSha256": a.sha(self.freeze["teacher"]), "combatTeacher": self.teacher,
                     "policy": self.teacher["ooc_policy"], "seedSpec": {"start": seed, "count": 1, "ascension": 20},
@@ -150,6 +150,30 @@ class Fixture:
                                 ((name + "Path", prefix + f".{name}.csv"), (name + "Sha256", a.sha(prefix + f".{name}.csv")))},
                     "producerExecutablePath": self.freeze["binary"], "teacherPath": self.freeze["teacher"],
                     "selection": a.SELECTION, "redrawKernel": a.REDRAW_KERNEL, "sourceControl": a.SOURCE_CONTROL, "environment": env}
+        progress, elapsed = [], 0.
+
+        def event(name, **fields):
+            nonlocal elapsed
+            elapsed += .01
+            progress.append({"event": name, "sourceSeed": seed, "elapsedCpuSeconds": elapsed, **fields})
+
+        event("source_start")
+        event("trajectory_complete", capturedFights=3, finalFloor=4, valid=True)
+        for state in states:
+            sid = state["stateId"]
+            event("state_start", stateId=sid, fightIdx=int(state["fightIdx"]), act=1,
+                  floor=int(state["floor"]), roomClass=state["roomClass"], encounter="SYNTHETIC")
+            event("ctm_complete", stateId=sid, supported=state["ctmSupported"] == "1", phaseCpuSeconds=.001)
+            for row in (r for r in arms if r["stateId"] == sid):
+                identity = {"stateId": sid, "arm": row["arm"], "k": int(row["k"]), "budget": int(row["budget"])}
+                event("arm_start", **identity)
+                event("arm_complete", **identity, combatCpuSeconds=.01, phaseCpuSeconds=.01,
+                      decisions=int(row["decisions"]), simulations=int(row["simulations"]), valid=True)
+            event("state_complete", stateId=sid)
+        event("source_complete", selectedStates=len(states))
+        Path(prefix + ".progress.jsonl").write_text("".join(json.dumps(row) + "\n" for row in progress))
+        manifest["outputs"].update(progressPath=prefix + ".progress.jsonl",
+                                   progressSha256=a.sha(prefix + ".progress.jsonl"))
         dump(prefix + ".manifest.json", manifest)
         argv = ["bash", str(self.repo / "tools/seed_guard.sh"), self.freeze["binary"], "ctmsilvergen", "1", "20", prefix,
                 str(seed), self.freeze["teacher"], "4"]
@@ -252,9 +276,46 @@ class AnalysisTests(unittest.TestCase):
     def test_receipt_resource_failure_and_custody(self):
         path = self.f.prefix(a.CANARY) + ".receipt.json"
         original = a.read_json(path)
-        for field, value in (("cpuSeconds", 181), ("wallSeconds", 241), ("cpuSeconds", .01),
+        for field, value in (("cpuSeconds", 601), ("wallSeconds", 901), ("cpuSeconds", .01),
                              ("returncode", 1), ("timedOut", True), ("freezeSha256", "wrong"), ("seed", 2)):
             dump(path, original | {field: value})
+            with self.assertRaises(a.Invalid):
+                self.analyze_canary()
+
+    def test_progress_missing_truncated_identity_and_timing_rejected(self):
+        prefix = self.f.prefix(a.CANARY)
+        path = Path(prefix + ".progress.jsonl")
+        original = [json.loads(line) for line in path.read_text().splitlines()]
+        manifest_path = prefix + ".manifest.json"
+
+        def write(records, final_newline=True):
+            text = "\n".join(json.dumps(row) for row in records) + ("\n" if final_newline else "")
+            path.write_text(text)
+            manifest = a.read_json(manifest_path)
+            manifest["outputs"]["progressSha256"] = a.sha(path)
+            dump(manifest_path, manifest)
+
+        for changed, newline in [(original[:-1], True), (original, False),
+                                  (original + [original[-1]], True)]:
+            write(changed, newline)
+            with self.assertRaisesRegex(a.Invalid, "progress"):
+                self.analyze_canary()
+        complete = next(i for i, row in enumerate(original) if row["event"] == "arm_complete")
+        for index, key, value in [(2, "stateId", "wrong"), (3, "elapsedCpuSeconds", 0.),
+                                  (3, "phaseCpuSeconds", 1e9),
+                                  (complete, "combatCpuSeconds", .02), (complete, "phaseCpuSeconds", .001)]:
+            changed = copy.deepcopy(original)
+            changed[index][key] = value
+            write(changed)
+            with self.assertRaisesRegex(a.Invalid, "progress"):
+                self.analyze_canary()
+
+    def test_old_attempt_seeds_or_caps_cannot_be_used_for_followup(self):
+        path = self.f.root / "freeze.json"
+        for changed in [self.f.freeze | {"canarySeed": 97150701},
+                        self.f.freeze | {"resourceLimits": {"cpuSecondsPerSource": 180, "wallSecondsPerSource": 240,
+                                                          "maxConcurrentSources": 2, "maxAttemptedSources": 5}}]:
+            dump(path, changed)
             with self.assertRaises(a.Invalid):
                 self.analyze_canary()
 

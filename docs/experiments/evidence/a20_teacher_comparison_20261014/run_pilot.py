@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and execute only the fixed pilot in PROTOCOL.md; never retry a phase.
+"""Prepare and execute only the fixed follow-up pilot in PROTOCOL-V2.md; never retry a phase.
 
 prepare OUT_DIR --prior FILE --prior-generation 5 --prior-sha256 SHA --prior-source URI --ctm-dir DIR
 canary OUT_DIR
@@ -28,9 +28,9 @@ CTM_HASHES = {
     "standard.native": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
     "manifest.json": "704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0",
 }
-CANARY = 97150701
-COHORT = list(range(97150710, 97150714))
-CPU_LIMIT, WALL_LIMIT = 180, 240
+CANARY = 97150801
+COHORT = list(range(97150810, 97150814))
+CPU_LIMIT, WALL_LIMIT = 600, 900
 
 
 def sha(path):
@@ -120,13 +120,13 @@ def prepare(out, prior, ctm_dir, generation, prior_hash, prior_source):
                    ooc_policy=json.loads((out / "policy.json").read_text()))
     write_new(out / "teacher.json", teacher)
     artifacts = [binary, out / "teacher.json", out / "policy.json", out / "build.log",
-                 *models.iterdir(), PACKET / "PROTOCOL.md", PACKET / "ANALYSIS-CONTRACT.md",
+                 *models.iterdir(), PACKET / "PROTOCOL-V2.md", PACKET / "PROTOCOL.md", PACKET / "ANALYSIS-CONTRACT.md",
                  Path(__file__).resolve(), REPO / "tools/analyze_a20_teachers.py",
                  REPO / "tools/seed_guard.sh", template]
     artifacts.extend(REPO / x["path"] for x in teacher["model_artifacts"])
     artifacts.extend(REPO / x["path"] for x in teacher["ooc_policy"]["model_artifacts"])
     freeze = {
-        "schemaVersion": "a20_teacher_comparison_freeze_v1", "producerGitSha": revision,
+        "schemaVersion": "a20_teacher_comparison_freeze_v2", "producerGitSha": revision,
         "repository": str(REPO), "binary": str(binary), "binarySha256": sha(binary),
         "teacher": str(out / "teacher.json"), "environment": env,
         "canarySeed": CANARY, "cohortSeeds": COHORT,
@@ -147,8 +147,10 @@ def prepare(out, prior, ctm_dir, generation, prior_hash, prior_source):
 
 def verify(out):
     freeze = json.loads((out / "freeze.json").read_text())
-    require(freeze["schemaVersion"] == "a20_teacher_comparison_freeze_v1", "unknown freeze schema")
+    require(freeze["schemaVersion"] == "a20_teacher_comparison_freeze_v2", "unknown freeze schema")
     require(freeze["canarySeed"] == CANARY and freeze["cohortSeeds"] == COHORT, "wrong seeds")
+    require(freeze["resourceLimits"] == {"cpuSecondsPerSource": CPU_LIMIT, "wallSecondsPerSource": WALL_LIMIT,
+                                        "maxConcurrentSources": 2, "maxAttemptedSources": 5}, "wrong resource limits")
     require(freeze["repository"] == str(REPO), "wrong repository")
     for path, digest in freeze["artifactFiles"].items():
         require(sha(path) == digest, f"frozen artifact changed: {path}")

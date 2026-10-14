@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 REPO = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -36,9 +36,11 @@ class RunnerTests(unittest.TestCase):
             root = Path(tmp)
             artifact = root / "model"
             artifact.write_text("frozen")
-            freeze = {"schemaVersion": "a20_teacher_comparison_freeze_v1",
+            freeze = {"schemaVersion": "a20_teacher_comparison_freeze_v2",
                       "canarySeed": pilot.CANARY, "cohortSeeds": pilot.COHORT,
                       "repository": str(pilot.REPO),
+                      "resourceLimits": {"cpuSecondsPerSource": 600, "wallSecondsPerSource": 900,
+                                         "maxConcurrentSources": 2, "maxAttemptedSources": 5},
                       "artifactFiles": {str(artifact): pilot.sha(artifact)}}
             pilot.write_new(root / "freeze.json", freeze)
             pilot.verify(root)
@@ -88,6 +90,28 @@ class RunnerTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "existing source outputs"):
                     pilot.run_source(root, pilot.CANARY)
                 launch.assert_not_called()
+
+    def test_real_launch_uses_new_fixed_cpu_and_wall_limits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "freeze.json").write_text("{}")
+            freeze = {"binary": "synthetic-one-combat", "binarySha256": "fixture", "teacher": "fixture-teacher",
+                      "environment": {"OMP_NUM_THREADS": "1"}}
+            process = Mock()
+            process.wait.return_value = 0
+
+            def popen(command, **kwargs):
+                self.assertIn("--cpu=600:600", command)
+                self.assertEqual(kwargs["env"], freeze["environment"])
+                (root / "canary.time").write_text(".02 .01\n")
+                return process
+
+            with patch.object(pilot, "verify", return_value=freeze), \
+                    patch.object(pilot.subprocess, "Popen", side_effect=popen) as launch:
+                pilot.run_source(root, pilot.CANARY)
+                process.wait.assert_called_once_with(timeout=900)
+                self.assertEqual(json.loads((root / "canary.receipt.json").read_text())["cpuSeconds"], .03)
+                self.assertEqual(launch.call_count, 1)
 
 
 if __name__ == "__main__":

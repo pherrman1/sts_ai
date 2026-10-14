@@ -16,8 +16,8 @@ import statistics
 import sys
 
 
-CANARY = 97150701
-COHORT = [97150710, 97150711, 97150712, 97150713]
+CANARY = 97150801
+COHORT = [97150810, 97150811, 97150812, 97150813]
 ARM_CONFIG = {"plain2k": (2000, False), "prior2k": (2000, True),
               "plain10k": (10000, False), "prior10k": (10000, True)}
 FORECASTERS = ("ctm", *ARM_CONFIG)
@@ -82,11 +82,15 @@ def json_object(pairs):
     return obj
 
 
-def read_json(path):
+def decode_json(text):
     def bad_constant(value):
         raise Invalid(f"nonfinite JSON constant: {value}")
-    return json.loads(Path(path).read_text(), object_pairs_hook=json_object, parse_constant=bad_constant,
+    return json.loads(text, object_pairs_hook=json_object, parse_constant=bad_constant,
                       parse_float=lambda value: number(value, "JSON float"))
+
+
+def read_json(path):
+    return decode_json(Path(path).read_text())
 
 
 def sha(path):
@@ -165,10 +169,10 @@ def validate_freeze(freeze):
     keys(freeze, ("schemaVersion", "producerGitSha", "repository", "binary", "binarySha256", "teacher",
                   "environment", "canarySeed", "cohortSeeds", "outputs", "resourceLimits", "priorIdentity",
                   "ctmIdentity", "arms", "buildCommands", "artifactFiles"), "freeze")
-    require(freeze["schemaVersion"] == "a20_teacher_comparison_freeze_v1", "unknown freeze schema")
+    require(freeze["schemaVersion"] == "a20_teacher_comparison_freeze_v2", "unknown freeze schema")
     require(freeze["canarySeed"] == CANARY and freeze["cohortSeeds"] == COHORT, "wrong frozen seed panel")
     require(re.fullmatch(r"[0-9a-f]{40}", freeze["producerGitSha"]) is not None, "invalid source revision")
-    require(freeze["resourceLimits"] == {"cpuSecondsPerSource": 180, "wallSecondsPerSource": 240,
+    require(freeze["resourceLimits"] == {"cpuSecondsPerSource": 600, "wallSecondsPerSource": 900,
                                         "maxConcurrentSources": 2, "maxAttemptedSources": 5}, "wrong resource caps")
     require(freeze["ctmIdentity"] == CTM_HASHES, "wrong PR524 CTM identity")
     keys(freeze["priorIdentity"], ("sha256", "generation", "source", "treeMinVisits", "weight", "rootBonus"), "prior identity")
@@ -195,7 +199,7 @@ def validate_freeze(freeze):
     packet = repo / "docs/experiments/evidence/a20_teacher_comparison_20261014"
     for path in (freeze["binary"], freeze["teacher"], str(Path(__file__).resolve()),
                  str(repo / "tools/seed_guard.sh"), str(packet / "run_pilot.py"),
-                 str(packet / "PROTOCOL.md"), str(packet / "ANALYSIS-CONTRACT.md")):
+                 str(packet / "PROTOCOL-V2.md"), str(packet / "PROTOCOL.md"), str(packet / "ANALYSIS-CONTRACT.md")):
         require(path in freeze["artifactFiles"], f"required file absent from freeze: {path}")
     require(freeze["artifactFiles"][freeze["binary"]] == freeze["binarySha256"], "binary hash mismatch")
     keys(freeze["outputs"], map(str, (CANARY, *COHORT)), "frozen output prefixes")
@@ -458,6 +462,60 @@ def expected_runtime_arms(freeze):
     return result
 
 
+def validate_progress(path, seed, source, states, arm_rows, cpu_seconds):
+    text = Path(path).read_text()
+    require(text.endswith("\n"), "truncated progress record")
+    records = [decode_json(line) for line in text.splitlines()]
+    expected = [("source_start", {}, ())]
+    expected.append(("trajectory_complete", {"capturedFights": source["capturedCount"],
+                     "finalFloor": source["finalFloor"], "valid": True}, ()))
+    for state in states:
+        sid = state["stateId"]
+        expected.append(("state_start", {"stateId": sid, "fightIdx": int(state["fightIdx"]),
+                         "act": int(state["act"]), "floor": int(state["floor"]),
+                         "roomClass": state["roomClass"], "encounter": state["encounter"]}, ()))
+        expected.append(("ctm_complete", {"stateId": sid, "supported": state["ctmSupported"] == "1"},
+                         ("phaseCpuSeconds",)))
+        if state["ctmSupported"] == "1":
+            for name, (budget, _) in {"control": (10000, False), **ARM_CONFIG}.items():
+                for k in range(1 if name == "control" else 4):
+                    row = arm_rows[(sid, name, str(k))]
+                    identity = {"stateId": sid, "arm": name, "k": k, "budget": budget}
+                    expected.append(("arm_start", identity, ()))
+                    expected.append(("arm_complete", identity | {"decisions": int(row["decisions"]),
+                                     "simulations": int(row["simulations"]), "valid": True},
+                                     ("phaseCpuSeconds", "combatCpuSeconds")))
+        expected.append(("state_complete", {"stateId": sid}, ()))
+    expected.append(("source_complete", {"selectedStates": len(states)}, ()))
+    require(len(records) == len(expected), "missing or extra progress records")
+    previous, arm_start, state_start = -1., None, None
+    for record, (event, identity, timed_fields) in zip(records, expected):
+        keys(record, ("event", "sourceSeed", "elapsedCpuSeconds", *identity, *timed_fields), "progress record")
+        require(record["event"] == event and record["sourceSeed"] == seed
+                and all(type(record[key]) is type(value) and record[key] == value for key, value in identity.items()),
+                "progress order/identity mismatch")
+        elapsed = number(record["elapsedCpuSeconds"], "progress CPU", 0, cpu_seconds + .02)
+        require(elapsed >= previous, "nonmonotone progress CPU")
+        previous = elapsed
+        for field in timed_fields:
+            number(record[field], "progress " + field, 0)
+        if event == "state_start":
+            state_start = elapsed
+        if event == "ctm_complete":
+            require(record["phaseCpuSeconds"] <= elapsed - state_start + .02,
+                    "progress CTM phase CPU mismatch")
+        if event == "arm_start":
+            arm_start = elapsed
+        if event == "arm_complete":
+            row = arm_rows[(record["stateId"], record["arm"], str(record["k"]))]
+            combat = record["combatCpuSeconds"]
+            require(math.isclose(combat, float(row["cpuSeconds"]), rel_tol=1e-7, abs_tol=1e-8),
+                    "progress/CSV combat CPU mismatch")
+            require(combat <= record["phaseCpuSeconds"] + .000001
+                    and record["phaseCpuSeconds"] <= elapsed - arm_start + .02,
+                    "progress phase CPU mismatch")
+
+
 def validate_job(prefix, seed, freeze, freeze_hash, teacher):
     prefix = str(Path(prefix).resolve())
     require(prefix == freeze["outputs"][str(seed)], "prefix differs from frozen output")
@@ -471,8 +529,8 @@ def validate_job(prefix, seed, freeze, freeze_hash, teacher):
             "source process failed or timed out")
     require(receipt["binarySha256"] == freeze["binarySha256"] and receipt["freezeSha256"] == freeze_hash,
             "runner custody mismatch")
-    number(receipt["cpuSeconds"], "job CPU", 0, 180)
-    number(receipt["wallSeconds"], "job wall time", 0, 240)
+    number(receipt["cpuSeconds"], "job CPU", 0, 600)
+    number(receipt["wallSeconds"], "job wall time", 0, 900)
     started = read_json(prefix + ".started.json")
     require(started == {"argv": argv, "freezeSha256": freeze_hash}, "job launch latch mismatch")
     require(Path(prefix + ".log").is_file(), "missing source log")
@@ -481,7 +539,7 @@ def validate_job(prefix, seed, freeze, freeze_hash, teacher):
                     "combatTeacher", "policy", "seedSpec", "rootPrior", "ctm", "redraw", "ctmOnly", "candidate",
                     "arms", "armSet", "sources", "integrity", "outputs", "producerExecutablePath", "teacherPath",
                     "selection", "redrawKernel", "sourceControl", "environment"), "runtime manifest")
-    require(manifest["schemaVersion"] == "ctm_vs_silver_teacher_a20_v1" and manifest["armSet"] == "teacher_a20"
+    require(manifest["schemaVersion"] == "ctm_vs_silver_teacher_a20_v2" and manifest["armSet"] == "teacher_a20"
             and manifest["ctmOnly"] is False and manifest["candidate"] is None, "wrong runtime mode")
     require(manifest["producerGitSha"] == freeze["producerGitSha"]
             and manifest["producerExecutableSha256"] == freeze["binarySha256"]
@@ -508,10 +566,10 @@ def validate_job(prefix, seed, freeze, freeze_hash, teacher):
     require(manifest["selection"] == SELECTION and manifest["redrawKernel"] == REDRAW_KERNEL
             and manifest["redraw"] == REDRAW and manifest["sourceControl"] == SOURCE_CONTROL,
             "runtime selection/redraw/source protocol mismatch")
-    keys(manifest["outputs"], ("statesSha256", "armsSha256", "samplesSha256", "statesPath", "armsPath", "samplesPath"),
+    keys(manifest["outputs"], ("statesSha256", "armsSha256", "samplesSha256", "statesPath", "armsPath", "samplesPath", "progressPath", "progressSha256"),
          "runtime outputs")
-    for name in ("states", "arms", "samples"):
-        path = prefix + f".{name}.csv"
+    for name in ("states", "arms", "samples", "progress"):
+        path = prefix + (".progress.jsonl" if name == "progress" else f".{name}.csv")
         require(manifest["outputs"][name + "Path"] == path
                 and manifest["outputs"][name + "Sha256"] == sha(path), f"runtime output custody mismatch: {name}")
     states = read_csv(prefix + ".states.csv", STATE_COLUMNS)
@@ -563,6 +621,7 @@ def validate_job(prefix, seed, freeze, freeze_hash, teacher):
         "capturedStates": len(captured), "selectedStates": len(states), "ctmUnsupported": len(states) - len(supported),
         "unsupportedReasons": reasons}, "integrity counts mismatch")
     require(bool(supported), f"source {seed} has no supported matched state")
+    validate_progress(prefix + ".progress.jsonl", seed, source, states, amap, receipt["cpuSeconds"])
     # Arm timers are contained in the process timer. GNU time rounds to .01s.
     require(sum(float(r["cpuSeconds"]) for r in arms) <= receipt["cpuSeconds"] + .02,
             "sum of arm CPU exceeds process CPU")
@@ -594,13 +653,13 @@ def analyze(freeze_path, prefixes, canary=False):
                 and canary_report["sourceSeeds"] == [CANARY], "excluded canary did not pass this freeze")
         all_jobs.append(validate_job(freeze["outputs"][str(CANARY)], CANARY, freeze, freeze_hash, teacher))
     cpu = sum(job["receipt"]["cpuSeconds"] for job in all_jobs)
-    require(cpu <= 900, "aggregate CPU cap exceeded")
+    require(cpu <= 3000, "aggregate CPU cap exceeded")
     rows = [row for job in jobs for row in job["metrics"]]
     per_source = {str(job["seed"]): {"coverage": job["coverage"], "summary": summarize_states(job["metrics"])} for job in jobs}
     equal = equal_source_summary([source["summary"] for source in per_source.values()])
     custody = {str(Path(freeze_path).resolve()): freeze_hash}
     for job in all_jobs:
-        for extension in ("states.csv", "arms.csv", "samples.csv", "manifest.json", "receipt.json", "started.json", "log"):
+        for extension in ("states.csv", "arms.csv", "samples.csv", "progress.jsonl", "manifest.json", "receipt.json", "started.json", "log"):
             path = job["prefix"] + "." + extension
             custody[path] = sha(path)
     return {"schemaVersion": "a20_teacher_comparison_analysis_v1",

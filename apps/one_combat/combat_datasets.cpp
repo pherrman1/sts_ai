@@ -5259,10 +5259,45 @@ bool ctmTeacherA20Select(int act, const std::string &room, std::set<std::pair<in
 const char *ctmSilverRawOutcome(int won, const one_combat::CombatTransitionPersistentState &raw) {
     return won == 0 ? "DEATH" : raw.smokeBombUsed ? "ESCAPE" : won == 1 ? "VICTORY" : "UNDECIDED";
 }
+// Publish completed data before its progress record. std::endl flushes the
+// JSONL record so a CPU-limit SIGKILL leaves the last active replay observable.
+void ctmTeacherA20Checkpoint(std::ostream &states, std::ostream &arms,
+                              std::ostream &samples, std::ostream &progress,
+                              const nlohmann::json &record) {
+    states.flush(); arms.flush(); samples.flush();
+    if (!states || !arms || !samples)
+        throw std::runtime_error("ctm vs silver: cannot flush completed data");
+    progress << record.dump() << std::endl;
+    if (!progress) throw std::runtime_error("ctm vs silver: cannot flush progress");
+}
 void ctmTeacherA20SelfTest() {
     const auto require = [](bool ok, const char *why) {
         if (!ok) throw std::runtime_error(std::string("teacher_a20 selftest: ") + why);
     };
+    // Simulate abrupt termination without destructors: another reader must see
+    // every completed data row and the active replay immediately after checkpoint.
+    const auto dir = std::filesystem::temp_directory_path() /
+        ("teacher-a20-progress-" + std::to_string(vwinThreadCpuNanos()));
+    std::filesystem::create_directory(dir);
+    {
+        std::ofstream states(dir / "states"), arms(dir / "arms"), samples(dir / "samples"), progress(dir / "progress");
+        states << "state\n"; arms << "completed arm\n"; samples << "completed sample\n";
+        ctmTeacherA20Checkpoint(states, arms, samples, progress, {{"event", "arm_start"}, {"arm", "prior10k"}, {"k", 2}});
+        for (const auto &name : {"states", "arms", "samples", "progress"}) {
+            std::ifstream in(dir / name);
+            std::string line;
+            require(bool(std::getline(in, line)) && !line.empty(), "checkpoint visible while streams remain open");
+            if (std::string(name) == "progress")
+                require(nlohmann::json::parse(line).at("arm") == "prior10k", "active replay identity persisted");
+        }
+        std::ostringstream bad;
+        bad.setstate(std::ios::badbit);
+        bool rejected = false;
+        try { ctmTeacherA20Checkpoint(states, arms, samples, bad, {{"event", "arm_complete"}}); }
+        catch (const std::runtime_error &) { rejected = true; }
+        require(rejected, "progress write failure rejects the run");
+    }
+    std::filesystem::remove_all(dir);
     ctmTeacherA20ValidateBounds(1, 20, 0, 4);
     ctmTeacherA20ValidateBounds(4, 20, std::numeric_limits<long long>::max() - 3, 4);
     for (const auto &args : std::vector<std::tuple<int, int, long long, int>>{
@@ -5539,11 +5574,19 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const std::string armsPath = outPrefix + ".arms.csv";
     const std::string samplesPath = outPrefix + ".samples.csv";
     const std::string manifestPath = outPrefix + ".manifest.json";
+    const std::string progressPath = outPrefix + ".progress.jsonl";
     for (const auto &path : {statesPath, armsPath, samplesPath, manifestPath})
         if (std::filesystem::exists(path))
             throw std::runtime_error("ctm vs silver: refusing to overwrite existing output " + path);
+    if (teacherA20 && std::filesystem::exists(progressPath))
+        throw std::runtime_error("ctm vs silver: refusing to overwrite existing progress " + progressPath);
     std::ofstream states(statesPath), armsOut(armsPath), samples(samplesPath);
     if (!states || !armsOut || !samples) throw std::runtime_error("ctm vs silver: cannot open outputs");
+    std::ofstream progress;
+    if (teacherA20) {
+        progress.open(progressPath);
+        if (!progress) throw std::runtime_error("ctm vs silver: cannot open progress");
+    }
     samples << "stateId,forecaster,k,outcome,curHp,maxHp,gold,potionCount,potions,relics,deckHash,"
                "smokeBombUsed,stolenGold\n";
     states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
@@ -5576,6 +5619,14 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     for (int i = 0; i < nSeeds; ++i) {
         VwinCollector capture;
         capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
+        const auto sourceCpuStart = vwinThreadCpuNanos();
+        const auto checkpoint = [&](nlohmann::json record) {
+            if (!teacherA20) return;
+            record["sourceSeed"] = capture.sourceSeed;
+            record["elapsedCpuSeconds"] = double(vwinThreadCpuNanos() - sourceCpuStart) / 1e9;
+            ctmTeacherA20Checkpoint(states, armsOut, samples, progress, record);
+        };
+        checkpoint({{"event", "source_start"}});
         capture.captureBoss = true;
         capture.captureAllCombatEntries = true;
         capture.captureRawCombatEntries = teacherA20;
@@ -5589,6 +5640,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         }
         if (source.trajectoryComplete) ++completeSources;
         if (source.trajectoryValid) ++validSources;
+        checkpoint({{"event", "trajectory_complete"}, {"capturedFights", capture.bossEntries.size()},
+            {"finalFloor", source.finalFloor}, {"valid", source.trajectoryValid}});
         perSeed.push_back({{"seed", capture.sourceSeed}, {"complete", source.trajectoryComplete},
                            {"valid", source.trajectoryValid}, {"fights", capture.bossEntries.size()},
                            {"finalFloor", source.finalFloor},
@@ -5621,6 +5674,9 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         for (auto &entry : capture.bossEntries) {
             const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
             if (teacherA20 && !selectedIds.count(stateId)) continue;
+            const auto stateCpuStart = vwinThreadCpuNanos();
+            checkpoint({{"event", "state_start"}, {"stateId", stateId}, {"fightIdx", entry.fightIdx},
+                {"act", entry.act}, {"floor", entry.floor}, {"roomClass", entry.roomClass}, {"encounter", entry.encounter}});
             if (teacherA20 && entry.rawPost)
                 ctmSilverWriteSample(samples, stateId, "source", 0, ctmSilverRawOutcome(entry.sourceWon, *entry.rawPost), *entry.rawPost);
             const GameContext &pre = *entry.pre;
@@ -5706,10 +5762,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     << ',' << entry.rawCaptureCount;
             states << '\n';
             ++nStates;
-            if (teacherA20 && !support.supported) continue;
+            checkpoint({{"event", "ctm_complete"}, {"stateId", stateId}, {"supported", support.supported},
+                {"phaseCpuSeconds", double(vwinThreadCpuNanos() - stateCpuStart) / 1e9}});
+            if (teacherA20 && !support.supported) {
+                checkpoint({{"event", "state_complete"}, {"stateId", stateId}});
+                continue;
+            }
             bool controlMatch = false;
             for (const auto &arm : arms) {
                 for (int k = 0; k < arm.replicates; ++k) {
+                    const auto armCpuStart = vwinThreadCpuNanos();
+                    checkpoint({{"event", "arm_start"}, {"stateId", stateId}, {"arm", arm.name},
+                        {"k", k}, {"budget", arm.budget}});
                     const std::uint64_t redrawSeed = arm.redraw
                         ? ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0xC0FFEE07) : 0;
                     VwinBossEntry replay;
@@ -5789,12 +5853,19 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                             << (rawPost ? ctmSilverRawOutcome(result.won, *rawPost) : "MISSING")
                             << ',' << rawCaptureCount << ',' << replay.pre->seed;
                     armsOut << '\n';
+                    checkpoint({{"event", "arm_complete"}, {"stateId", stateId}, {"arm", arm.name},
+                        {"k", k}, {"budget", arm.budget}, {"combatCpuSeconds", result.cpuSeconds},
+                        {"phaseCpuSeconds", double(vwinThreadCpuNanos() - armCpuStart) / 1e9},
+                        {"decisions", result.decisions}, {"simulations", result.simulations}, {"valid", valid}});
                 }
             }
+            checkpoint({{"event", "state_complete"}, {"stateId", stateId}});
         }
+        checkpoint({{"event", "source_complete"}, {"selectedStates", selected.size()}});
         states.flush(); armsOut.flush(); samples.flush();
     }
     states.close(); armsOut.close(); samples.close();
+    if (teacherA20) progress.close();
     nlohmann::json manifest = {
         {"schemaVersion", "ctm_vs_silver_forecast_v1"},
         {"producerGitSha", trainingExecutableGitSha()},
@@ -5823,7 +5894,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                      {"samplesSha256", fileSha256(samplesPath)}}}
     };
     if (teacherA20) {
-        manifest["schemaVersion"] = "ctm_vs_silver_teacher_a20_v1";
+        manifest["schemaVersion"] = "ctm_vs_silver_teacher_a20_v2";
         manifest["producerExecutablePath"] = std::filesystem::absolute(g_mainBinaryPath).string();
         manifest["teacherPath"] = std::filesystem::absolute(teacherPath).string();
         manifest["ctm"]["candidateId"] = ctm.fastRuntime().identity().at("candidateId");
@@ -5867,6 +5938,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         manifest["outputs"]["statesPath"] = std::filesystem::absolute(statesPath).string();
         manifest["outputs"]["armsPath"] = std::filesystem::absolute(armsPath).string();
         manifest["outputs"]["samplesPath"] = std::filesystem::absolute(samplesPath).string();
+        manifest["outputs"]["progressPath"] = std::filesystem::absolute(progressPath).string();
+        manifest["outputs"]["progressSha256"] = fileSha256(progressPath);
     }
     std::ofstream manifestOut(manifestPath);
     if (!manifestOut) throw std::runtime_error("ctm vs silver: cannot write manifest");

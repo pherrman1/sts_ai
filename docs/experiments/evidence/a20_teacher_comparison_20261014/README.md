@@ -3,6 +3,11 @@
 The [gen6 E attempt](gen6E-attempt-1/RESULTS.md) is complete: the canary passed,
 but one of four cohort sources hit the fixed 180-second CPU limit. The exact
 verdict is **INVALID_OR_INSUFFICIENT**; no teacher ranking is reported.
+The user authorized an observability/resource follow-up under
+[PROTOCOL-V2.md](PROTOCOL-V2.md): flushed per-replay progress, 600 CPU/900 wall
+seconds per source and a fresh fixed panel. The first attempt is not pooled
+into it. Its original frozen tooling is archived in
+`gen6E-attempt-1/frozen-source.tar.gz`; the current runner/analyzer implement v2.
 The bounded diagnostic compares
 the unchanged PR #524 A20 CTM with plain/prior Silver at **2k and 10k**
 simulations per combat decision. The user selected the completed
@@ -61,7 +66,8 @@ failures remain invalid. Historical modes retain their behavior.
 ## Execution with the selected artifact
 
 The attempt used the following commands. These output paths now exist and
-must not be overwritten or retried:
+must not be overwritten or retried. These are historical commands from
+producer `dc941156`, not instructions for the current v2 runner:
 
 ```sh
 python3 docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py \
@@ -107,3 +113,19 @@ full repository test suite and gameplay were not run for this preparation.
 Knowledge impact: the ledger/index and maintained research page correct the
 historical forecast interpretation and record the incomplete A20 comparison.
 The protocol and analysis contract specify the opt-in research interface.
+
+## Authorized v2 execution
+
+Prepare `build/a20-teacher-comparison/gen6E-run-2` from a clean reviewed commit
+with the same E model, generation, SHA256, source URL and CTM paths above;
+then run `canary` and, only after it passes, `cohort` with that new directory.
+The current runner fixes canary `97150801`, cohort `97150810–97150813`,
+600 CPU/900 wall seconds per source and two concurrent jobs. Every completed
+replay flushes CSV data and a JSONL timing/progress record; each start record
+identifies the active replay if the process is subsequently killed.
+
+The new runtime schema is `ctm_vs_silver_teacher_a20_v2`; the new freeze schema
+is `a20_teacher_comparison_freeze_v2`. The analyzer checks ordered progress
+against the selected panel and each replay's budget, decisions, simulations
+and combat CPU. Its scientific metrics/decision rule are unchanged. Do not
+relax this attempt or overwrite previous outputs after launch.

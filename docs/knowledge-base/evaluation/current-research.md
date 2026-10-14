@@ -437,6 +437,12 @@ cohort sources hit the fixed 180-second CPU cap. The exact verdict is
 there is no teacher-quality or optimal-budget conclusion. All outputs are
 preserved, with no retry, extension, training or default change.
 
+The user authorized a separately frozen [v2 follow-up](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL-V2.md)
+with flushed replay progress, 600 CPU/900 wall seconds per source, canary
+`97150801` and four fresh sources `97150810–97150813`. It preserves the model,
+controller settings, source/reference and analysis, and does not pool §472.
+This follow-up is pending collection; no new teacher conclusion yet.
+
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
 outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every
