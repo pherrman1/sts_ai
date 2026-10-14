@@ -1815,7 +1815,7 @@ std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
-// STS_OOC_MCTS_A20_CTM=1 (§470, off by default): the bundled A20 stack, used for ascension-20 decisions.
+// STS_OOC_MCTS_A20_CTM (§470, on by default): the bundled A20 stack, used for ascension-20 decisions.
 std::shared_ptr<const CombatTransitionSampler> liveSamplerA20;
 std::shared_ptr<const CombatTransitionSampler> liveSamplerFor(const GameContext &gc) {
     if (!liveSamplerA20 || gc.ascension < 20) return liveSampler;
@@ -2350,13 +2350,15 @@ void configureLiveOocMcts() {
     if(!researchCandidate.empty())
         std::cout << "[ctm-research-candidate] candidate_id=" << researchCandidate << "\n";
     // §470: the bundled A20 Lizard CTM with its boss calibration, for ascension-20 decisions only; below A20 the
-    // stack above stays in use. Only beside the automatic default stack, so no override can mix into it.
+    // stack above stays in use. Only beside the automatic default stack, so no override can mix into it. On by
+    // default; unset, it is skipped when an override is present, while an explicit 1 refuses such overrides.
     const char *a20Ctm = std::getenv("STS_OOC_MCTS_A20_CTM");
     if (a20Ctm && std::string(a20Ctm) != "0" && std::string(a20Ctm) != "1")
         throw std::runtime_error("STS_OOC_MCTS_A20_CTM must be 0 or 1 when set");
-    if (a20Ctm && std::string(a20Ctm) == "1") {
-        if (!automaticDefaultStack || brewFallbackOverride || !activeLizardEnabled
-                || std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+    const bool a20Compatible = automaticDefaultStack && !brewFallbackOverride && activeLizardEnabled
+        && !std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") && !std::getenv("STS_OOC_MCTS_LEAF_CAPTURE");
+    if (a20Ctm ? std::string(a20Ctm) == "1" : a20Compatible) {
+        if (!a20Compatible)
             throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 requires the default CTM stack: no STS_OOC_MCTS_COMBAT_MODEL, "
                 "STS_OOC_MCTS_BREW_FALLBACK_MODEL, STS_OOC_MCTS_ACTIVE_LIZARD=0, STS_OOC_MCTS_COMBAT_RESOLVER, "
                 "STS_CTM_RESEARCH_CANDIDATE_MANIFEST or STS_OOC_MCTS_LEAF_CAPTURE");

@@ -18058,3 +18058,18 @@ at ascension 20 and keeps the default stack below. Smokes at A20 (seeds 74070351
 
 **Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_A20_CTM`) and
 `architecture/out-of-combat.md` (A20 stack, manifest boss calibration).
+
+## §472 — A20 CTM stack made the default (decision, no new experiment) (2026-10-14)
+
+**Date:** 2026-10-14. **Decision:** Philipp (14:52Z): "merge 534 and make it default." `STS_OOC_MCTS_A20_CTM`
+(§470) is now on by default: OOC MCTS searches rooted at ascension 20 use the bundled, boss-calibrated `pathb-a20`
+stack; other ascensions keep the default stack. `0` restores the previous behaviour.
+**Basis:** the §470 offline PASS on the fresh Stage 4 corpus and §458 (+6.03 floors [+2.69, +9.37] vs CTM off at A20,
+uncalibrated candidate). No live A/B of the calibrated stack was run; this is Philipp's call, not a gate result.
+**Runtime:** unset, the A20 stack is added only beside the automatic default stack and silently skipped when
+`STS_OOC_MCTS_COMBAT_MODEL`, `STS_OOC_MCTS_BREW_FALLBACK_MODEL`, `STS_OOC_MCTS_ACTIVE_LIZARD=0`,
+`STS_OOC_MCTS_COMBAT_RESOLVER`, `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` or `STS_OOC_MCTS_LEAF_CAPTURE` is set, so
+existing research configurations are unchanged; an explicit `1` still refuses those combinations. OOC MCTS itself
+stays off by default, so play without `STS_OOC_MCTS` is unchanged.
+
+**Knowledge impact:** `operations/environment-variables.md` and `architecture/out-of-combat.md` (A20 stack default).

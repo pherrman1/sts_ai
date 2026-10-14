@@ -384,7 +384,7 @@ and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. The live advisor still uses the pre-#418
 stack (open follow-up). OOC MCTS stays off by default.
 
-**A20 stack (§470, opt-in).** `STS_OOC_MCTS_A20_CTM=1` adds a second hybrid
+**A20 stack (§470, default on since §472).** `STS_OOC_MCTS_A20_CTM` (unset or `1`) adds a second hybrid
 sampler beside the default one: the §443 Stage 4 `pathb-a20` Lizard candidate,
 bundled in `selfplay/models/` and pinned by a third built-in manifest
 (`kA20CandidateManifest`, `00bb4da6…`). `liveSamplerFor(gc)` hands it to every
@@ -395,7 +395,10 @@ optional v3 field adds it to the death logit of boss encounters
 (`sts::isBossEncounter`, which includes act-1 bosses fought from an event). An
 artifact declaring `pathb-a20` with no research manifest naming that candidate
 now loads under this built-in manifest. Offline on the fresh Stage 4 corpus the
-calibrated stack passes all five Stage 3a criteria (ledger §470).
+calibrated stack passes all five Stage 3a criteria (ledger §470). Philipp made it the default
+on 2026-10-14 (ledger §472) without a live A/B. Unset, it is added only beside the automatic default
+stack and silently skipped when a CTM override, active Lizard off, a research manifest or leaf capture is
+set; `1` refuses those combinations; `0` restores the pre-§472 behaviour.
 
 A `ctm_research_candidate_v3` manifest also lists each artifact's
 `capabilities` (`{"standard": {...}, "fast": {...}}`), and an artifact's

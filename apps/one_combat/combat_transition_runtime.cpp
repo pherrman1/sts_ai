@@ -510,7 +510,7 @@ std::vector<int> declaredHpClasses(const nlohmann::json &domain,const nlohmann::
     return classes;
 }
 // The bundled A20 stack (§470): the §443 Stage 4 Lizard candidate pathb-a20 (fast ae785ec2, standard e338506d,
-// manifest 704f2a58) plus the boss calibration fit on Stage 1 VALIDATION rows. Loaded by STS_OOC_MCTS_A20_CTM=1 at
+// manifest 704f2a58) plus the boss calibration fit on Stage 1 VALIDATION rows. Loaded by STS_OOC_MCTS_A20_CTM (default on) at
 // ascension 20, or by any artifact declaring pathb-a20 when no research manifest names that candidate.
 constexpr char kA20CandidateManifest[]=R"json({
   "activeLizard": {
