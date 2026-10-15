@@ -1,0 +1,119 @@
+{
+  "by_ascension": {
+    "20": {
+      "ascension": 20,
+      "cohort": [
+        107000000,
+        107000063
+      ],
+      "units": {
+        "v4": 64,
+        "v4roll": 64
+      },
+      "seed_failures_dropped": [],
+      "invalid_units": [],
+      "missing_cohort_seeds": {
+        "v4": [],
+        "v4roll": []
+      },
+      "non_cohort_seeds": [],
+      "pairs": 64,
+      "delta_clear": 0.03125,
+      "delta_clear_ci95": [
+        -0.09375,
+        0.15625
+      ],
+      "label": "NOT_SHOWN",
+      "discordant_v4roll_only": 10,
+      "discordant_v4_only": 8,
+      "mcnemar_p": 0.8145294189453125,
+      "delta_floor": -5.703125,
+      "delta_floor_ci95": [
+        -9.328125,
+        -2.1714843750000057
+      ],
+      "floor_label": "WORSE",
+      "delta_hp_end": -1.546875,
+      "clears": {
+        "v4": 10,
+        "v4roll": 12
+      },
+      "mean_floor": {
+        "v4": 42.359375,
+        "v4roll": 36.65625
+      },
+      "reached_act3": {
+        "v4": 43,
+        "v4roll": 29
+      },
+      "clears_given_act3": {
+        "v4": 0.23255813953488372,
+        "v4roll": 0.41379310344827586
+      },
+      "deaths_by_act": {
+        "v4": {
+          "1": 2,
+          "2": 19,
+          "3": 33
+        },
+        "v4roll": {
+          "1": 5,
+          "2": 30,
+          "3": 17
+        }
+      },
+      "boss_deaths": {
+        "v4": 38,
+        "v4roll": 27
+      },
+      "sec_per_run": {
+        "v4": 462.203371875,
+        "v4roll": 339.06434375000003
+      },
+      "mcts": {
+        "v4": {
+          "runs_with_trace": 64,
+          "mcts_cpu_sec_per_run": 403.380678618375,
+          "owned_share": 0.9728132387706856,
+          "fallback_share": 0.027186761229314422,
+          "support_aborts_per_run": 0.125,
+          "prior_builds_per_run": 119886.234375,
+          "prior_leaf_steps_per_run": 0.0,
+          "ooc_decisions_by": {
+            "chain": 161,
+            "chest_rule": 155,
+            "match_and_keep": 50,
+            "mcts": 5742,
+            "relic_rule": 455,
+            "tree_rule": 2495
+          }
+        },
+        "v4roll": {
+          "runs_with_trace": 64,
+          "mcts_cpu_sec_per_run": 285.81651003151563,
+          "owned_share": 0.9722991689750693,
+          "fallback_share": 0.027700831024930747,
+          "support_aborts_per_run": 0.1875,
+          "prior_builds_per_run": 95805.1875,
+          "prior_leaf_steps_per_run": 1669324.296875,
+          "ooc_decisions_by": {
+            "chain": 140,
+            "chest_rule": 132,
+            "match_and_keep": 50,
+            "mcts": 4887,
+            "relic_rule": 373,
+            "tree_rule": 2248
+          }
+        }
+      }
+    }
+  },
+  "primary": "NOT_SHOWN",
+  "control_vs_486_v4": {
+    "20": {
+      "compared": 64,
+      "identical": 64,
+      "differ": []
+    }
+  }
+}

@@ -18937,3 +18937,35 @@ A0 (107001000–127, reserved) was not run. Cost makes the heart1 prior impracti
 being investigated separately.
 
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (heart1 prior result line).
+
+## §487 OOC MCTS with the V4 policy inside the rollouts at A20 (2026-10-15)
+
+**Verdict:** primary (A20 act-3 clears) `NOT_SHOWN`, 12 vs 10 of 64, +3.1 pp [−9.4, +15.6], McNemar p = 0.81
+(10 vs 8 discordant pairs); key secondary (floors) `WORSE`, −5.70 [−9.33, −2.17]. The chain rollouts stay; no
+default change.
+[Pre-registration](evidence/v4_rollout_policy_487_20261015/PREREG.md), [report](evidence/v4_rollout_policy_487_20261015/report.json).
+
+Philipp asked (16:19Z) for the §486 seeds with the V4 prior also used inside the rollouts, on 32 workers. Both arms
+are the §486 `v4` arm (§433 `combo` with the automatic A20 CTM, V4 tree prior, run-commit defaults ADR-0030..0040);
+`v4roll` adds `STS_OOC_MCTS_LEAF_POLICY=prior` (new, default off): at each non-combat rollout step the tree's fixed
+rule steps run first, then V4's policy-head argmax decides every screen V4 encodes (card rewards, map except the boss
+row, shops, rest, upgrades, events except Match and Keep, treasure, boss relics); the chain decides the rest. Before,
+rollouts used the chain: heuristics with V4 Q-head one-ply gates at margin 1.0, and the room-value map heuristic. Run
+commit `9f1ae0f8`, code `8ffa30a9`, binary `2779f937…`; seeds 107000000–107000063, one unit per seed and arm;
+independent pre-launch review PASS.
+
+All 128 units rc=0, no dropped seeds, all 32 worker tars verified from the lead container (`worker_tars.txt`). The
+control reproduces the §486 `v4` rows on 64/64 seeds (won, floor, act, end HP), so the option leaves the chain
+rollouts unchanged. `v4roll` took about 1.67M V4 rollout steps per run. Reached act 3: 29 (v4roll) vs 43 (v4);
+clears given act 3 reached 41.4% vs 23.3%; deaths by act 1/2/3: 5/30/17 vs 2/19/33; boss deaths 27 vs 38; end HP
+−1.5 per pair. Cost: 339 vs 462 s per run (MCTS CPU 286 vs 403 s), mostly because runs end earlier; MCTS CPU per OOC
+decision is about the same.
+
+**Interpretation (Inference):** greedy V4 policy-head rollouts make the search build differently: many more runs die
+in act 2, while the runs that reach act 3 clear it more often. The clear difference is small and not separated; the
+floor loss is clear. Whether sampling from the prior instead of argmax, or V4 on fewer screens (for example without
+the map, where V4 gating lost in §91/§93/§100), would do better is an **Open question**; the per-screen effect was
+not measured.
+
+**Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (`LEAF_POLICY=prior` and the §487 result
+line).
