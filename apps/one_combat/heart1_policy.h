@@ -11,6 +11,9 @@
 #define STS_ONE_COMBAT_HEART1_POLICY_H
 
 #include <array>
+#include <cstdint>
+#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -115,6 +118,26 @@ const Net &net();
 // The run-driver hook: one real out-of-combat step by heart1 (greedy, the
 // temperature-0 eval policy). False leaves the step to the ordinary chain.
 bool policyStep(sts::GameContext &);
+
+// OOC MCTS hook (STS_OOC_MCTS_PRIOR=heart1).
+// priorLogits: heart1's logit for each given primitive (a primitive behind
+// several tokens keeps its best token). Reward-screen primitives silverbot's
+// choice space lacks map as in mapPriorLogits. nullopt when silverbot has no
+// encoding for the screen or a primitive has no mapping, so the caller keeps
+// V4 there. *tally counts "scored:SCREEN", "mapped:SCREEN:KIND" per mapped
+// primitive and "fallback:SCREEN:KIND" per fallback.
+std::optional<std::vector<double>> priorLogits(const sts::GameContext &,
+                                               const std::vector<sts::search::GameAction> &,
+                                               std::map<std::string, std::uint64_t> *tally = nullptr);
+// The mapping step of priorLogits, given the choice and its token logits:
+// skip one card reward -> silverbot's skip token (bowl token with Singing
+// Bowl); gold -> the node's best logit; a potion discard -> the node's lowest.
+std::optional<std::vector<double>> mapPriorLogits(const Choice &, const std::vector<float> &logits,
+                                                  bool singingBowl,
+                                                  const std::vector<sts::search::GameAction> &,
+                                                  std::map<std::string, std::uint64_t> *tally = nullptr);
+// Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
+void priorMappingSelfTest();
 
 // Diagnostics for the parity harness (tools/heart1/); neither uses a seed range.
 // heart1score <weights> <records.jsonl> <out.jsonl>: native logits for records.

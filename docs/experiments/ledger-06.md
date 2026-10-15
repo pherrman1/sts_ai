@@ -18906,3 +18906,34 @@ hash-bound evidence packets under `evidence/a20_teacher_comparison_20261014/`
 and `evidence/ooc_selective_silver_audit_20261014/` keep the original numbers. Reproducing §480–§485 on later main needs the frozen binaries or
 the `=0` flags for the later defaults (ADR-0035, ADR-0036, ADR-0038, ADR-0040); rerun run 3's analyzer at `68684054`, since main's
 `tools/seed_guard.sh` has since changed.
+
+## §486 OOC MCTS with heart1 vs V4 as the tree prior at A20 (2026-10-15)
+
+**Verdict:** primary (A20 floors) `NOT_SHOWN`, −0.09 [−3.64, +3.23]; key secondary (act-3 clears) `IMPROVED`,
+25 vs 10 of 64, +23.4 pp [+9.4, +37.5], McNemar p = 0.0026 (19 vs 4 discordant pairs). Per the pre-registered rule
+this is reported as such and the decision is Philipp's; no default change.
+[Pre-registration](evidence/heart1_ooc_ab_486_20261015/PREREG.md), [report](evidence/heart1_ooc_ab_486_20261015/report.json).
+
+Philipp asked for the comparison (09:12Z, 10:08Z) and chose A20 only, 64 seeds, 32 workers on the cost card
+(11:57Z). Both arms: §433 `combo` OOC MCTS with the automatic A20 CTM (ADR-0033), chain rollouts
+(`STS_OOC_MCTS_LEAF_POLICY=v4`), run-commit defaults (ADR-0030..0040). The `heart1` arm uses silverbot's released PPO
+policy (`heart1.bin` `1e92f2a6…`) as the tree prior (`STS_OOC_MCTS_PRIOR=heart1`), the `v4` arm the V4 prior. Run
+commit `3f8acc98`, code `d094e012`, binary `7fa2a7e9…`; seeds 107000000–107000063, one unit per seed and arm. The
+pre-launch review caught that at the first run commit (`ec19d1e`) the tree's skip-card-reward primitive had no heart1
+token, so every node with a card reward kept V4 (about 20% of sampled reward nodes at A0, nearly all at A20 in a
+probe); `d094e012` maps it (and gold and potion discards), and the act-1 coverage smoke and the run both show heart1
+scoring 100% of prior builds (6.82M, 0 fallbacks).
+
+All 128 units rc=0, no dropped seeds, all 32 worker tars verified from the lead container (`worker_tars.txt`).
+Reached act 3: 42 (heart1) vs 43 (v4); clears given act 3 reached 59.5% vs 23.3%; boss deaths 23 vs 38; deaths by
+act 1/2/3: 4/18/17 vs 2/19/33; end HP +12.8 per pair. Mean floor 42.27 vs 42.36: with the act-3 stop a clear and an
+act-3 boss death end on nearly the same floor, so floors barely register the clears. Cost: 4,310 vs 494 s per run
+(8.7x; MCTS CPU 4,170 vs 430 s), about 85 core-h in all; the heart1 forward pass dominates.
+
+**Interpretation (Inference):** heart1's prior changes what the search builds toward rather than how far early runs
+get: similar act-1/2 survival, many more act-3 boss kills. 64 seeds and one secondary endpoint; the clear effect is
+large but not yet replicated, and the floor endpoint chosen as primary was a poor fit for an act-3-stop run.
+A0 (107001000–127, reserved) was not run. Cost makes the heart1 prior impractical as is; a distilled fast prior is
+being investigated separately.
+
+**Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (heart1 prior result line).

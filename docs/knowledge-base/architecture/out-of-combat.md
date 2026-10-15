@@ -1780,14 +1780,16 @@ trajectories diverge. Default-off and other decision families are unchanged.
 
 ### heart1 policy adapter (opt-in)
 
-Last verified: 2026-10-15 for reward-potion swaps (ADR-0039); 2026-10-15 for the Neow curse fix (ADR-0038); 2026-10-14 for the native port and its parity harness.
+Last verified: 2026-10-15 for reward-potion swaps (ADR-0039), the Neow curse fix (ADR-0038), the OOC MCTS prior
+hook and the AVX forward pass; 2026-10-14 for the native port and its parity harness.
 
 `STS_OOC_HEART1=<weights.bin>` makes the real run driver (`runFullRunOOC`) take
 every out-of-combat decision it can encode with silverbot's released `heart1.pt`
 policy (daniel-ziegler/sts_lightspeed @84ab3ea, MIT). Combat stays on our
 default Silver. Unset, nothing is loaded and the run is unchanged; the flag
-enters the effective OOC policy identity with the weights' SHA-256. It is
-exclusive with live OOC MCTS.
+enters the effective OOC policy identity with the weights' SHA-256. With live
+OOC MCTS it is allowed only as the tree prior (below); then real decisions stay
+with the search and its chain.
 
 - Code: `apps/one_combat/heart1_policy.{h,cpp}`. It ports silverbot's
   `getNNRepresentation`, `construct_choice`, `take_free_rewards`, `collate_fn`,
@@ -1824,5 +1826,32 @@ exclusive with live OOC MCTS.
   - Keys are offered as in silverbot (Recall, emerald and sapphire rewards),
     so heart1 can collect them and enter Act 4 unless `STS_STOP_AFTER_ACT`
     stops the run.
-- Cost: about 50–75 ms per scored decision on one core (Release, no
-  `-march=native`), ~100 tokens per state.
+- Cost: about 30 ms per scored early-game state on one core (Release, no
+  `-march=native`), ~100 tokens per state. The projections run in an AVX
+  kernel chosen at runtime (`__builtin_cpu_supports("avx")`); it keeps the
+  reference loop's eight partial sums and reduction order with separate
+  multiply and add (no FMA), so logits are bit-identical to the scalar path
+  (`STS_OOC_HEART1_SCALAR=1` forces it). Map and path feature projections are
+  batched over rows with the same per-element addition order. About 2.1x faster
+  than the first port (`heart1score` on the adapter's 104 early records x10).
+- OOC MCTS tree prior (research, default off): `STS_OOC_MCTS_PRIOR=heart1` with
+  `STS_OOC_HEART1` set. At each node V4 would score (the unchanged
+  `sourcePriorCovered` rule), heart1's logit replaces V4's for every source
+  primitive (a primitive behind several tokens takes its best token; grouped
+  candidates keep the mean), then the usual softmax at
+  `STS_OOC_MCTS_TEMPERATURE`. Reward-screen primitives that silverbot's choice
+  space lacks are mapped (`heart1::mapPriorLogits`): skipping one card reward
+  (`CARD` idx2 5) takes silverbot's skip token (the bowl token with Singing
+  Bowl), gold takes the node's best logit (silverbot always takes gold), and a
+  potion discard on a full belt (rewards or shop) takes the node's lowest logit
+  (silverbot's engine offers no discard). Where heart1 has no encoding for the
+  screen or another source has no token (Match and Keep, Bonfire Spirits,
+  unmapped events), the node keeps V4; the support trace counts
+  `heart1_prior_nodes`, `heart1_prior_fallbacks` and `heart1_prior_reasons`
+  (`scored:`, `mapped:` and `fallback:` by screen and kind). Before this
+  mapping (run commit `ec19d1e`) every card-reward node kept V4. Rollouts are
+  unchanged. `STS_OOC_MCTS_PRIOR_TRACE`
+  refuses it. §486 (A20, 64 paired seeds, `combo`): floors NOT_SHOWN, act-3 clears
+  25 vs 10 (+23.4 pp [+9.4, +37.5]) at 8.7x CPU per run; no default change.
+  heart1 inside rollouts was not implemented: a timing smoke
+  (2026-10-15) put it at tens of core-hours per A0 run.

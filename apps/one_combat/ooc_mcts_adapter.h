@@ -26,6 +26,10 @@ struct OocContinuationMetrics {
     std::uint64_t singletonPolicyLogitCalls = 0, singletonPolicyInferenceCalls = 0;
     std::map<std::string, std::uint64_t> continuationReasons;
     std::uint64_t screenLeafEvaluations = 0, screenLeafFallbacks = 0;
+    // STS_OOC_MCTS_PRIOR=heart1: prior builds heart1 scored, and those that kept V4.
+    std::uint64_t heart1PriorNodes = 0, heart1PriorFallbacks = 0;
+    // "scored:SCREEN", "mapped:SCREEN:KIND" and "fallback:SCREEN:KIND" (heart1::priorLogits).
+    std::map<std::string, std::uint64_t> heart1PriorReasons;
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
@@ -52,6 +56,9 @@ struct OocAdapterOptions {
     // before downstream MAP expansion.
     bool stopAtMapCheckpoint = false;
     bool uniformPrior = false;
+    // Research option (default off, STS_OOC_MCTS_PRIOR=heart1, needs STS_OOC_HEART1):
+    // tree priors from heart1's logits where it scores every candidate source, V4 elsewhere.
+    bool heart1Prior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
@@ -114,6 +121,11 @@ struct OocMctsDependencies {
                          const std::vector<GameAction> &)> policyLogits;
     std::function<double(const GameContext &, const PathHistory &)> leafValue;
     std::function<void(GameContext &, PathHistory &, std::mt19937_64 &)> continuationStep;
+    // Optional heart1 seam (set when STS_OOC_HEART1 is loaded): nullopt where
+    // heart1 does not score every given primitive.
+    std::function<std::optional<std::vector<double>>(const GameContext &,
+                         const std::vector<GameAction> &,
+                         std::map<std::string, std::uint64_t> *)> heart1PolicyLogits;
     // Optional live public-belief counter prior. The simulator keeps its
     // existing copied-counter semantics when this callback is absent.
     std::function<void(GameContext &, std::mt19937_64 &)> sampleHiddenCounters;
@@ -257,6 +269,8 @@ int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
+// True when the live search takes its tree prior from heart1.
+bool liveOocMctsUsesHeart1();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);

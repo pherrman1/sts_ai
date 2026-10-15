@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <immintrin.h>
 #include <limits>
 #include <map>
 #include <mutex>
@@ -488,7 +489,7 @@ float dot(const float *a, const float *b, int n) {
 }
 
 // y[t] (+)= W x[t] + b for n tokens.
-void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumulate = false) {
+void linearScalar(const Net::Linear &l, const float *x, int n, float *y, bool accumulate) {
     for (int t = 0; t < n; ++t) {
         const float *xt = x + std::size_t(t) * l.in;
         float *yt = y + std::size_t(t) * l.out;
@@ -497,6 +498,62 @@ void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumula
             yt[o] = accumulate ? yt[o] + v : v;
         }
     }
+}
+
+// The same arithmetic as linearScalar, bit for bit: each output keeps dot()'s
+// eight partial sums (one AVX lane each, separate multiply and add, no FMA)
+// and its reduction order. Tiles of 3 tokens x 4 outputs reuse every load.
+__attribute__((target("avx"), always_inline)) inline float reduce8(__m256 v) {
+    // ((s0 + s1) + (s2 + s3)) + ((s4 + s5) + (s6 + s7)), as in dot().
+    const __m128 pairs = _mm_hadd_ps(_mm256_castps256_ps128(v), _mm256_extractf128_ps(v, 1));
+    const __m128 quads = _mm_hadd_ps(pairs, pairs);
+    return _mm_cvtss_f32(_mm_add_ss(quads, _mm_shuffle_ps(quads, quads, 1)));
+}
+
+__attribute__((target("avx"))) void linearAvx(const Net::Linear &l, const float *x, int n, float *y, bool accumulate) {
+    constexpr int TT = 3, OO = 4;
+    const int in = l.in;
+    const float *w = l.w.data();
+    const auto store = [&](int t, int o, float v) {
+        v += l.b.empty() ? 0.f : l.b[o];
+        float &out = y[std::size_t(t) * l.out + o];
+        out = accumulate ? out + v : v;
+    };
+    const auto single = [&](int t, int o) {
+        store(t, o, dot(w + std::size_t(o) * in, x + std::size_t(t) * in, in));
+    };
+    const int fullT = n / TT * TT, fullO = l.out / OO * OO;
+    for (int t = 0; t < fullT; t += TT) {
+        for (int o = 0; o < fullO; o += OO) {
+            __m256 acc[OO][TT];
+            for (auto &row : acc) for (auto &a : row) a = _mm256_setzero_ps();
+            for (int i = 0; i < in; i += 8) {
+                __m256 v[TT];
+                for (int q = 0; q < TT; ++q) v[q] = _mm256_loadu_ps(x + std::size_t(t + q) * in + i);
+                for (int p = 0; p < OO; ++p) {
+                    const __m256 r = _mm256_loadu_ps(w + std::size_t(o + p) * in + i);
+                    for (int q = 0; q < TT; ++q) acc[p][q] = _mm256_add_ps(acc[p][q], _mm256_mul_ps(r, v[q]));
+                }
+            }
+            for (int p = 0; p < OO; ++p)
+                for (int q = 0; q < TT; ++q) store(t + q, o + p, reduce8(acc[p][q]));
+        }
+        for (int o = fullO; o < l.out; ++o)
+            for (int q = 0; q < TT; ++q) single(t + q, o);
+    }
+    for (int t = fullT; t < n; ++t)
+        for (int o = 0; o < l.out; ++o) single(t, o);
+}
+
+// STS_OOC_HEART1_SCALAR=1 forces the reference loop (for the bit-equality check).
+bool useAvx() {
+    static const bool avx = __builtin_cpu_supports("avx") && !std::getenv("STS_OOC_HEART1_SCALAR");
+    return avx;
+}
+
+void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumulate = false) {
+    if (l.in % 8 == 0 && useAvx()) linearAvx(l, x, n, y, accumulate);
+    else linearScalar(l, x, n, y, accumulate);
 }
 
 void rmsNorm(const float *x, const std::vector<float> &w, float *y) {
@@ -523,6 +580,23 @@ void addFixedVec(const Net::FixedVec &f, const float *x, float *out) {
             s[std::size_t(k) * kDim + half + j] = std::cos(a);
         }
     linear(f.proj, s.data(), 1, out, /*accumulate=*/true);
+}
+
+// addFixedVec for n consecutive rows (x: n x features) in one projection call:
+// every row gets the same additions in the same order.
+void addFixedVecRows(const Net::FixedVec &f, const float *x, int n, float *out) {
+    if (n == 0) return;
+    const std::size_t width = std::size_t(f.features) * kDim;
+    std::vector<float> s(width * n);
+    const int half = kDim / 2;
+    for (int r = 0; r < n; ++r)
+        for (int k = 0; k < f.features; ++k)
+            for (int j = 0; j < half; ++j) {
+                const float a = x[std::size_t(r) * f.features + k] * f.invFreq[j];
+                s[r * width + std::size_t(k) * kDim + j] = std::sin(a);
+                s[r * width + std::size_t(k) * kDim + half + j] = std::cos(a);
+            }
+    linear(f.proj, s.data(), n, out, /*accumulate=*/true);
 }
 
 struct DagFeatures {
@@ -765,24 +839,36 @@ Output Net::forward(const Record &r) const {
         addEmbedding(screen_, r.screenState, row(t));
         position(obsPosition_, 3);
     }
-    for (int j = 0; j < nMap; ++j) {
-        float *out = row(t);
-        addEmbedding(mapRoom_, r.mapRooms[j], out);
-        addEmbedding(isCurrent_, r.mapXs[j] == r.mapX && r.mapYs[j] == r.mapY ? 1 : 0, out);
-        const float pos[2] = {float(r.mapXs[j]), float(r.mapYs[j])};
-        addFixedVec(pos_, pos, out);
-        const float px[3] = {float(r.mapPathXs[j][0]), float(r.mapPathXs[j][1]), float(r.mapPathXs[j][2])};
-        addFixedVec(pathXs_, px, out);
-        const float rel[2] = {float(r.mapXs[j] - r.mapX), float(r.mapYs[j] - r.mapY)};
-        addFixedVec(rel_, rel, out);
-        addEmbedding(reachable_, dag.reach[j] ? 1 : 0, out);
+    // Map tokens: the per-token additions of silverbot's order, one feature at a
+    // time over all map rows so each projection runs batched.
+    {
+        const int m0 = t;
+        std::vector<float> f2(std::size_t(nMap) * 2), f3(std::size_t(nMap) * 3);
+        for (int j = 0; j < nMap; ++j) {
+            float *out = row(m0 + j);
+            addEmbedding(mapRoom_, r.mapRooms[j], out);
+            addEmbedding(isCurrent_, r.mapXs[j] == r.mapX && r.mapYs[j] == r.mapY ? 1 : 0, out);
+        }
+        for (int j = 0; j < nMap; ++j) { f2[2 * j] = float(r.mapXs[j]); f2[2 * j + 1] = float(r.mapYs[j]); }
+        addFixedVecRows(pos_, f2.data(), nMap, row(m0));
+        for (int j = 0; j < nMap; ++j)
+            for (int k = 0; k < 3; ++k) f3[3 * j + k] = float(r.mapPathXs[j][k]);
+        addFixedVecRows(pathXs_, f3.data(), nMap, row(m0));
+        for (int j = 0; j < nMap; ++j) { f2[2 * j] = float(r.mapXs[j] - r.mapX); f2[2 * j + 1] = float(r.mapYs[j] - r.mapY); }
+        addFixedVecRows(rel_, f2.data(), nMap, row(m0));
+        for (int j = 0; j < nMap; ++j) addEmbedding(reachable_, dag.reach[j] ? 1 : 0, row(m0 + j));
         // collate_fn divides in Python floats, then stores float32.
-        const float agg[3] = {float(double(dag.minE[j]) / kMapAggCap), float(double(dag.maxE[j]) / kMapAggCap),
-                              float(double(dag.dR[j]) / kMapAggCap)};
-        addFixedVec(agg_, agg, out);
-        const bool burning = r.burningEliteX >= 0 && r.mapXs[j] == r.burningEliteX && r.mapYs[j] == r.burningEliteY;
-        addEmbedding(burning_, burning ? 1 : 0, out);
-        position(obsPosition_, 4);
+        for (int j = 0; j < nMap; ++j) {
+            f3[3 * j] = float(double(dag.minE[j]) / kMapAggCap);
+            f3[3 * j + 1] = float(double(dag.maxE[j]) / kMapAggCap);
+            f3[3 * j + 2] = float(double(dag.dR[j]) / kMapAggCap);
+        }
+        addFixedVecRows(agg_, f3.data(), nMap, row(m0));
+        for (int j = 0; j < nMap; ++j) {
+            const bool burning = r.burningEliteX >= 0 && r.mapXs[j] == r.burningEliteX && r.mapYs[j] == r.burningEliteY;
+            addEmbedding(burning_, burning ? 1 : 0, row(m0 + j));
+            position(obsPosition_, 4);
+        }
     }
     for (std::size_t i = 0; i < r.offeredCards.size(); ++i) {
         addEmbedding(card_, r.offeredCards[i], row(t));
@@ -802,17 +888,20 @@ Output Net::forward(const Record &r) const {
         addEmbedding(info_, f.info, out);
         position(choicePosition_, 3);
     }
-    for (std::size_t i = 0; i < r.paths.size(); ++i) {
-        float *out = row(t);
-        const float px = float(r.paths[i]);
-        addFixedVec(pathX_, &px, out);
-        addEmbedding(pathRoom_, dag.destRooms[i], out);
+    {
+        const int p0 = t, nPath = int(r.paths.size());
+        std::vector<float> px(nPath), cone(std::size_t(nPath) * 3);
+        for (int i = 0; i < nPath; ++i) px[i] = float(r.paths[i]);
+        addFixedVecRows(pathX_, px.data(), nPath, row(p0));
+        for (int i = 0; i < nPath; ++i) addEmbedding(pathRoom_, dag.destRooms[i], row(p0 + i));
         // collate_fn divides the float32 tensor by MAP_AGG_CAP.
-        const float cone[3] = {float(dag.optCone[i][0]) / float(kMapAggCap), float(dag.optCone[i][1]) / float(kMapAggCap),
-                               float(dag.optCone[i][2]) / float(kMapAggCap)};
-        addFixedVec(cone_, cone, out);
-        addEmbedding(reachesBurn_, dag.optBurn[i], out);
-        position(choicePosition_, 4);
+        for (int i = 0; i < nPath; ++i)
+            for (int k = 0; k < 3; ++k) cone[3 * i + k] = float(dag.optCone[i][k]) / float(kMapAggCap);
+        addFixedVecRows(cone_, cone.data(), nPath, row(p0));
+        for (int i = 0; i < nPath; ++i) {
+            addEmbedding(reachesBurn_, dag.optBurn[i], row(p0 + i));
+            position(choicePosition_, 4);
+        }
     }
 
     // Padding tokens are key-masked in silverbot, so attending over the valid
@@ -920,6 +1009,107 @@ bool policyStep(GameContext &gc) {
     }
     choice.actions[chosen].execute(gc);
     return true;
+}
+
+std::optional<std::vector<double>> mapPriorLogits(const Choice &choice, const std::vector<float> &logits,
+                                                  bool singingBowl, const std::vector<GA> &actions,
+                                                  std::map<std::string, std::uint64_t> *tally) {
+    if (logits.size() != choice.actions.size()) throw std::runtime_error("heart1: logit count mismatch");
+    // A primitive behind several tokens keeps its best token.
+    std::map<std::uint32_t, double> byBits;
+    for (std::size_t i = 0; i < choice.actions.size(); ++i) {
+        const auto [it, inserted] = byBits.emplace(choice.actions[i].bits, logits[i]);
+        if (!inserted) it->second = std::max(it->second, double(logits[i]));
+    }
+    // Fixed tokens follow the card, relic and potion tokens.
+    const Record &r = choice.record;
+    const std::size_t fixedStart = r.offeredCards.size() + r.offeredRelics.size() + r.offeredPotions.size();
+    const auto fixedLogit = [&](int fa) -> std::optional<double> {
+        for (std::size_t k = 0; k < r.fixedActions.size(); ++k)
+            if (r.fixedActions[k].action == fa) return double(logits.at(fixedStart + k));
+        return std::nullopt;
+    };
+    const bool rewards = r.screenState == static_cast<int>(ScreenState::REWARDS);
+    const bool shop = r.screenState == static_cast<int>(ScreenState::SHOP_ROOM);
+    double lo = std::numeric_limits<double>::infinity(), hi = -lo;
+    for (const float l : logits) { lo = std::min(lo, double(l)); hi = std::max(hi, double(l)); }
+    const std::string where = rewards ? "REWARDS" : shop ? "SHOP" : "screen" + std::to_string(r.screenState);
+    std::map<std::string, std::uint64_t> mapped;
+    const auto fail = [&](const char *kind) -> std::optional<std::vector<double>> {
+        if (tally) ++(*tally)["fallback:" + where + ":" + kind];
+        return std::nullopt;
+    };
+    std::vector<double> out;
+    out.reserve(actions.size());
+    for (const auto action : actions) {
+        if (const auto it = byBits.find(action.bits); it != byBits.end()) { out.push_back(it->second); continue; }
+        // Tree primitives silverbot's choice space lacks:
+        // - skip one card reward (CARD idx2 5 without Singing Bowl): silverbot declines a card by skipping;
+        //   with Singing Bowl, silverbot offers the bowl token on the last card reward only.
+        // - gold: silverbot always takes it for free (take_free_rewards), so heart1's best logit.
+        // - discard a held potion for a reward or shop potion: silverbot's engine offers no discard, so
+        //   heart1's lowest logit at the node.
+        if (rewards && action.getRewardsActionType() == GA::RewardsActionType::CARD && action.getIdx2() == 5) {
+            const auto l = fixedLogit(singingBowl ? FA_SINGING_BOWL : FA_SKIP);
+            if (!l) return fail(singingBowl ? "bowl_no_token" : "skip_card_no_token");
+            out.push_back(*l);
+            ++mapped[singingBowl ? "bowl" : "skip_card"];
+        } else if (rewards && action.getRewardsActionType() == GA::RewardsActionType::GOLD) {
+            out.push_back(hi);
+            ++mapped["gold"];
+        } else if ((rewards || shop) && action.isPotionDiscard()) {
+            out.push_back(lo);
+            ++mapped["discard_potion"];
+        } else {
+            return fail(action.isPotionDiscard() ? "discard_potion" : "no_token");
+        }
+    }
+    if (tally) {
+        ++(*tally)["scored:" + where];
+        for (const auto &[kind, n] : mapped) (*tally)["mapped:" + where + ":" + kind] += n;
+    }
+    return out;
+}
+
+void priorMappingSelfTest() {
+    const auto require = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("heart1 prior mapping selftest: ") + what);
+    };
+    Choice c;
+    c.record.screenState = static_cast<int>(ScreenState::REWARDS);
+    c.record.offeredCards = {1, 2};
+    c.record.offeredUpgrades = {0, 0};
+    FixedChoice skip;
+    skip.action = FA_SKIP;
+    c.record.fixedActions = {skip};
+    c.actions = {GA(RT::CARD, 0, 0), GA(RT::CARD, 0, 1), GA(RT::SKIP)};
+    const std::vector<float> logits{0.5f, 2.0f, -1.0f};
+    std::map<std::string, std::uint64_t> tally;
+    const auto got = mapPriorLogits(c, logits, false,
+        {GA(RT::CARD, 0, 0), GA(RT::CARD, 0, 1), GA(RT::CARD, 0, 5), GA(RT::GOLD, 0), GA(0xc0000001u), GA(RT::SKIP)},
+        &tally);
+    require(got && *got == std::vector<double>{0.5, 2.0, -1.0, 2.0, -1.0, -1.0},
+            "skip card -> skip token, gold -> best, discard -> lowest");
+    require(tally["scored:REWARDS"] == 1 && tally["mapped:REWARDS:skip_card"] == 1
+            && tally["mapped:REWARDS:gold"] == 1 && tally["mapped:REWARDS:discard_potion"] == 1, "tally of mappings");
+    require(!mapPriorLogits(c, logits, true, {GA(RT::CARD, 0, 5)}, &tally)
+            && tally["fallback:REWARDS:bowl_no_token"] == 1, "bowl without a bowl token falls back");
+    require(!mapPriorLogits(c, logits, false, {GA(RT::RELIC, 0)}, &tally)
+            && tally["fallback:REWARDS:no_token"] == 1, "unmapped primitive falls back");
+    c.record.screenState = static_cast<int>(ScreenState::MAP_SCREEN);
+    require(!mapPriorLogits(c, logits, false, {GA(RT::CARD, 0, 5)}, &tally), "skip-card mapping is REWARDS only");
+}
+
+std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions,
+                                               std::map<std::string, std::uint64_t> *tally) {
+    Choice choice;
+    if (!enabled() || gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE
+            || !buildChoice(gc, choice) || choice.record.choiceCount() == 0) {
+        if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
+        return std::nullopt;
+    }
+    return mapPriorLogits(choice, net().forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
+                          actions, tally);
 }
 
 namespace {
