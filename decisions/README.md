@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0040](0040-silver-rollout-card-table-default.md) makes Silver's greedy leaf rollout play cards by the
+  gen-6-fitted table by default (§479 NOT_SHOWN, 0.89x CPU per fight; `STS_SILVER_ROLLOUT_CARD_TABLE=0` restores
+  the hand-written priority list).
 - [ADR-0039](0039-potion-reward-swap.md) lets the out-of-combat policy discard its worst potion for a better
   reward potion when slots are full (`STS_POTION_REWARD_SWAP=0` restores the free-slot-only pickup).
 - [ADR-0038](0038-neow-transform-curse-fix.md) makes Neow "transform two cards" add a curse only

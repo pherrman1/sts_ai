@@ -5345,10 +5345,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             if (!prev.empty()) arms.push_back({"mlpprev" + tag, b, true, true, replicates, 8, prev});
         }
         if (armSet == "rollout479") {
-            // §479: the source run and control must play production rollouts.
+            // §479: the source run and control must play the pre-ADR-0040 greedy rollouts.
             const auto &envRollout = search::SilverSearcher::envRolloutConfig();
             if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != nullptr)
-                throw std::runtime_error("ctm vs silver: rollout479 requires the STS_SILVER_ROLLOUT_* options unset");
+                throw std::runtime_error("ctm vs silver: rollout479 requires STS_SILVER_ROLLOUT_CARD_TABLE=0 and the "
+                                         "other STS_SILVER_ROLLOUT_* options unset");
             const std::string table = env("STS_CTMSILVER_CARD_TABLE");
             if (table.empty()) throw std::runtime_error("ctm vs silver: rollout479 requires STS_CTMSILVER_CARD_TABLE");
             const int *tablePtr = search::SilverRolloutAgent::loadPlayTable(table);
