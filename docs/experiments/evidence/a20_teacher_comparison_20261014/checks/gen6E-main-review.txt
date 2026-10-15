@@ -1,0 +1,22 @@
+Independent implementation review: PASS — gen6 E compatibility through merged main
+Reviewer: recent_ooc_evidence; 2026-10-14. Read-only independent review; no production edits, builds, tests, or game seeds by this reviewer.
+
+Dependency reviewed: PR541 pinned 0f1b70f278fbc188d9ab96688d67004855d88db8.
+Merged main: 531db3e33d5c38674b123932f0d701b066ef21a7.
+Current integration: a5a50b63cb949e3e48289d49e5b4f67e4f3638f1.
+Scope: five-file runtime/header/test/error-message/KB compatibility delta, cross-checked against pinned arch.py and export_native.py. Source/header/error-message files match the pinned dependency exactly (git diff returned no differences). git diff --check passed.
+
+No remaining actionable findings. The exported E model requires combat_policy_mlp_v2 with enc, mon_id and mon_dmg projection tables. The loader accepts the v2 header and checks table names, 128-row dimensions, duplicates and complete values. Tables under v1 reject instead of being silently ignored. Model reload clears all table vectors. Valid legacy v1 files keep the previous arithmetic path with empty embedding vectors.
+
+Inference matches export/training semantics: encounter row from raw encounter feature; per occupied slot monster id+1 and incoming-damage row; indices clipped to 0..127; INVALID id0 and dead/empty -1 slots skipped; embedding projection contributions added once per node before action-specific evaluation. Canonical category/damage features are integer-valued, so the native and Python rounding conventions agree on supported input. mon_dmg is incoming damage, not an intent category. Existing isPolicyMlp routing uses softmax and the same root/tree prior hooks. The hand-computed test covers added contributions and empty-slot poison values, plus v1-with-tables rejection.
+
+Pilot compatibility: plain/prior at 2k and 10k, K=8, weight400, root bonus on, and prior off for source/control remain valid. Selecting exact gen6 E changes the prior artifact and required loader support only; it does not require another environment flag or alter the fixed sampling design. New-model CPU and gameplay benefit remain empirical questions, not established by this review.
+
+Exact selected artifact: docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt at pinned0f1b70f; expected SHA256 ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228. This review did not independently execute the actual model. Parent Release/build checks and architecture-agent seed-free actual-model parity are pending proving checks before a clean commit/freeze and canary. No scientific quality or canary verdict is made.
+
+Reviewed file SHA256 values:
+ce42b107f54b355c6b367897737a0eaeab63dfba9e593b6b492d40f1c5b24a58  include/sim/search/CombatValueNet.h
+41b1a4314465730896e0f473071aa1a207ac9390126437114c6e724d5a0d75b4  src/sim/search/CombatValueNet.cpp
+5322cf4a49a5ee3f0ddc03989941eaea71fb449ce3dc245a0c3471ab2dba569c  apps/test.cpp
+4cbf08c5b9b1d6fd7745387852adfeecadeb08b9f3959281de52f6e7ce8cc5f6  apps/one_combat/silver_synth_replay.cpp
+243c7f761e6da7ea80bee371d1c7b9bd0619cbe6db3d9876b594123729759513  docs/knowledge-base/architecture/combat-search.md

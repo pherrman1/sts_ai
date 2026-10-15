@@ -205,6 +205,7 @@ void runFloorProfileSelfTest() {
 
 thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
+thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
 
@@ -455,6 +456,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     while (gc.outcome == GameOutcome::UNDECIDED) {
         floorProfile.advance(gc, mctsMetrics);
         path.update(gc);
+        if (t_realRunContextObserver) t_realRunContextObserver(gc, path);
         if (gc.screenState == ScreenState::BATTLE) {
             const Room battleRoom = gc.curRoom;
             const int battleAct = gc.act;

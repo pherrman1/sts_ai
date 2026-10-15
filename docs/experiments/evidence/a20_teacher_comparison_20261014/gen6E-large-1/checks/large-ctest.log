@@ -1,0 +1,107 @@
+Test project /home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache
+    Start  97: teacher_schema_compat
+1/8 Test  #97: teacher_schema_compat ............   Passed    0.23 sec
+    Start  98: a20_teacher_runner
+2/8 Test  #98: a20_teacher_runner ...............   Passed    0.07 sec
+    Start  99: a20_teacher_analysis
+3/8 Test  #99: a20_teacher_analysis .............   Passed    0.28 sec
+    Start 100: a20_teacher_large_analysis
+4/8 Test #100: a20_teacher_large_analysis .......   Passed    0.85 sec
+    Start 200: ctm_research_candidate_loader
+5/8 Test #200: ctm_research_candidate_loader ....***Failed    0.08 sec
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_research_candidate.py", line 358, in <module>
+    main()
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_research_candidate.py", line 146, in main
+    expect('production_pair_without_manifest', probe(['--pair-identity', FAST, STANDARD, 1]), identity='production')
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_research_candidate.py", line 75, in probe
+    return subprocess.run([sys.argv[1], *map(str, args)], text=True, capture_output=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache/combat_transition_runtime_probe'
+
+    Start 201: ctm_escape_runtime
+6/8 Test #201: ctm_escape_runtime ...............***Failed    1.15 sec
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_escape_runtime.py", line 168, in <module>
+    main()
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_escape_runtime.py", line 84, in main
+    ('capability_listed', probe(['--identity', escape_path], env), 0, f'identity={CANDIDATE}'),
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_escape_runtime.py", line 28, in probe
+    result = subprocess.run([sys.argv[1], *map(str, args)], text=True, capture_output=True,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache/combat_transition_runtime_probe'
+
+    Start 203: ctm_candidate_tool
+7/8 Test #203: ctm_candidate_tool ...............***Failed    0.14 sec
+production_fast_refused PASS
+standard_stamped_twice PASS
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_candidate.py", line 94, in <module>
+    main()
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_candidate.py", line 63, in main
+    expect('interim_standard_only', probe(['--identity', std1], interim['env']), CANDIDATE)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_candidate.py", line 20, in probe
+    return subprocess.run([sys.argv[1], *map(str, args)], text=True, capture_output=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache/combat_transition_runtime_probe'
+
+    Start 204: ctm_lizard_runtime
+8/8 Test #204: ctm_lizard_runtime ...............***Failed    0.19 sec
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_lizard_runtime.py", line 214, in <module>
+    main()
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_lizard_runtime.py", line 138, in main
+    ('unlisted', probe(['--pair-identity', capable_path, standard_path, 1],
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tests/check_ctm_lizard_runtime.py", line 29, in probe
+    return subprocess.run([sys.argv[1], *map(str, args)], text=True, capture_output=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache/combat_transition_runtime_probe'
+
+
+50% tests passed, 4 tests failed out of 8
+
+Label Time Summary:
+core              =   1.43 sec*proc (4 tests)
+integration       =   1.56 sec*proc (4 tests)
+research-repro    =   1.43 sec*proc (4 tests)
+
+Total Test time (real) =   2.99 sec
+
+The following tests FAILED:
+	200 - ctm_research_candidate_loader (Failed)            integration
+	201 - ctm_escape_runtime (Failed)                       integration
+	203 - ctm_candidate_tool (Failed)                       integration
+	204 - ctm_lizard_runtime (Failed)                       integration
+Errors while running CTest

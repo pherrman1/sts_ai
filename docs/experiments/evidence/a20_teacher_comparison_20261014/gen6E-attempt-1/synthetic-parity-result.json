@@ -1,0 +1,345 @@
+{
+  "verdict": "PASS",
+  "argv": [
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/one_combat",
+    "silverpolicymlpcheck",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-validation/frozen-binary/synthetic",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-validation/frozen-binary/native-logits.txt"
+  ],
+  "binarySha256": "f065c3be3f6d9e73cebf03beb117e27ef8afb76d5590b244d0e1589d577be4c7",
+  "binarySha256After": "f065c3be3f6d9e73cebf03beb117e27ef8afb76d5590b244d0e1589d577be4c7",
+  "modelSha256": "ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228",
+  "manifestSha256": "f53af18ed1e8f7e5defc9ced1df342b8f160bc2b3194e02b8cca008f596e21fc",
+  "helperSha256": "0a82e5de1f92e72e08bb35b0dec76272cf884810e26e91c857622827e3ff458f",
+  "roots": 8,
+  "edges": 40,
+  "atol": 0.0001,
+  "rtol": 1e-05,
+  "maxAbsError": 1.1600693667901396e-06,
+  "maxRelativeError": 1.4055533072532904e-06,
+  "maxToleranceFraction": 0.008284572482685909,
+  "noGameplay": true,
+  "rows": [
+    {
+      "case": "ordinary_and_empty_slot",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -4.10807085,
+      "numpy": -4.108070466843813,
+      "absError": 3.8315618677842167e-07
+    },
+    {
+      "case": "ordinary_and_empty_slot",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": -1.53025162,
+      "numpy": -1.5302515778770722,
+      "absError": 4.212292781247129e-08
+    },
+    {
+      "case": "ordinary_and_empty_slot",
+      "action": "card_target_one",
+      "target": 1,
+      "native": 0.42310369,
+      "numpy": 0.42310405295934816,
+      "absError": 3.629593481879745e-07
+    },
+    {
+      "case": "ordinary_and_empty_slot",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -1.41972315,
+      "numpy": -1.4197232131437663,
+      "absError": 6.314376621574525e-08
+    },
+    {
+      "case": "ordinary_and_empty_slot",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -0.0887612849,
+      "numpy": -0.08876124679991872,
+      "absError": 3.810008128435349e-08
+    },
+    {
+      "case": "encounter_lower_clip",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -3.63982916,
+      "numpy": -3.639829701389118,
+      "absError": 5.413891179806285e-07
+    },
+    {
+      "case": "encounter_lower_clip",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": 0.640808225,
+      "numpy": 0.6408083210745034,
+      "absError": 9.607450335291645e-08
+    },
+    {
+      "case": "encounter_lower_clip",
+      "action": "card_target_one",
+      "target": 1,
+      "native": 0.259023517,
+      "numpy": 0.25902344211300543,
+      "absError": 7.488699454993863e-08
+    },
+    {
+      "case": "encounter_lower_clip",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -0.213337004,
+      "numpy": -0.2133369956625299,
+      "absError": 8.337470103203515e-09
+    },
+    {
+      "case": "encounter_lower_clip",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -0.0372644365,
+      "numpy": -0.03726448887722558,
+      "absError": 5.2377225584487874e-08
+    },
+    {
+      "case": "encounter_upper_clip",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -4.04613352,
+      "numpy": -4.046133564347332,
+      "absError": 4.4347332028848996e-08
+    },
+    {
+      "case": "encounter_upper_clip",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": 0.435351372,
+      "numpy": 0.4353512980023122,
+      "absError": 7.399768781057858e-08
+    },
+    {
+      "case": "encounter_upper_clip",
+      "action": "card_target_one",
+      "target": 1,
+      "native": 0.886709273,
+      "numpy": 0.886709341493144,
+      "absError": 6.849314393431172e-08
+    },
+    {
+      "case": "encounter_upper_clip",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": 0.409613907,
+      "numpy": 0.4096140346493767,
+      "absError": 1.2764937667997245e-07
+    },
+    {
+      "case": "encounter_upper_clip",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": 0.127475381,
+      "numpy": 0.12747539501121757,
+      "absError": 1.4011217575049528e-08
+    },
+    {
+      "case": "id_zero_skips_embeddings",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -4.17181873,
+      "numpy": -4.171818941354223,
+      "absError": 2.113542230119947e-07
+    },
+    {
+      "case": "id_zero_skips_embeddings",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": 0.633580565,
+      "numpy": 0.633580796311129,
+      "absError": 2.3131112891761063e-07
+    },
+    {
+      "case": "id_zero_skips_embeddings",
+      "action": "card_target_one",
+      "target": 1,
+      "native": -0.626181602,
+      "numpy": -0.6261816633088702,
+      "absError": 6.130887020283637e-08
+    },
+    {
+      "case": "id_zero_skips_embeddings",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -0.760168612,
+      "numpy": -0.760168615276471,
+      "absError": 3.276470983415436e-09
+    },
+    {
+      "case": "id_zero_skips_embeddings",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -0.561108351,
+      "numpy": -0.5611083650162237,
+      "absError": 1.4016223737201017e-08
+    },
+    {
+      "case": "two_occupied_damage_clip",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -3.6665287,
+      "numpy": -3.666528388713905,
+      "absError": 3.112860951226537e-07
+    },
+    {
+      "case": "two_occupied_damage_clip",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": -4.00276566,
+      "numpy": -4.0027668200693665,
+      "absError": 1.1600693667901396e-06
+    },
+    {
+      "case": "two_occupied_damage_clip",
+      "action": "card_target_one",
+      "target": 1,
+      "native": 3.6853714,
+      "numpy": 3.6853711388489767,
+      "absError": 2.611510234729053e-07
+    },
+    {
+      "case": "two_occupied_damage_clip",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -2.87225819,
+      "numpy": -2.8722585035939,
+      "absError": 3.1359389973673046e-07
+    },
+    {
+      "case": "two_occupied_damage_clip",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -1.47783303,
+      "numpy": -1.4778331458540968,
+      "absError": 1.1585409676051484e-07
+    },
+    {
+      "case": "negative_damage_clip",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -1.9274261,
+      "numpy": -1.9274259237284852,
+      "absError": 1.7627151471799607e-07
+    },
+    {
+      "case": "negative_damage_clip",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": -0.128778562,
+      "numpy": -0.1287786760613996,
+      "absError": 1.1406139957537142e-07
+    },
+    {
+      "case": "negative_damage_clip",
+      "action": "card_target_one",
+      "target": 1,
+      "native": 0.24730514,
+      "numpy": 0.24730517890432674,
+      "absError": 3.8904326732369654e-08
+    },
+    {
+      "case": "negative_damage_clip",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -0.2169341,
+      "numpy": -0.21693409457573087,
+      "absError": 5.4242691172046165e-09
+    },
+    {
+      "case": "negative_damage_clip",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -0.0443045273,
+      "numpy": -0.04430458153273639,
+      "absError": 5.423273639199033e-08
+    },
+    {
+      "case": "monster_id_upper_clip",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -4.8065877,
+      "numpy": -4.8065877263918635,
+      "absError": 2.6391863805486082e-08
+    },
+    {
+      "case": "monster_id_upper_clip",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": 1.19553256,
+      "numpy": 1.1955326165703333,
+      "absError": 5.6570333306638076e-08
+    },
+    {
+      "case": "monster_id_upper_clip",
+      "action": "card_target_one",
+      "target": 1,
+      "native": -0.397348464,
+      "numpy": -0.39734844609780495,
+      "absError": 1.7902195059704695e-08
+    },
+    {
+      "case": "monster_id_upper_clip",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -0.909532607,
+      "numpy": -0.9095324660705071,
+      "absError": 1.4092949296440338e-07
+    },
+    {
+      "case": "monster_id_upper_clip",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -0.900974691,
+      "numpy": -0.9009745932089064,
+      "absError": 9.779109366725436e-08
+    },
+    {
+      "case": "all_empty_skip_embeddings",
+      "action": "end_turn_no_card",
+      "target": -1,
+      "native": -4.84604597,
+      "numpy": -4.846045877461635,
+      "absError": 9.253836452671749e-08
+    },
+    {
+      "case": "all_empty_skip_embeddings",
+      "action": "card_target_zero",
+      "target": 0,
+      "native": 1.17755973,
+      "numpy": 1.1775593481222346,
+      "absError": 3.81877765409655e-07
+    },
+    {
+      "case": "all_empty_skip_embeddings",
+      "action": "card_target_one",
+      "target": 1,
+      "native": -0.97159946,
+      "numpy": -0.9715996211262263,
+      "absError": 1.6112622636121898e-07
+    },
+    {
+      "case": "all_empty_skip_embeddings",
+      "action": "highest_card_no_target",
+      "target": -1,
+      "native": -1.11444986,
+      "numpy": -1.1144499857977248,
+      "absError": 1.2579772490362018e-07
+    },
+    {
+      "case": "all_empty_skip_embeddings",
+      "action": "invalid_card_fallback",
+      "target": -1,
+      "native": -0.926248848,
+      "numpy": -0.926248862773402,
+      "absError": 1.4773402057244311e-08
+    }
+  ]
+}

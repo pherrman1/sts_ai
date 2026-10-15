@@ -1,0 +1,26 @@
+Independent implementation and bounded-protocol review: PASS (prepared implementation only)
+Reviewer: recent_ooc_evidence; 2026-10-14. No production code or tests authored by this reviewer for this change.
+
+Scope: current combat_datasets.cpp diff; A20-only escape adaptation; initialized-RNG redraw; exact source/control RAW equality; source/prior/budget isolation; six-slot selection; runner artifact pins, attempts, bounds and canary gate; protocol/analysis-contract and analyzer identity/interface agreement. The analyzer's complete statistical implementation has a separate independent review by ooc_architecture; this note does not replace it.
+
+Findings: no remaining actionable findings. Earlier blocking initialized-RNG coupling and insufficient RAW replay comparison were corrected before collection. The new redraw is restricted to teacher_a20 and tests actual initialized streams. Legacy A0 modes retain their historical behavior.
+
+Final escape change: accepts only the legacy rejection reason 'escape', a surviving terminal victory, exactly one valid positive-HP RAW capture with smokeBombUsed, and valid max HP. Health/hook/unknown-encounter rejections precede escape in combatEvalTerminal and cannot be overridden. The helper is called only by A20 source RAW collection and A20 arm evaluation. Real RAW-boundary synthetic coverage includes combat-end healing; terminal HP need not equal RAW HP. Escapes remain explicit ESCAPE samples.
+
+Final prior pin: prepare requires generation 5 or 6, an explicit source location and expected SHA256, verifies actual bytes before output creation/build, copies to a generation-specific path, and freezes generation/source/hash plus K=8, weight=400 and root bonus. No gen3 fallback. The analyzer checks the same frozen identity against both loaded prior paths. Completion/export eligibility remains an artifact-custody precondition, not something filename/label alone can prove.
+
+Protocol assessment: suitable for the authorized small descriptive pilot. Four fixed sources, up to six chronological slots/source, four shared redrawn futures per Silver arm, plain/prior at 2k/10k, independent original-future plain10k reference, 32 CTM samples. Equal-source summaries, explicit absent/unsupported slots, separate forecast/controller/cost questions, no winner/training/default/qualification claim. Exclusive phase/source latches, no retries or replacements, canary gating and 180 CPU/240 wall seconds per source remain intact.
+
+Checks independently performed: git diff --check, exit 0; focused source/test/protocol reads. Coordinator evidence inspected: build-debug-final.log and build-release-final.log both reach Built target one_combat; tests-debug-final.log and tests-release-final.log each report 6/6 passed; analysis-tests.log reports 19 tests OK; runner-tests.log reports 6 tests OK. These are synthetic/seed-free checks. The reviewer did not run builds, tests, game seeds, canary, cohort or training.
+
+Remaining prerequisite: recover a completed exported gen5/gen6 general MLP with verifiable source/hash, commit the reviewed source, and prepare a clean Release freeze before the first scientific attempt. Actual prior loading and real canary behavior remain unverified. This PASS is not a scientific comparison result or permission to bypass those prerequisites.
+
+Reviewed base HEAD: 06589b30f05d89fac1b5a5f30c97be02a912916b
+Reviewed file SHA256 values:
+93209cc086055665652b9006d366cd6932fdd0d00bbf5c83110fa45da9c6247e  apps/one_combat/combat_datasets.cpp
+ae8427ea85b81ffb057739ffc2f42f5f0282f8d2b011cf705710b0abcd6e4ce2  docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py
+59a7c622f674c5b71fb638bc689083d0877c79f43192307fd940c66954e8ff64  docs/experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL.md
+a62b58b82a7fc810b5692e6fa9c9473df425ff7560f6b79e85d0ecca4eba2034  docs/experiments/evidence/a20_teacher_comparison_20261014/ANALYSIS-CONTRACT.md
+190c0eee53493642d6a4492ca875b2f4c1bb14d9115c5baad352faa9248b8f10  tools/analyze_a20_teachers.py
+ba944cdc03a3fb356a1f4994df68a534dddb6ff654196342fe7900b59cb76482  tests/test_a20_teacher_runner.py
+a5b8660dbda2c6ff1c5977f640f5b9a179a62cc967420d73b3408a0e9365d7d4  tests/test_analyze_a20_teachers.py
