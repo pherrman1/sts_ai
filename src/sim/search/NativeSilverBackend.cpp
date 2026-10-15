@@ -541,6 +541,8 @@ namespace sts::search {
                     searcher->nodePrior = nativeSilverPolicyPrior;
                     searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
                 }
+                searcher->rolloutConfig = g_nativeSilverRolloutOverride
+                    ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -553,6 +555,8 @@ namespace sts::search {
                 // contracts search every root.
                 const bool skipSearch = skipSingletons && searcher->prepareRootActions() == 1;
                 const auto stepsBefore = searcher->stats.steps;
+                const auto playoutsBefore = searcher->stats.rolloutPlayouts;
+                const auto rolloutActionsBefore = searcher->stats.rolloutActions;
                 try {
                     if (skipSearch) {
                         ++g_singletonSkips;
@@ -633,6 +637,8 @@ namespace sts::search {
                     stats.searchSteps += steps;
                     stats.minRootSteps = stats.minRootSteps < 0 ? steps : std::min(stats.minRootSteps, steps);
                     stats.maxRootSteps = std::max(stats.maxRootSteps, steps);
+                    stats.rolloutPlayouts += searcher->stats.rolloutPlayouts - playoutsBefore;
+                    stats.rolloutActions += searcher->stats.rolloutActions - rolloutActionsBefore;
                 }
                 agent.simulationCountTotal += simulations;
                 searching.resume();
@@ -1041,6 +1047,7 @@ namespace sts::search {
     }
 
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
+    thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;

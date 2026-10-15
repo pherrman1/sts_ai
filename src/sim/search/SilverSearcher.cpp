@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
+#include <random>
 #include <limits>
 #include <stdexcept>
 #include <unordered_set>
@@ -673,8 +675,21 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
     return &chance.edges.back();
 }
 
+const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutConfig() {
+    static const RolloutConfig config = [] {
+        RolloutConfig c;
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_UNIFORM"); raw && *raw)
+            c.uniform = std::clamp(std::atoi(raw), 0, 64);
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUTS_PER_LEAF"); raw && *raw)
+            c.perLeaf = std::clamp(std::atoi(raw), 1, 64);
+        if (const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE"); path && *path)
+            c.cardTable = SilverRolloutAgent::loadPlayTable(path);
+        return c;
+    }();
+    return config;
+}
+
 double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
-    int rolloutDepth = 0;
     int leafSample = -1;
     if (leafSamples && bc.outcome == Outcome::UNDECIDED && leafSamples->stride > 0
             && ++leafSamples->counter % leafSamples->stride == 0
@@ -686,9 +701,33 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         ++profile->rolloutCalls;
         if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
     }
+    rolloutAgent.playTable = rolloutConfig.cardTable;
+    const int uniform = rolloutConfig.uniform;
+    const int playouts = uniform > 0 ? uniform : rolloutConfig.perLeaf;
+    double value = 0;
+    if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
+        value = playoutToEnd(bc, treeDepth, uniform > 0);
+    } else {
+        // Research: average `playouts` independent playouts from this leaf.
+        const BattleContext start = bc;
+        for (int i = 0; i < playouts; ++i) {
+            BattleContext run = start;
+            value += playoutToEnd(run, treeDepth, uniform > 0);
+        }
+        value /= playouts;
+    }
+    if (leafSample >= 0) leafSamples->samples[leafSample].value = value;
+    return value;
+}
+
+double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bool uniformPolicy) {
+    int rolloutDepth = 0;
     while (bc.outcome == Outcome::UNDECIDED) {
         Action action;
-        if (bc.inputState == InputState::PLAYER_NORMAL) {
+        if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
+                || bc.inputState == InputState::CARD_SELECT)) {
+            action = chooseUniformRolloutAction(bc);
+        } else if (bc.inputState == InputState::PLAYER_NORMAL) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
             // the hidden intent through its END_TURN chance node.
@@ -700,12 +739,27 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
             break;
         }
         action.execute(bc);
-        if (profile) ++rolloutDepth;
+        ++rolloutDepth;
     }
+    ++stats.rolloutPlayouts;
+    stats.rolloutActions += rolloutDepth;
     recordEndpoint(bc, treeDepth, rolloutDepth);
-    const double value = evaluateEndState(bc);
-    if (leafSample >= 0) leafSamples->samples[leafSample].value = value;
-    return value;
+    return evaluateEndState(bc);
+}
+
+search::Action search::SilverSearcher::chooseUniformRolloutAction(BattleContext &bc) {
+    if (bc.inputState == InputState::PLAYER_NORMAL) {
+        rolloutAgent.materializeHiddenIntents(bc);
+    }
+    Node scratch;
+    enumerateActionsForNode(scratch, bc);
+    if (scratch.edges.empty()) {
+        return bc.inputState == InputState::CARD_SELECT
+                ? Action(ActionType::MULTI_CARD_SELECT, 0)
+                : Action(ActionType::END_TURN);
+    }
+    std::uniform_int_distribution<std::size_t> dist(0, scratch.edges.size() - 1);
+    return scratch.edges[dist(rolloutAgent.rng)].action;
 }
 
 void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleContext &bc) {
