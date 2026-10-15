@@ -1,0 +1,39 @@
+w03 hang diagnostics 2026-10-14T00:36:54Z
+unit natural-91000228 lane 9, pid 2533, cmd: /root/azgen4-w3/one_combat silverazgen 4 10000 0 /root/azgen4-w3/raw/natural-91000228 91000228 natural 8 0 
+  PID     ELAPSED     TIME %CPU   RSS
+ 2533    01:40:59 01:39:34 98.6 466012
+raw jsonl: 519 lines, mtime 2026-10-13T22:57:22Z
+--- last raw record (truncated) ---
+{"act":3,"encounter":"DONU_AND_DECA","endHp":42,"fight":24,"floor":50,"kind":"fight","perturbation":null,"preHp":51,"preMaxHp":51,"room":"BOSS","roots":53,"seed":91000228,"teacherId":"silver-az-10000-k8-rb0-f57b7fdd","turns":13,"valid":true,"variant":"natural","won":true}
+
+--- unit log tail ---
+--- wchan ---
+0
+--- /proc stack ---
+--- gdb ---
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x000055ae220f4e17 in sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const ()
+
+Thread 1 (Thread 0x7f732491a6c0 (LWP 2533) "one_combat"):
+#0  0x000055ae220f4e17 in sts::CardInstance::canUse(sts::BattleContext const&, int, bool) const ()
+#1  0x000055ae2215f0c4 in sts::search::SilverSearcher::rolloutToEnd(sts::BattleContext&, int) ()
+#2  0x000055ae221607af in sts::search::SilverSearcher::step() ()
+#3  0x000055ae221421b0 in sts::search::(anonymous namespace)::runNativeSilverCombat(sts::search::ScumSearchAgent2&, sts::GameContext&, sts::BattleContext&) ()
+#4  0x000055ae220829ed in (anonymous namespace)::runSynthSeed(unsigned long, int, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool, std::optional<(anonymous namespace)::AzPrior> const&)::{lambda(sts::GameContext&, sts::BattleContext&, sts::search::ScumSearchAgent2&, nlohmann::json_abi_v3_12_0::basic_json<std::map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_12_0::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&)#1}::operator()(sts::GameContext&, sts::BattleContext&, sts::search::ScumSearchAgent2&, nlohmann::json_abi_v3_12_0::basic_json<std::map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_12_0::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&) const ()
+#5  0x000055ae2208776c in (anonymous namespace)::runSynthSeed(unsigned long, int, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool, std::optional<(anonymous namespace)::AzPrior> const&) [clone .lto_priv.0] ()
+#6  0x000055ae2208c125 in silverAzGen(int, int, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, long long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int, int) [clone ._omp_fn.0] ()
+#7  0x00007f7324939977 in GOMP_parallel () from /lib/x86_64-linux-gnu/libgomp.so.1
+#8  0x000055ae2208d4c2 in silverAzGen(int, int, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, long long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int, int) ()
+#9  0x000055ae21e7a638 in main ()
+[Inferior 1 (process 2533) detached]
+--- gdb sample 2 00:37:31 ---
+#0  0x000055ae221cb683 in void std::__sort<__gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, __gnu_cxx::__ops::_Iter_less_iter>(__gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, __gnu_cxx::__normal_iterator<sts::CardInstance*, std::vector<sts::CardInstance, std::allocator<sts::CardInstance> > >, __gnu_cxx::__ops::_Iter_less_iter) [clone .isra.0] ()
+#1  0x000055ae220f7946 in sts::CardManager::moveDiscardPileIntoToDrawPile(sts::Random&) ()
+#2  0x000055ae220eb32d in sts::BattleContext::executeActions() ()
+#3  0x000055ae2215e8d9 in sts::search::SilverSearcher::rolloutToEnd(sts::BattleContext&, int) ()
+--- gdb sample 3 00:37:34 ---
+#0  0x000055ae220f63ea in sts::CardManager::notifyAddToHand(sts::CardInstance const&) ()
+#1  0x000055ae220eacd2 in sts::BattleContext::drawCards(int) ()
+#2  0x000055ae220eb32d in sts::BattleContext::executeActions() ()
+#3  0x000055ae2215e8d9 in sts::search::SilverSearcher::rolloutToEnd(sts::BattleContext&, int) ()

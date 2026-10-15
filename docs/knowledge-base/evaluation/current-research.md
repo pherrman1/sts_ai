@@ -431,7 +431,7 @@ its separate OOC future resampling. The bounded [A20 teacher protocol](../../exp
 uses a corrected, A20-only initialization kernel and keeps the old modes
 unchanged. The user selected completed gen6 E from PR #541; its v2 support is
 integrated from `main` merge `531db3e3`. The [bounded A20 attempt](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/RESULTS.md)
-(§472) passed actual-model parity and its excluded canary, but one of four
+(§480) passed actual-model parity and its excluded canary, but one of four
 cohort sources hit the fixed 180-second CPU cap. The exact verdict is
 **INVALID_OR_INSUFFICIENT**. The completed sources are not a replacement panel;
 there is no teacher-quality or optimal-budget conclusion. All outputs are
@@ -440,9 +440,9 @@ preserved, with no retry, extension, training or default change.
 The user authorized a separately frozen [v2 follow-up](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL-V2.md)
 with flushed replay progress, 600 CPU/900 wall seconds per source, canary
 `97150801` and four fresh sources `97150810–97150813`. It preserves the model,
-controller settings, source/reference and analysis, and does not pool §472.
+controller settings, source/reference and analysis, and does not pool §480.
 The [completed follow-up](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-2/RESULTS.md)
-(§473) is **DESCRIPTIVE_COMPARISON_MEASURED**: 14 supported states (6/4/2/2
+(§481) is **DESCRIPTIVE_COMPARISON_MEASURED**: 14 supported states (6/4/2/2
 per source), all exact controls/progress/custody checks pass. Principal
 equal-source HP RMSE: CTM 9.246, plain2k 6.605, prior2k 8.171, plain10k
 6.397, prior10k 8.276. Four-future search CPU is 0.587/0.622/3.279/3.275s
@@ -465,7 +465,7 @@ does not describe the calibrated manifest. This contract makes no training,
 OOC decision-value, gameplay or default-promotion claim.
 
 The [completed larger study](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-large-1/RESULTS.md)
-(§474) is **DESCRIPTIVE_COMPARISON_MEASURED**: 32 sources, 147 matched fights,
+(§482) is **DESCRIPTIVE_COMPARISON_MEASURED**: 32 sources, 147 matched fights,
 5,696 forecast replays, all controls/custody/progress/caps pass. Main later-act
 coverage passes (17 Act 2 boss / 13 Act 3 boss sources). Equal-source HP RMSE
 is CTM 12.017 [10.441,13.511], plain2k 11.853 [10.011,13.606], prior2k
@@ -482,7 +482,7 @@ Total CPU including excluded canary was 5,074.70s; largest source 918.11s
 under the 1200s cap. Earlier attempts remain separately preserved and excluded.
 
 The subsequent [selective MAP-choice audit](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-1/RESULTS.md)
-(§475) is **INVALID_OR_INSUFFICIENT**: the excluded canary completed two roots
+(§483) is **INVALID_OR_INSUFFICIENT**: the excluded canary completed two roots
 with exact source and baseline controls, but provenance hashing utility children
 left0.011785s outside itemized child CPU settlement. The analyzer rejected it;
 the eight-source cohort never launched. A narrow tested accounting repair
@@ -493,7 +493,7 @@ cost, leaving matched compute unresolved. A newly authorized freeze/canary
 must precede future cohort execution; no training or default change follows.
 
 The authorized [renewed E2500 audit](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-2/RESULTS.md)
-(§479) has a valid fresh canary with exact provenance CPU settlement, but an
+(§484) has a valid fresh canary with exact provenance CPU settlement, but an
 **INVALID_OR_INSUFFICIENT** cohort. Both initially dispatched sources fail:
 one Act2 Silver evaluation and one Act3 plain10k reference, normal child exit125
 with the underlying exception erased. Six remaining sources never launch.

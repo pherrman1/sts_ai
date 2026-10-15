@@ -580,7 +580,29 @@ namespace sts::search {
         SilverSearchContext context;
         context.act = wire.act;
         context.actBossRoom = isBossEncounter(static_cast<MonsterEncounter>(wire.encounter));
+        // The first A20 act-3 boss (floor 50) goes straight into the second (floor 51).
+        context.actHealFollows = !(wire.act == 3 && wire.ascension >= 20 && wire.floorNum < 51);
         context.omamoriCharged = wire.omamoriOwned && wire.omamoriValue > 0;
+        // The wire carries no room, so elite-trigger fights (ADR-0036 elite escape
+        // penalty) are recognised by their encounter.
+        switch (static_cast<MonsterEncounter>(wire.encounter)) {
+            case MonsterEncounter::GREMLIN_NOB: case MonsterEncounter::LAGAVULIN:
+            case MonsterEncounter::THREE_SENTRIES: case MonsterEncounter::GREMLIN_LEADER:
+            case MonsterEncounter::SLAVERS: case MonsterEncounter::BOOK_OF_STABBING:
+            case MonsterEncounter::GIANT_HEAD: case MonsterEncounter::NEMESIS:
+            case MonsterEncounter::REPTOMANCER: case MonsterEncounter::SHIELD_AND_SPEAR:
+            case MonsterEncounter::COLOSSEUM_EVENT_NOBS: case MonsterEncounter::LAGAVULIN_EVENT:
+                context.eliteRewards = true;
+                break;
+            default:
+                break;
+        }
+        // ADR-0035 leaf defaults. The wire carries no keys, so the final-fight leaf
+        // applies only to the Heart here (an act-3 boss may still lead to Act 4).
+        context.noLossPotionCredit = true;
+        context.relicHealLeaf = true;
+        context.finalFightLeaf = wire.act == 4
+            && static_cast<MonsterEncounter>(wire.encounter) == MonsterEncounter::THE_HEART;
         return context;
     }
 

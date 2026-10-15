@@ -189,6 +189,18 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     const bool binaryObjectiveEnabled = binaryObjective && std::string(binaryObjective) == "1";
     if (s.value("final_boss_binary", false) != binaryObjectiveEnabled)
         throw std::runtime_error("wholecombatgen: final-boss objective differs from teacher");
+    // ADR-0035 leaf terms default on. A teacher that records a term must match the
+    // effective option; older teachers do not record them and are not checked.
+    const auto leafOption = [](const char *name, bool fallback) {
+        const char *raw = std::getenv(name);
+        return raw ? std::string(raw) == "1" : fallback;
+    };
+    for (const auto &[field, name, fallback] : {std::tuple<const char *, const char *, bool>
+             {"final_fight_leaf", "STS_SILVER_FINAL_FIGHT_LEAF", !binaryObjectiveEnabled},
+             {"no_loss_potion_credit", "STS_SILVER_NO_LOSS_POTION_CREDIT", true},
+             {"relic_heal_leaf", "STS_SILVER_RELIC_HEAL_LEAF", true}})
+        if (s.contains(field) && s[field].get<bool>() != leafOption(name, fallback))
+            throw std::runtime_error(std::string("wholecombatgen: ") + field + " differs from teacher");
     // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
     // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
     // that opt in; it pins the compiled stop model and threshold.
@@ -5214,7 +5226,11 @@ struct TreePriorScope {
 // priorModel (non-empty) scores this arm's prior with that policy model instead
 // of the STS_SILVER_ROOT_PRIOR one (Silver AZ MLP armset).
 struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0;
-                      std::string priorModel; };
+                      std::string priorModel; bool finalFightLeaf = false; };
+struct FinalFightLeafScope {
+    explicit FinalFightLeafScope(bool on) { search::g_nativeSilverFinalFightLeafOverride = on; }
+    ~FinalFightLeafScope() { search::g_nativeSilverFinalFightLeafOverride.reset(); }
+};
 // A20 uses explicit scoped settings; never inherit a preceding research arm's
 // budget, planner seed or tree prior, and restore every override on exceptions.
 struct CtmTeacherA20Scope {
@@ -5449,8 +5465,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
     if (teacherLarge && replicates != 16)
         throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
-    if (!teacherA20 && (nSeeds < 1 || asc != 0 || seedOffset < 0 || replicates < 0))
-        throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0");
+    // Ascension 20 is allowed only for the mlpsweep armset (§476) and teacher_a20; every other armset is A0.
+    const bool sweepArmSet = armSet == "mlpsweep";
+    if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
+        throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5507,14 +5526,56 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // mlpprior (Silver AZ MLP loop milestone): plain2k, plain_cpu at
     // STS_CTMSILVER_PLAIN_CPU_SIMS, and the MLP tree prior (K = 8, 2k) scored by
     // STS_CTMSILVER_MLP_PRIOR; STS_CTMSILVER_MLP_PRIOR_PREV adds a second MLP arm.
+    // mlpsweep (§476): for every budget in STS_CTMSILVER_SWEEP_SIMS (comma list),
+    // plain<b>, mlp<b> (STS_CTMSILVER_MLP_PRIOR, K = 8) and, when set, mlpprev<b>
+    // (STS_CTMSILVER_MLP_PRIOR_PREV); STS_CTMSILVER_HALLWAY_EVERY = n > 1 replays
+    // only about one NORMAL fight in n (hash of seed and fight index).
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
-            && armSet != "mlpprior" && !teacherA20)
+            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453, mlpprior or teacher_a20");
+                                 "cpumatch453, mlpprior, finalleaf, mlpsweep or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
-    if (teacherA20) {
+    int hallwayEvery = 1;
+    std::vector<int> sweepSims;
+    if (armSet == "mlpsweep") {
+        const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+        const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR"), prev = env("STS_CTMSILVER_MLP_PRIOR_PREV");
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: mlpsweep requires STS_CTMSILVER_MLP_PRIOR");
+        std::stringstream list(env("STS_CTMSILVER_SWEEP_SIMS"));
+        for (std::string item; std::getline(list, item, ',');) {
+            char *end = nullptr;
+            const long b = std::strtol(item.c_str(), &end, 10);
+            if (item.empty() || *end != '\0' || b < 1 || b > 100000
+                    || std::find(sweepSims.begin(), sweepSims.end(), static_cast<int>(b)) != sweepSims.end())
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_SWEEP_SIMS must list distinct budgets 1..100000");
+            sweepSims.push_back(static_cast<int>(b));
+        }
+        if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: mlpsweep requires STS_CTMSILVER_SWEEP_SIMS");
+        const std::string every = env("STS_CTMSILVER_HALLWAY_EVERY");
+        if (!every.empty()) {
+            char *end = nullptr;
+            const long n = std::strtol(every.c_str(), &end, 10);
+            if (*end != '\0' || n < 1 || n > 1000)
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_HALLWAY_EVERY must be 1..1000");
+            hallwayEvery = static_cast<int>(n);
+        }
+        for (const auto &path : {mlp, prev}) {
+            if (path.empty() || priorNets.count(path)) continue;
+            auto net = std::make_unique<search::CombatValueNet>();
+            if (!net->load(path) || !net->isPolicyMlp)
+                throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp model from " + path);
+            priorNets[path] = std::move(net);
+        }
+        arms = {{"control", sims, false, false, 1}};
+        for (const int b : sweepSims) {
+            const std::string tag = std::to_string(b);
+            arms.push_back({"plain" + tag, b, false, true, replicates});
+            arms.push_back({"mlp" + tag, b, true, true, replicates, 8, mlp});
+            if (!prev.empty()) arms.push_back({"mlpprev" + tag, b, true, true, replicates, 8, prev});
+        }
+    } else if (teacherA20) {
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR");
         if (mlp.empty() || search::nativeSilverRootPriorWeight() != 400.0)
             throw std::runtime_error("ctm vs silver: teacher_a20 requires STS_CTMSILVER_MLP_PRIOR and root prior weight 400");
@@ -5561,6 +5622,15 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             {"mlp8_2k", 2000, true, true, replicates, 8, mlp},
         };
         if (!prev.empty()) arms.push_back({"mlp_prev8_2k", 2000, true, true, replicates, 8, prev});
+    } else if (armSet == "finalleaf") {
+        // Final-fight leaf replay: only act-3 boss fights (the run-ending fight
+        // without keys) are replayed, by plain exact-10k Silver with the default
+        // leaf and with STS_SILVER_FINAL_FIGHT_LEAF's, on the same redraws.
+        arms = {
+            {"control", sims, false, false, 1},
+            {"base10k", sims, false, true, replicates},
+            {"final10k", sims, false, true, replicates, 0, "", true},
+        };
     } else if (armSet == "cpumatch453") {
         // §453: plain search at about tree8_2k's CPU per fight.
         arms = {
@@ -5621,12 +5691,12 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     for (const auto &a : arms)
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
                            {"redrawCombatFuture", a.redraw}, {"replicates", a.replicates},
-                           {"treeMinVisits", a.treeMinVisits},
+                           {"treeMinVisits", a.treeMinVisits}, {"finalFightLeaf", a.finalFightLeaf},
                            {"priorModel", a.priorModel.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.priorModel)},
                            {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
                                                                      : nlohmann::json(fileSha256(a.priorModel))}});
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
-    int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0, capturedStates = 0;
+    int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0, capturedStates = 0, hallwaySkipped = 0;
     std::map<std::string, int> unsupportedReasons;
     nlohmann::json perSeed = nlohmann::json::array();
     constexpr int kTimingReps = 20;
@@ -5687,6 +5757,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             perSeed.back()["invalidCombatRows"] = source.invalidCombatRows;
         }
         for (auto &entry : capture.bossEntries) {
+            if (armSet == "finalleaf" && !(entry.act == 3 && entry.roomClass == "BOSS")) continue;
+            if (hallwayEvery > 1 && entry.roomClass == "NORMAL"
+                    && ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, 0, 0x4A11)
+                           % static_cast<std::uint64_t>(hallwayEvery) != 0) {
+                ++hallwaySkipped;
+                continue;
+            }
             const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
             if (teacherA20 && !selectedIds.count(stateId)) continue;
             const auto stateCpuStart = vwinThreadCpuNanos();
@@ -5823,6 +5900,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         RootPriorScope priorScope(arm.prior);
                         TreePriorScope treeScope(arm.treeMinVisits);
                         PriorNetScope netScope(priorNet);
+                        FinalFightLeafScope leafScope(arm.finalFightLeaf);
                         result = evaluate();
                     }
                     if (teacherA20 && !result.valid && ctmTeacherA20ValidEscape(result.quarantineReason,
@@ -5904,7 +5982,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         {"arms", armSpec}, {"armSet", armSet.empty() ? "forecast408" : armSet}, {"sources", std::move(perSeed)},
         {"integrity", {{"completeSources", completeSources}, {"validSources", validSources},
             {"states", nStates}, {"ctmSupported", ctmSupported}, {"controlReplayMatches", controlMatches},
-            {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows}}},
+            {"controlReplayMismatches", controlMismatches}, {"invalidArmRows", invalidArmRows},
+            {"hallwayEvery", hallwayEvery}, {"hallwaySkipped", hallwaySkipped}}},
         {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)},
                      {"samplesSha256", fileSha256(samplesPath)}}}
     };

@@ -24,6 +24,19 @@ namespace sts::search {
         // Research-only, supplied by the backend only for an A0 Act-3 cutoff.
         // Final boss wins have no subsequent run-resource utility.
         bool finalBossBinary = false;
+        // Research-only (STS_SILVER_FINAL_FIGHT_LEAF), set by the backend only
+        // when a victory ends the run: no HP, potion, gold, max-HP, speed or
+        // cheat-death utility after the fight, and a loss keeps no potion credit.
+        bool finalFightLeaf = false;
+        // False when no act-transition heal follows the act-boss room: the
+        // first of the two A20 act-3 bosses goes straight into the second.
+        bool actHealFollows = true;
+        // Research-only (STS_SILVER_NO_LOSS_POTION_CREDIT): a loss earns no
+        // credit for potions still held.
+        bool noLossPotionCredit = false;
+        // Research-only (STS_SILVER_RELIC_HEAL_LEAF): victory HP includes the
+        // post-combat relic heals (Meat on the Bone, Burning Blood, Black Blood).
+        bool relicHealLeaf = false;
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
@@ -40,12 +53,16 @@ namespace sts::search {
         double maxHpWeight = 2.0;
         double parasitePenalty = 12;
         // A Smoke Bomb escape ends combat as PLAYER_VICTORY but forfeits the
-        // combat rewards. Both default to 0 (the historical escape-as-victory
-        // valuation); STS_SILVER_ESCAPE_PENALTY=<normal>,<elite> enables them.
+        // combat rewards. Both default to 0 here (the historical escape-as-victory
+        // valuation); native Silver sets 12,35 by default (ADR-0036) and
+        // STS_SILVER_ESCAPE_PENALTY=<normal>,<elite> overrides it.
         // The applied penalty is capped at half the HP left when escaping.
         double escapePenalty = 0;
         double eliteEscapePenalty = 0;
     };
+    // ADR-0036 defaults (§473 values), used by native Silver and the live advisor.
+    inline constexpr double kDefaultEscapePenalty = 12;
+    inline constexpr double kDefaultEliteEscapePenalty = 35;
 
     struct SilverSearchStats {
         std::int64_t steps = 0;

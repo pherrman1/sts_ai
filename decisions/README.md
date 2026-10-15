@@ -26,6 +26,17 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0037](0037-live-advisor-escape-penalty.md) gives the live-game advisor the same `12,35` escape penalty
+  (no environment override on the live path; elite fights from the wire encounter).
+- [ADR-0036](0036-silver-escape-penalty-default.md) makes native Silver charge a Smoke Bomb
+  escape for the forfeited rewards by default (`12,35`, §473 NOT_SHOWN; `STS_SILVER_ESCAPE_PENALTY=0,0` restores
+  escape scored as a win).
+- [ADR-0035](0035-silver-situational-leaf-default.md) turns Silver's situational leaf terms on by
+  default (final-fight leaf, no loss potion credit, relic heal leaf, A20 boss heal fix; each `=0` restores the
+  legacy term).
+- [ADR-0034](0034-recall-filter-and-multiselect-canonical-default.md) turns on the
+  keys-off optional Ruby Recall filter and canonical multi-select masks by default
+  (`STS_OOC_SKIP_OPTIONAL_RECALL=0`, `STS_MULTISELECT_CANONICAL=0` restore the old behavior).
 - [ADR-0033](0033-ooc-mcts-a20-ctm-default.md) makes live OOC MCTS use the calibrated
   A20 CTM (`pathb-a20`, §470) for ascension-20 searches on the automatic CTM stack
   (`STS_OOC_MCTS_A20_CTM=0` restores the default stack at A20).
