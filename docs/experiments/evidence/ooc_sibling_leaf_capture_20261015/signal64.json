@@ -1,0 +1,202 @@
+{
+ "all": {
+  "leaves": 219670,
+  "varT": 0.00825895854801913,
+  "noiseVar": 0.00555881839200556,
+  "signalVar": 0.0027001401560135716,
+  "r0": {
+   "corrWithT": 0.13795949116039047,
+   "corrWithExpected": 0.2412798605848735
+  },
+  "x2b": {
+   "corrWithT": 0.3276748871022053,
+   "corrWithExpected": 0.573076563360677
+  },
+  "heart1": {
+   "corrWithT": 0.1579013661521801,
+   "corrWithExpected": 0.3036956642870643
+  },
+  "l5": {
+   "corrWithT": 0.19307703536885729,
+   "corrWithExpected": 0.33767593504515453
+  }
+ },
+ "byParentScreen": {
+  "1": {
+   "leaves": 16294,
+   "varT": 0.0049949313725997715,
+   "noiseVar": 0.0030184839058941962,
+   "signalVar": 0.001976447466705575,
+   "r0": {
+    "corrWithT": 0.13538714439380678,
+    "corrWithExpected": 0.21522838814196027
+   },
+   "x2b": {
+    "corrWithT": 0.44373132759748923,
+    "corrWithExpected": 0.7054109814821422
+   },
+   "heart1": {
+    "corrWithT": 0.19372964649535304,
+    "corrWithExpected": 0.307976948160035
+   },
+   "l5": {
+    "corrWithT": 0.22980673422464867,
+    "corrWithExpected": 0.36532961244436707
+   }
+  },
+  "2": {
+   "leaves": 10452,
+   "varT": 0.005540693607503727,
+   "noiseVar": 0.0038939381140852456,
+   "signalVar": 0.0016467554934184816,
+   "r0": {
+    "corrWithT": 0.12044435420912214,
+    "corrWithExpected": 0.22092962450903644
+   },
+   "x2b": {
+    "corrWithT": 0.09790574978752077,
+    "corrWithExpected": 0.17958733458171852
+   },
+   "heart1": {
+    "corrWithT": 0.30289043549123046,
+    "corrWithExpected": 0.5555882682908513
+   },
+   "l5": {
+    "corrWithT": 0.21509746338131802,
+    "corrWithExpected": 0.394550679687082
+   }
+  },
+  "3": {
+   "leaves": 6929,
+   "varT": 0.004031650478510393,
+   "noiseVar": 0.002771460323446459,
+   "signalVar": 0.0012601901550639341,
+   "r0": {
+    "corrWithT": 0.15812034653441556,
+    "corrWithExpected": 0.2828206742600369
+   },
+   "x2b": {
+    "corrWithT": 0.29058586995840097,
+    "corrWithExpected": 0.519754057420983
+   },
+   "heart1": {
+    "corrWithT": 0.15039299900972752,
+    "corrWithExpected": 0.26899921683805844
+   },
+   "l5": {
+    "corrWithT": 0.12527846869781517,
+    "corrWithExpected": 0.2240783160671181
+   }
+  },
+  "4": {
+   "leaves": 1603,
+   "varT": 0.002990748022406878,
+   "noiseVar": 0.002430165590115007,
+   "signalVar": 0.0005605824322918715,
+   "r0": {
+    "corrWithT": 0.09879172969154829,
+    "corrWithExpected": 0.22818692695619028
+   },
+   "x2b": {
+    "corrWithT": 0.3548946168408058,
+    "corrWithExpected": 0.8197276458570416
+   },
+   "heart1": {
+    "corrWithT": 0.14093476288250553,
+    "corrWithExpected": 0.32552796214691193
+   },
+   "l5": {
+    "corrWithT": 0.10685001806868531,
+    "corrWithExpected": 0.24679978116014897
+   }
+  },
+  "5": {
+   "leaves": 157016,
+   "varT": 0.008964835044976248,
+   "noiseVar": 0.005735057155620899,
+   "signalVar": 0.0032297778893553486,
+   "r0": {
+    "corrWithT": 0.15441077289424304,
+    "corrWithExpected": 0.2572541678926982
+   },
+   "x2b": {
+    "corrWithT": 0.3422772807268655,
+    "corrWithExpected": 0.5702468512496393
+   },
+   "heart1": {
+    "corrWithT": 0.16862213194019593,
+    "corrWithExpected": 0.3227222405864574
+   },
+   "l5": {
+    "corrWithT": 0.21104268836875426,
+    "corrWithExpected": 0.3516050737167579
+   }
+  },
+  "6": {
+   "leaves": 50,
+   "varT": 0.004349899401772706,
+   "noiseVar": 0.006706527964336542,
+   "signalVar": -0.002356628562563836,
+   "r0": {
+    "corrWithT": 0.1795567317844713,
+    "corrWithExpected": null
+   },
+   "x2b": {
+    "corrWithT": 0.18208361361160116,
+    "corrWithExpected": null
+   },
+   "heart1": {
+    "corrWithT": -0.0025647778508327613,
+    "corrWithExpected": null
+   },
+   "l5": {
+    "corrWithT": 0.1290977714380123,
+    "corrWithExpected": null
+   }
+  },
+  "7": {
+   "leaves": 15225,
+   "varT": 0.009245208155781654,
+   "noiseVar": 0.008533777972573289,
+   "signalVar": 0.0007114301832083668,
+   "r0": {
+    "corrWithT": 0.04300154648941831,
+    "corrWithExpected": 0.15501591145401808
+   },
+   "x2b": {
+    "corrWithT": 0.24655059643172397,
+    "corrWithExpected": 0.8887881610211473
+   },
+   "heart1": {
+    "corrWithT": -0.02981648673270342,
+    "corrWithExpected": -0.10748520098838847
+   },
+   "l5": {
+    "corrWithT": 0.06786298165298166,
+    "corrWithExpected": 0.2446386889251285
+   }
+  },
+  "8": {
+   "leaves": 12101,
+   "varT": 0.0077364580665379495,
+   "noiseVar": 0.006393371113220515,
+   "signalVar": 0.0013430869533174344,
+   "r0": {
+    "corrWithT": 0.07427779997469663,
+    "corrWithExpected": 0.178269913882355
+   },
+   "x2b": {
+    "corrWithT": 0.1896696962425441,
+    "corrWithExpected": 0.45521542677313065
+   },
+   "heart1": {
+    "corrWithT": 0.1127947534600207,
+    "corrWithExpected": 0.27071225847493174
+   },
+   "l5": {
+    "corrWithT": 0.10988867370126604,
+    "corrWithExpected": 0.26373754209258143
+   }
+  }
+ }
+}

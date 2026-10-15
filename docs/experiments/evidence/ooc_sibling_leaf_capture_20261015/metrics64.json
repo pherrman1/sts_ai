@@ -1,0 +1,690 @@
+{
+ "rows": 222132,
+ "targetT": {
+  "r0": {
+   "confidentLeafPairConcordance": 0.7012317266680922,
+   "confidentLeafPairs": 710872,
+   "leafPairConcordance": 0.5615012752060169,
+   "leafPairs": 4801185,
+   "actionPairConcordance": 0.5333763852702994,
+   "actionPairs": 134721,
+   "topActionAgreement": 0.40734126984126984,
+   "parents": 5040,
+   "meanRegret": 0.04674700442130142
+  },
+  "half": {
+   "confidentLeafPairConcordance": NaN,
+   "confidentLeafPairs": 0,
+   "leafPairConcordance": 0.5836533055421832,
+   "leafPairs": 4750673,
+   "actionPairConcordance": 0.5410305703192733,
+   "actionPairs": 132645,
+   "topActionAgreement": 0.6664682539682539,
+   "parents": 5040,
+   "meanRegret": 0.01483154215617358
+  },
+  "l5": {
+   "confidentLeafPairConcordance": 0.7100110849773236,
+   "confidentLeafPairs": 710872,
+   "leafPairConcordance": 0.566551278486457,
+   "leafPairs": 4801185,
+   "actionPairConcordance": 0.5347236139874258,
+   "actionPairs": 134721,
+   "topActionAgreement": 0.4029761904761905,
+   "parents": 5040,
+   "meanRegret": 0.04597477309011448
+  },
+  "x2b": {
+   "confidentLeafPairConcordance": 0.7228586862332459,
+   "confidentLeafPairs": 710872,
+   "leafPairConcordance": 0.5865744602634558,
+   "leafPairs": 4801185,
+   "actionPairConcordance": 0.562076439456358,
+   "actionPairs": 134721,
+   "topActionAgreement": 0.4146825396825397,
+   "parents": 5040,
+   "meanRegret": 0.04234372749940559
+  },
+  "heart1": {
+   "confidentLeafPairConcordance": 0.7008374465331332,
+   "confidentLeafPairs": 704642,
+   "leafPairConcordance": 0.5733526360509947,
+   "leafPairs": 4764096,
+   "actionPairConcordance": 0.5381327584925295,
+   "actionPairs": 134530,
+   "topActionAgreement": 0.3935099609776135,
+   "parents": 4869,
+   "meanRegret": 0.046505923768642175
+  }
+ },
+ "targetL5": {
+  "r0": {
+   "confidentLeafPairConcordance": NaN,
+   "confidentLeafPairs": 0,
+   "leafPairConcordance": 0.5418026623877399,
+   "leafPairs": 4661605,
+   "actionPairConcordance": 0.5197986099016798,
+   "actionPairs": 126322,
+   "topActionAgreement": 0.38432539682539685,
+   "parents": 5040,
+   "meanRegret": 0.09076843423293736
+  },
+  "x2b": {
+   "confidentLeafPairConcordance": NaN,
+   "confidentLeafPairs": 0,
+   "leafPairConcordance": 0.5503068149274767,
+   "leafPairs": 4661605,
+   "actionPairConcordance": 0.5440738747011605,
+   "actionPairs": 126322,
+   "topActionAgreement": 0.37956349206349205,
+   "parents": 5040,
+   "meanRegret": 0.08804150386335577
+  },
+  "heart1": {
+   "confidentLeafPairConcordance": NaN,
+   "confidentLeafPairs": 0,
+   "leafPairConcordance": 0.5558224249564926,
+   "leafPairs": 4625650,
+   "actionPairConcordance": 0.5358473662512289,
+   "actionPairs": 126132,
+   "topActionAgreement": 0.3585951940850277,
+   "parents": 4869,
+   "meanRegret": 0.09543594306531981
+  },
+  "T": {
+   "confidentLeafPairConcordance": NaN,
+   "confidentLeafPairs": 0,
+   "leafPairConcordance": 0.5685439886047832,
+   "leafPairs": 4661605,
+   "actionPairConcordance": 0.5370323459096594,
+   "actionPairs": 126322,
+   "topActionAgreement": 0.4029761904761905,
+   "parents": 5040,
+   "meanRegret": 0.08486598521874134
+  }
+ },
+ "byParentScreen": {
+  "1": {
+   "rows": 16564,
+   "r0": {
+    "confidentLeafPairConcordance": 0.802042494597334,
+    "confidentLeafPairs": 104578,
+    "leafPairConcordance": 0.626467354823706,
+    "leafPairs": 378402,
+    "actionPairConcordance": 0.5517902813299232,
+    "actionPairs": 8602,
+    "topActionAgreement": 0.4460093896713615,
+    "parents": 1065,
+    "meanRegret": 0.04270866644492102
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.657293506658346,
+    "leafPairs": 378172,
+    "actionPairConcordance": 0.5642399534071054,
+    "actionPairs": 8585,
+    "topActionAgreement": 0.7192488262910798,
+    "parents": 1065,
+    "meanRegret": 0.011091318996264364
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.8085830671843026,
+    "confidentLeafPairs": 104578,
+    "leafPairConcordance": 0.6265757052024038,
+    "leafPairs": 378402,
+    "actionPairConcordance": 0.5562659846547314,
+    "actionPairs": 8602,
+    "topActionAgreement": 0.4591549295774648,
+    "parents": 1065,
+    "meanRegret": 0.038870039090631914
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.85956893419266,
+    "confidentLeafPairs": 104578,
+    "leafPairConcordance": 0.6488932405219846,
+    "leafPairs": 378402,
+    "actionPairConcordance": 0.6155545222041385,
+    "actionPairs": 8602,
+    "topActionAgreement": 0.5154929577464789,
+    "parents": 1065,
+    "meanRegret": 0.03472383143808089
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.7640756181988564,
+    "confidentLeafPairs": 104578,
+    "leafPairConcordance": 0.6168492766951549,
+    "leafPairs": 378402,
+    "actionPairConcordance": 0.5592885375494071,
+    "actionPairs": 8602,
+    "topActionAgreement": 0.4676056338028169,
+    "parents": 1065,
+    "meanRegret": 0.041687215706532846
+   }
+  },
+  "2": {
+   "rows": 10588,
+   "r0": {
+    "confidentLeafPairConcordance": 0.7556672666871552,
+    "confidentLeafPairs": 68331,
+    "leafPairConcordance": 0.5898122642708818,
+    "leafPairs": 353955,
+    "actionPairConcordance": 0.5028726107612419,
+    "actionPairs": 9051,
+    "topActionAgreement": 0.2634069400630915,
+    "parents": 634,
+    "meanRegret": 0.05541705124417565
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.6117982737713104,
+    "leafPairs": 350475,
+    "actionPairConcordance": 0.5306577480490524,
+    "actionPairs": 8970,
+    "topActionAgreement": 0.5646687697160884,
+    "parents": 634,
+    "meanRegret": 0.02152101348531603
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.7586893210987692,
+    "confidentLeafPairs": 68331,
+    "leafPairConcordance": 0.5959825401534093,
+    "leafPairs": 353955,
+    "actionPairConcordance": 0.5194453651530218,
+    "actionPairs": 9051,
+    "topActionAgreement": 0.30441640378548895,
+    "parents": 634,
+    "meanRegret": 0.05410306472977498
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.6212846292312421,
+    "confidentLeafPairs": 68331,
+    "leafPairConcordance": 0.5483408907912023,
+    "leafPairs": 353955,
+    "actionPairConcordance": 0.5438625566235775,
+    "actionPairs": 9051,
+    "topActionAgreement": 0.32018927444794953,
+    "parents": 634,
+    "meanRegret": 0.050268575969682955
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.8013127277516793,
+    "confidentLeafPairs": 68331,
+    "leafPairConcordance": 0.6155627127742227,
+    "leafPairs": 353955,
+    "actionPairConcordance": 0.5349132692520163,
+    "actionPairs": 9051,
+    "topActionAgreement": 0.3217665615141956,
+    "parents": 634,
+    "meanRegret": 0.05018015843298721
+   }
+  },
+  "3": {
+   "rows": 6999,
+   "r0": {
+    "confidentLeafPairConcordance": 0.7271002598259578,
+    "confidentLeafPairs": 24247,
+    "leafPairConcordance": 0.5892873757362782,
+    "leafPairs": 139723,
+    "actionPairConcordance": 0.6815476190476191,
+    "actionPairs": 168,
+    "topActionAgreement": 0.32142857142857145,
+    "parents": 28,
+    "meanRegret": 0.02837379780549696
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5965488613103161,
+    "leafPairs": 139722,
+    "actionPairConcordance": 0.7202380952380952,
+    "actionPairs": 168,
+    "topActionAgreement": 0.75,
+    "parents": 28,
+    "meanRegret": 0.004996778869515957
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.7186043634264032,
+    "confidentLeafPairs": 24247,
+    "leafPairConcordance": 0.5726652018636874,
+    "leafPairs": 139723,
+    "actionPairConcordance": 0.7023809523809523,
+    "actionPairs": 168,
+    "topActionAgreement": 0.42857142857142855,
+    "parents": 28,
+    "meanRegret": 0.027617219660303068
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.8613024291664948,
+    "confidentLeafPairs": 24247,
+    "leafPairConcordance": 0.6394759631556723,
+    "leafPairs": 139723,
+    "actionPairConcordance": 0.6726190476190477,
+    "actionPairs": 168,
+    "topActionAgreement": 0.42857142857142855,
+    "parents": 28,
+    "meanRegret": 0.026133196354458186
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.6513795521095394,
+    "confidentLeafPairs": 24247,
+    "leafPairConcordance": 0.5556565490291505,
+    "leafPairs": 139723,
+    "actionPairConcordance": 0.6130952380952381,
+    "actionPairs": 168,
+    "topActionAgreement": 0.35714285714285715,
+    "parents": 28,
+    "meanRegret": 0.03597319436915967
+   }
+  },
+  "4": {
+   "rows": 1649,
+   "r0": {
+    "confidentLeafPairConcordance": 0.7141628730399595,
+    "confidentLeafPairs": 9885,
+    "leafPairConcordance": 0.5692846270928462,
+    "leafPairs": 65700,
+    "actionPairConcordance": 0.5365950676213206,
+    "actionPairs": 1257,
+    "topActionAgreement": 0.3611111111111111,
+    "parents": 144,
+    "meanRegret": 0.035345530596118196
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5790867579908676,
+    "leafPairs": 65700,
+    "actionPairConcordance": 0.569610182975338,
+    "actionPairs": 1257,
+    "topActionAgreement": 0.6875,
+    "parents": 144,
+    "meanRegret": 0.013045254895254366
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.6845725847243298,
+    "confidentLeafPairs": 9885,
+    "leafPairConcordance": 0.5695053272450533,
+    "leafPairs": 65700,
+    "actionPairConcordance": 0.5584725536992841,
+    "actionPairs": 1257,
+    "topActionAgreement": 0.3888888888888889,
+    "parents": 144,
+    "meanRegret": 0.04134768187045984
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.9289327263530602,
+    "confidentLeafPairs": 9885,
+    "leafPairConcordance": 0.6747184170471842,
+    "leafPairs": 65700,
+    "actionPairConcordance": 0.5644391408114559,
+    "actionPairs": 1257,
+    "topActionAgreement": 0.4791666666666667,
+    "parents": 144,
+    "meanRegret": 0.028456217106268604
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.5979261507334345,
+    "confidentLeafPairs": 9885,
+    "leafPairConcordance": 0.5453729071537291,
+    "leafPairs": 65700,
+    "actionPairConcordance": 0.5441527446300716,
+    "actionPairs": 1257,
+    "topActionAgreement": 0.375,
+    "parents": 144,
+    "meanRegret": 0.040797557921133994
+   }
+  },
+  "5": {
+   "rows": 158554,
+   "r0": {
+    "confidentLeafPairConcordance": 0.6924921867601098,
+    "confidentLeafPairs": 422360,
+    "leafPairConcordance": 0.5664612977931358,
+    "leafPairs": 2741084,
+    "actionPairConcordance": 0.6198170731707318,
+    "actionPairs": 3280,
+    "topActionAgreement": 0.5764241398759166,
+    "parents": 1773,
+    "meanRegret": 0.023057465633801795
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5933403035873102,
+    "leafPairs": 2727782,
+    "actionPairConcordance": 0.6543624161073825,
+    "actionPairs": 3278,
+    "topActionAgreement": 0.7879300620417372,
+    "parents": 1773,
+    "meanRegret": 0.005954763336191036
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.6992719481011459,
+    "confidentLeafPairs": 422360,
+    "leafPairConcordance": 0.5712256537924413,
+    "leafPairs": 2741084,
+    "actionPairConcordance": 0.5902439024390244,
+    "actionPairs": 3280,
+    "topActionAgreement": 0.5380710659898477,
+    "parents": 1773,
+    "meanRegret": 0.0256958776706322
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.6838514537361493,
+    "confidentLeafPairs": 422360,
+    "leafPairConcordance": 0.5775636572976238,
+    "leafPairs": 2741084,
+    "actionPairConcordance": 0.5611280487804878,
+    "actionPairs": 3280,
+    "topActionAgreement": 0.5076142131979695,
+    "parents": 1773,
+    "meanRegret": 0.02926358822951061
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.6946290822579483,
+    "confidentLeafPairs": 416130,
+    "leafPairConcordance": 0.5777414529242842,
+    "leafPairs": 2703995,
+    "actionPairConcordance": 0.5681450307542895,
+    "actionPairs": 3089,
+    "topActionAgreement": 0.5143570536828964,
+    "parents": 1602,
+    "meanRegret": 0.029319303298768452
+   }
+  },
+  "6": {
+   "rows": 52,
+   "r0": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5220588235294118,
+    "leafPairs": 68,
+    "actionPairConcordance": 0.3333333333333333,
+    "actionPairs": 12,
+    "topActionAgreement": 0.3333333333333333,
+    "parents": 12,
+    "meanRegret": 0.045214168580467486
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.4264705882352941,
+    "leafPairs": 68,
+    "actionPairConcordance": 0.3333333333333333,
+    "actionPairs": 12,
+    "topActionAgreement": 0.5,
+    "parents": 12,
+    "meanRegret": 0.022646122683722004
+   },
+   "l5": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5441176470588235,
+    "leafPairs": 68,
+    "actionPairConcordance": 0.6666666666666666,
+    "actionPairs": 12,
+    "topActionAgreement": 0.6666666666666666,
+    "parents": 12,
+    "meanRegret": 0.03526471651752145
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5220588235294118,
+    "leafPairs": 68,
+    "actionPairConcordance": 0.5,
+    "actionPairs": 12,
+    "topActionAgreement": 0.5,
+    "parents": 12,
+    "meanRegret": 0.03987088368422076
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5588235294117647,
+    "leafPairs": 68,
+    "actionPairConcordance": 0.5,
+    "actionPairs": 12,
+    "topActionAgreement": 0.5,
+    "parents": 12,
+    "meanRegret": 0.03536368794728074
+   }
+  },
+  "7": {
+   "rows": 15230,
+   "r0": {
+    "confidentLeafPairConcordance": 0.5512874159622841,
+    "confidentLeafPairs": 71694,
+    "leafPairConcordance": 0.5120113946582878,
+    "leafPairs": 1019074,
+    "actionPairConcordance": 0.5136590317313209,
+    "actionPairs": 22659,
+    "topActionAgreement": 0.11834319526627218,
+    "parents": 169,
+    "meanRegret": 0.09007442865542091
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5220380094897127,
+    "leafPairs": 987385,
+    "actionPairConcordance": 0.5308267270668177,
+    "actionPairs": 22075,
+    "topActionAgreement": 0.4378698224852071,
+    "parents": 169,
+    "meanRegret": 0.030395908215029063
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.5908374480430719,
+    "confidentLeafPairs": 71694,
+    "leafPairConcordance": 0.5231793765712794,
+    "leafPairs": 1019074,
+    "actionPairConcordance": 0.5234343969283728,
+    "actionPairs": 22659,
+    "topActionAgreement": 0.13609467455621302,
+    "parents": 169,
+    "meanRegret": 0.09457878865554456
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.7780427929812815,
+    "confidentLeafPairs": 71694,
+    "leafPairConcordance": 0.5911126179256855,
+    "leafPairs": 1019074,
+    "actionPairConcordance": 0.5520985039057328,
+    "actionPairs": 22659,
+    "topActionAgreement": 0.2603550295857988,
+    "parents": 169,
+    "meanRegret": 0.05962332256155054
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.5908025776215583,
+    "confidentLeafPairs": 71694,
+    "leafPairConcordance": 0.5389647856779782,
+    "leafPairs": 1019074,
+    "actionPairConcordance": 0.5366962354914162,
+    "actionPairs": 22659,
+    "topActionAgreement": 0.14792899408284024,
+    "parents": 169,
+    "meanRegret": 0.08134486306952365
+   }
+  },
+  "8": {
+   "rows": 12496,
+   "r0": {
+    "confidentLeafPairConcordance": 0.642323821213051,
+    "confidentLeafPairs": 9777,
+    "leafPairConcordance": 0.5405945008189651,
+    "leafPairs": 103179,
+    "actionPairConcordance": 0.5362128171966285,
+    "actionPairs": 89692,
+    "topActionAgreement": 0.25020576131687244,
+    "parents": 1215,
+    "meanRegret": 0.07609506522786336
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5364016612573864,
+    "leafPairs": 101369,
+    "actionPairConcordance": 0.5374518686296715,
+    "actionPairs": 88300,
+    "topActionAgreement": 0.5251028806584362,
+    "parents": 1215,
+    "meanRegret": 0.02576914511730741
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.657665950700624,
+    "confidentLeafPairs": 9777,
+    "leafPairConcordance": 0.5394993167214259,
+    "leafPairs": 103179,
+    "actionPairConcordance": 0.5343564643446461,
+    "actionPairs": 89692,
+    "topActionAgreement": 0.24362139917695474,
+    "parents": 1215,
+    "meanRegret": 0.07186978631532016
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.6991919811803211,
+    "confidentLeafPairs": 9777,
+    "leafPairConcordance": 0.5560239971311992,
+    "leafPairs": 103179,
+    "actionPairConcordance": 0.5611091290193105,
+    "actionPairs": 89692,
+    "topActionAgreement": 0.25267489711934155,
+    "parents": 1215,
+    "meanRegret": 0.06361536637152793
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.6200265930244451,
+    "confidentLeafPairs": 9777,
+    "leafPairConcordance": 0.5354432588026633,
+    "leafPairs": 103179,
+    "actionPairConcordance": 0.535538286580743,
+    "actionPairs": 89692,
+    "topActionAgreement": 0.24279835390946503,
+    "parents": 1215,
+    "meanRegret": 0.06765676532825053
+   }
+  }
+ },
+ "byDepth": {
+  "1": {
+   "rows": 80568,
+   "r0": {
+    "confidentLeafPairConcordance": 0.713989812711216,
+    "confidentLeafPairs": 511029,
+    "leafPairConcordance": 0.5676086636180334,
+    "leafPairs": 3277753,
+    "actionPairConcordance": 0.5357000774723089,
+    "actionPairs": 47759,
+    "topActionAgreement": 0.34685598377281945,
+    "parents": 986,
+    "meanRegret": 0.050300053569609086
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5884113580959712,
+    "leafPairs": 3242304,
+    "actionPairConcordance": 0.5392882124764186,
+    "actionPairs": 47177,
+    "topActionAgreement": 0.6561866125760649,
+    "parents": 986,
+    "meanRegret": 0.016460841790043
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.7188819029839794,
+    "confidentLeafPairs": 511029,
+    "leafPairConcordance": 0.5709884179802444,
+    "leafPairs": 3277753,
+    "actionPairConcordance": 0.5359094620909148,
+    "actionPairs": 47759,
+    "topActionAgreement": 0.3630831643002028,
+    "parents": 986,
+    "meanRegret": 0.051364709343798894
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.737150924898587,
+    "confidentLeafPairs": 511029,
+    "leafPairConcordance": 0.5924555633081565,
+    "leafPairs": 3277753,
+    "actionPairConcordance": 0.5596850855336167,
+    "actionPairs": 47759,
+    "topActionAgreement": 0.3772819472616633,
+    "parents": 986,
+    "meanRegret": 0.04226101989232308
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.7119838158661188,
+    "confidentLeafPairs": 508152,
+    "leafPairConcordance": 0.5770409630154897,
+    "leafPairs": 3259013,
+    "actionPairConcordance": 0.5412017617449665,
+    "actionPairs": 47680,
+    "topActionAgreement": 0.3034934497816594,
+    "parents": 916,
+    "meanRegret": 0.05180292984861333
+   }
+  },
+  "2": {
+   "rows": 141564,
+   "r0": {
+    "confidentLeafPairConcordance": 0.6686073567750684,
+    "confidentLeafPairs": 199843,
+    "leafPairConcordance": 0.5483608720310457,
+    "leafPairs": 1523432,
+    "actionPairConcordance": 0.5321002276856558,
+    "actionPairs": 86962,
+    "topActionAgreement": 0.4220522940305871,
+    "parents": 4054,
+    "meanRegret": 0.04588284397230499
+   },
+   "half": {
+    "confidentLeafPairConcordance": NaN,
+    "confidentLeafPairs": 0,
+    "leafPairConcordance": 0.5734256670615745,
+    "leafPairs": 1508369,
+    "actionPairConcordance": 0.5419923246127205,
+    "actionPairs": 85468,
+    "topActionAgreement": 0.6689689195855945,
+    "parents": 4054,
+    "meanRegret": 0.014435269477585683
+   },
+   "l5": {
+    "confidentLeafPairConcordance": 0.6873270517356125,
+    "confidentLeafPairs": 199843,
+    "leafPairConcordance": 0.5570045134932179,
+    "leafPairs": 1523432,
+    "actionPairConcordance": 0.5340723534417332,
+    "actionPairs": 86962,
+    "topActionAgreement": 0.41267883571780956,
+    "parents": 4054,
+    "meanRegret": 0.04466385124844387
+   },
+   "x2b": {
+    "confidentLeafPairConcordance": 0.6863112543346527,
+    "confidentLeafPairs": 199843,
+    "leafPairConcordance": 0.5739209232837436,
+    "leafPairs": 1523432,
+    "actionPairConcordance": 0.563389756445344,
+    "actionPairs": 86962,
+    "topActionAgreement": 0.42377898371978295,
+    "parents": 4054,
+    "meanRegret": 0.04236384336042757
+   },
+   "heart1": {
+    "confidentLeafPairConcordance": 0.6720112982849,
+    "confidentLeafPairs": 196490,
+    "leafPairConcordance": 0.5653661625305714,
+    "leafPairs": 1505083,
+    "actionPairConcordance": 0.5364478986758779,
+    "actionPairs": 86850,
+    "topActionAgreement": 0.4143688337971161,
+    "parents": 3953,
+    "meanRegret": 0.045278486994229455
+   }
+  }
+ }
+}

@@ -18,7 +18,9 @@ def load(paths):
                 reps = [x['value'] for x in e.get('repeats', []) if 'value' in x]
                 if len(reps) < 2 or len(reps) != len(e['repeats']): continue
                 h = len(reps) // 2
-                c = {'T': sum(reps) / len(reps), 'r0': r['value'],
+                m = sum(reps) / len(reps)
+                se = (sum((x - m) ** 2 for x in reps) / (len(reps) - 1) / len(reps)) ** 0.5
+                c = {'T': m, 'Tse': se, 'r0': r['value'],
                      'half_a': sum(reps[:h]) / h, 'half_b': sum(reps[h:]) / (len(reps) - h)}
                 l5 = [x['value'] for x in e.get('long5', []) if 'value' in x]
                 if l5 and len(l5) == len(e['long5']): c['l5'] = sum(l5) / len(l5)
@@ -39,7 +41,7 @@ def concord(pairs):
 def run(rows, names, target='T'):
     groups = collections.defaultdict(list)
     for r in rows: groups[r['key']].append(r)
-    leaf = collections.defaultdict(list); act = collections.defaultdict(list)
+    leaf = collections.defaultdict(list); act = collections.defaultdict(list); conf = collections.defaultdict(list)
     top = collections.Counter(); topn = collections.Counter(); regret = collections.defaultdict(float)
     for g in groups.values():
         for a, b in itertools.combinations(g, 2):
@@ -47,7 +49,10 @@ def run(rows, names, target='T'):
             for k in names:
                 ka, kb = ('half_b', 'half_b') if k == 'half' else (k, k)
                 ta, tb = (a['c']['half_a'], b['c']['half_a']) if k == 'half' else (a['c'][target], b['c'][target])
-                if ka in a['c'] and kb in b['c']: leaf[k].append((ta - tb, a['c'][ka] - b['c'][kb]))
+                if ka in a['c'] and kb in b['c']:
+                    leaf[k].append((ta - tb, a['c'][ka] - b['c'][kb]))
+                    if target == 'T' and k != 'half' and abs(ta - tb) > 2 * (a['c']['Tse'] ** 2 + b['c']['Tse'] ** 2) ** 0.5:
+                        conf[k].append((ta - tb, a['c'][ka] - b['c'][kb]))
         byact = collections.defaultdict(list)
         for r in g: byact[r['action']].append(r['c'])
         if len(byact) < 2: continue
@@ -71,15 +76,15 @@ def run(rows, names, target='T'):
                 regret[k] += means[best_t][target] - means[pick][target]
     out = {}
     for k in names:
-        c, n = concord(leaf[k]); c2, n2 = concord(act[k])
-        out[k] = {'leafPairConcordance': c, 'leafPairs': n, 'actionPairConcordance': c2, 'actionPairs': n2,
+        c, n = concord(leaf[k]); c2, n2 = concord(act[k]); c3, n3 = concord(conf[k])
+        out[k] = {'confidentLeafPairConcordance': c3, 'confidentLeafPairs': n3,'leafPairConcordance': c, 'leafPairs': n, 'actionPairConcordance': c2, 'actionPairs': n2,
                   'topActionAgreement': top[k] / topn[k] if topn[k] else None, 'parents': topn[k],
                   'meanRegret': regret[k] / topn[k] if topn[k] else None}
     return out
 
 def main(outpath, paths):
     rows = list(load(paths))
-    names = ['r0', 'half', 'l5', 'x2b', 'heart1'] + sorted({k for r in rows for k in r['c']} - {'T', 'r0', 'half_a', 'half_b', 'l5', 'x2b', 'heart1'})
+    names = ['r0', 'half', 'l5', 'x2b', 'heart1'] + sorted({k for r in rows for k in r['c']} - {'T', 'Tse', 'r0', 'half_a', 'half_b', 'l5', 'x2b', 'heart1'})
     report = {'rows': len(rows), 'targetT': run(rows, names), 'targetL5': run([r for r in rows if 'l5' in r['c']], [n for n in names if n not in ('half', 'l5')] + ['T'], 'l5'),
               'byParentScreen': {}, 'byDepth': {}}
     for s in sorted({r['screen'] for r in rows}):
@@ -93,7 +98,7 @@ def main(outpath, paths):
     for tname in ('targetT', 'targetL5'):
         print(tname)
         for k, v in report[tname].items():
-            print(f"  {k:8s} leaf {v['leafPairConcordance']:.3f} (n={v['leafPairs']})  action {v['actionPairConcordance']:.3f} (n={v['actionPairs']})  top {v['topActionAgreement']}  regret {v['meanRegret']}")
+            print(f"  {k:8s} conf {v['confidentLeafPairConcordance']:.3f} (n={v['confidentLeafPairs']})  leaf {v['leafPairConcordance']:.3f} (n={v['leafPairs']})  action {v['actionPairConcordance']:.3f} (n={v['actionPairs']})  top {v['topActionAgreement']}  regret {v['meanRegret']}")
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2:])
