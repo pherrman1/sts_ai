@@ -19030,7 +19030,7 @@ By parent screen (X2-B / heart1 / one rollout3): map 0.57 / 0.32 / 0.26 (157k le
 rewards 0.18 / 0.56 / 0.22, shop 0.46 / 0.27 / 0.18, boss relic 0.52 / 0.27 / 0.28. Two independent single rollout3
 evaluations order a sibling pair the same way 53% of the time (smoke). Held out (seeds % 4 == 3, 59.6k leaves): linear
 X2-B + heart1 blend 0.556 vs X2-B 0.534; CPU net (deck/relic/potion/offer bags, fixed observation, rooms ahead, X2-B
-logit; within-parent loss) 0.561, 0.51 without the within-parent loss. Capture cost +43% run wall time.
+logit; within-parent loss) 0.561, 0.51 without the within-parent loss. Capture with 1 repeat + 1 rollout5 cost +43% wall time on the smoke seed.
 
 **Interpretation (Inference):** one X2-B call carries about as much sibling-ranking information as the mean of 8
 rollout3 calls, but it is a fixed estimate, while averaged rollouts converge; with thousands of simulations the
