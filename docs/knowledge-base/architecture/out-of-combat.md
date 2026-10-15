@@ -724,6 +724,21 @@ reconstruction, candidate order, finite values and exact raw planner weights
 before writing. It does not create a second search or change search RNG,
 candidate ordering or returned priors; use a fresh path for each capture.
 
+`STS_OOC_SIBLING_CAPTURE=<jsonl>` (default off, research) records sibling
+leaves for learned-leaf tests: on every `STS_OOC_SIBLING_EVERY`-th searched
+decision, each tree leaf up to `STS_OOC_SIBLING_MAX_DEPTH` below the root (at
+most `STS_OOC_SIBLING_MAX_LEAVES` per root, in evaluation order) writes its
+parent state id, action, the search's own leaf value and extras computed in a
+forked child of the untouched pre-evaluation process: `_REPEATS` repeat leaf
+rollouts and `_LONG` `LEAF_COMBATS=5` rollouts on fresh `seed_seq` streams
+(policy thread state restored before each), X2-B at the leaf (`anchorValue`)
+and, with `STS_OOC_HEART1`, heart1's value head and input record
+(`heart1::leafAnnotation`). Siblings are leaves sharing a parent; the parent
+link is kept only while capture is on. The forked child needs a single-threaded
+process, as for the leaf replay probes. A20 smoke 74072220 (this capture with
+1 repeat + 1 rollout5) left the decision trace and action log byte-identical
+to capture off.
+
 `STS_OOC_MCTS_LEAF_CAPTURE=<new.jsonl>` is a default-off, simulator-only
 observational canary for #507. It requires enabled MCTS with the native CTM
 rollout leaf and exclusively creates its output (an existing file is an error).
