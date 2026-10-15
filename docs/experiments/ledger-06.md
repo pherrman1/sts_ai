@@ -18969,3 +18969,41 @@ not measured.
 
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (`LEAF_POLICY=prior` and the §487 result
 line).
+
+## §488 OOC MCTS with the distilled heart1 student C vs V4 as the tree prior at A20 (2026-10-15)
+
+**Verdict:** primary (A20 act-3 clears) `IMPROVED`, 26 vs 10 of 64, +25.0 pp [+10.9, +39.1], McNemar p = 0.0015
+(20 vs 4 discordant pairs); key secondary (floors) `NOT_SHOWN`, −1.83 [−5.45, +1.81]. Per the pre-registered rule
+student C is the candidate fast tree prior; a replication on fresh seeds comes before any default change (Philipp's
+call). No default change.
+[Pre-registration](evidence/student_c_ooc_prior_488_20261015/PREREG.md), [report](evidence/student_c_ooc_prior_488_20261015/report.json).
+
+Philipp asked (17:38Z) for the §486 seeds with distilled student C as the tree prior, on 32 Haiku workers. Both arms
+are the §486 arms (§433 `combo` with the automatic A20 CTM, chain rollouts, run-commit defaults ADR-0030..0040);
+`studentc` runs the §486 heart1 prior path with student C's weights (`studentc.bin` `eff2f74f…`, from
+`claude/heart1-distill-data@68fe88be`: silverbot `NN` at dim 64, 2 layers, 4 heads, 272k parameters, trained on
+heart1's logits over 884k OOC MCTS tree nodes, map rows below the current floor dropped). The heart1 port now reads
+the network size and map trim from the weights file; heart1 itself scores byte-identically to main. Run commit
+`0db886fe`, code `9fab3483`, binary `4b98d17d…`; seeds 107000000–107000063, one unit per seed and arm; independent
+pre-launch review PASS.
+
+All 128 units rc=0, no dropped seeds, all 32 worker tars verified from the lead container (`worker_tars.txt`; 128
+distinct units, each seed once per arm). The control reproduces the §486 `v4` rows on 64/64 seeds. The student scored
+every prior build (6.63M, no V4 fallbacks). Reached act 3: 38 (studentc) vs 43 (v4); clears given act 3 reached
+68.4% vs 23.3% (different, post-treatment subsets of seeds, so not a paired effect); deaths by act 1/2/3: 8/18/12 vs 2/19/33; boss deaths 27 vs 38; end HP +16.8 per pair. Cost: 619 vs
+460 s per run (1.35x; MCTS CPU 542 vs 402 s), about 19 core-h of unit time in all.
+
+Descriptive, against the §486 `heart1` arm on the same seeds (different binary and run): clears 26 vs 25 (10 vs 9
+discordant, McNemar p = 1.0), reached act 3 38 vs 42, mean floor 40.5 vs 42.3, 619 vs 4,310 s per run (MCTS CPU 542
+vs 4,170 s), so about 7x less wall time per run (MCTS CPU 7.7x less) for the same clear count, across separate runs.
+
+**Interpretation (Inference):** the distilled student keeps heart1's effect as a tree prior on these seeds at a
+small fraction of its cost: same pattern of many more act-3 boss kills, similar reach. Two caveats. These are the seeds
+on which §486 found the heart1 effect and the V4 result was known, so this is not an independent replication of a
+heart1-style prior; fresh seeds are needed. And act-1 deaths rose from 2 to 8 (heart1 arm in §486: 4), which the
+floor endpoint partly reflects; whether that is noise or a real early-game weakness of the student (its map top-1
+agreement with heart1 is the lowest, about 87%) is an **Open question**.
+
+**Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (distilled-student weights and the §488
+result line).
+

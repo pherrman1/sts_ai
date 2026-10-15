@@ -1,0 +1,3 @@
+student_pt claude/heart1-distill-data@68fe88be8271fa1f9b515f7a9abcf0fb9755e25f:results/C_d64_trim/student.pt 53739a4375380001fce0323935c187906b5c1d5efd65691f9d75f2dd8884e020
+export python3 tools/heart1/export_heart1_weights.py student.pt studentc.bin --allow-other-checkpoint --n-heads 4 --trim-map
+studentc_bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509

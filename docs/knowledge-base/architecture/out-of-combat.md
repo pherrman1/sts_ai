@@ -1780,8 +1780,9 @@ trajectories diverge. Default-off and other decision families are unchanged.
 
 ### heart1 policy adapter (opt-in)
 
-Last verified: 2026-10-15 for reward-potion swaps (ADR-0039), the Neow curse fix (ADR-0038), the OOC MCTS prior
-hook and the AVX forward pass; 2026-10-14 for the native port and its parity harness.
+Last verified: 2026-10-15 for distilled-student weights (network size and map trim from the file) and §488, reward-potion
+swaps (ADR-0039), the Neow curse fix (ADR-0038), the OOC MCTS prior hook and the AVX forward pass; 2026-10-14 for the
+native port and its parity harness.
 
 `STS_OOC_HEART1=<weights.bin>` makes the real run driver (`runFullRunOOC`) take
 every out-of-combat decision it can encode with silverbot's released `heart1.pt`
@@ -1798,6 +1799,18 @@ with the search and its chain.
   dropped instead of key-masked, which leaves every valid output unchanged.
 - Weights are not vendored. `tools/heart1/export_heart1_weights.py` converts
   `heart1.pt` (SHA-256 `deaba59d…`, checked) to the native file.
+- Distilled students (heart1-distill, smaller silverbot `NN`s trained on heart1's
+  logits) load through the same flag. The loader reads dim, hidden size and
+  layer count from the tensors, the head count from an optional
+  `meta.n_heads` tensor (default 8) and `meta.trim_map`; with trim the forward
+  first drops the map rows below the current floor, as the student's training
+  records did. The exporter writes the meta tensors with
+  `--allow-other-checkpoint --n-heads N [--trim-map]`; heart1's own export has
+  none and scores byte-identically to the fixed-size port. The load line
+  names the size (`[heart1] loaded PATH (dim …, heads …, hidden …, layers …,
+  trim_map …)`). Student C (dim 64, 2 layers, 4 heads, trim) matches
+  silverbot's torch forward to 1.6e-5 on 3,000 tree-node records at about
+  1.5 ms per call (heart1 about 31 ms).
 - Policy: temperature 0, the first maximum logit in token order. Gold, and
   relics on screens without a key reward, are taken before the decision, as
   silverbot does. A single offered choice is executed directly. Screens
@@ -1859,3 +1872,8 @@ with the search and its chain.
   argmax rollouts (`STS_OOC_MCTS_LEAF_POLICY=prior`) vs the chain: act-3
   clears 12 vs 10 NOT_SHOWN, floors −5.70 [−9.33, −2.17] WORSE (more act-2
   deaths); the chain stays.
+  §488 (A20, the same 64 seeds, `combo`): student C as the tree prior
+  (`STS_OOC_HEART1=studentc.bin`, `STS_OOC_MCTS_PRIOR=heart1`) vs V4: act-3
+  clears 26 vs 10 (+25.0 pp [+10.9, +39.1]) IMPROVED, floors NOT_SHOWN, at
+  619 vs 460 s per run (1.35x); about the §486 heart1 arm's 25 clears. Same
+  seeds as §486, so not an independent replication; no default change.

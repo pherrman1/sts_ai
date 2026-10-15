@@ -52,7 +52,6 @@ enum FA : int {
     FA_TAKE_KEY = 164, FA_OPEN_CHEST = 165,
 };
 
-constexpr int kDim = 256, kHeads = 8, kHeadDim = kDim / kHeads, kHidden = 1024, kLayers = 4;
 constexpr float kNormEps = 1e-5f;
 constexpr int kMapAggCap = 15;
 constexpr int kRelicInvalid = static_cast<int>(RelicId::INVALID);
@@ -557,27 +556,28 @@ void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumula
 }
 
 void rmsNorm(const float *x, const std::vector<float> &w, float *y) {
+    const int dim = int(w.size());
     float ss = 0;
-    for (int i = 0; i < kDim; ++i) ss += x[i] * x[i];
-    const float inv = 1.0f / std::sqrt(ss / kDim + kNormEps);
-    for (int i = 0; i < kDim; ++i) y[i] = x[i] * inv * w[i];
+    for (int i = 0; i < dim; ++i) ss += x[i] * x[i];
+    const float inv = 1.0f / std::sqrt(ss / dim + kNormEps);
+    for (int i = 0; i < dim; ++i) y[i] = x[i] * inv * w[i];
 }
 
 void addEmbedding(const Net::Embedding &e, int idx, float *out) {
     if (idx < 0 || idx >= e.rows) throw std::runtime_error("heart1: embedding index out of range");
-    const float *row = e.w.data() + std::size_t(idx) * kDim;
-    for (int i = 0; i < kDim; ++i) out[i] += row[i];
+    const float *row = e.w.data() + std::size_t(idx) * e.dim;
+    for (int i = 0; i < e.dim; ++i) out[i] += row[i];
 }
 
 // FixedVecEmbedding: sinusoidal features then a projection.
 void addFixedVec(const Net::FixedVec &f, const float *x, float *out) {
-    std::vector<float> s(std::size_t(f.features) * kDim);
-    const int half = kDim / 2;
+    const int half = int(f.invFreq.size()), dim = 2 * half;
+    std::vector<float> s(std::size_t(f.features) * dim);
     for (int k = 0; k < f.features; ++k)
         for (int j = 0; j < half; ++j) {
             const float a = x[k] * f.invFreq[j];
-            s[std::size_t(k) * kDim + j] = std::sin(a);
-            s[std::size_t(k) * kDim + half + j] = std::cos(a);
+            s[std::size_t(k) * dim + j] = std::sin(a);
+            s[std::size_t(k) * dim + half + j] = std::cos(a);
         }
     linear(f.proj, s.data(), 1, out, /*accumulate=*/true);
 }
@@ -586,15 +586,15 @@ void addFixedVec(const Net::FixedVec &f, const float *x, float *out) {
 // every row gets the same additions in the same order.
 void addFixedVecRows(const Net::FixedVec &f, const float *x, int n, float *out) {
     if (n == 0) return;
-    const std::size_t width = std::size_t(f.features) * kDim;
+    const int half = int(f.invFreq.size()), dim = 2 * half;
+    const std::size_t width = std::size_t(f.features) * dim;
     std::vector<float> s(width * n);
-    const int half = kDim / 2;
     for (int r = 0; r < n; ++r)
         for (int k = 0; k < f.features; ++k)
             for (int j = 0; j < half; ++j) {
                 const float a = x[std::size_t(r) * f.features + k] * f.invFreq[j];
-                s[r * width + std::size_t(k) * kDim + j] = std::sin(a);
-                s[r * width + std::size_t(k) * kDim + half + j] = std::cos(a);
+                s[r * width + std::size_t(k) * dim + j] = std::sin(a);
+                s[r * width + std::size_t(k) * dim + half + j] = std::cos(a);
             }
     linear(f.proj, s.data(), n, out, /*accumulate=*/true);
 }
@@ -715,6 +715,31 @@ bool Net::load(const std::string &file, std::string *error) {
     }
     if (!in) return fail("truncated weights file " + file);
 
+    // Sizes come from the tensors (heart1: dim 256, hidden 1024, 4 layers). The
+    // head count is not in a state dict: the export's meta.n_heads, else
+    // silverbot's ModelHP default 8. meta.trim_map != 0: the network was trained
+    // on records without the map rows below the current floor (see forward).
+    const auto shapeOf = [&](const std::string &name) {
+        const auto it = tensors.find(name);
+        return it == tensors.end() ? std::vector<int>{} : it->second.shape;
+    };
+    const auto meta = [&](const std::string &name, float fallback) {
+        const auto it = tensors.find(name);
+        if (it == tensors.end()) return fallback;
+        return it->second.data.size() == 1 ? it->second.data[0] : std::numeric_limits<float>::quiet_NaN();
+    };
+    const auto normShape = shapeOf("norm.w"), hiddenShape = shapeOf("layers.0.mlp.w1.weight");
+    if (normShape.size() != 1 || hiddenShape.size() != 2) return fail("cannot read the network size from " + file);
+    const int dim = normShape[0], hidden = hiddenShape[0];
+    const float headsMeta = meta("meta.n_heads", 8.f), trimMeta = meta("meta.trim_map", 0.f);
+    const int heads = int(headsMeta);
+    int layers = 0;
+    while (tensors.count("layers." + std::to_string(layers) + ".norm1.w")) ++layers;
+    if (!(float(heads) == headsMeta) || heads < 1 || dim < 2 || dim % 2 != 0 || dim % heads != 0 || layers < 1
+        || hidden < 1 || !(trimMeta == 0.f || trimMeta == 1.f))
+        return fail("bad network size or meta tensors in " + file);
+    dim_ = dim; heads_ = heads; hidden_ = hidden; trimMap_ = trimMeta != 0.f;
+
     std::string missing;
     const auto take = [&](const std::string &name, std::vector<int> shape) -> std::vector<float> {
         const auto it = tensors.find(name);
@@ -725,8 +750,9 @@ bool Net::load(const std::string &file, std::string *error) {
     };
     const auto embedding = [&](const std::string &name) {
         Embedding e;
-        e.w = take(name, {-1, kDim});
-        e.rows = int(e.w.size() / kDim);
+        e.w = take(name, {-1, dim});
+        e.rows = int(e.w.size() / dim);
+        e.dim = dim;
         return e;
     };
     const auto lin = [&](const std::string &prefix, int out, int inDim, bool bias) {
@@ -739,8 +765,8 @@ bool Net::load(const std::string &file, std::string *error) {
     const auto fixedVec = [&](const std::string &prefix, int features) {
         FixedVec f;
         f.features = features;
-        f.invFreq = take(prefix + ".num_embed.inv_freq", {kDim / 2});
-        f.proj = lin(prefix + ".proj", kDim, features * kDim, true);
+        f.invFreq = take(prefix + ".num_embed.inv_freq", {dim / 2});
+        f.proj = lin(prefix + ".proj", dim, features * dim, true);
         return f;
     };
     const std::string O = "obs_embed.component_embeddings.";
@@ -780,24 +806,24 @@ bool Net::load(const std::string &file, std::string *error) {
     cone_ = fixedVec(PA + "cone", 3);
     reachesBurn_ = embedding(PA + "reaches_burn.weight");
     choicePosition_ = embedding("choice_embed.position_embedding.weight");
-    blocks_.assign(kLayers, {});
-    for (int i = 0; i < kLayers; ++i) {
+    blocks_.assign(layers, {});
+    for (int i = 0; i < layers; ++i) {
         const std::string L = "layers." + std::to_string(i) + ".";
         auto &b = blocks_[i];
-        b.norm1 = take(L + "norm1.w", {kDim});
-        b.norm2 = take(L + "norm2.w", {kDim});
-        b.inProj.out = 3 * kDim; b.inProj.in = kDim;
-        b.inProj.w = take(L + "attn.in_proj_weight", {3 * kDim, kDim});
-        b.inProj.b = take(L + "attn.in_proj_bias", {3 * kDim});
-        b.outProj = lin(L + "attn.out_proj", kDim, kDim, true);
-        b.w1 = lin(L + "mlp.w1", kHidden, kDim, true);
-        b.w2 = lin(L + "mlp.w2", kDim, kHidden, false);
-        b.v = lin(L + "mlp.v", kHidden, kDim, false);
+        b.norm1 = take(L + "norm1.w", {dim});
+        b.norm2 = take(L + "norm2.w", {dim});
+        b.inProj.out = 3 * dim; b.inProj.in = dim;
+        b.inProj.w = take(L + "attn.in_proj_weight", {3 * dim, dim});
+        b.inProj.b = take(L + "attn.in_proj_bias", {3 * dim});
+        b.outProj = lin(L + "attn.out_proj", dim, dim, true);
+        b.w1 = lin(L + "mlp.w1", hidden, dim, true);
+        b.w2 = lin(L + "mlp.w2", dim, hidden, false);
+        b.v = lin(L + "mlp.v", hidden, dim, false);
     }
-    finalNorm_ = take("norm.w", {kDim});
-    valueNorm_ = take("value_head_norm.w", {kDim});
-    choiceLogits_ = lin("choice_logits", 1, kDim, true);
-    valueHead_ = lin("value_head", 1, kDim, true);
+    finalNorm_ = take("norm.w", {dim});
+    valueNorm_ = take("value_head_norm.w", {dim});
+    choiceLogits_ = lin("choice_logits", 1, dim, true);
+    valueHead_ = lin("value_head", 1, dim, true);
     if (!missing.empty()) return fail("missing or misshaped tensors:" + missing);
     constexpr int kCardCount = int(sizeof(cardStringIds) / sizeof(cardStringIds[0]));
     if (card_.rows != kCardCount || relic_.rows != kRelicInvalid + 1
@@ -807,7 +833,28 @@ bool Net::load(const std::string &file, std::string *error) {
     return true;
 }
 
-Output Net::forward(const Record &r) const {
+// distill.py trim(): drop the map rows below the current floor (none before the
+// first map node).
+static Record trimmedMap(const Record &in) {
+    Record r = in;
+    r.mapXs.clear(); r.mapYs.clear(); r.mapRooms.clear(); r.mapPathXs.clear();
+    for (std::size_t j = 0; j < in.mapYs.size(); ++j)
+        if (in.mapYs[j] >= in.mapY) {
+            r.mapXs.push_back(in.mapXs[j]);
+            r.mapYs.push_back(in.mapYs[j]);
+            r.mapRooms.push_back(in.mapRooms[j]);
+            r.mapPathXs.push_back(in.mapPathXs[j]);
+        }
+    return r;
+}
+
+Output Net::forward(const Record &record) const {
+    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record));
+    return forwardRecord(record);
+}
+
+Output Net::forwardRecord(const Record &r) const {
+    const int kDim = dim_, kHeads = heads_, kHeadDim = dim_ / heads_, kHidden = hidden_;
     const DagFeatures dag = mapDagFeatures(r);
     const int nDeck = int(r.deckCards.size()), nRelic = int(r.relics.size()), nPot = int(r.potions.size());
     const int nMap = int(r.mapXs.size());
@@ -978,7 +1025,9 @@ const Net &net() {
         std::string error;
         if (!g_net.load(weightsPath(), &error))
             throw std::runtime_error("STS_OOC_HEART1: " + error);
-        std::fprintf(stderr, "[heart1] loaded %s\n", g_net.path().c_str());
+        std::fprintf(stderr, "[heart1] loaded %s (dim %d, heads %d, hidden %d, layers %d, trim_map %d)\n",
+                     g_net.path().c_str(), g_net.dim(), g_net.heads(), g_net.hidden(), g_net.layers(),
+                     g_net.trimMap() ? 1 : 0);
     });
     return g_net;
 }

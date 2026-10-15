@@ -4,7 +4,8 @@
 // observation/choice encoding (silverbot/playouts.py construct_choice,
 // bindings/bindings-util.cpp getNNRepresentation, silverbot/network.py
 // collate_fn/map_dag_features) and the transformer forward pass
-// (silverbot/network.py NN, dim 256, 4 layers, 8 heads, value head). Weights
+// (silverbot/network.py NN with a value head; heart1 is dim 256, 4 layers, 8
+// heads, and smaller distilled students load from the same format). Weights
 // come from heart1.pt via tools/heart1/export_heart1_weights.py; they are not
 // vendored. Unset, nothing here is loaded or called.
 #ifndef STS_ONE_COMBAT_HEART1_POLICY_H
@@ -84,11 +85,17 @@ struct Output {
 class Net {
 public:
     bool load(const std::string &path, std::string *error);
+    // Map rows below the current floor are dropped first for a trim_map network.
     Output forward(const Record &) const;
     const std::string &path() const { return path_; }
+    int dim() const { return dim_; }
+    int heads() const { return heads_; }
+    int hidden() const { return hidden_; }
+    int layers() const { return int(blocks_.size()); }
+    bool trimMap() const { return trimMap_; }
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
-    struct Embedding { int rows = 0; std::vector<float> w; };
+    struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
     struct FixedVec { int features = 0; std::vector<float> invFreq; Linear proj; };
     struct Block {
         std::vector<float> norm1, norm2;
@@ -96,7 +103,11 @@ public:
     };
 
 private:
+    Output forwardRecord(const Record &) const;
+
     std::string path_;
+    int dim_ = 0, heads_ = 0, hidden_ = 0;
+    bool trimMap_ = false;
     Embedding card_, upgrade_, relic_, potion_;
     FixedVec fixedObs_;
     Embedding boss_, ascension_, keyRuby_, keyEmerald_, keySapphire_, screen_;
