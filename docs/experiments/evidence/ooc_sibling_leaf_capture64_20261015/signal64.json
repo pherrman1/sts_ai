@@ -1,0 +1,166 @@
+{
+ "all": {
+  "leaves": 225265,
+  "varT": 0.003582094960472534,
+  "noiseVar": 0.0007197262281366492,
+  "signalVar": 0.002862368732335885,
+  "r0": {
+   "corrWithT": 0.21558216717053486,
+   "corrWithExpected": 0.24116739437681697
+  },
+  "x2b": {
+   "corrWithT": 0.504771924161008,
+   "corrWithExpected": 0.5646781053471148
+  },
+  "heart1": {
+   "corrWithT": 0.29613944585726887,
+   "corrWithExpected": 0.35568130511757606
+  }
+ },
+ "byParentScreen": {
+  "1": {
+   "leaves": 12379,
+   "varT": 0.002892294771963574,
+   "noiseVar": 0.0005138346358213072,
+   "signalVar": 0.002378460136142267,
+   "r0": {
+    "corrWithT": 0.22100224288310058,
+    "corrWithExpected": 0.2437081309878028
+   },
+   "x2b": {
+    "corrWithT": 0.5971686898759259,
+    "corrWithExpected": 0.6585221190315141
+   },
+   "heart1": {
+    "corrWithT": 0.24377331052070264,
+    "corrWithExpected": 0.2688187102387666
+   }
+  },
+  "2": {
+   "leaves": 11760,
+   "varT": 0.0022473695159663616,
+   "noiseVar": 0.0005773259727814041,
+   "signalVar": 0.0016700435431849573,
+   "r0": {
+    "corrWithT": 0.181994410443904,
+    "corrWithExpected": 0.21112098102844867
+   },
+   "x2b": {
+    "corrWithT": 0.19668405494227015,
+    "corrWithExpected": 0.2281615711756396
+   },
+   "heart1": {
+    "corrWithT": 0.493126751023449,
+    "corrWithExpected": 0.5720472578993391
+   }
+  },
+  "3": {
+   "leaves": 6782,
+   "varT": 0.002297369072081579,
+   "noiseVar": 0.0004165401479942945,
+   "signalVar": 0.0018808289240872845,
+   "r0": {
+    "corrWithT": 0.24127541159914406,
+    "corrWithExpected": 0.2666574997864176
+   },
+   "x2b": {
+    "corrWithT": 0.53318049144141,
+    "corrWithExpected": 0.589270891054877
+   },
+   "heart1": {
+    "corrWithT": 0.3653900462056853,
+    "corrWithExpected": 0.4038289501705581
+   }
+  },
+  "4": {
+   "leaves": 1227,
+   "varT": 0.001220513873814356,
+   "noiseVar": 0.0003933887556312646,
+   "signalVar": 0.0008271251181830915,
+   "r0": {
+    "corrWithT": 0.11765779444884585,
+    "corrWithExpected": 0.1429244265751674
+   },
+   "x2b": {
+    "corrWithT": 0.5938950922173174,
+    "corrWithExpected": 0.7214321490436446
+   },
+   "heart1": {
+    "corrWithT": 0.2951170185724771,
+    "corrWithExpected": 0.3584924470973548
+   }
+  },
+  "5": {
+   "leaves": 156990,
+   "varT": 0.004178971149728579,
+   "noiseVar": 0.0007202303294388822,
+   "signalVar": 0.003458740820289696,
+   "r0": {
+    "corrWithT": 0.24206380533604085,
+    "corrWithExpected": 0.26607589581387425
+   },
+   "x2b": {
+    "corrWithT": 0.5150615876374682,
+    "corrWithExpected": 0.5661543374471234
+   },
+   "heart1": {
+    "corrWithT": 0.30180118563557884,
+    "corrWithExpected": 0.36861911015447996
+   }
+  },
+  "6": {
+   "leaves": 447,
+   "varT": 0.0026920523089300178,
+   "noiseVar": 0.0011390489907393787,
+   "signalVar": 0.0015530033181906393,
+   "r0": {
+    "corrWithT": 0.1741374677592639,
+    "corrWithExpected": 0.2292702899296959
+   },
+   "x2b": {
+    "corrWithT": 0.5002255080852993,
+    "corrWithExpected": 0.6585994889250065
+   },
+   "heart1": {
+    "corrWithT": 0.36461571597145265,
+    "corrWithExpected": 0.4800549358468055
+   }
+  },
+  "7": {
+   "leaves": 17109,
+   "varT": 0.0020932192006293386,
+   "noiseVar": 0.0010396139931529583,
+   "signalVar": 0.00105360520747638,
+   "r0": {
+    "corrWithT": 0.07710343984623122,
+    "corrWithExpected": 0.10867812936954217
+   },
+   "x2b": {
+    "corrWithT": 0.521691244093144,
+    "corrWithExpected": 0.735329430562149
+   },
+   "heart1": {
+    "corrWithT": 0.18179146412202876,
+    "corrWithExpected": 0.2562370277582113
+   }
+  },
+  "8": {
+   "leaves": 18571,
+   "varT": 0.0018597057632527077,
+   "noiseVar": 0.000770366860765555,
+   "signalVar": 0.0010893389024871527,
+   "r0": {
+    "corrWithT": 0.0953266823875237,
+    "corrWithExpected": 0.12455325754453445
+   },
+   "x2b": {
+    "corrWithT": 0.34879174901695176,
+    "corrWithExpected": 0.45572915637734207
+   },
+   "heart1": {
+    "corrWithT": 0.29033528771593764,
+    "corrWithExpected": 0.3793503031831366
+   }
+  }
+ }
+}

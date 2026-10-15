@@ -1,0 +1,281 @@
+{
+ "args": {
+  "out": "r490/tv_within.json",
+  "files": [
+   "d64/w01/out/cap-a20-110000000.sib.jsonl",
+   "d64/w01/out/cap-a20-110000001.sib.jsonl",
+   "d64/w02/out/cap-a20-110000002.sib.jsonl",
+   "d64/w02/out/cap-a20-110000003.sib.jsonl",
+   "d64/w03/out/cap-a20-110000004.sib.jsonl",
+   "d64/w03/out/cap-a20-110000005.sib.jsonl",
+   "d64/w04/out/cap-a20-110000006.sib.jsonl",
+   "d64/w04/out/cap-a20-110000007.sib.jsonl",
+   "d64/w05/out/cap-a20-110000008.sib.jsonl",
+   "d64/w05/out/cap-a20-110000009.sib.jsonl",
+   "d64/w06/out/cap-a20-110000010.sib.jsonl",
+   "d64/w06/out/cap-a20-110000011.sib.jsonl",
+   "d64/w07/out/cap-a20-110000012.sib.jsonl",
+   "d64/w07/out/cap-a20-110000013.sib.jsonl",
+   "d64/w08/out/cap-a20-110000014.sib.jsonl",
+   "d64/w08/out/cap-a20-110000015.sib.jsonl",
+   "d64/w09/out/cap-a20-110000016.sib.jsonl",
+   "d64/w09/out/cap-a20-110000017.sib.jsonl",
+   "d64/w10/out/cap-a20-110000018.sib.jsonl",
+   "d64/w10/out/cap-a20-110000019.sib.jsonl",
+   "d64/w11/out/cap-a20-110000020.sib.jsonl",
+   "d64/w11/out/cap-a20-110000021.sib.jsonl",
+   "d64/w12/out/cap-a20-110000022.sib.jsonl",
+   "d64/w12/out/cap-a20-110000023.sib.jsonl",
+   "d64/w13/out/cap-a20-110000024.sib.jsonl",
+   "d64/w13/out/cap-a20-110000025.sib.jsonl",
+   "d64/w14/out/cap-a20-110000026.sib.jsonl",
+   "d64/w14/out/cap-a20-110000027.sib.jsonl",
+   "d64/w15/out/cap-a20-110000028.sib.jsonl",
+   "d64/w15/out/cap-a20-110000029.sib.jsonl",
+   "d64/w16/out/cap-a20-110000030.sib.jsonl",
+   "d64/w16/out/cap-a20-110000031.sib.jsonl",
+   "d64/w17/out/cap-a20-110000032.sib.jsonl",
+   "d64/w17/out/cap-a20-110000033.sib.jsonl",
+   "d64/w18/out/cap-a20-110000034.sib.jsonl",
+   "d64/w18/out/cap-a20-110000035.sib.jsonl",
+   "d64/w19/out/cap-a20-110000036.sib.jsonl",
+   "d64/w19/out/cap-a20-110000037.sib.jsonl",
+   "d64/w20/out/cap-a20-110000038.sib.jsonl",
+   "d64/w20/out/cap-a20-110000039.sib.jsonl",
+   "d64/w21/out/cap-a20-110000040.sib.jsonl",
+   "d64/w21/out/cap-a20-110000041.sib.jsonl",
+   "d64/w22/out/cap-a20-110000042.sib.jsonl",
+   "d64/w22/out/cap-a20-110000043.sib.jsonl",
+   "d64/w23/out/cap-a20-110000044.sib.jsonl",
+   "d64/w23/out/cap-a20-110000045.sib.jsonl",
+   "d64/w24/out/cap-a20-110000046.sib.jsonl",
+   "d64/w24/out/cap-a20-110000047.sib.jsonl",
+   "d64/w25/out/cap-a20-110000048.sib.jsonl",
+   "d64/w25/out/cap-a20-110000049.sib.jsonl",
+   "d64/w26/out/cap-a20-110000050.sib.jsonl",
+   "d64/w26/out/cap-a20-110000051.sib.jsonl",
+   "d64/w27/out/cap-a20-110000052.sib.jsonl",
+   "d64/w27/out/cap-a20-110000053.sib.jsonl",
+   "d64/w28/out/cap-a20-110000054.sib.jsonl",
+   "d64/w28/out/cap-a20-110000055.sib.jsonl",
+   "d64/w29/out/cap-a20-110000056.sib.jsonl",
+   "d64/w29/out/cap-a20-110000057.sib.jsonl",
+   "d64/w30/out/cap-a20-110000058.sib.jsonl",
+   "d64/w30/out/cap-a20-110000059.sib.jsonl",
+   "d64/w31/out/cap-a20-110000060.sib.jsonl",
+   "d64/w31/out/cap-a20-110000061.sib.jsonl",
+   "d64/w32/out/cap-a20-110000062.sib.jsonl",
+   "d64/w32/out/cap-a20-110000063.sib.jsonl"
+  ],
+  "x2b": false,
+  "epochs": 20,
+  "mod": 4,
+  "within": true,
+  "target": "T"
+ },
+ "rows": 227929,
+ "train": 170967,
+ "val": 56962,
+ "bestValCorr": 0.5766979192946249,
+ "bestEpoch": 19,
+ "all": {
+  "leaves": 56026,
+  "varT": 0.004439128618413165,
+  "noiseVar": 0.0008966308421202919,
+  "signalVar": 0.003542497776292873,
+  "r0": {
+   "corrWithT": 0.2128047661864476,
+   "corrWithExpected": 0.2382184648821917
+  },
+  "x2b": {
+   "corrWithT": 0.532073738543794,
+   "corrWithExpected": 0.5956153683558957
+  },
+  "heart1": {
+   "corrWithT": 0.316617299802623,
+   "corrWithExpected": 0.3544285612853386
+  },
+  "net": {
+   "corrWithT": 0.5151744468523686,
+   "corrWithExpected": 0.5766979192946249
+  }
+ },
+ "byParentScreen": {
+  "1": {
+   "leaves": 3197,
+   "varT": 0.0036807767767441896,
+   "noiseVar": 0.0005991910762343227,
+   "signalVar": 0.003081585700509867,
+   "r0": {
+    "corrWithT": 0.23777741378892514,
+    "corrWithExpected": 0.25986824536816233
+   },
+   "x2b": {
+    "corrWithT": 0.49139362616483623,
+    "corrWithExpected": 0.5370468009628186
+   },
+   "heart1": {
+    "corrWithT": 0.17489611946254974,
+    "corrWithExpected": 0.19114493240631836
+   },
+   "net": {
+    "corrWithT": 0.47839892412934176,
+    "corrWithExpected": 0.5228448195246502
+   }
+  },
+  "2": {
+   "leaves": 2667,
+   "varT": 0.0022283080515899055,
+   "noiseVar": 0.0006238970894930504,
+   "signalVar": 0.001604410962096855,
+   "r0": {
+    "corrWithT": 0.15543178301577634,
+    "corrWithExpected": 0.18317644805891642
+   },
+   "x2b": {
+    "corrWithT": 0.1578846877276757,
+    "corrWithExpected": 0.18606719771020946
+   },
+   "heart1": {
+    "corrWithT": 0.4864492973260628,
+    "corrWithExpected": 0.5732807841231524
+   },
+   "net": {
+    "corrWithT": 0.6066846418403721,
+    "corrWithExpected": 0.714978208626324
+   }
+  },
+  "3": {
+   "leaves": 1791,
+   "varT": 0.002855380316130566,
+   "noiseVar": 0.000555300816845112,
+   "signalVar": 0.002300079499285454,
+   "r0": {
+    "corrWithT": 0.22166872609051014,
+    "corrWithExpected": 0.24698181769588112
+   },
+   "x2b": {
+    "corrWithT": 0.5180696672578768,
+    "corrWithExpected": 0.5772297715114111
+   },
+   "heart1": {
+    "corrWithT": 0.4185791550820407,
+    "corrWithExpected": 0.46637810572140237
+   },
+   "net": {
+    "corrWithT": 0.516704432386347,
+    "corrWithExpected": 0.5757086359137149
+   }
+  },
+  "4": {
+   "leaves": 406,
+   "varT": 0.0017599410301715713,
+   "noiseVar": 0.00048408217661160765,
+   "signalVar": 0.0012758588535599635,
+   "r0": {
+    "corrWithT": 0.1800905931939832,
+    "corrWithExpected": 0.21151383076113034
+   },
+   "x2b": {
+    "corrWithT": 0.6611011384935803,
+    "corrWithExpected": 0.7764538493840305
+   },
+   "heart1": {
+    "corrWithT": 0.4276547800116226,
+    "corrWithExpected": 0.5022744339907524
+   },
+   "net": {
+    "corrWithT": 0.4896351054617681,
+    "corrWithExpected": 0.575069441410495
+   }
+  },
+  "5": {
+   "leaves": 38312,
+   "varT": 0.0052680486368239824,
+   "noiseVar": 0.0008906714164450501,
+   "signalVar": 0.004377377220378932,
+   "r0": {
+    "corrWithT": 0.2438125278928318,
+    "corrWithExpected": 0.26746928609057835
+   },
+   "x2b": {
+    "corrWithT": 0.5518890218466554,
+    "corrWithExpected": 0.6054379729799456
+   },
+   "heart1": {
+    "corrWithT": 0.3276220648188038,
+    "corrWithExpected": 0.3594107347228853
+   },
+   "net": {
+    "corrWithT": 0.5378594345907054,
+    "corrWithExpected": 0.5900471162429045
+   }
+  },
+  "6": {
+   "leaves": 351,
+   "varT": 0.0028313232243089583,
+   "noiseVar": 0.0011618931855906986,
+   "signalVar": 0.0016694300387182597,
+   "r0": {
+    "corrWithT": 0.15673685030943715,
+    "corrWithExpected": 0.20411819959424127
+   },
+   "x2b": {
+    "corrWithT": 0.5121475067628432,
+    "corrWithExpected": 0.6669690427026321
+   },
+   "heart1": {
+    "corrWithT": 0.3141026925073864,
+    "corrWithExpected": 0.4090555345200208
+   },
+   "net": {
+    "corrWithT": 0.49493418619059737,
+    "corrWithExpected": 0.64455215734792
+   }
+  },
+  "7": {
+   "leaves": 3840,
+   "varT": 0.002403385859686297,
+   "noiseVar": 0.0012768574170129317,
+   "signalVar": 0.0011265284426733653,
+   "r0": {
+    "corrWithT": 0.054446497378366404,
+    "corrWithExpected": 0.07952627056025402
+   },
+   "x2b": {
+    "corrWithT": 0.5636382272244487,
+    "corrWithExpected": 0.8232677640373554
+   },
+   "heart1": {
+    "corrWithT": 0.24446031758798326,
+    "corrWithExpected": 0.35706644676599913
+   },
+   "net": {
+    "corrWithT": 0.4194496932696182,
+    "corrWithExpected": 0.6126614456310148
+   }
+  },
+  "8": {
+   "leaves": 5462,
+   "varT": 0.0024012232359953236,
+   "noiseVar": 0.001103927266430647,
+   "signalVar": 0.0012972959695646766,
+   "r0": {
+    "corrWithT": 0.084449345165441,
+    "corrWithExpected": 0.11489285475728071
+   },
+   "x2b": {
+    "corrWithT": 0.34938253592501906,
+    "corrWithExpected": 0.4753329570066418
+   },
+   "heart1": {
+    "corrWithT": 0.30495956205929825,
+    "corrWithExpected": 0.4148957532101891
+   },
+   "net": {
+    "corrWithT": 0.22981901652397282,
+    "corrWithExpected": 0.3126674675122925
+   }
+  }
+ }
+}
