@@ -19049,3 +19049,35 @@ ground truth either (Philipp); comparisons to it say nothing about true win prob
 
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` and
 `docs/knowledge-base/operations/environment-variables.md` (the capture option).
+
+## §490 CPU value net on 64-rollout leaf labels vs X2-B at A20 (2026-10-15)
+
+**Verdict:** descriptive offline measurement, no gameplay A/B. With 64 rollout3 evaluations per leaf as labels, the
+§489 CPU value net with X2-B as an input reaches a within-parent correlation with the expected rollout3 return of
+0.645 at the last of 20 epochs (0.624–0.659 over epochs 5–20) on held-out seeds, vs X2-B 0.596, one rollout3 0.238 and
+heart1's value head 0.354. Without the X2-B input the net reaches 0.570 (0.492–0.577). No learned leaf is promoted
+or ported; no default changes. Philipp closed this line here and continues it in Codex.
+[Evidence](evidence/ooc_sibling_leaf_capture64_20261015/README.md).
+
+Capture: `STS_OOC_SIBLING_CAPTURE` as in §489 with every 2nd searched decision, ≤ 128 leaves per root, depth ≤ 2,
+64 repeat rollout3 per leaf, no rollout5, heart1 annotation; option cap for `_REPEATS` raised from 16 to 256 (capture
+only). Stack: §486 `v4` arm. Run commit `12b7a055`, binary `992f5cdc…`; seeds 110000000–063 (A20), 32 workers × 2
+seeds on Philipp's word, pre-launch review PASS; smoke 74072240 (rc=0, 2,440 leaves all with 64 repeats); all 64 units
+rc=0, tars verified from the lead container; 225k leaves; unit wall time 7–41 min (median 21).
+
+Metric as §489 (`sib_signal.py`). Signal is 80% of within-parent var(T) (33% with §489's 8 repeats). All 64 seeds
+(X2-B / heart1 / one rollout3): 0.56 / 0.36 / 0.24, matching §489. Held out (seeds % 4 == 3, 57.0k leaves), best-epoch
+net with X2-B vs X2-B by parent screen: map 0.67 vs 0.61 (38k leaves), card rewards 0.72 vs 0.19 (heart1 0.57), event
+0.54 vs 0.54, shop 0.51 vs 0.48, rest 0.75 vs 0.82, boss relic 0.60 vs 0.58. Same net and training script as §489
+(selection bug fixed there): bags of deck/relic/potion/offer tokens, fixed observation, rooms ahead, X2-B logit;
+within-parent loss; seed 0; training is deterministic (a repeat run reproduced the no-X2-B log exactly).
+
+**Interpretation (Inference):** by §489's formula, the net's 0.645 matches the mean of about 12 independent rollout3
+calls, X2-B's 0.596 about 9; the gain over X2-B comes mostly from card-reward parents, where X2-B barely ranks
+siblings. Cleaner labels moved the net from 0.561 (§489, 8-rollout labels) to 0.645; whether more data, features or
+a larger net move it further is untested. The held-out ranking says nothing yet about play: a C++ port and a paired
+run with the net as (or blended into) the OOC MCTS leaf are needed, and the net's per-call cost is not measured.
+Rollout3 itself ends in X2-B and is not ground truth (Philipp).
+
+**Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (result line) and
+`docs/knowledge-base/operations/environment-variables.md` (`_REPEATS` cap).
