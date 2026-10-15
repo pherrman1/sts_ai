@@ -19,6 +19,11 @@ a20 = pd.read_csv(sys.argv[1]).set_index("potion")
 a0 = pd.read_csv(sys.argv[2]).set_index("potion")
 v = pd.DataFrame({"a20": a20.hp - WIN_BONUS * a20.death, "a0": a0.hp - WIN_BONUS * a0.death})
 v["mean"] = v.mean(axis=1)
+# Philipp (2026-10-15): Smoke Bomb's value is reduced by 8 HP.
+ADJUST = {"SMOKE_BOMB": -8.0}
+for name, delta in ADJUST.items():
+    if name in v.index:
+        v.loc[name, "mean"] += delta
 v = v.sort_values("mean", ascending=False)
 print(v.round(2).to_string())
 print("spearman a20 vs a0:", round(v.a20.corr(v.a0, method="spearman"), 3))

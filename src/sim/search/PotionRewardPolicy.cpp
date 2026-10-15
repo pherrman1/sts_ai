@@ -20,7 +20,7 @@ int search::potionKeepRank(Potion p) {
     // SilverEvalWeights::winBonus (53). Mean of the two ascensions.
     switch (p) {
         case Potion::BLOOD_POTION:           return 1163;
-        case Potion::SMOKE_BOMB:             return 1034;
+        case Potion::SMOKE_BOMB:             return 234;   // fitted 1034 minus 8 HP (Philipp, 2026-10-15)
         case Potion::FRUIT_JUICE:            return 924;
         case Potion::HEART_OF_IRON:          return 666;
         case Potion::ENTROPIC_BREW:          return 628;
