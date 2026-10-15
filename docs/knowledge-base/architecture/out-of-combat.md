@@ -744,7 +744,7 @@ leaf and 0.30 for heart1's value head (0.56 on card-reward parents); a CPU
 value net on 8-rollout means reached 0.56 vs X2-B 0.53 held out. No learned leaf
 replaces rollout3. §490 (64 rollout3 labels per leaf, 64 further A20 seeds): the
 same net with X2-B as an input reaches 0.645 vs X2-B 0.596 held out (card-reward
-parents 0.72 vs 0.19); offline only, not ported or played.
+parents 0.72 vs 0.19 at the best held-out epoch); offline only, not ported or played.
 
 `STS_OOC_MCTS_LEAF_CAPTURE=<new.jsonl>` is a default-off, simulator-only
 observational canary for #507. It requires enabled MCTS with the native CTM

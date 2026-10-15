@@ -19066,8 +19066,8 @@ seeds on Philipp's word, pre-launch review PASS; smoke 74072240 (rc=0, 2,440 lea
 rc=0, tars verified from the lead container; 225k leaves; unit wall time 7–41 min (median 21).
 
 Metric as §489 (`sib_signal.py`). Signal is 80% of within-parent var(T) (33% with §489's 8 repeats). All 64 seeds
-(X2-B / heart1 / one rollout3): 0.56 / 0.36 / 0.24, matching §489. Held out (seeds % 4 == 3, 57.0k leaves), best-epoch
-net with X2-B vs X2-B by parent screen: map 0.67 vs 0.61 (38k leaves), card rewards 0.72 vs 0.19 (heart1 0.57), event
+(X2-B / heart1 / one rollout3): 0.56 / 0.36 / 0.24, matching §489. Held out (seeds % 4 == 3, 57.0k leaves), the epoch with the best
+held-out correlation (epoch 10, selected on the held-out seeds), net with X2-B vs X2-B by parent screen: map 0.67 vs 0.61 (38k leaves), card rewards 0.72 vs 0.19 (heart1 0.57), event
 0.54 vs 0.54, shop 0.51 vs 0.48, rest 0.75 vs 0.82, boss relic 0.60 vs 0.58. Same net and training script as §489
 (selection bug fixed there): bags of deck/relic/potion/offer tokens, fixed observation, rooms ahead, X2-B logit;
 within-parent loss; seed 0; training is deterministic (a repeat run reproduced the no-X2-B log exactly).
