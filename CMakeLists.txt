@@ -101,6 +101,14 @@ add_test(NAME rest_recall_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(rest_recall_filter PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(neow_transform_curse_test tests/neow_transform_curse_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(neow_transform_curse_test PRIVATE include json/include)
+add_test(NAME neow_transform_curse COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:neow_transform_curse_test>)
+set_tests_properties(neow_transform_curse PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)

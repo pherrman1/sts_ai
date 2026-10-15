@@ -6,7 +6,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 #include "constants/RelicPools.h"
 #include "constants/CardPools.h"
@@ -2345,6 +2347,16 @@ void GameContext::discardPotionAtIdx(int idx) {
     --potionCount;
 }
 
+// STS_NEOW_TRANSFORM_CURSE_FIX (ADR-0038): unset or 1 = Neow "transform two
+// cards" adds a curse only with the CURSE drawback; 0 = the legacy curse on
+// every transform pick. Read per Neow choice, so tests can switch it.
+static bool neowTransformCurseFix() {
+    const char *value = std::getenv("STS_NEOW_TRANSFORM_CURSE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_NEOW_TRANSFORM_CURSE_FIX must be 0 or 1");
+}
+
 void GameContext::chooseNeowOption(const Neow::Option &o) {
 
     switch (o.d) {
@@ -2473,11 +2485,15 @@ void GameContext::chooseNeowOption(const Neow::Option &o) {
         case Neow::Bonus::TRANSFORM_TWO_CARDS:
             info.transformRng = NEOW_RNG;
             openCardSelectScreen(CardSelectScreenType::TRANSFORM, 2);
-            {
+            if (!neowTransformCurseFix()) {
+                // Legacy: a curse whatever the drawback, and the CURSE
+                // drawback's pending curse is dropped.
                 int roll = cardRng.random(static_cast<int>(9));
                 deck.obtain(*this, curseCardPool[roll]);
+                regainControlAction = returnToMapAction;
             }
-            regainControlAction = returnToMapAction;
+            // Otherwise regainControlAction stays as the drawback set it, so
+            // only the CURSE drawback adds a curse, after the transforms.
             break;
 
         case Neow::Bonus::TWENTY_PERCENT_HP_BONUS:

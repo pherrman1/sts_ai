@@ -71,7 +71,7 @@ def divergence_cause(keys, theirs, mine):
     """Name the known engine difference behind a first record mismatch."""
     t, o = theirs["record"], mine.get("record", {})
     if keys == ["obs.deck.cards", "obs.deck.upgrades"] and len(o["obs.deck.cards"]) == len(t["obs.deck.cards"]) + 1:
-        return "neow_transform_curse"  # ours adds a curse on Neow "transform two cards"
+        return "neow_transform_curse"  # STS_NEOW_TRANSFORM_CURSE_FIX=0: ours adds a curse on "transform two cards"
     if keys == ["potions_offered"] and len(o["potions_offered"]) < len(t["potions_offered"]):
         return "potion_slot_full"  # ours offers reward potions only with a free slot
     return "other"
