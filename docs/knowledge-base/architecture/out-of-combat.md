@@ -762,6 +762,39 @@ independent-repeat label variance or reproducible full-state replay. The
 teacher remains `NOT_QUALIFIED` for this research milestone; no learned leaf,
 training loop or default change is enabled.
 
+The opt-in `one_combat oocselectivesilvergen 1 SEED PLAN.json OUT.jsonl`
+audit, always launched through `tools/seed_guard.sh`, selects actual MAP choices
+from a fixed native V4 source trajectory. Its ordinary calibrated CTM MCTS
+baseline retains its selected action and highest-visit alternative. Forked
+copies rescore only those two choices with CTM, native Silver and extra CTM
+continuations, then use disjoint plain-native reference futures. This isolates
+conditional decision utility; it does not establish whole-run wins, trainable
+labels or a new runtime policy. The prospective [protocol](../../experiments/evidence/ooc_selective_silver_audit_20261014/PROTOCOL.md)
+binds source selection, loaded models, streams, CPU matching, resource caps and
+failure rules; its runner freezes a clean reviewed producer before seeds.
+
+`oocselectivesilverspec` exports loaded CTM identity and effective source policy
+without driving a game. `oocselectivesilverselftest` checks native sampler
+isolation, RAW transfer, nonce consumption and the requested-three-combat
+first-MAP checkpoint horizon, including mandatory fourth-combat chains and
+earlier terminals. These audit modes are unavailable in the live advisor.
+The default-empty thread-local `t_realRunContextObserver` observes the real
+`runFullRunOOC` context after each path update and before policy execution.
+The audit uses that address to exclude action/RAW callbacks from hypothetical
+copies; child scopes clear it and restore all inherited observers afterward.
+Ordinary runs leave this observer unset. Whole-source CPU accounting includes
+startup/provenance hashing utilities, retained separately from evaluator forks. The audit-only nonce wrapper consumes
+one outer RNG draw per combat and puts resolver draws in a private substream;
+ordinary CTM baseline search retains its original sampler. The audit-only fork
+callback transports a tagged success/error envelope. Standard messages are
+bounded to1024 printable ASCII bytes; nonstandard exceptions have an explicit
+category. The parent rejects error/malformed envelopes, retains failed-child
+CPU, and invalidates the source. Ordinary replay-fork behavior is unchanged; serialization/transport errors
+outside the callback envelope can still produce generic fork status.
+Fixed evaluation-start records include candidate key/bits and future seed
+before launch, so a failed branch remains identifiable. These records are
+diagnostics, never deployable features or substitute replay snapshots.
+
 `one_combat oocleafreplayprobe 1 SEED 20`, through `tools/seed_guard.sh`, is
 a separate disposable Linux diagnostic for that collector. It requires a
 native teacher with 4096 simulations, three continuation combats and a fresh

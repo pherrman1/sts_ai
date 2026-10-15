@@ -281,4 +281,5 @@ bool oocHypotheticalCardTaken(const GameContext &, const PathHistory &, const st
     const std::function<void(GameContext &)> &step);
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &, int realCombats);
 void oocMctsAdapterSelfTest();
+int oocSelectiveSilverHorizonSelfTest();
 }

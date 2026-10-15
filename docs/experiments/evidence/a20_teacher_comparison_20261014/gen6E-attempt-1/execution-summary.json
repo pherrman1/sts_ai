@@ -1,0 +1,42 @@
+{
+  "canaryExcluded": true,
+  "jobs": [
+    {
+      "seed": 97150701,
+      "returncode": 0,
+      "cpuSeconds": 95.89999999999999,
+      "wallSeconds": 95.93209486801061,
+      "timedOut": false
+    },
+    {
+      "seed": 97150710,
+      "returncode": 0,
+      "cpuSeconds": 69.68,
+      "wallSeconds": 69.69012093998026,
+      "timedOut": false
+    },
+    {
+      "seed": 97150711,
+      "returncode": 0,
+      "cpuSeconds": 57.25,
+      "wallSeconds": 57.268144328991184,
+      "timedOut": false
+    },
+    {
+      "seed": 97150712,
+      "returncode": 0,
+      "cpuSeconds": 89.7,
+      "wallSeconds": 89.72563936799997,
+      "timedOut": false
+    },
+    {
+      "seed": 97150713,
+      "returncode": 137,
+      "cpuSeconds": 180.1,
+      "wallSeconds": 180.17924184299773,
+      "timedOut": false
+    }
+  ],
+  "totalCpuSeconds": 492.63,
+  "verdict": "INVALID_OR_INSUFFICIENT"
+}

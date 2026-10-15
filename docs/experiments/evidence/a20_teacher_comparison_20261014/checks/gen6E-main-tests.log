@@ -1,0 +1,23 @@
+Test project /home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache
+    Start  56: vwin_refresh_policy_export
+1/7 Test  #56: vwin_refresh_policy_export .......   Passed    0.15 sec
+    Start  97: teacher_schema_compat
+2/7 Test  #97: teacher_schema_compat ............   Passed    0.21 sec
+    Start  98: a20_teacher_runner
+3/7 Test  #98: a20_teacher_runner ...............   Passed    0.06 sec
+    Start  99: a20_teacher_analysis
+4/7 Test  #99: a20_teacher_analysis .............   Passed    0.22 sec
+    Start 100: learned_stop_teacher_contract
+5/7 Test #100: learned_stop_teacher_contract ....   Passed    0.19 sec
+    Start 101: ctm_offline_score_rows
+6/7 Test #101: ctm_offline_score_rows ...........   Passed    0.16 sec
+    Start 121: silver_searcher
+7/7 Test #121: silver_searcher ..................   Passed    0.64 sec
+
+100% tests passed out of 7
+
+Label Time Summary:
+core              =   1.48 sec*proc (6 tests)
+research-repro    =   0.84 sec*proc (5 tests)
+
+Total Test time (real) =   1.63 sec

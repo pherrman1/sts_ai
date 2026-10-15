@@ -1,0 +1,4339 @@
+{
+  "schemaVersion": "a20_teacher_comparison_analysis_v1",
+  "verdict": "CANARY_VALID",
+  "reasons": [],
+  "freezeSha256": "135f3c11f90528283d385b52c9f603e792bf73bd67b4c232ee40837e3b50bd1f",
+  "sourceSeeds": [
+    97150701
+  ],
+  "canaryExcluded": false,
+  "inputHashes": {
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/freeze.json": "135f3c11f90528283d385b52c9f603e792bf73bd67b4c232ee40837e3b50bd1f",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.states.csv": "9bb4ecbf460f0e75ded1dc3fe92199ccec9bb4fca3f62df4b55bbc3a0a3ebe24",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.arms.csv": "b585de5f1b3b3eb277abbcfd930055fab60c44a4d70f9256956c43f5c765a80a",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.samples.csv": "c76c49578ea7402fc8ebce84928c98e1052e8ada2187e9ea9a7ce3ae10c61af1",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.manifest.json": "76afc4712989ec162ee3a3081c454a9420825707dfd5f4445b2da6e5aa44048c",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.receipt.json": "236ddd1a8a74e63aa18d311963c33f08b5506f0e5c679be2b7b47d6060c3c3d7",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.started.json": "9b2c5b8aafcc4b135bb3a6666fe47c9c85b7cf41c4791d10390e6769c034190e",
+    "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/canary.log": "e2cf33ce2f04cb8fb08d8396c39d2ed0f69d930832479324b23a27a168ac57e0"
+  },
+  "sources": 1,
+  "matchedStates": 5,
+  "coverage": {
+    "captured": 15,
+    "selected": 5,
+    "unsupported": 0,
+    "unsupportedReasons": {}
+  },
+  "perState": [
+    {
+      "stateId": "s97150701-f0",
+      "sourceSeed": 97150701,
+      "act": 1,
+      "floor": 1,
+      "roomClass": "NORMAL",
+      "reference": {
+        "death": 0.0,
+        "rawHp": 65.0,
+        "potions": 0.0,
+        "escape": 0.0
+      },
+      "forecast": {
+        "ctm": {
+          "deathBrier": 6.190248313388787e-11,
+          "deathBias": 7.86781311e-06,
+          "hpSquaredError": 15.354324069448385,
+          "hpBias": 3.9184594000000033,
+          "hpAbsoluteError": 3.9184594000000033,
+          "predictedDeath": 7.86781311e-06,
+          "predictedRawHp": 68.9184594,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "plain2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 10.5625,
+          "hpBias": 3.25,
+          "hpAbsoluteError": 3.25,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 68.25,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "prior2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 9.0,
+          "hpBias": 3.0,
+          "hpAbsoluteError": 3.0,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 68.0,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "plain10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 9.0,
+          "hpBias": 3.0,
+          "hpAbsoluteError": 3.0,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 68.0,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "prior10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 9.0,
+          "hpBias": 3.0,
+          "hpAbsoluteError": 3.0,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 68.0,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        }
+      },
+      "repeat": {
+        "ctm": {
+          "death": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 32,
+            "mean": 69.5,
+            "sampleVariance": 5.870967741935484,
+            "sd": 2.423007994608248,
+            "min": 63.0,
+            "max": 73.0,
+            "range": 10.0
+          },
+          "potions": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 68.25,
+            "sampleVariance": 18.25,
+            "sd": 4.272001872658765,
+            "min": 65.0,
+            "max": 74.0,
+            "range": 9.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 68.0,
+            "sampleVariance": 20.666666666666668,
+            "sd": 4.546060565661952,
+            "min": 64.0,
+            "max": 74.0,
+            "range": 10.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 68.0,
+            "sampleVariance": 20.666666666666668,
+            "sd": 4.546060565661952,
+            "min": 64.0,
+            "max": 74.0,
+            "range": 10.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 68.0,
+            "sampleVariance": 20.666666666666668,
+            "sd": 4.546060565661952,
+            "min": 64.0,
+            "max": 74.0,
+            "range": 10.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        }
+      },
+      "cost": {
+        "ctm": {
+          "expectationCpuSeconds": 6.906305e-05,
+          "prepareAndSampleCpuSeconds": 3.32063e-05
+        },
+        "plain2k": {
+          "forecastCpuSeconds": 0.20886225,
+          "fightCpuSeconds": 0.0522155625,
+          "decisions": 37,
+          "simulations": 74000,
+          "cpuSecondsPerDecision": 0.005644925675675675
+        },
+        "prior2k": {
+          "forecastCpuSeconds": 0.221495936,
+          "fightCpuSeconds": 0.055373984,
+          "decisions": 36,
+          "simulations": 72000,
+          "cpuSecondsPerDecision": 0.006152664888888889
+        },
+        "plain10k": {
+          "forecastCpuSeconds": 1.097377545,
+          "fightCpuSeconds": 0.27434438625,
+          "decisions": 34,
+          "simulations": 340000,
+          "cpuSecondsPerDecision": 0.032275810147058825
+        },
+        "prior10k": {
+          "forecastCpuSeconds": 1.134443228,
+          "fightCpuSeconds": 0.283610807,
+          "decisions": 35,
+          "simulations": 350000,
+          "cpuSecondsPerDecision": 0.03241266365714286
+        }
+      },
+      "controllerContrasts": {
+        "prior2k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": -1.0,
+            "max": 0.0,
+            "range": 1.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.0031584215000000034,
+            "sampleVariance": 0.00014212694601474437,
+            "sd": 0.011921700634336712,
+            "min": -0.011075288999999995,
+            "max": 0.018011644000000007,
+            "range": 0.029086933000000002
+          }
+        },
+        "prior10k_minus_plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.009266420749999992,
+            "sampleVariance": 4.878879708493534e-05,
+            "sd": 0.006984897786291174,
+            "min": 0.0020833389999999966,
+            "max": 0.018182033999999958,
+            "range": 0.01609869499999996
+          }
+        },
+        "plain10k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": -1.0,
+            "max": 0.0,
+            "range": 1.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.22212882375,
+            "sampleVariance": 0.028263023529932835,
+            "sd": 0.1681161013405106,
+            "min": 0.02610091,
+            "max": 0.435691861,
+            "range": 0.40959095100000004
+          }
+        },
+        "prior10k_minus_prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.228236823,
+            "sampleVariance": 0.028438267805484318,
+            "sd": 0.16863649606619652,
+            "min": 0.026554641999999996,
+            "max": 0.435862251,
+            "range": 0.40930760899999996
+          }
+        }
+      },
+      "controlCpuSeconds": 0.119555311
+    },
+    {
+      "stateId": "s97150701-f2",
+      "sourceSeed": 97150701,
+      "act": 1,
+      "floor": 6,
+      "roomClass": "ELITE",
+      "reference": {
+        "death": 0.0,
+        "rawHp": 70.0,
+        "potions": 0.0,
+        "escape": 0.0
+      },
+      "forecast": {
+        "ctm": {
+          "deathBrier": 1.4410503114500023e-06,
+          "deathBias": 0.00120043755,
+          "hpSquaredError": 33.76202994640614,
+          "hpBias": -5.810510300000004,
+          "hpAbsoluteError": 5.810510300000004,
+          "predictedDeath": 0.00120043755,
+          "predictedRawHp": 64.1894897,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.001953125,
+              "referenceMatchProbability": 0.96875
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.001953125,
+              "referenceMatchProbability": 0.96875
+            }
+          }
+        },
+        "plain2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 42.25,
+          "hpBias": -6.5,
+          "hpAbsoluteError": 6.5,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 63.5,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "prior2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 0.25,
+          "hpBias": -0.5,
+          "hpAbsoluteError": 0.5,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 69.5,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "plain10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 42.25,
+          "hpBias": -6.5,
+          "hpAbsoluteError": 6.5,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 63.5,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "prior10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 0.25,
+          "hpBias": -0.5,
+          "hpAbsoluteError": 0.5,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 69.5,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        }
+      },
+      "repeat": {
+        "ctm": {
+          "death": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 32,
+            "mean": 65.25,
+            "sampleVariance": 139.2258064516129,
+            "sd": 11.799398563130788,
+            "min": 39.0,
+            "max": 78.0,
+            "range": 39.0
+          },
+          "potions": {
+            "n": 32,
+            "mean": 0.03125,
+            "sampleVariance": 0.03125,
+            "sd": 0.1767766952966369,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 63.5,
+            "sampleVariance": 137.0,
+            "sd": 11.704699910719626,
+            "min": 46.0,
+            "max": 70.0,
+            "range": 24.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 69.5,
+            "sampleVariance": 1.0,
+            "sd": 1.0,
+            "min": 68.0,
+            "max": 70.0,
+            "range": 2.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 63.5,
+            "sampleVariance": 137.0,
+            "sd": 11.704699910719626,
+            "min": 46.0,
+            "max": 70.0,
+            "range": 24.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 69.5,
+            "sampleVariance": 1.0,
+            "sd": 1.0,
+            "min": 68.0,
+            "max": 70.0,
+            "range": 2.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        }
+      },
+      "cost": {
+        "ctm": {
+          "expectationCpuSeconds": 6.874344999999999e-05,
+          "prepareAndSampleCpuSeconds": 3.2609650000000004e-05
+        },
+        "plain2k": {
+          "forecastCpuSeconds": 0.227098897,
+          "fightCpuSeconds": 0.05677472425,
+          "decisions": 42,
+          "simulations": 84000,
+          "cpuSecondsPerDecision": 0.005407116595238095
+        },
+        "prior2k": {
+          "forecastCpuSeconds": 0.220813404,
+          "fightCpuSeconds": 0.055203351,
+          "decisions": 40,
+          "simulations": 80000,
+          "cpuSecondsPerDecision": 0.0055203351
+        },
+        "plain10k": {
+          "forecastCpuSeconds": 1.3136157339999999,
+          "fightCpuSeconds": 0.32840393349999997,
+          "decisions": 42,
+          "simulations": 420000,
+          "cpuSecondsPerDecision": 0.031276565095238094
+        },
+        "prior10k": {
+          "forecastCpuSeconds": 1.287794819,
+          "fightCpuSeconds": 0.32194870475,
+          "decisions": 41,
+          "simulations": 410000,
+          "cpuSecondsPerDecision": 0.031409629731707314
+        }
+      },
+      "controllerContrasts": {
+        "prior2k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 6.0,
+            "sampleVariance": 144.0,
+            "sd": 12.0,
+            "min": 0.0,
+            "max": 24.0,
+            "range": 24.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": -0.001571373249999999,
+            "sampleVariance": 5.317176211316693e-05,
+            "sd": 0.0072918970174548495,
+            "min": -0.011649697,
+            "max": 0.005581632000000003,
+            "range": 0.017231329000000004
+          }
+        },
+        "prior10k_minus_plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 6.0,
+            "sampleVariance": 144.0,
+            "sd": 12.0,
+            "min": 0.0,
+            "max": 24.0,
+            "range": 24.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": -0.006455228749999993,
+            "sampleVariance": 0.005537592847935583,
+            "sd": 0.07441500418555107,
+            "min": -0.115080505,
+            "max": 0.053976472,
+            "range": 0.169056977
+          }
+        },
+        "plain10k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.27162920925,
+            "sampleVariance": 0.006591742155035644,
+            "sd": 0.08118954461650615,
+            "min": 0.181380538,
+            "max": 0.378635492,
+            "range": 0.197254954
+          }
+        },
+        "prior10k_minus_prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.26674535374999997,
+            "sampleVariance": 0.002456388886266823,
+            "sd": 0.04956197016127207,
+            "min": 0.197896745,
+            "max": 0.316097798,
+            "range": 0.11820105299999997
+          }
+        }
+      },
+      "controlCpuSeconds": 0.294458788
+    },
+    {
+      "stateId": "s97150701-f8",
+      "sourceSeed": 97150701,
+      "act": 1,
+      "floor": 16,
+      "roomClass": "BOSS",
+      "reference": {
+        "death": 0.0,
+        "rawHp": 46.0,
+        "potions": 0.0,
+        "escape": 0.0
+      },
+      "forecast": {
+        "ctm": {
+          "deathBrier": 0.011112432489363529,
+          "deathBias": 0.105415523,
+          "hpSquaredError": 224.2288279196929,
+          "hpBias": -14.974272200000001,
+          "hpAbsoluteError": 14.974272200000001,
+          "predictedDeath": 0.105415523,
+          "predictedRawHp": 31.0257278,
+          "categorical": {
+            "outcome": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "maxHp": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "gold": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "potions": {
+              "brier": 0.03515625,
+              "referenceMatchProbability": 0.84375
+            },
+            "relics": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "deckHash": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "smokeBombUsed": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "stolenGold": {
+              "brier": 0.017578125,
+              "referenceMatchProbability": 0.90625
+            },
+            "nonHpJoint": {
+              "brier": 0.03515625,
+              "referenceMatchProbability": 0.84375
+            }
+          }
+        },
+        "plain2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 52.5625,
+          "hpBias": -7.25,
+          "hpAbsoluteError": 7.25,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 38.75,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "prior2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 68.0625,
+          "hpBias": -8.25,
+          "hpAbsoluteError": 8.25,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 37.75,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "plain10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 39.0625,
+          "hpBias": -6.25,
+          "hpAbsoluteError": 6.25,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 39.75,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        },
+        "prior10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 49.0,
+          "hpBias": -7.0,
+          "hpAbsoluteError": 7.0,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 39.0,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            }
+          }
+        }
+      },
+      "repeat": {
+        "ctm": {
+          "death": {
+            "n": 32,
+            "mean": 0.09375,
+            "sampleVariance": 0.08770161290322581,
+            "sd": 0.29614458108029906,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 32,
+            "mean": 29.125,
+            "sampleVariance": 240.88709677419354,
+            "sd": 15.520537902218258,
+            "min": 0.0,
+            "max": 58.0,
+            "range": 58.0
+          },
+          "potions": {
+            "n": 32,
+            "mean": 0.0625,
+            "sampleVariance": 0.06048387096774194,
+            "sd": 0.24593468841898236,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 38.75,
+            "sampleVariance": 110.25,
+            "sd": 10.5,
+            "min": 30.0,
+            "max": 54.0,
+            "range": 24.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 37.75,
+            "sampleVariance": 162.91666666666666,
+            "sd": 12.76388133236386,
+            "min": 22.0,
+            "max": 50.0,
+            "range": 28.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 39.75,
+            "sampleVariance": 38.916666666666664,
+            "sd": 6.238322424070967,
+            "min": 34.0,
+            "max": 48.0,
+            "range": 14.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 39.0,
+            "sampleVariance": 65.33333333333333,
+            "sd": 8.082903768654761,
+            "min": 32.0,
+            "max": 50.0,
+            "range": 18.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        }
+      },
+      "cost": {
+        "ctm": {
+          "expectationCpuSeconds": 6.9554e-05,
+          "prepareAndSampleCpuSeconds": 3.343025e-05
+        },
+        "plain2k": {
+          "forecastCpuSeconds": 1.6378176500000001,
+          "fightCpuSeconds": 0.40945441250000003,
+          "decisions": 137,
+          "simulations": 274000,
+          "cpuSecondsPerDecision": 0.011954873357664235
+        },
+        "prior2k": {
+          "forecastCpuSeconds": 1.5789000579999999,
+          "fightCpuSeconds": 0.39472501449999997,
+          "decisions": 128,
+          "simulations": 256000,
+          "cpuSecondsPerDecision": 0.012335156703124999
+        },
+        "plain10k": {
+          "forecastCpuSeconds": 9.166595019999999,
+          "fightCpuSeconds": 2.2916487549999998,
+          "decisions": 136,
+          "simulations": 1360000,
+          "cpuSecondsPerDecision": 0.06740143397058823
+        },
+        "prior10k": {
+          "forecastCpuSeconds": 9.06743978,
+          "fightCpuSeconds": 2.266859945,
+          "decisions": 135,
+          "simulations": 1350000,
+          "cpuSecondsPerDecision": 0.0671662205925926
+        }
+      },
+      "controllerContrasts": {
+        "prior2k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -1.0,
+            "sampleVariance": 112.66666666666667,
+            "sd": 10.614455552060438,
+            "min": -14.0,
+            "max": 11.0,
+            "range": 25.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": -0.014729398000000019,
+            "sampleVariance": 0.0011763390405668238,
+            "sd": 0.03429779935457702,
+            "min": -0.04762759999999999,
+            "max": 0.03346390599999999,
+            "range": 0.08109150599999998
+          }
+        },
+        "prior10k_minus_plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -0.75,
+            "sampleVariance": 32.916666666666664,
+            "sd": 5.737304826019502,
+            "min": -9.0,
+            "max": 4.0,
+            "range": 13.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": -0.024788809999999994,
+            "sampleVariance": 0.06548606583125587,
+            "sd": 0.25590245374215514,
+            "min": -0.3669411400000002,
+            "max": 0.2500223399999997,
+            "range": 0.6169634799999999
+          }
+        },
+        "plain10k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 1.0,
+            "sampleVariance": 51.333333333333336,
+            "sd": 7.164728420068226,
+            "min": -6.0,
+            "max": 11.0,
+            "range": 17.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 1.8821943425,
+            "sampleVariance": 0.008681764981803642,
+            "sd": 0.09317598929876539,
+            "min": 1.782336366,
+            "max": 2.007655565,
+            "range": 0.22531919899999986
+          }
+        },
+        "prior10k_minus_prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 1.25,
+            "sampleVariance": 154.25,
+            "sd": 12.419742348374221,
+            "min": -12.0,
+            "max": 18.0,
+            "range": 30.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 1.8721349305,
+            "sampleVariance": 0.03231537869693017,
+            "sd": 0.17976478714400707,
+            "min": 1.6611991789999998,
+            "max": 2.084308287,
+            "range": 0.423109108
+          }
+        }
+      },
+      "controlCpuSeconds": 2.19948328
+    },
+    {
+      "stateId": "s97150701-f10",
+      "sourceSeed": 97150701,
+      "act": 2,
+      "floor": 25,
+      "roomClass": "ELITE",
+      "reference": {
+        "death": 0.0,
+        "rawHp": 38.0,
+        "potions": 0.0,
+        "escape": 0.0
+      },
+      "forecast": {
+        "ctm": {
+          "deathBrier": 0.0006959800071334889,
+          "deathBias": 0.026381433,
+          "hpSquaredError": 170.71044166314442,
+          "hpBias": 13.065620600000003,
+          "hpAbsoluteError": 13.065620600000003,
+          "predictedDeath": 0.026381433,
+          "predictedRawHp": 51.0656206,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "maxHp": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "gold": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "potions": {
+              "brier": 0.0234375,
+              "referenceMatchProbability": 0.875
+            },
+            "relics": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "deckHash": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "smokeBombUsed": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "stolenGold": {
+              "brier": 0.0078125,
+              "referenceMatchProbability": 0.9375
+            },
+            "nonHpJoint": {
+              "brier": 0.0234375,
+              "referenceMatchProbability": 0.875
+            }
+          }
+        },
+        "plain2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 324.0,
+          "hpBias": 18.0,
+          "hpAbsoluteError": 18.0,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 56.0,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            }
+          }
+        },
+        "prior2k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 495.0625,
+          "hpBias": 22.25,
+          "hpAbsoluteError": 22.25,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 60.25,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            }
+          }
+        },
+        "plain10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 517.5625,
+          "hpBias": 22.75,
+          "hpAbsoluteError": 22.75,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 60.75,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            }
+          }
+        },
+        "prior10k": {
+          "deathBrier": 0.0,
+          "deathBias": 0.0,
+          "hpSquaredError": 315.0625,
+          "hpBias": 17.75,
+          "hpAbsoluteError": 17.75,
+          "predictedDeath": 0.0,
+          "predictedRawHp": 55.75,
+          "categorical": {
+            "outcome": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "maxHp": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "gold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "potions": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            },
+            "relics": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "deckHash": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "smokeBombUsed": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "stolenGold": {
+              "brier": 0.0,
+              "referenceMatchProbability": 1.0
+            },
+            "nonHpJoint": {
+              "brier": 0.125,
+              "referenceMatchProbability": 0.75
+            }
+          }
+        }
+      },
+      "repeat": {
+        "ctm": {
+          "death": {
+            "n": 32,
+            "mean": 0.0625,
+            "sampleVariance": 0.06048387096774194,
+            "sd": 0.24593468841898236,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 32,
+            "mean": 45.40625,
+            "sampleVariance": 351.9909274193548,
+            "sd": 18.76142125264914,
+            "min": 0.0,
+            "max": 72.0,
+            "range": 72.0
+          },
+          "potions": {
+            "n": 32,
+            "mean": 0.0625,
+            "sampleVariance": 0.06048387096774194,
+            "sd": 0.24593468841898236,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 56.0,
+            "sampleVariance": 8.666666666666666,
+            "sd": 2.943920288775949,
+            "min": 53.0,
+            "max": 59.0,
+            "range": 6.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 60.25,
+            "sampleVariance": 70.91666666666667,
+            "sd": 8.421203397773187,
+            "min": 52.0,
+            "max": 72.0,
+            "range": 20.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 60.75,
+            "sampleVariance": 87.58333333333333,
+            "sd": 9.358596760910972,
+            "min": 52.0,
+            "max": 74.0,
+            "range": 22.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 55.75,
+            "sampleVariance": 10.916666666666666,
+            "sd": 3.304037933599835,
+            "min": 52.0,
+            "max": 59.0,
+            "range": 7.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        }
+      },
+      "cost": {
+        "ctm": {
+          "expectationCpuSeconds": 7.00855e-05,
+          "prepareAndSampleCpuSeconds": 3.365465e-05
+        },
+        "plain2k": {
+          "forecastCpuSeconds": 1.1176888859999998,
+          "fightCpuSeconds": 0.27942222149999996,
+          "decisions": 89,
+          "simulations": 178000,
+          "cpuSecondsPerDecision": 0.01255830208988764
+        },
+        "prior2k": {
+          "forecastCpuSeconds": 1.172847343,
+          "fightCpuSeconds": 0.29321183575,
+          "decisions": 92,
+          "simulations": 184000,
+          "cpuSecondsPerDecision": 0.012748340684782608
+        },
+        "plain10k": {
+          "forecastCpuSeconds": 6.387433743,
+          "fightCpuSeconds": 1.59685843575,
+          "decisions": 89,
+          "simulations": 890000,
+          "cpuSecondsPerDecision": 0.07176891846067415
+        },
+        "prior10k": {
+          "forecastCpuSeconds": 6.1452873,
+          "fightCpuSeconds": 1.536321825,
+          "decisions": 85,
+          "simulations": 850000,
+          "cpuSecondsPerDecision": 0.07229749764705883
+        }
+      },
+      "controllerContrasts": {
+        "prior2k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 4.25,
+            "sampleVariance": 84.25,
+            "sd": 9.17877987534291,
+            "min": -1.0,
+            "max": 18.0,
+            "range": 19.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.013789614250000005,
+            "sampleVariance": 0.0002088514479374907,
+            "sd": 0.014451693601010599,
+            "min": -0.005087096000000013,
+            "max": 0.02719483300000003,
+            "range": 0.03228192900000004
+          }
+        },
+        "prior10k_minus_plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -5.0,
+            "sampleVariance": 100.0,
+            "sd": 10.0,
+            "min": -20.0,
+            "max": 0.0,
+            "range": 20.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": -0.06053661075,
+            "sampleVariance": 0.036844937705576286,
+            "sd": 0.19195035218924786,
+            "min": -0.25767465999999994,
+            "max": 0.12405265700000001,
+            "range": 0.38172731699999995
+          }
+        },
+        "plain10k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 4.75,
+            "sampleVariance": 103.58333333333333,
+            "sd": 10.177589760514683,
+            "min": -1.0,
+            "max": 20.0,
+            "range": 21.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 1.31743621425,
+            "sampleVariance": 0.1768428552904361,
+            "sd": 0.42052687820213835,
+            "min": 0.718068088,
+            "max": 1.6514017879999998,
+            "range": 0.9333336999999998
+          }
+        },
+        "prior10k_minus_prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -4.5,
+            "sampleVariance": 81.0,
+            "sd": 9.0,
+            "min": -18.0,
+            "max": 0.0,
+            "range": 18.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 1.24310998925,
+            "sampleVariance": 0.08015868652371005,
+            "sd": 0.2831230942959441,
+            "min": 0.819449018,
+            "max": 1.411705622,
+            "range": 0.5922566039999999
+          }
+        }
+      },
+      "controlCpuSeconds": 2.07293359
+    },
+    {
+      "stateId": "s97150701-f14",
+      "sourceSeed": 97150701,
+      "act": 2,
+      "floor": 33,
+      "roomClass": "BOSS",
+      "reference": {
+        "death": 1.0,
+        "rawHp": 0.0,
+        "potions": 0.0,
+        "escape": 0.0
+      },
+      "forecast": {
+        "ctm": {
+          "deathBrier": 0.16034425137138691,
+          "deathBias": -0.40043008300000005,
+          "hpSquaredError": 336.0024166779397,
+          "hpBias": 18.3303687,
+          "hpAbsoluteError": 18.3303687,
+          "predictedDeath": 0.599569917,
+          "predictedRawHp": 18.3303687,
+          "categorical": {
+            "outcome": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "maxHp": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "gold": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "potions": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "relics": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "deckHash": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "smokeBombUsed": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "stolenGold": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            },
+            "nonHpJoint": {
+              "brier": 0.330078125,
+              "referenceMatchProbability": 0.59375
+            }
+          }
+        },
+        "plain2k": {
+          "deathBrier": 0.25,
+          "deathBias": -0.5,
+          "hpSquaredError": 612.5625,
+          "hpBias": 24.75,
+          "hpAbsoluteError": 24.75,
+          "predictedDeath": 0.5,
+          "predictedRawHp": 24.75,
+          "categorical": {
+            "outcome": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "maxHp": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "gold": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "potions": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "relics": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "deckHash": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "smokeBombUsed": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "stolenGold": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "nonHpJoint": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            }
+          }
+        },
+        "prior2k": {
+          "deathBrier": 0.25,
+          "deathBias": -0.5,
+          "hpSquaredError": 742.5625,
+          "hpBias": 27.25,
+          "hpAbsoluteError": 27.25,
+          "predictedDeath": 0.5,
+          "predictedRawHp": 27.25,
+          "categorical": {
+            "outcome": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "maxHp": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "gold": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "potions": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "relics": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "deckHash": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "smokeBombUsed": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "stolenGold": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "nonHpJoint": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            }
+          }
+        },
+        "plain10k": {
+          "deathBrier": 0.5625,
+          "deathBias": -0.75,
+          "hpSquaredError": 1482.25,
+          "hpBias": 38.5,
+          "hpAbsoluteError": 38.5,
+          "predictedDeath": 0.25,
+          "predictedRawHp": 38.5,
+          "categorical": {
+            "outcome": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "maxHp": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "gold": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "potions": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "relics": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "deckHash": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "smokeBombUsed": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "stolenGold": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            },
+            "nonHpJoint": {
+              "brier": 1.125,
+              "referenceMatchProbability": 0.25
+            }
+          }
+        },
+        "prior10k": {
+          "deathBrier": 0.25,
+          "deathBias": -0.5,
+          "hpSquaredError": 855.5625,
+          "hpBias": 29.25,
+          "hpAbsoluteError": 29.25,
+          "predictedDeath": 0.5,
+          "predictedRawHp": 29.25,
+          "categorical": {
+            "outcome": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "maxHp": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "gold": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "potions": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "relics": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "deckHash": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "smokeBombUsed": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "stolenGold": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            },
+            "nonHpJoint": {
+              "brier": 0.5,
+              "referenceMatchProbability": 0.5
+            }
+          }
+        }
+      },
+      "repeat": {
+        "ctm": {
+          "death": {
+            "n": 32,
+            "mean": 0.59375,
+            "sampleVariance": 0.24899193548387097,
+            "sd": 0.49899091723584604,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 32,
+            "mean": 16.15625,
+            "sampleVariance": 545.7489919354839,
+            "sd": 23.36127119690801,
+            "min": 0.0,
+            "max": 79.0,
+            "range": 79.0
+          },
+          "potions": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 32,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.5,
+            "sampleVariance": 0.3333333333333333,
+            "sd": 0.5773502691896257,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 24.75,
+            "sampleVariance": 816.9166666666666,
+            "sd": 28.58175408659634,
+            "min": 0.0,
+            "max": 50.0,
+            "range": 50.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.5,
+            "sampleVariance": 0.3333333333333333,
+            "sd": 0.5773502691896257,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 27.25,
+            "sampleVariance": 990.25,
+            "sd": 31.468237955119125,
+            "min": 0.0,
+            "max": 55.0,
+            "range": 55.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 38.5,
+            "sampleVariance": 659.6666666666666,
+            "sd": 25.68397684679432,
+            "min": 0.0,
+            "max": 52.0,
+            "range": 52.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        },
+        "prior10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.5,
+            "sampleVariance": 0.3333333333333333,
+            "sd": 0.5773502691896257,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 29.25,
+            "sampleVariance": 1142.25,
+            "sd": 33.797189232242374,
+            "min": 0.0,
+            "max": 60.0,
+            "range": 60.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          }
+        }
+      },
+      "cost": {
+        "ctm": {
+          "expectationCpuSeconds": 7.177365e-05,
+          "prepareAndSampleCpuSeconds": 2.256485e-05
+        },
+        "plain2k": {
+          "forecastCpuSeconds": 2.506372313,
+          "fightCpuSeconds": 0.62659307825,
+          "decisions": 158,
+          "simulations": 316000,
+          "cpuSecondsPerDecision": 0.015863115905063292
+        },
+        "prior2k": {
+          "forecastCpuSeconds": 2.511613357,
+          "fightCpuSeconds": 0.62790333925,
+          "decisions": 156,
+          "simulations": 312000,
+          "cpuSecondsPerDecision": 0.016100085621794873
+        },
+        "plain10k": {
+          "forecastCpuSeconds": 13.776639509999999,
+          "fightCpuSeconds": 3.4441598774999997,
+          "decisions": 159,
+          "simulations": 1590000,
+          "cpuSecondsPerDecision": 0.08664553150943395
+        },
+        "prior10k": {
+          "forecastCpuSeconds": 14.19234864,
+          "fightCpuSeconds": 3.54808716,
+          "decisions": 156,
+          "simulations": 1560000,
+          "cpuSecondsPerDecision": 0.09097659384615385
+        }
+      },
+      "controllerContrasts": {
+        "prior2k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 2.5,
+            "sampleVariance": 9.0,
+            "sd": 3.0,
+            "min": 0.0,
+            "max": 6.0,
+            "range": 6.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.0013102609999999515,
+            "sampleVariance": 0.0027098324479257513,
+            "sd": 0.05205605102123817,
+            "min": -0.05834294200000001,
+            "max": 0.06101937599999996,
+            "range": 0.11936231799999997
+          }
+        },
+        "prior10k_minus_plain10k": {
+          "death": {
+            "n": 4,
+            "mean": 0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": 0.0,
+            "max": 1.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": -9.25,
+            "sampleVariance": 824.9166666666666,
+            "sd": 28.721362548922826,
+            "min": -52.0,
+            "max": 8.0,
+            "range": 60.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 0.10392728250000005,
+            "sampleVariance": 0.059398677685405354,
+            "sd": 0.24371843936273135,
+            "min": -0.19523041999999968,
+            "max": 0.4017518200000003,
+            "range": 0.59698224
+          }
+        },
+        "plain10k_minus_plain2k": {
+          "death": {
+            "n": 4,
+            "mean": -0.25,
+            "sampleVariance": 0.25,
+            "sd": 0.5,
+            "min": -1.0,
+            "max": 0.0,
+            "range": 1.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 13.75,
+            "sampleVariance": 652.25,
+            "sd": 25.53918557824427,
+            "min": 0.0,
+            "max": 52.0,
+            "range": 52.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 2.8175667992499998,
+            "sampleVariance": 0.23651653783900026,
+            "sd": 0.4863296596332577,
+            "min": 2.3774235790000002,
+            "max": 3.300926024,
+            "range": 0.9235024449999996
+          }
+        },
+        "prior10k_minus_prior2k": {
+          "death": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "rawHp": {
+            "n": 4,
+            "mean": 2.0,
+            "sampleVariance": 6.0,
+            "sd": 2.449489742783178,
+            "min": 0.0,
+            "max": 5.0,
+            "range": 5.0
+          },
+          "potions": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "escape": {
+            "n": 4,
+            "mean": 0.0,
+            "sampleVariance": 0.0,
+            "sd": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0
+          },
+          "cpuSeconds": {
+            "n": 4,
+            "mean": 2.92018382075,
+            "sampleVariance": 0.09628856975895586,
+            "sd": 0.3103039957186434,
+            "min": 2.502737458,
+            "max": 3.214958946,
+            "range": 0.712221488
+          }
+        }
+      },
+      "controlCpuSeconds": 2.9909347
+    }
+  ],
+  "perSource": {
+    "97150701": {
+      "coverage": {
+        "captured": 15,
+        "selected": 5,
+        "matched": 5,
+        "unsupported": 0,
+        "unsupportedReasons": {},
+        "selectedStateIds": [
+          "s97150701-f0",
+          "s97150701-f2",
+          "s97150701-f8",
+          "s97150701-f10",
+          "s97150701-f14"
+        ],
+        "absentSlots": [
+          {
+            "act": 3,
+            "roomClass": "BOSS"
+          }
+        ],
+        "finalFloor": 33,
+        "finalOutcome": "DEATH"
+      },
+      "summary": {
+        "matchedStates": 5,
+        "forecast": {
+          "ctm": {
+            "deathBrier": 0.03443082099601957,
+            "deathBias": -0.05348496432737801,
+            "hpSquaredError": 156.01160805532632,
+            "hpBias": 2.9059332400000004,
+            "hpAbsoluteError": 11.219846240000003,
+            "predictedDeath": 0.146515035672622,
+            "predictedRawHp": 46.70593324,
+            "categorical": {
+              "outcome": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "maxHp": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "gold": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "potions": {
+                "brier": 0.078125,
+                "referenceMatchProbability": 0.85625
+              },
+              "relics": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "deckHash": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "smokeBombUsed": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "stolenGold": {
+                "brier": 0.07109375,
+                "referenceMatchProbability": 0.8875
+              },
+              "nonHpJoint": {
+                "brier": 0.078125,
+                "referenceMatchProbability": 0.85625
+              }
+            },
+            "hpRmse": 12.490460682269742
+          },
+          "plain2k": {
+            "deathBrier": 0.05,
+            "deathBias": -0.1,
+            "hpSquaredError": 208.3875,
+            "hpBias": 6.45,
+            "hpAbsoluteError": 11.95,
+            "predictedDeath": 0.1,
+            "predictedRawHp": 50.25,
+            "categorical": {
+              "outcome": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "maxHp": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "gold": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "potions": {
+                "brier": 0.125,
+                "referenceMatchProbability": 0.85
+              },
+              "relics": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "deckHash": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "smokeBombUsed": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "stolenGold": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "nonHpJoint": {
+                "brier": 0.125,
+                "referenceMatchProbability": 0.85
+              }
+            },
+            "hpRmse": 14.435632996166119
+          },
+          "prior2k": {
+            "deathBrier": 0.05,
+            "deathBias": -0.1,
+            "hpSquaredError": 262.9875,
+            "hpBias": 8.75,
+            "hpAbsoluteError": 12.25,
+            "predictedDeath": 0.1,
+            "predictedRawHp": 52.55,
+            "categorical": {
+              "outcome": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "maxHp": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "gold": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "potions": {
+                "brier": 0.125,
+                "referenceMatchProbability": 0.85
+              },
+              "relics": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "deckHash": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "smokeBombUsed": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "stolenGold": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "nonHpJoint": {
+                "brier": 0.125,
+                "referenceMatchProbability": 0.85
+              }
+            },
+            "hpRmse": 16.21688934413749
+          },
+          "plain10k": {
+            "deathBrier": 0.1125,
+            "deathBias": -0.15,
+            "hpSquaredError": 418.025,
+            "hpBias": 10.3,
+            "hpAbsoluteError": 15.4,
+            "predictedDeath": 0.05,
+            "predictedRawHp": 54.1,
+            "categorical": {
+              "outcome": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "maxHp": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "gold": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "potions": {
+                "brier": 0.25,
+                "referenceMatchProbability": 0.8
+              },
+              "relics": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "deckHash": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "smokeBombUsed": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "stolenGold": {
+                "brier": 0.225,
+                "referenceMatchProbability": 0.85
+              },
+              "nonHpJoint": {
+                "brier": 0.25,
+                "referenceMatchProbability": 0.8
+              }
+            },
+            "hpRmse": 20.44565968610453
+          },
+          "prior10k": {
+            "deathBrier": 0.05,
+            "deathBias": -0.1,
+            "hpSquaredError": 245.775,
+            "hpBias": 8.5,
+            "hpAbsoluteError": 11.5,
+            "predictedDeath": 0.1,
+            "predictedRawHp": 52.3,
+            "categorical": {
+              "outcome": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "maxHp": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "gold": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "potions": {
+                "brier": 0.125,
+                "referenceMatchProbability": 0.85
+              },
+              "relics": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "deckHash": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "smokeBombUsed": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "stolenGold": {
+                "brier": 0.1,
+                "referenceMatchProbability": 0.9
+              },
+              "nonHpJoint": {
+                "brier": 0.125,
+                "referenceMatchProbability": 0.85
+              }
+            },
+            "hpRmse": 15.677212762477902
+          }
+        },
+        "cost": {
+          "ctm": {
+            "expectationCpuSeconds": 6.984393e-05,
+            "prepareAndSampleCpuSeconds": 3.109314e-05
+          },
+          "plain2k": {
+            "forecastCpuSeconds": 1.1395679992,
+            "fightCpuSeconds": 0.2848919998,
+            "decisions": 92.6,
+            "simulations": 185200,
+            "cpuSecondsPerDecision": 0.01230634988336933
+          },
+          "prior2k": {
+            "forecastCpuSeconds": 1.1411340196,
+            "fightCpuSeconds": 0.2852835049,
+            "decisions": 90.4,
+            "simulations": 180800,
+            "cpuSecondsPerDecision": 0.012623163933628318
+          },
+          "plain10k": {
+            "forecastCpuSeconds": 6.3483323104,
+            "fightCpuSeconds": 1.5870830776,
+            "decisions": 92,
+            "simulations": 920000,
+            "cpuSecondsPerDecision": 0.0690036120695652
+          },
+          "prior10k": {
+            "forecastCpuSeconds": 6.3654627534,
+            "fightCpuSeconds": 1.59136568835,
+            "decisions": 90.4,
+            "simulations": 904000,
+            "cpuSecondsPerDecision": 0.07041441098893805
+          }
+        },
+        "controllerContrasts": {
+          "prior2k_minus_plain2k": {
+            "death": 0.0,
+            "rawHp": 2.3,
+            "potions": 0.0,
+            "escape": 0.0,
+            "cpuSeconds": 0.00039150509999998854
+          },
+          "prior10k_minus_plain10k": {
+            "death": 0.05,
+            "rawHp": -1.8,
+            "potions": 0.0,
+            "escape": 0.0,
+            "cpuSeconds": 0.004282610750000012
+          },
+          "plain10k_minus_plain2k": {
+            "death": -0.05,
+            "rawHp": 3.85,
+            "potions": 0.0,
+            "escape": 0.0,
+            "cpuSeconds": 1.3021910777999999
+          },
+          "prior10k_minus_prior2k": {
+            "death": 0.0,
+            "rawHp": -0.25,
+            "potions": 0.0,
+            "escape": 0.0,
+            "cpuSeconds": 1.30608218345
+          }
+        }
+      }
+    }
+  },
+  "equalSourceMeans": {
+    "forecast": {
+      "ctm": {
+        "deathBrier": 0.03443082099601957,
+        "deathBias": -0.05348496432737801,
+        "hpSquaredError": 156.01160805532632,
+        "hpBias": 2.9059332400000004,
+        "hpAbsoluteError": 11.219846240000003,
+        "predictedDeath": 0.146515035672622,
+        "predictedRawHp": 46.70593324,
+        "categorical": {
+          "outcome": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "maxHp": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "gold": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "potions": {
+            "brier": 0.078125,
+            "referenceMatchProbability": 0.85625
+          },
+          "relics": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "deckHash": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "smokeBombUsed": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "stolenGold": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "nonHpJoint": {
+            "brier": 0.078125,
+            "referenceMatchProbability": 0.85625
+          }
+        },
+        "hpRmse": 12.490460682269742
+      },
+      "plain2k": {
+        "deathBrier": 0.05,
+        "deathBias": -0.1,
+        "hpSquaredError": 208.3875,
+        "hpBias": 6.45,
+        "hpAbsoluteError": 11.95,
+        "predictedDeath": 0.1,
+        "predictedRawHp": 50.25,
+        "categorical": {
+          "outcome": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "maxHp": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "gold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "potions": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          },
+          "relics": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "deckHash": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "smokeBombUsed": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "stolenGold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "nonHpJoint": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          }
+        },
+        "hpRmse": 14.435632996166119
+      },
+      "prior2k": {
+        "deathBrier": 0.05,
+        "deathBias": -0.1,
+        "hpSquaredError": 262.9875,
+        "hpBias": 8.75,
+        "hpAbsoluteError": 12.25,
+        "predictedDeath": 0.1,
+        "predictedRawHp": 52.55,
+        "categorical": {
+          "outcome": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "maxHp": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "gold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "potions": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          },
+          "relics": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "deckHash": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "smokeBombUsed": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "stolenGold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "nonHpJoint": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          }
+        },
+        "hpRmse": 16.21688934413749
+      },
+      "plain10k": {
+        "deathBrier": 0.1125,
+        "deathBias": -0.15,
+        "hpSquaredError": 418.025,
+        "hpBias": 10.3,
+        "hpAbsoluteError": 15.4,
+        "predictedDeath": 0.05,
+        "predictedRawHp": 54.1,
+        "categorical": {
+          "outcome": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "maxHp": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "gold": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "potions": {
+            "brier": 0.25,
+            "referenceMatchProbability": 0.8
+          },
+          "relics": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "deckHash": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "smokeBombUsed": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "stolenGold": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "nonHpJoint": {
+            "brier": 0.25,
+            "referenceMatchProbability": 0.8
+          }
+        },
+        "hpRmse": 20.44565968610453
+      },
+      "prior10k": {
+        "deathBrier": 0.05,
+        "deathBias": -0.1,
+        "hpSquaredError": 245.775,
+        "hpBias": 8.5,
+        "hpAbsoluteError": 11.5,
+        "predictedDeath": 0.1,
+        "predictedRawHp": 52.3,
+        "categorical": {
+          "outcome": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "maxHp": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "gold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "potions": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          },
+          "relics": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "deckHash": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "smokeBombUsed": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "stolenGold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "nonHpJoint": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          }
+        },
+        "hpRmse": 15.677212762477902
+      }
+    },
+    "cost": {
+      "ctm": {
+        "expectationCpuSeconds": 6.984393e-05,
+        "prepareAndSampleCpuSeconds": 3.109314e-05
+      },
+      "plain2k": {
+        "forecastCpuSeconds": 1.1395679992,
+        "fightCpuSeconds": 0.2848919998,
+        "decisions": 92.6,
+        "simulations": 185200,
+        "cpuSecondsPerDecision": 0.01230634988336933
+      },
+      "prior2k": {
+        "forecastCpuSeconds": 1.1411340196,
+        "fightCpuSeconds": 0.2852835049,
+        "decisions": 90.4,
+        "simulations": 180800,
+        "cpuSecondsPerDecision": 0.012623163933628318
+      },
+      "plain10k": {
+        "forecastCpuSeconds": 6.3483323104,
+        "fightCpuSeconds": 1.5870830776,
+        "decisions": 92,
+        "simulations": 920000,
+        "cpuSecondsPerDecision": 0.0690036120695652
+      },
+      "prior10k": {
+        "forecastCpuSeconds": 6.3654627534,
+        "fightCpuSeconds": 1.59136568835,
+        "decisions": 90.4,
+        "simulations": 904000,
+        "cpuSecondsPerDecision": 0.07041441098893805
+      }
+    },
+    "controllerContrasts": {
+      "prior2k_minus_plain2k": {
+        "death": 0.0,
+        "rawHp": 2.3,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 0.00039150509999998854
+      },
+      "prior10k_minus_plain10k": {
+        "death": 0.05,
+        "rawHp": -1.8,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 0.004282610750000012
+      },
+      "plain10k_minus_plain2k": {
+        "death": -0.05,
+        "rawHp": 3.85,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 1.3021910777999999
+      },
+      "prior10k_minus_prior2k": {
+        "death": 0.0,
+        "rawHp": -0.25,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 1.30608218345
+      }
+    }
+  },
+  "pooledStateMeans": {
+    "matchedStates": 5,
+    "forecast": {
+      "ctm": {
+        "deathBrier": 0.03443082099601957,
+        "deathBias": -0.05348496432737801,
+        "hpSquaredError": 156.01160805532632,
+        "hpBias": 2.9059332400000004,
+        "hpAbsoluteError": 11.219846240000003,
+        "predictedDeath": 0.146515035672622,
+        "predictedRawHp": 46.70593324,
+        "categorical": {
+          "outcome": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "maxHp": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "gold": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "potions": {
+            "brier": 0.078125,
+            "referenceMatchProbability": 0.85625
+          },
+          "relics": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "deckHash": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "smokeBombUsed": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "stolenGold": {
+            "brier": 0.07109375,
+            "referenceMatchProbability": 0.8875
+          },
+          "nonHpJoint": {
+            "brier": 0.078125,
+            "referenceMatchProbability": 0.85625
+          }
+        },
+        "hpRmse": 12.490460682269742
+      },
+      "plain2k": {
+        "deathBrier": 0.05,
+        "deathBias": -0.1,
+        "hpSquaredError": 208.3875,
+        "hpBias": 6.45,
+        "hpAbsoluteError": 11.95,
+        "predictedDeath": 0.1,
+        "predictedRawHp": 50.25,
+        "categorical": {
+          "outcome": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "maxHp": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "gold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "potions": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          },
+          "relics": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "deckHash": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "smokeBombUsed": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "stolenGold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "nonHpJoint": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          }
+        },
+        "hpRmse": 14.435632996166119
+      },
+      "prior2k": {
+        "deathBrier": 0.05,
+        "deathBias": -0.1,
+        "hpSquaredError": 262.9875,
+        "hpBias": 8.75,
+        "hpAbsoluteError": 12.25,
+        "predictedDeath": 0.1,
+        "predictedRawHp": 52.55,
+        "categorical": {
+          "outcome": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "maxHp": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "gold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "potions": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          },
+          "relics": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "deckHash": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "smokeBombUsed": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "stolenGold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "nonHpJoint": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          }
+        },
+        "hpRmse": 16.21688934413749
+      },
+      "plain10k": {
+        "deathBrier": 0.1125,
+        "deathBias": -0.15,
+        "hpSquaredError": 418.025,
+        "hpBias": 10.3,
+        "hpAbsoluteError": 15.4,
+        "predictedDeath": 0.05,
+        "predictedRawHp": 54.1,
+        "categorical": {
+          "outcome": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "maxHp": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "gold": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "potions": {
+            "brier": 0.25,
+            "referenceMatchProbability": 0.8
+          },
+          "relics": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "deckHash": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "smokeBombUsed": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "stolenGold": {
+            "brier": 0.225,
+            "referenceMatchProbability": 0.85
+          },
+          "nonHpJoint": {
+            "brier": 0.25,
+            "referenceMatchProbability": 0.8
+          }
+        },
+        "hpRmse": 20.44565968610453
+      },
+      "prior10k": {
+        "deathBrier": 0.05,
+        "deathBias": -0.1,
+        "hpSquaredError": 245.775,
+        "hpBias": 8.5,
+        "hpAbsoluteError": 11.5,
+        "predictedDeath": 0.1,
+        "predictedRawHp": 52.3,
+        "categorical": {
+          "outcome": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "maxHp": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "gold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "potions": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          },
+          "relics": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "deckHash": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "smokeBombUsed": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "stolenGold": {
+            "brier": 0.1,
+            "referenceMatchProbability": 0.9
+          },
+          "nonHpJoint": {
+            "brier": 0.125,
+            "referenceMatchProbability": 0.85
+          }
+        },
+        "hpRmse": 15.677212762477902
+      }
+    },
+    "cost": {
+      "ctm": {
+        "expectationCpuSeconds": 6.984393e-05,
+        "prepareAndSampleCpuSeconds": 3.109314e-05
+      },
+      "plain2k": {
+        "forecastCpuSeconds": 1.1395679992,
+        "fightCpuSeconds": 0.2848919998,
+        "decisions": 92.6,
+        "simulations": 185200,
+        "cpuSecondsPerDecision": 0.01230634988336933
+      },
+      "prior2k": {
+        "forecastCpuSeconds": 1.1411340196,
+        "fightCpuSeconds": 0.2852835049,
+        "decisions": 90.4,
+        "simulations": 180800,
+        "cpuSecondsPerDecision": 0.012623163933628318
+      },
+      "plain10k": {
+        "forecastCpuSeconds": 6.3483323104,
+        "fightCpuSeconds": 1.5870830776,
+        "decisions": 92,
+        "simulations": 920000,
+        "cpuSecondsPerDecision": 0.0690036120695652
+      },
+      "prior10k": {
+        "forecastCpuSeconds": 6.3654627534,
+        "fightCpuSeconds": 1.59136568835,
+        "decisions": 90.4,
+        "simulations": 904000,
+        "cpuSecondsPerDecision": 0.07041441098893805
+      }
+    },
+    "controllerContrasts": {
+      "prior2k_minus_plain2k": {
+        "death": 0.0,
+        "rawHp": 2.3,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 0.00039150509999998854
+      },
+      "prior10k_minus_plain10k": {
+        "death": 0.05,
+        "rawHp": -1.8,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 0.004282610750000012
+      },
+      "plain10k_minus_plain2k": {
+        "death": -0.05,
+        "rawHp": 3.85,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 1.3021910777999999
+      },
+      "prior10k_minus_prior2k": {
+        "death": 0.0,
+        "rawHp": -0.25,
+        "potions": 0.0,
+        "escape": 0.0,
+        "cpuSeconds": 1.30608218345
+      }
+    }
+  },
+  "execution": {
+    "totalCpuSecondsIncludingExcludedCanary": 95.89999999999999,
+    "jobs": [
+      {
+        "seed": 97150701,
+        "cpuSeconds": 95.89999999999999,
+        "wallSeconds": 95.93209486801061
+      }
+    ]
+  },
+  "costScopes": {
+    "silver": "cpuSeconds and all derived fight/forecast/decision CPU values time playoutBattle only; exclude exitBattle, RAW copy and post-callback work.",
+    "ctmExpectation": "Repeated captureCombatPredictorInput plus expectation, averaged over timing repetitions.",
+    "ctmSample": "Repeated input capture, prepare and one sample, averaged over timing repetitions; distinct from the 32 forecast draws.",
+    "process": "Runner receipt covers whole source process and all overhead. No exact end-to-end CTM/Silver CPU ratio is claimed."
+  },
+  "limitations": [
+    "Descriptive selected trajectories, at most four source clusters; no confidence intervals or winner.",
+    "Plain10k is an independent behavioral reference, not optimal play; CTM controller mismatch remains.",
+    "CTM32 and Silver4 categorical scores evaluate different finite-sample forecast sizes.",
+    "No training, OOC decision quality, public-input sufficiency, or promotion conclusion."
+  ]
+}

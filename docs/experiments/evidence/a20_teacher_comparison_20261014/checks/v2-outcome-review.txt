@@ -1,0 +1,67 @@
+Independent v2 outcome and scientific interpretation audit: PASS
+Reviewer: recent_ooc_evidence. No producer/analyzer/runner edits, game seeds,
+training, alternate estimands/statistical analyses, extensions, or retries.
+
+Frozen producer: 48f0c0e51bf8742cdbf0fbaa6b4f38ff34667311
+Binary SHA256: c6c8b7f146cdb932daa641b00bfee28c74fce4496389ad339feabf7e809b2944
+Freeze SHA256: c2457a2415e239e26144efe91eeb4e6978a131b697ebe008a25bf001caa437be
+Canary report SHA256: 7992dd028b66ef660f3f71c3d57b61f568a7d160cd9bc1757df3635092db282f
+Cohort report SHA256: a45c048aeb56f418c6c6d6580bf4ecb6fe8c05897da7e75f56a02f7adb4dc597
+Gen6 E prior SHA256: ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228
+
+Verdicts confirmed: CANARY_VALID; DESCRIPTIVE_COMPARISON_MEASURED.
+All 19 frozen artifact hashes and all 9 canary / 41 cohort report input hashes
+verified. Independently checked all 5 rc0/non-timeout receipts and custody
+latches, output hashes, complete newline-terminated CSV/progress, ordered
+source/state/arm event identities, monotone/contained CPU, CSV/progress combat
+CPU/decision/simulation/validity agreement, and matching controls. Exactly 5
+source attempts and 2 phase latches; runner remains pinned to max 2 workers.
+All sources remain below 600 CPU/900 wall seconds. No old attempt is pooled.
+Both full reports exactly reproduce with the frozen analyzer in memory;
+no reports were rewritten. Separately reconstructed HP squared error from
+raw CSVs, checked each source and equal-source aggregation/RMSE, checked
+raw paired HP/death contrasts, and verified principal cost/contrast weighting.
+
+Counts and resources:
+Excluded canary 97150801:4 states,68 arm rows,200 samples,151 progress events;
+CPU 62.37s, wall 62.4224s.
+Cohort 97150810:6 states,102 arm rows,300 samples,225 events; CPU 88.16s.
+Cohort 97150811:4 states,68 arm rows,200 samples,151 events; CPU 52.77s.
+Cohort 97150812:2 states,34 arm rows,100 samples,77 events; CPU 8.94s.
+Cohort 97150813:2 states,34 arm rows,100 samples,77 events; CPU 23.92s.
+Cohort total 14 matched states from 54 captured combat entries,238 arms
+(224 redrawn forecasts and 14 original controls),700 samples (448 CTM,
+224 redrawn Silver,14 sources,14 controls), zero unsupported states and
+zero invalid arms/control mismatches. Whole-process CPU 236.16s including
+excluded canary 62.37s; cohort CPU 173.79s.
+
+Confirmed principal values (equal source weighting):
+HP RMSE CTM 9.2458476514, plain2k 6.6047252655, prior2k 8.1714218724,
+plain10k 6.3967154658, prior10k 8.2760006948. These score fidelity to a single
+independent original-future plain10k RAW behavioral reference per state.
+CTM analytic expectation 79.491903125us; four-draw Silver search CPU
+plain2k 0.5870691074s, prior2k 0.6215668398s, plain10k 3.2789131123s,
+prior10k 3.2749489149s. These timing scopes differ: Silver excludes exitBattle,
+RAW copying and callback work; CTM expectation includes input capture plus
+expectation. These are not matched-CPU trials or exact end-to-end cost ratios.
+Paired prior2k-minus-plain2k: RAW HP -0.2864583333, death +0.0208333333.
+Paired prior10k-minus-plain10k: RAW HP +0.4947916667, death -0.0260416667.
+Paired plain10k-minus-plain2k: RAW HP -0.9947916667, death +0.0364583333.
+
+Interpretation approved only within the frozen descriptive scope:
+- Principal squared errors average states within source, then average 4 source
+  means; RMSE is the square root afterward, not an average of source RMSEs.
+- Two sources end in early Act1. Their 4 states carry 50% of equal-source weight;
+  this is the specified weighting, not population representativeness. All 4
+  source runs ended in death; terminal loss still counts as a completed source.
+- Plain Silver had smaller reference HP error than this CTM on this panel;
+  that does not demonstrate superior OOC decisions, general teacher quality,
+  or a production/default change. CTM/controller mismatch remains.
+- Prior contrasts point in different directions at 2k and 10k; the plain budget
+  contrast also conflicts across fidelity and sampled outcomes. No reliable
+  prior benefit, monotone budget effect, best budget or population winner follows.
+- Four clusters, deliberately selected slots, inherited hidden state, and
+  4 vs 32 empirical draws retain the stated coverage/calibration/variance limits.
+  No confidence interval, significance claim, training or student-value claim.
+
+No remaining outcome-validity or interpretation blocker found.

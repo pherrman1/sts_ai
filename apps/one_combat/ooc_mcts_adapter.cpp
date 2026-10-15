@@ -6,6 +6,7 @@
 #include "compact_tree.h"
 #include "screen_leaf_s0.h"
 #include "ooc_leaf_capture.h"
+#include "ooc_selective_silver_audit.h"
 #include "ooc_leaf_capture_sink.h"
 #include "driver_shared.h"
 #include <cerrno>
@@ -267,7 +268,7 @@ ReplayJson compareReplay(const ReplayJson &parent, const ReplayJson &child) {
 }
 // Fork before either evaluation. Only the child sees replay cache/metric and
 // callback mutations; the parent waits before doing its scheduled evaluation.
-ReplayJson forkLeafReplay(const std::function<ReplayJson()> &evaluate, int timeoutMs = 10000) {
+ReplayJson forkLeafReplay(const std::function<ReplayJson()> &evaluate, int timeoutMs = 10000, int cpuSeconds = 10, std::size_t byteLimit = leafReplayByteLimit) {
     requireReplaySingleThread();
     int channel[2];
     if (pipe(channel) != 0) throw std::runtime_error("replay_pipe_failed");
@@ -297,11 +298,11 @@ ReplayJson forkLeafReplay(const std::function<ReplayJson()> &evaluate, int timeo
         if (nullFd < 0) _exit(121);
         for (int fd = 0; fd < 3; ++fd) if (dup2(nullFd, fd) < 0) _exit(121);
         if (nullFd > 2) close(nullFd);
-        const rlimit cpu{10, 10};
+        const rlimit cpu{rlim_t(cpuSeconds), rlim_t(cpuSeconds)};
         if (setrlimit(RLIMIT_CPU, &cpu) != 0) _exit(122);
         try {
             const auto payload = evaluate().dump();
-            if (payload.size() > leafReplayByteLimit) _exit(123);
+            if (payload.size() > byteLimit) _exit(123);
             std::size_t at = 0;
             while (at < payload.size()) {
                 const ssize_t count = write(channel[1], payload.data() + at, payload.size() - at);
@@ -335,7 +336,7 @@ ReplayJson forkLeafReplay(const std::function<ReplayJson()> &evaluate, int timeo
             else if (count < 0 && errno != EINTR) throw std::runtime_error("replay_pipe_read_failed");
             else if (count > 0) {
                 payload.append(buffer, static_cast<std::size_t>(count));
-                if (payload.size() > leafReplayByteLimit) throw std::runtime_error("replay_payload_limit");
+                if (payload.size() > byteLimit) throw std::runtime_error("replay_payload_limit");
             }
         }
         if (!exited) {
@@ -2711,6 +2712,36 @@ void requireLeafProbeTeacher(int ascension) {
         throw std::runtime_error("replay_excludes_external_observers");
     requireReplaySingleThread();
 }
+}
+nlohmann::json oocSelectiveSilverAuditSpec() {
+    if (!liveEnabled || !liveSamplerA20) throw std::runtime_error("audit spec requires automatic A20 stack");
+    const auto hybrid = std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSamplerA20);
+    if (!hybrid) throw std::runtime_error("audit spec requires calibrated hybrid");
+    const auto mcts = liveOocMctsSpecification();
+    struct EnabledScope { bool saved = liveEnabled; ~EnabledScope() { liveEnabled = saved; } } scope;
+    liveEnabled = false;
+    return {{"sourcePolicy", selectiveAuditSourcePolicy()}, {"ctmLoadedIdentity", hybrid->fastRuntime().identity()},
+        {"mcts", mcts}, {"mapScreenEnum", int(sts::ScreenState::MAP_SCREEN)}, {"silverSimulations", 2500}};
+}
+int oocSelectiveSilverAccountingSelfTest() {
+    return selectiveSilverAccountingSelfTest([](const std::function<nlohmann::json()> &fn, int wall, int cpu) {
+        return forkLeafReplay(fn, wall, cpu, 2 * 1024 * 1024);
+    });
+}
+int oocSelectiveSilverAuditGen(std::uint64_t seed, const std::string &plan, const std::string &out) {
+    requireReplaySingleThread();
+    if (!liveEnabled || !liveSamplerA20 || liveLeafCapture || leafReplayMode || leafStabilityMode
+            || !liveTrace.empty() || !liveRootLockTrace.empty() || !liveCheckpointTrace.empty())
+        throw std::runtime_error("selective audit requires automatic calibrated A20 CTM and no observers");
+    if (sts::search::g_onGameActionExecute || sts::g_onBattleExitRaw || sts::g_onBattleExitPersistent
+            || sts::search::g_onCombatDecision || t_bossEntryHook || t_realRunContextObserver)
+        throw std::runtime_error("selective audit excludes external callbacks");
+    struct EnabledScope { bool saved = liveEnabled; ~EnabledScope() { liveEnabled = saved; } } scope;
+    liveEnabled = false; // V4 source trajectory; only explicit diagnostic searches use MCTS.
+    return runSelectiveSilverAudit(seed, plan, out, liveSamplerA20, liveOptions, liveConfig,
+        [](const std::function<nlohmann::json()> &fn, int wall, int cpu) {
+            return forkLeafReplay(fn, wall, cpu, 2 * 1024 * 1024);
+        });
 }
 int oocLeafStabilityProbe(std::uint64_t seed, int ascension, const std::string &planPath) {
     auto report = stabilityReport("INVALID", "startup_not_validated");
@@ -6480,6 +6511,102 @@ void oocMctsAdapterSelfTest() {
         std::cout<<"BOSS_LEAF_MECHANISM "<<mechanism.dump()<<'\n';
     }
     std::cout<<"PASS OOC MCTS adapter (offline native integration only)\n";
+}
+int oocSelectiveSilverHorizonSelfTest() {
+    try {
+        const auto require = [](bool ok, const char *why) {
+            if (!ok) throw std::runtime_error(std::string("selective Silver horizon selftest: ") + why);
+        };
+        struct Sampler final : CombatTransitionSampler {
+            mutable unsigned calls = 0;
+            bool dieOnSecond = false;
+            CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+                return {true, "supported"};
+            }
+            CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &,
+                    std::mt19937_64 &) const override {
+                ++calls;
+                auto post = captureCombatTransitionState(gc);
+                --post.curHp;
+                return {dieOnSecond && calls == 2 ? CombatRuntimeSample::Outcome::DEATH
+                    : CombatRuntimeSample::Outcome::VICTORY, std::move(post)};
+            }
+        };
+        // BATTLE is the audit's boundary after executing the retained MAP
+        // candidate; MAP also checks the ordinary continuation entry point.
+        for (const auto initialScreen : {sts::ScreenState::BATTLE, sts::ScreenState::MAP_SCREEN}) {
+            for (int terminalCase : {0, 1, 2}) {
+                auto sampler = std::make_shared<Sampler>();
+                sampler->dieOnSecond = terminalCase == 1;
+                GameContext gc{};
+                gc.cc = sts::CharacterClass::IRONCLAD; gc.ascension = 20;
+                gc.act = 1; gc.floorNum = 3; gc.curHp = 70; gc.maxHp = 80;
+                gc.screenState = initialScreen;
+                gc.curRoom = sts::Room::MONSTER; gc.info.encounter = sts::MonsterEncounter::CULTIST;
+                gc.curMapNodeX = 0; gc.curMapNodeY = -1;
+                unsigned callbacks = 0, pendingSteps = 0, anchors = 0;
+                gc.regainControlAction = [&](GameContext &state) {
+                    ++callbacks; ++state.floorNum;
+                    if (terminalCase == 2 && sampler->calls == 2)
+                        state.outcome = sts::GameOutcome::PLAYER_VICTORY;
+                    // A chained fight may leave a pending native decision
+                    // after the requested third combat, before any MAP.
+                    state.screenState = sampler->calls == 3
+                        ? sts::ScreenState::EVENT_SCREEN : sts::ScreenState::MAP_SCREEN;
+                    if (sampler->calls == 3) state.curEvent = sts::Event::COLOSSEUM;
+                };
+                OocMctsDependencies dependencies;
+                dependencies.policyAvailable = [] { return true; };
+                dependencies.policyLogits = [](const GameContext &, const PathHistory &,
+                        const std::vector<GameAction> &actions) { return std::vector<double>(actions.size(), 0); };
+                dependencies.leafValue = [&](const GameContext &state, const PathHistory &) {
+                    ++anchors;
+                    require(state.screenState == sts::ScreenState::MAP_SCREEN && sampler->calls == 4,
+                        "anchor runs only at the first MAP after the mandatory fourth fight");
+                    return state.curHp / 100.0;
+                };
+                dependencies.continuationStep = [&](GameContext &state, PathHistory &, std::mt19937_64 &) {
+                    require(state.screenState == sts::ScreenState::MAP_SCREEN
+                        || state.screenState == sts::ScreenState::EVENT_SCREEN, "expected synthetic pending screen");
+                    if (state.screenState == sts::ScreenState::EVENT_SCREEN) {
+                        require(sampler->calls == 3, "pending event follows the third combat");
+                        ++pendingSteps;
+                    }
+                    state.screenState = sts::ScreenState::BATTLE;
+                };
+                OocAdapterOptions options;
+                options.checkpointLeaves = true; options.leafCombats = 3;
+                const PathHistory path;
+                OocGameContextModel model(gc, path, sampler, options, dependencies);
+                const auto before = sts::test::oocStateFingerprint(model.state(0));
+                const auto *previousPath = t_curPath;
+                std::mt19937_64 rng(17);
+                const auto result = model.evaluateLeafWithOutcome(0, rng);
+                const unsigned expectedCombats = terminalCase ? 2 : 4;
+                require(sampler->calls == expectedCombats && model.combatSamples() == expectedCombats
+                    && model.continuationMetrics().imaginedCombats == expectedCombats,
+                    "all fights, including an entered BATTLE and mandatory chain, are counted");
+                require(sts::test::oocStateFingerprint(model.state(0)) == before
+                    && sts::test::oocStateFingerprint(gc) == before && t_curPath == previousPath
+                    && rng == std::mt19937_64(17), "synthetic rollout preserves source, path binding and unused RNG");
+                if (!terminalCase) {
+                    require(!result.terminal && result.value == .66 && result.endpoint
+                        && result.endpoint->hp == 66 && result.endpoint->floor == 7
+                        && callbacks == 4 && pendingSteps == 1 && anchors == 1,
+                        "third combat -> pending event -> fourth combat -> MAP completes before scoring");
+                } else {
+                    require(result.terminal && result.value == (terminalCase == 1 ? 0.0 : 1.0)
+                        && callbacks == (terminalCase == 1 ? 1u : 2u) && pendingSteps == 0 && anchors == 0,
+                        "death or victory before three combats returns its exact terminal value");
+                }
+            }
+        }
+        std::cout << "PASS selective Silver checkpoint horizon (synthetic only)\n";
+        return 0;
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
 }
 }
 #endif

@@ -1,0 +1,4 @@
+[ 56%] Built target sts_core_objects
+[ 59%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/combat_datasets.cpp.o
+[ 62%] Linking CXX executable one_combat
+[100%] Built target one_combat

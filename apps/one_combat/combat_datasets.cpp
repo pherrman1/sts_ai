@@ -367,7 +367,19 @@ struct VwinBossEntry {
     double signedOutcome = 0.0;
     bool labelValid = false, sourceTrajectoryValid = false;
     std::string encounter, roomClass;
+    std::optional<one_combat::CombatTransitionPersistentState> rawPost;
+    int rawCaptureCount = 0;
 };
+
+// The legacy signed combat label deliberately excludes escape. The A20
+// transition comparison accepts its separate RAW ESCAPE outcome, but only when
+// that is the sole label rejection and the completed surviving boundary is valid.
+static bool ctmTeacherA20ValidEscape(const std::string &reason, int won, int terminalHp,
+                                    const std::optional<one_combat::CombatTransitionPersistentState> &raw,
+                                    int rawCaptureCount) {
+    return reason == "escape" && won == 1 && terminalHp > 0 && rawCaptureCount == 1
+        && raw && raw->smokeBombUsed && raw->curHp > 0 && raw->maxHp >= raw->curHp;
+}
 
 struct VwinPendingDecision {
     std::size_t rowIndex = 0;
@@ -401,6 +413,7 @@ struct VwinCollector {
     int deviationIdx = 0;
     bool captureRefresh = false, captureBoss = false, allowSampling = false;
     bool captureAllCombatEntries = false;   // with captureBoss: every fight, not only bosses (#400)
+    bool captureRawCombatEntries = false; // teacher_a20: exact source/control RAW boundary
     bool captureDecisionSink = false;
     bool cfOptionCapV2 = false;             // ooccfpilotgen GEN=2 option cap (see vwinCfLimitOptions)
     std::optional<VwinCfTarget> cfTarget;   // GEN=2 diagnostic: exact initial REST screen only
@@ -1519,10 +1532,15 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             const int rawCaptureBefore = vwin ? vwin->rawCaptureCount : 0;
             const int preHp = gc.curHp, preMaxHp = gc.maxHp, prePotions = gc.potionCount, preGold = gc.gold;
             const int mapX = gc.curMapNodeX, mapY = gc.curMapNodeY;
-            if (vwin && vwin->captureRefresh) {
+            if (vwin && (vwin->captureRefresh || (vwin->captureRawCombatEntries && bossEntryIdx >= 0))) {
                 rawScope = std::make_unique<one_combat::CombatTransitionRawObserverScope>(
                     [&](const BattleContext &ended, GameContext &raw) {
-                        if (ended.outcome != Outcome::PLAYER_VICTORY) return;
+                        if (vwin->captureRawCombatEntries && bossEntryIdx >= 0) {
+                            auto &entry = vwin->bossEntries[bossEntryIdx];
+                            ++entry.rawCaptureCount;
+                            if (!entry.rawPost) entry.rawPost = one_combat::captureCombatTransitionState(raw);
+                        }
+                        if (!vwin->captureRefresh || ended.outcome != Outcome::PLAYER_VICTORY) return;
                         VwinRawRow row;
                         row.branchId = vwin->branchId;
                         row.deviationIdx = vwin->deviationIdx;
@@ -1617,6 +1635,9 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             if (vwin && bossEntryIdx >= 0) {
                 auto &entry = vwin->bossEntries.at(static_cast<std::size_t>(bossEntryIdx));
                 entry.postAfterBattleHp = gc.curHp;
+                if (vwin->captureRawCombatEntries && !entry.labelValid)
+                    entry.labelValid = ctmTeacherA20ValidEscape(label.reason, entry.sourceWon,
+                        entry.terminalHp, entry.rawPost, entry.rawCaptureCount);
             }
             if (captureActions) {
                 agent.recordActions = false;
@@ -1836,7 +1857,10 @@ int learnedStopTeacherSelfTest() {
     return failures == 0 ? 0 : 1;
 }
 
+namespace { void ctmTeacherA20SelfTest(); }
+
 int teacherSchemaCompatibilitySelfTest() {
+    ctmTeacherA20SelfTest();
     for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
              {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
              {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
@@ -5188,6 +5212,20 @@ void ctmSilverRedrawCombatFuture(GameContext &gc, std::uint64_t seed) {
         stream->counter = counter;
     }
 }
+// BattleContext::init reseeds four ordinary streams from gc.seed + floor.
+// Changing only the six GC streams does not redraw those initialized futures.
+// Keep native four-stream correlation; this A20-only kernel also handles the
+// Colosseum continuation, which uses the copied GC streams instead.
+void ctmTeacherA20RedrawCombatFuture(GameContext &gc, std::uint64_t seed) {
+    std::mt19937_64 rng(seed);
+    gc.seed = rng();
+    for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
+                        &gc.potionRng, &gc.shuffleRng}) {
+        const auto counter = stream->counter;
+        *stream = sts::Random(rng());
+        stream->counter = counter;
+    }
+}
 struct RootPriorScope {
     explicit RootPriorScope(bool on) { search::g_nativeSilverRootPriorOverride = on; }
     ~RootPriorScope() { search::g_nativeSilverRootPriorOverride.reset(); }
@@ -5216,6 +5254,203 @@ struct FinalFightLeafScope {
     explicit FinalFightLeafScope(bool on) { search::g_nativeSilverFinalFightLeafOverride = on; }
     ~FinalFightLeafScope() { search::g_nativeSilverFinalFightLeafOverride.reset(); }
 };
+// A20 uses explicit scoped settings; never inherit a preceding research arm's
+// budget, planner seed or tree prior, and restore every override on exceptions.
+struct CtmTeacherA20Scope {
+    decltype(search::g_nativeSilverRootPriorOverride) root = search::g_nativeSilverRootPriorOverride;
+    decltype(search::g_nativeSilverTreePriorOverride) tree = search::g_nativeSilverTreePriorOverride;
+    decltype(search::g_nativeSilverPlannerSeedOverride) planner = search::g_nativeSilverPlannerSeedOverride;
+    decltype(search::g_nativeSilverBudgetOverride) budget = search::g_nativeSilverBudgetOverride;
+    decltype(search::g_nativeSilverSearchParamOverride) params = search::g_nativeSilverSearchParamOverride;
+    const search::CombatValueNet *net = search::g_nativeSilverPriorNetOverride;
+    bool bonusOff = search::g_nativeSilverRootPriorBonusOff;
+    CtmTeacherA20Scope(bool prior, int minVisits, const search::CombatValueNet *priorNet,
+                       std::optional<std::uint64_t> plannerSeed) {
+        search::g_nativeSilverRootPriorOverride = prior;
+        search::g_nativeSilverTreePriorOverride = minVisits > 0 ? std::optional<int>(minVisits) : std::nullopt;
+        search::g_nativeSilverPlannerSeedOverride = plannerSeed;
+        search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
+            search::NativeSilverBudgetOverride::Policy::Flat, false};
+        search::g_nativeSilverSearchParamOverride.reset();
+        search::g_nativeSilverPriorNetOverride = priorNet;
+        search::g_nativeSilverRootPriorBonusOff = false;
+    }
+    ~CtmTeacherA20Scope() {
+        search::g_nativeSilverRootPriorOverride = root;
+        search::g_nativeSilverTreePriorOverride = tree;
+        search::g_nativeSilverPlannerSeedOverride = planner;
+        search::g_nativeSilverBudgetOverride = budget;
+        search::g_nativeSilverSearchParamOverride = params;
+        search::g_nativeSilverPriorNetOverride = net;
+        search::g_nativeSilverRootPriorBonusOff = bonusOff;
+    }
+};
+void ctmTeacherA20ValidateBounds(int nSeeds, int asc, long long seedOffset, int replicates) {
+    if (nSeeds < 1 || nSeeds > 4 || asc != 20 || replicates != 4 || seedOffset < 0
+            || seedOffset > std::numeric_limits<long long>::max() - (nSeeds - 1))
+        throw std::runtime_error("ctm vs silver: teacher_a20 requires 1..4 seeds, Ascension 20, REPLICATES=4 and a valid seed range");
+}
+bool ctmTeacherA20Select(int act, const std::string &room, std::set<std::pair<int, std::string>> &seen) {
+    const bool eligible = (act == 1 && (room == "NORMAL" || room == "ELITE" || room == "BOSS"))
+        || (act == 2 && (room == "ELITE" || room == "BOSS")) || (act == 3 && room == "BOSS");
+    return eligible && seen.emplace(act, room).second;
+}
+const char *ctmSilverRawOutcome(int won, const one_combat::CombatTransitionPersistentState &raw) {
+    return won == 0 ? "DEATH" : raw.smokeBombUsed ? "ESCAPE" : won == 1 ? "VICTORY" : "UNDECIDED";
+}
+// Publish completed data before its progress record. std::endl flushes the
+// JSONL record so a CPU-limit SIGKILL leaves the last active replay observable.
+void ctmTeacherA20Checkpoint(std::ostream &states, std::ostream &arms,
+                              std::ostream &samples, std::ostream &progress,
+                              const nlohmann::json &record) {
+    states.flush(); arms.flush(); samples.flush();
+    if (!states || !arms || !samples)
+        throw std::runtime_error("ctm vs silver: cannot flush completed data");
+    progress << record.dump() << std::endl;
+    if (!progress) throw std::runtime_error("ctm vs silver: cannot flush progress");
+}
+void ctmTeacherA20SelfTest() {
+    const auto require = [](bool ok, const char *why) {
+        if (!ok) throw std::runtime_error(std::string("teacher_a20 selftest: ") + why);
+    };
+    // Simulate abrupt termination without destructors: another reader must see
+    // every completed data row and the active replay immediately after checkpoint.
+    const auto dir = std::filesystem::temp_directory_path() /
+        ("teacher-a20-progress-" + std::to_string(vwinThreadCpuNanos()));
+    std::filesystem::create_directory(dir);
+    {
+        std::ofstream states(dir / "states"), arms(dir / "arms"), samples(dir / "samples"), progress(dir / "progress");
+        states << "state\n"; arms << "completed arm\n"; samples << "completed sample\n";
+        ctmTeacherA20Checkpoint(states, arms, samples, progress, {{"event", "arm_start"}, {"arm", "prior10k"}, {"k", 2}});
+        for (const auto &name : {"states", "arms", "samples", "progress"}) {
+            std::ifstream in(dir / name);
+            std::string line;
+            require(bool(std::getline(in, line)) && !line.empty(), "checkpoint visible while streams remain open");
+            if (std::string(name) == "progress")
+                require(nlohmann::json::parse(line).at("arm") == "prior10k", "active replay identity persisted");
+        }
+        std::ostringstream bad;
+        bad.setstate(std::ios::badbit);
+        bool rejected = false;
+        try { ctmTeacherA20Checkpoint(states, arms, samples, bad, {{"event", "arm_complete"}}); }
+        catch (const std::runtime_error &) { rejected = true; }
+        require(rejected, "progress write failure rejects the run");
+    }
+    std::filesystem::remove_all(dir);
+    ctmTeacherA20ValidateBounds(1, 20, 0, 4);
+    ctmTeacherA20ValidateBounds(4, 20, std::numeric_limits<long long>::max() - 3, 4);
+    for (const auto &args : std::vector<std::tuple<int, int, long long, int>>{
+            {0,20,0,4}, {5,20,0,4}, {1,0,0,4}, {1,20,-1,4}, {1,20,0,3}, {1,20,0,5},
+            {4,20,std::numeric_limits<long long>::max(),4}}) {
+        bool rejected = false;
+        try { std::apply(ctmTeacherA20ValidateBounds, args); } catch (const std::runtime_error &) { rejected = true; }
+        require(rejected, "bounds reject before any seed");
+    }
+    std::set<std::pair<int, std::string>> seen;
+    require(!ctmTeacherA20Select(2, "NORMAL", seen) && !ctmTeacherA20Select(3, "ELITE", seen)
+        && !ctmTeacherA20Select(4, "BOSS", seen), "only fixed six slots eligible");
+    for (const auto &slot : std::vector<std::pair<int, std::string>>{
+            {1,"NORMAL"},{1,"ELITE"},{1,"BOSS"},{2,"ELITE"},{2,"BOSS"},{3,"BOSS"}}) {
+        require(ctmTeacherA20Select(slot.first, slot.second, seen), "first eligible entry selected");
+        require(!ctmTeacherA20Select(slot.first, slot.second, seen), "no second occurrence or substitution");
+    }
+    require(seen.size() == 6, "six-slot cap");
+    // Synthetic initialization only: no search, policy action, or game run.
+    GameContext source(CharacterClass::IRONCLAD, 17, 20);
+    source.screenState = ScreenState::BATTLE;
+    source.curRoom = Room::MONSTER;
+    source.floorNum = 1;
+    source.info.encounter = MonsterEncounter::CULTIST;
+    GameContext pairedA = detachedCounterfactualCopy(source), pairedB = detachedCounterfactualCopy(source);
+    ctmTeacherA20RedrawCombatFuture(pairedA, 23);
+    ctmTeacherA20RedrawCombatFuture(pairedB, 23);
+    auto publicState = [](const GameContext &g) {
+        auto j = one_combat::combatTransitionStateJson(one_combat::captureCombatTransitionState(g));
+        j.erase("combatRng");
+        return j;
+    };
+    require(publicState(source) == publicState(pairedA) && publicState(source) == publicState(pairedB),
+        "redraw preserves persistent combat inputs");
+    require(source.seed == 17 && pairedA.seed != source.seed && pairedA.seed == pairedB.seed,
+        "detached battle seed redrawn and shared by paired arms");
+    BattleContext controlBattle, firstBattle, secondBattle;
+    controlBattle.init(source, MonsterEncounter::CULTIST);
+    firstBattle.init(pairedA, MonsterEncounter::CULTIST);
+    secondBattle.init(pairedB, MonsterEncounter::CULTIST);
+    const auto streams = [](const BattleContext &b) {
+        return std::array<const sts::Random *, 6>{&b.aiRng, &b.cardRandomRng, &b.miscRng,
+            &b.monsterHpRng, &b.potionRng, &b.shuffleRng};
+    };
+    const auto controlRng = streams(controlBattle), firstRng = streams(firstBattle), secondRng = streams(secondBattle);
+    for (std::size_t i = 0; i < firstRng.size(); ++i) {
+        const auto bits = [](const sts::Random *r) { return std::make_tuple(r->seed0, r->seed1, r->counter); };
+        require(bits(firstRng[i]) == bits(secondRng[i]), "all initialized streams match paired arm");
+        require(bits(firstRng[i]) != bits(controlRng[i]), "all initialized streams differ from original future");
+    }
+    // Exercise the real RAW boundary: Burning Blood may heal after terminal
+    // HP is captured, so escape validity must not demand equality of those HPs.
+    controlBattle.outcome = Outcome::PLAYER_VICTORY;
+    controlBattle.smokeBombUsed = true;
+    controlBattle.player.curHp = 20;
+    const auto escaped = combatEvalTerminal(controlBattle, MonsterEncounter::CULTIST, 1, 0, 0);
+    std::optional<one_combat::CombatTransitionPersistentState> escapedRaw;
+    int escapedCaptures = 0;
+    source.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    {
+        one_combat::CombatTransitionRawObserverScope rawScope([&](const BattleContext &, GameContext &raw) {
+            ++escapedCaptures;
+            escapedRaw = one_combat::captureCombatTransitionState(raw);
+        });
+        controlBattle.exitBattle(source);
+    }
+    require(!escaped.labelValid && std::string(escaped.reason) == "escape"
+        && ctmTeacherA20ValidEscape(escaped.reason, 1, 20, escapedRaw, escapedCaptures),
+        "A20 accepts explicit healthy surviving RAW escape without changing legacy labels");
+    for (const auto *reason : {"missing_first_decision_hook", "simulator_health_failure", "unknown_encounter", "turn_cap"})
+        require(!ctmTeacherA20ValidEscape(reason, 1, 20, escapedRaw, 1), "escape cannot override another rejection");
+    require(!ctmTeacherA20ValidEscape("escape", 0, 20, escapedRaw, 1)
+        && !ctmTeacherA20ValidEscape("escape", -1, 20, escapedRaw, 1)
+        && !ctmTeacherA20ValidEscape("escape", 1, 0, escapedRaw, 1)
+        && !ctmTeacherA20ValidEscape("escape", 1, 20, escapedRaw, 0)
+        && !ctmTeacherA20ValidEscape("escape", 1, 20, escapedRaw, 2)
+        && !ctmTeacherA20ValidEscape("escape", 1, 20, std::nullopt, 1),
+        "escape rejects invalid outcome, terminal HP or RAW custody");
+    escapedRaw->smokeBombUsed = false;
+    require(!ctmTeacherA20ValidEscape("escape", 1, 20, escapedRaw, 1), "escape requires RAW smoke flag");
+    CtmTeacherA20Scope restore(false, 0, nullptr, std::nullopt);
+    search::CombatValueNet originalNet, armNet;
+    search::g_nativeSilverPriorNetOverride = &originalNet;
+    search::g_nativeSilverRootPriorOverride = true;
+    search::g_nativeSilverTreePriorOverride = 91;
+    search::g_nativeSilverPlannerSeedOverride = 123;
+    search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
+        search::NativeSilverBudgetOverride::Policy::Adaptive, true};
+    search::g_nativeSilverSearchParamOverride = search::NativeSilverSearchParams{};
+    search::g_nativeSilverSearchParamOverride->exploration = 97;
+    search::g_nativeSilverRootPriorBonusOff = true;
+    try {
+        CtmTeacherA20Scope plain(false, 0, nullptr, std::nullopt);
+        require(search::g_nativeSilverRootPriorOverride == false && !search::g_nativeSilverTreePriorOverride
+            && !search::g_nativeSilverPlannerSeedOverride && !search::g_nativeSilverSearchParamOverride
+            && search::g_nativeSilverBudgetOverride->policy == search::NativeSilverBudgetOverride::Policy::Flat
+            && !search::g_nativeSilverBudgetOverride->skipSingletonRoots && !search::g_nativeSilverRootPriorBonusOff
+            && search::g_nativeSilverPriorNetOverride == nullptr,
+            "plain source/control overrides");
+        { CtmTeacherA20Scope prior(true, 8, &armNet, 456);
+          require(search::g_nativeSilverRootPriorOverride == true && search::g_nativeSilverTreePriorOverride == 8
+            && search::g_nativeSilverPlannerSeedOverride == 456
+            && search::g_nativeSilverPriorNetOverride == &armNet, "prior arm overrides"); }
+        require(search::g_nativeSilverRootPriorOverride == false && !search::g_nativeSilverTreePriorOverride,
+            "nested scope restoration");
+        throw 1;
+    } catch (int) {}
+    require(search::g_nativeSilverRootPriorOverride == true && search::g_nativeSilverTreePriorOverride == 91
+        && search::g_nativeSilverPlannerSeedOverride == 123 && search::g_nativeSilverRootPriorBonusOff
+        && search::g_nativeSilverBudgetOverride->policy == search::NativeSilverBudgetOverride::Policy::Adaptive
+        && search::g_nativeSilverBudgetOverride->skipSingletonRoots
+        && search::g_nativeSilverSearchParamOverride->exploration == 97
+        && search::g_nativeSilverPriorNetOverride == &originalNet, "exception restores prior overrides");
+}
 struct PriorNetScope {
     explicit PriorNetScope(const search::CombatValueNet *net) { search::g_nativeSilverPriorNetOverride = net; }
     ~PriorNetScope() { search::g_nativeSilverPriorNetOverride = nullptr; }
@@ -5246,11 +5481,16 @@ void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const s
 void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                          const std::string &teacherPath, int replicates) {
     constexpr int sims = 10000;
-    // Ascension 20 is allowed only for the mlpsweep armset (§476); every earlier armset is A0.
-    const char *armSetEarly = std::getenv("STS_CTMSILVER_ARMSET");
-    const bool sweepArmSet = armSetEarly
-        && (std::string(armSetEarly) == "mlpsweep" || std::string(armSetEarly) == "rollout479");
-    if (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0)
+    const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
+    const std::string armSet = armSetEnv ? armSetEnv : "";
+    const bool teacherLarge = armSet == "teacher_a20_large";
+    const bool teacherA20 = armSet == "teacher_a20" || teacherLarge;
+    if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
+    if (teacherLarge && replicates != 16)
+        throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
+    // Ascension 20 is allowed only for the mlpsweep armset (§476/§479) and teacher_a20; every other armset is A0.
+    const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479";
+    if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
                                  "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep or rollout479)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
@@ -5268,10 +5508,26 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // Deliberately the pre-#418 production stack (lizard_t2 + except_smoke_v2), not
     // the current default: §408/§410 measured it, so it stays pinned
     // for reproducibility after the #418 swap to pathb-r2.
-    const std::string fastModel = "selfplay/models/combat_transition_deepsets_lizard_t2.native";
-    const std::string standardModel = "selfplay/models/combat_transition_near_full_except_smoke_v2.native";
+    const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+    const std::string candidateManifest = teacherA20 ? env("STS_CTM_RESEARCH_CANDIDATE_MANIFEST") : "";
+    const std::string manifestHash = teacherLarge
+        ? "00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea"
+        : "704f2a58c70d731c10ea8f4b00dc977f6d57ee0872480bf53e461e88583404d0";
+    if (teacherA20 && (env("STS_CTMSILVER_CANDIDATE_FAST").empty()
+            || env("STS_CTMSILVER_CANDIDATE_STANDARD").empty() || candidateManifest.empty()
+            || env("STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256")
+                != manifestHash))
+        throw std::runtime_error("ctm vs silver: A20 teacher requires explicit candidate paths and its frozen manifest SHA256");
+    const std::string fastModel = teacherA20 ? env("STS_CTMSILVER_CANDIDATE_FAST")
+        : "selfplay/models/combat_transition_deepsets_lizard_t2.native";
+    const std::string standardModel = teacherA20 ? env("STS_CTMSILVER_CANDIDATE_STANDARD")
+        : "selfplay/models/combat_transition_near_full_except_smoke_v2.native";
     const one_combat::EntropicBrewFallbackCombatTransitionSampler ctm(fastModel, standardModel, true);
-    if (ctm.fastRuntime().researchCandidate())
+    if (teacherA20 && (!ctm.fastRuntime().researchCandidate()
+            || ctm.fastRuntime().identity().value("candidateId", std::string{}) != "pathb-a20"
+            || ctm.fastRuntime().identity().contains("bossSurvivalLogitShift") != teacherLarge))
+        throw std::runtime_error("ctm vs silver: A20 teacher loaded the wrong calibration identity");
+    if (!teacherA20 && ctm.fastRuntime().researchCandidate())
         throw std::runtime_error("ctm vs silver: expected the production CTM stack, not a research candidate");
     std::unique_ptr<const one_combat::EntropicBrewFallbackCombatTransitionSampler> candidate;
     std::string candidateFast, candidateStandard, candidateId;
@@ -5297,12 +5553,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // plain<b>, mlp<b> (STS_CTMSILVER_MLP_PRIOR, K = 8) and, when set, mlpprev<b>
     // (STS_CTMSILVER_MLP_PRIOR_PREV); STS_CTMSILVER_HALLWAY_EVERY = n > 1 replays
     // only about one NORMAL fight in n (hash of seed and fight index).
-    const char *armSetEnv = std::getenv("STS_CTMSILVER_ARMSET");
-    const std::string armSet = armSetEnv ? armSetEnv : "";
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
-            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479")
+            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479" && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453, mlpprior, finalleaf, mlpsweep or rollout479");
+                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479 or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
@@ -5365,6 +5619,30 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             add("perleaf4_", 625, {0, 4, nullptr}, "");
             add("table", 2500, {0, 1, tablePtr}, table);
         }
+    } else if (teacherA20) {
+        const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR");
+        if (mlp.empty() || search::nativeSilverRootPriorWeight() != 400.0)
+            throw std::runtime_error("ctm vs silver: teacher_a20 requires STS_CTMSILVER_MLP_PRIOR and root prior weight 400");
+        auto net = std::make_unique<search::CombatValueNet>();
+        if (!net->load(mlp) || !net->isPolicyMlp)
+            throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp_v1 model from " + mlp);
+        if (teacherLarge && fileSha256(mlp) != "ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228")
+            throw std::runtime_error("ctm vs silver: teacher_a20_large requires frozen gen6 E");
+        priorNets[mlp] = std::move(net);
+        arms = {
+            {"control", sims, false, false, 1},
+            {"plain2k", 2000, false, true, 4},
+            {"prior2k", 2000, true, true, 4, 8, mlp},
+            {"plain10k", 10000, false, true, 4},
+            {"prior10k", 10000, true, true, 4, 8, mlp},
+        };
+        if (teacherLarge) {
+            const auto anchor = env("STS_CTMSILVER_LARGE_ANCHOR");
+            if (anchor != "0" && anchor != "1")
+                throw std::runtime_error("ctm vs silver: teacher_a20_large requires explicit anchor 0/1");
+            for (auto &arm : arms) if (arm.redraw) arm.replicates = 16;
+            if (anchor == "0") arms.resize(3); // control plus the two main 2k conditions
+        }
     } else if (armSet == "mlpprior") {
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const std::string cpuSims = env("STS_CTMSILVER_PLAIN_CPU_SIMS");
@@ -5425,11 +5703,19 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     const std::string armsPath = outPrefix + ".arms.csv";
     const std::string samplesPath = outPrefix + ".samples.csv";
     const std::string manifestPath = outPrefix + ".manifest.json";
+    const std::string progressPath = outPrefix + ".progress.jsonl";
     for (const auto &path : {statesPath, armsPath, samplesPath, manifestPath})
         if (std::filesystem::exists(path))
             throw std::runtime_error("ctm vs silver: refusing to overwrite existing output " + path);
+    if (teacherA20 && std::filesystem::exists(progressPath))
+        throw std::runtime_error("ctm vs silver: refusing to overwrite existing progress " + progressPath);
     std::ofstream states(statesPath), armsOut(armsPath), samples(samplesPath);
     if (!states || !armsOut || !samples) throw std::runtime_error("ctm vs silver: cannot open outputs");
+    std::ofstream progress;
+    if (teacherA20) {
+        progress.open(progressPath);
+        if (!progress) throw std::runtime_error("ctm vs silver: cannot open progress");
+    }
     samples << "stateId,forecaster,k,outcome,curHp,maxHp,gold,potionCount,potions,relics,deckHash,"
                "smokeBombUsed,stolenGold\n";
     states << "stateId,sourceSeed,fightIdx,act,floor,roomClass,encounter,preHp,preMaxHp,prePotions,"
@@ -5438,10 +5724,15 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (ctmOnly)
         states << ",candSupported,candReason,candPDeath,candMeanHpWin,candExpectedHp,candForecastCpuUs,"
                   "candSampleCpuUs";
+    if (teacherA20)
+        states << ",sourcePostHp,sourceRawHp,sourceRawMaxHp,sourceRawOutcome,sourceRawCaptureCount";
     states << '\n';
     armsOut << "stateId,sourceSeed,fightIdx,arm,k,budget,prior,redraw,redrawSeed,won,terminalHp,"
-               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason,treeMinVisits,"
-               "rolloutPlayouts,rolloutActions\n";
+               "cpuSeconds,simulations,decisions,valid,controlReplayMatch,quarantineReason,treeMinVisits";
+    // teacher_a20 keeps its frozen analyzer schema; the other armsets add rollout counters (§479).
+    if (teacherA20) armsOut << ",plannerSeed,rawHp,rawMaxHp,rawOutcome,rawCaptureCount,battleSeed";
+    else armsOut << ",rolloutPlayouts,rolloutActions";
+    armsOut << '\n';
     nlohmann::json armSpec = nlohmann::json::array();
     for (const auto &a : arms)
         armSpec.push_back({{"name", a.name}, {"budget", a.budget}, {"rootPrior", a.prior},
@@ -5455,26 +5746,66 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                            {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
                                                                      : nlohmann::json(fileSha256(a.priorModel))}});
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
-    int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0, hallwaySkipped = 0;
+    int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0, capturedStates = 0, hallwaySkipped = 0;
+    std::map<std::string, int> unsupportedReasons;
     nlohmann::json perSeed = nlohmann::json::array();
     constexpr int kTimingReps = 20;
     constexpr int kCtmSamples = 32;
     for (int i = 0; i < nSeeds; ++i) {
         VwinCollector capture;
         capture.sourceSeed = static_cast<std::uint64_t>(seedOffset + i);
+        const auto sourceCpuStart = vwinThreadCpuNanos();
+        const auto checkpoint = [&](nlohmann::json record) {
+            if (!teacherA20) return;
+            record["sourceSeed"] = capture.sourceSeed;
+            record["elapsedCpuSeconds"] = double(vwinThreadCpuNanos() - sourceCpuStart) / 1e9;
+            ctmTeacherA20Checkpoint(states, armsOut, samples, progress, record);
+        };
+        checkpoint({{"event", "source_start"}});
         capture.captureBoss = true;
         capture.captureAllCombatEntries = true;
+        capture.captureRawCombatEntries = teacherA20;
         CombatEvalSeedResult source;
-        {
+        if (teacherA20) {
+            CtmTeacherA20Scope plain(false, 0, nullptr, std::nullopt);
+            source = runCombatEvalGenSeed(capture.sourceSeed, sims, asc, teacher, false, &capture);
+        } else {
             RootPriorScope plain(false);
             source = runCombatEvalGenSeed(capture.sourceSeed, sims, asc, teacher, false, &capture);
         }
         if (source.trajectoryComplete) ++completeSources;
         if (source.trajectoryValid) ++validSources;
+        checkpoint({{"event", "trajectory_complete"}, {"capturedFights", capture.bossEntries.size()},
+            {"finalFloor", source.finalFloor}, {"valid", source.trajectoryValid}});
         perSeed.push_back({{"seed", capture.sourceSeed}, {"complete", source.trajectoryComplete},
                            {"valid", source.trajectoryValid}, {"fights", capture.bossEntries.size()},
                            {"finalFloor", source.finalFloor},
                            {"won", source.finalOutcome == GameOutcome::PLAYER_VICTORY}});
+        std::set<std::pair<int, std::string>> selectedSlots;
+        nlohmann::json captured = nlohmann::json::array(), selected = nlohmann::json::array();
+        std::set<std::string> selectedIds;
+        if (teacherA20) for (const auto &entry : capture.bossEntries) {
+            const auto id = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
+            captured.push_back({{"stateId", id}, {"fightIdx", entry.fightIdx}, {"act", entry.act},
+                {"roomClass", entry.roomClass}, {"floor", entry.floor}});
+            if (teacherA20 && ctmTeacherA20Select(entry.act, entry.roomClass, selectedSlots)) {
+                selected.push_back(id);
+                selectedIds.insert(id);
+            }
+        }
+        capturedStates += static_cast<int>(capture.bossEntries.size());
+        if (teacherA20) {
+            perSeed.back()["captured"] = captured;
+            perSeed.back()["capturedCount"] = captured.size();
+            perSeed.back()["selectedStateIds"] = selected;
+            perSeed.back()["selectedCount"] = selected.size();
+            perSeed.back()["finalHp"] = source.finalHp;
+            perSeed.back()["finalOutcome"] = source.finalOutcome == GameOutcome::PLAYER_VICTORY ? "VICTORY"
+                : source.finalOutcome == GameOutcome::PLAYER_LOSS ? "DEATH" : "UNDECIDED";
+            perSeed.back()["fatalFailure"] = source.fatalFailure;
+            perSeed.back()["simulatorHealthFailures"] = source.simulatorHealthFailures;
+            perSeed.back()["invalidCombatRows"] = source.invalidCombatRows;
+        }
         for (auto &entry : capture.bossEntries) {
             if (armSet == "finalleaf" && !(entry.act == 3 && entry.roomClass == "BOSS")) continue;
             if (hallwayEvery > 1 && entry.roomClass == "NORMAL"
@@ -5484,6 +5815,12 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 continue;
             }
             const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
+            if (teacherA20 && !selectedIds.count(stateId)) continue;
+            const auto stateCpuStart = vwinThreadCpuNanos();
+            checkpoint({{"event", "state_start"}, {"stateId", stateId}, {"fightIdx", entry.fightIdx},
+                {"act", entry.act}, {"floor", entry.floor}, {"roomClass", entry.roomClass}, {"encounter", entry.encounter}});
+            if (teacherA20 && entry.rawPost)
+                ctmSilverWriteSample(samples, stateId, "source", 0, ctmSilverRawOutcome(entry.sourceWon, *entry.rawPost), *entry.rawPost);
             const GameContext &pre = *entry.pre;
             const auto encounter = pre.info.encounter;
             // CTM forecast and one sample, as the OOC planner prepares them.
@@ -5517,7 +5854,9 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 for (int rep = 0; rep < kTimingReps; ++rep) {
                     const auto in = one_combat::captureCombatPredictorInput(pre, encounter, potionKeepValue(pre));
                     const auto prepared = model.prepare(pre, in);
-                    (void)prepared->sample(sampleRng);
+                    const auto sample = prepared->sample(sampleRng);
+                    if (teacherA20 && sample.outcome == one_combat::CombatRuntimeSample::Outcome::UNSUPPORTED)
+                        throw std::runtime_error("ctm vs silver: teacher_a20 supported state produced unsupported timing sample");
                 }
                 r.sampleUs = static_cast<double>(vwinThreadCpuNanos() - t0) / 1e3 / kTimingReps;
                 // Forecast samples of the whole post-combat state, as the planner draws them.
@@ -5528,6 +5867,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                     using O = one_combat::CombatRuntimeSample::Outcome;
                     const char *o = x.outcome == O::DEATH ? "DEATH" : x.outcome == O::VICTORY ? "VICTORY"
                         : x.outcome == O::ESCAPE ? "ESCAPE" : "UNSUPPORTED";
+                    if (teacherA20 && x.outcome == O::UNSUPPORTED)
+                        throw std::runtime_error("ctm vs silver: teacher_a20 supported state produced unsupported sample");
                     ctmSilverWriteSample(samples, stateId, forecaster, k, o, x.rawPost);
                 }
                 return r;
@@ -5535,6 +5876,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             const auto prod = scoreCtm(ctm, "ctm");
             const auto &support = prod.support;
             if (support.supported) ++ctmSupported;
+            else if (teacherA20) ++unsupportedReasons[support.reason];
             const double pDeath = prod.pDeath, meanHpWin = prod.meanHpWin, expectedHp = prod.expectedHp,
                          forecastUs = prod.forecastUs, sampleUs = prod.sampleUs;
             // The candidate (CTM-only mode) draws with the same seeds as production.
@@ -5555,37 +5897,68 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                        << csvQuote(cand->support.supported ? "supported" : cand->support.reason) << ','
                        << cand->pDeath << ',' << cand->meanHpWin << ',' << cand->expectedHp << ','
                        << cand->forecastUs << ',' << cand->sampleUs;
+            if (teacherA20)
+                states << ',' << entry.postAfterBattleHp << ',' << (entry.rawPost ? entry.rawPost->curHp : -1)
+                    << ',' << (entry.rawPost ? entry.rawPost->maxHp : -1) << ','
+                    << (entry.rawPost ? ctmSilverRawOutcome(entry.sourceWon, *entry.rawPost) : "MISSING")
+                    << ',' << entry.rawCaptureCount;
             states << '\n';
             ++nStates;
+            checkpoint({{"event", "ctm_complete"}, {"stateId", stateId}, {"supported", support.supported},
+                {"phaseCpuSeconds", double(vwinThreadCpuNanos() - stateCpuStart) / 1e9}});
+            if (teacherA20 && !support.supported) {
+                checkpoint({{"event", "state_complete"}, {"stateId", stateId}});
+                continue;
+            }
             bool controlMatch = false;
             for (const auto &arm : arms) {
                 for (int k = 0; k < arm.replicates; ++k) {
+                    const auto armCpuStart = vwinThreadCpuNanos();
+                    checkpoint({{"event", "arm_start"}, {"stateId", stateId}, {"arm", arm.name},
+                        {"k", k}, {"budget", arm.budget}});
                     const std::uint64_t redrawSeed = arm.redraw
                         ? ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0xC0FFEE07) : 0;
                     VwinBossEntry replay;
                     replay.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(*entry.pre));
-                    if (arm.redraw) ctmSilverRedrawCombatFuture(*replay.pre, redrawSeed);
+                    if (arm.redraw) {
+                        if (teacherA20) ctmTeacherA20RedrawCombatFuture(*replay.pre, redrawSeed);
+                        else ctmSilverRedrawCombatFuture(*replay.pre, redrawSeed);
+                    }
                     replay.path = entry.path;
                     replay.agent = entry.agent;
                     replay.policy = entry.policy;
                     replay.fightIdx = entry.fightIdx;
                     std::optional<std::uint64_t> plannerSeed;
                     if (arm.redraw) plannerSeed = ctmSilverReplicateSeed(entry.pre->seed, entry.fightIdx, k, 0x91A77E2);
-                    PlannerSeedScope plannerScope(plannerSeed);
-                    RootPriorScope priorScope(arm.prior);
-                    TreePriorScope treeScope(arm.treeMinVisits);
-                    PriorNetScope netScope(arm.priorModel.empty() ? nullptr : priorNets.at(arm.priorModel).get());
-                    FinalFightLeafScope leafScope(arm.finalFightLeaf);
-                    std::optional<RolloutScope> rolloutScope;
-                    if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
+                    const auto *priorNet = arm.priorModel.empty() ? nullptr : priorNets.at(arm.priorModel).get();
                     std::optional<one_combat::CombatTransitionPersistentState> rawPost;
-                    VwinArmResult result;
-                    {
+                    int rawCaptureCount = 0;
+                    const auto evaluate = [&] {
                         one_combat::CombatTransitionRawObserverScope rawScope(
                             [&](const BattleContext &, GameContext &raw) {
+                                ++rawCaptureCount;
                                 if (!rawPost) rawPost = one_combat::captureCombatTransitionState(raw);
                             });
-                        result = vwinRunBossArm(replay, arm.budget);
+                        return vwinRunBossArm(replay, arm.budget);
+                    };
+                    VwinArmResult result;
+                    if (teacherA20) {
+                        CtmTeacherA20Scope scope(arm.prior, arm.treeMinVisits, priorNet, plannerSeed);
+                        result = evaluate();
+                    } else {
+                        PlannerSeedScope plannerScope(plannerSeed);
+                        RootPriorScope priorScope(arm.prior);
+                        TreePriorScope treeScope(arm.treeMinVisits);
+                        PriorNetScope netScope(priorNet);
+                        FinalFightLeafScope leafScope(arm.finalFightLeaf);
+                        std::optional<RolloutScope> rolloutScope;
+                        if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
+                        result = evaluate();
+                    }
+                    if (teacherA20 && !result.valid && ctmTeacherA20ValidEscape(result.quarantineReason,
+                            result.won, result.terminalHp, rawPost, rawCaptureCount)) {
+                        result.valid = true;
+                        result.quarantineReason.clear();
                     }
                     if (rawPost) {
                         const char *o = result.won == 0 ? "DEATH" : rawPost->smokeBombUsed ? "ESCAPE"
@@ -5598,10 +5971,16 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                             && result.terminalHp == entry.terminalHp
                             && result.postAfterBattleHp == entry.postAfterBattleHp
                             && result.firstActionBits == entry.firstActionBits;
+                        if (teacherA20)
+                            controlMatch = controlMatch && rawCaptureCount == 1 && entry.rawCaptureCount == 1
+                                && rawPost && entry.rawPost && one_combat::combatTransitionStateJson(*rawPost)
+                                    == one_combat::combatTransitionStateJson(*entry.rawPost);
                         if (controlMatch) ++controlMatches; else ++controlMismatches;
                     }
-                    const bool valid = result.valid && entry.sourceTrajectoryValid && controlMatch;
+                    const bool rawValid = !teacherA20 || (rawPost && rawCaptureCount == 1);
+                    const bool valid = result.valid && entry.sourceTrajectoryValid && controlMatch && rawValid;
                     std::string reason = result.quarantineReason;
+                    if (reason.empty() && !rawValid) reason = rawCaptureCount > 1 ? "repeated_raw_capture" : "missing_raw_capture";
                     if (reason.empty() && !entry.sourceTrajectoryValid) reason = "source_trajectory_invalid";
                     if (reason.empty() && !controlMatch)
                         reason = isControl ? "control_replay_mismatch" : "control_state_invalid";
@@ -5612,13 +5991,27 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                             << std::setprecision(9) << result.cpuSeconds << ',' << result.simulations << ','
                             << result.decisions << ',' << (valid ? 1 : 0) << ','
                             << (isControl ? (controlMatch ? 1 : 0) : -1) << ',' << csvQuote(reason) << ','
-                            << arm.treeMinVisits << ',' << result.rolloutPlayouts << ',' << result.rolloutActions << '\n';
+                            << arm.treeMinVisits;
+                    if (teacherA20)
+                        armsOut << ',' << plannerSeed.value_or(0) << ',' << (rawPost ? rawPost->curHp : -1)
+                            << ',' << (rawPost ? rawPost->maxHp : -1) << ','
+                            << (rawPost ? ctmSilverRawOutcome(result.won, *rawPost) : "MISSING")
+                            << ',' << rawCaptureCount << ',' << replay.pre->seed;
+                    else armsOut << ',' << result.rolloutPlayouts << ',' << result.rolloutActions;
+                    armsOut << '\n';
+                    checkpoint({{"event", "arm_complete"}, {"stateId", stateId}, {"arm", arm.name},
+                        {"k", k}, {"budget", arm.budget}, {"combatCpuSeconds", result.cpuSeconds},
+                        {"phaseCpuSeconds", double(vwinThreadCpuNanos() - armCpuStart) / 1e9},
+                        {"decisions", result.decisions}, {"simulations", result.simulations}, {"valid", valid}});
                 }
             }
+            checkpoint({{"event", "state_complete"}, {"stateId", stateId}});
         }
+        checkpoint({{"event", "source_complete"}, {"selectedStates", selected.size()}});
         states.flush(); armsOut.flush(); samples.flush();
     }
     states.close(); armsOut.close(); samples.close();
+    if (teacherA20) progress.close();
     nlohmann::json manifest = {
         {"schemaVersion", "ctm_vs_silver_forecast_v1"},
         {"producerGitSha", trainingExecutableGitSha()},
@@ -5647,6 +6040,55 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)},
                      {"samplesSha256", fileSha256(samplesPath)}}}
     };
+    if (teacherA20) {
+        manifest["schemaVersion"] = teacherLarge ? "ctm_vs_silver_teacher_a20_large_v1" : "ctm_vs_silver_teacher_a20_v2";
+        manifest["producerExecutablePath"] = std::filesystem::absolute(g_mainBinaryPath).string();
+        manifest["teacherPath"] = std::filesystem::absolute(teacherPath).string();
+        manifest["ctm"]["candidateId"] = ctm.fastRuntime().identity().at("candidateId");
+        manifest["ctm"]["manifestPath"] = std::filesystem::absolute(candidateManifest).string();
+        manifest["ctm"]["manifestSha256"] = fileSha256(candidateManifest);
+        manifest["ctm"]["loadedIdentity"] = ctm.fastRuntime().identity();
+        manifest["selection"] = {
+            {"rule", "first_captured_entry_per_fixed_slot_before_outcome_or_support_filtering"},
+            {"slots", nlohmann::json::array({
+                {{"act",1},{"roomClass","NORMAL"}}, {{"act",1},{"roomClass","ELITE"}},
+                {{"act",1},{"roomClass","BOSS"}}, {{"act",2},{"roomClass","ELITE"}},
+                {{"act",2},{"roomClass","BOSS"}}, {{"act",3},{"roomClass","BOSS"}}})},
+            {"maxPerSource", 6}, {"absentSlotPolicy", "skip_no_substitution"},
+            {"unsupportedPolicy", "retain_state_and_source_raw_exclude_all_forecasts_no_substitution"}
+        };
+        manifest["redraw"] = "A20 battle seed plus six GC streams redrawn; ordinary init derives four correlated streams from battleSeed+floor, misc/potion retain redrawn GC streams; Colosseum continuation retains six redrawn GC streams";
+        manifest["redrawKernel"] = {
+            {"id", "teacher_a20_native_init_v1"}, {"engine", "std::mt19937_64"},
+            {"drawOrder", {"gc.seed", "gc.aiRng", "gc.cardRandomRng", "gc.miscRng",
+                "gc.monsterHpRng", "gc.potionRng", "gc.shuffleRng"}},
+            {"gcCountersPreservedBeforeInit", true}, {"ordinaryInitFourCountersReset", true},
+            {"redrawSeedSalt", 0xC0FFEE07ULL}, {"plannerSeedSalt", 0x91A77E2ULL},
+            {"ctmSeedSalt", 0x5A3B1EULL}, {"sharedSilverReplicates", true},
+            {"sourceControlOriginalFuture", true}
+        };
+        manifest["sourceControl"] = {
+            {"budget", 10000}, {"rootPrior", false}, {"treeMinVisits", 0},
+            {"budgetPolicy", "flat"}, {"skipSingletonRoots", false},
+            {"controlEquality", "source terminal labels, first action, post-callback HP, and exact RAW CombatTransitionPersistentState JSON including combat RNG"}
+        };
+        manifest["environment"] = teacher.specification.at("environment");
+        for (const auto *name : {"STS_CTMSILVER_ARMSET", "STS_CTMSILVER_CANDIDATE_FAST",
+                "STS_CTMSILVER_CANDIDATE_STANDARD", "STS_CTM_RESEARCH_CANDIDATE_MANIFEST",
+                "STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256", "STS_CTMSILVER_MLP_PRIOR",
+                "STS_SILVER_ROOT_PRIOR", "STS_SILVER_ROOT_PRIOR_WEIGHT"})
+            manifest["environment"][name] = env(name);
+        if (teacherLarge) manifest["environment"]["STS_CTMSILVER_LARGE_ANCHOR"] = env("STS_CTMSILVER_LARGE_ANCHOR");
+        manifest["integrity"]["capturedStates"] = capturedStates;
+        manifest["integrity"]["selectedStates"] = nStates;
+        manifest["integrity"]["ctmUnsupported"] = nStates - ctmSupported;
+        manifest["integrity"]["unsupportedReasons"] = unsupportedReasons;
+        manifest["outputs"]["statesPath"] = std::filesystem::absolute(statesPath).string();
+        manifest["outputs"]["armsPath"] = std::filesystem::absolute(armsPath).string();
+        manifest["outputs"]["samplesPath"] = std::filesystem::absolute(samplesPath).string();
+        manifest["outputs"]["progressPath"] = std::filesystem::absolute(progressPath).string();
+        manifest["outputs"]["progressSha256"] = fileSha256(progressPath);
+    }
     std::ofstream manifestOut(manifestPath);
     if (!manifestOut) throw std::runtime_error("ctm vs silver: cannot write manifest");
     manifestOut << manifest.dump(2) << '\n';

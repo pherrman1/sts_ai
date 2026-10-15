@@ -1,0 +1,7 @@
+...................
+----------------------------------------------------------------------
+Ran 19 tests in 0.162s
+
+OK
+{"verdict": "CANARY_VALID", "reasons": []}
+{"verdict": "INVALID_OR_INSUFFICIENT", "reasons": ["Invalid: wrong or duplicate source panel"]}

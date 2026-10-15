@@ -417,10 +417,104 @@ the GBM on Gold2; more labels give small held-out gains that Gold2 cannot resolv
 A20 (§447), the GBM wins 3 of 128 runs vs 16 for the current stack (floors −2.21 [−5.29, +0.80], NOT_SHOWN by
 the pre-registered rule), so Gold2 regret did not predict whole-run play.
 
-## CTM vs low-sim Silver as a combat model (§408) — Silver more accurate, CTM cheaper
+## CTM vs low-sim Silver as a combat model (§408) — forecast accuracy needs a corrected comparison
+
+**2026-10-14 mechanism correction:** the §408 producer changed six
+`GameContext` RNG streams but retained `gc.seed`. Both the frozen producer
+revision and current `BattleContext::init` initialize four ordinary combat
+streams from `gc.seed + floorNum`, overwriting those redraws. Silver forecasts
+therefore shared part of the reference fight's hidden future, unlike the CTM's
+marginal prediction. The historical numbers below remain as-run measurements;
+their accuracy advantage does not establish independent-future forecasting
+superiority. This finding does not reclassify §411 gameplay without checking
+its separate OOC future resampling. The bounded [A20 teacher protocol](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
+uses a corrected, A20-only initialization kernel and keeps the old modes
+unchanged. The user selected completed gen6 E from PR #541; its v2 support is
+integrated from `main` merge `531db3e3`. The [bounded A20 attempt](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/RESULTS.md)
+(§480) passed actual-model parity and its excluded canary, but one of four
+cohort sources hit the fixed 180-second CPU cap. The exact verdict is
+**INVALID_OR_INSUFFICIENT**. The completed sources are not a replacement panel;
+there is no teacher-quality or optimal-budget conclusion. All outputs are
+preserved, with no retry, extension, training or default change.
+
+The user authorized a separately frozen [v2 follow-up](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL-V2.md)
+with flushed replay progress, 600 CPU/900 wall seconds per source, canary
+`97150801` and four fresh sources `97150810–97150813`. It preserves the model,
+controller settings, source/reference and analysis, and does not pool §480.
+The [completed follow-up](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-2/RESULTS.md)
+(§481) is **DESCRIPTIVE_COMPARISON_MEASURED**: 14 supported states (6/4/2/2
+per source), all exact controls/progress/custody checks pass. Principal
+equal-source HP RMSE: CTM 9.246, plain2k 6.605, prior2k 8.171, plain10k
+6.397, prior10k 8.276. Four-future search CPU is 0.587/0.622/3.279/3.275s
+for the Silver conditions; CTM expectation is 0.0795ms, with different timer
+scopes. Prior-minus-plain HP/death contrasts are −0.286/+2.083pp at 2k and
++0.495/−2.604pp at 10k. The cost/prior effects remain descriptive and mixed;
+two early Act 1 sources carry half the fixed equal-source weight, and only
+one source has Act 3 coverage. No population winner, optimal budget, training,
+OOC decision-value or promotion conclusion follows. Plain2k is an inexpensive
+candidate for a subsequent selective Silver decision-value audit, not a
+qualified teacher replacement.
+
+The prospective [larger-study contract](../../experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL-LARGE.md)
+compares the calibrated A20 CTM with plain2k and gen6 E prior2k on 32 fresh
+source clusters and 16 paired futures per fight. Eight fixed sources also
+compare both 10k settings. Source-cluster bootstrap intervals and explicit
+later-act coverage gates supersede pilot-only point estimates for this new
+panel; the pilot remains preserved separately. The old uncalibrated CTM RMSE
+does not describe the calibrated manifest. This contract makes no training,
+OOC decision-value, gameplay or default-promotion claim.
+
+The [completed larger study](../../experiments/evidence/a20_teacher_comparison_20261014/gen6E-large-1/RESULTS.md)
+(§482) is **DESCRIPTIVE_COMPARISON_MEASURED**: 32 sources, 147 matched fights,
+5,696 forecast replays, all controls/custody/progress/caps pass. Main later-act
+coverage passes (17 Act 2 boss / 13 Act 3 boss sources). Equal-source HP RMSE
+is CTM 12.017 [10.441,13.511], plain2k 11.853 [10.011,13.606], prior2k
+11.599 [9.692,13.396]; all paired main fidelity intervals include zero.
+Neither superiority nor equivalence is established. Gen6 E2k has a nominal
+paired controller benefit: +0.796 [0.247,1.348] RAW HP and −0.921
+[−1.784,−0.068]pp death, for +0.00597s/fight search CPU. The eight-source
+10k subset has 31 states but only two sources at each later boss; its
+28.6–29.6s/16-future forecast cost is about 5.4–5.6× the 2k conditions,
+with incremental controller benefit unresolved. **Inference:** retain CTM
+for bulk evaluation and nominate gen6 E2k for a selective OOC decision-value
+audit; do not infer training-teacher qualification or increased run wins.
+Total CPU including excluded canary was 5,074.70s; largest source 918.11s
+under the 1200s cap. Earlier attempts remain separately preserved and excluded.
+
+The subsequent [selective MAP-choice audit](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-1/RESULTS.md)
+(§483) is **INVALID_OR_INSUFFICIENT**: the excluded canary completed two roots
+with exact source and baseline controls, but provenance hashing utility children
+left0.011785s outside itemized child CPU settlement. The analyzer rejected it;
+the eight-source cohort never launched. A narrow tested accounting repair
+records measured utility-child CPU inside unchanged caps and tolerance.
+The failed canary remains excluded/invalid, without a decision-quality result
+or retry. The first matched CTM arm also hit4096 paired futures at0.474× Silver
+cost, leaving matched compute unresolved. A newly authorized freeze/canary
+must precede future cohort execution; no training or default change follows.
+
+The authorized [renewed E2500 audit](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-2/RESULTS.md)
+(§484) has a valid fresh canary with exact provenance CPU settlement, but an
+**INVALID_OR_INSUFFICIENT** cohort. Both initially dispatched sources fail:
+one Act2 Silver evaluation and one Act3 plain10k reference, normal child exit125
+with the underlying exception erased. Six remaining sources never launch.
+No teacher-quality conclusion or gen6-specific attribution is supported.
+The audit-only fork callback now transports bounded errors and retains failure
+cost/candidate/future metadata, with real seed-free tests. Original data and
+verdict stay sealed. A later exact-prefix replay of the two failed sources
+[found the cause](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-2/ROOT_CAUSE.md):
+the audit sampler rejected a played Discovery (`undefinedBehaviorEvoked`) as a
+health failure. With that fixed, the authorized
+[run 3](../../experiments/evidence/ooc_selective_silver_audit_20261014/run-3/RESULTS.md)
+on fresh seeds completed: Silver8 beats the baseline OOC MAP choice on the
+plain10k-Silver surrogate reference (+0.0225 [+0.0064,+0.0404], 8 sources,
+15 roots). CTM rescoring with up to 4096 futures reaches nearly the same
+(Silver8−matched +0.0038, interval includes zero) at about 0.6× the CPU, so a
+compute-matched Silver advantage is not shown. The reference is plain10k Silver
+and may share Silver's biases. Pre-ADR-0035/0036 Silver.
+No training/default promotion.
 
 On 6,750 real fight entries (256 fresh runs), forecasting the exact-10k Silver
-outcome, four low-sim Silver playouts on redrawn combat RNG beat the production
+outcome, four low-sim Silver playouts under that partially redrawn RNG beat the production
 CTM stack on post-combat HP (RMSE 8.5 vs 11.7; biases −2.6 and +2.3) and on every
 post-combat field (potions, relic counters, max HP, gold, deck), and tie it on
 deaths. The CTM costs 0.6 ms per forecast, versus 64 ms per prior-256 playout

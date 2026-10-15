@@ -1,0 +1,11 @@
+[ 85%] Built target sts_core_objects
+[ 90%] Building CXX object CMakeFiles/combat_transition_runtime_probe.dir/apps/one_combat/combat_transition_near_full.cpp.o
+[ 90%] Building CXX object CMakeFiles/combat_transition_runtime_probe.dir/tests/combat_transition_runtime_probe.cpp.o
+[ 90%] Building CXX object CMakeFiles/combat_transition_runtime_probe.dir/apps/one_combat/combat_transition_runtime.cpp.o
+[ 95%] Building CXX object CMakeFiles/combat_transition_runtime_probe.dir/apps/one_combat/combat_transition_native_contract.cpp.o
+[ 95%] Building CXX object CMakeFiles/combat_transition_runtime_probe.dir/apps/one_combat/combat_predictor_input.cpp.o
+[100%] Building CXX object CMakeFiles/combat_transition_runtime_probe.dir/apps/one_combat/combat_transition.cpp.o
+[100%] Linking CXX executable combat_transition_runtime_probe
+lto-wrapper: warning: using serial compilation of 12 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target combat_transition_runtime_probe
