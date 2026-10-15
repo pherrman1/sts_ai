@@ -1,6 +1,6 @@
-# §479 pre-registration (frozen pending delta check): Silver leaf-rollout variants × gen-6 tree prior, A20, fight level
+# §479 pre-registration (frozen; run 2026-10-15, result ledger §479): Silver leaf-rollout variants × gen-6 tree prior, A20, fight level
 
-Status: **not launched.** Written 2026-10-14 before any evaluation seed was played. Launch needs the
+Status: **run complete (2026-10-15 07:10–07:29Z, 8 workers); result in ledger §479.** Written 2026-10-14 before any evaluation seed was played. Launch needs the
 independent pre-launch review (first round at `7b3db2a6`: FIX REQUIRED; delta at `d41a4386`: PASS) to pass and
 Philipp's explicit go. Philipp (2026-10-15 06:44Z): "Start with 8 workers, and drop the two uniform rollout
 arms" (the `uniform10000` and `uniformmlp10000` arms; the smoke showed uniform rollouts save no CPU). Code commit `7a413622`, binary sha256

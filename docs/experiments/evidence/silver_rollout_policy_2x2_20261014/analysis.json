@@ -1,0 +1,1829 @@
+{
+  "states": 703,
+  "validFights": 689,
+  "excluded": {
+    "invalid_arm_row": 14
+  },
+  "truncatedRows": {},
+  "shards": [
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 17
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 13,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 17
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 25,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 16
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 26,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 26,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 12
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 14
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 24,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 15
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 29,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 19
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 21,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 19
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 35,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 22
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 9,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 24,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 22
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 5
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 14,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 31,
+      "controlReplayMismatches": 2,
+      "invalidArmRows": 50,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 22,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 26,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 18
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 25,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 18
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 13,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 36,
+      "controlReplayMismatches": 3,
+      "invalidArmRows": 75,
+      "hallwaySkipped": 17
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 20,
+      "controlReplayMismatches": 2,
+      "invalidArmRows": 50,
+      "hallwaySkipped": 13
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 25,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 14
+    },
+    {
+      "prefix": "out/shard0",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 22,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/shard1",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 13,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/shard2",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 30,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 22
+    },
+    {
+      "prefix": "out/shard3",
+      "manifest": true,
+      "requestedSeeds": 2,
+      "finishedSeeds": 2,
+      "states": 38,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 25,
+      "hallwaySkipped": 14
+    }
+  ],
+  "seedsWithStates": 64,
+  "roomClasses": {
+    "ELITE": 334,
+    "NORMAL": 206,
+    "BOSS": 125,
+    "OTHER": 24
+  },
+  "sourceSeeds": 64,
+  "meanCpuSecondsPerFight": {
+    "control": 2.537408365428165,
+    "plain2500": 0.5951267605248933,
+    "mlp2500": 0.6195657004950214,
+    "plain10000": 2.602018038958037,
+    "mlp10000": 2.6861388749203416,
+    "uniform2500": 0.5365468910590327,
+    "uniformmlp2500": 0.5705126928044097,
+    "perleaf2_1250": 0.4535090820810811,
+    "perleaf2_mlp1250": 0.46405314089260313,
+    "perleaf4_625": 0.340723226272404,
+    "perleaf4_mlp625": 0.34872436105192034,
+    "table2500": 0.5304352782524894,
+    "tablemlp2500": 0.5627434906628734
+  },
+  "cpuMsPerDecision": {
+    "control": 136.68950811463603,
+    "plain2500": 31.645861552059298,
+    "mlp2500": 33.31839261411359,
+    "plain10000": 138.72430467067346,
+    "mlp10000": 145.28606494087325,
+    "uniform2500": 31.99936071384942,
+    "uniformmlp2500": 34.753296914475115,
+    "perleaf2_1250": 24.04259905003582,
+    "perleaf2_mlp1250": 24.84894375195186,
+    "perleaf4_625": 17.941532382270328,
+    "perleaf4_mlp625": 18.57432479596166,
+    "table2500": 28.989815798141958,
+    "tablemlp2500": 30.718536625849282
+  },
+  "escapes": {
+    "plain2500": 0,
+    "mlp2500": 0,
+    "plain10000": 0,
+    "mlp10000": 0,
+    "uniform2500": 0,
+    "uniformmlp2500": 0,
+    "perleaf2_1250": 0,
+    "perleaf2_mlp1250": 0,
+    "perleaf4_625": 0,
+    "perleaf4_mlp625": 0,
+    "table2500": 0,
+    "tablemlp2500": 0
+  },
+  "excludedFightsByRootReason": {
+    "escape": 7,
+    "control_replay_mismatch": 7
+  },
+  "invalidArmRowsByReason": {
+    "escape": 175,
+    "control_replay_mismatch": 7,
+    "control_state_invalid": 168
+  },
+  "escapeReplicatesAllFights": {
+    "plain2500": 14,
+    "mlp2500": 14,
+    "plain10000": 14,
+    "mlp10000": 14,
+    "uniform2500": 14,
+    "uniformmlp2500": 14,
+    "perleaf2_1250": 14,
+    "perleaf2_mlp1250": 14,
+    "perleaf4_625": 14,
+    "perleaf4_mlp625": 14,
+    "table2500": 14,
+    "tablemlp2500": 14
+  },
+  "arms": {
+    "plain2500": {
+      "score": 279.1291727140784,
+      "win": 0.9230769230769231,
+      "hpLoss": 15.047169811320755,
+      "cpuSecondsPerFight": 1.1766465878258345,
+      "cpuMicrosecondsPerSimulation": 12.526413767181706,
+      "meanRolloutLength": 13.598816368040751,
+      "playoutsPerSimulation": 0.83378739184178
+    },
+    "mlp2500": {
+      "score": 280.79662554426704,
+      "win": 0.9267053701015965,
+      "hpLoss": 14.680696661828737,
+      "cpuSecondsPerFight": 1.2258594464818577,
+      "cpuMicrosecondsPerSimulation": 13.192505113452302,
+      "meanRolloutLength": 13.499490033838216,
+      "playoutsPerSimulation": 0.8319165449646608
+    },
+    "plain10000": {
+      "score": 279.8089622641509,
+      "win": 0.9230769230769231,
+      "hpLoss": 14.489840348330913,
+      "cpuSecondsPerFight": 5.123525393949202,
+      "cpuMicrosecondsPerSimulation": 13.705967527686752,
+      "meanRolloutLength": 13.528268131159216,
+      "playoutsPerSimulation": 0.7856009978257493
+    },
+    "mlp10000": {
+      "score": 283.1373367198839,
+      "win": 0.9317851959361393,
+      "hpLoss": 13.985486211901307,
+      "cpuSecondsPerFight": 5.28371527228447,
+      "cpuMicrosecondsPerSimulation": 14.32921287335275,
+      "meanRolloutLength": 13.450083523111962,
+      "playoutsPerSimulation": 0.7827776863732977
+    },
+    "uniform2500": {
+      "score": 256.3323657474601,
+      "win": 0.8657474600870827,
+      "hpLoss": 19.88388969521045,
+      "cpuSecondsPerFight": 1.0797345468447024,
+      "cpuMicrosecondsPerSimulation": 12.815453966856158,
+      "meanRolloutLength": 10.084212902276171,
+      "playoutsPerSimulation": 0.7605991903531438
+    },
+    "uniformmlp2500": {
+      "score": 260.13969521044993,
+      "win": 0.8708272859216255,
+      "hpLoss": 18.926705370101597,
+      "cpuSecondsPerFight": 1.148033569582003,
+      "cpuMicrosecondsPerSimulation": 13.917394729339316,
+      "meanRolloutLength": 10.192650358172031,
+      "playoutsPerSimulation": 0.7659637547286003
+    },
+    "perleaf2_1250": {
+      "score": 278.02467343976775,
+      "win": 0.9194484760522497,
+      "hpLoss": 15.449201741654571,
+      "cpuSecondsPerFight": 0.897605534885341,
+      "cpuMicrosecondsPerSimulation": 19.03509429165897,
+      "meanRolloutLength": 13.937173443248799,
+      "playoutsPerSimulation": 1.687686272699292
+    },
+    "perleaf2_mlp1250": {
+      "score": 278.81658200290275,
+      "win": 0.918722786647315,
+      "hpLoss": 14.89477503628447,
+      "cpuSecondsPerFight": 0.9120261634397678,
+      "cpuMicrosecondsPerSimulation": 19.585040567554934,
+      "meanRolloutLength": 13.882080611690611,
+      "playoutsPerSimulation": 1.6834975533738508
+    },
+    "perleaf4_625": {
+      "score": 274.94357764876634,
+      "win": 0.9114658925979681,
+      "hpLoss": 16.232946298984036,
+      "cpuSecondsPerFight": 0.676371157544267,
+      "cpuMicrosecondsPerSimulation": 28.48640168392741,
+      "meanRolloutLength": 14.15564562407404,
+      "playoutsPerSimulation": 3.4319866743075456
+    },
+    "perleaf4_mlp625": {
+      "score": 277.5052612481858,
+      "win": 0.9158200290275762,
+      "hpLoss": 15.542815674891147,
+      "cpuSecondsPerFight": 0.6884949465195936,
+      "cpuMicrosecondsPerSimulation": 29.37521592395696,
+      "meanRolloutLength": 14.138036783032025,
+      "playoutsPerSimulation": 3.4325320535645174
+    },
+    "table2500": {
+      "score": 279.461175616836,
+      "win": 0.9201741654571843,
+      "hpLoss": 14.5711175616836,
+      "cpuSecondsPerFight": 1.0515371396879536,
+      "cpuMicrosecondsPerSimulation": 11.501057056036194,
+      "meanRolloutLength": 11.674533907563752,
+      "playoutsPerSimulation": 0.835761314390031
+    },
+    "tablemlp2500": {
+      "score": 280.0306603773585,
+      "win": 0.9201741654571843,
+      "hpLoss": 14.415094339622641,
+      "cpuSecondsPerFight": 1.1178204842119013,
+      "cpuMicrosecondsPerSimulation": 12.200844572229702,
+      "meanRolloutLength": 11.603646924570015,
+      "playoutsPerSimulation": 0.8334096633663366
+    }
+  },
+  "contrasts": {
+    "uniform2500-plain2500/all/score": {
+      "mean": -22.796806966618288,
+      "ci95": [
+        -27.86968791500664,
+        -18.177758620689655
+      ],
+      "fights": 689
+    },
+    "uniform2500-plain2500/all/win": {
+      "mean": -0.057329462989840346,
+      "ci95": [
+        -0.07547169811320754,
+        -0.04052098408104197
+      ],
+      "fights": 689
+    },
+    "uniform2500-plain2500/all/hpLoss": {
+      "mean": 4.836719883889695,
+      "ci95": [
+        4.0193164933135215,
+        5.687323943661972
+      ],
+      "fights": 689
+    },
+    "uniform2500-plain2500/boss/score": {
+      "mean": -52.45,
+      "ci95": [
+        -69.80603448275862,
+        -35.661458333333336
+      ],
+      "fights": 125
+    },
+    "uniform2500-plain2500/boss/win": {
+      "mean": -0.168,
+      "ci95": [
+        -0.22727272727272727,
+        -0.10964912280701754
+      ],
+      "fights": 125
+    },
+    "uniform2500-plain2500/boss/hpLoss": {
+      "mean": 7.248,
+      "ci95": [
+        5.047413793103448,
+        9.471311475409836
+      ],
+      "fights": 125
+    },
+    "uniform2500-plain2500/elite/score": {
+      "mean": -21.61751497005988,
+      "ci95": [
+        -27.35891812865497,
+        -16.432404891304348
+      ],
+      "fights": 334
+    },
+    "uniform2500-plain2500/elite/win": {
+      "mean": -0.04940119760479042,
+      "ci95": [
+        -0.0707070707070707,
+        -0.03025936599423631
+      ],
+      "fights": 334
+    },
+    "uniform2500-plain2500/elite/hpLoss": {
+      "mean": 5.501497005988024,
+      "ci95": [
+        4.237609329446064,
+        6.82084690553746
+      ],
+      "fights": 334
+    },
+    "uniform2500-plain2500/normal/score": {
+      "mean": -8.393478260869566,
+      "ci95": [
+        -13.435426540284361,
+        -3.7167381974248928
+      ],
+      "fights": 230
+    },
+    "uniform2500-plain2500/normal/win": {
+      "mean": -0.008695652173913044,
+      "ci95": [
+        -0.028384279475982533,
+        0.008695652173913044
+      ],
+      "fights": 230
+    },
+    "uniform2500-plain2500/normal/hpLoss": {
+      "mean": 2.5608695652173914,
+      "ci95": [
+        1.7169811320754718,
+        3.3816964285714284
+      ],
+      "fights": 230
+    },
+    "table2500-plain2500/all/score": {
+      "mean": 0.33200290275761973,
+      "ci95": [
+        -2.282766990291262,
+        2.8130841121495327
+      ],
+      "fights": 689
+    },
+    "table2500-plain2500/all/win": {
+      "mean": -0.002902757619738752,
+      "ci95": [
+        -0.012461059190031152,
+        0.006024096385542169
+      ],
+      "fights": 689
+    },
+    "table2500-plain2500/all/hpLoss": {
+      "mean": -0.4760522496371553,
+      "ci95": [
+        -1.02217125382263,
+        0.028432732316227463
+      ],
+      "fights": 689
+    },
+    "table2500-plain2500/boss/score": {
+      "mean": -0.928,
+      "ci95": [
+        -12.581692913385826,
+        10.66905737704918
+      ],
+      "fights": 125
+    },
+    "table2500-plain2500/boss/win": {
+      "mean": -0.008,
+      "ci95": [
+        -0.04838709677419355,
+        0.03125
+      ],
+      "fights": 125
+    },
+    "table2500-plain2500/boss/hpLoss": {
+      "mean": -0.256,
+      "ci95": [
+        -1.8495934959349594,
+        1.1866666666666668
+      ],
+      "fights": 125
+    },
+    "table2500-plain2500/elite/score": {
+      "mean": 0.3345808383233533,
+      "ci95": [
+        -2.642391304347826,
+        3.657857142857143
+      ],
+      "fights": 334
+    },
+    "table2500-plain2500/elite/win": {
+      "mean": -0.004491017964071856,
+      "ci95": [
+        -0.013994910941475827,
+        0.005763688760806916
+      ],
+      "fights": 334
+    },
+    "table2500-plain2500/elite/hpLoss": {
+      "mean": -0.9745508982035929,
+      "ci95": [
+        -1.8133116883116882,
+        -0.19112627986348124
+      ],
+      "fights": 334
+    },
+    "table2500-plain2500/normal/score": {
+      "mean": 1.0130434782608695,
+      "ci95": [
+        -3.050355450236967,
+        5.235599078341014
+      ],
+      "fights": 230
+    },
+    "table2500-plain2500/normal/win": {
+      "mean": 0.002173913043478261,
+      "ci95": [
+        -0.013043478260869565,
+        0.01818181818181818
+      ],
+      "fights": 230
+    },
+    "table2500-plain2500/normal/hpLoss": {
+      "mean": 0.1282608695652174,
+      "ci95": [
+        -0.6239669421487604,
+        0.8702830188679245
+      ],
+      "fights": 230
+    },
+    "perleaf2_1250-plain2500/all/score": {
+      "mean": -1.104499274310595,
+      "ci95": [
+        -3.6431909212283045,
+        1.5431877444589308
+      ],
+      "fights": 689
+    },
+    "perleaf2_1250-plain2500/all/win": {
+      "mean": -0.00362844702467344,
+      "ci95": [
+        -0.012,
+        0.004768392370572207
+      ],
+      "fights": 689
+    },
+    "perleaf2_1250-plain2500/all/hpLoss": {
+      "mean": 0.4020319303338171,
+      "ci95": [
+        -0.14938608458390176,
+        0.9333333333333333
+      ],
+      "fights": 689
+    },
+    "perleaf2_1250-plain2500/boss/score": {
+      "mean": -4.46,
+      "ci95": [
+        -16.82091346153846,
+        9.364341085271318
+      ],
+      "fights": 125
+    },
+    "perleaf2_1250-plain2500/boss/win": {
+      "mean": -0.016,
+      "ci95": [
+        -0.056074766355140186,
+        0.02564102564102564
+      ],
+      "fights": 125
+    },
+    "perleaf2_1250-plain2500/boss/hpLoss": {
+      "mean": 1.824,
+      "ci95": [
+        0.3524590163934426,
+        3.396
+      ],
+      "fights": 125
+    },
+    "perleaf2_1250-plain2500/elite/score": {
+      "mean": -0.9098053892215568,
+      "ci95": [
+        -3.6925154320987654,
+        1.9607142857142856
+      ],
+      "fights": 334
+    },
+    "perleaf2_1250-plain2500/elite/win": {
+      "mean": -0.0029940119760479044,
+      "ci95": [
+        -0.013119533527696793,
+        0.0072254335260115606
+      ],
+      "fights": 334
+    },
+    "perleaf2_1250-plain2500/elite/hpLoss": {
+      "mean": 0.14820359281437126,
+      "ci95": [
+        -0.5458333333333333,
+        0.8123167155425219
+      ],
+      "fights": 334
+    },
+    "perleaf2_1250-plain2500/normal/score": {
+      "mean": 0.4364130434782609,
+      "ci95": [
+        -0.5727699530516432,
+        1.8820043103448276
+      ],
+      "fights": 230
+    },
+    "perleaf2_1250-plain2500/normal/win": {
+      "mean": 0.002173913043478261,
+      "ci95": [
+        0.0,
+        0.007075471698113208
+      ],
+      "fights": 230
+    },
+    "perleaf2_1250-plain2500/normal/hpLoss": {
+      "mean": -0.002173913043478261,
+      "ci95": [
+        -0.5809128630705395,
+        0.5698198198198198
+      ],
+      "fights": 230
+    },
+    "perleaf4_625-plain2500/all/score": {
+      "mean": -4.185595065312047,
+      "ci95": [
+        -7.206931089743589,
+        -1.4576729106628241
+      ],
+      "fights": 689
+    },
+    "perleaf4_625-plain2500/all/win": {
+      "mean": -0.011611030478955007,
+      "ci95": [
+        -0.022130013831258646,
+        -0.00211864406779661
+      ],
+      "fights": 689
+    },
+    "perleaf4_625-plain2500/all/hpLoss": {
+      "mean": 1.1857764876632801,
+      "ci95": [
+        0.5944992947813822,
+        1.7911290322580644
+      ],
+      "fights": 689
+    },
+    "perleaf4_625-plain2500/boss/score": {
+      "mean": -13.196,
+      "ci95": [
+        -28.472972972972972,
+        0.7698412698412699
+      ],
+      "fights": 125
+    },
+    "perleaf4_625-plain2500/boss/win": {
+      "mean": -0.04,
+      "ci95": [
+        -0.09243697478991597,
+        0.007936507936507936
+      ],
+      "fights": 125
+    },
+    "perleaf4_625-plain2500/boss/hpLoss": {
+      "mean": 3.216,
+      "ci95": [
+        1.3211382113821137,
+        5.231404958677686
+      ],
+      "fights": 125
+    },
+    "perleaf4_625-plain2500/elite/score": {
+      "mean": -3.502619760479042,
+      "ci95": [
+        -7.017197986577181,
+        -0.32921511627906974
+      ],
+      "fights": 334
+    },
+    "perleaf4_625-plain2500/elite/win": {
+      "mean": -0.008982035928143712,
+      "ci95": [
+        -0.02127659574468085,
+        0.001597444089456869
+      ],
+      "fights": 334
+    },
+    "perleaf4_625-plain2500/elite/hpLoss": {
+      "mean": 1.06437125748503,
+      "ci95": [
+        0.2507788161993769,
+        1.86685552407932
+      ],
+      "fights": 334
+    },
+    "perleaf4_625-plain2500/normal/score": {
+      "mean": -0.28043478260869564,
+      "ci95": [
+        -2.7742456896551726,
+        2.2160138248847927
+      ],
+      "fights": 230
+    },
+    "perleaf4_625-plain2500/normal/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.008733624454148471,
+        0.008658008658008658
+      ],
+      "fights": 230
+    },
+    "perleaf4_625-plain2500/normal/hpLoss": {
+      "mean": 0.25869565217391305,
+      "ci95": [
+        -0.21120689655172414,
+        0.6885593220338984
+      ],
+      "fights": 230
+    },
+    "mlp2500-plain2500/all/score": {
+      "mean": 1.6674528301886793,
+      "ci95": [
+        -0.7198275862068966,
+        3.9430494905385736
+      ],
+      "fights": 689
+    },
+    "mlp2500-plain2500/all/win": {
+      "mean": 0.00362844702467344,
+      "ci95": [
+        -0.004464285714285714,
+        0.011456628477905073
+      ],
+      "fights": 689
+    },
+    "mlp2500-plain2500/all/hpLoss": {
+      "mean": -0.3664731494920174,
+      "ci95": [
+        -1.0388349514563107,
+        0.31258023106546856
+      ],
+      "fights": 689
+    },
+    "mlp2500-plain2500/boss/score": {
+      "mean": 3.82,
+      "ci95": [
+        -10.282894736842104,
+        15.92436974789916
+      ],
+      "fights": 125
+    },
+    "mlp2500-plain2500/boss/win": {
+      "mean": 0.012,
+      "ci95": [
+        -0.03636363636363636,
+        0.05371900826446281
+      ],
+      "fights": 125
+    },
+    "mlp2500-plain2500/boss/hpLoss": {
+      "mean": -0.612,
+      "ci95": [
+        -3.0551470588235294,
+        2.0120967741935485
+      ],
+      "fights": 125
+    },
+    "mlp2500-plain2500/elite/score": {
+      "mean": 0.5475299401197605,
+      "ci95": [
+        -1.8378267973856208,
+        2.8342065868263475
+      ],
+      "fights": 334
+    },
+    "mlp2500-plain2500/elite/win": {
+      "mean": -0.0014970059880239522,
+      "ci95": [
+        -0.010542168674698794,
+        0.007374631268436578
+      ],
+      "fights": 334
+    },
+    "mlp2500-plain2500/elite/hpLoss": {
+      "mean": -0.4505988023952096,
+      "ci95": [
+        -1.1629213483146068,
+        0.22527472527472528
+      ],
+      "fights": 334
+    },
+    "mlp2500-plain2500/normal/score": {
+      "mean": 2.123913043478261,
+      "ci95": [
+        -0.7837982832618026,
+        5.644021739130435
+      ],
+      "fights": 230
+    },
+    "mlp2500-plain2500/normal/win": {
+      "mean": 0.006521739130434782,
+      "ci95": [
+        -0.004,
+        0.018907563025210083
+      ],
+      "fights": 230
+    },
+    "mlp2500-plain2500/normal/hpLoss": {
+      "mean": -0.1108695652173913,
+      "ci95": [
+        -0.7306201550387597,
+        0.40638297872340423
+      ],
+      "fights": 230
+    },
+    "mlp10000-plain10000/all/score": {
+      "mean": 3.328374455732946,
+      "ci95": [
+        1.291030534351145,
+        5.545749279538905
+      ],
+      "fights": 689
+    },
+    "mlp10000-plain10000/all/win": {
+      "mean": 0.008708272859216255,
+      "ci95": [
+        0.0007163323782234957,
+        0.017265193370165747
+      ],
+      "fights": 689
+    },
+    "mlp10000-plain10000/all/hpLoss": {
+      "mean": -0.5043541364296081,
+      "ci95": [
+        -0.9235807860262009,
+        -0.07286821705426356
+      ],
+      "fights": 689
+    },
+    "mlp10000-plain10000/boss/score": {
+      "mean": 9.587,
+      "ci95": [
+        1.6219262295081966,
+        17.924568965517242
+      ],
+      "fights": 125
+    },
+    "mlp10000-plain10000/boss/win": {
+      "mean": 0.028,
+      "ci95": [
+        0.0,
+        0.05859375
+      ],
+      "fights": 125
+    },
+    "mlp10000-plain10000/boss/hpLoss": {
+      "mean": -1.536,
+      "ci95": [
+        -2.9318181818181817,
+        -0.15677966101694915
+      ],
+      "fights": 125
+    },
+    "mlp10000-plain10000/elite/score": {
+      "mean": 1.9315119760479043,
+      "ci95": [
+        -0.7689873417721519,
+        4.637810559006211
+      ],
+      "fights": 334
+    },
+    "mlp10000-plain10000/elite/win": {
+      "mean": 0.0029940119760479044,
+      "ci95": [
+        -0.008169934640522876,
+        0.013927576601671309
+      ],
+      "fights": 334
+    },
+    "mlp10000-plain10000/elite/hpLoss": {
+      "mean": -0.4161676646706587,
+      "ci95": [
+        -1.1105610561056105,
+        0.288135593220339
+      ],
+      "fights": 334
+    },
+    "mlp10000-plain10000/normal/score": {
+      "mean": 1.9554347826086957,
+      "ci95": [
+        -0.01762114537444934,
+        4.870145631067961
+      ],
+      "fights": 230
+    },
+    "mlp10000-plain10000/normal/win": {
+      "mean": 0.006521739130434782,
+      "ci95": [
+        0.0,
+        0.017391304347826087
+      ],
+      "fights": 230
+    },
+    "mlp10000-plain10000/normal/hpLoss": {
+      "mean": -0.07173913043478261,
+      "ci95": [
+        -0.43621399176954734,
+        0.3192488262910798
+      ],
+      "fights": 230
+    },
+    "uniformmlp2500-uniform2500/all/score": {
+      "mean": 3.8073294629898404,
+      "ci95": [
+        0.30982905982905984,
+        7.761659021406728
+      ],
+      "fights": 689
+    },
+    "uniformmlp2500-uniform2500/all/win": {
+      "mean": 0.0050798258345428155,
+      "ci95": [
+        -0.007412398921832884,
+        0.018934081346423562
+      ],
+      "fights": 689
+    },
+    "uniformmlp2500-uniform2500/all/hpLoss": {
+      "mean": -0.9571843251088534,
+      "ci95": [
+        -1.5477941176470589,
+        -0.37920937042459735
+      ],
+      "fights": 689
+    },
+    "uniformmlp2500-uniform2500/boss/score": {
+      "mean": 3.407,
+      "ci95": [
+        -6.235294117647059,
+        12.528125
+      ],
+      "fights": 125
+    },
+    "uniformmlp2500-uniform2500/boss/win": {
+      "mean": 0.004,
+      "ci95": [
+        -0.030303030303030304,
+        0.0371900826446281
+      ],
+      "fights": 125
+    },
+    "uniformmlp2500-uniform2500/boss/hpLoss": {
+      "mean": -0.812,
+      "ci95": [
+        -2.207317073170732,
+        0.5370370370370371
+      ],
+      "fights": 125
+    },
+    "uniformmlp2500-uniform2500/elite/score": {
+      "mean": 5.424026946107785,
+      "ci95": [
+        0.8130664652567976,
+        10.758849557522124
+      ],
+      "fights": 334
+    },
+    "uniformmlp2500-uniform2500/elite/win": {
+      "mean": 0.0074850299401197605,
+      "ci95": [
+        -0.008116883116883116,
+        0.025210084033613446
+      ],
+      "fights": 334
+    },
+    "uniformmlp2500-uniform2500/elite/hpLoss": {
+      "mean": -1.6362275449101797,
+      "ci95": [
+        -2.6149732620320854,
+        -0.7266483516483516
+      ],
+      "fights": 334
+    },
+    "uniformmlp2500-uniform2500/normal/score": {
+      "mean": 1.6771739130434782,
+      "ci95": [
+        -2.5528242677824267,
+        6.023185483870968
+      ],
+      "fights": 230
+    },
+    "uniformmlp2500-uniform2500/normal/win": {
+      "mean": 0.002173913043478261,
+      "ci95": [
+        -0.013953488372093023,
+        0.019230769230769232
+      ],
+      "fights": 230
+    },
+    "uniformmlp2500-uniform2500/normal/hpLoss": {
+      "mean": -0.05,
+      "ci95": [
+        -0.6754807692307693,
+        0.5796460176991151
+      ],
+      "fights": 230
+    },
+    "uniformmlp2500-mlp2500/all/score": {
+      "mean": -20.656930333817126,
+      "ci95": [
+        -25.007824726134587,
+        -16.346418732782368
+      ],
+      "fights": 689
+    },
+    "uniformmlp2500-mlp2500/all/win": {
+      "mean": -0.05587808417997097,
+      "ci95": [
+        -0.07198748043818466,
+        -0.04011461318051576
+      ],
+      "fights": 689
+    },
+    "uniformmlp2500-mlp2500/all/hpLoss": {
+      "mean": 4.246008708272859,
+      "ci95": [
+        3.392296718972896,
+        5.180851063829787
+      ],
+      "fights": 689
+    },
+    "uniformmlp2500-mlp2500/boss/score": {
+      "mean": -52.863,
+      "ci95": [
+        -69.46926229508196,
+        -36.22950819672131
+      ],
+      "fights": 125
+    },
+    "uniformmlp2500-mlp2500/boss/win": {
+      "mean": -0.176,
+      "ci95": [
+        -0.23387096774193547,
+        -0.11904761904761904
+      ],
+      "fights": 125
+    },
+    "uniformmlp2500-mlp2500/boss/hpLoss": {
+      "mean": 7.048,
+      "ci95": [
+        4.109848484848484,
+        10.1
+      ],
+      "fights": 125
+    },
+    "uniformmlp2500-mlp2500/elite/score": {
+      "mean": -16.741017964071855,
+      "ci95": [
+        -21.971875,
+        -12.011080332409973
+      ],
+      "fights": 334
+    },
+    "uniformmlp2500-mlp2500/elite/win": {
+      "mean": -0.040419161676646706,
+      "ci95": [
+        -0.06118881118881119,
+        -0.021865889212827987
+      ],
+      "fights": 334
+    },
+    "uniformmlp2500-mlp2500/elite/hpLoss": {
+      "mean": 4.315868263473054,
+      "ci95": [
+        3.1638888888888888,
+        5.484326018808777
+      ],
+      "fights": 334
+    },
+    "uniformmlp2500-mlp2500/normal/score": {
+      "mean": -8.840217391304348,
+      "ci95": [
+        -14.001960784313725,
+        -3.9463519313304722
+      ],
+      "fights": 230
+    },
+    "uniformmlp2500-mlp2500/normal/win": {
+      "mean": -0.013043478260869565,
+      "ci95": [
+        -0.03177966101694915,
+        0.004201680672268907
+      ],
+      "fights": 230
+    },
+    "uniformmlp2500-mlp2500/normal/hpLoss": {
+      "mean": 2.621739130434783,
+      "ci95": [
+        1.7289719626168225,
+        3.5508849557522124
+      ],
+      "fights": 230
+    },
+    "tablemlp2500-mlp2500/all/score": {
+      "mean": -0.7659651669085631,
+      "ci95": [
+        -3.322142857142857,
+        2.0873819163292846
+      ],
+      "fights": 689
+    },
+    "tablemlp2500-mlp2500/all/win": {
+      "mean": -0.006531204644412192,
+      "ci95": [
+        -0.015497553017944535,
+        0.003129890453834116
+      ],
+      "fights": 689
+    },
+    "tablemlp2500-mlp2500/all/hpLoss": {
+      "mean": -0.2656023222060958,
+      "ci95": [
+        -0.8099369085173501,
+        0.2693452380952381
+      ],
+      "fights": 689
+    },
+    "tablemlp2500-mlp2500/boss/score": {
+      "mean": -5.898,
+      "ci95": [
+        -18.581932773109244,
+        8.988839285714286
+      ],
+      "fights": 125
+    },
+    "tablemlp2500-mlp2500/boss/win": {
+      "mean": -0.028,
+      "ci95": [
+        -0.07307692307692308,
+        0.023622047244094488
+      ],
+      "fights": 125
+    },
+    "tablemlp2500-mlp2500/boss/hpLoss": {
+      "mean": -0.268,
+      "ci95": [
+        -2.8488372093023258,
+        1.987603305785124
+      ],
+      "fights": 125
+    },
+    "tablemlp2500-mlp2500/elite/score": {
+      "mean": 0.5535179640718563,
+      "ci95": [
+        -1.9450757575757576,
+        3.080621301775148
+      ],
+      "fights": 334
+    },
+    "tablemlp2500-mlp2500/elite/win": {
+      "mean": -0.0029940119760479044,
+      "ci95": [
+        -0.0125,
+        0.006269592476489028
+      ],
+      "fights": 334
+    },
+    "tablemlp2500-mlp2500/elite/hpLoss": {
+      "mean": -0.5014970059880239,
+      "ci95": [
+        -1.1793785310734464,
+        0.18303571428571427
+      ],
+      "fights": 334
+    },
+    "tablemlp2500-mlp2500/normal/score": {
+      "mean": 0.10706521739130435,
+      "ci95": [
+        -1.5572222222222223,
+        1.5907079646017699
+      ],
+      "fights": 230
+    },
+    "tablemlp2500-mlp2500/normal/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.006521739130434782,
+        0.006355932203389831
+      ],
+      "fights": 230
+    },
+    "tablemlp2500-mlp2500/normal/hpLoss": {
+      "mean": 0.0782608695652174,
+      "ci95": [
+        -0.3915929203539823,
+        0.5694444444444444
+      ],
+      "fights": 230
+    },
+    "perleaf2_mlp1250-mlp2500/all/score": {
+      "mean": -1.980043541364296,
+      "ci95": [
+        -3.8104779411764707,
+        -0.2132034632034632
+      ],
+      "fights": 689
+    },
+    "perleaf2_mlp1250-mlp2500/all/win": {
+      "mean": -0.007982583454281567,
+      "ci95": [
+        -0.014751552795031056,
+        -0.0014534883720930232
+      ],
+      "fights": 689
+    },
+    "perleaf2_mlp1250-mlp2500/all/hpLoss": {
+      "mean": 0.21407837445573294,
+      "ci95": [
+        -0.17246835443037975,
+        0.5970464135021097
+      ],
+      "fights": 689
+    },
+    "perleaf2_mlp1250-mlp2500/boss/score": {
+      "mean": -2.77,
+      "ci95": [
+        -11.70703125,
+        6.3251953125
+      ],
+      "fights": 125
+    },
+    "perleaf2_mlp1250-mlp2500/boss/win": {
+      "mean": -0.016,
+      "ci95": [
+        -0.04782608695652174,
+        0.015503875968992248
+      ],
+      "fights": 125
+    },
+    "perleaf2_mlp1250-mlp2500/boss/hpLoss": {
+      "mean": -0.388,
+      "ci95": [
+        -2.1440677966101696,
+        1.3991596638655461
+      ],
+      "fights": 125
+    },
+    "perleaf2_mlp1250-mlp2500/elite/score": {
+      "mean": -2.1085329341317367,
+      "ci95": [
+        -4.4584677419354835,
+        0.1422275641025641
+      ],
+      "fights": 334
+    },
+    "perleaf2_mlp1250-mlp2500/elite/win": {
+      "mean": -0.0074850299401197605,
+      "ci95": [
+        -0.016467065868263474,
+        0.0014124293785310734
+      ],
+      "fights": 334
+    },
+    "perleaf2_mlp1250-mlp2500/elite/hpLoss": {
+      "mean": 0.37425149700598803,
+      "ci95": [
+        -0.1390625,
+        0.890625
+      ],
+      "fights": 334
+    },
+    "perleaf2_mlp1250-mlp2500/normal/score": {
+      "mean": -1.3641304347826086,
+      "ci95": [
+        -3.1222222222222222,
+        -0.10433070866141732
+      ],
+      "fights": 230
+    },
+    "perleaf2_mlp1250-mlp2500/normal/win": {
+      "mean": -0.004347826086956522,
+      "ci95": [
+        -0.011061946902654867,
+        0.0
+      ],
+      "fights": 230
+    },
+    "perleaf2_mlp1250-mlp2500/normal/hpLoss": {
+      "mean": 0.30869565217391304,
+      "ci95": [
+        -0.08733624454148471,
+        0.7258064516129032
+      ],
+      "fights": 230
+    },
+    "perleaf4_mlp625-mlp2500/all/score": {
+      "mean": -3.291364296081277,
+      "ci95": [
+        -5.850735294117647,
+        -0.7514044943820225
+      ],
+      "fights": 689
+    },
+    "perleaf4_mlp625-mlp2500/all/win": {
+      "mean": -0.01088534107402032,
+      "ci95": [
+        -0.020440251572327043,
+        -0.0014858841010401188
+      ],
+      "fights": 689
+    },
+    "perleaf4_mlp625-mlp2500/all/hpLoss": {
+      "mean": 0.8621190130624092,
+      "ci95": [
+        0.2733433734939759,
+        1.4780635400907716
+      ],
+      "fights": 689
+    },
+    "perleaf4_mlp625-mlp2500/boss/score": {
+      "mean": -9.732,
+      "ci95": [
+        -22.519144144144143,
+        2.603860294117647
+      ],
+      "fights": 125
+    },
+    "perleaf4_mlp625-mlp2500/boss/win": {
+      "mean": -0.036,
+      "ci95": [
+        -0.0811965811965812,
+        0.008
+      ],
+      "fights": 125
+    },
+    "perleaf4_mlp625-mlp2500/boss/hpLoss": {
+      "mean": 1.18,
+      "ci95": [
+        -1.1929133858267718,
+        3.7028985507246377
+      ],
+      "fights": 125
+    },
+    "perleaf4_mlp625-mlp2500/elite/score": {
+      "mean": -1.1343562874251496,
+      "ci95": [
+        -3.6630258899676376,
+        1.3539012738853504
+      ],
+      "fights": 334
+    },
+    "perleaf4_mlp625-mlp2500/elite/win": {
+      "mean": -0.0029940119760479044,
+      "ci95": [
+        -0.012779552715654952,
+        0.006361323155216285
+      ],
+      "fights": 334
+    },
+    "perleaf4_mlp625-mlp2500/elite/hpLoss": {
+      "mean": 0.7080838323353293,
+      "ci95": [
+        0.009771986970684038,
+        1.406060606060606
+      ],
+      "fights": 334
+    },
+    "perleaf4_mlp625-mlp2500/normal/score": {
+      "mean": -2.923369565217391,
+      "ci95": [
+        -5.293981481481482,
+        -1.0142857142857142
+      ],
+      "fights": 230
+    },
+    "perleaf4_mlp625-mlp2500/normal/win": {
+      "mean": -0.008695652173913044,
+      "ci95": [
+        -0.017777777777777778,
+        -0.0020491803278688526
+      ],
+      "fights": 230
+    },
+    "perleaf4_mlp625-mlp2500/normal/hpLoss": {
+      "mean": 0.9130434782608695,
+      "ci95": [
+        0.359375,
+        1.5460251046025104
+      ],
+      "fights": 230
+    },
+    "tablemlp2500-table2500/all/score": {
+      "mean": 0.5694847605224964,
+      "ci95": [
+        -1.7583853354134165,
+        2.8347457627118646
+      ],
+      "fights": 689
+    },
+    "tablemlp2500-table2500/all/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.00819672131147541,
+        0.008052708638360176
+      ],
+      "fights": 689
+    },
+    "tablemlp2500-table2500/all/hpLoss": {
+      "mean": -0.15602322206095792,
+      "ci95": [
+        -0.5742857142857143,
+        0.29072847682119207
+      ],
+      "fights": 689
+    },
+    "tablemlp2500-table2500/boss/score": {
+      "mean": -1.15,
+      "ci95": [
+        -11.048076923076923,
+        9.192477876106194
+      ],
+      "fights": 125
+    },
+    "tablemlp2500-table2500/boss/win": {
+      "mean": -0.008,
+      "ci95": [
+        -0.04090909090909091,
+        0.02631578947368421
+      ],
+      "fights": 125
+    },
+    "tablemlp2500-table2500/boss/hpLoss": {
+      "mean": -0.624,
+      "ci95": [
+        -1.9576923076923076,
+        0.7790697674418605
+      ],
+      "fights": 125
+    },
+    "tablemlp2500-table2500/elite/score": {
+      "mean": 0.7664670658682635,
+      "ci95": [
+        -2.511328125,
+        4.024801587301587
+      ],
+      "fights": 334
+    },
+    "tablemlp2500-table2500/elite/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.010263929618768328,
+        0.010115606936416185
+      ],
+      "fights": 334
+    },
+    "tablemlp2500-table2500/elite/hpLoss": {
+      "mean": 0.02245508982035928,
+      "ci95": [
+        -0.7573529411764706,
+        0.8364197530864198
+      ],
+      "fights": 334
+    },
+    "tablemlp2500-table2500/normal/score": {
+      "mean": 1.2179347826086957,
+      "ci95": [
+        0.04484304932735426,
+        2.8434684684684686
+      ],
+      "fights": 230
+    },
+    "tablemlp2500-table2500/normal/win": {
+      "mean": 0.004347826086956522,
+      "ci95": [
+        0.0,
+        0.011210762331838564
+      ],
+      "fights": 230
+    },
+    "tablemlp2500-table2500/normal/hpLoss": {
+      "mean": -0.1608695652173913,
+      "ci95": [
+        -0.47689075630252103,
+        0.167420814479638
+      ],
+      "fights": 230
+    },
+    "plain2500-plain10000/all/score": {
+      "mean": -0.6797895500725689,
+      "ci95": [
+        -3.1248125937031483,
+        1.8705357142857142
+      ],
+      "fights": 689
+    },
+    "plain2500-plain10000/all/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.007947976878612716,
+        0.008540372670807454
+      ],
+      "fights": 689
+    },
+    "plain2500-plain10000/all/hpLoss": {
+      "mean": 0.5573294629898403,
+      "ci95": [
+        0.07492581602373888,
+        1.0576923076923077
+      ],
+      "fights": 689
+    },
+    "plain2500-plain10000/boss/score": {
+      "mean": -1.923,
+      "ci95": [
+        -13.807926829268293,
+        10.652884615384615
+      ],
+      "fights": 125
+    },
+    "plain2500-plain10000/boss/win": {
+      "mean": -0.004,
+      "ci95": [
+        -0.04132231404958678,
+        0.036585365853658534
+      ],
+      "fights": 125
+    },
+    "plain2500-plain10000/boss/hpLoss": {
+      "mean": 0.704,
+      "ci95": [
+        -0.9693877551020408,
+        2.3055555555555554
+      ],
+      "fights": 125
+    },
+    "plain2500-plain10000/elite/score": {
+      "mean": -0.21070359281437126,
+      "ci95": [
+        -2.4714285714285715,
+        2.1603025936599423
+      ],
+      "fights": 334
+    },
+    "plain2500-plain10000/elite/win": {
+      "mean": 0.0029940119760479044,
+      "ci95": [
+        -0.004966887417218543,
+        0.011527377521613832
+      ],
+      "fights": 334
+    },
+    "plain2500-plain10000/elite/hpLoss": {
+      "mean": 0.8278443113772455,
+      "ci95": [
+        0.09247648902821316,
+        1.580281690140845
+      ],
+      "fights": 334
+    },
+    "plain2500-plain10000/normal/score": {
+      "mean": -0.6853260869565218,
+      "ci95": [
+        -2.575854700854701,
+        0.9875565610859729
+      ],
+      "fights": 230
+    },
+    "plain2500-plain10000/normal/win": {
+      "mean": -0.002173913043478261,
+      "ci95": [
+        -0.010256410256410256,
+        0.0045045045045045045
+      ],
+      "fights": 230
+    },
+    "plain2500-plain10000/normal/hpLoss": {
+      "mean": 0.08478260869565217,
+      "ci95": [
+        -0.2731707317073171,
+        0.44273127753303965
+      ],
+      "fights": 230
+    }
+  },
+  "cpuRatios": {
+    "uniform2500/plain2500/perSimulation": {
+      "ratio": 1.0230744573065054,
+      "ci95": [
+        0.9737875792680308,
+        1.0796809314227664
+      ]
+    },
+    "uniform2500/plain2500/perFight": {
+      "ratio": 0.9176370866292125,
+      "ci95": [
+        0.8659978396618255,
+        0.9747360453201296
+      ]
+    },
+    "table2500/plain2500/perSimulation": {
+      "ratio": 0.9181444322211461,
+      "ci95": [
+        0.9011862367904588,
+        0.9344500459732507
+      ]
+    },
+    "table2500/plain2500/perFight": {
+      "ratio": 0.8936728755836078,
+      "ci95": [
+        0.8721420270877497,
+        0.9143394002425028
+      ]
+    },
+    "perleaf2_1250/plain2500/perSimulation": {
+      "ratio": 1.5195964819180359,
+      "ci95": [
+        1.4957838954068392,
+        1.5441641479759343
+      ]
+    },
+    "perleaf2_1250/plain2500/perFight": {
+      "ratio": 0.7628505824709052,
+      "ci95": [
+        0.7472509346530936,
+        0.7788862972208014
+      ]
+    },
+    "perleaf4_625/plain2500/perSimulation": {
+      "ratio": 2.2741067166853224,
+      "ci95": [
+        2.2355432962214596,
+        2.311196103030985
+      ]
+    },
+    "perleaf4_625/plain2500/perFight": {
+      "ratio": 0.5748294896210436,
+      "ci95": [
+        0.5607957725947263,
+        0.5881315457262434
+      ]
+    }
+  },
+  "labels": {
+    "uniform2500-plain2500": "UNIFORM_HURTS",
+    "table2500-plain2500": "NOT_SHOWN",
+    "perleaf2_1250-plain2500": "NOT_SHOWN",
+    "perleaf4_625-plain2500": "PERLEAF4_HURTS"
+  }
+}
