@@ -63,6 +63,8 @@ namespace sts::search {
         // the fewest/most at one root (-1 before the first searched root).
         std::int64_t searchSteps = 0;
         std::int64_t minRootSteps = -1, maxRootSteps = -1;
+        // Leaf playouts and the actions inside them (SilverSearchStats).
+        std::int64_t rolloutPlayouts = 0, rolloutActions = 0;
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
@@ -131,6 +133,9 @@ namespace sts::search {
     // STS_SILVER_FINAL_FIGHT_LEAF for the current thread's combats (it still
     // applies only to fights whose victory ends the run). Unset elsewhere.
     extern thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    // Research-only (§479 rollout arms): when set, replaces the env rollout options
+    // (SilverSearcher::envRolloutConfig) for the current thread's searches. Unset elsewhere.
+    extern thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 

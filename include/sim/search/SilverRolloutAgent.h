@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <random>
+#include <string>
 
 #include "sim/search/Action.h"
 
@@ -20,6 +21,10 @@ namespace sts::search {
         bool randomize = true;
         std::default_random_engine rng;
         int act = 1;   // current act; scales the "enough block" check
+        // Research: learned play-priority table (loadPlayTable); nullptr = production order.
+        const int *playTable = nullptr;
+
+        static const int *loadPlayTable(const std::string &path);
 
         SilverRolloutAgent();
         SilverRolloutAgent(bool randomizeMode, std::uint64_t seed, int act);

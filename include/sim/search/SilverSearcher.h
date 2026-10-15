@@ -71,6 +71,8 @@ namespace sts::search {
         std::int64_t chanceOutcomesSampled = 0;
         std::int64_t chanceSiblingReuse = 0;
         std::int64_t chanceTranspositions = 0;
+        std::int64_t rolloutPlayouts = 0;   // playouts run to combat end from tree leaves
+        std::int64_t rolloutActions = 0;    // actions taken inside those playouts
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -175,6 +177,19 @@ namespace sts::search {
         SilverSearchStats stats;
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off
         SilverOutcomeCapture *outcomes = nullptr; // optional caller-owned samples; default off
+
+        // Research rollout options. uniform = k > 0: average k uniform-random playouts per leaf;
+        // perLeaf = k: average k greedy playouts per leaf; cardTable: learned play order for the
+        // greedy policy (SilverRolloutAgent::loadPlayTable). Defaults come from
+        // STS_SILVER_ROLLOUT_UNIFORM, STS_SILVER_ROLLOUTS_PER_LEAF and STS_SILVER_ROLLOUT_CARD_TABLE
+        // (all off = production rollouts).
+        struct RolloutConfig {
+            int uniform = 0;
+            int perLeaf = 1;
+            const int *cardTable = nullptr;
+        };
+        static const RolloutConfig &envRolloutConfig();
+        RolloutConfig rolloutConfig = envRolloutConfig();
         SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
         // Research-only root prior bonus (off by default): a visited root edge i
         // scores rootPriorWeight * rootPrior[i] / (visits_i + 1) on top of UCB.
@@ -291,6 +306,10 @@ namespace sts::search {
         int wideningCap(int category, std::int64_t visits);
         Edge *selectChanceOutcome(Node &chance);
         double rolloutToEnd(BattleContext &state, int treeDepth);
+        double playoutToEnd(BattleContext &state, int treeDepth, bool uniformPolicy);
+        // Research (STS_SILVER_ROLLOUT_UNIFORM=1): a uniformly random legal action,
+        // including potions and END_TURN, instead of SilverRolloutAgent's greedy pick.
+        Action chooseUniformRolloutAction(BattleContext &bc);
         void recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
