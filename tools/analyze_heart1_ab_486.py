@@ -17,7 +17,7 @@ CPU per run, the share of OOC decisions MCTS owned (trace ``by``), and the share
 
 Validity: a unit with rc != 0 is allowed only when its log names a ``[bestbench-seed-failure]`` or it hit the unit
 timeout (rc 124, issue #544's endless Silver loop does not throw); such a seed is dropped from both arms and listed.
-An ascension is INVALID when more than 1% of its cohort seeds are dropped. Every heart1 log must show
+An ascension is INVALID when more than 1% of its cohort seeds, and more than one seed, are dropped. Every heart1 log must show
 ``[heart1] loaded`` and ``prior=heart1``; every v4 log ``prior=policy`` and no heart1 load; both ``leaf_policy=v4``.
 Any other gap, failure or non-cohort row labels that ascension's result INVALID.
 """
@@ -108,7 +108,7 @@ def analyze_asc(rows, done, asc, cohort):
     bad += [d["line"] + " (heart1 not loaded)" for d in dn["heart1"] if not d["loaded"]]
     bad += [d["line"] + " (unexpected heart1 load)" for d in dn["v4"] if d["loaded"]]
     bad += [d["line"] + " (prior or leaf policy line missing)" for a in ARMS for d in dn[a] if not d["prior_ok"]]
-    if len(failed) > MAX_DROPPED * len(cohort):
+    if len(failed) > max(1, MAX_DROPPED * len(cohort)):
         bad.append(f"{len(failed)} dropped seeds exceed {MAX_DROPPED:.0%} of the cohort")
     missing = {a: sorted(set(cohort) - set(r[a]) - set(failed)) for a in ARMS}
     extra = sorted((set(r["v4"]) | set(r["heart1"])) - set(cohort))

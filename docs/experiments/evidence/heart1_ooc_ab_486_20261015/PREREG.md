@@ -4,7 +4,8 @@ Philipp, 2026-10-15 08:21Z: "Open a new thread which takes care of testing the h
 09:12Z: "do 128 seeds on a0 and a20. but with the ooc mcts and once the heart1 as a prior, and the other time with our
 v4 as the prior. prior should be used inside the tree and for their rollouts for rollout3. then use 32 workers";
 09:56Z decision card "Speed up first"; 10:08Z: "okay maybe no prior in the rollout, finish your speedup and give me
-the expected cpu hours". So the prior changes inside the tree only; rollouts stay as they are in both arms. Frozen
+the expected cpu hours"; 11:57Z (decision card on the doubled cost): "32 workers on a20, maybe just 64 seeds for
+now." So the run is A20 only with 64 seeds, and the prior changes inside the tree only; rollouts stay as they are in both arms. Frozen
 with the run commit, binary hash and weights hash before launch; independent pre-launch review.
 
 ## What is known (baseline)
@@ -23,7 +24,7 @@ with the run commit, binary hash and weights hash before launch; independent pre
 - H1: OOC MCTS with heart1 as the tree prior reaches further at A20 than with V4 as the prior (mean paired floor
   difference > 0).
 - H2 (key secondary): it clears act 3 more often at A20.
-- H3 (secondary): the same at A0.
+- H3 (secondary, A0): not run in this stage (Philipp 11:57Z); a later stage may add it.
 
 ## Arms (paired by seed, same binary, `arm_env.sh`)
 - Both: §433 `combo` literally (the §422 base: exact-10k Silver via the bestbench budget, V4 OOC gates at margin 1.0,
@@ -44,9 +45,9 @@ with the run commit, binary hash and weights hash before launch; independent pre
   Keys stay off in the tree (dropped candidates), as in `v4`.
 
 ## Seeds and runs
-- A20 seeds 107000000–107000127, A0 seeds 107001000–107001127 (`COHORTS`). One `bestbench 10000 1 ASC SEED` unit
-  per seed, arm and ascension through `tools/seed_guard.sh` (`run_unit.sh`), 512 units. 32 cloud workers
-  (`NWORKERS`, Philipp 09:12Z), each running 4 seeds of each cohort in both arms, 4 units at a time.
+- A20 seeds 107000000–107000063 (`COHORTS`; A0 seeds 107001000–107001127 stay reserved for a later stage). One
+  `bestbench 10000 1 20 SEED` unit per seed and arm through `tools/seed_guard.sh` (`run_unit.sh`), 128 units.
+  32 cloud workers (`NWORKERS`, Philipp 09:12Z and 11:57Z), each running 2 seeds in both arms, all 4 units at once.
 - Smokes: 74071950–74071976 in this thread (direct policy 950–967; OOC MCTS timing 970–974 on pre-fix binaries;
   final-binary heart1-arm act-1 coverage smoke 975 at A20 and 976 at A0).
 - Launch gate (reviewer): in the final-binary smoke heart1 scores at least 90% of prior builds at each ascension
@@ -55,7 +56,8 @@ with the run commit, binary hash and weights hash before launch; independent pre
   about 30 s per OOC decision). Issue #544's endless Silver loop does not throw, so a hung unit ends at rc 124.
   Workers let the timeout fire and never kill units themselves.
 - Dropped seeds: a `[bestbench-seed-failure]` (rc 1, no row) or a timeout (rc 124) drops that seed from both arms
-  and lists it. An ascension is INVALID if more than 1% of its seeds are dropped (here: more than 1 of 128), if any
+  and lists it. An ascension is INVALID if more than 1% of its seeds, and more than one seed, are dropped (here: more than 1
+  of 64; at 64 seeds a plain 1% rule would allow none), if any
   other unit fails, or if a log lacks its arm's markers (`[heart1] loaded` and `prior=heart1` for heart1,
   `prior=policy` and no heart1 load for v4, `leaf_policy=v4` for both) (`tools/analyze_heart1_ab_486.py`).
 
@@ -64,11 +66,11 @@ with the run commit, binary hash and weights hash before launch; independent pre
   seed 486 + ascension). **IMPROVED** if the lower CI > 0, **WORSE** if the upper CI < 0, **NOT_SHOWN** otherwise.
 - **Key secondary (A20):** act-3 clear difference with its CI (same resample indices, same labels), discordant pairs
   and exact McNemar p.
-- **Secondary (A0):** the same two statistics with their labels.
+- **Secondary (A0):** not in this stage.
 - Descriptive: reached act 3, clears given act 3 reached, deaths by act, boss deaths, end HP, seconds and MCTS CPU
   per run, MCTS-owned and fallback shares, support aborts, prior builds, and heart1's share of prior builds.
-- No multiplicity correction; all statistics are reported. 128 seeds give a floor CI of roughly ±2–3 floors at A20
-  (**Inference** from §458's ±3.3 at 128 seeds), so only a large effect will separate.
+- No multiplicity correction; all statistics are reported. 64 seeds give a floor CI of roughly ±4–5 floors at A20
+  (**Inference** from §458's ±3.3 at 128 seeds scaled by √2), so only a large effect will separate.
 
 ## Decision rule
 - A20 floors IMPROVED → heart1 is the candidate tree prior for OOC MCTS (stage 2 of the accepted plan, e.g. ExIt
@@ -80,5 +82,6 @@ with the run commit, binary hash and weights hash before launch; independent pre
 - Timing smokes (seeds 74071970–74071974 in this thread, pre-fix binaries; the reviewer's smokes): V4 prior about
   6 s per OOC decision, 6.5–11.4 min per run; heart1 prior about 30 s per OOC decision, more than 80 min per run that
   reaches act 3 (two runs still in act 2/3 after 80 min), about 100–120 min for a full clear.
-- **Inference:** about 450–500 core-h in all (256 heart1-arm units at roughly 90–110 min, 256 v4 units at about
-  10 min); on 32 workers (4 units at a time) about 3.5–4 h of runs per worker plus the build.
+- **Inference:** about 110–130 core-h in all (64 heart1-arm units at roughly 90–110 min, 64 v4 units at about
+  10 min); on 32 workers (4 units at once) about 2 h of runs per worker (the slowest heart1 unit) plus the build.
+  The 128+128 design would have been about 450–500 core-h.
