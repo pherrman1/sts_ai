@@ -18958,12 +18958,12 @@ All 128 units rc=0, no dropped seeds, all 32 worker tars verified from the lead 
 control reproduces the §486 `v4` rows on 64/64 seeds (won, floor, act, end HP), so the option leaves the chain
 rollouts unchanged. `v4roll` took about 1.67M V4 rollout steps per run. Reached act 3: 29 (v4roll) vs 43 (v4);
 clears given act 3 reached 41.4% vs 23.3%; deaths by act 1/2/3: 5/30/17 vs 2/19/33; boss deaths 27 vs 38; end HP
-−1.5 per pair. Cost: 339 vs 462 s per run (MCTS CPU 286 vs 403 s), mostly because runs end earlier; MCTS CPU per OOC
-decision is about the same.
+−1.5 per pair. Cost: 339 vs 462 s per run (MCTS CPU 286 vs 403 s): about half from fewer MCTS-owned decisions per run (76 vs 90,
+shorter runs) and half from cheaper decisions (MCTS CPU per MCTS-owned decision 3.74 vs 4.50 s, about 17% less).
 
 **Interpretation (Inference):** greedy V4 policy-head rollouts make the search build differently: many more runs die
-in act 2, while the runs that reach act 3 clear it more often. The clear difference is small and not separated; the
-floor loss is clear. Whether sampling from the prior instead of argmax, or V4 on fewer screens (for example without
+in act 2. Clears given act 3 reached are 41.4% vs 23.3%, but on different subsets of seeds (29 vs 43), so this is
+not a paired effect. The clear difference is small and not separated; the floor loss is clear. Whether sampling from the prior instead of argmax, or V4 on fewer screens (for example without
 the map, where V4 gating lost in §91/§93/§100), would do better is an **Open question**; the per-screen effect was
 not measured.
 
