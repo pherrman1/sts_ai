@@ -1770,3 +1770,50 @@ The historical broad win-head comparison (§24) did not confirm a gain; a binary
 win target alone does not establish better current-policy action rankings.
 Per-root take/skip preservation does not imply equal skip counts after
 trajectories diverge. Default-off and other decision families are unchanged.
+
+### heart1 policy adapter (opt-in)
+
+Last verified: 2026-10-14 for the native port and its parity harness.
+
+`STS_OOC_HEART1=<weights.bin>` makes the real run driver (`runFullRunOOC`) take
+every out-of-combat decision it can encode with silverbot's released `heart1.pt`
+policy (daniel-ziegler/sts_lightspeed @84ab3ea, MIT). Combat stays on our
+default Silver. Unset, nothing is loaded and the run is unchanged; the flag
+enters the effective OOC policy identity with the weights' SHA-256. It is
+exclusive with live OOC MCTS.
+
+- Code: `apps/one_combat/heart1_policy.{h,cpp}`. It ports silverbot's
+  `getNNRepresentation`, `construct_choice`, `take_free_rewards`, `collate_fn`,
+  `map_dag_features` and the network forward pass (pre-norm transformer, dim
+  256, 4 layers, 8 heads, ~6.0M parameters, value head). Padding tokens are
+  dropped instead of key-masked, which leaves every valid output unchanged.
+- Weights are not vendored. `tools/heart1/export_heart1_weights.py` converts
+  `heart1.pt` (SHA-256 `deaba59d…`, checked) to the native file.
+- Policy: temperature 0, the first maximum logit in token order. Gold, and
+  relics on screens without a key reward, are taken before the decision, as
+  silverbot does. A single offered choice is executed directly. Screens
+  silverbot does not encode (Match and Keep, Bonfire Spirits, any unmapped
+  event) fall back to the ordinary chain, where silverbot would call its own
+  `pick_gameaction`.
+- Diagnostics: `STS_OOC_HEART1_TRACE=<jsonl>` appends each scored decision's
+  record and logits. `one_combat heart1score` scores records offline;
+  `one_combat heart1replay` replays one seed's action bits for the harness.
+- Parity: `tools/heart1/heart1_reference.py score` runs silverbot's own
+  `collate_fn` and `NN` on our records; `tools/heart1/heart1_parity_seeds.py
+  early` replays silverbot's engine's early-game decisions (Neow to the first
+  combat) in our engine and compares records and logits. It compares each
+  branch up to its first divergence, attributes that divergence to a known
+  engine difference (below), and fails on any argmax disagreement or an
+  unexplained divergence.
+- Engine differences silverbot's policy sees through this adapter:
+  - Neow "transform two cards" also adds a random curse in our engine.
+  - After a Neow card or potion pick, silverbot's engine keeps the reward
+    screen open with only "proceed" left; ours goes straight to the map.
+  - Our engine offers a reward potion only with a free slot; silverbot's always
+    does. Singing Bowl is not enumerated by our `getAllActionsInState`, so the
+    adapter adds it.
+  - Keys are offered as in silverbot (Recall, emerald and sapphire rewards),
+    so heart1 can collect them and enter Act 4 unless `STS_STOP_AFTER_ACT`
+    stops the run.
+- Cost: about 50–75 ms per scored decision on one core (Release, no
+  `-march=native`), ~100 tokens per state.

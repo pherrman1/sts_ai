@@ -35,6 +35,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
 
 declare -A PYTHON_SEED_INDEX=(
   ["check_replay.py"]=3
+  ["heart1_parity_seeds.py"]=3
 )
 
 exe_name() {

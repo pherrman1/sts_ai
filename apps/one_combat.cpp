@@ -4,6 +4,7 @@
 // and focused search/model diagnostics.
 
 #include "one_combat/driver_shared.h"
+#include "one_combat/heart1_policy.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
 #include "one_combat/screen_leaf_net.h"
@@ -3020,6 +3021,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
+        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3861,6 +3863,10 @@ int main(int argc, char **argv) {
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
 
+    } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
+        return one_combat::heart1::scoreCommand(argc, argv);
+    } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits
+        return one_combat::heart1::replayCommand(argc, argv);
     } else if (mode == "winnettest") {    // validate C++ WinNet (OOC win trees) vs Python predictions
         // Reads a tierb-schema CSV (state block between `chosen` and `won`),
         // runs the native WinNet on the rich state of each row, and prints
