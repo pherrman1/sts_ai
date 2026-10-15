@@ -1,0 +1,21 @@
+rows 227929 train 170967 val 56962
+ep 1 train mse 0.00475 val mse 0.02333 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.440
+ep 2 train mse 0.00350 val mse 0.01943 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.507
+ep 3 train mse 0.00306 val mse 0.01849 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.574
+ep 4 train mse 0.00281 val mse 0.01695 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.599
+ep 5 train mse 0.00261 val mse 0.01535 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.624
+ep 6 train mse 0.00254 val mse 0.01777 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.642
+ep 7 train mse 0.00242 val mse 0.02444 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.640
+ep 8 train mse 0.00236 val mse 0.01500 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.653
+ep 9 train mse 0.00232 val mse 0.01562 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.639
+ep 10 train mse 0.00230 val mse 0.01591 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.659
+ep 11 train mse 0.00219 val mse 0.01524 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.652
+ep 12 train mse 0.00216 val mse 0.01448 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.655
+ep 13 train mse 0.00209 val mse 0.01567 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.646
+ep 14 train mse 0.00201 val mse 0.01644 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.637
+ep 15 train mse 0.00202 val mse 0.01466 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.648
+ep 16 train mse 0.00197 val mse 0.01475 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.642
+ep 17 train mse 0.00187 val mse 0.01458 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.647
+ep 18 train mse 0.00184 val mse 0.01463 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.642
+ep 19 train mse 0.00188 val mse 0.01475 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.651
+ep 20 train mse 0.00178 val mse 0.01494 | corrE r0 0.238 x2b 0.596 heart1 0.354 net 0.645

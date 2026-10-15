@@ -2557,7 +2557,7 @@ void configureLiveOocMcts() {
         };
         LiveSiblingCapture sibling;
         sibling.every = knob("STS_OOC_SIBLING_EVERY", 4, 1, 1000);
-        sibling.repeats = unsigned(knob("STS_OOC_SIBLING_REPEATS", 1, 0, 16));
+        sibling.repeats = unsigned(knob("STS_OOC_SIBLING_REPEATS", 1, 0, 256));
         sibling.longRepeats = unsigned(knob("STS_OOC_SIBLING_LONG", 0, 0, 16));
         sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
         sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
