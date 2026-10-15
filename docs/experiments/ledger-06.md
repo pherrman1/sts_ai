@@ -18990,12 +18990,12 @@ pre-launch review PASS.
 All 128 units rc=0, no dropped seeds, all 32 worker tars verified from the lead container (`worker_tars.txt`; 128
 distinct units, each seed once per arm). The control reproduces the §486 `v4` rows on 64/64 seeds. The student scored
 every prior build (6.63M, no V4 fallbacks). Reached act 3: 38 (studentc) vs 43 (v4); clears given act 3 reached
-68.4% vs 23.3%; deaths by act 1/2/3: 8/18/12 vs 2/19/33; boss deaths 27 vs 38; end HP +16.8 per pair. Cost: 619 vs
-460 s per run (1.35x; MCTS CPU 542 vs 402 s), about 36 core-h in all.
+68.4% vs 23.3% (different, post-treatment subsets of seeds, so not a paired effect); deaths by act 1/2/3: 8/18/12 vs 2/19/33; boss deaths 27 vs 38; end HP +16.8 per pair. Cost: 619 vs
+460 s per run (1.35x; MCTS CPU 542 vs 402 s), about 19 core-h of unit time in all.
 
 Descriptive, against the §486 `heart1` arm on the same seeds (different binary and run): clears 26 vs 25 (10 vs 9
 discordant, McNemar p = 1.0), reached act 3 38 vs 42, mean floor 40.5 vs 42.3, 619 vs 4,310 s per run (MCTS CPU 542
-vs 4,170 s), so about 7x cheaper per run for the same clear count.
+vs 4,170 s), so about 7x less wall time per run (MCTS CPU 7.7x less) for the same clear count, across separate runs.
 
 **Interpretation (Inference):** the distilled student keeps heart1's effect as a tree prior on these seeds at a
 small fraction of its cost: same pattern of many more act-3 boss kills, similar reach. Two caveats. These are the seeds
