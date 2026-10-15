@@ -1,0 +1,33 @@
+{
+  "schema": "publication_integration_command_v1",
+  "source_sha": "0734f3d1ef2aa76c2c1a7026f9dafbb52464587e",
+  "command": [
+    "bash",
+    "tools/seed_guard.sh",
+    "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/combat_knowledge_neutrality_test"
+  ],
+  "cwd": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed",
+  "started_epoch": 1791459423.427992,
+  "finished_epoch": 1791459423.4327557,
+  "exit_code": 0,
+  "log": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/publication-0734f3d1/combat_knowledge_neutrality.log",
+  "log_sha256": "730abfc1aeef9efb8ce2070b1688bc5f7276356a2fcb4726c08491baf3515430",
+  "python_runtime": {
+    "python": "/usr/bin/python3",
+    "version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "numpy": "2.5.1",
+    "pandas": "3.0.5",
+    "torch": "2.5.1+cu121"
+  },
+  "environment": {
+    "PATH": "/usr/bin:/bin",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "TMPDIR": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/publication-0734f3d1/tmp",
+    "PYTHONPYCACHEPREFIX": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/publication-pycache"
+  },
+  "environment_policy": "all inherited STS_* removed; registered CTest per-test environment then applies",
+  "scope": "publication integration fixtures/synthetic tests only; no new experimental cohorts, efficacy or probe spec execution; no collection checkout writes"
+}

@@ -1,0 +1,27 @@
+{
+  "status": "FOCUSED_TESTS_PASS_PENDING_INDEPENDENT_REVIEW",
+  "tests": 5,
+  "first_attempt": {
+    "status": "FAIL_TEST_FIXTURE",
+    "test": "test_declared_future_domain_and_source_are_exact",
+    "reason": "Fixture specified decision36 but expected decision71 derived-seed set; corrected only fixture identity. Four other tests passed. No real verifier or game execution."
+  },
+  "final_tests": "5/5 PASS",
+  "stdlib_reference_command": "c++ -std=c++17 docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/mt19937_64_vectors.cpp -o build/overnight_20261008/learning/mt19937_64_vectors",
+  "stdlib_vectors": {
+    "0": 2947667278772165694,
+    "1": 2469588189546311528,
+    "5489": 14514284786278117030,
+    "18446744073709551615": 478026398904862820
+  },
+  "test_command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_profile_seeds.py",
+  "hashes": {
+    "verify_gen2.py": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+    "verify_gen2_v1.py": "12443d83e12b33a6344005f0c5df1c3ab6fa0eed406cfd31669de81958de7ae1",
+    "test_gen2_profile_seeds.py": "dfbf85b967506af9a178bda5cfe8ea41c1a01b50cc35fee72902cff1dcaf4cc0",
+    "mt19937_64_vectors.cpp": "010c8a0ddacdebe69e02999fc91b71896bdb9e20391d82316c3439940f1a47be",
+    "gen2_profile_seed_diagnosis.json": "51639ea976d9bb64a968f0ec27c56ee85bb9058b143ec237763dc9f9897a434f"
+  },
+  "numerical_labels_opened": false,
+  "recorded_epoch": 1791420873.5540118
+}

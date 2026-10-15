@@ -1,0 +1,265 @@
+{
+  "baselineGitSha": "0eed6993999386737d87f040e38fb241623b5cf3",
+  "combatTeacher": {
+    "combat_backend": "native_silver",
+    "environment": {
+      "OMP_NUM_THREADS": "8",
+      "STS_EXECUTABLE_GIT_SHA": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+      "STS_FAIR": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "executable_sha256": "a055597f5c62cf29f6dd1912990400040044604be1b110f4119f43ee1e7ace16",
+    "git_sha": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+    "model_artifacts": [
+      {
+        "path": "models/policy_trees_c.txt",
+        "role": "policy",
+        "sha256": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+      },
+      {
+        "path": "models/v_rich_trees.txt",
+        "role": "floor",
+        "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+      },
+      {
+        "path": "models/v_win_trees.txt",
+        "role": "win",
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+      }
+    ],
+    "rng_regime": "project_fair",
+    "search_configuration": {
+      "adaptive": false,
+      "belief": "not_applicable_silver_private_chance_search",
+      "chance_widening_alpha": 0.52389,
+      "chance_widening_c": 3.7028,
+      "direct_learned_leaf": false,
+      "end_turn_widening_alpha": 0.52389,
+      "end_turn_widening_c": 3.7028,
+      "exploration_parameter": 25.0,
+      "exploration_parameter_chance": 25.0,
+      "learned_visit_puct": false,
+      "particles": "not_applicable_silver_private_chance_search",
+      "pruning": false,
+      "reuse_cap": 32768,
+      "reuse_cap_mode": "allocated",
+      "sequential_halving": false,
+      "simulation_budgets": [
+        10000
+      ]
+    },
+    "teacher_id": "silver-ordinary-fair-exact10k-native-5aeb7256-omp8-eventfix"
+  },
+  "combatTeacherManifestSha256": "e81dc96da406b661b7b465a8790c63d8ff92516802b71ce1a4744a9b1e337be8",
+  "directReplayPlan": {
+    "excludedBurningEliteTargets": [
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201016
+      },
+      {
+        "fightIdx": 5,
+        "sourceSeed": 4201026
+      },
+      {
+        "fightIdx": 12,
+        "sourceSeed": 4201030
+      },
+      {
+        "fightIdx": 20,
+        "sourceSeed": 4201031
+      },
+      {
+        "fightIdx": 20,
+        "sourceSeed": 4201055
+      },
+      {
+        "fightIdx": 4,
+        "sourceSeed": 4201070
+      },
+      {
+        "fightIdx": 16,
+        "sourceSeed": 4201089
+      },
+      {
+        "fightIdx": 14,
+        "sourceSeed": 4201103
+      },
+      {
+        "fightIdx": 6,
+        "sourceSeed": 4201113
+      }
+    ],
+    "mode": "persistent_snapshot_direct",
+    "path": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_plan_retry5_eventfix_omp8_resumable.json",
+    "sha256": "7cc41d8588db740c80f4a79f3c29c610bfceed1e805b211596a9aa61b77d5fb9"
+  },
+  "format": "jsonl",
+  "integrity": {
+    "completedSeeds": 119,
+    "pairs": 119,
+    "quarantinedSeeds": 0,
+    "requestedSeeds": 119
+  },
+  "jsonl": {
+    "path": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs_retry5_eventfix_omp8_resumable.jsonl",
+    "sha256": "3e02b7d1175190edc0cb7933ba32ce87d614a3e2836f7ef4c6e473bd8a5f3658"
+  },
+  "pairCheckpointing": {
+    "atomicWritePerCompletedPair": true,
+    "directory": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/native_teacher_transfer/stage_b_direct_snapshot_pairs_retry5_eventfix_omp8_resumable.jsonl.checkpoints",
+    "exclusiveCollectorLock": true,
+    "resumeValidatesPlanTeacherCollectorAndRowChecksum": true,
+    "schema": "lizard_direct_snapshot_pair_checkpoint_v1"
+  },
+  "predictorInputFieldSchemaHash": "1a92692da9247008",
+  "predictorInputSchemaVersion": "combat_predictor_input_v1",
+  "producerExecutableSha256": "a055597f5c62cf29f6dd1912990400040044604be1b110f4119f43ee1e7ace16",
+  "producerGitSha": "5aeb72561993397d6d591cb1ff3b3f0f8771e572",
+  "protocol": {
+    "interventionBranchLizard": "active_data_1",
+    "markOfBloom": "eligible_states_excluded",
+    "ordinaryBranchLizard": "absent",
+    "samePrecombatContext": true,
+    "sameSilverSearchRngSeed": true,
+    "sourceTrajectory": "not_replayed_direct_snapshot",
+    "stateSelection": "direct_archived_snapshot_replay_nonburning_subset_v1"
+  },
+  "rowSchemaVersion": "combat_transition_row_v2",
+  "schema": "lizard_tail_direct_snapshot_paired_transition_diagnostic_v1",
+  "seedSpec": {
+    "count": 119,
+    "start": 4201000
+  },
+  "sourceSeeds": [
+    4201000,
+    4201001,
+    4201002,
+    4201003,
+    4201004,
+    4201005,
+    4201006,
+    4201007,
+    4201008,
+    4201009,
+    4201010,
+    4201011,
+    4201012,
+    4201013,
+    4201014,
+    4201015,
+    4201017,
+    4201018,
+    4201019,
+    4201020,
+    4201021,
+    4201022,
+    4201023,
+    4201024,
+    4201025,
+    4201027,
+    4201028,
+    4201029,
+    4201032,
+    4201033,
+    4201034,
+    4201035,
+    4201036,
+    4201037,
+    4201038,
+    4201039,
+    4201040,
+    4201041,
+    4201042,
+    4201043,
+    4201044,
+    4201045,
+    4201046,
+    4201047,
+    4201048,
+    4201049,
+    4201050,
+    4201051,
+    4201052,
+    4201053,
+    4201054,
+    4201056,
+    4201057,
+    4201058,
+    4201059,
+    4201060,
+    4201061,
+    4201062,
+    4201063,
+    4201064,
+    4201065,
+    4201066,
+    4201067,
+    4201068,
+    4201069,
+    4201071,
+    4201072,
+    4201073,
+    4201074,
+    4201075,
+    4201076,
+    4201077,
+    4201078,
+    4201079,
+    4201080,
+    4201081,
+    4201082,
+    4201083,
+    4201084,
+    4201085,
+    4201086,
+    4201087,
+    4201088,
+    4201090,
+    4201091,
+    4201092,
+    4201093,
+    4201094,
+    4201095,
+    4201096,
+    4201097,
+    4201098,
+    4201099,
+    4201100,
+    4201101,
+    4201102,
+    4201104,
+    4201105,
+    4201106,
+    4201107,
+    4201108,
+    4201109,
+    4201110,
+    4201111,
+    4201112,
+    4201114,
+    4201115,
+    4201116,
+    4201117,
+    4201118,
+    4201119,
+    4201120,
+    4201121,
+    4201122,
+    4201123,
+    4201124,
+    4201125,
+    4201126,
+    4201127
+  ],
+  "targetSelection": {
+    "path": "/home/philippherrmann/.codex/worktrees/07e5/sts_lightspeed/docs/experiments/evidence/lizard_tail_mechanical_q_qualification_2026-09-25/archived_pr326/frozen_target_selection.json",
+    "sha256": "a78f4e8ddccc39769a9b01f9f4fc59195b79bdfd5ec427b062ee16a03605905b"
+  }
+}

@@ -1,0 +1,2266 @@
+{
+  "arms": {
+    "A_UCT": {
+      "j_best_selection_probability": 0.5078125,
+      "mean_j_regret": 1.3206471323298454,
+      "mean_search_wall_micros": 1327.8872460937498,
+      "median_j_regret": 0.5222347824072937
+    },
+    "M_LEARNED": {
+      "j_best_selection_probability": 0.484375,
+      "mean_j_regret": 1.3798082322202838,
+      "mean_search_wall_micros": 1304.5144453125,
+      "median_j_regret": 0.7195084374898144
+    },
+    "O_ORACLE_L": {
+      "j_best_selection_probability": 0.51953125,
+      "mean_j_regret": 1.1459527777782048,
+      "mean_search_wall_micros": 1290.45410546875,
+      "median_j_regret": 0.4452401093729925
+    },
+    "U_UNIFORM": {
+      "j_best_selection_probability": 0.4921875,
+      "mean_j_regret": 1.4137118526527732,
+      "mean_search_wall_micros": 1307.08367578125,
+      "median_j_regret": 0.7705181498962634
+    }
+  },
+  "bootstrap_replicates": 10000,
+  "classification": "LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED",
+  "contrasts": {
+    "M_LEARNED_minus_A_UCT": {
+      "bootstrap_replicates": 10000,
+      "ci95": [
+        -0.28675554477244775,
+        0.3699984816221184
+      ],
+      "improved_roots": 17,
+      "mean": 0.059161099890438384,
+      "seed": 20260923,
+      "tied_roots": 28,
+      "unit": "source_seed",
+      "worsened_roots": 19
+    },
+    "M_LEARNED_minus_U_UNIFORM": {
+      "bootstrap_replicates": 10000,
+      "ci95": [
+        -0.11794032451321877,
+        0.036512727212787296
+      ],
+      "improved_roots": 7,
+      "mean": -0.033903620432489345,
+      "seed": 20260922,
+      "tied_roots": 53,
+      "unit": "source_seed",
+      "worsened_roots": 4
+    },
+    "O_ORACLE_L_minus_U_UNIFORM": {
+      "bootstrap_replicates": 10000,
+      "ci95": [
+        -0.5613454254786968,
+        -0.07144022627899596
+      ],
+      "improved_roots": 17,
+      "mean": -0.26775907487456835,
+      "seed": 20260924,
+      "tied_roots": 45,
+      "unit": "source_seed",
+      "worsened_roots": 2
+    }
+  },
+  "per_root": {
+    "A_UCT": [
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.2651864375002049,
+        "mean_search_wall_micros": 1779.3149999999998,
+        "root_id": "24000384/2/29/36/6",
+        "source_seed": 24000384
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.0631050000000215,
+        "mean_search_wall_micros": 475.27025,
+        "root_id": "24000385/2/22/27/21",
+        "source_seed": 24000385
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 3.0796086437502836,
+        "mean_search_wall_micros": 1826.45075,
+        "root_id": "24000386/3/50/55/5",
+        "source_seed": 24000386
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.6135829283540346,
+        "mean_search_wall_micros": 1453.0662499999999,
+        "root_id": "24000387/3/37/45/4",
+        "source_seed": 24000387
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 0.4533437500002684,
+        "mean_search_wall_micros": 1039.5539999999999,
+        "root_id": "24000388/3/47/18/13",
+        "source_seed": 24000388
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.3383612500002613,
+        "mean_search_wall_micros": 1206.1999999999998,
+        "root_id": "24000389/1/16/18/10",
+        "source_seed": 24000389
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0154649999960839,
+        "mean_search_wall_micros": 2119.408,
+        "root_id": "24000390/1/14/17/12",
+        "source_seed": 24000390
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 1.0692980054829668,
+        "mean_search_wall_micros": 1065.21175,
+        "root_id": "24000391/3/50/54/39",
+        "source_seed": 24000391
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.16284500000406865,
+        "mean_search_wall_micros": 709.4627499999999,
+        "root_id": "24000392/2/29/29/10",
+        "source_seed": 24000392
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 685.90325,
+        "root_id": "24000393/3/50/53/41",
+        "source_seed": 24000393
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.2911304170414155,
+        "mean_search_wall_micros": 1545.7017500000002,
+        "root_id": "24000394/1/6/16/17",
+        "source_seed": 24000394
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.8980974999976787,
+        "mean_search_wall_micros": 1071.7537499999999,
+        "root_id": "24000395/1/16/20/13",
+        "source_seed": 24000395
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.323206874997986,
+        "mean_search_wall_micros": 1799.31775,
+        "root_id": "24000396/3/42/51/2",
+        "source_seed": 24000396
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 2.1331637438277777,
+        "mean_search_wall_micros": 909.4185,
+        "root_id": "24000397/2/25/36/16",
+        "source_seed": 24000397
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.05050593749953691,
+        "mean_search_wall_micros": 781.502,
+        "root_id": "24000398/1/4/7/2",
+        "source_seed": 24000398
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.072688750000097,
+        "mean_search_wall_micros": 1126.27575,
+        "root_id": "24000399/1/3/4/2",
+        "source_seed": 24000399
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 13.107066893026182,
+        "mean_search_wall_micros": 1938.37225,
+        "root_id": "24000400/2/27/35/2",
+        "source_seed": 24000400
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1403.7265000000002,
+        "root_id": "24000401/3/47/45/6",
+        "source_seed": 24000401
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 573.5487499999999,
+        "root_id": "24000402/1/16/20/41",
+        "source_seed": 24000402
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 972.55375,
+        "root_id": "24000403/2/27/36/8",
+        "source_seed": 24000403
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.9451799999989277,
+        "mean_search_wall_micros": 1222.305,
+        "root_id": "24000404/3/50/55/28",
+        "source_seed": 24000404
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 895.31675,
+        "root_id": "24000405/2/27/36/3",
+        "source_seed": 24000405
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.997097249999655,
+        "mean_search_wall_micros": 2612.58425,
+        "root_id": "24000406/3/42/49/11",
+        "source_seed": 24000406
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 388.503,
+        "root_id": "24000407/3/38/48/12",
+        "source_seed": 24000407
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 9.140165999999528,
+        "mean_search_wall_micros": 3425.08375,
+        "root_id": "24000408/1/16/20/8",
+        "source_seed": 24000408
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1388.1575,
+        "root_id": "24000409/3/35/40/11",
+        "source_seed": 24000409
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 560.3140000000001,
+        "root_id": "24000410/2/24/35/9",
+        "source_seed": 24000410
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.7380006250000406,
+        "mean_search_wall_micros": 1190.91125,
+        "root_id": "24000411/2/33/38/33",
+        "source_seed": 24000411
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5953435000001868,
+        "mean_search_wall_micros": 1460.395,
+        "root_id": "24000412/2/23/34/14",
+        "source_seed": 24000412
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 477.07849999999996,
+        "root_id": "24000413/1/16/20/40",
+        "source_seed": 24000413
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.3517278841914333,
+        "mean_search_wall_micros": 1948.9769999999999,
+        "root_id": "24000414/3/47/43/1",
+        "source_seed": 24000414
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.156292499960358,
+        "mean_search_wall_micros": 679.70425,
+        "root_id": "24000415/1/2/4/10",
+        "source_seed": 24000415
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 863.1167499999999,
+        "root_id": "24000416/2/31/29/6",
+        "source_seed": 24000416
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1750.7745,
+        "root_id": "24000417/3/42/63/10",
+        "source_seed": 24000417
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 421.21925000000005,
+        "root_id": "24000418/3/41/51/40",
+        "source_seed": 24000418
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.359657492598199,
+        "mean_search_wall_micros": 903.0709999999999,
+        "root_id": "24000419/3/50/54/35",
+        "source_seed": 24000419
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1194.3027499999998,
+        "root_id": "24000420/1/7/6/17",
+        "source_seed": 24000420
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0300787499961785,
+        "mean_search_wall_micros": 1196.0212499999998,
+        "root_id": "24000421/2/22/30/28",
+        "source_seed": 24000421
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0386694749996792,
+        "mean_search_wall_micros": 1778.72175,
+        "root_id": "24000422/3/48/50/13",
+        "source_seed": 24000422
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 0.950861718749902,
+        "mean_search_wall_micros": 1154.844,
+        "root_id": "24000423/3/44/51/19",
+        "source_seed": 24000423
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 2.875468454545505,
+        "mean_search_wall_micros": 2253.208,
+        "root_id": "24000424/3/37/47/1",
+        "source_seed": 24000424
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.8054875498147815,
+        "mean_search_wall_micros": 3346.46925,
+        "root_id": "24000425/3/50/53/38",
+        "source_seed": 24000425
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1304.84175,
+        "root_id": "24000426/1/2/1/1",
+        "source_seed": 24000426
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 457.66475,
+        "root_id": "24000427/3/39/40/15",
+        "source_seed": 24000427
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.09549499999970479,
+        "mean_search_wall_micros": 1943.9805000000001,
+        "root_id": "24000428/1/5/6/8",
+        "source_seed": 24000428
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.591125814814319,
+        "mean_search_wall_micros": 1313.5952499999999,
+        "root_id": "24000429/3/44/44/21",
+        "source_seed": 24000429
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 3.5967766190490167,
+        "mean_search_wall_micros": 968.2707499999999,
+        "root_id": "24000430/1/8/15/7",
+        "source_seed": 24000430
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 347.12325,
+        "root_id": "24000431/1/14/9/9",
+        "source_seed": 24000431
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 695.5514999999999,
+        "root_id": "24000432/2/23/34/32",
+        "source_seed": 24000432
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 549.5435,
+        "root_id": "24000433/3/48/48/21",
+        "source_seed": 24000433
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 873.5207499999999,
+        "root_id": "24000434/1/16/18/6",
+        "source_seed": 24000434
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 871.76575,
+        "root_id": "24000435/1/4/7/6",
+        "source_seed": 24000435
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 7.055059107635849,
+        "mean_search_wall_micros": 1527.89075,
+        "root_id": "24000436/3/48/44/8",
+        "source_seed": 24000436
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.6906632514875355,
+        "mean_search_wall_micros": 2507.3375,
+        "root_id": "24000437/2/33/39/3",
+        "source_seed": 24000437
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0248543750013184,
+        "mean_search_wall_micros": 806.7015,
+        "root_id": "24000438/2/27/32/7",
+        "source_seed": 24000438
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.0851981250206464,
+        "mean_search_wall_micros": 999.5590000000001,
+        "root_id": "24000439/2/27/28/4",
+        "source_seed": 24000439
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.9254281697692335,
+        "mean_search_wall_micros": 2105.5825,
+        "root_id": "24000440/2/33/38/8",
+        "source_seed": 24000440
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 2.47613125000116,
+        "mean_search_wall_micros": 1691.3435,
+        "root_id": "24000441/2/33/38/17",
+        "source_seed": 24000441
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.042938749996992,
+        "mean_search_wall_micros": 1738.09075,
+        "root_id": "24000442/3/48/48/4",
+        "source_seed": 24000442
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.1237987500000628,
+        "mean_search_wall_micros": 2907.25425,
+        "root_id": "24000443/3/36/40/5",
+        "source_seed": 24000443
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 924.2637500000001,
+        "root_id": "24000444/1/4/11/10",
+        "source_seed": 24000444
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.42363600000096824,
+        "mean_search_wall_micros": 2028.8212500000002,
+        "root_id": "24000445/3/45/51/18",
+        "source_seed": 24000445
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 4.4696239250000644,
+        "mean_search_wall_micros": 2358.2185,
+        "root_id": "24000446/3/40/50/3",
+        "source_seed": 24000446
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 470.77125,
+        "root_id": "24000447/3/39/40/21",
+        "source_seed": 24000447
+      }
+    ],
+    "M_LEARNED": [
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.6657322578127598,
+        "mean_search_wall_micros": 1642.9235,
+        "root_id": "24000384/2/29/36/6",
+        "source_seed": 24000384
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.0631050000000215,
+        "mean_search_wall_micros": 463.23749999999995,
+        "root_id": "24000385/2/22/27/21",
+        "source_seed": 24000385
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 3.034963056250234,
+        "mean_search_wall_micros": 1817.09825,
+        "root_id": "24000386/3/50/55/5",
+        "source_seed": 24000386
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.6503453986283958,
+        "mean_search_wall_micros": 1491.8134999999997,
+        "root_id": "24000387/3/37/45/4",
+        "source_seed": 24000387
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.9133918750009897,
+        "mean_search_wall_micros": 1015.5512500000001,
+        "root_id": "24000388/3/47/18/13",
+        "source_seed": 24000388
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.7237987500001708,
+        "mean_search_wall_micros": 1260.81725,
+        "root_id": "24000389/1/16/18/10",
+        "source_seed": 24000389
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0154649999960839,
+        "mean_search_wall_micros": 2210.92425,
+        "root_id": "24000390/1/14/17/12",
+        "source_seed": 24000390
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 2.1385960109659337,
+        "mean_search_wall_micros": 1133.07375,
+        "root_id": "24000391/3/50/54/39",
+        "source_seed": 24000391
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.16284500000406865,
+        "mean_search_wall_micros": 630.20925,
+        "root_id": "24000392/2/29/29/10",
+        "source_seed": 24000392
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 644.7365,
+        "root_id": "24000393/3/50/53/41",
+        "source_seed": 24000393
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.173233430755463,
+        "mean_search_wall_micros": 1484.0662499999999,
+        "root_id": "24000394/1/6/16/17",
+        "source_seed": 24000394
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.8980974999976787,
+        "mean_search_wall_micros": 1039.8692500000002,
+        "root_id": "24000395/1/16/20/13",
+        "source_seed": 24000395
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 3.7296676562472832,
+        "mean_search_wall_micros": 1852.645,
+        "root_id": "24000396/3/42/51/2",
+        "source_seed": 24000396
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 902.28725,
+        "root_id": "24000397/2/25/36/16",
+        "source_seed": 24000397
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.025252968749768456,
+        "mean_search_wall_micros": 777.97775,
+        "root_id": "24000398/1/4/7/2",
+        "source_seed": 24000398
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.145377500000194,
+        "mean_search_wall_micros": 1159.528,
+        "root_id": "24000399/1/3/4/2",
+        "source_seed": 24000399
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 14.129399579368641,
+        "mean_search_wall_micros": 1962.09675,
+        "root_id": "24000400/2/27/35/2",
+        "source_seed": 24000400
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1264.11575,
+        "root_id": "24000401/3/47/45/6",
+        "source_seed": 24000401
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 548.9327499999999,
+        "root_id": "24000402/1/16/20/41",
+        "source_seed": 24000402
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 929.9490000000001,
+        "root_id": "24000403/2/27/36/8",
+        "source_seed": 24000403
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 3.182668124998294,
+        "mean_search_wall_micros": 1272.24825,
+        "root_id": "24000404/3/50/55/28",
+        "source_seed": 24000404
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 1.6906556249999838,
+        "mean_search_wall_micros": 865.93425,
+        "root_id": "24000405/2/27/36/3",
+        "source_seed": 24000405
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.9739404101559437,
+        "mean_search_wall_micros": 2678.2665,
+        "root_id": "24000406/3/42/49/11",
+        "source_seed": 24000406
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 237.123,
+        "root_id": "24000407/3/38/48/12",
+        "source_seed": 24000407
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 12.352770293749572,
+        "mean_search_wall_micros": 3445.1137499999995,
+        "root_id": "24000408/1/16/20/8",
+        "source_seed": 24000408
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1351.29875,
+        "root_id": "24000409/3/35/40/11",
+        "source_seed": 24000409
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 323.47675,
+        "root_id": "24000410/2/24/35/9",
+        "source_seed": 24000410
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.740870625000447,
+        "mean_search_wall_micros": 1167.365,
+        "root_id": "24000411/2/33/38/33",
+        "source_seed": 24000411
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.505365687500067,
+        "mean_search_wall_micros": 1426.6292500000002,
+        "root_id": "24000412/2/23/34/14",
+        "source_seed": 24000412
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 390.42675,
+        "root_id": "24000413/1/16/20/40",
+        "source_seed": 24000413
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.4773052132353399,
+        "mean_search_wall_micros": 2063.50625,
+        "root_id": "24000414/3/47/43/1",
+        "source_seed": 24000414
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.7355487499777453,
+        "mean_search_wall_micros": 625.0475,
+        "root_id": "24000415/1/2/4/10",
+        "source_seed": 24000415
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 849.0432500000001,
+        "root_id": "24000416/2/31/29/6",
+        "source_seed": 24000416
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1696.7562500000001,
+        "root_id": "24000417/3/42/63/10",
+        "source_seed": 24000417
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 3.892125499998455,
+        "mean_search_wall_micros": 463.59299999999996,
+        "root_id": "24000418/3/41/51/40",
+        "source_seed": 24000418
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.359657492598199,
+        "mean_search_wall_micros": 844.497,
+        "root_id": "24000419/3/50/54/35",
+        "source_seed": 24000419
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1191.7730000000001,
+        "root_id": "24000420/1/7/6/17",
+        "source_seed": 24000420
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.9595812499993741,
+        "mean_search_wall_micros": 1154.39075,
+        "root_id": "24000421/2/22/30/28",
+        "source_seed": 24000421
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0386694749996792,
+        "mean_search_wall_micros": 1647.83725,
+        "root_id": "24000422/3/48/50/13",
+        "source_seed": 24000422
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 0.950861718749902,
+        "mean_search_wall_micros": 1160.8205,
+        "root_id": "24000423/3/44/51/19",
+        "source_seed": 24000423
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5663789715905665,
+        "mean_search_wall_micros": 2203.3869999999997,
+        "root_id": "24000424/3/37/47/1",
+        "source_seed": 24000424
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.8054875498147815,
+        "mean_search_wall_micros": 3595.8502500000004,
+        "root_id": "24000425/3/50/53/38",
+        "source_seed": 24000425
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1245.2555,
+        "root_id": "24000426/1/2/1/1",
+        "source_seed": 24000426
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 396.2475,
+        "root_id": "24000427/3/39/40/15",
+        "source_seed": 24000427
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.185754999999123,
+        "mean_search_wall_micros": 1914.818,
+        "root_id": "24000428/1/5/6/8",
+        "source_seed": 24000428
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.591125814814319,
+        "mean_search_wall_micros": 1273.536,
+        "root_id": "24000429/3/44/44/21",
+        "source_seed": 24000429
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5255876071434784,
+        "mean_search_wall_micros": 949.0125,
+        "root_id": "24000430/1/8/15/7",
+        "source_seed": 24000430
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 249.58875,
+        "root_id": "24000431/1/14/9/9",
+        "source_seed": 24000431
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 660.02025,
+        "root_id": "24000432/2/23/34/32",
+        "source_seed": 24000432
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 531.50225,
+        "root_id": "24000433/3/48/48/21",
+        "source_seed": 24000433
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 798.058,
+        "root_id": "24000434/1/16/18/6",
+        "source_seed": 24000434
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.30722187500060016,
+        "mean_search_wall_micros": 824.9355,
+        "root_id": "24000435/1/4/7/6",
+        "source_seed": 24000435
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1523.816,
+        "root_id": "24000436/3/48/44/8",
+        "source_seed": 24000436
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.6477832291661016,
+        "mean_search_wall_micros": 2547.9762499999997,
+        "root_id": "24000437/2/33/39/3",
+        "source_seed": 24000437
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 0.7034681250018835,
+        "mean_search_wall_micros": 903.02125,
+        "root_id": "24000438/2/27/32/7",
+        "source_seed": 24000438
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.9905981250233964,
+        "mean_search_wall_micros": 1075.932,
+        "root_id": "24000439/2/27/28/4",
+        "source_seed": 24000439
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.978776295654832,
+        "mean_search_wall_micros": 2066.1585000000005,
+        "root_id": "24000440/2/33/38/8",
+        "source_seed": 24000440
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1724.96125,
+        "root_id": "24000441/2/33/38/17",
+        "source_seed": 24000441
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.7145645503973483,
+        "mean_search_wall_micros": 1638.482,
+        "root_id": "24000442/3/48/48/4",
+        "source_seed": 24000442
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.9622918749996927,
+        "mean_search_wall_micros": 2707.1324999999997,
+        "root_id": "24000443/3/36/40/5",
+        "source_seed": 24000443
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 894.7682500000001,
+        "root_id": "24000444/1/4/11/10",
+        "source_seed": 24000444
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.5756752187508525,
+        "mean_search_wall_micros": 1969.7685000000001,
+        "root_id": "24000445/3/45/51/18",
+        "source_seed": 24000445
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 3.423721475000505,
+        "mean_search_wall_micros": 2359.0155,
+        "root_id": "24000446/3/40/50/3",
+        "source_seed": 24000446
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 348.68125,
+        "root_id": "24000447/3/39/40/21",
+        "source_seed": 24000447
+      }
+    ],
+    "O_ORACLE_L": [
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.2651864375002049,
+        "mean_search_wall_micros": 1675.992,
+        "root_id": "24000384/2/29/36/6",
+        "source_seed": 24000384
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.0631050000000215,
+        "mean_search_wall_micros": 469.30425,
+        "root_id": "24000385/2/22/27/21",
+        "source_seed": 24000385
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 3.4910615562502834,
+        "mean_search_wall_micros": 1715.54875,
+        "root_id": "24000386/3/50/55/5",
+        "source_seed": 24000386
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.6503453986283958,
+        "mean_search_wall_micros": 1475.0625,
+        "root_id": "24000387/3/37/45/4",
+        "source_seed": 24000387
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.6906500000002858,
+        "mean_search_wall_micros": 976.288,
+        "root_id": "24000388/3/47/18/13",
+        "source_seed": 24000388
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.6559650000005988,
+        "mean_search_wall_micros": 1240.12325,
+        "root_id": "24000389/1/16/18/10",
+        "source_seed": 24000389
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0154649999960839,
+        "mean_search_wall_micros": 2188.672,
+        "root_id": "24000390/1/14/17/12",
+        "source_seed": 24000390
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1042.84,
+        "root_id": "24000391/3/50/54/39",
+        "source_seed": 24000391
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.16284500000406865,
+        "mean_search_wall_micros": 655.9449999999999,
+        "root_id": "24000392/2/29/29/10",
+        "source_seed": 24000392
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 659.23375,
+        "root_id": "24000393/3/50/53/41",
+        "source_seed": 24000393
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.173233430755463,
+        "mean_search_wall_micros": 1495.7357499999998,
+        "root_id": "24000394/1/6/16/17",
+        "source_seed": 24000394
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.8980974999976787,
+        "mean_search_wall_micros": 1065.9805000000001,
+        "root_id": "24000395/1/16/20/13",
+        "source_seed": 24000395
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 3.3973134999976544,
+        "mean_search_wall_micros": 1842.67875,
+        "root_id": "24000396/3/42/51/2",
+        "source_seed": 24000396
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 898.29225,
+        "root_id": "24000397/2/25/36/16",
+        "source_seed": 24000397
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.025252968749768456,
+        "mean_search_wall_micros": 777.7900000000001,
+        "root_id": "24000398/1/4/7/2",
+        "source_seed": 24000398
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.145377500000194,
+        "mean_search_wall_micros": 1155.73075,
+        "root_id": "24000399/1/3/4/2",
+        "source_seed": 24000399
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 14.129399579368641,
+        "mean_search_wall_micros": 1961.8635000000002,
+        "root_id": "24000400/2/27/35/2",
+        "source_seed": 24000400
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1214.87625,
+        "root_id": "24000401/3/47/45/6",
+        "source_seed": 24000401
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 560.2114999999999,
+        "root_id": "24000402/1/16/20/41",
+        "source_seed": 24000402
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 945.43325,
+        "root_id": "24000403/2/27/36/8",
+        "source_seed": 24000403
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 3.182668124998294,
+        "mean_search_wall_micros": 1231.21925,
+        "root_id": "24000404/3/50/55/28",
+        "source_seed": 24000404
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 870.1650000000001,
+        "root_id": "24000405/2/27/36/3",
+        "source_seed": 24000405
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.9507835703122325,
+        "mean_search_wall_micros": 2508.60725,
+        "root_id": "24000406/3/42/49/11",
+        "source_seed": 24000406
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 235.88049999999998,
+        "root_id": "24000407/3/38/48/12",
+        "source_seed": 24000407
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 4.686115699999792,
+        "mean_search_wall_micros": 3432.9732500000005,
+        "root_id": "24000408/1/16/20/8",
+        "source_seed": 24000408
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1381.31675,
+        "root_id": "24000409/3/35/40/11",
+        "source_seed": 24000409
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 317.34,
+        "root_id": "24000410/2/24/35/9",
+        "source_seed": 24000410
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.7321681250004133,
+        "mean_search_wall_micros": 1176.98,
+        "root_id": "24000411/2/33/38/33",
+        "source_seed": 24000411
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.505365687500067,
+        "mean_search_wall_micros": 1467.99625,
+        "root_id": "24000412/2/23/34/14",
+        "source_seed": 24000412
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 385.92824999999993,
+        "root_id": "24000413/1/16/20/40",
+        "source_seed": 24000413
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.12557732904390662,
+        "mean_search_wall_micros": 1889.5335,
+        "root_id": "24000414/3/47/43/1",
+        "source_seed": 24000414
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.31480499999513256,
+        "mean_search_wall_micros": 584.544,
+        "root_id": "24000415/1/2/4/10",
+        "source_seed": 24000415
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 852.8472499999999,
+        "root_id": "24000416/2/31/29/6",
+        "source_seed": 24000416
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1737.02625,
+        "root_id": "24000417/3/42/63/10",
+        "source_seed": 24000417
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 3.892125499998455,
+        "mean_search_wall_micros": 450.23850000000004,
+        "root_id": "24000418/3/41/51/40",
+        "source_seed": 24000418
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.359657492598199,
+        "mean_search_wall_micros": 847.6302499999999,
+        "root_id": "24000419/3/50/54/35",
+        "source_seed": 24000419
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1207.8829999999998,
+        "root_id": "24000420/1/7/6/17",
+        "source_seed": 24000420
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.7191631249981185,
+        "mean_search_wall_micros": 1160.9855,
+        "root_id": "24000421/2/22/30/28",
+        "source_seed": 24000421
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0386694749996792,
+        "mean_search_wall_micros": 1658.13675,
+        "root_id": "24000422/3/48/50/13",
+        "source_seed": 24000422
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 0.950861718749902,
+        "mean_search_wall_micros": 1225.0729999999999,
+        "root_id": "24000423/3/44/51/19",
+        "source_seed": 24000423
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5663789715905665,
+        "mean_search_wall_micros": 2284.1932500000003,
+        "root_id": "24000424/3/37/47/1",
+        "source_seed": 24000424
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.780417908416311,
+        "mean_search_wall_micros": 3337.9135,
+        "root_id": "24000425/3/50/53/38",
+        "source_seed": 24000425
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1262.96825,
+        "root_id": "24000426/1/2/1/1",
+        "source_seed": 24000426
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 379.769,
+        "root_id": "24000427/3/39/40/15",
+        "source_seed": 24000427
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.185754999999123,
+        "mean_search_wall_micros": 1932.31575,
+        "root_id": "24000428/1/5/6/8",
+        "source_seed": 24000428
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.591125814814319,
+        "mean_search_wall_micros": 1218.165,
+        "root_id": "24000429/3/44/44/21",
+        "source_seed": 24000429
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5255876071434784,
+        "mean_search_wall_micros": 971.78225,
+        "root_id": "24000430/1/8/15/7",
+        "source_seed": 24000430
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 219.856,
+        "root_id": "24000431/1/14/9/9",
+        "source_seed": 24000431
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 662.71275,
+        "root_id": "24000432/2/23/34/32",
+        "source_seed": 24000432
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 543.4725000000001,
+        "root_id": "24000433/3/48/48/21",
+        "source_seed": 24000433
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 814.32575,
+        "root_id": "24000434/1/16/18/6",
+        "source_seed": 24000434
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.30722187500060016,
+        "mean_search_wall_micros": 825.2465,
+        "root_id": "24000435/1/4/7/6",
+        "source_seed": 24000435
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1510.35275,
+        "root_id": "24000436/3/48/44/8",
+        "source_seed": 24000436
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.011643892856469,
+        "mean_search_wall_micros": 2432.6349999999998,
+        "root_id": "24000437/2/33/39/3",
+        "source_seed": 24000437
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.9379575000025113,
+        "mean_search_wall_micros": 816.8980000000001,
+        "root_id": "24000438/2/27/32/7",
+        "source_seed": 24000438
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.9905981250233964,
+        "mean_search_wall_micros": 1069.8805,
+        "root_id": "24000439/2/27/28/4",
+        "source_seed": 24000439
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.9254281697692335,
+        "mean_search_wall_micros": 2007.0055,
+        "root_id": "24000440/2/33/38/8",
+        "source_seed": 24000440
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1700.1275,
+        "root_id": "24000441/2/33/38/17",
+        "source_seed": 24000441
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.33591562499452,
+        "mean_search_wall_micros": 1655.294,
+        "root_id": "24000442/3/48/48/4",
+        "source_seed": 24000442
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.9622918749996927,
+        "mean_search_wall_micros": 2750.2560000000003,
+        "root_id": "24000443/3/36/40/5",
+        "source_seed": 24000443
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 899.2265,
+        "root_id": "24000444/1/4/11/10",
+        "source_seed": 24000444
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.5756752187508525,
+        "mean_search_wall_micros": 1999.156,
+        "root_id": "24000445/3/45/51/18",
+        "source_seed": 24000445
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 3.423721475000505,
+        "mean_search_wall_micros": 2313.17975,
+        "root_id": "24000446/3/40/50/3",
+        "source_seed": 24000446
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 342.42425000000003,
+        "root_id": "24000447/3/39/40/21",
+        "source_seed": 24000447
+      }
+    ],
+    "U_UNIFORM": [
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.6657322578127598,
+        "mean_search_wall_micros": 1579.9454999999998,
+        "root_id": "24000384/2/29/36/6",
+        "source_seed": 24000384
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.0631050000000215,
+        "mean_search_wall_micros": 461.2865,
+        "root_id": "24000385/2/22/27/21",
+        "source_seed": 24000385
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 3.034963056250234,
+        "mean_search_wall_micros": 1912.5342500000002,
+        "root_id": "24000386/3/50/55/5",
+        "source_seed": 24000386
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.687107868902757,
+        "mean_search_wall_micros": 1479.91675,
+        "root_id": "24000387/3/37/45/4",
+        "source_seed": 24000387
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.1632300000018319,
+        "mean_search_wall_micros": 1020.08725,
+        "root_id": "24000388/3/47/18/13",
+        "source_seed": 24000388
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.229125000000181,
+        "mean_search_wall_micros": 1225.9045,
+        "root_id": "24000389/1/16/18/10",
+        "source_seed": 24000389
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0154649999960839,
+        "mean_search_wall_micros": 2381.83325,
+        "root_id": "24000390/1/14/17/12",
+        "source_seed": 24000390
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 2.1385960109659337,
+        "mean_search_wall_micros": 1085.21625,
+        "root_id": "24000391/3/50/54/39",
+        "source_seed": 24000391
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.16284500000406865,
+        "mean_search_wall_micros": 618.0542499999999,
+        "root_id": "24000392/2/29/29/10",
+        "source_seed": 24000392
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 637.89625,
+        "root_id": "24000393/3/50/53/41",
+        "source_seed": 24000393
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.173233430755463,
+        "mean_search_wall_micros": 1481.244,
+        "root_id": "24000394/1/6/16/17",
+        "source_seed": 24000394
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.8980974999976787,
+        "mean_search_wall_micros": 1049.48225,
+        "root_id": "24000395/1/16/20/13",
+        "source_seed": 24000395
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 3.7296676562472832,
+        "mean_search_wall_micros": 1927.3870000000002,
+        "root_id": "24000396/3/42/51/2",
+        "source_seed": 24000396
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 905.25825,
+        "root_id": "24000397/2/25/36/16",
+        "source_seed": 24000397
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.025252968749768456,
+        "mean_search_wall_micros": 785.3215,
+        "root_id": "24000398/1/4/7/2",
+        "source_seed": 24000398
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.145377500000194,
+        "mean_search_wall_micros": 1142.1055,
+        "root_id": "24000399/1/3/4/2",
+        "source_seed": 24000399
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 14.129399579368641,
+        "mean_search_wall_micros": 1961.4927500000001,
+        "root_id": "24000400/2/27/35/2",
+        "source_seed": 24000400
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1191.28,
+        "root_id": "24000401/3/47/45/6",
+        "source_seed": 24000401
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 555.9055000000001,
+        "root_id": "24000402/1/16/20/41",
+        "source_seed": 24000402
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 951.43175,
+        "root_id": "24000403/2/27/36/8",
+        "source_seed": 24000403
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 3.182668124998294,
+        "mean_search_wall_micros": 1243.90275,
+        "root_id": "24000404/3/50/55/28",
+        "source_seed": 24000404
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 1.6906556249999838,
+        "mean_search_wall_micros": 865.669,
+        "root_id": "24000405/2/27/36/3",
+        "source_seed": 24000405
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.9739404101559437,
+        "mean_search_wall_micros": 2644.44325,
+        "root_id": "24000406/3/42/49/11",
+        "source_seed": 24000406
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 234.2925,
+        "root_id": "24000407/3/38/48/12",
+        "source_seed": 24000407
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 12.352770293749572,
+        "mean_search_wall_micros": 3538.39275,
+        "root_id": "24000408/1/16/20/8",
+        "source_seed": 24000408
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1411.9920000000002,
+        "root_id": "24000409/3/35/40/11",
+        "source_seed": 24000409
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 332.25800000000004,
+        "root_id": "24000410/2/24/35/9",
+        "source_seed": 24000410
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 2.7929175000017494,
+        "mean_search_wall_micros": 1180.4972500000001,
+        "root_id": "24000411/2/33/38/33",
+        "source_seed": 24000411
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.505365687500067,
+        "mean_search_wall_micros": 1453.632,
+        "root_id": "24000412/2/23/34/14",
+        "source_seed": 24000412
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 390.04575,
+        "root_id": "24000413/1/16/20/40",
+        "source_seed": 24000413
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.4773052132353399,
+        "mean_search_wall_micros": 2063.1805000000004,
+        "root_id": "24000414/3/47/43/1",
+        "source_seed": 24000414
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.7355487499777453,
+        "mean_search_wall_micros": 613.6985,
+        "root_id": "24000415/1/2/4/10",
+        "source_seed": 24000415
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 816.0965,
+        "root_id": "24000416/2/31/29/6",
+        "source_seed": 24000416
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1768.56025,
+        "root_id": "24000417/3/42/63/10",
+        "source_seed": 24000417
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 3.892125499998455,
+        "mean_search_wall_micros": 473.06624999999997,
+        "root_id": "24000418/3/41/51/40",
+        "source_seed": 24000418
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 1.359657492598199,
+        "mean_search_wall_micros": 847.7882500000001,
+        "root_id": "24000419/3/50/54/35",
+        "source_seed": 24000419
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1199.6425,
+        "root_id": "24000420/1/7/6/17",
+        "source_seed": 24000420
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.160916250000838,
+        "mean_search_wall_micros": 1145.349,
+        "root_id": "24000421/2/22/30/28",
+        "source_seed": 24000421
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0386694749996792,
+        "mean_search_wall_micros": 1687.5765,
+        "root_id": "24000422/3/48/50/13",
+        "source_seed": 24000422
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 0.950861718749902,
+        "mean_search_wall_micros": 1144.9634999999998,
+        "root_id": "24000423/3/44/51/19",
+        "source_seed": 24000423
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5663789715905665,
+        "mean_search_wall_micros": 2218.3425,
+        "root_id": "24000424/3/37/47/1",
+        "source_seed": 24000424
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 0.8054875498147815,
+        "mean_search_wall_micros": 3277.383,
+        "root_id": "24000425/3/50/53/38",
+        "source_seed": 24000425
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1258.79825,
+        "root_id": "24000426/1/2/1/1",
+        "source_seed": 24000426
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 384.89899999999994,
+        "root_id": "24000427/3/39/40/15",
+        "source_seed": 24000427
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 2.090259999999418,
+        "mean_search_wall_micros": 1912.1529999999998,
+        "root_id": "24000428/1/5/6/8",
+        "source_seed": 24000428
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.591125814814319,
+        "mean_search_wall_micros": 1235.094,
+        "root_id": "24000429/3/44/44/21",
+        "source_seed": 24000429
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.5255876071434784,
+        "mean_search_wall_micros": 947.33175,
+        "root_id": "24000430/1/8/15/7",
+        "source_seed": 24000430
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 240.68200000000002,
+        "root_id": "24000431/1/14/9/9",
+        "source_seed": 24000431
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 696.4882499999999,
+        "root_id": "24000432/2/23/34/32",
+        "source_seed": 24000432
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 541.694,
+        "root_id": "24000433/3/48/48/21",
+        "source_seed": 24000433
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 842.4757500000001,
+        "root_id": "24000434/1/16/18/6",
+        "source_seed": 24000434
+      },
+      {
+        "j_best_rate": 0.75,
+        "mean_j_regret": 0.30722187500060016,
+        "mean_search_wall_micros": 829.915,
+        "root_id": "24000435/1/4/7/6",
+        "source_seed": 24000435
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1487.3705,
+        "root_id": "24000436/3/48/44/8",
+        "source_seed": 24000436
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.011643892856469,
+        "mean_search_wall_micros": 2759.46825,
+        "root_id": "24000437/2/33/39/3",
+        "source_seed": 24000437
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.0248543750013184,
+        "mean_search_wall_micros": 880.1637499999999,
+        "root_id": "24000438/2/27/32/7",
+        "source_seed": 24000438
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 1.9905981250233964,
+        "mean_search_wall_micros": 960.0930000000001,
+        "root_id": "24000439/2/27/28/4",
+        "source_seed": 24000439
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 1.9254281697692335,
+        "mean_search_wall_micros": 2042.53425,
+        "root_id": "24000440/2/33/38/8",
+        "source_seed": 24000440
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 1679.0985,
+        "root_id": "24000441/2/33/38/17",
+        "source_seed": 24000441
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 2.4022912499945264,
+        "mean_search_wall_micros": 1677.1019999999999,
+        "root_id": "24000442/3/48/48/4",
+        "source_seed": 24000442
+      },
+      {
+        "j_best_rate": 0.25,
+        "mean_j_regret": 3.862684374999354,
+        "mean_search_wall_micros": 2751.83375,
+        "root_id": "24000443/3/36/40/5",
+        "source_seed": 24000443
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 900.7725,
+        "root_id": "24000444/1/4/11/10",
+        "source_seed": 24000444
+      },
+      {
+        "j_best_rate": 0.0,
+        "mean_j_regret": 0.5756752187508525,
+        "mean_search_wall_micros": 2042.92775,
+        "root_id": "24000445/3/45/51/18",
+        "source_seed": 24000445
+      },
+      {
+        "j_best_rate": 0.5,
+        "mean_j_regret": 3.423721475000505,
+        "mean_search_wall_micros": 2358.7225,
+        "root_id": "24000446/3/40/50/3",
+        "source_seed": 24000446
+      },
+      {
+        "j_best_rate": 1.0,
+        "mean_j_regret": 0.0,
+        "mean_search_wall_micros": 319.38175,
+        "root_id": "24000447/3/39/40/21",
+        "source_seed": 24000447
+      }
+    ]
+  },
+  "provenance": {
+    "locked_test_paths_accessed": false,
+    "replay_sha256": "1f55730f0b04a67a463852cae6ddfe37eadaa0918064cb586dc9b840302934fa",
+    "validation_j_files": [
+      {
+        "path": "raw/J/00350b887b3fa616aaa126b2cf60f153ecbbff51f0f355b8c7a3370209541f42.json.gz",
+        "root_id": "24000384/2/29/36/6",
+        "sha256": "3ca8b9353c09ee50d06bb088c1ed63d22a96793a238a7760135333ff7b6817fa",
+        "source_seed": 24000384
+      },
+      {
+        "path": "raw/J/00866878d9203adce1dd5585dfb5d2174bee1e3d85fa21c584e27b0912056a73.json.gz",
+        "root_id": "24000385/2/22/27/21",
+        "sha256": "68ef20e13db4138d71ecb6f1c16ce711094056f464bc3a31c3ac18a40d1b76d1",
+        "source_seed": 24000385
+      },
+      {
+        "path": "raw/J/026cc68580308c5c9fc2dac92818201a269bd37cbb651700e6d3da75b5b2db47.json.gz",
+        "root_id": "24000386/3/50/55/5",
+        "sha256": "92fcf82c3eca4c8dc3380eb6fb06a52a1cda5a492eb8c68dcebbbd2f0686fa3a",
+        "source_seed": 24000386
+      },
+      {
+        "path": "raw/J/002dc1889834f7e6c4981327a2dd4bbc0c44fb0e86bec855cf1e2b7eecaa3b37.json.gz",
+        "root_id": "24000387/3/37/45/4",
+        "sha256": "d2777645fb8c9028ed6b417d9d7586975c69c499c0a8750c7d0c56dbc3c6c065",
+        "source_seed": 24000387
+      },
+      {
+        "path": "raw/J/003de282d47513321f6ae4b8bb79b9abd22b3310babfefb7afcc14464a3c690a.json.gz",
+        "root_id": "24000388/3/47/18/13",
+        "sha256": "598186e16349f4b3507e960ee46e7367c7d704a7abf8b0783a03c700f041948f",
+        "source_seed": 24000388
+      },
+      {
+        "path": "raw/J/00ebb3d707eaab88ae4a03804e387452044d0c5c4a0d1bbc4c73079445a6c9cd.json.gz",
+        "root_id": "24000389/1/16/18/10",
+        "sha256": "76e47cddee0bef481144f6e78574b9351e24f696b4f567111bca326d49c030ed",
+        "source_seed": 24000389
+      },
+      {
+        "path": "raw/J/00a55a77d8364b2d4c6af4f0dbc63e8c43e794484ff0f68cb1ff251cfa4e9339.json.gz",
+        "root_id": "24000390/1/14/17/12",
+        "sha256": "6ce811c9c428ec26377f1f5a256d8944c22b030acda6993f053e2f6acbae58c8",
+        "source_seed": 24000390
+      },
+      {
+        "path": "raw/J/004a92dc59549453491f5d8327ff39555e708a275fa1b95b51fc1e3c375eaecb.json.gz",
+        "root_id": "24000391/3/50/54/39",
+        "sha256": "6668b46ad436f0bc653aee7c0e1bedaa0089f300f4d3c24c464b8a83e4922cef",
+        "source_seed": 24000391
+      },
+      {
+        "path": "raw/J/00af1dad962dc800453fcc78a33d774b8ee8b24b3504736ce070bee49cb0c555.json.gz",
+        "root_id": "24000392/2/29/29/10",
+        "sha256": "60803ba471e04ca3148c34313c371283a87e641bbfdaa6ad20657108ef3733de",
+        "source_seed": 24000392
+      },
+      {
+        "path": "raw/J/00396d6deb1e795be0bdbaa890dee1b6d88c3e2120e855ca9c8e45b06bdd231d.json.gz",
+        "root_id": "24000393/3/50/53/41",
+        "sha256": "afe723c80f86bc4792e82eba1d6ecf1daac6557460b42b8c104db181dc7b9e4f",
+        "source_seed": 24000393
+      },
+      {
+        "path": "raw/J/01ac9eb1a7b69cf58917214a162fa8e1045612100c64f07e30f61733c23686de.json.gz",
+        "root_id": "24000394/1/6/16/17",
+        "sha256": "3396a1b8a7548f823ad9f34ec86665b90073808f6e0eb1cc16668f7c659c4ecc",
+        "source_seed": 24000394
+      },
+      {
+        "path": "raw/J/00abe36fcfe5902f231de33d8cad2c0886cf93fb32d59103b66f70fbecba868d.json.gz",
+        "root_id": "24000395/1/16/20/13",
+        "sha256": "65e27d4070bddb92f8a1dbd89c8cd36ce7de10c05cb4906242c67c82c50a9887",
+        "source_seed": 24000395
+      },
+      {
+        "path": "raw/J/00e24c7e631e643a56214438dffa27e08519ba3ee409c328665c6c483747dc7a.json.gz",
+        "root_id": "24000396/3/42/51/2",
+        "sha256": "7322c0042a4bdff907684c7e80c4314366e5daf31f159cb6ec4e940a49864996",
+        "source_seed": 24000396
+      },
+      {
+        "path": "raw/J/000f8214f047c4006c5c180468fa87ae29b312d6950752496e11213faef9c735.json.gz",
+        "root_id": "24000397/2/25/36/16",
+        "sha256": "e5c9228103833145bb9823692db41847c3e4083a290e388e6efdbf60c6fee6ab",
+        "source_seed": 24000397
+      },
+      {
+        "path": "raw/J/00633e51f525f4d6e5e731c9fa67e9cab418184b7e8e42672cba855e0f771ed7.json.gz",
+        "root_id": "24000398/1/4/7/2",
+        "sha256": "8ab382d6d260c044bc9d4e13b890a5fb40761f571fb34d0b29243df12bf832ed",
+        "source_seed": 24000398
+      },
+      {
+        "path": "raw/J/00934671faeecd8f4c8e93eb6a4a2d3b783e45f8481650a62f6ad6ff3b9b9d89.json.gz",
+        "root_id": "24000399/1/3/4/2",
+        "sha256": "f9c14fd1e508cc3b21bddbd9b280256cae602163d4ac1c2ac5e76c4af711b34b",
+        "source_seed": 24000399
+      },
+      {
+        "path": "raw/J/010233031b272c38ff79f7648c5c2eb1edb0381edf594ee23a1ebcc438278604.json.gz",
+        "root_id": "24000400/2/27/35/2",
+        "sha256": "c5940e544dd570fb46ea10f4e4c99c1bed849da6d2e0c4417f89cefc08e489d9",
+        "source_seed": 24000400
+      },
+      {
+        "path": "raw/J/024ceb3f2c3c2fa6809c65c4e8a5b2c47f968d40615175e5e0b272debf7aed59.json.gz",
+        "root_id": "24000401/3/47/45/6",
+        "sha256": "3a2214d89dd333ad96275f386eaee99432687206220c34f384a4b8bf85423c4c",
+        "source_seed": 24000401
+      },
+      {
+        "path": "raw/J/000e53bf3c8e02be05be977ed2d2a807430706f2ed7774c52cad6f815200f747.json.gz",
+        "root_id": "24000402/1/16/20/41",
+        "sha256": "cc005b2e6935a2b06af2a133d111ff74306f150a0d05c7285f042dffef14ec8d",
+        "source_seed": 24000402
+      },
+      {
+        "path": "raw/J/01b510da317c753324f3e7cb34ffb6fda78d7531d0610a041261f549c724770e.json.gz",
+        "root_id": "24000403/2/27/36/8",
+        "sha256": "187f5d1a33b64afdc3650dd002e5194cc8633bf0368458ee35a7fde7203535db",
+        "source_seed": 24000403
+      },
+      {
+        "path": "raw/J/0007cb2f25d6cd525a48a20fa8b5d0a291baacd8417869ac9c1f2ea612456d9a.json.gz",
+        "root_id": "24000404/3/50/55/28",
+        "sha256": "e0a1482424209b771ca14b05fe76e28d948c2902f2c10d66b60463975f4539ce",
+        "source_seed": 24000404
+      },
+      {
+        "path": "raw/J/000af217163706861151847b544de3a801564a5f55105939ce81cabe6232ce10.json.gz",
+        "root_id": "24000405/2/27/36/3",
+        "sha256": "ed95320d4149cbc3132286078448f6daaa47a6248bd5f8f0e2e322a075dcfee3",
+        "source_seed": 24000405
+      },
+      {
+        "path": "raw/J/006b9c6752e340d03aa132511c3f330f464ae6435f10c24494d97dddf86ae892.json.gz",
+        "root_id": "24000406/3/42/49/11",
+        "sha256": "972ea168a4449a128d8e7d4b8a8b6f225574b8b1dd3a76c5d397403ab439e703",
+        "source_seed": 24000406
+      },
+      {
+        "path": "raw/J/00bedfa65005635adcbb210c7b390b6ec868c0f8d75622bcd0f988130018881a.json.gz",
+        "root_id": "24000407/3/38/48/12",
+        "sha256": "973e2baed1be587e9a5852f2238a7a2e863278e41aa177e2e7a3439c523609cb",
+        "source_seed": 24000407
+      },
+      {
+        "path": "raw/J/00072757b22529c04d8632f8a6c9e66aa50aeca8973124f713a2303eaf3800d3.json.gz",
+        "root_id": "24000408/1/16/20/8",
+        "sha256": "35ddab95bf4ad4a122f710394d94a09969cacd77ac8144d7540ce631d7bf30a6",
+        "source_seed": 24000408
+      },
+      {
+        "path": "raw/J/00c5d39295836d0c2bbaab814d3709638fa93faa12fa08dc21aa66444e0e3655.json.gz",
+        "root_id": "24000409/3/35/40/11",
+        "sha256": "8c7ae03e2d918bff88db791e58c3fd3275289d6589ada7162f14f1c12e70efcb",
+        "source_seed": 24000409
+      },
+      {
+        "path": "raw/J/012727093c5b9520e72fbc2c7c1af259fd143dabd342d6999cb69fc6cd562420.json.gz",
+        "root_id": "24000410/2/24/35/9",
+        "sha256": "23b87535538a8a68e8dbe2973a54570cdcdc6212c029090b01f306385a694db8",
+        "source_seed": 24000410
+      },
+      {
+        "path": "raw/J/00d0122748b269d3a038d1dd580ee18e59519f70be28cd738327f676551f1e46.json.gz",
+        "root_id": "24000411/2/33/38/33",
+        "sha256": "6417c4747d832e4b2391a3a28e588eab0ad496738ed5420def93ac753f192074",
+        "source_seed": 24000411
+      },
+      {
+        "path": "raw/J/00059b167300dd9bd3e201b0e991fcf02da35b9f494f9bc3fe3494ac10b54976.json.gz",
+        "root_id": "24000412/2/23/34/14",
+        "sha256": "bc96b98865dcbc7f41595ee33740c7a6646e7076323b97e86fa174ef1b82ef12",
+        "source_seed": 24000412
+      },
+      {
+        "path": "raw/J/006e60fa290f136f007464c60dc46413a971103cf0e99d9bd2752fafa8e93047.json.gz",
+        "root_id": "24000413/1/16/20/40",
+        "sha256": "70c397138fd3978b42fdf9d2f7a281028ee918cfb33ad2fffb711e01d72930f2",
+        "source_seed": 24000413
+      },
+      {
+        "path": "raw/J/019d5bcb39c44015f64b70cdc3a3a04f4e0fbab86cb5f48a4e1a7efea15e2b34.json.gz",
+        "root_id": "24000414/3/47/43/1",
+        "sha256": "b0b9e27d6a98a0b980769e821ba0e5cf7530d3f33022ce0b5358a857f987d794",
+        "source_seed": 24000414
+      },
+      {
+        "path": "raw/J/0205f35449eb59ea3d60c5387b59d6c3f3d065bc0b39c988ff1ebf5882ab4475.json.gz",
+        "root_id": "24000415/1/2/4/10",
+        "sha256": "7a30f95d37ed6e6892512c2106be6b901daaea4101fe441a459ff3f8ee624a44",
+        "source_seed": 24000415
+      },
+      {
+        "path": "raw/J/00bd8833bcd0adda13999bf19a405448402ef89302d018ee70d0a9f2af75443b.json.gz",
+        "root_id": "24000416/2/31/29/6",
+        "sha256": "1298f1fb462931bec3631c4d78acb4760fa235c74fbcda0a4565309835b269d1",
+        "source_seed": 24000416
+      },
+      {
+        "path": "raw/J/006203b2096646ab85f64a8fcf524e03d95709c5ca83813c651dd6c666f14cb6.json.gz",
+        "root_id": "24000417/3/42/63/10",
+        "sha256": "abf95e54b28fd26692c53fc5b0a31c5c4f3b34c5e798f6618dac71b4b32c72e8",
+        "source_seed": 24000417
+      },
+      {
+        "path": "raw/J/010c4d0008d47e2dfa2e7b4f4979b32baedd63559b1a55d12fd128341184f1e1.json.gz",
+        "root_id": "24000418/3/41/51/40",
+        "sha256": "1f23ee8678c7a416d810c40345b247963cd2009685d055d25556a7db752a4865",
+        "source_seed": 24000418
+      },
+      {
+        "path": "raw/J/000a989c38141bf303fd7b580420f83c84527d57a8eca354c9c72243ebd81d4a.json.gz",
+        "root_id": "24000419/3/50/54/35",
+        "sha256": "4600fe168565b9add70cca98be65a81c776361e06652e54079d45a98cab147a5",
+        "source_seed": 24000419
+      },
+      {
+        "path": "raw/J/00ea241a8f84284c7f59861367d59adcb8a8d6ce124a426f57fd1110e660e3b3.json.gz",
+        "root_id": "24000420/1/7/6/17",
+        "sha256": "342c18fbc9abb9d490c1c0afdc3db49449a00a7c6dd4d001044f4cbf1eea37a7",
+        "source_seed": 24000420
+      },
+      {
+        "path": "raw/J/0098fee87bab0772d026eedce97b44e06ad6d69d06715a7d2855ae4e8ce7c9e4.json.gz",
+        "root_id": "24000421/2/22/30/28",
+        "sha256": "289df7ab3969bf780e120e2f98e639cd467a4b374c73b52f12d75b321fde30e1",
+        "source_seed": 24000421
+      },
+      {
+        "path": "raw/J/001fccc2c2204ba962671b9c5ff681da0f0d9790a13ee6e116c437fe5bc7d4f6.json.gz",
+        "root_id": "24000422/3/48/50/13",
+        "sha256": "ac8b202c01bcaf2951bfa7b9c52368e5555932c72a03b725c7f43c862ad31bc5",
+        "source_seed": 24000422
+      },
+      {
+        "path": "raw/J/0283c3990d4172d6323b048af185373adb1c394b8eafa10812894c2e5cff1fef.json.gz",
+        "root_id": "24000423/3/44/51/19",
+        "sha256": "92c4a12a6538fbc9cf2859bd1e26b4fc63a01e25280c65320158710e2341e899",
+        "source_seed": 24000423
+      },
+      {
+        "path": "raw/J/000b913d666a78ef609e7ab8ea6fd38d948bb9a003522ab4ce34c330fb2f57f4.json.gz",
+        "root_id": "24000424/3/37/47/1",
+        "sha256": "5168582a1e87b8ab7ec1dadfba4b7dd495dbb0836bf2fca034961da08ba3c2e2",
+        "source_seed": 24000424
+      },
+      {
+        "path": "raw/J/0026efcbf13d41d8e1b04f15db659c330ba224d3ebfb45f754b7cd3674e7f01a.json.gz",
+        "root_id": "24000425/3/50/53/38",
+        "sha256": "a71c12c95ed949ea02f38d8bd9ae2357894de964fbb42d3d5be22b0524399ae1",
+        "source_seed": 24000425
+      },
+      {
+        "path": "raw/J/00340eb118966b57cf405024384d38607081ce14ec49209a1341540eb0331e78.json.gz",
+        "root_id": "24000426/1/2/1/1",
+        "sha256": "b5f27dfe1dd9b4b3a599bcb9ef5f2ddd0a2fa8eec46cd94413489163e0e9887a",
+        "source_seed": 24000426
+      },
+      {
+        "path": "raw/J/00c4ac01568bbcb1b443ea9b1ae9e84cdaccdd6764b960ca7f216860bf8e8ce8.json.gz",
+        "root_id": "24000427/3/39/40/15",
+        "sha256": "062dfec5ee78ac4305a27e112a8136659f23a0bb1950b50914b06b4f423d1305",
+        "source_seed": 24000427
+      },
+      {
+        "path": "raw/J/006f5e716a06ab94376e44432d8b4ca3e4a5a27cd94e6707658b81bdd6ebdea3.json.gz",
+        "root_id": "24000428/1/5/6/8",
+        "sha256": "be19bf1cb3308cab4955808df85bedde44c7726cfcd1836e5f13ed011d40dcdd",
+        "source_seed": 24000428
+      },
+      {
+        "path": "raw/J/03b750b674de3877c2cf9d70d7bc1ec7dcf532d76bddd01b647308e4eaa78a73.json.gz",
+        "root_id": "24000429/3/44/44/21",
+        "sha256": "1f2e2de44b3ebd7cc8b8d470496ba83fe4d7da570ce72ae8b68a55667b956615",
+        "source_seed": 24000429
+      },
+      {
+        "path": "raw/J/02b81be235d017707b01527a48df30880be72f2a22d443614c9593eb42945df7.json.gz",
+        "root_id": "24000430/1/8/15/7",
+        "sha256": "59ac6dd87ca2921c6fff7fce79380162aef6cfd802d4911c2c31f3cd8e676709",
+        "source_seed": 24000430
+      },
+      {
+        "path": "raw/J/007fe2d4dd6424264ed96a7611ca7c50d3759dc7472bb0f08c3baa7d0f7ce7ee.json.gz",
+        "root_id": "24000431/1/14/9/9",
+        "sha256": "58361210d13b7f32adb835bbc28578b7f98b1d0bb28769664acc8ec4c838dfcb",
+        "source_seed": 24000431
+      },
+      {
+        "path": "raw/J/00461e1557a6a41c2d3248978eb60ca1bfab967593d90a8f4cef40a4a69476d9.json.gz",
+        "root_id": "24000432/2/23/34/32",
+        "sha256": "579799b6bd1133daa886a53895e609016bde5abcab30b4e4e029a2f824c4cc2e",
+        "source_seed": 24000432
+      },
+      {
+        "path": "raw/J/00217b05c7ad1747144e67fb11e9c33f8bee8cc59c8f3b2f7f80ac72cdd38fec.json.gz",
+        "root_id": "24000433/3/48/48/21",
+        "sha256": "1fb429fbbc03806ca3757b847fef901186717d7f9745db1975a7ef8ae254aa83",
+        "source_seed": 24000433
+      },
+      {
+        "path": "raw/J/0113f2383e3bf84d10aa38338786bf865ffd446e5f9884f3bf7bfed3b6a99fca.json.gz",
+        "root_id": "24000434/1/16/18/6",
+        "sha256": "4e5654cea64609656c8dff47418d878de0a03be9cfd34e2e6a28aa3ddfa333bc",
+        "source_seed": 24000434
+      },
+      {
+        "path": "raw/J/0002f8276aa8d7a04390d591f33146576246d4d3029100d5f2cc0646c03475d8.json.gz",
+        "root_id": "24000435/1/4/7/6",
+        "sha256": "23a059dce5e9aebf1fc5cb48feca033862728275ccb601ee8d2fdaa8444ac116",
+        "source_seed": 24000435
+      },
+      {
+        "path": "raw/J/0013026abf3a1ca2d76cbb81f69c8c3123bc7386722bfffca82917a72091a78f.json.gz",
+        "root_id": "24000436/3/48/44/8",
+        "sha256": "bc744cd256d47a81cbefa34e4644df79d0bd145d239b57842f50c7be46b2037a",
+        "source_seed": 24000436
+      },
+      {
+        "path": "raw/J/00026ab19f0764d151ee83c24da4196c1aa4005fce285d884ba3c8a53642dc3f.json.gz",
+        "root_id": "24000437/2/33/39/3",
+        "sha256": "9bbdf937a16352e93964ddcdc797a497c201587466a7d33822c4e38db13e34b5",
+        "source_seed": 24000437
+      },
+      {
+        "path": "raw/J/00163f5e4f1a79580c79e6ad7d798157c46e417340aca68ed8d53fb04a66769d.json.gz",
+        "root_id": "24000438/2/27/32/7",
+        "sha256": "78a498e08a6ce36d07c7052d9a531ce1fc494ee5befc0e96884c24ac3aa8c810",
+        "source_seed": 24000438
+      },
+      {
+        "path": "raw/J/006631b20621d9b3438efb509f4b9cc7e6254508e4ea1e7fc47060cb9537bc29.json.gz",
+        "root_id": "24000439/2/27/28/4",
+        "sha256": "d57d577162353f90c185dfa844d2a5c4f7c5ff455818d140e085f87612c32935",
+        "source_seed": 24000439
+      },
+      {
+        "path": "raw/J/0104b105cb0fda132c285557fbb5a5c330294a9f2cffa7010af1bd559961410d.json.gz",
+        "root_id": "24000440/2/33/38/8",
+        "sha256": "a0331c262e5ded9ab81ed6daabc30e6e9c0973998c8daf16977541ab06e8c183",
+        "source_seed": 24000440
+      },
+      {
+        "path": "raw/J/00f30434672f36a46b409315b8e94c9132c486e75156d733b142a8dafc2d5bd8.json.gz",
+        "root_id": "24000441/2/33/38/17",
+        "sha256": "e161dc588587e169252d528b8ac7ece38b5c97e1048d41a35b0fa3667feb4693",
+        "source_seed": 24000441
+      },
+      {
+        "path": "raw/J/003bb08be48857bd21cc07d1fe34d875dac99ba525ee916499ca870489356c25.json.gz",
+        "root_id": "24000442/3/48/48/4",
+        "sha256": "1c96b56ef957ffdc11d71037b77002a965aa28330f9a35cebdda874aef265945",
+        "source_seed": 24000442
+      },
+      {
+        "path": "raw/J/007c1baa43b6baa6a8da1cee3798c5b1ba0a05bc93b2f4b32f97aed3a0175f92.json.gz",
+        "root_id": "24000443/3/36/40/5",
+        "sha256": "5f9f022ca99018d1534f0098a341ab5121ee6407962a3eca99b920196fc4d039",
+        "source_seed": 24000443
+      },
+      {
+        "path": "raw/J/008dc19c33a8928be2a947bf3220874fd4f8a8aa12000263f330041144cab99d.json.gz",
+        "root_id": "24000444/1/4/11/10",
+        "sha256": "7931e1435756d57afc45f2d1a334184fa2002d5f583db3f52a08e7f77177a067",
+        "source_seed": 24000444
+      },
+      {
+        "path": "raw/J/0092bb96332c0a0934c579f408758f6166494b5be4e1b400a35893757f2e9572.json.gz",
+        "root_id": "24000445/3/45/51/18",
+        "sha256": "b5a3b9326c3cf05cfacd2556aa00051d894f0e474e58059e803ff73651e1de91",
+        "source_seed": 24000445
+      },
+      {
+        "path": "raw/J/00d348c76f01c8f1031ac81a11da8ef773e9d0cf86d6f5f2de6c17d0437220fd.json.gz",
+        "root_id": "24000446/3/40/50/3",
+        "sha256": "47f036b7b26b810d772c8c29807a6ce90662748ccbbf61cd3bace4fd4268e5f1",
+        "source_seed": 24000446
+      },
+      {
+        "path": "raw/J/0227723c3f6b8a130db287024050dc882be044ed97c5ff3f921300acafa4486c.json.gz",
+        "root_id": "24000447/3/39/40/21",
+        "sha256": "c45ce88fb2373003e9cd2362eeaac2e3fe48ccabae1077000575990077dc64d9",
+        "source_seed": 24000447
+      }
+    ],
+    "validation_j_roots": 64
+  },
+  "schema": "silver_prior_root_screen_analysis_v1",
+  "source_unit_count": 64
+}

@@ -1,0 +1,57 @@
+{
+  "artifactSha256": "23ee9e06b6674709a2a656f11647c0ede3665c27b3e98360a75dbc298e516119",
+  "history": [
+    {
+      "epoch": 1,
+      "validationNll": 0.624023973941803
+    },
+    {
+      "epoch": 2,
+      "validationNll": 0.6335051655769348
+    },
+    {
+      "epoch": 3,
+      "validationNll": 0.6304327249526978
+    },
+    {
+      "epoch": 4,
+      "validationNll": 0.6262303590774536
+    },
+    {
+      "epoch": 5,
+      "validationNll": 0.625137209892273
+    },
+    {
+      "epoch": 6,
+      "validationNll": 0.6264267563819885
+    },
+    {
+      "epoch": 7,
+      "validationNll": 0.6251875758171082
+    },
+    {
+      "epoch": 8,
+      "validationNll": 0.6220777034759521
+    },
+    {
+      "epoch": 9,
+      "validationNll": 0.619994044303894
+    },
+    {
+      "epoch": 10,
+      "validationNll": 0.6199495792388916
+    },
+    {
+      "epoch": 11,
+      "validationNll": 0.6184638142585754
+    },
+    {
+      "epoch": 12,
+      "validationNll": 0.6160274147987366
+    }
+  ],
+  "selectedEpoch": 12,
+  "sourceSha": "69f9e51be8bb6c53684dbb02ae5f73b7b397c9ae",
+  "trainRows": 3462,
+  "validationRows": 411
+}

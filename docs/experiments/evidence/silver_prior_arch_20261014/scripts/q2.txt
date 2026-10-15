@@ -1,0 +1,9 @@
+b0
+r_do15 --dropout 0.15
+r_card64 --card-dim 64
+r_cos --lr 1e-3 --sched cosine --epochs 25 --patience 25
+s_wide --h1 256 --h2 32
+s_dot --dot 32
+b0
+r_do05 --dropout 0.05
+r_do0 --dropout 0.0 --wd 1e-2

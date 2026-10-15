@@ -1,0 +1,32 @@
+{
+  "fixtures": 23,
+  "supportedFixtures": 16,
+  "unsupportedFixtures": 7,
+  "parityDraws": 2944,
+  "supportedDraws": 2048,
+  "seeds": 32,
+  "drawsPerSeed": 4,
+  "victories": 1909,
+  "deaths": 139,
+  "fullPersistentJsonParity": true,
+  "plannerRngPostParity": true,
+  "baselineProbabilityOutputParity": true,
+  "referenceSampleNs": 4393278.5810546875,
+  "preparedSampleNs": 22883.61474609375,
+  "preparedAmortizedNs": 60328.12744140625,
+  "referenceEncoderCalls": 7775,
+  "preparedEncoderCalls": 64,
+  "baselineComponentsNs": {
+    "hp_encoding": 1072117.325,
+    "hp_head": 10705.8375,
+    "max_hp": 1080333.3,
+    "potion": 1087034.71875,
+    "relic": 4499.48125,
+    "survival": 1083951.325
+  },
+  "artifactHashes": {
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/fixtures.jsonl": "372a162704a6361fdadcc0487c856021e7a80ed8fde7aa1ffacde345f83eec9c"
+  },
+  "amortizedSpeedup": 72.82305563556011
+}

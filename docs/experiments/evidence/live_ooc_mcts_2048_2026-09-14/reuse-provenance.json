@@ -1,0 +1,8 @@
+{
+  "source": "../live_ooc_mcts_expanded_support_2026-09-14",
+  "controlReuse": "Exact bytes of previous control outcomes/metadata/config/trace/support/log and validation",
+  "newGameRuns": 33,
+  "newOfficialGameRuns": 32,
+  "secondary512Treatment": "Preserved prior treatment, no recollection",
+  "runtime": "Historical comparisons; no contemporaneous timing control"
+}

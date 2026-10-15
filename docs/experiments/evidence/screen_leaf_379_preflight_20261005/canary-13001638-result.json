@@ -1,0 +1,43 @@
+{
+  "exit_code": 0,
+  "wall_seconds": 285.68750413,
+  "csv_parity": {
+    "branches.csv": {
+      "expected": "60a6abbafd5cb100816b5d23395f4da3cb57ae56efb3836268c30ff9d7ee518c",
+      "actual": "60a6abbafd5cb100816b5d23395f4da3cb57ae56efb3836268c30ff9d7ee518c",
+      "equal": true
+    },
+    "combat.csv": {
+      "expected": "ef5f34314bae6c2da5b4642d0c3a1953a90568d0952c4fd4dbeb5ed37f605d2e",
+      "actual": "ef5f34314bae6c2da5b4642d0c3a1953a90568d0952c4fd4dbeb5ed37f605d2e",
+      "equal": true
+    },
+    "decision.csv": {
+      "expected": "592a3ab64717537d3dbf701cd9dba11845eebac54a2f0f49546d25735309acac",
+      "actual": "592a3ab64717537d3dbf701cd9dba11845eebac54a2f0f49546d25735309acac",
+      "equal": true
+    },
+    "decisions.csv": {
+      "expected": "9a37ce43c34adb7a296b08190068269a30329a38f09b008198fe887bf143bc3b",
+      "actual": "9a37ce43c34adb7a296b08190068269a30329a38f09b008198fe887bf143bc3b",
+      "equal": true
+    },
+    "map.csv": {
+      "expected": "514f35b7bdd87e1c838273ee06f6900eb85de92b6a487a24f25f5ece12d7a7ab",
+      "actual": "514f35b7bdd87e1c838273ee06f6900eb85de92b6a487a24f25f5ece12d7a7ab",
+      "equal": true
+    },
+    "runout.csv": {
+      "expected": "d3d0bb8a5bf047815693302eed64541b78f4ea469154878ead6ab3e24d3c30f3",
+      "actual": "d3d0bb8a5bf047815693302eed64541b78f4ea469154878ead6ab3e24d3c30f3",
+      "equal": true
+    },
+    "win_raw.csv": {
+      "expected": "a21092ec95de982712b05391ac9f6599a0ec3e9c4e3364f18ad961e65e1c70a4",
+      "actual": "a21092ec95de982712b05391ac9f6599a0ec3e9c4e3364f18ad961e65e1c70a4",
+      "equal": true
+    }
+  },
+  "status": "PASS",
+  "snapshots_sha256": "94460f6e06049ee485c0c4f7639f1ebecbfe2970ddbc0448dde7d912a224e7de"
+}

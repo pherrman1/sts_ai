@@ -1,0 +1,67 @@
+{
+  "schema_version": "s3-generic-chance-tree-g1-v1",
+  "source_sha": "d3e250d84672e264b8515f02b1b6bbbc40c4dc66",
+  "remote": {
+    "instance": "sts-test",
+    "project": "sts-ai-502709",
+    "zone": "europe-west3-c",
+    "executable_sha256": "a103e0dd7e682a6bb06a641d1b2057df69a893249271e31551af0a0f6f1d641e",
+    "models": {
+      "v_rich_trees.txt": "c866b62512bb7cf8abdebc6175415508cb667fe2d628198ac107fd35591a9447",
+      "v_win_trees.txt": "724a75ccc4bc2394306181db229aa2295433450f9596f1bc1479083dda337e35",
+      "v_combat_7k_tuned.txt": "e26fffdbe21392cc08db841859d46c13188acd16b180323868b04dca55e15ea2",
+      "policy_trees_c.txt": "43c9dbddbebe52b4dce961b9376fcb76c1ac72a735caf161b646be0fa34f1a55"
+    }
+  },
+  "common_config": {
+    "regime": "project-fair Searcher3",
+    "ascension": 0,
+    "endpoint": "Act-3/full run",
+    "simulations_per_decision": 1000,
+    "particles": 64,
+    "threads": 24,
+    "seeds": [930000, 930001, 930002, 930003, 930004, 930005, 930006, 930007, 930008, 930009, 930010, 930011, 930012, 930013, 930014, 930015],
+    "fixed_flags": {
+      "STS_FAIR": 1,
+      "STS_SEARCHER3": 1,
+      "STS_S3_PARTICLES": 64,
+      "STS_S3_BELIEF": 1,
+      "STS_S3_CHAIN": 1,
+      "STS_LIVE_VALID": 1,
+      "STS_S3_GENERIC_CHANCE_TREE": 1,
+      "STS_S3_PERSISTENT_ENDTURN_CHANCE": 0,
+      "STS_S3_CRN": 0,
+      "STS_S3_STRATEGY_FUSION_DIAG": 0,
+      "STS_S3_ENDTURN_MARGINALIZE": 0,
+      "STS_S3_UNION_EXPAND": 0,
+      "STS_S3_EXPAND": 0,
+      "STS_S3_SEMANTIC_CARD_EDGES": 0
+    }
+  },
+  "fresh_tree_smoke": {
+    "seeds": 16,
+    "control": {"reuse_max_searches": 0, "wins": 7, "win_rate": 0.4375, "avg_floor": 44.625, "avg_end_hp": 15.625, "cpu_sec_per_run": 23.562975, "wall_sec_sum": 377.0076},
+    "treatment": {"reuse_max_searches": 0, "wins": 4, "win_rate": 0.25, "avg_floor": 41.3125, "avg_end_hp": 14.0, "cpu_sec_per_run": 31.986025, "wall_sec_sum": 511.7764, "hard_counters": {"decision_observation_mismatches": 0, "semantic_resolution_failures": 0, "semantic_action_set_missing": 0, "semantic_action_set_extra": 0}},
+    "paired_discordant_seeds": [930003, 930007, 930009],
+    "runtime_delta_fraction": 0.3575,
+    "csv_sha256": {"control": "d2f5003f8884d73dc9fdb0fdd8f637d8c3915a204810daef91962c94ec09d667", "treatment": "a124c2a703414d2321079f71c327939bf4b7abd13a4366ad3d93c5dfcf035dd7"}
+  },
+  "reuse_isolation_smoke": {
+    "seeds": 16,
+    "reuse0": {"wins": 4, "win_rate": 0.25, "avg_floor": 41.3125, "avg_end_hp": 14.0, "cpu_sec_per_run": 31.88259375, "wall_sec_sum": 510.1215},
+    "reuse1": {"wins": 5, "win_rate": 0.3125, "avg_floor": 42.0, "avg_end_hp": 11.625, "cpu_sec_per_run": 34.75638125, "wall_sec_sum": 556.1021},
+    "paired_discordant_seeds": {"reuse0_only": [930000, 930005, 930010], "reuse1_only": [930002, 930003, 930009, 930015]},
+    "runtime_delta_fraction": 0.0901,
+    "csv_sha256": {"reuse0": "3ef4c035010dd32f04ca52e7296e0fe7b913aa7f1c8c194041759084a3cefaf4", "reuse1": "2c0918087ea406103c27b8ce769d92c53f89c8546fca1188e8e6d179ec489d53"}
+  },
+  "particle_boundary_audit": {
+    "seeds": [930000, 930001, 930002, 930003],
+    "method": "STS_S3_BELIEF_AUDIT boundary telemetry; no source changes",
+    "reuse0": {"rows": 1731, "particles": 110784, "fallback_predicates": 29248, "fallback_fraction": 0.264009, "carried_particles": 87616, "carried_fallback": 7296, "carried_fallback_fraction": 0.083273, "fresh_particles": 23168, "fresh_fallback": 21952, "fresh_fallback_fraction": 0.947514, "diag_sha256": "b814a088a9c01c60b83f6af6244a5c43ef89290d47a5a91ac14cc7951be341e1"},
+    "reuse1": {"rows": 1867, "particles": 119488, "fallback_predicates": 34688, "fallback_fraction": 0.290305, "carried_particles": 95296, "carried_fallback": 11776, "carried_fallback_fraction": 0.123572, "fresh_particles": 24192, "fresh_fallback": 22912, "fresh_fallback_fraction": 0.94709, "diag_sha256": "bf09c8692cf63b9f6c6689107d82aca6d65ecaf77d8aec51c6d62f60446441f7"},
+    "interpretation": "Reuse=1 carried-boundary fallback is moderately higher than reuse=0 (12.36% vs 8.33%), but reuse=0 is not near zero and fresh-boundary fallback is approximately 95% in both arms. The audit is a boundary predicate, not an exact count of every internal applyParticle call; its fallback test uses the legacy CardId multiset predicate.",
+    "result_sha256": {"reuse0": "277ed4cc78d7cc2c98699266cedac09a54c31e30f658e9ad7ad606f2e70a6f5e", "reuse1": "51c7447ceee98f9dec06b85b3619aa00f1b02c3ae0c26d6ba2b77a25c7f3a5a4"}
+  },
+  "decision": "G1 generic tree correctness passed. Reuse=1 is operationally correct but was ~9% slower in the 16-seed isolation smoke; no gameplay promotion claim. Particle audit does not explain the large outcome tables by itself. Next justified experiment is reuse=1 with a fresh 64-particle belief rebuilt at the real boundary.",
+  "raw_artifacts": "ignored build/g1_* files in the experiment worktree; this manifest is the durable provenance record"
+}

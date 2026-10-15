@@ -1,0 +1,40 @@
+{
+  "schema": "shared_frozen_maxhp_encoder_compact_result_v1",
+  "baselineSha": "cde61c85b8a9ad8500cd3ca6e18607ff33bb6e1a",
+  "experimentSha": "af46e32cbb5fcb71d598f735be2edc9ab5d830d4",
+  "decision": "SHARED_HP_ENCODER_MAXHP_REJECTED",
+  "potionFollowupRun": false,
+  "counts": {"TRAIN": {"rows": 393677, "sources": 19986}, "VALIDATION": {"rows": 48590, "sources": 2496}},
+  "componentCheckpoints": {
+    "maxHP": {"sha256": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0", "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"},
+    "HP": {"sha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b", "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"}
+  },
+  "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+  "rowIdsSha256": "02ca974b977dd42784f1c43a60c6216270779ce3d1670e2e2ce975967b9612e2",
+  "sourceGroupsSha256": "f29f43065913889181fcb27981536701cf29d8273c54425798984ff801545995",
+  "representationSha256": {"reference": "5c37760a31b776fac319ca4df3f8a1c48e7eb2dc42645d8aaab6c1a8c5f246c8", "candidate": "e0c5181193a3b279740744634c129247c6dc9cc72124c8ede71ce629aeb700dc"},
+  "recipe": {"seed": 20260912, "epochs": 12, "batch": 512, "lr": 0.001, "weightDecay": 0.0001, "clip": 1.0, "precision": "cached FP32 representations; FP32 decoder fit", "selection": "independent earliest strict minimum VALIDATION maxHP-delta NLL"},
+  "parity": {"rowParity": true, "validationInGradientUpdates": false, "encoderParametersFrozen": true, "headInitialStatesByteIdentical": true, "batchOrdersIdentical": true},
+  "arms": {
+    "reference": {
+      "selectedEpoch": 8,
+      "trainNll": [0.071888578, 0.047792255, 0.046872081, 0.046509155, 0.046262726, 0.046088491, 0.045929869, 0.045928584, 0.045831200, 0.045776651, 0.045709774, 0.045726746],
+      "validationNll": [0.043850660, 0.042837016, 0.042839389, 0.042925749, 0.042877629, 0.043007515, 0.042878639, 0.042742204, 0.043015469, 0.043408189, 0.043599743, 0.043025408],
+      "selectedValidation": {"nll": 0.042742204, "accuracy": 0.980695616, "expectedPostMaxHpMae": 0.081355842},
+      "nonzeroDelta": {"rows": 1546, "nll": 0.787492633, "accuracy": 0.631306598, "expectedPostMaxHpMae": 1.231053402},
+      "zeroDelta": {"rows": 47044, "nll": 0.018267587, "accuracy": 0.992177536, "expectedPostMaxHpMae": 0.043573501},
+      "probabilityMaxNormalizationError": 2.980232238769531e-07
+    },
+    "candidate": {
+      "selectedEpoch": 12,
+      "trainNll": [0.250515890, 0.184698990, 0.180779252, 0.178711793, 0.177348722, 0.176331273, 0.175620645, 0.175056239, 0.174546217, 0.174166449, 0.173791803, 0.173553022],
+      "validationNll": [0.171160281, 0.165911436, 0.164192513, 0.163106397, 0.161226526, 0.161157072, 0.160449624, 0.160332605, 0.159301475, 0.161367223, 0.159861118, 0.159130603],
+      "selectedValidation": {"nll": 0.159130603, "accuracy": 0.968203334, "expectedPostMaxHpMae": 0.234179750},
+      "nonzeroDelta": {"rows": 1546, "nll": 3.897300243, "accuracy": 0.000646831, "expectedPostMaxHpMae": 3.450993290},
+      "zeroDelta": {"rows": 47044, "nll": 0.036283702, "accuracy": 1.0, "expectedPostMaxHpMae": 0.128466084},
+      "probabilityMaxNormalizationError": 3.5762786865234375e-07
+    }
+  },
+  "gates": {"nllRelative": 2.723032237, "accuracyDrop": 0.012492282, "expectedPostMaxHpMaeDelta": 0.152823909},
+  "external": {"resultsSha256": "53e240701d58cb30cdf0e575c58dff69064e2efb8a8eb45eaa7865c50b75cfef", "validationPredictionsSha256": "67bde21409d8eabc5ca22c9daa67630341868e42ee0c2fa82b0db481c99e5704"}
+}

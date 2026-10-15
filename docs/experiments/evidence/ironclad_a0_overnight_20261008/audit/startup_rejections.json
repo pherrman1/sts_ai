@@ -1,0 +1,32 @@
+{
+  "learned": {
+    "exit_code": -6,
+    "stdout": "",
+    "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  STS_SILVER_FINAL_BOSS_BINARY requires STS_STOP_AFTER_ACT=3, exact root budgets, adaptive and learned stopping off, and no stop trace\n"
+  },
+  "adaptive": {
+    "exit_code": -6,
+    "stdout": "",
+    "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  STS_SILVER_FINAL_BOSS_BINARY requires STS_STOP_AFTER_ACT=3, exact root budgets, adaptive and learned stopping off, and no stop trace\n"
+  },
+  "no_cutoff": {
+    "exit_code": -6,
+    "stdout": "",
+    "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  STS_SILVER_FINAL_BOSS_BINARY requires STS_STOP_AFTER_ACT=3, exact root budgets, adaptive and learned stopping off, and no stop trace\n"
+  },
+  "wrong_cutoff": {
+    "exit_code": -6,
+    "stdout": "",
+    "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  STS_SILVER_FINAL_BOSS_BINARY requires STS_STOP_AFTER_ACT=3, exact root budgets, adaptive and learned stopping off, and no stop trace\n"
+  },
+  "no_exact": {
+    "exit_code": -6,
+    "stdout": "",
+    "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  STS_SILVER_FINAL_BOSS_BINARY requires STS_STOP_AFTER_ACT=3, exact root budgets, adaptive and learned stopping off, and no stop trace\n"
+  },
+  "bad_flag": {
+    "exit_code": -6,
+    "stdout": "",
+    "stderr": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  STS_SILVER_FINAL_BOSS_BINARY must be 0 or 1\n"
+  }
+}

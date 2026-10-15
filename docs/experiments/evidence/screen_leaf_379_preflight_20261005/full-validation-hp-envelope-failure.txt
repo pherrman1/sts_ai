@@ -1,0 +1,12 @@
+S0 failure, full-validation-import-v4 source 13001949 after 803/1964 rows (stderr first line):
+hp_envelope
+
+{
+  "error": "ValueError: S0 evaluator failed; preserve partial predictions",
+  "s0_exit_code": 2,
+  "seed": 13001949,
+  "status": "FAIL",
+  "wall_seconds": 1494.2550928110004
+}
+
+aggregate: 149 sources finished, 148 PASS, 1 FAIL (this source); 6 unscheduled.

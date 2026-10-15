@@ -1,0 +1,94 @@
+{
+  "budget_per_searched_decision": 10000,
+  "cohort": "hard64-holdout",
+  "continuation_run_records": [
+    {
+      "arm": "control",
+      "block": 6,
+      "failures": 1,
+      "returncode": 1,
+      "rows": 8,
+      "singleton_skips": 0
+    },
+    {
+      "arm": "control",
+      "block": 7,
+      "failures": 0,
+      "returncode": 0,
+      "rows": 8,
+      "singleton_skips": 0
+    },
+    {
+      "arm": "treatment",
+      "block": 7,
+      "failures": 0,
+      "returncode": 0,
+      "rows": 8,
+      "singleton_skips": 16
+    },
+    {
+      "arm": "treatment",
+      "block": 8,
+      "failures": 0,
+      "returncode": 0,
+      "rows": 8,
+      "singleton_skips": 8
+    },
+    {
+      "arm": "control",
+      "block": 8,
+      "failures": 0,
+      "returncode": 0,
+      "rows": 8,
+      "singleton_skips": 0
+    }
+  ],
+  "control": {
+    "mean_decisions": 32.888888888888886,
+    "mean_hp_end": 31.634920634920636,
+    "mean_terminal_hp_fraction": 0.4672564710094782,
+    "replay_failures": 1,
+    "simulations": 20720000,
+    "singleton_search_skips": 0,
+    "valid_cases": 63,
+    "wall_seconds_sum": 189.464773017,
+    "wins": 57
+  },
+  "control_binary_sha256": "58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05",
+  "control_sha": "01f6f164a0fe757ec174738ac3a2f0fb98c2462d",
+  "n_attempted": 64,
+  "n_valid_pairs": 63,
+  "omp_num_threads": 4,
+  "paired": {
+    "action_trace_equal_valid_pairs": 60,
+    "common_failure_count": 1,
+    "control_only_wins": 0,
+    "mean_hp_end_delta_treatment_minus_control": 0.15873015873015872,
+    "outcome_flips_valid_pairs": 0,
+    "simulation_change_percent_valid_pairs": -3.1853281853281845,
+    "treatment_only_wins": 0,
+    "wall_change_percent_valid_pairs": -2.9914431283178167
+  },
+  "snapshot_sha256": "e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34",
+  "technical_failures": [
+    {
+      "case_id": "12100109/21",
+      "control_status": "replay_exception: selected_deterministic_state_mismatch edge_visits=2908 input 2>2 selected 0>0 turn 5>5 seed 14065812166749542182>14065812166749542182 asc/loop 0/191>0/191 outcome 0>0 battleOver 0>0 monsterTurnIdx 1>1 flags 0000>0000 potions 4/5>4/5 player(hp/energy/block) 68/3/0>68/3/0 hand 6>6 draw 27>27 discard 0>0 exhaust 10>10 rng 1>52 queues 1/0>1/0 equal(player/monsters/cards/rng) 1/1/0/0 equal(meta/potions/misc) 1/1/1 curCardQueueItem=1 hand_uids 8,14,37,23,40,12,>8,12,37,23,40,14,",
+      "same_failure": true,
+      "treatment_status": "replay_exception: selected_deterministic_state_mismatch edge_visits=2908 input 2>2 selected 0>0 turn 5>5 seed 14065812166749542182>14065812166749542182 asc/loop 0/191>0/191 outcome 0>0 battleOver 0>0 monsterTurnIdx 1>1 flags 0000>0000 potions 4/5>4/5 player(hp/energy/block) 68/3/0>68/3/0 hand 6>6 draw 27>27 discard 0>0 exhaust 10>10 rng 1>52 queues 1/0>1/0 equal(player/monsters/cards/rng) 1/1/0/0 equal(meta/potions/misc) 1/1/1 curCardQueueItem=1 hand_uids 8,14,37,23,40,12,>8,12,37,23,40,14,"
+    }
+  ],
+  "treatment": {
+    "mean_decisions": 32.82539682539682,
+    "mean_hp_end": 31.793650793650794,
+    "mean_terminal_hp_fraction": 0.4691922046525289,
+    "replay_failures": 1,
+    "simulations": 20060000,
+    "singleton_search_skips": 62,
+    "valid_cases": 63,
+    "wall_seconds_sum": 183.797042084,
+    "wins": 57
+  },
+  "treatment_binary_sha256": "03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d",
+  "treatment_sha": "2da8eed6a9c7faecd82effdd1751265eac1b42fd"
+}

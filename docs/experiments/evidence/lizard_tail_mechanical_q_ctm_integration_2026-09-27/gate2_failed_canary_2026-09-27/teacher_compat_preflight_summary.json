@@ -1,0 +1,14 @@
+[
+  {
+    "arm": "control",
+    "exit_code": 0,
+    "log": "/tmp/lizard-integration-gate2-final-b2ece8c6/preflight-teacher-compat/control.compat.log",
+    "log_sha256": "dc10336acd6d3a85aad070f3e3c83fb33628802867ea3b1e52ad7071d9357e7d"
+  },
+  {
+    "arm": "treatment",
+    "exit_code": 0,
+    "log": "/tmp/lizard-integration-gate2-final-b2ece8c6/preflight-teacher-compat/treatment.compat.log",
+    "log_sha256": "7453dad83b49f7f16692ac4f663bfb5eea2826c7d552781c921bcdb76f60ed5d"
+  }
+]

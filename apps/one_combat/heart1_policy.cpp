@@ -1,0 +1,1010 @@
+#include "heart1_policy.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <limits>
+#include <map>
+#include <mutex>
+#include <stdexcept>
+
+#include "constants/Events.h"
+#include "game/Map.h"
+#include "game/Neow.h"
+
+using namespace sts;
+using GA = sts::search::GameAction;
+using RT = sts::search::GameAction::RewardsActionType;
+
+namespace one_combat::heart1 {
+namespace {
+
+// silverbot/network.py FixedAction (IntEnum values).
+enum FA : int {
+    FA_SKIP = 1, FA_REMOVE = 2, FA_SINGING_BOWL = 3, FA_REST = 4, FA_SMITH = 5, FA_RECALL = 6,
+    FA_LIFT = 7, FA_TOKE = 8, FA_DIG = 9,
+    FA_NEOW_FIRST = 10,  // NEOW_THREE_CARDS .. NEOW_BOSS_RELIC follow Neow::Bonus order (10..28)
+    FA_BIG_FISH_BANANA = 29, FA_FACE_TRADER_LOSE_GOLD = 32, FA_FACE_TRADER_LOSE_HP = 33,
+    FA_GOLDEN_SHRINE_PRAY = 35, FA_NLOTH_OFFER_0 = 38, FA_NLOTH_OFFER_1 = 39,
+    FA_SENSORY_STONE_MEMORIES = 41, FA_WINDING_HALLS_MADNESS = 44, FA_WINDING_HALLS_WRITHE = 45,
+    FA_KNOWING_SKULL_OPTION_0 = 47, FA_WOMAN_IN_BLUE_OPTION_0 = 51,
+    FA_ANCIENT_WRITING_ELEGANCE = 55, FA_DEAD_ADVENTURER_SEARCH = 57, FA_DUPLICATOR_DUPLICATE = 59,
+    FA_OLD_BEGGAR_GIVE_GOLD = 61, FA_DIVINE_FOUNTAIN_HEAL = 63, FA_GHOSTS_AGREE = 65,
+    FA_SSSSSERPENT_AGREE = 67, FA_MASKED_BANDITS_PAY = 69, FA_MUSHROOMS_HEAL = 71,
+    FA_MYSTERIOUS_SPHERE_OPEN = 73, FA_NEST_AGREE = 75, FA_NOTE_FOR_YOURSELF_IGNORE = 77,
+    FA_SCRAP_OOZE_ATTACK = 79, FA_SECRET_PORTAL_ENTER = 81, FA_SHINING_LIGHT_ENTER = 83,
+    FA_JOUST_GIVE_GOLD = 85, FA_LIBRARY_READ = 87, FA_MAUSOLEUM_OPEN = 89,
+    FA_WORLD_OF_GOOP_ENTER = 91, FA_LAB_OPTION = 93, FA_WHEEL_OF_CHANGE_OPTION = 94,
+    FA_PLEADING_VAGRANT_GIVE_GOLD = 95, FA_COLOSSEUM_PHASE1_PROCEED = 98,
+    FA_COLOSSEUM_PHASE2_OPTION_0 = 99, FA_CURSED_TOME_READ = 101, FA_CURSED_TOME_PHASE1_OPTION = 103,
+    FA_CURSED_TOME_PHASE4_OPTION_0 = 106, FA_DESIGNER_UPGRADE_ONE = 108, FA_AUGMENTER_AGREE = 114,
+    FA_FALLING_SKILL = 117, FA_FALLING_POWER = 118, FA_FALLING_ATTACK = 119,
+    FA_FORGOTTEN_ALTAR_PRAY = 121, FA_GOLDEN_IDOL_TAKE = 124, FA_GOLDEN_IDOL_PHASE2_OPTION_0 = 126,
+    FA_WING_STATUE_REMOVE_CARD = 129, FA_LIVING_WALL_CHANGE = 132, FA_MINDBLOOM_ACT1_BOSS = 135,
+    FA_PURIFIER_PURIFY = 139, FA_TRANSMORGRIFIER_TRANSFORM = 141, FA_CLERIC_HEAL = 143,
+    FA_MOAI_HEAD_GOLDEN_IDOL = 146, FA_TOMB_RED_MASK_DON_MASK = 149, FA_UPGRADE_SHRINE_UPGRADE = 152,
+    FA_VAMPIRES_ACCEPT = 154, FA_WE_MEET_AGAIN_POTION = 157, FA_OMINOUS_FORGE_UPGRADE = 161,
+    FA_TAKE_KEY = 164, FA_OPEN_CHEST = 165,
+};
+
+constexpr int kDim = 256, kHeads = 8, kHeadDim = kDim / kHeads, kHidden = 1024, kLayers = 4;
+constexpr float kNormEps = 1e-5f;
+constexpr int kMapAggCap = 15;
+constexpr int kRelicInvalid = static_cast<int>(RelicId::INVALID);
+constexpr int kCardInvalid = static_cast<int>(CardId::INVALID);
+
+// map_event_action_to_fixed_action. -1: silverbot has no mapping (it returns
+// None for Match and Keep and raises for anything else).
+int eventFixedAction(const GameContext &gc, int idx1) {
+    const int phase = gc.info.eventData;
+    const auto pick = [&](int first, int n) { return idx1 < n ? first + idx1 : first + n - 1; };
+    switch (gc.curEvent) {
+        case Event::LAB: return FA_LAB_OPTION;
+        case Event::WHEEL_OF_CHANGE: return FA_WHEEL_OF_CHANGE_OPTION;
+        case Event::ANCIENT_WRITING: return FA_ANCIENT_WRITING_ELEGANCE + (idx1 == 0 ? 0 : 1);
+        case Event::DEAD_ADVENTURER: return FA_DEAD_ADVENTURER_SEARCH + (idx1 == 0 ? 0 : 1);
+        case Event::DUPLICATOR: return FA_DUPLICATOR_DUPLICATE + (idx1 == 0 ? 0 : 1);
+        case Event::OLD_BEGGAR: return FA_OLD_BEGGAR_GIVE_GOLD + (idx1 == 0 ? 0 : 1);
+        case Event::THE_DIVINE_FOUNTAIN: return FA_DIVINE_FOUNTAIN_HEAL + (idx1 == 0 ? 0 : 1);
+        case Event::GHOSTS: return FA_GHOSTS_AGREE + (idx1 == 0 ? 0 : 1);
+        case Event::THE_SSSSSERPENT: return FA_SSSSSERPENT_AGREE + (idx1 == 0 ? 0 : 1);
+        case Event::MASKED_BANDITS: return FA_MASKED_BANDITS_PAY + (idx1 == 0 ? 0 : 1);
+        case Event::HYPNOTIZING_COLORED_MUSHROOMS: return FA_MUSHROOMS_HEAL + (idx1 == 0 ? 0 : 1);
+        case Event::MYSTERIOUS_SPHERE: return FA_MYSTERIOUS_SPHERE_OPEN + (idx1 == 0 ? 0 : 1);
+        case Event::THE_NEST: return FA_NEST_AGREE + (idx1 == 0 ? 0 : 1);
+        case Event::NOTE_FOR_YOURSELF: return FA_NOTE_FOR_YOURSELF_IGNORE + (idx1 == 0 ? 0 : 1);
+        case Event::SCRAP_OOZE: return FA_SCRAP_OOZE_ATTACK + (idx1 == 0 ? 0 : 1);
+        case Event::SECRET_PORTAL: return FA_SECRET_PORTAL_ENTER + (idx1 == 0 ? 0 : 1);
+        case Event::SHINING_LIGHT: return FA_SHINING_LIGHT_ENTER + (idx1 == 0 ? 0 : 1);
+        case Event::THE_JOUST: return FA_JOUST_GIVE_GOLD + (idx1 == 0 ? 0 : 1);
+        case Event::THE_LIBRARY: return FA_LIBRARY_READ + (idx1 == 0 ? 0 : 1);
+        case Event::THE_MAUSOLEUM: return FA_MAUSOLEUM_OPEN + (idx1 == 0 ? 0 : 1);
+        case Event::WORLD_OF_GOOP: return FA_WORLD_OF_GOOP_ENTER + (idx1 == 0 ? 0 : 1);
+        case Event::BIG_FISH: return pick(FA_BIG_FISH_BANANA, 3);
+        case Event::FACE_TRADER: return pick(FA_FACE_TRADER_LOSE_GOLD, 3);
+        case Event::GOLDEN_SHRINE: return pick(FA_GOLDEN_SHRINE_PRAY, 3);
+        case Event::NLOTH: return pick(FA_NLOTH_OFFER_0, 3);
+        case Event::SENSORY_STONE: return pick(FA_SENSORY_STONE_MEMORIES, 3);
+        case Event::WINDING_HALLS: return pick(FA_WINDING_HALLS_MADNESS, 3);
+        case Event::NEOW: {
+            if (idx1 < 0 || idx1 >= int(gc.info.neowRewards.size())) return -1;
+            const auto bonus = gc.info.neowRewards[idx1].r;
+            if (bonus == Neow::Bonus::INVALID) return -1;
+            return FA_NEOW_FIRST + static_cast<int>(bonus);
+        }
+        case Event::KNOWING_SKULL: return pick(FA_KNOWING_SKULL_OPTION_0, 4);
+        case Event::THE_WOMAN_IN_BLUE: return pick(FA_WOMAN_IN_BLUE_OPTION_0, 4);
+        case Event::PLEADING_VAGRANT: return pick(FA_PLEADING_VAGRANT_GIVE_GOLD, 3);
+        case Event::COLOSSEUM:
+            if (phase == 0) return FA_COLOSSEUM_PHASE1_PROCEED;
+            return FA_COLOSSEUM_PHASE2_OPTION_0 + (idx1 == 0 ? 0 : 1);
+        case Event::CURSED_TOME:
+            switch (phase) {
+                case 0: return FA_CURSED_TOME_READ + (idx1 == 0 ? 0 : 1);
+                case 1: case 2: case 3: return FA_CURSED_TOME_PHASE1_OPTION + phase - 1;
+                case 4: return FA_CURSED_TOME_PHASE4_OPTION_0 + (idx1 == 0 ? 0 : 1);
+                default: return -1;
+            }
+        // The conditional events raise in silverbot on an out-of-range idx1.
+        case Event::DESIGNER_IN_SPIRE: return idx1 < 6 ? FA_DESIGNER_UPGRADE_ONE + idx1 : -1;
+        case Event::AUGMENTER: return idx1 < 3 ? FA_AUGMENTER_AGREE + idx1 : -1;
+        case Event::FALLING: return idx1 < 4 ? FA_FALLING_SKILL + idx1 : -1;
+        case Event::FORGOTTEN_ALTAR: return idx1 < 3 ? FA_FORGOTTEN_ALTAR_PRAY + idx1 : -1;
+        case Event::GOLDEN_IDOL: return idx1 < 5 ? FA_GOLDEN_IDOL_TAKE + idx1 : -1;
+        case Event::WING_STATUE: return idx1 < 3 ? FA_WING_STATUE_REMOVE_CARD + idx1 : -1;
+        case Event::LIVING_WALL: return idx1 < 3 ? FA_LIVING_WALL_CHANGE + idx1 : -1;
+        case Event::MINDBLOOM: return idx1 < 4 ? FA_MINDBLOOM_ACT1_BOSS + idx1 : -1;
+        case Event::PURIFIER: return idx1 < 2 ? FA_PURIFIER_PURIFY + idx1 : -1;
+        case Event::TRANSMORGRIFIER: return idx1 < 2 ? FA_TRANSMORGRIFIER_TRANSFORM + idx1 : -1;
+        case Event::THE_CLERIC: return idx1 < 3 ? FA_CLERIC_HEAL + idx1 : -1;
+        case Event::THE_MOAI_HEAD: return idx1 < 3 ? FA_MOAI_HEAD_GOLDEN_IDOL + idx1 : -1;
+        case Event::TOMB_OF_LORD_RED_MASK: return idx1 < 3 ? FA_TOMB_RED_MASK_DON_MASK + idx1 : -1;
+        case Event::UPGRADE_SHRINE: return idx1 < 2 ? FA_UPGRADE_SHRINE_UPGRADE + idx1 : -1;
+        case Event::VAMPIRES: return idx1 < 3 ? FA_VAMPIRES_ACCEPT + idx1 : -1;
+        case Event::WE_MEET_AGAIN: return idx1 < 4 ? FA_WE_MEET_AGAIN_POTION + idx1 : -1;
+        case Event::OMINOUS_FORGE: return idx1 < 3 ? FA_OMINOUS_FORGE_UPGRADE + idx1 : -1;
+        default: return -1;  // MATCH_AND_KEEP, BONFIRE_SPIRITS and unmapped events
+    }
+}
+
+// extract_event_info.
+FixedChoice eventFixedChoice(const GameContext &gc, int idx1, int fa) {
+    FixedChoice c;
+    c.action = fa;
+    const auto &info = gc.info;
+    const auto deckCard = [&](int idx) { return static_cast<int>(gc.deck.cards[idx].id); };
+    switch (gc.curEvent) {
+        case Event::NEOW:
+            if (idx1 < int(info.neowRewards.size())) {
+                switch (info.neowRewards[idx1].d) {
+                    case Neow::Drawback::TEN_PERCENT_HP_LOSS: c.info = 1; break;
+                    case Neow::Drawback::NO_GOLD: c.info = 2; break;
+                    case Neow::Drawback::CURSE: c.info = 3; break;
+                    case Neow::Drawback::PERCENT_DAMAGE: c.info = 4; break;
+                    case Neow::Drawback::LOSE_STARTER_RELIC: c.info = 5; break;
+                    default: break;
+                }
+            }
+            break;
+        case Event::FALLING:
+            if (fa == FA_FALLING_SKILL && info.skillCardDeckIdx != -1) c.card = deckCard(info.skillCardDeckIdx);
+            else if (fa == FA_FALLING_POWER && info.powerCardDeckIdx != -1) c.card = deckCard(info.powerCardDeckIdx);
+            else if (fa == FA_FALLING_ATTACK && info.attackCardDeckIdx != -1) c.card = deckCard(info.attackCardDeckIdx);
+            break;
+        case Event::WE_MEET_AGAIN:
+            if (info.cardIdx != -1) c.card = deckCard(info.cardIdx);
+            c.gold = info.gold != -1 ? info.gold : 0;
+            break;
+        case Event::NLOTH:
+            if (fa == FA_NLOTH_OFFER_0 && info.relicIdx0 != -1)
+                c.relic = static_cast<int>(gc.relics.relics[info.relicIdx0].id);
+            else if (fa == FA_NLOTH_OFFER_1 && info.relicIdx1 != -1)
+                c.relic = static_cast<int>(gc.relics.relics[info.relicIdx1].id);
+            break;
+        case Event::WORLD_OF_GOOP:
+            if (fa == FA_WORLD_OF_GOOP_ENTER) c.gold = info.goldLoss;
+            break;
+        case Event::FACE_TRADER:
+            if (fa == FA_FACE_TRADER_LOSE_HP) c.gold = info.hpAmount0;
+            break;
+        case Event::GOLDEN_IDOL:
+            if (fa == FA_GOLDEN_IDOL_TAKE) c.gold = info.hpAmount0;
+            else if (fa == FA_GOLDEN_IDOL_PHASE2_OPTION_0) c.gold = info.hpAmount1;
+            break;
+        case Event::WINDING_HALLS:
+            if (fa == FA_WINDING_HALLS_MADNESS) c.gold = info.hpAmount0;
+            else if (fa == FA_WINDING_HALLS_WRITHE) c.gold = info.hpAmount1;
+            break;
+        default: break;
+    }
+    return c;
+}
+
+int bossEncoding(MonsterEncounter boss) {
+    switch (boss) {
+        case MonsterEncounter::SLIME_BOSS: return 0;
+        case MonsterEncounter::HEXAGHOST: return 1;
+        case MonsterEncounter::THE_GUARDIAN: return 2;
+        case MonsterEncounter::CHAMP: return 3;
+        case MonsterEncounter::AUTOMATON: return 4;
+        case MonsterEncounter::COLLECTOR: return 5;
+        case MonsterEncounter::TIME_EATER: return 6;
+        case MonsterEncounter::DONU_AND_DECA: return 7;
+        case MonsterEncounter::AWAKENED_ONE: return 8;
+        case MonsterEncounter::THE_HEART: return 9;
+        default: throw std::runtime_error("heart1: boss outside the encoding");
+    }
+}
+
+// getNNRepresentation (bindings-util.cpp).
+void encodeObservation(const GameContext &gc, Record &r) {
+    r.fixedObservation = {std::min(gc.curHp, 200), std::min(gc.maxHp, 200), std::min(gc.gold, 1800),
+                          gc.floorNum, bossEncoding(gc.boss), gc.info.toSelectCount, gc.ascension,
+                          gc.redKey ? 1 : 0, gc.greenKey ? 1 : 0, gc.blueKey ? 1 : 0};
+    for (const auto &c : gc.deck.cards) {
+        r.deckCards.push_back(static_cast<int>(c.id));
+        r.deckUpgrades.push_back(c.getUpgraded());
+    }
+    for (const auto &relic : gc.relics.relics) {
+        r.relics.push_back(static_cast<int>(relic.id));
+        r.relicCounters.push_back(relic.data);
+    }
+    for (int i = 0; i < gc.potionCapacity; ++i) r.potions.push_back(static_cast<int>(gc.potions[i]));
+
+    const Map &map = *gc.map;
+    bool haveLastRow = false;
+    for (int y = 0; y < 15; ++y)
+        for (int x = 0; x < 7; ++x) {
+            const MapNode &node = map.getNode(x, y);
+            if (node.room == Room::NONE) continue;
+            r.mapRooms.push_back(static_cast<int>(node.room));
+            r.mapXs.push_back(x);
+            r.mapYs.push_back(y);
+            if (y == 14) haveLastRow = true;
+        }
+    if (haveLastRow) {
+        r.mapRooms.push_back(static_cast<int>(Room::BOSS));
+        r.mapXs.push_back(3);
+        r.mapYs.push_back(15);
+    }
+    for (int y = 0; y < 15; ++y)
+        for (int x = 0; x < 7; ++x) {
+            const MapNode &node = map.getNode(x, y);
+            if (node.room == Room::NONE) continue;
+            std::array<int, 3> paths{-1, -1, -1};
+            for (int k = 0; k < node.edgeCount; ++k) {
+                const int e = node.edges[k];
+                if (y == 14) paths[1] = e;
+                else if (e == x - 1) paths[0] = e;
+                else if (e == x) paths[1] = e;
+                else if (e == x + 1) paths[2] = e;
+            }
+            r.mapPathXs.push_back(paths);
+        }
+    if (haveLastRow) r.mapPathXs.push_back({-1, -1, -1});
+    r.burningEliteX = map.burningEliteX;
+    r.burningEliteY = map.burningEliteY;
+    r.mapX = gc.curMapNodeX;
+    r.mapY = gc.curMapNodeY;
+}
+
+// The pybind getters for reward and shop cards drop INVALID entries before
+// silverbot indexes them with the action's idx; keep that indexing.
+template <typename Cards>
+std::vector<Card> validCards(const Cards &cards, int n) {
+    std::vector<Card> out;
+    for (int i = 0; i < n; ++i)
+        if (cards[i].id != CardId::INVALID) out.push_back(cards[i]);
+    return out;
+}
+
+}  // namespace
+
+bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
+    const auto fail = [&](const char *why) {
+        if (reason) *reason = why;
+        return false;
+    };
+    out = Choice{};
+    Record &r = out.record;
+    std::vector<GA> cardActs, relicActs, potionActs, fixedActs, pathActs;
+    const auto actions = GA::getAllActionsInState(gc);
+    const auto fixed = [&](const FixedChoice &c, const GA &a) {
+        r.fixedActions.push_back(c);
+        fixedActs.push_back(a);
+    };
+    const auto simpleFixed = [](int fa) { FixedChoice c; c.action = fa; return c; };
+    const auto card = [&](const Card &c, const GA &a) {
+        r.offeredCards.push_back(static_cast<int>(c.id));
+        r.offeredUpgrades.push_back(c.getUpgraded());
+        cardActs.push_back(a);
+    };
+
+    switch (gc.screenState) {
+        case ScreenState::REWARDS: {
+            const auto &rc = gc.info.rewardsContainer;
+            auto all = actions;
+            // silverbot's engine also offers Singing Bowl (+2 max HP) on the
+            // last card reward; ours executes but does not enumerate it.
+            if (rc.cardRewardCount > 0 && gc.hasRelic(RelicId::SINGING_BOWL)) {
+                const GA bowl(RT::CARD, rc.cardRewardCount - 1, 5);
+                if (bowl.isValidAction(gc)) {
+                    const auto skip = std::find_if(all.begin(), all.end(), [](const GA &a) {
+                        return a.getRewardsActionType() != RT::GOLD && a.getRewardsActionType() != RT::CARD;
+                    });
+                    all.insert(skip, bowl);
+                }
+            }
+            for (const auto &a : all) {
+                switch (a.getRewardsActionType()) {
+                    case RT::CARD:
+                        if (a.getIdx2() == 5) fixed(simpleFixed(FA_SINGING_BOWL), a);
+                        else {
+                            const auto cards = validCards(rc.cardRewards[a.getIdx1()],
+                                                          int(rc.cardRewards[a.getIdx1()].size()));
+                            card(cards.at(a.getIdx2()), a);
+                        }
+                        break;
+                    case RT::POTION:
+                        r.offeredPotions.push_back(static_cast<int>(rc.potions[a.getIdx1()]));
+                        potionActs.push_back(a);
+                        break;
+                    case RT::RELIC:
+                        r.offeredRelics.push_back(static_cast<int>(rc.relics[a.getIdx1()]));
+                        relicActs.push_back(a);
+                        break;
+                    case RT::SKIP: fixed(simpleFixed(FA_SKIP), a); break;
+                    case RT::KEY: fixed(simpleFixed(FA_TAKE_KEY), a); break;
+                    default: break;  // gold is not in the choice space
+                }
+            }
+            break;
+        }
+        case ScreenState::TREASURE_ROOM:
+            for (const auto &a : actions) fixed(simpleFixed(a.getIdx1() == 0 ? FA_OPEN_CHEST : FA_SKIP), a);
+            break;
+        case ScreenState::SHOP_ROOM: {
+            const auto &shop = gc.info.shop;
+            const auto shopCards = validCards(shop.cards, 7);
+            for (const auto &a : actions) {
+                switch (a.getRewardsActionType()) {
+                    case RT::CARD: card(shopCards.at(a.getIdx1()), a); break;
+                    case RT::RELIC:
+                        r.offeredRelics.push_back(static_cast<int>(shop.relics[a.getIdx1()]));
+                        relicActs.push_back(a);
+                        break;
+                    case RT::POTION:
+                        r.offeredPotions.push_back(static_cast<int>(shop.potions[a.getIdx1()]));
+                        potionActs.push_back(a);
+                        break;
+                    case RT::SKIP: fixed(simpleFixed(FA_SKIP), a); break;
+                    case RT::CARD_REMOVE: fixed(simpleFixed(FA_REMOVE), a); break;
+                    default: break;
+                }
+            }
+            break;
+        }
+        case ScreenState::BOSS_RELIC_REWARDS:
+            // Ours: idx 0..2 take that relic, 3 skips. silverbot: RELIC i / SKIP.
+            for (const auto &a : actions) {
+                if (a.getIdx1() < 3) {
+                    r.offeredRelics.push_back(static_cast<int>(gc.info.bossRelics[a.getIdx1()]));
+                    relicActs.push_back(a);
+                } else {
+                    fixed(simpleFixed(FA_SKIP), a);
+                }
+            }
+            break;
+        case ScreenState::REST_ROOM:
+            for (const auto &a : actions) {
+                static constexpr int restFa[] = {FA_REST, FA_SMITH, FA_RECALL, FA_LIFT, FA_TOKE, FA_DIG};
+                fixed(simpleFixed(a.getIdx1() >= 0 && a.getIdx1() < 6 ? restFa[a.getIdx1()] : FA_SKIP), a);
+            }
+            break;
+        case ScreenState::CARD_SELECT:
+            for (const auto &a : actions)
+                if (a.getIdx1() < int(gc.info.toSelectCards.size()))
+                    card(gc.info.toSelectCards[a.getIdx1()].card, a);
+            break;
+        case ScreenState::MAP_SCREEN:
+            for (const auto &a : actions) {
+                r.paths.push_back(a.getIdx1());
+                pathActs.push_back(a);
+            }
+            break;
+        case ScreenState::EVENT_SCREEN:
+            if (gc.curEvent == Event::MATCH_AND_KEEP) return fail("match_and_keep");
+            for (const auto &a : actions) {
+                const int fa = eventFixedAction(gc, a.getIdx1());
+                if (fa < 0) return fail("unmapped_event");
+                fixed(eventFixedChoice(gc, a.getIdx1(), fa), a);
+            }
+            break;
+        default:
+            return fail("unsupported_screen");
+    }
+
+    encodeObservation(gc, r);
+    r.screenState = static_cast<int>(gc.screenState);
+    r.selectScreenType = static_cast<int>(gc.info.selectScreenType);
+    for (auto *v : {&cardActs, &relicActs, &potionActs, &fixedActs, &pathActs})
+        out.actions.insert(out.actions.end(), v->begin(), v->end());
+    return true;
+}
+
+int takeFreeRewards(GameContext &gc) {
+    int taken = 0;
+    while (gc.outcome == GameOutcome::UNDECIDED && gc.screenState == ScreenState::REWARDS) {
+        const auto actions = GA::getAllActionsInState(gc);
+        const bool hasKey = std::any_of(actions.begin(), actions.end(),
+                                        [](const GA &a) { return a.getRewardsActionType() == RT::KEY; });
+        const auto it = std::find_if(actions.begin(), actions.end(), [&](const GA &a) {
+            return a.getRewardsActionType() == RT::GOLD || (a.getRewardsActionType() == RT::RELIC && !hasKey);
+        });
+        if (it == actions.end()) break;
+        it->execute(gc);
+        ++taken;
+    }
+    return taken;
+}
+
+// ---------------------------------------------------------------- JSON
+
+nlohmann::json recordToJson(const Record &r) {
+    nlohmann::json fixed = nlohmann::json::array();
+    for (const auto &f : r.fixedActions)
+        fixed.push_back({{"action", f.action}, {"gold", f.gold}, {"card", f.card},
+                         {"relic", f.relic}, {"info", f.info}});
+    nlohmann::json pathXs = nlohmann::json::array();
+    for (const auto &p : r.mapPathXs) pathXs.push_back({p[0], p[1], p[2]});
+    return {{"obs.fixed_observation", r.fixedObservation},
+            {"obs.deck.cards", r.deckCards}, {"obs.deck.upgrades", r.deckUpgrades},
+            {"obs.relics.relics", r.relics}, {"obs.relics.relic_counters", r.relicCounters},
+            {"obs.potions", r.potions},
+            {"obs.map.xs", r.mapXs}, {"obs.map.ys", r.mapYs}, {"obs.map.roomTypes", r.mapRooms},
+            {"obs.map.pathXs", pathXs},
+            {"obs.map.burningEliteX", r.burningEliteX}, {"obs.map.burningEliteY", r.burningEliteY},
+            {"obs.mapX", r.mapX}, {"obs.mapY", r.mapY},
+            {"cards_offered.cards", r.offeredCards}, {"cards_offered.upgrades", r.offeredUpgrades},
+            {"relics_offered", r.offeredRelics}, {"potions_offered", r.offeredPotions},
+            {"fixed_actions", fixed}, {"paths_offered", r.paths},
+            {"screen_state", r.screenState}, {"select_screen_type", r.selectScreenType}};
+}
+
+Record recordFromJson(const nlohmann::json &j) {
+    Record r;
+    const auto ints = [&](const char *k) { return j.at(k).get<std::vector<int>>(); };
+    r.fixedObservation = ints("obs.fixed_observation");
+    r.deckCards = ints("obs.deck.cards");
+    r.deckUpgrades = ints("obs.deck.upgrades");
+    r.relics = ints("obs.relics.relics");
+    if (j.contains("obs.relics.relic_counters")) r.relicCounters = ints("obs.relics.relic_counters");
+    r.potions = ints("obs.potions");
+    r.mapXs = ints("obs.map.xs");
+    r.mapYs = ints("obs.map.ys");
+    r.mapRooms = ints("obs.map.roomTypes");
+    for (const auto &p : j.at("obs.map.pathXs")) r.mapPathXs.push_back({p.at(0).get<int>(), p.at(1).get<int>(), p.at(2).get<int>()});
+    r.burningEliteX = j.value("obs.map.burningEliteX", -1);
+    r.burningEliteY = j.value("obs.map.burningEliteY", -1);
+    r.mapX = j.at("obs.mapX").get<int>();
+    r.mapY = j.at("obs.mapY").get<int>();
+    r.offeredCards = ints("cards_offered.cards");
+    r.offeredUpgrades = ints("cards_offered.upgrades");
+    r.offeredRelics = ints("relics_offered");
+    r.offeredPotions = ints("potions_offered");
+    for (const auto &f : j.at("fixed_actions")) {
+        FixedChoice c;
+        c.action = f.at("action").get<int>();
+        c.gold = f.value("gold", 0);
+        c.card = f.value("card", kCardInvalid);
+        c.relic = f.value("relic", kRelicInvalid);
+        c.info = f.value("info", 0);
+        r.fixedActions.push_back(c);
+    }
+    r.paths = ints("paths_offered");
+    r.screenState = j.at("screen_state").get<int>();
+    r.selectScreenType = j.at("select_screen_type").get<int>();
+    return r;
+}
+
+// ---------------------------------------------------------------- network
+
+namespace {
+
+struct Tensor { std::vector<int> shape; std::vector<float> data; };
+
+float dot(const float *a, const float *b, int n) {
+    float s[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    int i = 0;
+    for (; i + 8 <= n; i += 8)
+        for (int k = 0; k < 8; ++k) s[k] += a[i + k] * b[i + k];
+    float t = ((s[0] + s[1]) + (s[2] + s[3])) + ((s[4] + s[5]) + (s[6] + s[7]));
+    for (; i < n; ++i) t += a[i] * b[i];
+    return t;
+}
+
+// y[t] (+)= W x[t] + b for n tokens.
+void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumulate = false) {
+    for (int t = 0; t < n; ++t) {
+        const float *xt = x + std::size_t(t) * l.in;
+        float *yt = y + std::size_t(t) * l.out;
+        for (int o = 0; o < l.out; ++o) {
+            const float v = dot(l.w.data() + std::size_t(o) * l.in, xt, l.in) + (l.b.empty() ? 0.f : l.b[o]);
+            yt[o] = accumulate ? yt[o] + v : v;
+        }
+    }
+}
+
+void rmsNorm(const float *x, const std::vector<float> &w, float *y) {
+    float ss = 0;
+    for (int i = 0; i < kDim; ++i) ss += x[i] * x[i];
+    const float inv = 1.0f / std::sqrt(ss / kDim + kNormEps);
+    for (int i = 0; i < kDim; ++i) y[i] = x[i] * inv * w[i];
+}
+
+void addEmbedding(const Net::Embedding &e, int idx, float *out) {
+    if (idx < 0 || idx >= e.rows) throw std::runtime_error("heart1: embedding index out of range");
+    const float *row = e.w.data() + std::size_t(idx) * kDim;
+    for (int i = 0; i < kDim; ++i) out[i] += row[i];
+}
+
+// FixedVecEmbedding: sinusoidal features then a projection.
+void addFixedVec(const Net::FixedVec &f, const float *x, float *out) {
+    std::vector<float> s(std::size_t(f.features) * kDim);
+    const int half = kDim / 2;
+    for (int k = 0; k < f.features; ++k)
+        for (int j = 0; j < half; ++j) {
+            const float a = x[k] * f.invFreq[j];
+            s[std::size_t(k) * kDim + j] = std::sin(a);
+            s[std::size_t(k) * kDim + half + j] = std::cos(a);
+        }
+    linear(f.proj, s.data(), 1, out, /*accumulate=*/true);
+}
+
+struct DagFeatures {
+    std::vector<int> minE, maxE, dR;
+    std::vector<bool> reach;
+    std::vector<int> destRooms;
+    std::vector<std::array<int, 3>> optCone;
+    std::vector<int> optBurn;
+};
+
+// map_dag_features.
+DagFeatures mapDagFeatures(const Record &r) {
+    const int n = int(r.mapXs.size());
+    std::map<std::pair<int, int>, int> idx;
+    for (int j = 0; j < n; ++j) idx.emplace(std::make_pair(r.mapXs[j], r.mapYs[j]), j);
+    const auto find = [&](int x, int y) {
+        const auto it = idx.find({x, y});
+        return it == idx.end() ? -1 : it->second;
+    };
+    std::vector<std::vector<int>> succ(n);
+    for (int j = 0; j < n; ++j)
+        for (int e : r.mapPathXs[j]) {
+            const int k = find(e, r.mapYs[j] + 1);
+            if (e >= 0 && k >= 0) succ[j].push_back(k);
+        }
+    const int ELITE = static_cast<int>(Room::ELITE), REST = static_cast<int>(Room::REST);
+    DagFeatures d;
+    d.minE.assign(n, 0); d.maxE.assign(n, 0); d.dR.assign(n, kMapAggCap);
+    std::vector<int> order(n);
+    for (int j = 0; j < n; ++j) order[j] = j;
+    std::stable_sort(order.begin(), order.end(), [&](int a, int b) { return -r.mapYs[a] < -r.mapYs[b]; });
+    for (int j : order) {
+        const int e = r.mapRooms[j] == ELITE ? 1 : 0;
+        int mn = 0, mx = 0, dr = std::numeric_limits<int>::max();
+        if (!succ[j].empty()) {
+            mn = std::numeric_limits<int>::max(); mx = std::numeric_limits<int>::min();
+            for (int k : succ[j]) { mn = std::min(mn, d.minE[k]); mx = std::max(mx, d.maxE[k]); dr = std::min(dr, d.dR[k]); }
+        }
+        d.minE[j] = e + mn;
+        d.maxE[j] = e + mx;
+        if (r.mapRooms[j] == REST) d.dR[j] = 0;
+        else if (!succ[j].empty()) d.dR[j] = std::min(kMapAggCap, 1 + dr);
+    }
+    std::vector<bool> reachesBurn(n, false);
+    const int bn = r.burningEliteX >= 0 ? find(r.burningEliteX, r.burningEliteY) : -1;
+    if (bn >= 0)
+        for (int j : order) {
+            bool any = j == bn;
+            for (int k : succ[j]) any = any || reachesBurn[k];
+            reachesBurn[j] = any;
+        }
+    const int cur = find(r.mapX, r.mapY);
+    std::vector<int> frontier;
+    if (cur >= 0) frontier = succ[cur];
+    else for (int j = 0; j < n; ++j) if (r.mapYs[j] == 0) frontier.push_back(j);
+    for (int px : r.paths) {
+        const int k = find(px, r.mapY + 1);
+        if (k >= 0 && std::find(frontier.begin(), frontier.end(), k) == frontier.end()) frontier.push_back(k);
+    }
+    d.reach.assign(n, false);
+    std::vector<int> stack = frontier;
+    while (!stack.empty()) {
+        const int j = stack.back();
+        stack.pop_back();
+        if (!d.reach[j]) {
+            d.reach[j] = true;
+            stack.insert(stack.end(), succ[j].begin(), succ[j].end());
+        }
+    }
+    for (int px : r.paths) {
+        const int k = find(px, r.mapY + 1);
+        d.destRooms.push_back(k >= 0 ? r.mapRooms[k] : 0);
+        if (k >= 0) {
+            d.optCone.push_back({d.minE[k], d.maxE[k], d.dR[k]});
+            d.optBurn.push_back(reachesBurn[k] ? 1 : 0);
+        } else {
+            d.optCone.push_back({0, 0, kMapAggCap});
+            d.optBurn.push_back(0);
+        }
+    }
+    return d;
+}
+
+}  // namespace
+
+bool Net::load(const std::string &file, std::string *error) {
+    const auto fail = [&](const std::string &why) {
+        if (error) *error = why;
+        return false;
+    };
+    std::ifstream in(file, std::ios::binary);
+    if (!in) return fail("cannot open " + file);
+    char magic[8];
+    in.read(magic, 8);
+    if (!in || std::memcmp(magic, "HEART1W\x01", 8) != 0) return fail("bad magic in " + file);
+    std::uint32_t count = 0;
+    in.read(reinterpret_cast<char *>(&count), 4);
+    std::map<std::string, Tensor> tensors;
+    for (std::uint32_t i = 0; in && i < count; ++i) {
+        std::uint32_t len = 0, ndim = 0;
+        in.read(reinterpret_cast<char *>(&len), 4);
+        std::string name(len, '\0');
+        in.read(name.data(), len);
+        in.read(reinterpret_cast<char *>(&ndim), 4);
+        Tensor t;
+        std::size_t total = 1;
+        for (std::uint32_t d = 0; d < ndim; ++d) {
+            std::uint32_t dim = 0;
+            in.read(reinterpret_cast<char *>(&dim), 4);
+            t.shape.push_back(int(dim));
+            total *= dim;
+        }
+        t.data.resize(total);
+        in.read(reinterpret_cast<char *>(t.data.data()), std::streamsize(total * sizeof(float)));
+        tensors.emplace(std::move(name), std::move(t));
+    }
+    if (!in) return fail("truncated weights file " + file);
+
+    std::string missing;
+    const auto take = [&](const std::string &name, std::vector<int> shape) -> std::vector<float> {
+        const auto it = tensors.find(name);
+        if (it == tensors.end()) { missing += " " + name; return {}; }
+        if (!shape.empty() && shape[0] < 0) shape[0] = it->second.shape.empty() ? 0 : it->second.shape[0];
+        if (it->second.shape != shape) { missing += " shape:" + name; return {}; }
+        return it->second.data;
+    };
+    const auto embedding = [&](const std::string &name) {
+        Embedding e;
+        e.w = take(name, {-1, kDim});
+        e.rows = int(e.w.size() / kDim);
+        return e;
+    };
+    const auto lin = [&](const std::string &prefix, int out, int inDim, bool bias) {
+        Linear l;
+        l.out = out; l.in = inDim;
+        l.w = take(prefix + ".weight", {out, inDim});
+        if (bias) l.b = take(prefix + ".bias", {out});
+        return l;
+    };
+    const auto fixedVec = [&](const std::string &prefix, int features) {
+        FixedVec f;
+        f.features = features;
+        f.invFreq = take(prefix + ".num_embed.inv_freq", {kDim / 2});
+        f.proj = lin(prefix + ".proj", kDim, features * kDim, true);
+        return f;
+    };
+    const std::string O = "obs_embed.component_embeddings.";
+    const std::string F = O + "fixed_obs.scalar_embedding.component_embeddings.";
+    const std::string M = O + "map_nodes.element_embedding.component_embeddings.";
+    const std::string C = "choice_embed.component_embeddings.";
+    const std::string FX = C + "fixed.element_embedding.component_embeddings.";
+    const std::string PA = C + "paths.element_embedding.component_embeddings.";
+    card_ = embedding(O + "deck.element_embedding.component_embeddings.0.embedding.weight");
+    upgrade_ = embedding(O + "deck.element_embedding.component_embeddings.1.weight");
+    relic_ = embedding(O + "relics.element_embedding.embedding.weight");
+    potion_ = embedding(O + "potions.element_embedding.embedding.weight");
+    fixedObs_ = fixedVec(F + "fixed_observation", 5);
+    boss_ = embedding(F + "boss.weight");
+    ascension_ = embedding(F + "ascension.weight");
+    keyRuby_ = embedding(F + "key_ruby.weight");
+    keyEmerald_ = embedding(F + "key_emerald.weight");
+    keySapphire_ = embedding(F + "key_sapphire.weight");
+    screen_ = embedding(F + "screen_state.embedding.weight");
+    mapRoom_ = embedding(M + "room.embedding.weight");
+    isCurrent_ = embedding(M + "is_current.embedding.weight");
+    pos_ = fixedVec(M + "pos", 2);
+    pathXs_ = fixedVec(M + "path_xs", 3);
+    rel_ = fixedVec(M + "rel", 2);
+    reachable_ = embedding(M + "reachable.embedding.weight");
+    agg_ = fixedVec(M + "agg", 3);
+    burning_ = embedding(M + "burning.weight");
+    obsPosition_ = embedding("obs_embed.position_embedding.weight");
+    // The choice-side card/upgrade/relic/potion tables are the same modules
+    // as the observation's (silverbot EmbedCache); the export checks that.
+    selectScreen_ = embedding(C + "cards.element_embedding.component_embeddings.2.embedding.weight");
+    fixedAction_ = embedding(FX + "action.embedding.weight");
+    gold_ = fixedVec(FX + "gold", 1);
+    info_ = embedding(FX + "info.embedding.weight");
+    pathX_ = fixedVec(PA + "x", 1);
+    pathRoom_ = embedding(PA + "room.embedding.weight");
+    cone_ = fixedVec(PA + "cone", 3);
+    reachesBurn_ = embedding(PA + "reaches_burn.weight");
+    choicePosition_ = embedding("choice_embed.position_embedding.weight");
+    blocks_.assign(kLayers, {});
+    for (int i = 0; i < kLayers; ++i) {
+        const std::string L = "layers." + std::to_string(i) + ".";
+        auto &b = blocks_[i];
+        b.norm1 = take(L + "norm1.w", {kDim});
+        b.norm2 = take(L + "norm2.w", {kDim});
+        b.inProj.out = 3 * kDim; b.inProj.in = kDim;
+        b.inProj.w = take(L + "attn.in_proj_weight", {3 * kDim, kDim});
+        b.inProj.b = take(L + "attn.in_proj_bias", {3 * kDim});
+        b.outProj = lin(L + "attn.out_proj", kDim, kDim, true);
+        b.w1 = lin(L + "mlp.w1", kHidden, kDim, true);
+        b.w2 = lin(L + "mlp.w2", kDim, kHidden, false);
+        b.v = lin(L + "mlp.v", kHidden, kDim, false);
+    }
+    finalNorm_ = take("norm.w", {kDim});
+    valueNorm_ = take("value_head_norm.w", {kDim});
+    choiceLogits_ = lin("choice_logits", 1, kDim, true);
+    valueHead_ = lin("value_head", 1, kDim, true);
+    if (!missing.empty()) return fail("missing or misshaped tensors:" + missing);
+    constexpr int kCardCount = int(sizeof(cardStringIds) / sizeof(cardStringIds[0]));
+    if (card_.rows != kCardCount || relic_.rows != kRelicInvalid + 1
+        || screen_.rows != static_cast<int>(ScreenState::BATTLE) + 1)
+        return fail("enum sizes differ from this engine");
+    path_ = file;
+    return true;
+}
+
+Output Net::forward(const Record &r) const {
+    const DagFeatures dag = mapDagFeatures(r);
+    const int nDeck = int(r.deckCards.size()), nRelic = int(r.relics.size()), nPot = int(r.potions.size());
+    const int nMap = int(r.mapXs.size());
+    const int nObs = nDeck + nRelic + nPot + 1 + nMap;
+    const int nChoice = r.choiceCount();
+    const int n = nObs + nChoice;
+    if (nChoice == 0) throw std::runtime_error("heart1: no choices to score");
+    std::vector<float> x(std::size_t(n) * kDim, 0.f);
+    int t = 0;
+    const auto row = [&](int i) { return x.data() + std::size_t(i) * kDim; };
+    const auto position = [&](const Embedding &e, int key) { addEmbedding(e, key, row(t)); ++t; };
+
+    for (int i = 0; i < nDeck; ++i) {
+        addEmbedding(card_, r.deckCards[i], row(t));
+        addEmbedding(upgrade_, r.deckUpgrades[i], row(t));
+        position(obsPosition_, 0);
+    }
+    for (int i = 0; i < nRelic; ++i) { addEmbedding(relic_, r.relics[i], row(t)); position(obsPosition_, 1); }
+    for (int i = 0; i < nPot; ++i) { addEmbedding(potion_, r.potions[i], row(t)); position(obsPosition_, 2); }
+    {
+        const auto &fo = r.fixedObservation;
+        const float scalars[5] = {float(fo[0]), float(fo[1]), float(fo[2]), float(fo[3]), float(fo[5])};
+        addFixedVec(fixedObs_, scalars, row(t));
+        addEmbedding(boss_, fo[4], row(t));
+        addEmbedding(ascension_, fo[6], row(t));
+        addEmbedding(keyRuby_, fo[7], row(t));
+        addEmbedding(keyEmerald_, fo[8], row(t));
+        addEmbedding(keySapphire_, fo[9], row(t));
+        addEmbedding(screen_, r.screenState, row(t));
+        position(obsPosition_, 3);
+    }
+    for (int j = 0; j < nMap; ++j) {
+        float *out = row(t);
+        addEmbedding(mapRoom_, r.mapRooms[j], out);
+        addEmbedding(isCurrent_, r.mapXs[j] == r.mapX && r.mapYs[j] == r.mapY ? 1 : 0, out);
+        const float pos[2] = {float(r.mapXs[j]), float(r.mapYs[j])};
+        addFixedVec(pos_, pos, out);
+        const float px[3] = {float(r.mapPathXs[j][0]), float(r.mapPathXs[j][1]), float(r.mapPathXs[j][2])};
+        addFixedVec(pathXs_, px, out);
+        const float rel[2] = {float(r.mapXs[j] - r.mapX), float(r.mapYs[j] - r.mapY)};
+        addFixedVec(rel_, rel, out);
+        addEmbedding(reachable_, dag.reach[j] ? 1 : 0, out);
+        // collate_fn divides in Python floats, then stores float32.
+        const float agg[3] = {float(double(dag.minE[j]) / kMapAggCap), float(double(dag.maxE[j]) / kMapAggCap),
+                              float(double(dag.dR[j]) / kMapAggCap)};
+        addFixedVec(agg_, agg, out);
+        const bool burning = r.burningEliteX >= 0 && r.mapXs[j] == r.burningEliteX && r.mapYs[j] == r.burningEliteY;
+        addEmbedding(burning_, burning ? 1 : 0, out);
+        position(obsPosition_, 4);
+    }
+    for (std::size_t i = 0; i < r.offeredCards.size(); ++i) {
+        addEmbedding(card_, r.offeredCards[i], row(t));
+        addEmbedding(upgrade_, r.offeredUpgrades[i], row(t));
+        addEmbedding(selectScreen_, r.selectScreenType, row(t));
+        position(choicePosition_, 0);
+    }
+    for (int id : r.offeredRelics) { addEmbedding(relic_, id, row(t)); position(choicePosition_, 1); }
+    for (int id : r.offeredPotions) { addEmbedding(potion_, id, row(t)); position(choicePosition_, 2); }
+    for (const auto &f : r.fixedActions) {
+        float *out = row(t);
+        addEmbedding(fixedAction_, f.action, out);
+        const float gold = float(f.gold);
+        addFixedVec(gold_, &gold, out);
+        addEmbedding(card_, f.card, out);
+        addEmbedding(relic_, f.relic, out);
+        addEmbedding(info_, f.info, out);
+        position(choicePosition_, 3);
+    }
+    for (std::size_t i = 0; i < r.paths.size(); ++i) {
+        float *out = row(t);
+        const float px = float(r.paths[i]);
+        addFixedVec(pathX_, &px, out);
+        addEmbedding(pathRoom_, dag.destRooms[i], out);
+        // collate_fn divides the float32 tensor by MAP_AGG_CAP.
+        const float cone[3] = {float(dag.optCone[i][0]) / float(kMapAggCap), float(dag.optCone[i][1]) / float(kMapAggCap),
+                               float(dag.optCone[i][2]) / float(kMapAggCap)};
+        addFixedVec(cone_, cone, out);
+        addEmbedding(reachesBurn_, dag.optBurn[i], out);
+        position(choicePosition_, 4);
+    }
+
+    // Padding tokens are key-masked in silverbot, so attending over the valid
+    // tokens alone gives the same outputs at every valid position.
+    std::vector<float> xn(std::size_t(n) * kDim), qkv(std::size_t(n) * 3 * kDim), att(std::size_t(n) * kDim);
+    std::vector<float> h1(std::size_t(n) * kHidden), h2(std::size_t(n) * kHidden), scores(n);
+    const float scale = 1.0f / std::sqrt(float(kHeadDim));
+    for (const auto &b : blocks_) {
+        for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm1, xn.data() + std::size_t(i) * kDim);
+        linear(b.inProj, xn.data(), n, qkv.data());
+        for (int hd = 0; hd < kHeads; ++hd) {
+            for (int i = 0; i < n; ++i) {
+                const float *q = qkv.data() + std::size_t(i) * 3 * kDim + hd * kHeadDim;
+                float mx = -std::numeric_limits<float>::infinity();
+                for (int j = 0; j < n; ++j) {
+                    const float *k = qkv.data() + std::size_t(j) * 3 * kDim + kDim + hd * kHeadDim;
+                    scores[j] = dot(q, k, kHeadDim) * scale;
+                    mx = std::max(mx, scores[j]);
+                }
+                float sum = 0;
+                for (int j = 0; j < n; ++j) { scores[j] = std::exp(scores[j] - mx); sum += scores[j]; }
+                float *o = att.data() + std::size_t(i) * kDim + hd * kHeadDim;
+                std::fill(o, o + kHeadDim, 0.f);
+                for (int j = 0; j < n; ++j) {
+                    const float p = scores[j] / sum;
+                    const float *v = qkv.data() + std::size_t(j) * 3 * kDim + 2 * kDim + hd * kHeadDim;
+                    for (int d = 0; d < kHeadDim; ++d) o[d] += p * v[d];
+                }
+            }
+        }
+        linear(b.outProj, att.data(), n, x.data(), /*accumulate=*/true);
+        for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm2, xn.data() + std::size_t(i) * kDim);
+        linear(b.w1, xn.data(), n, h1.data());
+        linear(b.v, xn.data(), n, h2.data());
+        for (std::size_t i = 0; i < h1.size(); ++i) {
+            const float a = h1[i];
+            h1[i] = a / (1.0f + std::exp(-a)) * h2[i];
+        }
+        linear(b.w2, h1.data(), n, x.data(), /*accumulate=*/true);
+    }
+    for (int i = 0; i < n; ++i) rmsNorm(row(i), finalNorm_, xn.data() + std::size_t(i) * kDim);
+
+    Output out;
+    out.logits.resize(nChoice);
+    for (int c = 0; c < nChoice; ++c)
+        out.logits[c] = dot(choiceLogits_.w.data(), xn.data() + std::size_t(nObs + c) * kDim, kDim) + choiceLogits_.b[0];
+    std::vector<float> pooled(kDim, 0.f), vn(kDim);
+    for (int i = 0; i < n; ++i) {
+        rmsNorm(xn.data() + std::size_t(i) * kDim, valueNorm_, vn.data());
+        for (int d = 0; d < kDim; ++d) pooled[d] += vn[d];
+    }
+    for (int d = 0; d < kDim; ++d) pooled[d] /= float(n);
+    out.value = dot(valueHead_.w.data(), pooled.data(), kDim) + valueHead_.b[0];
+    return out;
+}
+
+// ---------------------------------------------------------------- policy
+
+namespace {
+std::once_flag g_loadOnce;
+Net g_net;
+std::mutex g_traceMutex;
+
+const char *weightsPath() {
+    const char *p = std::getenv("STS_OOC_HEART1");
+    return p && *p ? p : nullptr;
+}
+}  // namespace
+
+bool enabled() { return weightsPath() != nullptr; }
+
+const Net &net() {
+    std::call_once(g_loadOnce, [] {
+        std::string error;
+        if (!g_net.load(weightsPath(), &error))
+            throw std::runtime_error("STS_OOC_HEART1: " + error);
+        std::fprintf(stderr, "[heart1] loaded %s\n", g_net.path().c_str());
+    });
+    return g_net;
+}
+
+bool policyStep(GameContext &gc) {
+    if (!enabled()) return false;
+    const Net &model = net();
+    const int freeTaken = takeFreeRewards(gc);
+    if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE) return freeTaken > 0;
+    Choice choice;
+    if (!buildChoice(gc, choice)) return freeTaken > 0;
+    const int nChoice = choice.record.choiceCount();
+    if (nChoice == 0) return freeTaken > 0;
+    int chosen = 0;
+    Output scored;
+    if (nChoice > 1) {
+        scored = model.forward(choice.record);
+        // Temperature 0: np.argmax, first maximum in token order.
+        chosen = int(std::max_element(scored.logits.begin(), scored.logits.end()) - scored.logits.begin());
+    }
+    if (const char *trace = std::getenv("STS_OOC_HEART1_TRACE"); trace && *trace && nChoice > 1) {
+        nlohmann::json line = {{"seed", std::to_string(gc.seed)}, {"act", gc.act}, {"floor", gc.floorNum},
+                               {"record", recordToJson(choice.record)}, {"logits", scored.logits},
+                               {"value", scored.value}, {"chosen", chosen},
+                               {"bits", choice.actions[chosen].bits}};
+        std::lock_guard<std::mutex> lock(g_traceMutex);
+        std::ofstream(trace, std::ios::app) << line.dump() << '\n';
+    }
+    choice.actions[chosen].execute(gc);
+    return true;
+}
+
+namespace {
+nlohmann::json scoreJson(const Net &model, const Record &record) {
+    const Output out = model.forward(record);
+    const int best = int(std::max_element(out.logits.begin(), out.logits.end()) - out.logits.begin());
+    return {{"logits", out.logits}, {"value", out.value}, {"argmax", best}};
+}
+
+Net loadOrThrow(const std::string &path) {
+    Net model;
+    std::string error;
+    if (!model.load(path, &error)) throw std::runtime_error("heart1: " + error);
+    return model;
+}
+}  // namespace
+
+int scoreCommand(int argc, char **argv) {
+    if (argc != 5) {
+        std::fprintf(stderr, "usage: one_combat heart1score <weights.bin> <records.jsonl> <out.jsonl>\n");
+        return 2;
+    }
+    const Net model = loadOrThrow(argv[2]);
+    std::ifstream in(argv[3]);
+    std::ofstream out(argv[4]);
+    if (!in || !out) throw std::runtime_error("heart1score: cannot open input or output");
+    std::string line;
+    int n = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const auto j = nlohmann::json::parse(line);
+        out << scoreJson(model, recordFromJson(j.contains("record") ? j.at("record") : j)).dump() << '\n';
+        ++n;
+    }
+    std::printf("heart1score records=%d -> %s\n", n, argv[4]);
+    return 0;
+}
+
+int replayCommand(int argc, char **argv) {
+    if (argc != 7) {
+        std::fprintf(stderr, "usage: one_combat heart1replay <weights.bin> <asc> <seed> <plan.json> <out.jsonl>\n");
+        return 2;
+    }
+    const Net model = loadOrThrow(argv[2]);
+    const int asc = std::stoi(argv[3]);
+    const std::uint64_t seed = std::stoull(argv[4]);
+    std::ifstream planIn(argv[5]);
+    if (!planIn) throw std::runtime_error("heart1replay: cannot open plan");
+    const auto plan = nlohmann::json::parse(planIn);
+    std::ofstream out(argv[6]);
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    int step = 0;
+    for (const auto &s : plan) {
+        nlohmann::json row = {{"step", step}};
+        // silverbot keeps a reward screen open with only "proceed" left after
+        // a Neow card or potion pick; ours has already left it. Skip that step.
+        if (s.value("proceed_only", false) && gc.screenState != ScreenState::REWARDS) {
+            row["skipped"] = "proceed_absent";
+            out << row.dump() << '\n';
+            ++step;
+            continue;
+        }
+        if (s.value("record", false)) {
+            Choice choice;
+            std::string reason;
+            if (!buildChoice(gc, choice, &reason)) {
+                row["unsupported"] = reason;
+            } else {
+                row["record"] = recordToJson(choice.record);
+                std::vector<std::uint32_t> bits;
+                for (const auto &a : choice.actions) bits.push_back(a.bits);
+                row["bits"] = bits;
+                if (choice.record.choiceCount() > 1) row.update(scoreJson(model, choice.record));
+            }
+            out << row.dump() << '\n';
+        }
+        const GA action(s.at("bits").get<std::uint32_t>());
+        if (!action.isValidAction(gc)) {
+            out << nlohmann::json({{"step", step}, {"invalid_action", action.bits}}).dump() << '\n';
+            return 1;
+        }
+        action.execute(gc);
+        ++step;
+    }
+    return 0;
+}
+
+}  // namespace one_combat::heart1

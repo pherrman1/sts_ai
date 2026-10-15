@@ -1,0 +1,106 @@
+{
+  "source_sha": "631f7f92cf45fe68c2805e70b53377c020510a05",
+  "binary_sha256": "0d78692026608575721d1e47bc78f4c1eed150d41c7a4b6edd5387c2e007ca48",
+  "protocol_sha256": "8c703eeaca9bd35d1c69b2cd4bad4096732e0ad6fd86f883dcc42fc83c1ddcf7",
+  "target_sha256": "a7de83029458bd7cf4a4a482c9cdd61751b3bd6814a0b4c550d2a14bccee2072",
+  "source_seed": 610081015,
+  "decision_idx": 93,
+  "public_state_sha256": "11a1ea6ea301c078ce522c00acd92b8f4cac9e39038d48677ea498117bc7f332",
+  "baseline_option_key": "ooc:v1:effect=17:source=1:none",
+  "selected_option_key": "ooc:v1:effect=0:source=0:card=234:misc=0:upgraded=0:bottle=-1:occurrence=0",
+  "selection_k": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "selection_scores": [
+    {
+      "option_key": "ooc:v1:effect=0:source=0:card=112:misc=0:upgraded=0:bottle=-1:occurrence=0",
+      "wins": 11,
+      "n": 16,
+      "mean_final_won": 0.6875
+    },
+    {
+      "option_key": "ooc:v1:effect=0:source=0:card=187:misc=0:upgraded=0:bottle=-1:occurrence=0",
+      "wins": 11,
+      "n": 16,
+      "mean_final_won": 0.6875
+    },
+    {
+      "option_key": "ooc:v1:effect=0:source=0:card=234:misc=0:upgraded=0:bottle=-1:occurrence=0",
+      "wins": 12,
+      "n": 16,
+      "mean_final_won": 0.75
+    },
+    {
+      "option_key": "ooc:v1:effect=17:source=1:none",
+      "wins": 10,
+      "n": 16,
+      "mean_final_won": 0.625
+    }
+  ],
+  "selection_rule": "highest selection mean finalWon, baseline wins any tie then semantic-key order; freeze winner before evaluating",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.labels.csv",
+      "sha256": "cfd18eb9845583cca45d5527fd63354255e28a9983f274297fec503de8b5ee29"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.log",
+      "sha256": "dbd042a9df6bbde208e5077075bb60c3910b6d58a208bb1cb68bd402fca10d3e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.manifest.json",
+      "sha256": "2355f9320587c3225e632c2b0ce0d0d66b2216610fbc73cc2f486a9c0b6f566f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.map.csv",
+      "sha256": "abcd49683850714956391609228ee55e3034c21e3a51d91b8437b2d0a6e34716"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.options.csv",
+      "sha256": "1e69cf717b0757dcdb6c2f9d6903e976b3fde0a3dfa947812ae6179aebdd290e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.sources.csv",
+      "sha256": "bdeee00d6953ccd6932cac2964cec3319ea3437f5139be33b3edd06eabe45f2d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.target.json",
+      "sha256": "dacd2efeaa5eda7acdee0d36ba4677d5089ac461ffc49da1d2146bde7253d101"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/targeted_rest_631f/protocol.json",
+      "sha256": "8c703eeaca9bd35d1c69b2cd4bad4096732e0ad6fd86f883dcc42fc83c1ddcf7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/targeted_rest_631f_selection_target.json",
+      "sha256": "a7de83029458bd7cf4a4a482c9cdd61751b3bd6814a0b4c550d2a14bccee2072"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/preflight.target.json",
+      "sha256": "681c6fca6e29d8fc0bd3fa6852bae8273b2c2580a6414ccde63c1499fd04e8c3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/selection.receipt.json",
+      "sha256": "e9ae9d245e97c7da63697a5f4e2f0c77f1838d23d4b497cc126cb3b060d578cf"
+    }
+  ],
+  "schema": "overnight_targeted_rest_choice_v1",
+  "frozen_epoch": 1791419655.579141,
+  "analysis_script_sha256": "18d13d27bbd8048610a145be166bda780445390f95c17546b807136e9f40229c",
+  "evaluation_outcomes_opened": false
+}

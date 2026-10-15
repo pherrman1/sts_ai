@@ -1,0 +1,1592 @@
+{
+  "attentionReference": {
+    "countCalibration": [
+      {
+        "brier": 0.09205779045948878,
+        "count": 0,
+        "meanProbability": 0.7091376327923405,
+        "observedFrequency": 0.7186340324396447
+      },
+      {
+        "brier": 0.10674389326095732,
+        "count": 1,
+        "meanProbability": 0.22092358745114551,
+        "observedFrequency": 0.21242129841971397
+      },
+      {
+        "brier": 0.036259682219268494,
+        "count": 2,
+        "meanProbability": 0.05849124425072962,
+        "observedFrequency": 0.057624150439894925
+      },
+      {
+        "brier": 0.008326420745869477,
+        "count": 3,
+        "meanProbability": 0.011043794651812284,
+        "observedFrequency": 0.010841012383771838
+      },
+      {
+        "brier": 0.0003892846867866501,
+        "count": 4,
+        "meanProbability": 0.0003689255223104281,
+        "observedFrequency": 0.0004378101154984781
+      },
+      {
+        "brier": 4.117622836453388e-05,
+        "count": 5,
+        "meanProbability": 3.481302164171728e-05,
+        "observedFrequency": 4.169620147604553e-05
+      }
+    ],
+    "illegalProbabilityMax": 0.0,
+    "label": "A",
+    "normalActionModeAccuracy": 0.8063211441437685,
+    "normalChangedActionModeAccuracy": 0.4574688796680498,
+    "normalChangedRows": 13496,
+    "normalCountAccuracy": 0.8145561439352875,
+    "normalNoChangeBrier": 0.09205779045948878,
+    "normalRows": 47966,
+    "normalUnchangedActionModeAccuracy": 0.9429068755439513,
+    "normalizationErrorMax": 1.9847707433129358e-07,
+    "rows": 48590,
+    "slices": {
+      "brew": {
+        "rows": 281,
+        "trajectoryNll": 1.800035643222281
+      },
+      "recursiveBrew": {
+        "rows": 12,
+        "trajectoryNll": 2.41296723484993
+      },
+      "smoke": {
+        "rows": 343,
+        "trajectoryNll": 0.2925538366092654
+      },
+      "trajectorySpecial": {
+        "rows": 624,
+        "trajectoryNll": 0.9714038168308318
+      }
+    },
+    "trajectoryNll": 0.5068032282204711
+  },
+  "classifications": {
+    "C": {
+      "decision": "TEACHER_FORCED_REJECTED",
+      "gates": {
+        "actionModeAccuracyDrop": -0.01009048075720298,
+        "countAccuracyDrop": -0.010528290872701462,
+        "illegalProbabilityMax": 0.0,
+        "noChangeBrierDelta": -0.005392129219394637,
+        "normalizationErrorMax": 1.9847707433129358e-07,
+        "obviousSliceRegression": true,
+        "slices": {
+          "brew": {
+            "delta": 0.1663927353050203,
+            "relative": 0.09243857805346412
+          },
+          "recursiveBrew": {
+            "delta": 0.5723790576060614,
+            "relative": 0.23720962694367442
+          },
+          "smoke": {
+            "delta": -0.05641958731088906,
+            "relative": -0.19285198227033679
+          },
+          "trajectorySpecial": {
+            "delta": 0.04391737207223667,
+            "relative": 0.045210211563215225
+          }
+        },
+        "trajectoryNllRelative": -0.039210286111421404
+      }
+    },
+    "P": {
+      "decision": "TEACHER_FORCED_REJECTED",
+      "gates": {
+        "actionModeAccuracyDrop": -0.00888129091439771,
+        "countAccuracyDrop": -0.009736063044656573,
+        "illegalProbabilityMax": 0.0,
+        "noChangeBrierDelta": -0.004580766618723059,
+        "normalizationErrorMax": 1.985931099568461e-07,
+        "obviousSliceRegression": true,
+        "slices": {
+          "brew": {
+            "delta": 0.12590672267315872,
+            "relative": 0.06994679419112529
+          },
+          "recursiveBrew": {
+            "delta": 0.6130810727675757,
+            "relative": 0.2540776616909617
+          },
+          "smoke": {
+            "delta": -0.02334093709697216,
+            "relative": -0.07978339087087853
+          },
+          "trajectorySpecial": {
+            "delta": 0.04386834558797459,
+            "relative": 0.04515974183743009
+          }
+        },
+        "trajectoryNllRelative": -0.033299341916922895
+      }
+    }
+  },
+  "controlReproduction": {
+    "absoluteTolerance": 0.005,
+    "referenceTrajectoryNll": 0.487162724,
+    "stopsBeforeCandidateOnFailure": true
+  },
+  "decision": "POTION_DEEPSET_POTION_BLIND_REJECTED",
+  "decisionScope": "existing teacher-forced validation gate; a pass authorizes conditional export/parity/latency follow-up only",
+  "executionEnvironment": {
+    "cudaDevice": "NVIDIA GeForce RTX 3060 Ti",
+    "cudaDeviceCount": 1,
+    "cudaRuntime": "12.1",
+    "python": "3.12.3",
+    "torch": "2.5.1+cu121",
+    "torchThreads": 4
+  },
+  "fit": {
+    "C": {
+      "checkpointBytes": 441283,
+      "checkpointSha256": "99a43bfa138021ff9f645accd1e098ec89863b9498490294837762a93b18ff1c",
+      "frozenEncoderParameterNames": [],
+      "history": [
+        {
+          "epoch": 1,
+          "validationTrajectoryNll": 0.5218852280133506
+        },
+        {
+          "epoch": 2,
+          "validationTrajectoryNll": 0.517263334135098
+        },
+        {
+          "epoch": 3,
+          "validationTrajectoryNll": 0.5100367270921846
+        },
+        {
+          "epoch": 4,
+          "validationTrajectoryNll": 0.5147755918995671
+        },
+        {
+          "epoch": 5,
+          "validationTrajectoryNll": 0.5074365493835511
+        },
+        {
+          "epoch": 6,
+          "validationTrajectoryNll": 0.506691838003028
+        },
+        {
+          "epoch": 7,
+          "validationTrajectoryNll": 0.5011005405647604
+        },
+        {
+          "epoch": 8,
+          "validationTrajectoryNll": 0.5044223702976592
+        },
+        {
+          "epoch": 9,
+          "validationTrajectoryNll": 0.5004998534125302
+        },
+        {
+          "epoch": 10,
+          "validationTrajectoryNll": 0.5000252636158716
+        },
+        {
+          "epoch": 11,
+          "validationTrajectoryNll": 0.4972033521828085
+        },
+        {
+          "epoch": 12,
+          "validationTrajectoryNll": 0.4952809460580828
+        },
+        {
+          "epoch": 13,
+          "validationTrajectoryNll": 0.5005645845422958
+        },
+        {
+          "epoch": 14,
+          "validationTrajectoryNll": 0.4941707922013336
+        },
+        {
+          "epoch": 15,
+          "validationTrajectoryNll": 0.49146023891411406
+        },
+        {
+          "epoch": 16,
+          "validationTrajectoryNll": 0.4941921920890016
+        },
+        {
+          "epoch": 17,
+          "validationTrajectoryNll": 0.49131111334782435
+        },
+        {
+          "epoch": 18,
+          "validationTrajectoryNll": 0.49288920899202454
+        },
+        {
+          "epoch": 19,
+          "validationTrajectoryNll": 0.49026549107788003
+        },
+        {
+          "epoch": 20,
+          "validationTrajectoryNll": 0.493367306883358
+        },
+        {
+          "epoch": 21,
+          "validationTrajectoryNll": 0.4984313766401408
+        },
+        {
+          "epoch": 22,
+          "validationTrajectoryNll": 0.4929032058857134
+        },
+        {
+          "epoch": 23,
+          "validationTrajectoryNll": 0.4916096147547321
+        },
+        {
+          "epoch": 24,
+          "validationTrajectoryNll": 0.4900793619571784
+        },
+        {
+          "epoch": 25,
+          "validationTrajectoryNll": 0.4898841335830858
+        },
+        {
+          "epoch": 26,
+          "validationTrajectoryNll": 0.4890267423631348
+        },
+        {
+          "epoch": 27,
+          "validationTrajectoryNll": 0.4876070578624417
+        },
+        {
+          "epoch": 28,
+          "validationTrajectoryNll": 0.489240500808176
+        },
+        {
+          "epoch": 29,
+          "validationTrajectoryNll": 0.48840515293954423
+        },
+        {
+          "epoch": 30,
+          "validationTrajectoryNll": 0.487298853832279
+        },
+        {
+          "epoch": 31,
+          "validationTrajectoryNll": 0.487776525970111
+        },
+        {
+          "epoch": 32,
+          "validationTrajectoryNll": 0.49018998704295436
+        },
+        {
+          "epoch": 33,
+          "validationTrajectoryNll": 0.48865267731436096
+        },
+        {
+          "epoch": 34,
+          "validationTrajectoryNll": 0.4869313286397544
+        },
+        {
+          "epoch": 35,
+          "validationTrajectoryNll": 0.49211941350498234
+        },
+        {
+          "epoch": 36,
+          "validationTrajectoryNll": 0.49085662162006494
+        },
+        {
+          "epoch": 37,
+          "validationTrajectoryNll": 0.4898511316879537
+        },
+        {
+          "epoch": 38,
+          "validationTrajectoryNll": 0.49286513281579586
+        },
+        {
+          "epoch": 39,
+          "validationTrajectoryNll": 0.4930932534261739
+        },
+        {
+          "epoch": 40,
+          "validationTrajectoryNll": 0.4903698698837211
+        }
+      ],
+      "initialStateSha256": {
+        "decoder": "4f62829fa6fb6632586b2375496ec19d9aac01d983b7e5ea35754cbfa9316c42",
+        "encoder": "bc8abb4a3a1f171202c32efdad3e977069e88b1b7cfa38b3169f6796e0433c1f"
+      },
+      "parameterCountTotal": 107652,
+      "selectedEpoch": 34,
+      "trainableParameterCount": 107652,
+      "trainableParameterNames": [
+        "encoder.card_id.weight",
+        "encoder.relic_id.weight",
+        "encoder.potion_id.weight",
+        "encoder.potion_slot.weight",
+        "encoder.global_category.0.weight",
+        "encoder.global_category.1.weight",
+        "encoder.global_category.2.weight",
+        "encoder.global_category.3.weight",
+        "encoder.card_mlp.0.weight",
+        "encoder.card_mlp.0.bias",
+        "encoder.card_mlp.2.weight",
+        "encoder.card_mlp.2.bias",
+        "encoder.relic_mlp.0.weight",
+        "encoder.relic_mlp.0.bias",
+        "encoder.relic_mlp.2.weight",
+        "encoder.relic_mlp.2.bias",
+        "encoder.potion_mlp.0.weight",
+        "encoder.potion_mlp.0.bias",
+        "encoder.potion_mlp.2.weight",
+        "encoder.potion_mlp.2.bias",
+        "encoder.global_mlp.0.weight",
+        "encoder.global_mlp.0.bias",
+        "encoder.trunk.0.weight",
+        "encoder.trunk.0.bias",
+        "encoder.trunk.2.weight",
+        "encoder.trunk.2.bias",
+        "decoder.delta.weight",
+        "decoder.potion.weight",
+        "decoder.slot.weight",
+        "decoder.mlp.0.weight",
+        "decoder.mlp.0.bias",
+        "decoder.mlp.2.weight",
+        "decoder.mlp.2.bias"
+      ],
+      "trainingSeconds": 815.8835219549946
+    },
+    "P": {
+      "checkpointBytes": 441283,
+      "checkpointSha256": "38c2b8eadc0aa1926c6bbbbe46e952d30e652dee7887559b6b57a0f4726dcab0",
+      "frozenEncoderParameterNames": [
+        "potion_id.weight",
+        "potion_slot.weight",
+        "potion_mlp.0.weight",
+        "potion_mlp.0.bias",
+        "potion_mlp.2.weight",
+        "potion_mlp.2.bias"
+      ],
+      "history": [
+        {
+          "epoch": 1,
+          "validationTrajectoryNll": 0.5215609947452851
+        },
+        {
+          "epoch": 2,
+          "validationTrajectoryNll": 0.518141112713057
+        },
+        {
+          "epoch": 3,
+          "validationTrajectoryNll": 0.511858348568258
+        },
+        {
+          "epoch": 4,
+          "validationTrajectoryNll": 0.5152620340979484
+        },
+        {
+          "epoch": 5,
+          "validationTrajectoryNll": 0.5079579678442233
+        },
+        {
+          "epoch": 6,
+          "validationTrajectoryNll": 0.5065714298963
+        },
+        {
+          "epoch": 7,
+          "validationTrajectoryNll": 0.5029251367097995
+        },
+        {
+          "epoch": 8,
+          "validationTrajectoryNll": 0.503170524141522
+        },
+        {
+          "epoch": 9,
+          "validationTrajectoryNll": 0.5018960457171407
+        },
+        {
+          "epoch": 10,
+          "validationTrajectoryNll": 0.5009406645072656
+        },
+        {
+          "epoch": 11,
+          "validationTrajectoryNll": 0.4997098917439369
+        },
+        {
+          "epoch": 12,
+          "validationTrajectoryNll": 0.4977952758899553
+        },
+        {
+          "epoch": 13,
+          "validationTrajectoryNll": 0.5017822725876496
+        },
+        {
+          "epoch": 14,
+          "validationTrajectoryNll": 0.4961360492889655
+        },
+        {
+          "epoch": 15,
+          "validationTrajectoryNll": 0.49528955065496516
+        },
+        {
+          "epoch": 16,
+          "validationTrajectoryNll": 0.4978261063734925
+        },
+        {
+          "epoch": 17,
+          "validationTrajectoryNll": 0.49378090974441385
+        },
+        {
+          "epoch": 18,
+          "validationTrajectoryNll": 0.4963026360905191
+        },
+        {
+          "epoch": 19,
+          "validationTrajectoryNll": 0.4929929416594906
+        },
+        {
+          "epoch": 20,
+          "validationTrajectoryNll": 0.49673186802796954
+        },
+        {
+          "epoch": 21,
+          "validationTrajectoryNll": 0.49850731165053597
+        },
+        {
+          "epoch": 22,
+          "validationTrajectoryNll": 0.49457095744896235
+        },
+        {
+          "epoch": 23,
+          "validationTrajectoryNll": 0.4930371681887703
+        },
+        {
+          "epoch": 24,
+          "validationTrajectoryNll": 0.49211045941602777
+        },
+        {
+          "epoch": 25,
+          "validationTrajectoryNll": 0.4925602281017736
+        },
+        {
+          "epoch": 26,
+          "validationTrajectoryNll": 0.491701017157032
+        },
+        {
+          "epoch": 27,
+          "validationTrajectoryNll": 0.49071850335305495
+        },
+        {
+          "epoch": 28,
+          "validationTrajectoryNll": 0.4926444803273623
+        },
+        {
+          "epoch": 29,
+          "validationTrajectoryNll": 0.4919995957794349
+        },
+        {
+          "epoch": 30,
+          "validationTrajectoryNll": 0.4903994125343972
+        },
+        {
+          "epoch": 31,
+          "validationTrajectoryNll": 0.4899270142393573
+        },
+        {
+          "epoch": 32,
+          "validationTrajectoryNll": 0.4934393627707786
+        },
+        {
+          "epoch": 33,
+          "validationTrajectoryNll": 0.49296729583864457
+        },
+        {
+          "epoch": 34,
+          "validationTrajectoryNll": 0.4900703463849813
+        },
+        {
+          "epoch": 35,
+          "validationTrajectoryNll": 0.4931780523967825
+        },
+        {
+          "epoch": 36,
+          "validationTrajectoryNll": 0.49345162687089716
+        },
+        {
+          "epoch": 37,
+          "validationTrajectoryNll": 0.49333002932453596
+        }
+      ],
+      "initialStateSha256": {
+        "decoder": "4f62829fa6fb6632586b2375496ec19d9aac01d983b7e5ea35754cbfa9316c42",
+        "encoder": "bc8abb4a3a1f171202c32efdad3e977069e88b1b7cfa38b3169f6796e0433c1f"
+      },
+      "parameterCountTotal": 107652,
+      "selectedEpoch": 31,
+      "trainableParameterCount": 99292,
+      "trainableParameterNames": [
+        "encoder.card_id.weight",
+        "encoder.relic_id.weight",
+        "encoder.global_category.0.weight",
+        "encoder.global_category.1.weight",
+        "encoder.global_category.2.weight",
+        "encoder.global_category.3.weight",
+        "encoder.card_mlp.0.weight",
+        "encoder.card_mlp.0.bias",
+        "encoder.card_mlp.2.weight",
+        "encoder.card_mlp.2.bias",
+        "encoder.relic_mlp.0.weight",
+        "encoder.relic_mlp.0.bias",
+        "encoder.relic_mlp.2.weight",
+        "encoder.relic_mlp.2.bias",
+        "encoder.global_mlp.0.weight",
+        "encoder.global_mlp.0.bias",
+        "encoder.trunk.0.weight",
+        "encoder.trunk.0.bias",
+        "encoder.trunk.2.weight",
+        "encoder.trunk.2.bias",
+        "decoder.delta.weight",
+        "decoder.potion.weight",
+        "decoder.slot.weight",
+        "decoder.mlp.0.weight",
+        "decoder.mlp.0.bias",
+        "decoder.mlp.2.weight",
+        "decoder.mlp.2.bias"
+      ],
+      "trainingSeconds": 669.4314503200003
+    }
+  },
+  "knowledgeImpact": "experiment evidence and current research status only; runtime defaults unchanged",
+  "provenance": {
+    "baselineSha": "1ed96f2aa564742156cc6593a1fc1915ea4e9033",
+    "batchOrderSha256": "7699f81a9fad65b7c8ffcde22c4efc6b681ba4dbfd14237451fc8179c85c444d",
+    "cachePreparationSha256": "165ddba8ed9d47a592de4fc7ec037f1687fbee2ec280daca20307ddbf7d78744",
+    "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "counts": {
+      "TRAIN": {
+        "rows": 393677,
+        "sources": 19986
+      },
+      "VALIDATION": {
+        "rows": 48590,
+        "sources": 2496
+      }
+    },
+    "implementationSha": "cffe964a806891908ea1082bcca632683c4d2d37",
+    "inputArtifactHashes": {
+      "attentionReferenceDecoder": "dad2df4a0d0d8a31c4707ee21bf92adf9b76c77deb520b49653b5eb789c3d48e",
+      "attentionReferenceReceipt": "1ba8b78524b8b6fc97c00a41eb33fc178cd6f36fa79a6b0af7dcad107ab45363",
+      "decoder": "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
+      "dedicatedComponent": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+      "encoder": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"
+    },
+    "rowSequenceSha256": "2cb23f2eac81cd30f0200c49d42f090873b5452b265bb47410d67c46d6745809",
+    "sourceArtifactHashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "sourceSequenceSha256": "d843fcf1f106e8985aef32087c12745da9dfca6f050c64bcca44837578718b32",
+    "splitSequenceSha256": "607782399125f7785c3a33f65934c9461b8b1e86f053637e8110f51a2294f3ca",
+    "testAccessCounters": {
+      "encodedRows": {
+        "TEST": 0,
+        "TRAIN": 30313145,
+        "VALIDATION": 4033006
+      },
+      "scoredRows": {
+        "TEST": 0,
+        "TRAIN": 0,
+        "VALIDATION": 3838646
+      },
+      "teacherMetricRows": {
+        "TEST": 0,
+        "TRAIN": 0,
+        "VALIDATION": 194360
+      }
+    },
+    "testRowsTouched": 0
+  },
+  "recipe": {
+    "batch": 512,
+    "decoderLearningRate": 0.001,
+    "encoderLearningRate": 0.0001,
+    "gradientClip": 1.0,
+    "loss": "existing exact potion trajectory NLL with hidden-trajectory marginalization",
+    "maximumEpochs": 40,
+    "minimumEpochs": 12,
+    "optimizer": "AdamW",
+    "patience": 6,
+    "population": "frozen final-union source-grouped TRAIN/VALIDATION winning rows",
+    "precision": "fp32",
+    "schema": "deepset_potion_blind_v1",
+    "seed": 20260912,
+    "selection": "earliest strict minimum VALIDATION exact trajectory NLL",
+    "testEncodedRows": 0,
+    "testInferenceRows": 0,
+    "weightDecay": 0.0001
+  },
+  "results": {
+    "C": {
+      "metrics": {
+        "countCalibration": [
+          {
+            "brier": 0.08666566124009414,
+            "count": 0,
+            "meanProbability": 0.7230631923663856,
+            "observedFrequency": 0.7186340324396447
+          },
+          {
+            "brier": 0.10184258493736814,
+            "count": 1,
+            "meanProbability": 0.20851311951951568,
+            "observedFrequency": 0.21242129841971397
+          },
+          {
+            "brier": 0.03504675400522804,
+            "count": 2,
+            "meanProbability": 0.05633196332623474,
+            "observedFrequency": 0.057624150439894925
+          },
+          {
+            "brier": 0.00802057249472707,
+            "count": 3,
+            "meanProbability": 0.011668325549672846,
+            "observedFrequency": 0.010841012383771838
+          },
+          {
+            "brier": 0.00039478960128635663,
+            "count": 4,
+            "meanProbability": 0.00033162400868303344,
+            "observedFrequency": 0.0004378101154984781
+          },
+          {
+            "brier": 4.418187205478334e-05,
+            "count": 5,
+            "meanProbability": 9.177331497508229e-05,
+            "observedFrequency": 4.169620147604553e-05
+          }
+        ],
+        "illegalProbabilityMax": 0.0,
+        "label": "C",
+        "normalActionModeAccuracy": 0.8164116249009715,
+        "normalChangedActionModeAccuracy": 0.47495554238292825,
+        "normalChangedRows": 13496,
+        "normalCountAccuracy": 0.825084434807989,
+        "normalNoChangeBrier": 0.08666566124009414,
+        "normalRows": 47966,
+        "normalUnchangedActionModeAccuracy": 0.9501015375689005,
+        "normalizationErrorMax": 1.8975784010777375e-07,
+        "rows": 48590,
+        "slices": {
+          "brew": {
+            "rows": 281,
+            "trajectoryNll": 1.9664283785273013
+          },
+          "recursiveBrew": {
+            "rows": 12,
+            "trajectoryNll": 2.9853462924559913
+          },
+          "smoke": {
+            "rows": 343,
+            "trajectoryNll": 0.23613424929837637
+          },
+          "trajectorySpecial": {
+            "rows": 624,
+            "trajectoryNll": 1.0153211889030684
+          }
+        },
+        "trajectoryNll": 0.4869313286397544
+      },
+      "recursiveBrewValidationRows": [
+        {
+          "attentionReferenceNll": 3.9234933853149414,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 65501,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 6,
+          "graphEdges": 25,
+          "graphNodes": 14,
+          "initialInventory": [
+            17,
+            1,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 1.2402362823486328,
+          "sourceSeed": 4103211,
+          "targetEdges": 1,
+          "trajectoryNll": 5.163729667663574
+        },
+        {
+          "attentionReferenceNll": 0.2528364658355713,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 123541,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 25,
+          "graphNodes": 14,
+          "initialInventory": [
+            17,
+            1,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.05193027853965759,
+          "sourceSeed": 4106053,
+          "targetEdges": 1,
+          "trajectoryNll": 0.2009061872959137
+        },
+        {
+          "attentionReferenceNll": 1.244966983795166,
+          "boss": true,
+          "brewRounds": 2,
+          "cacheIndex": 124188,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 60,
+          "graphEdges": 90,
+          "graphNodes": 38,
+          "initialInventory": [
+            39,
+            6,
+            17,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.22512173652648926,
+          "sourceSeed": 4106085,
+          "targetEdges": 1,
+          "trajectoryNll": 1.0198452472686768
+        },
+        {
+          "attentionReferenceNll": 1.0997458696365356,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 163889,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            27,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.8263735771179199,
+          "sourceSeed": 4108025,
+          "targetEdges": 1,
+          "trajectoryNll": 0.2733722925186157
+        },
+        {
+          "attentionReferenceNll": 2.1849920749664307,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 188717,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 3,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            39,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 1.3071775436401367,
+          "sourceSeed": 4109240,
+          "targetEdges": 2,
+          "trajectoryNll": 3.4921696186065674
+        },
+        {
+          "attentionReferenceNll": 8.433895111083984,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 192911,
+          "capacity": 5,
+          "compatibleTargetTrajectories": 4,
+          "graphEdges": 1581,
+          "graphNodes": 259,
+          "initialInventory": [
+            3,
+            3,
+            17,
+            41,
+            1
+          ],
+          "nllMinusAttention": 5.729296684265137,
+          "sourceSeed": 4109443,
+          "targetEdges": 1,
+          "trajectoryNll": 14.163191795349121
+        },
+        {
+          "attentionReferenceNll": 1.195608377456665,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 224376,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 18,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            39,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.48801684379577637,
+          "sourceSeed": 4111001,
+          "targetEdges": 1,
+          "trajectoryNll": 1.6836252212524414
+        },
+        {
+          "attentionReferenceNll": 1.6439540386199951,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 333738,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            9,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.9975084066390991,
+          "sourceSeed": 4116381,
+          "targetEdges": 1,
+          "trajectoryNll": 0.646445631980896
+        },
+        {
+          "attentionReferenceNll": 1.5170493125915527,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 346108,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 12,
+          "graphEdges": 30,
+          "graphNodes": 17,
+          "initialInventory": [
+            24,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.44176363945007324,
+          "sourceSeed": 4116985,
+          "targetEdges": 1,
+          "trajectoryNll": 1.0752856731414795
+        },
+        {
+          "attentionReferenceNll": 0.4586976170539856,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 377323,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 25,
+          "graphNodes": 14,
+          "initialInventory": [
+            17,
+            1,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.2632136940956116,
+          "sourceSeed": 4118500,
+          "targetEdges": 1,
+          "trajectoryNll": 0.19548392295837402
+        },
+        {
+          "attentionReferenceNll": 1.1780505180358887,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 476740,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 8,
+          "graphEdges": 115,
+          "graphNodes": 46,
+          "initialInventory": [
+            4,
+            17,
+            17,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.7568387985229492,
+          "sourceSeed": 4123390,
+          "targetEdges": 1,
+          "trajectoryNll": 1.934889316558838
+        },
+        {
+          "attentionReferenceNll": 5.822314739227295,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 487045,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 51,
+          "graphNodes": 25,
+          "initialInventory": [
+            17,
+            12,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.1528935432434082,
+          "sourceSeed": 4123895,
+          "targetEdges": 1,
+          "trajectoryNll": 5.975208282470703
+        }
+      ],
+      "reloadMetrics": {
+        "countCalibration": [
+          {
+            "brier": 0.08666566260809509,
+            "count": 0,
+            "meanProbability": 0.723063198297975,
+            "observedFrequency": 0.7186340324396447
+          },
+          {
+            "brier": 0.10184258627099578,
+            "count": 1,
+            "meanProbability": 0.20851311387825838,
+            "observedFrequency": 0.21242129841971397
+          },
+          {
+            "brier": 0.035046753884953576,
+            "count": 2,
+            "meanProbability": 0.056331964083322056,
+            "observedFrequency": 0.057624150439894925
+          },
+          {
+            "brier": 0.008020572558430816,
+            "count": 3,
+            "meanProbability": 0.011668326370633418,
+            "observedFrequency": 0.010841012383771838
+          },
+          {
+            "brier": 0.00039478960510509514,
+            "count": 4,
+            "meanProbability": 0.00033162403389162197,
+            "observedFrequency": 0.0004378101154984781
+          },
+          {
+            "brier": 4.418185830448763e-05,
+            "count": 5,
+            "meanProbability": 9.17732941173618e-05,
+            "observedFrequency": 4.169620147604553e-05
+          }
+        ],
+        "illegalProbabilityMax": 0.0,
+        "label": "C",
+        "normalActionModeAccuracy": 0.8164116249009715,
+        "normalChangedActionModeAccuracy": 0.47495554238292825,
+        "normalChangedRows": 13496,
+        "normalCountAccuracy": 0.825084434807989,
+        "normalNoChangeBrier": 0.08666566260809509,
+        "normalRows": 47966,
+        "normalUnchangedActionModeAccuracy": 0.9501015375689005,
+        "normalizationErrorMax": 2.028690625488494e-07,
+        "rows": 48590,
+        "slices": {
+          "brew": {
+            "rows": 281,
+            "trajectoryNll": 1.9664283732973118
+          },
+          "recursiveBrew": {
+            "rows": 12,
+            "trajectoryNll": 2.9853460701803365
+          },
+          "smoke": {
+            "rows": 343,
+            "trajectoryNll": 0.23613426824673198
+          },
+          "trajectorySpecial": {
+            "rows": 624,
+            "trajectoryNll": 1.0153211969634195
+          }
+        },
+        "trajectoryNll": 0.4869313343645659
+      },
+      "reloadReproduced": true,
+      "slices": {
+        "act_1": {
+          "rows": 23613,
+          "trajectoryNll": 0.35019235996663045
+        },
+        "act_2": {
+          "rows": 15926,
+          "trajectoryNll": 0.6203324621273337
+        },
+        "act_3": {
+          "rows": 9051,
+          "trajectoryNll": 0.6089367220057125
+        },
+        "boss": {
+          "rows": 4275,
+          "trajectoryNll": 1.058888891016039
+        },
+        "brewPresent": {
+          "rows": 281,
+          "trajectoryNll": 1.9664283785273013
+        },
+        "capacity_3": {
+          "rows": 45317,
+          "trajectoryNll": 0.46658022020225315
+        },
+        "capacity_5": {
+          "rows": 3273,
+          "trajectoryNll": 0.7687068193401032
+        },
+        "multipleOccupiedSlots": {
+          "rows": 23768,
+          "trajectoryNll": 0.8101269414901581
+        },
+        "multipleTrajectories": {
+          "rows": 139,
+          "trajectoryNll": 2.4570370672284056
+        },
+        "noChange": {
+          "rows": 47966,
+          "trajectoryNll": 0.4800573914174655
+        },
+        "nonBoss": {
+          "rows": 44315,
+          "trajectoryNll": 0.4317554608938756
+        },
+        "potionCount_0": {
+          "rows": 9935,
+          "trajectoryNll": 0.0
+        },
+        "potionCount_1": {
+          "rows": 14887,
+          "trajectoryNll": 0.2958887696156103
+        },
+        "potionCount_2": {
+          "rows": 12534,
+          "trajectoryNll": 0.6363832691705723
+        },
+        "potionCount_3": {
+          "rows": 10745,
+          "trajectoryNll": 0.9644235188571644
+        },
+        "potionCount_4": {
+          "rows": 301,
+          "trajectoryNll": 1.5518469139581632
+        },
+        "potionCount_5": {
+          "rows": 188,
+          "trajectoryNll": 2.387407544321723
+        },
+        "requiresAction": {
+          "rows": 624,
+          "trajectoryNll": 1.0153211889030684
+        },
+        "smokePresent": {
+          "rows": 343,
+          "trajectoryNll": 0.23613424929837637
+        }
+      }
+    },
+    "P": {
+      "metrics": {
+        "countCalibration": [
+          {
+            "brier": 0.08747702384076572,
+            "count": 0,
+            "meanProbability": 0.7141347850024242,
+            "observedFrequency": 0.7186340324396447
+          },
+          {
+            "brier": 0.10265721560993282,
+            "count": 1,
+            "meanProbability": 0.21725618664045593,
+            "observedFrequency": 0.21242129841971397
+          },
+          {
+            "brier": 0.035192079036346455,
+            "count": 2,
+            "meanProbability": 0.05837717259521641,
+            "observedFrequency": 0.057624150439894925
+          },
+          {
+            "brier": 0.008179035138982358,
+            "count": 3,
+            "meanProbability": 0.009860719986244828,
+            "observedFrequency": 0.010841012383771838
+          },
+          {
+            "brier": 0.0003961491039170007,
+            "count": 4,
+            "meanProbability": 0.00030916370004216345,
+            "observedFrequency": 0.0004378101154984781
+          },
+          {
+            "brier": 4.874348930891902e-05,
+            "count": 5,
+            "meanProbability": 6.19703297351985e-05,
+            "observedFrequency": 4.169620147604553e-05
+          }
+        ],
+        "illegalProbabilityMax": 0.0,
+        "label": "P",
+        "normalActionModeAccuracy": 0.8152024350581663,
+        "normalChangedActionModeAccuracy": 0.47984588026081804,
+        "normalChangedRows": 13496,
+        "normalCountAccuracy": 0.8242922069799441,
+        "normalNoChangeBrier": 0.08747702384076572,
+        "normalRows": 47966,
+        "normalUnchangedActionModeAccuracy": 0.9465042065564259,
+        "normalizationErrorMax": 1.985931099568461e-07,
+        "rows": 48590,
+        "slices": {
+          "brew": {
+            "rows": 281,
+            "trajectoryNll": 1.9259423658954398
+          },
+          "recursiveBrew": {
+            "rows": 12,
+            "trajectoryNll": 3.0260483076175055
+          },
+          "smoke": {
+            "rows": 343,
+            "trajectoryNll": 0.26921289951229327
+          },
+          "trajectorySpecial": {
+            "rows": 624,
+            "trajectoryNll": 1.0152721624188064
+          }
+        },
+        "trajectoryNll": 0.4899270142393573
+      },
+      "recursiveBrewValidationRows": [
+        {
+          "attentionReferenceNll": 3.9234933853149414,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 65501,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 6,
+          "graphEdges": 25,
+          "graphNodes": 14,
+          "initialInventory": [
+            17,
+            1,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.45268774032592773,
+          "sourceSeed": 4103211,
+          "targetEdges": 1,
+          "trajectoryNll": 4.376181125640869
+        },
+        {
+          "attentionReferenceNll": 0.2528364658355713,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 123541,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 25,
+          "graphNodes": 14,
+          "initialInventory": [
+            17,
+            1,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.34441089630126953,
+          "sourceSeed": 4106053,
+          "targetEdges": 1,
+          "trajectoryNll": 0.5972473621368408
+        },
+        {
+          "attentionReferenceNll": 1.244966983795166,
+          "boss": true,
+          "brewRounds": 2,
+          "cacheIndex": 124188,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 60,
+          "graphEdges": 90,
+          "graphNodes": 38,
+          "initialInventory": [
+            39,
+            6,
+            17,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.564331591129303,
+          "sourceSeed": 4106085,
+          "targetEdges": 1,
+          "trajectoryNll": 0.680635392665863
+        },
+        {
+          "attentionReferenceNll": 1.0997458696365356,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 163889,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            27,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.0195235013961792,
+          "sourceSeed": 4108025,
+          "targetEdges": 1,
+          "trajectoryNll": 1.0802223682403564
+        },
+        {
+          "attentionReferenceNll": 2.1849920749664307,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 188717,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 3,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            39,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.2568521499633789,
+          "sourceSeed": 4109240,
+          "targetEdges": 2,
+          "trajectoryNll": 1.9281399250030518
+        },
+        {
+          "attentionReferenceNll": 8.433895111083984,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 192911,
+          "capacity": 5,
+          "compatibleTargetTrajectories": 4,
+          "graphEdges": 1581,
+          "graphNodes": 259,
+          "initialInventory": [
+            3,
+            3,
+            17,
+            41,
+            1
+          ],
+          "nllMinusAttention": 5.549105644226074,
+          "sourceSeed": 4109443,
+          "targetEdges": 1,
+          "trajectoryNll": 13.983000755310059
+        },
+        {
+          "attentionReferenceNll": 1.195608377456665,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 224376,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 18,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            39,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.17019212245941162,
+          "sourceSeed": 4111001,
+          "targetEdges": 1,
+          "trajectoryNll": 1.0254162549972534
+        },
+        {
+          "attentionReferenceNll": 1.6439540386199951,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 333738,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 53,
+          "graphNodes": 26,
+          "initialInventory": [
+            9,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.36275744438171387,
+          "sourceSeed": 4116381,
+          "targetEdges": 1,
+          "trajectoryNll": 1.2811965942382812
+        },
+        {
+          "attentionReferenceNll": 1.5170493125915527,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 346108,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 12,
+          "graphEdges": 30,
+          "graphNodes": 17,
+          "initialInventory": [
+            24,
+            17,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.4386705160140991,
+          "sourceSeed": 4116985,
+          "targetEdges": 1,
+          "trajectoryNll": 1.9557198286056519
+        },
+        {
+          "attentionReferenceNll": 0.4586976170539856,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 377323,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 25,
+          "graphNodes": 14,
+          "initialInventory": [
+            17,
+            1,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": -0.2379341572523117,
+          "sourceSeed": 4118500,
+          "targetEdges": 1,
+          "trajectoryNll": 0.2207634598016739
+        },
+        {
+          "attentionReferenceNll": 1.1780505180358887,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 476740,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 8,
+          "graphEdges": 115,
+          "graphNodes": 46,
+          "initialInventory": [
+            4,
+            17,
+            17,
+            1,
+            1
+          ],
+          "nllMinusAttention": 1.9892008304595947,
+          "sourceSeed": 4123390,
+          "targetEdges": 1,
+          "trajectoryNll": 3.1672513484954834
+        },
+        {
+          "attentionReferenceNll": 5.822314739227295,
+          "boss": false,
+          "brewRounds": 2,
+          "cacheIndex": 487045,
+          "capacity": 3,
+          "compatibleTargetTrajectories": 2,
+          "graphEdges": 51,
+          "graphNodes": 25,
+          "initialInventory": [
+            17,
+            12,
+            1,
+            1,
+            1
+          ],
+          "nllMinusAttention": 0.19449090957641602,
+          "sourceSeed": 4123895,
+          "targetEdges": 1,
+          "trajectoryNll": 6.016805648803711
+        }
+      ],
+      "reloadMetrics": {
+        "countCalibration": [
+          {
+            "brier": 0.08747702376700674,
+            "count": 0,
+            "meanProbability": 0.7141347918542554,
+            "observedFrequency": 0.7186340324396447
+          },
+          {
+            "brier": 0.10265721537673304,
+            "count": 1,
+            "meanProbability": 0.21725618392016577,
+            "observedFrequency": 0.21242129841971397
+          },
+          {
+            "brier": 0.035192078781607954,
+            "count": 2,
+            "meanProbability": 0.058377170127264774,
+            "observedFrequency": 0.057624150439894925
+          },
+          {
+            "brier": 0.008179035046325512,
+            "count": 3,
+            "meanProbability": 0.009860719773500799,
+            "observedFrequency": 0.010841012383771838
+          },
+          {
+            "brier": 0.00039614910513905696,
+            "count": 4,
+            "meanProbability": 0.00030916373526111246,
+            "observedFrequency": 0.0004378101154984781
+          },
+          {
+            "brier": 4.874349637955359e-05,
+            "count": 5,
+            "meanProbability": 6.197032764738689e-05,
+            "observedFrequency": 4.169620147604553e-05
+          }
+        ],
+        "illegalProbabilityMax": 0.0,
+        "label": "P",
+        "normalActionModeAccuracy": 0.8152024350581663,
+        "normalChangedActionModeAccuracy": 0.47984588026081804,
+        "normalChangedRows": 13496,
+        "normalCountAccuracy": 0.8242922069799441,
+        "normalNoChangeBrier": 0.08747702376700674,
+        "normalRows": 47966,
+        "normalUnchangedActionModeAccuracy": 0.9465042065564259,
+        "normalizationErrorMax": 1.9605233991804027e-07,
+        "rows": 48590,
+        "slices": {
+          "brew": {
+            "rows": 281,
+            "trajectoryNll": 1.9259423688882664
+          },
+          "recursiveBrew": {
+            "rows": 12,
+            "trajectoryNll": 3.0260484603544078
+          },
+          "smoke": {
+            "rows": 343,
+            "trajectoryNll": 0.2692128895870916
+          },
+          "trajectorySpecial": {
+            "rows": 624,
+            "trajectoryNll": 1.0152721583108577
+          }
+        },
+        "trajectoryNll": 0.48992701599273575
+      },
+      "reloadReproduced": true,
+      "slices": {
+        "act_1": {
+          "rows": 23613,
+          "trajectoryNll": 0.3554705685467579
+        },
+        "act_2": {
+          "rows": 15926,
+          "trajectoryNll": 0.6236960437394138
+        },
+        "act_3": {
+          "rows": 9051,
+          "trajectoryNll": 0.605330228063405
+        },
+        "boss": {
+          "rows": 4275,
+          "trajectoryNll": 1.0611871616261075
+        },
+        "brewPresent": {
+          "rows": 281,
+          "trajectoryNll": 1.9259423658954398
+        },
+        "capacity_3": {
+          "rows": 45317,
+          "trajectoryNll": 0.4697461223245456
+        },
+        "capacity_5": {
+          "rows": 3273,
+          "trajectoryNll": 0.7693457367885553
+        },
+        "multipleOccupiedSlots": {
+          "rows": 23768,
+          "trajectoryNll": 0.8132799219479794
+        },
+        "multipleTrajectories": {
+          "rows": 139,
+          "trajectoryNll": 2.376043452231361
+        },
+        "noChange": {
+          "rows": 47966,
+          "trajectoryNll": 0.48309268633075586
+        },
+        "nonBoss": {
+          "rows": 44315,
+          "trajectoryNll": 0.43481842504657037
+        },
+        "potionCount_0": {
+          "rows": 9935,
+          "trajectoryNll": 0.0
+        },
+        "potionCount_1": {
+          "rows": 14887,
+          "trajectoryNll": 0.3006325275092899
+        },
+        "potionCount_2": {
+          "rows": 12534,
+          "trajectoryNll": 0.6402319178699637
+        },
+        "potionCount_3": {
+          "rows": 10745,
+          "trajectoryNll": 0.9659542056413349
+        },
+        "potionCount_4": {
+          "rows": 301,
+          "trajectoryNll": 1.5731844679729787
+        },
+        "potionCount_5": {
+          "rows": 188,
+          "trajectoryNll": 2.407786498943832
+        },
+        "requiresAction": {
+          "rows": 624,
+          "trajectoryNll": 1.0152721624188064
+        },
+        "smokePresent": {
+          "rows": 343,
+          "trajectoryNll": 0.26921289951229327
+        }
+      }
+    }
+  },
+  "schema": "deepset_potion_blind_v1"
+}

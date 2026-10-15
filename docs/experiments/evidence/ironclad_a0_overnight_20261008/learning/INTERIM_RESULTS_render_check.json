@@ -1,0 +1,18 @@
+{
+  "status": "PRESENTATION_CROSSCHECK_PASS",
+  "full_run_comparisons": 20,
+  "distinct_report_arm_cost_rows": 24,
+  "completed_conditional_reports": 4,
+  "exact_full_run_arms_comparisons_preserved": true,
+  "all_report_hashes_unchanged": true,
+  "final_report_included": false,
+  "raw_files_opened": false,
+  "checks_scope": "Report-to-presentation copying and identity; no raw analysis or new inference. v2 changes only conditional cost display from JSON to named CPU and wall columns; original presentation/helper retained.",
+  "hashes": {
+    "render_completed_reports.py": "9ae16cf419d6da8acbad62287db24da437148b3e5c7945ecad17a0b1fdf9a173",
+    "render_completed_reports_v1.py": "f8a1f583a4da5e2368b64556a940d2b585b6143619e50a755294439024583dd9",
+    "INTERIM_RESULTS_v2.json": "f1386edcf867f28b6884e8f220979857e0a16be66c735a7b15d1f7a0e6c2f6e4",
+    "INTERIM_RESULTS_v2.md": "dff7b2e1749506ab0e313a28aae4d23fed849a9ef5bf66bc27c8c54f6c9c7a6f"
+  },
+  "created_utc": "2026-10-08T03:03:12.200558+00:00"
+}

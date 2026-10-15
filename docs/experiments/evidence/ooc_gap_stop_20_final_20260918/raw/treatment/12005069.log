@@ -1,0 +1,22 @@
+[collect keys OFF]
+[ooc-strat-tok-net] loaded /home/philippherrmann/.codex/worktrees/ab3d/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[live OOC MCTS ON sims=2048 combat_model=/home/philippherrmann/.codex/worktrees/ab3d/sts_lightspeed/selfplay/models/combat_transition_near_full_except_smoke_v2.native prior=policy temperature=1 cpuct=1.5 widen_k=2 widen_alpha=0.5 max_depth=32 root_selection=visits early_stop=1 gap_stop_20=1 leaf_value=native leaf_combats=0 leaf_policy=v4]
+[ooc-mcts-config] {"prior":"policy","temperature":1,"cPuct":1.5,"wideningK":2,"wideningAlpha":0.5,"maxDepth":32,"rootSelection":"visits","earlyStop":true,"gapStop20":true,"leafValue":"native","leafCombats":0,"leafPolicy":"v4","simulations":2048}
+[benchmark stops after Act 3 boss]
+[card skip threshold = -0.5]
+[fair-play / determinized MCTS ON]
+[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed; reuse-cap=allocated cap=32768]
+[policy PUCT ON: /home/philippherrmann/.codex/worktrees/ab3d/sts_lightspeed/models/policy_trees_c.txt, 100 trees]
+[c_puct = 2.5]
+BEST stack config: skip@-0.5  rest=win-rate  shop-V=ON  path=heuristic  shop-beam=off  native-OOC=ON  keys=skip  searcher=Searcher2  fair-play  seeds 12005069..12005069  asc 0  sims 10000  threads 1
+BEST models: floor=models/v_rich_trees.txt  win=models/v_win_trees.txt  combatVNet=off  policyNet=ON  PVNet=off  distVNet=off
+BEST                    win%=100.0   avg_floor= 51.0   avg_hp_end= 52.0   cpu_sec/run=96.63   wall=96.6s

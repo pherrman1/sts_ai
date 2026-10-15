@@ -1,0 +1,22 @@
+{
+  "status": "SYNTHETIC_CHECKS_PASS_REVIEW_READY",
+  "active_analyzer_unchanged_sha256": "711c1e8a48692d6f428203357b10f7bf99d2e2eefcda8de97801eb7d8fc71bc5",
+  "removal_analyzer_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+  "test_sha256": "ac3ca20a16b699efff82f9990b0bf7516b202b8cb8daf6ad80a7cd81b330a9bc",
+  "diff_sha256": "b7fbf2c882dbaa640235800453364285c0ae693388476de099253dce1a52ec04",
+  "tests": 16,
+  "raw_summary": "Ran16 tests in0.258s;OK",
+  "command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_analyze_wave_removal.py",
+  "scope": "Exact addition of removal banner presence/absence equality against declared flag; FullHp check and existing custody/pairing/confirmation/failure gates unchanged.",
+  "new_checks": [
+    "flag1 withbanner accepted",
+    "flag1 withoutbanner rejected",
+    "flag0 withbanner rejected",
+    "unset withbanner rejected",
+    "flag0 withoutbanner accepted",
+    "existingFullHp mismatchstillrejected"
+  ],
+  "game_commands_executed": false,
+  "gen2_tranche_outcomes_read": false,
+  "recorded_epoch": 1791423355.3326793
+}

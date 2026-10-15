@@ -1,0 +1,176 @@
+{
+ "verdict": "LEARNED_STOP_PASS",
+ "rule": {
+  "minSaving": 0.1,
+  "margin": -0.005,
+  "reps": 2000
+ },
+ "fights": 2445,
+ "validFights": 2437,
+ "sourceSeeds": 96,
+ "excluded": {
+  "escape": 8,
+  "armInvalid": {
+   "adaptive199": 0,
+   "learned": 0
+  },
+  "armOnlyInvalid": {
+   "adaptive199": 0,
+   "learned": 0
+  }
+ },
+ "primary": {
+  "n": 2437,
+  "signedOutcome": 0.0019142526465775575,
+  "signedOutcomeCI": [
+   -0.0008701746084967282,
+   0.0047954863513118345
+  ],
+  "winRate": 0.0012310217480508822,
+  "potionsAfter": 0.006565449322938038,
+  "simulationSaving": 0.19401281465359255,
+  "cpuRatio": 0.7998520364017928,
+  "simulationSavingCI": [
+   0.1832399684260948,
+   0.20511141386020448
+  ]
+ },
+ "secondary": {
+  "adaptive199_vs_control": {
+   "n": 2437,
+   "signedOutcome": -0.002903233206005651,
+   "signedOutcomeCI": [
+    -0.005433007920696776,
+    -0.00042028079368748334
+   ],
+   "winRate": -0.0008206811653672548,
+   "potionsAfter": -0.0036930652441526466,
+   "simulationSaving": 0.46400281341708904,
+   "cpuRatio": 0.5203534731330882
+  },
+  "learned_vs_control": {
+   "n": 2437,
+   "signedOutcome": -0.000988980559428094,
+   "signedOutcomeCI": [
+    -0.003951513220930521,
+    0.002072931894391688
+   ],
+   "winRate": 0.0004103405826836274,
+   "potionsAfter": 0.002872384078785392,
+   "simulationSaving": 0.5679931362324464,
+   "cpuRatio": 0.41620578513424616
+  }
+ },
+ "byRoom": {
+  "BOSS": {
+   "learned_vs_adaptive199": {
+    "n": 272,
+    "signedOutcome": 0.006895145960443606,
+    "signedOutcomeCI": [
+     -0.014708161296244462,
+     0.029803707718310642
+    ],
+    "winRate": 0.003676470588235294,
+    "potionsAfter": 0.022058823529411766,
+    "simulationSaving": 0.17193098810806828,
+    "cpuRatio": 0.795732883410289
+   },
+   "learned_vs_control": {
+    "n": 272,
+    "signedOutcome": 0.0004051326330908733,
+    "signedOutcomeCI": [
+     -0.020693012691512216,
+     0.02116131430711264
+    ],
+    "winRate": 0.003676470588235294,
+    "potionsAfter": -0.01838235294117647,
+    "simulationSaving": 0.5370004120313143,
+    "cpuRatio": 0.41072850418768314
+   }
+  },
+  "ELITE": {
+   "learned_vs_adaptive199": {
+    "n": 600,
+    "signedOutcome": 0.0017020594374999468,
+    "signedOutcomeCI": [
+     -0.0030217226254832946,
+     0.006756163006608165
+    ],
+    "winRate": 0.0033333333333333335,
+    "potionsAfter": 0.023333333333333334,
+    "simulationSaving": 0.1946371935726927,
+    "cpuRatio": 0.7965309908884424
+   },
+   "learned_vs_control": {
+    "n": 600,
+    "signedOutcome": -0.004105578613425411,
+    "signedOutcomeCI": [
+     -0.009212264476304174,
+     0.0008299435308010136
+    ],
+    "winRate": 0.0016666666666666668,
+    "potionsAfter": 0.02,
+    "simulationSaving": 0.6086072553861875,
+    "cpuRatio": 0.3774330976659876
+   }
+  },
+  "NORMAL": {
+   "learned_vs_adaptive199": {
+    "n": 1480,
+    "signedOutcome": 0.0010012358833896271,
+    "signedOutcomeCI": [
+     -0.00040906743398684857,
+     0.0024210108271658214
+    ],
+    "winRate": 0.0,
+    "potionsAfter": -0.002027027027027027,
+    "simulationSaving": 0.20798987902889676,
+    "cpuRatio": 0.8016587364813801
+   },
+   "learned_vs_control": {
+    "n": 1480,
+    "signedOutcome": 2.6477336290162998e-05,
+    "signedOutcomeCI": [
+     -0.0015706293201870549,
+     0.0015338452422081355
+    ],
+    "winRate": -0.0006756756756756757,
+    "potionsAfter": 0.0013513513513513514,
+    "simulationSaving": 0.5624505607628543,
+    "cpuRatio": 0.4485801385787576
+   }
+  },
+  "OTHER": {
+   "learned_vs_adaptive199": {
+    "n": 85,
+    "signedOutcome": 0.00337046151237919,
+    "signedOutcomeCI": [
+     -0.002078838154321752,
+     0.010781764708223191
+    ],
+    "winRate": 0.0,
+    "potionsAfter": -0.011764705882352941,
+    "simulationSaving": 0.15987501627392264,
+    "cpuRatio": 0.8556478820797512
+   },
+   "learned_vs_control": {
+    "n": 85,
+    "signedOutcome": -0.0011315410491903014,
+    "signedOutcomeCI": [
+     -0.007986816890407368,
+     0.005683100325298973
+    ],
+    "winRate": 0.0,
+    "potionsAfter": -0.023529411764705882,
+    "simulationSaving": 0.5122448979591836,
+    "cpuRatio": 0.5003867951222799
+   }
+  }
+ },
+ "inputs": [
+  "run/replay0",
+  "run/replay1",
+  "run/replay2",
+  "run/replay3"
+ ]
+}

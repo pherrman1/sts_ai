@@ -1,0 +1,130 @@
+{
+  "schema": "overnight_targeted_rest_evaluation_v1",
+  "status": "EVALUATION_INTEGRITY_PASS",
+  "source_sha": "631f7f92cf45fe68c2805e70b53377c020510a05",
+  "binary_sha256": "0d78692026608575721d1e47bc78f4c1eed150d41c7a4b6edd5387c2e007ca48",
+  "protocol_sha256": "8c703eeaca9bd35d1c69b2cd4bad4096732e0ad6fd86f883dcc42fc83c1ddcf7",
+  "choice_sha256": "c4f8f74597ca5c9b423a4ae40920ab76ca70cf2559965916bd0784712ee000a8",
+  "source_seed": 610081015,
+  "decision_idx": 93,
+  "public_state_sha256": "11a1ea6ea301c078ce522c00acd92b8f4cac9e39038d48677ea498117bc7f332",
+  "selected_action": "Upgrade Offering",
+  "baseline_action": "REST",
+  "selected_option_key": "ooc:v1:effect=0:source=0:card=234:misc=0:upgraded=0:bottle=-1:occurrence=0",
+  "baseline_option_key": "ooc:v1:effect=17:source=1:none",
+  "evaluation_k": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47
+  ],
+  "conditional_future_pairs": 32,
+  "independent_source_decisions": 1,
+  "selected_wins": 23,
+  "baseline_wins": 17,
+  "paired_gain": 0.1875,
+  "paired_bootstrap_ci95": [
+    0.0,
+    0.375
+  ],
+  "selected_only": 8,
+  "baseline_only": 2,
+  "both_win": 15,
+  "both_lose": 7,
+  "bootstrap_replicates": 10000,
+  "bootstrap_seed": 20261008,
+  "classification": "LOCAL_CONDITIONAL_INCONCLUSIVE",
+  "branches": 64,
+  "map_rows": 64,
+  "invalid_branches": 0,
+  "source_trajectory_valid": true,
+  "source_cpu_seconds": 18.317,
+  "branch_cpu_seconds": 360.56808,
+  "branch_fights": 281,
+  "process_wall_seconds": 379.24484855899937,
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.labels.csv",
+      "sha256": "2f376ae7c969ebec339dca07544e995dfe49f803f98f50edc05582e5c9482813"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.log",
+      "sha256": "498e9e97c8e24c721d1481cdc2fc0f596a3def1da57ecc65659ce0dd4415ce89"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.manifest.json",
+      "sha256": "8f1a32007893d4f3cdb7e8f205ca10e8ee6ce71b34faafb05832b93745a89c02"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.map.csv",
+      "sha256": "2a8c90b41e451d7f71bc29de9aec7e74aea3cc6011b7af14856af5fe6eea7b9c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.options.csv",
+      "sha256": "76afa436174afd0ea47ec00d78c3ce012fe037ec2dd7799659b58ceaa8c010a0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.sources.csv",
+      "sha256": "9322216665ff8d1758675793adc742fb8764cdd086762f63c32fc46a78733d1c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.target.json",
+      "sha256": "d9752caa8a7e11ebf45a95a91cf2dd312169d2063fe3444d3df7b30c970d457b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/targeted_rest_631f/protocol.json",
+      "sha256": "8c703eeaca9bd35d1c69b2cd4bad4096732e0ad6fd86f883dcc42fc83c1ddcf7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/targeted_rest_631f_evaluation_target.json",
+      "sha256": "9c97ebca79bf6f6fba111f7ecebcb8f3365df16bf4256294a3c9a186da9044c3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/preflight.target.json",
+      "sha256": "681c6fca6e29d8fc0bd3fa6852bae8273b2c2580a6414ccde63c1499fd04e8c3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/targeted_rest_631f_selection_choice.json",
+      "sha256": "c4f8f74597ca5c9b423a4ae40920ab76ca70cf2559965916bd0784712ee000a8"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/targeted_rest_631f/evaluation.receipt.json",
+      "sha256": "ca75f616fd85d63720229e0f61f06a5d5d054d5169bec801061ca3c353981f46"
+    }
+  ],
+  "limits": [
+    "One selected source decision under fixed public-conditioning sampler and old631f teacher; not32 independent full runs.",
+    "Confidence interval resamples32 paired future draws conditional on this source; it does not include source-selection or teacher-distribution uncertainty.",
+    "Optional Ruby Recall defect remains in this diagnostic teacher. No corrected-reference qualification, policy promotion, or training claim.",
+    "Frozen selection used k0..15. Only k16..47 contribute to this evaluation; no reselection or sample extension."
+  ],
+  "analysis_script_sha256": "87cb840ccd7b86e24ba6f08d6f15195c4e645a2b4b92e01826457e2e79d65408"
+}

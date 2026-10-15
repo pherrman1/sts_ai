@@ -1,0 +1,9 @@
+{
+  "schema": "boss_k32_gen2_receipt_v1",
+  "freeze": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "verifier_sha256": "64db2d00154a34a8999cb5c9f78a4917d4f26f1e86ea185c41f02a737136e3db",
+  "status": "INVALID",
+  "error": "source subprocess incomplete/failed",
+  "evaluation_outcomes_reported": false
+}

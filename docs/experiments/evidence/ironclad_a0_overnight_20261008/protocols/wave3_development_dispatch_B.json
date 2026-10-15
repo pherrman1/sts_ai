@@ -1,0 +1,23 @@
+{
+  "queue": "B",
+  "launch_epoch": 1791425330.8781857,
+  "outer_timeout_seconds": 7200,
+  "experiment_deadline_epoch": 1791435171.1493402,
+  "removal_dispatch_completed": true,
+  "command": [
+    "timeout",
+    "--kill-after=30",
+    "7200",
+    "xargs",
+    "-P1",
+    "-L1",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py",
+    "--trace",
+    "--tree-profile",
+    "--timeout",
+    "1800"
+  ],
+  "stdin_jobs": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave3_development_B_jobs.txt",
+  "stdin_jobs_sha256": "2777bc5e79eb3297e125faf3f6dbf7c5f7fc8f6ce8a0bf9b498300a04822586d"
+}

@@ -1,0 +1,28 @@
+{
+  "verdict": "DESCRIPTIVE_COMPARISON_MEASURED",
+  "producerGitSha": "aa10fe8dfb6d4f63ba26f18a755b5f3f3a725117",
+  "freezeSha256": "8e7ff63a781a94013ad79ca9fdb1bcd1525121abfff0ee120dec33c200cbd1aa",
+  "binarySha256": "f3f98d84ef57faba177ebcb3842ece31b65c9524cb168fb3f516b2641e8afa5f",
+  "sourceCount": 32,
+  "anchorSourceCount": 8,
+  "matchedStates": 147,
+  "capturedFights": 574,
+  "redrawnForecastFights": 5696,
+  "originalFutureControls": 147,
+  "absentSlots": 45,
+  "unsupportedSelectedStates": 0,
+  "invalidArmRows": 0,
+  "controlMismatches": 0,
+  "coverage": {
+    "act2BossSourceClusters": 17,
+    "act3BossSourceClusters": 13,
+    "adequateLaterActs": true
+  },
+  "totalCpuSecondsIncludingExcludedCanary": 5074.7,
+  "cohortCpuSeconds": 4616.31,
+  "maximumSourceCpuSeconds": 918.11,
+  "localRawDirectory": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-large-1",
+  "rawArchiveFileCount": 314,
+  "sourceArchiveFileCount": 13,
+  "checks": "Release one_combat/probe PASS; final 8/8 affected CTests PASS; core21 and new4 synthetic tests PASS; prior missing-probe failures preserved in checks."
+}

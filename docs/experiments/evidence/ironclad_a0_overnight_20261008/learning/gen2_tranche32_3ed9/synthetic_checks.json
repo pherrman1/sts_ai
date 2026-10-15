@@ -1,0 +1,26 @@
+{
+  "status": "SYNTHETIC_CHECKS_PASS_PENDING_INDEPENDENT_REVIEW",
+  "tests": 7,
+  "command": ".venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_tranche.py",
+  "raw_test_summary": "Ran7 tests in0.193s;OK",
+  "scope": "Synthetic fixtures only; new source rows absent/unopened; no game execution",
+  "input_hashes": {
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_tranche.py": "f2ed2e94c5fd670aadaba5f12f563b6bd7d7532025de3b271d31f8eb06406fda",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_tranche.py": "ea2003d1337d4784c518ac63d8b726c2599a21a2145bbab8df2ca050760ade47",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py": "19234f751991a5f3e49589a38b8a57a126c7a196779d20e45bcb8fe2db32ff1c",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/paired_analysis.py": "f31e7ebd8a94a27043fdf5498c0e88dd53317626c6153896c345b1459667778d",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/proposal_v2.json": "714a1cde5342f4ab7b369838affda0a54794ac45023cc68e19d38d33ed8a750a",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/collection_spec.review.json": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1"
+  },
+  "checks": [
+    "exact32sources/disjointheldout/4+4futureblocks",
+    "uninterpretedout-of-stage numericalfields",
+    "equal-source weighting",
+    "duplicatedwithin-source observations leaveCIunchanged",
+    "no-eligible-state source retained withzero gain",
+    "emptycoverage0gain0CI",
+    "ties/nonfiniteinput rejection"
+  ],
+  "recorded_epoch": 1791421876.695573
+}

@@ -1,0 +1,125 @@
+{
+  "T2": {
+    "best_validation_ce": 1.3410672453976182,
+    "epochs": 19,
+    "history": [
+      1.3829196559058294,
+      1.3777203950932417,
+      1.372963825861613,
+      1.3760472561316515,
+      1.3624640337373846,
+      1.3494368255453766,
+      1.3490533696280584,
+      1.3463337434031977,
+      1.3455097883466691,
+      1.34897763073129,
+      1.3410672453976182,
+      1.3445082581232464,
+      1.3456700724899453,
+      1.346295056519685,
+      1.3452425040895977,
+      1.3641306534015312,
+      1.350332879515552,
+      1.3562447084951652,
+      1.3579539981468645
+    ],
+    "epoch_accounting": [
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      },
+      {
+        "train_roots_per_epoch": 8862,
+        "train_actions": 57012,
+        "optimizer_steps": 70
+      }
+    ],
+    "checkpoint_sha256": "e41bd24b35a0742a3bad21541079056334970d800173b217338b0d5fe24bd61f"
+  }
+}

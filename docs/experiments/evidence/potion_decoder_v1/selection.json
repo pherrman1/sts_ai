@@ -1,0 +1,108 @@
+{
+  "independent": {
+    "epochs": 12,
+    "validationHistory": [
+      {
+        "epoch": 1,
+        "jointNll": 0.6126641178793097
+      },
+      {
+        "epoch": 2,
+        "jointNll": 0.5621152448134711
+      },
+      {
+        "epoch": 3,
+        "jointNll": 0.5385954083930855
+      },
+      {
+        "epoch": 4,
+        "jointNll": 0.530310006437485
+      },
+      {
+        "epoch": 5,
+        "jointNll": 0.5257175786523257
+      },
+      {
+        "epoch": 6,
+        "jointNll": 0.5227708894850048
+      },
+      {
+        "epoch": 7,
+        "jointNll": 0.522559930175203
+      },
+      {
+        "epoch": 8,
+        "jointNll": 0.5207078495040809
+      },
+      {
+        "epoch": 9,
+        "jointNll": 0.5167920006717813
+      },
+      {
+        "epoch": 10,
+        "jointNll": 0.5165098921143232
+      },
+      {
+        "epoch": 11,
+        "jointNll": 0.5139625783094105
+      },
+      {
+        "epoch": 12,
+        "jointNll": 0.5131705911945892
+      }
+    ]
+  },
+  "joint": {
+    "epochs": 12,
+    "validationHistory": [
+      {
+        "epoch": 1,
+        "jointNll": 0.6138993682236745
+      },
+      {
+        "epoch": 2,
+        "jointNll": 0.5640401595436368
+      },
+      {
+        "epoch": 3,
+        "jointNll": 0.5379656529524238
+      },
+      {
+        "epoch": 4,
+        "jointNll": 0.5287180971124783
+      },
+      {
+        "epoch": 5,
+        "jointNll": 0.5227510695783761
+      },
+      {
+        "epoch": 6,
+        "jointNll": 0.5191759001774309
+      },
+      {
+        "epoch": 7,
+        "jointNll": 0.5182920899780641
+      },
+      {
+        "epoch": 8,
+        "jointNll": 0.5160272895327536
+      },
+      {
+        "epoch": 9,
+        "jointNll": 0.5138430977988047
+      },
+      {
+        "epoch": 10,
+        "jointNll": 0.5126583072828854
+      },
+      {
+        "epoch": 11,
+        "jointNll": 0.5099770361487678
+      },
+      {
+        "epoch": 12,
+        "jointNll": 0.5097903265350497
+      }
+    ]
+  }
+}

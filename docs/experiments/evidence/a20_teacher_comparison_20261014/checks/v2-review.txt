@@ -1,0 +1,57 @@
+Independent implementation/protocol review: PASS
+Reviewer: recent_ooc_evidence, independent of this v2 implementation and tests.
+Baseline/current HEAD before coordinator commit: 2e34d7c9cdc106d176ffdcd3f5c67593aac5d96e
+Reviewed the uncommitted v2 delta; exact file SHA256 values below bind this review.
+
+Scope: A20-only progress output and CSV flush checkpoints, v2 runner/analyzer schema,
+fixed fresh seeds 97150801 and 97150810-97150813, 600 CPU/900 wall seconds per source,
+max two concurrent sources/five attempts, regression tests, protocol/current docs,
+and custody of the preserved first attempt. No scientific result is qualified.
+
+Findings: no remaining blockers. One finding was corrected before this PASS:
+CTM phaseCpuSeconds previously had no upper bound against cumulative elapsed CPU.
+The analyzer now compares it with state_start and the 0.02s tolerance, and the
+regression covers 1e9 seconds. My independent in-memory malformed-record probe
+changed from accepted to rejected with progress CTM phase CPU mismatch.
+
+Verified properties:
+- CSV streams flush and reject stream failure before a progress record is emitted.
+  Progress records flush immediately; arm_start precedes clone/replay, and
+  arm_complete follows the returned replay and completed sample/arm CSV rows.
+  This provides visibility after a process kill, not an fsync/power-loss promise.
+- Selected identity, source, fixed event sequence, complete counts, finite monotone
+  cumulative CPU, bounded phase CPU, and CSV combat CPU/decision/simulation/validity
+  agreement are checked. Missing/truncated/extra events and old schemas fail closed.
+- Forecast/controller/RNG logic and scientific metric calculations are unchanged.
+  Progress files/schema changes apply only to teacher_a20; old armsets do not emit
+  progress or change their output schema, RNG, or controller settings.
+- Runner uses --cpu=600:600, timeout=900, max_workers=2, exclusive phase/source
+  latches, a completed valid canary gate, and the fixed fresh four-source cohort.
+- Protocol preserves all earlier quality limits and forbids pooling/retry/extension.
+- All nine SHA256SUMS entries for gen6E-attempt-1 verified; each of five archived
+  frozen-source members exactly matched an artifact digest in the old freeze.
+  Old raw data, reports, and freeze remain preserved.
+
+Checks performed by reviewer: full scoped diff and documentation inspection;
+git diff --check (PASS); read-only archive/hash verification (PASS);
+pure in-memory malformed-progress validation (PASS after correction).
+Coordinator logs inspected: Release one_combat build PASS; seven focused CTests
+PASS; final affected two Python CTests PASS after correction; direct analyzer
+21 tests and runner seven tests reported passed by coordinator.
+No build, game seed, training, canary, cohort, or quality comparison run by reviewer.
+Clean commit/freeze and actual canary/cohort execution are pending coordinator.
+Knowledge impact: maintained environment interface and current research status
+are updated; first attempt remains INVALID_OR_INSUFFICIENT.
+
+Reviewed file hashes:
+4fa2cfbbb71ee321aca73922087112dfd9b055e2ae4ab7d89065bc7df4248ef3  apps/one_combat/combat_datasets.cpp
+65ab37763865308bd4c488401082c5b851292d552d91f2e6570599419c68ded4  tools/analyze_a20_teachers.py
+d225b213cb0d45b213f70dfa37cf52c343cfa22ac521bd8a0584f2d538dd0c05  tests/test_analyze_a20_teachers.py
+9af4324720cd41a07f15bca2e6bcb46dbc45faf4d62beabe6ecf783d32be9e67  tests/test_a20_teacher_runner.py
+cfed6722c9636d3fb69fbe23d7df18e35a2e5090edf294caea6b8202a49ea895  docs/experiments/evidence/a20_teacher_comparison_20261014/run_pilot.py
+340714bf25f5a3078e2226e343d07e024f6537a05938ea2c0ac613a9d73c88f2  docs/experiments/evidence/a20_teacher_comparison_20261014/PROTOCOL-V2.md
+a1affca891e74d14903dd01b858620bbc99d32d513aaebae1aa50195b400fe74  docs/experiments/evidence/a20_teacher_comparison_20261014/README.md
+98266b0f0e1c2986957084c717b450e650fff0a51e542aea64da0b95e6b623a7  docs/knowledge-base/evaluation/current-research.md
+5bad35607c86f03746b2f5ef1c2e217398a2f45aa5388859017bffc2f49f9843  docs/knowledge-base/operations/environment-variables.md
+d86f24b676c6264511e50ae291c33c7f1a8d3dba5c427ecf82266ac5e2fa8426  docs/experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/SHA256SUMS
+45e04e25d5b6551e94d522dc621d46a1dbaaabe7c7fa749ff47dee938ba393eb  docs/experiments/evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/frozen-source.tar.gz

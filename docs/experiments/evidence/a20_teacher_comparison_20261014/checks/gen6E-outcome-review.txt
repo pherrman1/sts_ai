@@ -1,0 +1,23 @@
+Independent outcome/custody audit: PASS for the reported invalid-cohort interpretation
+Reviewer: recent_ooc_evidence; 2026-10-14. Read-only audit of gen6E-run-1; no seed runs, retries, extension, or partial quality reanalysis.
+
+Frozen source: dc9411562c72fb1828229b95aec0bd4c9fffbee6.
+Binary SHA256: f065c3be3f6d9e73cebf03beb117e27ef8afb76d5590b244d0e1589d577be4c7.
+Freeze SHA256: 135f3c11f90528283d385b52c9f603e792bf73bd67b4c232ee40837e3b50bd1f.
+Prior: gen6 E, SHA256 ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228; source pinned to PR541 commit 0f1b70f. CTM remains the frozen PR524 stack.
+
+Custody checks: all 18 artifactFiles hashes match; every canary input hash matches; all five per-source started files and receipts bind the same freeze. Completed canary and three cohort manifests bind the frozen source/binary and their three CSV hashes match. The cohort report contains no partial quality/comparison summaries.
+
+Canary 97150701: CANARY_VALID, rc 0, 95.90 CPU seconds. Five selected/supported states, five original-future control matches, zero mismatches and invalid arm rows. This is a successful mechanism/custody canary, not evidence of comparative teacher quality.
+
+Cohort: 97150710, 97150711 and 97150712 finish rc 0, at 69.68, 57.25 and 89.70 CPU seconds respectively. Their manifests report 3, 4 and 5 selected supported states, matching controls and no invalid arm rows. These completion/integrity counts are descriptive only; no outcome-quality metrics were pooled or calculated by this reviewer.
+
+97150713: rc 137, 180.10 CPU seconds, 180.17924 wall seconds; GNU time reports 'Command terminated by signal 9' and 179.87 user + 0.23 system seconds. Receipt timedOut=false means the Python 240-second wall timeout did not trigger; the failure is consistent with the frozen 180-second hard CPU cap. Its final manifest is absent, states CSV is empty, and arms/samples CSVs end without newline (buffered/truncated output retained). It is not a valid completed fourth source.
+
+Final cohort report correctly states INVALID_OR_INSUFFICIENT, reason 'Invalid: source process failed or timed out'. All four frozen cohort prefixes are present in that report. The design requires all four completed sources and disallows pooling an incomplete panel, replacements, retries or budget extensions. Thus no DESCRIPTIVE_COMPARISON_MEASURED, Silver-vs-CTM winner, prior benefit, optimal budget, student-learning, qualification or default-promotion claim is supported.
+
+Observed total job CPU across canary plus four attempted cohort sources: 492.63 seconds. This is execution-cost accounting, not a fair CPU comparison between teachers. The justified conclusion is that the real-model canary passed and the full planned panel failed its resource/completion gate. Preserve this attempt unchanged; any later scientific comparison needs a separate authorized design.
+
+Reviewed report hashes:
+bb5847a4f5120a8988730d90aad93ac3fb1ce3d2f0e75149d86ffbf751c0c6a6  canary-report.json
+ccabf18510f8317bab47d59055f221e414c38cf2f2ff04e44e83e67dddc920ab  cohort-report.json

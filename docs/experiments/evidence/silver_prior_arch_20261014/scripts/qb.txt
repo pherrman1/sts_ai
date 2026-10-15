@@ -1,0 +1,15 @@
+r_do05 --dropout 0.05
+b0
+s_wide --dropout 0.15 --h1 256 --h2 32
+s_dot --dropout 0.15 --dot 32
+r_cos --dropout 0.15 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+s_25664 --dropout 0.15 --h1 256 --h2 64
+r_do15s1 --dropout 0.15 --seed 1
+t512d15 --h1 512 --h2 256 --dropout 0.15 --dump-logp
+s_dot2 --dropout 0.15 --dot 16
+c_do15_s1 --dropout 0.15 --seed 1 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_do35_s1 --dropout 0.35 --seed 1 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_dist_s1 --dropout 0.15 --seed 1 --teacher runs/t512/logp.npy --alpha 0.5 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_6432dist_s0 --dropout 0.15 --h1 64 --h2 32 --teacher runs/t512/logp.npy --alpha 0.5 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_enc_s1 --dropout 0.15 --seed 1 --enc-emb 16 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_encdist_s1 --dropout 0.15 --seed 1 --enc-emb 16 --teacher runs/t512/logp.npy --alpha 0.5 --lr 1e-3 --sched cosine --epochs 25 --patience 25

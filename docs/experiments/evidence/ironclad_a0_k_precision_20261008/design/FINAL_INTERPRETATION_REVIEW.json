@@ -1,0 +1,101 @@
+{
+  "schema": "k_precision_final_interpretation_review_v1",
+  "status": "PASS_BLOCKED_CLOSEOUT_INTERPRETATION",
+  "reviewed_utc": "2026-10-08T11:09:20.245033+00:00",
+  "primary_status": "EXECUTION_BLOCKED",
+  "frozen_contract_status": "INVALID",
+  "blockers": [],
+  "bindings": [
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/blocked_accounting.json",
+      "sha256": "f1bd088ec0c1c7fb6cf09b4fffc9926494ecd9861fb0bb70d4eb27a8165c9c39"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/BLOCKED_RESULT.md",
+      "sha256": "8cc431583bd3297b117b6fb1fa61bd847a852c3ad4f2f48bb4ad8d3793bb7b66"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/contract_receipt.json",
+      "sha256": "33617a4879dc4ef0d2664e7defb0ef07f9dc7f232bd71b7a1e4ca1878b52ae6b"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_completion.json",
+      "sha256": "656034d8bfdb8e43e7805bdfe9288b3e401f4efdfcbd11baf5f18637d27b22bd"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/process_closeout.json",
+      "sha256": "8aa5e35ba1fe226237c99996fbe8805eb32badf54e9619436e5a68ab78e2780c"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/dispatch_authorization.json",
+      "sha256": "900af062a8611765ad4d2ede4828c6ff78a93f4c7f145ffe2f7c6fa97c5b4d13"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/freeze.json",
+      "sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/PROTOCOL.md",
+      "sha256": "277224c4c2d57a0f7e7894d91353f0cc68f0f5b329b05dc0db48ef6956cd4380"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/analysis/account_blocked_collection.py",
+      "sha256": "d041c018e1bc77a6a2243120836723eb8db5cbdce3a08b9669294e9c9eea1f7e"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/design/BLOCKED_ACCOUNTING_IMPLEMENTATION_REVIEW.json",
+      "sha256": "59913796ee45f0280f614068c55ecd866e26777fe13013ab0c2e59856a9c41d1"
+    },
+    {
+      "path": "docs/experiments/evidence/ironclad_a0_k_precision_20261008/audit/TIMEOUT_610084217_REVIEW.json",
+      "sha256": "f524b1e387abbfa43a565836247e1f55d3f090d388e97b6e2e866263704e3f05"
+    }
+  ],
+  "metadata_recomputed_from_accounting": {
+    "completed": {
+      "source_rows": 31,
+      "retained_option_rows": 124,
+      "observed_branch_rows": 3968,
+      "observed_map_rows": 3968,
+      "invalid_or_error_branch_rows": 0,
+      "source_cpu_observed_seconds": 412.58427,
+      "branch_cpu_observed_seconds": 30903.192223,
+      "files": 248,
+      "source_cpu_unavailable_sources": 0
+    },
+    "timeout": {
+      "source_rows": 0,
+      "retained_option_rows": 1,
+      "observed_branch_rows": 100,
+      "observed_map_rows": 97,
+      "invalid_or_error_branch_rows": 0,
+      "source_cpu_observed_seconds": null,
+      "branch_cpu_observed_seconds": 1747.39344,
+      "files": 7,
+      "source_cpu_unavailable_sources": 1
+    }
+  },
+  "observed_cpu_seconds": 33063.169933,
+  "observed_core_hours": 9.184213870277778,
+  "observed_cpu_censored": true,
+  "invocation_wall_seconds_sum": 33290.74718838194,
+  "dispatcher_elapsed_seconds": 6024.881753206253,
+  "receipt_span_elapsed_seconds": 6024.7903044223785,
+  "dispatcher_finished_local": "2026-10-08T13:02:19.409696+02:00",
+  "scientific_findings": [
+    "The fixed all-32 source validity gate fails; completed31 cannot replace it and timeout cannot be coded as valid no-state zero.",
+    "No K16-vs-K4 estimate, confidence interval, win count, action ranking or selector verdict is authorized by this incomplete corpus.",
+    "3968 complete branch records plus100 persisted partial-source branch records are accounting denominators, not independent sources or a complete primary.",
+    "4000 is only the available-options projection and cannot establish the interrupted source total allocation.",
+    "Observed CPU is censored; missing source/current/unflushed work is not zero. Sum of process wall is distinct from elapsed dispatch time.",
+    "No new games, retry, replacement, cap change or incomplete-primary inference is justified. Earlier RemoveLow confirmation remains separate and closed."
+  ],
+  "scope": [
+    "Read and independently recomputed metadata aggregates in the accounting JSON; verified exact summary/report/closure/contract/protocol hashes.",
+    "Checked consistency with the frozen all-source gate and prior timeout diagnosis.",
+    "Did not read raw CSV efficacy, compute or inspect choices, run either analysis stage, or launch games.",
+    "Complete raw-file custody and runtime health are separately reviewed by integrity; this is not a duplicate all-32 raw recomputation.",
+    "Campaign-wide nonexecution is bound to coordinator process_closeout; the accounting helper alone cannot prove absence of another analysis invocation."
+  ],
+  "next_gate": "Parent may finish metadata/health closeout and ordinary task-branch synchronization after the separate integrity review; this review does not authorize efficacy use."
+}

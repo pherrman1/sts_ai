@@ -1,0 +1,107 @@
+{
+  "units": {
+    "combo": 256,
+    "rollout3": 256,
+    "off": 256
+  },
+  "seed_failures": {
+    "combo": [],
+    "rollout3": [],
+    "off": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "combo": [],
+    "rollout3": [],
+    "off": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "combo": 256,
+    "rollout3": 256,
+    "off": 256
+  },
+  "pairs": 256,
+  "win": {
+    "combo": 0.875,
+    "rollout3": 0.83203125,
+    "off": 0.77734375
+  },
+  "combo_vs_off": {
+    "delta_win": 0.09765625,
+    "delta_win_ci95": [
+      0.0390625,
+      0.16015625
+    ],
+    "discordant_combo_only": 45,
+    "discordant_off_only": 20,
+    "mcnemar_p": 0.0026263768106840383,
+    "delta_floor": 0.5703125,
+    "delta_floor_ci95": [
+      -0.1993164062499999,
+      1.3790039062499986
+    ],
+    "delta_hp_end": 6.5234375
+  },
+  "combo_vs_rollout3": {
+    "delta_win": 0.04296875,
+    "delta_win_ci95": [
+      -0.015625,
+      0.1015625
+    ],
+    "discordant_combo_only": 35,
+    "discordant_rollout3_only": 24,
+    "mcnemar_p": 0.19252645776146274,
+    "delta_floor": 0.34765625,
+    "delta_floor_ci95": [
+      -0.3516601562499999,
+      1.0625
+    ],
+    "delta_hp_end": 0.23046875
+  },
+  "rollout3_vs_off": {
+    "delta_win": 0.0546875,
+    "delta_win_ci95": [
+      -0.01171875,
+      0.12109375
+    ],
+    "discordant_rollout3_only": 44,
+    "discordant_off_only": 30,
+    "mcnemar_p": 0.13017768031912763,
+    "delta_floor": 0.22265625,
+    "delta_floor_ci95": [
+      -0.5546875,
+      0.9921875
+    ],
+    "delta_hp_end": 6.29296875
+  },
+  "boss_deaths": {
+    "combo": 15,
+    "rollout3": 32,
+    "off": 42
+  },
+  "sec_per_run": {
+    "combo": 1536.08349609375,
+    "rollout3": 892.7767265625,
+    "off": 54.671053515625005
+  },
+  "label": "CONFIRMED",
+  "search": {
+    "combo": {
+      "runs_with_trace": 256,
+      "mcts_cpu_sec_per_run": 1452.6653917665196,
+      "owned_share": 0.7224328643499515,
+      "fallback_share": 0.2775671356500486,
+      "support_aborts_per_run": 31.703125,
+      "simulations_per_run": 188532.54296875
+    },
+    "rollout3": {
+      "runs_with_trace": 256,
+      "mcts_cpu_sec_per_run": 815.2577474940313,
+      "owned_share": 0.7844521849271691,
+      "fallback_share": 0.2155478150728309,
+      "support_aborts_per_run": 23.69921875,
+      "simulations_per_run": 101837.3515625
+    }
+  }
+}

@@ -1,0 +1,1149 @@
+# Live model inspector
+
+Last verified: 2026-10-09 for the advisor keeping the pre-#418 CTM stack; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+boundary currently present in the repository; it is not a claim that every
+game boundary has a qualified live evaluator.
+
+## Current boundary
+
+`one_combat_advisor` is a small, read-only newline-delimited JSON process.
+Its stdout contains protocol responses only; malformed input and failures are
+returned as structured errors. It validates the protocol name, request kind,
+session, monotonic observation sequence, observation hash, and the required
+observation boundary. It never receives RNG state or controls the simulator.
+
+Combat observations now have two separate fail-closed evaluator paths. The
+existing CTM evaluator uses the public combat-entry importer when its model is
+available. The `silver_player_decision_v2` evaluator imports an Ironclad
+decision-0 or decision-1 Silver root, builds a main-engine search state from it
+(`battleContextFromWire`), and runs a 1,000-simulation Silver decision by
+default with the native `SilverSearcher` (the same search `one_combat` uses,
+ADR-0021; responses carry `"engine": "native_silver"`). The combat
+panel's `Silver +9k` button raises the active root budget to 10,000; each later
+click adds another 10,000 (20,000, 30,000, ...). The retained Silver root is
+continued incrementally, and any gameplay state change resets the next decision
+to 1,000. The panel reports the requested budget, accumulated root visits, and
+total simulations returned by the advisor.
+One advisor-owned Silver session is retained for the active protocol session
+and `combatEntryHash`; a matching observed successor can therefore report an
+exact reroot with inherited visits. Matching considers every explored state in
+the retained graph, not only Silver's selected recommendation, so choosing
+another listed action also inherits its branch visits. Playing a different
+physical copy of an equivalent card reroots through that branch as well and
+reports `equivalentCopy: true` (ADR-0023). An observation with no retained
+successor safely reports a fresh `candidate_missing` fallback. Multi-card
+selections (Gambling Chip, Purity) are searched as whole subsets; the selected
+subset is lowered one `choose` at a time and then `proceed`.
+It returns the selected action, root action summaries containing
+edge visits, `visitShare`, and selection Q only when that edge has a valid Q
+value, plus the decision ordinal and reroot diagnostics.
+
+#### Combat final-HP samples
+
+Every OK Silver result also carries `finalHpDistribution`
+(`silver_final_hp_distribution_v1`) and a `finalHp` layer on each root action
+summary. Each simulation Silver runs at the current root adds one sample: the
+player HP when its combat ended (tree terminal or rollout), before
+post-combat relic heals such as Burning Blood, or a death. `hpCounts` share
+one `0..axisMaxHp` axis (at least the root max HP); index 0 holds deaths.
+Turn-cap losses, engine stops and halted rollouts are `unresolved` and are
+excluded from `count`. Samples accumulate across `Silver +9k` extensions of
+the same root and restart at every new root; visits inherited through a
+reroot are not included, so `count + unresolved` equals the simulations run
+at this root, not `rootVisits`. Root action layers partition the root layer.
+`SilverOutcomeCapture` is caller-owned, default off, and only counts;
+`live_silver_importer` checks that capturing leaves visits, values and the
+selected action unchanged. The samples follow Silver's UCB tree policy and
+rollout policy, so they are search-conditioned outcomes, not an unbiased
+estimate of the eventual result of the recommended line; low-visit actions
+have few samples.
+
+The combat panel shows these samples instead of the CTM combat-entry
+forecast, which remains in the protocol but is no longer displayed. The left
+card shows **Sampled deaths** (share of resolved samples) and the sample
+count. The right card, **HP at combat end**, draws a cyan histogram on a
+fixed 0..max-HP axis with the death bar in red, a white marker at the current
+HP, and the expected final HP (deaths as 0) with its change from now. Hovering
+a hand card outlines, in amber on the same y scale, the samples of every
+searched play of that physical card (UUID); while aiming at a monster, only
+plays at that target. Hovering End Turn shows its samples. Hovering a potion
+icon, or opening its menu, shows every searched use of that slot; aiming it
+narrows to that target, and hovering the menu's Discard button shows the
+discard. The display uses
+only identity-matched responses and does not depend on the CTM model or the
+response's CTM status.
+Unsupported encounter, relic, information, or schema states remain explicit
+`UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
+controller or a qualification of Silver policy quality. `STALE` responses
+reject a second observation with an equal or older sequence in the same
+session. A new process starts a new session state.
+
+The default live OOC evaluator is `mcts_ctm`. It imports the public OOC
+observation into a separate transition-capable root, uses the shared
+`CombatTransitionSampler` for combat-entry chance transitions, the loaded V4
+strategic model for policy priors, and `v_win_trees.txt` for compact-tree leaf
+values. The default search budget is exactly 512 simulations with the native
+OOC MCTS planner's default PUCT and progressive-widening configuration. The
+search seed is derived from the request observation hash, so repeated
+observations are reproducible without importing live RNG state. V4 remains
+available only as the explicit `STS_LIVE_OOC_POLICY=v4` diagnostic path; it is
+not the default and is not used as a post-hoc selector.
+Newly expanded reward, shop, event, and selector states are continued through
+the shared bounded dependency to a resolved map checkpoint before `v_win` is
+evaluated. Semantic roots outside V4's screen support use uniform source
+priors; REMOVE, TRANSFORM, and non-card reward roots are not rejected merely
+because V4 cannot supply their prior.
+
+Each supported OOC candidate reports a semantic key/payload, physical live
+action, Q, visit count, visit share, and prior. The selected candidate is the
+visit winner, with the planner's Q tie-break. The driver and Java overlay
+validate finite nonnegative statistics, a complete root visit/share
+distribution, and selected-candidate consistency before displaying or
+executing a choice. A selected smith, peace-pipe, shop-removal, or supported
+event transaction records a session/sequence-bound pending compound plan; the
+next matching selector must resolve the same physical card identity before a
+selector action is emitted. Missing, ambiguous, stale, or interrupted plans
+fail closed.
+
+The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
+post-update/render subscribers and captures detached Ironclad-compatible
+summary fields for actionable OOC screens and ordinary player turns. The
+combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
+upgraded/misc/cost/retain/free-play fields, battle-lifetime stable monster
+slots, dead/half-dead/escaping state, relics, potion slots, the combat entry
+identity, and a centralized native mapping
+boundary for runtime IDs. Monster move-history bytes are emitted in Java's
+oldest-to-newest order and translated by the native importer through the
+per-monster mapping; they are never copied as native enum values. Ordinary
+draw order is sorted before emission; the actual runtime order is retained
+when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
+`moveHistory`, `intent`, and `intentDamage`. A public-history observer qualifies 62 audited monster types. The roster is
+Jaw Worm, Cultist, Fungi Beast, Blue/Red Slaver, small/medium Acid and Spike
+Slimes, Sentry, Gremlin Nob, Centurion, Mystic, Chosen, Snake Plant, Snecko,
+Spheric Guardian, Exploder, Repulsor, Maw, Nemesis, Orb Walker, Giant Head,
+Donu, Deca, Spiker, Spire Growth, Taskmaster, the five ordinary gremlin types,
+Book of Stabbing, Time Eater, the three Masked Bandits, Transient, Writhing
+Mass, Champ, Byrd, Shelled Parasite, Guardian, Hexaghost, Lagavulin, Looter,
+Mugger, Awakened One, large Acid and Spike Slimes, Slime Boss, Bronze
+Automaton, Bronze Orb, Gremlin Leader, Reptomancer, Snake Dagger, Collector,
+Torch Head, both lice and Darkling. Every member of
+a group must qualify, retaining original physical slots and executed history
+for dead members. Source-qualified births carry canonical slots, occupant
+generations and local execution timelines. Replacements clear the previous
+occupant's pending rolls and attack predicates before the newborn's first roll.
+The thief contract separately qualifies original escaped slots. Generic card, relic, potion and power qualification still
+applies; Dome does not impose a separate restricted deck.
+Runic history schema 4 carries occupant identity and local timelines alongside
+typed known-next and forced-override proofs, public pre-roll
+inputs, roll generations and indexed attack predicates. Exact installed-source
+setter sites qualify deterministic transitions and visible stuns; missing,
+late, duplicate or unrelated overrides fail closed. No queued hidden move is
+read. Writhing Mass retains each public reactive-roll input and only marks
+Implant used after its public execution. Guardian derives the defensive
+threshold from completed Twin Slams and observes the public Mode Shift break.
+Hexaghost records player HP at public Activate execution to derive Divider,
+and derives orb phase from the completed deterministic cycle. Spot Weakness
+on a known next move checks consistency without consuming RNG.
+Lagavulin records public sleep/wake transitions and qualified setter ordering.
+Looter and Mugger retain a deferred direct-choice prior without reading its
+outcome, with public stolen-gold bookkeeping and escaped-slot handling.
+Awakened One records public half-dead/rebirth transitions while retaining the
+original Cultist slots. Deferred direct choices are materialized before rollout
+policy evaluation just as ordinary pending move rolls are.
+Both lice and Darkling carry a finite candidate mask for their persistent
+constructor damage. Public hit outcomes narrow that mask by replaying the
+visible HP, block and mitigation context; blocked hits, Buffer, Intangible and
+overkill retain every compatible candidate. The damage callback precedes
+Buffer's queued power reduction. Each simulated world samples one surviving
+candidate and retains it across attacks and Darkling's same-object regrow.
+Under Dome, public wire state, knowledge events, information hashes, model
+observations and retained search nodes redact that sample while preserving the
+mask. Ordinary public roots retain the known scalar and canonicalize the
+irrelevant belief metadata to zero.
+Unknown birth sources, incomplete execution tokens and impossible damage
+histories fail closed. This qualifies the installed vanilla source contract;
+it does not establish gameplay quality or a live smoke of every encounter.
+Spot Weakness contributes only its publicly revealed attack/nonattack predicate,
+indexed to the pending roll. Fair search conditions hidden move samples on that
+predicate without exposing the actual move or damage. Repeated queries retain
+the same observation; earlier constraints survive subsequent hidden rerolls.
+Silver wire v3 carries this information; legacy v2 is accepted only for roots
+without hidden intents. Binary snapshots use v4 for occupant generations and persistent damage
+beliefs. Legacy versions are readable within their representable domain. Impossible predicate constraints fail
+explicitly rather than selecting a fallback move.
+Sensitive player and monster powers carry the runtime `justApplied` bit when
+the bounded reflection helper can read it and are rejected when it cannot.
+The producer maps vanilla `RitualPower.skipFirst` to this field because that
+power uses a different turn-local member name; `SlaverBlue` has stable native
+`miscInfo` zero and is emitted explicitly as zero. The player-side
+`Weakened` ID is an alias of native `Weak` and follows the same
+`justApplied` requirement.
+Raw vanilla power IDs are accepted alongside the legacy class-name aliases,
+including Flame Barrier, Double Tap, Brutality, Confusion, Constricted,
+Next Turn Block, DexLoss, Regeneration, Ritual, Magnetism, Mayhem and Sadistic.
+Monster aliases include Shackled, Generic Strength Up Power, Painful Stabs,
+Regenerate and Compulsive. The latter is a Java boolean marker; at a resolved
+Writhing Mass boundary it maps to native zero pending reactive rolls.
+Unawakened and Explosive are validated against monster identity and phase/move
+state rather than invented status bits. Awakened One remains in native phase
+zero while half-dead and gains the native minion-leader victory rule after
+rebirth, so surviving Cultists do not delay victory after its final death.
+Combat capture includes
+`energyPerTurn` from Java `energyMaster`; the importer adds Berserk's power
+amount to this base/relic energy for native future turns. IntangiblePlayer
+has an explicit false native expiry bit because vanilla always decrements it
+at end of round and has no `justApplied` member. These mappings were checked
+against `desktop-1.0.jar` SHA-256
+`cfad868ac8d65a88e71a0bf096fb09f78811e553effe0787c5309a655e081673` and native
+regression fixtures; they do not establish live whole-fight parity.
+Special bookkeeping for Combust, Echo Form, Panache, Deva Form, Orange
+Pellets, used-up relics, and Necronomicon is serialized when its runtime field
+is accessible; otherwise the importer rejects that state. Monster `miscInfo`
+is similarly serialized from known runtime trackers or omitted so the importer
+fails closed. Bronze Orb Stasis uses the runtime `StasisPower.card` object to
+preserve the exact physical card UUID and state, rejecting only the active-
+Stasis snapshot when that field is unavailable.
+The observer's post-`AbstractPlayer.damage()` patch records finalized damage
+once per public damage call, preserving multi-hit event counts and the final
+individual unblocked hit. The v4 importer rejects observations unless the
+producer asserts this exact tracking; the old per-turn combat-damage total is
+not an accepted approximation. The resolved `CardQueueItem` is captured by a
+prefix on `AbstractPlayer.useCard(...)`, after vanilla resolves random
+targeting and before `GameActionManager` removes the queue entry; post-update
+observation is too late to retain that public item. At a card selection the
+importer also accepts an optional `combat.pendingCardQueue` array: vanilla's
+`GameActionManager.cardQueue` still pending at that point (not the item being
+played), front first, with items in the `curCardQueueItem` shape. A malformed array fails as
+`silver_card_queue_item`. The Java producer now emits this array at selectors,
+including an observed empty array, and retains same-UUID generated copies in
+front-first order. It verifies that the processed physical queue item has
+already been removed; unknown subclasses, unsettled queues, invalid targets,
+capacity overflow and unqualified end-turn/no-trigger payloads fail closed.
+At a qualified Nilry's Codex end-turn choice, the producer also preserves
+ordered vanilla Burn, Decay, Doubt, Shame and Regret objects still in the hand with their no-trigger
+flags. The importer verifies their physical card identity, owning continuation
+and exact flags. Pending block gains precede that damage; lethal damage stops
+the continuation. Regret retains its trigger-time hand count. Unceasing Top is
+qualified at the Codex end-turn barrier; its next-turn behavior resumes after
+the end-turn queue. Other no-trigger owners/cards remain unsupported.
+Java's `isEndTurnAutoPlay` flag is kept separate from the native
+null-card end-turn marker. A producer-shaped Double Tap/Headbutt fixture checks
+the copied continuation; Codex fixtures check choose/skip, upgraded Burn,
+block order and lethal damage.
+Qualified source-card selectors, standalone selectors and Toolbox capture an
+ordered typed action tail: opening draws, block/energy, literal or random enemy damage,
+Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
+batches, Mark of Pain's two shuffled Wounds, and the owning card's cleanup.
+Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
+are qualified by their exact vanilla relic, action and recipient.
+Exact vanilla action classes,
+unstarted-action fields and public parameters are required. The native root
+restores this observed queue directly instead of replaying a historical card;
+the producer clears stale current-card bookkeeping for standalone selectors.
+Source-card tails require an exact card/task owner, physical queue provenance,
+unstarted cleanup flags and an observed copied-card queue; cleanup executes
+once at its recorded position after effects such as Burning Pact's draw.
+Observed card and action queues survive JSON envelope snapshots, including
+known empty queues. Arbitrary action tails and hidden preselected random
+targets still require their own contracts. Boolean monster powers are
+presence states at the importer boundary, so a negative or sentinel Java amount
+still sets the status bit before numeric amount validation. The stable slot
+registry keeps ordinary Large Slime split children at native slots 0/1; the
+separate Slime Boss layout uses 0/2. Move bytes are likewise fail-closed, with all
+simulator-supported vanilla class constants independently qualified against the
+installed `desktop-1.0.jar`. The native construction, public-render, import,
+exact search-state parity, and one-simulation Silver-decision sweep covers all
+63 reachable `MonsterEncounter` values; the focused test additionally covers
+producer-shaped dynamic transitions for Large Slime split, Reptomancer summon,
+Darkling Regrow, Bronze Orb Stasis, and Awakened One stage 2. The only manifest
+exclusion is the `INVALID` sentinel.
+The combat boundary still requires the installed runtime's waiting-for-user
+phase, no current action, empty action/card/monster queues, and an unended turn.
+The combat fingerprint includes the payload, so successive decisions are not
+collapsed into one observation. A battle-start hook can precede encounter
+population, so combat-entry and Silver-root identity are captured lazily at the
+first actionable decision. A stable-boundary loss clears the displayed
+observation and fences late responses from the prior decision. Advisor writes
+use one bounded latest-observation slot; intermediate captures are replaceable
+rather than queued without limit. It launches the advisor with a direct
+`ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Its top
+edge sits 170 scaled pixels below the screen top, clearing the relic row.
+The panels omit floor/HP text already shown in the game HUD. The lower-left
+graph button exports a captured Silver or OOC MCTS tree as a timestamped HTML
+file under `~/.cache/sts-model-inspector/graphs/` and opens it in the default
+browser. At click time it pins the current observation and its matching ready
+advisor response into a dedicated temporary snapshot, so asynchronous updates
+to `latest.json` cannot change which tree the export uses;
+`captureMctsGraphs=true` enables tree capture. `showAdvisorPanel=false`
+hides the top-left panel while retaining the standalone graph and Silver
+budget controls, `showActionRecommendations=false` hides recommendation
+overlays, and `showSelectedActionSummary=false` hides the selected Silver
+action line while retaining the budget and visit summary. These properties are
+read from `~/.sts-model-inspector.properties` and default to their existing
+visible/capture-off behavior unless set.
+OOC decisions use the same dark/cyan styling as Silver, with an amber border
+on the selected action. Event and Neow scores appear beside their active
+buttons. Shop scores sit by each affordable card, relic, potion, removal and
+leave control. Map scores bind through the same one-based `choose` indices
+as the live capture (coordinates are metadata), and follow the reachable nodes' scrolled hitboxes;
+offscreen nodes never acquire badges clamped onto the screen edge. Rest options
+and OOC card selectors also use physical-control badges. Upgrade, remove, and
+transform selectors show the shared MCTS ranking when the public selector
+boundary is supported. Grid
+scores hide during peek/confirmation and cull offscreen cards.
+Card rewards retain scores below each card and add a separate
+skip-button badge (and Singing Bowl badge when present). These screens replace
+the upper-left recommendation list with inline labels and a small status footer;
+other screens retain the ranked panel. Labels and badges bind to current structured choice
+occurrences, not card names. Only identity-matched `live_ooc_decision_v1`
+responses display scores; waiting, unsupported and error states show no
+recommendation. If a scored action cannot be bound to its exact physical
+control, the ranked panel remains as a fallback rather than silently hiding it.
+
+Compound actions are represented as a source click followed by the pending
+selector plan; the source score is not silently combined with a fabricated
+selector score. The selector response carries an `APPLIED` compound-plan
+marker after the exact target is resolved. Unsupported effects, incomplete
+public continuations, and screens whose target cannot be matched remain
+explicit `UNSUPPORTED` results.
+
+In combat each scored potion gets one small badge under its top-bar icon:
+the best-ranked Silver action for that physical slot (`#rank · visits`,
+prefixed `Discard` when discarding ranks best), amber-bordered when it is
+Silver's selection. Unscored potions get no badge, and badges hide while the
+potion menu is open. The per-target and use/discard detail is in the hover
+distribution instead (see *Combat final-HP samples*). Card and potion target labels
+use live monster names, with indices only to distinguish duplicate names. Native
+Silver slots and compact live potion targets resolve separately. Silver root summaries include
+an additive `liveAction` binding for this display; unsupported lowering is
+`null`. OOC full-belt replacement discards have native MCTS action bindings,
+but the combat potion badge renderer does not display OOC scores. Freshness
+and unsupported/error suppression apply to potion scores
+as well. The overlay is presentation-only and does not change policy
+or driver decisions. Combat-entry projection translates only the spent
+Neow's Lament sentinel (`counter=-2`, `usedUp=true`) to native zero remaining
+charges. Active charges and other relic counters remain exact; the CTM support
+gate is unchanged. Workshop
+and game/dependency JARs remain outside Git. The native v4 importer is
+fail-closed for unknown mappings, resolving snapshots, unsupported selection
+tasks or option capacities, and native mechanics absent from the pinned
+simulator. Its maintained capability census is
+`docs/knowledge-base/behavior/live-silver-capability-census.md`. A single
+isolated search seed derived from `combatEntryHash` is retained across an
+active protocol session and combat; the UUID registry is reset when either
+identity changes.
+
+## Direct live-game driver
+
+### Start and discover the live control boundary
+
+The canonical local live-test setup is provided by
+`tools/live_game_start.sh`. It first ensures a self-contained user runtime at
+`${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/sts-ai/live-runtime}`,
+repairs the managed inspector properties without replacing unrelated keys,
+reuses an already-running modded game, or starts ModTheSpire in its own
+background session, waits for MCP port `8080`, and prints the driver command.
+Use:
+
+```bash
+tools/live_game_start.sh --probe
+```
+
+`--probe` performs a read-only driver dry-run after the game reaches a
+command-ready screen. Use `--check` to validate without starting anything and
+`--foreground` when the Codex terminal should retain the ModTheSpire process
+directly. `--run -- <driver options>` starts the autonomous driver immediately
+after MCP becomes available, without a separate probe or manual launch gap.
+The driver's initial menu-readiness budget is 45 seconds (`--startup-timeout`);
+this is a timeout, not a delay. Gameplay transition timeouts stay separate.
+It uses the seed guard and forwards arguments as an array; `--run` cannot be
+combined with `--check` or `--foreground`. For a fresh run with no existing save:
+
+```bash
+tools/live_game_start.sh --super-fast --run -- \
+  --new-run --character IRONCLAD --ascension 0 --run-until-error
+```
+
+`--super-fast` enables an already installed `mods/SuperFastMode.jar` (mod ID
+`superfastmode`). Use `--restart-game` once if the running game lacks that mod.
+Its local configuration is under `~/.config/ModTheSpire/SuperFastMode/`; the
+debug setup uses `deltaMultiplier=4.0`, `isDeltaMultiplied=true`, and
+`isInstantLerp=true`. The external JAR is not a repository artifact. Speed
+changes remain subject to the same readiness and observation checks.
+
+`--refresh-runtime` builds only `one_combat_advisor`, copies it and
+the tracked CTM/OOC model artifacts into a new release, validates their hashes,
+and atomically changes `current`. New releases package both the qualified
+`combat_transition_deepsets_lizard_t2.native` primary and standard Brew
+fallback, pin both hashes and the correction setting in the manifest, and
+select that manifest's primary at launch. Legacy single-model manifests and
+explicit standard-primary overrides remain supported. `STS_CTM_BREW_FALLBACK_MODEL`
+and strict `STS_CTM_ACTIVE_LIZARD=0|1` override the qualified stack; advisor
+hello/forecast and OOC responses identify the loaded artifacts and setting.
+The advisor deliberately still uses this pre-#418 stack, not the pathb-r2 default of `one_combat` OOC MCTS (ledger §412; open follow-up).
+Only validated production qualification enables Lizard correction automatically;
+integration-candidate metadata requires explicit opt-in. An explicitly empty
+or whitespace model override reaches the native loader unchanged and fails,
+rather than being replaced by Java properties.
+Launch overrides that differ from the installed manifest no longer count as a
+matching active runtime. The runtime helper uses the Release build
+preset (`linux-gcc-release-ccache`, with the build wrapper's matching fallback).
+The helper packages the executable from the preset actually selected by the
+wrapper. A running game is never silently restarted; when it is
+using another release, the helper prints both identities and
+requires the explicit `--restart-game` option. `--deploy-inspector` invokes the
+existing Java build and atomically installs its JAR. `--allow-missing-advisor`
+is only for MCP-only control. Background launch output is written to
+`~/.cache/sts-live-driver/modthespire.log`, and launch identity is recorded in
+`~/.cache/sts-live-driver/active-runtime.json`. The installed game artifacts
+are:
+
+```text
+game directory: /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
+ModTheSpire:   /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar
+MCPTheSpire:   <game directory>/mods/MCPTheSpire.jar
+inspector:     <game directory>/mods/sts-model-inspector.jar
+```
+
+The active-runtime record is written only after port `8080` is verified as
+owned by the exact `java -jar <ModTheSpire.jar>` process. It includes that
+process's PID, Linux start ticks, and command-line hash; stale metadata is not
+reported as the currently running runtime. Explicit `--allow-missing-advisor`
+startup remains MCP-only and neither validates nor records a stable runtime.
+
+Start the modded game with the MCP and inspector mods enabled:
+
+```bash
+# Equivalent manual launch when the helper is unavailable.
+cd /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
+/usr/bin/java -jar \
+  /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar \
+  --skip-launcher --mods basemod,MCPTheSpire,stsmodelinspector
+```
+
+MCPTheSpire starts a Streamable HTTP server at
+`http://127.0.0.1:8080/mcp`. It is the live game's control boundary; use its
+MCP tools rather than GUI automation. The driver discovers the available
+surface at startup and requires `get_screen_state`,
+`get_available_commands`, and at least one supported action tool. A quick
+endpoint check is:
+
+```bash
+uv run --extra live-driver python tools/live_game_driver.py \
+  --dry-run --max-steps 1
+```
+
+The asynchronous inspector snapshot is written to
+`~/.cache/sts-model-inspector/latest.json`. Before using an advisor response,
+verify that `response.ready` is true and that `response.session`,
+`response.sequence`, and `response.observationHash` match the observation (and
+then correlate that observation with `get_screen_state`/`get_game_state`).
+The endpoint and snapshot paths can be overridden with `STS_MCP_URL` and
+`STS_INSPECTOR_PATH` when an isolated game instance is required.
+
+The inspector launches the stable advisor configured in
+`~/.sts-model-inspector.properties`. Managed keys point through the stable
+`current` symlink, never into a Codex worktree:
+
+```properties
+advisor=<XDG data>/sts-ai/live-runtime/current/one_combat_advisor
+ctmModel=<XDG data>/sts-ai/live-runtime/current/models/combat_transition_deepsets_lizard_t2.native
+oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.native
+```
+
+`STS_MODEL_INSPECTOR_ADVISOR`, `STS_CTM_MODEL`, and `STS_LIVE_OOC_MODEL`
+override their corresponding properties when nonempty.
+`STS_MODEL_INSPECTOR_CONFIG` selects a different properties file. These
+environment-first rules provide an isolated development/test escape hatch.
+The learned Silver root prior is not supported by the native evaluator: the
+advisor exits at startup when `STS_SILVER_ROOT_PRIOR_MODEL` is set.
+For an explicit Silver tree-debug capture, launch the advisor/runtime with
+`STS_SILVER_DEBUG_TREE=1`; the normal response remains unchanged when it is
+unset. The optional `STS_SILVER_DEBUG_TREE_NODE_CAP` bounds the attached graph
+(default `8192`). Native graph nodes report `victoryCount` 0 (the native search
+does not count victories) and edges have no continuation actions. A captured `latest.json` can then be rendered with
+`python3 tools/render_combat_decision.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/combat-decision.html`.
+For an OOC MCTS search graph, launch the advisor with
+`STS_OOC_DEBUG_TREE=1` and select an OOC decision with the `mcts_ctm` policy.
+Then render the matching ready snapshot with
+`python3 tools/render_ooc_mcts.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/ooc-mcts.html`.
+The mod's lower-left graph button runs the screen-appropriate renderer and
+opens the resulting HTML. Configure `graphToolsDir` in
+`~/.sts-model-inspector.properties` to the repository's absolute `tools`
+directory; `python` optionally overrides the `python3` executable.
+`STS_OOC_DEBUG_TREE_NODE_CAP` bounds the capture (default `4096`). The graph
+shows retained action nodes and sampled outcome particles, with root semantic
+labels, state summaries, visits, priors, and action Q values. State IDs refer to hypothetical
+search particles; they are not observed game states. Omitted edges indicate
+the capture cap. The renderer validates the snapshot session, sequence, and
+observation hash before producing a portable offline HTML file.
+Fixture snapshots are labeled in the report. Sampled terminal losses may retain
+the pre-combat HP field, which is not a post-death HP reading.
+If `latest.json` remains `WAITING` after a combat observation, run
+`tools/live_game_runtime.py status` and restart the game explicitly after a
+runtime change. A ready response can
+still be `UNSUPPORTED` for an encounter or state outside the maintained live
+capability boundary; that is an advisor result, not an MCP connectivity
+failure.
+
+### Fresh-worktree workflow
+
+An unchanged worktree reuses the installed known-good runtime:
+
+```bash
+python tools/agent/worktree.py preflight .
+python tools/agent/worktree.py check .
+tools/live_game_start.sh --probe
+```
+
+After changing live advisor, bridge, or relevant model code, publish the
+current worktree first:
+
+```bash
+tools/live_game_start.sh --refresh-runtime --probe
+```
+
+No dotfile editing or worktree path is part of either workflow. Codex-exposed
+`slay_the_spire` tools remain useful for interactive control when available,
+but their absence is not a blocker: the repository driver connects directly
+to `http://127.0.0.1:8080/mcp`. GUI/mouse control remains unsupported.
+
+`tools/live_game_driver.py` is the repository-local integration/debug harness
+for advancing a currently running game without a Codex or Luna turn between
+actions. It connects directly to MCPTheSpire over Streamable HTTP, reads the
+current screen and advertised commands, and materializes concrete MCP calls
+before selecting through Silver or its deterministic fallback policy. The
+optional dependencies are isolated in the `live-driver` extra:
+
+```text
+uv run --extra live-driver python tools/live_game_driver.py
+```
+
+Combat reads the matching `~/.cache/sts-model-inspector/latest.json` response
+and uses Silver only when the snapshot is ready, identity-matched, and
+correlated with the MCP-visible state. A Silver `OK` response must include a
+structured `selectedLiveAction` lowered from the imported physical identity
+and map to exactly one current candidate; zero or multiple matches stop the
+driver. Only an explicit Silver `UNSUPPORTED` result may use the deterministic
+fallback policy, and `--strict-silver` turns that boundary into a stop.
+Non-combat screens use deterministic priorities over the generated legal
+candidates, so no policy can invent an MCP tool name or arguments. The driver
+waits for `ready_for_command` before selecting and after execution, while
+readiness-only changes are ignored for state identity. Combat draw/discard
+pile card display caches have one additional normalization: a positive
+`damage`, `block`, or `magic_number` with an explicit positive `base_*` value
+is compared using that base value. MCP emits `base_*` only while the derived
+value differs, and vanilla `Soul` animation completion calls
+`AbstractCard.clearPowers()`/`resetAttributes()` to restore those cached values.
+The driver retains intrinsic base values, UUIDs, card IDs, costs, pile order,
+all hand values, HP and energy; ambiguous zero/absent values and every OOC
+field remain strict. This prevents an animation-only reset from looking like
+a new decision while still stopping on actual state changes. It never
+refreshes or substitutes the selected action after a mismatch.
+A live monster whose intent is exactly `DEBUG` is also not a decision-ready
+state, even if MCP advertises readiness: vanilla initializes that sentinel in
+`AbstractMonster` and replaces it in `createIntent()`. The driver waits for it
+to resolve before consulting the advisor and when waiting for post-action
+advance. This does not reinterpret legitimate `UNKNOWN` or Runic Dome's
+`NONE`, nor dead/escaped/half-dead monster slots; later real intent changes
+still fail the pre-action comparison.
+
+Inspector correlation uses the full `get_game_state` monster records when
+available because the lightweight screen uses names and filters dead slots.
+Dead or escaped inspector slots are excluded before comparing the remaining
+live monsters. Silver target slots are compacted through that same ordered
+public monster observation before becoming MCP's 1-based living-monster index;
+dead or missing targets fail closed. Potion candidates are emitted only when
+MCP explicitly advertises the corresponding `can_use` or `can_discard`
+capability; absent sparse fields mean unavailable. The post-action identity
+includes the full game-state payload when that read tool is available, so
+successful potion effects that do not change the lightweight screen still
+advance correctly. Silver card-selection actions remain explicitly
+unsupported until their mapping to MCPTheSpire's choice surface is qualified;
+they therefore use the deterministic fallback boundary.
+
+The default MCP endpoint can be overridden with `STS_MCP_URL` or `--mcp-url`.
+Each decision is written as redacted JSONL under
+`~/.cache/sts-live-driver/` (override with `--trace`). `--dry-run` performs the
+read, candidate, and decision path without a mutating MCP call, while
+`--max-steps N` bounds a smoke test. The driver intentionally stops on
+unavailable MCP, malformed or stale inspector data, unsupported candidate
+enumeration, absent or ambiguous structured Silver lowering, readiness or
+transition timeout, and unexpected advisor errors.
+
+Live current energy comes from `EnergyPanel.totalCount`; the player's
+`EnergyManager.energy` field is the per-turn recharge amount and does not
+decrease when a card is played.
+
+Equivalent-copy rerooting is a lookup only. It exchanges the unique ids of one
+pair of search-equivalent cards in the observed state and requires the full
+search-state check to match. It does not relax `equalForSearch()`, merge
+UID-distinct states in the global dedup table, or make chance-node identity
+less strict.
+
+Rest observations are emitted only while the installed campfire UI exists, is
+visible, and has not selected an option. Selecting a campfire option therefore
+clears the old rest observation while the option resolves.
+
+### Autonomous OOC decisions
+
+The versioned live OOC boundary is `boundary: "ooc"`, `ooc.schemaVersion: 1`.
+`LiveOocCapture` captures only command-ready screens through MCPTheSpire's
+read-only screen and choice converters. The observation contains:
+
+- `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
+  potion capacity and five exact slots, physical deck instances with bottle
+  binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
+  current/burning-elite coordinates, exact whole-run and current-act path
+  counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
+  identities, and the publicly recorded number of paid shop removals. A
+  `seenRelics` list is accepted only when its producer marks the history
+  complete. The Java observer accumulates visible shop, reward and boss offers
+  from a fresh Neow boundary. `RelicOfferRecorder` captures those offers before
+  shop/reward input and persists the ledger with the BaseMod run-save field
+  `stsmodelinspector:relicOffersV1`. Restoration validates schema version,
+  seed, character, ascension and exact checkpoint floor. An unseen merchant
+  makes the current projection incomplete immediately, even if the map is
+  opened from that shop; revealing its offers repairs that temporary gap.
+  Leaving without revealing them invalidates the history. A save without the
+  field cannot recover skipped historical offers and remains incomplete.
+  A separate current-act combat-class observer records whether each
+  fight consumed the normal or elite encounter queue, was a fixed event fight,
+  or was a boss. This ledger is part of the same identity-bound run-save
+  checkpoint, suppresses duplicate observations of the same current fight,
+  and resets for a fresh run. Each
+  normal/elite queue entry also stores the canonical encounter identity, so
+  reconstruction restores the consumed native queue prefix rather than only
+  its length. Restoration validates the checkpoint against `damage_taken` and
+  rejects unknown identities, conflicting floors and incomplete history.
+  Loading and fade frames do not observe partially reconstructed combat rooms.
+  An unrelated OOC projection exception rejects that snapshot without erasing
+  validated combat history; actual combat-history contradictions still
+  invalidate the ledger. This preserves a matched post-combat save through
+  reward-screen reconstruction.
+  Colosseum's ordered Slavers-then-Nobs fights are the sole qualified
+  same-floor pair in Act 2; both are fixed event fights and consume neither
+  encounter queue. Capture and save restoration preserve both entries and
+  validate them against the two completed-combat metric records.
+  The old seed/act TSV sidecar is not a restoration authority: repeated seeds
+  and checkpoint rollback can leave stale entries in that file. Missing or
+  contradictory history still fails closed with
+  `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
+  An optional
+  `rewardPityHistoryComplete` marker is reserved for synthetic captures with
+  an exact reconstruction; the live Java producer leaves it false.
+- `details`: current reward groups, campfire options, physical upgrade targets,
+  supported event/Neow phase and options, shop slots/prices, chest state, or
+  ordered boss relic offers.
+  Neow phase 3 accepts exactly two early-death offers or four ordinary offers,
+  with all active button slots matching the captured reward order. Import clears
+  unused native Neow slots to `INVALID`; legal-action enumeration and MCTS use
+  only captured offers, preserving their original option indices and live hints.
+  No random offers are synthesized. Native fresh-run generation remains four
+  offers. These paths have Java projection and native import/transition/search
+  fixture coverage; this does not assert a new live-game qualification streak.
+  Neow phases 0/1 (intro) and 99 (leave) are accepted only with the sole enabled
+  slot-zero button and matching live choice. They return a forced
+  `native_pass_through` action without model scoring. Differential trace mode
+  rejects them with `DIFFERENTIAL_MECHANICAL_EVENT_UNREPRESENTABLE`, because
+  the native simulator starts at the offer page and has no matching dialogue
+  transition; this change does not qualify Neow trace replay.
+- `liveChoices`: occurrence-bound native action identities and single-command
+  structured MCP hints. Duplicate labels are never action identity.
+- `mcpState`: the exact current MCP screen conversion used by the driver to
+  reject observation/screen/offer mismatches before mutation.
+- `unsupportedReason`: an explicit producer qualification boundary, when the
+  live state cannot be represented exactly. Missing or malformed schema fields
+  are errors, not permission to guess an action.
+- `captureError`: an unexpected capture or identity failure. This always stops
+  the driver, including when an unsupported reason is also present.
+
+When a visible potion reward or affordable shop potion can refill a full belt,
+the native OOC candidate set and inspector expose each held potion as a
+`DISCARD_POTION` candidate. The driver lowers the selected physical slot to
+MCP `discard_potion`; a fresh observation then permits taking the replacement.
+Sozu excludes these candidates. Direct V4 reports
+`POTION_REPLACEMENT_REQUIRES_MCTS`, because its frozen candidate set cannot
+score the additional action; MCTS uses its uniform-prior fallback.
+
+The live driver opens an unrevealed card reward after gold and freely
+collectable potions in that combat reward have been collected. Visible
+relic/key rewards and constrained potion rewards may remain as exact parent
+continuations while a card group is open. This also supports manually opening
+a card group before collecting visible gold or relic rewards.
+
+Path counts derive from persisted `metricData.path_taken`, whose original map
+symbols survive event-to-room conversion and save/resume. Completed combat
+floors additionally come from `metricData.damage_taken`. The observed live room
+class distinguishes a `?` floor that became a hallway fight from a fixed event
+fight on the same map symbol: only the former advances the normal encounter
+queue. The combat-class ledger is checked against completed public combat
+floors without indexing `path_taken` by absolute floor. Wing Boots' public
+charge counter is copied into the native root separately from frozen model
+relic features. Charged ordinary Act 1–3 MAP decisions are supported by default;
+the OOC evaluator identity records `wingBoots=public_exact`. Native
+jump legality, charge consumption, acquire/save entry, reordered MCP choice
+mapping and exhausted `-2` import have fixed-fixture coverage. An installed-JAR
+fixture checks vanilla connectivity and charge initialization/reset, including
+JSON recapture. Live execution of a charged jump and policy quality with these
+extra choices remain unqualified. Missing or
+contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
+after fifteen public map-room entries for that act and a matching public boss
+combat floor; other unknown path symbols remain unsupported. Public metric
+history conditions current-act normal/elite
+encounter consumption, relic-pool membership, one-time/event membership, and
+shop-removal cost. Currently visible shop, combat-reward, and boss-relic offers
+are also removed from every reconstructed relic pool because native generation
+consumes a relic when it is offered, not when it is acquired. Historical
+shop and reward offers skipped earlier are absent from vanilla metrics.
+Validated historical boss `picked`/`not_picked` metrics contribute known
+exclusions without marking that global history complete. Legacy normal/elite
+encounter history can be recovered only from canonical encounter identities
+joined to validated resolved public path floors. An uninterrupted
+fresh-run observer accumulates them from each public screen; random-relic
+branches and direct MAP search fail closed with
+`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
+resolved `?`-room outcomes are recovered from vanilla's persisted
+`path_per_floor`, checked against `path_taken`, with the current public room
+allowed to complete the current floor. Missing, contradictory or shifted
+history fails closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`.
+Native import replays the observed outcomes using native float increments and
+resets; qualified root particles preserve these exact room probabilities.
+Public acquisition/loss chronology can prove whether Juzu was owned at each
+room entry; a later known monster reset also removes earlier counter ambiguity.
+For new ordinary transitions, a scoped observer records Juzu's public flash
+inside the room roll and persists true/false/unknown conversion provenance.
+A known conversion resets the monster chance; an observed non-conversion
+uses the normal increment. Legacy Juzu EVENT outcomes without that evidence can instead form a finite
+weighted belief over reachable monster chances. This requires ordinary vanilla
+room rules, qualified Juzu ownership, the preceding-room shop flag, and proven
+Tiny Chest forcing for every relevant outcome. The belief conditions on all
+observed outcomes using the exact 24-bit room-roll bin counts and native float
+increments. It is conditioning under the fair uniform room-roll prior, not an
+exact posterior over the real run's hidden PRNG state. MCTS samples it once per
+root particle and preserves the sampled counter in descendants. Direct V4 and
+differential tracing reject unresolved mixtures; evaluator diagnostics label
+point, finite-posterior and unqualified cases separately. Missing chronology
+retains the conservative guard until a known reset. Tiny Chest's qualified
+forced treasure outcome is representable.
+Event capture uses source-specific phase tables, public displayed costs and
+exact enabled option slots. This includes Shining Light, Ghosts, Winding Halls,
+and the remaining vanilla Act 1–3 and shrine decision pages. Dead Adventurer
+captures the public encounter and consumed reward categories; MCTS shuffles
+only the unrevealed remainder. Direct V4 and differential replay reject that
+hidden event state. Verified dialogue/result pages use their exact sole
+continuation without a model. Unknown phases and contradictory public fields
+remain explicit unsupported boundaries.
+Ominous Forge (`AccursedBlacksmith`, initial phase 0) and Ancient Writing
+(`BackToBasics.INTRO`) qualify their exact enabled option slots. Forge's
+phase 2 and Writing's COMPLETE page have a verified sole Leave click; the
+latter's unflagged removal grid is identified from its event owner.
+World of Goop's initial `GoopPuddle.INTRO` screen projects the displayed gold
+loss into native `StateInfo.goldLoss`; its fixed damage/gold reward are
+validated against the native effect. Its `RESULT` page uses the same strict
+one-button forced transition and differential-trace rejection as Neow.
+Unopened ordinary treasure uses visible chest size and the existing MCTS
+prior for correlated gold/relic-tier draws. Its Java `goldReward` and
+`relicReward` pre-rolls remain hidden. The private Java `potionChance` and
+`cardRarityFactor` counters are
+not captured. Library captures its displayed `healAmt` into `hpAmount0`;
+MCTS uses the existing hypothetical reward-pity prior for Read. Its visible
+20-card grid imports an OBTAIN selector, preserving offer order and UUIDs,
+requiring distinct class reward cards and exact Egg-preview upgrades, and
+checking the non-cancelable one-pick continuation. Its completed Read/Sleep
+page is a forced Leave. Brutality and Combust already have red native metadata
+and import normally. Searing Blow retains upgrade eligibility after repeated
+upgrades; Egg preview/acquisition never upgrades an already upgraded card twice.
+Direct V4 still rejects unknown pity; differential tracing rejects Library's
+unknown-pity initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
+Mushrooms and Mysterious Sphere use the same reward-pity prior for combat
+rewards. Their native leave effects match installed vanilla: Mushrooms heals
+and adds Parasite; Sphere leaves without granting gold. Event repairs also
+preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
+Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
+The v_win leaf marginalizes the hidden counters
+features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
+native lattice (`potionChance` -40 through 60), never applying the link to an
+expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
+MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
+parity fixtures may mark an exact pity reconstruction explicitly. Live
+hypothetical reward-pity counters are sampled once per root particle.
+Without qualified question history, room chances use the public current-act
+`?` visit count and jointly advance
+all three counters for each sampled latent room outcome, so every sampled
+triple is reachable under the native update rule. Qualified question histories
+are preserved instead of resampled; this does not expose reward-pity counters.
+The shared simulator
+sampler retains its previous copied-counter behavior. This is a support-safe
+prior, not an exact posterior conditioned on every prior `?` outcome. An
+already-open boss chest with only native `proceed` is a
+pass-through state, not a fresh treasure decision; the advisor preserves that
+single live action.
+No RNG state, future encounter queue, or unrevealed outcome is captured.
+Checkpoint continuation preserves the simulator's reward-collection order and
+uses the V4 Q/margin contract for card rewards. The fixed free-reward prefix
+is shared with the full-run driver. The default native floor/win fallback
+calculations for card rewards, shop, rest, upgrade and shop removal now live in
+`ooc_native_fallback` and are called by both the simulator policy and the
+standalone advisor. The runtime packages both tracked compact-tree models;
+absence of either is explicit unsupported, not a heuristic substitution.
+Other qualified screens use `ScumSearchAgent2` as in the simulator. A
+complete-history synthetic MAP fixture now returns 512-simulation scored
+paths. Qualified question-room history permits downstream MAP expansion;
+otherwise MAP remains a hard planner leaf. Root hidden-counter sampling
+preserves reconstructed public room chances, and successors update them through
+normal native transitions. The lattice-valid reward-pity prior remains broad rather than an exact
+public-history posterior, so this test is not a general belief-equivalence
+claim.
+
+`live_ooc_state` creates both a value-only public projection and a separately
+conditioned transition root. It imports no hidden queue ordering or RNG.
+`ooc_v4_encoding` is the shared pure implementation of the existing 42-global
+V4 token and candidate encodings; the ordinary driver's `buildTokState` wrapper
+retains its diagnostic hook. `LiveOocPolicy` is the policy-provider interface.
+The explicit diagnostic provider is `v4_q`: prepare the token state once,
+score every existing legal V4 primitive with the tracked native model, and
+select maximum Q with ascending canonical semantic identity as the tie-break.
+
+The stable evaluator is `live_ooc_decision_v1`, with default `policy: "mcts_ctm"`
+and opt-in diagnostic `policy: "v4_q"`.
+An OK result contains semantic identities/payloads, finite per-action Q scores,
+model content identity, latency, and one structured `selectedLiveAction`.
+Smith and removal source choices carry a `:current-screen` semantic identity;
+the revealed selector is a separate observation and decision. Map identity is
+`ooc-live:v1:map:x=X:y=Y`. Native semantic bindings supply the other identities.
+Exact duplicate/missing primitive mappings, incomplete semantic enumeration,
+nonfinite Q, and invalid schema produce errors. Only explicit unsupported
+support/model states permit the driver's deterministic fallback.
+
+#### OOC values and sampled distributions
+
+`advisor_stdio.cpp` copies `LiveOocCandidateScore.q` into
+`candidateSummaries[].q` without rescaling. The evaluator's `valueSemantics`
+field distinguishes three cases:
+
+- `mcts_ctm`: `mean_backed_up_value_0_1`. `OocMctsPlanner.cpp` computes each
+  root action's Q as `ChanceNode.totalValue / visits` (zero when unvisited).
+  Every backed-up leaf passes a finite `[0,1]` check. Live search uses the
+  public win-value model at checkpoints and exact 0/1 for terminal loss/win;
+  this is a **mean search value**, not an established calibrated run-win
+  probability. PUCT uses this mean plus a separate exploration term; the
+  displayed value is not that selection score. Final choice uses visits,
+  then mean, then action identity. A sole legal action bypasses search and
+  displays **No samples**, not a fabricated zero-valued evaluation.
+- `v4_q`: `raw_v4_action_score`. `scoreLiveOocV4` calls
+  `OocStrategicTokNet::predictActionValue`, whose output is
+  `q2b + sum(q2w[i] * GELU(q0b[i] + q0w[i] dot state_action_encoding))`.
+  It has no sigmoid or probability bounds. `train_strategic_tok.py` defaults
+  to `STRAT_Q_TARGET=absolute`, targeting `10 * labelWon + labelHp`;
+  `fallback_centered` instead subtracts the behavior action's target.
+  The runtime header does not establish that training provenance, so the UI
+  says **V4 score**. Finite values above 1 or 100 are allowed by this raw
+  utility head and are covered by native/display fixtures; they are neither
+  percentages nor accumulated MCTS values. No clamping is applied.
+- Native pass-through choices: `forced_no_search`. Their placeholder Q is
+  not an evaluation; the UI says **Forced**.
+- A validated MCTS root with one legal action reports
+  `forced_no_search` and `model.selection=sole_legal_action`: zero actual
+  simulations, visits and sample share, with its configured budget recorded
+  separately. It carries no value
+  or HP sample distributions. The driver accepts this explicit singleton
+  contract; searched roots still require a complete visit distribution.
+
+The live MCTS provider enables observational `captureValueDistribution`.
+`ooc_value_distribution_v1` retains fixed-size aggregates at the root and
+per root action, not whole leaf states: 22 counts, total count, mean, terminal
+loss count and terminal win count. Bin 0 is an exact terminal-value 0;
+models returning nonterminal 0 go in bin 1. Bins 1–20 cover `[0,.05)`,
+`[.05,.10)`, …, `[.95,1]`; bin 21 is exact terminal-value 1. Terminal
+classification comes from `terminalValue` or the explicit terminal outcome
+of a detached `evaluateLeafWithOutcome` continuation, never an inferred low
+model score. Unsupported searches discard partial distributions. The sum of
+candidate bins equals the baseline; each candidate count equals its visits.
+
+The aggregates also carry `sumSquares` for a search-noise standard error.
+
+The same observational capture records `ooc_endpoint_hp_distribution_v1`:
+per root and per candidate, the player HP of the state each simulation was
+actually evaluated at (the node, or where its detached continuation stopped),
+with explicit terminal deaths at index 0, on one shared `0..axisMaxHp` axis.
+`floorOffsets` counts endpoints by floor relative to the root. Providers
+without endpoints report `unresolved` samples. Qualified public question-room
+histories allow downstream MAP expansion using native transitions and the
+inherited room-chance counters. Histories without that qualification retain
+`stopAtMapCheckpoint`; zero leaf combats still bounds detached continuation.
+Endpoint floor/HP distributions therefore depend on the actual expanded tree,
+not a universal next-map assumption. The capture itself changes no draws,
+visits, values or selection.
+
+
+The persistent upper-left MCTS panel shows two boxes, like combat. **Win
+estimate** shows the root mean search value (a model estimate, not a
+calibrated probability) and sample count; hovering a choice shows its gap to
+the recommended choice with the standard error of the difference, marked
+`≈ tie` below two errors. That error covers search noise only, not model
+error. The right box, titled by the measured horizon (e.g. **HP at floor
++1**), draws the endpoint HP histogram in cyan with a red death bar, a
+current-HP marker and expected HP; hover adds the candidate as an amber
+outline on the same scale. When every sample keeps the current HP, it says so
+instead of drawing a spike. The 22-bucket value distribution remains in the
+response and graph export but is no longer drawn. Reused particles and
+adaptive search visits are correlated samples, not an unbiased policy-risk
+estimate. The parser checks the schema,
+counts, means and root/candidate conservation before displaying an OK result.
+A zero-simulation shortcut has empty bins and null mean. The aggregates can
+later gain explicit sampled-consequence fields without retaining leaf states.
+Capture does not alter selection, RNG draws or the planner's objective.
+
+`STS_LIVE_OOC_MODEL` (inspector property `oocModel`) loads the native V4 model
+once in the advisor process. The stable runtime manifest records its SHA-256;
+the evaluator also reports a content fingerprint. Missing/incompatible OOC
+models report `MODEL_UNAVAILABLE` without disabling Silver. The launcher
+validates/displays the OOC path; `--allow-missing-ooc` permits Silver-only work.
+
+Supported native fixtures cover map choices, reward take/skip and repeated
+card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
+duplicate cards, initial supported events/Neow including the Woman in Blue's
+gold-correct potion purchases and Ascension-dependent leave outcome, all shop
+purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
+support gate still excludes non-card reward collection, removal/other
+selectors and the final map-to-boss transition. The live producer additionally
+qualifies event phases, path history, special maps, shop slot provenance,
+relic-counter representation, and key-disabled campfires. A screen-specific
+unsupported phase takes precedence over path and relic warnings, so a terminal
+event outro cannot be misread as its initial decision. Unopened card reward
+groups expose only their occurrence/type and require the driver to open the
+group after parent reward collection; their concealed card identities are not
+serialized or scored. Multiple unopened card groups (Prayer Wheel, Orrery,
+and Sensory Stone) are revealed one eligible physical occurrence at a time;
+the decline ledger prevents reopening skipped groups. An opened group records
+only the count of unrevealed siblings. MCTS resolves its visible card and known
+gold, relic, potion and key rewards, then stops at a player-state value checkpoint; it omits future
+unrevealed sibling-choice value and reports that scope in `continuationScope`.
+Sapphire Key retains its exact publicly linked relic occurrence, so taking
+either excludes only its counterpart. No hidden sibling card identity is
+captured or fabricated. Sensory Stone's
+post-reward `LEAVE` page is a verified mechanical continuation.
+Wing Boots is imported with a separate public charge
+  counter, with charged direct and downstream MAP decisions supported by default.
+  Frozen value inputs omit remaining charges; mechanical support does not
+  establish value calibration. Lizard Tail maps its
+  unused/used state to native 1/0; Matryoshka and N'loth's Hungry Face preserve
+  remaining charges with Java used-up sentinels mapped to zero. Maw Bank has an explicit
+source-derived active/spent conversion, and a spent Neow's Lament or
+Omamori reporting Java's used-up -2 is native 0 remaining charges in both the
+OOC capture and the combat-entry payload, because the CTM rejects negative
+charge data; other
+unqualified positive counters
+are unsupported. Upgraded Searing Blow is supported: native deck bookkeeping
+preserves its repeated-upgrade eligibility, so the public deck reconstructs the
+cached count without acquisition history. A GRID result screen
+is a forced confirmation only when `isJustForConfirming` is true, MCP exposes
+Continue with no choices or Cancel, and `confirmScreenUp` is false. Upgrade
+preview screens retain both Confirm and Cancel. For a verified single-card
+upgrade/remove/transform/Bonfire preview, the policy scores the original complete
+target set: it confirms when the chosen target is hovered, otherwise returns
+to the grid. Ordinary selection and preview use the same native-state search
+seed, preventing re-scoring noise from causing repeated cancellation. The MCP
+command is `proceed` even when the visible button says Confirm. Missing alternatives or multi-pick previews remain unsupported.
+Acts 1–3 MAP roots
+at row 14 with exactly one boss choice use the same forced-action path;
+Act 4 does not. These paths bypass models and history-dependent search,
+including active Wing Boots at the forced boss step. Differential tracing
+rejects them with `DIFFERENTIAL_FORCED_OOC_UNREPRESENTABLE`.
+OOC selector capture identifies bottle relics, Dolly's Mirror and Astrolabe
+from their pending-selection fields, and Duplicator/Bonfire from their event
+phase. Astrolabe maps to transform-and-upgrade, and Bonfire retains its
+sacrifice/reward continuation. Native import restores completed physical picks
+for Empty Cage/Astrolabe and only offers remaining cards, preserving each
+card's MCP choice index. Note For Yourself captures its public stored card and
+subsequent removal grid; its direct acquisition preserves Omamori charges and
+applies the actual relic hooks. An off-color stored card can be legitimate
+without Prismatic Shard, but subsequent combat still requires broader
+Silver/CTM card support and qualification; OOC capture does not establish it.
+Removal, bottle, duplicate and Bonfire selectors may still
+fall outside direct V4 scoring; their native semantic/MCTS support is separate.
+When a full belt blocks a visible potion reward or affordable shop potion,
+MCTS enumerates each held-slot discard using public potion identity and duplicate
+occurrence. Sozu prevents these replacement actions. The driver requires the
+advertised `discard_potion` command and slot permission; discarding never takes
+a monster target. The next observation scores the actual refill separately.
+These new actions use a uniform prior where the frozen V4 action set has no
+matching source; direct V4 reports `POTION_REPLACEMENT_REQUIRES_MCTS`.
+Match and Keep captures physical board slots and a run/event-local memory of
+revealed cards. Unseen cards have no identity in the payload. The existing
+native memory policy chooses a slot, valuing known cards as hypothetical lone
+rewards through the active policy. Initial exploration requires no model;
+unqualified history/model dependencies stop card-value decisions. Hidden board
+transitions remain outside differential replay.
+Unopened Small/Medium/Large chests capture only visible size. MCTS samples
+hidden gold and relic tier together using the existing native correlated
+prior; capture never reads either hidden setup field. Both Open and Leave
+must be available in MCP. A verified unopened BossChest uses an explicit
+public-reveal action: Open reveals the offers while retaining the later Skip
+decision. This is an informational policy step, not a claim that Proceed is
+unavailable. Unknown chest classes remain unsupported.
+Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
+tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
+claiming an exact hidden chest state.
+These limits must not be presented as whole-game equivalence.
+Representable relic counters do not expand the frozen CTM/model support gates.
+The advisor now uses the existing qualified DeepSets/Lizard sampler with the
+standard Entropic Brew fallback. Active Tail follows that wrapper's qualified
+support contract; Fairy/Tail+Brew and other excluded combinations still fail
+closed. This integration reuses qualified artifacts; it is not new gameplay
+quality evidence.
+
+### Full-run driver and failure packets
+
+```bash
+tools/live_game_start.sh --probe
+uv run --extra live-driver python tools/live_game_driver.py --run-until-error
+# Only when there is no saved/live run:
+uv run --extra live-driver python tools/live_game_driver.py \
+  --new-run --character IRONCLAD --ascension 0 --run-until-error
+```
+
+The driver owns the loop and performs one MCP command per iteration. It waits
+for command readiness, checks observation/session/sequence/hash and exact MCP
+correlation, lowers the selected action to exactly one legal candidate,
+rechecks the state immediately before mutation, and waits for an advanced
+command-ready state. It consumes Silver in combat and the generic OOC
+provider elsewhere; no LLM chooses ordinary gameplay actions. `--ooc-policy
+v4`, `--strict-ooc`, `--strict-silver`, and `--max-steps` control coverage and
+stopping. The default resumes an advertised save; `--new-run` refuses to
+replace a save or live run. Without a save, an explicit new-run/character
+request is required. Ascension and seed are passed through to MCP.
+
+In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.
+Non-skippable Discovery/Colorless Potion offers support exactly three distinct,
+unmodified cards and one or two zero-cost copies. The chosen option lowers to
+its captured MCP choice index. Discovery's sole pending `UseCardAction` is
+restored through native interrupted-card replay, preserving exhaust/discard
+cleanup and physical card identity; unrelated queued actions are rejected.
+A standalone potion offer clears historical current-card bookkeeping so an
+already-completed card cannot replay. Typed Attack/Skill/Power Potion offers
+include their exact Skip action. Toolbox preserves normal card costs and the
+qualified ordered opening actions, including Bag of Preparation's draw,
+Gambling Chip and Warped Tongs. Nilry's Codex resumes verified queued self-block actions
+and Stone Calendar's literal damage before ending the turn after choosing or
+skipping; lethal damage terminates combat without another turn. Extra
+unrepresented queued relic/power actions remain unsupported; these popups never become deck rewards.
+Combat capture uses the room's `COMBAT` phase, including event rooms, rather
+than requiring a monster-room subclass. Selection boundary detection is
+independent of native serializer support: an unknown selection task remains
+combat and returns Silver `UNSUPPORTED` with `silver_unmapped_selection_task`,
+allowing the normal deterministic combat fallback. Hand selections project the
+screen's actual `canPickZero` value. The driver still stops on any genuine
+boundary mismatch instead of reinterpreting OOC output as a Silver result.
+Warcry, base Forethought, Armaments, Dual Wield, Exhume, Headbutt, one-card ExhaustAction,
+Secret Technique and Secret Weapon derive their
+selection task from the active vanilla action class, with exact screen/count
+checks, before the legacy prompt-text fallback. These single-pick tasks
+capture the physical card UUIDs in MCP's actual displayed order. Import checks
+that the set matches eligible native cards, and lowering resolves that UUID
+to its captured choice index, including duplicate card names. Completed single
+HAND picks emit a verified model-free Proceed, retaining the native predecessor
+session for the next stable combat root. Armaments, Dual Wield and Exhume capture cards
+temporarily held by their owning action so the native source pile remains
+complete. Upgraded Forethought, Gambling Chip/Gambler's Brew, and Purity/Elixir
+emit the whole ordered UUID subset, including the empty subset. The driver
+checks the action owner and selection limit, then clicks descending
+physical indices, validates remaining and selected UUIDs after every click,
+then confirms. This avoids the installed MCP bulk command's ascending-index
+mutation bug. Exhaust/discard triggers follow the original hand order after
+the selected cards are removed. A partial transaction, unknown owner, missing/duplicate UUID, or
+changed hand stops before any further click. Differential replay excludes UI
+confirmations without an equivalent native state.
+
+Liquid Memories qualifies its exact owning action and one- or two-card count.
+The two-card native decision preserves selection order, including the case
+where only one card fits in hand. The driver clicks the ordered physical UUID
+pair using stable GRID indices, checks the offered and selected UUIDs before
+the second click, and lets vanilla close the grid automatically. This differs
+from HAND selections, which remove chosen cards and require confirmation.
+
+Card-reward skips are retained by session and an opaque, read-only identity of
+that physical reward. Returning to the combat-reward list collects other
+rewards or proceeds instead of reopening the skipped group. These identities
+do not expose unopened card contents. A repeated OOC state/action pair stops
+before another mutation and emits a failure packet; distinct physical rewards
+remain distinguishable even when their visible offers match.
+
+A real integration error exits nonzero and atomically writes
+`<trace>.failure.json`: current MCP state/identity, inspector snapshot and
+identity, evaluators, selected hint and mapping diagnostics, exact error,
+recent trace rows, Git identity, and reproduction command. A
+`LIVE_DRIVER_ERROR` line identifies the packet. Terminal outcomes and step
+bounds exit zero. The final JSONL summary records reached act/floor/HP,
+Silver/OOC/fallback counts, exact unsupported reasons and latency count/mean/
+p50/p95/max. The trace is integration evidence only, never a win-rate benchmark.
+
+Focused checks are `live_ooc_parity`, `live_ooc_policy`, `live_ooc_protocol`,
+`live_game_driver` and the existing Silver/protocol regressions. Native fixtures
+project ordinary states into the live JSON schema and compare all 42 globals,
+deck/relic/potion tokens, candidate order/encodings, semantic keys/payloads,
+per-action Q and argmax. Driver fixtures prove stale/malformed actions cause
+zero mutations, a failure packet and nonzero exit. Live screen coverage and
+run progress are recorded in the task's PR evidence packet, not promoted into
+benchmark evidence.
+
+Run the endpoint after building:
+
+```text
+build/linux-gcc-debug/one_combat_advisor
+```
+
+Use `tools/mod/doctor.sh` to locate the standard Steam installation and
+workshop dependencies. Build the local JAR with
+`mods/sts-model-inspector/build.sh MODTHESPIRE.jar BASEMOD.jar desktop-1.0.jar`.
+The bundled Steam runtime is sufficient to launch the game but does not ship a
+Java compiler, so a Java 8 JDK is needed for the build; the helper does not
+install one or alter system defaults.
+
+For a handshake:
+
+```json
+{"protocol":"sts_model_inspector_v1","kind":"hello"}
+```
+
+An observation must include `session`, `sequence`, `observationHash`, and an
+object containing a string `boundary`. The response echoes the identity fields
+so a future game UI can discard responses after a reload or newer capture.
+
+## Remaining bounded boundary
+
+The Java process owns bounded background I/O and treats the endpoint as
+advisory only. Common Grid and Hand card-selection screens are mapped to the
+native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt, Exhume,
+Warcry, Gambler's Brew, Liquid Memories, and Hologram. The mapping remains
+deliberately bounded: an unrecognized selection prompt, an unavailable runtime
+tracker, or an option list larger than the native representation is rejected.
+The ordinary player limbo pile is serialized. Native `Monster::rollMove` and
+`CombatKnowledgeState` represent hidden rolls using public executed-move
+history, `pendingMoveRolls`, `pendingDirectMoveChoice`, and roll-time
+`pendingRollInputs`. The Java Dome observer now starts at `MonsterGroup.init`
+before initial rolls, captures public HP at roll entry, and records an audited
+move only when its concrete `takeTurn` executes. It survives the later battle
+callback and includes epoch/generation in the observation. Raw queued intent,
+private move history and live RNG are omitted.
+
+The supported roster and public knowledge contract are listed in the combat
+import section above, including stable audited groups, Spot Weakness predicates
+and small Acid Slime's deterministic known-next proof. Unknown lifecycle,
+replacements, unaudited rerolls or overrides, missing initial history and
+unqualified generators remain fail-closed. Save resume during an unobserved
+combat does not manufacture earlier provenance.
+Native fixtures check deferred-roll public-input/history parity, including
+roll-time HP that differs from current HP. These fixed fixtures do not qualify
+all encounters or establish live whole-fight/gameplay quality.
+
+General action-queue metadata remains outside the supported boundary. CTM and
+Silver results remain separate evaluators, and neither path controls gameplay
+or establishes policy-quality evidence. Further public-state support requires
+its native parity fixture and explicit public-information contract.
+
+Knowledge impact: this page records the protocol/lifecycle boundary, the
+player-visible combat gate, protocol-v4 producer/importer contract, explicit
+fail-closed state handling, selection coverage, and the producer coverage
+boundary.

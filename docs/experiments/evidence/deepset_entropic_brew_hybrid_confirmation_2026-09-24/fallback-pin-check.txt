@@ -1,0 +1,1 @@
+pinned standard fallback SHA256 PASS

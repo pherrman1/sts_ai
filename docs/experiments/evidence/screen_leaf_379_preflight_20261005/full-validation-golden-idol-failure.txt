@@ -1,0 +1,26 @@
+snapshot public-screen/candidate parity failed: 13001065:s13001065-d25-e4060641b190:1
+{"actual":{"candidateKeys":["ooc:v1:effect=26:source=5:event=23:option=0","ooc:v1:effect=26:source=5:event=23:option=1"],"replacementDiscardKeys":[],"screenContents":{"eventId":23,"optionIds":[0,1],"screen":"event","screenState":1}},"expected":{"candidateKeys":["ooc:v1:effect=26:source=5:event=23:option=2","ooc:v1:effect=26:source=5:event=23:option=3","ooc:v1:effect=26:source=5:event=23:option=4"],"screenContents":{"eventId":23,"optionIds":[2,3,4],"screen":"event","screenState":1}}}
+Command exited with non-zero status 2
+	Command being timed: "bash /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/tools/seed_guard.sh /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/linux-gcc-release/one_combat screenleafs0 /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/full-validation/13001065/replay/snapshots.jsonl /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/full-validation/13001065/predictions.jsonl 2691 1"
+	User time (seconds): 1.94
+	System time (seconds): 0.05
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.01
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 23424
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 7232
+	Voluntary context switches: 22
+	Involuntary context switches: 206
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 4936
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 2

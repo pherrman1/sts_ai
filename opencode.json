@@ -1,0 +1,49 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "build": {
+      "description": "Interactive implementation agent. Follows AGENTS.md for project conventions.",
+      "mode": "primary",
+      "prompt": "{file:./.opencode/prompts/implementer.md}",
+      "permission": {
+        "edit": "allow",
+        "task": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "bash": {
+          "*": "allow",
+          "*one_combat*": "deny",
+          "tools/seed_guard.sh *": "allow",
+          "wsl bash tools/seed_guard.sh *": "allow",
+          "git commit *": "allow",
+          "git commit --amend*": "deny",
+          "git push *": "deny",
+          "git push": "allow",
+          "*/git push*": "deny",
+          "git -C * push*": "deny",
+          "git --git-dir=* push*": "deny",
+          "git --work-tree=* push*": "deny",
+          "git -c * push*": "deny",
+          "git --no-pager push*": "deny",
+          "git reset --hard *": "deny",
+          "git clean *": "deny",
+          "rm -rf *": "deny",
+          "git restore *": "deny",
+          "git checkout *": "deny",
+          "git reset *": "deny"
+        }
+      }
+    },
+    "plan": {
+      "description": "Optional read-only planning mode. Analyzes code and reviews suggestions without modifying the repository.",
+      "mode": "primary",
+      "permission": {
+        "edit": "deny",
+        "task": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "bash": "deny"
+      }
+    }
+  }
+}

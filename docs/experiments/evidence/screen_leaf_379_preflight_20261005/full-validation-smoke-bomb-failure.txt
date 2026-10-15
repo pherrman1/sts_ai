@@ -1,0 +1,14 @@
+S0 failure, full-validation-import-v1 source 13001297 after 1683/2476 rows (stderr):
+pre_smoke_bomb_used
+Command exited with non-zero status 2
+
+result.json:
+{
+  "error": "ValueError: S0 evaluator failed; preserve partial predictions",
+  "s0_exit_code": 2,
+  "seed": 13001297,
+  "status": "FAIL",
+  "wall_seconds": 876.5528236639984
+}
+
+aggregate: 58 sources scheduled, 57 PASS, 1 FAIL (this source); scheduling stopped.

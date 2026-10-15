@@ -1,0 +1,6 @@
+repeated_reroot decision=0 simulations=10000 historical_nodes=11635 before_nodes=11635 retained_nodes=9 cumulative_reclaimed=11626 allocated_cap_blocked=0
+repeated_reroot decision=1 simulations=10000 historical_nodes=23868 before_nodes=12242 retained_nodes=1 cumulative_reclaimed=23867 allocated_cap_blocked=0
+repeated_reroot decision=2 simulations=10000 historical_nodes=35878 before_nodes=12011 retained_nodes=79 cumulative_reclaimed=35799 allocated_cap_blocked=0
+repeated_reroot decision=3 simulations=10000 historical_nodes=48231 before_nodes=12432 retained_nodes=4 cumulative_reclaimed=48227 allocated_cap_blocked=0
+repeated_reroot decision=4 simulations=10000 historical_nodes=58494 before_nodes=10267 retained_nodes=64 cumulative_reclaimed=58430 allocated_cap_blocked=0
+repeated_reroot_canary PASS reroots=5 historical_cap_reroots=3 final_search_nodes=11795 historical_nodes=70225

@@ -1,0 +1,174 @@
+{
+  "chunkCountPerArm": 4,
+  "chunkSize": 128,
+  "chunks": {
+    "C1": {
+      "arm": "C",
+      "elapsedSeconds": 2716.5881120329723,
+      "finishedAtUtc": "2026-09-25T14:12:03Z",
+      "inputSha256": {
+        "actions": "daf18d94256746e3011e0fe5f63f870bf16478b76a82422e52ad1a72ba933dce",
+        "log": "bcf0fbf5d01df6b95a9ba82ad4c7b81cf08c60d299dfe7dc3c7c63d5b35a112b",
+        "meta": "02a83ec078b42b4551644d69ff57231c1f86dbe8a78bd9347477dce1351b76c6",
+        "results": "8f2aa298c7ed978e951c917a9fe5d98cb6cea0fc21cbc503827e62c16f94f4ee",
+        "support": "51c504ca03fc204e26d0f7c47befdab94bb1472fc1a0ac66b7fa00e5e438d2f1",
+        "trace": "6e1787f1e817f5a93408644da29a2ba0af07ad6fd9898000589b0ecc1aa7092f"
+      },
+      "seedEnd": 990127,
+      "seedStart": 990000,
+      "startedAtUtc": "2026-09-25T13:26:46Z"
+    },
+    "C2": {
+      "arm": "C",
+      "elapsedSeconds": 2540.140300524945,
+      "finishedAtUtc": "2026-09-25T15:49:44Z",
+      "inputSha256": {
+        "actions": "af0b9c164e372e23635540c8d88e34085067b57eee7224508deb6a30b7f8b214",
+        "log": "c416c0b0817b676bd915b0149373f748334cdb9a82129816fcd27a14d9a4128c",
+        "meta": "7dd8b7aa55fabbfdb81addd94cdcac50f6799a5f53cc2743a417de505b3a3410",
+        "results": "2214f6205da17146bf24e63c6ebfa95f299c04f323c7e07d968744eb802a848e",
+        "support": "2d6d70c7bcb4462425c4bdd1d47330764935b0786476f276d47ea801fe14bf7d",
+        "trace": "5cf0595c6d9994ec3c3090f308f21a6eb123f74074f75a4e472ebafb4b607898"
+      },
+      "seedEnd": 990255,
+      "seedStart": 990128,
+      "startedAtUtc": "2026-09-25T15:07:23Z"
+    },
+    "C3": {
+      "arm": "C",
+      "elapsedSeconds": 2674.9842235050164,
+      "finishedAtUtc": "2026-09-25T17:08:26Z",
+      "inputSha256": {
+        "actions": "52acf6865ec66be196690313f4934a3f89052809b2c44404e193d41791ccf8ad",
+        "log": "c8968f7a07101e2b4c840aa51c084e681279f42599e83f9dfc89c3761a7ee1b7",
+        "meta": "2eb11e8dadafb400c4adea457d347f5f0fe9694c8c8d79b1c9f425bb176c1d46",
+        "results": "2e0b8b67af5686c3d83f91bafb1e821947c864fdcd12ff2d3557e67442a4e5bc",
+        "support": "8fe3eae813691b98d6dc1bcf986fcee1d0279b6bf6c5b63a3cd5e14f2d072130",
+        "trace": "92c0e7a9ce222fccda998c5eed9672828affb3db89717233352610bf69ecea65"
+      },
+      "seedEnd": 990383,
+      "seedStart": 990256,
+      "startedAtUtc": "2026-09-25T16:23:51Z"
+    },
+    "C4": {
+      "arm": "C",
+      "elapsedSeconds": 2678.1574024279835,
+      "finishedAtUtc": "2026-09-25T18:25:15Z",
+      "inputSha256": {
+        "actions": "7f4cd7250c6007815f423f508c3f3484150b8d08fbe444ff075e8d252e4adf13",
+        "log": "7ea32ad528d61ec7854ada8ae3e356472dd21e58a1c445c3ce05f40c894dcfc5",
+        "meta": "f524cebebd1c78f7f9c6810ae14fe80ac6069924b9e5d8008c5cc08f0e10e9a1",
+        "results": "e61eed94c675773704026c4d2de6c4934d1efefbc8bf9ed680712a4f4cf0eae2",
+        "support": "15ac6564495987b46357b31ab855465ec0c9b1a49d971392da1a7586c0c563b4",
+        "trace": "d613553886fe9e312e499caafe585e1f106009445a358f08ee44856be39e1005"
+      },
+      "seedEnd": 990511,
+      "seedStart": 990384,
+      "startedAtUtc": "2026-09-25T17:40:37Z"
+    },
+    "H1": {
+      "arm": "H",
+      "elapsedSeconds": 3320.6678844330017,
+      "finishedAtUtc": "2026-09-25T15:07:23Z",
+      "inputSha256": {
+        "actions": "75b7882834eca7369c9ed071091cf4d09acc9d016f71244e84763e8ffee2e1d6",
+        "log": "01db3d3201c3f70b12ce3ce5d5c6191b43955e318885481501c4a382b255c82e",
+        "meta": "ecf703a3a7781088fbadb9f7b55188963d27264541ec3a84013491960fbb7c4f",
+        "results": "40a7d29d789f7ce5e6d7f12d1ce6b4927b63f8b381b250b6704d7a28f3bd8aa5",
+        "support": "accd4c89e09eff85da6472eba5290494c4b84cc6b48607effc85f18196a29376",
+        "trace": "1066439a838f698414659af2ff7d2b9d0d437aec1bd35e3d2925f657b74cbf0f"
+      },
+      "seedEnd": 990127,
+      "seedStart": 990000,
+      "startedAtUtc": "2026-09-25T14:12:03Z"
+    },
+    "H2": {
+      "arm": "H",
+      "elapsedSeconds": 2047.8675641230075,
+      "finishedAtUtc": "2026-09-25T16:23:51Z",
+      "inputSha256": {
+        "actions": "b19b93ceb0b2c03f4e70cb2025598a56c5a183d4c8e9397923906e5e5fbdfbec",
+        "log": "259f31daced651d6e2d3d90332e17d8520711386e300ec4bfbe1fa47f1c8594d",
+        "meta": "0a63aaa05a3cb9b624def253ea83d52bfaec1e95eb3d96ee343f5626a9ca8a7a",
+        "results": "714c41bf8839dea5200cebebebfd0edaca8cd3380ab98d5bf62097ee1b13641c",
+        "support": "488749856e33e484662e634a0af37dc86ba1cf92dcb02422ce56b6a03c1170f4",
+        "trace": "a5af7f3ad607d684db9a7b7e99403ac2c4369c080c0a427a7c415ae8ae07aade"
+      },
+      "seedEnd": 990255,
+      "seedStart": 990128,
+      "startedAtUtc": "2026-09-25T15:49:44Z"
+    },
+    "H3": {
+      "arm": "H",
+      "elapsedSeconds": 1930.2003902219585,
+      "finishedAtUtc": "2026-09-25T17:40:37Z",
+      "inputSha256": {
+        "actions": "a3e5c910dd333ce36f329671da964ee7caa43efe18e06b976e72a635d79b5fb9",
+        "log": "44ea51f9baf4e03cf181af595e42c54122ace8f9ffca82c4694d94bbe717cb5c",
+        "meta": "978b75919e3ce2de4d2ced1a6bd55bfe66fd7f1c147772915367b8965c2204bb",
+        "results": "7c8c08d189be6cbf07f07ae669a7bba8b4568605025b33dd905c4c1d5c720148",
+        "support": "7186830713275290e36e19d3c0fba29c250c2b6fb6f06da0dc659f6fe4ecdac3",
+        "trace": "a5506f4f3b6347b4f4bbff9e1a43cb45787e959abc51c9f8f3d639ac5390f0c5"
+      },
+      "seedEnd": 990383,
+      "seedStart": 990256,
+      "startedAtUtc": "2026-09-25T17:08:26Z"
+    },
+    "H4": {
+      "arm": "H",
+      "elapsedSeconds": 1896.1594479620107,
+      "finishedAtUtc": "2026-09-25T18:56:51Z",
+      "inputSha256": {
+        "actions": "42f2e6ac0e535804b7310a29b912a84c0df115f4174c5b6e47fa6290f93435c3",
+        "log": "5c2fce4a45495403119a262c9bd4e5e9e1ad19d949ce4465e7d70100538106e3",
+        "meta": "68cd70a48669ad6040671a8571eedf677874b38e954ecd7a3adac46e0780f89f",
+        "results": "1260996c0bf8a731907deae7e2be12dd873352cb3e196503608cea6dac50b2c5",
+        "support": "ff999581330a3ad649ce0487a5946f242d0a745c70f47d7e71ae05add7916680",
+        "trace": "51ca45692800660227b497a1c24c9dc4b8e4ab9f7d9fb744e06c42bd35bbe841"
+      },
+      "seedEnd": 990511,
+      "seedStart": 990384,
+      "startedAtUtc": "2026-09-25T18:25:15Z"
+    }
+  },
+  "executionOrder": [
+    "C1",
+    "H1",
+    "C2",
+    "H2",
+    "C3",
+    "H3",
+    "C4",
+    "H4"
+  ],
+  "frozenSourceGitSha": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+  "manifestSha256": "b9b8b14d510a27ef0f57ccf49a533d89e66e69191ee44aad10bbc6004fdf7ae2",
+  "note": "Merged raw result/trace CSV rows and support/action JSONL records byte-for-byte; repeated CSV headers and duplicate per-chunk config log lines were omitted. Source chunk files remain unchanged.",
+  "outputs": {
+    "C": {
+      "mcts.csv": "cf5415e52172177ccc7558d5ed3b19f096c61c96757fd457610889767561d8b9",
+      "mcts.csv.actions.jsonl": "548aafa0ca4819c7b41c61f6deb6b88478a816c7bdcb7c60743fee15aa43534c",
+      "mcts.csv.support.jsonl": "6cf431ad2b52342f5f44b1ea5258a59508c5c06b7aad8225591d5e94803e0143",
+      "results.csv": "78caf5df535bb10833c60c3a813d34f5fbf1498e403cfc7e718e7c69ebb31139",
+      "results.csv.meta.json": "19685b00474f79c3bbc0ba2a790bffd2df272d3d76607116c91cf71cd37094e0",
+      "run.log": "d7b0be9c513d4ac907bded11cd5a5aefd6c8c06020d7e4d6a63422a72fadc93c"
+    },
+    "H": {
+      "mcts.csv": "df2fd816b94849c44f73f4b65261228fd3818eb1abb99b5c0e7ae2d955117966",
+      "mcts.csv.actions.jsonl": "46e5e8e6404ba23b15acb46abc39c7a22228d208c47dde97b065829b68c2a14a",
+      "mcts.csv.support.jsonl": "96bd19963c2d542089b17cbd00f59ef7d72c111c231770ab26f65d40f3d6f4bc",
+      "results.csv": "0a10ad87c23a88ab854999a054895197466175485ba4ab6dd11d2e24e1af08de",
+      "results.csv.meta.json": "9ab149d88a46fbbe874ce2b3b88577acdfd3695c13484ec83374fe5c55720f04",
+      "run.log": "300b8eb7303622f7a174b3fe4df4bb2597e8de48208678106d8cc4e298c314a4"
+    }
+  },
+  "schemaVersion": 1,
+  "scientificProtocolChanged": false,
+  "seedCountPerArm": 512,
+  "seedRange": [
+    990000,
+    990511
+  ],
+  "transport": "local-seed-guarded-four-by-128",
+  "transportPlanSha256": "5f80578f8426ed98b46c52a0095be2878f635db4d89346244bea8869f39a7d16"
+}

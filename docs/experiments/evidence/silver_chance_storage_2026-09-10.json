@@ -1,0 +1,1553 @@
+{
+  "baseline_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+  "implementation_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+  "machine": "AMD Ryzen 5 7500F, Linux, CPU2 affinity, OMP_NUM_THREADS=1",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "arms": {
+    "A": "Prior optimized Release, inline state on every node, PGO OFF",
+    "B": "Compact nodes with reusable decision-state pool, PGO OFF"
+  },
+  "raw_directory": "/home/philippherrmann/.codex/worktrees/bc58/sts_lightspeed/build/chance-storage-evidence",
+  "results": [
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-0-0-A.rss-kb",
+        "build/chance-storage-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-0-0-A.csv",
+        "0",
+        "build/chance-storage-evidence/final-0-0-A.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 18.656616414999007,
+      "cpu_seconds": 18.65565,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+        "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 277104,
+      "name": "final-0-0-A",
+      "seed": 0,
+      "rep": 0,
+      "arm": "A",
+      "label_rows": 22,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-0-0-B.rss-kb",
+        "build/linux-gcc-release-ccache/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-0-0-B.csv",
+        "0",
+        "build/chance-storage-evidence/final-0-0-B.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 18.81347886500589,
+      "cpu_seconds": 18.806162999999998,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+        "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 234988,
+      "name": "final-0-0-B",
+      "seed": 0,
+      "rep": 0,
+      "arm": "B",
+      "label_rows": 22,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-0-1-A.rss-kb",
+        "build/chance-storage-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-0-1-A.csv",
+        "0",
+        "build/chance-storage-evidence/final-0-1-A.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 19.00465922500007,
+      "cpu_seconds": 19.003788999999998,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+        "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 277288,
+      "name": "final-0-1-A",
+      "seed": 0,
+      "rep": 1,
+      "arm": "A",
+      "label_rows": 22,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-0-1-B.rss-kb",
+        "build/linux-gcc-release-ccache/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-0-1-B.csv",
+        "0",
+        "build/chance-storage-evidence/final-0-1-B.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 19.38801236799918,
+      "cpu_seconds": 19.386057,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+        "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 235076,
+      "name": "final-0-1-B",
+      "seed": 0,
+      "rep": 1,
+      "arm": "B",
+      "label_rows": 22,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-1-0-A.rss-kb",
+        "build/chance-storage-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-1-0-A.csv",
+        "1",
+        "build/chance-storage-evidence/final-1-0-A.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 13.658211836998817,
+      "cpu_seconds": 13.656238,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+        "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 288456,
+      "name": "final-1-0-A",
+      "seed": 1,
+      "rep": 0,
+      "arm": "A",
+      "label_rows": 9,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-1-0-B.rss-kb",
+        "build/linux-gcc-release-ccache/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-1-0-B.csv",
+        "1",
+        "build/chance-storage-evidence/final-1-0-B.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 13.007143349997932,
+      "cpu_seconds": 13.006684,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+        "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 237584,
+      "name": "final-1-0-B",
+      "seed": 1,
+      "rep": 0,
+      "arm": "B",
+      "label_rows": 9,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-1-1-A.rss-kb",
+        "build/chance-storage-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-1-1-A.csv",
+        "1",
+        "build/chance-storage-evidence/final-1-1-A.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 13.112615063990233,
+      "cpu_seconds": 13.111347000000002,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+        "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 288444,
+      "name": "final-1-1-A",
+      "seed": 1,
+      "rep": 1,
+      "arm": "A",
+      "label_rows": 9,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-1-1-B.rss-kb",
+        "build/linux-gcc-release-ccache/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-1-1-B.csv",
+        "1",
+        "build/chance-storage-evidence/final-1-1-B.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 13.643105153998476,
+      "cpu_seconds": 13.640454000000002,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+        "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 237560,
+      "name": "final-1-1-B",
+      "seed": 1,
+      "rep": 1,
+      "arm": "B",
+      "label_rows": 9,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-2-0-A.rss-kb",
+        "build/chance-storage-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-2-0-A.csv",
+        "2",
+        "build/chance-storage-evidence/final-2-0-A.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 12.457323087000987,
+      "cpu_seconds": 12.455827,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+        "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 319816,
+      "name": "final-2-0-A",
+      "seed": 2,
+      "rep": 0,
+      "arm": "A",
+      "label_rows": 17,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-2-0-B.rss-kb",
+        "build/linux-gcc-release-ccache/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-2-0-B.csv",
+        "2",
+        "build/chance-storage-evidence/final-2-0-B.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 11.965715311991517,
+      "cpu_seconds": 11.964341000000001,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+        "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 296588,
+      "name": "final-2-0-B",
+      "seed": 2,
+      "rep": 0,
+      "arm": "B",
+      "label_rows": 17,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-2-1-A.rss-kb",
+        "build/chance-storage-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-2-1-A.csv",
+        "2",
+        "build/chance-storage-evidence/final-2-1-A.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 12.110486705991207,
+      "cpu_seconds": 12.110108,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+        "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 319736,
+      "name": "final-2-1-A",
+      "seed": 2,
+      "rep": 1,
+      "arm": "A",
+      "label_rows": 17,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/chance-storage-evidence/final-2-1-B.rss-kb",
+        "build/linux-gcc-release-ccache/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/chance-storage-evidence/final-2-1-B.csv",
+        "2",
+        "build/chance-storage-evidence/final-2-1-B.teacher.json"
+      ],
+      "returncode": 0,
+      "wall_seconds": 11.663140435004607,
+      "cpu_seconds": 11.662617999999998,
+      "teacher": {
+        "teacher_id": "exact-search-parity",
+        "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+        "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+        "combat_backend": "silver_uct",
+        "rng_regime": "project_fair",
+        "search_configuration": {
+          "simulation_budgets": [
+            10000
+          ],
+          "exploration_parameter": 25.0,
+          "exploration_parameter_chance": 25.0,
+          "chance_widening_c": 3.7028,
+          "chance_widening_alpha": 0.52389,
+          "end_turn_widening_c": 3.7028,
+          "end_turn_widening_alpha": 0.52389,
+          "reuse_cap_mode": "allocated",
+          "reuse_cap": 32768,
+          "sequential_halving": false,
+          "pruning": false,
+          "learned_visit_puct": false,
+          "direct_learned_leaf": false,
+          "adaptive": false
+        },
+        "environment": {
+          "STS_FAIR": "1",
+          "STS_SEARCHER3": "0",
+          "STS_SILVER_SEARCH": "1",
+          "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+          "STS_SILVER_REUSE_CAP_MODE": "allocated",
+          "STS_SILVER_ADAPTIVE": "0",
+          "STS_SILVER_VNET_LEAF_DIRECT": "0",
+          "STS_SILVER_TELEMETRY": "1",
+          "OMP_NUM_THREADS": "1",
+          "STS_NATIVE_OOC": "1",
+          "STS_POLICY": "0"
+        },
+        "model_artifacts": [
+          {
+            "role": "floor",
+            "path": "models/v_rich_trees.txt",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "role": "win",
+            "path": "models/v_win_trees.txt",
+            "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+          }
+        ]
+      },
+      "max_rss_kb": 296496,
+      "name": "final-2-1-B",
+      "seed": 2,
+      "rep": 1,
+      "arm": "B",
+      "label_rows": 17,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05"
+    }
+  ],
+  "totals": {
+    "A": {
+      "cpu_seconds": 88.992959,
+      "wall_seconds": 88.99991233398032
+    },
+    "B": {
+      "cpu_seconds": 88.466317,
+      "wall_seconds": 88.4805954839976
+    }
+  },
+  "cpu_reduction": 0.005917794013344357,
+  "wall_reduction": 0.005835026533890675,
+  "peak_rss_by_seed_kb": {
+    "0": {
+      "A": 277196,
+      "B": 235032
+    },
+    "1": {
+      "A": 288450,
+      "B": 237572
+    },
+    "2": {
+      "A": 319776,
+      "B": 296542
+    }
+  },
+  "peak_rss_reduction_by_seed": {
+    "0": 0.1521089770415157,
+    "1": 0.17638412203154796,
+    "2": 0.07265710997698394
+  },
+  "fixture_results": [
+    "det",
+    "known_top",
+    "reshuffle",
+    "ordinary_select",
+    "gamble",
+    "gamble_select",
+    "exhaust_many",
+    "duplicates",
+    "random_potion",
+    "random_monster",
+    "reuse_det",
+    "tx_gamble",
+    "tx_gamble_select",
+    "tx_exhaust_many"
+  ],
+  "storage_fixture": "storage simulations=512 logical_nodes=604 decision_nodes=510 chance_nodes=94 node_pool_peak=604 state_pool_peak=510 node_size=88 battle_state_size=6248 omitted_chance_state_payload_bytes=587312\nsilver_search_optimization PASS\n",
+  "checks": {
+    "ctest": "62/62 passed after complete default Debug build",
+    "sanitizers": "ASan+UBSan optimization and bridge boundary 2/2 passed, final post-reroot state growth included",
+    "review": "independent source review no blocking findings",
+    "repo_health": "pass against49781db"
+  },
+  "limitations": [
+    "Three fixed seeds, two repeats each; local memory/CPU pilot, no statistical generalization.",
+    "No combined PGO measurement; prior PGO binary belongs to previous source SHA.",
+    "Labels and per-fight telemetry identical; 14 native fixture traces identical; no persisted full-producer RNG trace.",
+    "Initial perf samples overlapped builds and are excluded from controlled timing and counter conclusions.",
+    "No deployment, model, teacher budget or reuse-cap change."
+  ],
+  "perf_pairs": [
+    {
+      "name": "counter-0-A",
+      "arm": "A",
+      "rep": 0,
+      "metrics": {
+        "cycles:u": {
+          "count": 88690848899,
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 150803011333,
+          "running_percent": 100.0
+        },
+        "branches:u": {
+          "count": 31777238993,
+          "running_percent": 100.0
+        },
+        "branch-misses:u": {
+          "count": 843751399,
+          "running_percent": 100.0
+        },
+        "cache-references:u": {
+          "count": 6096491904,
+          "running_percent": 100.0
+        },
+        "cache-misses:u": {
+          "count": 356275818,
+          "running_percent": 100.0
+        }
+      },
+      "run": {
+        "command": [
+          "bash",
+          "tools/seed_guard.sh",
+          "taskset",
+          "-c",
+          "2",
+          "/home/philippherrmann/.local/opt/perf-7.1.5/usr/bin/perf",
+          "stat",
+          "-x",
+          ",",
+          "-o",
+          "build/chance-storage-evidence/counter-0-A.perf.csv",
+          "-e",
+          "cycles:u,instructions:u,branches:u,branch-misses:u,cache-references:u,cache-misses:u",
+          "--",
+          "/usr/bin/time",
+          "-f",
+          "%M",
+          "-o",
+          "build/chance-storage-evidence/counter-0-A.rss-kb",
+          "build/chance-storage-evidence/baseline/one_combat",
+          "wholecombatgen",
+          "1",
+          "10000",
+          "0",
+          "build/chance-storage-evidence/counter-0-A.csv",
+          "0",
+          "build/chance-storage-evidence/counter-0-A.teacher.json"
+        ],
+        "returncode": 0,
+        "wall_seconds": 18.188029183002072,
+        "cpu_seconds": 18.174319999999998,
+        "teacher": {
+          "teacher_id": "exact-search-parity",
+          "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+          "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+          "combat_backend": "silver_uct",
+          "rng_regime": "project_fair",
+          "search_configuration": {
+            "simulation_budgets": [
+              10000
+            ],
+            "exploration_parameter": 25.0,
+            "exploration_parameter_chance": 25.0,
+            "chance_widening_c": 3.7028,
+            "chance_widening_alpha": 0.52389,
+            "end_turn_widening_c": 3.7028,
+            "end_turn_widening_alpha": 0.52389,
+            "reuse_cap_mode": "allocated",
+            "reuse_cap": 32768,
+            "sequential_halving": false,
+            "pruning": false,
+            "learned_visit_puct": false,
+            "direct_learned_leaf": false,
+            "adaptive": false
+          },
+          "environment": {
+            "STS_FAIR": "1",
+            "STS_SEARCHER3": "0",
+            "STS_SILVER_SEARCH": "1",
+            "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+            "STS_SILVER_REUSE_CAP_MODE": "allocated",
+            "STS_SILVER_ADAPTIVE": "0",
+            "STS_SILVER_VNET_LEAF_DIRECT": "0",
+            "STS_SILVER_TELEMETRY": "1",
+            "OMP_NUM_THREADS": "1",
+            "STS_NATIVE_OOC": "1",
+            "STS_POLICY": "0"
+          },
+          "model_artifacts": [
+            {
+              "role": "floor",
+              "path": "models/v_rich_trees.txt",
+              "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+            },
+            {
+              "role": "win",
+              "path": "models/v_win_trees.txt",
+              "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+            }
+          ]
+        },
+        "max_rss_kb": 277184
+      }
+    },
+    {
+      "name": "counter-0-B",
+      "arm": "B",
+      "rep": 0,
+      "metrics": {
+        "cycles:u": {
+          "count": 90333610163,
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 151100977885,
+          "running_percent": 100.0
+        },
+        "branches:u": {
+          "count": 31804326190,
+          "running_percent": 100.0
+        },
+        "branch-misses:u": {
+          "count": 855316136,
+          "running_percent": 100.0
+        },
+        "cache-references:u": {
+          "count": 6339182385,
+          "running_percent": 100.0
+        },
+        "cache-misses:u": {
+          "count": 364584570,
+          "running_percent": 100.0
+        }
+      },
+      "run": {
+        "command": [
+          "bash",
+          "tools/seed_guard.sh",
+          "taskset",
+          "-c",
+          "2",
+          "/home/philippherrmann/.local/opt/perf-7.1.5/usr/bin/perf",
+          "stat",
+          "-x",
+          ",",
+          "-o",
+          "build/chance-storage-evidence/counter-0-B.perf.csv",
+          "-e",
+          "cycles:u,instructions:u,branches:u,branch-misses:u,cache-references:u,cache-misses:u",
+          "--",
+          "/usr/bin/time",
+          "-f",
+          "%M",
+          "-o",
+          "build/chance-storage-evidence/counter-0-B.rss-kb",
+          "build/linux-gcc-release-ccache/one_combat",
+          "wholecombatgen",
+          "1",
+          "10000",
+          "0",
+          "build/chance-storage-evidence/counter-0-B.csv",
+          "0",
+          "build/chance-storage-evidence/counter-0-B.teacher.json"
+        ],
+        "returncode": 0,
+        "wall_seconds": 18.525061975000426,
+        "cpu_seconds": 18.521382999999997,
+        "teacher": {
+          "teacher_id": "exact-search-parity",
+          "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+          "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+          "combat_backend": "silver_uct",
+          "rng_regime": "project_fair",
+          "search_configuration": {
+            "simulation_budgets": [
+              10000
+            ],
+            "exploration_parameter": 25.0,
+            "exploration_parameter_chance": 25.0,
+            "chance_widening_c": 3.7028,
+            "chance_widening_alpha": 0.52389,
+            "end_turn_widening_c": 3.7028,
+            "end_turn_widening_alpha": 0.52389,
+            "reuse_cap_mode": "allocated",
+            "reuse_cap": 32768,
+            "sequential_halving": false,
+            "pruning": false,
+            "learned_visit_puct": false,
+            "direct_learned_leaf": false,
+            "adaptive": false
+          },
+          "environment": {
+            "STS_FAIR": "1",
+            "STS_SEARCHER3": "0",
+            "STS_SILVER_SEARCH": "1",
+            "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+            "STS_SILVER_REUSE_CAP_MODE": "allocated",
+            "STS_SILVER_ADAPTIVE": "0",
+            "STS_SILVER_VNET_LEAF_DIRECT": "0",
+            "STS_SILVER_TELEMETRY": "1",
+            "OMP_NUM_THREADS": "1",
+            "STS_NATIVE_OOC": "1",
+            "STS_POLICY": "0"
+          },
+          "model_artifacts": [
+            {
+              "role": "floor",
+              "path": "models/v_rich_trees.txt",
+              "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+            },
+            {
+              "role": "win",
+              "path": "models/v_win_trees.txt",
+              "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+            }
+          ]
+        },
+        "max_rss_kb": 235040
+      }
+    },
+    {
+      "name": "counter-1-A",
+      "arm": "A",
+      "rep": 1,
+      "metrics": {
+        "cycles:u": {
+          "count": 92416206427,
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 150803029284,
+          "running_percent": 100.0
+        },
+        "branches:u": {
+          "count": 31777247445,
+          "running_percent": 100.0
+        },
+        "branch-misses:u": {
+          "count": 851069523,
+          "running_percent": 100.0
+        },
+        "cache-references:u": {
+          "count": 6225462322,
+          "running_percent": 100.0
+        },
+        "cache-misses:u": {
+          "count": 363654158,
+          "running_percent": 100.0
+        }
+      },
+      "run": {
+        "command": [
+          "bash",
+          "tools/seed_guard.sh",
+          "taskset",
+          "-c",
+          "2",
+          "/home/philippherrmann/.local/opt/perf-7.1.5/usr/bin/perf",
+          "stat",
+          "-x",
+          ",",
+          "-o",
+          "build/chance-storage-evidence/counter-1-A.perf.csv",
+          "-e",
+          "cycles:u,instructions:u,branches:u,branch-misses:u,cache-references:u,cache-misses:u",
+          "--",
+          "/usr/bin/time",
+          "-f",
+          "%M",
+          "-o",
+          "build/chance-storage-evidence/counter-1-A.rss-kb",
+          "build/chance-storage-evidence/baseline/one_combat",
+          "wholecombatgen",
+          "1",
+          "10000",
+          "0",
+          "build/chance-storage-evidence/counter-1-A.csv",
+          "0",
+          "build/chance-storage-evidence/counter-1-A.teacher.json"
+        ],
+        "returncode": 0,
+        "wall_seconds": 18.976970160001656,
+        "cpu_seconds": 18.974563999999997,
+        "teacher": {
+          "teacher_id": "exact-search-parity",
+          "git_sha": "49781db78acac6f5dd87e325b6aa97c67737a527",
+          "executable_sha256": "835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf",
+          "combat_backend": "silver_uct",
+          "rng_regime": "project_fair",
+          "search_configuration": {
+            "simulation_budgets": [
+              10000
+            ],
+            "exploration_parameter": 25.0,
+            "exploration_parameter_chance": 25.0,
+            "chance_widening_c": 3.7028,
+            "chance_widening_alpha": 0.52389,
+            "end_turn_widening_c": 3.7028,
+            "end_turn_widening_alpha": 0.52389,
+            "reuse_cap_mode": "allocated",
+            "reuse_cap": 32768,
+            "sequential_halving": false,
+            "pruning": false,
+            "learned_visit_puct": false,
+            "direct_learned_leaf": false,
+            "adaptive": false
+          },
+          "environment": {
+            "STS_FAIR": "1",
+            "STS_SEARCHER3": "0",
+            "STS_SILVER_SEARCH": "1",
+            "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+            "STS_SILVER_REUSE_CAP_MODE": "allocated",
+            "STS_SILVER_ADAPTIVE": "0",
+            "STS_SILVER_VNET_LEAF_DIRECT": "0",
+            "STS_SILVER_TELEMETRY": "1",
+            "OMP_NUM_THREADS": "1",
+            "STS_NATIVE_OOC": "1",
+            "STS_POLICY": "0"
+          },
+          "model_artifacts": [
+            {
+              "role": "floor",
+              "path": "models/v_rich_trees.txt",
+              "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+            },
+            {
+              "role": "win",
+              "path": "models/v_win_trees.txt",
+              "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+            }
+          ]
+        },
+        "max_rss_kb": 277168
+      }
+    },
+    {
+      "name": "counter-1-B",
+      "arm": "B",
+      "rep": 1,
+      "metrics": {
+        "cycles:u": {
+          "count": 92972088148,
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 151100978050,
+          "running_percent": 100.0
+        },
+        "branches:u": {
+          "count": 31804326241,
+          "running_percent": 100.0
+        },
+        "branch-misses:u": {
+          "count": 865478561,
+          "running_percent": 100.0
+        },
+        "cache-references:u": {
+          "count": 6240460138,
+          "running_percent": 100.0
+        },
+        "cache-misses:u": {
+          "count": 368844504,
+          "running_percent": 100.0
+        }
+      },
+      "run": {
+        "command": [
+          "bash",
+          "tools/seed_guard.sh",
+          "taskset",
+          "-c",
+          "2",
+          "/home/philippherrmann/.local/opt/perf-7.1.5/usr/bin/perf",
+          "stat",
+          "-x",
+          ",",
+          "-o",
+          "build/chance-storage-evidence/counter-1-B.perf.csv",
+          "-e",
+          "cycles:u,instructions:u,branches:u,branch-misses:u,cache-references:u,cache-misses:u",
+          "--",
+          "/usr/bin/time",
+          "-f",
+          "%M",
+          "-o",
+          "build/chance-storage-evidence/counter-1-B.rss-kb",
+          "build/linux-gcc-release-ccache/one_combat",
+          "wholecombatgen",
+          "1",
+          "10000",
+          "0",
+          "build/chance-storage-evidence/counter-1-B.csv",
+          "0",
+          "build/chance-storage-evidence/counter-1-B.teacher.json"
+        ],
+        "returncode": 0,
+        "wall_seconds": 19.057246307987953,
+        "cpu_seconds": 19.054618,
+        "teacher": {
+          "teacher_id": "exact-search-parity",
+          "git_sha": "255d8f16886ea8ac5f89c46c9956cd8aee8d1226",
+          "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+          "combat_backend": "silver_uct",
+          "rng_regime": "project_fair",
+          "search_configuration": {
+            "simulation_budgets": [
+              10000
+            ],
+            "exploration_parameter": 25.0,
+            "exploration_parameter_chance": 25.0,
+            "chance_widening_c": 3.7028,
+            "chance_widening_alpha": 0.52389,
+            "end_turn_widening_c": 3.7028,
+            "end_turn_widening_alpha": 0.52389,
+            "reuse_cap_mode": "allocated",
+            "reuse_cap": 32768,
+            "sequential_halving": false,
+            "pruning": false,
+            "learned_visit_puct": false,
+            "direct_learned_leaf": false,
+            "adaptive": false
+          },
+          "environment": {
+            "STS_FAIR": "1",
+            "STS_SEARCHER3": "0",
+            "STS_SILVER_SEARCH": "1",
+            "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+            "STS_SILVER_REUSE_CAP_MODE": "allocated",
+            "STS_SILVER_ADAPTIVE": "0",
+            "STS_SILVER_VNET_LEAF_DIRECT": "0",
+            "STS_SILVER_TELEMETRY": "1",
+            "OMP_NUM_THREADS": "1",
+            "STS_NATIVE_OOC": "1",
+            "STS_POLICY": "0"
+          },
+          "model_artifacts": [
+            {
+              "role": "floor",
+              "path": "models/v_rich_trees.txt",
+              "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+            },
+            {
+              "role": "win",
+              "path": "models/v_win_trees.txt",
+              "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+            }
+          ]
+        },
+        "max_rss_kb": 235264
+      }
+    }
+  ],
+  "perf_counter_reduction": {
+    "cycles:u": -0.012140018405369934,
+    "instructions:u": -0.0019758069725026584,
+    "branches:u": -0.0008522764644294245,
+    "branch-misses:u": -0.015325380199666894,
+    "cache-references:u": -0.020912940615885667,
+    "cache-misses:u": -0.018750570819404233
+  },
+  "perf_setup": {
+    "binary": "/home/philippherrmann/.local/opt/perf-7.1.5/usr/bin/perf",
+    "library_path": "/home/philippherrmann/.local/opt/perf-7.1.5/usr/lib/x86_64-linux-gnu",
+    "version": "7.1.5",
+    "perf_event_paranoid": 2,
+    "system_permissions_changed": false,
+    "installation": "user-local extracted linux-perf, libdebuginfod1t64 and libtraceevent1 packages"
+  },
+  "decision": "Retain as memory optimization; CPU neutral in three-seed pilot; counter pairs do not support cache-efficiency improvement."
+}

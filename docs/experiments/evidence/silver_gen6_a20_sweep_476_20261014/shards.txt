@@ -1,0 +1,4 @@
+shard2 seed=104000048 n=24 rc=0 wall=7259
+shard0 seed=104000000 n=24 rc=0 wall=7420
+shard3 seed=104000072 n=24 rc=0 wall=7829
+shard1 seed=104000024 n=24 rc=0 wall=8139

@@ -1,0 +1,226 @@
+{
+  "proposedOfficial": [
+    980000,
+    980063
+  ],
+  "excludedCanary": 979999,
+  "localHits": [],
+  "preservedCandidates": [
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/control.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/treatment.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/canary_on.csv",
+      "rows": 1,
+      "minimum": 969999,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/canary_on.csv.mcts.csv",
+      "rows": 1,
+      "minimum": 969999,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/control.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/treatment.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/smoke_on.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/control.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/treatment.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/parity_off.csv.mcts.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/control.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/smoke_on.csv.mcts.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/parity_off.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/treatment.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/canary_off.csv.mcts.csv",
+      "rows": 1,
+      "minimum": 969999,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/control.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/treatment.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/canary_on.csv",
+      "rows": 1,
+      "minimum": 969999,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/canary_on.csv.mcts.csv",
+      "rows": 1,
+      "minimum": 969999,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/control.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/treatment.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/canary_off.csv",
+      "rows": 1,
+      "minimum": 969999,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-canary-on.csv",
+      "rows": 1,
+      "minimum": 969992,
+      "maximum": 969992
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/control.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/treatment.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/repaired-smoke-on.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/baseline-off.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/control.csv.mcts.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/smoke-on.csv",
+      "rows": 5,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-baseline-off.csv",
+      "rows": 1,
+      "minimum": 969992,
+      "maximum": 969992
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/repaired-smoke-on.csv.mcts.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-canary-off.csv",
+      "rows": 1,
+      "minimum": 969992,
+      "maximum": 969992
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/repaired-off.csv",
+      "rows": 8,
+      "minimum": 969992,
+      "maximum": 969999
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/treatment.csv",
+      "rows": 32,
+      "minimum": 970000,
+      "maximum": 970031
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-baseline-corrected-off.csv",
+      "rows": 1,
+      "minimum": 969992,
+      "maximum": 969992
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-canary-on.csv.mcts.csv",
+      "rows": 1,
+      "minimum": 969992,
+      "maximum": 969992
+    }
+  ]
+}

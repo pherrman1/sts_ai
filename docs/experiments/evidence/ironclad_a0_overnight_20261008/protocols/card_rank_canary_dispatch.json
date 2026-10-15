@@ -1,0 +1,12 @@
+{
+  "launch_epoch": 1791425800.0513725,
+  "manifest_sha256": "cc77397f2017986c9807153d0a35e90b5034ce0029838bdc555912fdb08dde4c",
+  "independent_review_sha256": "12d1a5e67277fbfda2076806aee1e3ff634261fbf8611bce88fe2d967e43a9d1",
+  "gen2_all32_started": true,
+  "gen2_completed": 29,
+  "other_game_workers": 5,
+  "canary_workers": 1,
+  "outer_timeout_seconds": 900,
+  "per_shard_timeout_seconds": 180,
+  "jobs_sha256": "c8afc8d68bb0bdd2e252898d04adbcd50edd5218b60a6f7c374a361c8f0803af"
+}

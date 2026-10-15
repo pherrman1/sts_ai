@@ -1,0 +1,1 @@
+benchmark_canary PASS backend=silver seeds=1 wins=1 sims=10000 seed_lo=979999

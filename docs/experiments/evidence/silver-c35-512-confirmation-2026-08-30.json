@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-c35-3000-confirm-935000",
+  "status": "ROOT_C35_PROMOTION_REJECTED_OPERATIONAL_AND_STATISTICAL",
+  "date": "2026-08-30",
+  "preregistration": "docs/experiments/evidence/silver-c35-512-confirmation-prereg-2026-08-30.json",
+  "source": {
+    "implementation_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+    "preregistration_commit": "2bdc76c",
+    "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "executable_sha256": "d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba"
+  },
+  "configuration": {
+    "canary_seed": 934999,
+    "requested_confirmation_seeds": [935000, 935511],
+    "requested_paired_seed_count": 512,
+    "exact_root_simulations": 3000,
+    "control": "root exploration unset/default(25)",
+    "treatment": "root-only exploration c=35",
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "fair_play": true,
+    "threads_per_arm": 24,
+    "arms_run_sequentially": true,
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "sequential_halving": false,
+    "leaf_vnet": false,
+    "policy_net": false
+  },
+  "canary": {
+    "integrity_pass": true,
+    "control": {"wins": 0, "mean_floor": 50.0, "mean_sec": 10.20},
+    "treatment": {"wins": 1, "mean_floor": 51.0, "mean_sec": 9.51},
+    "efficacy_excluded": true
+  },
+  "cohort_completion": {
+    "control": {
+      "requested": 512,
+      "completed": 511,
+      "wins": 339,
+      "win_rate": 0.6634,
+      "mean_floor": 47.579,
+      "mean_sec": 30.136,
+      "failed_seed": 935505,
+      "failure": "Silver live backend semantic action resolution: semantic hand card identity is ambiguous",
+      "failure_context": "floor=41 encounter=50 decision=23 turn=3 input=1"
+    },
+    "treatment": {
+      "requested": 512,
+      "completed": 511,
+      "wins": 350,
+      "win_rate": 0.6849,
+      "mean_floor": 47.973,
+      "mean_sec": 30.878,
+      "failed_seed": 935456,
+      "failure": "Silver live backend semantic action resolution: semantic hand card identity is ambiguous",
+      "failure_context": "floor=45 encounter=43 decision=24 turn=4 input=1"
+    }
+  },
+  "strict_analysis": {
+    "valid": false,
+    "reason": "Seed sets differ and neither arm completed the required 512 rows. paired_analysis.py without --allow-partial failed as required.",
+    "control_only_seed": 935456,
+    "treatment_only_seed": 935505,
+    "promotion_gate_pass": false
+  },
+  "diagnostic_intersection_analysis": {
+    "warning": "Diagnostic only; --allow-partial was used after the strict gate failed and these values cannot authorize promotion.",
+    "paired_seeds": 510,
+    "control_win_rate": 0.663,
+    "treatment_win_rate": 0.686,
+    "win_delta_pp": 2.4,
+    "win_delta_95ci_pp": [-1.6, 6.3],
+    "floor_delta": 0.4,
+    "floor_delta_95ci": [-0.2, 1.1],
+    "hp_end_delta": 1.0,
+    "control_mean_sec": 30.12,
+    "treatment_mean_sec": 30.90,
+    "runtime_ratio": 1.026,
+    "control_only_wins": 44,
+    "treatment_only_wins": 56,
+    "both_win": 294,
+    "both_lose": 116,
+    "interpretation": "Even the invalid intersection estimate misses the preregistered positive paired win lower-bound requirement."
+  },
+  "decision": {
+    "verdict": "ROOT_C35_PROMOTION_REJECTED_OPERATIONAL_AND_STATISTICAL",
+    "default_change_authorized": false,
+    "additional_seed_extension_authorized": false,
+    "reason": "Both arms had semantic-resolution failures, making the strict gate invalid; the 510-seed diagnostic win interval also includes zero.",
+    "next_action": "Keep c=25 as default. Diagnose and fix the two semantic hand-card identity failures separately before relying on larger Silver cohorts. Do not rerun this efficacy gate merely to seek significance."
+  },
+  "artifacts": {
+    "remote_control_csv": "results/silver-c35-3000-confirm-935000-root-c25.csv",
+    "remote_control_log": "logs/silver-c35-3000-confirm-935000-root-c25.log",
+    "remote_treatment_csv": "results/silver-c35-3000-confirm-935000-root-c35.csv",
+    "remote_treatment_log": "logs/silver-c35-3000-confirm-935000-root-c35.log",
+    "local_raw_directory": "build/gcp-c35-512/",
+    "local_archive": "build/silver-c35-512-confirmation-raw.zip",
+    "sha256": {
+      "archive": "4cd87bc2f23bce310ce963976fc5e505d929b77e4129d5c3249e13d3978804ed",
+      "control.csv": "a66cbdd2f34666e310d109f1b2a8f8cd0cf4db43d134508cda7e184aba31fecc",
+      "control.meta.json": "b200591d07cc2f339d2c5c30590c8426600572de60e039289a344bee0f9fd87b",
+      "control.log": "5dbc38c6007bb81857dfef8ba2d2d2ce47e2d6b00a0105e9d0355d64e04f817a",
+      "treatment.csv": "70abe4b5eb678bed321b1b379e4e4737ea71137259a43d42579f300396fa010c",
+      "treatment.meta.json": "d64fceec44329f7a7e56fa403e9bef2ecf1064fdbc418c95bcf34d1c28712795",
+      "treatment.log": "750f2e2ebb3b2df5f24eb8166a5e578a9e31f3a14802d0d3724408736218462c"
+    }
+  }
+}

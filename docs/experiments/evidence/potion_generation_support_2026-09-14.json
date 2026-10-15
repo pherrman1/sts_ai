@@ -1,0 +1,262 @@
+{
+  "auditedSourceHashes": {
+    "apps/one_combat/combat_transition_native_contract.cpp": "20debdc84e5e03d8633ca03f08eb5c114ea51f15dda1f2ebea454ea472eb2954",
+    "include/constants/CardPools.h": "44669ce7ffa0ec32170afb4ffc4827509d0cb4394eafe12568961dec2236f066",
+    "include/constants/Cards.h": "3492ca9ec6ff3e1098092127892529589be91cb338d3ef44b5fd8e979f52a7e0",
+    "src/combat/Actions.cpp": "6de9d058a75ddf9c0f7bff12cecae9f329148362f18847b6d45ae562bfc6c2d5",
+    "src/combat/BattleContext.cpp": "a00f1bbb13fa30e7f634c8cc6b9056fd96b7e5e5dc29d0144bc3b63d00ede2ab",
+    "src/combat/Player.cpp": "eee0890a1b4ba1190dc1c274ae0343816039e638e988527a0e70d565d42724e6",
+    "src/game/Game.cpp": "486aa531e3707e608d13e542ba450fb06ca50f33d0bbade41f2831d6a1083869",
+    "tools/combat_transition_composed.py": "86331aa705c2040913f3bbeae59d5e9ccba832ac26015145d528f459cd9e0fd7",
+    "tools/combat_transition_frozen_composition.py": "dccbe139d9c172b00a4a5b384ea35f9ddc1c9121e19fe7e30c68b95d42e6301e",
+    "tools/combat_transition_potion_support_audit.py": "d79c368b52cb56c2a5b64f38f153c75fe7a8c80d2119e4673487f3e2d3d10699"
+  },
+  "baseline": "3057ea79f8a678ba13f9f2ea2b4834850fa2dd87",
+  "counts": {
+    "fullySupportedRecovered": 91155,
+    "potionCertificationRecovered": 113094,
+    "previousPotionNotCertified": 116302,
+    "supportedRowsChecked": 413799
+  },
+  "gameplay": false,
+  "hashes": {
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.provenance.json": "f533312d76fbd67e7b3fe47ef542f15867452d02f1f0005d409ccdb8cb9361fc",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "integrity": {
+    "completedSeeds": 24999,
+    "outcomes": {
+      "0": 0,
+      "1": 491897,
+      "2": 18133
+    },
+    "quarantinedRows": 0,
+    "quarantinedSeeds": 1,
+    "requestedSeeds": 25000,
+    "rows": 510030,
+    "sourceSeeds": 24999,
+    "teacherId": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+  },
+  "newReasons": {
+    "entropic_brew": 3208,
+    "gold_mutating_card": 2640,
+    "gold_mutating_encounter": 27664,
+    "gold_mutating_potion": 21698,
+    "gold_mutating_relic": 6824,
+    "potion_not_certified": 3208,
+    "pre_smoke_bomb_used": 26,
+    "pre_stolen_gold_nonzero": 19048,
+    "ritual_dagger": 13926,
+    "smoke_bomb": 3765,
+    "writhing_mass": 4477
+  },
+  "oldReasons": {
+    "entropic_brew": 3208,
+    "gold_mutating_card": 2640,
+    "gold_mutating_encounter": 27664,
+    "gold_mutating_potion": 21698,
+    "gold_mutating_relic": 6824,
+    "potion_not_certified": 116302,
+    "pre_smoke_bomb_used": 26,
+    "pre_stolen_gold_nonzero": 19048,
+    "ritual_dagger": 13926,
+    "smoke_bomb": 3765,
+    "writhing_mass": 4477
+  },
+  "schema": "potion_generation_support_audit_v1",
+  "supportedPotionViolations": 0,
+  "tables": {
+    "act:1": {
+      "newFallback": 41790,
+      "newRate": 0.8251069279251378,
+      "newSupported": 197156,
+      "oldFallback": 60140,
+      "oldRate": 0.74831133394156,
+      "oldSupported": 178806,
+      "recovered": 18350,
+      "rows": 238946
+    },
+    "act:2": {
+      "newFallback": 35310,
+      "newRate": 0.7940531460700371,
+      "newSupported": 136142,
+      "oldFallback": 75874,
+      "oldRate": 0.5574621468399319,
+      "oldSupported": 95578,
+      "recovered": 40564,
+      "rows": 171452
+    },
+    "act:3": {
+      "newFallback": 19131,
+      "newRate": 0.8079833788341095,
+      "newSupported": 80501,
+      "oldFallback": 51372,
+      "oldRate": 0.4843825277019432,
+      "oldSupported": 48260,
+      "recovered": 32241,
+      "rows": 99632
+    },
+    "all": {
+      "newFallback": 96231,
+      "newRate": 0.8113228633609788,
+      "newSupported": 413799,
+      "oldFallback": 187386,
+      "oldRate": 0.6325980824657373,
+      "oldSupported": 322644,
+      "recovered": 91155,
+      "rows": 510030
+    },
+    "room:2": {
+      "newFallback": 1259,
+      "newRate": 0.839125990288781,
+      "newSupported": 6567,
+      "oldFallback": 3249,
+      "oldRate": 0.5848453871709686,
+      "oldSupported": 4577,
+      "recovered": 1990,
+      "rows": 7826
+    },
+    "room:3": {
+      "newFallback": 18830,
+      "newRate": 0.8408754806270334,
+      "newSupported": 99505,
+      "oldFallback": 42491,
+      "oldRate": 0.6409261841382515,
+      "oldSupported": 75844,
+      "recovered": 23661,
+      "rows": 118335
+    },
+    "room:4": {
+      "newFallback": 67386,
+      "newRate": 0.7957597708639581,
+      "newSupported": 262549,
+      "oldFallback": 119922,
+      "oldRate": 0.6365284071104914,
+      "oldSupported": 210013,
+      "recovered": 52536,
+      "rows": 329935
+    },
+    "room:6": {
+      "newFallback": 8756,
+      "newRate": 0.8376534282641748,
+      "newSupported": 45178,
+      "oldFallback": 21724,
+      "oldRate": 0.5972114065339118,
+      "oldSupported": 32210,
+      "recovered": 12968,
+      "rows": 53934
+    },
+    "split:0": {
+      "newFallback": 76958,
+      "newRate": 0.8114620158115355,
+      "newSupported": 331225,
+      "oldFallback": 149977,
+      "oldRate": 0.6325741150415377,
+      "oldSupported": 258206,
+      "recovered": 73019,
+      "rows": 408183
+    },
+    "split:1": {
+      "newFallback": 9286,
+      "newRate": 0.8157758996944808,
+      "newSupported": 41120,
+      "oldFallback": 18132,
+      "oldRate": 0.6402809189382216,
+      "oldSupported": 32274,
+      "recovered": 8846,
+      "rows": 50406
+    },
+    "split:2": {
+      "newFallback": 9987,
+      "newRate": 0.8058552516475185,
+      "newSupported": 41454,
+      "oldFallback": 19277,
+      "oldRate": 0.6252600066095139,
+      "oldSupported": 32164,
+      "recovered": 9290,
+      "rows": 51441
+    },
+    "test:act:1": {
+      "newFallback": 4192,
+      "newRate": 0.8256674706811944,
+      "newSupported": 19854,
+      "oldFallback": 6094,
+      "oldRate": 0.7465690759377859,
+      "oldSupported": 17952,
+      "recovered": 1902,
+      "rows": 24046
+    },
+    "test:act:2": {
+      "newFallback": 3730,
+      "newRate": 0.7837555800336251,
+      "newSupported": 13519,
+      "oldFallback": 7845,
+      "oldRate": 0.5451910255666995,
+      "oldSupported": 9404,
+      "recovered": 4115,
+      "rows": 17249
+    },
+    "test:act:3": {
+      "newFallback": 2065,
+      "newRate": 0.7964715158683225,
+      "newSupported": 8081,
+      "oldFallback": 5338,
+      "oldRate": 0.47388133254484527,
+      "oldSupported": 4808,
+      "recovered": 3273,
+      "rows": 10146
+    },
+    "test:room:2": {
+      "newFallback": 128,
+      "newRate": 0.8373570520965693,
+      "newSupported": 659,
+      "oldFallback": 333,
+      "oldRate": 0.576874205844981,
+      "oldSupported": 454,
+      "recovered": 205,
+      "rows": 787
+    },
+    "test:room:3": {
+      "newFallback": 1951,
+      "newRate": 0.8369001839157332,
+      "newSupported": 10011,
+      "oldFallback": 4341,
+      "oldRate": 0.6371008192609932,
+      "oldSupported": 7621,
+      "recovered": 2390,
+      "rows": 11962
+    },
+    "test:room:4": {
+      "newFallback": 7023,
+      "newRate": 0.7887374785669163,
+      "newSupported": 26220,
+      "oldFallback": 12397,
+      "oldRate": 0.6270793851337123,
+      "oldSupported": 20846,
+      "recovered": 5374,
+      "rows": 33243
+    },
+    "test:room:6": {
+      "newFallback": 885,
+      "newRate": 0.8375848779592586,
+      "newSupported": 4564,
+      "oldFallback": 2206,
+      "oldRate": 0.5951550743255644,
+      "oldSupported": 3243,
+      "recovered": 1321,
+      "rows": 5449
+    }
+  },
+  "training": false
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-c35-budget-curve-934500",
+  "status": "EXPLORATORY_C35_BUDGET_CURVE_COMPLETE_NO_STABLE_INTERACTION",
+  "date": "2026-08-30",
+  "preregistration": "docs/experiments/evidence/silver-c35-budget-curve-prereg-2026-08-30.json",
+  "source": {
+    "implementation_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+    "preregistration_commit": "089975e",
+    "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "executable_sha256": "d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba"
+  },
+  "configuration": {
+    "seeds": [934500, 934515],
+    "paired_seeds_per_cell": 16,
+    "budgets": [100, 200, 500, 1000, 2000, 3000, 5000, 7500, 10000],
+    "control": "root exploration unset/default(25)",
+    "treatment": "root-only exploration c=35",
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "fair_play": true,
+    "ascension": 0,
+    "threads_per_arm": 24,
+    "arms_run_sequentially": true,
+    "exact_root_budgets": true,
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "sequential_halving": false,
+    "leaf_vnet": false,
+    "policy_net": false
+  },
+  "cells": [
+    {"budget":100,"control_wins":4,"treatment_wins":7,"win_delta_pp":18.8,"win_delta_95ci_pp":[-12.5,50.0],"control_mean_floor":40.6,"treatment_mean_floor":42.9,"floor_delta":2.4,"floor_delta_95ci":[-4.9,9.2],"control_sec":0.72,"treatment_sec":0.81},
+    {"budget":200,"control_wins":6,"treatment_wins":8,"win_delta_pp":12.5,"win_delta_95ci_pp":[-12.5,37.5],"control_mean_floor":40.8,"treatment_mean_floor":44.8,"floor_delta":4.0,"floor_delta_95ci":[-2.6,11.1],"control_sec":1.38,"treatment_sec":1.80},
+    {"budget":500,"control_wins":6,"treatment_wins":9,"win_delta_pp":18.8,"win_delta_95ci_pp":[-6.2,43.8],"control_mean_floor":45.2,"treatment_mean_floor":47.1,"floor_delta":1.9,"floor_delta_95ci":[-2.9,7.1],"control_sec":4.10,"treatment_sec":3.95},
+    {"budget":1000,"control_wins":7,"treatment_wins":8,"win_delta_pp":6.2,"win_delta_95ci_pp":[-25.0,37.5],"control_mean_floor":48.1,"treatment_mean_floor":45.2,"floor_delta":-2.9,"floor_delta_95ci":[-8.4,1.5],"control_sec":7.92,"treatment_sec":8.25},
+    {"budget":2000,"control_wins":7,"treatment_wins":9,"win_delta_pp":12.5,"win_delta_95ci_pp":[0.0,31.2],"control_mean_floor":44.9,"treatment_mean_floor":46.6,"floor_delta":1.7,"floor_delta_95ci":[-2.5,6.4],"control_sec":17.65,"treatment_sec":16.86},
+    {"budget":3000,"control_wins":8,"treatment_wins":6,"win_delta_pp":-12.5,"win_delta_95ci_pp":[-37.5,12.5],"control_mean_floor":44.7,"treatment_mean_floor":42.8,"floor_delta":-1.9,"floor_delta_95ci":[-8.9,5.1],"control_sec":25.00,"treatment_sec":21.89},
+    {"budget":5000,"control_wins":11,"treatment_wins":11,"win_delta_pp":0.0,"win_delta_95ci_pp":[-31.2,37.5],"control_mean_floor":45.5,"treatment_mean_floor":46.3,"floor_delta":0.8,"floor_delta_95ci":[-6.7,7.4],"control_sec":38.55,"treatment_sec":42.64},
+    {"budget":7500,"control_wins":10,"treatment_wins":10,"win_delta_pp":0.0,"win_delta_95ci_pp":[-31.2,31.2],"control_mean_floor":47.4,"treatment_mean_floor":46.9,"floor_delta":-0.6,"floor_delta_95ci":[-5.6,4.4],"control_sec":55.40,"treatment_sec":58.91},
+    {"budget":10000,"control_wins":12,"treatment_wins":12,"win_delta_pp":0.0,"win_delta_95ci_pp":[-31.2,31.2],"control_mean_floor":50.6,"treatment_mean_floor":48.1,"floor_delta":-2.5,"floor_delta_95ci":[-6.3,0.2],"control_sec":90.24,"treatment_sec":77.67}
+  ],
+  "descriptive_summary": {
+    "treatment_ahead_on_wins": [100,200,500,1000,2000],
+    "treatment_behind_on_wins": [3000],
+    "tied_on_wins": [5000,7500,10000],
+    "interpretation": "The apparent c=35 advantage is confined to low budgets in this noisy block, reverses at the established 3000 reference, and disappears at 5000-10000. There is no stable monotonic c-by-budget interaction and no basis to select a new promotion budget from sixteen seeds.",
+    "independence_warning": "Every budget reused the same sixteen seeds; cells are not independent samples and must not be pooled as 144 runs."
+  },
+  "integrity": {
+    "all_18_arms_complete": true,
+    "strict_seed_set_equality_every_cell": true,
+    "unique_rows_per_arm": 16,
+    "paired_analysis_allow_partial": false,
+    "telemetry_structurally_parseable": true,
+    "all_simulation_totals_positive_exact_budget_multiples": true,
+    "conversion_failures": 0,
+    "semantic_resolution_failures": 0,
+    "transaction_failures": 0,
+    "knowledge_failures": 0,
+    "bestbench_seed_failures": 0,
+    "repository_validator_passed_all_18_arms": true
+  },
+  "artifacts": {
+    "remote_csv_pattern": "results/silver-c35-budget-{budget}-934500-root-c{25|35}.csv",
+    "remote_log_pattern": "logs/silver-c35-budget-{budget}-934500-root-c{25|35}.log",
+    "local_raw_directory": "build/gcp-c35-budget-curve/",
+    "local_raw_archive": "build/silver-c35-budget-curve-934500-raw.zip",
+    "local_raw_archive_sha256": "b377b741db3cadaa5f09492ffd006e7d55c00f2ef6a0814f8cc1d82b07fea60b",
+    "csv_sha256": {
+      "100-control.csv":"34436ba7a5dfff2a3cd9b986f2a4d69d30e62322e29f5935dcc89341e0ee5b9f","100-treatment.csv":"2921115e4239bffc921cff150054740e82e80de8331afc03c8d06899626369bd",
+      "200-control.csv":"0dcae0bd99f8c6976c8b1df963f07b65cc854a230e8cfb922f667146e95ee849","200-treatment.csv":"ae82b4eb24c90590f205db74a58f408a960311c630cc4dcb9a8571ff31eb0d9e",
+      "500-control.csv":"5b2de840fc412668f8fcd6b67d6e08140268e8c8e2c0d9e6e698d67b2fa16eeb","500-treatment.csv":"6a6cc6b95a6879b55cfe4ff7c43a0e02a279108983663b3800290667ce187b7d",
+      "1000-control.csv":"746a9a4f6ea65b795fadabf5e15c7a52e4344341ecdddf1475511e9550203c28","1000-treatment.csv":"bfe1010fb9ccfe31964ebdc7d9b17ad2ac9df1f685ddaace57d31bc172e9e9cc",
+      "2000-control.csv":"5d8a696eda2fee06130cc3a88b3fa5f31f86d2cd9a167ea6b6af5039457dd5aa","2000-treatment.csv":"d842fa415cf8a9b54003270ef0d21bbd17ab8cc8def2ee45df50dfc33dd48fb7",
+      "3000-control.csv":"b9b51eb97029b62bd536bb73bf9e88e935a2089eccdbc48969e8ac205168b225","3000-treatment.csv":"cd6647816f8214cc82f83feb333e3175316ee94ef79bb81f7a6b59077a12064b",
+      "5000-control.csv":"13deb0e9314381f668600264d4d859d3e0f5734ba822214a6c9951a425573eb3","5000-treatment.csv":"b669b8f5db267f94fd03037f764a183e70389cb980511bf382b9bb8400fea939",
+      "7500-control.csv":"825a1f94c17b60661fd42ccc05c2b6bbc37341022789453c6333215758048415","7500-treatment.csv":"bda405caa8a3aca5d0a6a238ac4dd2d2b144459c6c74b5c025de6d287744b9d8",
+      "10000-control.csv":"01791a8f20b04dcd227d1be4219e9723898e588f3e1a294905957a5a5b93092c","10000-treatment.csv":"abc08db862bb507c7bfec584e467d5088a0475d083d38427ef06e0b687ceba04"
+    }
+  },
+  "verdict": "EXPLORATORY_C35_BUDGET_CURVE_COMPLETE_NO_STABLE_INTERACTION"
+}

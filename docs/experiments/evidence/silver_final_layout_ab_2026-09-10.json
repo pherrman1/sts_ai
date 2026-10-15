@@ -1,0 +1,801 @@
+{
+  "baseline_sha": "3bec0b159984ab1a01c100bce17189aa68f71967",
+  "reviewed_head_sha": "4224c03e4ae0487cd43e5e9a196a193d22be9f24",
+  "comparison": "Current main versus complete PR final layout; selected-workload confirmation; PGO OFF",
+  "machine": "AMD Ryzen 5 7500F; Linux; CPU2 affinity; OMP_NUM_THREADS=1",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "build": {
+    "baseline": "baseline_build.py exact3bec source archive,linux-gcc-release-ccache/linux-gcc-release-ccache-build",
+    "head": "linux-gcc-release-ccache one_combat verified up-to-date,artifact copied into frozen head directory",
+    "flags": "-O3 -DNDEBUG -std=gnu++17 -Wno-shift-count-overflow -fopenmp -O3 -flto; PGO OFF",
+    "new_main_change_since_original_baseline": "Only tools/train_ooc_semantic_probe.py; no runtime/build/model changes",
+    "baseline_binary_equal_to_original": true,
+    "head_binary_equal_to_prior_final_layout": true
+  },
+  "protocol": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "repetitions": 2,
+    "order_per_seed": [
+      "A",
+      "B",
+      "B",
+      "A"
+    ],
+    "cpu_pinning": 2,
+    "processes": 1,
+    "omp_threads": 1,
+    "builds_running_during_timing": false,
+    "decision_rule": "Identical labels and telemetry, reused native trace parity, and1-sum(B CPU)/sum(A CPU)>=0.05",
+    "large_benchmark": false
+  },
+  "teachers": {
+    "A": {
+      "teacher_id": "exact-search-parity",
+      "git_sha": "3bec0b159984ab1a01c100bce17189aa68f71967",
+      "executable_sha256": "4d0beb28998568df1503ecc0f72784f6dbf70c81973717d439ff8eb3b2031862",
+      "combat_backend": "silver_uct",
+      "rng_regime": "project_fair",
+      "search_configuration": {
+        "simulation_budgets": [
+          10000
+        ],
+        "exploration_parameter": 25.0,
+        "exploration_parameter_chance": 25.0,
+        "chance_widening_c": 3.7028,
+        "chance_widening_alpha": 0.52389,
+        "end_turn_widening_c": 3.7028,
+        "end_turn_widening_alpha": 0.52389,
+        "reuse_cap_mode": "allocated",
+        "reuse_cap": 32768,
+        "sequential_halving": false,
+        "pruning": false,
+        "learned_visit_puct": false,
+        "direct_learned_leaf": false,
+        "adaptive": false
+      },
+      "environment": {
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "OMP_NUM_THREADS": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_POLICY": "0"
+      },
+      "model_artifacts": [
+        {
+          "role": "floor",
+          "path": "models/v_rich_trees.txt",
+          "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+        },
+        {
+          "role": "win",
+          "path": "models/v_win_trees.txt",
+          "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+        }
+      ]
+    },
+    "B": {
+      "teacher_id": "exact-search-parity",
+      "git_sha": "4224c03e4ae0487cd43e5e9a196a193d22be9f24",
+      "executable_sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5",
+      "combat_backend": "silver_uct",
+      "rng_regime": "project_fair",
+      "search_configuration": {
+        "simulation_budgets": [
+          10000
+        ],
+        "exploration_parameter": 25.0,
+        "exploration_parameter_chance": 25.0,
+        "chance_widening_c": 3.7028,
+        "chance_widening_alpha": 0.52389,
+        "end_turn_widening_c": 3.7028,
+        "end_turn_widening_alpha": 0.52389,
+        "reuse_cap_mode": "allocated",
+        "reuse_cap": 32768,
+        "sequential_halving": false,
+        "pruning": false,
+        "learned_visit_puct": false,
+        "direct_learned_leaf": false,
+        "adaptive": false
+      },
+      "environment": {
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "OMP_NUM_THREADS": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_POLICY": "0"
+      },
+      "model_artifacts": [
+        {
+          "role": "floor",
+          "path": "models/v_rich_trees.txt",
+          "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+        },
+        {
+          "role": "win",
+          "path": "models/v_win_trees.txt",
+          "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+        }
+      ]
+    }
+  },
+  "runs": [
+    {
+      "name": "final-0-0-A",
+      "arm": "A",
+      "seed": 0,
+      "repetition": 0,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-0-0-A.rss-kb",
+        "build/final-layout-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-0-0-A.csv",
+        "0",
+        "build/final-layout-evidence/final-0-0-A.teacher.json"
+      ],
+      "cpu_seconds": 19.391875000000002,
+      "wall_seconds": 19.393039963004412,
+      "max_rss_kb": 283588,
+      "label_rows": 22,
+      "acts": [
+        "1",
+        "2",
+        "3"
+      ],
+      "max_floor": 47,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800",
+      "raw_provenance": "build/final-layout-evidence/final-0-0-A.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-0-0-B",
+      "arm": "B",
+      "seed": 0,
+      "repetition": 0,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-0-0-B.rss-kb",
+        "build/final-layout-evidence/head/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-0-0-B.csv",
+        "0",
+        "build/final-layout-evidence/final-0-0-B.teacher.json"
+      ],
+      "cpu_seconds": 17.467554,
+      "wall_seconds": 17.468732897003065,
+      "max_rss_kb": 235016,
+      "label_rows": 22,
+      "acts": [
+        "1",
+        "2",
+        "3"
+      ],
+      "max_floor": 47,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800",
+      "raw_provenance": "build/final-layout-evidence/final-0-0-B.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-0-1-A",
+      "arm": "A",
+      "seed": 0,
+      "repetition": 1,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-0-1-A.rss-kb",
+        "build/final-layout-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-0-1-A.csv",
+        "0",
+        "build/final-layout-evidence/final-0-1-A.teacher.json"
+      ],
+      "cpu_seconds": 19.548705999999996,
+      "wall_seconds": 19.550077755993698,
+      "max_rss_kb": 283488,
+      "label_rows": 22,
+      "acts": [
+        "1",
+        "2",
+        "3"
+      ],
+      "max_floor": 47,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800",
+      "raw_provenance": "build/final-layout-evidence/final-0-1-A.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-0-1-B",
+      "arm": "B",
+      "seed": 0,
+      "repetition": 1,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-0-1-B.rss-kb",
+        "build/final-layout-evidence/head/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-0-1-B.csv",
+        "0",
+        "build/final-layout-evidence/final-0-1-B.teacher.json"
+      ],
+      "cpu_seconds": 17.603322,
+      "wall_seconds": 17.61254433299473,
+      "max_rss_kb": 234988,
+      "label_rows": 22,
+      "acts": [
+        "1",
+        "2",
+        "3"
+      ],
+      "max_floor": 47,
+      "labels_sha256": "4e620651d9e694423ac4226ff93eba1a8282389ad89e42d2eee4b2505e351d4e",
+      "telemetry_sha256": "89fbe6f773479791b986295ac107dc41a068914856bf988d8d74a5e39852d800",
+      "raw_provenance": "build/final-layout-evidence/final-0-1-B.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-1-0-A",
+      "arm": "A",
+      "seed": 1,
+      "repetition": 0,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-1-0-A.rss-kb",
+        "build/final-layout-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-1-0-A.csv",
+        "1",
+        "build/final-layout-evidence/final-1-0-A.teacher.json"
+      ],
+      "cpu_seconds": 12.751573,
+      "wall_seconds": 12.755621063988656,
+      "max_rss_kb": 290752,
+      "label_rows": 9,
+      "acts": [
+        "1"
+      ],
+      "max_floor": 16,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4",
+      "raw_provenance": "build/final-layout-evidence/final-1-0-A.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-1-0-B",
+      "arm": "B",
+      "seed": 1,
+      "repetition": 0,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-1-0-B.rss-kb",
+        "build/final-layout-evidence/head/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-1-0-B.csv",
+        "1",
+        "build/final-layout-evidence/final-1-0-B.teacher.json"
+      ],
+      "cpu_seconds": 12.352775,
+      "wall_seconds": 12.353522010991583,
+      "max_rss_kb": 237464,
+      "label_rows": 9,
+      "acts": [
+        "1"
+      ],
+      "max_floor": 16,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4",
+      "raw_provenance": "build/final-layout-evidence/final-1-0-B.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-1-1-A",
+      "arm": "A",
+      "seed": 1,
+      "repetition": 1,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-1-1-A.rss-kb",
+        "build/final-layout-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-1-1-A.csv",
+        "1",
+        "build/final-layout-evidence/final-1-1-A.teacher.json"
+      ],
+      "cpu_seconds": 12.578748,
+      "wall_seconds": 12.581946346006589,
+      "max_rss_kb": 290764,
+      "label_rows": 9,
+      "acts": [
+        "1"
+      ],
+      "max_floor": 16,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4",
+      "raw_provenance": "build/final-layout-evidence/final-1-1-A.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-1-1-B",
+      "arm": "B",
+      "seed": 1,
+      "repetition": 1,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-1-1-B.rss-kb",
+        "build/final-layout-evidence/head/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-1-1-B.csv",
+        "1",
+        "build/final-layout-evidence/final-1-1-B.teacher.json"
+      ],
+      "cpu_seconds": 12.980375999999998,
+      "wall_seconds": 12.982275474991184,
+      "max_rss_kb": 237568,
+      "label_rows": 9,
+      "acts": [
+        "1"
+      ],
+      "max_floor": 16,
+      "labels_sha256": "28b62360480ffc8cdab24e63ff2a5e4f13b3d57f618017bd34ad9b06e1afd012",
+      "telemetry_sha256": "4b77df477038927abb4c5d3e1c2bab5228fea1378f12944e850ad849b4ccc3d4",
+      "raw_provenance": "build/final-layout-evidence/final-1-1-B.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-2-0-A",
+      "arm": "A",
+      "seed": 2,
+      "repetition": 0,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-2-0-A.rss-kb",
+        "build/final-layout-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-2-0-A.csv",
+        "2",
+        "build/final-layout-evidence/final-2-0-A.teacher.json"
+      ],
+      "cpu_seconds": 11.543917,
+      "wall_seconds": 11.54467277599906,
+      "max_rss_kb": 323204,
+      "label_rows": 17,
+      "acts": [
+        "1",
+        "2"
+      ],
+      "max_floor": 33,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05",
+      "raw_provenance": "build/final-layout-evidence/final-2-0-A.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-2-0-B",
+      "arm": "B",
+      "seed": 2,
+      "repetition": 0,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-2-0-B.rss-kb",
+        "build/final-layout-evidence/head/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-2-0-B.csv",
+        "2",
+        "build/final-layout-evidence/final-2-0-B.teacher.json"
+      ],
+      "cpu_seconds": 10.535784,
+      "wall_seconds": 10.536462301999563,
+      "max_rss_kb": 296568,
+      "label_rows": 17,
+      "acts": [
+        "1",
+        "2"
+      ],
+      "max_floor": 33,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05",
+      "raw_provenance": "build/final-layout-evidence/final-2-0-B.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-2-1-A",
+      "arm": "A",
+      "seed": 2,
+      "repetition": 1,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-2-1-A.rss-kb",
+        "build/final-layout-evidence/baseline/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-2-1-A.csv",
+        "2",
+        "build/final-layout-evidence/final-2-1-A.teacher.json"
+      ],
+      "cpu_seconds": 11.774391,
+      "wall_seconds": 11.7752490999992,
+      "max_rss_kb": 323344,
+      "label_rows": 17,
+      "acts": [
+        "1",
+        "2"
+      ],
+      "max_floor": 33,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05",
+      "raw_provenance": "build/final-layout-evidence/final-2-1-A.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    },
+    {
+      "name": "final-2-1-B",
+      "arm": "B",
+      "seed": 2,
+      "repetition": 1,
+      "command": [
+        "bash",
+        "tools/seed_guard.sh",
+        "taskset",
+        "-c",
+        "2",
+        "/usr/bin/time",
+        "-f",
+        "%M",
+        "-o",
+        "build/final-layout-evidence/final-2-1-B.rss-kb",
+        "build/final-layout-evidence/head/one_combat",
+        "wholecombatgen",
+        "1",
+        "10000",
+        "0",
+        "build/final-layout-evidence/final-2-1-B.csv",
+        "2",
+        "build/final-layout-evidence/final-2-1-B.teacher.json"
+      ],
+      "cpu_seconds": 11.111248,
+      "wall_seconds": 11.112782887008507,
+      "max_rss_kb": 296472,
+      "label_rows": 17,
+      "acts": [
+        "1",
+        "2"
+      ],
+      "max_floor": 33,
+      "labels_sha256": "f21dcd1a0d8a698a4ccfff5089d2c693fcabb84719004abcd823033581340145",
+      "telemetry_sha256": "f21bf2de80ee8b011c88548f1b4e0304851b24ffc3c3ab8c7ea055dce3440e05",
+      "raw_provenance": "build/final-layout-evidence/final-2-1-B.csv.provenance.json",
+      "completed_seeds": 1,
+      "quarantined_seeds": 0,
+      "simulator_health_failures": 0
+    }
+  ],
+  "totals": {
+    "A": {
+      "cpu_seconds": 87.58921,
+      "wall_seconds": 87.60060700499162
+    },
+    "B": {
+      "cpu_seconds": 82.051059,
+      "wall_seconds": 82.06631990498863
+    }
+  },
+  "per_seed_means": {
+    "0": {
+      "A": {
+        "cpu_seconds": 19.470290499999997,
+        "wall_seconds": 19.471558859499055,
+        "max_rss_kb": 283538
+      },
+      "B": {
+        "cpu_seconds": 17.535438,
+        "wall_seconds": 17.540638614998898,
+        "max_rss_kb": 235002
+      }
+    },
+    "1": {
+      "A": {
+        "cpu_seconds": 12.665160499999999,
+        "wall_seconds": 12.668783704997622,
+        "max_rss_kb": 290758
+      },
+      "B": {
+        "cpu_seconds": 12.666575499999999,
+        "wall_seconds": 12.667898742991383,
+        "max_rss_kb": 237516
+      }
+    },
+    "2": {
+      "A": {
+        "cpu_seconds": 11.659154000000001,
+        "wall_seconds": 11.65996093799913,
+        "max_rss_kb": 323274
+      },
+      "B": {
+        "cpu_seconds": 10.823516,
+        "wall_seconds": 10.824622594504035,
+        "max_rss_kb": 296520
+      }
+    }
+  },
+  "cpu_reduction": 0.06322868992653319,
+  "wall_reduction": 0.06317635561232615,
+  "passes_predeclared_five_percent_bar": true,
+  "parity": "All final labels and Silver telemetry identical;14 preserved native trace pairs identical",
+  "reused_native_trace_evidence": {
+    "reason": "Fresh main executable matches original baseline SHA256; source delta0034ce8..3bec0b1 only unrelated Python probe. Final executable matches previously validated255d8f1 compact layout;255d8f1..4224c03 changes evidence only.",
+    "results": [
+      {
+        "fixture": "det",
+        "baseline_trace": "build/optimization-evidence/det-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/det-candidate.trace",
+        "sha256": "0f3bd2146083d4edca54250353c2359b5f0b739774e5c74cfbb32b7d4f1f38d8",
+        "simulations": 10000
+      },
+      {
+        "fixture": "known_top",
+        "baseline_trace": "build/optimization-evidence/known_top-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/known_top-candidate.trace",
+        "sha256": "1012941f8f1b0ee82d40a90bc175b648d00ddf6c4c94ddcb66073bc8b894c156",
+        "simulations": 10000
+      },
+      {
+        "fixture": "reshuffle",
+        "baseline_trace": "build/optimization-evidence/reshuffle-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/reshuffle-candidate.trace",
+        "sha256": "4a356481a9275f1e9a48633164a6486cab56a5e34d1248c0e0dd9231ec432c01",
+        "simulations": 10000
+      },
+      {
+        "fixture": "ordinary_select",
+        "baseline_trace": "build/optimization-evidence/ordinary_select-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/ordinary_select-candidate.trace",
+        "sha256": "20ee38269dfb026e3f2f7d4cfa902309c20a4d91cbadbb8c42666d046ef6a52b",
+        "simulations": 10000
+      },
+      {
+        "fixture": "gamble",
+        "baseline_trace": "build/optimization-evidence/gamble-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/gamble-candidate.trace",
+        "sha256": "d179f74ef579d06458b63d7b02ba30254be87c07303b8e693bc2f4321bd20b71",
+        "simulations": 10000
+      },
+      {
+        "fixture": "gamble_select",
+        "baseline_trace": "build/optimization-evidence/gamble_select-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/gamble_select-candidate.trace",
+        "sha256": "572a8645bcc7e881263d9cb4aee2325627265a2e471c2b0c48980b42a3cbd6b1",
+        "simulations": 10000
+      },
+      {
+        "fixture": "exhaust_many",
+        "baseline_trace": "build/optimization-evidence/exhaust_many-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/exhaust_many-candidate.trace",
+        "sha256": "847fe24c3f0c56e093e7761983c20e4fdadc34b6e938a2a8a2a6ac12e618528c",
+        "simulations": 10000
+      },
+      {
+        "fixture": "duplicates",
+        "baseline_trace": "build/optimization-evidence/duplicates-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/duplicates-candidate.trace",
+        "sha256": "c3430f47820d37842aac0b5d4c381ecf9dbce1ecea54da9ffa36c4db9c3df5c4",
+        "simulations": 10000
+      },
+      {
+        "fixture": "random_potion",
+        "baseline_trace": "build/optimization-evidence/random_potion-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/random_potion-candidate.trace",
+        "sha256": "714b0690833add92a1d925c1e391345e816366def941931d7a942bcd9c839714",
+        "simulations": 10000
+      },
+      {
+        "fixture": "random_monster",
+        "baseline_trace": "build/optimization-evidence/random_monster-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/random_monster-candidate.trace",
+        "sha256": "238727e02b258b40f47bf18027200ee34f5c7ad6805378f7b545750bb0c9652d",
+        "simulations": 10000
+      },
+      {
+        "fixture": "reuse_det",
+        "baseline_trace": "build/optimization-evidence/reuse_det-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/reuse_det-candidate.trace",
+        "sha256": "98f6fd5cd9469e23c5de7a8ab6fe1e948792a65f3cc3e29918c1f252cb4e8752",
+        "simulations": 10000
+      },
+      {
+        "fixture": "tx_gamble",
+        "baseline_trace": "build/optimization-evidence/tx_gamble-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/tx_gamble-candidate.trace",
+        "sha256": "baefe0779aa9acb737d00134671351f8d62969f091980f6a6e576626f0af3c54",
+        "simulations": 10000
+      },
+      {
+        "fixture": "tx_gamble_select",
+        "baseline_trace": "build/optimization-evidence/tx_gamble_select-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/tx_gamble_select-candidate.trace",
+        "sha256": "b2e30ced095354d0f727300a5759ef05c120631b5f6edb8a79ffe233979fc784",
+        "simulations": 10000
+      },
+      {
+        "fixture": "tx_exhaust_many",
+        "baseline_trace": "build/optimization-evidence/tx_exhaust_many-baseline.trace",
+        "head_trace": "build/chance-storage-evidence/tx_exhaust_many-candidate.trace",
+        "sha256": "400dcb4173eaf24957aaad91816f05bf28dade4e798b60a5541add07b1fc1892",
+        "simulations": 10000
+      }
+    ]
+  },
+  "checks": {
+    "source_preflight": "clean worktree; pinned submodules pass; unchanged reviewed source4224c03",
+    "ci": "Linux GCC SUCCESS on4224c03 before this evidence-only update",
+    "builds": "fresh exactmain Release build and head target verification passed",
+    "runtime": "12 producer executions completed with zero quarantine/health failures; all provenance/model/executable hashes verified",
+    "independent_protocol_review": "no blocking issues",
+    "independent_final_evidence_review": "PASS:12 raw runs/teacher/provenance/hash pairs,all label and telemetry streams,14 reused trace pairs,and all arithmetic verified independently; no blockers"
+  },
+  "limitations": [
+    "Three previously examined trajectories with two repetitions; not fresh held-out or broad statistical qualification.",
+    "No new PGO training or final-layout PGO measurement because PGO is optional and not intended as the default.",
+    "No persistent full-producer RNG trace; native traces reused via exact source and binary equivalence.",
+    "No source-code changes, larger sweep, deployment or automatic merge."
+  ],
+  "raw_directory": "/home/philippherrmann/.codex/worktrees/bc58/sts_lightspeed/build/final-layout-evidence"
+}

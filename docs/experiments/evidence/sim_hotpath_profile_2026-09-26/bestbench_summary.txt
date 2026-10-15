@@ -1,0 +1,2 @@
+BEST                    win%= 50.0   avg_floor= 42.9   avg_hp_end= 15.2   cpu_sec/run=16.34   wall=89.9s
+BEST                    win%= 50.0   avg_floor= 42.9   avg_hp_end= 15.2   cpu_sec/run=16.15   wall=89.2s

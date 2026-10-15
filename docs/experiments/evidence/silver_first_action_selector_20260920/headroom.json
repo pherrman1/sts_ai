@@ -1,0 +1,303 @@
+{
+  "best_action_differs_from_baseline": {
+    "leaves": 184,
+    "total": 247
+  },
+  "classification": "FIRST_ACTION_POLICY_HEADROOM_INSUFFICIENT",
+  "corpus": {
+    "bootstrap_cluster_count": 20,
+    "counterfactual_rows": 40512,
+    "eligible_leaves": 247,
+    "fold_count": 5,
+    "groups": 32,
+    "replicates": 32,
+    "rng_contract": "fnv1a(silver-rollout-variance/v1/group/replicate)",
+    "selection_replicates": 16
+  },
+  "group_improvement": {
+    "concentration": {
+      "1": 0.6653271355522481,
+      "2": 0.8969291718281782,
+      "4": 1.0,
+      "8": 1.0
+    },
+    "improved": 4,
+    "largest": [
+      {
+        "baseline_regret": 14.250399555276985,
+        "group_id": "c20a2b9c8ce98855",
+        "improvement": 4.956384093072749,
+        "oracle_regret": 9.294015462204236
+      },
+      {
+        "baseline_regret": 12.101449326763088,
+        "group_id": "73a930377101137b",
+        "improvement": 1.7253296719492255,
+        "oracle_regret": 10.376119654813863
+      },
+      {
+        "baseline_regret": 0.6718629500691407,
+        "group_id": "2ef80137dc5aa89b",
+        "improvement": 0.6718629500691407,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.09596776945595309,
+        "group_id": "9249765fac6ec320",
+        "improvement": 0.09596776945595309,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.1876719667296527,
+        "group_id": "e01ab8f5abdd8cb9",
+        "improvement": 0.0,
+        "oracle_regret": 0.1876719667296527
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "88c7c1af25d91065",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "c2173e160a94edaa",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "7637a54651c33a3e",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 3.7722576868822557,
+        "group_id": "769677ba17731ec7",
+        "improvement": 0.0,
+        "oracle_regret": 3.7722576868822557
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "a4247c55175c1388",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "ec798f48cfc7fbae",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "b4249959cb43bc6f",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "1194824b92a5b6f5",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "18b1b61ccc77b353",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.1497346014443437,
+        "group_id": "1315f2850118a51e",
+        "improvement": 0.0,
+        "oracle_regret": 0.1497346014443437
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "a190dfa42b78cdfc",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      }
+    ],
+    "unchanged": 26,
+    "worsened": 2
+  },
+  "headroom_gate": {
+    "not_one_group": true,
+    "pairwise_no_collapse": true,
+    "reduction_at_least_20_percent": false,
+    "teacher_b_direction_consistent": true
+  },
+  "inputs": {
+    "baseline_sha256": "253c60eb8bdd80f5476e1826295137985ec6101b9acf0a3f26b13855435e70be",
+    "counterfactual_sha256": "d706341c6863c98e507751b79b7c0a4354aaf25d08ac4e0747570d73e9d0b439",
+    "teachers_sha256": "01994f057b07add5067d095f17c413bf246c322fa63c4c6cd409efb787b3855e"
+  },
+  "metrics_teacher_a": {
+    "baseline": {
+      "centered_mae": 4.049411332285114,
+      "centered_rmse": 6.689277560296465,
+      "groups": 32,
+      "mean_teacher_regret": 1.513323903420704,
+      "pairwise_concordance": 0.7424135497529993,
+      "pairwise_pairs": 1417,
+      "top_leaf_agreement": 0.5625,
+      "value_mae": 5.219883703678893
+    },
+    "oracle": {
+      "centered_mae": 3.9844307219481765,
+      "centered_rmse": 6.435529540058525,
+      "groups": 32,
+      "mean_teacher_regret": 1.4135385158245475,
+      "pairwise_concordance": 0.7517630465444288,
+      "pairwise_pairs": 1418,
+      "top_leaf_agreement": 0.625,
+      "value_mae": 4.857701855611859
+    }
+  },
+  "metrics_teacher_b": {
+    "baseline": {
+      "centered_mae": 4.142839746476512,
+      "centered_rmse": 6.942563681395914,
+      "groups": 32,
+      "mean_teacher_regret": 1.4729049694877248,
+      "pairwise_concordance": 0.757939308398024,
+      "pairwise_pairs": 1417,
+      "top_leaf_agreement": 0.53125,
+      "value_mae": 5.1397941043458175
+    },
+    "oracle": {
+      "centered_mae": 3.963564442189769,
+      "centered_rmse": 6.388884404903745,
+      "groups": 32,
+      "mean_teacher_regret": 1.3498820944914116,
+      "pairwise_concordance": 0.7595204513399154,
+      "pairwise_pairs": 1418,
+      "top_leaf_agreement": 0.5625,
+      "value_mae": 4.842775685053862
+    }
+  },
+  "oracle_bootstrap_reduction": {
+    "p025": -0.29749173215674274,
+    "p975": 0.584285320239005
+  },
+  "oracle_regret_reduction": 0.06593789166390784,
+  "raw_input_note": "Teacher values are frozen PR #251 A/B references, not ground truth.",
+  "schema": "silver_first_action_headroom_v1",
+  "source_seed_contract": {
+    "all_groups_have_one_source_seed": true,
+    "cluster_key": "source_seed",
+    "group_count": 32,
+    "group_to_source_seed": {
+      "04df6dc6c7500524": "12100052",
+      "04fcab644163af9e": "12100036",
+      "0530fe9984c813e2": "12100035",
+      "1194824b92a5b6f5": "12100017",
+      "1315f2850118a51e": "12100012",
+      "137c7885d87cacb7": "12100017",
+      "18b1b61ccc77b353": "12100007",
+      "266c835ca79bd69c": "12100053",
+      "2ef80137dc5aa89b": "12100018",
+      "49d948edcffe8323": "12100013",
+      "73a4aa7fd7623aea": "12100036",
+      "73a930377101137b": "12100031",
+      "75c1988f2ab3e8f3": "12100008",
+      "7637a54651c33a3e": "12100039",
+      "769677ba17731ec7": "12100013",
+      "88c7c1af25d91065": "12100003",
+      "9131e6062ef2f3a9": "12100039",
+      "91ce3829d47043e0": "12100041",
+      "9249765fac6ec320": "12100009",
+      "92994b5c8cdc0549": "12100003",
+      "9701175810936dd2": "12100025",
+      "9a58cddc9df01b19": "12100041",
+      "a190dfa42b78cdfc": "12100034",
+      "a4247c55175c1388": "12100037",
+      "b18c90a0df8c39e7": "12100053",
+      "b4249959cb43bc6f": "12100025",
+      "c20a2b9c8ce98855": "12100021",
+      "c2173e160a94edaa": "12100001",
+      "e01ab8f5abdd8cb9": "12100018",
+      "e2ab6a6437060dc5": "12100034",
+      "ec798f48cfc7fbae": "12100012",
+      "f65dceb330b8045c": "12100053"
+    },
+    "groups_per_source_seed": {
+      "12100001": [
+        "c2173e160a94edaa"
+      ],
+      "12100003": [
+        "88c7c1af25d91065",
+        "92994b5c8cdc0549"
+      ],
+      "12100007": [
+        "18b1b61ccc77b353"
+      ],
+      "12100008": [
+        "75c1988f2ab3e8f3"
+      ],
+      "12100009": [
+        "9249765fac6ec320"
+      ],
+      "12100012": [
+        "1315f2850118a51e",
+        "ec798f48cfc7fbae"
+      ],
+      "12100013": [
+        "49d948edcffe8323",
+        "769677ba17731ec7"
+      ],
+      "12100017": [
+        "1194824b92a5b6f5",
+        "137c7885d87cacb7"
+      ],
+      "12100018": [
+        "2ef80137dc5aa89b",
+        "e01ab8f5abdd8cb9"
+      ],
+      "12100021": [
+        "c20a2b9c8ce98855"
+      ],
+      "12100025": [
+        "9701175810936dd2",
+        "b4249959cb43bc6f"
+      ],
+      "12100031": [
+        "73a930377101137b"
+      ],
+      "12100034": [
+        "a190dfa42b78cdfc",
+        "e2ab6a6437060dc5"
+      ],
+      "12100035": [
+        "0530fe9984c813e2"
+      ],
+      "12100036": [
+        "04fcab644163af9e",
+        "73a4aa7fd7623aea"
+      ],
+      "12100037": [
+        "a4247c55175c1388"
+      ],
+      "12100039": [
+        "7637a54651c33a3e",
+        "9131e6062ef2f3a9"
+      ],
+      "12100041": [
+        "91ce3829d47043e0",
+        "9a58cddc9df01b19"
+      ],
+      "12100052": [
+        "04df6dc6c7500524"
+      ],
+      "12100053": [
+        "266c835ca79bd69c",
+        "b18c90a0df8c39e7",
+        "f65dceb330b8045c"
+      ]
+    },
+    "shared_source_seed_count": 11,
+    "source_seed_count": 20
+  }
+}

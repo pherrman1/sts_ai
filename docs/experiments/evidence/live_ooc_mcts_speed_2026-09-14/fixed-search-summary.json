@@ -1,0 +1,316 @@
+{
+  "baselineSha": "210f347334898e7c2a85b8af0f30dedc4888ea88",
+  "cpu": 0,
+  "ompThreads": 1,
+  "fixedGameContextSeed": 42,
+  "searchSeed": 20260914,
+  "ascension": 0,
+  "simulations": 512,
+  "maxDepth": 1,
+  "cPuct": 1.5,
+  "wideningK": 2,
+  "wideningAlpha": 0.5,
+  "repeats": 3,
+  "interleavedOrder": [
+    "baseline",
+    "optimized",
+    "baseline",
+    "optimized",
+    "baseline",
+    "optimized"
+  ],
+  "baselineSecondsMedian": 0.38425201,
+  "optimizedSecondsMedian": 0.223176497,
+  "optimizedUncachedSecondsMedian": 0.381130949,
+  "speedup": 1.7217404841693522,
+  "wallReductionFraction": 0.4191923758577085,
+  "exactRootTreeSnapshotsAndHistoryParity": true,
+  "exactPayloadSha256": "ad91f26b5c44fef58b6269027d66be32a7cb12d96d51123c3eceb8ff6c9e18f1",
+  "baselineProfileGroupsSeconds": {
+    "copying": 0.0005577910000000002,
+    "actionEnumerationAndPrior": 0.0007161130000000008,
+    "combatInferenceSamplingAndNativePost": 0.181862883,
+    "leafContinuationAndValue": 0.23568628399999988,
+    "treeAndNativeActionResidual": 0.00040673500000010243
+  },
+  "baselineProfileCounts": {
+    "boundary": 1106,
+    "candidates": 1188,
+    "combat": 80,
+    "copies": 592,
+    "leaf": 512,
+    "legal": 1,
+    "prior": 1,
+    "tokens": 1
+  },
+  "rows": [
+    {
+      "arm": "baseline",
+      "trial": 1,
+      "metrics": {
+        "baselineProfile": {
+          "boundary": {
+            "calls": 1106,
+            "exclusiveSeconds": 0.0002567439999999996
+          },
+          "candidates": {
+            "calls": 1188,
+            "exclusiveSeconds": 0.0001455599999999999
+          },
+          "combat": {
+            "calls": 80,
+            "exclusiveSeconds": 0.16484819599999995
+          },
+          "copies": {
+            "calls": 592,
+            "exclusiveSeconds": 0.0005040489999999998
+          },
+          "leaf": {
+            "calls": 512,
+            "exclusiveSeconds": 0.21798120800000015
+          },
+          "legal": {
+            "calls": 1,
+            "exclusiveSeconds": 1.1220000000000208e-06
+          },
+          "prior": {
+            "calls": 1,
+            "exclusiveSeconds": 0.000168044
+          },
+          "tokens": {
+            "calls": 1,
+            "exclusiveSeconds": 1.643e-06
+          }
+        },
+        "combatSamples": 80,
+        "decisionNodes": 81,
+        "generatedStates": 81,
+        "metadataBuilds": 0,
+        "parity": true,
+        "preparedCombatSamplesPerSecond": 209.68854768671292,
+        "preparedEncoderCalls": 320,
+        "preparedSeconds": 0.381518213,
+        "preparedSimulationsPerSecond": 1342.0067051949627,
+        "priorBuilds": 0,
+        "referenceCombatSamplesPerSecond": 208.1966988279385,
+        "referenceEncoderCalls": 320,
+        "referenceSeconds": 0.38425201,
+        "referenceSimulationsPerSecond": 1332.4588724988062,
+        "simulations": 512,
+        "uniqueCombatEdges": 0
+      },
+      "logSha256": "b5930d4c5b32f25fb7d24820c884f15714b29bb58a06db5ca5bc376da05cf1ba"
+    },
+    {
+      "arm": "optimized",
+      "trial": 1,
+      "metrics": {
+        "combatSamples": 80,
+        "decisionNodes": 81,
+        "generatedStates": 81,
+        "metadataBuilds": 81,
+        "parity": true,
+        "preparedCombatSamplesPerSecond": 354.31821179531437,
+        "preparedEncoderCalls": 12,
+        "preparedSeconds": 0.225785741,
+        "preparedSimulationsPerSecond": 2267.636555490012,
+        "priorBuilds": 1,
+        "referenceCombatSamplesPerSecond": 209.0543722069111,
+        "referenceEncoderCalls": 320,
+        "referenceSeconds": 0.382675565,
+        "referenceSimulationsPerSecond": 1337.947982124231,
+        "simulations": 512,
+        "uniqueCombatEdges": 3
+      },
+      "logSha256": "6191eb297c5851133520a9a5bcc11aa9fc3991fd1967d6cb320ff5c3a257f918"
+    },
+    {
+      "arm": "baseline",
+      "trial": 2,
+      "metrics": {
+        "baselineProfile": {
+          "boundary": {
+            "calls": 1106,
+            "exclusiveSeconds": 0.0002742999999999996
+          },
+          "candidates": {
+            "calls": 1188,
+            "exclusiveSeconds": 0.00014484999999999994
+          },
+          "combat": {
+            "calls": 80,
+            "exclusiveSeconds": 0.165691998
+          },
+          "copies": {
+            "calls": 592,
+            "exclusiveSeconds": 0.00044602399999999956
+          },
+          "leaf": {
+            "calls": 512,
+            "exclusiveSeconds": 0.2223529289999999
+          },
+          "legal": {
+            "calls": 1,
+            "exclusiveSeconds": 8.820000000000095e-07
+          },
+          "prior": {
+            "calls": 1,
+            "exclusiveSeconds": 0.000169005
+          },
+          "tokens": {
+            "calls": 1,
+            "exclusiveSeconds": 1.483e-06
+          }
+        },
+        "combatSamples": 80,
+        "decisionNodes": 81,
+        "generatedStates": 81,
+        "metadataBuilds": 0,
+        "parity": true,
+        "preparedCombatSamplesPerSecond": 212.7944979429023,
+        "preparedEncoderCalls": 320,
+        "preparedSeconds": 0.37594957,
+        "preparedSimulationsPerSecond": 1361.8847868345747,
+        "priorBuilds": 0,
+        "referenceCombatSamplesPerSecond": 205.4461145530041,
+        "referenceEncoderCalls": 320,
+        "referenceSeconds": 0.38939651,
+        "referenceSimulationsPerSecond": 1314.8551331392262,
+        "simulations": 512,
+        "uniqueCombatEdges": 0
+      },
+      "logSha256": "730b9341c282bebd8990b873ba9cbb20ebf2f1d8cc4323dd8b457ca173d89cad"
+    },
+    {
+      "arm": "optimized",
+      "trial": 2,
+      "metrics": {
+        "combatSamples": 80,
+        "decisionNodes": 81,
+        "generatedStates": 81,
+        "metadataBuilds": 81,
+        "parity": true,
+        "preparedCombatSamplesPerSecond": 359.9385431932888,
+        "preparedEncoderCalls": 12,
+        "preparedSeconds": 0.222260165,
+        "preparedSimulationsPerSecond": 2303.6066764370485,
+        "priorBuilds": 1,
+        "referenceCombatSamplesPerSecond": 209.9016104829629,
+        "referenceEncoderCalls": 320,
+        "referenceSeconds": 0.381130949,
+        "referenceSimulationsPerSecond": 1343.3703070909626,
+        "simulations": 512,
+        "uniqueCombatEdges": 3
+      },
+      "logSha256": "c6966a022468d1ed6a01f1dc674f7714ef3938ce991c1811bd5dfba5c9ec36e5"
+    },
+    {
+      "arm": "baseline",
+      "trial": 3,
+      "metrics": {
+        "baselineProfile": {
+          "boundary": {
+            "calls": 1106,
+            "exclusiveSeconds": 0.00028968799999999937
+          },
+          "candidates": {
+            "calls": 1188,
+            "exclusiveSeconds": 0.00013886099999999965
+          },
+          "combat": {
+            "calls": 80,
+            "exclusiveSeconds": 0.16320849
+          },
+          "copies": {
+            "calls": 592,
+            "exclusiveSeconds": 0.0005111759999999993
+          },
+          "leaf": {
+            "calls": 512,
+            "exclusiveSeconds": 0.21564258200000003
+          },
+          "legal": {
+            "calls": 1,
+            "exclusiveSeconds": 7.910000000000133e-07
+          },
+          "prior": {
+            "calls": 1,
+            "exclusiveSeconds": 0.00016335499999999998
+          },
+          "tokens": {
+            "calls": 1,
+            "exclusiveSeconds": 1.172e-06
+          }
+        },
+        "combatSamples": 80,
+        "decisionNodes": 81,
+        "generatedStates": 81,
+        "metadataBuilds": 0,
+        "parity": true,
+        "preparedCombatSamplesPerSecond": 210.98626084106417,
+        "preparedEncoderCalls": 320,
+        "preparedSeconds": 0.379171609,
+        "preparedSimulationsPerSecond": 1350.3120693828107,
+        "priorBuilds": 0,
+        "referenceCombatSamplesPerSecond": 210.36781969172222,
+        "referenceEncoderCalls": 320,
+        "referenceSeconds": 0.380286301,
+        "referenceSimulationsPerSecond": 1346.3540460270222,
+        "simulations": 512,
+        "uniqueCombatEdges": 0
+      },
+      "logSha256": "c2915ef2c254396b4e564cea8475a5ac0a9577c2063f8f92c50583668913f538"
+    },
+    {
+      "arm": "optimized",
+      "trial": 3,
+      "metrics": {
+        "combatSamples": 80,
+        "decisionNodes": 81,
+        "generatedStates": 81,
+        "metadataBuilds": 81,
+        "parity": true,
+        "preparedCombatSamplesPerSecond": 358.4606850424756,
+        "preparedEncoderCalls": 12,
+        "preparedSeconds": 0.223176497,
+        "preparedSimulationsPerSecond": 2294.148384271844,
+        "priorBuilds": 1,
+        "referenceCombatSamplesPerSecond": 210.827041700988,
+        "referenceEncoderCalls": 320,
+        "referenceSeconds": 0.379457964,
+        "referenceSimulationsPerSecond": 1349.2930668863232,
+        "simulations": 512,
+        "uniqueCombatEdges": 3
+      },
+      "logSha256": "dbee86e9b1755c4f1fb07762b932c7db6510213ab1fd644d77f5c51e869b9f1e"
+    }
+  ],
+  "binarySha256": {
+    "build/ooc-speed-evidence/one_combat-comparison": "9afc9fcc5113436932b016cc7f8ec91a753ca33290f0a983f739d51454773106",
+    "build/linux-gcc-release-ccache/one_combat": "24c40c95d4a25e7bb0acacd9e4dc450aafd8d0a3b847ba28f59618c258e44bda"
+  },
+  "syntheticRootProfile": {
+    "supportedFixtureRoots": 41,
+    "trivialFixtureRoots": 0
+  },
+  "candidateSourceSha256": {
+    "apps/one_combat/combat_transition_runtime.cpp": "8e2d328c4424b3ac8ce9118d7744d612ff755565ffef13f66e494c700bd94d52",
+    "apps/one_combat/combat_transition_runtime.h": "21a7f72100140880d43ad0e7ba7a3ae10327ea05434f225164130a7b0a59f309",
+    "apps/one_combat/combat_transition_sampler.h": "cfdae475f1f0488b1e2b77e4e611e248740e4651f1a7f60f1e8f68dee250cd1b",
+    "apps/one_combat/ooc_mcts_adapter.cpp": "9f57a682973a29a4f308cc40ae59b3f9fef4afae9d6f0a5715264add44b15b99",
+    "apps/one_combat/ooc_mcts_adapter.h": "6e98209637a890cc4db23d44e7bca00acc9ce971e15a83411cc8735c71fd8b5f",
+    "apps/ooc_mcts_test.cpp": "626b7a5536a0c1b4393c8a3fad5c29398517c2cec4787960983da831253436de",
+    "include/sim/search/OocMctsPlanner.h": "eb90c3f6b53a4c78c726d164cc7cc2a7672560c8b98d17d276deae71c3dbfba7",
+    "src/sim/search/OocMctsPlanner.cpp": "666bc4e24c54e02c54ab73ec9c5bf37bd8a5d3e3bc50b82e22e833065183b903",
+    "tests/combat_transition_runtime_probe.cpp": "c8c2c855f65e0279faf653060bead8cb0344cf23f236c2afc7395d229dcdd5d4",
+    "tools/analyze_ooc_mcts_gameplay.py": "4b020d80c9fbeea733a318c3d08c8db0acc1045ee7323649b1fddf1a2bcb5330",
+    "tools/test_analyze_ooc_mcts_gameplay.py": "1a5487233ce89ab23b4856fffa7bb14cffcc6fb89a33f18bdf4626b01203862b"
+  },
+  "modelSha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "selfplay/models/ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+  },
+  "originalAdapterSelftestStdoutParity": true,
+  "profileSource": "Initial baseline profiled trial, retained separately from refreshed final timing trials."
+}

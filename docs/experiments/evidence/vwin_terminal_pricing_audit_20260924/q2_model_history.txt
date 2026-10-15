@@ -1,0 +1,40 @@
+Tracked-model counter split audit
+=================================
+
+Tracked artifact: models/v_win_trees.txt
+SHA-256: fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70
+Git blob: b9b02bc5d16a9736afb3d144f039f4a4d3e74f8e
+Original exported build/v_win_trees.txt blob introduced by commit 746e50fc:
+same SHA-256 and same Git blob.
+
+Current tracked compact model: 448 features, 1,060 trees, logistic output,
+base_score 0.33217296. The complete feature-by-feature threshold count table
+is q2_counter_relic_splits.csv. run_features.cpp:90-94 encodes each present
+relic field as 1 + counter; split thresholds above 1.0 therefore split
+counter values for counter relics rather than only presence.
+
+Counter-value split counts (threshold > 1.0):
+  r26 Happy Flower: 8
+  r30 Incense Burner: 26
+  r31 Ink Bottle: 39
+  r32 Inserter: feature absent
+  r35 Lizard Tail: 0 (106 presence splits at threshold 1.0)
+  r44 Nunchaku: 60
+  r46 Omamori: 100
+  r52 Pen Nib: 27
+  r68 Sundial: 11
+  r116 Neow's Lament: 0 (234 presence splits at threshold 1.0)
+  r131 Thread and Needle: 0 (169 presence splits at threshold 1.0)
+
+Historical comparison: ledger-04 §§109-110 state that the deployed GBMs have
+zero splits on a listed counter-relic set and call r131 Neow's Lament. The
+current enum maps r116 to NEOWS_LAMENT and r131 to THREAD_AND_NEEDLE. The old
+model content hash and exact runtime artifact used for that historical run
+are not bound by those entries, so this audit does not revise the historical
+run's original result; it corrects the interpretation for the currently
+tracked artifact.
+
+Repository source inspected for the synthetic model-only HP sensitivity probe:
+train_winrate.py:58-82. It raises curHp by 30% of maxHp, clamped to maxHp,
+then reports P(win) change by HP band. This is feature-space sensitivity,
+not an outcome intervention or matched-continuation causal estimate.

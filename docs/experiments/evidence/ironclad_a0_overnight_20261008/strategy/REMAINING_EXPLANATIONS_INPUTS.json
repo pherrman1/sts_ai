@@ -1,0 +1,108 @@
+{
+  "scope": "completed evidence only; no ongoing efficacy, protected TEST, or final confirmation read",
+  "cutoff_local": "2026-10-08T04:35:00+02:00",
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/Downloads/sts_ai_overnight_astra_ultra_campaign.md",
+      "sha256": "59a3b708251166fe22293ad0379550d28029bd677982f602b7c6931a89b3d888"
+    },
+    {
+      "path": "/home/philippherrmann/Downloads/sts_ai_overnight_decision_audit_addendum.md",
+      "sha256": "ac033647d9e2b114d097d64b79a5a46d14d5e889a61afdac2323a0cb672efd36"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave1_report.json",
+      "sha256": "ca81039a2c73299f971d28a9d7819cf635d159e320f2bdbb0bd3736e1f52396d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave2_report.json",
+      "sha256": "bb795afe5a5057b760eec592ca2a86ddbe6c1c68f7fde490fb3dcd3e1247c405"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave3_report.json",
+      "sha256": "d2dc463939de18517222f66c790b2a6dedfb8362a0212ffa59579440a1badc67"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave4_removal_report.json",
+      "sha256": "f405de50965522e4cee17cb103a22688ad663f2d2cf8f3c5372439cd44fbf0fd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/CORRECTED_REFERENCE_ATLAS.md",
+      "sha256": "a1b8fc5e26974a6bfdf9eccad1c20cc8c839f256e4a8b14af8226727a9ff7cbc"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/SHARED_RESCUE_610081023.md",
+      "sha256": "5c67afe07f2adf579dc8e44239daa942c4cd7feece1c33b7110a8947c91e4d36"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/INITIAL_HYPOTHESES.md",
+      "sha256": "d7ccfede9eb9c0c6d1dfb043deee050cee0851fc6082b2af05d79defb72a2e5e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/FAIR_FALLBACK_IMPLEMENTATION.md",
+      "sha256": "0875401ce86533742e9c1f957cd28d9c00cd3191fd69eb0d6543e3fb9ca8cd09"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/REMOVE_OBTAIN_WEIGHT_REVIEW.md",
+      "sha256": "ffc4454984d60cb3974c1775c4a523a1b1a3e283d21c7bfdca43ac0ed12c6593"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/GEN2_TRANCHE_RESULT.md",
+      "sha256": "32e88472a526cc00e4e9e6b73687728f055da8afc257c0389078521765720b5f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/TARGETED_REST_RESULT.md",
+      "sha256": "2101087b8e74f2f24cda448e084cbc1c1f9f473d31f44c98f1cb1db4a9766591"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/README.md",
+      "sha256": "9edad4fa2391729d76a8b21f1f58ba3ad797b5b6c628c3af799cce5a508428d3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/card_rank_canary_validation.json",
+      "sha256": "e3f9d33502ac57a6d804ac18943ac9dffbe164018784965b518b3e8e9bd30a68"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/champ_d13_evaluation_report.json",
+      "sha256": "269b1e792395de0c1d97cd5af2ae1d5ced2a2a65c436b651fd627bcd74da86c3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/card-head-objective-diagnosis.md",
+      "sha256": "18e92c865a8ff36a2ad4f959969670dc2121cca0326be686c38117713166191c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/terminal-discovery-interpretation.md",
+      "sha256": "6966b399c8afb783c9f0f7751f65dda901a599081bdaa1636dea43759a506f83"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/audit/wave2-interpretation.md",
+      "sha256": "77cd421a78cefbad3b8596869595a738805b669a0482a62f8604debbadf52903"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/ledger-01.md",
+      "sha256": "11d56a0724f5be23b376dc0a0bab4972ecc7618b2730200fa95d718161abdad4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/ledger-06.md",
+      "sha256": "9e8c8cdb20bf6dc8d40020d72698df4340b2b504d1e58cf53818a2d4725d81c6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/GEN2_EXPLORATORY_RESULT.md",
+      "sha256": "4054b1ec285e64d7d2055381bc9f3c2b46e794218c062b23a4651259183edbab"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9_exploratory.json",
+      "sha256": "540e5bfba6c58f35c2cfc8d6f81dd431e8b4abedc37e0ed6d5828ca26a29d99d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/TREASURE_EXPOSURE_CHECK.md",
+      "sha256": "a120f986562454ceba83ba7b52ee9129f50a5ab7a2ad03934c644ae7c0c2cd7f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/strategy/TREASURE_EXPOSURE_CHECK.json",
+      "sha256": "f78d29ce938ad33e49fa0ddbe56d7aac2d5d9a4ed957e21476572ff66c1b49b3"
+    }
+  ],
+  "audit_sha256": "3e09a3764cf72cccdc6a30085c31d45a743b6b070bbe187419d90d8a2a95b74e",
+  "addendum_scope": "Completed GEN2 exploratory report and bounded treasure disconfirmation added after original04:35cutoff; no running population efficacy read"
+}

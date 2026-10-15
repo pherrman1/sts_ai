@@ -1,0 +1,27 @@
+{
+  "schema": "lizard_tail_stage_b_session_status_v1",
+  "observedAtUtc": "2026-09-26T05:31:41Z",
+  "attempt": "retry2",
+  "planSha256": "da0c9ec818645da6c2b7f27a5b152c585325a925420d25b12f192a80161e3601",
+  "collectorSessionPoll": {
+    "sessionId": 64132,
+    "result": "Unknown process id"
+  },
+  "rawLog": {
+    "path": "stage_b_direct_snapshot_collection_retry2.log",
+    "sizeBytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "outputs": {
+    "pairJsonlExists": false,
+    "pairManifestExists": false
+  },
+  "resourceSnapshot": {
+    "logicalCpus": 12,
+    "loadAverage1m": 0.44,
+    "availableMemoryGiB": 14,
+    "cpuPressureSomeAvg10": 0.0,
+    "ioPressureSomeAvg10": 0.0
+  },
+  "interpretation": "No validated Stage B output is available. The unavailable process session and absent outputs do not establish whether the collector exited or was interrupted. Do not interpret this attempt as scientific evidence or a scientific rejection."
+}

@@ -1,0 +1,8 @@
+A 43
+B 56
+C 365
+prior512 99
+prior1000 187
+prior2000 378
+prior4000 764
+plain10k 1992

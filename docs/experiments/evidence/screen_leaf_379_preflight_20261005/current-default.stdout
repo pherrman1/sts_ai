@@ -1,0 +1,19 @@
+[collect keys OFF]
+[ooc-strat-tok-net] loaded /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 445 trees, 461 feats from /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/v_win_x2b_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[CompactTreeNet: 445 trees, 461 feats from /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/v_win_x2b_trees.txt]
+[live OOC MCTS ON sims=2048 combat_model=selfplay/models/combat_transition_deepsets_lizard_t2.native brew_fallback_model=selfplay/models/combat_transition_near_full_except_smoke_v2.native dispatch=precombat_entropic_brew active_lizard_correction=1 prior=policy temperature=1 cpuct=1.5 widen_k=2 widen_alpha=0.5 max_depth=32 root_selection=visits early_stop=1 gap_stop_20=0 merge_outcomes=0 leaf_value=native leaf_combats=0 leaf_policy=v4]
+[ooc-mcts-config] {"noncombatOutcomes":"sampled","prior":"policy","temperature":1,"cPuct":1.5,"wideningK":2,"wideningAlpha":0.5,"maxDepth":32,"rootSelection":"visits","earlyStop":true,"gapStop20":false,"mergeOutcomes":false,"leafValue":"native","leafCombats":0,"leafPolicy":"v4","simulations":2048,"combatModel":"selfplay/models/combat_transition_deepsets_lizard_t2.native","brewFallbackModel":"selfplay/models/combat_transition_near_full_except_smoke_v2.native","dispatchRule":"precombat_entropic_brew_to_standard","activeLizardCorrection":true,"priorTrace":""}
+[benchmark stops after Act 3 boss]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+BEST stack config: skip@-0.5  rest=win-rate  shop-V=ON  path=heuristic  shop-beam=off  native-OOC=ON  keys=skip  searcher=Silver  fair-play  seeds 12002033..12002033  asc 0  sims 10000  threads 1
+BEST models: floor=models/v_rich_trees.txt  win=/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/models/candidates/v_win_x2b_trees.txt
+BEST                    win%=100.0   avg_floor= 51.0   avg_hp_end= 27.0   cpu_sec/run=101.98   wall=102.0s

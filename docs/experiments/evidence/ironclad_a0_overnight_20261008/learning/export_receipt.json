@@ -1,0 +1,133 @@
+{
+  "schema": "overnight_public_e1_exports_v1",
+  "test_rows_opened": false,
+  "corpus_index": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-scale-1024-extra512-8175c9dc-20261002/corpus-mixed-1024.json",
+  "corpus_index_sha256": "ae56f9633ce8da8a72e341978d707c9f145c1f1b6479afa438067af5570dfa00",
+  "fixture_manifest": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001000.manifest.json",
+  "fixture_manifest_sha256": "7871354b89d85f8a41c4b864e3e86726099a9ba9af1edeb077a143377fa5913f",
+  "fixture_table": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/a2a-512-20260930-1e93bd66/shards/seed-13001000.map.csv",
+  "fixture_table_sha256": "27438d0970745776d9994e87c401adf1ebdfa4edbf2978b5a1f6fde97d4b2790",
+  "fixture_rows": 64,
+  "fixture_split": "TRAIN",
+  "numpy": "2.5.2",
+  "xgboost": "3.4.0",
+  "exports": [
+    {
+      "arm": "F2-s0",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s0/model.ubj",
+      "sha256": "271166525f945e8834844a91e1bb17e4502deb6c7867934ba07137f159a7bd1e",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 287,
+      "load_and_predict": "PASS",
+      "native_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/public-e1-export/F2-s0.trees.txt",
+      "native_sha256": "8955d513fbd152c40d112604bb30c7da16ac0ff7b3dd1bf72717d2308bd83935",
+      "python_compact_max_abs_error": 1.050758753340375e-07,
+      "parity_tolerance": 1e-05,
+      "native_binary_parity": "PENDING",
+      "logistic": true,
+      "information_boundary": "No four hidden future queues; latent pity counters retained as in E1",
+      "qualification": "UNQUALIFIED_CURRENT_SOURCE; historical privileged-continuation labels"
+    },
+    {
+      "arm": "P0-s0",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/model.ubj",
+      "sha256": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 278,
+      "load_and_predict": "PASS",
+      "native_path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/public-e1-export/P0-s0.trees.txt",
+      "native_sha256": "3189c51ae352740e02a3f15cb691ca6e80324d88a6583c094ca81bae91c59ab0",
+      "python_compact_max_abs_error": 1.208001944030812e-07,
+      "parity_tolerance": 1e-05,
+      "native_binary_parity": "PENDING",
+      "logistic": true,
+      "information_boundary": "No four hidden future queues; latent pity counters retained as in E1",
+      "qualification": "UNQUALIFIED_CURRENT_SOURCE; historical privileged-continuation labels"
+    }
+  ],
+  "inventory": [
+    {
+      "arm": "F1-s0",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F1-s0/model.ubj",
+      "sha256": "bdf8841d39cec62dc134dd464500137a519b1fa8a8e1c8edf8e2156fa910c1c6",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 163,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "F1-s1",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F1-s1/model.ubj",
+      "sha256": "39b59832b93e5d90277abab4150ec55d3de91efdf920ba14a81f0b592417bff2",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 143,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "F1-s2",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F1-s2/model.ubj",
+      "sha256": "9ac56f31d5a77dd7a7cd825acc63e2ccb739244fbc73f145f8632aead0133970",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 241,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "F2-s0",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s0/model.ubj",
+      "sha256": "271166525f945e8834844a91e1bb17e4502deb6c7867934ba07137f159a7bd1e",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 287,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "F2-s1",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s1/model.ubj",
+      "sha256": "004f8fda0bca9cee9cdbaa660aa4bafac91208abf40f5fe559804da7c865863c",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 347,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "F2-s2",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s2/model.ubj",
+      "sha256": "84dcb4c6606b9071e64a728b02d6507de12b0954ce144bbf55dcbdd0ceb8c269",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 302,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "P0-s0",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/model.ubj",
+      "sha256": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 278,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "P0-s1",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s1/model.ubj",
+      "sha256": "227a110ea579657f9f843f0f7197977c7ad25863efb5c9b6491024b1acc13410",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 355,
+      "load_and_predict": "PASS"
+    },
+    {
+      "arm": "P0-s2",
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s2/model.ubj",
+      "sha256": "e74b7740065742caf06c50abf0dff4dfe8080de78a70d57eb73c66f1f7e35e9c",
+      "predictor_sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0",
+      "features": 457,
+      "trees": 373,
+      "load_and_predict": "PASS"
+    }
+  ]
+}

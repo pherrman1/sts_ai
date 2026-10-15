@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "reviewed_epoch": 1791427524.1772938,
+  "scope": "Independent paired arithmetic from bound completed removal development and CardWinRank discovery CSVs only; supplementary tree-health audit remains separate.",
+  "reports": [
+    {
+      "report": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/removal_development_report.json",
+      "report_sha256": "91afa7dc02117114b75206fc07f7a77532146a0bff6948e44a996637bd6d10df",
+      "phase": "development",
+      "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+      "binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5",
+      "arms": {
+        "Fprod": {
+          "n": 128,
+          "wins": 104
+        },
+        "RemoveLow": {
+          "n": 128,
+          "wins": 106
+        }
+      },
+      "recomputed": {
+        "RemoveLow-Fprod": {
+          "pairs": 128,
+          "gain": 0.015625,
+          "ci95": [
+            -0.0390625,
+            0.0703125
+          ],
+          "candidate_only": 7,
+          "control_only": 5
+        }
+      }
+    },
+    {
+      "report": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/wave5_card_rank_report.json",
+      "report_sha256": "51902c796b13ebdb80376eaeb98ba920bd29bd4813dedfecf4b786bc2d29b530",
+      "phase": "discovery",
+      "source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+      "binary_sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907",
+      "arms": {
+        "Fprod": {
+          "n": 32,
+          "wins": 26
+        },
+        "CardWinRank": {
+          "n": 32,
+          "wins": 22
+        }
+      },
+      "recomputed": {
+        "CardWinRank-Fprod": {
+          "pairs": 32,
+          "gain": -0.125,
+          "ci95": [
+            -0.34375,
+            0.09375
+          ],
+          "candidate_only": 4,
+          "control_only": 8
+        }
+      }
+    }
+  ],
+  "bootstrap": {
+    "replicates": 10000,
+    "seed": 20261008,
+    "unit": "paired source run"
+  },
+  "limits": [
+    "Development nomination is exploratory and does not establish improvement; confirmation remains a separate frozen comparison.",
+    "CardWinRank discovery did not show positive gain and supplies no reason for a development extension."
+  ],
+  "ongoing_wave3_development_or_holdout_opened": false
+}

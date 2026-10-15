@@ -1,0 +1,165 @@
+{
+  "children": {
+    "fast": {
+      "l2": 10.0,
+      "rModelSha256": "4bbc0f12a5e1e6019d12b0cbdb7e5e0ad4447dbe87bfab5fabfe441e2851ebcf",
+      "validationNll": {
+        "0.0": 0.34931745199634084,
+        "0.01": 0.34930826862247416,
+        "0.1": 0.34922600135755205,
+        "1.0": 0.3484396689185187,
+        "10.0": 0.3431120187225409
+      }
+    },
+    "standard": {
+      "l2": 0.0,
+      "rModelSha256": "01f25ae11ab85cb5789666d7824e1cd421a520fb0032643e0619bf460b27b820",
+      "validationNll": {
+        "0.0": 0.13259815385851037,
+        "0.01": 0.13263950256739523,
+        "0.1": 0.13300468163329665,
+        "1.0": 0.13607102396426224,
+        "10.0": 0.14581773022123168
+      }
+    }
+  },
+  "evaluation": {
+    "TEST/brew": {
+      "classNll": 0.030045860450312392,
+      "meanQ": 0.015395555145733786,
+      "observedTailRate": 0.017064846416382253,
+      "rNll": {
+        "constant": 0.5144415923811729,
+        "model": 0.26987520833685225
+      },
+      "rows": 293,
+      "tailFired": 5
+    },
+    "TEST/fairy": {
+      "classNll": 0.0325297691594699,
+      "meanQ": 0.015728810854793027,
+      "observedTailRate": 0.008714596949891068,
+      "rNll": {
+        "constant": 0.3778873486371594,
+        "model": 0.1392306530297891
+      },
+      "rows": 918,
+      "tailFired": 8
+    },
+    "TEST/plain": {
+      "classNll": 0.06931190111760518,
+      "meanQ": 0.02860063887115839,
+      "observedTailRate": 0.024822695035460994,
+      "rNll": {
+        "constant": 0.2160477382180743,
+        "model": 0.22638476311178465
+      },
+      "rows": 846,
+      "tailFired": 21
+    },
+    "TRAIN/brew": {
+      "classNll": 0.06565350077355205,
+      "meanQ": 0.011006740133616617,
+      "observedTailRate": 0.0169971671388102,
+      "rNll": {
+        "constant": 0.4029413578669423,
+        "model": 0.37807116220162723
+      },
+      "rows": 2118,
+      "tailFired": 36
+    },
+    "TRAIN/fairy": {
+      "classNll": 0.03356843266875872,
+      "meanQ": 0.013826123846857937,
+      "observedTailRate": 0.010491382079006531,
+      "rNll": {
+        "constant": 0.45791792521802555,
+        "model": 0.435496802439853
+      },
+      "rows": 9341,
+      "tailFired": 98
+    },
+    "TRAIN/plain": {
+      "classNll": 0.08096504424797993,
+      "meanQ": 0.027581872319921038,
+      "observedTailRate": 0.03026813620661293,
+      "rNll": {
+        "constant": 0.28695405582643596,
+        "model": 0.24505826807128075
+      },
+      "rows": 6079,
+      "tailFired": 184
+    },
+    "VALIDATION/brew": {
+      "classNll": 0.01827407275070966,
+      "meanQ": 0.004925187452282152,
+      "observedTailRate": 0.008298755186721992,
+      "rNll": {
+        "constant": 0.1495317339709637,
+        "model": 0.13259815385851037
+      },
+      "rows": 241,
+      "tailFired": 2
+    },
+    "VALIDATION/fairy": {
+      "classNll": 0.03516668294298894,
+      "meanQ": 0.014480861993150684,
+      "observedTailRate": 0.008904109589041096,
+      "rNll": {
+        "constant": 0.43821809098273545,
+        "model": 0.5084652189205109
+      },
+      "rows": 1460,
+      "tailFired": 13
+    },
+    "VALIDATION/plain": {
+      "classNll": 0.07748248893951326,
+      "meanQ": 0.02918331111401752,
+      "observedTailRate": 0.03128911138923655,
+      "rNll": {
+        "constant": 0.28377139057806067,
+        "model": 0.25712835461959666
+      },
+      "rows": 799,
+      "tailFired": 25
+    }
+  },
+  "features": [
+    {
+      "path": "/tmp/claude-0/-home-user-sts-ai/2d19bef2-5928-5b0c-ae25-9972a28417f3/scratchpad/lizfix/lizard_fairy.csv",
+      "sha256": "12dd187a67bb027cf0446fbac6baa66c0ac5734d9ce39a48ad4393c2ef78b30d"
+    },
+    {
+      "path": "/tmp/claude-0/-home-user-sts-ai/2d19bef2-5928-5b0c-ae25-9972a28417f3/scratchpad/lizfix/lizard_brew.csv",
+      "sha256": "9cda135f3380e8d77ad7c2ba6751a6479cc42ab6cd59a2a25782a96b694ec1fd"
+    }
+  ],
+  "rModels": {
+    "fast": {
+      "featureMean": [
+        0.8789525245602837
+      ],
+      "featureScale": [
+        0.1636047250904659
+      ],
+      "standardizedCoefficients": [
+        2.2332087936341596,
+        0.577329295732773
+      ]
+    },
+    "standard": {
+      "featureMean": [
+        0.9220745124444445
+      ],
+      "featureScale": [
+        0.1254272163284112
+      ],
+      "standardizedCoefficients": [
+        1.9365468362108325,
+        0.5448779953885916
+      ]
+    }
+  },
+  "rule": "r per child on Tail-fired rows; L2 on the standardized slope chosen on VALIDATION; q = 1 - pOrdinaryWin",
+  "schema": "ctm_lizard_fit_v1"
+}

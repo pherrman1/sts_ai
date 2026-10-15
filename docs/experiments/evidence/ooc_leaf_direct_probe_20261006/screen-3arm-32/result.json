@@ -1,0 +1,70 @@
+{
+ "pairs": 32,
+ "arms": {
+  "A_playout": {
+   "win": 0.5,
+   "floor": 44.15625,
+   "sec": 117.877559375
+  },
+  "B_direct": {
+   "win": 0.625,
+   "floor": 45.5625,
+   "sec": 77.58869375
+  },
+  "C_screen": {
+   "win": 0.625,
+   "floor": 45.0,
+   "sec": 87.01286875
+  }
+ },
+ "B_direct-A_playout": {
+  "win": [
+   0.125,
+   0.0,
+   0.28125
+  ],
+  "floor": [
+   1.40625,
+   -0.9375,
+   4.0
+  ],
+  "discordant": [
+   1.0,
+   5.0
+  ]
+ },
+ "C_screen-A_playout": {
+  "win": [
+   0.125,
+   -0.03125,
+   0.28125
+  ],
+  "floor": [
+   0.84375,
+   -2.40625,
+   4.1875
+  ],
+  "discordant": [
+   2.0,
+   6.0
+  ]
+ },
+ "C_screen-B_direct": {
+  "win": [
+   0.0,
+   -0.15625,
+   0.15625
+  ],
+  "floor": [
+   -0.5625,
+   -3.53125,
+   2.3125
+  ],
+  "discordant": [
+   3.0,
+   3.0
+  ]
+ },
+ "screen_leaf_evaluations": 669582,
+ "screen_leaf_fallbacks_to_direct": 1790157
+}

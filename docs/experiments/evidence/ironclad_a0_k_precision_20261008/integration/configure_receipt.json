@@ -1,0 +1,17 @@
+{
+  "schema": "integration_command_v1",
+  "source_sha": "61b9616ab2137d9c950f414fb8e162290d83ae5c",
+  "command": [
+    "cmake",
+    "--preset",
+    "linux-gcc-debug"
+  ],
+  "cwd": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "started_epoch": 1791458193.6212952,
+  "finished_epoch": 1791458194.1103702,
+  "exit_code": 0,
+  "log": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/integration-61b9616/configure.log",
+  "log_sha256": "c97af7df9b0df1d7c7b1640f35fe9da7c8cf631a361da61afd55deca16f74a1b",
+  "environment_policy": "inherited STS_* removed; .venv Python first; OMP/BLAS1; separate build pycache",
+  "scope": "integration build only; no experimental game cohorts"
+}

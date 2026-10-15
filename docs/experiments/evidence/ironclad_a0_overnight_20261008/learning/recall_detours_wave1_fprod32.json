@@ -1,0 +1,311 @@
+{
+  "schema": "overnight_optional_recall_audit_v1",
+  "source_seeds": [
+    610081000,
+    610081001,
+    610081002,
+    610081003,
+    610081004,
+    610081005,
+    610081006,
+    610081007,
+    610081008,
+    610081009,
+    610081010,
+    610081011,
+    610081012,
+    610081013,
+    610081014,
+    610081015,
+    610081016,
+    610081017,
+    610081018,
+    610081019,
+    610081020,
+    610081021,
+    610081022,
+    610081023,
+    610081024,
+    610081025,
+    610081026,
+    610081027,
+    610081028,
+    610081029,
+    610081030,
+    610081031
+  ],
+  "rest_decisions": 259,
+  "counts": {
+    "INFERRED_FALLBACK_RECALL": 5
+  },
+  "cases": [
+    {
+      "seed": 610081003,
+      "act": 1,
+      "floor": 15,
+      "hp": 49,
+      "max_hp": 80,
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.trace.jsonl:579",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.strategic.jsonl:180",
+      "trace_idx": 63,
+      "classification": "INFERRED_FALLBACK_RECALL",
+      "basis": [
+        "declined strategic gate",
+        "no visible change",
+        "all later REST menus omit Ruby option"
+      ],
+      "legal_action_bits": [
+        0,
+        1,
+        2
+      ],
+      "selected_action_bits": null,
+      "strategic_owned": false,
+      "strategic_margin": 0.900047,
+      "later_ruby_option_absent": true,
+      "relics": [
+        "BURNING_BLOOD",
+        "BAG_OF_PREPARATION",
+        "TINY_CHEST",
+        "POTION_BELT",
+        "BOTTLED_TORNADO"
+      ]
+    },
+    {
+      "seed": 610081008,
+      "act": 2,
+      "floor": 28,
+      "hp": 45,
+      "max_hp": 80,
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.trace.jsonl:122",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.strategic.jsonl:37",
+      "trace_idx": 105,
+      "classification": "INFERRED_FALLBACK_RECALL",
+      "basis": [
+        "declined strategic gate",
+        "no visible change",
+        "all later REST menus omit Ruby option"
+      ],
+      "legal_action_bits": [
+        0,
+        1,
+        2
+      ],
+      "selected_action_bits": null,
+      "strategic_owned": false,
+      "strategic_margin": 0.30027,
+      "later_ruby_option_absent": true,
+      "relics": [
+        "BURNING_BLOOD",
+        "OMAMORI",
+        "WHITE_BEAST_STATUE",
+        "MOLTEN_EGG",
+        "STONE_CALENDAR",
+        "BUSTED_CROWN",
+        "SELF_FORMING_CLAY",
+        "KUNAI",
+        "AKABEKO",
+        "THE_BOOT"
+      ]
+    },
+    {
+      "seed": 610081011,
+      "act": 1,
+      "floor": 12,
+      "hp": 40,
+      "max_hp": 101,
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.trace.jsonl:651",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.strategic.jsonl:197",
+      "trace_idx": 40,
+      "classification": "INFERRED_FALLBACK_RECALL",
+      "basis": [
+        "declined strategic gate",
+        "no visible change",
+        "all later REST menus omit Ruby option"
+      ],
+      "legal_action_bits": [
+        0,
+        1,
+        2
+      ],
+      "selected_action_bits": null,
+      "strategic_owned": false,
+      "strategic_margin": 0.311867,
+      "later_ruby_option_absent": true,
+      "relics": [
+        "BURNING_BLOOD",
+        "MANGO",
+        "GREMLIN_HORN",
+        "STRAWBERRY",
+        "SMILING_MASK"
+      ]
+    },
+    {
+      "seed": 610081019,
+      "act": 1,
+      "floor": 11,
+      "hp": 48,
+      "max_hp": 80,
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_4.trace.jsonl:554",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_4.strategic.jsonl:173",
+      "trace_idx": 39,
+      "classification": "INFERRED_FALLBACK_RECALL",
+      "basis": [
+        "declined strategic gate",
+        "no visible change",
+        "all later REST menus omit Ruby option"
+      ],
+      "legal_action_bits": [
+        0,
+        1,
+        2
+      ],
+      "selected_action_bits": null,
+      "strategic_owned": false,
+      "strategic_margin": 0.520416,
+      "later_ruby_option_absent": true,
+      "relics": [
+        "BURNING_BLOOD",
+        "PEN_NIB",
+        "THE_BOOT"
+      ]
+    },
+    {
+      "seed": 610081031,
+      "act": 1,
+      "floor": 13,
+      "hp": 18,
+      "max_hp": 80,
+      "trace_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_7.trace.jsonl:647",
+      "strategic_locator": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_7.strategic.jsonl:202",
+      "trace_idx": 49,
+      "classification": "INFERRED_FALLBACK_RECALL",
+      "basis": [
+        "declined strategic gate",
+        "no visible change",
+        "all later REST menus omit Ruby option"
+      ],
+      "legal_action_bits": [
+        0,
+        1,
+        2
+      ],
+      "selected_action_bits": null,
+      "strategic_owned": false,
+      "strategic_margin": 0.274849,
+      "later_ruby_option_absent": true,
+      "relics": [
+        "BURNING_BLOOD",
+        "PAPER_PHROG",
+        "BAG_OF_MARBLES",
+        "ODDLY_SMOOTH_STONE",
+        "RED_SKULL"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.csv",
+      "sha256": "b8dcec6a7fab10c331a9187507a283a3449d5390f4d23a6f71c3149eef8f5647"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.trace.jsonl",
+      "sha256": "f63ab0f8fb93a18e1281fe3ef8bce620f418794fef2feca7290f3a2352af395e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_0.strategic.jsonl",
+      "sha256": "b21170cebc05f89633186679cd10ce844f1e6b41bbf1ed3b7e4bf04223057c89"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_1.csv",
+      "sha256": "a29ad18e3aef92d0fa8fb748655a035d27eabaffbf88a80aec12aafd7e6fee0d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_1.trace.jsonl",
+      "sha256": "de371debdbd6bdcc80ab5a84b0fd1c07825e5d19ba03658757ceaeeb69cd7bcd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_1.strategic.jsonl",
+      "sha256": "a15cdb2bc06cb19a7eb7dd6d7baa0dce0c547277038bd6ff992e41a3a0362282"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.csv",
+      "sha256": "be0b47fb897eb5e8c987526b264a5acbb01f87222fc111831ba1d94455188873"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.trace.jsonl",
+      "sha256": "e0437b5a943baab20f13a5e69cda1b46ba07b3b236e92e8f32e2ce935aef4603"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_2.strategic.jsonl",
+      "sha256": "0b6439935f95d22db48c95ed9f1cbbf11b56ae51c0da3c7819c3400fdc3150b6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_3.csv",
+      "sha256": "8c978825fc12a01615e619a1f4ac3b4c0e1ff2bb7067d24a167a97e88b719dff"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_3.trace.jsonl",
+      "sha256": "6d2b7a5315c638147e04a59b1643c9f6cdb69d8c5a7a3534ca1784813a55681c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_3.strategic.jsonl",
+      "sha256": "f8c51c0ab01a3022ab02c31d853d1aee4e8ea27795deff3e9696d2b8ce088f84"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_4.csv",
+      "sha256": "eca04620efb764377fb773dfeeefbda071cbe16e9ac3b96541bbd2d37d01f063"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_4.trace.jsonl",
+      "sha256": "20d771f6f337ae21688fe9a2606f2a31df8e92034f765a989f4cddf8867ba2ec"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_4.strategic.jsonl",
+      "sha256": "3cb7f2de755834d9723d2c1052394647842cb13517d454500d90a9f6121d3ce9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.csv",
+      "sha256": "fbbfa266cace5726a3e5131fc5d848765fb67300f90be7c33d4fd0dcdd9787da"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.trace.jsonl",
+      "sha256": "ba7b6b5172a5c6b9d91b1c558139a6f627b643479fab39aed376f88ccac1ef6b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_5.strategic.jsonl",
+      "sha256": "a88d564d046f4e5441213333cf38bc295319a0cac8da64e9a40a5fc83a0a1a39"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_6.csv",
+      "sha256": "1fd373082ef71a211de821104abf51c6dce7f1b251b2ea98ea813384cf3aabbd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_6.trace.jsonl",
+      "sha256": "970e2c089ce3eca534663109aaee64fd919e8128fba84a482706f85a391d276c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_6.strategic.jsonl",
+      "sha256": "e670e69abc4e7ba1f4b32a87211ca23c8d45513a5f5c70d9eee037409da7da38"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_7.csv",
+      "sha256": "e84cc460ee8ec68184b9a10997db160a3b10cc1b1beb69f35b69009d0db588df"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_7.trace.jsonl",
+      "sha256": "479537d35a2546c8f834fb75bf952e3388071b03f2a96675701a362d2df49863"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave1/Fprod_7.strategic.jsonl",
+      "sha256": "0618470a79a000678363f8208de0e00e32a11a56859a0950d08c70890017f441"
+    }
+  ],
+  "script_sha256": "6f3244fe757fbb8db124446d5e2a601f42ef3168f632714b6cd79ac56d6159f6",
+  "limits": [
+    "Strategic files use CSV despite .jsonl suffix. Outcome columns were not used for counting.",
+    "OOC trace omits keys and exact fallback action; inference categories remain distinct from direct selected-action evidence.",
+    "Optional means Ruby plus at least one other captured legal action. Forced-only Ruby is excluded.",
+    "No counterfactual quality claim; this counts exposure to the keys-off contract violation."
+  ]
+}

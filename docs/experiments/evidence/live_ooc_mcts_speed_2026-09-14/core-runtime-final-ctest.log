@@ -1,0 +1,15 @@
+Test project /home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/build/linux-gcc-release-ccache
+    Start  1: ooc_mcts
+1/3 Test  #1: ooc_mcts ............................   Passed    0.01 sec
+    Start 88: combat_transition_native_contract
+2/3 Test #88: combat_transition_native_contract ...   Passed    4.15 sec
+    Start 89: combat_transition_runtime_loader
+3/3 Test #89: combat_transition_runtime_loader ....   Passed    0.03 sec
+
+100% tests passed out of 3
+
+Label Time Summary:
+core           =   0.01 sec*proc (1 test)
+integration    =   4.18 sec*proc (2 tests)
+
+Total Test time (real) =   4.19 sec

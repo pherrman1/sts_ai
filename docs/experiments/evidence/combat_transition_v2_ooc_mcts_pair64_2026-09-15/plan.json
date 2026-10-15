@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "hypothesis": "The promoted attention-HPO survival component changes paired OOC MCTS gameplay outcomes versus the historical qualified V2 survival component.",
+  "decisionRule": "Report new-minus-old paired win-rate delta with a deterministic 200000-resample percentile interval. Treat improvement or harm as established only if the 95% interval excludes zero; otherwise classify as inconclusive. Floor, HP, and runtime are secondary.",
+  "seedStart": 12002032,
+  "seedCount": 64,
+  "ascension": 0,
+  "combatSimulations": 10000,
+  "ompThreads": 12,
+  "fair": true,
+  "stopAfterAct": 3,
+  "collectKeys": false,
+  "arms": [
+    {
+      "id": "old_v2",
+      "root": "/tmp/sts-old-v2-baseline",
+      "sourceSha": "cde61c85b8a9ad8500cd3ca6e18607ff33bb6e1a",
+      "binary": "/tmp/sts-old-v2-baseline/build/linux-gcc-release/one_combat",
+      "binarySha256": "0d3dc088531d3a435f5f12a3acd03edf4b001f07f28de7d8b090ba741d43d0cb",
+      "combatModel": "/tmp/sts-old-v2-baseline/selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+      "combatModelSha256": "22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e"
+    },
+    {
+      "id": "new_v2",
+      "root": "/home/philippherrmann/.codex/worktrees/6ae3/sts_lightspeed",
+      "sourceSha": "22765a5549db50e23bb1d09d8c8953ef24b4506f",
+      "binary": "/home/philippherrmann/.codex/worktrees/6ae3/sts_lightspeed/build/linux-gcc-release/one_combat",
+      "binarySha256": "84c24b32897a5d2dea4d069ee4b1881f3beb498e672a5a910ea78a4a07fc34d0",
+      "combatModel": "/home/philippherrmann/.codex/worktrees/6ae3/sts_lightspeed/selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+      "combatModelSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"
+    }
+  ],
+  "strategicModelSha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+  "treeModelSha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+  },
+  "oocMctsProfile": {
+    "STS_OOC_MCTS_SIMS": "2048",
+    "STS_OOC_MCTS_PRIOR": "policy",
+    "STS_OOC_MCTS_TEMPERATURE": "1",
+    "STS_OOC_MCTS_CPUCT": "1.5",
+    "STS_OOC_MCTS_WIDEN_K": "2",
+    "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+    "STS_OOC_MCTS_MAX_DEPTH": "32",
+    "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_LEAF_COMBATS": "0",
+    "STS_OOC_MCTS_LEAF_POLICY": "v4"
+  },
+  "explicitControls": {
+    "STS_OOC_MCTS_EARLY_STOP": "1",
+    "STS_SILVER_REUSE_CAP": "32768"
+  }
+}

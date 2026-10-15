@@ -1,0 +1,1080 @@
+{
+  "schema": "active_lizard_b1_qr_source_grouped_diagnostic_v1",
+  "classification": "DEVELOPMENT_ONLY",
+  "t2Treatment": "T2_revive fixed from prior cohort; not retuned",
+  "analysisDomain": "descriptive_after_native_boundaries",
+  "tailStrippedSupportDefinition": "composed.full_support_reasons(pre with LIZARD_TAIL removed, noTail predictor input with LIZARD_TAIL removed, frozen models) == []",
+  "inputManifests": [
+    {
+      "path": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "sha256": "122bd32fdf834dccd1003d3f490ff63fba47c17152655c0a200e81c6d0c40ab4",
+      "rawPairs": 128,
+      "includedPairs": 128,
+      "duplicatePairsDropped": 0
+    },
+    {
+      "path": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "sha256": "e84f3a00af1c05ecda760b862b6278650f078165f39437ef6178f7aa897da7b9",
+      "rawPairs": 128,
+      "includedPairs": 93,
+      "duplicatePairsDropped": 35
+    },
+    {
+      "path": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-02.jsonl.manifest.json",
+      "sha256": "9aa206070d582b5d4c351d7fe6c70c5c13f0ebcf1656db2640b5ed7a77cc84be",
+      "rawPairs": 127,
+      "includedPairs": 127,
+      "duplicatePairsDropped": 0
+    },
+    {
+      "path": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-03.jsonl.manifest.json",
+      "sha256": "2349b4daa1c9b3b52e7c9628076494af903a85676b7004693fe933f5390cfcb7",
+      "rawPairs": 32,
+      "includedPairs": 32,
+      "duplicatePairsDropped": 0
+    },
+    {
+      "path": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-03-next95.jsonl.manifest.json",
+      "sha256": "3d923737d0a51c19767c1ec01b17ec14353b5d19183224188a9fcb09c911f63d",
+      "rawPairs": 95,
+      "includedPairs": 95,
+      "duplicatePairsDropped": 0
+    }
+  ],
+  "pairs": 475,
+  "modeledPairs": 451,
+  "duplicateFightKeysDropped": 35,
+  "duplicateFightKeyDetails": [
+    {
+      "sourceSeed": 4200300,
+      "fightIdx": 13,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200303,
+      "fightIdx": 24,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200307,
+      "fightIdx": 9,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200312,
+      "fightIdx": 16,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200315,
+      "fightIdx": 19,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200316,
+      "fightIdx": 14,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200319,
+      "fightIdx": 4,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200320,
+      "fightIdx": 19,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200321,
+      "fightIdx": 11,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200328,
+      "fightIdx": 18,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200331,
+      "fightIdx": 22,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200332,
+      "fightIdx": 16,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200334,
+      "fightIdx": 18,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200335,
+      "fightIdx": 18,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200341,
+      "fightIdx": 5,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200343,
+      "fightIdx": 18,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200344,
+      "fightIdx": 15,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200353,
+      "fightIdx": 7,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200354,
+      "fightIdx": 15,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200355,
+      "fightIdx": 26,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200360,
+      "fightIdx": 25,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200367,
+      "fightIdx": 8,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200372,
+      "fightIdx": 21,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200374,
+      "fightIdx": 26,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200375,
+      "fightIdx": 16,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200382,
+      "fightIdx": 28,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200383,
+      "fightIdx": 24,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200393,
+      "fightIdx": 11,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200397,
+      "fightIdx": 23,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200404,
+      "fightIdx": 10,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200408,
+      "fightIdx": 15,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200417,
+      "fightIdx": 10,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200421,
+      "fightIdx": 16,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200422,
+      "fightIdx": 15,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    },
+    {
+      "sourceSeed": 4200423,
+      "fightIdx": 21,
+      "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
+      "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
+    }
+  ],
+  "duplicateObservationsIdenticalCombat": 35,
+  "duplicateObservationsWithChangedSelectionRiskBand": 35,
+  "distinctModeledSources": 124,
+  "rowsPerSource": {
+    "min": 1,
+    "median": 4.0,
+    "max": 4
+  },
+  "classCounts": {
+    "WIN_RETAINED": 380,
+    "WIN_CONSUMED": 58,
+    "LOSS_CONSUMED": 13
+  },
+  "excludedNativeExactBoundaryPairs": 24,
+  "nativeExactBoundaryReasons": {
+    "fairy_potion_precedence_exact_boundary": 24
+  },
+  "excludedFullSupportPairs": 24,
+  "fullSupportExclusionReasons": {
+    "entropic_brew": 1,
+    "gold_mutating_card": 3,
+    "gold_mutating_encounter": 1,
+    "gold_mutating_potion": 6,
+    "gold_mutating_relic": 2,
+    "potion_not_certified": 1,
+    "pre_stolen_gold_nonzero": 4,
+    "ritual_dagger": 6,
+    "writhing_mass": 1
+  },
+  "folding": "5-fold source-grouped; every fight from one source stays in one fold",
+  "b1VsQr": {
+    "b1": {
+      "rows": 451,
+      "threeClassNll": 1.912185236824243,
+      "multiclassBrier": 0.21580170892720713,
+      "modeAccuracy": 0.8470066518847007,
+      "confusionActualRowsPredictedColumns": [
+        [
+          356,
+          17,
+          7
+        ],
+        [
+          31,
+          20,
+          7
+        ],
+        [
+          4,
+          3,
+          6
+        ]
+      ],
+      "perClass": {
+        "WIN_RETAINED": {
+          "count": 380,
+          "observedRate": 0.8425720620842572,
+          "meanPredictedProbability": 0.785627829063758
+        },
+        "WIN_CONSUMED": {
+          "count": 58,
+          "observedRate": 0.1286031042128603,
+          "meanPredictedProbability": 0.12212799248304176
+        },
+        "LOSS_CONSUMED": {
+          "count": 13,
+          "observedRate": 0.028824833702882482,
+          "meanPredictedProbability": 0.09224417845320014
+        }
+      }
+    },
+    "qr": {
+      "rows": 451,
+      "threeClassNll": 0.35442671915969953,
+      "multiclassBrier": 0.1993893834275361,
+      "modeAccuracy": 0.8647450110864745,
+      "confusionActualRowsPredictedColumns": [
+        [
+          368,
+          12,
+          0
+        ],
+        [
+          36,
+          21,
+          1
+        ],
+        [
+          8,
+          4,
+          1
+        ]
+      ],
+      "perClass": {
+        "WIN_RETAINED": {
+          "count": 380,
+          "observedRate": 0.8425720620842572,
+          "meanPredictedProbability": 0.8419095853722471
+        },
+        "WIN_CONSUMED": {
+          "count": 58,
+          "observedRate": 0.1286031042128603,
+          "meanPredictedProbability": 0.13122168100894926
+        },
+        "LOSS_CONSUMED": {
+          "count": 13,
+          "observedRate": 0.028824833702882482,
+          "meanPredictedProbability": 0.026868733618803542
+        }
+      }
+    },
+    "correctionMinusB1SourceBootstrap": {
+      "threeClassNll": {
+        "rows": 451,
+        "sources": 124,
+        "meanCorrectionMinusB1": -1.5577585176645434,
+        "sourceBootstrap95CI": [
+          -4.67999690132958,
+          -0.009019094329687737
+        ]
+      },
+      "multiclassBrier": {
+        "rows": 451,
+        "sources": 124,
+        "meanCorrectionMinusB1": -0.016412325499670984,
+        "sourceBootstrap95CI": [
+          -0.030275727625302618,
+          -0.0024306338329507615
+        ]
+      }
+    },
+    "coherentRows": 451,
+    "incoherentRows": 0
+  },
+  "qMetrics": {
+    "rows": 451,
+    "brier": 0.08972378163428361,
+    "nll": 0.2917671073860656,
+    "observedRate": 0.1574279379157428,
+    "meanPredicted": 0.15809041462775278
+  },
+  "rMetrics": {
+    "rows": 71,
+    "brier": 0.12492496088788275,
+    "nll": 0.3980209142240691,
+    "observedRate": 0.8169014084507042,
+    "meanPredicted": 0.8172370891341801
+  },
+  "foldByFold": [
+    {
+      "fold": 0,
+      "trainRows": 357,
+      "testRows": 94,
+      "trainClassCounts": {
+        "WIN_RETAINED": 297,
+        "WIN_CONSUMED": 49,
+        "LOSS_CONSUMED": 11
+      },
+      "b0ClassFrequency": {
+        "rows": 94,
+        "threeClassNll": 0.426651305724145,
+        "multiclassBrier": 0.2151485542068309,
+        "modeAccuracy": 0.8829787234042553,
+        "confusionActualRowsPredictedColumns": [
+          [
+            83,
+            0,
+            0
+          ],
+          [
+            9,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 83,
+            "observedRate": 0.8829787234042553,
+            "meanPredictedProbability": 0.8319327731092437
+          },
+          "WIN_CONSUMED": {
+            "count": 9,
+            "observedRate": 0.09574468085106383,
+            "meanPredictedProbability": 0.13725490196078427
+          },
+          "LOSS_CONSUMED": {
+            "count": 2,
+            "observedRate": 0.02127659574468085,
+            "meanPredictedProbability": 0.030812324929971983
+          }
+        }
+      },
+      "correction": {
+        "rows": 94,
+        "threeClassNll": 0.3688728881406195,
+        "multiclassBrier": 0.20205263478484306,
+        "modeAccuracy": 0.8723404255319149,
+        "confusionActualRowsPredictedColumns": [
+          [
+            80,
+            3,
+            0
+          ],
+          [
+            7,
+            1,
+            1
+          ],
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 83,
+            "observedRate": 0.8829787234042553,
+            "meanPredictedProbability": 0.8566113432887815
+          },
+          "WIN_CONSUMED": {
+            "count": 9,
+            "observedRate": 0.09574468085106383,
+            "meanPredictedProbability": 0.11191447663049633
+          },
+          "LOSS_CONSUMED": {
+            "count": 2,
+            "observedRate": 0.02127659574468085,
+            "meanPredictedProbability": 0.031474180080721996
+          }
+        }
+      },
+      "q": {
+        "rows": 94,
+        "brier": 0.0925366337377319,
+        "nll": 0.3248858457572042,
+        "observedRate": 0.11702127659574468,
+        "meanPredicted": 0.14338865671121837
+      },
+      "r": {
+        "rows": 11,
+        "brier": 0.12583908541339656,
+        "nll": 0.3758892712764574,
+        "observedRate": 0.8181818181818182,
+        "meanPredicted": 0.7940423375208652
+      }
+    },
+    {
+      "fold": 1,
+      "trainRows": 362,
+      "testRows": 89,
+      "trainClassCounts": {
+        "WIN_RETAINED": 306,
+        "WIN_CONSUMED": 46,
+        "LOSS_CONSUMED": 10
+      },
+      "b0ClassFrequency": {
+        "rows": 89,
+        "threeClassNll": 0.5388717446198444,
+        "multiclassBrier": 0.28964625999192656,
+        "modeAccuracy": 0.8314606741573034,
+        "confusionActualRowsPredictedColumns": [
+          [
+            74,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0
+          ],
+          [
+            3,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 74,
+            "observedRate": 0.8314606741573034,
+            "meanPredictedProbability": 0.8453038674033149
+          },
+          "WIN_CONSUMED": {
+            "count": 12,
+            "observedRate": 0.1348314606741573,
+            "meanPredictedProbability": 0.1270718232044199
+          },
+          "LOSS_CONSUMED": {
+            "count": 3,
+            "observedRate": 0.033707865168539325,
+            "meanPredictedProbability": 0.027624309392265182
+          }
+        }
+      },
+      "correction": {
+        "rows": 89,
+        "threeClassNll": 0.3973776808527282,
+        "multiclassBrier": 0.22124621222464494,
+        "modeAccuracy": 0.8539325842696629,
+        "confusionActualRowsPredictedColumns": [
+          [
+            70,
+            4,
+            0
+          ],
+          [
+            6,
+            6,
+            0
+          ],
+          [
+            3,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 74,
+            "observedRate": 0.8314606741573034,
+            "meanPredictedProbability": 0.8355387452210717
+          },
+          "WIN_CONSUMED": {
+            "count": 12,
+            "observedRate": 0.1348314606741573,
+            "meanPredictedProbability": 0.14295027059976725
+          },
+          "LOSS_CONSUMED": {
+            "count": 3,
+            "observedRate": 0.033707865168539325,
+            "meanPredictedProbability": 0.02151098417916089
+          }
+        }
+      },
+      "q": {
+        "rows": 89,
+        "brier": 0.10388510201071455,
+        "nll": 0.31071264893982026,
+        "observedRate": 0.16853932584269662,
+        "meanPredicted": 0.16446125477892812
+      },
+      "r": {
+        "rows": 15,
+        "brier": 0.16305813463651217,
+        "nll": 0.5142125226832533,
+        "observedRate": 0.8,
+        "meanPredicted": 0.8965853736037867
+      }
+    },
+    {
+      "fold": 2,
+      "trainRows": 362,
+      "testRows": 89,
+      "trainClassCounts": {
+        "WIN_RETAINED": 310,
+        "WIN_CONSUMED": 42,
+        "LOSS_CONSUMED": 10
+      },
+      "b0ClassFrequency": {
+        "rows": 89,
+        "threeClassNll": 0.6301775826677997,
+        "multiclassBrier": 0.356914514346155,
+        "modeAccuracy": 0.7865168539325843,
+        "confusionActualRowsPredictedColumns": [
+          [
+            70,
+            0,
+            0
+          ],
+          [
+            16,
+            0,
+            0
+          ],
+          [
+            3,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 70,
+            "observedRate": 0.7865168539325843,
+            "meanPredictedProbability": 0.8563535911602209
+          },
+          "WIN_CONSUMED": {
+            "count": 16,
+            "observedRate": 0.1797752808988764,
+            "meanPredictedProbability": 0.11602209944751384
+          },
+          "LOSS_CONSUMED": {
+            "count": 3,
+            "observedRate": 0.033707865168539325,
+            "meanPredictedProbability": 0.027624309392265182
+          }
+        }
+      },
+      "correction": {
+        "rows": 89,
+        "threeClassNll": 0.4150119888284343,
+        "multiclassBrier": 0.23687548789959043,
+        "modeAccuracy": 0.8426966292134831,
+        "confusionActualRowsPredictedColumns": [
+          [
+            69,
+            1,
+            0
+          ],
+          [
+            10,
+            6,
+            0
+          ],
+          [
+            2,
+            1,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 70,
+            "observedRate": 0.7865168539325843,
+            "meanPredictedProbability": 0.835427796586784
+          },
+          "WIN_CONSUMED": {
+            "count": 16,
+            "observedRate": 0.1797752808988764,
+            "meanPredictedProbability": 0.13116380379313017
+          },
+          "LOSS_CONSUMED": {
+            "count": 3,
+            "observedRate": 0.033707865168539325,
+            "meanPredictedProbability": 0.03340839962008569
+          }
+        }
+      },
+      "q": {
+        "rows": 89,
+        "brier": 0.10169211542985535,
+        "nll": 0.34014949003632844,
+        "observedRate": 0.21348314606741572,
+        "meanPredicted": 0.16457220341321588
+      },
+      "r": {
+        "rows": 19,
+        "brier": 0.11005730410552622,
+        "nll": 0.35067170486828514,
+        "observedRate": 0.8421052631578947,
+        "meanPredicted": 0.7733505408240741
+      }
+    },
+    {
+      "fold": 3,
+      "trainRows": 360,
+      "testRows": 91,
+      "trainClassCounts": {
+        "WIN_RETAINED": 303,
+        "WIN_CONSUMED": 48,
+        "LOSS_CONSUMED": 9
+      },
+      "b0ClassFrequency": {
+        "rows": 91,
+        "threeClassNll": 0.5294190375749335,
+        "multiclassBrier": 0.2709447496947497,
+        "modeAccuracy": 0.8461538461538461,
+        "confusionActualRowsPredictedColumns": [
+          [
+            77,
+            0,
+            0
+          ],
+          [
+            10,
+            0,
+            0
+          ],
+          [
+            4,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 77,
+            "observedRate": 0.8461538461538461,
+            "meanPredictedProbability": 0.8416666666666667
+          },
+          "WIN_CONSUMED": {
+            "count": 10,
+            "observedRate": 0.10989010989010989,
+            "meanPredictedProbability": 0.1333333333333333
+          },
+          "LOSS_CONSUMED": {
+            "count": 4,
+            "observedRate": 0.04395604395604396,
+            "meanPredictedProbability": 0.024999999999999994
+          }
+        }
+      },
+      "correction": {
+        "rows": 91,
+        "threeClassNll": 0.363858052148649,
+        "multiclassBrier": 0.21198074006733997,
+        "modeAccuracy": 0.8351648351648352,
+        "confusionActualRowsPredictedColumns": [
+          [
+            73,
+            4,
+            0
+          ],
+          [
+            7,
+            3,
+            0
+          ],
+          [
+            3,
+            1,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 77,
+            "observedRate": 0.8461538461538461,
+            "meanPredictedProbability": 0.8258333880048441
+          },
+          "WIN_CONSUMED": {
+            "count": 10,
+            "observedRate": 0.10989010989010989,
+            "meanPredictedProbability": 0.15194871852552994
+          },
+          "LOSS_CONSUMED": {
+            "count": 4,
+            "observedRate": 0.04395604395604396,
+            "meanPredictedProbability": 0.022217893469625917
+          }
+        }
+      },
+      "q": {
+        "rows": 91,
+        "brier": 0.09751801022481825,
+        "nll": 0.29476467451091504,
+        "observedRate": 0.15384615384615385,
+        "meanPredicted": 0.17416661199515585
+      },
+      "r": {
+        "rows": 14,
+        "brier": 0.14351640686068748,
+        "nll": 0.4491069546452714,
+        "observedRate": 0.7142857142857143,
+        "meanPredicted": 0.8203943047159712
+      }
+    },
+    {
+      "fold": 4,
+      "trainRows": 363,
+      "testRows": 88,
+      "trainClassCounts": {
+        "WIN_RETAINED": 304,
+        "WIN_CONSUMED": 47,
+        "LOSS_CONSUMED": 12
+      },
+      "b0ClassFrequency": {
+        "rows": 88,
+        "threeClassNll": 0.4474637936344928,
+        "multiclassBrier": 0.23955368865211088,
+        "modeAccuracy": 0.8636363636363636,
+        "confusionActualRowsPredictedColumns": [
+          [
+            76,
+            0,
+            0
+          ],
+          [
+            11,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 76,
+            "observedRate": 0.8636363636363636,
+            "meanPredictedProbability": 0.8374655647382917
+          },
+          "WIN_CONSUMED": {
+            "count": 11,
+            "observedRate": 0.125,
+            "meanPredictedProbability": 0.1294765840220386
+          },
+          "LOSS_CONSUMED": {
+            "count": 1,
+            "observedRate": 0.011363636363636364,
+            "meanPredictedProbability": 0.03305785123966942
+          }
+        }
+      },
+      "correction": {
+        "rows": 88,
+        "threeClassNll": 0.224529948961997,
+        "multiclassBrier": 0.12350665453248476,
+        "modeAccuracy": 0.9204545454545454,
+        "confusionActualRowsPredictedColumns": [
+          [
+            76,
+            0,
+            0
+          ],
+          [
+            6,
+            5,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 76,
+            "observedRate": 0.8636363636363636,
+            "meanPredictedProbability": 0.8558283659590683
+          },
+          "WIN_CONSUMED": {
+            "count": 11,
+            "observedRate": 0.125,
+            "meanPredictedProbability": 0.11860831051111767
+          },
+          "LOSS_CONSUMED": {
+            "count": 1,
+            "observedRate": 0.011363636363636364,
+            "meanPredictedProbability": 0.02556332352981393
+          }
+        }
+      },
+      "q": {
+        "rows": 88,
+        "brier": 0.05223262117097646,
+        "nll": 0.18519750205190763,
+        "observedRate": 0.13636363636363635,
+        "meanPredicted": 0.1441716340409316
+      },
+      "r": {
+        "rows": 12,
+        "brier": 0.07827098249083385,
+        "nll": 0.2884379440073218,
+        "observedRate": 0.9166666666666666,
+        "meanPredicted": 0.8051172058382895
+      }
+    }
+  ],
+  "foldCoefficients": [
+    {
+      "fold": 0,
+      "q": [
+        -1.0587296514187687,
+        0.7366203611359522,
+        1.533616207130443
+      ],
+      "r": [
+        -1.7155942676426879,
+        4.670008467818232
+      ],
+      "qConverged": true,
+      "rConverged": true
+    },
+    {
+      "fold": 1,
+      "q": [
+        -1.1481843836396162,
+        0.660206868467716,
+        1.481723296211336
+      ],
+      "r": [
+        -1.5051295984429602,
+        4.67301857847198
+      ],
+      "qConverged": true,
+      "rConverged": true
+    },
+    {
+      "fold": 2,
+      "q": [
+        -1.4787384853916357,
+        0.5695103067068309,
+        2.247531458662338
+      ],
+      "r": [
+        -1.5995360102118594,
+        4.3059145928154585
+      ],
+      "qConverged": true,
+      "rConverged": true
+    },
+    {
+      "fold": 3,
+      "q": [
+        -1.5145998862879888,
+        0.5206079587252495,
+        2.911254351851895
+      ],
+      "r": [
+        -0.8238329755671567,
+        3.5863571667378737
+      ],
+      "qConverged": true,
+      "rConverged": true
+    },
+    {
+      "fold": 4,
+      "q": [
+        -1.0758246365713031,
+        0.5954283191621832,
+        1.1653793374025148
+      ],
+      "r": [
+        -1.4685472206200443,
+        4.099032716915729
+      ],
+      "qConverged": true,
+      "rConverged": true
+    }
+  ],
+  "frozenModelHashes": {
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"
+  },
+  "claimBoundary": "descriptive research only; no model export, runtime integration, or support qualification"
+}

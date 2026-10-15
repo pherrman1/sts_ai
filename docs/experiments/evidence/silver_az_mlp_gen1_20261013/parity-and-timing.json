@@ -1,0 +1,34 @@
+{
+ "parity-natural-56000000-9.json": {
+  "roots": 3525,
+  "edges": 19404,
+  "max_abs_diff": 1.3908717120258984e-06,
+  "mean_abs_diff": 1.455058426936713e-07,
+  "logit_abs_max": 6.071967394992265,
+  "pass": true
+ },
+ "parity-perturbed-56002000-9.json": {
+  "roots": 3461,
+  "edges": 18833,
+  "max_abs_diff": 1.7743078783993838e-06,
+  "mean_abs_diff": 1.300043762737488e-07,
+  "logit_abs_max": 6.409801465247204,
+  "pass": true
+ },
+ "timing-natural-56000000-9.json": {
+  "edges": 19404,
+  "gbmTrees": 1997,
+  "gbmUsPerRoot": 179.94420312056738,
+  "mlp": "policy mlp 128/64",
+  "mlpUsPerRoot": 8.593159432624113,
+  "roots": 3525
+ },
+ "timing-perturbed-56002000-9.json": {
+  "edges": 18833,
+  "gbmTrees": 1997,
+  "gbmUsPerRoot": 187.92512106327652,
+  "mlp": "policy mlp 128/64",
+  "mlpUsPerRoot": 9.021905807570066,
+  "roots": 3461
+ }
+}

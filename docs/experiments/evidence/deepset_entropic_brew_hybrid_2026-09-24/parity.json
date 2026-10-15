@@ -1,0 +1,32 @@
+{
+  "acts": [
+    1,
+    2,
+    3
+  ],
+  "bossStates": [
+    false,
+    true
+  ],
+  "brewFixtures": 18,
+  "capacityValues": [
+    3,
+    5
+  ],
+  "checkpointSha256": "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace",
+  "fixtures": 31,
+  "legalMaskMismatches": 0,
+  "maxEncoderAbsoluteError": 7.748603820800781e-07,
+  "maxProbabilityAbsoluteError": 4.76837158203125e-07,
+  "occupiedPotionCounts": [
+    0,
+    1,
+    2,
+    3,
+    5
+  ],
+  "pythonNativeParity": "PASS",
+  "selectedEpoch": 27,
+  "smokeFixtures": 1,
+  "tolerance": 0.0001
+}

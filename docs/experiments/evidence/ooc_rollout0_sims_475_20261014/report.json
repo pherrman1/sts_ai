@@ -1,0 +1,99 @@
+{
+  "cohort": [
+    103000000,
+    103000127
+  ],
+  "units": {
+    "r0s16k": 128,
+    "rollout3": 128
+  },
+  "seed_failures": {
+    "r0s16k": [],
+    "rollout3": []
+  },
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "r0s16k": [],
+    "rollout3": []
+  },
+  "non_cohort_seeds": [],
+  "runs": {
+    "r0s16k": 128,
+    "rollout3": 128
+  },
+  "pairs": 128,
+  "win": {
+    "r0s16k": 0.796875,
+    "rollout3": 0.8984375
+  },
+  "wins": {
+    "r0s16k": 102,
+    "rollout3": 115
+  },
+  "r0s16k_vs_rollout3": {
+    "delta_win": -0.1015625,
+    "delta_win_ci95": [
+      -0.1875,
+      -0.015625
+    ],
+    "discordant_r0s16k_only": 9,
+    "discordant_rollout3_only": 22,
+    "mcnemar_p": 0.029449373483657837,
+    "delta_floor": -1.1875,
+    "delta_floor_ci95": [
+      -2.3828125,
+      -0.015625
+    ],
+    "delta_hp_end": -1.609375
+  },
+  "boss_deaths": {
+    "r0s16k": 22,
+    "rollout3": 10
+  },
+  "mean_floor": {
+    "r0s16k": 48.7421875,
+    "rollout3": 49.9296875
+  },
+  "sec_per_run": {
+    "r0s16k": 720.466796875,
+    "rollout3": 660.5656718749999
+  },
+  "label": "WORSE",
+  "noninferiority_10pp": "NOT_NONINFERIOR_AT_10PP",
+  "search": {
+    "r0s16k": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 633.1637886342344,
+      "owned_share": 0.972492275227975,
+      "fallback_share": 0.02750772477202502,
+      "support_aborts_per_run": 0.0,
+      "simulations_per_run": 846267.578125,
+      "max_depth_mean_per_run": 10.875,
+      "mean_simulation_depth": 6.035340864873098,
+      "searches": 9030,
+      "search_max_depth_median": 5.0,
+      "search_max_depth_p90": 9.0,
+      "search_max_depth_max": 14,
+      "pick_top_prior_share": 0.7272425249169435,
+      "pick_top_q_share": 0.5545957918050941
+    },
+    "rollout3": {
+      "runs_with_trace": 128,
+      "mcts_cpu_sec_per_run": 574.2952841770078,
+      "owned_share": 0.9728631548396459,
+      "fallback_share": 0.027136845160354084,
+      "support_aborts_per_run": 0.0,
+      "simulations_per_run": 222667.6171875,
+      "max_depth_mean_per_run": 10.1640625,
+      "mean_simulation_depth": 5.286467761031849,
+      "searches": 9395,
+      "search_max_depth_median": 4.0,
+      "search_max_depth_p90": 8.0,
+      "search_max_depth_max": 13,
+      "pick_top_prior_share": 0.7590207557211283,
+      "pick_top_q_share": 0.510590739755189
+    }
+  },
+  "sec_sum_ratio_r0s16k_over_rollout3": 1.0906815590794663,
+  "mcts_cpu_ratio_r0s16k_over_rollout3": 1.1025056379168914
+}

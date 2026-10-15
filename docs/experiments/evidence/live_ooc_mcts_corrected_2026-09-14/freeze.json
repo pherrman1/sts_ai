@@ -1,0 +1,16 @@
+{
+  "sha": "f9af4ad6055b98603fd732d59869b5b39cc8beec",
+  "binarySha256": "0ad6c27b7a9a8faa131bb526ace5f875cb4463842df50aba5baec0f67f621f73",
+  "binaryMtimeUtc": "2026-09-14T09:55:59.022394+00:00",
+  "smokeMetadataSha": "0000000000000000000000000000000000000000",
+  "binding": "Final build completed before smokes; tested source was committed unchanged as this SHA; no rebuild since smokes. Historical sentinel preserved.",
+  "review": "Independent implementation review PASS",
+  "ci": "https://github.com/pherrman1/sts_ai/actions/runs/34830645555",
+  "seedRange": [
+    970000,
+    970031
+  ],
+  "combatSims": 10000,
+  "mctsSims": 512,
+  "frozenUtc": "2026-09-14T10:03:08.905382+00:00"
+}

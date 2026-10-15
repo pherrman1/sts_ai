@@ -1,0 +1,35 @@
+{
+  "rows": 2100231,
+  "width": 1788,
+  "stateFeatures": 1766,
+  "vcont-nat": {
+    "train": 72006,
+    "val": 23399,
+    "iters": 579
+  },
+  "vroll-nat": {
+    "train": 169926,
+    "val": 54798,
+    "iters": 419
+  },
+  "prior-nat": {
+    "train": 298037,
+    "val": 99144,
+    "iters": 1680
+  },
+  "vcont-natpert": {
+    "train": 146984,
+    "val": 47063,
+    "iters": 311
+  },
+  "vroll-natpert": {
+    "train": 337490,
+    "val": 108339,
+    "iters": 1447
+  },
+  "prior-natpert": {
+    "train": 606636,
+    "val": 196318,
+    "iters": 1997
+  }
+}

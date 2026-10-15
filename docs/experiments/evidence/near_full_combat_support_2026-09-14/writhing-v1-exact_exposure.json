@@ -1,0 +1,24 @@
+{
+  "artifactSha256": "23ee9e06b6674709a2a656f11647c0ede3665c27b3e98360a75dbc298e516119",
+  "classification": "EXACT_SPARSE_EXPOSURE_FAIL",
+  "estimator": "exact weighted marginal over all maxHP classes, legal HP classes and legal potion masks",
+  "evaluationSha": "658097f7580573b6e4997c2c2d7d4fe2a45182f3",
+  "eventExposureGate": false,
+  "exposure": {
+    "mean": 0.5307103806471911,
+    "repetitions": 1000,
+    "rows": 449,
+    "sourceBootstrap95": [
+      0.33549966458602476,
+      0.7594710156278297
+    ],
+    "sources": 435
+  },
+  "mechanism": "writhing",
+  "mixtureNll": 1.1182056064877193,
+  "modelSourceSha": "69f9e51be8bb6c53684dbb02ae5f73b7b397c9ae",
+  "rows": 449,
+  "supportChanged": false,
+  "teacherNll": 0.5874952258405282,
+  "zeroMixtureProbabilityRows": 0
+}

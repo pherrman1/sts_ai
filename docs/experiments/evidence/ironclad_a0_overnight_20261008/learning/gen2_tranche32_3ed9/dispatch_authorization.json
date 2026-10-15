@@ -1,0 +1,22 @@
+{
+  "status": "authorized_dispatch",
+  "frozen_epoch": 1791422187.5233293,
+  "freeze_sha256": "1e8d1112a17c6126b3ccc446116b2fb74617fac35318acf1ca830bd392a177e1",
+  "analysis_bundle_sha256": "2f56269cf2bb6f5cc001890499a460cba0dff3b5df601396b6f9fbd02a0c2857",
+  "jobs_sha256": "4cc12aefa0e3ef72c150e709b58625ff67d1761c3b3634a98106b26da920ac90",
+  "job_arguments": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/gen2_tranche32_jobs.txt",
+  "job_arguments_sha256": "a22e7ad74cf6e4c2bdbcf5077060a7d28379dbe0f675382c42306c15391251de",
+  "command_prefix": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/run_gen2_source.py",
+    "--freeze",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/freeze.json"
+  ],
+  "workers": 4,
+  "wall_limit_seconds": 10800,
+  "absolute_stop_epoch": 1791435180.0,
+  "max_game_processes_campaign": 6,
+  "other_lanes": "Champ P1 finishing; CTest P1; wave2 completed",
+  "numerical_outcomes_opened": false,
+  "prelaunch_only_error": "First job-list preparation assumed each item was an array, rejected with KeyError before files/processes. Corrected to observed command field; no game rerun."
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "silver-leaf-evaluator-10k-evidence-v1",
+  "date": "2026-08-27",
+  "verdict": "M10_DIRECT_REJECTED",
+  "frozen_sha": "0f0840b5b3010e3d0f98e9563674ce0506d628a8",
+  "pr": "https://github.com/pherrman1/sts_ai/pull/76",
+  "gcp": {
+    "host": "sts-test",
+    "run_directory": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b",
+    "configuration": {"release": true, "fair": true, "threads": 1, "ascension": 0, "silver_base_simulations": 1000, "reuse_cap_mode": "allocated", "affine_a": 1, "affine_b": 0},
+    "binary_sha256": "3cf3c44fb909aa3082cd7f53f5581ad0762ee892fdaa262c886924035f22adf0"
+  },
+  "model": {
+    "xgboost_m10_sha256": "cfb7bf8b041e6748a6a63f280eb8c43ad2bbefc223e69d0d9807567ebcbe5613",
+    "native_runtime_sha256": "344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959",
+    "trees": 501,
+    "features": 1766,
+    "parity_rows": 641,
+    "parity_max_abs_error": 0.000127,
+    "parity_mean_abs_error": 0.000023
+  },
+  "offline_25k_b": {
+    "groups": 93, "rows": 641, "reference_pairs": 5187,
+    "current": {"pairwise": 0.5278581068054752, "top_leaf": 0.2716049382716049, "mean_regret": 4.833536393621745, "centered_mae": 3.7721262385409218, "centered_rmse": 5.599186961938778},
+    "m10": {"pairwise": 0.5788509735878157, "top_leaf": 0.30864197530864196, "mean_regret": 3.902424168542608, "centered_mae": 3.7609905956568674, "centered_rmse": 5.4746655861565365}
+  },
+  "gate8": {
+    "seeds": [973600, 973601, 973602, 973603, 973604, 973605, 973606, 973607],
+    "A": {"wins": 4, "mean_floor": 50.25, "mean_ending_hp": 39.25, "mean_seconds": 5.53117375, "wall_sum_seconds": 44.24939, "simulations": 5513000, "skipped_rollouts": 0},
+    "B": {"wins": 1, "mean_floor": 31.0, "mean_ending_hp": 1.125, "mean_seconds": 5.74795375, "wall_sum_seconds": 45.98363, "simulations": 3505000, "skipped_rollouts": 3041875, "inference_calls": 3041875, "inference_micros": 17603210},
+    "paired": {"win_delta_pp": -37.5, "win_delta_95pct_pp": [-75.0, -12.5], "floor_delta": -19.2, "floor_delta_95pct": [-28.2, -9.9], "a_only_wins": 3, "b_only_wins": 0},
+    "failures": {"conversion": 0, "semantic_resolution": 0, "transaction": 0, "knowledge": 0}
+  },
+  "artifact_sha256": {
+    "gate8_A_log": "8aed51bdb303e245e085c1987789e37dbdd64ca1ac47681217f72b4a78f7857b",
+    "gate8_A_csv": "8b9b997fa512fc59f63a3218135a80ca06238acf4bfae74309458a2f69dbebf4",
+    "gate8_A_meta": "8f9128111b10d93149208afeace301e8b39556ab8266c8390a8b6f536cfcfcbc",
+    "gate8_B_log": "77b8cbf8daa478119f6570902fb53aba4f5e3805152ca457c10dbb1270f99575",
+    "gate8_B_csv": "83cfdc93a5f096b7e91cf8ab6bdb9d857760dd4a533707119906f06fc7c1d99a",
+    "gate8_B_meta": "4c6224ec06ca2a2ce885d1668320d97f6c94a31339ba77f0861d106c1a6a03b0",
+    "offline_sanity": "8b4f0f3aa909efe34424b5e0a35cd45e0977d7def317978e43bd009c76e94a6d",
+    "parity_csv": "54066667369037ee127feaddcd927f7f717642319436d93c27c2cafbaf112ae2"
+  },
+  "omitted": ["seeds 973608-973615", "equal-runtime follow-up", "more than 16 seeds", "feature-extraction optimization", "policy-prior work"]
+}

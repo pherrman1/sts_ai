@@ -1,0 +1,36 @@
+{
+  "issue": 345,
+  "baseline_sha": "b23aad9d8885c6eca332b1f5cccf3890755bbecf",
+  "scope": "narrow frozen-concrete-state last-Defend diagnostic; no policy/RNG/budget change",
+  "commands": [
+    "OMP_NUM_THREADS=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_USELESS_TRACE=build/issue345/trace.jsonl bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 1000 8 0 0 build/issue345/on.csv",
+    "OMP_NUM_THREADS=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_USELESS_TRACE= bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 1000 1 0 0 build/issue345/off.csv",
+    "python3 tools/analyze_silver_useless.py build/issue345/trace.jsonl --output build/issue345/summary.json",
+    "bash tools/seed_guard.sh build/linux-gcc-debug-ccache/silver_useless_replay build/issue345/trace.jsonl"
+  ],
+  "source_sha256": {
+    "include/sim/search/SilverUselessAction.h": "baf9722e20e972bebb6ea5bb1f841976ea2739c4f59b47b4c4a0c0fedb4d0553",
+    "src/sim/search/SilverUselessAction.cpp": "f628ded11a9630e402b89fc78cb9aa7017f4a877a3374ae16904f947ddd72cad",
+    "src/sim/search/NativeSilverBackend.cpp": "7b4cf058894812737f11d6a952ebb0a034b4d023cddf427de78e933ea6007176",
+    "apps/one_combat.cpp": "5e1691186fde4425b5293d0389612e12f50b7d2727f45e4d5be9ad74175e688f",
+    "apps/silver_useless_replay.cpp": "c312c4b7c394d35f94c3e4341146d535e9213e26dea12cee1aee157b79a32a27",
+    "tools/analyze_silver_useless.py": "2f07ce6db9ed5dc0eb23f7341248a32cc1301572d708e9eb70def9ce0a7ddb97"
+  },
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "binary_sha256": "41e92363b087e698b015d02749edabdbe237da90d98a7447c4dcb7651e626165",
+  "artifact_sha256": {
+    "off.csv": "2873dc2602cf52967f1d1dce6a82f0339dcc9e4eca7a862877742f017cf50ece",
+    "parity.json": "f67480587e565e51e557e8d64d9e44812a479c4cfb5f1c40ea27738feb762334",
+    "trace.jsonl.gz": "e2947b951f9ad0e5726a61eaef196422236057bcb74d2150f07153a4a8b1e9c9",
+    "summary.json": "1878f73e395de2a64b4d3156341e3d8705fa8cd12c60813ebc57837024e21bca",
+    "off.csv.meta.json": "3237f71c7f9229ab3b1a2b57127776c0d76a95bb1e4172d1cc9089b44b906ac1",
+    "off.log": "f42e0dfd4608bf3dcd822030f10666d54a2a993154f5e813a717a7665cdb9e2d",
+    "on.log": "568545ef91a95aeadc755d9fc109f0cc06b598bf7103a86991be048dc5236f89",
+    "on.csv.meta.json": "f77f96508ac3ace265a4c6b9b07d9220ff790e2da00fa798492f422043013534",
+    "on.csv": "8a80bf3864e73379cc66476a56b8beae0f9b5b39b580605093aaf590204d984b"
+  },
+  "replay_result": "verified=0 PASS; no observed examples to replay"
+}

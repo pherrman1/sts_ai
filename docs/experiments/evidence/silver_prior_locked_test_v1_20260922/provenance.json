@@ -1,0 +1,52 @@
+{
+  "baseline_sha": "60ece5403ec0a06d802c54aed8c7b85a9d4bc369",
+  "candidate_count": 1,
+  "checkpoint": {
+    "architecture": "SilverPriorNetV1",
+    "arm": "T2",
+    "seed": 20260922,
+    "sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+    "tau": 1.179975000005129
+  },
+  "dataset_hashes": {
+    "binding": "7febae9df90e427ad5db631a2004ff4c4cdd579346d22d25b3e1f4532af96e17",
+    "release": "b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419",
+    "selection": "ed91b3bb4c6983be3701333320f1e6c12f7332e3e371ac24b857a76a47d3b5ed",
+    "vocabulary": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46"
+  },
+  "durable_raw_summary_directory": "/home/philippherrmann/Documents/sts/silver-prior-model-v1/locked-test-v1",
+  "evaluator_source_sha256": "0a1b468475298cf26006beee7ade617a73878e8741f8cf5fa9a57dd306345ae1",
+  "external_output_sha256": {
+    "consumption-receipt.json": "14ff659da62b6b9ea70bb0aeb3b44d91a31b64d6acf5352c9655c36b2f6e6ecd",
+    "decision.json": "92a3913b791ab0b4a758b32ca696f3bed60ce2d5e84d44e24d7ee82ee90546a8",
+    "locked-j-summary.json": "5ca456e9163ecc3dff60f7a9a6c327c06d05f5c4bed89f7006daf889c5ef8a9b",
+    "locked-l-summary.json": "3c46269580ae787c0b722b6eb8dcc4170fe3488c4542370ca6d10c0f156b16a0"
+  },
+  "post_consumption_guard_source_sha256": "20053ded50437b128cabaf99bee1b0d04eff4664dd6df9fdfe7466082b34570d",
+  "pull_request": "https://github.com/pherrman1/sts_ai/pull/291",
+  "receipt": {
+    "binding_sha256": "7febae9df90e427ad5db631a2004ff4c4cdd579346d22d25b3e1f4532af96e17",
+    "checkpoint_sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+    "evaluator_git_sha": "f458ef51029ea53f9baaf361e87fba67c743d5a2",
+    "evaluator_source_sha256": "0a1b468475298cf26006beee7ade617a73878e8741f8cf5fa9a57dd306345ae1",
+    "release_sha256": "b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419",
+    "seed": 20260922,
+    "selected_arm": "T2",
+    "selection_sha256": "ed91b3bb4c6983be3701333320f1e6c12f7332e3e371ac24b857a76a47d3b5ed",
+    "status": "LOCKED_TEST_OPENED",
+    "vocabulary_sha256": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46"
+  },
+  "reviewed_evaluator_sha": "f458ef51029ea53f9baaf361e87fba67c743d5a2",
+  "run_command": "python3 tools/evaluate_silver_prior_locked.py --checkpoint /home/philippherrmann/Documents/sts/silver-prior-model-v1/stage-a-863d7d5e/T2.pt --corpus /home/philippherrmann/Documents/sts/silver-prior-v1-corpus-v2 --output-dir /home/philippherrmann/Documents/sts/silver-prior-model-v1/locked-test-v1",
+  "selection_counts": {
+    "locked_j_sources": 64,
+    "locked_l_roots": 1494,
+    "locked_l_sources": 64,
+    "preselected_locked_j_roots": 64
+  },
+  "trainer_source_sha256": "f66aed7ee1da9f48d0c21ea8392d23e83f22b0b2a281dc549380c4367cc9391f",
+  "validation_summary_sha256": {
+    "J": "1352b9b1acc1e34f146e5d8079f1e738ecbaa01337ab453267b4b5cda5e3c327",
+    "L": "b559dabec4d3e9fd5ceff1b702c3ca82c97d40a112d8b5a324717b919647153c"
+  }
+}

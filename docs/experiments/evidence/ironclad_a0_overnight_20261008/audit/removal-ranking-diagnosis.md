@@ -1,0 +1,30 @@
+# Non-shop removal ranking: independent diagnosis
+
+Status: **supported policy-ranking weakness; opt-in hypothesis justified**. No source edits or game runs performed for this diagnosis. This is not an illegal action, state-transition failure or established full-run quality defect.
+
+The exact atlas examples are development sources **610082010** and **610082011**, not discovery610081010/011. Their corrected-source3ed9 trace is `build/overnight_20261008/wave2/Fprod_2.trace.jsonl`: line402 Living Wall opens removal and line403 removes Shrug It Off at Act1 floor2; line667 opens removal and line668 removes Offering at Act1 floor13. The reviewer rehashed the raw trace against its completed Fprod_2 receipt. No full-run endpoint was needed for this diagnosis.
+
+`runFullRunOocPolicyStep` routes native `removeSelectVPolicy` only when shopV is enabled, curRoom is SHOP, and selection type is REMOVE. Other REMOVE states reach the Scum fallback in the campaign profile. Living Wall's Forget action opens REMOVE; Peace Pipe's Toke also opens REMOVE. Empty Cage and other ordinary removal selectors can reach the same owner. Bonfire Spirits has its own distinct selection type.
+
+`ScumSearchAgent2::cardSelectPolicy` assigns REMOVE and BONFIRE_SPIRITS the score `-getObtainWeight(cardId)`, sorts ascending and commits the first choice. Its upgrade flag is ignored. The acquisition table assigns Shrug15, Thinking Ahead6, Bash1 and Strike/Defend0, explaining the floor2 removal exactly. Offering and Spot Weakness both have weight65, Flame Barrier18, Rupture25 and basics0. The floor13 result therefore removes a maximum-weight card; Offering is not uniquely top-ranked because the unupgraded lookup also gives Spot Weakness+65. `std::sort` has no declared stable tie rule, so do not claim Offering-specific preference from that tie.
+
+Higher obtain weight increases a card's acquisition weighting in the same fallback and is favored for obtain/duplicate/bottle/upgrade selectors. Removing the highest such weight is opposite the simple 'discard lower acquisition value' hypothesis. There is no explicit supported contract requiring that heuristic, however; describe the observed sign inconsistency and policy weakness rather than labeling a simulator correctness repair or guaranteed strength gain.
+
+Bonfire must remain separate: the simulator rewards sacrifice according to rarity. A rare sacrifice grants10 maximum HP and heals fully; uncommon heals10, common/special heals5, basic grants nothing and curse gives Spirit Poop. Its goal is not ordinary removal. Reversing the shared switch group wholesale would silently change this separate tradeoff.
+
+## Minimal opt-in candidate
+
+Use one strict default-off experimental flag to change **only the Scum REMOVE ranking** from ascending negative obtain weight to ascending positive obtain weight. Preserve the existing card-ID lookup, existing sorting/tie behavior, RNG behavior and every other selector, including BONFIRE_SPIRITS. Existing native shop ownership remains unchanged in the campaign profile. This treats Living Wall, Peace Pipe and other fallback REMOVE contexts consistently without fitting a contextual value model. The enabled flag needs startup and effective-teacher provenance; no default change follows from its implementation.
+
+Do not add upgrade weighting, curse priority, stable tie replacement or model routing in the same candidate. Those are separate design variables. If an explicit non-shop-only boundary is desired, guard by curRoom as well and document it; under the current native-shop profile, the fallback already does not own shop removal.
+
+Neighbor counterexamples prevent a dominance claim. Searing Blow and Mind Blast have weight0 despite possible high deck-specific value; a heavily upgraded Searing Blow still has weight0. Body Slam1 can be central to a block deck. Curses share the table's default0 with basics, and curse/exhaust synergies can make a generic curse-first rule unreliable. Offering costs HP and can be undesirable in some contexts; high acquisition weight is not a calibrated marginal removal value. Low-weight ties can remove a card the deck needs. A reversal fixes neither this table nor its missing context.
+
+Focused fixture plan: directly construct legal REMOVE menus with basics plus Offering, and basics plus Shrug, record the legacy maximum-weight choice with flag unset/0 and the new minimum with1; preserve selected index/deck transition and agent/game RNG. Include Living Wall and Peace Pipe transitions, a forced singleton, a legal multi-remove sequence, bottled/unremovable exclusion supplied by the real selector, and explicit unchanged BONFIRE/TRANSFORM/UPGRADE/DUPLICATE behavior. A real native-shop routing fixture should show that the existing shop owner still handles its selector. Strict malformed flag rejection, enabled-only teacher binding and a named public replay canary precede any fresh bounded screen. Test actual ranking/legality contracts, not assumed gameplay improvement.
+
+Knowledge impact: unresolved policy hypothesis plus source-grounded diagnosis, requiring experimental evidence before any maintained strength claim or promotion.
+
+
+## Assigned implementation prepared
+
+After coordinator authorization, the strict default-off getter `oocRemoveLowObtainWeightEnabled` and REMOVE-only sign change were added in ScumSearchAgent2.cpp/.h. Owned production diff SHA256 `e6c357e86b23d31a6bbb793ca7285874c7239c90ccb6e77acca13a2fcce4102d`. Fixture `tests/remove_obtain_weight_test.cpp` SHA256 `b9cef224233e22110e8c872280bcf4cda2951dd70eaaec221dd955a589ab5edd` exercises actual Living Wall and Peace Pipe selection, protection of excluded/bottled cards, forced and multi-remove cases, unchanged agent/game RNG, legacy equal-weight upgraded ties, Bonfire reward, and other selector order. Existing card-ID weights and `std::sort` are unchanged; this is a sign-only experiment. Source diff whitespace checks passed. No builds, games or commits were performed by this specialist; the coordinator owns wiring, checks and freezing, and strategy was asked to independently review before launch.

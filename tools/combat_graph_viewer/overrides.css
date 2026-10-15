@@ -1,0 +1,24 @@
+.graph-tools input { width: 58px; }
+.graph-tools select { width: 120px; }
+.graph-fullscreen header { display: flex; }
+.graph-fullscreen .workspace { height: calc(100vh - 56px); }
+.graph-fullscreen .graph-column { height: calc(100vh - 56px); }
+.link { cursor: pointer; }
+.link path { pointer-events: stroke; }
+.link .edge-label { pointer-events: all; cursor: pointer; }
+.link.choice path { stroke-dasharray: none; }
+.overview .node-secondary, .overview .edge-label { display: none; }
+.details-panel section { background:#202832; border:1px solid var(--line); border-radius:9px; padding:16px; margin:12px 0; overflow:auto; }
+.details-panel .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; }
+.details-panel .metric,.details-panel .state-chip { background:#151b22; border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+.details-panel .metric span,.details-panel .state-chip span { display:block; color:var(--muted); font-size:11px; }
+.details-panel .metric strong,.details-panel .state-chip b { display:block; margin-top:3px; }
+.details-panel table { width:100%; border-collapse:collapse; }
+.details-panel th,.details-panel td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line); padding:8px; }
+.details-panel th { color:var(--muted); }
+.details-panel .selected-action,.details-panel .selected-summary { background:#284d38; }
+.details-panel .chips { display:flex; gap:8px; flex-wrap:wrap; }
+.details-panel .columns { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.details-panel .chain { display:grid; grid-template-columns:repeat(7,auto); gap:10px; align-items:center; }
+.details-panel .share i { display:block; height:5px; background:var(--blue); }
+.breadcrumb { color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:220px; }

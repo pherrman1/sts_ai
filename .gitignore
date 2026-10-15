@@ -1,0 +1,66 @@
+/cmake-build-*/
+/files/
+/.idea/
+
+# Local build products and Python caches.
+/build/
+/build2/
+/build_asan/
+/build-tsan/
+/one_combat*.elf
+/logs/
+/.venv
+/__pycache__/
+*.py[cod]
+
+# Self-play is source-controlled only at the orchestration/documentation level.
+# Its buffers, trainer checkpoints, validation gates and snapshots are
+# regenerated local artifacts (tens of GB) and must not be committed to GitHub.
+# The deployable native exports (selfplay/models/*.native) ARE tracked since
+# 2026-08-05 so model handoff between machines happens via git.
+/selfplay/buffer/
+/selfplay/cbuffer/
+/selfplay/pbuffer/
+/selfplay/card_buffer/
+/selfplay/path_buffer/
+/selfplay/card_models/
+/selfplay/models/
+!/selfplay/models/
+/selfplay/models/*
+!/selfplay/models/*.native
+/selfplay/current/
+/selfplay/cand/
+/selfplay/gate/
+/selfplay/logs/
+/selfplay/*backup*/
+/selfplay/status.txt
+/selfplay/history.tsv
+/selfplay/logs_run.out
+build/pilot_val.csv
+build/pilot_pol.csv
+
+# Local multi-model agent workflow state.
+/.ai/
+/.cache/
+/.claude/
+/.mcp.json
+/.vscode/
+
+# Generated CMake tooling metadata and emergency editor backups.
+/compile_commands.json
+*.bak
+
+# Retired repository-tool state and local SkillOpt transcript-derived staging.
+/.serena/
+/.repowise/
+/.skillopt-sleep/
+/.skillopt-sleep-handoff/
+
+# CatBoost trainer output.
+/catboost_info/
+
+# Disposable coding-agent evaluation workspaces and result records.
+/.agent-eval/
+
+# Large local archive exports.
+/sts_lightspeed-local-ignored-2026-09-09.tar.zst*

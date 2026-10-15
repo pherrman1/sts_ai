@@ -1,0 +1,32 @@
+[ooc-strat-tok-net] loaded /home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[policy PUCT ON: models/policy_trees_c.txt, 100 trees]
+[c_puct = 2.5]
+parity bits=0 logit=-0.244000256062 expected=-0.244001902191 error=1.64612944603e-06 q_error=1.85119328151e-05
+parity bits=65536 logit=-5.895860672 expected=-5.89586024557 error=4.26427070543e-07 q_error=1.90712062533e-05
+parity bits=305419896 logit=4.76017665863 expected=4.76016767064 error=8.98799037152e-06 q_error=2.80172210907e-05
+parity bits=4294967295 logit=-0.530581057072 expected=-0.530581154641 error=9.75693141836e-08 q_error=2.9142257425e-05
+nonempty_history_parity actions=3 policy_max_error=0 leaf_error=0 leaf_value=0.210758878401
+candidate_parity screen=7 selector=0 count=3
+candidate_parity screen=4 selector=3 count=10
+candidate_parity screen=1 selector=0 count=3
+candidate_parity screen=8 selector=0 count=11
+candidate_parity screen=6 selector=0 count=2
+candidate_parity screen=3 selector=0 count=4
+candidate_parity screen=5 selector=0 count=3
+leaf_parity hp=10 gold=50 value=0.134068390531
+leaf_parity hp=40 gold=200 value=0.209407345659
+leaf_parity hp=70 gold=350 value=0.263855970741
+combat_planner_chance simulations=32 particles=12 samples=12 depth=1 chained_battle=leaf
+combat_adapter_oracle raw_calls=1 fingerprint=exact path_history=exact stochastic_draws=12
+MAP(x=1) bits=1 logit=-2.28940081596 prior=0.395038565367 visits=13 Q=0.261284747433
+MAP(x=2) bits=2 logit=-2.52633976936 prior=0.311701014212 visits=10 Q=0.261284747433
+MAP(x=4) bits=4 logit=-2.58732318878 prior=0.293260420421 visits=9 Q=0.261284747433
+selected=1 simulations=32 decision_nodes=22 chance_nodes=3 particles=21 samples=21 leaf_evaluations=32 max_depth=1
+corrected_continuations reward_oracle=exact unsupported_root=V4 unsupported_sample=V4 native_imagination=forbidden deterministic_reuse=exact
+PASS live OOC MCTS OFF/isolation/execution/real-combat/fallback/determinism
+PASS OOC MCTS adapter (offline native integration only)
+PASS native v_win unavailable rejects construction/leaves; terminals bypass leaves

@@ -1,0 +1,102 @@
+{
+  "schema": "overnight_main_movement_readonly_review_v1",
+  "created_at_utc": "2026-10-08T03:26:08.455759+00:00",
+  "status": "NO_IDENTIFIED_FROZEN_CAMPAIGN_IMPACT_THREE_DOCUMENTATION_MERGE_CONFLICTS",
+  "campaign_base": "a4b3df35d170abba7860e8e854cc24cfd3579075",
+  "reviewed_campaign_head": "5add2413281c95a29e32846531d41353c804fd3c",
+  "new_main": "dd308d3d89e6dde49b80468f66c6b0fe8e714136",
+  "common_ancestor": "a4b3df35d170abba7860e8e854cc24cfd3579075",
+  "upstream_change": "PR440 CTM escape capability; capability-bound research CTM sampler/runtime, offline feature extraction, test/tool support",
+  "upstream_diff_sha256": "a4ca318e677ab479923a5bb8a3fd5e4299e47581949a8b1cfa7db601bb9e9cf4",
+  "upstream_paths": [
+    "CMakeLists.txt",
+    "apps/one_combat.cpp",
+    "apps/one_combat/combat_transition_native_contract.cpp",
+    "apps/one_combat/combat_transition_native_contract.h",
+    "apps/one_combat/combat_transition_near_full.cpp",
+    "apps/one_combat/combat_transition_runtime.cpp",
+    "apps/one_combat/combat_transition_runtime.h",
+    "apps/one_combat/combat_transition_sampler.h",
+    "apps/one_combat/ctm_offline_score.cpp",
+    "apps/one_combat/driver_shared.h",
+    "apps/one_combat/ooc_mcts_adapter.cpp",
+    "docs/knowledge-base/architecture/out-of-combat.md",
+    "docs/knowledge-base/operations/environment-variables.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md",
+    "tests/check_ctm_escape_runtime.py",
+    "tests/check_ctm_research_candidate.py",
+    "tests/combat_transition_runtime_probe.cpp",
+    "tools/combat_transition_near_full_exposure.py",
+    "tools/combat_transition_near_full_sampler.py",
+    "tools/combat_transition_near_full_support.py",
+    "tools/combat_transition_potion_trajectory.py",
+    "tools/ctm_escape.py",
+    "tools/test_ctm_escape.py"
+  ],
+  "overlapping_committed_paths": [
+    "CMakeLists.txt",
+    "apps/one_combat.cpp",
+    "apps/one_combat/driver_shared.h",
+    "docs/knowledge-base/architecture/out-of-combat.md",
+    "docs/knowledge-base/operations/environment-variables.md",
+    "docs/knowledge-base/operations/ooc-label-pipeline.md"
+  ],
+  "virtual_merge": {
+    "command": [
+      "git",
+      "merge-tree",
+      "a4b3df35d170abba7860e8e854cc24cfd3579075",
+      "5add2413281c95a29e32846531d41353c804fd3c",
+      "dd308d3d89e6dde49b80468f66c6b0fe8e714136"
+    ],
+    "mode": "legacy three-tree read-only merge display; exit0 does not establish absence of content conflicts",
+    "exit_code": 0,
+    "log_path": "build/overnight_20261008/audit/raw_build_logs/main_movement_virtual_merge.log",
+    "log_sha256": "ac3d4ae0497e4d57fd12355c23c968d78a11c97ba850e2eaf8c93bb849ea5359",
+    "conflicts": [
+      {
+        "path": "docs/knowledge-base/architecture/out-of-combat.md",
+        "virtual_merge_log_line": 515,
+        "scope": "first Last verified metadata paragraph only"
+      },
+      {
+        "path": "docs/knowledge-base/operations/environment-variables.md",
+        "virtual_merge_log_line": 566,
+        "scope": "first Last verified metadata paragraph only"
+      },
+      {
+        "path": "docs/knowledge-base/operations/ooc-label-pipeline.md",
+        "virtual_merge_log_line": 590,
+        "scope": "first Last verified metadata paragraph only"
+      }
+    ],
+    "source_or_cmake_conflicts_found": false,
+    "index_or_worktree_merge_performed": false
+  },
+  "campaign_scope_evidence": {
+    "already_frozen_receipt": "audit/removal-static-checks.json",
+    "receipt_sha256": "6b1cd56edfefd0201188982821b637b7b2e7b59da974a393d288fb56eadace90",
+    "effective_ooc_mcts": "0",
+    "effective_silver_adaptive": "0",
+    "sim_adapt_and_ctm_override": "absent from clean declared environment",
+    "ctm_loading_gate": "configureLiveOocMcts returns before model loading when disabled; separate CTM adaptive-budget construction requires STS_SIM_ADAPT and STS_SIM_ADAPT_CTM",
+    "noncombat_future_sampler_body_changed": false,
+    "silver_or_native_ooc_floor_win_scoring_changed": false,
+    "immutable_final_producer": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+    "immutable_final_binary_sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5"
+  },
+  "conclusion": "The fetched main movement does not mutate the frozen producer and no active-path effect is identified for the declared non-CTM campaign. This is source-scope assessment, not execution evidence for a merged build.",
+  "handoff_limitations": [
+    "PR is based on a4b3, not the newly fetched main.",
+    "Three Last verified paragraph conflicts need eventual reconciliation retaining both research control and CTM escape verification facts. Source/CMake clean textual integration is not a merged build or CI pass.",
+    "Virtual check covers committed5add and dd308; current uncommitted documentation/evidence packaging is not part of that Git merge tree.",
+    "Keep all completed and ongoing experiment identities attached to their original frozen sources/binaries; never relabel as measured on dd308 or a later merge.",
+    "No rebase, merge, index change, new build/test/game or final-confirmation output read was performed."
+  ],
+  "source_anchors": {
+    "apps/one_combat/ooc_mcts_adapter.cpp": "configureLiveOocMcts disabled return; maskInitialSmokeBomb capability gate; only adapter selftest otherwise changes",
+    "apps/one_combat.cpp": "new ctmescapefeatures explicit subcommand; existing STS_SIM_ADAPT CTM guard unchanged",
+    "apps/one_combat/combat_transition_runtime.cpp": "manifestv3 per-artifact capability gate, production capability map empty",
+    "CMakeLists.txt": "two CTM tests added; no altered one_combat source composition"
+  }
+}

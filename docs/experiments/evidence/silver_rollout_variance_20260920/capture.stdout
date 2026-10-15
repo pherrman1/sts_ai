@@ -1,0 +1,1 @@
+{"budget":1000,"candidate_groups":150,"candidate_modulus":256,"max_total_leaves":256,"replay_failures":0,"replicate_contract":"seed=fnv1a(silver-rollout-variance/v1/group_id/replicate); same seed across sibling leaves","replicates":32,"schema":"silver_rollout_variance_v1","selected_groups":32,"selected_leaves":247,"snapshots":64,"source_sha256_required":true}

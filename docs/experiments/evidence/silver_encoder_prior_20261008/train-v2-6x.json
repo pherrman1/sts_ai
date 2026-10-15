@@ -1,0 +1,11 @@
+{
+  "rows": 5726111,
+  "width": 3554,
+  "train": 3440255,
+  "val": 1147158,
+  "trainRoots": 570479,
+  "valRoots": 190772,
+  "iters": 6000,
+  "valGroupXent": 1.170823434852273,
+  "valEntropyFloor": 0.7118598080256503
+}

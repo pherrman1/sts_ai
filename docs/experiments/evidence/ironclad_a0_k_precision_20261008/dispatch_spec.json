@@ -1,0 +1,30 @@
+{
+  "schema": "k_precision_dispatch_spec_v1",
+  "jobs": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+  "jobs_sha256": "73ee434e02f57211985439579968966f64290195131ded1673bd846917044789",
+  "source_count": 32,
+  "concurrent_processes": 6,
+  "command_template": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=30s",
+    "EFFECTIVE_CAP_SECONDSs",
+    "xargs",
+    "-r",
+    "-P6",
+    "-L1",
+    "-a",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_k_precision_20261008/jobs.txt",
+    "--",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python"
+  ],
+  "effective_cap_seconds": "floor(min(10800,1791462144-dispatch_epoch))",
+  "absolute_stop_epoch": 1791462144.0,
+  "termination_scope": "timeout default process group, no --foreground; TERM followed by KILL after 30 seconds",
+  "dispatch_log": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-k-precision-3ed9/dispatch.log",
+  "cwd": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed",
+  "latch": "Create dispatch_authorization.json exclusively before launching; its existence forbids automatic re-dispatch.",
+  "error_rule": "Nonzero exit, missing/invalid receipts, incomplete source allocation or collection outside caps blocks inference; no replacement/retry.",
+  "output_rule": "Raw directory must be absent immediately before one authorized dispatch; all source suffixes refuse overwrite.",
+  "post_run": "Record tool session exit code and end time; verify no owned one_combat/xargs/timeout processes remain."
+}

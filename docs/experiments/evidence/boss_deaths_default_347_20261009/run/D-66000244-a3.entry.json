@@ -1,0 +1,362 @@
+{
+  "act": 3,
+  "bossBattlesSeen": 3,
+  "capturedBoss": "TIME_EATER",
+  "checks": {
+    "aRep0RepeatIdentical": true,
+    "allRowsValid": true,
+    "budgetSpentEveryRoot": true,
+    "checkedReps": 8,
+    "controlParity": {
+      "fullTrace": true,
+      "pass": true,
+      "postExitStateDigest": true,
+      "simulations": true,
+      "terminalHp": true,
+      "won": true
+    },
+    "controlRepeatIdentical": true,
+    "startDigestIdentical": true
+  },
+  "entryDescriptor": {
+    "act": 3,
+    "boss": "TIME_EATER",
+    "deck": [
+      "Strike",
+      "Defend",
+      "Defend",
+      "Defend",
+      "Defend",
+      "Bash",
+      "Clothesline",
+      "Headbutt",
+      "Sword Boomerang",
+      "Shrug It Off+",
+      "Clash",
+      "Clash",
+      "Warcry",
+      "Havoc",
+      "Thunderclap",
+      "Immolate",
+      "Seeing Red",
+      "Perfected Strike",
+      "Twin Strike",
+      "Power Through",
+      "Iron Wave+",
+      "Pummel+",
+      "Clash+",
+      "Pommel Strike+",
+      "Uppercut",
+      "Spot Weakness",
+      "Clothesline+",
+      "Demon Form",
+      "Cleave+",
+      "Chrysalis",
+      "Finesse",
+      "Shrug It Off+",
+      "Whirlwind",
+      "Battle Trance+",
+      "Thunderclap+",
+      "Warcry",
+      "Parasite",
+      "Perfected Strike+",
+      "Pommel Strike+",
+      "Cleave",
+      "True Grit+"
+    ],
+    "deckSize": 41,
+    "floor": 50,
+    "gold": 102,
+    "hp": 22,
+    "maxHp": 84,
+    "pathRoomVisits": [
+      4,
+      7,
+      13,
+      6,
+      12,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "potionCapacity": 3,
+    "potionCount": 3,
+    "potions": [
+      "BLESSING_OF_THE_FORGE",
+      "ANCIENT_POTION",
+      "LIQUID_BRONZE"
+    ],
+    "relics": [
+      {
+        "data": 0,
+        "relic": "BURNING_BLOOD"
+      },
+      {
+        "data": 0,
+        "relic": "MUMMIFIED_HAND"
+      },
+      {
+        "data": 0,
+        "relic": "DREAM_CATCHER"
+      },
+      {
+        "data": 0,
+        "relic": "BOTTLED_LIGHTNING"
+      },
+      {
+        "data": 0,
+        "relic": "MATRYOSHKA"
+      },
+      {
+        "data": 0,
+        "relic": "RUNIC_DOME"
+      },
+      {
+        "data": 0,
+        "relic": "MAGIC_FLOWER"
+      },
+      {
+        "data": 0,
+        "relic": "BRONZE_SCALES"
+      },
+      {
+        "data": 8,
+        "relic": "INK_BOTTLE"
+      },
+      {
+        "data": 0,
+        "relic": "FUSION_HAMMER"
+      },
+      {
+        "data": 0,
+        "relic": "STRAWBERRY"
+      },
+      {
+        "data": 0,
+        "relic": "FOSSILIZED_HELIX"
+      },
+      {
+        "data": 0,
+        "relic": "BOTTLED_FLAME"
+      },
+      {
+        "data": 0,
+        "relic": "THE_ABACUS"
+      },
+      {
+        "data": 0,
+        "relic": "MERCURY_HOURGLASS"
+      }
+    ],
+    "rngCounters": {
+      "aiRng": 9,
+      "cardRandomRng": 0,
+      "cardRng": 604,
+      "eventRng": 13,
+      "mathUtilRng": 0,
+      "merchantRng": 64,
+      "miscRng": 0,
+      "monsterHpRng": 6,
+      "monsterRng": 107,
+      "neowRng": 5,
+      "potionRng": 110,
+      "relicRng": 11,
+      "shuffleRng": 0,
+      "treasureRng": 32
+    },
+    "rngDigest": "1ec857afd43484ee2e09f8016610bacd8464ffcf9c511396e310cc7da4b26d24",
+    "upgrades": 13
+  },
+  "entrySummary": "hp=22;maxHp=84;gold=102;potions=BLESSING_OF_THE_FORGE|ANCIENT_POTION|LIQUID_BRONZE;relics=BURNING_BLOOD:0|MUMMIFIED_HAND:0|DREAM_CATCHER:0|BOTTLED_LIGHTNING:0|MATRYOSHKA:0|RUNIC_DOME:0|MAGIC_FLOWER:0|BRONZE_SCALES:0|INK_BOTTLE:8|FUSION_HAMMER:0|STRAWBERRY:0|FOSSILIZED_HELIX:0|BOTTLED_FLAME:0|THE_ABACUS:0|MERCURY_HOURGLASS:0;deck=Strike|Defend|Defend|Defend|Defend|Bash|Clothesline|Headbutt|Sword Boomerang|Shrug It Off+|Clash|Clash|Warcry|Havoc|Thunderclap|Immolate|Seeing Red|Perfected Strike|Twin Strike|Power Through|Iron Wave+|Pummel+|Clash+|Pommel Strike+|Uppercut|Spot Weakness|Clothesline+|Demon Form|Cleave+|Chrysalis|Finesse|Shrug It Off+|Whirlwind|Battle Trance+|Thunderclap+|Warcry|Parasite|Perfected Strike+|Pommel Strike+|Cleave|True Grit+",
+  "expectedBoss": "TIME_EATER",
+  "expectedSourceWon": 0,
+  "failures": [],
+  "floor": 50,
+  "outputs": {
+    "rowsSha256": "51b25d878f774a181745d0f38c0a4c942c759bb4d8218aada8d6f18fc758ac7c"
+  },
+  "plannerSeedDomain": "boss-deaths-347-planner-v1:{runSeed}:{act}:{rep}",
+  "plannerSeeds": [
+    "b538bcb379a512e3",
+    "dc3b884a8b1982e4",
+    "3c8a9ea2f6dd74f8",
+    "7b4c7225a95aaad1",
+    "d3de2b225252bfda",
+    "62eb9811490cf6d4",
+    "3e24a1e61385ac39",
+    "8b3c8a36cbfb94dd"
+  ],
+  "provenance": {
+    "environment": {
+      "OMP_DYNAMIC": "FALSE",
+      "OMP_NUM_THREADS": "1",
+      "STS_COLLECT_KEYS": "0",
+      "STS_EXECUTABLE_GIT_SHA": "93d0bd357e1f04df0034af930cdc6b7dd1851f66",
+      "STS_FAIR": "1",
+      "STS_OOC_MCTS": "0",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_REST_WIN": "0",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+      "STS_SILVER_LEARNED_STOP": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_STOP_AFTER_ACT": "3"
+    },
+    "executableGitSha": "93d0bd357e1f04df0034af930cdc6b7dd1851f66",
+    "executableSha256": "a8fa3bd205d1f4aaffe5c6258e2b7740c6b52d7721fe45b1021ca4802b431f67",
+    "policy": {
+      "flags": {
+        "act_fight_probe_all_ooc": false,
+        "act_fight_probe_draft": false,
+        "act_fight_probe_encounter_nn": false,
+        "act_fight_probe_gate_regret": false,
+        "act_fight_probe_predict": false,
+        "boss_draft": false,
+        "boss_relic_v": false,
+        "boss_v": false,
+        "card_action": false,
+        "card_nn": false,
+        "card_win": false,
+        "collect_keys": false,
+        "event_v": 0,
+        "neow_v": false,
+        "ooc_action_nn": false,
+        "ooc_map_route": false,
+        "ooc_shop_beam": false,
+        "ooc_strategic_boss_relic": true,
+        "ooc_strategic_card": true,
+        "ooc_strategic_event": true,
+        "ooc_strategic_map": false,
+        "ooc_strategic_q": true,
+        "ooc_strategic_rest": true,
+        "ooc_strategic_score_policy": false,
+        "ooc_strategic_shop": true,
+        "ooc_strategic_tok": true,
+        "ooc_strategic_treasure": true,
+        "path_v": 0,
+        "remove_low_obtain_weight": true,
+        "rest_win": false,
+        "shop_win": false
+      },
+      "model_artifacts": [
+        {
+          "path": "models/v_rich_trees.txt",
+          "role": "floor",
+          "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+        },
+        {
+          "path": "models/v_win_trees.txt",
+          "role": "win",
+          "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+        },
+        {
+          "path": "selfplay/models/ooc_strategic_tok_final.native",
+          "role": "ooc_strategic_tok",
+          "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+        }
+      ],
+      "native_ooc": true,
+      "parameters": {
+        "act_fight_probe_checkpoint_sims": [],
+        "act_fight_probe_floor_decay": 0.985,
+        "act_fight_probe_futures": 4,
+        "act_fight_probe_margin": 0.0,
+        "act_fight_probe_max_checkpoints": -1,
+        "act_fight_probe_predict_win_threshold": 0.5,
+        "act_fight_probe_sims": 100,
+        "act_fight_probe_term_win": 0.0,
+        "boss_draft_fights": 4,
+        "boss_draft_futures": 2,
+        "boss_draft_rows": 3,
+        "boss_draft_sims": 150,
+        "boss_v_weight": 0.5,
+        "card_nn_skip": 0.0,
+        "card_nn_weight": 1.0,
+        "card_skip_threshold": -0.5,
+        "card_win_skip": 0.0,
+        "map_route_horizon": 3,
+        "shop_beam_budget": 4096,
+        "shop_beam_depth": 0,
+        "shop_beam_width": 32,
+        "stop_after_act": 3,
+        "strategic_gate": "margin",
+        "strategic_gate_eps": 0.03,
+        "strategic_margin": 1.0,
+        "strategic_margin_boss_relic": -1.0,
+        "strategic_margin_card": -1.0,
+        "strategic_margin_event": -1.0,
+        "strategic_margin_map": -1.0,
+        "strategic_margin_rest": -1.0,
+        "strategic_margin_shop": -1.0,
+        "strategic_margin_treasure": -1.0
+      },
+      "policy_chain": "runFullRunOOC",
+      "restV": false,
+      "schema_version": "runFullRunOOC_policy_v1",
+      "shopV": true
+    },
+    "selectionSha256": "dfc62e24b1a0a24e182469e1d47979f03c53127989bac89683ef1ff684151a3b"
+  },
+  "reconstruction": {
+    "act": {
+      "historical": 3,
+      "reconstructed": 3
+    },
+    "deathCombat": {
+      "historical": 24,
+      "reconstructed": 24
+    },
+    "deathEncounter": {
+      "historical": 54,
+      "reconstructed": 54
+    },
+    "fightsLost": {
+      "historical": 1,
+      "reconstructed": 1
+    },
+    "floor": {
+      "historical": 50,
+      "reconstructed": 50
+    },
+    "hpEnd": {
+      "historical": 0,
+      "reconstructed": 0
+    },
+    "maxHp": {
+      "historical": 84,
+      "reconstructed": 84
+    },
+    "won": {
+      "historical": 0,
+      "reconstructed": 0
+    }
+  },
+  "schema": "boss_deaths_default_347_entry_v1",
+  "seed": 66000244,
+  "sourceArm": "default",
+  "sourceFight": {
+    "cpuSeconds": 0.649685477,
+    "decisions": 14,
+    "postExitDigest": "57dc3737e33097967798a4c0b4c623ab0122b4bc0dc28171fccc21ce5a652333",
+    "postExitHp": 0,
+    "simulations": 78500,
+    "terminalHp": 0,
+    "traceLen": 14,
+    "won": 0
+  },
+  "startDigest": "a1118fabd3e292f8890d7c4915148daeea9378e34ed07f908a8c765be1bdaa7d",
+  "stateId": "D-66000244-a3",
+  "status": "VALID",
+  "stratum": "D"
+}

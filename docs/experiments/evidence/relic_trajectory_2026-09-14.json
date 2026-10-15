@@ -1,0 +1,2449 @@
+{
+  "ancestralClassification": "ANCESTRAL_OK",
+  "ancestralNormalizedExposureGap": -0.002407000986270638,
+  "artifactHashes": {
+    "cache.npz": "a6047b0cb69352bdf8beb6a8a3f8f3a4be6a46df100bed5e2e919aef90ab6e9f",
+    "implementation-review.json": "17482bc4c740d902cdbc3765b9a36bf7a1b0d2130c22fdf5a853ae2d79dfd003",
+    "initial-structural-audit.json": "2991abede076e793a9d060f8f97e7f973c6e8d5217b42db26fc7ac08c8eb589e",
+    "predictions.npz": "9998fb49d547289e4d56ad893e4aa2ee9bc0c2238f7072b510ff099e4924a081",
+    "preflight.json": "8d76adff084a67acc6466304aedcb6f963de2dc1398be84ba922613205e1dc8d",
+    "recipe.json": "27fdbb97deb1e69262cae19b9767ec4a5cab7b6f354bd9abac56703a390c3070",
+    "relic-20260912-0.pt": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "relic-20260912-1.pt": "42bddca5a41b69e6c476ebf4a42a571c2839139ce4eab010dc3ab3f1ad066469",
+    "relic-20260913-0.pt": "dd2cd029da73009c4ecc39e775818dd3e9665058c8128b8a9e723dd0bf6e18ec",
+    "relic-20260913-1.pt": "6de7c3a9af583815602019d60f6f35e4815f6fbdcc173d17e9833c64616fe946",
+    "relic-20260914-0.pt": "83da22d88a944f5e2ed4ab2dac87f3eedf71f489390a951b5cdf5f9ad6aa568b",
+    "relic-20260914-1.pt": "5e5fb79109470f6548b4e1de6a0c71d39b1aa2995a08cea9397d8577135c396a",
+    "results.json": "ba789903107e41816ade313330ed9e9684e9c3a8e115cfc33ad400d7504e75cb",
+    "teacher-20260912.json": "6f7160a157f1ee32f3f99760a40db06a75515b4dfad2521bd51b31703961b10e",
+    "teacher-20260913.json": "186797e2213895c0aca511c1aa5ab50747af22eee14ae0239dfed5048f318e79",
+    "teacher-20260914.json": "0fa5f311882423af27f0bd0312304c03a11e7bcb78840c4a817f409ba37ad783"
+  },
+  "baselineSha": "b5502a84bb41c736fa72b210dc8766e0a25717e6",
+  "bootstrap": {
+    "ci95": [
+      -0.013335115682935746,
+      -0.007743432365775927
+    ],
+    "estimate": -0.010460228750748103,
+    "resamples": 1000,
+    "sources": 1979
+  },
+  "classification": "RELIC_TRAJECTORY_QUALIFIED",
+  "cpuLatency": {
+    "batch": 1,
+    "draws": 100,
+    "meanMs": 0.03499702434055507,
+    "p95Ms": 0.03672767197713255,
+    "threads": 1,
+    "warmups": 10
+  },
+  "externalArtifacts": "/home/philippherrmann/sts_sweep/runs/relic-trajectory-20260914",
+  "independentScientificVerification": {
+    "bootstrapCi95": [
+      -0.0133351143032696,
+      -0.007743430426356951
+    ],
+    "classification": "RELIC_TRAJECTORY_QUALIFIED",
+    "hashesVerified": true,
+    "independentSampleValidity": {
+      "coherenceViolation": 0,
+      "copyMismatch": 0,
+      "deterministicMismatch": 0,
+      "illegal": 0
+    },
+    "normalizedExposureGap": -0.0024069896144506904,
+    "reviewedExecutionSha": "66350924cd3b4c7ca82d967e282f68cd677736b2",
+    "rowSourceAlignmentVerified": true,
+    "seedMetrics": [
+      {
+        "difference": -0.010601659778553893,
+        "normalizedExposureGap": -0.0022248698653955603,
+        "priorNll": 0.5302411861508544,
+        "seed": 20260912,
+        "teacherNll": 0.5196395263723005
+      },
+      {
+        "difference": -0.010121833591043482,
+        "normalizedExposureGap": -0.0021376747217144226,
+        "priorNll": 0.5302542558461314,
+        "seed": 20260913,
+        "teacherNll": 0.5201324222550878
+      },
+      {
+        "difference": -0.010657189383554967,
+        "normalizedExposureGap": -0.002858424256242088,
+        "priorNll": 0.530250808066119,
+        "seed": 20260914,
+        "teacherNll": 0.5195936186825639
+      }
+    ],
+    "status": "PASS",
+    "tenEpochProvenanceVerified": true
+  },
+  "independentVerificationSha256": "1b588727aba802623cd8332700a658ca125170e87e7502dbdbd0082db222024f",
+  "metrics": {
+    "20260912": {
+      "ancestralClassification": "ANCESTRAL_OK",
+      "ancestralMixtureNll": 0.518946067741006,
+      "heads": {
+        "attacks": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.15482611366419455,
+                "modeCompatibility": 0.13446372239747634,
+                "rows": 2536
+              },
+              {
+                "confidence": 0.23148255959465572,
+                "modeCompatibility": 0.20958083832335328,
+                "rows": 501
+              },
+              {
+                "confidence": 0.33040052319616203,
+                "modeCompatibility": 0.2682926829268293,
+                "rows": 82
+              },
+              {
+                "confidence": 0.49619035259739513,
+                "modeCompatibility": 1.0,
+                "rows": 1
+              },
+              {
+                "confidence": 0.5644945496454538,
+                "modeCompatibility": 1.0,
+                "rows": 1
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 2.2209105175376433,
+          "exactLabelRows": 3121,
+          "modeCompatibility": 0.15059275873117592,
+          "nll": 2.2209105175376433,
+          "rows": 3121
+        },
+        "cards": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.13246748148052334,
+                "modeCompatibility": 0.09734513274336283,
+                "rows": 1130
+              },
+              {
+                "confidence": 0.20235209826281633,
+                "modeCompatibility": 0.0,
+                "rows": 3
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 2.319182879295585,
+          "exactLabelRows": 1133,
+          "modeCompatibility": 0.0970873786407767,
+          "nll": 2.319182879295585,
+          "rows": 1133
+        },
+        "lizard": {
+          "activeRows": 0,
+          "bothLegalRows": 0,
+          "brier": null,
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": null,
+          "exactLabelRows": 0,
+          "modeCompatibility": null,
+          "nll": null,
+          "rows": 0
+        },
+        "shuffles": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.37759306756375,
+                "modeCompatibility": 0.37777777777777777,
+                "rows": 45
+              },
+              {
+                "confidence": 0.46073103966814216,
+                "modeCompatibility": 0.43805309734513276,
+                "rows": 226
+              },
+              {
+                "confidence": 0.5463721219796154,
+                "modeCompatibility": 0.47530864197530864,
+                "rows": 324
+              },
+              {
+                "confidence": 0.645921861248517,
+                "modeCompatibility": 0.6136363636363636,
+                "rows": 176
+              },
+              {
+                "confidence": 0.7447881372800808,
+                "modeCompatibility": 0.7317073170731707,
+                "rows": 82
+              },
+              {
+                "confidence": 0.834676981752296,
+                "modeCompatibility": 0.8048780487804879,
+                "rows": 41
+              },
+              {
+                "confidence": 0.9129935011181941,
+                "modeCompatibility": 1.0,
+                "rows": 3
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 0.9337313223376853,
+          "exactLabelRows": 897,
+          "modeCompatibility": 0.5284280936454849,
+          "nll": 0.9337313223376853,
+          "rows": 897
+        },
+        "turns": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.19370318701274808,
+                "modeCompatibility": 0.32894736842105265,
+                "rows": 76
+              },
+              {
+                "confidence": 0.24425634168739738,
+                "modeCompatibility": 0.31820792647903506,
+                "rows": 1741
+              },
+              {
+                "confidence": 0.33501882682375345,
+                "modeCompatibility": 0.3492647058823529,
+                "rows": 272
+              },
+              {
+                "confidence": 0.44307974150519536,
+                "modeCompatibility": 0.3918918918918919,
+                "rows": 74
+              },
+              {
+                "confidence": 0.5447328800514247,
+                "modeCompatibility": 0.4117647058823529,
+                "rows": 34
+              },
+              {
+                "confidence": 0.6322182865466776,
+                "modeCompatibility": 0.4,
+                "rows": 15
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.8181191838124395,
+                "modeCompatibility": 0.0,
+                "rows": 1
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 1.7179702346356922,
+          "exactLabelRows": 596,
+          "modeCompatibility": 0.32670582919114327,
+          "nll": 1.2657712843605506,
+          "rows": 2213
+        }
+      },
+      "normalizedExposureGap": -0.0022248809827493062,
+      "pairedDifference": -0.010601645792088573,
+      "priorNll": 0.5302411755150465,
+      "reconstructed": {
+        "byRelic": {
+          "HAPPY_FLOWER": {
+            "decoder": {
+              "changedTokenExact": 0.3490650044523598,
+              "changedTokenMae": 0.8726625111308994,
+              "changedTokens": 1123,
+              "changedVectorRows": 1123,
+              "fullVectorExact": 0.3623798076923077,
+              "fullVectorExactChanged": 0.3490650044523598,
+              "rows": 1664,
+              "tokenExact": 0.3623798076923077,
+              "tokenMae": 0.8653846153846154,
+              "tokens": 1664
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 1.3615316117542298,
+              "changedTokens": 1123,
+              "changedVectorRows": 1123,
+              "fullVectorExact": 0.3251201923076923,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1664,
+              "tokenExact": 0.3251201923076923,
+              "tokenMae": 0.9188701923076923,
+              "tokens": 1664
+            }
+          },
+          "INCENSE_BURNER": {
+            "decoder": {
+              "changedTokenExact": 0.24564796905222436,
+              "changedTokenMae": 1.6557059961315281,
+              "changedTokens": 517,
+              "changedVectorRows": 517,
+              "fullVectorExact": 0.2214765100671141,
+              "fullVectorExactChanged": 0.24564796905222436,
+              "rows": 596,
+              "tokenExact": 0.2214765100671141,
+              "tokenMae": 1.691275167785235,
+              "tokens": 596
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 2.357833655705996,
+              "changedTokens": 517,
+              "changedVectorRows": 517,
+              "fullVectorExact": 0.1325503355704698,
+              "fullVectorExactChanged": 0.0,
+              "rows": 596,
+              "tokenExact": 0.1325503355704698,
+              "tokenMae": 2.045302013422819,
+              "tokens": 596
+            }
+          },
+          "INK_BOTTLE": {
+            "decoder": {
+              "changedTokenExact": 0.0923226433430515,
+              "changedTokenMae": 3.313896987366375,
+              "changedTokens": 1029,
+              "changedVectorRows": 1029,
+              "fullVectorExact": 0.0970873786407767,
+              "fullVectorExactChanged": 0.0923226433430515,
+              "rows": 1133,
+              "tokenExact": 0.0970873786407767,
+              "tokenMae": 3.262135922330097,
+              "tokens": 1133
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 3.6987366375121478,
+              "changedTokens": 1029,
+              "changedVectorRows": 1029,
+              "fullVectorExact": 0.09179170344218888,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1133,
+              "tokenExact": 0.09179170344218888,
+              "tokenMae": 3.3592233009708736,
+              "tokens": 1133
+            }
+          },
+          "INSERTER": {
+            "decoder": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": null,
+              "fullVectorExactChanged": null,
+              "rows": 0,
+              "tokenExact": null,
+              "tokenMae": null,
+              "tokens": 0
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": null,
+              "fullVectorExactChanged": null,
+              "rows": 0,
+              "tokenExact": null,
+              "tokenMae": null,
+              "tokens": 0
+            }
+          },
+          "LIZARD_TAIL": {
+            "decoder": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": 1.0,
+              "fullVectorExactChanged": null,
+              "rows": 456,
+              "tokenExact": 1.0,
+              "tokenMae": 0.0,
+              "tokens": 456
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": 1.0,
+              "fullVectorExactChanged": null,
+              "rows": 456,
+              "tokenExact": 1.0,
+              "tokenMae": 0.0,
+              "tokens": 456
+            }
+          },
+          "NUNCHAKU": {
+            "decoder": {
+              "changedTokenExact": 0.14248194353250165,
+              "changedTokenMae": 2.799737360472751,
+              "changedTokens": 1523,
+              "changedVectorRows": 1523,
+              "fullVectorExact": 0.14475271411338964,
+              "fullVectorExactChanged": 0.14248194353250165,
+              "rows": 1658,
+              "tokenExact": 0.14475271411338964,
+              "tokenMae": 2.8636911942098915,
+              "tokens": 1658
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 3.9652002626395273,
+              "changedTokens": 1523,
+              "changedVectorRows": 1523,
+              "fullVectorExact": 0.08142340168878166,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1658,
+              "tokenExact": 0.08142340168878166,
+              "tokenMae": 3.6423401688781665,
+              "tokens": 1658
+            }
+          },
+          "PEN_NIB": {
+            "decoder": {
+              "changedTokenExact": 0.1467828418230563,
+              "changedTokenMae": 2.745308310991957,
+              "changedTokens": 1492,
+              "changedVectorRows": 1492,
+              "fullVectorExact": 0.15512978986402967,
+              "fullVectorExactChanged": 0.1467828418230563,
+              "rows": 1618,
+              "tokenExact": 0.15512978986402967,
+              "tokenMae": 2.8176761433868975,
+              "tokens": 1618
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 4.31769436997319,
+              "changedTokens": 1492,
+              "changedVectorRows": 1492,
+              "fullVectorExact": 0.07787391841779975,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1618,
+              "tokenExact": 0.07787391841779975,
+              "tokenMae": 3.9814585908529048,
+              "tokens": 1618
+            }
+          },
+          "SUNDIAL": {
+            "decoder": {
+              "changedTokenExact": 0.4893203883495146,
+              "changedTokenMae": 0.6970873786407767,
+              "changedTokens": 515,
+              "changedVectorRows": 515,
+              "fullVectorExact": 0.5284280936454849,
+              "fullVectorExactChanged": 0.4893203883495146,
+              "rows": 897,
+              "tokenExact": 0.5284280936454849,
+              "tokenMae": 0.6142697881828316,
+              "tokens": 897
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 1.3242718446601942,
+              "changedTokens": 515,
+              "changedVectorRows": 515,
+              "fullVectorExact": 0.4258639910813824,
+              "fullVectorExactChanged": 0.0,
+              "rows": 897,
+              "tokenExact": 0.4258639910813824,
+              "tokenMae": 0.7603121516164995,
+              "tokens": 897
+            }
+          }
+        },
+        "decoder": {
+          "changedTokenExact": 0.22674877625138165,
+          "changedTokenMae": 2.2051160587399337,
+          "changedTokens": 6333,
+          "changedVectorRows": 5265,
+          "fullVectorExact": 0.8062052130088984,
+          "fullVectorExactChanged": 0.17815764482431148,
+          "rows": 25398,
+          "tokenExact": 0.9610438831587211,
+          "tokenMae": 0.10830017055144969,
+          "tokens": 147756
+        },
+        "nativeCopyThrough": {
+          "changedTokenExact": 0.021159008368861518,
+          "changedTokenMae": 3.113374388125691,
+          "changedTokens": 6333,
+          "changedVectorRows": 5265,
+          "fullVectorExact": 0.7927002126151665,
+          "fullVectorExactChanged": 0.0,
+          "rows": 25398,
+          "tokenExact": 0.9580456969598528,
+          "tokenMae": 0.13344297355098947,
+          "tokens": 147756
+        }
+      },
+      "samplingValidity": {
+        "deterministicNativeMismatches": 0,
+        "illegalRelicSamples": 0,
+        "sameGroupConsistencyViolations": 0,
+        "unsupportedMutableMutations": 0
+      },
+      "slices": {
+        "act:1": {
+          "ancestralNll": 0.15349477092874686,
+          "rows": 14270,
+          "teacherNll": 0.15358882604658353
+        },
+        "act:2": {
+          "ancestralNll": 0.808873180105451,
+          "rows": 7491,
+          "teacherNll": 0.8095199772472897
+        },
+        "act:3": {
+          "ancestralNll": 1.3556647938308828,
+          "rows": 3637,
+          "teacherNll": 1.3588061805497638
+        },
+        "multipleGroups": {
+          "ancestralNll": 3.6650316132011795,
+          "rows": 1084,
+          "teacherNll": 3.671671943186028
+        },
+        "nonzeroConsumption": {
+          "ancestralNll": 0.622455504629664,
+          "rows": 6668,
+          "teacherNll": 0.624193668964586
+        },
+        "oneGroup": {
+          "ancestralNll": 1.7983003827687483,
+          "rows": 5120,
+          "teacherNll": 1.8003344510722712
+        },
+        "potionChanged": {
+          "ancestralNll": 0.622455504629664,
+          "rows": 6668,
+          "teacherNll": 0.624193668964586
+        },
+        "potionUnchanged": {
+          "ancestralNll": 0.4820960450408688,
+          "rows": 18730,
+          "teacherNll": 0.4824175862919288
+        },
+        "room:BOSS": {
+          "ancestralNll": 0.8883183082930179,
+          "rows": 2130,
+          "teacherNll": 0.8893751634854697
+        },
+        "room:ELITE": {
+          "ancestralNll": 0.5888891167489911,
+          "rows": 5945,
+          "teacherNll": 0.5916039166394909
+        },
+        "room:EVENT": {
+          "ancestralNll": 0.7723480515932682,
+          "rows": 360,
+          "teacherNll": 0.7663840441133983
+        },
+        "room:NORMAL": {
+          "ancestralNll": 0.44267424006223044,
+          "rows": 16963,
+          "teacherNll": 0.442754945314923
+        },
+        "sampledHpLoss": {
+          "[-inf,0)": {
+            "ancestralMixtureRowNll": 0.5933143318389179,
+            "drawConditionalNll": 0.5972487299375269,
+            "draws": 84750,
+            "rows": 11601,
+            "teacherNll": 0.5938795278605373
+          },
+          "[0,1)": {
+            "ancestralMixtureRowNll": 0.3444415583624502,
+            "drawConditionalNll": 0.344696058106179,
+            "draws": 125289,
+            "rows": 17779,
+            "teacherNll": 0.34396647130628244
+          },
+          "[1,10)": {
+            "ancestralMixtureRowNll": 0.5279171644132817,
+            "drawConditionalNll": 0.5300172394363825,
+            "draws": 102077,
+            "rows": 22653,
+            "teacherNll": 0.5285526460926261
+          },
+          "[10,30)": {
+            "ancestralMixtureRowNll": 0.6274387101796322,
+            "drawConditionalNll": 0.630249446641635,
+            "draws": 74983,
+            "rows": 15136,
+            "teacherNll": 0.6295438100405576
+          },
+          "[30,inf)": {
+            "ancestralMixtureRowNll": 0.856791241348378,
+            "drawConditionalNll": 0.8615185068483635,
+            "draws": 19269,
+            "rows": 5623,
+            "teacherNll": 0.8604608044692239
+          }
+        },
+        "sampledPotionConsumption": {
+          "nonzero": {
+            "drawConditionalNll": 0.6362061465675396,
+            "draws": 109303,
+            "teacherNll": 0.6346738316002091
+          },
+          "zero": {
+            "drawConditionalNll": 0.47876854548310005,
+            "draws": 297065,
+            "teacherNll": 0.47731345866750147
+          }
+        },
+        "sampledSliceConvention": "drawConditionalNll is conditioned on that upstream draw; mixtureRowNll is descriptive draw-weighted row composition",
+        "trueHpLoss:[-inf,0)": {
+          "ancestralNll": 0.6012720286163025,
+          "rows": 5162,
+          "teacherNll": 0.6025305982358419
+        },
+        "trueHpLoss:[0,1)": {
+          "ancestralNll": 0.3392054249103655,
+          "rows": 8069,
+          "teacherNll": 0.3394091783348784
+        },
+        "trueHpLoss:[1,10)": {
+          "ancestralNll": 0.5358866059980167,
+          "rows": 5818,
+          "teacherNll": 0.5363301294059796
+        },
+        "trueHpLoss:[10,30)": {
+          "ancestralNll": 0.6318380436784398,
+          "rows": 4973,
+          "teacherNll": 0.6325381345547886
+        },
+        "trueHpLoss:[30,inf)": {
+          "ancestralNll": 0.784490245826771,
+          "rows": 1376,
+          "teacherNll": 0.7869682643903947
+        },
+        "zeroConsumption": {
+          "ancestralNll": 0.4820960450408688,
+          "rows": 18730,
+          "teacherNll": 0.4824175862919288
+        }
+      },
+      "teacherNll": 0.5196395297229579
+    },
+    "20260913": {
+      "ancestralClassification": "ANCESTRAL_OK",
+      "ancestralMixtureNll": 0.5194658530581185,
+      "heads": {
+        "attacks": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.15607443459087597,
+                "modeCompatibility": 0.13292354975028814,
+                "rows": 2603
+              },
+              {
+                "confidence": 0.2303499369936769,
+                "modeCompatibility": 0.1894273127753304,
+                "rows": 454
+              },
+              {
+                "confidence": 0.32421094123085886,
+                "modeCompatibility": 0.25,
+                "rows": 64
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 2.2209941472276897,
+          "exactLabelRows": 3121,
+          "modeCompatibility": 0.14354373598205702,
+          "nll": 2.2209941472276897,
+          "rows": 3121
+        },
+        "cards": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.13355605155710798,
+                "modeCompatibility": 0.09131205673758866,
+                "rows": 1128
+              },
+              {
+                "confidence": 0.21453505921703378,
+                "modeCompatibility": 0.2,
+                "rows": 5
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 2.3221348739785634,
+          "exactLabelRows": 1133,
+          "modeCompatibility": 0.09179170344218888,
+          "nll": 2.3221348739785634,
+          "rows": 1133
+        },
+        "lizard": {
+          "activeRows": 0,
+          "bothLegalRows": 0,
+          "brier": null,
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": null,
+          "exactLabelRows": 0,
+          "modeCompatibility": null,
+          "nll": null,
+          "rows": 0
+        },
+        "shuffles": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.37530513977966307,
+                "modeCompatibility": 0.40625,
+                "rows": 32
+              },
+              {
+                "confidence": 0.4595303254180497,
+                "modeCompatibility": 0.4475806451612903,
+                "rows": 248
+              },
+              {
+                "confidence": 0.5461509763436384,
+                "modeCompatibility": 0.48,
+                "rows": 325
+              },
+              {
+                "confidence": 0.6429347143643187,
+                "modeCompatibility": 0.5987654320987654,
+                "rows": 162
+              },
+              {
+                "confidence": 0.7409547671944784,
+                "modeCompatibility": 0.6933333333333334,
+                "rows": 75
+              },
+              {
+                "confidence": 0.8403915274188541,
+                "modeCompatibility": 0.84,
+                "rows": 50
+              },
+              {
+                "confidence": 0.9177040073527056,
+                "modeCompatibility": 0.8,
+                "rows": 5
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 0.9407387910329778,
+          "exactLabelRows": 897,
+          "modeCompatibility": 0.5295429208472687,
+          "nll": 0.9407387910329778,
+          "rows": 897
+        },
+        "turns": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.19395903341700532,
+                "modeCompatibility": 0.3382352941176471,
+                "rows": 68
+              },
+              {
+                "confidence": 0.24577690624213244,
+                "modeCompatibility": 0.30837988826815643,
+                "rows": 1790
+              },
+              {
+                "confidence": 0.3317243663453212,
+                "modeCompatibility": 0.3701067615658363,
+                "rows": 281
+              },
+              {
+                "confidence": 0.43701667142381223,
+                "modeCompatibility": 0.3770491803278688,
+                "rows": 61
+              },
+              {
+                "confidence": 0.5286779055095203,
+                "modeCompatibility": 0.36363636363636365,
+                "rows": 11
+              },
+              {
+                "confidence": 0.6132078976872554,
+                "modeCompatibility": 1.0,
+                "rows": 1
+              },
+              {
+                "confidence": 0.765341547787217,
+                "modeCompatibility": 0.0,
+                "rows": 1
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 1.7162212943470718,
+          "exactLabelRows": 596,
+          "modeCompatibility": 0.31947582467239044,
+          "nll": 1.2669584705320358,
+          "rows": 2213
+        }
+      },
+      "normalizedExposureGap": -0.002137684958933159,
+      "pairedDifference": -0.010121854563620683,
+      "priorNll": 0.5302542798159755,
+      "reconstructed": {
+        "byRelic": {
+          "HAPPY_FLOWER": {
+            "decoder": {
+              "changedTokenExact": 0.37310774710596617,
+              "changedTokenMae": 0.8245770258236865,
+              "changedTokens": 1123,
+              "changedVectorRows": 1123,
+              "fullVectorExact": 0.34975961538461536,
+              "fullVectorExactChanged": 0.37310774710596617,
+              "rows": 1664,
+              "tokenExact": 0.34975961538461536,
+              "tokenMae": 0.8695913461538461,
+              "tokens": 1664
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 1.3615316117542298,
+              "changedTokens": 1123,
+              "changedVectorRows": 1123,
+              "fullVectorExact": 0.3251201923076923,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1664,
+              "tokenExact": 0.3251201923076923,
+              "tokenMae": 0.9188701923076923,
+              "tokens": 1664
+            }
+          },
+          "INCENSE_BURNER": {
+            "decoder": {
+              "changedTokenExact": 0.25338491295938104,
+              "changedTokenMae": 1.6131528046421664,
+              "changedTokens": 517,
+              "changedVectorRows": 517,
+              "fullVectorExact": 0.23657718120805368,
+              "fullVectorExactChanged": 0.25338491295938104,
+              "rows": 596,
+              "tokenExact": 0.23657718120805368,
+              "tokenMae": 1.645973154362416,
+              "tokens": 596
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 2.357833655705996,
+              "changedTokens": 517,
+              "changedVectorRows": 517,
+              "fullVectorExact": 0.1325503355704698,
+              "fullVectorExactChanged": 0.0,
+              "rows": 596,
+              "tokenExact": 0.1325503355704698,
+              "tokenMae": 2.045302013422819,
+              "tokens": 596
+            }
+          },
+          "INK_BOTTLE": {
+            "decoder": {
+              "changedTokenExact": 0.09329446064139942,
+              "changedTokenMae": 3.2244897959183674,
+              "changedTokens": 1029,
+              "changedVectorRows": 1029,
+              "fullVectorExact": 0.09179170344218888,
+              "fullVectorExactChanged": 0.09329446064139942,
+              "rows": 1133,
+              "tokenExact": 0.09179170344218888,
+              "tokenMae": 3.2427184466019416,
+              "tokens": 1133
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 3.6987366375121478,
+              "changedTokens": 1029,
+              "changedVectorRows": 1029,
+              "fullVectorExact": 0.09179170344218888,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1133,
+              "tokenExact": 0.09179170344218888,
+              "tokenMae": 3.3592233009708736,
+              "tokens": 1133
+            }
+          },
+          "INSERTER": {
+            "decoder": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": null,
+              "fullVectorExactChanged": null,
+              "rows": 0,
+              "tokenExact": null,
+              "tokenMae": null,
+              "tokens": 0
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": null,
+              "fullVectorExactChanged": null,
+              "rows": 0,
+              "tokenExact": null,
+              "tokenMae": null,
+              "tokens": 0
+            }
+          },
+          "LIZARD_TAIL": {
+            "decoder": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": 1.0,
+              "fullVectorExactChanged": null,
+              "rows": 456,
+              "tokenExact": 1.0,
+              "tokenMae": 0.0,
+              "tokens": 456
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": 1.0,
+              "fullVectorExactChanged": null,
+              "rows": 456,
+              "tokenExact": 1.0,
+              "tokenMae": 0.0,
+              "tokens": 456
+            }
+          },
+          "NUNCHAKU": {
+            "decoder": {
+              "changedTokenExact": 0.13854235062376888,
+              "changedTokenMae": 2.788575180564675,
+              "changedTokens": 1523,
+              "changedVectorRows": 1523,
+              "fullVectorExact": 0.14294330518697226,
+              "fullVectorExactChanged": 0.13854235062376888,
+              "rows": 1658,
+              "tokenExact": 0.14294330518697226,
+              "tokenMae": 2.813630880579011,
+              "tokens": 1658
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 3.9652002626395273,
+              "changedTokens": 1523,
+              "changedVectorRows": 1523,
+              "fullVectorExact": 0.08142340168878166,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1658,
+              "tokenExact": 0.08142340168878166,
+              "tokenMae": 3.6423401688781665,
+              "tokens": 1658
+            }
+          },
+          "PEN_NIB": {
+            "decoder": {
+              "changedTokenExact": 0.1333780160857909,
+              "changedTokenMae": 2.9262734584450403,
+              "changedTokens": 1492,
+              "changedVectorRows": 1492,
+              "fullVectorExact": 0.14215080346106304,
+              "fullVectorExactChanged": 0.1333780160857909,
+              "rows": 1618,
+              "tokenExact": 0.14215080346106304,
+              "tokenMae": 2.987639060568603,
+              "tokens": 1618
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 4.31769436997319,
+              "changedTokens": 1492,
+              "changedVectorRows": 1492,
+              "fullVectorExact": 0.07787391841779975,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1618,
+              "tokenExact": 0.07787391841779975,
+              "tokenMae": 3.9814585908529048,
+              "tokens": 1618
+            }
+          },
+          "SUNDIAL": {
+            "decoder": {
+              "changedTokenExact": 0.4815533980582524,
+              "changedTokenMae": 0.6932038834951456,
+              "changedTokens": 515,
+              "changedVectorRows": 515,
+              "fullVectorExact": 0.5295429208472687,
+              "fullVectorExactChanged": 0.4815533980582524,
+              "rows": 897,
+              "tokenExact": 0.5295429208472687,
+              "tokenMae": 0.6075808249721293,
+              "tokens": 897
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 1.3242718446601942,
+              "changedTokens": 515,
+              "changedVectorRows": 515,
+              "fullVectorExact": 0.4258639910813824,
+              "fullVectorExactChanged": 0.0,
+              "rows": 897,
+              "tokenExact": 0.4258639910813824,
+              "tokenMae": 0.7603121516164995,
+              "tokens": 897
+            }
+          }
+        },
+        "decoder": {
+          "changedTokenExact": 0.22706458234643928,
+          "changedTokenMae": 2.2182220116848255,
+          "changedTokens": 6333,
+          "changedVectorRows": 5265,
+          "fullVectorExact": 0.8047090322072604,
+          "fullVectorExactChanged": 0.17929724596391264,
+          "rows": 25398,
+          "tokenExact": 0.9607663986572458,
+          "tokenMae": 0.10927475026394867,
+          "tokens": 147756
+        },
+        "nativeCopyThrough": {
+          "changedTokenExact": 0.021159008368861518,
+          "changedTokenMae": 3.113374388125691,
+          "changedTokens": 6333,
+          "changedVectorRows": 5265,
+          "fullVectorExact": 0.7927002126151665,
+          "fullVectorExactChanged": 0.0,
+          "rows": 25398,
+          "tokenExact": 0.9580456969598528,
+          "tokenMae": 0.13344297355098947,
+          "tokens": 147756
+        }
+      },
+      "samplingValidity": {
+        "deterministicNativeMismatches": 0,
+        "illegalRelicSamples": 0,
+        "sameGroupConsistencyViolations": 0,
+        "unsupportedMutableMutations": 0
+      },
+      "slices": {
+        "act:1": {
+          "ancestralNll": 0.15394541573515882,
+          "rows": 14270,
+          "teacherNll": 0.1538593265655143
+        },
+        "act:2": {
+          "ancestralNll": 0.8092810237505799,
+          "rows": 7491,
+          "teacherNll": 0.8102741696568162
+        },
+        "act:3": {
+          "ancestralNll": 1.356686418618033,
+          "rows": 3637,
+          "teacherNll": 1.3596334730740196
+        },
+        "multipleGroups": {
+          "ancestralNll": 3.6592921731509533,
+          "rows": 1084,
+          "teacherNll": 3.6662051585532063
+        },
+        "nonzeroConsumption": {
+          "ancestralNll": 0.6226753857522704,
+          "rows": 6668,
+          "teacherNll": 0.6237846100482042
+        },
+        "oneGroup": {
+          "ancestralNll": 1.8020939492723556,
+          "rows": 5120,
+          "teacherNll": 1.8039369032593036
+        },
+        "potionChanged": {
+          "ancestralNll": 0.6226753857522704,
+          "rows": 6668,
+          "teacherNll": 0.6237846100482042
+        },
+        "potionUnchanged": {
+          "ancestralNll": 0.48272259817266183,
+          "rows": 18730,
+          "teacherNll": 0.4832315833826954
+        },
+        "room:BOSS": {
+          "ancestralNll": 0.8897246404876344,
+          "rows": 2130,
+          "teacherNll": 0.8932926996260893
+        },
+        "room:ELITE": {
+          "ancestralNll": 0.5883255203411668,
+          "rows": 5945,
+          "teacherNll": 0.5918627661232119
+        },
+        "room:EVENT": {
+          "ancestralNll": 0.7832613960356588,
+          "rows": 360,
+          "teacherNll": 0.7783909672414934
+        },
+        "room:NORMAL": {
+          "ancestralNll": 0.443241816349134,
+          "rows": 16963,
+          "teacherNll": 0.4426554850879152
+        },
+        "sampledHpLoss": {
+          "[-inf,0)": {
+            "ancestralMixtureRowNll": 0.5954211399517144,
+            "drawConditionalNll": 0.5991241728108194,
+            "draws": 84809,
+            "rows": 11665,
+            "teacherNll": 0.5949507358179894
+          },
+          "[0,1)": {
+            "ancestralMixtureRowNll": 0.34789966420343965,
+            "drawConditionalNll": 0.3486116208560893,
+            "draws": 125822,
+            "rows": 17914,
+            "teacherNll": 0.34797847629248796
+          },
+          "[1,10)": {
+            "ancestralMixtureRowNll": 0.5336588887395474,
+            "drawConditionalNll": 0.534953537319141,
+            "draws": 101231,
+            "rows": 22560,
+            "teacherNll": 0.5343709903941816
+          },
+          "[10,30)": {
+            "ancestralMixtureRowNll": 0.6219551813179498,
+            "drawConditionalNll": 0.6250400056130417,
+            "draws": 75193,
+            "rows": 15105,
+            "teacherNll": 0.6240360486807481
+          },
+          "[30,inf)": {
+            "ancestralMixtureRowNll": 0.8302334102996769,
+            "drawConditionalNll": 0.8332298101829961,
+            "draws": 19313,
+            "rows": 5601,
+            "teacherNll": 0.8339769196832578
+          }
+        },
+        "sampledPotionConsumption": {
+          "nonzero": {
+            "drawConditionalNll": 0.6357273128247934,
+            "draws": 109559,
+            "teacherNll": 0.6341801867916349
+          },
+          "zero": {
+            "drawConditionalNll": 0.4793290185539378,
+            "draws": 296809,
+            "teacherNll": 0.4780347843234006
+          }
+        },
+        "sampledSliceConvention": "drawConditionalNll is conditioned on that upstream draw; mixtureRowNll is descriptive draw-weighted row composition",
+        "trueHpLoss:[-inf,0)": {
+          "ancestralNll": 0.6016870526300269,
+          "rows": 5162,
+          "teacherNll": 0.6024955661956375
+        },
+        "trueHpLoss:[0,1)": {
+          "ancestralNll": 0.34150081913536495,
+          "rows": 8069,
+          "teacherNll": 0.34189942517372535
+        },
+        "trueHpLoss:[1,10)": {
+          "ancestralNll": 0.5356352058703688,
+          "rows": 5818,
+          "teacherNll": 0.5359362333552699
+        },
+        "trueHpLoss:[10,30)": {
+          "ancestralNll": 0.6310663482198762,
+          "rows": 4973,
+          "teacherNll": 0.6317111791309353
+        },
+        "trueHpLoss:[30,inf)": {
+          "ancestralNll": 0.7829189558425776,
+          "rows": 1376,
+          "teacherNll": 0.7862485920432687
+        },
+        "zeroConsumption": {
+          "ancestralNll": 0.48272259817266183,
+          "rows": 18730,
+          "teacherNll": 0.4832315833826954
+        }
+      },
+      "teacherNll": 0.5201324252523548
+    },
+    "20260914": {
+      "ancestralClassification": "ANCESTRAL_OK",
+      "ancestralMixtureNll": 0.5187463647480681,
+      "heads": {
+        "attacks": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.15726918220388691,
+                "modeCompatibility": 0.1354292623941959,
+                "rows": 2481
+              },
+              {
+                "confidence": 0.23171687478828867,
+                "modeCompatibility": 0.21487603305785125,
+                "rows": 605
+              },
+              {
+                "confidence": 0.3264695027218554,
+                "modeCompatibility": 0.14705882352941177,
+                "rows": 34
+              },
+              {
+                "confidence": 0.4006871283806792,
+                "modeCompatibility": 0.0,
+                "rows": 1
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 2.217104038608567,
+          "exactLabelRows": 3121,
+          "modeCompatibility": 0.15091316885613584,
+          "nll": 2.217104038608567,
+          "rows": 3121
+        },
+        "cards": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.13567604836770716,
+                "modeCompatibility": 0.10008857395925598,
+                "rows": 1129
+              },
+              {
+                "confidence": 0.2071060050124398,
+                "modeCompatibility": 0.25,
+                "rows": 4
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 2.3219029422576516,
+          "exactLabelRows": 1133,
+          "modeCompatibility": 0.10061782877316858,
+          "nll": 2.3219029422576516,
+          "rows": 1133
+        },
+        "lizard": {
+          "activeRows": 0,
+          "bothLegalRows": 0,
+          "brier": null,
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": null,
+          "exactLabelRows": 0,
+          "modeCompatibility": null,
+          "nll": null,
+          "rows": 0
+        },
+        "shuffles": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.3775167960086573,
+                "modeCompatibility": 0.4222222222222222,
+                "rows": 45
+              },
+              {
+                "confidence": 0.4598099808736554,
+                "modeCompatibility": 0.45,
+                "rows": 260
+              },
+              {
+                "confidence": 0.5466762027531009,
+                "modeCompatibility": 0.5086705202312138,
+                "rows": 346
+              },
+              {
+                "confidence": 0.6428595889192557,
+                "modeCompatibility": 0.6402877697841727,
+                "rows": 139
+              },
+              {
+                "confidence": 0.7413654367062477,
+                "modeCompatibility": 0.7162162162162162,
+                "rows": 74
+              },
+              {
+                "confidence": 0.8416200605096525,
+                "modeCompatibility": 0.9032258064516129,
+                "rows": 31
+              },
+              {
+                "confidence": 0.9065360945118617,
+                "modeCompatibility": 0.5,
+                "rows": 2
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 0.9324349699377881,
+          "exactLabelRows": 897,
+          "modeCompatibility": 0.5384615384615384,
+          "nll": 0.9324349699377881,
+          "rows": 897
+        },
+        "turns": {
+          "calibration": {
+            "bins": [
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": 0.19339324278688652,
+                "modeCompatibility": 0.22772277227722773,
+                "rows": 101
+              },
+              {
+                "confidence": 0.2456452396583482,
+                "modeCompatibility": 0.304635761589404,
+                "rows": 1661
+              },
+              {
+                "confidence": 0.3350903593744671,
+                "modeCompatibility": 0.3793103448275862,
+                "rows": 319
+              },
+              {
+                "confidence": 0.44664408831545716,
+                "modeCompatibility": 0.37037037037037035,
+                "rows": 81
+              },
+              {
+                "confidence": 0.5470427830052886,
+                "modeCompatibility": 0.4722222222222222,
+                "rows": 36
+              },
+              {
+                "confidence": 0.6378771175120549,
+                "modeCompatibility": 0.38461538461538464,
+                "rows": 13
+              },
+              {
+                "confidence": 0.7664762996627462,
+                "modeCompatibility": 0.5,
+                "rows": 2
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              },
+              {
+                "confidence": null,
+                "modeCompatibility": null,
+                "rows": 0
+              }
+            ],
+            "convention": "mode probability versus compatible-set correctness; partial labels do not identify full-class calibration"
+          },
+          "exactLabelNll": 1.7341988388723975,
+          "exactLabelRows": 596,
+          "modeCompatibility": 0.3176683235427022,
+          "nll": 1.2697455534358963,
+          "rows": 2213
+        }
+      },
+      "normalizedExposureGap": -0.0028584370171294495,
+      "pairedDifference": -0.010657185896535054,
+      "priorNll": 0.530250808066119,
+      "reconstructed": {
+        "byRelic": {
+          "HAPPY_FLOWER": {
+            "decoder": {
+              "changedTokenExact": 0.3143365983971505,
+              "changedTokenMae": 0.8975957257346393,
+              "changedTokens": 1123,
+              "changedVectorRows": 1123,
+              "fullVectorExact": 0.359375,
+              "fullVectorExactChanged": 0.3143365983971505,
+              "rows": 1664,
+              "tokenExact": 0.359375,
+              "tokenMae": 0.8389423076923077,
+              "tokens": 1664
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 1.3615316117542298,
+              "changedTokens": 1123,
+              "changedVectorRows": 1123,
+              "fullVectorExact": 0.3251201923076923,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1664,
+              "tokenExact": 0.3251201923076923,
+              "tokenMae": 0.9188701923076923,
+              "tokens": 1664
+            }
+          },
+          "INCENSE_BURNER": {
+            "decoder": {
+              "changedTokenExact": 0.21663442940038685,
+              "changedTokenMae": 1.6266924564796905,
+              "changedTokens": 517,
+              "changedVectorRows": 517,
+              "fullVectorExact": 0.2063758389261745,
+              "fullVectorExactChanged": 0.21663442940038685,
+              "rows": 596,
+              "tokenExact": 0.2063758389261745,
+              "tokenMae": 1.657718120805369,
+              "tokens": 596
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 2.357833655705996,
+              "changedTokens": 517,
+              "changedVectorRows": 517,
+              "fullVectorExact": 0.1325503355704698,
+              "fullVectorExactChanged": 0.0,
+              "rows": 596,
+              "tokenExact": 0.1325503355704698,
+              "tokenMae": 2.045302013422819,
+              "tokens": 596
+            }
+          },
+          "INK_BOTTLE": {
+            "decoder": {
+              "changedTokenExact": 0.07580174927113703,
+              "changedTokenMae": 3.2157434402332363,
+              "changedTokens": 1029,
+              "changedVectorRows": 1029,
+              "fullVectorExact": 0.10061782877316858,
+              "fullVectorExactChanged": 0.07580174927113703,
+              "rows": 1133,
+              "tokenExact": 0.10061782877316858,
+              "tokenMae": 3.122683142100618,
+              "tokens": 1133
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 3.6987366375121478,
+              "changedTokens": 1029,
+              "changedVectorRows": 1029,
+              "fullVectorExact": 0.09179170344218888,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1133,
+              "tokenExact": 0.09179170344218888,
+              "tokenMae": 3.3592233009708736,
+              "tokens": 1133
+            }
+          },
+          "INSERTER": {
+            "decoder": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": null,
+              "fullVectorExactChanged": null,
+              "rows": 0,
+              "tokenExact": null,
+              "tokenMae": null,
+              "tokens": 0
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": null,
+              "fullVectorExactChanged": null,
+              "rows": 0,
+              "tokenExact": null,
+              "tokenMae": null,
+              "tokens": 0
+            }
+          },
+          "LIZARD_TAIL": {
+            "decoder": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": 1.0,
+              "fullVectorExactChanged": null,
+              "rows": 456,
+              "tokenExact": 1.0,
+              "tokenMae": 0.0,
+              "tokens": 456
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": null,
+              "changedTokenMae": null,
+              "changedTokens": 0,
+              "changedVectorRows": 0,
+              "fullVectorExact": 1.0,
+              "fullVectorExactChanged": null,
+              "rows": 456,
+              "tokenExact": 1.0,
+              "tokenMae": 0.0,
+              "tokens": 456
+            }
+          },
+          "NUNCHAKU": {
+            "decoder": {
+              "changedTokenExact": 0.1319763624425476,
+              "changedTokenMae": 2.783322390019698,
+              "changedTokens": 1523,
+              "changedVectorRows": 1523,
+              "fullVectorExact": 0.13811821471652594,
+              "fullVectorExactChanged": 0.1319763624425476,
+              "rows": 1658,
+              "tokenExact": 0.13811821471652594,
+              "tokenMae": 2.827503015681544,
+              "tokens": 1658
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 3.9652002626395273,
+              "changedTokens": 1523,
+              "changedVectorRows": 1523,
+              "fullVectorExact": 0.08142340168878166,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1658,
+              "tokenExact": 0.08142340168878166,
+              "tokenMae": 3.6423401688781665,
+              "tokens": 1658
+            }
+          },
+          "PEN_NIB": {
+            "decoder": {
+              "changedTokenExact": 0.153485254691689,
+              "changedTokenMae": 2.8130026809651474,
+              "changedTokens": 1492,
+              "changedVectorRows": 1492,
+              "fullVectorExact": 0.16440049443757726,
+              "fullVectorExactChanged": 0.153485254691689,
+              "rows": 1618,
+              "tokenExact": 0.16440049443757726,
+              "tokenMae": 2.857849196538937,
+              "tokens": 1618
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 4.31769436997319,
+              "changedTokens": 1492,
+              "changedVectorRows": 1492,
+              "fullVectorExact": 0.07787391841779975,
+              "fullVectorExactChanged": 0.0,
+              "rows": 1618,
+              "tokenExact": 0.07787391841779975,
+              "tokenMae": 3.9814585908529048,
+              "tokens": 1618
+            }
+          },
+          "SUNDIAL": {
+            "decoder": {
+              "changedTokenExact": 0.47378640776699027,
+              "changedTokenMae": 0.7106796116504854,
+              "changedTokens": 515,
+              "changedVectorRows": 515,
+              "fullVectorExact": 0.5384615384615384,
+              "fullVectorExactChanged": 0.47378640776699027,
+              "rows": 897,
+              "tokenExact": 0.5384615384615384,
+              "tokenMae": 0.5986622073578596,
+              "tokens": 897
+            },
+            "nativeCopyThrough": {
+              "changedTokenExact": 0.0,
+              "changedTokenMae": 1.3242718446601942,
+              "changedTokens": 515,
+              "changedVectorRows": 515,
+              "fullVectorExact": 0.4258639910813824,
+              "fullVectorExactChanged": 0.0,
+              "rows": 897,
+              "tokenExact": 0.4258639910813824,
+              "tokenMae": 0.7603121516164995,
+              "tokens": 897
+            }
+          }
+        },
+        "decoder": {
+          "changedTokenExact": 0.21332701721143218,
+          "changedTokenMae": 2.2043265435022894,
+          "changedTokens": 6333,
+          "changedVectorRows": 5265,
+          "fullVectorExact": 0.806087093471927,
+          "fullVectorExactChanged": 0.16638176638176638,
+          "rows": 25398,
+          "tokenExact": 0.9610641869027315,
+          "tokenMae": 0.10673678226264924,
+          "tokens": 147756
+        },
+        "nativeCopyThrough": {
+          "changedTokenExact": 0.021159008368861518,
+          "changedTokenMae": 3.113374388125691,
+          "changedTokens": 6333,
+          "changedVectorRows": 5265,
+          "fullVectorExact": 0.7927002126151665,
+          "fullVectorExactChanged": 0.0,
+          "rows": 25398,
+          "tokenExact": 0.9580456969598528,
+          "tokenMae": 0.13344297355098947,
+          "tokens": 147756
+        }
+      },
+      "samplingValidity": {
+        "deterministicNativeMismatches": 0,
+        "illegalRelicSamples": 0,
+        "sameGroupConsistencyViolations": 0,
+        "unsupportedMutableMutations": 0
+      },
+      "slices": {
+        "act:1": {
+          "ancestralNll": 0.15395190627905017,
+          "rows": 14270,
+          "teacherNll": 0.15406845130454916
+        },
+        "act:2": {
+          "ancestralNll": 0.807889906731678,
+          "rows": 7491,
+          "teacherNll": 0.8080454702601706
+        },
+        "act:3": {
+          "ancestralNll": 1.3545018361128365,
+          "rows": 3637,
+          "teacherNll": 1.359640747326983
+        },
+        "multipleGroups": {
+          "ancestralNll": 3.656637329803605,
+          "rows": 1084,
+          "teacherNll": 3.6627789600498835
+        },
+        "nonzeroConsumption": {
+          "ancestralNll": 0.6218296123728102,
+          "rows": 6668,
+          "teacherNll": 0.6244256042204642
+        },
+        "oneGroup": {
+          "ancestralNll": 1.799086973899282,
+          "rows": 5120,
+          "teacherNll": 1.8019895357751985
+        },
+        "potionChanged": {
+          "ancestralNll": 0.6218296123728102,
+          "rows": 6668,
+          "teacherNll": 0.6244256042204642
+        },
+        "potionUnchanged": {
+          "ancestralNll": 0.4820480681564086,
+          "rows": 18730,
+          "teacherNll": 0.4822727649183681
+        },
+        "room:BOSS": {
+          "ancestralNll": 0.8889550933248994,
+          "rows": 2130,
+          "teacherNll": 0.8939039425217727
+        },
+        "room:ELITE": {
+          "ancestralNll": 0.5883024154287952,
+          "rows": 5945,
+          "teacherNll": 0.5907849436350099
+        },
+        "room:EVENT": {
+          "ancestralNll": 0.7674023906823417,
+          "rows": 360,
+          "teacherNll": 0.7633193305370269
+        },
+        "room:NORMAL": {
+          "ancestralNll": 0.4426058540776729,
+          "rows": 16963,
+          "teacherNll": 0.44246960852374295
+        },
+        "sampledHpLoss": {
+          "[-inf,0)": {
+            "ancestralMixtureRowNll": 0.59179956986734,
+            "drawConditionalNll": 0.5953231809632503,
+            "draws": 85207,
+            "rows": 11703,
+            "teacherNll": 0.5925160628674447
+          },
+          "[0,1)": {
+            "ancestralMixtureRowNll": 0.34582095429262577,
+            "drawConditionalNll": 0.34623379042536795,
+            "draws": 125499,
+            "rows": 17834,
+            "teacherNll": 0.34583808071100486
+          },
+          "[1,10)": {
+            "ancestralMixtureRowNll": 0.5310267389992345,
+            "drawConditionalNll": 0.5327300069165618,
+            "draws": 101661,
+            "rows": 22588,
+            "teacherNll": 0.5315332474967067
+          },
+          "[10,30)": {
+            "ancestralMixtureRowNll": 0.6250407146681689,
+            "drawConditionalNll": 0.6277217717518291,
+            "draws": 74796,
+            "rows": 15093,
+            "teacherNll": 0.6266384089547434
+          },
+          "[30,inf)": {
+            "ancestralMixtureRowNll": 0.8456661416175323,
+            "drawConditionalNll": 0.8500467737222492,
+            "draws": 19205,
+            "rows": 5602,
+            "teacherNll": 0.8513993066373863
+          }
+        },
+        "sampledPotionConsumption": {
+          "nonzero": {
+            "drawConditionalNll": 0.6340252681684442,
+            "draws": 109350,
+            "teacherNll": 0.633183217837585
+          },
+          "zero": {
+            "drawConditionalNll": 0.47903199413213937,
+            "draws": 297018,
+            "teacherNll": 0.4777745328002664
+          }
+        },
+        "sampledSliceConvention": "drawConditionalNll is conditioned on that upstream draw; mixtureRowNll is descriptive draw-weighted row composition",
+        "trueHpLoss:[-inf,0)": {
+          "ancestralNll": 0.6007772036509537,
+          "rows": 5162,
+          "teacherNll": 0.6014304867625339
+        },
+        "trueHpLoss:[0,1)": {
+          "ancestralNll": 0.34020381495455715,
+          "rows": 8069,
+          "teacherNll": 0.34055031871099894
+        },
+        "trueHpLoss:[1,10)": {
+          "ancestralNll": 0.5342224937489,
+          "rows": 5818,
+          "teacherNll": 0.5361987495640701
+        },
+        "trueHpLoss:[10,30)": {
+          "ancestralNll": 0.6314321117604675,
+          "rows": 4973,
+          "teacherNll": 0.6300868863828217
+        },
+        "trueHpLoss:[30,inf)": {
+          "ancestralNll": 0.7853090867303649,
+          "rows": 1376,
+          "teacherNll": 0.7929707198912125
+        },
+        "zeroConsumption": {
+          "ancestralNll": 0.4820480681564086,
+          "rows": 18730,
+          "teacherNll": 0.4822727649183681
+        }
+      },
+      "teacherNll": 0.5195936221695838
+    }
+  },
+  "parameterCount": 12895,
+  "provenance": {
+    "cacheSha256": "a6047b0cb69352bdf8beb6a8a3f8f3a4be6a46df100bed5e2e919aef90ab6e9f",
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "counts": {
+      "holdout": {
+        "activeLizard": 0,
+        "bothLegalLizard": 0,
+        "rows": 25398,
+        "sources": 1979,
+        "supervision": {
+          "attacks": 3121,
+          "cards": 1133,
+          "lizard": 0,
+          "shuffles": 897,
+          "turns": 2213
+        }
+      },
+      "train": {
+        "activeLizard": 0,
+        "bothLegalLizard": 0,
+        "rows": 224715,
+        "sources": 17718,
+        "supervision": {
+          "attacks": 27906,
+          "cards": 9311,
+          "lizard": 0,
+          "shuffles": 8983,
+          "turns": 18522
+        }
+      }
+    },
+    "deltaValues": [
+      0,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "encoderFrozen": true,
+    "encoderUnchanged": true,
+    "hpCheckpointSha256": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "hpDomain": {
+      "classes": 304,
+      "envelope": "all globally supported pre-combat states",
+      "max": 143,
+      "maxHpDeltaValues": [
+        0,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "min": -160,
+      "preCurHpRange": [
+        1,
+        161
+      ],
+      "preMaxHpRange": [
+        24,
+        172
+      ],
+      "rule": "[min(1-preCurHp),max(preMaxHp-preCurHp)+max(deltaMaxHp)]",
+      "sha256": "f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec"
+    },
+    "maxHpModeling": "untouched",
+    "nestedSplitSha256": "58e35f9f85eefd7617e616ddbfa7ee227c429ed4d312f7dacd470828f9a09094",
+    "potionCheckpointSha256": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potionEncoderSha256": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "preparedHashes": {
+      "prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+    },
+    "structuralAudit": {
+      "contradictoryConstraints": 0,
+      "corpusRows": 510030,
+      "globalSupported": 413799,
+      "nativeReconstructionMismatches": 0,
+      "unreachableTargets": 0,
+      "unsupportedMutableMutations": 0
+    }
+  },
+  "recipe": {
+    "batch": 2048,
+    "bootstrapReps": 1000,
+    "bootstrapSeed": 20260914,
+    "calibrationBins": 10,
+    "clip": 1.0,
+    "decision": "qualify iff paired NLL CI upper<0, ancestral OK, zero validity counts; reject iff CI lower>0 or invalidity; otherwise inconclusive",
+    "decoder": "89/64 ReLU; 6/10/10/3/2 independent trajectory heads",
+    "epochs": 10,
+    "exposureAggregation": "mean normalized row mixture-minus-teacher NLL on informative rows",
+    "exposureThreshold": 0.1,
+    "features": "frozen HP state64 + signedHP embedding16 + ending fraction1 + mask embedding8",
+    "hpSeedConvention": 20260912,
+    "loss": "partial-label logsumexp; mean observed heads per row then mean rows",
+    "lr": 0.001,
+    "optimizer": "AdamW",
+    "precision": "fp32",
+    "prior": "TRAIN-only class biases; same loss and fixed optimization",
+    "samplesPerRow": 16,
+    "samplingSeed": 20260915,
+    "schema": "relic_trajectory_v1",
+    "seeds": [
+      20260912,
+      20260913,
+      20260914
+    ],
+    "weightDecay": 0.0001
+  },
+  "reviewedExecutionSha": "66350924cd3b4c7ca82d967e282f68cd677736b2",
+  "trainingAudits": [
+    {
+      "batchOrder": "4e6deb9e93ab6cc87f05f6bfb0190de7be7df0c55cff114a048298b2fc8866b9",
+      "initialization": "1731dc38c67caacf30431c1e67e7d848afecc87929eff7914d1dfee43b057eea",
+      "prior": false,
+      "seed": 20260912,
+      "trainLoss": [
+        0.4385880478848614,
+        0.43290653858877,
+        0.4306995728715458,
+        0.42923989135406365,
+        0.4282089901598295,
+        0.42725243627543635,
+        0.4265755122733833,
+        0.4258647089030458,
+        0.4251277873510937,
+        0.4244260029778144
+      ]
+    },
+    {
+      "batchOrder": "4e6deb9e93ab6cc87f05f6bfb0190de7be7df0c55cff114a048298b2fc8866b9",
+      "initialization": "25db149bb4a3041dc92d305a3e48f24035830ed937cf3e42d15dfd328b79ca6a",
+      "prior": true,
+      "seed": 20260912,
+      "trainLoss": [
+        0.44621427203148845,
+        0.44416922256375385,
+        0.44296729434272053,
+        0.44227092156456793,
+        0.4418617986891125,
+        0.44161702166294764,
+        0.4414685187025095,
+        0.4413793861775814,
+        0.4413230634086046,
+        0.4412897612133563
+      ]
+    },
+    {
+      "batchOrder": "f55251ae7f27e67eaa8188b803b7d95edff0ee016c60396aa8a6bc6745176714",
+      "initialization": "46052b18f7e05a9f9c6cffd70e15535ede4d05df5679eeddfd574021b5017ec8",
+      "prior": false,
+      "seed": 20260913,
+      "trainLoss": [
+        0.4377621458971041,
+        0.43228091916766775,
+        0.4303153923336167,
+        0.42897216738592603,
+        0.4280552011453625,
+        0.4271880272232218,
+        0.4264485865603927,
+        0.425596739612121,
+        0.4249934901622051,
+        0.42439191700144696
+      ]
+    },
+    {
+      "batchOrder": "f55251ae7f27e67eaa8188b803b7d95edff0ee016c60396aa8a6bc6745176714",
+      "initialization": "25db149bb4a3041dc92d305a3e48f24035830ed937cf3e42d15dfd328b79ca6a",
+      "prior": true,
+      "seed": 20260913,
+      "trainLoss": [
+        0.4462129521674436,
+        0.44417842490832266,
+        0.4429857804553334,
+        0.4422868512372421,
+        0.4418820684364041,
+        0.4416316085184241,
+        0.441477003232385,
+        0.44138348125274596,
+        0.4413262078553996,
+        0.4412906523426488
+      ]
+    },
+    {
+      "batchOrder": "a775a1bed4b242c29059802603c9d976b669515784c45d9235900a90e97f9bbc",
+      "initialization": "2f7dfe10153371f7097ce41e27c0db1d1c1a5756e0ae3dbb498b3948206881bf",
+      "prior": false,
+      "seed": 20260914,
+      "trainLoss": [
+        0.43832093606463496,
+        0.4330101227545731,
+        0.4309703440938924,
+        0.4296470889063917,
+        0.4286944210116871,
+        0.427569430662942,
+        0.42672700861825874,
+        0.4259603358027513,
+        0.4251715822202661,
+        0.42446113483725373
+      ]
+    },
+    {
+      "batchOrder": "a775a1bed4b242c29059802603c9d976b669515784c45d9235900a90e97f9bbc",
+      "initialization": "25db149bb4a3041dc92d305a3e48f24035830ed937cf3e42d15dfd328b79ca6a",
+      "prior": true,
+      "seed": 20260914,
+      "trainLoss": [
+        0.4462080827045644,
+        0.44415962954543925,
+        0.44295471899420785,
+        0.44225906541294296,
+        0.44185724434585655,
+        0.441613199572096,
+        0.4414654489133073,
+        0.44137741485067056,
+        0.4413190248703879,
+        0.44128818856026103
+      ]
+    }
+  ],
+  "upstreamComponentsUnchanged": true,
+  "validity": {
+    "deterministicNativeMismatches": 0,
+    "illegalRelicSamples": 0,
+    "sameGroupConsistencyViolations": 0,
+    "unsupportedMutableMutations": 0
+  }
+}

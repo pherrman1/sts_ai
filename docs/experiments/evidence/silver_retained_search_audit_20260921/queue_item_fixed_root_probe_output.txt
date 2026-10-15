@@ -1,0 +1,15 @@
+probe=queue_item_root_audit
+baseline_sha=43ef6a6df2ea9af56840c9a298c92623c14bcff6
+source=apps/silver_search_optimization_test.cpp
+patch=queue_item_fixed_root_probe.patch
+steps_per_arm=128
+pairing=identical native fixture and RNG state per arm; only curCardQueueItem differs
+root_a_card=BASH uid=701 energyOnUse=2 exhaustOnUse=false
+root_b_card=DRAMATIC_ENTRANCE uid=702 energyOnUse=0 exhaustOnUse=true
+checks=best action, SearchStats, root action count/action identity/visit count, deterministic successor after queue-item normalization
+selection_boundary=both arms drink ATTACK_POTION and execute actions
+rng_regime=native simulator fixture; paired common RNG initialization; not a live/fair gameplay run
+
+command_output:
+queue_item_root_audit steps=128 best_action_parity=PASS potion_card_select_queue_difference=OBSERVED
+silver_search_optimization PASS

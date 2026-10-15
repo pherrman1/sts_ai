@@ -1,0 +1,11 @@
+{"load_seconds": 34.60710906982422, "rows": {"TRAIN": 648669, "VALIDATION": 141566}, "branches": {"TRAIN": 23557, "VALIDATION": 5169}}
+{"arm": "P0", "seed": 0, "tree_count": 278, "train_rows": 648669, "train_weight_sum": 648669.0, "seconds": 26.95569396018982, "model_sha256": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5"}
+{"arm": "P0", "seed": 1, "tree_count": 355, "train_rows": 648669, "train_weight_sum": 648669.0, "seconds": 31.967814922332764, "model_sha256": "227a110ea579657f9f843f0f7197977c7ad25863efb5c9b6491024b1acc13410"}
+{"arm": "P0", "seed": 2, "tree_count": 373, "train_rows": 648669, "train_weight_sum": 648669.0, "seconds": 34.42658090591431, "model_sha256": "e74b7740065742caf06c50abf0dff4dfe8080de78a70d57eb73c66f1f7e35e9c"}
+{"arm": "F1", "seed": 0, "tree_count": 163, "train_rows": 23551, "train_weight_sum": 23551.000000000004, "seconds": 0.7896625995635986, "model_sha256": "bdf8841d39cec62dc134dd464500137a519b1fa8a8e1c8edf8e2156fa910c1c6"}
+{"arm": "F1", "seed": 1, "tree_count": 143, "train_rows": 23551, "train_weight_sum": 23551.000000000004, "seconds": 0.800351619720459, "model_sha256": "39b59832b93e5d90277abab4150ec55d3de91efdf920ba14a81f0b592417bff2"}
+{"arm": "F1", "seed": 2, "tree_count": 241, "train_rows": 23551, "train_weight_sum": 23551.000000000004, "seconds": 1.089937686920166, "model_sha256": "9ac56f31d5a77dd7a7cd825acc63e2ccb739244fbc73f145f8632aead0133970"}
+{"arm": "F2", "seed": 0, "tree_count": 287, "train_rows": 648669, "train_weight_sum": 1250236.0, "seconds": 26.91682481765747, "model_sha256": "271166525f945e8834844a91e1bb17e4502deb6c7867934ba07137f159a7bd1e"}
+{"arm": "F2", "seed": 1, "tree_count": 347, "train_rows": 648669, "train_weight_sum": 1250236.0, "seconds": 31.102954149246216, "model_sha256": "004f8fda0bca9cee9cdbaa660aa4bafac91208abf40f5fe559804da7c865863c"}
+{"arm": "F2", "seed": 2, "tree_count": 302, "train_rows": 648669, "train_weight_sum": 1250236.0, "seconds": 30.133350610733032, "model_sha256": "84dcb4c6606b9071e64a728b02d6507de12b0954ce144bbf55dcbdd0ceb8c269"}
+DONE build/e1-focal-36b5b14f/report.json

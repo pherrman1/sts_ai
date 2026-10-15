@@ -1,0 +1,12 @@
+=== Paired comparison (16 seeds) ===
+Metric                       flat10k ctm_adaptive10k      Delta
+Win rate                       62.5%      68.8%      +6.2pp
+  Win diff 95% CI: [+0.0pp, +18.8pp]
+Avg floor                      46.2      46.2      +0.1
+  Floor diff 95% CI: [+0.0, +0.2]
+Avg HP end                     33.9      40.6      +6.6
+Avg sec/run                   28.42     19.60     -8.82
+  Discordant: 1/16 (6%)
+  Both win: 10, both lose: 5, flat10k-only: 0, ctm_adaptive10k-only: 1
+  flat10k Wilson 95% CI: [38.6%, 81.5%]
+  ctm_adaptive10k Wilson 95% CI: [44.4%, 85.8%]

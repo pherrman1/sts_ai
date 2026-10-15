@@ -1,0 +1,14 @@
+d_distill --dropout 0.15 --teacher runs/t512/logp.npy --alpha 0.5
+s_tower --dropout 0.15 --tower 256
+e_enc16 --dropout 0.15 --enc-emb 16
+s_3l --dropout 0.15 --h2 64 --h3 32
+s_6432 --dropout 0.15 --h1 64 --h2 32
+r_do25 --dropout 0.25
+d_a8 --dropout 0.15 --teacher runs/t512/logp.npy --alpha 0.8
+d_6432 --dropout 0.15 --h1 64 --h2 32 --teacher runs/t512/logp.npy --alpha 0.5
+c_encdist --dropout 0.15 --enc-emb 16 --teacher runs/t512/logp.npy --alpha 0.5
+c_do35_s0 --dropout 0.35 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_dist_s0 --dropout 0.15 --teacher runs/t512/logp.npy --alpha 0.5 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_enc_s0 --dropout 0.15 --enc-emb 16 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_6432_s0 --dropout 0.15 --h1 64 --h2 32 --lr 1e-3 --sched cosine --epochs 25 --patience 25
+c_encdist_s0 --dropout 0.15 --enc-emb 16 --teacher runs/t512/logp.npy --alpha 0.5 --lr 1e-3 --sched cosine --epochs 25 --patience 25

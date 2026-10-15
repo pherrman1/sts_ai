@@ -1,0 +1,16 @@
+base_off_74024004.csv 38.1281 s; real 38.517 user 37.263 sys 0.285
+base_r3_74024000.csv 554.956 s; real 556.051 user 540.689 sys 6.396
+base_r3_74024002.csv 566.815 s; real 567.158 user 560.806 sys 0.295
+base_r3_74024003.csv 271.564 s; real 271.884 user 268.175 sys 0.274
+base_uu_74024001.csv 337.055 s; real 338.182 user 330.805 sys 2.139
+cand2_off_74024004.csv 38.7398 s; real 39.119 user 38.100 sys 0.279
+cand2_r3_74024000.csv 481.055 s; real 481.749 user 470.551 sys 5.185
+cand2_r3_74024002.csv 491.398 s; real 491.798 user 484.741 sys 0.518
+cand2_r3_74024003.csv 251.135 s; real 251.555 user 248.278 sys 0.331
+cand2_uu_74024001.csv 297.727 s; real 298.110 user 293.147 sys 1.377
+cand_r3_74024000.csv 489 s; real 489.352 user 478.742 sys 4.922
+cand_uu_74024001.csv 312.337 s; real 312.707 user 307.391 sys 1.521
+final_off_74024004.csv 38.0195 s; real 38.382 user 37.432 sys 0.197
+final_r3_74024002.csv 475.231 s; real 475.581 user 468.842 sys 0.434
+final_r3_74024003.csv 240.111 s; real 240.443 user 236.335 sys 0.356
+final_uu_74024001.csv 325.39 s; real 325.801 user 320.480 sys 1.466

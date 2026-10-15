@@ -1,0 +1,6 @@
+......{"returncode": 0, "cpuSeconds": 0.03, "wallSeconds": 0.00012021500151604414, "timedOut": false, "argv": ["bash", "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/tools/seed_guard.sh", "synthetic-one-combat", "ctmsilvergen", "1", "20", "/tmp/tmpt7ctdlbx/canary", "97150801", "fixture-teacher", "4"], "seed": 97150801, "binarySha256": "fixture", "freezeSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"}
+.
+----------------------------------------------------------------------
+Ran 7 tests in 0.004s
+
+OK

@@ -1,0 +1,21 @@
+{
+  "stage": "post_primary_exploratory",
+  "command": [
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/.venv/bin/python",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_exploratory.py"
+  ],
+  "started_epoch": 1791426831.4366753,
+  "script_sha256": "a160752d20a65ba85d3dd6c144accb73014137bfc479e7dd297b8be3c4fe5879",
+  "independent_review_sha256": "f72a5f83282e4eaa5f0cb782abfab541c564d840247ceeaf584d10c0b8020d40",
+  "frozen_primary_artifacts_before": {
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9/contract_receipt.json": "dec269de73abb320cf926e8e3891bbbdb74205521658849e23f8783ac217aa70",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9_choices.json": "0f7f79637cc1bce3fccb306e39d32c91e97539d75ebb970de6efc27416e923f7",
+    "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_tranche32_3ed9_evaluation.json": "5ada874a05f6d947cf0a19435db681a01be89aa23b26ceb26b5c59414aff798f"
+  },
+  "primary_execution_receipt_sha256": "63356184ddd25c7a8654a2f0c785bcffc631e1a8d4225b98d16f2e74e9112518",
+  "finished_epoch": 1791426833.6373518,
+  "exit_code": 0,
+  "log_sha256": "063706e7e048bfdbc24e6c7d0b34af47d55287c92bff51c41e8f462c085b9112",
+  "result_sha256": "540e5bfba6c58f35c2cfc8d6f81dd431e8b4abedc37e0ed6d5828ca26a29d99d",
+  "frozen_primary_artifacts_unchanged": true
+}

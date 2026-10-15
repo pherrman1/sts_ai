@@ -1,0 +1,5 @@
+control (singleton roots searched) wins 82/128, treatment (unsearched) wins 86/128
+paired difference +3.1 pp, normal 95% CI [-1.7, +8.0] pp
+discordant seeds: treatment-only 7, control-only 3, McNemar z = +1.26
+mean floor: control 47.43, treatment 47.42
+mean sec: control 38.58, treatment 36.09

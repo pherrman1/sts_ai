@@ -1,0 +1,56 @@
+{
+  "schema": "overnight_campaign_result_v1",
+  "status": "CONFIRMED_IMPROVEMENT",
+  "recorded_epoch": 1791431355.551762,
+  "objective": "Ironclad A0 Act-3 boss victory under frozen corrected-fair simulator profile",
+  "champion": "RemoveLow",
+  "baseline": "Fprod",
+  "source_sha": "d35b42b1d5dc9819ec0f157027c68912bb82b8b7",
+  "implementation_source_sha": "5add2413281c95a29e32846531d41353c804fd3c",
+  "primary": {
+    "pairs": 512,
+    "gain": 0.02734375,
+    "ci95": [
+      0.00390625,
+      0.052734375
+    ],
+    "candidate_only": 27,
+    "control_only": 13,
+    "both_win": 368,
+    "decision": "CONFIRMED_IMPROVEMENT",
+    "neither_win": 104
+  },
+  "arm_wins": {
+    "Fprod": 381,
+    "RemoveLow": 395
+  },
+  "criteria": {
+    "all_512_pairs_valid": true,
+    "execution_and_information_contract_gates_pass": true,
+    "paired_95_lower_bound_positive": true,
+    "observed_gain_at_least_2pp": true
+  },
+  "artifacts": {
+    "final_confirmation_report.json": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+    "audit/final_confirmation_health.json": "29b11028411eb0f07eb22df0a66ddaf93f20f5284e75b278e02201b24942b2c0",
+    "audit/final_execution_completion.json": "720fe902253296cae4a50991947f3d72e32739d1acf07f72012d9b2341a8c83a",
+    "audit/FINAL_CONFIRMATION_REVIEW.json": "579d8551afba25527c4aa34bf200ae02765e27116695af5b2b731e3973b8a773",
+    "learning/ATTEMPT_ACCOUNTING_v3.json": "e4bf69dc2d3ff5587356fff5907297c1a0958d0a816c285d7c6532937caba6a9",
+    "learning/FINAL_RESULTS.json": "7bd2c09d14e34b181117519bcb8af4d0b84a388ffe3cfbf0314c96bfd88041ba",
+    "champion_freeze.json": "a58edc078457b04138e0fe846efe4e0f57eb02d775f0257600241b0c033e19a8",
+    "holdout_opened.json": "eadbf3663ad340925e7c3cc2d0ba53846e64251a108a7e014de44e291126674e"
+  },
+  "limits": [
+    "Frozen simulator/profile comparison, not live-game equivalence or merged-source qualification.",
+    "Observed gain exceeds 2pp; the interval does not establish that true gain is at least 2pp.",
+    "Conditional public-future approximation and inherited model/feature limits retained.",
+    "Search engine-stop and turn-limit endpoints retained as diagnostic limits."
+  ],
+  "no_automatic_actions": [
+    "merge",
+    "production-default change",
+    "model promotion",
+    "holdout extension or retuning"
+  ],
+  "active_game_workers": 0
+}

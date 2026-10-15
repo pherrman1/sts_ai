@@ -1,0 +1,7 @@
+{
+  "all_passed": true,
+  "arms": [
+    "mcts2048_rollout0",
+    "mcts2048_rollout1"
+  ]
+}

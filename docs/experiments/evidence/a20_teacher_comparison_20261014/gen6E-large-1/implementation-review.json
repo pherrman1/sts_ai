@@ -1,0 +1,21 @@
+{
+  "baselineSha": "55fff33c83c3f5ed559cbf9f6cff17bdb30fe0ca",
+  "reviewedProducerSha": "aa10fe8dfb6d4f63ba26f18a755b5f3f3a725117",
+  "implementationVerdict": "PASS",
+  "reviewers": [
+    "recent_ooc_evidence",
+    "ooc_architecture"
+  ],
+  "scope": "Independent C++/analysis/runner/protocol review before any game seed; narrow findings fixed before source commit.",
+  "checks": {
+    "releaseOneCombat": "PASS",
+    "releaseRuntimeProbe": "PASS",
+    "affectedCtests": "8/8 PASS",
+    "coreAnalyzerTests": "21 PASS",
+    "largeSyntheticTests": "4 PASS (process, worker-exception and integrity failure modes included)",
+    "diffCheck": "PASS"
+  },
+  "limitations": [
+    "Conditional source-policy inference; 8 anchor clusters; no training, OOC gameplay or default promotion."
+  ]
+}

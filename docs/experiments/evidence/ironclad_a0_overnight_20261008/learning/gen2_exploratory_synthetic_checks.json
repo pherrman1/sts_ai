@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "command": [
+    ".venv/bin/python",
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_exploratory.py"
+  ],
+  "exit_code": 0,
+  "tests": 5,
+  "observed_summary": "Ran 5 tests in 0.026s; OK",
+  "checks": [
+    "No-state zero applies only to effect summaries",
+    "All-undefined bootstrap draws counted explicitly",
+    "Family contribution additivity with unequal source state counts",
+    "Source/state/option-balanced calibration and occupied-bin weights",
+    "Paired dispersion preserves shared future coupling"
+  ],
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/analyze_gen2_exploratory.py",
+      "sha256": "a160752d20a65ba85d3dd6c144accb73014137bfc479e7dd297b8be3c4fe5879"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/test_gen2_exploratory.py",
+      "sha256": "6e1e68fa27d5a797e294d17086e71a554087efe105814980fe99c2c50ab1d8d1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/GEN2_POST_PRIMARY_DIAGNOSTICS.md",
+      "sha256": "835cb0d121de3854b245c4ed5f20f5edc577b3a0e7bf6a600ccf44855e5ca401"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/GEN2_POST_PRIMARY_DIAGNOSTICS_REVIEW.md",
+      "sha256": "41d471b3e65149927957876e80e3599755d6b83fab46db5c2b76b7eb0b0c2c27"
+    }
+  ],
+  "numerical_diagnostic_executed": false
+}

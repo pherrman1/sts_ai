@@ -1,0 +1,8 @@
+{
+ "roots": 3525,
+ "edges": 19404,
+ "max_abs_diff": 1.1407680489128325e-06,
+ "mean_abs_diff": 1.266620535897134e-07,
+ "logit_abs_max": 4.998318390132367,
+ "pass": true
+}

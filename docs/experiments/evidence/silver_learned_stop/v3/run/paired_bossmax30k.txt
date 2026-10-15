@@ -1,0 +1,12 @@
+=== Paired comparison (1024 seeds) ===
+Metric                          #199 bossmax30k      Delta
+Win rate                       78.3%      79.2%      +0.9pp
+  Win diff 95% CI: [-1.8pp, +3.5pp]
+Avg floor                      49.1      49.4      +0.3
+  Floor diff 95% CI: [-0.0, +0.7]
+Avg HP end                     33.0      33.7      +0.7
+Avg sec/run                   29.29     30.73     +1.44
+  Discordant: 183/1024 (18%)
+  Both win: 715, both lose: 126, #199-only: 87, bossmax30k-only: 96
+  #199 Wilson 95% CI: [75.7%, 80.7%]
+  bossmax30k Wilson 95% CI: [76.6%, 81.6%]

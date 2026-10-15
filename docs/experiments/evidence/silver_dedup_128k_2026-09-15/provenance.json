@@ -1,0 +1,74 @@
+{
+  "baseline_sha": "fa2ea0ad702281a6b2a1366d792a8e920227832d",
+  "measured_sha": "9a849fd7deadb4374ad33f42796811b03a3ceb07",
+  "canary_binary_sha256": "ce98e15569b87de37290cf9c6ad219c1640d331039c380e7f7c965cea84705a4",
+  "canary_closure_note": "Final producer-test repair changes apps/one_combat.cpp only; measured standalone canary closure unchanged since7a672a8. Current-head run and exact binary hash recorded.",
+  "commands": {
+    "complete_debug_build": "cmake --build --preset linux-gcc-debug-ccache-build -j 4",
+    "complete_ctest": "ctest --preset linux-gcc-ccache-test",
+    "release_build": "cmake --build --preset linux-gcc-release-ccache-build --target one_combat silver-search-optimization-test -j 4",
+    "canary": "/usr/bin/time -v -o /tmp/silver128-memory-reviewed.txt bash tools/seed_guard.sh build/linux-gcc-release-ccache/silver_search_optimization_test --repeated-reroot-canary",
+    "resize_tests": "bash tools/seed_guard.sh build/linux-gcc-release-ccache/silver_search_optimization_test"
+  },
+  "outcomes": {
+    "complete_debug_ctest": "92/92pass;47.36s",
+    "focused_ctest": "3/3pass",
+    "canary": "exit0",
+    "resize_tests": "exit0"
+  },
+  "canary": {
+    "fixture": "Ironclad starter deck400/400HP,Jaw Worm A0,seed0xBADC0DE,floor1/act1;expanded END_TURN first stored outcomes",
+    "budget": 10000,
+    "searches": 15,
+    "reroots": 14,
+    "peak_live_nodes": 140976,
+    "peak_stored_states": 116788,
+    "max_candidate_reachable": 80,
+    "resizes": 2,
+    "capacity_sequence": [
+      65536,
+      131072,
+      262144
+    ],
+    "peak_sampled_load": 0.493408,
+    "final_capacity": 262144,
+    "final_entries": 4693,
+    "final_load": 0.017902374267578125,
+    "compactions": 1,
+    "pressure_before": 140976,
+    "retained_after": 3,
+    "reclaimed": 140973,
+    "final_live": 5497,
+    "historical_allocations": 146470,
+    "old32k": "pressure yes;reachable fallback no(max80)",
+    "new128k": "pressure once;fallback no"
+  },
+  "memory": {
+    "peak_rss_kib": 794040,
+    "peak_rss_mib": 775.4296875,
+    "swaps": 0,
+    "method": "external time -v;includes validation snapshots",
+    "sizeof_node": 88,
+    "sizeof_state": 6248,
+    "sizeof_slot": 16,
+    "raw_peak_node_state_table_mib": 711.7191467285156,
+    "host_memtotal_kib": 32509112
+  },
+  "frozen_contract": "32k teacher producers reject cap mismatch before outputs; schemas/old evidence not broadened",
+  "not_run": [
+    "new full action/state trajectory cohort",
+    "large gameplay benchmark",
+    "10kquality qualification",
+    "sanitizers",
+    "independent review",
+    "new agent-tooling discovery"
+  ],
+  "artifact_sha256": {
+    "memory-time.txt": "14769b2a52e1e7ada8b82e512ecdf26a1955614d6526dd4244669961637179ec",
+    "ctest-initial-failure.log": "0ba2ddff1d74c9c98ed3fc06d1db6409a5510cfb4787844698945750bfdd9be2",
+    "README.md": "f4a9e573795f5ea6f37c9cc2d0f64455eba09e0598ebb35768d5f55efbeabce3",
+    "canary.log": "c235a33d5f3b1ada8c293baa86532b9ab254600a9e138bf78e8f309c8a948265",
+    "resize-tests.log": "014bb54bfe89147a73c1422683ec850ac92268f7399e3f5b4e9e6574cf8c00a0",
+    "ctest-debug.log": "a42c3a7b183f6dfc298fbf6efd3d5651e48f51771d16b08afa6a901debd3cef1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "status": "preregistered_after_mechanism_pass_before_gameplay",
+  "source_head": "6224735ca8a69a85ee0cb7f080f4f7b0c1918b1b",
+  "implementation_diff_sha256": "33f99fdce95e789a9ab03a20d9ceadd85c5d25adb5397ebe8a7cccd957b1f2c3",
+  "binary_sha256": "d3ffe4f4225286597ce1f2a13f956658c038cbcb28d79d25e6f6dcf77f680146",
+  "combat_model": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+  "combat_model_sha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+  "ooc_policy_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+  "initial_seeds": [12003064, 12003071],
+  "conditional_extension_seeds": [12003072, 12003079],
+  "arms": {"native": "native v_win checkpoint leaf", "boss": "mean all ten Act 1-4 boss combat expectations"},
+  "shared": "Ironclad A0, fair RNG, keys off, Act-3 stop, OOC MCTS 512, V4 priors, exact-root-budget Silver 10k, 12 workers",
+  "decision_rule": "Run the initial paired N8 only after the real-model mechanism gate. Extend to paired N16 only if terminal state or non-timing OOC trace fields differ. Do not run N32 in this correction pass."
+}

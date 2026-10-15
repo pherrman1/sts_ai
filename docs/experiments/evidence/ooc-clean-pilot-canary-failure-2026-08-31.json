@@ -1,0 +1,38 @@
+{
+  "schema": "ooc_clean_pilot_canary_failure_v1",
+  "date": "2026-08-31",
+  "verdict": "CLEAN_OOC_PILOT_FAILED",
+  "baseline_sha": "746e7570400b0114bd8a25def6e9085214831f20",
+  "frozen_sha": "474c2d11c90d9074b2c3a0b589ad10df0b3cf6de",
+  "selected_H": 1,
+  "frozen_pilot_seed_block": {"start": 983000, "count": 16, "launched": false},
+  "canary": {
+    "source_seed": 983000,
+    "requested_source_count": 1,
+    "teacher_id": "ooc-k1-10k-h1-474c2d11",
+    "failure": "wholecombatgen: teacher git_sha mismatch",
+    "diagnosis": "The producer resolves git provenance with `git rev-parse HEAD` in the process working directory. The GCP launcher runs from the designated remote root, whose HEAD was 0189bb40e1712f2b9b3597483c66cc4d267e206e, rather than from the exact executable checkout at frozen_sha. The teacher correctly named frozen_sha, so the producer rejected it before gameplay/search.",
+    "search_started": false,
+    "ooc_rows": 0,
+    "combat_surrogate_rows": 0,
+    "published_result_artifacts": 0,
+    "log": {
+      "remote_path": "logs/ooc-clean-pilot-canary2-474c2d11.log",
+      "sha256": "aac71530ef7a6fc68afa8d31351a5ed48c20564d5a13bab1bf09756cc3cca6b0",
+      "bytes": 120
+    }
+  },
+  "provenance": {
+    "producer_executable_sha256": "83ddbffc8dc1c154f38324efc4e5d0d7623a3e330863a2efbeb14a771825cc36",
+    "teacher_manifest_sha256": "8603e5dda10a4296b33027b9635230d138ab4bf5318ba157f1e953297d8c46e8",
+    "ooc_floor_model_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "ooc_win_model_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "bundle_sha256": "3a43d53dd2cf39cf6d053a0c8891ca930cca4d948a902a2811ffac59f5a55ff6"
+  },
+  "gate": {
+    "canary_passed": false,
+    "pilot_launched": false,
+    "reason": "A correctness/provenance failure requires STOP; no replacement seeds may be appended."
+  },
+  "knowledge_impact": "Recorded the failed canary and the working-directory-dependent Git provenance defect in the experiment ledger and current research status."
+}

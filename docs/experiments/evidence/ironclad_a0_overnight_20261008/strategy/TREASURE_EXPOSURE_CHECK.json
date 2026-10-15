@@ -1,0 +1,3055 @@
+{
+  "scope": "outcome-unselected corrected Fprod first12 only; no new games",
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "atlas_sha256": "de8e455686631903d82d5ca590189939146e8a1a7c6dc88a6a3f1a15b2e14cb4",
+  "treasure_rows": [
+    {
+      "seed": 610082000,
+      "idx": 28,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:36",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082000,
+      "idx": 84,
+      "act": 2,
+      "floor": 26,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:97",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082000,
+      "idx": 138,
+      "act": 3,
+      "floor": 43,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:161",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082000,
+      "idx": 143,
+      "act": 3,
+      "floor": 44,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:166",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082001,
+      "idx": 31,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:225",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082001,
+      "idx": 94,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:297",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082002,
+      "idx": 29,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:366",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082002,
+      "idx": 83,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:427",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082003,
+      "idx": 31,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:493",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082003,
+      "idx": 94,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:564",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082003,
+      "idx": 151,
+      "act": 3,
+      "floor": 43,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:629",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082004,
+      "idx": 31,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:36",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082004,
+      "idx": 96,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:110",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082004,
+      "idx": 158,
+      "act": 3,
+      "floor": 43,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:179",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082005,
+      "idx": 33,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:244",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082005,
+      "idx": 66,
+      "act": 2,
+      "floor": 19,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:282",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082005,
+      "idx": 95,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:313",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082005,
+      "idx": 148,
+      "act": 3,
+      "floor": 43,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:375",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082006,
+      "idx": 30,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:440",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082006,
+      "idx": 67,
+      "act": 2,
+      "floor": 21,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:481",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082006,
+      "idx": 86,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:503",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082006,
+      "idx": 143,
+      "act": 3,
+      "floor": 43,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:569",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082007,
+      "idx": 33,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:638",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082007,
+      "idx": 68,
+      "act": 2,
+      "floor": 19,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:679",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082007,
+      "idx": 93,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:707",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082007,
+      "idx": 153,
+      "act": 3,
+      "floor": 43,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:777",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082008,
+      "idx": 28,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:34",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082008,
+      "idx": 82,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:96",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082008,
+      "idx": 142,
+      "act": 3,
+      "floor": 43,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:165",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082009,
+      "idx": 31,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:228",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082009,
+      "idx": 92,
+      "act": 2,
+      "floor": 26,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:300",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082009,
+      "idx": 152,
+      "act": 3,
+      "floor": 43,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:368",
+      "post_screen": "REWARDS",
+      "cursed_key": true
+    },
+    {
+      "seed": 610082010,
+      "idx": 29,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:429",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082010,
+      "idx": 67,
+      "act": 2,
+      "floor": 20,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:473",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082010,
+      "idx": 95,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:505",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082010,
+      "idx": 161,
+      "act": 3,
+      "floor": 43,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:582",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082011,
+      "idx": 32,
+      "act": 1,
+      "floor": 9,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:649",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082011,
+      "idx": 87,
+      "act": 2,
+      "floor": 26,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:712",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    },
+    {
+      "seed": 610082011,
+      "idx": 141,
+      "act": 3,
+      "floor": 43,
+      "by": "chest_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:775",
+      "post_screen": "REWARDS",
+      "cursed_key": false
+    }
+  ],
+  "relic_offer_rows": [
+    {
+      "seed": 610082000,
+      "idx": 19,
+      "act": 1,
+      "floor": 7,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:26",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ANCHOR"
+      ],
+      "ordinary_offered": [
+        "ANCHOR"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ANCHOR"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 29,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:37",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MATRYOSHKA"
+      ],
+      "ordinary_offered": [
+        "MATRYOSHKA"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MATRYOSHKA"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 42,
+      "act": 1,
+      "floor": 14,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:52",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ART_OF_WAR"
+      ],
+      "ordinary_offered": [
+        "ART_OF_WAR"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ART_OF_WAR"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 65,
+      "act": 2,
+      "floor": 20,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:77",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ENCHIRIDION"
+      ],
+      "ordinary_offered": [
+        "ENCHIRIDION"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ENCHIRIDION"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 78,
+      "act": 2,
+      "floor": 24,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:91",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MAGIC_FLOWER"
+      ],
+      "ordinary_offered": [
+        "MAGIC_FLOWER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MAGIC_FLOWER"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 85,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:98",
+      "post_screen": "REWARDS",
+      "offered": [
+        "CERAMIC_FISH"
+      ],
+      "ordinary_offered": [
+        "CERAMIC_FISH"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "CERAMIC_FISH"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 96,
+      "act": 2,
+      "floor": 30,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:111",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TORII"
+      ],
+      "ordinary_offered": [
+        "TORII"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "TORII"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 124,
+      "act": 3,
+      "floor": 39,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:146",
+      "post_screen": "REWARDS",
+      "offered": [
+        "LIZARD_TAIL"
+      ],
+      "ordinary_offered": [
+        "LIZARD_TAIL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "LIZARD_TAIL"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 131,
+      "act": 3,
+      "floor": 41,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:154",
+      "post_screen": "REWARDS",
+      "offered": [
+        "THREAD_AND_NEEDLE"
+      ],
+      "ordinary_offered": [
+        "THREAD_AND_NEEDLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "THREAD_AND_NEEDLE"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 139,
+      "act": 3,
+      "floor": 43,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:162",
+      "post_screen": "REWARDS",
+      "offered": [
+        "JUZU_BRACELET"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "JUZU_BRACELET"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082000,
+      "idx": 140,
+      "act": 3,
+      "floor": 43,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:163",
+      "post_screen": "REWARDS",
+      "offered": [
+        "JUZU_BRACELET"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "JUZU_BRACELET"
+      ],
+      "added": [
+        "JUZU_BRACELET"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 144,
+      "act": 3,
+      "floor": 44,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:167",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PAPER_PHROG"
+      ],
+      "ordinary_offered": [
+        "PAPER_PHROG"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PAPER_PHROG"
+      ]
+    },
+    {
+      "seed": 610082000,
+      "idx": 151,
+      "act": 3,
+      "floor": 47,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:175",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PRESERVED_INSECT"
+      ],
+      "ordinary_offered": [
+        "PRESERVED_INSECT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PRESERVED_INSECT"
+      ]
+    },
+    {
+      "seed": 610082001,
+      "idx": 21,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:215",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WHETSTONE"
+      ],
+      "ordinary_offered": [
+        "WHETSTONE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WHETSTONE"
+      ]
+    },
+    {
+      "seed": 610082001,
+      "idx": 32,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:226",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ODDLY_SMOOTH_STONE"
+      ],
+      "ordinary_offered": [
+        "ODDLY_SMOOTH_STONE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ODDLY_SMOOTH_STONE"
+      ]
+    },
+    {
+      "seed": 610082001,
+      "idx": 42,
+      "act": 1,
+      "floor": 11,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:237",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BLOOD_VIAL"
+      ],
+      "ordinary_offered": [
+        "BLOOD_VIAL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BLOOD_VIAL"
+      ]
+    },
+    {
+      "seed": 610082001,
+      "idx": 74,
+      "act": 2,
+      "floor": 21,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:275",
+      "post_screen": "REWARDS",
+      "offered": [
+        "RED_MASK"
+      ],
+      "ordinary_offered": [
+        "RED_MASK"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "RED_MASK"
+      ]
+    },
+    {
+      "seed": 610082001,
+      "idx": 83,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:285",
+      "post_screen": "REWARDS",
+      "offered": [
+        "OMAMORI"
+      ],
+      "ordinary_offered": [
+        "OMAMORI"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "OMAMORI"
+      ]
+    },
+    {
+      "seed": 610082001,
+      "idx": 95,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:298",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TINY_CHEST"
+      ],
+      "ordinary_offered": [
+        "TINY_CHEST"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "TINY_CHEST"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 22,
+      "act": 1,
+      "floor": 7,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:359",
+      "post_screen": "REWARDS",
+      "offered": [
+        "STRAWBERRY"
+      ],
+      "ordinary_offered": [
+        "STRAWBERRY"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "STRAWBERRY"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 30,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:367",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WAR_PAINT"
+      ],
+      "ordinary_offered": [
+        "WAR_PAINT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WAR_PAINT"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 44,
+      "act": 1,
+      "floor": 13,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:382",
+      "post_screen": "REWARDS",
+      "offered": [
+        "DARKSTONE_PERIAPT"
+      ],
+      "ordinary_offered": [
+        "DARKSTONE_PERIAPT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "DARKSTONE_PERIAPT"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 72,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:415",
+      "post_screen": "REWARDS",
+      "offered": [
+        "CENTENNIAL_PUZZLE"
+      ],
+      "ordinary_offered": [
+        "CENTENNIAL_PUZZLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "CENTENNIAL_PUZZLE"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 79,
+      "act": 2,
+      "floor": 25,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:423",
+      "post_screen": "REWARDS",
+      "offered": [
+        "HAPPY_FLOWER"
+      ],
+      "ordinary_offered": [
+        "HAPPY_FLOWER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "HAPPY_FLOWER"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 84,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:428",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "ordinary_offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "TOY_ORNITHOPTER"
+      ]
+    },
+    {
+      "seed": 610082002,
+      "idx": 97,
+      "act": 2,
+      "floor": 30,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:444",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SMILING_MASK"
+      ],
+      "ordinary_offered": [
+        "SMILING_MASK"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SMILING_MASK"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 20,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:481",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BLUE_CANDLE"
+      ],
+      "ordinary_offered": [
+        "BLUE_CANDLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BLUE_CANDLE"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 32,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:494",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MUMMIFIED_HAND"
+      ],
+      "ordinary_offered": [
+        "MUMMIFIED_HAND"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MUMMIFIED_HAND"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 38,
+      "act": 1,
+      "floor": 11,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:501",
+      "post_screen": "REWARDS",
+      "offered": [
+        "UNCEASING_TOP"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "UNCEASING_TOP"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082003,
+      "idx": 39,
+      "act": 1,
+      "floor": 11,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:502",
+      "post_screen": "REWARDS",
+      "offered": [
+        "UNCEASING_TOP"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "UNCEASING_TOP"
+      ],
+      "added": [
+        "UNCEASING_TOP"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 86,
+      "act": 2,
+      "floor": 24,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:556",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PRAYER_WHEEL"
+      ],
+      "ordinary_offered": [
+        "PRAYER_WHEEL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PRAYER_WHEEL"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 95,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:565",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "ordinary_offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "TOY_ORNITHOPTER"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 115,
+      "act": 2,
+      "floor": 31,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:588",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BOTTLED_FLAME"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "BOTTLED_FLAME"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082003,
+      "idx": 116,
+      "act": 2,
+      "floor": 31,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:589",
+      "post_screen": "CARD_SELECT",
+      "offered": [
+        "BOTTLED_FLAME"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "BOTTLED_FLAME"
+      ],
+      "added": [
+        "BOTTLED_FLAME"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 152,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:630",
+      "post_screen": "REWARDS",
+      "offered": [
+        "RED_SKULL"
+      ],
+      "ordinary_offered": [
+        "RED_SKULL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "RED_SKULL"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 160,
+      "act": 3,
+      "floor": 46,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:640",
+      "post_screen": "REWARDS",
+      "offered": [
+        "JUZU_BRACELET"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "JUZU_BRACELET"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082003,
+      "idx": 161,
+      "act": 3,
+      "floor": 46,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:641",
+      "post_screen": "REWARDS",
+      "offered": [
+        "JUZU_BRACELET"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "JUZU_BRACELET"
+      ],
+      "added": [
+        "JUZU_BRACELET"
+      ]
+    },
+    {
+      "seed": 610082003,
+      "idx": 168,
+      "act": 3,
+      "floor": 48,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_0.trace.jsonl:650",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SMILING_MASK"
+      ],
+      "ordinary_offered": [
+        "SMILING_MASK"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SMILING_MASK"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 21,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:25",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MEAT_ON_THE_BONE"
+      ],
+      "ordinary_offered": [
+        "MEAT_ON_THE_BONE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MEAT_ON_THE_BONE"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 32,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:37",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SUNDIAL"
+      ],
+      "ordinary_offered": [
+        "SUNDIAL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SUNDIAL"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 35,
+      "act": 1,
+      "floor": 10,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:41",
+      "post_screen": "REWARDS",
+      "offered": [
+        "RED_SKULL"
+      ],
+      "ordinary_offered": [
+        "RED_SKULL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "RED_SKULL"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 43,
+      "act": 1,
+      "floor": 12,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:50",
+      "post_screen": "REWARDS",
+      "offered": [
+        "CENTENNIAL_PUZZLE"
+      ],
+      "ordinary_offered": [
+        "CENTENNIAL_PUZZLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "CENTENNIAL_PUZZLE"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 86,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:100",
+      "post_screen": "REWARDS",
+      "offered": [
+        "REGAL_PILLOW"
+      ],
+      "ordinary_offered": [
+        "REGAL_PILLOW"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "REGAL_PILLOW"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 97,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:111",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PANTOGRAPH"
+      ],
+      "ordinary_offered": [
+        "PANTOGRAPH"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PANTOGRAPH"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 101,
+      "act": 2,
+      "floor": 27,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:116",
+      "post_screen": "REWARDS",
+      "offered": [
+        "FOSSILIZED_HELIX"
+      ],
+      "ordinary_offered": [
+        "FOSSILIZED_HELIX"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "FOSSILIZED_HELIX"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 110,
+      "act": 2,
+      "floor": 30,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:126",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BLUE_CANDLE"
+      ],
+      "ordinary_offered": [
+        "BLUE_CANDLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BLUE_CANDLE"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 134,
+      "act": 3,
+      "floor": 36,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:153",
+      "post_screen": "REWARDS",
+      "offered": [
+        "LIZARD_TAIL"
+      ],
+      "ordinary_offered": [
+        "LIZARD_TAIL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "LIZARD_TAIL"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 151,
+      "act": 3,
+      "floor": 41,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:172",
+      "post_screen": "REWARDS",
+      "offered": [
+        "JUZU_BRACELET"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "JUZU_BRACELET"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082004,
+      "idx": 152,
+      "act": 3,
+      "floor": 41,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:173",
+      "post_screen": "REWARDS",
+      "offered": [
+        "JUZU_BRACELET"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "JUZU_BRACELET"
+      ],
+      "added": [
+        "JUZU_BRACELET"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 159,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:180",
+      "post_screen": "REWARDS",
+      "offered": [
+        "GAMBLING_CHIP"
+      ],
+      "ordinary_offered": [
+        "GAMBLING_CHIP"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "GAMBLING_CHIP"
+      ]
+    },
+    {
+      "seed": 610082004,
+      "idx": 164,
+      "act": 3,
+      "floor": 45,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:186",
+      "post_screen": "REWARDS",
+      "offered": [
+        "INK_BOTTLE"
+      ],
+      "ordinary_offered": [
+        "INK_BOTTLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "INK_BOTTLE"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 20,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:230",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "ordinary_offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "TOY_ORNITHOPTER"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 28,
+      "act": 1,
+      "floor": 8,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:239",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PANTOGRAPH"
+      ],
+      "ordinary_offered": [
+        "PANTOGRAPH"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PANTOGRAPH"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 34,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:245",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SUNDIAL"
+      ],
+      "ordinary_offered": [
+        "SUNDIAL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SUNDIAL"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 37,
+      "act": 1,
+      "floor": 10,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:249",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ORNAMENTAL_FAN"
+      ],
+      "ordinary_offered": [
+        "ORNAMENTAL_FAN"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ORNAMENTAL_FAN"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 67,
+      "act": 2,
+      "floor": 19,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:283",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BAG_OF_PREPARATION"
+      ],
+      "ordinary_offered": [
+        "BAG_OF_PREPARATION"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BAG_OF_PREPARATION"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 87,
+      "act": 2,
+      "floor": 24,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:305",
+      "post_screen": "REWARDS",
+      "offered": [
+        "HORN_CLEAT"
+      ],
+      "ordinary_offered": [
+        "HORN_CLEAT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "HORN_CLEAT"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 96,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:314",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MEAL_TICKET"
+      ],
+      "ordinary_offered": [
+        "MEAL_TICKET"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MEAL_TICKET"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 131,
+      "act": 3,
+      "floor": 38,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:357",
+      "post_screen": "REWARDS",
+      "offered": [
+        "GIRYA"
+      ],
+      "ordinary_offered": [
+        "GIRYA"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "GIRYA"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 141,
+      "act": 3,
+      "floor": 41,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:368",
+      "post_screen": "REWARDS",
+      "offered": [
+        "GREMLIN_HORN"
+      ],
+      "ordinary_offered": [
+        "GREMLIN_HORN"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "GREMLIN_HORN"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 149,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:376",
+      "post_screen": "REWARDS",
+      "offered": [
+        "STRIKE_DUMMY"
+      ],
+      "ordinary_offered": [
+        "STRIKE_DUMMY"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "STRIKE_DUMMY"
+      ]
+    },
+    {
+      "seed": 610082005,
+      "idx": 166,
+      "act": 3,
+      "floor": 48,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:397",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PEN_NIB"
+      ],
+      "ordinary_offered": [
+        "PEN_NIB"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PEN_NIB"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 15,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:423",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MATRYOSHKA"
+      ],
+      "ordinary_offered": [
+        "MATRYOSHKA"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MATRYOSHKA"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 24,
+      "act": 1,
+      "floor": 8,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:434",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MEAT_ON_THE_BONE"
+      ],
+      "ordinary_offered": [
+        "MEAT_ON_THE_BONE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MEAT_ON_THE_BONE"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 31,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:441",
+      "post_screen": "REWARDS",
+      "offered": [
+        "FROZEN_EGG"
+      ],
+      "ordinary_offered": [
+        "FROZEN_EGG"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "FROZEN_EGG"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 45,
+      "act": 1,
+      "floor": 14,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:457",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ODD_MUSHROOM"
+      ],
+      "ordinary_offered": [
+        "ODD_MUSHROOM"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ODD_MUSHROOM"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 68,
+      "act": 2,
+      "floor": 21,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:482",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PEN_NIB"
+      ],
+      "ordinary_offered": [
+        "PEN_NIB"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PEN_NIB"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 78,
+      "act": 2,
+      "floor": 24,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:494",
+      "post_screen": "REWARDS",
+      "offered": [
+        "AKABEKO"
+      ],
+      "ordinary_offered": [
+        "AKABEKO"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "AKABEKO"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 87,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:504",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MAW_BANK"
+      ],
+      "ordinary_offered": [
+        "MAW_BANK"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MAW_BANK"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 105,
+      "act": 2,
+      "floor": 31,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:525",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WAR_PAINT"
+      ],
+      "ordinary_offered": [
+        "WAR_PAINT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WAR_PAINT"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 132,
+      "act": 3,
+      "floor": 40,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:557",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WHITE_BEAST_STATUE"
+      ],
+      "ordinary_offered": [
+        "WHITE_BEAST_STATUE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WHITE_BEAST_STATUE"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 144,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:570",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SUNDIAL"
+      ],
+      "ordinary_offered": [
+        "SUNDIAL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SUNDIAL"
+      ]
+    },
+    {
+      "seed": 610082006,
+      "idx": 153,
+      "act": 3,
+      "floor": 46,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:581",
+      "post_screen": "REWARDS",
+      "offered": [
+        "REGAL_PILLOW"
+      ],
+      "ordinary_offered": [
+        "REGAL_PILLOW"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "REGAL_PILLOW"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 22,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:627",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WAR_PAINT"
+      ],
+      "ordinary_offered": [
+        "WAR_PAINT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WAR_PAINT"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 34,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:639",
+      "post_screen": "REWARDS",
+      "offered": [
+        "OMAMORI"
+      ],
+      "ordinary_offered": [
+        "OMAMORI"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "OMAMORI"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 47,
+      "act": 1,
+      "floor": 13,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:655",
+      "post_screen": "REWARDS",
+      "offered": [
+        "STRAWBERRY"
+      ],
+      "ordinary_offered": [
+        "STRAWBERRY"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "STRAWBERRY"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 69,
+      "act": 2,
+      "floor": 19,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:680",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BLOOD_VIAL"
+      ],
+      "ordinary_offered": [
+        "BLOOD_VIAL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BLOOD_VIAL"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 83,
+      "act": 2,
+      "floor": 23,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:697",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BOTTLED_FLAME"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "BOTTLED_FLAME"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082007,
+      "idx": 84,
+      "act": 2,
+      "floor": 23,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:698",
+      "post_screen": "CARD_SELECT",
+      "offered": [
+        "BOTTLED_FLAME"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "BOTTLED_FLAME"
+      ],
+      "added": [
+        "BOTTLED_FLAME"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 94,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:708",
+      "post_screen": "REWARDS",
+      "offered": [
+        "QUESTION_CARD"
+      ],
+      "ordinary_offered": [
+        "QUESTION_CARD"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "QUESTION_CARD"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 101,
+      "act": 2,
+      "floor": 29,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:716",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ORICHALCUM"
+      ],
+      "ordinary_offered": [
+        "ORICHALCUM"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ORICHALCUM"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 138,
+      "act": 3,
+      "floor": 40,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:760",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MEAL_TICKET"
+      ],
+      "ordinary_offered": [
+        "MEAL_TICKET"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MEAL_TICKET"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 145,
+      "act": 3,
+      "floor": 41,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:768",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ICE_CREAM"
+      ],
+      "ordinary_offered": [
+        "ICE_CREAM"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ICE_CREAM"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 149,
+      "act": 3,
+      "floor": 42,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:773",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PANTOGRAPH"
+      ],
+      "ordinary_offered": [
+        "PANTOGRAPH"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PANTOGRAPH"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 154,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:778",
+      "post_screen": "REWARDS",
+      "offered": [
+        "DARKSTONE_PERIAPT"
+      ],
+      "ordinary_offered": [
+        "DARKSTONE_PERIAPT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "DARKSTONE_PERIAPT"
+      ]
+    },
+    {
+      "seed": 610082007,
+      "idx": 160,
+      "act": 3,
+      "floor": 45,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_1.trace.jsonl:785",
+      "post_screen": "REWARDS",
+      "offered": [
+        "RED_SKULL"
+      ],
+      "ordinary_offered": [
+        "RED_SKULL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "RED_SKULL"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 17,
+      "act": 1,
+      "floor": 6,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:23",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ORNAMENTAL_FAN"
+      ],
+      "ordinary_offered": [
+        "ORNAMENTAL_FAN"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ORNAMENTAL_FAN"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 29,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:35",
+      "post_screen": "REWARDS",
+      "offered": [
+        "LIZARD_TAIL"
+      ],
+      "ordinary_offered": [
+        "LIZARD_TAIL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "LIZARD_TAIL"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 32,
+      "act": 1,
+      "floor": 10,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:39",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TUNGSTEN_ROD"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "TUNGSTEN_ROD"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082008,
+      "idx": 33,
+      "act": 1,
+      "floor": 10,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:40",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TUNGSTEN_ROD"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "TUNGSTEN_ROD"
+      ],
+      "added": [
+        "TUNGSTEN_ROD"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 72,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:85",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PRAYER_WHEEL"
+      ],
+      "ordinary_offered": [
+        "PRAYER_WHEEL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PRAYER_WHEEL"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 83,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:97",
+      "post_screen": "REWARDS",
+      "offered": [
+        "NUNCHAKU"
+      ],
+      "ordinary_offered": [
+        "NUNCHAKU"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "NUNCHAKU"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 87,
+      "act": 2,
+      "floor": 27,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:102",
+      "post_screen": "REWARDS",
+      "offered": [
+        "THE_BOOT"
+      ],
+      "ordinary_offered": [
+        "THE_BOOT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "THE_BOOT"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 132,
+      "act": 3,
+      "floor": 40,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:154",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BAG_OF_MARBLES"
+      ],
+      "ordinary_offered": [
+        "BAG_OF_MARBLES"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BAG_OF_MARBLES"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 138,
+      "act": 3,
+      "floor": 42,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:161",
+      "post_screen": "REWARDS",
+      "offered": [
+        "OLD_COIN"
+      ],
+      "ordinary_offered": [
+        "OLD_COIN"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "OLD_COIN"
+      ]
+    },
+    {
+      "seed": 610082008,
+      "idx": 143,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:166",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WHETSTONE"
+      ],
+      "ordinary_offered": [
+        "WHETSTONE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WHETSTONE"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 22,
+      "act": 1,
+      "floor": 7,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:218",
+      "post_screen": "REWARDS",
+      "offered": [
+        "DU_VU_DOLL"
+      ],
+      "ordinary_offered": [
+        "DU_VU_DOLL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "DU_VU_DOLL"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 32,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:229",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MANGO"
+      ],
+      "ordinary_offered": [
+        "MANGO"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MANGO"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 40,
+      "act": 1,
+      "floor": 11,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:239",
+      "post_screen": "REWARDS",
+      "offered": [
+        "LIZARD_TAIL"
+      ],
+      "ordinary_offered": [
+        "LIZARD_TAIL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "LIZARD_TAIL"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 82,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:288",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PEAR"
+      ],
+      "ordinary_offered": [
+        "PEAR"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PEAR"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 93,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:301",
+      "post_screen": "REWARDS",
+      "offered": [
+        "FROZEN_EGG"
+      ],
+      "ordinary_offered": [
+        "FROZEN_EGG"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "FROZEN_EGG"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 98,
+      "act": 2,
+      "floor": 28,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:307",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PRAYER_WHEEL"
+      ],
+      "ordinary_offered": [
+        "PRAYER_WHEEL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PRAYER_WHEEL"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 107,
+      "act": 2,
+      "floor": 30,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:318",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ETERNAL_FEATHER"
+      ],
+      "ordinary_offered": [
+        "ETERNAL_FEATHER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ETERNAL_FEATHER"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 144,
+      "act": 3,
+      "floor": 41,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:360",
+      "post_screen": "REWARDS",
+      "offered": [
+        "THREAD_AND_NEEDLE"
+      ],
+      "ordinary_offered": [
+        "THREAD_AND_NEEDLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "THREAD_AND_NEEDLE"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 153,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:369",
+      "post_screen": "REWARDS",
+      "offered": [
+        "QUESTION_CARD"
+      ],
+      "ordinary_offered": [
+        "QUESTION_CARD"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "QUESTION_CARD"
+      ]
+    },
+    {
+      "seed": 610082009,
+      "idx": 163,
+      "act": 3,
+      "floor": 46,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:381",
+      "post_screen": "REWARDS",
+      "offered": [
+        "MAGIC_FLOWER"
+      ],
+      "ordinary_offered": [
+        "MAGIC_FLOWER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "MAGIC_FLOWER"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 22,
+      "act": 1,
+      "floor": 7,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:422",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SMILING_MASK"
+      ],
+      "ordinary_offered": [
+        "SMILING_MASK"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SMILING_MASK"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 30,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:430",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BAG_OF_PREPARATION"
+      ],
+      "ordinary_offered": [
+        "BAG_OF_PREPARATION"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BAG_OF_PREPARATION"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 37,
+      "act": 1,
+      "floor": 11,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:439",
+      "post_screen": "REWARDS",
+      "offered": [
+        "PAPER_PHROG"
+      ],
+      "ordinary_offered": [
+        "PAPER_PHROG"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "PAPER_PHROG"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 68,
+      "act": 2,
+      "floor": 20,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:474",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BOTTLED_LIGHTNING"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "BOTTLED_LIGHTNING"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082010,
+      "idx": 69,
+      "act": 2,
+      "floor": 20,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:475",
+      "post_screen": "CARD_SELECT",
+      "offered": [
+        "BOTTLED_LIGHTNING"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "BOTTLED_LIGHTNING"
+      ],
+      "added": [
+        "BOTTLED_LIGHTNING"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 83,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:491",
+      "post_screen": "REWARDS",
+      "offered": [
+        "THE_COURIER"
+      ],
+      "ordinary_offered": [
+        "THE_COURIER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "THE_COURIER"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 90,
+      "act": 2,
+      "floor": 25,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:500",
+      "post_screen": "REWARDS",
+      "offered": [
+        "REGAL_PILLOW"
+      ],
+      "ordinary_offered": [
+        "REGAL_PILLOW"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "REGAL_PILLOW"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 96,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:506",
+      "post_screen": "REWARDS",
+      "offered": [
+        "DREAM_CATCHER"
+      ],
+      "ordinary_offered": [
+        "DREAM_CATCHER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "DREAM_CATCHER"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 99,
+      "act": 2,
+      "floor": 27,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:510",
+      "post_screen": "REWARDS",
+      "offered": [
+        "WHETSTONE"
+      ],
+      "ordinary_offered": [
+        "WHETSTONE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "WHETSTONE"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 134,
+      "act": 3,
+      "floor": 37,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:551",
+      "post_screen": "REWARDS",
+      "offered": [
+        "STONE_CALENDAR"
+      ],
+      "ordinary_offered": [
+        "STONE_CALENDAR"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "STONE_CALENDAR"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 147,
+      "act": 3,
+      "floor": 40,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:567",
+      "post_screen": "REWARDS",
+      "offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "ordinary_offered": [
+        "TOY_ORNITHOPTER"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "TOY_ORNITHOPTER"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 162,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:583",
+      "post_screen": "REWARDS",
+      "offered": [
+        "VAJRA"
+      ],
+      "ordinary_offered": [
+        "VAJRA"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "VAJRA"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 166,
+      "act": 3,
+      "floor": 44,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:588",
+      "post_screen": "REWARDS",
+      "offered": [
+        "LANTERN"
+      ],
+      "ordinary_offered": [
+        "LANTERN"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "LANTERN"
+      ]
+    },
+    {
+      "seed": 610082010,
+      "idx": 176,
+      "act": 3,
+      "floor": 47,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:601",
+      "post_screen": "REWARDS",
+      "offered": [
+        "DEAD_BRANCH"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "DEAD_BRANCH"
+      ],
+      "added": []
+    },
+    {
+      "seed": 610082010,
+      "idx": 177,
+      "act": 3,
+      "floor": 47,
+      "by": "chain",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:602",
+      "post_screen": "REWARDS",
+      "offered": [
+        "DEAD_BRANCH"
+      ],
+      "ordinary_offered": [],
+      "exceptions_offered": [
+        "DEAD_BRANCH"
+      ],
+      "added": [
+        "DEAD_BRANCH"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 28,
+      "act": 1,
+      "floor": 8,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:645",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BLOOD_VIAL"
+      ],
+      "ordinary_offered": [
+        "BLOOD_VIAL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BLOOD_VIAL"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 33,
+      "act": 1,
+      "floor": 9,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:650",
+      "post_screen": "REWARDS",
+      "offered": [
+        "BAG_OF_PREPARATION"
+      ],
+      "ordinary_offered": [
+        "BAG_OF_PREPARATION"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "BAG_OF_PREPARATION"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 40,
+      "act": 1,
+      "floor": 11,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:658",
+      "post_screen": "REWARDS",
+      "offered": [
+        "ART_OF_WAR"
+      ],
+      "ordinary_offered": [
+        "ART_OF_WAR"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "ART_OF_WAR"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 79,
+      "act": 2,
+      "floor": 23,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:704",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SMILING_MASK"
+      ],
+      "ordinary_offered": [
+        "SMILING_MASK"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SMILING_MASK"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 88,
+      "act": 2,
+      "floor": 26,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:713",
+      "post_screen": "REWARDS",
+      "offered": [
+        "INK_BOTTLE"
+      ],
+      "ordinary_offered": [
+        "INK_BOTTLE"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "INK_BOTTLE"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 97,
+      "act": 2,
+      "floor": 29,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:724",
+      "post_screen": "REWARDS",
+      "offered": [
+        "CALIPERS"
+      ],
+      "ordinary_offered": [
+        "CALIPERS"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "CALIPERS"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 132,
+      "act": 3,
+      "floor": 40,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:765",
+      "post_screen": "REWARDS",
+      "offered": [
+        "POTION_BELT"
+      ],
+      "ordinary_offered": [
+        "POTION_BELT"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "POTION_BELT"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 142,
+      "act": 3,
+      "floor": 43,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:776",
+      "post_screen": "REWARDS",
+      "offered": [
+        "SINGING_BOWL"
+      ],
+      "ordinary_offered": [
+        "SINGING_BOWL"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "SINGING_BOWL"
+      ]
+    },
+    {
+      "seed": 610082011,
+      "idx": 151,
+      "act": 3,
+      "floor": 46,
+      "by": "relic_rule",
+      "locator": "build/overnight_20261008/wave2/Fprod_2.trace.jsonl:787",
+      "post_screen": "REWARDS",
+      "offered": [
+        "GREMLIN_HORN"
+      ],
+      "ordinary_offered": [
+        "GREMLIN_HORN"
+      ],
+      "exceptions_offered": [],
+      "added": [
+        "GREMLIN_HORN"
+      ]
+    }
+  ],
+  "exceptions": [
+    "BOTTLED_FLAME",
+    "BOTTLED_LIGHTNING",
+    "BOTTLED_TORNADO",
+    "DEAD_BRANCH",
+    "JUZU_BRACELET",
+    "TUNGSTEN_ROD",
+    "UNCEASING_TOP"
+  ],
+  "treasure_gate_rows": [
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_0.strategic.jsonl:37",
+      "seed": "610082000",
+      "decIdx": "35",
+      "act": "2",
+      "floor": "26",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "57.3623|54.2081",
+      "bestIdx": "0",
+      "bestSecondMargin": "3.154182",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "0",
+      "rule": "margin",
+      "owned": "1",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    },
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_0.strategic.jsonl:56",
+      "seed": "610082000",
+      "decIdx": "54",
+      "act": "3",
+      "floor": "43",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "59.3061|55.2471",
+      "bestIdx": "0",
+      "bestSecondMargin": "4.059010",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "0",
+      "rule": "margin",
+      "owned": "1",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    },
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_0.strategic.jsonl:57",
+      "seed": "610082000",
+      "decIdx": "55",
+      "act": "3",
+      "floor": "44",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "27.2451|24.3256",
+      "bestIdx": "0",
+      "bestSecondMargin": "2.919548",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "0",
+      "rule": "margin",
+      "owned": "1",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    },
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_1.strategic.jsonl:115",
+      "seed": "610082005",
+      "decIdx": "53",
+      "act": "3",
+      "floor": "43",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "78.2337|78.303",
+      "bestIdx": "1",
+      "bestSecondMargin": "0.069328",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "-1",
+      "rule": "margin",
+      "owned": "0",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    },
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_1.strategic.jsonl:175",
+      "seed": "610082006",
+      "decIdx": "52",
+      "act": "3",
+      "floor": "43",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "77.9737|76.7244",
+      "bestIdx": "0",
+      "bestSecondMargin": "1.249321",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "0",
+      "rule": "margin",
+      "owned": "1",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    },
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_2.strategic.jsonl:95",
+      "seed": "610082009",
+      "decIdx": "31",
+      "act": "2",
+      "floor": "26",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "33.5846|29.5195",
+      "bestIdx": "0",
+      "bestSecondMargin": "4.065113",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "0",
+      "rule": "margin",
+      "owned": "1",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    },
+    {
+      "locator": "build/overnight_20261008/wave2/Fprod_2.strategic.jsonl:119",
+      "seed": "610082009",
+      "decIdx": "55",
+      "act": "3",
+      "floor": "43",
+      "screen": "6",
+      "nActions": "2",
+      "actionBits": "0|1",
+      "qValues": "70.1007|66.5329",
+      "bestIdx": "0",
+      "bestSecondMargin": "3.567795",
+      "threshold": "1.000000",
+      "heurIdx": "-1",
+      "takeIdx": "0",
+      "rule": "margin",
+      "owned": "1",
+      "collectKeys": "0",
+      "stopAfterAct": "3"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_0.trace.jsonl",
+      "sha256": "5b6645f19f8aa6175f7bd30da49fa895748bca1fdf4bc3822f377675e31cdd74"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_0.strategic.jsonl",
+      "sha256": "8ac5afb0fd4fc55f5f52a4d50a9bc95a8b96c49c42748adc9060a244b441ee8c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_1.trace.jsonl",
+      "sha256": "6b855bf5323fd7f1f6c22d12d9a67eaee5b6b3620599964cec913952a1bc8288"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_1.strategic.jsonl",
+      "sha256": "065baa9cd65bd35818733c0eb2bc7ca07d98da68cbfa23d5d997afca7edef6f1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.trace.jsonl",
+      "sha256": "eca26c7963abc0b1db073100ce3f0205a67a4ba0ae6bfd20c400be752153bf5c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/wave2/Fprod_2.strategic.jsonl",
+      "sha256": "97d7b23adbfc8c705ed3964fe3bee52dfa7dfd37c5e6f7ea64e0ffa33a40f1d5"
+    }
+  ],
+  "source_inputs": [
+    {
+      "path": "apps/one_combat/run_driver.cpp",
+      "sha256": "fa863e4a65d862185b2edf67bc313d5914d18a36cd8956c5250ddc175517002e"
+    },
+    {
+      "path": "apps/one_combat/ooc_checkpoint_policy.cpp",
+      "sha256": "57dc151bf545e7e041d29e136fe745e7f90f0a925a09e6d7c109ea64534246a5"
+    },
+    {
+      "path": "apps/one_combat/ooc_policy.cpp",
+      "sha256": "1b00a6e2d7554f5573b9b72681104d02103eb2dea7d7bfa4b45d1ce1d50edf3f"
+    },
+    {
+      "path": "include/game/GameContext.h",
+      "sha256": "b78fa0770eb2163d66b009e60facc2c75a7b89822ae2fd54f1878cdad16f8721"
+    }
+  ],
+  "summary": {
+    "free_chests_opened": 32,
+    "free_chests_skipped": 0,
+    "cursed_key_chests_opened": 7,
+    "ordinary_relics_collected_immediately": 112,
+    "ordinary_relics_left": 0,
+    "exception_reward_rows": 18,
+    "distinct_exception_collections": 9
+  }
+}

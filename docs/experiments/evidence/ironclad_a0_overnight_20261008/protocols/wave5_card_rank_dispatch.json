@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "launch_epoch": 1791426512.121849,
+  "session_id": 32580,
+  "workers": 1,
+  "max_game_processes": 6,
+  "other_workers": {
+    "wave3_development": 2,
+    "removal_development": 3
+  },
+  "manifest_sha256": "721add02c24c8a8765e4eb8fb612df1d56b74207fe0849ebb99bd947a5f2eb30",
+  "review_sha256": "84cbc8bb3ec82bca0d3ce6578881c7a7820a9052a9dc8ad2c1744caa32db8646",
+  "jobs_sha256": "0b5763d5d609d45397ddc3c096ad13ef8aea7655be1e208341bf3d2e21a57357",
+  "outer_timeout_seconds": 3600,
+  "shard_timeout_seconds": 900,
+  "command": "timeout --kill-after=30 3600 xargs -P1 -L1 .venv/bin/python docs/experiments/evidence/ironclad_a0_overnight_20261008/run_arm.py --trace --tree-profile --timeout 900 < build/overnight_20261008/wave5_card_rank_jobs.txt > build/overnight_20261008/wave5_card_rank_dispatch.log 2>&1"
+}

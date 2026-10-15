@@ -1,0 +1,6 @@
+diff --git a/tools/agent/doctor.sh b/tools/agent/doctor.sh
+--- a/tools/agent/doctor.sh
++++ b/tools/agent/doctor.sh
+@@ -36,1 +36,1 @@
+-    if printf '%s\n' "$submodule_status" | grep -Eq '^[+U-]'; then
++    if printf '%s\n' "$submodule_status" | grep -Eq '^[+U]'; then

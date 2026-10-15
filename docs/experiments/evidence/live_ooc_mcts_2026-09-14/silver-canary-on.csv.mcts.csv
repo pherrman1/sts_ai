@@ -1,0 +1,2 @@
+seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats
+969992,88,70,18,8960,5946,42,8960,3,1.333926397,1.333760406,15

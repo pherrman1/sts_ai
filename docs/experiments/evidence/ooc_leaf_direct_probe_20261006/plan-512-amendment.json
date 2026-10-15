@@ -1,0 +1,11 @@
+{
+  "amends": "plan.json (sha256 ceb8e15ceeaab21f4d4b4d4a630f3997f2954ff10e0aecbcca343e643483b20d)",
+  "authorized_by": "Philipp, 2026-10-05T23:17Z (thread: do the original 512 seeds A/B on 10 workers)",
+  "change": "extend the identical frozen configuration from 32 to 512 paired seeds: 47000000..47000511. The first 32 pairs already running are part of the 512.",
+  "seeds": [
+    47000000,
+    47000511
+  ],
+  "count": 512,
+  "decision_rule": "Report paired floor delta B-A and win-rate delta with 95% paired bootstrap CIs (source=seed). Interpretation: if B is within noise of A (CI includes 0 and |win delta|<3pp), the playout adds little and leaf speed matters more than leaf fidelity; a clear drop for B means leaf quality matters. No default promotion from this run."
+}

@@ -1,0 +1,73 @@
+{
+  "experiment": "current #199 retained-adaptive Silver cap screen",
+  "source_sha": "3fb0c8ce2e009c2ef7a3abee5584556aff515261",
+  "binary_sha256": "46b6b6f55e4f9dfa7ea40dfdfd35be643f3d1960ea331dcaaa5fd8016f7b052e",
+  "silver_upstream_sha": "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff",
+  "seed_block": {"lo": 256, "hi": 271, "n": 16},
+  "policy": {
+    "adaptive": true,
+    "retained_only": true,
+    "initial_simulations": 500,
+    "maximum_simulations": 10000,
+    "top_two_visit_gap_threshold": 0.2932885906040268
+  },
+  "arms": {
+    "32k": {
+      "cap": 32768,
+      "wins": 11,
+      "mean_floor": 49.0,
+      "mean_hp": 40.25,
+      "mean_seconds_per_run": 18.56132,
+      "wall_seconds": 80.51,
+      "peak_rss_kib": 1066104,
+      "decisions": 7681,
+      "simulations": 46704500,
+      "exact_reroot": 5021,
+      "reroot_attempts": 7262,
+      "exact_reroot_rate": 0.6914073258055632,
+      "cap_pressure_candidates": 398,
+      "cap_pressure_rescued": 395,
+      "allocated_cap_fallbacks": 3,
+      "valid_500_stops": 3169,
+      "max_allocated_nodes_after_search": 45268
+    },
+    "128k": {
+      "cap": 131072,
+      "wins": 11,
+      "mean_floor": 49.125,
+      "mean_hp": 39.8125,
+      "mean_seconds_per_run": 17.7166775,
+      "wall_seconds": 77.02,
+      "peak_rss_kib": 1986088,
+      "decisions": 7691,
+      "simulations": 46652500,
+      "exact_reroot": 5033,
+      "reroot_attempts": 7272,
+      "exact_reroot_rate": 0.6921067106710671,
+      "cap_pressure_candidates": 0,
+      "cap_pressure_rescued": 0,
+      "allocated_cap_fallbacks": 0,
+      "valid_500_stops": 3185,
+      "max_allocated_nodes_after_search": 99255
+    }
+  },
+  "paired": {
+    "both_won": 11,
+    "both_lost": 5,
+    "32k_only_wins": 0,
+    "128k_only_wins": 0,
+    "mean_floor_delta_128k_minus_32k": 0.125,
+    "mean_hp_delta_128k_minus_32k": -0.4375,
+    "mean_seconds_delta_128k_minus_32k": -0.8446425
+  },
+  "failure_counters": {
+    "conversion_failures": 0,
+    "semantic_resolution_failures": 0,
+    "transaction_failures": 0,
+    "knowledge_failures": 0,
+    "exact_visit_lock_fired": 0,
+    "rho_racing_fired": 0
+  },
+  "decision": "KEEP_32768_PRODUCTION",
+  "classification": "CAP_128K_NOT_MATERIALLY_USEFUL_IN_FRESH_N16"
+}

@@ -1,0 +1,48 @@
+{
+ "decisions": 66930,
+ "seeds": 160,
+ "folds": 5,
+ "features": "all",
+ "freshDecisions": 15284,
+ "rule_199": {
+  "saving": 0.41009113999701186,
+  "disagreement": 0.010294337367398775
+ },
+ "lock_only": {
+  "threshold": 0.0001,
+  "saving": 0.37067421186314065,
+  "disagreement": 0.0,
+  "freshSaving": 0.13451975922533366,
+  "freshDisagreement": 0.0
+ },
+ "gbt_v1": {
+  "0.0025": {
+   "threshold": 0.014345,
+   "saving": 0.5080883012102196,
+   "disagreement": 0.0022560884506200507,
+   "freshSaving": 0.30570858414027746,
+   "freshDisagreement": 0.002420832242868359
+  },
+  "0.005": {
+   "threshold": 0.02381,
+   "saving": 0.5524536829523383,
+   "disagreement": 0.004586881816823547,
+   "freshSaving": 0.3609804370583617,
+   "freshDisagreement": 0.005103376079560324
+  },
+  "0.0075": {
+   "threshold": 0.032271,
+   "saving": 0.5812270282384581,
+   "disagreement": 0.0071567309128940685,
+   "freshSaving": 0.39703448050248624,
+   "freshDisagreement": 0.008113059408531798
+  },
+  "0.01": {
+   "threshold": 0.039522,
+   "saving": 0.601294636187061,
+   "disagreement": 0.009293291498580606,
+   "freshSaving": 0.4225758963622088,
+   "freshDisagreement": 0.01105731483904737
+  }
+ }
+}

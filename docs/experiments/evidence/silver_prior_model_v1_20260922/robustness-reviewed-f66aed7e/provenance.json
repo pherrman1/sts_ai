@@ -1,0 +1,10 @@
+{
+  "reviewed_pr_head": "06b3383a423d350b396a2cae973f7f2a06f4f0f4",
+  "trainer_sha256": "f66aed7ee1da9f48d0c21ea8392d23e83f22b0b2a281dc549380c4367cc9391f",
+  "cache_sha256": "ca88c0687c17c4eceae55e8ac94ccfa9d239c173f502e023a7d43348c8b0caf9",
+  "cache_path_during_run": "/tmp/silver-prior-robustness-cache-f66aed7e.pkl",
+  "stage_a_directory": "/home/philippherrmann/Documents/sts/silver-prior-model-v1/stage-a-863d7d5e",
+  "stage_a_checkpoint_sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+  "locked_test_labels_opened": false,
+  "metadata_deviation": "LOCKED_TEST root/action counts observed before freeze; labels untouched"
+}

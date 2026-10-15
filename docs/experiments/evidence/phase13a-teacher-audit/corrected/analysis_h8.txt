@@ -1,0 +1,6 @@
+decisions=16 valid_decisions=16 invalid_rows=0 mean_refDelta=-11.320312 mean_refWinDelta=-0.195312
+S_preference M0=9 V4=5 tie=2
+R_preference M0=5 V4=10 tie=1
+strict_sign_agreement short_ref=5/16 model_ref=5/16
+threeway_sign_agreement short_ref=6/16 model_ref=5/16
+screen_counts screen1=4 screen2=7 screen3=1 screen4=1 screen8=3

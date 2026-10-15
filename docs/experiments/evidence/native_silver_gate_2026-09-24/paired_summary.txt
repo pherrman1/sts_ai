@@ -1,0 +1,4 @@
+vendored wins 83/128, native wins 86/128
+paired difference +2.3 pp, normal 95% CI [-6.2, +10.9] pp
+discordant seeds: native-only 17, vendored-only 14, McNemar z = +0.54
+mean floor vendored 48.26, native 47.81

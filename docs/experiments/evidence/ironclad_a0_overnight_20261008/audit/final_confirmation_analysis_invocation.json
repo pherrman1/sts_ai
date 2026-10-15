@@ -1,0 +1,16 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/analyze_wave_removal.py",
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/protocols/final_confirmation.json",
+    "build/overnight_20261008/final_confirmation",
+    "--out",
+    "docs/experiments/evidence/ironclad_a0_overnight_20261008/final_confirmation_report.json"
+  ],
+  "exit_code": 0,
+  "recorded_epoch": 1791431071.556929,
+  "report_sha256": "56af59f69b2e2040f0f4673c245e962634e34f2f828f4351892f01c3139c8ce9",
+  "analysis_script_sha256": "85f51b7d0d3094f79d6d9b29dbb4a3fad1c04a8f2e08d974543a694af2c07d42",
+  "completion_receipt_sha256": "720fe902253296cae4a50991947f3d72e32739d1acf07f72012d9b2341a8c83a",
+  "timing_note": "Executed after dispatcher exit0 and completion receipt creation; separate analysis duration was not recorded. No game rerun."
+}

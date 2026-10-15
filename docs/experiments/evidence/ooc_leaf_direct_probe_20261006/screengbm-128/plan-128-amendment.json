@@ -1,0 +1,11 @@
+{
+  "amends": "plan.json",
+  "authorized_by": "Philipp, 2026-10-06T09:48Z (thread: swap it and only do 128 seeds pairwise on 6 workers)",
+  "change": "Stop the 512-pair MLP 3-arm run. 128 paired seeds 47001024..47001151: A_playout/B_direct/C_screen games already complete (binary 0584480e, unchanged code paths); run D_screengbm for the remaining 96 seeds with the frozen ff6f1f65 binary on 6 workers.",
+  "seeds": [
+    47001024,
+    47001151
+  ],
+  "count": 128,
+  "workers": 6
+}

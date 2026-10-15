@@ -1,0 +1,64 @@
+{
+  "binarySha256": "b4586cfc0e26dcae96d3fe14f0c80beccd297cde87bd986fd69954cf126995e1",
+  "capture": {
+    "bytes": 4509533,
+    "histograms": {
+      "abortReason": {
+        "": 64
+      },
+      "act": {
+        "1": 207,
+        "2": 79
+      },
+      "actualCombats": {
+        "1": 1,
+        "3": 285
+      },
+      "boundary": {
+        "decision": 286
+      },
+      "evaluationError": {
+        "": 286
+      },
+      "inputError": {
+        "": 286
+      },
+      "screen": {
+        "1": 6,
+        "2": 111,
+        "3": 10,
+        "4": 3,
+        "5": 112,
+        "6": 8,
+        "7": 18,
+        "8": 18
+      },
+      "terminal": {
+        "False": 281,
+        "True": 5
+      }
+    },
+    "roots": 64,
+    "samples": 286,
+    "validSamples": 286
+  },
+  "claim": "one historical seed: observational capture parity only",
+  "cpuRatioOnOverOff": 1.0117804018713665,
+  "seed": 87000000,
+  "sourceRevision": "252db2a7bbca2641d074ca3c1b05e4f1b852910b",
+  "status": "PASS",
+  "timingDescriptive": {
+    "off": {
+      "cpuSeconds": 267.779914,
+      "returncode": 0,
+      "wallLimitExceeded": false,
+      "wallSeconds": 267.81535402601
+    },
+    "on": {
+      "cpuSeconds": 270.934469,
+      "returncode": 0,
+      "wallLimitExceeded": false,
+      "wallSeconds": 270.9488307730062
+    }
+  }
+}

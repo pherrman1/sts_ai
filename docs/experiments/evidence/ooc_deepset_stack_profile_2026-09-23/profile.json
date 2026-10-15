@@ -1,0 +1,343 @@
+{
+  "schema": "ooc_deepset_stack_profile_v1",
+  "date": "2026-09-23",
+  "sourceSha": "4e4da3b154e59f193c77f972e9b5e2338c52be3c",
+  "binarySha256": "2a0e9e5a3f2f2bf845bf432cc28c15100db70bcd9c735f55058fdfbcf6727ef7",
+  "controlArtifactSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+  "candidateArtifactSha256": "f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e",
+  "candidateArtifactPath": "/tmp/ooc-deepset-stack-v2.native",
+  "candidateComposition": {
+    "survival": "Phase-1 DeepSets; TEST survival logloss 0.060430; checkpoint 328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3",
+    "maxHP_HP": "shared DeepSets; checkpoint bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+    "downstream": "DeepSets downstream checkpoint c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a",
+    "potion": "DeepSets B checkpoint 06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
+    "potionOfflineDecision": "DEEPSET_POTION_REJECTED",
+    "qualified": false,
+    "defaultChanged": false
+  },
+  "design": {
+    "uniqueSeedCount": 1,
+    "seed": 12002032,
+    "repetitionsPerArm": 2,
+    "capturedProfileExecution": "second execution per arm, captured after first pair output truncation",
+    "stopAfterAct": 3,
+    "ascension": 0,
+    "sims": 2048,
+    "threads": 1,
+    "fair": true,
+    "keys": false,
+    "leafCombatSamples": 0,
+    "ctmSupport": "same as current standard",
+    "interpretation": "runtime timing and functional smoke only; not a gameplay quality or model qualification result; first repetition timings were not retained",
+    "firstExecutionTimingRetained": false
+  },
+  "environment": {
+    "STS_NATIVE_OOC": "1",
+    "STS_OOC_MCTS": "1",
+    "STS_OOC_MCTS_CPUCT": "1.5",
+    "STS_OOC_MCTS_EARLY_STOP": "1",
+    "STS_OOC_MCTS_LEAF_COMBATS": "0",
+    "STS_OOC_MCTS_LEAF_POLICY": "v4",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_MAX_DEPTH": "32",
+    "STS_OOC_MCTS_PRIOR": "policy",
+    "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+    "STS_OOC_MCTS_SIMS": "2048",
+    "STS_OOC_MCTS_TEMPERATURE": "1",
+    "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+    "STS_OOC_MCTS_WIDEN_K": "2",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP": "32768",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_STOP_AFTER_ACT": "3",
+    "STS_OOC_CPU_PROFILE": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "arms": {
+    "control": {
+      "result": {
+        "seed": "12002032",
+        "won": "0",
+        "floor": "33",
+        "act": "2",
+        "hpEnd": "0",
+        "maxHp": "48",
+        "fightsLost": "1",
+        "deathCombat": "16",
+        "deathEncounter": "39",
+        "sec": "75.6732"
+      },
+      "mcts": {
+        "seed": "12002032",
+        "oocDecisions": "93",
+        "mctsOwned": "90",
+        "mctsFallback": "3",
+        "simulations": "73218",
+        "transitionSamples": "69874",
+        "combatSurrogateSamples": "11417",
+        "leafEvaluations": "73217",
+        "maxDepth": "4",
+        "mctsWallSec": "54.151319447",
+        "mctsCpuSec": "54.142841415",
+        "realCombats": "16",
+        "imaginedCombats": "11418",
+        "unsupportedCombats": "1",
+        "mctsSupportAborts": "1",
+        "discardedSimulations": "44",
+        "simulationAttempts": "73219",
+        "pendingLeaves": "45488",
+        "battleLeaves": "0",
+        "mapLeaves": "27729",
+        "projectionSteps": "103453",
+        "outcomeParticles": "69874",
+        "particleRevisits": "86329",
+        "deterministicRevisits": "0",
+        "depthSum": "259034",
+        "continuationLimitAborts": "0",
+        "trivialRootBypasses": "35",
+        "earlyStopLockedRoot": "55",
+        "earlyStopVisitGap20": "0",
+        "savedSimulations": "39466",
+        "metadataBuilds": "69964",
+        "priorBuilds": "52976",
+        "preparedCombats": "11102",
+        "combatEdgeSamples": "11102"
+      },
+      "profile": {
+        "counters": {
+          "combat_prepare": {
+            "calls": 11102,
+            "exclusiveCpuSec": 26.61369052800009,
+            "inclusiveCpuSec": 26.61369052800009
+          },
+          "combat_resolve": {
+            "calls": 11418,
+            "exclusiveCpuSec": 1.147047737000529,
+            "inclusiveCpuSec": 1.147047737000529
+          },
+          "evaluate_leaf": {
+            "calls": 73217,
+            "exclusiveCpuSec": 7.163364961002044,
+            "inclusiveCpuSec": 16.298585997999137
+          },
+          "leaf_value": {
+            "calls": 73216,
+            "exclusiveCpuSec": 2.740446697998402,
+            "inclusiveCpuSec": 2.740446697998402
+          },
+          "mcts": {
+            "calls": 93,
+            "exclusiveCpuSec": 0.38613781100140687,
+            "inclusiveCpuSec": 54.14267485699999
+          },
+          "metadata": {
+            "calls": 69966,
+            "exclusiveCpuSec": 1.6567991609995156,
+            "inclusiveCpuSec": 1.6567991609995156
+          },
+          "policy_logits": {
+            "calls": 52976,
+            "exclusiveCpuSec": 0.08943374399875158,
+            "inclusiveCpuSec": 6.939046587999695
+          },
+          "policy_predict": {
+            "calls": 52976,
+            "exclusiveCpuSec": 3.331417323001318,
+            "inclusiveCpuSec": 6.849612844000944
+          },
+          "policy_prepare": {
+            "calls": 0,
+            "exclusiveCpuSec": 0.0,
+            "inclusiveCpuSec": 0.0
+          },
+          "real_combat": {
+            "calls": 16,
+            "exclusiveCpuSec": 21.504099325,
+            "inclusiveCpuSec": 21.504099325
+          },
+          "successor": {
+            "calls": 69875,
+            "exclusiveCpuSec": 1.8447824999996378,
+            "inclusiveCpuSec": 28.862105299000234
+          },
+          "v4_action_value": {
+            "calls": 194508,
+            "exclusiveCpuSec": 3.0152296309988844,
+            "inclusiveCpuSec": 3.0152296309988844
+          },
+          "v4_state_network": {
+            "calls": 93579,
+            "exclusiveCpuSec": 6.154324762999412,
+            "inclusiveCpuSec": 6.154324762999412
+          }
+        },
+        "mctsCpuSec": 54.14284141500001,
+        "processCpuAtReportSec": 75.782013473,
+        "realCombats": 16,
+        "seed": 12002032
+      },
+      "gnuTime": "\tCommand being timed: \"bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 10000 1 0 12002032 /tmp/ooc-deepset-profile-control.csv\"\n\tUser time (seconds): 74.94\n\tSystem time (seconds): 0.86\n\tPercent of CPU this job got: 99%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 1:15.82\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 297948\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 84124\n\tVoluntary context switches: 47\n\tInvoluntary context switches: 1265\n\tSwaps: 0\n\tFile system inputs: 16\n\tFile system outputs: 152\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "deepset": {
+      "result": {
+        "seed": "12002032",
+        "won": "0",
+        "floor": "48",
+        "act": "3",
+        "hpEnd": "0",
+        "maxHp": "65",
+        "fightsLost": "1",
+        "deathCombat": "23",
+        "deathEncounter": "46",
+        "sec": "118.478"
+      },
+      "mcts": {
+        "seed": "12002032",
+        "oocDecisions": "137",
+        "mctsOwned": "134",
+        "mctsFallback": "3",
+        "simulations": "120399",
+        "transitionSamples": "117558",
+        "combatSurrogateSamples": "20928",
+        "leafEvaluations": "120297",
+        "maxDepth": "4",
+        "mctsWallSec": "83.791003594",
+        "mctsCpuSec": "83.772093799",
+        "realCombats": "23",
+        "imaginedCombats": "20929",
+        "unsupportedCombats": "1",
+        "mctsSupportAborts": "1",
+        "discardedSimulations": "44",
+        "simulationAttempts": "120400",
+        "pendingLeaves": "79084",
+        "battleLeaves": "0",
+        "mapLeaves": "41213",
+        "projectionSteps": "190668",
+        "outcomeParticles": "117558",
+        "particleRevisits": "141613",
+        "deterministicRevisits": "0",
+        "depthSum": "430156",
+        "continuationLimitAborts": "0",
+        "trivialRootBypasses": "48",
+        "earlyStopLockedRoot": "85",
+        "earlyStopVisitGap20": "0",
+        "savedSimulations": "55773",
+        "metadataBuilds": "117633",
+        "priorBuilds": "92442",
+        "preparedCombats": "20231",
+        "combatEdgeSamples": "20231"
+      },
+      "profile": {
+        "counters": {
+          "combat_prepare": {
+            "calls": 20231,
+            "exclusiveCpuSec": 11.96235215899991,
+            "inclusiveCpuSec": 11.96235215899991
+          },
+          "combat_resolve": {
+            "calls": 20929,
+            "exclusiveCpuSec": 1.158521918000503,
+            "inclusiveCpuSec": 1.158521918000503
+          },
+          "evaluate_leaf": {
+            "calls": 120297,
+            "exclusiveCpuSec": 33.07261861200139,
+            "inclusiveCpuSec": 50.146436259999504
+          },
+          "leaf_value": {
+            "calls": 120283,
+            "exclusiveCpuSec": 4.452813461999339,
+            "inclusiveCpuSec": 4.452813461999339
+          },
+          "mcts": {
+            "calls": 137,
+            "exclusiveCpuSec": 0.6671543280013086,
+            "inclusiveCpuSec": 83.77183172799997
+          },
+          "metadata": {
+            "calls": 117635,
+            "exclusiveCpuSec": 3.184843638000162,
+            "inclusiveCpuSec": 3.184843638000162
+          },
+          "policy_logits": {
+            "calls": 92442,
+            "exclusiveCpuSec": 0.16239406899785486,
+            "inclusiveCpuSec": 13.747567976998909
+          },
+          "policy_predict": {
+            "calls": 92442,
+            "exclusiveCpuSec": 6.346866076999973,
+            "inclusiveCpuSec": 13.585173908001053
+          },
+          "policy_prepare": {
+            "calls": 0,
+            "exclusiveCpuSec": 0.0,
+            "inclusiveCpuSec": 0.0
+          },
+          "real_combat": {
+            "calls": 23,
+            "exclusiveCpuSec": 34.66267116600001,
+            "inclusiveCpuSec": 34.66267116600001
+          },
+          "successor": {
+            "calls": 117559,
+            "exclusiveCpuSec": 3.3751933539996486,
+            "inclusiveCpuSec": 16.02582952500008
+          },
+          "v4_action_value": {
+            "calls": 408701,
+            "exclusiveCpuSec": 6.430917696999486,
+            "inclusiveCpuSec": 6.430917696999486
+          },
+          "v4_state_network": {
+            "calls": 166431,
+            "exclusiveCpuSec": 12.958156414000388,
+            "inclusiveCpuSec": 12.958156414000388
+          }
+        },
+        "mctsCpuSec": 83.77209379899999,
+        "processCpuAtReportSec": 118.579681916,
+        "realCombats": 23,
+        "seed": 12002032
+      },
+      "gnuTime": "\tCommand being timed: \"bash tools/seed_guard.sh build/linux-gcc-release/one_combat bestbench 10000 1 0 12002032 /tmp/ooc-deepset-profile-candidate.csv\"\n\tUser time (seconds): 117.05\n\tSystem time (seconds): 1.55\n\tPercent of CPU this job got: 99%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 1:58.63\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 299392\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 1\n\tMinor (reclaiming a frame) page faults: 114275\n\tVoluntary context switches: 73\n\tInvoluntary context switches: 1897\n\tSwaps: 0\n\tFile system inputs: 80\n\tFile system outputs: 192\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    }
+  },
+  "fileSha256": {
+    "control.csv": "a69ba7f1bb3db030ce83c00c094c894e3882ae527716721a825ffe621d1a1939",
+    "deepset.csv": "f2f94972052689050b23dc2efb8a52101bb2db678eef002140468aea4a053930",
+    "control.mcts.csv": "bdec9a5badf23225470d6d889a0135de98f549b43dfe7ebfa3e084771224459c",
+    "deepset.mcts.csv": "e743df4cf6197b01775800ba35cd79ca97b263d3f8170293c64762c3813e5260"
+  },
+  "normalization": {
+    "preparedDataPath": "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/prepared.npz",
+    "preparedManifestSha256": "fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51",
+    "preparedCorpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "splitManifestSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "normalizationRows": 458589,
+    "rule": "all TRAIN+VALIDATION source groups; NumPy float32 mean/std as Phase-1 fit; inv=1/max(std,1e-6)",
+    "preparedSha256": "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9",
+    "scalarMeanSha256": "b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9",
+    "scalarInvSha256": "48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55"
+  },
+  "implementationSources": {
+    "runtimeCppSha256": "23588a94164f7022c3fb0fc08f4407077b38ec54b0b6f0cd8c8ddf1a484f9bbc",
+    "exporterSha256": "815cf54c737c45cf83414a7a89612630c7e04a3edb6667dbe37b59ca603a9780",
+    "measuredRuntimeCppSha256": "104b680dc5cb46282ffe147110c1d37b0f201bf152c07603beb9230726e89c6f",
+    "compatibilityFollowup": "re-enabled loading of the previously supported strong-WD DeepSets survival artifact; Phase-1 DeepSets branch used for the captured timing runs is unchanged; rebuilt successfully after the run"
+  },
+  "measuredBinarySha256": "2a0e9e5a3f2f2bf845bf432cc28c15100db70bcd9c735f55058fdfbcf6727ef7",
+  "postProfileCompatibilityRebuildBinarySha256": "c89583ea5bdd97a0998785bc89d486e3cdcacfd1d79de3309fa7d19d8e173dfd",
+  "reviewCorrection": {
+    "provenanceHardenedReexportSha256": "3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586",
+    "measuredCandidateSha256": "f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e",
+    "tensorPayloadByteIdenticalToMeasuredCandidate": true,
+    "reexportUsedForTiming": false,
+    "tamperedPreparedArrayRejected": true,
+    "repetitionsPerArm": 2,
+    "onlySecondExecutionTimingRetained": true,
+    "reviewedExporterSha256": "f7d10e8ccfbd61f69768162c4e898c95c81fe0765aba5082eb5bf70ddb458514",
+    "reviewedRuntimeCppSha256": "39f443e2bf4c0227dd43614d24db04a9c3b2e0269f252406051e10739f854a81"
+  }
+}

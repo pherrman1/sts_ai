@@ -1,0 +1,50 @@
+{
+  "bindings": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "7487898f08500115640adfb7cfa279484e513157f525e2b853aff85b402a1b9f",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+  },
+  "partition": "original TEST reused engineering development",
+  "protocol": "exact all eleven maxHP classes, all legal signed HP and initial ordinary potion actions; special Brew/Smoke rows separately retain full trajectory composition",
+  "rowsSha256": "3fe0b6770e23f7a3e36ad2dde7bcaf047dfc22fba9c04c7370980fe1431b1988",
+  "slices": {
+    "writhingNoSpecial": {
+      "exposure": {
+        "mean": 0.09125644974941449,
+        "repetitions": 1000,
+        "rows": 449,
+        "sourceBootstrap95": [
+          0.06590343891433635,
+          0.11722417456291719
+        ],
+        "sources": 435
+      },
+      "gate": true,
+      "mixtureNll": 0.6398396733630692,
+      "rows": 449,
+      "teacherNll": 0.5485832236136547,
+      "zeroExactMassRows": 0
+    },
+    "writhingRitual": {
+      "exposure": {
+        "mean": 0.12173154116677021,
+        "repetitions": 1000,
+        "rows": 31,
+        "sourceBootstrap95": [
+          0.049949504424000805,
+          0.20782105781636465
+        ],
+        "sources": 31
+      },
+      "gate": false,
+      "mixtureNll": 0.618374827404101,
+      "rows": 31,
+      "teacherNll": 0.49664328623733084,
+      "zeroExactMassRows": 0
+    }
+  },
+  "sourceSha": "4b7f6befa2c48a1ba0682028f9f86d0578644142",
+  "supportChanged": false
+}

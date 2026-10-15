@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths-ignore:
+      - 'docs/**'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux-gcc:
+    name: Linux GCC
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # CI cache settings; local builds use ccache only through the opt-in presets.
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 1G
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install compiler and build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential cmake python3-dev ccache
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Verify and sync locked Python environment
+        run: |
+          uv lock --check
+          uv sync --locked --extra analysis
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Check repository prerequisites
+        run: tools/agent/doctor.sh
+
+      - name: Check repository health
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          test -n "$BASE_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git cat-file -e "$BASE_SHA^{commit}"
+          python3 tools/repo_health.py --baseline "$BASE_SHA" --json | tee /tmp/repo-health.json
+
+      - name: Test repository health checker
+        run: python3 -m unittest discover -s tests -p 'test_repo_health.py' -v
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        id: ccache-cache
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-gcc-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ runner.arch }}-gcc-
+
+      - name: Print ccache diagnostic before build
+        run: |
+          ccache --version
+          ccache --show-config | head -20
+          echo "--- ccache stats (pre-build) ---"
+          ccache --zero-stats
+          ccache --show-stats
+
+      - name: Configure
+        run: cmake --preset linux-gcc-debug
+
+      - name: Build
+        run: cmake --build --preset linux-gcc-debug-build --parallel 2
+
+      - name: Print ccache statistics after build
+        if: always()
+        run: |
+          echo "--- ccache stats (post-build) ---"
+          ccache --show-stats || true
+
+      - name: Test
+        run: ctest --preset linux-gcc-test -L 'core|smoke'

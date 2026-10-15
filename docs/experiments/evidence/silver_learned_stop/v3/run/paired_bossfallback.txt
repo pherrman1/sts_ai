@@ -1,0 +1,12 @@
+=== Paired comparison (1024 seeds) ===
+Metric                          #199 bossfallback      Delta
+Win rate                       78.3%      78.8%      +0.5pp
+  Win diff 95% CI: [-2.0pp, +2.8pp]
+Avg floor                      49.1      49.4      +0.3
+  Floor diff 95% CI: [+0.0, +0.6]
+Avg HP end                     33.0      32.1      -0.9
+Avg sec/run                   29.29     25.58     -3.71
+  Discordant: 155/1024 (15%)
+  Both win: 727, both lose: 142, #199-only: 75, bossfallback-only: 80
+  #199 Wilson 95% CI: [75.7%, 80.7%]
+  bossfallback Wilson 95% CI: [76.2%, 81.2%]

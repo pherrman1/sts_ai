@@ -1,0 +1,13 @@
+{
+  "schema": "k_precision_execution_block_v1",
+  "status": "EXECUTION_BLOCKED",
+  "source_seed": 610084217,
+  "invocation_status": "timeout",
+  "exit_code": 124,
+  "wall_seconds": 1800.0335158249945,
+  "receipt_sha256": "a4f6619ed3272702b071f56dbef416fbd4f54ac1af199d85c42337253ddbd137",
+  "freeze_sha256": "fc86c6e538618bf9212ffca58d422bda472954aa00f67a9216c3129c1a0df859",
+  "detected_epoch": 1791455607.7516744,
+  "response": "Keep fixed queue and caps unchanged; no numerical selection/evaluation because complete contract cannot pass; no replacement/retry/extension.",
+  "evaluation_outcomes_opened": false
+}

@@ -1,0 +1,102 @@
+{
+  "schema": "shared_transition_encoder_potion_v1_evidence",
+  "decision": "SHARED_TRANSITION_POTION_REJECTED",
+  "baseSha": "c371f3c29ffab07096c71fc66a4ab930e9595952",
+  "experimentSha": "71d3d4d6343ed3b1e3ebfbb4b4c9eb230976d0f5",
+  "recipeEpochs": 24,
+  "seed": 20260912,
+  "selectedEpoch": 23,
+  "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+  "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+  "counts": {
+    "TRAIN": {"rows": 393677, "sources": 19986},
+    "VALIDATION": {"rows": 48590, "sources": 2496}
+  },
+  "testInferenceRows": 0,
+  "testMetricsComputed": false,
+  "teachersFrozen": true,
+  "validationInGradientUpdates": false,
+  "calibration": {
+    "rows": 8192,
+    "rowIdsSha256": "122776e919b5fd6445b516ae8e9f70aa5db4f4c3d1eccbb994f0e7de80ffa053",
+    "scales": {
+      "s_max": 0.0021965544365230016,
+      "s_hp": 0.011543620959855616,
+      "s_potion": 2.281699538230896
+    }
+  },
+  "batchOrderSha256": "9615a714605fac562b61f93779f7a1204f3a71d5125b329558eb0a2915e45375",
+  "artifacts": {
+    "candidateCheckpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+    "candidateReceiptSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
+    "maxHPTeacherSha256": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "HPTeacherSha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "dedicatedPotionSha256": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "externalResultSha256": "2a3c6aa4f08e94965fd92b88a70823d99da760057f657493ae312f78c7e2e87d",
+    "selectedCheckpointSha256": "70c1fbaf8fed3bdf68219edfbad78a6690411326bd9c88133c560c4120c7d23b"
+  },
+  "history": [
+    {"epoch": 1, "validationPotionNll": 0.5628084053748682, "eligible": true},
+    {"epoch": 2, "validationPotionNll": 0.5489933826597797, "eligible": true},
+    {"epoch": 3, "validationPotionNll": 0.5430533135936769, "eligible": true},
+    {"epoch": 4, "validationPotionNll": 0.5413145550985654, "eligible": true},
+    {"epoch": 5, "validationPotionNll": 0.5366710207155203, "eligible": true},
+    {"epoch": 6, "validationPotionNll": 0.5332990933130832, "eligible": true},
+    {"epoch": 7, "validationPotionNll": 0.5309248706378059, "eligible": true},
+    {"epoch": 8, "validationPotionNll": 0.5305057104489089, "eligible": true},
+    {"epoch": 9, "validationPotionNll": 0.5281665082656442, "eligible": true},
+    {"epoch": 10, "validationPotionNll": 0.5275283005179868, "eligible": true},
+    {"epoch": 11, "validationPotionNll": 0.5257935745571416, "eligible": true},
+    {"epoch": 12, "validationPotionNll": 0.5243396687984324, "eligible": true},
+    {"epoch": 13, "validationPotionNll": 0.5244311126996739, "eligible": true},
+    {"epoch": 14, "validationPotionNll": 0.5269960844736131, "eligible": true},
+    {"epoch": 15, "validationPotionNll": 0.5237848818989356, "eligible": true},
+    {"epoch": 16, "validationPotionNll": 0.5223428266751123, "eligible": true},
+    {"epoch": 17, "validationPotionNll": 0.5219145611071074, "eligible": true},
+    {"epoch": 18, "validationPotionNll": 0.5231695796422318, "eligible": true},
+    {"epoch": 19, "validationPotionNll": 0.5222223436497231, "eligible": true},
+    {"epoch": 20, "validationPotionNll": 0.521448017874649, "eligible": true},
+    {"epoch": 21, "validationPotionNll": 0.5216532176516806, "eligible": true},
+    {"epoch": 22, "validationPotionNll": 0.5202583966320865, "eligible": true},
+    {"epoch": 23, "validationPotionNll": 0.5200218808379603, "eligible": true},
+    {"epoch": 24, "validationPotionNll": 0.5215835824796956, "eligible": true}
+  ],
+  "preservation": {
+    "eligible": true,
+    "maxHpNllRelative": -0.005144533741993983,
+    "maxHpAccuracyDrop": 0.00016464293064422098,
+    "maxHpExpectedMaeDelta": 0.00047038760532629176,
+    "hpNllRelative": 0.0011680002107152924,
+    "hpCrpsRelative": 0.002460397078522547,
+    "hpExpectedMaeDelta": 0.010358403913672376
+  },
+  "teacherForcedPotion": {
+    "decision": "TEACHER_FORCED_REJECTED",
+    "dedicatedTrajectoryNll": 0.5040243655309458,
+    "candidateTrajectoryNll": 0.5200218808404137,
+    "trajectoryNllRelative": 0.03173956737709679,
+    "noChangeBrierDelta": 0.0030060534924076093,
+    "actionModeAccuracyDrop": 0.0035858733269398257,
+    "countAccuracyDrop": 0.004649126464579045,
+    "illegalProbabilityMax": 0.0,
+    "normalizationErrorMax": 2.0352331775441712e-07,
+    "slices": {
+      "brewRelative": 0.12060038294048699,
+      "smokeRelative": 0.15589325228217163,
+      "recursiveBrewRelative": 0.20279678859062375,
+      "trajectorySpecialRelative": 0.1263909539296852
+    }
+  },
+  "ancestral": null,
+  "ancestralSkippedReason": "teacher-forced potion gate failed",
+  "wallSeconds": 610.3019075400007,
+  "checks": {
+    "focusedTests": "20 tests, OK",
+    "pyCompile": true,
+    "jsonValidation": true,
+    "gitDiffCheck": true,
+    "realArtifactPreflight": true,
+    "fixedGpuRun": "24/24 epochs completed"
+  },
+  "uncertainty": "one offline TRAIN/VALIDATION run; no TEST, runtime, export, promotion or gameplay"
+}

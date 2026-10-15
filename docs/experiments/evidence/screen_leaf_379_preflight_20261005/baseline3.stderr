@@ -1,0 +1,24 @@
+[ooc-cpu-profile] {"combatTransitionHybrid":{"activeLizardEnabled":false,"fallbackRate":0.0,"fallbackSamples":0,"fallbackSupportFailures":0,"fastPreparations":0,"fastSamples":0,"fastSupportFailures":0,"lizardBoundaryExclusions":0,"lizardConsumedLosses":0,"lizardConsumedWins":0,"lizardOrdinaryWins":0,"lizardPreparations":0,"lizardSamples":0,"lizardSupportFailures":0,"preparations":0,"standardBrewFallbackPreparations":0,"uniqueBrewPredictorStates":0},"counters":{"combat_prepare":{"calls":26989,"exclusiveCpuSec":92.86489785500146,"inclusiveCpuSec":92.86489785500146},"combat_resolve":{"calls":28127,"exclusiveCpuSec":5.885905250999786,"inclusiveCpuSec":5.885905250999786},"evaluate_leaf":{"calls":158196,"exclusiveCpuSec":27.45263263599928,"inclusiveCpuSec":52.92752160100449},"leaf_features":{"calls":158193,"exclusiveCpuSec":0.3422329469966749,"inclusiveCpuSec":0.3422329469966749},"leaf_predict":{"calls":158193,"exclusiveCpuSec":2.658234034003226,"inclusiveCpuSec":2.658234034003226},"leaf_value":{"calls":158193,"exclusiveCpuSec":0.32848355100140236,"inclusiveCpuSec":3.3289505320013038},"mcts":{"calls":143,"exclusiveCpuSec":1.0358589879951288,"inclusiveCpuSec":170.53030348700014},"metadata":{"calls":154486,"exclusiveCpuSec":5.318558669003119,"inclusiveCpuSec":5.318558669003119},"policy_logits":{"calls":77859,"exclusiveCpuSec":0.16056076299727745,"inclusiveCpuSec":11.179420159001051},"policy_predict":{"calls":77859,"exclusiveCpuSec":3.321747135001087,"inclusiveCpuSec":11.018859396003773},"policy_prepare":{"calls":77859,"exclusiveCpuSec":0.4684318960014127,"inclusiveCpuSec":0.4684318960014127},"prior_build":{"calls":150099,"exclusiveCpuSec":0.2515238219948998,"inclusiveCpuSec":11.452426778996422},"real_combat":{"calls":27,"exclusiveCpuSec":54.978342472999984,"inclusiveCpuSec":54.978342472999984},"singleton_prior":{"calls":34085,"exclusiveCpuSec":0.021482798000471925,"inclusiveCpuSec":0.021482798000471925},"successor":{"calls":154441,"exclusiveCpuSec":5.641148784999873,"inclusiveCpuSec":99.79593745000098},"v4_action_value":{"calls":496750,"exclusiveCpuSec":8.3414110150017,"inclusiveCpuSec":8.3414110150017},"v4_encode_deck":{"calls":174970,"exclusiveCpuSec":8.367379171995701,"inclusiveCpuSec":8.367379171995701},"v4_encode_pot":{"calls":174970,"exclusiveCpuSec":0.18482337899377066,"inclusiveCpuSec":0.18482337899377066},"v4_encode_rel":{"calls":174970,"exclusiveCpuSec":0.559358176000284,"inclusiveCpuSec":0.559358176000284},"v4_state_fusion":{"calls":174970,"exclusiveCpuSec":6.767358120003646,"inclusiveCpuSec":6.767358120003646},"v4_state_network":{"calls":174970,"exclusiveCpuSec":0.5582744950099383,"inclusiveCpuSec":16.43719334200334}},"expandedNodesByActionCount":{"0":0,"1":34085,"2":35181,"3+":80833},"mctsCpuSec":170.53063082999998,"processCpuAtReportSec":225.65416163,"realCombats":27,"seed":12002032,"singletonPolicyInferenceCalls":0,"singletonPolicyLogitCalls":0}
+	Command being timed: "bash tools/seed_guard.sh /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/linux-gcc-release/one_combat bestbench 10000 1 0 12002032 /home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/docs/experiments/evidence/screen_leaf_379_preflight_20261005/baseline3.csv"
+	User time (seconds): 222.55
+	System time (seconds): 3.12
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:45.74
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 370344
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 139933
+	Voluntary context switches: 35
+	Involuntary context switches: 1899
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 176
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

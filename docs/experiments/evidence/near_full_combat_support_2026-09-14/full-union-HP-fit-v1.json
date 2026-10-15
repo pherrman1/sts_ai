@@ -1,0 +1,91 @@
+{
+  "artifactSha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+  "component": "HP",
+  "hashes": {
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "validationNll": 2.5360560417175293
+    },
+    {
+      "epoch": 2,
+      "validationNll": 2.5262434482574463
+    },
+    {
+      "epoch": 3,
+      "validationNll": 2.5173981189727783
+    },
+    {
+      "epoch": 4,
+      "validationNll": 2.5150179862976074
+    },
+    {
+      "epoch": 5,
+      "validationNll": 2.513741970062256
+    },
+    {
+      "epoch": 6,
+      "validationNll": 2.5119857788085938
+    },
+    {
+      "epoch": 7,
+      "validationNll": 2.508638858795166
+    },
+    {
+      "epoch": 8,
+      "validationNll": 2.503694534301758
+    },
+    {
+      "epoch": 9,
+      "validationNll": 2.5036635398864746
+    },
+    {
+      "epoch": 10,
+      "validationNll": 2.5030150413513184
+    },
+    {
+      "epoch": 11,
+      "validationNll": 2.5002799034118652
+    },
+    {
+      "epoch": 12,
+      "validationNll": 2.4982755184173584
+    }
+  ],
+  "originalValidationNll": 2.568683385848999,
+  "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+  "recipe": {
+    "batch": 512,
+    "clip": 1.0,
+    "encoderLr": 0.0001,
+    "epochs": 12,
+    "evidence": "engineering development; original TEST reused, not untouched confirmation",
+    "headLr": 0.001,
+    "population": "entire provisional final union; original source-grouped TRAIN",
+    "scope": "existing survival, maxHP, HP and potion encoder/head architectures; shared 64-action native trajectory extension",
+    "seed": 20260912,
+    "selection": "earliest strict minimum original VALIDATION NLL",
+    "weightDecay": 0.0001
+  },
+  "selectedEpoch": 12,
+  "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+  "supportChanged": false,
+  "testNll": 2.5076141357421875,
+  "testRows": 49630,
+  "trainRows": 393677,
+  "validationRows": 48590,
+  "warmBindings": {}
+}

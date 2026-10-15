@@ -1,0 +1,10 @@
+{
+  "modid": "stsmodelinspector",
+  "name": "STS Model Inspector",
+  "author_list": ["pherrman1"],
+  "description": "Private, read-only in-game observer for the local STS model advisor.",
+  "version": "0.1.0",
+  "sts_version": "12-18-2022",
+  "mts_version": "3.30.3",
+  "dependencies": ["basemod"]
+}

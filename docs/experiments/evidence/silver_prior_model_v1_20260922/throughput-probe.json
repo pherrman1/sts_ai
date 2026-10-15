@@ -1,0 +1,12 @@
+{
+  "roots": 8862,
+  "actions": 57012,
+  "wall_seconds": 1.3606546110095223,
+  "roots_per_second": 6513.041537723478,
+  "actions_per_second": 41900.42023794752,
+  "max_rss_kib": 555624,
+  "device": "cpu",
+  "temperature": "T1",
+  "temperature_value": 0.5899875000025645,
+  "epoch_count": 1
+}

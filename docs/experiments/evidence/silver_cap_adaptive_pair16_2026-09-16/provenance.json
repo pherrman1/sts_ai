@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-16",
+  "purpose": "Fresh paired N16 comparison of the current #199 retained-adaptive policy at allocated Silver caps 32768 and 131072.",
+  "source_sha": "3fb0c8ce2e009c2ef7a3abee5584556aff515261",
+  "binary_sha256": "46b6b6f55e4f9dfa7ea40dfdfd35be643f3d1960ea331dcaaa5fd8016f7b052e",
+  "silver_upstream_sha": "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff",
+  "seed_block": {"lo": 256, "hi": 271, "count": 16, "paired": true, "fresh_against_prior_ledger_blocks": true},
+  "common_configuration": {
+    "character": "Ironclad",
+    "ascension": 0,
+    "fair": true,
+    "silver": true,
+    "native_ooc": true,
+    "searcher3": false,
+    "threads": 4,
+    "base_budget": 10000,
+    "reuse_cap_mode": "allocated",
+    "adaptive": true,
+    "adaptive_retained_only": true,
+    "adaptive_top_gap": 0.2932885906040268,
+    "exact_root_budgets": false,
+    "ctm_adaptive": false,
+    "convergence": false,
+    "ooc_mcts": false,
+    "collect_keys": false,
+    "exact_visit_lock": false,
+    "rho_racing": false
+  },
+  "commands": {
+    "32k": "/usr/bin/time -v env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=0 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_REUSE_CAP=32768 STS_SILVER_ADAPTIVE=1 STS_SILVER_ADAPTIVE_RETAINED_ONLY=1 STS_SILVER_ADAPTIVE_TOP_GAP=0.2932885906040268 STS_SILVER_EXACT_VISIT_LOCK=0 STS_SILVER_RHO_RACING=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_NATIVE_OOC=1 STS_COLLECT_KEYS=0 STS_OOC_MCTS=0 STS_SIM_ADAPT=0 STS_CONVERGE=0 STS_CONV_ROOT=0 STS_SILVER_TELEMETRY=1 STS_SILVER_SCALING_DIAG_FILE=docs/experiments/evidence/silver_cap_adaptive_pair16_2026-09-16/32k/scaling.csv STS_EXECUTABLE_GIT_SHA=3fb0c8ce2e009c2ef7a3abee5584556aff515261 bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 10000 16 0 256 docs/experiments/evidence/silver_cap_adaptive_pair16_2026-09-16/32k/results.csv",
+    "128k": "/usr/bin/time -v env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=0 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_REUSE_CAP=131072 STS_SILVER_ADAPTIVE=1 STS_SILVER_ADAPTIVE_RETAINED_ONLY=1 STS_SILVER_ADAPTIVE_TOP_GAP=0.2932885906040268 STS_SILVER_EXACT_VISIT_LOCK=0 STS_SILVER_RHO_RACING=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_NATIVE_OOC=1 STS_COLLECT_KEYS=0 STS_OOC_MCTS=0 STS_SIM_ADAPT=0 STS_CONVERGE=0 STS_CONV_ROOT=0 STS_SILVER_TELEMETRY=1 STS_SILVER_SCALING_DIAG_FILE=docs/experiments/evidence/silver_cap_adaptive_pair16_2026-09-16/128k/scaling.csv STS_EXECUTABLE_GIT_SHA=3fb0c8ce2e009c2ef7a3abee5584556aff515261 bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 10000 16 0 256 docs/experiments/evidence/silver_cap_adaptive_pair16_2026-09-16/128k/results.csv"
+  },
+  "validation": [
+    "Both guarded producers exited 0.",
+    "Strict paired_analysis.py completed without --allow-partial.",
+    "Sidecars match on common configuration, models, source, and seed block; only cap, output path, argv path, and timestamp differ.",
+    "All 500-simulation stops satisfy retained/non-forced/inherited-visits/threshold invariants.",
+    "Failure counters and exact-lock/rho counters are zero in both arms."
+  ],
+  "decision": "KEEP_32768_PRODUCTION"
+}

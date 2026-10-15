@@ -1,0 +1,108 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux-gcc-release",
+      "displayName": "Linux/WSL GCC Release",
+      "description": "Verified GNU C++/Unix Makefiles configuration for Linux and WSL.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/linux-gcc-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "linux-gcc-debug",
+      "displayName": "Linux/WSL GCC Debug",
+      "description": "GNU C++/Unix Makefiles configuration for assertion-dependent CTest checks.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/linux-gcc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "linux-gcc-release-ccache",
+      "displayName": "Linux/WSL GCC Release (shared ccache)",
+      "description": "Release build with a compiler cache shared by sibling Git worktrees.",
+      "inherits": "linux-gcc-release",
+      "binaryDir": "${sourceDir}/build/linux-gcc-release-ccache",
+      "environment": {
+        "CCACHE_BASEDIR": "${sourceParentDir}",
+        "CCACHE_COMPILERCHECK": "content",
+        "CCACHE_DIR": "$penv{HOME}/.cache/sts_ai/ccache",
+        "CCACHE_MAXSIZE": "1G"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+      }
+    },
+    {
+      "name": "linux-gcc-debug-ccache",
+      "displayName": "Linux/WSL GCC Debug (shared ccache)",
+      "description": "Debug build with a compiler cache shared by sibling Git worktrees.",
+      "inherits": "linux-gcc-debug",
+      "binaryDir": "${sourceDir}/build/linux-gcc-debug-ccache",
+      "environment": {
+        "CCACHE_BASEDIR": "${sourceParentDir}",
+        "CCACHE_COMPILERCHECK": "content",
+        "CCACHE_DIR": "$penv{HOME}/.cache/sts_ai/ccache",
+        "CCACHE_MAXSIZE": "1G"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-gcc-build",
+      "displayName": "Build Linux/WSL GCC Release",
+      "configurePreset": "linux-gcc-release",
+      "jobs": 0
+    },
+    {
+      "name": "linux-gcc-debug-build",
+      "displayName": "Build Linux/WSL GCC Debug",
+      "configurePreset": "linux-gcc-debug",
+      "jobs": 0
+    },
+    {
+      "name": "linux-gcc-release-ccache-build",
+      "displayName": "Build Linux/WSL GCC Release with shared ccache",
+      "configurePreset": "linux-gcc-release-ccache",
+      "jobs": 0
+    },
+    {
+      "name": "linux-gcc-debug-ccache-build",
+      "displayName": "Build Linux/WSL GCC Debug with shared ccache",
+      "configurePreset": "linux-gcc-debug-ccache",
+      "jobs": 0
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux-gcc-test",
+      "displayName": "Test Linux/WSL GCC Debug",
+      "configurePreset": "linux-gcc-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-gcc-ccache-test",
+      "displayName": "Test Linux/WSL GCC Debug built with shared ccache",
+      "configurePreset": "linux-gcc-debug-ccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,611 @@
+{
+  "schema": "overnight_gen2_probe_evaluation_v1",
+  "status": "DIAGNOSTIC_EVALUATION_COMPLETE",
+  "choice_sha256": "3a07120ae68e25ba93cda2f3924a20d24f4ecbbc78beaab362f59ae4eb339cc4",
+  "freeze_sha256": "8c7a1b9060159983b3a09e43e673e891c59be918e82c405784455143235d10bf",
+  "selection_k": [
+    0,
+    1
+  ],
+  "evaluation_k": [
+    2,
+    3
+  ],
+  "source_seeds": [
+    610084000,
+    610084001,
+    610084002,
+    610084003
+  ],
+  "states": [
+    {
+      "source_seed": 610084000,
+      "decision_idx": 36,
+      "type": "BOSS_RELIC",
+      "act": 1,
+      "floor": 17,
+      "baseline_option_key": "ooc:v1:effect=27:source=9:relic=17:occurrence=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=17:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=81:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=81:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084000,
+      "decision_idx": 71,
+      "type": "CARD_REWARD",
+      "act": 2,
+      "floor": 33,
+      "baseline_option_key": "ooc:v1:effect=5:source=7:reward=card,202,0,0:group=[141,0,0;202,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,202,0,0:group=[141,0,0;202,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,141,0,0:group=[141,0,0;202,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 1,
+          "paired_gain": -0.5,
+          "selected_only": 0,
+          "baseline_only": 1,
+          "both_win": 1,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,141,0,0:group=[141,0,0;202,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 1,
+          "paired_gain": -0.5,
+          "selected_only": 0,
+          "baseline_only": 1,
+          "both_win": 1,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084001,
+      "decision_idx": 36,
+      "type": "BOSS_RELIC",
+      "act": 1,
+      "floor": 17,
+      "baseline_option_key": "ooc:v1:effect=27:source=9:relic=81:occurrence=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=81:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=81:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=81:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084001,
+      "decision_idx": 47,
+      "type": "CARD_REWARD",
+      "act": 2,
+      "floor": 22,
+      "baseline_option_key": "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[24,0,0;244,0,0;249,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,24,0,0:group=[24,0,0;244,0,0;249,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,249,0,1:group=[24,0,0;244,0,0;249,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,249,0,1:group=[24,0,0;244,0,0;249,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084002,
+      "decision_idx": 3,
+      "type": "CARD_REWARD",
+      "act": 1,
+      "floor": 1,
+      "baseline_option_key": "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=12:source=7:reward=none:group=[178,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[178,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084002,
+      "decision_idx": 85,
+      "type": "BOSS_RELIC",
+      "act": 2,
+      "floor": 34,
+      "baseline_option_key": "ooc:v1:effect=27:source=9:relic=114:occurrence=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=114:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=135:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=135:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084003,
+      "decision_idx": 21,
+      "type": "CARD_REWARD",
+      "act": 1,
+      "floor": 10,
+      "baseline_option_key": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[57,0,0;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[57,0,0;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[57,0,0;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[57,0,0;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    },
+    {
+      "source_seed": 610084003,
+      "decision_idx": 76,
+      "type": "BOSS_RELIC",
+      "act": 2,
+      "floor": 34,
+      "baseline_option_key": "ooc:v1:effect=27:source=9:relic=102:occurrence=0",
+      "baseline_wins": 2,
+      "future_pairs": 2,
+      "rules": {
+        "rollout": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=102:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "P0-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=156:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        },
+        "F2-s0": {
+          "option_key": "ooc:v1:effect=27:source=9:relic=156:occurrence=0",
+          "selected_wins": 2,
+          "paired_gain": 0.0,
+          "selected_only": 0,
+          "baseline_only": 0,
+          "both_win": 2,
+          "both_lose": 0
+        }
+      }
+    }
+  ],
+  "summaries": {
+    "rollout": {
+      "per_source_mean_paired_gain": {
+        "610084000": 0.0,
+        "610084001": 0.0,
+        "610084002": 0.0,
+        "610084003": 0.0
+      },
+      "observed_source_clusters": 4,
+      "allocated_source_clusters": 4,
+      "equal_source_mean_paired_gain": 0.0,
+      "pooled_state_mean_paired_gain": 0.0,
+      "action_changes": 2
+    },
+    "P0-s0": {
+      "per_source_mean_paired_gain": {
+        "610084000": -0.25,
+        "610084001": 0.0,
+        "610084002": 0.0,
+        "610084003": 0.0
+      },
+      "observed_source_clusters": 4,
+      "allocated_source_clusters": 4,
+      "equal_source_mean_paired_gain": -0.0625,
+      "pooled_state_mean_paired_gain": -0.0625,
+      "action_changes": 5
+    },
+    "F2-s0": {
+      "per_source_mean_paired_gain": {
+        "610084000": -0.25,
+        "610084001": 0.0,
+        "610084002": 0.0,
+        "610084003": 0.0
+      },
+      "observed_source_clusters": 4,
+      "allocated_source_clusters": 4,
+      "equal_source_mean_paired_gain": -0.0625,
+      "pooled_state_mean_paired_gain": -0.0625,
+      "action_changes": 6
+    }
+  },
+  "confidence_intervals": null,
+  "inference": "Descriptive contrasts only; four source clusters cannot qualify any challenger or establish a ranking.",
+  "contract_cost": {
+    "source_cpu_seconds": 62.46158,
+    "branch_cpu_seconds": 1291.933931,
+    "invocation_wall_seconds_sum": 1355.5126197969948,
+    "label_rows": 128
+  },
+  "inputs": [
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+      "sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.labels.csv",
+      "sha256": "e9748a54226b27401e05f28176d4c8da03d1a11246cca1a18c5488d34be9a1c2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.log",
+      "sha256": "1dc85bdd36ce8ff171de295ef330463deea0b8cc97d111c6e98fcfaee0ad07d3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.manifest.json",
+      "sha256": "760df1f1ea8f472f326f1b4b3c4424b2c3be343c05665f0102c46b4b43705a3e"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.map.csv",
+      "sha256": "c53898c7e57118ed4c5357d260affc111b05010483d4d36eb80e5fa90525a6cb"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.options.csv",
+      "sha256": "2437f9ff50969d249b039bad54c270475bf8cc141c14a47a260c6278173dc024"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.receipt.json",
+      "sha256": "4b0c9dbae60f821dac2e95849d3058581a0628f08ebb0c9ab802da857da16295"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.sources.csv",
+      "sha256": "60c4c363e5de830eeb9eef4bb970854a58dff51c596b57dbe56405dcea2bf67a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084000.tree.jsonl",
+      "sha256": "1d772edbd734f14f8fe766fc6356a01cf18269cdbafe6e26e8df1f5bfe76d80c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.labels.csv",
+      "sha256": "8aab77b1c67eea90a72d78a223f41409dc8bc08edd2f499b3e638b89c39861c4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.log",
+      "sha256": "ed6815eb1c7007e4c74dfe7efaf82ecff9d42b3b683ca65e13ed2e4d2842cabe"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.manifest.json",
+      "sha256": "4715816d3d8f20fb6ce5b9cb5301f8d2f427c8aa42977446d4aef0a17d1b7e7c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.map.csv",
+      "sha256": "1cfa0b4dcc3ce7e2115b4d5b3b79bd10ef6e02005a8ee3089dfa180caad3f6ed"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.options.csv",
+      "sha256": "8ca589df376ea7e7b85120f694963c18e09374b43784d22bac0482ff4d86a034"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.receipt.json",
+      "sha256": "8a81af94ff703cdcdf9c5facc9b279d85675cabb0b9e2ff63d1b50dbc445878a"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.sources.csv",
+      "sha256": "870c932da7ddca167b4fd80c6a76c38047cd78f26fc2eb1dacdafb7ba1c8e45c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084001.tree.jsonl",
+      "sha256": "d2cf2e9e20c09f8a89b6c5d42f83888b390bd043fe62039193558e294b8f34b3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.labels.csv",
+      "sha256": "e2f9e47e96aa5c88a5d0077b2cedd77a0680f83fe78979a25c48caacc6668e10"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.log",
+      "sha256": "41ecb22abbcdbdd8a195d9ec93a5146b5a4a76df4365c40b35cbff4150ba542d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.manifest.json",
+      "sha256": "064ac377add430a24b40157ba60aca6b4f3a519a39c98f33cde75e7246e60ffd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.map.csv",
+      "sha256": "d496f567e419df3e9fe4d03dcdba9a624fc08ce80ca8a19168620bf025a5eb38"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.options.csv",
+      "sha256": "ac400fa4aaa14842a1d83ba321cb3a63af13f231a3c79cd80010972dbb42aae6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.receipt.json",
+      "sha256": "008c9c6a742235f537a9caafbd3a4d38b243c3c231abae1e592fcb1cdb3651ad"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.sources.csv",
+      "sha256": "840f1b0b916fc49ce14a7042c278f35bc3ef91dd792867dd173ca14a9b0e90f1"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084002.tree.jsonl",
+      "sha256": "145b3f025fc75943d05285a565cc5a104b2b7a25df6c64f1911ed9aeda684d6f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.labels.csv",
+      "sha256": "6d48382a6e0fbd45a51609466538f82b66e682f024fc9d55ab398b4970413325"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.log",
+      "sha256": "ea5d4ec360a14c3a8b23a7bd8dd4190dcf62bc3959abc6428a219d624ce51d0f"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.manifest.json",
+      "sha256": "027572593d9bf4714365446a45a327cbf493f6db7bb2f0f216db5a20a9d936cf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.map.csv",
+      "sha256": "90e326abf710ebe744b4340998983a724bc6336c55f9cfbe82a1c873bdefe346"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.options.csv",
+      "sha256": "f9f5a929789e6b8915c32b4d56ffd4e110000f9fb563924d219d6a6b023a86e2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.receipt.json",
+      "sha256": "614a4f15402977354ec5a35fcaf9c108c938c28c20cda4fc8894132e82f5cd7d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.sources.csv",
+      "sha256": "f99f8970bee20eb27eea47bc51c18c33d1e9d7f919cbd0ce5fe31633e4edd0a7"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/gen2-canary-3ed9/seed-610084003.tree.jsonl",
+      "sha256": "5dec26069d4025b4e442cb91ec0b53936ff43d627a9911a5b247a4763c3903dd"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/native-e1-parity-736d-v2/F2-s0.log",
+      "sha256": "a0eb7ed1075a5d910764b17cca6d03ee7c97edef461e3be650e7767dbb181b2c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/native-e1-parity-736d-v2/P0-s0.log",
+      "sha256": "7fd7e8bce92552dceab2388b36e4f737a0a451cfc91da0df2834b1783a4dbee6"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/public-e1-export/F2-s0.trees.txt",
+      "sha256": "8955d513fbd152c40d112604bb30c7da16ac0ff7b3dd1bf72717d2308bd83935"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/learning/public-e1-export/P0-s0.trees.txt",
+      "sha256": "3189c51ae352740e02a3f15cb691ca6e80324d88a6583c094ca81bae91c59ab0"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/export_receipt.json",
+      "sha256": "928e3520cc00fa87808ff2ae9533529895dade9cade7b9324a3425de1397714d"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/contract_receipt_v2.json",
+      "sha256": "bf2a82d869e809f6cd205a699d434b0f65c76daa3d6c8986a3e4e0619168bcf2"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/freeze.json",
+      "sha256": "8c7a1b9060159983b3a09e43e673e891c59be918e82c405784455143235d10bf"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/policy.json",
+      "sha256": "1d7f29703b20fbb4f9f37740438a316f5ae144a3d2133eec1e56e8239bcec188"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_canary_3ed9/teacher.json",
+      "sha256": "cf30c66df49aa9a11097320511b5bc70564e838541089465e3c315c2c4815040"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/gen2_probe_3ed9_choices.json",
+      "sha256": "3a07120ae68e25ba93cda2f3924a20d24f4ecbbc78beaab362f59ae4eb339cc4"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/native_export_parity_receipt.json",
+      "sha256": "ae1daf771077d31aa6b013b44b4c4e6cb25327e21b99183c83f41698efa3c4f9"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/docs/experiments/evidence/ironclad_a0_overnight_20261008/learning/verify_gen2.py",
+      "sha256": "8f9c9a790fa8cd350572de516df80120134a8fdb4072de661876fdd945f4d3aa"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/src/sim/search/NativeSilverStopModel.cpp",
+      "sha256": "74c70373f985affb518047829710e91fffd6122901f1addd9285797a95216c1b"
+    },
+    {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/tools/analysis/vwin_tree_utils.py",
+      "sha256": "ab6f2df86101d97a7ecbef2f5b1910992cabdce217f8de953e37b5dd19ae9e47"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s0/model.ubj",
+      "sha256": "271166525f945e8834844a91e1bb17e4502deb6c7867934ba07137f159a7bd1e"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/F2-s0/predictor.json",
+      "sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/model.ubj",
+      "sha256": "ed8d95dcb93469cd4383d072c29ab5c21d268193f70e0348ab2f2a7c8f1d9de5"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/artifacts/vwin-refresh-334/e1-focal-20261007-36b5b14f/P0-s0/predictor.json",
+      "sha256": "8244cc2634d4be90bf15a9f0ddc76e316d3136de7b441ddcdac8d20628977ec0"
+    }
+  ],
+  "limits": [
+    "Four allocated source runs and at most eight selected states: contract/representation diagnostic only, no population-strength claim.",
+    "Retained action set only; early eligible CARD_REWARD/BOSS_RELIC states need not represent important later decisions.",
+    "One future k is paired between sibling actions; different decisions within a source are not independent runs.",
+    "Historical P0/F2 models omit four hidden encounter-queue features but retain E1 latent potion/rarity counters and privileged-teacher labels.",
+    "Model predictions are averaged over legitimate selection-future post-action MAP states; no realized evaluation MAP is used for action selection.",
+    "Historical export/native parity establishes arithmetic compatibility, not current-policy calibration or fair deployment qualification.",
+    "No training, test-split access, policy installation, adaptive extension, or final confirmation qualification."
+  ],
+  "analysis_script_sha256": "b843837e259c9fbabce330922deb5e496cb712ef435a26b410e5375c9bf75f54"
+}

@@ -1,0 +1,137 @@
+{
+  "policies": [
+    {
+      "arm": "pareto_1pct",
+      "cap_fallbacks": 528,
+      "cap_pressure": 1741,
+      "cap_rescued": 1213,
+      "decisions": 7287,
+      "elapsed": "3:17.74",
+      "exact_reroot_rate": 0.6299189814814815,
+      "exact_reroots": 4354,
+      "fallbacks": 2558,
+      "mean_floor": 42.6875,
+      "mean_hp": 24.125,
+      "mean_sec": 42.72484375,
+      "paired_vs_reference": {
+        "both_losses": 5,
+        "both_wins": 7,
+        "policy_only_wins": 1,
+        "reference_only_wins": 3
+      },
+      "reroot_attempts": 6912,
+      "retained_nonforced": 4026,
+      "rss_kib": 2138436,
+      "seeds": 16,
+      "simulations": 99191000,
+      "stop_counts": {
+        "500": 1832,
+        "1000": 51,
+        "2000": 75,
+        "4000": 125,
+        "8000": 158,
+        "10000": 359,
+        "20000": 373
+      },
+      "wins": 8
+    },
+    {
+      "arm": "pareto_2pct",
+      "cap_fallbacks": 343,
+      "cap_pressure": 1433,
+      "cap_rescued": 1090,
+      "decisions": 6589,
+      "elapsed": "2:31.00",
+      "exact_reroot_rate": 0.659666559794806,
+      "exact_reroots": 4115,
+      "fallbacks": 2123,
+      "mean_floor": 39.9375,
+      "mean_hp": 22.625,
+      "mean_sec": 32.653248749999996,
+      "paired_vs_reference": {
+        "both_losses": 6,
+        "both_wins": 8,
+        "policy_only_wins": 0,
+        "reference_only_wins": 2
+      },
+      "reroot_attempts": 6238,
+      "retained_nonforced": 3791,
+      "rss_kib": 2110216,
+      "seeds": 16,
+      "simulations": 78491500,
+      "stop_counts": {
+        "250": 1686,
+        "500": 30,
+        "1000": 27,
+        "2000": 77,
+        "4000": 408,
+        "8000": 149,
+        "10000": 56,
+        "20000": 713
+      },
+      "wins": 8
+    },
+    {
+      "arm": "pareto_5pct",
+      "cap_fallbacks": 171,
+      "cap_pressure": 664,
+      "cap_rescued": 493,
+      "decisions": 6735,
+      "elapsed": "1:44.68",
+      "exact_reroot_rate": 0.6889516635279347,
+      "exact_reroots": 4390,
+      "fallbacks": 1982,
+      "mean_floor": 41.625,
+      "mean_hp": 28.5625,
+      "mean_sec": 21.759800625,
+      "paired_vs_reference": {
+        "both_losses": 6,
+        "both_wins": 7,
+        "policy_only_wins": 0,
+        "reference_only_wins": 3
+      },
+      "reroot_attempts": 6372,
+      "retained_nonforced": 4021,
+      "rss_kib": 1915624,
+      "seeds": 16,
+      "simulations": 57546500,
+      "stop_counts": {
+        "250": 2136,
+        "500": 237,
+        "1000": 94,
+        "2000": 560,
+        "4000": 168,
+        "8000": 171,
+        "10000": 52,
+        "20000": 139
+      },
+      "wins": 7
+    }
+  ],
+  "reference": {
+    "arm": "reference_50k",
+    "cap_fallbacks": 3646,
+    "cap_pressure": 5217,
+    "cap_rescued": 1571,
+    "decisions": 8284,
+    "elapsed": "13:41.47",
+    "exact_reroot_rate": 0.25190452006094466,
+    "exact_reroots": 1984,
+    "fallbacks": 5892,
+    "mean_floor": 47.1875,
+    "mean_hp": 34.5625,
+    "mean_sec": 185.15859375,
+    "reroot_attempts": 7876,
+    "retained_nonforced": 0,
+    "rss_kib": 2248448,
+    "seeds": 16,
+    "simulations": 414200000,
+    "stop_counts": {},
+    "wins": 10
+  },
+  "schema_version": 1,
+  "seed_block": [
+    304,
+    319
+  ]
+}

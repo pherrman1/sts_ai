@@ -1,0 +1,38 @@
+{
+  "schema": "silver_rank4_visit_policy_online_screen_v1",
+  "date": "2026-08-30",
+  "valid": true,
+  "classification": "RANK4_VISIT_POLICY_ONLINE_SCREEN_INCONCLUSIVE",
+  "frozen_implementation": {
+    "implementation_sha": "0a8ec2087d5af7e9fec53323e84e5dc36a003f44",
+    "evidence_parent_sha": "424cecfb4a4d971763bf7464e58fca574c94a0ca",
+    "executable_sha256": "45305dfc93cf3261ff3d0ccc60ef2c87521a7b02253db93ee923d1938e4439ba",
+    "runtime_model_sha256": "bf16ecf38cd90c1deed494df1c8d16647e61cad7e57a13e7ef44d4bfe205c984",
+    "source_npz_sha256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf"
+  },
+  "protocol": {"seeds": [976064, 976095], "paired_seeds": 32, "ascension": 0, "act_horizon": 3, "fair_rng": true, "simulations_per_decision": 1000, "exact_root_budget": true, "reuse_cap_mode": "allocated", "reuse_cap": 32768, "threads_per_process": 1, "balanced_wave_processes": [24, 24, 16], "wave_wall_seconds": [11, 4, 6]},
+  "A_off": {"wins": 19, "win_rate": 0.59375, "mean_floor": 44.3125, "median_floor": 51.0, "mean_ending_hp": 32.9375, "mean_cpu_seconds": 3.68183634375, "total_cpu_seconds": 117.818763, "total_silver_simulations": 13823000, "cpu_seconds_per_1000_simulations": 0.008523385878608118},
+  "B_rank4": {"wins": 17, "win_rate": 0.53125, "mean_floor": 42.34375, "median_floor": 51.0, "mean_ending_hp": 33.15625, "mean_cpu_seconds": 3.7148100625, "total_cpu_seconds": 118.873922, "total_silver_simulations": 14067000, "cpu_seconds_per_1000_simulations": 0.008450552498755955, "policy_scored_roots": 14067, "policy_scored_actions": 89832, "fresh_prior_applications": 5071, "reused_prior_applications": 8996, "inference_microseconds": 609351, "inference_fraction_of_cpu": 0.005126027557162621},
+  "B_minus_A": {
+    "net_wins": -2,
+    "win_rate_delta": -0.0625,
+    "win_rate_delta_ci95": [-0.1875, 0.0625],
+    "mean_floor_delta": -1.96875,
+    "mean_floor_delta_ci95": [-5.6875, 1.9375],
+    "mean_ending_hp_delta": 0.21875,
+    "mean_ending_hp_delta_ci95": [-5.84375, 6.59375],
+    "mean_cpu_seconds_delta": 0.03297371875,
+    "mean_cpu_seconds_delta_ci95": [-0.534613834375, 0.646001005469],
+    "normalized_cpu_ratio": 0.9914548771005477,
+    "bootstrap_seed": 20260830,
+    "bootstrap_resamples": 10000
+  },
+  "validity": {"rows_per_arm": 32, "sidecars_per_arm": 32, "all_process_exit_codes_zero": true, "all_correctness_counters_zero": true, "selector_model_and_provenance_checks": "PASS"},
+  "artifacts": {
+    "manifest": {"path": "build/silver_visit_prior_online_screen_rank4_20260830/run_manifest.json", "sha256": "ac400d1244a93f72c040cf61f690b1b3502f8aee412315a36539e4bc50836c0b"},
+    "runner": {"path": "build/silver_visit_prior_online_screen_rank4_20260830/run_balanced_wave.sh", "sha256": "e10fa72a1ec9d971b89e75d01d9b69f1929b501ba8c6b9f17c88e3584e767e24"},
+    "analysis": {"path": "build/silver_visit_prior_online_screen_rank4_20260830/paired_analysis.json", "sha256": "dc874d905de356e01f7a58ce9ef82a2d04eed120b7eee23384f4b378fd24d47e"},
+    "raw_archive": {"path": "build/silver_visit_prior_online_screen_rank4_20260830/silver-visit-prior-rank4-screen-976064-976095-raw.tar.gz", "sha256": "9d1ac6a951d58f4d9867db03defcf8de6b2db54d38b436b6a68e4f956f98f44a"}
+  },
+  "interpretation": "Rank4 lost two net wins, so it neither met the positive continuation rule nor crossed the predeclared negative boundary. No tuning or follow-up run is authorized."
+}

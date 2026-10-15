@@ -1,0 +1,112 @@
+{
+  "label": {
+    "a0": "NOT_SHOWN",
+    "a20": "NOT_SHOWN"
+  },
+  "a0": {
+    "cohort": [
+      100000000,
+      100000499
+    ],
+    "dropped_seeds": {
+      "base": [],
+      "end": []
+    },
+    "timeouts": [],
+    "stalls": [],
+    "invalid_units": [],
+    "missing_cohort_seeds": {
+      "base": [],
+      "end": []
+    },
+    "non_cohort_seeds": [],
+    "pairs": 500,
+    "wins": {
+      "base": 402,
+      "end": 406
+    },
+    "delta_win": 0.008,
+    "delta_win_ci95": [
+      -0.012,
+      0.03
+    ],
+    "discordant_end_only": 17,
+    "discordant_base_only": 13,
+    "mcnemar_p": 0.584664711728692,
+    "mean_floor": {
+      "base": 48.938,
+      "end": 48.946
+    },
+    "delta_floor": 0.008,
+    "delta_floor_ci95": [
+      -0.012,
+      0.03
+    ],
+    "delta_hp_end": 4.934,
+    "boss_deaths": {
+      "base": 81,
+      "end": 77
+    },
+    "sec_per_run": {
+      "base": 63.118240639999996,
+      "end": 63.851765920000005
+    },
+    "reached_floor_50": {
+      "base": 451,
+      "end": 451
+    }
+  },
+  "a20": {
+    "cohort": [
+      100000500,
+      100000999
+    ],
+    "dropped_seeds": {
+      "base": [],
+      "end": []
+    },
+    "timeouts": [],
+    "stalls": [],
+    "invalid_units": [],
+    "missing_cohort_seeds": {
+      "base": [],
+      "end": []
+    },
+    "non_cohort_seeds": [],
+    "pairs": 500,
+    "wins": {
+      "base": 42,
+      "end": 47
+    },
+    "delta_win": 0.01,
+    "delta_win_ci95": [
+      -0.004,
+      0.024
+    ],
+    "discordant_end_only": 10,
+    "discordant_base_only": 5,
+    "mcnemar_p": 0.3017578125,
+    "mean_floor": {
+      "base": 32.97,
+      "end": 32.97
+    },
+    "delta_floor": 0.0,
+    "delta_floor_ci95": [
+      -0.024,
+      0.024
+    ],
+    "delta_hp_end": -0.428,
+    "boss_deaths": {
+      "base": 250,
+      "end": 245
+    },
+    "sec_per_run": {
+      "base": 36.975851240000004,
+      "end": 36.9529192
+    },
+    "reached_floor_50": {
+      "base": 160,
+      "end": 160
+    }
+  }
+}

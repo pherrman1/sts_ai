@@ -1,0 +1,77 @@
+{
+  "schema": "silver_policy_online_methods_evidence_v1",
+  "version": 1,
+  "verdict": "ONLINE_POLICY_METHODS_REJECTED",
+  "offline_verdict": "POLICY_MODEL_OFFLINE_REJECTED",
+  "offline_frozen_sha": "85599a3d2c6e55f32236ea59c814bdd1250d73bb",
+  "online_frozen_sha": "a805d1404e10cc6eaa4fc2d4268f450937b25f0e",
+  "explicit_exploratory_override": true,
+  "partial_attempts_are_not_scientific_evidence": true,
+  "attempts": {
+    "attempt_1": {"sha": "241112c40614356b90550f179d8f24c06f720b27", "status": "stopped_on_B_canary_internal_private_selection"},
+    "attempt_2": {"sha": "041acfcbcf3004a2c2730e44e5bdb2c4c26b8d66", "status": "partial_A_B_only_then_C_seed_975024_ambiguous_semantic_identity"},
+    "attempt_3": {"sha": "a805d1404e10cc6eaa4fc2d4268f450937b25f0e", "status": "complete_128_runs", "exact_action_repair": true, "former_crash_canaries_cleared": [975000, 975024]}
+  },
+  "artifacts": {
+    "executable_sha256": "351c781a3b4478418019368d6b1f235f99c853d6d78abeca6dff252299315433",
+    "model_json_sha256": "3de211d354c2e03de2516c5ab68d35ec8aba40a4c02cb61937c02925221d1f20",
+    "compact_model_sha256": "4e2925bd17154ab60fcef52018ade3a85f82f246b1dc149be0da5cd21249386d",
+    "features_sha256": "0377aaef862362cdf1fa3925579a73b66381cbd646762a0453b6a939149923bd",
+    "relabel_sha256": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c",
+    "native_predictions_sha256": "9d3ad9377276ee7c15421e902f70c3623bcd6b78a767cd9e3e8c8361b7c1aecb",
+    "raw_packet_sha256": "fa1b97b87c09b112073f14da2f966b89b54d9bc6254f7ae328d997a524d358d9",
+    "analysis_json_sha256": "689967986cf352b50f1f810036fd5166889ed473702b4aa0022cccd84a84afc3",
+    "raw_files": {
+      "A": {"csv": "c55101daa9970fb8e6521b3f225550062d03af41e01c093d965674d93d5686f2", "meta": "20866bc89d063f8bd582b90fbd095406e37805b9f9e5e65ba571356ea8cf99df", "log": "426e270ff6b35d47df8e47d0874f67dcfa840086ad19cb9639772668e52c89cd"},
+      "B": {"csv": "21b6df2dacf4c0edf09f451c40d1bfcc80905a6d7488f5b7c64cd14dd0bdc181", "meta": "f72bbe9b8c3bd1b0a215080d483bd914c2a2585a491d8479d0acb3c9db73aae9", "log": "2ab6e1b9f6986118a4154e2c3d4016ae5423f8962e97b16ac5f3e96517a9acfd"},
+      "C": {"csv": "9cca1c7e87a0170907aa7fa1139d11536890196af6475a04632ed91e438cefc6", "meta": "e6f41f0fe8372e414c24a8676cef2fc3eb3b5071c786b0fa29d86a18177fd1d0", "log": "12958fbd3408fa02b062c26aff385558726f1f1b6daa4b7c04b2814f14f0152f"},
+      "D": {"csv": "29126c0980253b284d7d2b45150e7e080b51699a18c529b48556dcea3a87cd60", "meta": "1b7c06b48420561d7febaf936bf46cbaac07849c776b6ff8368c3f236f41fbdf", "log": "47bc0d3014bcec8fe21071e366ec68e60d8c64534e1812188c9eaf3c49705ce2"}
+    }
+  },
+  "native_parity": {"parents": 93, "actions": 370, "max_abs_error": 0.000005231872011179917, "mean_abs_error": 0.0000005755666858123457, "tolerance": 0.00001, "passed": true},
+  "gcp": {"host": "sts-test", "zone": "europe-west3-c", "build": "Release", "compiler": "GNU 13.3.0", "omp_num_threads": 1, "fair": true, "backend": "ordinary Silver", "base_simulations": 1000, "reuse_cap_mode": "allocated", "reuse_cap": 32768, "seed_first": 975000, "seed_last": 975031, "seeds_per_arm": 32, "total_runs": 128, "cpuct": 2.5},
+  "arms": {
+    "A": {"ordering": "current", "selection": "ordinary_UCT", "wins": 20, "n": 32, "win_rate": 0.625, "mean_floor": 47.75, "median_floor": 51.0, "mean_ending_hp": 30.3125, "median_ending_hp": 20.5, "mean_cpu_seconds": 4.93176665625, "wall_seconds": 157.8, "cpu_ratio_vs_A": 1.0},
+    "B": {"ordering": "learned", "selection": "ordinary_UCT", "wins": 20, "n": 32, "win_rate": 0.625, "mean_floor": 46.59375, "median_floor": 51.0, "mean_ending_hp": 29.65625, "median_ending_hp": 31.5, "mean_cpu_seconds": 7.35509875, "wall_seconds": 235.4, "cpu_ratio_vs_A": 1.491372009800773},
+    "C": {"ordering": "current", "selection": "learned_rank_PUCT", "wins": 17, "n": 32, "win_rate": 0.53125, "mean_floor": 45.5, "median_floor": 51.0, "mean_ending_hp": 22.6875, "median_ending_hp": 12.0, "mean_cpu_seconds": 6.842936875, "wall_seconds": 219.0, "cpu_ratio_vs_A": 1.3875224340405452},
+    "D": {"ordering": "learned", "selection": "learned_rank_PUCT", "wins": 15, "n": 32, "win_rate": 0.46875, "mean_floor": 44.75, "median_floor": 50.0, "mean_ending_hp": 19.75, "median_ending_hp": 0.0, "mean_cpu_seconds": 6.7664828125, "wall_seconds": 216.5, "cpu_ratio_vs_A": 1.3720200658571053}
+  },
+  "bootstrap": {"replicates": 10000, "seed": 20260828, "unit": "whole_paired_seed", "shared_resamples": true},
+  "contrasts": {
+    "B-A": {"win_delta_count": 0, "win_delta": 0.0, "win_delta_ci95": [-0.1875, 0.15625], "discordant_left_only_right_only": [4, 4], "mean_floor_delta": -1.15625, "mean_floor_delta_ci95": [-3.8125, 1.5625], "mean_ending_hp_delta": -0.65625, "ending_hp_delta_ci95": [-10.0625, 8.84375], "cpu_ratio": 1.491372009800773},
+    "C-A": {"win_delta_count": -3, "win_delta": -0.09375, "win_delta_ci95": [-0.25, 0.0625], "discordant_left_only_right_only": [5, 2], "mean_floor_delta": -2.25, "mean_floor_delta_ci95": [-4.78125, 0.21875], "mean_ending_hp_delta": -7.625, "ending_hp_delta_ci95": [-17.875, 1.68828125], "cpu_ratio": 1.3875224340405452},
+    "D-A": {"win_delta_count": -5, "win_delta": -0.15625, "win_delta_ci95": [-0.375, 0.0625], "discordant_left_only_right_only": [9, 4], "mean_floor_delta": -3.0, "mean_floor_delta_ci95": [-5.21875, -1.0625], "mean_ending_hp_delta": -10.5625, "ending_hp_delta_ci95": [-21.03125, -0.3125], "cpu_ratio": 1.3720200658571053},
+    "B-C": {"win_delta_count": 3, "win_delta": 0.09375, "win_delta_ci95": [-0.09375, 0.28125], "discordant_left_only_right_only": [4, 7], "mean_floor_delta": 1.09375, "mean_floor_delta_ci95": [-1.4375, 3.5625], "mean_ending_hp_delta": 6.96875, "ending_hp_delta_ci95": [-1.21875, 15.15625], "cpu_ratio": 1.0748453309384063},
+    "D-C": {"win_delta_count": -2, "win_delta": -0.0625, "win_delta_ci95": [-0.25, 0.125], "discordant_left_only_right_only": [6, 4], "mean_floor_delta": -0.75, "mean_floor_delta_ci95": [-3.15625, 1.53125], "mean_ending_hp_delta": -2.9375, "ending_hp_delta_ci95": [-10.8125, 5.21875], "cpu_ratio": 0.9888273026776971},
+    "D-B": {"win_delta_count": -5, "win_delta": -0.15625, "win_delta_ci95": [-0.34375, 0.03125], "discordant_left_only_right_only": [8, 3], "mean_floor_delta": -1.84375, "mean_floor_delta_ci95": [-4.75, 1.0], "mean_ending_hp_delta": -9.90625, "ending_hp_delta_ci95": [-17.28125, -3.28125], "cpu_ratio": 0.9199717151996091}
+  },
+  "factorial_descriptive_effects": {
+    "ordering_under_UCT_B-A": {"win_delta_count": 0, "mean_floor_delta": -1.15625, "mean_ending_hp_delta": -0.65625},
+    "ordering_under_PUCT_D-C": {"win_delta_count": -2, "mean_floor_delta": -0.75, "mean_ending_hp_delta": -2.9375},
+    "PUCT_with_current_order_C-A": {"win_delta_count": -3, "mean_floor_delta": -2.25, "mean_ending_hp_delta": -7.625},
+    "PUCT_with_learned_order_D-B": {"win_delta_count": -5, "mean_floor_delta": -1.84375, "mean_ending_hp_delta": -9.90625},
+    "interaction_significance_claimed": false
+  },
+  "per_seed_columns": ["seed", "A_won", "A_floor", "A_hp", "B_won", "B_floor", "B_hp", "C_won", "C_floor", "C_hp", "D_won", "D_floor", "D_hp"],
+  "per_seed": [
+    [975000,1,51,12,1,51,22,1,51,20,0,44,0], [975001,0,50,0,0,50,0,0,50,0,1,51,1], [975002,1,51,43,1,51,22,0,33,0,0,33,0], [975003,1,51,14,0,50,0,1,51,28,0,33,0],
+    [975004,1,51,20,1,51,33,0,50,0,0,50,0], [975005,0,30,0,1,51,64,1,51,39,0,33,0], [975006,0,29,0,0,28,0,0,28,0,0,28,0], [975007,1,51,23,0,27,0,1,51,50,1,51,11],
+    [975008,1,51,60,1,51,72,1,51,69,1,51,83], [975009,0,33,0,1,51,38,0,33,0,0,33,0], [975010,0,50,0,0,41,0,0,41,0,0,44,0], [975011,1,51,68,1,51,30,1,51,58,0,50,0],
+    [975012,1,51,71,1,51,26,1,51,11,1,51,41], [975013,1,51,52,1,51,72,1,51,74,1,51,76], [975014,0,50,0,0,50,0,0,33,0,0,50,0], [975015,0,33,0,0,33,0,0,33,0,0,33,0],
+    [975016,0,50,0,0,41,0,1,51,18,1,51,13], [975017,1,51,54,1,51,44,0,50,0,0,50,0], [975018,0,50,0,1,51,51,0,50,0,1,51,67], [975019,1,51,78,1,51,73,1,51,75,1,51,59],
+    [975020,1,51,93,1,51,40,1,51,30,1,51,22], [975021,1,51,58,1,51,58,1,51,41,0,50,0], [975022,1,51,83,1,51,39,0,47,0,1,51,30], [975023,0,50,0,1,51,56,0,50,0,1,51,25],
+    [975024,1,51,73,1,51,65,1,51,33,1,51,52], [975025,1,51,37,0,50,0,1,51,13,0,33,0], [975026,1,51,21,1,51,47,1,51,60,1,51,56], [975027,0,50,0,0,33,0,0,33,0,0,33,0],
+    [975028,1,51,47,1,51,45,1,51,55,1,51,52], [975029,1,51,52,1,51,52,1,51,52,1,51,44], [975030,1,51,11,0,40,0,0,33,0,0,45,0], [975031,0,33,0,0,28,0,0,25,0,0,25,0]
+  ],
+  "telemetry": {
+    "limitation": "STS_SILVER_TELEMETRY=1 was absent from the final cohort; simulation, inference-call, inference-time, scored-node, legal-action, PUCT-selection, and aggregate failure-counter fields were not captured and must not be interpreted as zero.",
+    "total_simulations": null,
+    "policy_inference_calls": null,
+    "policy_inference_microseconds": null,
+    "policy_scored_decision_nodes": null,
+    "mean_legal_actions_per_scored_node": null,
+    "policy_puct_selections": null,
+    "aggregate_failure_counters": null
+  },
+  "decision": {"required_win_gain_count": 3, "maximum_mean_floor_loss": 1.0, "maximum_cpu_ratio": 1.25, "qualifying_arms": [], "mechanism_promoted": false, "defaults_changed": false, "runtime_mechanisms_removed_after_rejection": true}
+}

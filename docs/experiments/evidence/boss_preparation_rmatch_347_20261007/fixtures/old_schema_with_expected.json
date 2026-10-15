@@ -1,0 +1,92 @@
+{
+ "schema": "boss_budget_rescue_347_pilot_selection_v1",
+ "source": {
+  "pr": 417,
+  "ledger": "\u00a7384",
+  "evidenceRef": "10e56bd813202db969ddb176aad8ed33173179f7",
+  "historicalGameplayBaseline": "5e9583cc4c871b887ab0eccc5e290c7c0f990117",
+  "historicalProducerBuild": "aa000e8a0f4a1b839555e78ec1b874e1f77aa722",
+  "runFilesSha256": {
+   "flat10k0.csv": "74ad395444e03dc386ee5217960ec662c3e0a783530f6b7a7b65a583b5573b84",
+   "flat10k1.csv": "00b51ba5a440c0ef4b01f5e93d6c4e378bc37b84f6a88225e4032d816e5fe661",
+   "flat10k2.csv": "9fd7e4b47e672bb37d9814001e06bba1d830e68d4dd30f36005f0d0702f8feff",
+   "flat10k3.csv": "501965d9f36994a9f94dfcea036aee350cc99601cb55776594cf91c61c3fea2e",
+   "mcts0.csv": "92669590f0a976428ea74918760b563f9419e63fa4b724330f001090be7d9755",
+   "mcts1.csv": "d5ff7e0ef357c84a08c32221c729b054b7afd6398bda6a2bfb025ec699000048",
+   "mcts2.csv": "ba3fd598d1a6d7a49a7a42cff31037f68ab6f96c80c1b0b3d89b02369d1c3517",
+   "mcts3.csv": "ee72073b8a745045f3e2c513b88898f21729767ce6d731c4b07380435aa57a50"
+  }
+ },
+ "rule": {
+  "domain": "boss-loss-347-pilot-v1:{stratum}:{seed}:{act}",
+  "perStratum": 4,
+  "R": "mcts boss loss and flat10k won the same seed",
+  "C": "flat10k boss loss, seed not selected into R",
+  "order": "round-robin acts 1,2,3 skipping empty buckets; ascending SHA-256 within bucket",
+  "bossIdentity": "historical deathEncounter; confirmed again at reconstruction"
+ },
+ "census": {
+  "flat10k": {
+   "wins": 100,
+   "losses": 28,
+   "bossLosses": 24,
+   "bossLossesByAct": {
+    "1": 2,
+    "2": 10,
+    "3": 12
+   }
+  },
+  "mcts": {
+   "wins": 72,
+   "losses": 56,
+   "bossLosses": 44,
+   "bossLossesByAct": {
+    "1": 3,
+    "2": 14,
+    "3": 27
+   }
+  }
+ },
+ "eligible": {},
+ "selected": [
+  {
+   "stratum": "C",
+   "sourceArm": "flat10k",
+   "seed": 48000062,
+   "act": 1,
+   "boss": "SLIME_BOSS",
+   "floorMatchesBossFloor": true,
+   "historicalRow": {
+    "seed": 48000062,
+    "won": 0,
+    "floor": 16,
+    "act": 1,
+    "hpEnd": 0,
+    "maxHp": 103,
+    "fightsLost": 1,
+    "deathCombat": 8,
+    "deathEncounter": 18,
+    "sec": 13.2526,
+    "file": "flat10k1.csv"
+   },
+   "pairedArmRow": {
+    "seed": 48000062,
+    "won": 0,
+    "floor": 50,
+    "act": 3,
+    "hpEnd": 0,
+    "maxHp": 107,
+    "fightsLost": 1,
+    "deathCombat": 25,
+    "deathEncounter": 55,
+    "sec": 116.101,
+    "file": "mcts1.csv"
+   },
+   "rankKey": "1d5d26a231ad65261a93969f195023ed88122a9d82711348d3ede3f4c3cadfed",
+   "stateId": "C1-48000062-a1",
+   "expectedSourceWon": 0
+  }
+ ],
+ "shortfall": 0,
+ "fixture": "old #425 schema with expectedSourceWon; must be refused"
+}

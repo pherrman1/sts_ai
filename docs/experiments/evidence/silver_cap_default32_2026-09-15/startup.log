@@ -1,0 +1,14 @@
+PASS default OFF rc=0
+PASS invalid cap rejects ON rc=1
+PASS malformed cap rejects ON rc=1
+PASS experimental cap rejects ON rc=1
+PASS OFF ignores combat artifact and sims rc=0
+PASS invalid enable flag rc=1
+PASS missing V4 rc=1
+PASS missing native win rc=1
+PASS explicit bad win rejects default retry rc=1
+PASS missing combat artifact rc=1
+PASS bad combat artifact rc=1
+PASS zero simulations rc=1
+PASS malformed simulations rc=1
+PASS 13 live OOC MCTS startup cases

@@ -1,0 +1,95 @@
+{
+  "schema": "shared_transition_encoder_potion_v1",
+  "decision": "SHARED_TRANSITION_POTION_REJECTED",
+  "baseSha": "c371f3c29ffab07096c71fc66a4ab930e9595952",
+  "experimentSha": "49e2642a69b7c6222648228195a29694c3734896",
+  "candidateCheckpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+  "candidateReceiptSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
+  "components": {
+    "maxHPTeacherSha256": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "HPTeacherSha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "dedicatedPotionSha256": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"
+  },
+  "population": {
+    "TRAIN": {"rows": 393677, "sources": 19986},
+    "VALIDATION": {"rows": 48590, "sources": 2496},
+    "testInferenceRows": 0
+  },
+  "calibration": {
+    "rows": 8192,
+    "seed": 20260912,
+    "rowIdsSha256": "122776e919b5fd6445b516ae8e9f70aa5db4f4c3d1eccbb994f0e7de80ffa053",
+    "s_max": 0.0021965544365230016,
+    "s_hp": 0.011543620959855616,
+    "s_potion": 2.281699538230896
+  },
+  "recipe": {
+    "seed": 20260912,
+    "precision": "fp32",
+    "epochs": 12,
+    "batch": 512,
+    "encoderLr": 0.0001,
+    "headsLr": 0.001,
+    "weightDecay": 0.0001,
+    "gradientClip": 1.0,
+    "batchOrderSha256": "110ff129ce40099ba612986aabe78195cbcc37bcd11597b9e6b3d012f3cf304d"
+  },
+  "validationPotionNll": [
+    0.5627860516654607,
+    0.5489464148641321,
+    0.543072733934924,
+    0.5413694198318738,
+    0.5364694656238779,
+    0.5333121211047062,
+    0.5309613725714107,
+    0.5303436122953781,
+    0.527917986633598,
+    0.5270789660126952,
+    0.525693796380591,
+    0.5240996503712959
+  ],
+  "selectedEpoch": 12,
+  "preservation": {
+    "eligible": true,
+    "maxHpNllRelative": -0.0007755767080883565,
+    "maxHpAccuracyDrop": 0.0001852232969746792,
+    "maxHpExpectedMaeDelta": 0.0005535712395855763,
+    "maxHpNonzeroAccuracyDrop": -0.01293661060802076,
+    "hpNllRelative": 0.0012024513975825383,
+    "hpCrpsRelative": 0.0023059785496042213,
+    "hpExpectedMaeDelta": 0.012734075673241918
+  },
+  "teacherForcedPotion": {
+    "dedicatedTrajectoryNll": 0.5040243655284924,
+    "candidateTrajectoryNll": 0.5240996503688425,
+    "trajectoryNllRelative": 0.03982998881274381,
+    "noChangeBrierDelta": 0.004306631073598147,
+    "actionModeAccuracyDrop": 0.007421923862736102,
+    "countAccuracyDrop": 0.007922278280448669,
+    "illegalProbabilityMax": 0.0,
+    "normalizationErrorMax": 2.0352331775441712e-07,
+    "sliceRelativeNll": {
+      "brew": 0.08653117052596246,
+      "smoke": 0.0463038650421624,
+      "recursiveBrew": 0.2051678677689808,
+      "trajectorySpecial": 0.07993099682234486
+    },
+    "decision": "TEACHER_FORCED_REJECTED"
+  },
+  "ancestral": {"ran": false, "reason": "teacher-forced potion gate failed"},
+  "externalResult": {
+    "path": "/home/philippherrmann/sts_sweep/runs/shared-transition-potion-distill-20260916/results.json",
+    "sha256": "03e31b3d827e1dc327e9316cb62ad86e1093ea34f92d3eeaf6af62ccfe5a5b88",
+    "selectedCheckpointSha256": "e55d16510fa9791f71d8f02b517e60f05653a80494c63c4bfcdc90eaf348c52d"
+  },
+  "verification": {
+    "focusedTests": "20 passed",
+    "pyCompile": true,
+    "diffCheck": true,
+    "componentsAndTeachersPreflight": true,
+    "testInferenceRows": 0
+  },
+  "uncertainty": "One offline FP32 seed on TRAIN/VALIDATION; no TEST, runtime, export, promotion or gameplay."
+}

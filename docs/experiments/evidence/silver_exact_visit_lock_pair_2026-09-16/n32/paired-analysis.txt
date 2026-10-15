@@ -1,0 +1,12 @@
+=== Paired comparison (32 seeds) ===
+Metric                       Control  Treatment      Delta
+Win rate                       75.0%      68.8%      -6.2pp
+  Win diff 95% CI: [-15.6pp, +0.0pp]
+Avg floor                      48.3      48.8      +0.4
+  Floor diff 95% CI: [-0.4, +1.7]
+Avg HP end                     48.5      42.4      -6.0
+Avg sec/run                   28.64     19.94     -8.70
+  Discordant: 2/32 (6%)
+  Both win: 22, both lose: 8, Control-only: 2, Treatment-only: 0
+  Control Wilson 95% CI: [57.9%, 86.7%]
+  Treatment Wilson 95% CI: [51.4%, 82.0%]
