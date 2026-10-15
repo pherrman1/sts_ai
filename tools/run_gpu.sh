@@ -41,7 +41,7 @@ ARMS=("$@"); [ ${#ARMS[@]} -gt 0 ] || ARMS=(B_d128_trim C_d64_trim D_d256_trim A
 for arm in "${ARMS[@]}"; do
   [ -f "results/$arm/summary.json" ] && { echo "$arm already done"; continue; }
   mkdir -p "results/$arm"
-  "$PY" tools/distill.py train "$SB" "results/$arm" $(arm_args $arm) --epochs 8 --device cuda 2>&1 | grep -v Warning | tee "results/$arm/log.txt"
+  "$PY" tools/distill.py train "$SB" "results/$arm" $(arm_args $arm) --epochs 8 --device cuda 2>&1 | grep --line-buffered -v Warning | tee "results/$arm/log.txt"
   git add "results/$arm" && git commit -qm "heart1 distill: results $arm" && git push -q origin claude/heart1-distill-data
   echo "$arm pushed"
 done

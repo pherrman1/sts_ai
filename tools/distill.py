@@ -130,8 +130,8 @@ def cmd_train(a):
     def evaluate():
         net.eval(); kls, agr = [], []
         with torch.no_grad():
-            for i in range(0, nva, 1024):
-                idx = torch.arange(i, min(i + 1024, nva)); b, m, t = batch(va, idx)
+            for i in range(0, nva, 256):
+                idx = torch.arange(i, min(i + 256, nva)); b, m, t = batch(va, idx)
                 lg = net(b)[0]; kls.append(kl_rows(lg, m, t).cpu())
                 agr.append((lg.masked_fill(~m, -1e9).argmax(-1) == t.masked_fill(~m, -1e9).argmax(-1)).cpu())
         net.train(); kls, agr = torch.cat(kls), torch.cat(agr).float()
