@@ -44,20 +44,20 @@ int main() {
     try {
         unsetenv("STS_POTION_REWARD_SWAP");
         // Full slots, better reward: the worst held potion (Block) is replaced.
-        auto held = pickUp(rewardFixture({Potion::FAIRY_POTION, Potion::BLOCK_POTION}, {Potion::GHOST_IN_A_JAR}));
-        require(held[0] == Potion::FAIRY_POTION && held[1] == Potion::GHOST_IN_A_JAR, "swap did not replace the worst potion");
+        auto held = pickUp(rewardFixture({Potion::FAIRY_POTION, Potion::BLOCK_POTION}, {Potion::BLOOD_POTION}));
+        require(held[0] == Potion::FAIRY_POTION && held[1] == Potion::BLOOD_POTION, "swap did not replace the worst potion");
         // Full slots, worse reward: nothing changes.
-        held = pickUp(rewardFixture({Potion::FAIRY_POTION, Potion::GHOST_IN_A_JAR}, {Potion::BLOCK_POTION}));
-        require(held[0] == Potion::FAIRY_POTION && held[1] == Potion::GHOST_IN_A_JAR, "swap dropped a better potion");
-        // Free slot, two rewards: the better one is taken first, then it swaps for nothing worse.
-        held = pickUp(rewardFixture({Potion::FIRE_POTION}, {Potion::BLOCK_POTION, Potion::FAIRY_POTION}));
+        held = pickUp(rewardFixture({Potion::FAIRY_POTION, Potion::BLOOD_POTION}, {Potion::BLOCK_POTION}));
+        require(held[0] == Potion::FAIRY_POTION && held[1] == Potion::BLOOD_POTION, "swap dropped a better potion");
+        // Free slot, two rewards: the better one is taken first; the other ranks below both held.
+        held = pickUp(rewardFixture({Potion::FIRE_POTION}, {Potion::SPEED_POTION, Potion::FAIRY_POTION}));
         require(held[0] == Potion::FIRE_POTION && held[1] == Potion::FAIRY_POTION, "free slot did not take the best reward");
 
         setenv("STS_POTION_REWARD_SWAP", "0", 1);
-        held = pickUp(rewardFixture({Potion::FAIRY_POTION, Potion::BLOCK_POTION}, {Potion::GHOST_IN_A_JAR}));
+        held = pickUp(rewardFixture({Potion::FAIRY_POTION, Potion::BLOCK_POTION}, {Potion::BLOOD_POTION}));
         require(held[0] == Potion::FAIRY_POTION && held[1] == Potion::BLOCK_POTION, "legacy: full slots must not change");
-        held = pickUp(rewardFixture({Potion::FIRE_POTION}, {Potion::BLOCK_POTION, Potion::FAIRY_POTION}));
-        require(held[0] == Potion::FIRE_POTION && held[1] == Potion::BLOCK_POTION, "legacy: free slot takes index 0");
+        held = pickUp(rewardFixture({Potion::FIRE_POTION}, {Potion::SPEED_POTION, Potion::FAIRY_POTION}));
+        require(held[0] == Potion::FIRE_POTION && held[1] == Potion::SPEED_POTION, "legacy: free slot takes index 0");
 
         std::cout << "potion_reward_swap: OK\n";
         return 0;

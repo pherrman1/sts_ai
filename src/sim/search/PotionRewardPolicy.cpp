@@ -14,44 +14,47 @@ bool search::potionRewardSwapEnabled() {
 }
 
 int search::potionKeepRank(Potion p) {
+    // Fitted keep values x100 (tools/potion_keep/, ADR-0039): HP-equivalent
+    // fight outcome gain from holding the potion at fight start, with seed and
+    // encounter fixed effects on the A20 and A0 CTM corpora; a death counts
+    // SilverEvalWeights::winBonus (53). Mean of the two ascensions.
     switch (p) {
-        case Potion::FAIRY_POTION:          return 100;
-        case Potion::FRUIT_JUICE:           return 95;
-        case Potion::GHOST_IN_A_JAR:        return 90;
-        case Potion::CULTIST_POTION:        return 85;
-        case Potion::ENTROPIC_BREW:         return 80;
-        case Potion::DISTILLED_CHAOS:       return 78;
-        case Potion::STRENGTH_POTION:       return 76;
-        case Potion::POWER_POTION:          return 74;
-        case Potion::DUPLICATION_POTION:    return 72;
-        case Potion::SMOKE_BOMB:            return 70;
-        case Potion::HEART_OF_IRON:         return 68;
-        case Potion::FEAR_POTION:           return 66;
-        case Potion::ATTACK_POTION:         return 65;
-        case Potion::REGEN_POTION:          return 64;
-        case Potion::BLOOD_POTION:          return 63;
-        case Potion::ENERGY_POTION:         return 62;
-        case Potion::WEAK_POTION:           return 61;
-        case Potion::FLEX_POTION:           return 60;
-        case Potion::ESSENCE_OF_STEEL:      return 59;
-        case Potion::LIQUID_MEMORIES:       return 58;
-        case Potion::SKILL_POTION:          return 57;
-        case Potion::SWIFT_POTION:          return 56;
-        case Potion::ANCIENT_POTION:        return 55;
-        case Potion::EXPLOSIVE_POTION:      return 54;
-        case Potion::FIRE_POTION:           return 53;
-        case Potion::DEXTERITY_POTION:      return 52;
-        case Potion::SNECKO_OIL:            return 51;
-        case Potion::COLORLESS_POTION:      return 50;
-        case Potion::BLOCK_POTION:          return 49;
-        case Potion::SPEED_POTION:          return 48;
-        case Potion::LIQUID_BRONZE:         return 47;
-        case Potion::BLESSING_OF_THE_FORGE: return 46;
-        case Potion::ELIXIR_POTION:         return 45;
-        case Potion::GAMBLERS_BREW:         return 44;
+        case Potion::BLOOD_POTION:           return 1163;
+        case Potion::SMOKE_BOMB:             return 1034;
+        case Potion::FRUIT_JUICE:            return 924;
+        case Potion::HEART_OF_IRON:          return 666;
+        case Potion::ENTROPIC_BREW:          return 628;
+        case Potion::REGEN_POTION:           return 596;
+        case Potion::DISTILLED_CHAOS:        return 581;
+        case Potion::FAIRY_POTION:           return 463;
+        case Potion::LIQUID_MEMORIES:        return 455;
+        case Potion::ATTACK_POTION:          return 443;
+        case Potion::DUPLICATION_POTION:     return 440;
+        case Potion::POWER_POTION:           return 419;
+        case Potion::SNECKO_OIL:             return 413;
+        case Potion::BLOCK_POTION:           return 405;
+        case Potion::FIRE_POTION:            return 393;
+        case Potion::COLORLESS_POTION:       return 392;
+        case Potion::FLEX_POTION:            return 350;
+        case Potion::STRENGTH_POTION:        return 346;
+        case Potion::BLESSING_OF_THE_FORGE:  return 328;
+        case Potion::CULTIST_POTION:         return 322;
+        case Potion::ENERGY_POTION:          return 318;
+        case Potion::FEAR_POTION:            return 295;
+        case Potion::SKILL_POTION:           return 292;
+        case Potion::EXPLOSIVE_POTION:       return 291;
+        case Potion::ESSENCE_OF_STEEL:       return 278;
+        case Potion::SWIFT_POTION:           return 224;
+        case Potion::WEAK_POTION:            return 212;
+        case Potion::GAMBLERS_BREW:          return 196;
+        case Potion::ANCIENT_POTION:         return 168;
+        case Potion::DEXTERITY_POTION:       return 113;
+        case Potion::SPEED_POTION:           return 113;
+        case Potion::LIQUID_BRONZE:          return 106;
+        case Potion::ELIXIR_POTION:          return 47;
         case Potion::EMPTY_POTION_SLOT:
-        case Potion::INVALID:               return -1;
-        default:                            return 20;  // other classes' potions
+        case Potion::INVALID:                return -1;
+        default:                             return 0;  // not fitted (other classes' potions)
     }
 }
 

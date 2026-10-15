@@ -14,7 +14,7 @@ namespace sts::search {
     // Unset or 1: on (default). 0: the legacy pickup. Other values are fatal.
     bool potionRewardSwapEnabled();
 
-    // Hand-written Ironclad keep value; higher is better (Inference, not fitted).
+    // Fitted Ironclad keep value x100 (ADR-0039, tools/potion_keep/); higher is better.
     int potionKeepRank(Potion p);
 
     // The next potion action on a reward screen, or nothing.
