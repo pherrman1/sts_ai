@@ -1131,6 +1131,8 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         throw std::runtime_error("OOC MCTS policy-logit count mismatch");
     for (double logit : sourceLogits)
         if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
+    if (!heart1Logits && one_combat::heart1::captureEnabled())
+        one_combat::heart1::captureNode(gc, sources, sourceLogits);
     if (!options.priorTracePath.empty())
         cached.priorTraceSources = Metadata::PriorTraceSources{sources, sourceLogits};
     std::vector<double> logits;

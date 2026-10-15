@@ -124,6 +124,14 @@ bool policyStep(sts::GameContext &);
 std::optional<std::vector<double>> priorLogits(const sts::GameContext &,
                                                const std::vector<sts::search::GameAction> &);
 
+// STS_OOC_HEART1_CAPTURE=<out.jsonl> (with STS_OOC_HEART1, V4 tree prior): every
+// STS_OOC_HEART1_CAPTURE_EVERY-th (default 8) multi-source V4 prior build writes one
+// JSON line with the node's heart1 record, heart1 token logits/value and the V4
+// source logits. Observation only: the search keeps V4's logits.
+bool captureEnabled();
+void captureNode(const sts::GameContext &, const std::vector<sts::search::GameAction> &sources,
+                 const std::vector<double> &v4Logits);
+
 // Diagnostics for the parity harness (tools/heart1/); neither uses a seed range.
 // heart1score <weights> <records.jsonl> <out.jsonl>: native logits for records.
 int scoreCommand(int argc, char **argv);

@@ -1,0 +1,2 @@
+heart1_pt https://github.com/daniel-ziegler/sts_lightspeed/releases/latest/download/heart1.pt deaba59d0c1d13a64578bd770bbcdcee95b1b5ef85e9b732739c89291da237d9
+heart1_bin 1e92f2a6b2432cc9a2c67c37a7d30566dcfc7a1d45f0877f5ef697078304563f

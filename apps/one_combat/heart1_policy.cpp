@@ -1011,13 +1011,32 @@ bool policyStep(GameContext &gc) {
     return true;
 }
 
-std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions) {
-    if (!enabled() || gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE)
-        return std::nullopt;
-    Choice choice;
-    if (!buildChoice(gc, choice) || choice.record.choiceCount() == 0) return std::nullopt;
-    const Output scored = net().forward(choice.record);
-    // A primitive behind several tokens keeps its best token.
+namespace {
+// STS_OOC_HEART1_CAPTURE: distillation data from OOC MCTS tree nodes (observation only).
+std::mutex g_captureMutex;
+std::ofstream g_captureOut;
+std::uint64_t g_captureNodes = 0;
+
+const char *capturePath() {
+    const char *p = std::getenv("STS_OOC_HEART1_CAPTURE");
+    return p && *p ? p : nullptr;
+}
+
+std::uint64_t captureEvery() {
+    static const std::uint64_t every = [] {
+        const char *p = std::getenv("STS_OOC_HEART1_CAPTURE_EVERY");
+        if (!p || !*p) return std::uint64_t(8);
+        char *end = nullptr;
+        const unsigned long long v = std::strtoull(p, &end, 10);
+        if (*end || v == 0) throw std::runtime_error("STS_OOC_HEART1_CAPTURE_EVERY must be a positive integer");
+        return std::uint64_t(v);
+    }();
+    return every;
+}
+
+// heart1's logit per given primitive (best token per primitive); nullopt when a primitive has no token.
+std::optional<std::vector<double>> logitsBySource(const Choice &choice, const Output &scored,
+                                                  const std::vector<GA> &actions) {
     std::map<std::uint32_t, double> byBits;
     for (std::size_t i = 0; i < choice.actions.size(); ++i) {
         const auto [it, inserted] = byBits.emplace(choice.actions[i].bits, scored.logits[i]);
@@ -1031,6 +1050,55 @@ std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std:
         out.push_back(it->second);
     }
     return out;
+}
+}  // namespace
+
+bool captureEnabled() { return capturePath() != nullptr; }
+
+void captureNode(const GameContext &gc, const std::vector<GA> &sources, const std::vector<double> &v4Logits) {
+    if (!captureEnabled() || sources.size() < 2) return;
+    if (!enabled()) throw std::runtime_error("STS_OOC_HEART1_CAPTURE requires STS_OOC_HEART1");
+    std::lock_guard<std::mutex> lock(g_captureMutex);
+    const std::uint64_t node = g_captureNodes++;
+    if (node % captureEvery() != 0) return;
+    if (!g_captureOut.is_open()) {
+        g_captureOut.open(capturePath(), std::ios::app);
+        if (!g_captureOut) throw std::runtime_error("STS_OOC_HEART1_CAPTURE: cannot open output");
+    }
+    std::vector<std::uint32_t> bits;
+    for (const auto a : sources) bits.push_back(a.bits);
+    nlohmann::json row = {{"node", node}, {"act", gc.act}, {"floor", gc.floorNum},
+                          {"screen", int(gc.screenState)}, {"src_bits", bits}, {"v4", v4Logits}};
+    Choice choice;
+    std::string reason;
+    if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE) {
+        row["unsupported"] = "terminal_or_battle";
+    } else if (!buildChoice(gc, choice, &reason) || choice.record.choiceCount() == 0) {
+        row["unsupported"] = reason.empty() ? "no_choice" : reason;
+    } else {
+        const Output scored = net().forward(choice.record);
+        row["record"] = recordToJson(choice.record);
+        row["logits"] = scored.logits;
+        row["value"] = scored.value;
+        std::vector<std::uint32_t> tokenBits;
+        for (const auto &a : choice.actions) tokenBits.push_back(a.bits);
+        row["token_bits"] = tokenBits;
+        const auto bySource = logitsBySource(choice, scored, sources);
+        row["h1"] = bySource ? nlohmann::json(*bySource) : nlohmann::json(nullptr);
+    }
+    g_captureOut << row.dump() << '\n';
+    g_captureOut.flush();
+    if (!g_captureOut) throw std::runtime_error("STS_OOC_HEART1_CAPTURE: write failed");
+}
+
+std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions) {
+    if (!enabled() || gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE)
+        return std::nullopt;
+    Choice choice;
+    if (!buildChoice(gc, choice) || choice.record.choiceCount() == 0) return std::nullopt;
+    const Output scored = net().forward(choice.record);
+    // A primitive behind several tokens keeps its best token.
+    return logitsBySource(choice, scored, actions);
 }
 
 namespace {
