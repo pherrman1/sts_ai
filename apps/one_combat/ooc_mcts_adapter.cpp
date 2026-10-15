@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
+#include "heart1_policy.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
@@ -709,6 +710,11 @@ OocMctsDependencies defaultOocMctsDependencies() {
         agent.simulationCountBase = 10000;
         runFullRunOocPolicyStep(gc, agent, false, true);
     };
+    if (one_combat::heart1::enabled()) {
+        dependencies.heart1PolicyLogits = [](const GameContext &gc, const std::vector<GameAction> &actions) {
+            return one_combat::heart1::priorLogits(gc, actions);
+        };
+    }
     dependencies.potionKeepValue = [](const GameContext &gc) { return ::potionKeepValue(gc); };
     dependencies.stopAfterAct = [] { return g_stopAfterAct; };
     return dependencies;
@@ -749,6 +755,10 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!dependencies.policyAvailable || !dependencies.policyLogits
             || !dependencies.policyAvailable())
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
+    if (options.heart1Prior && !dependencies.heart1PolicyLogits)
+        throw std::runtime_error("STS_OOC_MCTS_PRIOR=heart1 requires STS_OOC_HEART1");
+    if (options.heart1Prior && !options.priorTracePath.empty())
+        throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE does not support STS_OOC_MCTS_PRIOR=heart1");
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
     if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
     auto root = detachedCopy(gc);
@@ -1111,7 +1121,12 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         else for (const auto a : cached.priorSourceGroups.at(i)) addSource(a);
     }
     OocProfileScope prediction(OocProfileBucket::PolicyPredict);
-    const auto sourceLogits = dependencies.policyLogits(gc, snapshot.path, sources);
+    std::optional<std::vector<double>> heart1Logits;
+    if (options.heart1Prior) {
+        heart1Logits = dependencies.heart1PolicyLogits(gc, sources);
+        ++(heart1Logits ? continuation_.heart1PriorNodes : continuation_.heart1PriorFallbacks);
+    }
+    const auto sourceLogits = heart1Logits ? *heart1Logits : dependencies.policyLogits(gc, snapshot.path, sources);
     if (sourceLogits.size() != sources.size())
         throw std::runtime_error("OOC MCTS policy-logit count mismatch");
     for (double logit : sourceLogits)
@@ -2141,7 +2156,10 @@ void applyLiveControl(const std::string &key, const std::string &value,
         try { x = std::stoull(value); } catch (...) { invalid(); }
         return x;
     };
-    if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
+    if (key == "STS_OOC_MCTS_PRIOR") {
+        if (value != "policy" && value != "uniform" && value != "heart1") invalid();
+        opts.uniformPrior = value == "uniform"; opts.heart1Prior = value == "heart1";
+    }
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
         opts.constantLeaf = opts.bossLeaf = opts.bossRollout = opts.directLeaf = opts.screenLeaf = opts.screenGbm = false;
         if (value == "native") {}
@@ -2343,6 +2361,7 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
+bool liveOocMctsUsesHeart1() { return liveEnabled && liveOptions.heart1Prior; }
 nlohmann::json liveOocMctsSpecification() {
     if (!liveEnabled) return nullptr;
     // Every control the search reads, as set: STS_OOC_MCTS*, the combat
@@ -2622,7 +2641,7 @@ void configureLiveOocMcts() {
         << (!brewFallbackArtifact.empty() ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
             " dispatch=precombat_entropic_brew" : std::string{})
         << " active_lizard_correction=" << (activeLizardEnabled?"1":"0")
-        << " prior=" << (liveOptions.uniformPrior ? "uniform" : "policy")
+        << " prior=" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
@@ -2636,7 +2655,7 @@ void configureLiveOocMcts() {
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
-        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
+        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
         << "\",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
@@ -2671,6 +2690,7 @@ void requireLeafProbeTeacher(int ascension) {
             || liveOptions.leafCombats != 3 || !liveOptions.checkpointLeaves
             || !liveOptions.sampleNoncombat || liveOptions.stopAtMapCheckpoint
             || liveOptions.uniformLeafPolicy || liveOptions.uniformPrior
+            || liveOptions.heart1Prior
             || liveOptions.constantLeaf || liveOptions.directLeaf || liveOptions.screenLeaf
             || liveOptions.bossLeaf || liveOptions.bossRollout)
         throw std::runtime_error("replay_requires_a20_native_4096_rollout3_v4_teacher");
@@ -3573,6 +3593,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.singletonPolicyLogitCalls+=continuation.singletonPolicyLogitCalls;
     c.singletonPolicyInferenceCalls+=continuation.singletonPolicyInferenceCalls;
     c.screenLeafEvaluations+=continuation.screenLeafEvaluations; c.screenLeafFallbacks+=continuation.screenLeafFallbacks;
+    c.heart1PriorNodes+=continuation.heart1PriorNodes; c.heart1PriorFallbacks+=continuation.heart1PriorFallbacks;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
     auto &m = metrics.search;
@@ -3755,7 +3776,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         {"continuation_reasons",m.continuation.continuationReasons},
         {"continuation_limit_aborts",m.continuation.continuationLimitAborts},
         {"screen_leaf_evaluations",m.continuation.screenLeafEvaluations},
-        {"screen_leaf_fallbacks",m.continuation.screenLeafFallbacks}}.dump() << '\n';
+        {"screen_leaf_fallbacks",m.continuation.screenLeafFallbacks},
+        {"heart1_prior_nodes",m.continuation.heart1PriorNodes},
+        {"heart1_prior_fallbacks",m.continuation.heart1PriorFallbacks}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
@@ -4460,6 +4483,44 @@ void oocMctsAdapterSelfTest() {
             && secondCopy.candidate(0,restrictedActions.front().id).primitive.bits
                 ==*restricted.rootPrimitiveBits->begin(),
             "singleton root keeps its action identity and exact prior without another V4 score");
+        // STS_OOC_MCTS_PRIOR=heart1: heart1's logits replace V4's where it scores every
+        // source primitive (same grouping); a nullopt node keeps V4 and counts a fallback.
+        bool heart1Scores=true;
+        deps.heart1PolicyLogits=[&](const GameContext &state, const std::vector<GameAction> &actions)
+                -> std::optional<std::vector<double>> {
+            if(!heart1Scores) return std::nullopt;
+            auto logits=deps.policyLogits(state,PathHistory{},actions);
+            for(auto &l:logits) l=-l;
+            return logits;
+        };
+        OocAdapterOptions heart1Options; heart1Options.heart1Prior=true;
+        const auto priorsOf=[&](const OocGameContextModel &m) {
+            std::vector<double> out(3);
+            for(const auto action:m.legalActions(0)) {
+                const auto &target=std::get<OocSelectorTarget>(m.candidate(0,action.id).semantic->target);
+                const auto &card=std::get<OocCardTarget>(target.card);
+                out[card.id==CardId::STRIKE_RED ? 0 : card.id==CardId::DEFEND_RED ? 1 : 2]=action.prior;
+            }
+            return out;
+        };
+        OocGameContextModel heart1Model(duplicates,path,{},heart1Options,deps);
+        const auto heart1Priors=priorsOf(heart1Model);
+        const auto heart1Expected=oocPolicyWeights({-1.0,-4.0,-6.0});
+        for(int i=0;i<3;++i)
+            require(std::abs(heart1Priors[i]-heart1Expected[i])<1e-12,"heart1 prior uses heart1 logits");
+        require(heart1Model.continuationMetrics().heart1PriorNodes==1
+            && heart1Model.continuationMetrics().heart1PriorFallbacks==0,"heart1 prior node counted");
+        heart1Scores=false;
+        OocGameContextModel fallbackModel(duplicates,path,{},heart1Options,deps);
+        const auto fallbackPriors=priorsOf(fallbackModel);
+        for(int i=0;i<3;++i)
+            require(std::abs(fallbackPriors[i]-expected[i])<1e-12,"heart1 prior falls back to V4");
+        require(fallbackModel.continuationMetrics().heart1PriorNodes==0
+            && fallbackModel.continuationMetrics().heart1PriorFallbacks==1,"heart1 prior fallback counted");
+        auto noHeart1=deps; noHeart1.heart1PolicyLogits=nullptr;
+        bool threw=false;
+        try { OocGameContextModel bad(duplicates,path,{},heart1Options,noHeart1); } catch(const std::runtime_error &) { threw=true; }
+        require(threw,"heart1 prior without STS_OOC_HEART1 is fatal");
     }
     {
         // Keys off: a sapphire key must not compete with its paired relic.

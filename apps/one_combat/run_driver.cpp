@@ -425,8 +425,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
-        if (one_combat::heart1::enabled())
-            throw std::runtime_error("STS_OOC_HEART1 and live OOC MCTS are exclusive");
+        // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
+        // real decisions stay with the search and its chain.
+        if (one_combat::heart1::enabled() && !one_combat::liveOocMctsUsesHeart1())
+            throw std::runtime_error("STS_OOC_HEART1 with live OOC MCTS requires STS_OOC_MCTS_PRIOR=heart1");
     }
     vDisconnect();
     t_oocStrategicTraceRows.clear();
@@ -515,7 +517,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            if (one_combat::heart1::enabled() && one_combat::heart1::policyStep(gc)) {
+            if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
+                    && one_combat::heart1::policyStep(gc)) {
                 traceBy = "heart1";
             } else if (openTreasureChestRuleStep(gc)) {
                 traceBy = "chest_rule";

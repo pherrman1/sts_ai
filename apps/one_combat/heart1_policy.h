@@ -11,6 +11,7 @@
 #define STS_ONE_COMBAT_HEART1_POLICY_H
 
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -115,6 +116,13 @@ const Net &net();
 // The run-driver hook: one real out-of-combat step by heart1 (greedy, the
 // temperature-0 eval policy). False leaves the step to the ordinary chain.
 bool policyStep(sts::GameContext &);
+
+// OOC MCTS hook (STS_OOC_MCTS_PRIOR=heart1).
+// priorLogits: heart1's logit for each given primitive (a primitive behind
+// several tokens keeps its best token); nullopt when silverbot has no encoding
+// for the screen or a primitive has no token, so the caller keeps V4 there.
+std::optional<std::vector<double>> priorLogits(const sts::GameContext &,
+                                               const std::vector<sts::search::GameAction> &);
 
 // Diagnostics for the parity harness (tools/heart1/); neither uses a seed range.
 // heart1score <weights> <records.jsonl> <out.jsonl>: native logits for records.
