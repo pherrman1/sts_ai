@@ -52,6 +52,7 @@ struct OocLeafObservation {
     std::uint64_t projectionSteps;
     std::string error;
 };
+struct OocSiblingLeafCapture;
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
     // Live histories must qualify both room chances and future relic pools
@@ -113,6 +114,21 @@ struct OocAdapterOptions {
     std::function<void(const OocLeafObservation &)> leafObserver;
     std::uint64_t leafCaptureStride = 1;
     std::uint64_t leafCaptureLimit = 8;
+    // Research capture (default off, STS_OOC_SIBLING_CAPTURE): see OocSiblingLeafCapture.
+    std::shared_ptr<OocSiblingLeafCapture> siblingCapture;
+};
+// Per-root sibling-leaf capture for learned-leaf research. Every tree leaf up
+// to maxDepth below the root (at most maxLeaves per root) writes one row: the
+// search's own leaf value, its parent node and action, and extra evaluations
+// computed in a forked child (repeat leaf rollouts on fresh RNG, LEAF_COMBATS=5
+// rollouts, the X2-B anchor and `annotate`). The parent process never runs any
+// of the extra work, so the search plays exactly as without capture.
+struct OocSiblingLeafCapture {
+    std::function<void(const nlohmann::json &)> write;
+    std::function<nlohmann::json(const GameContext &)> annotate;
+    std::uint64_t runSeed = 0, decisionIndex = 0, searchSeed = 0;
+    unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
+    std::uint64_t maxLeaves = 256, captured = 0;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -200,6 +216,13 @@ private:
     double anchorValue(const GameContext &, const PathHistory &) const;
     double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                             sts::search::OocEndpoint &endpoint);
+    double evaluateLeafObserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
+                                sts::search::OocEndpoint &endpoint);
+    // Tree parent (state, action) of each sampled state; root and replays have none.
+    std::map<sts::search::OocStateId, std::pair<sts::search::OocStateId, sts::search::OocActionId>> parents_;
+#ifndef STS_LIVE_ADVISOR
+    std::optional<nlohmann::json> siblingLeafExtras(sts::search::OocStateId);
+#endif
     double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                                  sts::search::OocEndpoint &endpoint);
 #ifndef STS_LIVE_ADVISOR
@@ -276,6 +299,8 @@ bool liveOocMctsEnabled();
 bool liveOocMctsTreeRules();
 // True when the live search takes its tree prior from heart1.
 bool liveOocMctsUsesHeart1();
+// STS_OOC_SIBLING_CAPTURE is configured (heart1, when loaded, only annotates leaves).
+bool liveOocSiblingCaptureEnabled();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);

@@ -119,6 +119,10 @@ const Net &net();
 // temperature-0 eval policy). False leaves the step to the ordinary chain.
 bool policyStep(sts::GameContext &);
 
+// STS_OOC_SIBLING_CAPTURE annotation of one tree leaf: {"value", "record"} (heart1's
+// value head and its input record), or {"unsupported": reason}.
+nlohmann::json leafAnnotation(const sts::GameContext &);
+
 // OOC MCTS hook (STS_OOC_MCTS_PRIOR=heart1).
 // priorLogits: heart1's logit for each given primitive (a primitive behind
 // several tokens keeps its best token). Reward-screen primitives silverbot's

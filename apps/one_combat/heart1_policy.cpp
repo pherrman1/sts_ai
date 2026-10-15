@@ -1100,6 +1100,17 @@ void priorMappingSelfTest() {
     require(!mapPriorLogits(c, logits, false, {GA(RT::CARD, 0, 5)}, &tally), "skip-card mapping is REWARDS only");
 }
 
+nlohmann::json leafAnnotation(const GameContext &gc) {
+    Choice choice;
+    std::string reason;
+    if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE)
+        return {{"unsupported", "terminal_or_battle"}};
+    if (!buildChoice(gc, choice, &reason) || choice.record.choiceCount() == 0)
+        return {{"unsupported", reason.empty() ? "no_choice" : reason}};
+    const Output scored = net().forward(choice.record);
+    return {{"value", scored.value}, {"record", recordToJson(choice.record)}};
+}
+
 std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions,
                                                std::map<std::string, std::uint64_t> *tally) {
     Choice choice;
