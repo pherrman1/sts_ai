@@ -65,7 +65,7 @@ def run(repo,root,reviewed):
     freeze={'reviewedSha':reviewed,'binarySha256':sha(bundle/'one_combat'),'models':models,'environment':env,
             'splits':{'train':list(range(110160000,110160040)),
                       'validation':list(range(110160040,110160048)),'test':list(range(110160048,110160064))},
-            'canarySeeds':[110159998,110159999],'sourceTimeoutSeconds':600,'cohortWallSeconds':14400,
+            'canarySeeds':[110159996,110159997],'sourceTimeoutSeconds':600,'cohortWallSeconds':14400,
             'workers':3,'repeats':64,'captureEvery':4,'maxLeaves':64,'maxDepth':1,
             'toolHashes':{str(bundle/Path(p).name):sha(bundle/Path(p).name) for p in scripts},
             'protocolSha256':sha(bundle/'PROTOCOL.md'),'runtime':runtime_identity(),
@@ -101,16 +101,16 @@ def run(repo,root,reviewed):
         with receipt.open('x') as f: json.dump(result,f,indent=2,sort_keys=True)
         if rc!=0: raise RuntimeError(f'unit {seed} failed rc={rc}')
         return base
-    control=unit(110159998,False,'canary-control'); treatment=unit(110159998,True,'canary-capture')
+    control=unit(110159996,False,'canary-control'); treatment=unit(110159996,True,'canary-capture')
     for suffix in ('.trace.jsonl','.mcts.csv.actions.jsonl'):
         a=Path(str(control)+suffix); b=Path(str(treatment)+suffix)
         if not a.exists() or not b.exists() or a.read_bytes()!=b.read_bytes():
             raise ValueError('canary changed decisions/actions: '+suffix)
-    second=unit(110159999,True,'canary-second')
+    second=unit(110159997,True,'canary-second')
     def canary_coverage(base,seed):
         _,_,coverage=validate_rows((json.loads(line) for line in base.with_suffix('.sib.jsonl').open()),seed)
         return coverage
-    cover=[canary_coverage(treatment,110159998),canary_coverage(second,110159999)]
+    cover=[canary_coverage(treatment,110159996),canary_coverage(second,110159997)]
     write(root/'canary.json',{'parity':True,'coverage':cover})
     if any(not c['groups'] or c['accepted']<.8*c['raw'] for c in cover): raise ValueError('canary coverage/support gate')
     status('collecting',completed=0); start=time.monotonic(); completed=[]

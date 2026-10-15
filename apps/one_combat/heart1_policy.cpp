@@ -435,6 +435,48 @@ nlohmann::json recordToJson(const Record &r) {
             {"screen_state", r.screenState}, {"select_screen_type", r.selectScreenType}};
 }
 
+bool buildPublicLeafRecord(const GameContext &gc, nlohmann::json &out, std::string *reason) {
+    if (gc.outcome != GameOutcome::UNDECIDED) {
+        if (reason) *reason = "decided_outcome";
+        return false;
+    }
+    Choice choice;
+    if (gc.screenState != ScreenState::BATTLE && buildChoice(gc, choice, reason)) {
+        out = recordToJson(choice.record);
+        return true;
+    }
+    const bool battle = gc.screenState == ScreenState::BATTLE;
+    const bool match = gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP;
+    if (!battle && !match) return false;
+    Record record;
+    encodeObservation(gc, record);
+    record.screenState = static_cast<int>(gc.screenState);
+    out = recordToJson(record);
+    if (battle) {
+        // OOC adapter boundaries precede BattleContext construction: this is the
+        // encounter just entered, visible now, never a future encounter queue.
+        const int encounter = static_cast<int>(gc.info.encounter);
+        if (encounter <= static_cast<int>(MonsterEncounter::INVALID)
+                || encounter > static_cast<int>(MonsterEncounter::MYSTERIOUS_SPHERE_EVENT)) {
+            if (reason) *reason = "invalid_public_encounter";
+            return false;
+        }
+        out["leaf.publicBattleEncounter"] = encounter;
+    } else {
+        out["leaf.matchAttempts"] = gc.info.eventData;
+        auto &slots = out["leaf.matchSlots"] = nlohmann::json::array();
+        for (int i = 0; i < static_cast<int>(gc.info.toSelectCards.size()); ++i) {
+            const auto &slot = gc.info.toSelectCards[i];
+            const bool seen = slot.deckIdx != GameContext::MATCH_AND_KEEP_UNSEEN;
+            slots.push_back({{"position", i}, {"state", slot.deckIdx},
+                {"card", seen ? static_cast<int>(slot.card.id) : -1},
+                {"upgrades", seen ? slot.card.getUpgraded() : 0}});
+        }
+    }
+    if (reason) reason->clear();
+    return true;
+}
+
 Record recordFromJson(const nlohmann::json &j) {
     Record r;
     const auto ints = [&](const char *k) { return j.at(k).get<std::vector<int>>(); };
@@ -1144,6 +1186,34 @@ void priorMappingSelfTest() {
     altered.relics.getRelicValueRef(RelicId::NUNCHAKU) = 3;
     require(buildChoice(altered, hidden) && recordToJson(first.record) != recordToJson(hidden.record),
         "record retains a public relic counter");
+    nlohmann::json leaf, changed;
+    auto boundary = gc;
+    boundary.screenState = ScreenState::BATTLE;
+    boundary.info.encounter = MonsterEncounter::CULTIST;
+    require(buildPublicLeafRecord(boundary, leaf), "battle-start leaf record");
+    boundary.monsterList.push_back(MonsterEncounter::SLIME_BOSS);
+    boundary.miscRng = Random(123);
+    boundary.secondBoss = MonsterEncounter::TIME_EATER;
+    require(buildPublicLeafRecord(boundary, changed) && leaf == changed, "battle record ignores future/RNG");
+    boundary.info.encounter = MonsterEncounter::JAW_WORM;
+    require(buildPublicLeafRecord(boundary, changed) && leaf != changed, "battle record keeps current encounter");
+    boundary.screenState = ScreenState::EVENT_SCREEN;
+    boundary.curEvent = Event::MATCH_AND_KEEP;
+    boundary.info.eventData = 5;
+    boundary.info.toSelectCards.clear();
+    boundary.info.toSelectCards.push_back({Card(CardId::BASH), GameContext::MATCH_AND_KEEP_UNSEEN});
+    boundary.info.toSelectCards.push_back({Card(CardId::STRIKE_RED), GameContext::MATCH_AND_KEEP_SEEN});
+    require(buildPublicLeafRecord(boundary, leaf), "memory-game leaf record");
+    boundary.info.toSelectCards[0].card = Card(CardId::DEFEND_RED, 1);
+    boundary.miscRng = Random(789);
+    require(buildPublicLeafRecord(boundary, changed) && leaf == changed, "unseen board identity is masked");
+    boundary.info.toSelectCards[1].card = Card(CardId::DEFEND_RED);
+    require(buildPublicLeafRecord(boundary, changed) && leaf != changed, "visible board identity is retained");
+    require(buildPublicLeafRecord(boundary, leaf), "memory-game visible update");
+    --boundary.info.eventData;
+    require(buildPublicLeafRecord(boundary, changed) && leaf != changed, "public attempts retained");
+    boundary.outcome = GameOutcome::PLAYER_LOSS;
+    require(!buildPublicLeafRecord(boundary, changed), "true terminal rejected");
     Choice c;
     c.record.screenState = static_cast<int>(ScreenState::REWARDS);
     c.record.offeredCards = {1, 2};

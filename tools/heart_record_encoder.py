@@ -13,12 +13,14 @@ def encode_record(r):
                  ('obs.map.xs','obs.map.ys','obs.map.roomTypes','obs.map.pathXs')]:
         if len({len(r[k]) for k in keys})!=1: raise ValueError('parallel record lengths differ')
     if any(len(edges)!=3 for edges in r['obs.map.pathXs']): raise ValueError('map edge width')
+    if not isinstance(r['screen_state'],int) or not 0<=r['screen_state']<10:raise ValueError('screen vocabulary')
     fo=r['obs.fixed_observation']
     if len(fo)!=10: raise ValueError('fixed observation width')
     dense=[float(v)/s for v,s in zip(fo,[200,200,1800,60,4,5,20,1,1,1])]
     dense += [r['obs.mapX']/7,r['obs.mapY']/15,r['obs.map.burningEliteX']/7,r['obs.map.burningEliteY']/15]
-    dense += [float(r['screen_state']==i) for i in range(9)]
+    dense += [float(r['screen_state']==i) for i in range(10)]
     dense += [float(r['select_screen_type']==i) for i in range(16)]
+    dense += [float('leaf.matchSlots' in r),float(r.get('leaf.matchAttempts',0))/5]
     if not all(math.isfinite(v) for v in dense): raise ValueError("nonfinite dense input")
     tokens=[]
     def add(kind,entity,*attrs):
@@ -44,6 +46,27 @@ def encode_record(r):
         add(8,1088+int(room),x/7,y/15,*[e/7 for e in edges],
             float(x==r['obs.map.burningEliteX'] and y==r['obs.map.burningEliteY']),
             float(y==my+1 and x in offered),(y-my)/15)
+    if r['screen_state']==9:
+        encounter=r['leaf.publicBattleEncounter']
+        if not isinstance(encounter,int) or not 1<=encounter<=63: raise ValueError('public encounter vocabulary')
+        add(9,1280+encounter)
+    elif 'leaf.publicBattleEncounter' in r: raise ValueError('encounter outside battle boundary')
+    if 'leaf.matchSlots' in r:
+        if r['screen_state']!=1 or not 1<=len(r['leaf.matchSlots'])<=12:raise ValueError('memory-game screen/width')
+        if not 0<=r['leaf.matchAttempts']<=5: raise ValueError('memory-game attempts')
+        seen_positions=set()
+        for slot in r['leaf.matchSlots']:
+            state=slot['state'];card=slot['card'];position=slot['position'];up=slot['upgrades']
+            if state not in (-1,0,1,2) or not 0<=position<12 or position in seen_positions:
+                raise ValueError('memory-game public slot state')
+            seen_positions.add(position)
+            if state==-1:
+                if card!=-1 or up!=0:raise ValueError('unseen memory-game card leaked')
+                entity=1535
+            else:
+                if not 0<=card<512:raise ValueError('memory-game card vocabulary')
+                entity=card
+            add(10,entity,position/12,state/3,up/10)
     if not tokens: raise ValueError('empty public record')
     if len(tokens)>384: raise ValueError('token resource bound exceeded')
     # Count baseline has the same public entities and typed attribute sums.

@@ -73,6 +73,12 @@ Record recordFromJson(const nlohmann::json &);
 // encoding for the screen (it returns None there and defers to its agent).
 bool buildChoice(const sts::GameContext &, Choice &, std::string *reason = nullptr);
 
+// Leaf-only public observation extension. It does not change trained heart1
+// choice construction. Battle starts expose their current visible encounter;
+// Match and Keep masks unseen board identities. Call only at OOC adapter
+// boundaries before BattleContext construction, never for mid-combat states.
+bool buildPublicLeafRecord(const sts::GameContext &, nlohmann::json &, std::string *reason = nullptr);
+
 // take_free_rewards: gold always, relics unless a key shares the screen.
 // Returns the number of actions executed.
 int takeFreeRewards(sts::GameContext &);

@@ -34,6 +34,27 @@ class DistillTest(unittest.TestCase):
         self.assertNotEqual(baseline[0],encode_record(r)[0])
         r=record();r['obs.map.pathXs'][0][0]=1
         self.assertNotEqual(baseline[1],encode_record(r)[1])
+    def test_public_battle_and_memory_game_extensions(self):
+        r=record();r['screen_state']=9;r['leaf.publicBattleEncounter']=4
+        a=encode_record(r);r['leaf.publicBattleEncounter']=5
+        self.assertNotEqual(a,encode_record(r))
+        r['leaf.publicBattleEncounter']=64
+        with self.assertRaises(ValueError):encode_record(r)
+        del r['leaf.publicBattleEncounter']
+        with self.assertRaises(KeyError):encode_record(r)
+        r=record();r['screen_state']=1;r['leaf.matchAttempts']=5
+        r['leaf.matchSlots']=[{'position':0,'state':-1,'card':-1,'upgrades':0},
+                              {'position':1,'state':1,'card':2,'upgrades':0}]
+        a=encode_record(r);r['leaf.matchSlots'][1]['card']=3
+        self.assertNotEqual(a,encode_record(r))
+        r['leaf.matchSlots'][0]['card']=1
+        with self.assertRaises(ValueError):encode_record(r)
+    def test_native_screen_enum_contract(self):
+        import re
+        header=(Path(__file__).resolve().parents[1]/'include/game/GameContext.h').read_text()
+        body=re.search(r'enum class ScreenState\s*\{([^}]+)',header).group(1)
+        values=[v.strip().split('=')[0] for v in body.split(',') if v.strip()]
+        self.assertEqual((values.index('EVENT_SCREEN'),values.index('BATTLE')),(1,9))
     def test_bad_record_fails_closed(self):
         r=record();r['obs.deck.upgrades'].pop()
         with self.assertRaises(ValueError):encode_record(r)
@@ -75,7 +96,7 @@ class DistillTest(unittest.TestCase):
             return {'seed':1,'decision':0,'ordinal':ordinal,'parent':parent,'action':action,
                 'parentScreen':5,'act':1,'floor':12,'value':.5,'extra':{'record':record(),'x2b':.5,
                 'rolloutCpuSeconds':.064,'anchorCpuSeconds':.001,
-                'recordSchema':'heart1-public-record-v1','recordPublicParityQualified':False,'repeats':[{'value':.6}]*64}}
+                'recordSchema':'heart1-public-record-v2','recordPublicParityQualified':False,'repeats':[{'value':.6}]*64}}
         rows=[raw(0,0),raw(1,1),raw(2,0,1),raw(3,1,1)]
         rows[1]['extra']['repeats'].pop()
         accepted,groups,cov=h.validate_rows(rows,1)

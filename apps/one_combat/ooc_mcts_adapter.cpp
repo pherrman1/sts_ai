@@ -1728,12 +1728,11 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         catch (const std::exception &e) { out["x2bError"] = e.what(); }
         out["anchorCpuSeconds"] = double(std::clock() - anchorStart) / CLOCKS_PER_SEC;
         try {
-            one_combat::heart1::Choice choice;
+            nlohmann::json publicRecord;
             std::string reason;
-            if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE
-                    && one_combat::heart1::buildChoice(gc, choice, &reason)) {
-                out["record"] = one_combat::heart1::recordToJson(choice.record);
-                out["recordSchema"] = "heart1-public-record-v1";
+            if (gc.outcome == sts::GameOutcome::UNDECIDED && one_combat::heart1::buildPublicLeafRecord(gc, publicRecord, &reason)) {
+                out["record"] = std::move(publicRecord);
+                out["recordSchema"] = "heart1-public-record-v2";
                 out["recordPublicParityQualified"] = false;
             } else out["recordError"] = reason.empty() ? "terminal_or_battle" : reason;
         } catch (const std::exception &e) { out["recordError"] = e.what(); }

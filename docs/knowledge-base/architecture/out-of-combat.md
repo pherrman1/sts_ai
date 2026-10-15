@@ -748,7 +748,9 @@ at epoch 20. Those seeds also selected the checkpoint (best epoch 10; card-rewar
 parents 0.72 vs 0.19 there). No untouched TEST or gameplay result is established.
 
 When sibling capture is enabled, each forked child also records a weight-free
-heart1 public observation (`extra.record`, schema `heart1-public-record-v1`),
+heart1 public observation (`extra.record`, schema `heart1-public-record-v2`,
+with current public battle-start encounter and masked public Match and Keep
+state extensions),
 separate X2-B CPU and total repeat-rollout CPU. `buildChoice`/`recordToJson`
 need no released network weights. Unsupported records carry `recordError`.
 This input is parity-unqualified for learned leaf deployment; limited hidden

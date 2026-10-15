@@ -1,6 +1,6 @@
 # A20 Heart rollout-distillation pilot (2026-10-16)
 
-Status: prospective; implementation/source/binary freeze and independent review required before generation.
+Version2. Status: prospective; implementation/source/binary freeze and independent review required before generation.
 Source baseline: main79404f1b, after separate Heart PR562 and Opus evidence PR561.
 
 Hypothesis: a small public-input network can compress the expected three-combat
@@ -13,7 +13,8 @@ Inventory: §490 / merged PR561 provides 64-label targets and selected checkpoin
 with correlation0.645 at epoch20 versus X2-B0.596. Epoch selection used the
 validation set; no untouched TEST or gameplay evidence exists. Its raw tars are
 still unavailable locally. The frozen published X2-B-input CPU checkpoint is
-an additional diagnostic baseline on the new TEST; it does not affect model
+an additional out-of-domain diagnostic baseline on the new TEST (in particular
+its screen clamp maps BATTLE9 to SHOP8 and ignores the new extensions); it does not affect model
 selection or change the primary X2-B comparison. §489 / merged PR560 provides 64 A20 keys-off Act3 source runs,
 repeated sibling rollouts, and modest CPU value-net validation evidence. Its raw
 tars remain in Claude cloud project storage and are unavailable locally; tracked
@@ -21,6 +22,18 @@ aggregate metrics cannot train a new student. The different keys/horizon also
 precludes treating that cohort as A20 Heart data. §471 has only four early MAP
 inputs. Existing screen-leaf tools and candidate-public-leaf-v1 capture are reused.
 No historical TEST dataset will be opened or pooled. Recheck PR560 before training.
+
+Version1 at7622669e failed its support canaries with zero cohort collection,
+training or TEST opening. Preserved PROTOCOL-v1-invalid-canary.md and
+canary-v1-result.json record that result. In particular, the126 rows marked
+terminal_or_battle were UNDECIDED BATTLE boundaries, not exact terminal values.
+Version2 repairs observation support rather than relaxing the80% complete-row
+gate: capture-only extensions describe the CURRENT publicly visible encounter
+at a pre-BattleContext boundary, and Match and Keep attempts/slot states. Unseen
+board identities are masked; visible or remembered identities are retained.
+No trained heart1 choice behavior changes. New canary seeds exclude both old
+canaries; the64 cohort sources remain unused and fixed. This new representation
+is reviewed/frozen before a new generation attempt.
 
 Source: separate Heart-objective PR must be merged first. Then a separate
 research branch adds only default-off sibling-capture public input and measured
@@ -36,15 +49,15 @@ rollout3 (LEAF_COMBATS=3), same widening/PUCT settings as §489. This is a lower
 source distribution, not a qualification of the historical4096 search budget.
 
 Capture: every4th searched decision, max64 leaves/root, depth<=1; 64 fresh
-rollout3 labels per retained leaf, no rollout5. Public heart1 record only (schema heart1-public-record-v1);
+rollout3 labels per retained leaf, no rollout5. Public heart1 record only (schema heart1-public-record-v2);
 seed, RNG, action ID, parent ID, outcomes, endpoints, errors and costs are
 metadata/targets, never network inputs. X2-B is an explicit baseline/scalar
 residual input. The existing candidate-public schema and new heart1 record remain
 parity-unqualified for this new use: offline
 results cannot themselves authorize native deployment or public-input parity.
 
-Canary: seed110159998 capture off/on for decision/action byte parity (timing
-excluded); seed110159999 capture on for coverage and support diagnostics.
+Canary: seed110159996 capture off/on for decision/action byte parity (timing
+excluded); seed110159997 capture on for coverage and support diagnostics.
 At most600s/unit. Fail closed on crashes, identity mismatch, changed actions,
 no complete sibling groups or >20% label/input rejection; preserve failures.
 If canary is invalid, stop before the cohort and repair/review a new protocol.
@@ -62,7 +75,8 @@ Offline grid (frozen, no additional architectures): a count MLP, heart1-inspired
 pooled typed tokens, and heart1/student-C-inspired attention tokens (dim64,
 2 pre-norm transformer layers,4 heads, FF128, dropout0). Same public heart1
 record in all arms: fixed observation, deck/upgrades, relics/public counters,
-potions, offers/fixed actions, screen and forward map nodes/edges; no released
+potions, offers/fixed actions, screen and forward map nodes/edges, plus
+current public battle encounter and public memory-game state; no released
 heart1 weights required. Tokens preserve map coordinates/outgoing links and
 burning-elite identity. This is not an exact port of the trained heart1 network.
 Count arm gets typed entity counts and attribute sums plus identical fixed
@@ -117,6 +131,9 @@ capture groups, not an exhaustive set of all legal actions/chance outcomes.
 Canary and corpus use the identical validator. The runner verifies/builds the
 reviewed source before copying the executable; build receipt and log hashes
 connect the frozen binary with that source.
+
+Domain diagnostic: report row counts, source coverage and MSE by original
+heart1, battle-start and memory-game inputs; these do not affect selection.
 
 Fixed hybrid diagnostic: after selection, compare a50/50 blend of the selected
 prediction with its independent scheduled rollout3 return (`r0`) on TEST, beside

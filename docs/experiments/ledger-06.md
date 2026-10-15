@@ -19108,3 +19108,16 @@ failed gates are retained without replacement seeds or adaptive extensions.
 
 **Knowledge impact:** maintained OOC architecture capture contract and current
 research status; protocol/evidence and results belong here.
+
+
+The first freeze (`7622669e`) stopped at the canary coverage gate, before any
+cohort collection, fitting or TEST opening. Decision/action parity passed;
+complete-parent acceptance was257/449 (57.2%) and211/275 (76.7%). The missing
+inputs were unresolved battle-start states (126 rows) and Match and Keep
+(1 and2 rows, causing whole-parent rejection). BATTLE rows were UNDECIDED,
+not analytical terminals. [Failure receipt](evidence/heart_rollout_distill_20261016/canary-v1-result.json)
+and the original protocol remain preserved. Revised schema v2 extends only
+capture observations with the CURRENT public encounter and a memory-game board
+that masks unseen identities/upgrades. The unchanged80% gate,64-label target,
+whole-parent rejection, unused cohort and selection rules remain prospective;
+fresh canaries and a new source/binary/tool freeze are required.

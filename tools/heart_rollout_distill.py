@@ -33,7 +33,7 @@ def validate_row(r,seed):
     if r['seed']!=seed: raise ValueError('cross-source row')
     e=r.get('extra',{}); reps=e.get('repeats',[])
     if (len(reps)!=64 or any('value' not in v for v in reps) or 'record' not in e or 'x2b' not in e
-            or e.get('recordSchema')!='heart1-public-record-v1' or e.get('recordPublicParityQualified') is not False):
+            or e.get('recordSchema')!='heart1-public-record-v2' or e.get('recordPublicParityQualified') is not False):
         return None
     vals=[float(v['value']) for v in reps]
     if any(not math.isfinite(v) or not 0<=v<=1 for v in vals+[float(e['x2b']),float(r['value'])]): return None
@@ -132,7 +132,7 @@ class Net(nn.Module):
         super().__init__(); self.variant=variant
         extra=0
         if variant!='counts':
-            self.kind=nn.Embedding(9,64,padding_idx=0)
+            self.kind=nn.Embedding(11,64,padding_idx=0)
             self.entity=nn.Embedding(1536,64)
             self.attrs=nn.Linear(8,64,bias=False)
             extra=64
@@ -313,14 +313,26 @@ def test(root,out):
     feature_cpu=(time.process_time()-begin)/min(100,len(rows))
     cpu=float(np.mean([r['cpu'] for r in rows])); anchor_cpu=float(np.mean([r['anchorCpu'] for r in rows]))
     speedup=cpu/(latency+feature_cpu+anchor_cpu)
-    opus=metrics(rows,groups,predict_reference(root/'run/opus490.pt',rows))
+    opus_pred=np.asarray(predict_reference(root/'run/opus490.pt',rows))
+    opus=metrics(rows,groups,opus_pred)
+    domains=defaultdict(list)
+    for i,row in enumerate(rows):
+        record=row['record']
+        domain=('battle' if record['screen_state']==9 else
+                'memory_game' if 'leaf.matchSlots' in record else 'original_heart1')
+        domains[domain].append(i)
+    domain_diagnostics={}
+    for domain,ids in domains.items():
+        domain_diagnostics[domain]={'rows':len(ids),'sources':len({rows[i]['seed'] for i in ids})}
+        for name,values in [('student',pred),('x2b',b.numpy()),('opus490',opus_pred)]:
+            domain_diagnostics[domain][name+'Mse']=float(np.mean([(values[i]-rows[i]['target'])**2 for i in ids]))
     sa=student['aggregate']; ba=baseline['aggregate']
     enough=cov['groups']>=200 and cov['accepted']>=.8*cov['raw'] and len(deltas)==len(sources)
     passed=enough and candidate_passes(sa,ba,ci,speedup)
     verdict='OFFLINE_CANDIDATE' if passed else ('NOT_SHOWN' if enough else 'INSUFFICIENT')
     save_json(out/'test-result.json',{'verdict':verdict,'coverage':cov,'student':student,'baseline':baseline,'opus490FrozenReference':opus,'scheduledRolloutBaseline':metrics(rows,groups,[r['r0'] for r in rows]),
         'fixedHalfRolloutHybrid':metrics(rows,groups,.5*pred+.5*np.array([r['r0'] for r in rows])),
-        'regretImprovement95CI':ci,'meanRolloutCpuSeconds':cpu,'tensorInferenceCpuSeconds':latency,
+        'domainMseDiagnostics':domain_diagnostics,'regretImprovement95CI':ci,'meanRolloutCpuSeconds':cpu,'tensorInferenceCpuSeconds':latency,
         'tensorInferenceCpuSecondsBatch32PerRow':latency32,'featureEncodingCpuSeconds':feature_cpu,
         'requiredX2bCpuSeconds':anchor_cpu,'pythonFeatureAndInferenceSpeedup':speedup,
         'tensorOnlySpeedup':cpu/latency if latency else None,
