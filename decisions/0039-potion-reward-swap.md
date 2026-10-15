@@ -40,8 +40,9 @@ picked "Learned ranking" (fit per-potion values from existing fight data).
   use policy and the deployed pickup policy. Seed fixed effects remove run-level
   strength, but potion choice within a run can still be confounded.
   **Unverified** as a causal value. The fit counts the HP a Smoke Bomb escape
-  saves, not the rewards it forfeits. On 2026-10-15 Philipp set Smoke Bomb
-  8 HP below its fitted value (10.34 to 2.34).
+  saves, not the rewards it forfeits. On 2026-10-15 Philipp decided "I think we
+  should punish smoke potion by 8 HP", so Smoke Bomb's value is 8 HP below the
+  fit (10.34 to 2.34).
 - With Sozu, the pickup stays legacy, because a pickup obtains nothing.
 - `STS_POTION_REWARD_SWAP=0` restores the legacy pickup exactly: reward potion 0
   while a slot is free, nothing otherwise. `1` equals the default. Other values
