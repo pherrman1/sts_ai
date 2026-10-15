@@ -26,22 +26,21 @@ from collections import defaultdict
 
 R = 2
 ARMS = ["plain2500", "mlp2500", "plain10000", "mlp10000",
-        "uniform2500", "uniformmlp2500", "uniform10000", "uniformmlp10000",
+        "uniform2500", "uniformmlp2500",
         "perleaf2_1250", "perleaf2_mlp1250", "perleaf4_625", "perleaf4_mlp625",
         "table2500", "tablemlp2500"]
 # Pre-registered labels: (x, y, positive label, negative label); all fights, score.
 LABELED = [("uniform2500", "plain2500", "UNIFORM_HELPS", "UNIFORM_HURTS"),       # primary
-           ("uniform10000", "plain10000", "UNIFORM_HELPS", "UNIFORM_HURTS"),
            ("table2500", "plain2500", "TABLE_HELPS", "TABLE_HURTS"),
            ("perleaf2_1250", "plain2500", "PERLEAF2_HELPS", "PERLEAF2_HURTS"),
            ("perleaf4_625", "plain2500", "PERLEAF4_HELPS", "PERLEAF4_HURTS")]
 DESCRIPTIVE = [("mlp2500", "plain2500"), ("mlp10000", "plain10000"),
-               ("uniformmlp2500", "uniform2500"), ("uniformmlp10000", "uniform10000"),
+               ("uniformmlp2500", "uniform2500"),
                ("uniformmlp2500", "mlp2500"), ("tablemlp2500", "mlp2500"),
                ("perleaf2_mlp1250", "mlp2500"), ("perleaf4_mlp625", "mlp2500"),
                ("tablemlp2500", "table2500"), ("plain2500", "plain10000")]
 # CPU-ratio contrasts (x / y): per simulation and per fight.
-CPU_RATIOS = [("uniform2500", "plain2500"), ("uniform10000", "plain10000"), ("table2500", "plain2500"),
+CPU_RATIOS = [("uniform2500", "plain2500"), ("table2500", "plain2500"),
               ("perleaf2_1250", "plain2500"), ("perleaf4_625", "plain2500")]
 METRICS = ("score", "win", "hpLoss")
 

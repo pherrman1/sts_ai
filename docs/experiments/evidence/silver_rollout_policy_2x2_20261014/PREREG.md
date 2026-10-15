@@ -1,8 +1,10 @@
-# §479 pre-registration (DRAFT, not frozen): Silver leaf-rollout variants × gen-6 tree prior, A20, fight level
+# §479 pre-registration (frozen pending delta check): Silver leaf-rollout variants × gen-6 tree prior, A20, fight level
 
-Status: **draft, not launched.** Written 2026-10-14 before any evaluation seed was played. Launch needs the
-independent pre-launch review (first round at `7b3db2a6`: FIX REQUIRED, addressed here) to pass and Philipp's
-explicit go. The frozen SHA, binary sha256 and seed count are filled in at freeze.
+Status: **not launched.** Written 2026-10-14 before any evaluation seed was played. Launch needs the
+independent pre-launch review (first round at `7b3db2a6`: FIX REQUIRED; delta at `d41a4386`: PASS) to pass and
+Philipp's explicit go. Philipp (2026-10-15 06:44Z): "Start with 8 workers, and drop the two uniform rollout
+arms" (the `uniform10000` and `uniformmlp10000` arms; the smoke showed uniform rollouts save no CPU). Code commit `7a413622`, binary sha256
+`a1405f6d…097e78`, 64 seeds; the frozen run commit (this file's commit) is named in the launch brief.
 
 Philipp (2026-10-14): 21:24Z "could we do that here? maybe its not worse and we can save some cpu? maybe consider
 to do it with the gen 6 prior and without a prior?"; 21:26Z "yes do both. no prior in the rollouts"; 22:08Z "any
@@ -12,7 +14,7 @@ and rollouts-per-leaf arms in this pre-registration).
 ## Questions
 1. **Primary:** at 2,500 simulations, does a uniform-random leaf rollout lose fight score against the production
    greedy rollout (`SilverRolloutAgent`), and how much CPU per simulation does it save?
-2. **Labeled secondary:** the same at 10,000 simulations; a learned card-play table in the greedy rollout; 2 and 4
+2. **Labeled secondary:** a learned card-play table in the greedy rollout; 2 and 4
    greedy playouts per leaf at 1,250 and 625 simulations (the same rollouts per decision as 1 × 2,500).
 3. **Descriptive:** the gen-6 tree prior under each rollout variant; per-arm CPU per fight, CPU per simulation,
    mean rollout length and playouts per simulation.
@@ -43,7 +45,6 @@ Out of scope: a prior that guides rollout actions (cost estimated below, not run
 | `plain2500`, `mlp2500` | 2,500 | greedy, 1 playout | none / gen 6 |
 | `plain10000`, `mlp10000` | 10,000 | greedy, 1 playout | none / gen 6 |
 | `uniform2500`, `uniformmlp2500` | 2,500 | uniform random, 1 playout | none / gen 6 |
-| `uniform10000`, `uniformmlp10000` | 10,000 | uniform random, 1 playout | none / gen 6 |
 | `perleaf2_1250`, `perleaf2_mlp1250` | 1,250 | greedy, 2 playouts averaged | none / gen 6 |
 | `perleaf4_625`, `perleaf4_mlp625` | 625 | greedy, 4 playouts averaged | none / gen 6 |
 | `table2500`, `tablemlp2500` | 2,500 | greedy with `card_table/card_table_g6.txt` | none / gen 6 |
@@ -54,19 +55,20 @@ Out of scope: a prior that guides rollout actions (cost estimated below, not run
   §476.
 - Card table: offline fit to gen-6 Silver choices (`card_table/README.md`); replaces only the play-priority order.
 
-## Frozen inputs (filled at freeze)
-- Code: commit `<freeze>` on `claude/project-thread-8vmyta`, which merges main `2195b648` (includes §476's
+## Frozen inputs
+- Code: commit `7a413622` on `claude/project-thread-8vmyta`, which merges main `2195b648` (includes §476's
   harness, ADR-0035 and ADR-0036). `run.sh` refuses a checkout whose `apps/`, `src/`, `include/` or `CMakeLists.txt` differ
-  from code commit `34c9678f`, and a binary with another sha256 (`BINARY_SHA256`).
+  from code commit `7a413622`, and a binary with another sha256 (`BINARY_SHA256`).
 - Environment (`env.sh`): §476's settings with `STS_CTMSILVER_ARMSET=rollout479`,
   `STS_CTMSILVER_SWEEP_SIMS=2500,10000`, `STS_CTMSILVER_HALLWAY_EVERY=3`, `STS_CTMSILVER_MLP_PRIOR` and
   `STS_CTMSILVER_CARD_TABLE`. Silver scoring defaults are those of the frozen binary: ADR-0035 leaf terms on,
   ADR-0036 escape penalty `12,35`. No `STS_SILVER_*` scoring overrides.
 - Teacher: generated per binary as §476's `run.sh` (`tools/silver_synth_teacher.py <code sha> <one_combat>`, then
   `ooc_policy` from `one_combat vwinrefreshpolicyspec`); teacher_id `silver-flat-exact10k-synth-<sha8>`.
-- Seeds: run seeds **105000000 onward** (coordinator block 105M; count set at freeze from the Cost section).
+- Seeds: run seeds **105000000–105000063** (coordinator block 105M; 64 seeds, see Cost).
   Smoke seeds already used in this thread: 74071450–74071489 (full-run smokes) and 74071490–74071493 (matched
-  `rollout479` smoke). The pre-launch reviewer uses 74071600–74071649.
+  `rollout479` smoke), 74071491–74071492 and 74071494–74071495 (mismatch and parity checks). The pre-launch reviewer used
+74071550–74071599 (550–551 played).
 - Fight selection: as §476: all BOSS, ELITE and OTHER fights of each source run; NORMAL fights kept when
   `ctmSilverReplicateSeed(seed, fightIdx, 0, 0x4A11) % 3 == 0`. Source policy: plain Silver at 10k, A20.
 
@@ -80,18 +82,17 @@ Out of scope: a prior that guides rollout actions (cost estimated below, not run
 ## Labeled contrasts (`analyze_479.py`, all fights, fight score, 95% bootstrap over source seeds)
 CI > 0 → HELPS label, CI < 0 → HURTS label, else `NOT_SHOWN`.
 1. `uniform2500 − plain2500`: `UNIFORM_HELPS` / `UNIFORM_HURTS` (**primary**).
-2. `uniform10000 − plain10000`: `UNIFORM_HELPS` / `UNIFORM_HURTS`.
-3. `table2500 − plain2500`: `TABLE_HELPS` / `TABLE_HURTS`.
-4. `perleaf2_1250 − plain2500`: `PERLEAF2_HELPS` / `PERLEAF2_HURTS`.
-5. `perleaf4_625 − plain2500`: `PERLEAF4_HELPS` / `PERLEAF4_HURTS`.
+2. `table2500 − plain2500`: `TABLE_HELPS` / `TABLE_HURTS`.
+3. `perleaf2_1250 − plain2500`: `PERLEAF2_HELPS` / `PERLEAF2_HURTS`.
+4. `perleaf4_625 − plain2500`: `PERLEAF4_HELPS` / `PERLEAF4_HURTS`.
 
-Five labels at 95% each, no multiplicity correction; the write-up says so and does not treat one borderline
+Four labels at 95% each, no multiplicity correction; the write-up says so and does not treat one borderline
 label as decisive. With about 1,000 fights a `NOT_SHOWN` label means inconclusive at this resolution.
 
 CPU ratios with the same seed bootstrap (no label): per simulation and per fight, for `uniform2500/plain2500`,
-`uniform10000/plain10000`, `table2500/plain2500`, `perleaf2_1250/plain2500`, `perleaf4_625/plain2500`.
+`table2500/plain2500`, `perleaf2_1250/plain2500`, `perleaf4_625/plain2500`.
 
-Descriptive only (no label): `mlp − plain` at 2500 and 10000; `uniformmlp − uniform` at both budgets;
+Descriptive only (no label): `mlp − plain` at 2500 and 10000; `uniformmlp2500 − uniform2500`;
 `uniformmlp2500 − mlp2500`; `tablemlp2500 − mlp2500`; `tablemlp2500 − table2500`; `perleaf2_mlp1250 − mlp2500`;
 `perleaf4_mlp625 − mlp2500`; `plain2500 − plain10000`. Every contrast also for win rate and HP lost, and on the
 boss, elite and normal (NORMAL + OTHER) subsets.
@@ -125,7 +126,8 @@ Matched smoke at code `34c9678f` (binary sha256 `1b3f76ed…6fb6c5`), seeds 7407
 on 4 cores, `rollout479`, `SWEEP_SIMS=2500,10000`: 65 fights replayed, 63 valid (2 excluded, both control-replay
 mismatches on the act-3 boss Donu and Deca), no escapes. Both mismatches reproduce with main's binary (`2195b648`)
 under §476's `mlpsweep` armset on the same seeds, so they predate this change. Shard wall times 288, 452, 938 and 1,432 s (mean
-778 s per seed, of which about 170 s is the source run). Replay CPU per arm (both replicates, all 65 fights):
+778 s per seed, of which about 170 s is the source run). Replay CPU per arm (both replicates, all 65 fights; the
+two 10k uniform arms were dropped afterwards):
 
 | Arm | CPU s | Share | CPU s per valid fight | µs per simulation | Mean rollout length |
 |---|---|---|---|---|---|
@@ -144,11 +146,12 @@ legal action, so in this implementation uniform rollouts save no CPU. Table/gree
 [0.90, 0.95]; 2 per leaf at 1,250 0.79 [0.68, 0.82] and 4 per leaf at 625 0.59 [0.53, 0.64] of `plain2500`.
 These smoke numbers are not evidence for any contrast.
 
-Run size: about 15.75 valid fights per seed, so **64 seeds** (105000000–105000063) give about 1,000 valid fights,
-at about 64 × 780 s ≈ 14 CPU hours. Default layout: 4 containers × 4 shards × 4 seeds (`run.sh OUT 16 BASE`
-with BASE = 105000000, 105000016, 105000032, 105000048); expected shard time about 50 min, with the heavy
-seeds up to about 1.5 h. Per-shard timeout 6 h (≥ 3× the slowest expected shard). The seed count, layout and
-timeout are confirmed at freeze; Philipp may cap the CPU, which lowers the seed count and the resolution.
+Run size: about 15.75 valid fights per seed, so **64 seeds** (105000000–105000063) give about 1,000 valid fights.
+Re-running smoke seed 74071493 with code `7a413622` gave the same rows (outcome, HP, simulations, rollout
+counts, samples) for every remaining arm, with only the two 10k uniform arms gone. Without the two 10k uniform arms (30% of the smoke's replay CPU) a seed costs about 600 s, so about 11 CPU hours.
+Layout (Philipp's 8 workers): 8 containers × 4 shards × 2 seeds; worker W = 1..8 runs
+`run.sh OUT 8 $((105000000 + 8*(W-1))) "0 1 2 3" 6h`. Expected shard time about 20 min, the heaviest about 40 min.
+Per-shard timeout 6 h (≥ 3× the slowest expected shard).
 
 ## Operation and delivery
 As §476: `run.sh OUT TOTAL BASE "<shards>" 6h`, launched detached with a re-armed background watcher; 4 shards
