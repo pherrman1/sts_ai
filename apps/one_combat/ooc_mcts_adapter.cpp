@@ -1980,7 +1980,29 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         else {
             if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
             bool applied = false;
-            if (options.uniformLeafPolicy && v4DecisionSupported(child.gc)) {
+            if (options.priorLeafPolicy) {
+                const std::string screen = t_decisionLog ? logScreen(child.gc) : std::string{};
+#ifndef STS_LIVE_ADVISOR
+                if (options.treeRules && oocTreeRuleStep(child.gc)) applied = true;
+                else
+#endif
+                if (v4DecisionSupported(child.gc)) {
+                    const auto actions = v4CandidateActions(child.gc);
+                    std::set<std::uint32_t> ids;
+                    bool unique = !actions.empty();
+                    for (auto action : actions) if (!ids.insert(action.bits).second) unique = false;
+                    if (unique) {
+                        const auto logits = dependencies.policyLogits(child.gc, child.path, actions);
+                        if (logits.size() != actions.size())
+                            throw std::runtime_error("OOC MCTS rollout policy-logit count mismatch");
+                        const auto best = std::max_element(logits.begin(), logits.end()) - logits.begin();
+                        actions[best].execute(child.gc); applied = true;
+                        ++continuation_.priorLeafSteps;
+                    }
+                }
+                if (applied && t_decisionLog) t_decisionLog->add("rollout_step", screen + " | prior leaf policy");
+            }
+            if (!applied && options.uniformLeafPolicy && v4DecisionSupported(child.gc)) {
                 const auto actions = v4CandidateActions(child.gc);
                 std::set<std::uint32_t> ids;
                 bool unique = !actions.empty();
@@ -2172,7 +2194,10 @@ void applyLiveControl(const std::string &key, const std::string &value,
         else if (value == "screengbm") opts.screenLeaf = opts.screenGbm = true;
         else invalid();
     }
-    else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
+    else if (key == "STS_OOC_MCTS_LEAF_POLICY") {
+        if (value != "v4" && value != "uniform" && value != "prior") invalid();
+        opts.uniformLeafPolicy = value == "uniform"; opts.priorLeafPolicy = value == "prior";
+    }
     else if (key == "STS_OOC_MCTS_ROLLOUT_SHOP") opts.greedyRolloutShop = choice("planner", "greedy");
     else if (key == "STS_OOC_MCTS_TREE_RULES") opts.treeRules = choice("0", "1");
     else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
@@ -2629,7 +2654,8 @@ void configureLiveOocMcts() {
             files.emplace_back("ctmManifest", manifest);
         auto provenance = oocLeafCaptureProvenance(identity, files);
         provenance["effectiveLeaf"] = {{"combats", liveOptions.leafCombats},
-            {"uniformPolicy", liveOptions.uniformLeafPolicy}, {"sampleNoncombat", liveOptions.sampleNoncombat},
+            {"uniformPolicy", liveOptions.uniformLeafPolicy}, {"priorPolicy", liveOptions.priorLeafPolicy},
+            {"sampleNoncombat", liveOptions.sampleNoncombat},
             {"stopAtMapCheckpoint", liveOptions.stopAtMapCheckpoint}, {"collectKeys", liveOptions.collectKeys}};
         pendingLeafCapturePath = capturePath;
         if (pendingLeafCapturePath.empty())
@@ -2650,7 +2676,7 @@ void configureLiveOocMcts() {
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
-        << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
+        << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << "]\n";
@@ -2665,7 +2691,7 @@ void configureLiveOocMcts() {
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << "\",\"leafWinModel\":" << (liveOptions.leafWinNet ? "\"" + liveOptions.leafWinPath + "\"" : std::string("null"))
-        << ",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
+        << ",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
         << (!brewFallbackArtifact.empty() ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
@@ -2690,7 +2716,7 @@ void requireLeafProbeTeacher(int ascension) {
     if (ascension != 20 || !liveEnabled || liveSimulations != 4096
             || liveOptions.leafCombats != 3 || !liveOptions.checkpointLeaves
             || !liveOptions.sampleNoncombat || liveOptions.stopAtMapCheckpoint
-            || liveOptions.uniformLeafPolicy || liveOptions.uniformPrior
+            || liveOptions.uniformLeafPolicy || liveOptions.priorLeafPolicy || liveOptions.uniformPrior
             || liveOptions.heart1Prior
             || liveOptions.constantLeaf || liveOptions.directLeaf || liveOptions.screenLeaf
             || liveOptions.bossLeaf || liveOptions.bossRollout)
@@ -3595,6 +3621,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.singletonPolicyInferenceCalls+=continuation.singletonPolicyInferenceCalls;
     c.screenLeafEvaluations+=continuation.screenLeafEvaluations; c.screenLeafFallbacks+=continuation.screenLeafFallbacks;
     c.heart1PriorNodes+=continuation.heart1PriorNodes; c.heart1PriorFallbacks+=continuation.heart1PriorFallbacks;
+    c.priorLeafSteps+=continuation.priorLeafSteps;
     for (auto &[reason,count] : continuation.heart1PriorReasons) c.heart1PriorReasons[reason]+=count;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
@@ -3781,7 +3808,8 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         {"screen_leaf_fallbacks",m.continuation.screenLeafFallbacks},
         {"heart1_prior_nodes",m.continuation.heart1PriorNodes},
         {"heart1_prior_fallbacks",m.continuation.heart1PriorFallbacks},
-        {"heart1_prior_reasons",m.continuation.heart1PriorReasons}}.dump() << '\n';
+        {"heart1_prior_reasons",m.continuation.heart1PriorReasons},
+        {"prior_leaf_steps",m.continuation.priorLeafSteps}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
@@ -5101,6 +5129,13 @@ void oocMctsAdapterSelfTest() {
         std::mt19937_64 playoutRng(20261006);
         (void)playout.evaluateLeaf(0,playoutRng);
         require(playout.continuationMetrics().projectionSteps>0,"native leaf still projects a pending screen");
+        require(playout.continuationMetrics().priorLeafSteps==0,"chain leaf takes no V4 rollout step");
+        // STS_OOC_MCTS_LEAF_POLICY=prior: V4's policy head decides the pending campfire in the rollout.
+        OocAdapterOptions priorOptions{true}; priorOptions.priorLeafPolicy=true; priorOptions.treeRules=true;
+        OocGameContextModel priorPlayout(pending,path,bossSampler,priorOptions);
+        std::mt19937_64 priorRng(20261006);
+        (void)priorPlayout.evaluateLeaf(0,priorRng);
+        require(priorPlayout.continuationMetrics().priorLeafSteps>=1,"prior leaf policy decides the campfire");
     }
     {
         OocMctsResult capped; capped.aborted=true;
@@ -5122,6 +5157,12 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_EARLY_STOP","0",parsed,opts);
         require(!parsed.allowUnqualifiedRootStop,"early-stop rollback parsed");
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","prior",parsed,opts);
+        require(opts.priorLeafPolicy && !opts.uniformLeafPolicy,"prior leaf policy parsed");
+        applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","uniform",parsed,opts);
+        require(!opts.priorLeafPolicy && opts.uniformLeafPolicy,"uniform leaf policy clears prior");
+        applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","v4",parsed,opts);
+        require(!opts.priorLeafPolicy && !opts.uniformLeafPolicy,"chain leaf policy parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","5",parsed,opts);
         require(opts.leafCombats == 5,"five-combat rollout parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
@@ -5142,7 +5183,7 @@ void oocMctsAdapterSelfTest() {
             {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},{"STS_OOC_MCTS_LEAF_COMBATS","4"},
-            {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
+            {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_POLICY","Prior"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
             {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
             rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
     }

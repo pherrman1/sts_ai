@@ -30,6 +30,8 @@ struct OocContinuationMetrics {
     std::uint64_t heart1PriorNodes = 0, heart1PriorFallbacks = 0;
     // "scored:SCREEN", "mapped:SCREEN:KIND" and "fallback:SCREEN:KIND" (heart1::priorLogits).
     std::map<std::string, std::uint64_t> heart1PriorReasons;
+    // STS_OOC_MCTS_LEAF_POLICY=prior: rollout steps decided by the V4 policy head.
+    std::uint64_t priorLeafSteps = 0;
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
@@ -80,6 +82,9 @@ struct OocAdapterOptions {
     std::string leafWinPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
+    // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
+    // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
+    bool priorLeafPolicy = false;
     // STS_OOC_MCTS_ROLLOUT_SHOP=greedy: shops in leaf rollouts buy the single
     // best item per decision instead of the first item of the best affordable
     // bundle. Live OOC MCTS turns it on by default (ADR-0032); the struct
