@@ -1,0 +1,11 @@
+train 883663 rows, val 126045 rows
+student params 773260
+ep 1 train KL 0.2098 val KL 0.1148 top1 0.9030 (V4 0.4739) 578s
+ep 2 train KL 0.0562 val KL 0.1035 top1 0.9160 (V4 0.4739) 1189s
+ep 3 train KL 0.0414 val KL 0.0900 top1 0.9171 (V4 0.4739) 1798s
+ep 4 train KL 0.0316 val KL 0.0795 top1 0.9287 (V4 0.4739) 2423s
+ep 5 train KL 0.0238 val KL 0.0734 top1 0.9333 (V4 0.4739) 3046s
+ep 6 train KL 0.0178 val KL 0.0710 top1 0.9344 (V4 0.4739) 3667s
+ep 7 train KL 0.0139 val KL 0.0691 top1 0.9378 (V4 0.4739) 4328s
+ep 8 train KL 0.0119 val KL 0.0687 top1 0.9377 (V4 0.4739) 5010s
+best per screen (n, KL, top1, V4 top1): {"event": [6961, 0.0513, 0.9599, 0.4328], "rewards": [85387, 0.0658, 0.9475, 0.4863], "boss_relic": [3593, 0.0388, 0.9621, 0.5505], "map": [19884, 0.064, 0.9027, 0.5464], "treasure": [94, 0.0, 1.0, 0.0], "rest": [1551, 0.1767, 0.9155, 0.5229], "shop": [8575, 0.1163, 0.8966, 0.1796]}
