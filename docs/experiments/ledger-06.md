@@ -18531,10 +18531,13 @@ same process. The source run and control use production rollouts; each arm's rep
 a per-thread override. Arms, each without and with the gen-6 tree prior (K = 8): greedy at 2,500 and 10,000
 simulations; uniform random playouts at 2,500; 2 greedy playouts per leaf at 1,250 and 4 at 625 (the same playouts
 per decision as 1 × 2,500); greedy with a card-play table fitted offline to gen-6 Silver choices at 2,500. Fight
-score 0 on death, else 53 + HP + 11·potions + 0.25·gold + 2·maxHP; paired 95% bootstrap over source seeds.
+score 0 on death, else 53 + HP + 11·potions + 0.25·gold + 2·maxHP; paired 95% bootstrap over source seeds. Frozen
+pre-registration: [`PREREG.md` at run commit `df88c0f4`](https://github.com/pherrman1/sts_ai/blob/df88c0f4bbb2e6566b15ff9662c3c79da12e6962/docs/experiments/evidence/silver_rollout_policy_2x2_20261014/PREREG.md).
 
-**Result:** 689 valid fights (125 boss, 334 elite, 206 normal, 24 event); 14 excluded (7 escapes, 7 control-replay
-mismatches that also occur with main's binary). Fewer fights per seed than in the smoke, so 689 instead of ~1,000.
+**Result:** 689 valid fights (125 boss, 334 elite, 206 normal, 24 event); 14 excluded (7 escapes; 7 control-replay
+mismatches on act-3 bosses: 4 Time Eater, 2 Awakened One, 1 Donu and Deca, seeds 105000025, 031, 036, 049, 050, 054,
+056). Replaying those 7 seeds with main's binary (`2195b648`, §476 `mlpsweep` armset) gives the same 7 control
+mismatches with the same outcome and HP, so they predate this change. Fewer fights per seed than in the smoke, so 689 instead of ~1,000.
 
 | Contrast (fight score) | Δ score [95% CI] | Δ win pp | Δ HP lost | CPU per fight | Label |
 |---|---|---|---|---|---|
@@ -18544,22 +18547,23 @@ mismatches that also occur with main's binary). Fewer fights per seed than in th
 | 4 per leaf 625 − greedy 2.5k | −4.19 [−7.21, −1.46] | −1.2 [−2.2, −0.2] | +1.19 [+0.59, +1.79] | 0.58x | PERLEAF4_HURTS |
 
 - CPU per simulation vs greedy 2.5k: uniform 1.02x [0.97, 1.08], table 0.92x [0.90, 0.93], 2 per leaf 1.52x, 4 per
-  leaf 2.27x. Mean playout length: greedy 13.6 actions, uniform 10.1, table 11.7. Greedy 2.5k: 1.18 s per fight,
-  12.5 µs per simulation.
+  leaf 2.27x. Mean playout length: greedy 13.6 actions, uniform 10.1, table 11.7. Greedy 2.5k: 1.18 s per fight for both
+  replicates (0.59 s per replicate), 12.5 µs per simulation.
 - Uniform loses most in boss fights (−52.5 [−69.8, −35.7], win −16.8 pp) and elites (−21.6); normal −8.4.
 - Descriptive (no label): gen 6 − plain +1.67 [−0.72, +3.94] at 2.5k and +3.33 [+1.29, +5.55] at 10k (boss +9.59
   [+1.62, +17.93]); gen 6 with uniform playouts − plain uniform +3.81 [+0.31, +7.76], still −20.66 below gen 6 with
   greedy; table with gen 6 − gen 6 −0.77 [−3.32, +2.09]; 2 per leaf with gen 6 at 1,250 − gen 6 2.5k −1.98 [−3.81,
   −0.21]; 4 per leaf with gen 6 at 625 −3.29 [−5.85, −0.75]; greedy 2.5k − 10k −0.68 [−3.13, +1.87].
 
-**Decision rules (pre-registered):** uniform `UNIFORM_HURTS` and no CPU saving → greedy stays (negative). Table
+**Decision rules (pre-registered):** uniform `UNIFORM_HURTS` and no CPU saving per simulation (1.02x [0.97, 1.08]; per fight 0.92x [0.87, 0.97]) → greedy stays (negative). Table
 `NOT_SHOWN` → no follow-up on this table. 2 per leaf `NOT_SHOWN` with per-fight CPU ratio upper bound 0.78 ≤ 0.8 but
 score lower bound −3.64 < −1.0 → no follow-up. 4 per leaf `PERLEAF4_HURTS` → no follow-up. No default changes; the
 `STS_SILVER_ROLLOUT_*` options stay research-only and off.
 
 **Interpretation:**
-- Uniform random playouts are not a CPU saving in this engine: they are shorter, but each step enumerates every
-  legal action, so a simulation costs the same; and a uniformly random continuation is a much worse value estimate,
+- Uniform random playouts save no CPU per simulation in this engine (per fight 0.92x [0.87, 0.97]),
+  although they are 26% shorter. **Inference:** each uniform step enumerates every legal action, which costs about what
+  the shorter playout saves. A uniformly random continuation is a much worse value estimate,
   above all in boss fights. The gen-6 tree prior recovers only a small part (+3.8) of the loss. This agrees with §441
   (uniform OOC rollouts −7.8 pp).
 - The learned table plays 14% shorter playouts and is 11% cheaper per fight, with no score change shown; a gain of

@@ -26,6 +26,10 @@ d9994b0f47e694c80a7ca88862e9716d6435bb18481df84f4768a26115568145  w08.tar
 ## Exclusions
 703 fights replayed, 689 valid in every arm (125 boss, 334 elite, 206 normal, 24 event). Excluded
 (`invalid_arm_row`) by root reason: 7 `escape` (175 escape-quarantined rows; 14 escaped replicates per arm, the same
-fights in every arm) and 7 `control_replay_mismatch` (pre-existing on main, see PREREG Cost). `truncatedRows` and
+fights in every arm) and 7 `control_replay_mismatch`, all act-3 bosses
+(4 Time Eater: s105000025-f28, s105000036-f24, s105000049-f27, s105000056-f27; 2 Awakened One: s105000050-f24,
+s105000054-f24; 1 Donu and Deca: s105000031-f27). Replaying seeds 105000025, 031, 036, 049, 050, 054 and 056 with
+main's binary (`2195b648`, §476 `mlpsweep` armset at 625, teacher regenerated for that binary) gives the same 7
+control mismatches with identical control outcome and terminal HP, so they predate this change. `truncatedRows` and
 `incomplete_shard_abort`: 0. The run gave 10.8 valid fights per seed against 15.75 in the 4-seed smoke, so 689
 instead of the planned ~1,000.
