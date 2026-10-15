@@ -13,6 +13,12 @@ deferred Runic Dome intents in `Monster`, and the value-only wire types in
 [`daniel-ziegler/sts_lightspeed`](https://github.com/daniel-ziegler/sts_lightspeed)
 at commit `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`.
 
+The opt-in heart1 policy adapter (`apps/one_combat/heart1_policy.{h,cpp}`,
+`tools/heart1/`) ports silverbot's observation/choice encoding and network
+forward pass from the same repository and commit (`silverbot/playouts.py`,
+`silverbot/network.py`, `bindings/bindings-util.cpp`). The released
+`heart1.pt` weights are not included in this repository.
+
 Copyright (c) 2021 gamerpuppy
 
 Copyright (c) 2026 Daniel Ziegler

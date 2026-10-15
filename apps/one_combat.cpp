@@ -2,6 +2,7 @@
 // and focused search/model diagnostics.
 
 #include "one_combat/driver_shared.h"
+#include "one_combat/heart1_policy.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
 #include "one_combat/screen_leaf_net.h"
@@ -3840,6 +3841,10 @@ int main(int argc, char **argv) {
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
 
+    } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
+        return one_combat::heart1::scoreCommand(argc, argv);
+    } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits
+        return one_combat::heart1::replayCommand(argc, argv);
     } else if (mode == "winnettest") {    // validate C++ WinNet (OOC win trees) vs Python predictions
         // Reads a tierb-schema CSV (state block between `chosen` and `won`),
         // runs the native WinNet on the rich state of each row, and prints

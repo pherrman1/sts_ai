@@ -18,6 +18,7 @@
 #include "ooc_native_fallback.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
+#include "heart1_policy.h"
 #include "ooc_profile.h"
 #include "run_profile.h"
 #include "run_features.h"
@@ -422,6 +423,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
+        if (one_combat::heart1::enabled())
+            throw std::runtime_error("STS_OOC_HEART1 and live OOC MCTS are exclusive");
     }
     vDisconnect();
     t_oocStrategicTraceRows.clear();
@@ -509,7 +512,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            if (openTreasureChestRuleStep(gc)) {
+            if (one_combat::heart1::enabled() && one_combat::heart1::policyStep(gc)) {
+                traceBy = "heart1";
+            } else if (openTreasureChestRuleStep(gc)) {
                 traceBy = "chest_rule";
             } else if (takeRewardRelicRuleStep(gc)) {
                 traceBy = "relic_rule";

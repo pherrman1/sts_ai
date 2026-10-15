@@ -11,6 +11,7 @@
 #include "one_combat/ooc_native_fallback.h"
 #include "run_driver.h"
 #include "sim/search/SilverRolloutAgent.h"
+#include "one_combat/heart1_policy.h"
 
 #include <regex>
 #include <cstdio>
@@ -153,6 +154,12 @@ nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["remove_low_obtain_weight"] = true;
     if (one_combat::nativeOocCardWinRankEnabled())
         policy["flags"]["native_ooc_card_win_rank"] = true;
+    if (one_combat::heart1::enabled()) {
+        const char *weights = std::getenv("STS_OOC_HEART1");
+        policy["flags"]["ooc_heart1"] = true;
+        policy["model_artifacts"].push_back({{"role", "ooc_heart1"}, {"path", weights},
+                                             {"sha256", fileSha256(weights)}});
+    }
     // Added only when active so identities frozen before these keys still match.
     if (auto mcts = one_combat::liveOocMctsSpecification(); !mcts.is_null()) {
         // Hash every control value that names a file (candidate manifests, models).
