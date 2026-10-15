@@ -4,6 +4,7 @@
 
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/OocMctsPlanner.h"
+#include "sim/search/PotionRewardPolicy.h"
 
 #include <algorithm>
 #include <array>
@@ -305,8 +306,8 @@ void search::ScumSearchAgent2::stepRewardsPolicy(GameContext &gc) {
     } else if (r.relicCount > 0) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::RELIC, 0));
 
-    } else if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
-        takeAction(gc, GameAction(GameAction::RewardsActionType::POTION, 0));
+    } else if (const auto potion = potionRewardAction(gc)) {
+        takeAction(gc, *potion);
 
     } else if (g_collectKeys && r.emeraldKey) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::KEY));

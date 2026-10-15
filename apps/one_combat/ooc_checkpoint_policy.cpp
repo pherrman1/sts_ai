@@ -1,6 +1,7 @@
 #include "ooc_checkpoint_policy.h"
 
 #include "sim/search/GameAction.h"
+#include "sim/search/PotionRewardPolicy.h"
 #include "ooc_v4_encoding.h"
 #include "../ooc_strategic_tok_net.h"
 
@@ -21,8 +22,8 @@ bool collectFreeOocReward(sts::GameContext &gc, bool collectKeys) {
         sts::search::GameAction(RT::RELIC, 0).execute(gc);
         return true;
     }
-    if (rewards.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
-        sts::search::GameAction(RT::POTION, 0).execute(gc);
+    if (const auto potion = sts::search::potionRewardAction(gc)) {
+        potion->execute(gc);
         return true;
     }
     if (collectKeys && rewards.emeraldKey) {
