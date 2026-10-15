@@ -5349,7 +5349,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 arms.push_back({name + "mlp" + std::to_string(b), b, true, true, replicates, 8, mlp});
                 arms.back().rollout = r; arms.back().cardTable = tablePath;
             };
-            for (const int b : sweepSims) add("uniform", b, {1, 1, nullptr}, "");
+            add("uniform", 2500, {1, 1, nullptr}, "");   // 10k uniform arms dropped by Philipp (2026-10-15)
             add("perleaf2_", 1250, {0, 2, nullptr}, "");
             add("perleaf4_", 625, {0, 4, nullptr}, "");
             add("table", 2500, {0, 1, tablePtr}, table);
