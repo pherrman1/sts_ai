@@ -12,6 +12,7 @@
 #include "run_driver.h"
 #include "sim/search/SilverRolloutAgent.h"
 #include "one_combat/heart1_policy.h"
+#include "sim/search/PotionRewardPolicy.h"
 
 #include <regex>
 #include <cstdio>
@@ -154,6 +155,8 @@ nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["remove_low_obtain_weight"] = true;
     if (one_combat::nativeOocCardWinRankEnabled())
         policy["flags"]["native_ooc_card_win_rank"] = true;
+    if (sts::search::potionRewardSwapEnabled())
+        policy["flags"]["potion_reward_swap"] = true;
     if (one_combat::heart1::enabled()) {
         const char *weights = std::getenv("STS_OOC_HEART1");
         policy["flags"]["ooc_heart1"] = true;

@@ -19,6 +19,7 @@
 #include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "heart1_policy.h"
+#include "sim/search/PotionRewardPolicy.h"
 #include "ooc_profile.h"
 #include "run_profile.h"
 #include "run_features.h"
@@ -287,8 +288,8 @@ bool oocTreeRuleStep(GameContext &gc) {
     if (gc.screenState != ScreenState::REWARDS) return false;
     auto &r = gc.info.rewardsContainer;
     if (r.goldRewardCount > 0) { search::GameAction(RT::GOLD, 0).execute(gc); return true; }
-    if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity && !gc.hasRelic(RelicId::SOZU)) {
-        search::GameAction(RT::POTION, 0).execute(gc); return true;
+    if (!gc.hasRelic(RelicId::SOZU)) {
+        if (const auto potion = search::potionRewardAction(gc)) { potion->execute(gc); return true; }
     }
     // Nothing left (keys only count when STS_COLLECT_KEYS is on): leaving is the only sensible action.
     if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0

@@ -109,6 +109,14 @@ add_test(NAME neow_transform_curse COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
 set_tests_properties(neow_transform_curse PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(potion_reward_swap_test PRIVATE include json/include)
+add_test(NAME potion_reward_swap COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:potion_reward_swap_test>)
+set_tests_properties(potion_reward_swap PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
