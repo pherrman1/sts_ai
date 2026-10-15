@@ -18904,5 +18904,5 @@ parallel with main's entries of those numbers. On landing it became
 §480–§484 (§472→§480, §473→§481, §474→§482, §475→§483, §479→§484). Frozen,
 hash-bound evidence packets under `evidence/a20_teacher_comparison_20261014/`
 and `evidence/ooc_selective_silver_audit_20261014/` keep the original numbers. Reproducing §480–§485 on later main needs the frozen binaries or
-the `=0` flags for the ADR-0035/ADR-0036 defaults; rerun run 3's analyzer at `68684054`, since main's
+the `=0` flags for the later defaults (ADR-0035, ADR-0036, ADR-0038, ADR-0040); rerun run 3's analyzer at `68684054`, since main's
 `tools/seed_guard.sh` has since changed.

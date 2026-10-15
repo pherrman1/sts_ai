@@ -26,6 +26,11 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0040](0040-silver-rollout-card-table-default.md) makes Silver's greedy leaf rollout play cards by the
+  gen-6-fitted table by default (§479 NOT_SHOWN, 0.89x CPU per fight; `STS_SILVER_ROLLOUT_CARD_TABLE=0` restores
+  the hand-written priority list).
+- [ADR-0038](0038-neow-transform-curse-fix.md) makes Neow "transform two cards" add a curse only
+  with the CURSE drawback (`STS_NEOW_TRANSFORM_CURSE_FIX=0` restores the legacy curse on every pick).
 - [ADR-0037](0037-live-advisor-escape-penalty.md) gives the live-game advisor the same `12,35` escape penalty
   (no environment override on the live path; elite fights from the wire encounter).
 - [ADR-0036](0036-silver-escape-penalty-default.md) makes native Silver charge a Smoke Bomb
