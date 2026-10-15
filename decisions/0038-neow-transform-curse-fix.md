@@ -41,8 +41,8 @@ but on by default").
   arm or rerun the controls.
 - The flag is not part of the OOC policy identity: it is engine behavior, like
   the other engine corrections.
-- **Unverified:** the playing-strength effect. The default was chosen because it
-  is a correctness fix, not because a game test passed.
+- **Unverified:** the playing-strength effect. The default is Philipp's decision
+  (2026-10-15); no game test was run for it.
 
 ## Evidence
 
