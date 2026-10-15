@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "ooc_selective_failed_packet_v1",
+  "producerGitSha": "d3e33b46856155d65d382db5ae4351a9f00e8d45",
+  "verdict": "INVALID_OR_INSUFFICIENT",
+  "reason": "failed source process",
+  "canaryVerdict": "CANARY_VALID",
+  "attemptedCohort": [
+    97151010,
+    97151011
+  ],
+  "unlaunchedCohort": [
+    97151012,
+    97151013,
+    97151014,
+    97151015,
+    97151016,
+    97151017
+  ],
+  "totalCpuSeconds": 606.77,
+  "rawFiles": {
+    "s97151010.started.json": "66309cdca303ee4cc476e71fb268262a7f76fce079eb71c26e7b0777166b1477",
+    "s97151011.jsonl": "2d1b5fd6a6e135ec03449c48fffe7aea9e40775679cf9a991483906554e0929c",
+    "s97151010.receipt.json": "c986f1662f8dec19d1d8e68f17d3c6754a8a0934f244ed52ba06bab5796c5b88",
+    "canary.time": "a6f4c161fe5c67d1922a5eb79a520c8d17e2ab6bac622562fe813bc5d1b9df3d",
+    "canary.jsonl": "87c1493881d7447e1183a301bec1af8fe6486cbf97611dc92f39e5201a8bd7c6",
+    "canary.started.json": "ca2172dc3cd32cd468b76b8360983d4f68488f16b6b96bd09b45f422a92fde63",
+    "phase-canary.started.json": "adf175f196457e0dbf93f5a4c688c85b76cfe07da4b6ae52e2d70b9852b664a8",
+    "s97151011.started.json": "8bfd194f2730e9fb5a252eba420bcd82fe040401c169fff29e6a2b64c40a3310",
+    "freeze.json": "9ec9b834589f7fedbd717f4ce74176af4783a841e01a461cbd9a3e9fdcb4913c",
+    "s97151010.time": "0b265f31eb3dd891a2b356c184cabb342d419e351914add86591a1eeb295cd63",
+    "canary.receipt.json": "f6d34829daf0cd2d74e3fdfff4519a55ed0b024caa642e1816b50a3efc29b7d6",
+    "s97151011.receipt.json": "1a040ee4f8153e2103271f6b31c6b6d79b80fffca0790545559b25353cc38e6f",
+    "spec.log": "4ff53a9bf6599e6c9c987f1b1f011736aaf35f558464f2134c298b2813f28455",
+    "s97151011.time": "b0c466a636a46b7bea6af1706a73722c006e26c881cdef6d7923e96d2ed3eace",
+    "spec.json": "0bc0c0f1e16fef746b3349bd9eea2bc7babb68549ff9a49e58932925eeb780e9",
+    "plan.json": "07bdb170a82960d479e037d1686d45d3c7f9fb956c7f6a4a335712d827c6fde1",
+    "canary.log": "e4f6c399d2ff2732d68e00f2b4a8346e1df595cfff9814ef25505ac4546d83de",
+    "cohort-report.json": "3a53b71d8bbc17f544a90b0c2290ae8d3ce84569dbb6f2a64d7ab40e9e3eb987",
+    "s97151010.log": "9ec1f0e1f8820832ff3264a8d391681601454b1097a54f3bd3ddddbd169430d2",
+    "s97151011.log": "9ec1f0e1f8820832ff3264a8d391681601454b1097a54f3bd3ddddbd169430d2",
+    "phase-cohort.started.json": "adf175f196457e0dbf93f5a4c688c85b76cfe07da4b6ae52e2d70b9852b664a8",
+    "build.log": "b8fbb98f850dc31a19c8a2ad02ef17ccfc3a939d781cf7fb2bac27627c09ded5",
+    "canary-report.json": "bf4829332c1de6a4165ffb087ea12b532c725d036176acfe26292e36bb560bd4",
+    "s97151010.jsonl": "457125728a90bffc9382ef3fc941fb4de134b1de78754ccbdc1caeee7f2d0889",
+    "frozen-input-custody/09-PROTOCOL.md": "746b9ccfad8c0e37f31b0a5d529033b08fad9b04a75a1d3d885c6dbe1a22876b",
+    "frozen-input-custody/13-ooc_strategic_tok_final.native": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "frozen-input-custody/08-seed_guard.sh": "4dc45bbe53a3511782949bcd94ccd4ccafa9bedc3277583326f93bbd806ac0c1",
+    "frozen-input-custody/14-combat_transition_deepsets_pathb_a20_lizard.native": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+    "frozen-input-custody/01-gen6E.txt": "ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228",
+    "frozen-input-custody/15-combat_transition_near_full_escape_pathb_a20.native": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+    "frozen-input-custody/03-spec.json": "0bc0c0f1e16fef746b3349bd9eea2bc7babb68549ff9a49e58932925eeb780e9",
+    "frozen-input-custody/02-plan.json": "07bdb170a82960d479e037d1686d45d3c7f9fb956c7f6a4a335712d827c6fde1",
+    "frozen-input-custody/06-run.py": "86e1b9914e596a112e8a12421e617eaf0c43f8bee121bccb4c9e391387ab291d",
+    "frozen-input-custody/07-analyze_ooc_selective_silver.py": "ca4f50ecbeec33aae3d6a5583caef51ddcf5fcb1ff34a8525aff387c082668d6",
+    "frozen-input-custody/10-manifest.json": "00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea",
+    "frozen-input-custody/index.json": "ec8f679f8c97bc9e073d1ab3f95e498f80a8ea0576ac57ca36696776a51bccdd",
+    "frozen-input-custody/05-build.log": "b8fbb98f850dc31a19c8a2ad02ef17ccfc3a939d781cf7fb2bac27627c09ded5",
+    "frozen-input-custody/12-v_win_x2b_public_trees.txt": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+    "frozen-input-custody/04-spec.log": "4ff53a9bf6599e6c9c987f1b1f011736aaf35f558464f2134c298b2813f28455",
+    "frozen-input-custody/11-v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+  },
+  "archives": {
+    "raw-evidence.tar.gz": "27de6d84c87752bc35f1c80f8cf32e49cfcea6316ef692a9973a94cce2109320",
+    "producer-tools.tar.gz": "537732f31226d60e1a46a420cdbd3044dfd8f7b652e72b75a84bed69792d0533",
+    "checks.tar.gz": "bdae6d4ba6b1ca4f3df188bebd276d6cb3c5d37f47b3f0af4c474413be85d1c5"
+  },
+  "localOnly": {
+    "binary": {
+      "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/ooc-selective-silver-audit/run-2/one_combat",
+      "sha256": "ca14a43ce7f9f86ba39e7647304f4ada14c8539d71e61e5cc5ca63fc60c91e1e"
+    }
+  }
+}

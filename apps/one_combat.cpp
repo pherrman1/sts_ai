@@ -1,3 +1,5 @@
+#include "one_combat/ooc_selective_silver_audit.h"
+#include "one_combat/ooc_selective_silver_sampler.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
 // and focused search/model diagnostics.
 
@@ -3683,6 +3685,26 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
+    } else if (mode == "oocselectivesilverspec") {
+        try { std::cout << one_combat::oocSelectiveSilverAuditSpec().dump() << '\n'; return 0; }
+        catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
+    } else if (mode == "oocselectivesilvergen") {
+        if (argc != 6 || std::string(argv[2]) != "1") {
+            std::cerr << "usage: one_combat oocselectivesilvergen 1 SEED PLAN.json OUT.jsonl\n"; return 2;
+        }
+        try {
+            const std::string value(argv[3]);
+            if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("audit seed must be a nonnegative integer");
+            return one_combat::oocSelectiveSilverAuditGen(std::stoull(value), argv[4], argv[5]);
+        }
+        catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
+    } else if (mode == "oocselectivesilverselftest") {
+        try { const int samplerStatus = one_combat::auditNativeSilverSamplerSelfTest();
+            if (samplerStatus) return samplerStatus;
+            const int horizonStatus = one_combat::oocSelectiveSilverHorizonSelfTest();
+            return horizonStatus ? horizonStatus : one_combat::oocSelectiveSilverAccountingSelfTest(); }
+        catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
     } else if (mode == "oocleafreplayprobe" || mode == "oocleafstabilityprobe") {
         const bool stability = mode == "oocleafstabilityprobe";
         if (argc != (stability ? 6 : 5) || std::string(argv[2]) != "1") {

@@ -15746,6 +15746,18 @@ here.
 
 ## §408 — CTM vs low-sim Silver as combat-outcome forecasters: Silver more accurate on every field, CTM about 400x cheaper (2026-10-09)
 
+**Mechanism correction, 2026-10-14:** inspection of frozen producer
+`ccc3d62a6aa1645097df6040111d8df72056014f` and current code found that
+`ctmSilverRedrawCombatFuture` retains `gc.seed`, while `BattleContext::init`
+resets ai/monsterHp/shuffle/cardRandom from `gc.seed + floorNum`. The claimed
+six-stream redraw below therefore did not survive ordinary battle
+initialization. Silver and the reference shared part of the hidden future;
+the CTM did not receive that information. Preserve all as-run results, but
+do not interpret the reported forecast advantage as independent-future
+superiority. The same caveat applies to §410's comparison against these Silver
+rows. The [A20 pilot protocol](evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
+records a separate corrected kernel; it does not alter these historical modes.
+
 **Question (Philipp, 2026-10-09):** could low-sim Silver with the synthetic
 root prior (§406) replace the CTM stack in OOC planning? Compare speed and
 accuracy on the same job.
@@ -18583,3 +18595,314 @@ Seeds 105000000–105000063, smokes 74071450–74071495 and reviewer seeds 74071
 
 **Knowledge impact:** `architecture/combat-search.md` (leaf rollouts) and `operations/environment-variables.md` list
 the three research options and the §479 result.
+
+## §480 — A20 CTM/Silver teachers with gen6 E: INVALID_OR_INSUFFICIENT (2026-10-14)
+
+**Question:** compare the unchanged PR #524 A20 CTM with plain/prior Silver
+at 2k and 10k simulations, separating forecasting fidelity, paired controller
+outcomes and cost. The user selected completed gen6 version E, obtained from
+PR #541; its required v2 inference support came from merged main, with no
+separate runtime copy or default change.
+
+**Frozen design and identity:** [protocol](evidence/a20_teacher_comparison_20261014/PROTOCOL.md)
+and [complete attempt record](evidence/a20_teacher_comparison_20261014/gen6E-attempt-1/RESULTS.md).
+Producer `dc9411562c72fb1828229b95aec0bd4c9fffbee6`, binary
+`f065c3be3f6d9e73cebf03beb117e27ef8afb76d5590b244d0e1589d577be4c7`,
+prior `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
+A20, fixed V4 source policy, OOC MCTS off, fair mode, original-future plain10k
+reference, four shared redrawn futures per Silver condition; prior K=8,
+weight 400 and root bonus on. Four sources `97150710–97150713`, six possible
+chronological fight slots each, excluded canary `97150701`. Hard limits:
+180 CPU/240 wall seconds/source, two concurrent jobs, no replacements/retries.
+
+**Checks and execution:** merged Release builds and seven focused CTests
+passed. Independent implementation review passed. Actual E/frozen-binary
+parity against NumPy passed on eight synthetic roots/40 actions, max absolute
+logit error 1.16007e-6. Canary **CANARY_VALID**: five supported states, five
+exact source/control matches, no invalid arm rows, 95.90 CPU seconds.
+Three cohort sources completed in 69.68, 57.25 and 89.70 CPU seconds. Source
+`97150713` was killed at the CPU cap (return code 137, GNU time signal 9,
+180.10 measured CPU seconds, 180.18 wall seconds), leaving no final manifest
+and incomplete buffered CSVs. Total measured CPU including canary: 492.63s.
+
+**Verdict:** exactly **INVALID_OR_INSUFFICIENT**, reason
+`Invalid: source process failed or timed out`. The analyzer emits no partial
+comparison metrics. An independent evidence audit confirmed custody and the
+interpretation. All raw outputs, including empty/truncated files, are
+preserved; the three completed sources are not a replacement cohort. No
+retry, cap increase, replacement seed, training or promotion occurred.
+
+**Interpretation:** gen6 E inference and canary mechanics work; the chosen
+resource cap was insufficient for one source. There is no A20 teacher-quality,
+prior-benefit or optimal-simulation-budget conclusion. Any subsequent attempt
+requires a separate prospective resource/attempt design; this freeze remains
+unchanged. This run does not settle #507's OOC decision value or student route.
+
+**Knowledge impact:** maintained research status records the incomplete
+comparison; this ledger and its evidence packet retain the executed protocol,
+artifact identity, canary success and bounded failure.
+
+
+## §481 — Fresh A20 CTM/Silver teacher pilot with gen6 E: DESCRIPTIVE_COMPARISON_MEASURED (2026-10-14)
+
+**Question and authorization:** after §480 hit its resource cap, the user
+accepted a larger fixed cap and flushed per-replay timing/progress, then
+instructed continuing. The [v2 protocol](evidence/a20_teacher_comparison_20261014/PROTOCOL-V2.md)
+fixes fresh canary `97150801` and four sources `97150810–97150813`, with
+600 CPU/900 wall seconds/source, two concurrent jobs, no retry/extension or
+pooling of §480. All model, controller, source/reference, selection, RNG and
+analysis settings are unchanged. The [complete results and raw evidence](evidence/a20_teacher_comparison_20261014/gen6E-attempt-2/RESULTS.md)
+retain the full schema, metrics, progress and custody records.
+
+**Identity:** producer `48f0c0e51bf8742cdbf0fbaa6b4f38ff34667311`, binary
+`c6c8b7f146cdb932daa641b00bfee28c74fce4496389ad339feabf7e809b2944`,
+freeze `c2457a2415e239e26144efe91eeb4e6978a131b697ebe008a25bf001caa437be`,
+gen6 E `ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228`.
+Unchanged PR #524 CTM; plain/prior Silver at 2k/10k per decision, four shared
+redrawn futures, K=8/weight400/root bonus; original-future plain10k reference.
+
+**Checks and execution:** Release build and seven focused CTests passed;
+final affected Python checks passed (21 analyzer/seven runner tests).
+Independent implementation/protocol review passed before freeze. Fresh canary
+**CANARY_VALID**, four supported states. All four sources completed with
+**14 supported states (6/4/2/2), 224 forecast fights and 14 exact controls**;
+no unsupported/invalid rows or control mismatches. Process CPU: 88.16, 52.77,
+8.94 and 23.92 seconds, plus excluded canary 62.37; total 236.16s. The new cap
+was available but not needed. Complete progress, source/model custody and
+reports passed independent outcome/scientific audit, including raw-CSV checks
+of the principal equal-source aggregation.
+
+**Principal descriptive metrics:** CTM/plain2k/prior2k/plain10k/prior10k
+HP RMSE **9.246/6.605/8.171/6.397/8.276**; death Brier
+0.014558/0.002604/0.013021/0.016927/0.005208. CTM analytic expectation CPU
+0.0795ms; four-future Silver search CPU **0.587/0.622/3.279/3.275s**.
+Timers have different documented scopes; no exact end-to-end ratio is claimed.
+Paired prior-minus-plain HP/death: **−0.286/+2.083pp at 2k** and
+**+0.495/−2.604pp at 10k**. Plain10k-minus-plain2k HP/death:
+−0.995/+3.646pp. These are descriptive point estimates without significance
+claims, not population controller ordering.
+
+**Verdict and interpretation:** exactly **DESCRIPTIVE_COMPARISON_MEASURED**.
+Plain2k has lower HP error than CTM on this panel. Plain10k costs 5.59x the
+four-future search CPU for only −0.208 HP RMSE; prior effects are mixed by budget.
+Inference: plain2k is the first inexpensive Silver candidate for a separate
+selective OOC decision-value audit; the pilot gives no reason to routinely pay
+10k or assume a prior gain at 2k. CTM remains a plausible bulk sampling tool.
+No qualified teacher replacement, optimal budget, OOC action-value, training
+or default-promotion conclusion follows. There are only four source clusters;
+two early Act 1 sources have half the principal weight, and only one source
+reaches Act 3. The reference is plain10k behavior, not optimal play, and four
+Silver futures have Monte Carlo uncertainty.
+
+**Progress diagnosis:** the longest source spent 20.97 CPU seconds on its
+original trajectory, 0.0209s in CTM blocks and 66.79s in replay phases. Its
+slowest replay was plain10k Donu/Deca repeat 0: 2.69s, 32 decisions/320k sims.
+Per-replay CSV checkpoints and active identities were visible during the run;
+this does not reconstruct §480's failed source. All 54 raw top-level runtime
+files and reports are archived; models/binary remain preserved locally.
+
+**Knowledge impact:** maintained current research status records the completed
+comparison, and the environment interface documents durable v2 progress.
+This entry and the evidence packet preserve the prospective design and results;
+§480 remains incomplete and excluded. No production defaults changed.
+
+## §482 Larger calibrated A20 CTM/gen6 E Silver teacher comparison (2026-10-14)
+
+**Verdict:** `DESCRIPTIVE_COMPARISON_MEASURED`. User-authorized prospective
+follow-up to §481: 32 fresh sources (`97150910–97150941`), excluded canary
+`97150901`, 16 paired Silver futures per selected fight, eight predetermined
+sources also running both 10k conditions. The calibrated A20 CTM replaces the
+pilot's uncalibrated manifest; neither earlier attempt is pooled. Protocol,
+full tables, nominal intervals, raw evidence and reviews:
+[larger study](evidence/a20_teacher_comparison_20261014/gen6E-large-1/RESULTS.md).
+
+**Freeze:** clean independently reviewed producer
+`aa10fe8dfb6d4f63ba26f18a755b5f3f3a725117`, binary SHA256
+`f3f98d84ef57faba177ebcb3842ece31b65c9524cb168fb3f516b2641e8afa5f`, freeze
+`8e7ff63a781a94013ad79ca9fdb1bcd1525121abfff0ee120dec33c200cbd1aa`.
+Exact gen6 E prior `ca9bd7f2…`, calibrated manifest `00bb4da6…`; FAST/STD
+native weights unchanged. A20 Ironclad, V4 OOC policy, OOC MCTS off, no keys,
+stop after Act 3, original-future plain10k source/control. Fixed six-slot
+selection before support/outcome filtering, corrected independent native
+combat future kernel, K8/weight400/root bonus for prior arms. Four one-thread
+workers, 1200 CPU/1800 wall seconds/source, at most 33 attempts, no retries,
+replacements or cap extensions. The canary passes all six slots before cohort.
+
+**Integrity/coverage:** 574 captured fights,147 selected/supported fights,
+5,696 redrawn forecast fights and147 exact controls; zero unsupported/invalid
+rows or control mismatches. Forty-five absent slots remain skipped. Source
+state-count distribution: 4×2,3×3,8×4,4×5,13×6. Main later-act coverage gates
+pass with 17 Act 2 boss and13 Act 3 boss source clusters; anchor coverage is
+only 2/2. Source sampling paths end in 28 deaths and 4 victories, not a gameplay
+A/B. Total process CPU including canary **5,074.70s**, largest source918.11s.
+All 33 receipts and resource/concurrency/progress/custody checks pass.
+
+Principal equal-source results, with 5,000 paired source-cluster bootstrap
+resamples (analysis seed 97150999, nominal 95% percentile intervals):
+
+| Main forecaster (32 sources/147 fights) | RAW HP RMSE [95% interval] | CPU per forecast |
+| --- | ---: | ---: |
+| Calibrated CTM |12.017 [10.441,13.511]|0.101ms analytic expectation|
+| Plain2k |11.853 [10.011,13.606]|5.116s/16 futures|
+| Gen6 E2k |11.599 [9.692,13.396]|5.211s/16 futures|
+
+All main paired forecast MSE/death-Brier intervals include zero: no resolved
+fidelity superiority, equivalence or noninferiority. The paired prior2k
+controller improves RAW HP by **+0.796 [0.247,1.348]** and death by
+**−0.921 [−1.784,−0.068]pp**, for +0.00597s/fight search CPU. Those are nominal
+secondary conditional comparisons, without multiplicity adjustment; the death
+bound is near zero. They do not establish whole-run wins or OOC ranking.
+
+The eight-source/31-fight anchors have HP RMSE CTM 11.326, plain2k 11.225,
+prior2k 8.797, plain10k 9.786, prior10k 9.357. Plain10k−plain2k forecast MSE is
+−30.25 [−66.66,−3.08] HP², but controller HP/death differences include zero.
+Prior10k−prior2k fidelity/controller gains remain unresolved. Both 10k forecasts
+cost 28.59–29.59s/16 futures (about 5.4–5.6× the same-subset 2k cost). Only two
+anchor sources reach each later boss, limiting cross-act budget conclusions.
+
+**Interpretation (Inference):** retain calibrated CTM for cheap bulk evaluation
+and nominate gen6 E2k for a separately registered selective OOC decision-value
+and matched-CPU audit. Single original-future references retain stochastic
+noise; Silver finite 16 means and CTM analytic expectation have different
+precision. Timing scopes differ. No training corpus for OOC leaf states,
+public-input qualification, OOC gameplay, optimal budget or default promotion.
+
+**Verification:** Release one_combat/probe builds PASS; final affected 8/8 CTests
+PASS (initial missing-probe failure preserved and repaired); core 21/new 4
+synthetic tests PASS. Independent implementation review before freeze and
+independent raw-CSV/custody/all-interval outcome audit afterward PASS, including
+exact saved-report reproduction. All 314 original top-level output/metadata
+files and 13 producer source/tool files archived; originals/binary/models remain
+local with hashes. Full RAW/RNG equality is producer-checked and code-verified;
+retained CSV control/source fields independently agree.
+
+**Knowledge impact:** evidence ledger/current research and opt-in dataset
+interface. Earlier attempts remain unchanged and excluded; defaults unchanged.
+
+
+## §483 Selective calibrated CTM/gen6 E2k OOC-choice audit: invalid canary (2026-10-14)
+
+**Verdict:** `INVALID_OR_INSUFFICIENT`. Authorized prospective follow-up to §482,
+using two actual competing MAP choices, CTM4096 baseline, CTM8/gen6 E2k Silver8
+rescoring, extra CTM continuations with CPU matching and disjoint plain10k
+reference futures. [Evidence and diagnosis](evidence/ooc_selective_silver_audit_20261014/run-1/RESULTS.md).
+Only excluded canary97151001 launched; cohort97151010–97151017 was never
+started. No replacement, retry, cap change or quality conclusion.
+
+Frozen independently reviewed producer695e95a590125218d244c884a48c74b96bde228c,
+binaryb3e89dca6bc15fbec3a9faa156366a58122800d47b42e8e71392fcb8df6c7bd5,
+freezed2ce0084d7f885f49f1a549461c693d3ec9f1dcc912aff663cf52bdfd16467a8.
+All16 artifact identities and111,051 allocated streams were verified before
+launch. Calibrated manifest00bb4da6…/gen6 Eca9bd7f2…; A20/no keys/Act3,
+fixed V4 source with MCTS off, native plain10k, two one-thread workers planned,
+parent200CPU/children1200CPU/source1800wall, no retries.
+
+Canary exited0, without timeout, at219.82 process CPU/223.506 wall seconds.
+Source/control117-action/20-RAW-battle/end traces and both4096 baseline
+controls match exactly. Two eligible roots (Act1/floor3,Act2/floor19) completed.
+Frozen analysis rejects **source child settlement**: retained fork wrappers
+sum204.717603s but scoped RUSAGE_CHILDREN records204.729388s, leaving0.011785s.
+The header's plan/policy hashes call fileSha256's popen/pclose utility children
+outside the itemized wrappers. Omitted subprocess category confirmed; exact
+per-utility microsecond attribution is inference. No failed canary rescue.
+
+Separately reviewed narrow tooling repair records measured startup/provenance
+child CPU, includes it in unchanged caps, and reconciles that bucket plus all
+forks at the unchanged tolerance. Seed-free real hash-utility and synthetic
+regressions cover the defect. Original16 frozen inputs copied and hash-verified
+before edits; raw data, latches, original analysis/runner/protocol and verdict
+preserved in the evidence packet. No new scientific freeze or seeds after repair.
+The first root's matched CTM reached4096 pairs at0.474× Silver cost, so that
+root also precludes a matched-CPU claim. No efficacy interval from canary data.
+
+**Knowledge impact:** experiment evidence/current research; default-off audit
+interface and whole-process CPU-accounting contract. No model, runtime default,
+training qualification or gameplay promotion. Future execution requires a newly
+authorized freeze/canary; the eight-source cohort remains unopened.
+
+
+## §484 Selective A20 OOC-choice audit with gen6 E2500: invalid cohort (2026-10-14)
+
+**Verdict:**`INVALID_OR_INSUFFICIENT`, reason`failed source process`.
+[Full evidence/diagnosis](evidence/ooc_selective_silver_audit_20261014/run-2/RESULTS.md).
+Philipp authorized a fresh canary/comparison after §483 and cited PR547's
+nominal1080-fight A20 evidence for gen6 E2500. Budget alone moves2000→2500;
+CTM/source/plain10k reference, horizon/V4/X2-B, unopened cohort streams,
+resource caps and4096 matched-CTM ceiling remain fixed. No PR547 code/new
+terminal score, default change, training or gameplay qualification imported.
+
+Freeze:independently reviewed d3e33b46856155d65d382db5ae4351a9f00e8d45,
+binaryca14a43ce7f9f86ba39e7647304f4ada14c8539d71e61e5cc5ca63fc60c91e1e,
+freeze9ec9b834589f7fedbd717f4ce74176af4783a841e01a461cbd9a3e9fdcb4913c.
+All16 input hashes and111051 streams verified; fresh excluded canary97151101,
+original unopened cohort97151010–97151017. Earlier run remains invalid/excluded.
+
+CanaryCANARY_VALID:exact source25actions/7battles/summary control, baseline
+repeat and CTM prefixes;193.25CPU/195.102wall seconds. Measured0.016525s
+provenance CPU plus forks equals184.297805s total child CPU, zero residual.
+Independent saved-report reproduction exact. Matched4096-pair CTM reaches
+only0.176025× Silver cost, correctly unresolved as registered.
+
+Both initial cohort sources failed normal child exit125 (wait status32000),
+not signal termination:97151011 Act2/floor19 Silver8 future1/candidate1
+(97.05CPU/99.400wall);97151010 Act3 plain10k reference future1/candidate0
+(316.47CPU/321.281wall). Generic fork catch-all erases exceptions from
+evaluation/result construction/serialization. Underlying cause unknown; no
+unsupported-encounter, gen6-specific or CPU-cap attribution. Completed roots
+1/2 remain incomplete source captures, without quality inference. Dispatch
+stops, already active source drains; six later seeds never launch. Total606.77
+CPU including excluded canary. No scientific retry, cap extension or pooling.
+
+Narrow diagnostic repair transports bounded callback errors and records failed
+child CPU; fixed evaluation starts retain candidate/future identity. Ordinary
+replay behavior/model/RNG/budgets remain unchanged. ReleasePASS,16synthetic
+checksPASS,5/5 affected CTestsPASS with actual seed-free fork-error tests;
+independent implementation/custody/canary/invalid-outcome/repair reviewsPASS.
+Original16 dependencies and raw data/receipts/latches/reports archived and
+hash-bound separately from repaired tooling. A one-source diagnostic replay
+is proposed but requires new authorization; no further game seeds executed.
+
+**Knowledge impact:**failed evidence/current research and maintained opt-in
+error transport. No conditional utility result, OOC teacher winner or promotion.
+
+Root cause (later replay, [details](evidence/ooc_selective_silver_audit_20261014/run-2/ROOT_CAUSE.md)):
+both failures are the audit sampler rejecting `undefinedBehaviorEvoked`, set
+only when a continuation plays Discovery, as `simulator_health_failure`; no
+health count changed. Exact-prefix cloud replay of 97151011/97151010 only.
+Fix accepts it like source/live combats; both sources then complete. Run-2
+verdict unchanged; a new cohort needs a new freeze and authorization.
+
+## §485 Selective A20 OOC-choice audit, gen6 E2500 run 3 after the Discovery fix (2026-10-14)
+
+**Verdict:** `DECISION_AUDIT_MEASURED`; directional improvement of Silver8 over
+the baseline choice shown, matched-CPU claim not resolved.
+[Results](evidence/ooc_selective_silver_audit_20261014/run-3/RESULTS.md).
+Philipp authorized the rerun (22:34Z) after the §484 root cause (played
+Discovery rejected as a health failure). Protocol as §484 plus the run-3
+addendum: Discovery terminal fix, fresh seeds. Runs 1/2 stay excluded.
+
+Producer 686840547577c5ff55ad77de28da4a4700c81584 (reviewed), binary
+ae05716b…, freeze 05187c0e…; PR539-chain base, so Silver has no ADR-0035 leaf
+terms or ADR-0036 escape penalty. Canary 106000000 CANARY_VALID; cohort
+106000001–106000008 all complete, no failure or retry; 3361.62 CPU s including
+canary. Canary and cohort reports reproduce byte-exactly (also independently).
+
+15 roots (Act1/2/3 = 8/5/2). Equal-source plain10k-reference utility, 5000
+source-cluster bootstrap resamples: Silver8−baseline +0.0225 [+0.0064,+0.0404];
+CTM8−baseline +0.0014 [−0.0156,+0.0175]; matched CTM−baseline +0.0186
+[+0.0045,+0.0371]; Silver8−CTM8 +0.0210 [+0.0018,+0.0443]; Silver8−matched
++0.0038 [−0.0026,+0.0135]. Matched CTM hit its 4096-pair ceiling at 0.44–1.01×
+Silver cost (median 0.63×; 14/15 roots below 0.9). Largest single equal-weight
+contribution +0.009 (one Act1 root). The reference is plain10k Silver and may
+share Silver's biases; surrogate checkpoint utility, not run wins; eight-source
+pilot with nominal intervals. No training, default or gameplay claim.
+
+**Knowledge impact:** current research updated; measured evidence packet.
+
+Numbering note: the PR539/PR548 chain was written as §472–§475 and §479 in
+parallel with main's entries of those numbers. On landing it became
+§480–§484 (§472→§480, §473→§481, §474→§482, §475→§483, §479→§484). Frozen,
+hash-bound evidence packets under `evidence/a20_teacher_comparison_20261014/`
+and `evidence/ooc_selective_silver_audit_20261014/` keep the original numbers. Reproducing §480–§485 on later main needs the frozen binaries or
+the `=0` flags for the later defaults (ADR-0035, ADR-0036, ADR-0038, ADR-0040); rerun run 3's analyzer at `68684054`, since main's
+`tools/seed_guard.sh` has since changed.

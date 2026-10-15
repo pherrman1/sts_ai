@@ -166,6 +166,8 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/ooc_selective_silver_audit.cpp
+    apps/one_combat/ooc_selective_silver_sampler.cpp
     apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
@@ -631,6 +633,18 @@ add_test(NAME teacher_schema_compat COMMAND $<TARGET_FILE:one_combat> teacher_sc
 set_tests_properties(teacher_schema_compat PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME a20_teacher_runner COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/test_a20_teacher_runner.py)
+set_tests_properties(a20_teacher_runner PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME a20_teacher_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/test_analyze_a20_teachers.py)
+set_tests_properties(a20_teacher_analysis PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME a20_teacher_large_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/test_analyze_a20_teachers_large.py)
+set_tests_properties(a20_teacher_large_analysis PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME learned_stop_teacher_contract COMMAND $<TARGET_FILE:one_combat> learnedstopteacherselftest)
 set_tests_properties(learned_stop_teacher_contract PROPERTIES
     LABELS "core;research-repro"
@@ -958,3 +972,10 @@ add_test(NAME generator_policy_parity
         ${CMAKE_BINARY_DIR}/generator_policy_parity)
 set_tests_properties(generator_policy_parity PROPERTIES
     PASS_REGULAR_EXPRESSION "GENERATOR_POLICY_PARITY: PASS" LABELS "integration;smoke")
+
+add_test(NAME ooc_selective_silver_sampler COMMAND $<TARGET_FILE:one_combat> oocselectivesilverselftest)
+set_tests_properties(ooc_selective_silver_sampler PROPERTIES LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ooc_selective_silver_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/test_ooc_selective_silver.py)
+set_tests_properties(ooc_selective_silver_analysis PROPERTIES LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ooc_selective_seed_guard_rejects_zero COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh $<TARGET_FILE:one_combat> oocselectivesilvergen 0 97151001 /tmp/audit-unused-plan /tmp/audit-unused-output)
+set_tests_properties(ooc_selective_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE LABELS "core;research-repro")

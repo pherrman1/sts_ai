@@ -1,0 +1,7 @@
+.{"seed": 97150910, "dispatchStopped": "synthetic worker failure"}
+{"seed": 97150910, "dispatchStopped": "synthetic integrity failure"}
+...
+----------------------------------------------------------------------
+Ran 4 tests in 0.778s
+
+OK

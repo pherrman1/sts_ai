@@ -1,0 +1,26 @@
+Test project /home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache
+    Start  97: teacher_schema_compat
+1/8 Test  #97: teacher_schema_compat ............   Passed    0.22 sec
+    Start  98: a20_teacher_runner
+2/8 Test  #98: a20_teacher_runner ...............   Passed    0.07 sec
+    Start  99: a20_teacher_analysis
+3/8 Test  #99: a20_teacher_analysis .............   Passed    0.27 sec
+    Start 100: a20_teacher_large_analysis
+4/8 Test #100: a20_teacher_large_analysis .......   Passed    0.85 sec
+    Start 200: ctm_research_candidate_loader
+5/8 Test #200: ctm_research_candidate_loader ....   Passed    1.74 sec
+    Start 201: ctm_escape_runtime
+6/8 Test #201: ctm_escape_runtime ...............   Passed    4.41 sec
+    Start 203: ctm_candidate_tool
+7/8 Test #203: ctm_candidate_tool ...............   Passed    0.24 sec
+    Start 204: ctm_lizard_runtime
+8/8 Test #204: ctm_lizard_runtime ...............   Passed    0.79 sec
+
+100% tests passed out of 8
+
+Label Time Summary:
+core              =   1.41 sec*proc (4 tests)
+integration       =   7.18 sec*proc (4 tests)
+research-repro    =   1.41 sec*proc (4 tests)
+
+Total Test time (real) =   8.60 sec
