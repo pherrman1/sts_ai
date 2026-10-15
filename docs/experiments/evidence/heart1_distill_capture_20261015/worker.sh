@@ -43,7 +43,7 @@ setup)
   got=$(sha256sum "$RUN/one_combat" | cut -d' ' -f1)
   [ "$got" = "$EXPECT_BIN" ] || stop "binary sha256 $got != $EXPECT_BIN ($(g++ --version | head -1))"
   echo "$CODE" > "$RUN/GITSHA"
-  cp "$SHARE/heart1.bin" "$RUN/heart1.bin" || stop "cannot copy $SHARE/heart1.bin"
+  cp /mnt/project-files/heart1-ooc-ab-486/heart1.bin "$RUN/heart1.bin" || stop "cannot copy the §486 heart1.bin"
   got=$(sha256sum "$RUN/heart1.bin" | cut -d' ' -f1)
   [ "$got" = "$EXPECT_W" ] || stop "heart1.bin sha256 $got != $EXPECT_W"
   units > "$OUT/units.txt" || stop "unit list"
