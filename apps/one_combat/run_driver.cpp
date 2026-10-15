@@ -427,8 +427,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
         // real decisions stay with the search and its chain.
-        if (one_combat::heart1::enabled() && !one_combat::liveOocMctsUsesHeart1())
-            throw std::runtime_error("STS_OOC_HEART1 with live OOC MCTS requires STS_OOC_MCTS_PRIOR=heart1");
+        if (one_combat::heart1::enabled() && !one_combat::liveOocMctsUsesHeart1()
+                && !one_combat::liveOocSiblingCaptureEnabled())
+            throw std::runtime_error("STS_OOC_HEART1 with live OOC MCTS requires STS_OOC_MCTS_PRIOR=heart1"
+                                     " or STS_OOC_SIBLING_CAPTURE");
     }
     vDisconnect();
     t_oocStrategicTraceRows.clear();

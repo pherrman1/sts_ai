@@ -19007,3 +19007,45 @@ agreement with heart1 is the lowest, about 87%) is an **Open question**.
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (distilled-student weights and the §488
 result line).
 
+## §489 Sibling OOC MCTS leaves: learned leaf values vs rollout3 at A20 (2026-10-15)
+
+**Verdict:** descriptive offline measurement, no gameplay A/B. Within parent nodes, correlations with the expected
+rollout3 return (noise-corrected) are: one rollout3 0.24, X2-B at the leaf 0.57, heart1's value head 0.30
+(0.56 on card-reward parents, where X2-B is 0.18), and the mean of 4 rollout5 evaluations 0.34. A small CPU value net
+trained on 8-rollout means reached 0.56 vs X2-B 0.53 on held-out seeds. No learned leaf is promoted, nothing is trained on the GPU, no
+default changes. [Evidence](evidence/ooc_sibling_leaf_capture_20261015/README.md).
+
+Philipp asked (18:03–18:09Z) for an offline test of a model that "distills rollout3 without having to do rollout3",
+with GPU use only after asking him. New default-off option `STS_OOC_SIBLING_CAPTURE` writes tree leaves (depth ≤ 2,
+≤ 256 per root, every 4th searched decision) with their parent node and action, the search's own rollout3 value and,
+from a forked child (play unchanged: smoke 74072220 trace and action log byte-identical with capture on/off), 8
+repeat rollout3 and 4 rollout5 evaluations on fresh RNG, X2-B at the leaf and heart1's value and record. Stack: §486
+`v4` arm (§433 `combo`, V4 prior, automatic A20 CTM, 4096 simulations). Run commit `8df8b9b7`, binary `6eded1e2…`;
+seeds 109000000–063 (A20; 16 lead container, 48 on 8 workers on Philipp's word, pre-launch review PASS); all 64 units
+rc=0, tars verified from the lead container; 221k leaves.
+
+Metric: within each parent, demean leaf values; signal variance of E[rollout3] = var(T) − mean SE(T)², with T the mean
+of the 8 repeats; corr(c, E[rollout3]) = cov(c, T)/sqrt(var(c)·signal). Signal is only 33% of within-parent var(T).
+By parent screen (X2-B / heart1 / one rollout3): map 0.57 / 0.32 / 0.26 (157k leaves), event 0.71 / 0.31 / 0.22,
+rewards 0.18 / 0.56 / 0.22, shop 0.46 / 0.27 / 0.18, boss relic 0.52 / 0.27 / 0.28. Two independent single rollout3
+evaluations order a sibling pair the same way 53% of the time (smoke). Held out (seeds % 4 == 3, 59.6k leaves): linear
+X2-B + heart1 blend 0.556 vs X2-B 0.534; CPU net (deck/relic/potion/offer bags, fixed observation, rooms ahead, X2-B
+logit; within-parent loss, 12 fixed epochs) 0.561 at the last epoch, 0.539–0.561 over epochs 6–12 (`tv_within_x2b.log`).
+An earlier plain-MSE run of the same net on a 46-seed subset (different held-out set) stayed at 0.47–0.51 over epochs
+4–15. About 71% of within-parent leaf pairs are chance outcomes of the same action; at the action level (per-action
+means) every candidate sits near 0.53–0.56 pair concordance (`metrics64.json`). heart1 encodes 99.5% of leaves; its
+score uses only parents whose leaves are all encoded. Capture cost is not measured reliably (smoke +43% wall time with 1 repeat + 1 rollout5; the
+reviewer saw 2.2x on shared cores).
+
+**Interpretation (Inference):** one X2-B call carries about as much sibling-ranking information as the mean of 8
+rollout3 calls (the mean of n independent rollouts with single-call correlation ρ = 0.24 has correlation
+sqrt(n·ρ²/(1+(n−1)·ρ²)), which equals 0.57 at n ≈ 7.8), but it is a fixed estimate, while averaged rollouts converge; with thousands of simulations the
+search averages enough to pass it, consistent with §472/§475 (rollout0 −10 to −12 pp). rollout3 itself ends in X2-B,
+which flatters X2-B here. heart1's value head is a weak target outside card rewards, so fine-tuning the distilled
+students on it is not justified. A net trained on 8-rollout means gained little over X2-B (0.561 vs 0.534); label
+noise (signal share 0.33) is one plausible limit, untested against features, architecture or data size (one net, about
+5k training parents). Rollout3 is not
+ground truth either (Philipp); comparisons to it say nothing about true win probability.
+
+**Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` and
+`docs/knowledge-base/operations/environment-variables.md` (the capture option).

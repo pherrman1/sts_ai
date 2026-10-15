@@ -1437,6 +1437,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
                 + " -> " + (child.combatPrediction.used ? child.combatPrediction.outcome : "unsupported"));
         t_decisionLog->add("tree_successor", logScreen(child.gc));
     }
+    if (options.siblingCapture) parents_[states.size()] = {id, action};
     states.push_back(std::move(child));
     return states.size()-1;
 }
@@ -1671,6 +1672,84 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
 // `endpoint` receives the player state that was actually evaluated: the node
 // itself, or the detached continuation where it stopped.
 double OocGameContextModel::evaluateLeafImpl(sts::search::OocStateId id,
+        std::mt19937_64 &rng, bool &terminal, sts::search::OocEndpoint &endpoint) {
+#ifndef STS_LIVE_ADVISOR
+    if (options.siblingCapture) {
+        auto row = siblingLeafExtras(id);
+        const double value = evaluateLeafObserved(id, rng, terminal, endpoint);
+        if (row) {
+            (*row)["value"] = value;
+            (*row)["valueTerminal"] = terminal;
+            (*row)["valueEndFloor"] = endpoint.floor;
+            options.siblingCapture->write(*row);
+        }
+        return value;
+    }
+#endif
+    return evaluateLeafObserved(id, rng, terminal, endpoint);
+}
+#ifndef STS_LIVE_ADVISOR
+// Extra evaluations run in a forked child from the untouched pre-evaluation
+// parent, so the scheduled leaf evaluation and the search are unchanged.
+std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search::OocStateId id) {
+    auto &capture = *options.siblingCapture;
+    if (id == 0 || capture.captured >= capture.maxLeaves) return std::nullopt;
+    const auto parent = parents_.find(id);
+    if (parent == parents_.end()) return std::nullopt;
+    unsigned depth = 1;
+    for (auto at = parent->second.first; at != 0; ++depth) {
+        const auto up = parents_.find(at);
+        if (up == parents_.end() || depth > capture.maxDepth) return std::nullopt;
+        at = up->second.first;
+    }
+    if (depth > capture.maxDepth) return std::nullopt;
+    const auto ordinal = capture.captured++;
+    const auto &gc = state(id);
+    const auto &from = state(parent->second.first);
+    nlohmann::json row = {{"seed", capture.runSeed}, {"decision", capture.decisionIndex},
+        {"searchSeed", capture.searchSeed}, {"ordinal", ordinal}, {"leaf", id},
+        {"parent", parent->second.first}, {"action", parent->second.second}, {"depth", depth},
+        {"parentScreen", int(from.screenState)}, {"parentFloor", from.floorNum},
+        {"actionKey", candidate(parent->second.first, parent->second.second).key},
+        {"screen", int(gc.screenState)}, {"act", gc.act}, {"floor", gc.floorNum},
+        {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
+        {"outcome", int(gc.outcome)}, {"boundary", isLeafBoundary(id)}};
+    const auto policyBefore = captureOocPolicyThreadState();
+    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats);
+    try { row["extra"] = forkLeafReplay([&] {
+        nlohmann::json out = nlohmann::json::object();
+        try { out["x2b"] = anchorValue(gc, pathHistory(id)); }
+        catch (const std::exception &e) { out["x2bError"] = e.what(); }
+        if (capture.annotate) {
+            try { out["annotation"] = capture.annotate(gc); }
+            catch (const std::exception &e) { out["annotationError"] = e.what(); }
+        }
+        const auto evaluations = [&](const char *name, unsigned count, std::uint64_t kind) {
+            auto &list = out[name] = nlohmann::json::array();
+            for (unsigned r = 0; r < count; ++r) {
+                restoreOocPolicyThreadState(policyBefore);
+                std::seed_seq seq{capture.searchSeed, capture.decisionIndex, ordinal, kind, std::uint64_t(r)};
+                std::mt19937_64 stream(seq);
+                bool ended = false;
+                sts::search::OocEndpoint end;
+                try {
+                    const double value = evaluateLeafUnobserved(id, stream, ended, end);
+                    list.push_back({{"value", value}, {"terminal", ended}, {"endFloor", end.floor}});
+                } catch (const std::exception &e) { list.push_back({{"error", e.what()}}); }
+            }
+        };
+        evaluations("repeats", capture.repeats, 1);
+        if (capture.longRepeats) {
+            options.leafCombats = 5;  // child process only
+            evaluations("long5", capture.longRepeats, 2);
+        }
+        return out;
+    }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
+    catch (const std::exception &e) { row["extraError"] = e.what(); }
+    return row;
+}
+#endif
+double OocGameContextModel::evaluateLeafObserved(sts::search::OocStateId id,
         std::mt19937_64 &rng, bool &terminal, sts::search::OocEndpoint &endpoint) {
     if (!options.leafObserver)
         return evaluateLeafUnobserved(id, rng, terminal, endpoint);
@@ -2081,6 +2160,14 @@ std::shared_ptr<const CombatTransitionSampler> liveSamplerFor(const GameContext 
     return liveSamplerA20;
 }
 std::unique_ptr<OocLeafCaptureSink> liveLeafCapture;
+// STS_OOC_SIBLING_CAPTURE (research, default off): OocSiblingLeafCapture rows
+// for every STS_OOC_SIBLING_EVERY-th searched decision.
+struct LiveSiblingCapture {
+    std::shared_ptr<std::ofstream> out;
+    std::uint64_t every = 4, maxLeaves = 256;
+    unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
+};
+std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
 nlohmann::json pendingLeafCaptureProvenance;
 std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
@@ -2388,6 +2475,7 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 bool liveOocMctsEnabled() { return liveEnabled; }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
 bool liveOocMctsUsesHeart1() { return liveEnabled && liveOptions.heart1Prior; }
+bool liveOocSiblingCaptureEnabled() { return liveEnabled && liveSibling.has_value(); }
 nlohmann::json liveOocMctsSpecification() {
     if (!liveEnabled) return nullptr;
     // Every control the search reads, as set: STS_OOC_MCTS*, the combat
@@ -2443,6 +2531,32 @@ void configureLiveOocMcts() {
     pendingLeafCaptureProvenance = nullptr;
     if (std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_LEAF_CAPTURE requires STS_OOC_MCTS=1");
+    liveSibling.reset();
+    if (const char *path = std::getenv("STS_OOC_SIBLING_CAPTURE")) {
+        if (!liveEnabled || !*path) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE requires STS_OOC_MCTS=1 and a path");
+        if (std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_SIBLING_CAPTURE excludes STS_OOC_MCTS_LEAF_CAPTURE");
+        const auto knob = [](const char *key, std::uint64_t fallback, std::uint64_t low, std::uint64_t high) {
+            const char *raw = std::getenv(key);
+            if (!raw) return fallback;
+            const std::string value(raw);
+            if (value.empty() || value.size() > 9 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoull(value) < low || std::stoull(value) > high)
+                throw std::runtime_error(std::string(key) + " out of range");
+            return std::uint64_t(std::stoull(value));
+        };
+        LiveSiblingCapture sibling;
+        sibling.every = knob("STS_OOC_SIBLING_EVERY", 4, 1, 1000);
+        sibling.repeats = unsigned(knob("STS_OOC_SIBLING_REPEATS", 1, 0, 16));
+        sibling.longRepeats = unsigned(knob("STS_OOC_SIBLING_LONG", 0, 0, 16));
+        sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
+        sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
+        sibling.out = std::make_shared<std::ofstream>(path, std::ios::app);
+        if (!*sibling.out) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE cannot open output");
+        // Load heart1 in the parent: forked children must not each reload it.
+        if (one_combat::heart1::enabled()) (void)one_combat::heart1::net();
+        liveSibling = std::move(sibling);
+    }
     if (!liveEnabled) return;
     decisionLogPath.clear();
     if (const char *path = std::getenv("STS_OOC_MCTS_DECISION_LOG"); path && *path) decisionLogPath = path;
@@ -3244,6 +3358,21 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         options.leafCaptureStride = capture->row.at("stride").get<std::uint64_t>();
         options.leafCaptureLimit = OocLeafCaptureSink::leavesPerRoot;
         options.leafObserver = [capture](const OocLeafObservation &observation) { capture->observe(observation); };
+    }
+    if (liveSibling && index % liveSibling->every == 0) {
+        auto sibling = std::make_shared<OocSiblingLeafCapture>();
+        const auto out = liveSibling->out;
+        sibling->write = [out](const nlohmann::json &row) {
+            *out << row.dump() << '\n';
+            out->flush();
+            if (!*out) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE write failed");
+        };
+        if (one_combat::heart1::enabled())
+            sibling->annotate = [](const GameContext &leaf) { return one_combat::heart1::leafAnnotation(leaf); };
+        sibling->runSeed = seed; sibling->decisionIndex = index; sibling->searchSeed = config.seed;
+        sibling->repeats = liveSibling->repeats; sibling->longRepeats = liveSibling->longRepeats;
+        sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
+        options.siblingCapture = std::move(sibling);
     }
     if (!options.priorTracePath.empty()) {
         options.priorTraceRunSeed = seed;

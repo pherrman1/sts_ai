@@ -1,0 +1,281 @@
+{
+ "args": {
+  "out": "/home/user/lv/tv_within_x2b.json",
+  "files": [
+   "data/cap-a20-109000000.sib.jsonl",
+   "data/cap-a20-109000001.sib.jsonl",
+   "data/cap-a20-109000002.sib.jsonl",
+   "data/cap-a20-109000003.sib.jsonl",
+   "data/cap-a20-109000004.sib.jsonl",
+   "data/cap-a20-109000005.sib.jsonl",
+   "data/cap-a20-109000006.sib.jsonl",
+   "data/cap-a20-109000007.sib.jsonl",
+   "data/cap-a20-109000008.sib.jsonl",
+   "data/cap-a20-109000009.sib.jsonl",
+   "data/cap-a20-109000010.sib.jsonl",
+   "data/cap-a20-109000011.sib.jsonl",
+   "data/cap-a20-109000012.sib.jsonl",
+   "data/cap-a20-109000013.sib.jsonl",
+   "data/cap-a20-109000014.sib.jsonl",
+   "data/cap-a20-109000015.sib.jsonl",
+   "data/cap-a20-109000016.sib.jsonl",
+   "data/cap-a20-109000017.sib.jsonl",
+   "data/cap-a20-109000018.sib.jsonl",
+   "data/cap-a20-109000019.sib.jsonl",
+   "data/cap-a20-109000020.sib.jsonl",
+   "data/cap-a20-109000021.sib.jsonl",
+   "data/cap-a20-109000022.sib.jsonl",
+   "data/cap-a20-109000023.sib.jsonl",
+   "data/cap-a20-109000024.sib.jsonl",
+   "data/cap-a20-109000025.sib.jsonl",
+   "data/cap-a20-109000026.sib.jsonl",
+   "data/cap-a20-109000027.sib.jsonl",
+   "data/cap-a20-109000028.sib.jsonl",
+   "data/cap-a20-109000029.sib.jsonl",
+   "data/cap-a20-109000030.sib.jsonl",
+   "data/cap-a20-109000031.sib.jsonl",
+   "data/cap-a20-109000032.sib.jsonl",
+   "data/cap-a20-109000033.sib.jsonl",
+   "data/cap-a20-109000034.sib.jsonl",
+   "data/cap-a20-109000035.sib.jsonl",
+   "data/cap-a20-109000036.sib.jsonl",
+   "data/cap-a20-109000037.sib.jsonl",
+   "data/cap-a20-109000038.sib.jsonl",
+   "data/cap-a20-109000039.sib.jsonl",
+   "data/cap-a20-109000040.sib.jsonl",
+   "data/cap-a20-109000041.sib.jsonl",
+   "data/cap-a20-109000042.sib.jsonl",
+   "data/cap-a20-109000043.sib.jsonl",
+   "data/cap-a20-109000044.sib.jsonl",
+   "data/cap-a20-109000045.sib.jsonl",
+   "data/cap-a20-109000046.sib.jsonl",
+   "data/cap-a20-109000047.sib.jsonl",
+   "data/cap-a20-109000048.sib.jsonl",
+   "data/cap-a20-109000049.sib.jsonl",
+   "data/cap-a20-109000050.sib.jsonl",
+   "data/cap-a20-109000051.sib.jsonl",
+   "data/cap-a20-109000052.sib.jsonl",
+   "data/cap-a20-109000053.sib.jsonl",
+   "data/cap-a20-109000054.sib.jsonl",
+   "data/cap-a20-109000055.sib.jsonl",
+   "data/cap-a20-109000056.sib.jsonl",
+   "data/cap-a20-109000057.sib.jsonl",
+   "data/cap-a20-109000058.sib.jsonl",
+   "data/cap-a20-109000059.sib.jsonl",
+   "data/cap-a20-109000060.sib.jsonl",
+   "data/cap-a20-109000061.sib.jsonl",
+   "data/cap-a20-109000062.sib.jsonl",
+   "data/cap-a20-109000063.sib.jsonl"
+  ],
+  "x2b": true,
+  "epochs": 12,
+  "mod": 4,
+  "within": true,
+  "target": "T"
+ },
+ "rows": 221053,
+ "train": 161500,
+ "val": 59553,
+ "bestValNegCorr": 0.01920610859441892,
+ "bestEpoch": 12,
+ "all": {
+  "leaves": 58937,
+  "varT": 0.007300733301370473,
+  "noiseVar": 0.004970465474496832,
+  "signalVar": 0.0023302678268736408,
+  "r0": {
+   "corrWithT": 0.12399592149908661,
+   "corrWithExpected": 0.2194763468624017
+  },
+  "x2b": {
+   "corrWithT": 0.30175814449279076,
+   "corrWithExpected": 0.5341205935530899
+  },
+  "heart1": {
+   "corrWithT": 0.17325781109273658,
+   "corrWithExpected": 0.3066713080904845
+  },
+  "net": {
+   "corrWithT": 0.3169219096312648,
+   "corrWithExpected": 0.5609608939197132
+  }
+ },
+ "byParentScreen": {
+  "1": {
+   "leaves": 4155,
+   "varT": 0.005474653311388185,
+   "noiseVar": 0.0025983615342663057,
+   "signalVar": 0.0028762917771218786,
+   "r0": {
+    "corrWithT": 0.15577793561891723,
+    "corrWithExpected": 0.2149155232353641
+   },
+   "x2b": {
+    "corrWithT": 0.40757085427914186,
+    "corrWithExpected": 0.5622959570934833
+   },
+   "heart1": {
+    "corrWithT": 0.21968380177756472,
+    "corrWithExpected": 0.30308181333753564
+   },
+   "net": {
+    "corrWithT": 0.3751228765355161,
+    "corrWithExpected": 0.517529834811825
+   }
+  },
+  "2": {
+   "leaves": 3179,
+   "varT": 0.005126402990973815,
+   "noiseVar": 0.004012600451494485,
+   "signalVar": 0.00111380253947933,
+   "r0": {
+    "corrWithT": 0.06694502149044693,
+    "corrWithExpected": 0.14362186275482744
+   },
+   "x2b": {
+    "corrWithT": 0.0732302555311371,
+    "corrWithExpected": 0.15710601737419355
+   },
+   "heart1": {
+    "corrWithT": 0.23282488942762056,
+    "corrWithExpected": 0.49949560954362093
+   },
+   "net": {
+    "corrWithT": 0.2819581826564636,
+    "corrWithExpected": 0.6049047189844564
+   }
+  },
+  "3": {
+   "leaves": 2294,
+   "varT": 0.0031362165621644975,
+   "noiseVar": 0.002311065541188226,
+   "signalVar": 0.0008251510209762716,
+   "r0": {
+    "corrWithT": 0.19162518609765108,
+    "corrWithExpected": 0.37358453600214103
+   },
+   "x2b": {
+    "corrWithT": 0.41354067236741215,
+    "corrWithExpected": 0.8062217882239376
+   },
+   "heart1": {
+    "corrWithT": 0.2584388354992116,
+    "corrWithExpected": 0.503841663045827
+   },
+   "net": {
+    "corrWithT": 0.4059468994999692,
+    "corrWithExpected": 0.7914172827674177
+   }
+  },
+  "4": {
+   "leaves": 282,
+   "varT": 0.002370214797560338,
+   "noiseVar": 0.0015434005887674613,
+   "signalVar": 0.0008268142087928766,
+   "r0": {
+    "corrWithT": 0.1449848911476262,
+    "corrWithExpected": 0.24547803247804134
+   },
+   "x2b": {
+    "corrWithT": 0.3094086253856114,
+    "corrWithExpected": 0.523868521679673
+   },
+   "heart1": {
+    "corrWithT": 0.06684840933156892,
+    "corrWithExpected": 0.11318293835384205
+   },
+   "net": {
+    "corrWithT": 0.30111664910193964,
+    "corrWithExpected": 0.5098291413872966
+   }
+  },
+  "5": {
+   "leaves": 41405,
+   "varT": 0.00811728046299029,
+   "noiseVar": 0.005313477171713789,
+   "signalVar": 0.0028038032912765013,
+   "r0": {
+    "corrWithT": 0.13872731937528615,
+    "corrWithExpected": 0.23604429031837937
+   },
+   "x2b": {
+    "corrWithT": 0.3122057070379906,
+    "corrWithExpected": 0.531217462306554
+   },
+   "heart1": {
+    "corrWithT": 0.17096012694096568,
+    "corrWithExpected": 0.29088835579208394
+   },
+   "net": {
+    "corrWithT": 0.3337804361064515,
+    "corrWithExpected": 0.5679268259323271
+   }
+  },
+  "6": {
+   "leaves": 17,
+   "varT": 0.0018981827246212066,
+   "noiseVar": 0.0022839396256072292,
+   "signalVar": -0.0003857569009860229,
+   "r0": {
+    "corrWithT": -0.53923005680551,
+    "corrWithExpected": null
+   },
+   "x2b": {
+    "corrWithT": -0.2359156488577758,
+    "corrWithExpected": null
+   },
+   "heart1": {
+    "corrWithT": 0.010176540612014609,
+    "corrWithExpected": null
+   },
+   "net": {
+    "corrWithT": -0.15006422380291032,
+    "corrWithExpected": null
+   }
+  },
+  "7": {
+   "leaves": 4466,
+   "varT": 0.006660241408039566,
+   "noiseVar": 0.006336250852102903,
+   "signalVar": 0.0003239905559366631,
+   "r0": {
+    "corrWithT": 0.015575584440936907,
+    "corrWithExpected": 0.07061925986535315
+   },
+   "x2b": {
+    "corrWithT": 0.18953870887723542,
+    "corrWithExpected": 0.8593631518291754
+   },
+   "heart1": {
+    "corrWithT": 0.15042402521579773,
+    "corrWithExpected": 0.682018281046786
+   },
+   "net": {
+    "corrWithT": 0.15529688838336314,
+    "corrWithExpected": 0.7041117049965271
+   }
+  },
+  "8": {
+   "leaves": 3139,
+   "varT": 0.005576142973719814,
+   "noiseVar": 0.004878689317867525,
+   "signalVar": 0.0006974536558522885,
+   "r0": {
+    "corrWithT": 0.0559470983621402,
+    "corrWithExpected": 0.15819284622986302
+   },
+   "x2b": {
+    "corrWithT": 0.15902662200933326,
+    "corrWithExpected": 0.4496546684001193
+   },
+   "heart1": {
+    "corrWithT": 0.11806854377414178,
+    "corrWithExpected": 0.33384392643472516
+   },
+   "net": {
+    "corrWithT": 0.11885707341410649,
+    "corrWithExpected": 0.3360735281787726
+   }
+  }
+ }
+}

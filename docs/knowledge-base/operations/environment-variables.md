@@ -169,6 +169,7 @@ enable flag:
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
+| `STS_OOC_SIBLING_CAPTURE` (+ `_EVERY`, `_REPEATS`, `_LONG`, `_MAX_DEPTH`, `_MAX_LEAVES`) | Research capture of sibling OOC MCTS leaves for learned-leaf tests (requires `STS_OOC_MCTS=1`, excludes `STS_OOC_MCTS_LEAF_CAPTURE`). Every `_EVERY`-th searched decision (default 4) appends one JSON row per tree leaf at depth ≤ `_MAX_DEPTH` (2), at most `_MAX_LEAVES` (256) per root: parent node and action, the search's own leaf value, and from a forked child `_REPEATS` (1) repeat leaf rollouts on fresh RNG, `_LONG` (0) `LEAF_COMBATS=5` rollouts, X2-B at the leaf and, with `STS_OOC_HEART1`, heart1's value and record. Play is unchanged (forked child only) | unset (off) | `configureLiveOocMcts`, `OocGameContextModel::siblingLeafExtras` |
 | `STS_OOC_ACTION_NN` | OOC decisions via next-combat action NN | `0` (off) | `main` ~L9270 |
 | `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9277 |
 | `STS_OOC_MAP_ROUTE` | C_psi route search (M2) | `0` (off) | `main` ~L9345 |
