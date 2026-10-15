@@ -9,6 +9,14 @@ Format: b"HEART1W\\x01", u32 tensor count, then per tensor u32 name length,
 UTF-8 name, u32 ndim, u32 dims, float32 little-endian data.
 
     python3 tools/heart1/export_heart1_weights.py heart1.pt heart1.bin
+
+A distilled student (the heart1-distill thread's distill.py state dict) needs
+--allow-other-checkpoint and its head count; --trim-map marks a student trained
+on records without the map rows below the current floor. Both are written as
+one-element meta.* tensors, which heart1's own export leaves out:
+
+    python3 tools/heart1/export_heart1_weights.py student.pt student.bin \\
+        --allow-other-checkpoint --n-heads 4 --trim-map
 """
 import argparse
 import hashlib
@@ -47,6 +55,8 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--allow-other-checkpoint", action="store_true",
                     help="export a checkpoint whose SHA-256 is not heart1's")
+    ap.add_argument("--n-heads", type=int, help="attention heads (meta.n_heads; the native default is 8)")
+    ap.add_argument("--trim-map", action="store_true", help="meta.trim_map = 1")
     args = ap.parse_args()
 
     digest = sha256(args.checkpoint)
@@ -59,6 +69,13 @@ def main():
         for name in group[1:]:
             if not torch.equal(state[group[0]], state[name]):
                 sys.exit(f"{name} differs from {group[0]}; the native forward assumes they are shared")
+    if any(name.startswith("meta.") for name in state):
+        sys.exit("checkpoint already has meta.* tensors")
+    state = dict(state)
+    if args.n_heads is not None:
+        state["meta.n_heads"] = torch.tensor([float(args.n_heads)])
+    if args.trim_map:
+        state["meta.trim_map"] = torch.tensor([1.0])
 
     with open(args.out, "wb") as f:
         f.write(b"HEART1W\x01")
