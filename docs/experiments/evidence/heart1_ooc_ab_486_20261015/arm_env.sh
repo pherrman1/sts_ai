@@ -1,10 +1,13 @@
 # §486 arm environments. Sourced by run_unit.sh: arm_env_args ARM BASE RUN -> KEY=VALUE lines for env -i.
-# Shared part = the §457 `off` base (§422/§433 off: exact-10k Silver via the bestbench budget, V4 OOC gates at
-# margin 1.0, keys off, act-3 stop, STS_OOC_MCTS=0), copied literally, plus STS_OOC_PUBLIC_FUTURES=8 as in §457.
-# Every other setting is the binary's default (ADR-0030..0038 defaults ON). Ascension is the bestbench argument.
-#   v4      the shared part only
-#   heart1  the shared part + STS_OOC_HEART1=RUN/heart1.bin (silverbot heart1.pt, native export, sha256 in
-#           heart1_weights.txt). heart1 decides every OOC screen it encodes; the rest falls back to the same chain.
+# Both arms = §433 `combo` (the §422 base: exact-10k Silver via the bestbench budget, V4 OOC gates at margin 1.0,
+# keys off, act-3 stop; live OOC MCTS rollout3 at 4096 simulations, WIDEN_K=4, WIDEN_ALPHA=0.75, 3 leaf combats,
+# native leaf), copied literally, plus STS_OOC_PUBLIC_FUTURES=8 as in §457/§458. No CTM variables: the automatic
+# stack, which at ascension 20 is the calibrated pathb-a20 stack with active Lizard (ADR-0033). Every other setting is
+# the binary's default on the code commit. Ascension is the bestbench argument.
+# Rollouts: STS_OOC_MCTS_LEAF_POLICY=v4 (the ordinary chain) in both arms (Philipp 2026-10-15 10:08Z).
+#   v4      STS_OOC_MCTS_PRIOR=policy (V4 tree prior)
+#   heart1  STS_OOC_HEART1=RUN/heart1.bin, STS_OOC_MCTS_PRIOR=heart1 (heart1 tree prior where it scores every
+#           candidate source of a node, V4 elsewhere)
 arm_env_args() {
   local arm=$1 base=$2 run=$3
   case $arm in v4|heart1) ;; *) echo "unknown arm $arm" >&2; return 1 ;; esac
@@ -17,10 +20,16 @@ arm_env_args() {
     STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0 \
     STS_COLLECT_KEYS=0 STS_REST_WIN=0 STS_STOP_AFTER_ACT=3 \
     STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_LEARNED_STOP=0 \
-    STS_OOC_MCTS=0 STS_OOC_PUBLIC_FUTURES=8 \
-    "STS_OOC_DECISION_TRACE=$base.trace.jsonl"
-  if [ "$arm" = heart1 ]; then
+    "STS_OOC_DECISION_TRACE=$base.trace.jsonl" \
+    STS_OOC_MCTS=1 STS_OOC_MCTS_SIMS=4096 STS_OOC_MCTS_LEAF_COMBATS=3 STS_OOC_MCTS_LEAF_VALUE=native \
+    STS_OOC_MCTS_TEMPERATURE=1 STS_OOC_MCTS_CPUCT=1.5 \
+    STS_OOC_MCTS_WIDEN_K=4 STS_OOC_MCTS_WIDEN_ALPHA=0.75 STS_OOC_MCTS_MAX_DEPTH=32 \
+    STS_OOC_MCTS_ROOT_SELECTION=visits STS_OOC_MCTS_EARLY_STOP=1 "STS_OOC_MCTS_TRACE=$base.mcts.csv" \
+    STS_OOC_PUBLIC_FUTURES=8 STS_OOC_MCTS_LEAF_POLICY=v4
+  if [ "$arm" = v4 ]; then
+    echo STS_OOC_MCTS_PRIOR=policy
+  else
     [ -s "$run/heart1.bin" ] || { echo "missing $run/heart1.bin" >&2; return 1; }
-    echo "STS_OOC_HEART1=$run/heart1.bin"
+    printf '%s\n' "STS_OOC_HEART1=$run/heart1.bin" STS_OOC_MCTS_PRIOR=heart1
   fi
 }
