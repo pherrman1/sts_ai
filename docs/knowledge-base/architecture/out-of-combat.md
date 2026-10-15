@@ -1740,7 +1740,7 @@ trajectories diverge. Default-off and other decision families are unchanged.
 
 ### heart1 policy adapter (opt-in)
 
-Last verified: 2026-10-15 for the Neow curse fix (ADR-0038); 2026-10-14 for the native port and its parity harness.
+Last verified: 2026-10-15 for reward-potion swaps (ADR-0039); 2026-10-15 for the Neow curse fix (ADR-0038); 2026-10-14 for the native port and its parity harness.
 
 `STS_OOC_HEART1=<weights.bin>` makes the real run driver (`runFullRunOOC`) take
 every out-of-combat decision it can encode with silverbot's released `heart1.pt`
@@ -1778,8 +1778,9 @@ exclusive with live OOC MCTS.
   - After a Neow card or potion pick, silverbot's engine keeps the reward
     screen open with only "proceed" left; ours goes straight to the map.
   - Our engine offers a reward potion only with a free slot; silverbot's always
-    does. Singing Bowl is not enumerated by our `getAllActionsInState`, so the
-    adapter adds it.
+    does. The ADR-0039 swap (`STS_POTION_REWARD_SWAP`) applies to our own
+    policy, not to heart1. Singing Bowl is not enumerated by our
+    `getAllActionsInState`, so the adapter adds it.
   - Keys are offered as in silverbot (Recall, emerald and sapphire rewards),
     so heart1 can collect them and enter Act 4 unless `STS_STOP_AFTER_ACT`
     stops the run.

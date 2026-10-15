@@ -26,6 +26,8 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0039](0039-potion-reward-swap.md) lets the out-of-combat policy discard its worst potion for a better
+  reward potion when slots are full (`STS_POTION_REWARD_SWAP=0` restores the free-slot-only pickup).
 - [ADR-0038](0038-neow-transform-curse-fix.md) makes Neow "transform two cards" add a curse only
   with the CURSE drawback (`STS_NEOW_TRANSFORM_CURSE_FIX=0` restores the legacy curse on every pick).
 - [ADR-0037](0037-live-advisor-escape-penalty.md) gives the live-game advisor the same `12,35` escape penalty
