@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 #include "one_combat/ooc_selective_silver_audit.h"
 #include "one_combat/ooc_selective_silver_sampler.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
@@ -27,7 +28,7 @@ void tokEntity(const sts::GameContext &gc, const sts::search::GameAction &a,
     one_combat::tokEntity(gc, a, entType, entId, goldGePrice);
 }
 
-extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
+extern bool g_collectKeys;              // default on; STS_COLLECT_KEYS=0 restores Act-3 play
 static std::vector<std::string> g_mainArgv;
 std::string g_mainBinaryPath;
 // Resolved only after successful loading, so E3a provenance does not confuse
@@ -267,8 +268,8 @@ static RunResult runFullRun(std::uint64_t seed, int sims, int ascension, bool ve
     agent.playout(gc);                   // runs until gc.outcome is decided
     auto t1 = std::chrono::steady_clock::now();
 
-    return { gc.outcome == GameOutcome::PLAYER_VICTORY,
-             gc.floorNum, gc.act, gc.curHp, gc.maxHp,
+    return { search::runGoalVictory(gc, g_collectKeys),
+             gc.floorNum, gc.act, gc.curHp, gc.maxHp, 0,
              std::chrono::duration<double>(t1 - t0).count() };
 }
 
@@ -3091,10 +3092,11 @@ int main(int argc, char **argv) {
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 
+    g_collectKeys = true;  // Whole-run objective: collect keys and defeat the Heart.
     if (const char *d = std::getenv("STS_COLLECT_KEYS")) {
         g_collectKeys = std::atoi(d) != 0;
-        std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
     }
+    std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
 
     one_combat::configureRestVPolicyFromEnvironment();
     if (const char *d = std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
@@ -3804,7 +3806,7 @@ int main(int argc, char **argv) {
     } else if (mode == "run") {          // one whole run, verbose
         int sims         = argc > 2 ? std::stoi(argv[2]) : 1000;
         std::uint64_t sd = argc > 3 ? std::stoull(argv[3]) : 42;
-        int asc          = argc > 4 ? std::stoi(argv[4]) : 0;
+        int asc          = argc > 4 ? std::stoi(argv[4]) : 20;
         RunResult r = runFullRun(sd, sims, asc, false);
         std::printf("=== %s ===  reached floor %d (act %d)  hp %d/%d  %.2fs\n",
                     r.won ? "WIN" : "DEAD", r.floor, r.act, r.hpEnd, r.maxHp, r.sec);
@@ -4365,7 +4367,7 @@ int main(int argc, char **argv) {
     } else if (mode == "bestbench") {     // current best OOC stack, single arm (baseline for new experiments)
         int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;
         int nSeeds = argc > 3 ? std::stoi(argv[3]) : 512;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
+        int asc    = argc > 4 ? std::stoi(argv[4]) : 20;
         std::uint64_t seedOffset = argc > 5 ? std::stoull(argv[5]) : 0;
         std::string resultsFile = argc > 6 ? argv[6] : "";
         // issue 46 hardening: bestBench APPENDS to the results file and never
@@ -4402,7 +4404,7 @@ int main(int argc, char **argv) {
     } else if (mode == "reprobench") {    // repeat one full run in one process; audit determinism
         int sims = argc > 2 ? std::stoi(argv[2]) : 1000;
         int repeats = argc > 3 ? std::stoi(argv[3]) : 2;
-        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
+        int asc = argc > 4 ? std::stoi(argv[4]) : 20;
         std::uint64_t seed = argc > 5 ? std::stoull(argv[5]) : 0;
         std::string resultsFile = argc > 6 ? argv[6] : "";
         std::cout << "[reprobench: seed " << seed << ", repeats " << repeats << "]\n";
@@ -4413,7 +4415,7 @@ int main(int argc, char **argv) {
     } else if (mode == "runtrace") {      // per-node human-readable trace of ONE seed
         std::uint64_t seed = argc > 2 ? std::stoull(argv[2]) : 0;
         int sims = argc > 3 ? std::stoi(argv[3]) : 1000;
-        int asc  = argc > 4 ? std::stoi(argv[4]) : 0;
+        int asc  = argc > 4 ? std::stoi(argv[4]) : 20;
         runTraceRun(seed, sims, asc);
 
     } else {

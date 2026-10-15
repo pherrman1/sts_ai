@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 //
 // Created by keega on 9/19/2021.
 //
@@ -170,6 +171,7 @@ void search::ScumSearchAgent2::stepRandom(GameContext &gc) {
 
 void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
     ++stepCount;
+    if (const auto key = heartKeyAction(gc, g_collectKeys)) { takeAction(gc, *key); return; }
 
     switch (gc.screenState) {
         case ScreenState::EVENT_SCREEN:

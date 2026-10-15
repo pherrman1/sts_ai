@@ -52,8 +52,11 @@ cmake --build build -j
 Run a small serverless fair-play smoke benchmark after `one_combat` is built:
 
 ```bash
-STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+STS_FAIR=1 ./build/one_combat bestbench 1000 8 0  # explicit A0; default ascension is now 20
 ```
+
+Whole-run defaults target A20 Ironclad Heart kills with key collection on.
+Historical Act-3 benchmarks require explicit `STS_COLLECT_KEYS=0 STS_STOP_AFTER_ACT=3`.
 
 Check the startup messages for native OOC and policy-model loads. File presence
 alone does not prove a model was used.

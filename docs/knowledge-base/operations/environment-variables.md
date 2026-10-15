@@ -142,7 +142,7 @@ enable flag:
 | `STS_OOC_STRATEGIC_MARGIN_TREASURE` | — | −1.0 | `main` |
 | `STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC` | — | −1.0 | `main` |
 | `STS_OOC_STRATEGIC_MARGIN_MAP` | — | −1.0 | `main` |
-| `STS_COLLECT_KEYS` | Collect act-4 keys (emerald/sapphire in rewards, ruby at rest) | `0` (off) | `main` ~L9244 |
+| `STS_COLLECT_KEYS` | Heart objective: mandatory Emerald/Sapphire rewards, Act-3 Ruby Recall and a final-act route to the visible burning elite. Explicit `0` restores keys-off play. | `1` (on in `one_combat`) | `one_combat::main`, `heartKeyAction` |
 
 ## OOC model-driven decisions
 

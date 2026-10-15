@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 #include "run_driver.h"
 
 #include <algorithm>
@@ -258,7 +259,7 @@ static bool openTreasureChestRuleStep(GameContext &gc) {
 // Every offered reward relic (elites, event elites, chests) is taken first,
 // except Philipp's listed exceptions (2026-10-07), which go to the ordinary
 // decision. Live OOC MCTS left most chest relics because its leaf value prices
-// them near zero (#347, ledger §390). Keys are off, so a Sapphire pairing is ignored.
+// them near zero (#347, ledger §390). The Heart key rule runs first to preserve Sapphire pairing.
 static bool reviewedRewardRelic(RelicId id) {
     switch (id) {
         case RelicId::BOTTLED_FLAME: case RelicId::BOTTLED_LIGHTNING: case RelicId::BOTTLED_TORNADO:
@@ -284,6 +285,7 @@ const char *lastOocChainHandler() { return t_oocChainHandler; }
 
 bool oocTreeRuleStep(GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
+    if (const auto key = search::heartKeyAction(gc, g_collectKeys)) { key->execute(gc); return true; }
     if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return true;
     if (gc.screenState != ScreenState::REWARDS) return false;
     auto &r = gc.info.rewardsContainer;
@@ -305,6 +307,9 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     // chain layer that handled this step. Never read by any policy.
     const auto tag = [](const char *name) { t_oocChainHandler = name; return true; };
     tag("unknown");
+    if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+        tag("heart_key"); key->execute(gc); return;
+    }
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
         tag("match_and_keep");
         static const one_combat::PathHistory emptyPath;
@@ -519,7 +524,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
+            if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+                key->execute(gc); traceBy = "heart_key";
+            } else if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
                     && one_combat::heart1::policyStep(gc)) {
                 traceBy = "heart1";
             } else if (openTreasureChestRuleStep(gc)) {
@@ -548,7 +555,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         : gc.outcome == GameOutcome::PLAYER_VICTORY ? "victory"
         : gc.outcome == GameOutcome::PLAYER_LOSS ? "death" : "stopped");
     auto t1 = std::chrono::steady_clock::now();
-    const RunResult result { clearedStopActBoss || gc.outcome == GameOutcome::PLAYER_VICTORY,
+    const RunResult result { clearedStopActBoss || search::runGoalVictory(gc, g_collectKeys, g_stopAfterAct),
                               gc.floorNum, gc.act, gc.curHp, gc.maxHp,
                               fightsLost,
                               std::chrono::duration<double>(t1 - t0).count(),

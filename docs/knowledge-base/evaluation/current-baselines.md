@@ -1,9 +1,9 @@
 # Current baselines
 
-Last verified: 2026-10-14 for the ADR-0034 Recall/multi-select defaults; 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-09-27 for the OOC MCTS CTM stack default when enabled; 2026-09-25 for the native one-action-root bypass (§354) and native-only Silver (ADR-0022); 2026-09-24 for the native Silver default (ADR-0021) and Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
+Last verified: 2026-10-16 for the A20 Heart objective (ADR-0041); 2026-10-14 for the ADR-0034 Recall/multi-select defaults; 2026-10-12 for the public-futures fallback default (ADR-0028); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-09-27 for the OOC MCTS CTM stack default when enabled; 2026-09-25 for the native one-action-root bypass (§354) and native-only Silver (ADR-0022); 2026-09-24 for the native Silver default (ADR-0021) and Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
 artifacts relocated from `build/` to `models/`; V4 token-net artifact =
 skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 key collection is
-explicitly opt-in — pre-32281a2 baselines are Act-3-only).
+now on by default (ADR-0041); historical key settings below still apply).
 Experiments invalidated by fixes are tracked in the
 [rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
 **2026-08-05 §113 battle-skip exploit invalidates every Searcher3 measurement
@@ -70,13 +70,22 @@ current binary confirmed the recorded references (flat @1k, +2.3pp n.s.
 @3k/256p) and re-confirmed S3−belief−chain as the particle config (belief+
 chain ON costs −11.3 to −12.1pp, significant).
 
-Commit `32281a2` initially enabled automatic Act-4 key collection (emerald/
-sapphire at rewards screens, ruby at rest sites when act ≥ 3). Commit
-`ee6cfa8fb65d4d4c39dbbbeaf84ee48e91152b19` later gated that behavior behind
-`STS_COLLECT_KEYS=1`. **The current default is key collection OFF**: unset or
-`STS_COLLECT_KEYS=0` leaves Act 4 unreachable, while `STS_COLLECT_KEYS=1`
-explicitly enables key collection. `STS_STOP_AFTER_ACT=3` additionally makes
-the Act-3 horizon explicit for comparisons.
+The default `one_combat` whole-run objective is A20 Ironclad Heart kill.
+`run`, `bestbench`, `reprobench`, and `runtrace` use ascension 20 when omitted;
+an explicit positional ascension still overrides it. Key collection is enabled
+unless `STS_COLLECT_KEYS=0`. Required key offers and Act-3 Recall run before
+learned policies; the final act's path rule preserves a route to the visible
+burning elite while Emerald is missing. Sapphire is taken before its paired
+relic. A simulator Act-3 victory without all keys is not a Heart win in the run
+driver or OOC MCTS terminal backup. `STS_STOP_AFTER_ACT=3` retains an explicit
+Act-3 benchmark objective, including the second A20 boss. To reproduce older
+keys-off Act-3 experiments, set **both** `STS_COLLECT_KEYS=0` and
+`STS_STOP_AFTER_ACT=3` and pass their recorded ascension explicitly.
+
+This changes the objective, not the qualification of existing models: the
+tracked policy, CTM and leaf models retain their recorded training domains.
+Historical Act-3 rates below are not Heart-kill rates. No A20 Heart win-rate
+qualification has been established by enabling keys.
 ## Baseline table
 
 **Native OOC information boundary (updated 2026-10-12).** Since ADR-0028 the

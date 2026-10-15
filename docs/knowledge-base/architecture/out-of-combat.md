@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-16 for the Heart objective and key rule; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -1071,7 +1071,7 @@ as the retained primitive. Singing Bowl, multiple groups and mixed rewards keep
 their distinct choices. Taking a Sapphire-paired relic consumes that key
 choice, and taking Sapphire consumes its paired relic. Treasure `OPEN_CHEST`
 ends at the revealed reward screen; it does not choose a generated reward.
-In live runs with `STS_COLLECT_KEYS` off (the default), the adapter drops
+In live runs with `STS_COLLECT_KEYS=0`, the adapter drops
 `TAKE_KEY` and `TAKE_RUBY_KEY` candidates and their primitives from the V4
 prior source set (`OocAdapterOptions::collectKeys`, set from `g_collectKeys` in
 `configureLiveOocMcts`); offline fixtures and the live advisor keep keys. Before
@@ -1537,11 +1537,15 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    full-run collection behavior is separate from the live semantic MCTS path,
    which now exposes `DISCARD_POTION` when a visible reward or affordable shop
    potion can refill a full belt (see the live inspector contract).
-   When `STS_COLLECT_KEYS=1` (default off), every REWARDS handler takes the
-   emerald (burning elite) / sapphire (chest) key via `RT::KEY` right after
-   gold/relic/potion, and every act-3+ rest room takes the ruby key (RECALL,
-   rest action 2) before any heal/smith layer; without key collection Act 4
-   (`THE_HEART`) is unreachable.
+   `one_combat` enables `STS_COLLECT_KEYS` by default. `heartKeyAction` runs
+   before learned choices and reward relic rules: take offered keys before
+   their paired relic, take Ruby Recall at the first legal Act-3+ campfire,
+   and on Act 3 choose the first legal map edge still reaching the visible
+   burning elite while Emerald is missing. Earlier acts retain normal path
+   decisions. The helper also runs in the fallback chain and tree-rule
+   projection. Explicit `STS_COLLECT_KEYS=0` restores keys-off behavior.
+   `runGoalVictory` keeps missing-key Act-3 clears out of Heart win labels;
+   explicit benchmark horizons retain their separate Act-clear semantics.
    Sites: `apps/one_combat.cpp` REWARDS chains + `restWinPolicy`,
    `src/sim/search/ScumSearchAgent2.cpp::stepRewardsPolicy` and its REST_ROOM
    case, `src/sim/search/SimpleAgent.cpp::stepRestScreen`.

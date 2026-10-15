@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 // RUN TRACE mode (runtrace): per-node human-readable trace of one seed.
 // Split out of apps/one_combat.cpp; see driver_shared.h for shared state.
 
@@ -287,7 +288,15 @@ void runTraceRun(std::uint64_t seed, int sims, int asc) {
         path.update(gc);
         const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                     && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
+        if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+            if (gc.screenState == ScreenState::MAP_SCREEN) {
+                flush(); tr_logOocActions("map", gc);
+            } else if (gc.screenState == ScreenState::REST_ROOM) {
+                if (!nodeActive) { flush(); nodeActive = true; label = "REST"; }
+                desc = "Recall"; tr_logOocActions("rest", gc);
+            }
+            key->execute(gc);
+        } else if (gc.screenState == ScreenState::BATTLE) {
             agent.simulationCountBase = fightSims(gc, sims);
             BattleContext bc;
             flush();  // a battle always begins a fresh node (fixes forced rest/event -> boss merge)
@@ -368,6 +377,6 @@ void runTraceRun(std::uint64_t seed, int sims, int asc) {
     }
     flush();
     std::printf("=== %s  final floor %d act %d  HP %d/%d ===\n",
-                gc.outcome == GameOutcome::PLAYER_VICTORY ? "VICTORY" : "DEATH",
+                search::runGoalVictory(gc, g_collectKeys) ? "VICTORY" : "DEATH",
                 gc.floorNum, gc.act, gc.curHp, gc.maxHp);
 }
