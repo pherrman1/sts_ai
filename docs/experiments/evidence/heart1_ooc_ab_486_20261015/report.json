@@ -1,0 +1,120 @@
+{
+    "by_ascension": {
+        "20": {
+            "ascension": 20,
+            "cohort": [
+                107000000,
+                107000063
+            ],
+            "units": {
+                "v4": 64,
+                "heart1": 64
+            },
+            "seed_failures_dropped": [],
+            "invalid_units": [],
+            "missing_cohort_seeds": {
+                "v4": [],
+                "heart1": []
+            },
+            "non_cohort_seeds": [],
+            "pairs": 64,
+            "delta_clear": 0.234375,
+            "delta_clear_ci95": [
+                0.09375,
+                0.375
+            ],
+            "clear_label": "IMPROVED",
+            "discordant_heart1_only": 19,
+            "discordant_v4_only": 4,
+            "mcnemar_p": 0.002599477767944336,
+            "delta_floor": -0.09375,
+            "delta_floor_ci95": [
+                -3.640625,
+                3.2347656249999943
+            ],
+            "label": "NOT_SHOWN",
+            "delta_hp_end": 12.796875,
+            "clears": {
+                "v4": 10,
+                "heart1": 25
+            },
+            "mean_floor": {
+                "v4": 42.359375,
+                "heart1": 42.265625
+            },
+            "reached_act3": {
+                "v4": 43,
+                "heart1": 42
+            },
+            "clears_given_act3": {
+                "v4": 0.23255813953488372,
+                "heart1": 0.5952380952380952
+            },
+            "deaths_by_act": {
+                "v4": {
+                    "1": 2,
+                    "2": 19,
+                    "3": 33
+                },
+                "heart1": {
+                    "1": 4,
+                    "2": 18,
+                    "3": 17
+                }
+            },
+            "boss_deaths": {
+                "v4": 38,
+                "heart1": 23
+            },
+            "sec_per_run": {
+                "v4": 493.6952484375,
+                "heart1": 4310.3984375
+            },
+            "heart1_arm_ooc_decisions_by": {
+                "mcts": 5661,
+                "tree_rule": 2577,
+                "relic_rule": 526,
+                "chest_rule": 164,
+                "chain": 154,
+                "match_and_keep": 70
+            },
+            "mcts": {
+                "v4": {
+                    "runs_with_trace": 64,
+                    "mcts_cpu_sec_per_run": 429.78443174446875,
+                    "owned_share": 0.9728132387706856,
+                    "fallback_share": 0.027186761229314422,
+                    "support_aborts_per_run": 0.125,
+                    "prior_builds_per_run": 119886.234375,
+                    "heart1_prior_nodes": 0,
+                    "heart1_prior_fallbacks": 0,
+                    "heart1_prior_share": 0.0,
+                    "heart1_prior_reasons": {}
+                },
+                "heart1": {
+                    "runs_with_trace": 64,
+                    "mcts_cpu_sec_per_run": 4170.066883796719,
+                    "owned_share": 0.973679712869595,
+                    "fallback_share": 0.02632028713040506,
+                    "support_aborts_per_run": 0.0625,
+                    "prior_builds_per_run": 106636.984375,
+                    "heart1_prior_nodes": 6824767,
+                    "heart1_prior_fallbacks": 0,
+                    "heart1_prior_share": 1.0,
+                    "heart1_prior_reasons": {
+                        "mapped:REWARDS:skip_card": 4129107,
+                        "scored:REWARDS": 4491423,
+                        "scored:SHOP": 618122,
+                        "scored:screen1": 260428,
+                        "scored:screen3": 133543,
+                        "scored:screen4": 17,
+                        "scored:screen5": 1246447,
+                        "scored:screen6": 6092,
+                        "scored:screen7": 68695
+                    }
+                }
+            }
+        }
+    },
+    "primary": "NOT_SHOWN"
+}

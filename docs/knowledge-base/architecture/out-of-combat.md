@@ -1851,5 +1851,7 @@ with the search and its chain.
   (`scored:`, `mapped:` and `fallback:` by screen and kind). Before this
   mapping (run commit `ec19d1e`) every card-reward node kept V4. Rollouts are
   unchanged. `STS_OOC_MCTS_PRIOR_TRACE`
-  refuses it. heart1 inside rollouts was not implemented: a timing smoke
+  refuses it. §486 (A20, 64 paired seeds, `combo`): floors NOT_SHOWN, act-3 clears
+  25 vs 10 (+23.4 pp [+9.4, +37.5]) at 8.7x CPU per run; no default change.
+  heart1 inside rollouts was not implemented: a timing smoke
   (2026-10-15) put it at tens of core-hours per A0 run.
