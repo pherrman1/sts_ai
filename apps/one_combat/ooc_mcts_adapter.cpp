@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 #include "run_profile.h"
 #include "ooc_mcts_adapter.h"
 #ifndef STS_LIVE_ADVISOR
@@ -980,7 +981,8 @@ std::string mctsChoiceKey(sts::search::OocSemanticAction action, const GameConte
 std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId id) const {
     switch (state(id).outcome) {
         case sts::GameOutcome::PLAYER_LOSS: return 0;
-        case sts::GameOutcome::PLAYER_VICTORY: return 1;
+        case sts::GameOutcome::PLAYER_VICTORY:
+            return sts::search::runGoalVictory(state(id), options.collectKeys, dependencies.stopAfterAct()) ? 1 : 0;
         case sts::GameOutcome::UNDECIDED: return std::nullopt;
     }
     throw std::runtime_error("OOC MCTS invalid outcome");
@@ -1506,6 +1508,8 @@ CombatRuntimeSample::Outcome OocGameContextModel::resolveCombat(Snapshot &child,
     ++continuation_.imaginedCombats;
     const int battleAct = child.gc.act;
     const auto battleRoom = child.gc.curRoom;
+    const bool firstA20Act3Boss = battleAct == 3 && child.gc.ascension >= 20
+        && child.gc.info.encounter == child.gc.boss;
     bool victory = false;
     auto sampledOutcome = CombatRuntimeSample::Outcome::UNSUPPORTED;
     const auto input = prepared ? CombatPredictorInputV1{}
@@ -1547,7 +1551,7 @@ CombatRuntimeSample::Outcome OocGameContextModel::resolveCombat(Snapshot &child,
         throw sts::search::OocSearchUnsupported(reason.empty() ? "unspecified" : reason);
     }
     if (victory && dependencies.stopAfterAct() > 0 && battleAct == dependencies.stopAfterAct()
-            && battleRoom == sts::Room::BOSS)
+            && battleRoom == sts::Room::BOSS && !firstA20Act3Boss)
         child.gc.outcome = sts::GameOutcome::PLAYER_VICTORY;
     child.path.update(child.gc);
     return sampledOutcome;
@@ -1985,7 +1989,10 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
     }
     if (!options.checkpointLeaves) {
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
-        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) {
+            terminal = true;
+            return sts::search::runGoalVictory(child.gc, options.collectKeys, dependencies.stopAfterAct()) ? 1 : 0;
+        }
         return options.bossLeaf ? bossLeafValue(child.gc)
             : anchorValue(child.gc, child.path);
     }
@@ -2005,7 +2012,10 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
     const auto checkpoint = [&]() -> std::optional<double> {
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
-        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) { terminal = true; return 1; }
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) {
+            terminal = true;
+            return sts::search::runGoalVictory(child.gc, options.collectKeys, dependencies.stopAfterAct()) ? 1 : 0;
+        }
         if (options.bossRollout)
             return bossesCleared(child.gc) >= targetBosses ? std::optional<double>(1.0) : std::nullopt;
         if (options.screenLeaf && child.gc.screenState != sts::ScreenState::BATTLE
@@ -5210,7 +5220,7 @@ void oocMctsAdapterSelfTest() {
     std::mt19937_64 constantRng(777);
     require(constantCheckpoint.evaluateLeaf(0,constantRng) == .5, "constant value only at resolved checkpoint");
     for (auto outcome : {GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {
-        auto terminal = detachedCopy(gc); terminal.outcome = outcome;
+        auto terminal = detachedCopy(gc); terminal.outcome = outcome; terminal.act = 4;
         OocGameContextModel exactTerminal(terminal,path,{},constantOptions);
         require(exactTerminal.evaluateLeaf(0,constantRng) == (outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0),
                 "constant ablation preserves terminal values");
@@ -5341,11 +5351,21 @@ void oocMctsAdapterSelfTest() {
     require(br.metrics.leafEvaluations==4 && br.rootActions.empty()
         && br.metrics.transitionSamples==0,"battle MCTS boundary");
     for(auto outcome : {GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {
-        battle.outcome=outcome;
+        battle.outcome=outcome; battle.act=4;
         OocGameContextModel terminal(battle,path);
         require(terminal.terminalValue(0)==(outcome==GameOutcome::PLAYER_VICTORY?1.:0.),"exact terminal value");
         auto tr=OocMctsPlanner().search(terminal,0,3);
         require(tr.metrics.leafEvaluations==0 && tr.rootActions.empty(),"terminal precedence");
+    }
+    for (const bool keys : {false, true}) {
+        auto act3 = detachedCopy(gc); act3.outcome = GameOutcome::PLAYER_VICTORY; act3.act = 3;
+        OocAdapterOptions opts{true}; opts.collectKeys = keys;
+        auto deps = defaultOocMctsDependencies(); deps.stopAfterAct = [] { return 0; };
+        OocGameContextModel model(act3,path,{},opts,deps);
+        std::mt19937_64 rng(123);
+        require(model.terminalValue(0) == (keys ? 0.0 : 1.0)
+            && model.evaluateLeafWithOutcome(0,rng).value == (keys ? 0.0 : 1.0),
+            "Act-3 terminal is not a Heart victory, keys-off retains historical value");
     }
     for (auto screen : {ScreenState::INVALID,ScreenState::CARD_SELECT}) {
         auto unsupported=detachedCopy(gc); unsupported.screenState=screen;
@@ -6031,7 +6051,7 @@ void oocMctsAdapterSelfTest() {
             require(!std::getline(input,line),"production selection emits one root row");
         }
         for(const auto outcome:{GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {
-            auto terminalRoot=detachedCopy(root); terminalRoot.outcome=outcome;
+            auto terminalRoot=detachedCopy(root); terminalRoot.outcome=outcome; terminalRoot.act=4;
             bool seen=false;
             opts.leafObserver=[&](const OocLeafObservation &o) {
                 seen=true;
@@ -6076,6 +6096,39 @@ void oocMctsAdapterSelfTest() {
                 captureCombatTransitionState(g)};
         }
     };
+    // Controlled A20 horizon: never stop at boss one, regardless of boss two's outcome.
+    struct DoubleBossSampler final : CombatTransitionSampler {
+        bool secondDies = false;
+        mutable unsigned calls = 0;
+        CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+            return {true,"supported"};
+        }
+        CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+            ++calls;
+            return {secondDies && calls == 2 ? CombatRuntimeSample::Outcome::DEATH
+                : CombatRuntimeSample::Outcome::VICTORY, captureCombatTransitionState(g)};
+        }
+    };
+    for (const bool secondDies : {false,true}) {
+        auto root = detachedCopy(gc);
+        root.act = 3; root.ascension = 20; root.curRoom = Room::BOSS;
+        root.screenState = ScreenState::BATTLE;
+        root.boss = MonsterEncounter::TIME_EATER; root.secondBoss = MonsterEncounter::AWAKENED_ONE;
+        root.info.encounter = root.boss;
+        auto sampler = std::make_shared<DoubleBossSampler>(); sampler->secondDies = secondDies;
+        root.regainControlAction = [sampler](GameContext &state) {
+            if (sampler->calls == 1) {
+                state.info.encounter = state.secondBoss; state.screenState = ScreenState::BATTLE;
+            } else state.outcome = GameOutcome::PLAYER_VICTORY;
+        };
+        auto deps = defaultOocMctsDependencies(); deps.stopAfterAct = [] { return 3; };
+        OocAdapterOptions opts{true}; opts.leafCombats = 3;
+        OocGameContextModel projected(root,path,sampler,opts,deps);
+        std::mt19937_64 rng(913);
+        const auto result = projected.evaluateLeafWithOutcome(0,rng);
+        require(result.terminal && result.value == (secondDies ? 0.0 : 1.0) && sampler->calls == 2,
+            "A20 Act-3 horizon waits through the second boss death or victory");
+    }
     for (int variant : {0,1,2}) {
         const bool bossDies = variant == 1, activeTail = variant == 2;
         auto bossRoot = detachedCopy(gc);
@@ -6465,8 +6518,8 @@ void oocMctsAdapterSelfTest() {
         g_collectKeys = keys;
         const bool stepped = oocTreeRuleStep(keyRoot);
         g_collectKeys = savedKeys;
-        require(stepped != keys && (keyRoot.screenState == ScreenState::REWARDS) == keys,
-            "tree rules leave a key-only reward screen only when keys are not collected");
+        require(stepped && (!keys || keyRoot.greenKey),
+            "tree rules collect a required key, or leave it when keys are off");
     }
     liveOptions = optionsBeforeGoldRoots;
 
@@ -6782,8 +6835,9 @@ int oocSelectiveSilverHorizonSelfTest() {
                 unsigned callbacks = 0, pendingSteps = 0, anchors = 0;
                 gc.regainControlAction = [&](GameContext &state) {
                     ++callbacks; ++state.floorNum;
-                    if (terminalCase == 2 && sampler->calls == 2)
-                        state.outcome = sts::GameOutcome::PLAYER_VICTORY;
+                    if (terminalCase == 2 && sampler->calls == 2) {
+                        state.act = 4; state.outcome = sts::GameOutcome::PLAYER_VICTORY;
+                    }
                     // A chained fight may leave a pending native decision
                     // after the requested third combat, before any MAP.
                     state.screenState = sampler->calls == 3

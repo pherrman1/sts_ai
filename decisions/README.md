@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0041](0041-a20-heart-objective.md) sets whole-run defaults to A20 Ironclad
+  Heart kills, required key collection and goal-aware terminal labels.
+
 - [ADR-0040](0040-silver-rollout-card-table-default.md) makes Silver's greedy leaf rollout play cards by the
   gen-6-fitted table by default (§479 NOT_SHOWN, 0.89x CPU per fight; `STS_SILVER_ROLLOUT_CARD_TABLE=0` restores
   the hand-written priority list).

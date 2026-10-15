@@ -93,6 +93,11 @@ target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
+add_executable(run_goal_test tests/run_goal_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(run_goal_test PRIVATE include json/include)
+add_test(NAME run_goal COMMAND $<TARGET_FILE:run_goal_test>)
+set_tests_properties(run_goal PROPERTIES LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)

@@ -532,7 +532,7 @@ int main(int argc, char **argv) {
         for (const auto outcome : {GameOutcome::PLAYER_LOSS, GameOutcome::PLAYER_VICTORY}) {
             auto terminalDeps = deps;
             terminalDeps.continuationStep = [outcome](GameContext &state, PathHistory &, std::mt19937_64 &rng) {
-                (void)rng(); state.outcome = outcome;
+                (void)rng(); state.outcome = outcome; state.act = 4;
             };
             OocGameContextModel terminalLeaf(pending, path, {}, checkpoint, terminalDeps);
             OocGameContextModel scalarLeaf(pending, path, {}, checkpoint, terminalDeps);
