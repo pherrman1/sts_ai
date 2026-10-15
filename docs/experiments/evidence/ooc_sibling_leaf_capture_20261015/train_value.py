@@ -99,7 +99,7 @@ for ep in range(a.epochs):
     print(f"ep {ep+1} train mse {tot/len(train):.5f} val mse {vm:.5f} | corrE r0 {res['r0']['corrWithExpected']:.3f} x2b {res['x2b']['corrWithExpected']:.3f} heart1 {res['heart1']['corrWithExpected']:.3f} net {res['net']['corrWithExpected']:.3f}", flush=True)
     score = -res['net']['corrWithExpected']
     if best is None or score < best[0]:
-        best = (vm, ep + 1, res, {s: analyse([r for r in val if r['screen'] == s], ['r0', 'x2b', 'heart1', 'net']) for s in sorted({r['screen'] for r in val})})
+        best = (score, ep + 1, res, {s: analyse([r for r in val if r['screen'] == s], ['r0', 'x2b', 'heart1', 'net']) for s in sorted({r['screen'] for r in val})})
         torch.save(net.state_dict(), a.out + '.pt')
-json.dump({'args': vars(a), 'rows': len(rows), 'train': len(train), 'val': len(val), 'bestValNegCorr': best[0], 'bestEpoch': best[1],
+json.dump({'args': vars(a), 'rows': len(rows), 'train': len(train), 'val': len(val), 'bestValCorr': -best[0], 'bestEpoch': best[1],
            'all': best[2], 'byParentScreen': {str(k): v for k, v in best[3].items()}}, open(a.out, 'w'), indent=1)

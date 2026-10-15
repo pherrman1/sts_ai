@@ -19030,14 +19030,21 @@ By parent screen (X2-B / heart1 / one rollout3): map 0.57 / 0.32 / 0.26 (157k le
 rewards 0.18 / 0.56 / 0.22, shop 0.46 / 0.27 / 0.18, boss relic 0.52 / 0.27 / 0.28. Two independent single rollout3
 evaluations order a sibling pair the same way 53% of the time (smoke). Held out (seeds % 4 == 3, 59.6k leaves): linear
 X2-B + heart1 blend 0.556 vs X2-B 0.534; CPU net (deck/relic/potion/offer bags, fixed observation, rooms ahead, X2-B
-logit; within-parent loss) 0.561, 0.51 without the within-parent loss. Capture with 1 repeat + 1 rollout5 cost +43% wall time on the smoke seed.
+logit; within-parent loss, 12 fixed epochs) 0.561 at the last epoch, 0.539–0.561 over epochs 6–12 (`tv_within_x2b.log`).
+An earlier plain-MSE run of the same net on a 46-seed subset (different held-out set) stayed at 0.47–0.51 over epochs
+4–15. About 71% of within-parent leaf pairs are chance outcomes of the same action; at the action level (per-action
+means) every candidate sits near 0.53–0.56 pair concordance (`metrics64.json`). heart1 encodes 99.5% of leaves; its
+score uses only parents whose leaves are all encoded. Capture cost is not measured reliably (smoke +43% wall time with 1 repeat + 1 rollout5; the
+reviewer saw 2.2x on shared cores).
 
 **Interpretation (Inference):** one X2-B call carries about as much sibling-ranking information as the mean of 8
-rollout3 calls, but it is a fixed estimate, while averaged rollouts converge; with thousands of simulations the
+rollout3 calls (the mean of n independent rollouts with single-call correlation ρ = 0.24 has correlation
+sqrt(n·ρ²/(1+(n−1)·ρ²)), which equals 0.57 at n ≈ 7.8), but it is a fixed estimate, while averaged rollouts converge; with thousands of simulations the
 search averages enough to pass it, consistent with §472/§475 (rollout0 −10 to −12 pp). rollout3 itself ends in X2-B,
 which flatters X2-B here. heart1's value head is a weak target outside card rewards, so fine-tuning the distilled
-students on it is not justified. Labels from 8 rollouts carry too little within-parent signal to train a
-replacement for rollout3; a distillation attempt would need many more rollouts per training leaf. Rollout3 is not
+students on it is not justified. A net trained on 8-rollout means gained little over X2-B (0.561 vs 0.534); label
+noise (signal share 0.33) is one plausible limit, untested against features, architecture or data size (one net, about
+5k training parents). Rollout3 is not
 ground truth either (Philipp); comparisons to it say nothing about true win probability.
 
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` and
