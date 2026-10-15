@@ -1,7 +1,7 @@
 // Generated from docs/experiments/evidence/silver_rollout_policy_2x2_20261014/card_table/card_table_g6.txt
 // (sha256 fa93269f251bda03da879f5a1ff68bc3746d79d4887c8ae0ad25ae465b725c98) with the encoding of SilverRolloutAgent::loadPlayTable:
 // entry id * 2 + upgraded = static_cast<int>(-score * 1000.0); lower plays first. Default Silver rollout
-// card-play table (ADR-0038); STS_SILVER_ROLLOUT_CARD_TABLE=0 restores the hand-written priority list.
+// card-play table (ADR-0040); STS_SILVER_ROLLOUT_CARD_TABLE=0 restores the hand-written priority list.
 #pragma once
 
 namespace sts::search {

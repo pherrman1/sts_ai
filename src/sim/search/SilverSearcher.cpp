@@ -683,7 +683,7 @@ const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutC
             c.uniform = std::clamp(std::atoi(raw), 0, 64);
         if (const char *raw = std::getenv("STS_SILVER_ROLLOUTS_PER_LEAF"); raw && *raw)
             c.perLeaf = std::clamp(std::atoi(raw), 1, 64);
-        // ADR-0038: the gen-6-fitted card-play table is the default; "0" restores the hand-written
+        // ADR-0040: the gen-6-fitted card-play table is the default; "0" restores the hand-written
         // priority list, any other value is a table file path.
         c.cardTable = kSilverRolloutCardTableG6;
         if (const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE"); path && *path)

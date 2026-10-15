@@ -1,4 +1,4 @@
-# ADR-0038: Silver's greedy leaf rollout plays cards by the gen-6-fitted table by default
+# ADR-0040: Silver's greedy leaf rollout plays cards by the gen-6-fitted table by default
 
 Date: 2026-10-15
 Status: accepted

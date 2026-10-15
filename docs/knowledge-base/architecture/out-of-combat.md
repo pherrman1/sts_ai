@@ -1740,7 +1740,7 @@ trajectories diverge. Default-off and other decision families are unchanged.
 
 ### heart1 policy adapter (opt-in)
 
-Last verified: 2026-10-14 for the native port and its parity harness.
+Last verified: 2026-10-15 for the Neow curse fix (ADR-0038); 2026-10-14 for the native port and its parity harness.
 
 `STS_OOC_HEART1=<weights.bin>` makes the real run driver (`runFullRunOOC`) take
 every out-of-combat decision it can encode with silverbot's released `heart1.pt`
@@ -1773,7 +1773,8 @@ exclusive with live OOC MCTS.
   engine difference (below), and fails on any argmax disagreement or an
   unexplained divergence.
 - Engine differences silverbot's policy sees through this adapter:
-  - Neow "transform two cards" also adds a random curse in our engine.
+  - Before ADR-0038, Neow "transform two cards" also added a random curse in
+    our engine; `STS_NEOW_TRANSFORM_CURSE_FIX=0` still does.
   - After a Neow card or potion pick, silverbot's engine keeps the reward
     screen open with only "proceed" left; ours goes straight to the map.
   - Our engine offers a reward potion only with a free slot; silverbot's always
