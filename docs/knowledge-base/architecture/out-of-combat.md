@@ -1456,11 +1456,18 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
 2. `runFullRunOOC` evaluates opt-in action networks/evaluators first, then map,
    rewards, shop, rest, boss-relic/Neow, and finally the base policy.
    `collectFreeOocReward` in `apps/one_combat/ooc_checkpoint_policy.cpp`
-   takes a potion only when `potionCount < potionCapacity`; the subsequent
-   full-run REWARDS handlers in `apps/one_combat/run_driver.cpp` do not discard
-   or swap a carried potion to create space. A Potion Belt reward collected
-   earlier in that chain can add two slots before the potion decision. In the
-   3,069-fight `v_win` audit, 147 unmatched full-belt drops were classified
+   takes potions through `search::potionRewardAction` (ADR-0039,
+   `STS_POTION_REWARD_SWAP`, default on). With a free slot it takes the
+   best-ranked reward potion. With full slots it discards the worst-ranked held
+   potion when the best reward potion ranks strictly higher, then takes it
+   (`potionKeepRank`, fitted on CTM fight data). Sozu keeps the legacy pickup.
+   The effective teacher specification includes `potion_reward_swap: true`
+   for unset/`1`; `=0` omits it and restores the legacy pickup, which took
+   reward potion 0 only when
+   `potionCount < potionCapacity` and never discarded. A Potion Belt reward
+   collected earlier in that chain can add two slots before the potion
+   decision. The audit below predates ADR-0039 and describes the legacy pickup.
+   In the 3,069-fight `v_win` audit, 147 unmatched full-belt drops were classified
    by the adjacent-floor proxy (4.79%, or 4.8% of RAW fights); 199 more
    unmatched full-belt rows had unknown proxy status. If all 199 represent
    forfeited drops, the code-path upper count is 346/3,069 (11.27%, or 11.3%).
@@ -1469,9 +1476,9 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    Capacity was full in 95.3% of unmatched RAW rows versus 15.3% of matched
    rows; one matched full-belt drop was explained by a new Potion Belt. The
    belt was full in 759/3,069 RAW rows (24.7%); among 301 full-belt rows with
-   classifiable adjacent-floor status, 148 (49.2%) had a potion drop. The run
-   policy takes a potion only when capacity is available and has no discard or
-   swap path. The exact cohort forfeiture rate is unknown. This historical
+   classifiable adjacent-floor status, 148 (49.2%) had a potion drop. The legacy
+   run policy took a potion only when capacity was available and had no discard
+   or swap path. The exact cohort forfeiture rate is unknown. This historical
    full-run collection behavior is separate from the live semantic MCTS path,
    which now exposes `DISCARD_POTION` when a visible reward or affordable shop
    potion can refill a full belt (see the live inspector contract).

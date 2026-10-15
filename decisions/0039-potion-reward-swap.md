@@ -27,7 +27,7 @@ picked "Learned ranking" (fit per-potion values from existing fight data).
   - With full slots, it discards the worst-ranked held potion when the best
     reward potion outranks it strictly, then takes the reward.
 - The ranking is `potionKeepRank`, fitted by `tools/potion_keep/` on existing
-  CTM corpora: 606,639 A20 fights (`ctm-a20/stage1`, setup `none`) and 427,847
+  CTM corpora: 606,639 A20 fights (`ctm-a20/stage1`, `main-*` units) and 427,847
   A0 fights (`ctm-pathb`). Per fight, the outcome is the HP plus max-HP change.
   It is regressed on held-potion counts at fight start, with run-seed and
   encounter fixed effects and HP, max HP, floor, deck size, relic count and
@@ -52,10 +52,18 @@ picked "Learned ranking" (fit per-potion values from existing fight data).
 
 ## Consequences
 
+- Through these three functions the change also reaches two more callers:
+  the live advisor's OOC MCTS continuations (`continuationStep` in
+  `apps/one_combat/live_ooc_policy.cpp`, via `collectFreeOocReward`), and OOC
+  MCTS rollouts and fallbacks that step `ScumSearchAgent2`.
 - Runs that reach a reward screen with full slots, or with several reward
   potions, can play differently. Earlier results need `STS_POTION_REWARD_SWAP=0`
   to reproduce.
-- The flag is not part of the OOC policy identity.
+- The effective OOC policy identity (`effectiveOocPolicySpecification`)
+  includes `potion_reward_swap: true` for unset/`1`, like the other default-on
+  OOC rule flags. Explicit `0` omits it and restores the legacy identity.
+  Teacher identities frozen before ADR-0039 therefore match only with
+  `STS_POTION_REWARD_SWAP=0`.
 - **Unverified:** the playing-strength effect. The default is Philipp's decision
   (2026-10-15); no game test was run for it.
 

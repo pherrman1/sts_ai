@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Per-potion keep value: fight HP outcome on held-potion counts, seed and encounter fixed effects."""
-import sys, re
+import os, sys, re
 import numpy as np, pandas as pd, scipy.sparse as sp
 from scipy.sparse.linalg import lsqr
 
-src = open("/home/user/sts_ai/include/constants/Potions.h").read()
+src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "include", "constants", "Potions.h")).read()
 enum = re.search(r"enum class Potion[^{]*\{(.*?)\};", src, re.S).group(1)
 names = [t.split("=")[0].strip() for t in re.sub(r"//.*", "", enum).split(",") if t.strip()]
 
