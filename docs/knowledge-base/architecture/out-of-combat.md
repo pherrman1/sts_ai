@@ -1780,7 +1780,7 @@ trajectories diverge. Default-off and other decision families are unchanged.
 
 ### heart1 policy adapter (opt-in)
 
-Last verified: 2026-10-15 for distilled-student weights (network size and map trim from the file), reward-potion
+Last verified: 2026-10-15 for distilled-student weights (network size and map trim from the file) and §488, reward-potion
 swaps (ADR-0039), the Neow curse fix (ADR-0038), the OOC MCTS prior hook and the AVX forward pass; 2026-10-14 for the
 native port and its parity harness.
 
@@ -1872,3 +1872,8 @@ with the search and its chain.
   argmax rollouts (`STS_OOC_MCTS_LEAF_POLICY=prior`) vs the chain: act-3
   clears 12 vs 10 NOT_SHOWN, floors −5.70 [−9.33, −2.17] WORSE (more act-2
   deaths); the chain stays.
+  §488 (A20, the same 64 seeds, `combo`): student C as the tree prior
+  (`STS_OOC_HEART1=studentc.bin`, `STS_OOC_MCTS_PRIOR=heart1`) vs V4: act-3
+  clears 26 vs 10 (+25.0 pp [+10.9, +39.1]) IMPROVED, floors NOT_SHOWN, at
+  619 vs 460 s per run (1.35x); about the §486 heart1 arm's 25 clears. Same
+  seeds as §486, so not an independent replication; no default change.

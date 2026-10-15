@@ -1,0 +1,155 @@
+{
+  "by_ascension": {
+    "20": {
+      "ascension": 20,
+      "cohort": [
+        107000000,
+        107000063
+      ],
+      "units": {
+        "v4": 64,
+        "studentc": 64
+      },
+      "seed_failures_dropped": [],
+      "invalid_units": [],
+      "missing_cohort_seeds": {
+        "v4": [],
+        "studentc": []
+      },
+      "non_cohort_seeds": [],
+      "pairs": 64,
+      "delta_clear": 0.25,
+      "delta_clear_ci95": [
+        0.109375,
+        0.390625
+      ],
+      "label": "IMPROVED",
+      "discordant_studentc_only": 20,
+      "discordant_v4_only": 4,
+      "mcnemar_p": 0.001543879508972168,
+      "delta_floor": -1.828125,
+      "delta_floor_ci95": [
+        -5.453125,
+        1.8125
+      ],
+      "floor_label": "NOT_SHOWN",
+      "delta_hp_end": 16.828125,
+      "clears": {
+        "v4": 10,
+        "studentc": 26
+      },
+      "mean_floor": {
+        "v4": 42.359375,
+        "studentc": 40.53125
+      },
+      "reached_act3": {
+        "v4": 43,
+        "studentc": 38
+      },
+      "clears_given_act3": {
+        "v4": 0.23255813953488372,
+        "studentc": 0.6842105263157895
+      },
+      "deaths_by_act": {
+        "v4": {
+          "1": 2,
+          "2": 19,
+          "3": 33
+        },
+        "studentc": {
+          "1": 8,
+          "2": 18,
+          "3": 12
+        }
+      },
+      "boss_deaths": {
+        "v4": 38,
+        "studentc": 27
+      },
+      "sec_per_run": {
+        "v4": 460.307440625,
+        "studentc": 619.03971875
+      },
+      "studentc_arm_ooc_decisions_by": {
+        "mcts": 5410,
+        "tree_rule": 2471,
+        "relic_rule": 524,
+        "chest_rule": 166,
+        "chain": 147,
+        "match_and_keep": 60
+      },
+      "mcts": {
+        "v4": {
+          "runs_with_trace": 64,
+          "mcts_cpu_sec_per_run": 402.0655614829531,
+          "owned_share": 0.9728132387706856,
+          "fallback_share": 0.027186761229314422,
+          "support_aborts_per_run": 0.125,
+          "prior_builds_per_run": 119886.234375,
+          "heart1_prior_nodes": 0,
+          "heart1_prior_fallbacks": 0,
+          "heart1_prior_share": 0.0,
+          "heart1_prior_reasons": {}
+        },
+        "studentc": {
+          "runs_with_trace": 64,
+          "mcts_cpu_sec_per_run": 541.9167995881406,
+          "owned_share": 0.9736794986571172,
+          "fallback_share": 0.026320501342882722,
+          "support_aborts_per_run": 0.0,
+          "prior_builds_per_run": 103597.28125,
+          "heart1_prior_nodes": 6630226,
+          "heart1_prior_fallbacks": 0,
+          "heart1_prior_share": 1.0,
+          "heart1_prior_reasons": {
+            "mapped:REWARDS:skip_card": 4043696,
+            "scored:REWARDS": 4375995,
+            "scored:SHOP": 614931,
+            "scored:screen1": 245263,
+            "scored:screen3": 135209,
+            "scored:screen4": 16,
+            "scored:screen5": 1182651,
+            "scored:screen6": 2136,
+            "scored:screen7": 74025
+          }
+        }
+      }
+    }
+  },
+  "primary": "IMPROVED",
+  "vs_486": {
+    "20": {
+      "studentc_vs_486_heart1": {
+        "compared": 64,
+        "clears": {
+          "studentc": 26,
+          "heart1_486": 25
+        },
+        "discordant_studentc_only": 10,
+        "discordant_heart1_only": 9,
+        "mcnemar_p": 1.0,
+        "mean_floor": {
+          "studentc": 40.53125,
+          "heart1_486": 42.265625
+        },
+        "reached_act3": {
+          "studentc": 38,
+          "heart1_486": 42
+        },
+        "sec_per_run": {
+          "studentc": 619.03971875,
+          "heart1_486": 4310.3984375
+        },
+        "mcts_cpu_sec_per_run": {
+          "studentc": 541.9167995881405,
+          "heart1_486": 4170.066883796719
+        }
+      },
+      "control_vs_486_v4": {
+        "compared": 64,
+        "identical": 64,
+        "differ": []
+      }
+    }
+  }
+}
