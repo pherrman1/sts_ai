@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-15 for the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-15 for the default rollout card table (ADR-0038) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -247,12 +247,15 @@ the terminal state with Silver's evaluation weights (`SilverEvalWeights`).
 Each `SilverSearcher` carries a `RolloutConfig` (uniform-random playouts, greedy
 playouts per leaf, card-play table), read from the `STS_SILVER_ROLLOUT_*`
 research variables and overridable per thread with
-`g_nativeSilverRolloutOverride`; the default is one greedy playout. The
+`g_nativeSilverRolloutOverride`; the default is one greedy playout whose
+card-play order comes from the gen-6-fitted table in
+`SilverRolloutCardTable.h` (ADR-0038; `STS_SILVER_ROLLOUT_CARD_TABLE=0`
+restores the hand-written `cardPlayPriorities` order). The
 `ctmsilvergen` armset `rollout479` compares these per arm on the same captured
 fights. §479 (A20, 689 fights): uniform playouts lose 22.8 fight score at no
 CPU saving per simulation; a learned card table and 2 or 4 playouts per leaf
 at matched rollouts per decision are not shown better, so the greedy single
-playout stays.
+playout stays; Philipp then made the table the default (ADR-0038).
 `one_combat` loads no learned combat model for play. `CombatValueNet` remains
 for `vnettest`, and `CombatDistValueNet` only for `parity_test`.
 
