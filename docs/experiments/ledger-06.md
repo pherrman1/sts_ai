@@ -19074,10 +19074,37 @@ within-parent loss; seed 0; training is deterministic (a repeat run reproduced t
 
 **Interpretation (Inference):** by §489's formula, the net's 0.645 matches the mean of about 12 independent rollout3
 calls, X2-B's 0.596 about 9; the gain over X2-B comes mostly from card-reward parents, where X2-B barely ranks
-siblings. Cleaner labels moved the net from 0.561 (§489, 8-rollout labels) to 0.645; whether more data, features or
-a larger net move it further is untested. The held-out ranking says nothing yet about play: a C++ port and a paired
+siblings. The fresh 64-label corpus produced 0.645 versus 0.561 in §489 (8-label corpus); the label-count effect
+was not isolated from the new source seeds and capture sampling. Whether more data, features or a larger net move
+it further is untested. The held-out ranking says nothing yet about play: a C++ port and a paired
 run with the net as (or blended into) the OOC MCTS leaf are needed, and the net's per-call cost is not measured.
 Rollout3 itself ends in X2-B and is not ground truth (Philipp).
 
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (result line) and
 `docs/knowledge-base/operations/environment-variables.md` (`_REPEATS` cap).
+
+
+## §491 Public heart1-record rollout-distillation pilot at A20 Heart (2026-10-16)
+
+**Status:** prospective bounded pilot, not a result or runtime promotion.
+Separate Heart-objective PR #562 is merged. Opus §490/PR #561 is historical
+keys-off Act3 evidence; its published checkpoint is a frozen diagnostic only.
+The source-disjoint new cohort targets 64-repeat expected rollout3 values,
+using heart1-format public records rather than the earlier X2-B feature bundle.
+No AlphaZero-style learning loop is included.
+
+[Prospective protocol](evidence/heart_rollout_distill_20261016/PROTOCOL.md)
+freezes 64 fresh source seeds (40 TRAIN, 8 VALIDATION, 16 untouched TEST),
+three local workers, canary parity/support gates, hard source/cohort/fit caps,
+and counts/pooling/attention representations with two initializations each.
+Validation alone chooses checkpoint and X2-B blend. Per-action regret and
+concordance, source bootstrap and full Python feature/inference cost determine
+the one-shot TEST verdict. No gameplay-strength claim follows from a fit.
+
+Generation requires a clean independently reviewed source and immutable binary,
+model, tool, dependency, protocol and build identities. Raw artifacts, receipts,
+selection and the TEST latch remain in the persistent local run directory;
+failed gates are retained without replacement seeds or adaptive extensions.
+
+**Knowledge impact:** maintained OOC architecture capture contract and current
+research status; protocol/evidence and results belong here.

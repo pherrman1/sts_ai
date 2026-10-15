@@ -743,8 +743,18 @@ with the expected rollout3 return is 0.24 for one rollout3, 0.57 for X2-B at the
 leaf and 0.30 for heart1's value head (0.56 on card-reward parents); a CPU
 value net on 8-rollout means reached 0.56 vs X2-B 0.53 held out. No learned leaf
 replaces rollout3. §490 (64 rollout3 labels per leaf, 64 further A20 seeds): the
-same net with X2-B as an input reaches 0.645 vs X2-B 0.596 held out (card-reward
-parents 0.72 vs 0.19 at the best held-out epoch); offline only, not ported or played.
+same net with X2-B as an input reaches 0.645 vs X2-B 0.596 on validation seeds
+at epoch 20. Those seeds also selected the checkpoint (best epoch 10; card-reward
+parents 0.72 vs 0.19 there). No untouched TEST or gameplay result is established.
+
+When sibling capture is enabled, each forked child also records a weight-free
+heart1 public observation (`extra.record`, schema `heart1-public-record-v1`),
+separate X2-B CPU and total repeat-rollout CPU. `buildChoice`/`recordToJson`
+need no released network weights. Unsupported records carry `recordError`.
+This input is parity-unqualified for learned leaf deployment; limited hidden
+field invariance fixtures do not prove live parity. The default-off path remains
+unchanged. The bounded Heart-domain compression protocol is in the
+[prospective pilot](../../experiments/evidence/heart_rollout_distill_20261016/PROTOCOL.md).
 
 `STS_OOC_MCTS_LEAF_CAPTURE=<new.jsonl>` is a default-off, simulator-only
 observational canary for #507. It requires enabled MCTS with the native CTM

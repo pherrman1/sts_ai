@@ -1,4 +1,5 @@
 #include "sim/search/RunGoal.h"
+#include <ctime>
 #include "run_profile.h"
 #include "ooc_mcts_adapter.h"
 #ifndef STS_LIVE_ADVISOR
@@ -1722,8 +1723,20 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
     const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats);
     try { row["extra"] = forkLeafReplay([&] {
         nlohmann::json out = nlohmann::json::object();
+        const auto anchorStart = std::clock();
         try { out["x2b"] = anchorValue(gc, pathHistory(id)); }
         catch (const std::exception &e) { out["x2bError"] = e.what(); }
+        out["anchorCpuSeconds"] = double(std::clock() - anchorStart) / CLOCKS_PER_SEC;
+        try {
+            one_combat::heart1::Choice choice;
+            std::string reason;
+            if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE
+                    && one_combat::heart1::buildChoice(gc, choice, &reason)) {
+                out["record"] = one_combat::heart1::recordToJson(choice.record);
+                out["recordSchema"] = "heart1-public-record-v1";
+                out["recordPublicParityQualified"] = false;
+            } else out["recordError"] = reason.empty() ? "terminal_or_battle" : reason;
+        } catch (const std::exception &e) { out["recordError"] = e.what(); }
         if (capture.annotate) {
             try { out["annotation"] = capture.annotate(gc); }
             catch (const std::exception &e) { out["annotationError"] = e.what(); }
@@ -1742,7 +1755,9 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
                 } catch (const std::exception &e) { list.push_back({{"error", e.what()}}); }
             }
         };
+        const auto rolloutStart = std::clock();
         evaluations("repeats", capture.repeats, 1);
+        out["rolloutCpuSeconds"] = double(std::clock() - rolloutStart) / CLOCKS_PER_SEC;
         if (capture.longRepeats) {
             options.leafCombats = 5;  // child process only
             evaluations("long5", capture.longRepeats, 2);

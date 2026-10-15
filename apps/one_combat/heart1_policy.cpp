@@ -1124,6 +1124,26 @@ void priorMappingSelfTest() {
     const auto require = [](bool ok, const char *what) {
         if (!ok) throw std::runtime_error(std::string("heart1 prior mapping selftest: ") + what);
     };
+    // The record builder is usable without network weights and ignores hidden
+    // future/RNG fields. This is a limited invariance fixture, not live parity.
+    GameContext gc{};
+    gc.cc = CharacterClass::IRONCLAD; gc.ascension = 20; gc.act = 1;
+    gc.curHp = 70; gc.maxHp = 80; gc.boss = MonsterEncounter::HEXAGHOST;
+    gc.map = std::make_shared<Map>(); gc.screenState = ScreenState::REST_ROOM;
+    gc.curRoom = Room::REST; gc.keysEnabled = true;
+    gc.deck.obtainRaw(Card(CardId::BASH));
+    gc.relics.add({RelicId::NUNCHAKU, 2});
+    Choice first, hidden;
+    require(buildChoice(gc, first), "weight-free public record fixture");
+    auto altered = gc;
+    altered.seed = 987654321; altered.miscRng = Random(456);
+    altered.cardRarityFactor = -35; altered.secondBoss = MonsterEncounter::TIME_EATER;
+    altered.monsterList.push_back(MonsterEncounter::CULTIST);
+    require(buildChoice(altered, hidden) && recordToJson(first.record) == recordToJson(hidden.record),
+        "record must ignore seed, RNG, hidden counters and future encounter queue");
+    altered.relics.getRelicValueRef(RelicId::NUNCHAKU) = 3;
+    require(buildChoice(altered, hidden) && recordToJson(first.record) != recordToJson(hidden.record),
+        "record retains a public relic counter");
     Choice c;
     c.record.screenState = static_cast<int>(ScreenState::REWARDS);
     c.record.offeredCards = {1, 2};
