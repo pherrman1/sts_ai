@@ -47,9 +47,13 @@ with the run commit, binary hash and weights hash before launch; independent pre
 - A20 seeds 107000000–107000127, A0 seeds 107001000–107001127 (`COHORTS`). One `bestbench 10000 1 ASC SEED` unit
   per seed, arm and ascension through `tools/seed_guard.sh` (`run_unit.sh`), 512 units. 32 cloud workers
   (`NWORKERS`, Philipp 09:12Z), each running 4 seeds of each cohort in both arms, 4 units at a time.
-- Smokes: 74071950–74071973 in this thread (direct policy 950–967; OOC MCTS timing 970–973).
-- Unit timeout: 4 h per unit, about 4x the slowest expected unit (a heart1-prior A0 run, about 65 min). Issue #544's endless Silver loop
-  does not throw, so a hung unit ends at rc 124. Workers let the timeout fire and never kill units themselves.
+- Smokes: 74071950–74071976 in this thread (direct policy 950–967; OOC MCTS timing 970–974 on pre-fix binaries;
+  final-binary heart1-arm act-1 coverage smoke 975 at A20 and 976 at A0).
+- Launch gate (reviewer): in the final-binary smoke heart1 scores at least 90% of prior builds at each ascension
+  (`heart1_prior_nodes` / all prior builds); the remaining fallbacks are listed by reason (`heart1_prior_reasons`).
+- Unit timeout: 8 h per unit, about 4x the slowest expected unit (a full heart1-prior clear, about 100–120 min at
+  about 30 s per OOC decision). Issue #544's endless Silver loop does not throw, so a hung unit ends at rc 124.
+  Workers let the timeout fire and never kill units themselves.
 - Dropped seeds: a `[bestbench-seed-failure]` (rc 1, no row) or a timeout (rc 124) drops that seed from both arms
   and lists it. An ascension is INVALID if more than 1% of its seeds are dropped (here: more than 1 of 128), if any
   other unit fails, or if a log lacks its arm's markers (`[heart1] loaded` and `prior=heart1` for heart1,
@@ -72,8 +76,9 @@ with the run commit, binary hash and weights hash before launch; independent pre
 - NOT_SHOWN on floors but clears IMPROVED → reported as such; Philipp decides.
 - WORSE or NOT_SHOWN on both → the V4 prior stays; the ledger records the result.
 
-## Cost (timing smoke, seeds 74071972 A0 and 74071973 A20, 4 units at a time on 4 cores)
-- V4 prior: A0 388 s (died floor 33), A20 481 s (died floor 40). heart1 prior: about 5x slower per OOC decision
-  (A20: 52 decisions in 16 min against 140 in 8 min; partly overlapping a build).
-- **Inference:** about 40 min per A20 and 65 min per A0 run with the heart1 prior, 8 and 11 min with V4; about
-  225 + 40 ≈ 265 core-h in all; on 32 workers about 2–2.5 h of runs per worker plus the build.
+## Cost
+- Timing smokes (seeds 74071970–74071974 in this thread, pre-fix binaries; the reviewer's smokes): V4 prior about
+  6 s per OOC decision, 6.5–11.4 min per run; heart1 prior about 30 s per OOC decision, more than 80 min per run that
+  reaches act 3 (two runs still in act 2/3 after 80 min), about 100–120 min for a full clear.
+- **Inference:** about 450–500 core-h in all (256 heart1-arm units at roughly 90–110 min, 256 v4 units at about
+  10 min); on 32 workers (4 units at a time) about 3.5–4 h of runs per worker plus the build.
