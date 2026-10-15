@@ -8,7 +8,7 @@
 Loss: KL(heart1 softmax || student softmax) over each node's valid choice tokens. Reports val KL, top-1 agreement
 with heart1, and V4's top-1 agreement with heart1 on the same rows (V4's best source vs heart1's best token; the
 two skip encodings count as equal), overall and per screen."""
-import argparse, collections, glob, gzip, json, math, os, random, re, sys, time
+import argparse, collections, contextlib, glob, gzip, json, math, os, random, re, sys, time
 
 SECTIONS = (("cards_offered.cards", 96), ("relics_offered", 3), ("potions_offered", 5), ("fixed_actions", 5), ("paths_offered", 7))
 WIDTH = sum(w for _, w in SECTIONS)
@@ -109,6 +109,8 @@ def cmd_train(a):
     ntr, nva = len(tr["_tgt"]), len(va["_tgt"])
     print(f"train {ntr} rows, val {nva} rows", flush=True)
     dev = a.device
+    if a.amp and dev == "cuda": torch.backends.cuda.matmul.allow_tf32 = torch.backends.cudnn.allow_tf32 = True
+    amp = (lambda: torch.autocast("cuda", dtype=torch.bfloat16)) if a.amp and dev == "cuda" else contextlib.nullcontext
     def batch(d, idx):
         out = {}
         for k, v in d.items():
@@ -124,6 +126,8 @@ def cmd_train(a):
     opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
     steps_per = math.ceil(ntr / a.bs)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.epochs * steps_per, pct_start=0.05)
+    def fwd(b):  # bf16 autocast forward (--amp 1 on cuda); loss and metrics stay fp32
+        with amp(): return net(b)[0].float()
     def kl_rows(lg, m, t):
         lp = F.log_softmax(lg.masked_fill(~m, -1e9), -1); lt = F.log_softmax(t.masked_fill(~m, -1e9), -1)
         return (lt.exp() * (lt - lp)).masked_fill(~m, 0).sum(-1)
@@ -132,7 +136,7 @@ def cmd_train(a):
         with torch.no_grad():
             for i in range(0, nva, 256):
                 idx = torch.arange(i, min(i + 256, nva)); b, m, t = batch(va, idx)
-                lg = net(b)[0]; kls.append(kl_rows(lg, m, t).cpu())
+                lg = fwd(b); kls.append(kl_rows(lg, m, t).cpu())
                 agr.append((lg.masked_fill(~m, -1e9).argmax(-1) == t.masked_fill(~m, -1e9).argmax(-1)).cpu())
         net.train(); kls, agr = torch.cat(kls), torch.cat(agr).float()
         per = {}
@@ -146,7 +150,7 @@ def cmd_train(a):
         perm = torch.randperm(ntr); tot = 0.0
         for i in range(steps_per):
             b, m, t = batch(tr, perm[i * a.bs:(i + 1) * a.bs])
-            loss = kl_rows(net(b)[0], m, t).mean(); opt.zero_grad(set_to_none=True); loss.backward()
+            loss = kl_rows(fwd(b), m, t).mean(); opt.zero_grad(set_to_none=True); loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step(); sched.step(); tot += loss.item() * len(m)
         kl, ag, v4, per = evaluate()
         hist.append({"epoch": ep + 1, "train_kl": tot / ntr, "val_kl": kl, "val_top1": ag, "v4_top1": v4, "sec": round(time.time() - t0)})
@@ -164,7 +168,7 @@ if __name__ == "__main__":
     p = sub.add_parser("prep"); p.add_argument("repo"); p.add_argument("out"); p.add_argument("--data", nargs="+", required=True)
     p.add_argument("--trim-map", action="store_true"); p.add_argument("--procs", type=int, default=8)
     t = sub.add_parser("train"); t.add_argument("repo"); t.add_argument("out"); t.add_argument("--shards", required=True)
-    for k, v in (("dim", 128), ("layers", 2), ("mult", 2), ("heads", 4), ("epochs", 8), ("bs", 256), ("threads", 4), ("seed", 0)):
+    for k, v in (("dim", 128), ("layers", 2), ("mult", 2), ("heads", 4), ("epochs", 8), ("bs", 256), ("threads", 4), ("seed", 0), ("amp", 1)):
         t.add_argument("--" + k, type=int, default=v)
     t.add_argument("--lr", type=float, default=1e-3); t.add_argument("--wd", type=float, default=0.01); t.add_argument("--device", default="cpu")
     a = ap.parse_args()
