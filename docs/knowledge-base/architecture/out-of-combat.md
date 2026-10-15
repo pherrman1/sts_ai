@@ -1839,9 +1839,17 @@ with the search and its chain.
   `sourcePriorCovered` rule), heart1's logit replaces V4's for every source
   primitive (a primitive behind several tokens takes its best token; grouped
   candidates keep the mean), then the usual softmax at
-  `STS_OOC_MCTS_TEMPERATURE`. Where heart1 has no encoding for the screen or a
-  source has no token (Match and Keep, Bonfire Spirits, unmapped events), the
-  node keeps V4; the support trace counts `heart1_prior_nodes` and
-  `heart1_prior_fallbacks`. Rollouts are unchanged. `STS_OOC_MCTS_PRIOR_TRACE`
+  `STS_OOC_MCTS_TEMPERATURE`. Reward-screen primitives that silverbot's choice
+  space lacks are mapped (`heart1::mapPriorLogits`): skipping one card reward
+  (`CARD` idx2 5) takes silverbot's skip token (the bowl token with Singing
+  Bowl), gold takes the node's best logit (silverbot always takes gold), and a
+  potion discard on a full belt (rewards or shop) takes the node's lowest logit
+  (silverbot's engine offers no discard). Where heart1 has no encoding for the
+  screen or another source has no token (Match and Keep, Bonfire Spirits,
+  unmapped events), the node keeps V4; the support trace counts
+  `heart1_prior_nodes`, `heart1_prior_fallbacks` and `heart1_prior_reasons`
+  (`scored:`, `mapped:` and `fallback:` by screen and kind). Before this
+  mapping (run commit `ec19d1e`) every card-reward node kept V4. Rollouts are
+  unchanged. `STS_OOC_MCTS_PRIOR_TRACE`
   refuses it. heart1 inside rollouts was not implemented: a timing smoke
   (2026-10-15) put it at tens of core-hours per A0 run.

@@ -21,7 +21,7 @@ An ascension is INVALID when more than 1% of its cohort seeds are dropped. Every
 ``[heart1] loaded`` and ``prior=heart1``; every v4 log ``prior=policy`` and no heart1 load; both ``leaf_policy=v4``.
 Any other gap, failure or non-cohort row labels that ascension's result INVALID.
 """
-import csv, glob, json, math, os, re, sys
+import collections, csv, glob, json, math, os, re, sys
 import numpy as np
 
 REPS, RNG_SEED = 10000, 486
@@ -166,7 +166,10 @@ def analyze_asc(rows, done, asc, cohort):
                           "support_aborts_per_run": tot("mctsSupportAborts") / max(1, len(ms)),
                           "prior_builds_per_run": tot("priorBuilds") / max(1, len(ms)),
                           "heart1_prior_nodes": hp, "heart1_prior_fallbacks": hf,
-                          "heart1_prior_share": hp / max(1, hp + hf)}
+                          "heart1_prior_share": hp / max(1, hp + hf),
+                          "heart1_prior_reasons": dict(sorted(sum(
+                              (collections.Counter(x.get("heart1_prior_reasons", {})) for x in sp),
+                              collections.Counter()).items()))}
     return out
 
 

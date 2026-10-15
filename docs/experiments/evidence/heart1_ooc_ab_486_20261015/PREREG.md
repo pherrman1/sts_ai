@@ -36,9 +36,11 @@ with the run commit, binary hash and weights hash before launch; independent pre
 - `heart1`: `STS_OOC_HEART1=heart1.bin` (sha256 `1e92f2a6…`) and `STS_OOC_MCTS_PRIOR=heart1`. Where V4 covers a node's
   candidates (the existing `sourcePriorCovered` rule, unchanged), heart1's logit replaces V4's for each source
   primitive (a primitive behind several heart1 tokens takes its best token; grouped candidates keep the mean, as for
-  V4); softmax at temperature 1 as for V4. Nodes heart1 does not encode, or where a source has no heart1 token
-  (Match and Keep, Bonfire Spirits, unmapped events), keep the V4 prior; their share is reported
-  (`heart1_prior_fallbacks`). Real decisions the search does not own fall back to the same chain in both arms.
+  V4); softmax at temperature 1 as for V4. Reward primitives silverbot lacks are mapped: skipping one card
+  reward takes heart1's skip token (bowl token with Singing Bowl), gold its best logit at the node, a potion
+  discard on a full belt (rewards or shop) its lowest. Nodes heart1 does not encode, or where another source has
+  no heart1 token (Match and Keep, Bonfire Spirits, unmapped events), keep the V4 prior; their share and the
+  counts by screen and kind are reported (`heart1_prior_fallbacks`, `heart1_prior_reasons`). Real decisions the search does not own fall back to the same chain in both arms.
   Keys stay off in the tree (dropped candidates), as in `v4`.
 
 ## Seeds and runs

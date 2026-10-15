@@ -28,6 +28,8 @@ struct OocContinuationMetrics {
     std::uint64_t screenLeafEvaluations = 0, screenLeafFallbacks = 0;
     // STS_OOC_MCTS_PRIOR=heart1: prior builds heart1 scored, and those that kept V4.
     std::uint64_t heart1PriorNodes = 0, heart1PriorFallbacks = 0;
+    // "scored:SCREEN", "mapped:SCREEN:KIND" and "fallback:SCREEN:KIND" (heart1::priorLogits).
+    std::map<std::string, std::uint64_t> heart1PriorReasons;
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
@@ -122,7 +124,8 @@ struct OocMctsDependencies {
     // Optional heart1 seam (set when STS_OOC_HEART1 is loaded): nullopt where
     // heart1 does not score every given primitive.
     std::function<std::optional<std::vector<double>>(const GameContext &,
-                         const std::vector<GameAction> &)> heart1PolicyLogits;
+                         const std::vector<GameAction> &,
+                         std::map<std::string, std::uint64_t> *)> heart1PolicyLogits;
     // Optional live public-belief counter prior. The simulator keeps its
     // existing copied-counter semantics when this callback is absent.
     std::function<void(GameContext &, std::mt19937_64 &)> sampleHiddenCounters;

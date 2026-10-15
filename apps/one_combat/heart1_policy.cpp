@@ -1011,26 +1011,105 @@ bool policyStep(GameContext &gc) {
     return true;
 }
 
-std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions) {
-    if (!enabled() || gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE)
-        return std::nullopt;
-    Choice choice;
-    if (!buildChoice(gc, choice) || choice.record.choiceCount() == 0) return std::nullopt;
-    const Output scored = net().forward(choice.record);
+std::optional<std::vector<double>> mapPriorLogits(const Choice &choice, const std::vector<float> &logits,
+                                                  bool singingBowl, const std::vector<GA> &actions,
+                                                  std::map<std::string, std::uint64_t> *tally) {
+    if (logits.size() != choice.actions.size()) throw std::runtime_error("heart1: logit count mismatch");
     // A primitive behind several tokens keeps its best token.
     std::map<std::uint32_t, double> byBits;
     for (std::size_t i = 0; i < choice.actions.size(); ++i) {
-        const auto [it, inserted] = byBits.emplace(choice.actions[i].bits, scored.logits[i]);
-        if (!inserted) it->second = std::max(it->second, double(scored.logits[i]));
+        const auto [it, inserted] = byBits.emplace(choice.actions[i].bits, logits[i]);
+        if (!inserted) it->second = std::max(it->second, double(logits[i]));
     }
+    // Fixed tokens follow the card, relic and potion tokens.
+    const Record &r = choice.record;
+    const std::size_t fixedStart = r.offeredCards.size() + r.offeredRelics.size() + r.offeredPotions.size();
+    const auto fixedLogit = [&](int fa) -> std::optional<double> {
+        for (std::size_t k = 0; k < r.fixedActions.size(); ++k)
+            if (r.fixedActions[k].action == fa) return double(logits.at(fixedStart + k));
+        return std::nullopt;
+    };
+    const bool rewards = r.screenState == static_cast<int>(ScreenState::REWARDS);
+    const bool shop = r.screenState == static_cast<int>(ScreenState::SHOP_ROOM);
+    double lo = std::numeric_limits<double>::infinity(), hi = -lo;
+    for (const float l : logits) { lo = std::min(lo, double(l)); hi = std::max(hi, double(l)); }
+    const std::string where = rewards ? "REWARDS" : shop ? "SHOP" : "screen" + std::to_string(r.screenState);
+    std::map<std::string, std::uint64_t> mapped;
+    const auto fail = [&](const char *kind) -> std::optional<std::vector<double>> {
+        if (tally) ++(*tally)["fallback:" + where + ":" + kind];
+        return std::nullopt;
+    };
     std::vector<double> out;
     out.reserve(actions.size());
     for (const auto action : actions) {
-        const auto it = byBits.find(action.bits);
-        if (it == byBits.end()) return std::nullopt;
-        out.push_back(it->second);
+        if (const auto it = byBits.find(action.bits); it != byBits.end()) { out.push_back(it->second); continue; }
+        // Tree primitives silverbot's choice space lacks:
+        // - skip one card reward (CARD idx2 5 without Singing Bowl): silverbot declines a card by skipping;
+        //   with Singing Bowl, silverbot offers the bowl token on the last card reward only.
+        // - gold: silverbot always takes it for free (take_free_rewards), so heart1's best logit.
+        // - discard a held potion for a reward or shop potion: silverbot's engine offers no discard, so
+        //   heart1's lowest logit at the node.
+        if (rewards && action.getRewardsActionType() == GA::RewardsActionType::CARD && action.getIdx2() == 5) {
+            const auto l = fixedLogit(singingBowl ? FA_SINGING_BOWL : FA_SKIP);
+            if (!l) return fail(singingBowl ? "bowl_no_token" : "skip_card_no_token");
+            out.push_back(*l);
+            ++mapped[singingBowl ? "bowl" : "skip_card"];
+        } else if (rewards && action.getRewardsActionType() == GA::RewardsActionType::GOLD) {
+            out.push_back(hi);
+            ++mapped["gold"];
+        } else if ((rewards || shop) && action.isPotionDiscard()) {
+            out.push_back(lo);
+            ++mapped["discard_potion"];
+        } else {
+            return fail(action.isPotionDiscard() ? "discard_potion" : "no_token");
+        }
+    }
+    if (tally) {
+        ++(*tally)["scored:" + where];
+        for (const auto &[kind, n] : mapped) (*tally)["mapped:" + where + ":" + kind] += n;
     }
     return out;
+}
+
+void priorMappingSelfTest() {
+    const auto require = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("heart1 prior mapping selftest: ") + what);
+    };
+    Choice c;
+    c.record.screenState = static_cast<int>(ScreenState::REWARDS);
+    c.record.offeredCards = {1, 2};
+    c.record.offeredUpgrades = {0, 0};
+    FixedChoice skip;
+    skip.action = FA_SKIP;
+    c.record.fixedActions = {skip};
+    c.actions = {GA(RT::CARD, 0, 0), GA(RT::CARD, 0, 1), GA(RT::SKIP)};
+    const std::vector<float> logits{0.5f, 2.0f, -1.0f};
+    std::map<std::string, std::uint64_t> tally;
+    const auto got = mapPriorLogits(c, logits, false,
+        {GA(RT::CARD, 0, 0), GA(RT::CARD, 0, 1), GA(RT::CARD, 0, 5), GA(RT::GOLD, 0), GA(0xc0000001u), GA(RT::SKIP)},
+        &tally);
+    require(got && *got == std::vector<double>{0.5, 2.0, -1.0, 2.0, -1.0, -1.0},
+            "skip card -> skip token, gold -> best, discard -> lowest");
+    require(tally["scored:REWARDS"] == 1 && tally["mapped:REWARDS:skip_card"] == 1
+            && tally["mapped:REWARDS:gold"] == 1 && tally["mapped:REWARDS:discard_potion"] == 1, "tally of mappings");
+    require(!mapPriorLogits(c, logits, true, {GA(RT::CARD, 0, 5)}, &tally)
+            && tally["fallback:REWARDS:bowl_no_token"] == 1, "bowl without a bowl token falls back");
+    require(!mapPriorLogits(c, logits, false, {GA(RT::RELIC, 0)}, &tally)
+            && tally["fallback:REWARDS:no_token"] == 1, "unmapped primitive falls back");
+    c.record.screenState = static_cast<int>(ScreenState::MAP_SCREEN);
+    require(!mapPriorLogits(c, logits, false, {GA(RT::CARD, 0, 5)}, &tally), "skip-card mapping is REWARDS only");
+}
+
+std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions,
+                                               std::map<std::string, std::uint64_t> *tally) {
+    Choice choice;
+    if (!enabled() || gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE
+            || !buildChoice(gc, choice) || choice.record.choiceCount() == 0) {
+        if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
+        return std::nullopt;
+    }
+    return mapPriorLogits(choice, net().forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
+                          actions, tally);
 }
 
 namespace {
