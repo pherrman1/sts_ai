@@ -1,6 +1,6 @@
 """Frozen local Heart leaf pilot. Called only after independent implementation review.
 
-Usage: python run_heart_distill_pilot.py REPO DATA_ROOT REVIEWED_SHA
+Usage: python run_heart_distill_pilot.py REPO DATA_ROOT REVIEWED_SHA STUDENT_C_NATIVE
 Creates an immutable run bundle, canaries, source-disjoint corpus, fit, then one-shot TEST.
 Never replaces failed/partial units or extends frozen seeds/time limits.
 """
@@ -23,7 +23,22 @@ def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,v): Path(p).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
 
 
-def run(repo,root,reviewed):
+STUDENT_C_SHA256='eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509'
+
+
+def student_contract(text,support,seed):
+    expected='[heart1] loaded studentc.bin (dim 64, heads 4, hidden 256, layers 2, trim_map 1)'
+    scored=support['heart1_prior_nodes'];fallback=support['heart1_prior_fallbacks']
+    if any(type(v) is not int or v<0 for v in (scored,fallback,support['prior_leaf_steps'])):
+        raise ValueError('invalid Arm C usage counters')
+    share=scored/max(1,scored+fallback)
+    if (expected not in text or ' prior=heart1 ' not in text or ' leaf_policy=v4' not in text
+            or support['seed']!=seed or scored<=0 or share<.9 or support['prior_leaf_steps']!=0):
+        raise ValueError('Arm C tree-prior-only runtime contract failed')
+    return {'scored':scored,'fallback':fallback,'share':share,'priorLeafSteps':0,'shape':'64/4/256/2/trim1'}
+
+
+def run(repo,root,reviewed,student_c):
     root.mkdir(parents=True,exist_ok=False); bundle=root/'run'; bundle.mkdir()
     if subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip()!=reviewed:
         raise ValueError('reviewed source is not HEAD')
@@ -47,7 +62,11 @@ def run(repo,root,reviewed):
     for rel in scripts: shutil.copy2(repo/rel,bundle/Path(rel).name)
     shutil.copy2(repo/'docs/experiments/evidence/heart_rollout_distill_20261016/PROTOCOL.md',bundle/'PROTOCOL.md')
     shutil.copy2(repo/'docs/experiments/evidence/ooc_sibling_leaf_capture64_20261015/tv_within_x2b.json.pt',bundle/'opus490.pt')
+    if sha(student_c)!=STUDENT_C_SHA256:raise ValueError('wrong Arm C native weights')
+    shutil.copy2(student_c,bundle/'studentc.bin')
+    if sha(bundle/'studentc.bin')!=STUDENT_C_SHA256:raise ValueError('Arm C copy identity mismatch')
     models={p:sha(bundle/p) for p in paths}
+    models['studentc.bin']=sha(bundle/'studentc.bin')
     env={'PATH':os.environ.get('PATH','/usr/bin:/bin'),'HOME':os.environ['HOME'],
          'OMP_NUM_THREADS':'1','OMP_DYNAMIC':'FALSE','STS_EXECUTABLE_GIT_SHA':reviewed,
          'STS_FAIR':'1','STS_SILVER_SEARCH':'1','STS_SILVER_EXACT_ROOT_BUDGETS':'1',
@@ -58,14 +77,18 @@ def run(repo,root,reviewed):
          'STS_OOC_STRATEGIC_TREASURE':'1','STS_OOC_STRATEGIC_BOSS_RELIC':'1','STS_OOC_STRATEGIC_MARGIN':'1.0',
          'STS_REST_WIN':'0','STS_OOC_PUBLIC_FUTURES':'8',
          'STS_OOC_MCTS':'1','STS_OOC_MCTS_SIMS':'512','STS_OOC_MCTS_LEAF_COMBATS':'3',
-         'STS_OOC_MCTS_LEAF_VALUE':'native','STS_OOC_MCTS_LEAF_POLICY':'v4','STS_OOC_MCTS_PRIOR':'policy',
+         'STS_OOC_MCTS_LEAF_VALUE':'native','STS_OOC_MCTS_LEAF_POLICY':'v4','STS_OOC_MCTS_PRIOR':'heart1',
+         'STS_OOC_HEART1':'studentc.bin',
          'STS_OOC_MCTS_TREE_RULES':'1','STS_OOC_MCTS_TEMPERATURE':'1','STS_OOC_MCTS_CPUCT':'1.5',
          'STS_OOC_MCTS_WIDEN_K':'4','STS_OOC_MCTS_WIDEN_ALPHA':'0.75','STS_OOC_MCTS_MAX_DEPTH':'32',
          'STS_OOC_MCTS_ROOT_SELECTION':'visits','STS_OOC_MCTS_EARLY_STOP':'1'}
-    freeze={'reviewedSha':reviewed,'binarySha256':sha(bundle/'one_combat'),'models':models,'environment':env,
-            'splits':{'train':list(range(110160000,110160040)),
-                      'validation':list(range(110160040,110160048)),'test':list(range(110160048,110160064))},
-            'canarySeeds':[110159996,110159997],'sourceTimeoutSeconds':600,'cohortWallSeconds':14400,
+    freeze={'studentPrior':{'name':'Arm C d64 trim','checkpointGitRef':'68fe88be8271fa1f9b515f7a9abcf0fb9755e25f:results/C_d64_trim/student.pt',
+                          'checkpointSha256':'53739a4375380001fce0323935c187906b5c1d5efd65691f9d75f2dd8884e020',
+                          'nativeSha256':STUDENT_C_SHA256,'exporterSha256':sha(repo/'tools/heart1/export_heart1_weights.py')},
+            'reviewedSha':reviewed,'binarySha256':sha(bundle/'one_combat'),'models':models,'environment':env,
+            'splits':{'train':list(range(110161000,110161040)),
+                      'validation':list(range(110161040,110161048)),'test':list(range(110161048,110161064))},
+            'canarySeeds':[110159994,110159995],'sourceTimeoutSeconds':600,'cohortWallSeconds':14400,
             'workers':3,'repeats':64,'captureEvery':4,'maxLeaves':64,'maxDepth':1,
             'toolHashes':{str(bundle/Path(p).name):sha(bundle/Path(p).name) for p in scripts},
             'protocolSha256':sha(bundle/'PROTOCOL.md'),'runtime':runtime_identity(),
@@ -95,22 +118,31 @@ def run(repo,root,reviewed):
                         os.killpg(child.pid,signal.SIGKILL); child.wait()
                     rc=124
         result.update(returncode=rc,seconds=time.time()-start)
+        if rc==0:
+            try:
+                support_path=base.with_suffix('.mcts.csv.support.jsonl')
+                support_rows=[json.loads(line) for line in support_path.open()]
+                if len(support_rows)!=1:raise ValueError('one source support receipt required')
+                result['studentPriorContract']=student_contract(base.with_suffix('.log').read_text(),support_rows[0],seed)
+            except (ValueError,KeyError,OSError) as error:
+                result['contractError']=str(error);result['processReturncode']=rc
+                rc=65;result['returncode']=rc
         cap=base.with_suffix('.sib.jsonl')
         if capture and cap.exists(): result['captureSha256']=sha(cap)
         # Receipts expose only completion/custody, not run outcomes or target values.
         with receipt.open('x') as f: json.dump(result,f,indent=2,sort_keys=True)
         if rc!=0: raise RuntimeError(f'unit {seed} failed rc={rc}')
         return base
-    control=unit(110159996,False,'canary-control'); treatment=unit(110159996,True,'canary-capture')
+    control=unit(110159994,False,'canary-control'); treatment=unit(110159994,True,'canary-capture')
     for suffix in ('.trace.jsonl','.mcts.csv.actions.jsonl'):
         a=Path(str(control)+suffix); b=Path(str(treatment)+suffix)
         if not a.exists() or not b.exists() or a.read_bytes()!=b.read_bytes():
             raise ValueError('canary changed decisions/actions: '+suffix)
-    second=unit(110159997,True,'canary-second')
+    second=unit(110159995,True,'canary-second')
     def canary_coverage(base,seed):
         _,_,coverage=validate_rows((json.loads(line) for line in base.with_suffix('.sib.jsonl').open()),seed)
         return coverage
-    cover=[canary_coverage(treatment,110159996),canary_coverage(second,110159997)]
+    cover=[canary_coverage(treatment,110159994),canary_coverage(second,110159995)]
     write(root/'canary.json',{'parity':True,'coverage':cover})
     if any(not c['groups'] or c['accepted']<.8*c['raw'] for c in cover): raise ValueError('canary coverage/support gate')
     status('collecting',completed=0); start=time.monotonic(); completed=[]
@@ -153,9 +185,9 @@ def run(repo,root,reviewed):
 
 
 if __name__=='__main__':
-    repo,root,reviewed=Path(sys.argv[1]).resolve(),Path(sys.argv[2]).resolve(),sys.argv[3]
+    repo,root,reviewed,student_c=Path(sys.argv[1]).resolve(),Path(sys.argv[2]).resolve(),sys.argv[3],Path(sys.argv[4]).resolve()
     already_existed=root.exists()
-    try: run(repo,root,reviewed)
+    try: run(repo,root,reviewed,student_c)
     except BaseException as error:
         if root.exists() and not already_existed: write(root/'failure.json',{'error':str(error),'time':time.time(),'pid':os.getpid()})
         raise

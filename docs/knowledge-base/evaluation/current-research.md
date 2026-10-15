@@ -44,7 +44,9 @@ contracts now bind native Silver teachers.
 ## A20 Heart rollout distillation (§491)
 
 The current continuation uses public heart1-format records and fresh A20
-Heart/key-collection trajectories. The prospective counts/pooling/attention
+Heart/key-collection trajectories with distilled heart1 Arm C as tree prior
+and the V4 rollout chain held fixed (user clarification). Interrupted V4-prior
+data remains excluded. The prospective counts/pooling/attention
 comparison compresses fixed 64-repeat rollout3 surrogate labels; it has no
 student-driven policy iteration. Opus §490's validation-selected checkpoint is
 a frozen diagnostic, not independent TEST or Heart-win evidence. Its raw cloud

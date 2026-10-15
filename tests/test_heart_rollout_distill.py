@@ -55,6 +55,15 @@ class DistillTest(unittest.TestCase):
         body=re.search(r'enum class ScreenState\s*\{([^}]+)',header).group(1)
         values=[v.strip().split('=')[0] for v in body.split(',') if v.strip()]
         self.assertEqual((values.index('EVENT_SCREEN'),values.index('BATTLE')),(1,9))
+    def test_student_c_runtime_contract(self):
+        from run_heart_distill_pilot import student_contract
+        text='[heart1] loaded studentc.bin (dim 64, heads 4, hidden 256, layers 2, trim_map 1)\n prior=heart1 temperature=1 leaf_policy=v4'
+        support={'seed':1,'heart1_prior_nodes':100,'heart1_prior_fallbacks':0,'prior_leaf_steps':0}
+        self.assertEqual(student_contract(text,support,1)['share'],1)
+        for field,value in [('prior_leaf_steps',1),('heart1_prior_nodes',0),('heart1_prior_fallbacks',20),('heart1_prior_nodes',float('nan'))]:
+            bad=dict(support);bad[field]=value
+            with self.assertRaises(ValueError):student_contract(text,bad,1)
+        with self.assertRaises(ValueError):student_contract(text.replace('prior=heart1','prior=policy'),support,1)
     def test_bad_record_fails_closed(self):
         r=record();r['obs.deck.upgrades'].pop()
         with self.assertRaises(ValueError):encode_record(r)

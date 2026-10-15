@@ -1,0 +1,18 @@
+{
+  "reason": "User requested Arm C in place of V4; stop old teacher-regime campaign before fitting/TEST",
+  "sourceSha": "64710e912e1971c48733495a057b66052c80a94d",
+  "time": 1792106564.8604047,
+  "priorStatus": {
+    "completed": 11,
+    "failures": [],
+    "pid": 531356,
+    "stage": "collecting",
+    "time": 1792106528.7565384
+  },
+  "terminatedOwnedUnitGroups": [
+    539047,
+    540311,
+    540964
+  ],
+  "testOpened": false
+}

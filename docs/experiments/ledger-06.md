@@ -19121,3 +19121,14 @@ capture observations with the CURRENT public encounter and a memory-game board
 that masks unseen identities/upgrades. The unchanged80% gate,64-label target,
 whole-parent rejection, unused cohort and selection rules remain prospective;
 fresh canaries and a new source/binary/tool freeze are required.
+
+
+Schema-v2 canaries passed:355/355 and678/678 rows, no invalid groups and exact
+capture-off/on decision/action parity. The user then requested distilled heart1
+Arm C, clarified as **tree prior only**. The V4-prior collection was stopped
+with11 completed sources and3 interrupted units, before fitting or any TEST
+opening. Its partial corpus is preserved, excluded from training, and never
+pooled with the replacement. [Scope-change receipt](evidence/heart_rollout_distill_20261016/scope-v2-stop.json).
+Version3 freezes Arm C's published exact native weights, unchanged V4 rollout
+chain, fresh source range110161000..063 and fresh canaries110159994/995.
+Require actual Arm C load and>=90% prior scoring on every source. This changes the source distribution with a fixed rollout target policy, not paired evidence for Arm C versus V4 gameplay.

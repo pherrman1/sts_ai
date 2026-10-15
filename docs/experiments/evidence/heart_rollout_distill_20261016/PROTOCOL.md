@@ -1,6 +1,6 @@
 # A20 Heart rollout-distillation pilot (2026-10-16)
 
-Version2. Status: prospective; implementation/source/binary freeze and independent review required before generation.
+Version3. Status: prospective; implementation/source/binary freeze and independent review required before generation.
 Source baseline: main79404f1b, after separate Heart PR562 and Opus evidence PR561.
 
 Hypothesis: a small public-input network can compress the expected three-combat
@@ -35,6 +35,25 @@ No trained heart1 choice behavior changes. New canary seeds exclude both old
 canaries; the64 cohort sources remain unused and fixed. This new representation
 is reviewed/frozen before a new generation attempt.
 
+Version2 passed both canaries (355/355 and678/678 rows, action parity), then
+was explicitly stopped at the user's change of tree prior after11 completed
+sources, before fitting or TEST. Preserve its bundle and scope-v2-stop.json;
+never pool its partial V4-prior corpus. Version3 follows the user's clarification:
+Arm C ONLY as tree prior, unchanged V4 rollout chain. New source seeds and
+canaries below are disjoint from the interrupted run. This prior change defines
+a new source distribution with the same V4 rollout target policy; it is not a test of V4 versus Arm C gameplay.
+
+Arm C custody: published §488 d64 trim checkpoint from git68fe88be, checkpoint
+SHA25653739a4375380001fce0323935c187906b5c1d5efd65691f9d75f2dd8884e020,
+native eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509.
+The existing exporter with --n-heads4 --trim-map reproduces that native hash.
+Freeze this consumed artifact and require its actual64/4/256/2/trim1 load marker,
+prior=heart1, leaf_policy=v4, zero prior-leaf steps and>=90% student prior scoring
+on every unit: scored/(scored+fallback) among attempted model-prior nodes,
+excluding singleton/unqualified uniform-prior nodes (configuration/support
+counters only, no TEST target parsing).
+V4 remains the existing fallback for prior states Arm C cannot encode.
+
 Source: separate Heart-objective PR must be merged first. Then a separate
 research branch adds only default-off sibling-capture public input and measured
 teacher CPU, plus offline fitting/analysis. Freeze reviewed SHA, binary SHA256,
@@ -43,7 +62,7 @@ machine-readable manifest before canary/data generation. Preserve all raw output
 
 Regime: native project-fair Silver; 10000 exact real-combat simulations,
 reuse allocated cap32768, adaptive/learned stopping off. A20 Ironclad,
-STS_COLLECT_KEYS=1 STS_STOP_AFTER_ACT=0. V4 ordinary chain, policy prior, native
+STS_COLLECT_KEYS=1 STS_STOP_AFTER_ACT=0. V4 rollout chain, distilled heart1 Arm C tree prior, native
 leaf and automatic calibrated A20 CTM stack. OOC source search512 sims,
 rollout3 (LEAF_COMBATS=3), same widening/PUCT settings as §489. This is a lower-cost
 source distribution, not a qualification of the historical4096 search budget.
@@ -56,15 +75,15 @@ residual input. The existing candidate-public schema and new heart1 record remai
 parity-unqualified for this new use: offline
 results cannot themselves authorize native deployment or public-input parity.
 
-Canary: seed110159996 capture off/on for decision/action byte parity (timing
-excluded); seed110159997 capture on for coverage and support diagnostics.
+Canary: seed110159994 capture off/on for decision/action byte parity (timing
+excluded); seed110159995 capture on for coverage and support diagnostics.
 At most600s/unit. Fail closed on crashes, identity mismatch, changed actions,
 no complete sibling groups or >20% label/input rejection; preserve failures.
 If canary is invalid, stop before the cohort and repair/review a new protocol.
 
-Cohort:64 source seeds110160000..110160063, disjoint by source run:
-TRAIN110160000..039 (40), VALIDATION110160040..047 (8),
-TEST110160048..063 (16). No replacement, extension, pooling or adaptive seed
+Cohort:64 source seeds110161000..110161063, disjoint by source run:
+TRAIN110161000..039 (40), VALIDATION110161040..047 (8),
+TEST110161048..063 (16). No replacement, extension, pooling or adaptive seed
 selection. Collect TEST to separate files but do not load their contents for
 training/selection; inspect only exit/hash/receipt metadata until frozen final
 selection. Three single-threaded workers; max600s/source,4h cohort wall cap.
