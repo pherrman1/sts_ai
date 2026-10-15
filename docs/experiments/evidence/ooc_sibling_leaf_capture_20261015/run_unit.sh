@@ -2,9 +2,9 @@
 # Sibling-leaf capture unit (env = §486 v4 arm + capture). Resumable via .done.
 # usage: run_unit.sh REPO RUN OUT TAG ASC SEED CAPTURE(0|1)
 set -uo pipefail
-[ -f "$OUT/$TAG-a$ASC-$SEED.done" ] && exit 0
 REPO=$1 RUN=$2 OUT=$3 TAG=$4 ASC=$5 SEED=$6 CAP=$7
 base=$OUT/$TAG-a$ASC-$SEED
+[ -f "$base.done" ] && exit 0
 source "$REPO/docs/experiments/evidence/heart1_ooc_ab_486_20261015/arm_env.sh"
 mapfile -t E < <(arm_env_args v4 "$base" "$RUN") || exit 2
 if [ "$CAP" = 1 ]; then
