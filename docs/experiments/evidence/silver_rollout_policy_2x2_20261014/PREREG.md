@@ -154,9 +154,10 @@ Layout (Philipp's 8 workers): 8 containers × 4 shards × 2 seeds; worker W = 1.
 Per-shard timeout 6 h (≥ 3× the slowest expected shard).
 
 ## Operation and delivery
-As §476: `run.sh OUT TOTAL BASE "<shards>" 6h`, launched detached with a re-armed background watcher; 4 shards
-per container. A shard
-lost with its container is rerun unchanged into a fresh folder. Raw tar with sha256 to
+8 cloud workers per `BRIEF-worker.md`: `worker.sh setup W` builds and checks the binary, `worker.sh run W` runs
+`run.sh OUT 8 $((105000000 + 8*(W-1))) "0 1 2 3" 6h` detached with a re-armed background watcher and uploads
+`wWW.tar` plus `wWW.DONE.txt`. A worker whose
+container is lost reruns its 8 seeds whole into a fresh folder. Raw tar with sha256 to
 `/mnt/project-files/silver-rollout-2x2/`, verified from a second container before the write-up cites it.
 
 ## Cost of a prior that guides rollouts (estimate, not run)
