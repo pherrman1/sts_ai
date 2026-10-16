@@ -1,0 +1,3 @@
+encoding train 18570
+encoding validation 2721
+{"verdict": "VALIDATION_ONLY", "selectedAlpha": 0.01, "validationRawMse": 0.03955912621244244, "checkpointSha256": "b91757a62e0905fe2ba31e06f61efc57cab4160a879b96b7d7f97ca21dc2640f", "seconds": 53.19101847399725}

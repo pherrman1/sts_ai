@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=10s",
+    "1800s",
+    "python3",
+    "tools/heart1/train_value_head.py",
+    "fit",
+    "--corpus",
+    "/home/philippherrmann/armc494/data/corpus",
+    "--checkpoint",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models/student-c-68fe88be.pt",
+    "--silverbot",
+    "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+    "--out",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-value-head-20261016-v1",
+    "--device",
+    "cuda"
+  ],
+  "cwd": "/home/philippherrmann/Documents/sts/sts_lightspeed-worktrees/native-campaign-guards"
+}

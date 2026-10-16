@@ -1,0 +1,10 @@
+{
+  "verdict": "PASS",
+  "sourceSha": "deb1ecaae17f9baa73f189f88b40ac8b2c1f73a2",
+  "freezeSha256": "8c0f03ceb73cb0075dc72d96711365e7f3c94612a2825426d920b531746692f9",
+  "reviewer": "/root/heart_review",
+  "independentChecks": "10/10 PASS 2.406s; actual Arm C CPU/CUDA incl empty1/32 companion independence",
+  "scope": "TRAIN/VALIDATION only; hard timeout1800s; no TEST/native/gameplay",
+  "implementationChecks": "10/10 PASS2.251s",
+  "broaderChecks": "56 tests:53 pass,2 optional skipped,1 pre-existing historical recovery allowlist failure; unchanged source confirmed; doctor PASS"
+}
