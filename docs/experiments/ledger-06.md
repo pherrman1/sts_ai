@@ -19399,3 +19399,50 @@ verdicts rather than pooling or reconstructing missing states.
 [Claude handoff](evidence/heart_outcome_collection_20261016/CLAUDE_HANDOFF.md).
 **Knowledge impact:** observed-outcome capture semantics in maintained OOC label
 pipeline; prospective supervision/data-custody status in current research.
+
+### §497 cloud execution update (2026-10-16)
+
+**Cohort DELIVERED and hash-verified: 1,800/1,800 sources, every receipt complete,
+zero nonzero source return codes. Import/seal review pending; TEST sealed; no
+fitting, outcome summary, trained-value or gameplay verdict.**
+
+- Philipp asked (2026-10-16 16:25Z) to carry out this plan with Haiku Claude
+  workers. Cloud canary 110179996 OFF/ON and 110179997 ON PASS with exact
+  trace/action parity (230/230 and 207/207 supported); GCC 13.3 cloud producer
+  binary byte-identical to the local one (`178e7076…`). canary
+  `fc1ee227…`, reviewed canary `584317a6…`.
+- Export check deviation: Philipp chose a one-way reviewer read (17:42Z): a
+  288 MiB share blob hashed read-only from a different container (boot_id
+  recorded, since every container hostname is `vm`); `export-roundtrip.json`
+  `2bdeb88a…`. The round trip in the other direction was not run.
+- Activation `9f66ee27…` at 17:43:29Z; six-hour deadline 23:43:29Z. Plan
+  `4b49a404…`, bundle `836a3412…` re-prepared and hash-checked by every worker.
+- Cloud wrapper [`cloud_worker.sh`](evidence/heart_outcome_collection_20261016/cloud_worker.sh)
+  ran `heart_outcome_collect.py worker` unchanged. Three wrapper commits were
+  used after auto-mode refusals of worker setup in fresh threads (v1
+  `3c033a20` W=1; v2 `98cc07bb` W=0,3,9,14,15,17; v3 `33c3c110` others); the
+  producer, plan, bundle and worker code are identical across them.
+- Container restarts killed W=7, 8, 27, 34 mid-run (about 18:49Z and
+  19:24–19:27Z). Their `SEALED-partial-out.tar.gz` archives are kept as
+  superseded raw evidence and were never unpacked. Deviation authorized by
+  Philipp (card "Redistribute all", 20:18Z): their 160 sources were rerun as
+  eight half-workers (W, h) at `35d0b6a5` via
+  [`rerun_half.py`](evidence/heart_outcome_collection_20261016/rerun_half.py),
+  which runs the unchanged worker on its sources `[h::2]` (20 each). All 160
+  sources are taken from the reruns, irrespective of the partial content.
+- W=11 ran on a 2.80 GHz Xeon, the others on 2.10 GHz; decisions use fixed
+  simulation counts on the same binary, so only wall time differs.
+- Delivered 41 original workers plus 8 rerun halves by 21:29Z, all inside the
+  deadline: 1,080 TRAIN / 360 VALIDATION / 360 TEST sources, 32.8 MB of
+  archives. Delivery index
+  [`delivery-index.json`](evidence/heart_outcome_collection_20261016/delivery-index.json)
+  `5ddf833a…` (built by
+  [`make_delivery_index.py`](evidence/heart_outcome_collection_20261016/make_delivery_index.py),
+  from receipts and archive hashes only) binds plan, activation, bundle, every
+  receipt and archive hash and the superseded partials; the share copy is
+  `heart-outcome-collection/DELIVERY-INDEX.json`.
+- The lead never opened, unpacked or summarized a SEALED-test or partial archive,
+  and no label counts were read. Next: independent import/seal and class-coverage
+  audit, then a reviewed training protocol.
+
+**Knowledge impact:** none beyond this entry; the data are not yet imported.

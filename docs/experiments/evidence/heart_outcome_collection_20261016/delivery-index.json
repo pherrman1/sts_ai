@@ -1,0 +1,1589 @@
+{
+ "activationSha256": "9f66ee277e52874b8c74dcd11561027f827029b336da28f81c534e3c5a041b22",
+ "bundleSha256": "836a34129c99bfd68e691ed802f0a403cd75e37db7effd0e1b01f51b4697f6d5",
+ "cohortStartedSha256": "cdbdfdf77d7c7dd17baae3531af2133ad0f7cc9c544871e6c5a2a3ecf3b63609",
+ "deliveries": [
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 153199,
+     "sha256": "6a5ad6875bb25021b8521f2931fcb6770eaa4f10809d996c3b2cff54acdd3d28"
+    },
+    "train.tar.gz": {
+     "bytes": 469216,
+     "sha256": "048f6a96127520f2c2880341435bd57e60047c56436f4f800ed48d52d1994fe1"
+    },
+    "validation.tar.gz": {
+     "bytes": 142525,
+     "sha256": "006958a41ca3760601900ac17a5a006bcaad8b37a00c7f9af1e0cca6e62fb27a"
+    }
+   },
+   "complete": true,
+   "folder": "w00",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "46f30ed2b63d12238a4a4811450877dfc152e2b04838e7c934d0461dbde362eb",
+   "runCommit": "98cc07bbdf5e0fefad655ae044237426cd13054a",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 0,
+   "workerStartedSha256": "a045182dfd7a1765e467a242026cb9d64a693d66c87ad93ed75a29e4604b7115"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 129501,
+     "sha256": "8b07b5448b5cc5a5830b96c6c9a9c6327ef97feca8b9500880a21893bfa49cd4"
+    },
+    "train.tar.gz": {
+     "bytes": 475685,
+     "sha256": "ec60b807f2697cc55660957d363a4148f4ce0cb47cc60ab82a682b446752f027"
+    },
+    "validation.tar.gz": {
+     "bytes": 139010,
+     "sha256": "e0f0036e41089bd526d6cf66d237a1ff19de698e8289ea507347f0ef05e65dc7"
+    }
+   },
+   "complete": true,
+   "folder": "w01",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "f9d356086d0723904f3157f569a61ebd1c768ce8bf950c144c9b611f94c6e2ba",
+   "runCommit": "3c033a2009dd6cfa920905c4a137450a853266b5",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 1,
+   "workerStartedSha256": "b3778c406db9a282b5c7b7889824b1c5f5803a75cc0296cbdf8d2f67f161b30f"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 125416,
+     "sha256": "6d79376bbe45bb0baa45f54356799a3ad071248551810ebffff28c9f14bf73bf"
+    },
+    "train.tar.gz": {
+     "bytes": 439451,
+     "sha256": "51922bdede010c0786d3abfb896cf51d04010054965a657ace984196d93509d7"
+    },
+    "validation.tar.gz": {
+     "bytes": 141271,
+     "sha256": "1cd141ef3f6573e95d7a03ab521e3727c9e0327cc5749ee3d8151e77c62a7564"
+    }
+   },
+   "complete": true,
+   "folder": "w02",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "298a2e7c70cb86a99bc654ab56ca3ace6683b7b7129369f2a2d3a3b34244201a",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 2,
+   "workerStartedSha256": "56b7db740945b8312be55670d75af8713938f56e24f6faeacec96004da1d65ce"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 145854,
+     "sha256": "b3adbe8d9726e466306603293a4c2db6d640bdc862578059d7aa7e37523740e5"
+    },
+    "train.tar.gz": {
+     "bytes": 428461,
+     "sha256": "37a14b9d2f05aabfa5726ca60635736cb31c2c0ac3a99a6d09c98c21e10f2b12"
+    },
+    "validation.tar.gz": {
+     "bytes": 141097,
+     "sha256": "dd1a6504b79d09542780b66076a7a58da687893d3961d28a36e39b8a434ee21a"
+    }
+   },
+   "complete": true,
+   "folder": "w03",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "cff0feeec20604686db29f17fb36ac205cecb3e3849f18b509cdd882c9aa77ac",
+   "runCommit": "98cc07bbdf5e0fefad655ae044237426cd13054a",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 3,
+   "workerStartedSha256": "69f074c41d46686c7ba885a6b5088b32c151fbdc7551b4b4074a10d6d899a174"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 144462,
+     "sha256": "d283d2bb24cbc3480c166a482ea7a2efe7c6ba9bdf04c3fc3990c755591dc33a"
+    },
+    "train.tar.gz": {
+     "bytes": 466815,
+     "sha256": "f557a4b6c0b8f26cbd7656d3c4092258fbecf9978b7ef8eabc692208696bab7a"
+    },
+    "validation.tar.gz": {
+     "bytes": 161229,
+     "sha256": "013f3b4b11cfc7f1ec80ee5e2d4844ec864e3390161b35eb12e118af6e24742d"
+    }
+   },
+   "complete": true,
+   "folder": "w04",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "8ca087d27a27b3ca43322b05a54f8407a9365a9644d57697d43a25e36efec514",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 4,
+   "workerStartedSha256": "6d91037ea8361a88908c42ac8013fe15a05a5f151dc165b1e866d601700eaa9b"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 152532,
+     "sha256": "3dfcb3f6f52b2d0cf503d8830f1e6f579914ef3a211983082c1e0d6d8e81065e"
+    },
+    "train.tar.gz": {
+     "bytes": 460891,
+     "sha256": "aeeac4fa03b21dd54f83570f305d783b869f2a3d2eb7814b63c18173aa8867c5"
+    },
+    "validation.tar.gz": {
+     "bytes": 134713,
+     "sha256": "d2b2fbf5650efe8a1b7c93f70bb8268026172680a05930d2b4cc78421a05f393"
+    }
+   },
+   "complete": true,
+   "folder": "w05",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "fe894881da717a5ddaadb621d7fe5cd08a9227512d8f359b614d4878a14ea180",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 5,
+   "workerStartedSha256": "f209b7e805c8fd5ff1625e36a064f5adb9bb79890271bb1084b1c323308c3c73"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 124406,
+     "sha256": "da42682eb1bd53b0c57aa5a4fe0144fdd1b899749305390d788301f05194a178"
+    },
+    "train.tar.gz": {
+     "bytes": 417438,
+     "sha256": "d7f737e3d9c1b4fa51ea26acb8fafa3cdaacefdd8b67c12462b6b8d3d1e2ba4a"
+    },
+    "validation.tar.gz": {
+     "bytes": 150151,
+     "sha256": "3361cb089db90e97b9c595c28147548afdeefd3a9399b76402bb1b604ba7cf3d"
+    }
+   },
+   "complete": true,
+   "folder": "w06",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "64fd5f24b255aa16856abd08cce7a52e25b41ec4555d2b4c49b09f7e62da1061",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 6,
+   "workerStartedSha256": "125bea0aee77150b4a78b4fc125d6cd9ee7de3dddea304ea3aac117de80a39f5"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 75938,
+     "sha256": "c4e5163a14b455eef2b18b733a2ea65f8badaff7855649eb334a5c26379fea57"
+    },
+    "train.tar.gz": {
+     "bytes": 220408,
+     "sha256": "667a13cddc1cb111bc6f5e498d8bd61b8e3463a238f0edb9d8b3645405a54b8b"
+    },
+    "validation.tar.gz": {
+     "bytes": 83077,
+     "sha256": "3238ca25b76e9461235082277c15b4ac30d819301acb0cf9fb26ef85419d9c04"
+    }
+   },
+   "complete": true,
+   "folder": "r07-0",
+   "half": 0,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "5f9a45395b57b360c917add5f5d4cbdcdefd671a248d6fdc406576057ce17a65",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 7,
+   "workerStartedSha256": "64e20b3b4998e3f322d3af9fd1fba8425a88ddadc541c0df466ca365344dde79"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 72596,
+     "sha256": "a9ab70c985d7586feeab4c231ab69dcbfda29696c3bad8d9d121e51b6f5fd2f8"
+    },
+    "train.tar.gz": {
+     "bytes": 210796,
+     "sha256": "ef9fb036cb7cef43ed28462cad8f3f9764b820d9448d7486019f26ce03628911"
+    },
+    "validation.tar.gz": {
+     "bytes": 73397,
+     "sha256": "f0fd543957b357d3fe96f0eac4bdadbd2f5a3bf3bd28c5fd5fd027c007d0d1db"
+    }
+   },
+   "complete": true,
+   "folder": "r07-1",
+   "half": 1,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "ed1414c10f64535bd3e50b305192aed8945b915902ef15bae9b98597a239f9d9",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 7,
+   "workerStartedSha256": "64e20b3b4998e3f322d3af9fd1fba8425a88ddadc541c0df466ca365344dde79"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 71242,
+     "sha256": "b1ce431b16ca71bac66a497afaf4f8b518945dafb5aef869e50042304b4e29f6"
+    },
+    "train.tar.gz": {
+     "bytes": 243162,
+     "sha256": "f788d3e3e9ee73e6be779bfeef639afacb1718bfbcd67117f45f68dafda3ba5e"
+    },
+    "validation.tar.gz": {
+     "bytes": 66106,
+     "sha256": "ec9c588458bcf2538a11c42741dac1ef06a43dbfec7b6652555ce710052207c1"
+    }
+   },
+   "complete": true,
+   "folder": "r08-0",
+   "half": 0,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "5d161cdcb71960b588e188d1305aa4e47b73eab2a072373570ce2082b8f6f08c",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 8,
+   "workerStartedSha256": "06910f9da7fcb0992bc1f64f42c9669c95a74a0d4551657c2b1512a13a87741a"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 65683,
+     "sha256": "30c56683aa7ee0ee7498e1d037e74ffb103ca4bae361a2cbb02d1366d6465e62"
+    },
+    "train.tar.gz": {
+     "bytes": 224040,
+     "sha256": "55721244278b7feeec1958b9279b6a5d001d30aee4b745a1e8a5164cf8d9e62b"
+    },
+    "validation.tar.gz": {
+     "bytes": 82112,
+     "sha256": "e24cbca38812db659754401fb01e1f1829411bf383dfa1526f0b26e3796fd44a"
+    }
+   },
+   "complete": true,
+   "folder": "r08-1",
+   "half": 1,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "c1ebe537389a54e293992cf08f83d2d9f318cbe2753fcb9340d75e633fad812c",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 8,
+   "workerStartedSha256": "06910f9da7fcb0992bc1f64f42c9669c95a74a0d4551657c2b1512a13a87741a"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 133043,
+     "sha256": "0a9b52802cd60debfcd313c9eb68b5954ed3e1ec9574375400fae5cc3629f4a8"
+    },
+    "train.tar.gz": {
+     "bytes": 435477,
+     "sha256": "e828abe6297e733a4eaf1c1e919d738bcf1092136c3a0dc121869eab4d5f150b"
+    },
+    "validation.tar.gz": {
+     "bytes": 144101,
+     "sha256": "a54c3ba3ebcd0dd620823ed0ba6ff9b52c9089e276d0bed0d793ec8c4ba6fd06"
+    }
+   },
+   "complete": true,
+   "folder": "w09",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "dc4aac9b3bd8195d41dc301498a8ac6393085c077c3a7221065ee98bc04461ca",
+   "runCommit": "98cc07bbdf5e0fefad655ae044237426cd13054a",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 9,
+   "workerStartedSha256": "d4c9f05ca5d40d5ecb56e686c4b24eab935e15b7d8376958bfecc8418e7c1f06"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 147925,
+     "sha256": "8d0ed33e590303e7eea24e89133315319807637e51a3f1f451098106dafd6f61"
+    },
+    "train.tar.gz": {
+     "bytes": 401967,
+     "sha256": "1fee2ad6d61524b1b88dd3453380a119fcc16a97841655cdb27a1c92e6ac4b4e"
+    },
+    "validation.tar.gz": {
+     "bytes": 136452,
+     "sha256": "e2b95dca58613add607ac62934b8bde5b2727016cacb35c9ef1f1749abd36816"
+    }
+   },
+   "complete": true,
+   "folder": "w10",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "124ceb212332a2505ac046e4ba748bf82751100d66f73303b6b1189c6775f487",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 10,
+   "workerStartedSha256": "6ba52438e627ba327dde7e812405e11c9e839a393aa0f479b870e7eba09b02b7"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 129654,
+     "sha256": "c494c4fc57507467dc292b4eb22c940bd9ef0509b0170e9692d964023e4201ed"
+    },
+    "train.tar.gz": {
+     "bytes": 414878,
+     "sha256": "66d57ca0eb8798d8d5991803f6439af788d19fc33b4e4c1f06372e9d05d43a3e"
+    },
+    "validation.tar.gz": {
+     "bytes": 167318,
+     "sha256": "a5389d510a2ea3d605b8fce11f871a89f83d18d2ab9ddb2be912694a0b1f090f"
+    }
+   },
+   "complete": true,
+   "folder": "w11",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "cf20192ee30cba435ebfde4bf24c433fd8ef508c98a8431dffbf3c426ab2f7e5",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 11,
+   "workerStartedSha256": "c8cc5961deb070d4d265bca18876a90cc79787a48077e1c0ce6d19d1037b321e"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 142974,
+     "sha256": "3ee2743e162d56ef6a5f8c90aab171a098731c5d508e26ee7860e26f415235ba"
+    },
+    "train.tar.gz": {
+     "bytes": 447430,
+     "sha256": "1733c06d481f037144a6509fdc88d1d96b9deaad328fe17f29eba5e8b2a7c39a"
+    },
+    "validation.tar.gz": {
+     "bytes": 142914,
+     "sha256": "c65b2dc8dd7fbcf7b5bb4d8cb4de6858cc138c1acd4198019be7f29c2a63518b"
+    }
+   },
+   "complete": true,
+   "folder": "w12",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "4183df1d31b3712e13df2814a685a8e4922db5fa77424fb5ebe955299f34da93",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 12,
+   "workerStartedSha256": "3df025d9d4b7d2e55bf0a929027225ca49bb05bdb6bb4e9b386bc8fcafbe9cba"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 152868,
+     "sha256": "88373f7bae33393766f3b08a2522ee389e0d17c909b52d2d018357bcb7b61da9"
+    },
+    "train.tar.gz": {
+     "bytes": 455240,
+     "sha256": "4a155d83cedfa3c5f74358e3c7a597a26ceda4ffa28beea6db2ef3eed6ad9586"
+    },
+    "validation.tar.gz": {
+     "bytes": 158143,
+     "sha256": "9aeb84480fa80919f876951ea7b8e0768e27c9b774ce1842632385ed676e841e"
+    }
+   },
+   "complete": true,
+   "folder": "w13",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "e0bf1fa6a068b161cd1119f561c74277eca9660c7ebc57b49202022538abb67a",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 13,
+   "workerStartedSha256": "ee86cf6810a8c7635ed7c282a7f3ded23c3dbf541452f789e13042458b3e02e6"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 144647,
+     "sha256": "974013ba4bcc97966ba005aee9e19c0c2f8a0914df0f8dbee1247e0c44937e73"
+    },
+    "train.tar.gz": {
+     "bytes": 428452,
+     "sha256": "9e22d81958d9b768559aba043afeeaa5d2a6beda3022e82e0de320a50c0765b6"
+    },
+    "validation.tar.gz": {
+     "bytes": 138765,
+     "sha256": "51b588d979eef12d64513ad8c9bb38bdbed688ed6e483afe49d6aa8a52dda1db"
+    }
+   },
+   "complete": true,
+   "folder": "w14",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "ff4bf4cc05c36ae92bfb6434ea3674ea42bb0484a8eedbd909e87d0333937964",
+   "runCommit": "98cc07bbdf5e0fefad655ae044237426cd13054a",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 14,
+   "workerStartedSha256": "ba996d78783108875526bd751d6901354e5e7df8f4b3944552b6ff8b0465ea74"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 139420,
+     "sha256": "32b6519b9c6499b5809c46a323e76f3e131b7617a83e8c0dba25246663314113"
+    },
+    "train.tar.gz": {
+     "bytes": 469327,
+     "sha256": "9ea462745c625988df87fbce060d6b882ffac560ed2d5d700d640f883dcc6a33"
+    },
+    "validation.tar.gz": {
+     "bytes": 152585,
+     "sha256": "3da593161bf475dc87e5ab56cd9150d4efd32533942efccf074ad14affd61b7a"
+    }
+   },
+   "complete": true,
+   "folder": "w15",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "912a846dfcead2b3656a59708e6c671f1ae325381e9fff3fc05790f027dc96e3",
+   "runCommit": "98cc07bbdf5e0fefad655ae044237426cd13054a",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 15,
+   "workerStartedSha256": "dc4f1febbd3866e34402de260037ac13a105939e80408e32a023aa8a81df19d2"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 149218,
+     "sha256": "5afd0bce467e6f0dd7581bf7f104bb94e1779b52c7ecc5eb13050356cd171b3c"
+    },
+    "train.tar.gz": {
+     "bytes": 425217,
+     "sha256": "3fe38733fce4d8eec03b07965033d2c875a14c778c61455ca0a542662461bddc"
+    },
+    "validation.tar.gz": {
+     "bytes": 158988,
+     "sha256": "96d02c650582196b59111cde9e7f6b13dc0d8a4625bbef7a9fc265e7ff87b2f8"
+    }
+   },
+   "complete": true,
+   "folder": "w16",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "23fed3764b5f53e5aa230843dcc20a8dae854e4e34a0faf76abd36f774f53729",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 16,
+   "workerStartedSha256": "8aef5ec457f977665d04bb49ae0d3a1c3bfcdc90cfa8cf2b4a37e95109c81de1"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 159693,
+     "sha256": "7e4b9419d05211a9570ea433c035df6da622eedf6f3afd484ea065b199678655"
+    },
+    "train.tar.gz": {
+     "bytes": 461514,
+     "sha256": "8956f8fbeff9ba78faefefa60c08a0578cac186a1f4e042bba16275eb2313bee"
+    },
+    "validation.tar.gz": {
+     "bytes": 154716,
+     "sha256": "e386cc6b9497718e6493f03269c5f5a887f8514476948914d79494e7b247e47f"
+    }
+   },
+   "complete": true,
+   "folder": "w17",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "19916704968c181e40ebde3a859697c10c21a99f111f30ecba76ce8d25f9fa71",
+   "runCommit": "98cc07bbdf5e0fefad655ae044237426cd13054a",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 17,
+   "workerStartedSha256": "693154404348e5f7ec9ed77d86b6293ea19fcc23feda2d344ad13edeec5077b4"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 169568,
+     "sha256": "99347f85108b35f6d08c18222ff499391325144eee95e85623853a61e7df085c"
+    },
+    "train.tar.gz": {
+     "bytes": 405234,
+     "sha256": "f6d24d513ffa60b0882cfd658f2473dabb0afbb09abeb458d32f7801ff38f100"
+    },
+    "validation.tar.gz": {
+     "bytes": 132419,
+     "sha256": "cd50fcd4bd538f57f51881585d3f338110226ae7f7259ce5517a8990e1867a7f"
+    }
+   },
+   "complete": true,
+   "folder": "w18",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "c209764541323dd930e31c758acdd062fde9126ccdb14ce3cbfb8f6f0e65f963",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 18,
+   "workerStartedSha256": "2f9fb2b01e6304ca827706c32e95adf00eaee73c30755c9a4631125b240a2eb8"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 133636,
+     "sha256": "701e32e12f327e4ca2a0b760c1732632cd0ce7d5b285d7118c4b8d2f34bcf216"
+    },
+    "train.tar.gz": {
+     "bytes": 434791,
+     "sha256": "1c72e5c8a21ede966c5cf6e5e4cc7a318ba80f24e1188c1187e6cf28b308a966"
+    },
+    "validation.tar.gz": {
+     "bytes": 123314,
+     "sha256": "dd7a88f9486bc3b1083247a3f29ea86798db67088015c028d3608dfa18665ba0"
+    }
+   },
+   "complete": true,
+   "folder": "w19",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "d7428cb6e9c7c9946e9ced5e3e3a11693409fb073ca6cfcc3e7afeb8cc7e7492",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 19,
+   "workerStartedSha256": "449904cd5057e00d08fb4c5b2420c10b48fdc693e933750d0bba617d82e6f2e1"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 154175,
+     "sha256": "21e89f3f0a7b48bc3e38bb30e072c7e204ca3afb0819624b028cce1b78ade349"
+    },
+    "train.tar.gz": {
+     "bytes": 454025,
+     "sha256": "7c03e175f444a29c7ce99ba09a108919118d56038636859d356d9cc64137ef53"
+    },
+    "validation.tar.gz": {
+     "bytes": 159846,
+     "sha256": "8005fd2490834a943af88edd2f2a31581b6b6d01e72ec54726dabe118b2cdfa7"
+    }
+   },
+   "complete": true,
+   "folder": "w20",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "cb43447042fbcf32c26c3b2bf39be462f78bc8d72775064b4a3c21ad46513bae",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 20,
+   "workerStartedSha256": "6e6dce51d0a4c8f49e206cc6173c8f48c79a537124b9057653afbc6fbcc16cce"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 119281,
+     "sha256": "841f7284d15012cbe022d11967cea72fb52692796fe1706755771fcd769a6fe2"
+    },
+    "train.tar.gz": {
+     "bytes": 426273,
+     "sha256": "e0899c7aaaefe8f5ae1112c787d5ae4b857cdfb3d4218749ac5e4e2725db8fda"
+    },
+    "validation.tar.gz": {
+     "bytes": 153157,
+     "sha256": "4824757ca7e19c41d3ed62738579aed4e21c60fb136cd83a0ea987b50e60b85c"
+    }
+   },
+   "complete": true,
+   "folder": "w21",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "dd3c1147e93a8c0e0145c4df6c64b2291babbd4495a447ec72f767bc94ecf8af",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 21,
+   "workerStartedSha256": "5ecb7c5c148c318242ebeb002c7d19caa9c823190ba113f9437e56a532647d4c"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 148347,
+     "sha256": "ba40ad66bd9e02acc976661ad66dcb4e8bf0a9d874573418d0049634779c3c04"
+    },
+    "train.tar.gz": {
+     "bytes": 425205,
+     "sha256": "3532a191ee76373a2a2c352b2db198f4652d3a72b3d24e75bdede4ff4d9df2ed"
+    },
+    "validation.tar.gz": {
+     "bytes": 132179,
+     "sha256": "97a58f9e31cfd8b706c77decb4d34f8f483bad83c469e255e5696fd91d1178d5"
+    }
+   },
+   "complete": true,
+   "folder": "w22",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "aaf748459d741cf8b72bf4a841e85304e7a840190970db192768bc207d47e764",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 22,
+   "workerStartedSha256": "baeb7ef60364a5d305c24c0197ecdfb5982d0818a1e6fe775a5b698b22d3af5d"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 155168,
+     "sha256": "4304357377f0e4719c0bc3f8cbc85414b279d4d7b87dcda024f9b75595ebd9a0"
+    },
+    "train.tar.gz": {
+     "bytes": 478296,
+     "sha256": "f282364006f03d8e6e7d7527fbfb8b685e41e96be5f800e65b691e1712b1a070"
+    },
+    "validation.tar.gz": {
+     "bytes": 140568,
+     "sha256": "c649e385e5a711939fc2e783e8eab0be0ba9b9b83716fe8c580d81201eabd5ed"
+    }
+   },
+   "complete": true,
+   "folder": "w23",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "c60d5e571ec9489fc0cb82ce50f09e282437d307bd30483a09506cc9ca21edfe",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 23,
+   "workerStartedSha256": "0a035c2105b5db0cfa49ff9079e0a727377c74bdc956bfbedbe8651b5af31e01"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 137009,
+     "sha256": "e7f2261a0001a421145a969fed989a4b290b3ac1f03b26e1538dc782f37c6f9b"
+    },
+    "train.tar.gz": {
+     "bytes": 427278,
+     "sha256": "a4d31b9ba2b1b9803ef0b8172d067b0f2daef693e47634b51bab8ace3477d0ed"
+    },
+    "validation.tar.gz": {
+     "bytes": 128169,
+     "sha256": "3bf715a9c93679c5f0a5d9e5e9f7643721ae80f81533cc9837db8b240efc6237"
+    }
+   },
+   "complete": true,
+   "folder": "w24",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "d3efcc2282fcb2f25dfd86791b8e0bd45a5ddac10a6380eb562bc6d93005913e",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 24,
+   "workerStartedSha256": "3f469ad222096ab0f6cd0108de85116944e7066b55e9584aface6447e321a210"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 149369,
+     "sha256": "1a14ab891d748f1e8204544f4659a598d9d5a057faeeb573c3b8ce3e8cd7df72"
+    },
+    "train.tar.gz": {
+     "bytes": 441803,
+     "sha256": "14758e1b04ac2ba734ee62155456c841a7319f65d31127f45540cc8d90c5467d"
+    },
+    "validation.tar.gz": {
+     "bytes": 160384,
+     "sha256": "5ad880e1a08e11af04ffb38ec30b46001ff2ee89668d57d6419a4a9d5bedf1ca"
+    }
+   },
+   "complete": true,
+   "folder": "w25",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "57888b769698c5814df1efe190d5b6e7ffe458b8b8fdbf1026b40c2f03126a7d",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 25,
+   "workerStartedSha256": "137cdb25d55b0c4d347ca3d5697720d9c92595cb99bc6ed3ed7d167095004d5c"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 155270,
+     "sha256": "b93403012bbb6aaf7ae34d98bfa7acb843f865cec211e14c0c8a2500e22a888e"
+    },
+    "train.tar.gz": {
+     "bytes": 439600,
+     "sha256": "57e316cd62749b783881a38bdce2d155482374fed85eb3621f7a3e0475760375"
+    },
+    "validation.tar.gz": {
+     "bytes": 133210,
+     "sha256": "220bc427ad159cf405bdbfb31f1b0104b934f7aaf6c656324d04e8d05058030f"
+    }
+   },
+   "complete": true,
+   "folder": "w26",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "f88d9130677d7677018f0cf1691e2566d04adb8967d8a841f82d5b0a5ef30ce9",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 26,
+   "workerStartedSha256": "a3dfb8c6329c2e116e7114cf9c6dcdfbbd22d397e8d3547bc6a29587f26468ef"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 66236,
+     "sha256": "457f1df37f1b4da4ea1835374ead81d2770d27167d66c36d79445406fe3981cf"
+    },
+    "train.tar.gz": {
+     "bytes": 179431,
+     "sha256": "c29d32cea33111b6bdca34fb9df0288e14b53a838ecf64079719294ab5269c20"
+    },
+    "validation.tar.gz": {
+     "bytes": 93695,
+     "sha256": "b194f8beeef3b67f3af3a3a028f41dd8473d6084c1a99e86cdaa2fc3f840cd86"
+    }
+   },
+   "complete": true,
+   "folder": "r27-0",
+   "half": 0,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "d8b255567b55181d8efcb4365558a3cc61803eda273c13a54f47e672125d9395",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 27,
+   "workerStartedSha256": "e417b491860e56a3bee4b9b880a09fbb31c14744afc0c3c676c65894f820396f"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 69523,
+     "sha256": "8d5e0cfc08915c9051c0efc939494805263aa25e428eafb3af1fe1c4f89e9c0d"
+    },
+    "train.tar.gz": {
+     "bytes": 213623,
+     "sha256": "a1f9e0d1c11348796848d4f779d41937f8e1f667f543a204b309e00dbcf91a04"
+    },
+    "validation.tar.gz": {
+     "bytes": 62948,
+     "sha256": "06d69e3ffa741b6d72a633ee3a5ba367144a7ea6390edf4e78141f046f4fc266"
+    }
+   },
+   "complete": true,
+   "folder": "r27-1",
+   "half": 1,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "0407a83a0519a3d9e57576d8b7dcf9cdbfcb0b232830013d6ad01c3c8bc6b785",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 27,
+   "workerStartedSha256": "e417b491860e56a3bee4b9b880a09fbb31c14744afc0c3c676c65894f820396f"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 140343,
+     "sha256": "cafeeb264ae2fd1ccb86dbe0d799fbeb2cf0ded354d487018b26c265e14a1a18"
+    },
+    "train.tar.gz": {
+     "bytes": 415735,
+     "sha256": "b788e799dc62dc2ab85a81d2c6aeacf75206496d5df351a965550d71f6951f43"
+    },
+    "validation.tar.gz": {
+     "bytes": 154830,
+     "sha256": "cade800d2c456a86c5977e04c5481cb6602d50700ba4d81405efc9736e5716c2"
+    }
+   },
+   "complete": true,
+   "folder": "w28",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "9190880f2c07fa950c4486cac26668c623e4725228a1fd4741a2beae67d1aa46",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 28,
+   "workerStartedSha256": "d3057204cc5848cf43df95c1cabeba40232b40a1bcd2059d6e53651d3ba6200e"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 135630,
+     "sha256": "8c388eb9e0fe3db237146c54de96f9aa9dcbd16c0252c2875315cde5236d5d0d"
+    },
+    "train.tar.gz": {
+     "bytes": 455350,
+     "sha256": "db07944c7f754dfe8b5cb20c1f3156cae923fd1ec72e4855e6c825f4fee4787a"
+    },
+    "validation.tar.gz": {
+     "bytes": 129673,
+     "sha256": "22d7cc1706581382b111ec8f6a613ccf305940fd69f78b47abe87ff16ef439cb"
+    }
+   },
+   "complete": true,
+   "folder": "w29",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "ea2d3e13d737f9b157eb10022f943bb56aca7f4faa84d71853124dc3511c8986",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 29,
+   "workerStartedSha256": "36af9503465553c47bdf9c87b74f89feec1f4fe58f6e6536920cde2f57939abf"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 164187,
+     "sha256": "f0a3e83c6bef25a21a7aa30350292965e698679c3f88d1b5135cad6c14c657b6"
+    },
+    "train.tar.gz": {
+     "bytes": 427989,
+     "sha256": "07bdad2e26b563ab944c838164141ebc6428cabbb39d9787437376ae3b56d5e6"
+    },
+    "validation.tar.gz": {
+     "bytes": 140216,
+     "sha256": "e834e03ca9ef5a696d9490e206917eb70dfc69ca9348906165002a8dea23acff"
+    }
+   },
+   "complete": true,
+   "folder": "w30",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "194bb3ac89ba26cf7fb70f418b00bbf876d3d5150ce2d33ff0a228a6f2d8c1a8",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 30,
+   "workerStartedSha256": "575a1937563e2c738a1289506304c1a41b5a2dcdf92c7bdc80c7aa316cd360aa"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 138544,
+     "sha256": "58b46d08bb76e2366a9e68227216c44e98079464f0ba118a1131041f790671f1"
+    },
+    "train.tar.gz": {
+     "bytes": 431416,
+     "sha256": "a524f32c23c338c4bff63f378aa2257bf01df0e306d1ff1eb51d1334a2389376"
+    },
+    "validation.tar.gz": {
+     "bytes": 143755,
+     "sha256": "98049e594ff731bad1d979c40bd66d4fb468c284b9b012c5d70f234aadc11179"
+    }
+   },
+   "complete": true,
+   "folder": "w31",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "b3a680038d7bf44c9e5e4e162c454ca8096c3cc0d6cef9c7d6559aef61db01fe",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 31,
+   "workerStartedSha256": "271ba71350a561ef300f82d2d248200b3e83d6c726a007d634373d77c9cbb9a8"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 123750,
+     "sha256": "67e4acac53ad1aac82824e2d517e96e5a63ce7c62f1ca4a89a5471120a57bd98"
+    },
+    "train.tar.gz": {
+     "bytes": 408984,
+     "sha256": "3004e518f6328b90741b35a1a2f385532c3d75701e886f9802c4c4c00a93dc8f"
+    },
+    "validation.tar.gz": {
+     "bytes": 152360,
+     "sha256": "ffcd2d8ba1184c9c199ed2f24c1b82ec47e905218fc8f538b0bf0f1e156a7de9"
+    }
+   },
+   "complete": true,
+   "folder": "w32",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "50bb314fef8b2843605244087538553b8820f4a4e1baa2d0e5648859baa052ac",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 32,
+   "workerStartedSha256": "28eea031b30fac99d4580a45487e535a5edddbccc084ac9485f823d58314744e"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 141226,
+     "sha256": "961f4ec853b2242f4007caec9e9052a9b9e04b2db1e8234d52bea7b2a0b8edf0"
+    },
+    "train.tar.gz": {
+     "bytes": 426523,
+     "sha256": "50a241022a68dd2803c5009205124b765b539a16f98fd771f8c7d232c4d06573"
+    },
+    "validation.tar.gz": {
+     "bytes": 147600,
+     "sha256": "7d9503f798f0370aa33b9988f7db2ac82febe1123756272e98494e706d381aea"
+    }
+   },
+   "complete": true,
+   "folder": "w33",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "143d73a4637f3a59aaecaa2f226c8aada8b52c4bf9cedbead8993702775a790d",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 33,
+   "workerStartedSha256": "5aa5958d2596f035966e88d8d6ea3220babac1f595fabd31a15c4a3304286c3c"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 50567,
+     "sha256": "ae21d4362639254a7a5e50b105961067fda256e4021a5e335e7c55254635f139"
+    },
+    "train.tar.gz": {
+     "bytes": 216622,
+     "sha256": "2d28839bc7486d64c4d256b2bd47c5218cf5b0b3c64b5fab04fb5ae04a695a40"
+    },
+    "validation.tar.gz": {
+     "bytes": 74591,
+     "sha256": "b75ce552c600ffdf880cad8866a78433e5199f00a9ca0a49db76798ff3d89d4e"
+    }
+   },
+   "complete": true,
+   "folder": "r34-0",
+   "half": 0,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "854f0f6051f10349faea3c2bed07d720e898ce86dd5f91e0e3f06d37471e6179",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 34,
+   "workerStartedSha256": "90fe192f935db04af0f70a209252bfe7aae25cf61ec2dc6fe5163fc9153f59a6"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 74221,
+     "sha256": "667069aec51b50b5cfe6714365739e15f958e14a6a4f9b47ca2f74cfe06b1416"
+    },
+    "train.tar.gz": {
+     "bytes": 244536,
+     "sha256": "d070c8d09083ffbde64c5f49e0d83e6ba9209cc9a4dc4e8b7eba51bf95f1d28e"
+    },
+    "validation.tar.gz": {
+     "bytes": 54961,
+     "sha256": "a093288495708d29f7188f3521db89d8ee7fc5d882f8a954402c0a328f22d97b"
+    }
+   },
+   "complete": true,
+   "folder": "r34-1",
+   "half": 1,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "168e481c991095b493c0ed19463935a3a15a11956ce1ac3cc02fa341191c54f5",
+   "runCommit": "35d0b6a565582ee67018e28409290b0e0fcf3f75",
+   "sources": 20,
+   "splitCounts": {
+    "test": 4,
+    "train": 12,
+    "validation": 4
+   },
+   "verified": true,
+   "worker": 34,
+   "workerStartedSha256": "90fe192f935db04af0f70a209252bfe7aae25cf61ec2dc6fe5163fc9153f59a6"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 138423,
+     "sha256": "9fcdea1fdd40773b173d38ae836b078553ebc86897fee5d0fa562a452ef44648"
+    },
+    "train.tar.gz": {
+     "bytes": 438175,
+     "sha256": "2ebc6e649236fd642c61c0b40b6ed0f1a38258da207b1b36c4e060f85ce3fa38"
+    },
+    "validation.tar.gz": {
+     "bytes": 133077,
+     "sha256": "b9f8460f7f391749cdda81ffc4299e97995a1e3f4509b54cf2741a7c916dd100"
+    }
+   },
+   "complete": true,
+   "folder": "w35",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "5289e0c13c45f8be28fc006c54206dd59414cc2cb80a4a3c2c1be02db49a579e",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 35,
+   "workerStartedSha256": "2fa372e4bfab06141d70b6f5e8792b234aac904f11202936468844862aa5dbe8"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 172869,
+     "sha256": "fc35417d97089dcf2c6dd6d6670aedb7140dd8a5bb84d5023640d8adb2bcd1b0"
+    },
+    "train.tar.gz": {
+     "bytes": 398865,
+     "sha256": "f8f188eb6577ed63eea1ab62e7eaa7738087d78694e708f77380f8dfc2913533"
+    },
+    "validation.tar.gz": {
+     "bytes": 154712,
+     "sha256": "f963dbcff6d126e4ea7d153952bdfd51fc7da42c0aac5d755c0af6d053a5d003"
+    }
+   },
+   "complete": true,
+   "folder": "w36",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "4dd705c02e80f9eabdd7bc30269057311d3bafc2894a37b67ab15c7378c143fd",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 36,
+   "workerStartedSha256": "670df7cead0fa12992170f5e911ebefebe3939d1467999ed1c990113371ba6b2"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 155905,
+     "sha256": "d571fa0273a0c9c473d2264149f2b3fd3de3a86478d70aadbba68da774b6022f"
+    },
+    "train.tar.gz": {
+     "bytes": 437743,
+     "sha256": "5efb77e061a528ef71d6da6cb8768add0b189b2c24082ddd885e9f7018b644c4"
+    },
+    "validation.tar.gz": {
+     "bytes": 147454,
+     "sha256": "82ff40b4dea12237080b8e04f5a703d8f881dbb43fa6a9976d6b1e770c6d4815"
+    }
+   },
+   "complete": true,
+   "folder": "w37",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "cc286a92fa7f135574d239b5fc7dc2ef24a0e1b04c33614f79649fad1ce97e64",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 37,
+   "workerStartedSha256": "01ebb5319a29aa7bf4c9cd8e911073c6e8a00f081eebde1b3ec0ec7363c1fb68"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 159292,
+     "sha256": "75bf505d61690b16ed173d38f223063bd3eb82bf4d075cfee57303e513018ee0"
+    },
+    "train.tar.gz": {
+     "bytes": 479712,
+     "sha256": "edf226144fe1d2162a7e39b3961f0e03bb970af6edb894cb1adeb75cbc9355db"
+    },
+    "validation.tar.gz": {
+     "bytes": 126681,
+     "sha256": "887bdc54ced722871a0b2c69e88ff683dae82f009d71bd7f891f5aa69146b232"
+    }
+   },
+   "complete": true,
+   "folder": "w38",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "0a4ff3f48c623b6dc8fcafc36d3bd5fccecf295bb203efc92c7b9fd247b788e0",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 38,
+   "workerStartedSha256": "35290feeddafe7da74740065f5bc4ea47b2192b860b1bcdf083245a993a9e5d7"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 153025,
+     "sha256": "f391a96ea92623710da9170e4d4425b02ecca23032ff2493ccffc49e2205d54a"
+    },
+    "train.tar.gz": {
+     "bytes": 485179,
+     "sha256": "6e9829149acf5ae151ffcdbc23a8b60631bc089adc47c76f20430f8017e0ac75"
+    },
+    "validation.tar.gz": {
+     "bytes": 174755,
+     "sha256": "dc6ee12930618ef7ff02c376f0b879be9139a132b0f53321614bc0cda4416351"
+    }
+   },
+   "complete": true,
+   "folder": "w39",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "ee2ff844d52363c4e61560ae33e3e7bb12e5c28b7ae1654f7449125904a8a3c6",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 39,
+   "workerStartedSha256": "3ce5aef5cd384f701a6a551b3025622ab0d29f5b190f15ff298d321650752ad8"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 147009,
+     "sha256": "e334a0b80ba3000c87482085d672bf6cc6b03120f6309e473845e5e3ca32512c"
+    },
+    "train.tar.gz": {
+     "bytes": 397765,
+     "sha256": "d633c98be57e553d513992dc1cbd836a59889c2f99b72120cec9c16066046b81"
+    },
+    "validation.tar.gz": {
+     "bytes": 119844,
+     "sha256": "d12907f40974fbaf45243d9e3af328e1fc731f78e7381e1c0425c58740d50708"
+    }
+   },
+   "complete": true,
+   "folder": "w40",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "093b5ff777c6d44010b8dd48636ff76660a80550c1ae3709d04e18a77ee13eb7",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 40,
+   "workerStartedSha256": "e99de814ed900a1bf63c5346e919e7d732aa3b5148da5622e86c177b8f27afdd"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 137242,
+     "sha256": "afa526b663bf783c467325138caed20f9a474507759b80056006661856487886"
+    },
+    "train.tar.gz": {
+     "bytes": 462088,
+     "sha256": "5e0008a90d5ba9a83b25e17f0e5f28dcb553942c8ae9547c937dffc5769ac1c6"
+    },
+    "validation.tar.gz": {
+     "bytes": 146194,
+     "sha256": "c65f2080269a68d078047838433c3688f3526797d37fcce1c665ceaeaef6da9a"
+    }
+   },
+   "complete": true,
+   "folder": "w41",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "ba7b408f65e101c58325d5d04d11d9ac7b455a9384b54eaabe014be1414672f7",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 41,
+   "workerStartedSha256": "927f049e81589c1368f12ee555a9f8451b91ef096254130f711670e4a9beda10"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 142667,
+     "sha256": "6cc8160f840fffa880abaa6bceaecb8e55163c62dbdb982dd5d52227463a5115"
+    },
+    "train.tar.gz": {
+     "bytes": 415193,
+     "sha256": "0daab28f603afd2193e9d954a99b0ff4bc5eff2b5231c4fac570c8223d6ed023"
+    },
+    "validation.tar.gz": {
+     "bytes": 147572,
+     "sha256": "16d87d5590132fb35c78bb99cc0d066120ee79f2fb0a5488a986a25809288781"
+    }
+   },
+   "complete": true,
+   "folder": "w42",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "2bc8fd7e0cf09d546f93c8df4fb1890a8af4cafd8f65d6e1644b94032c958186",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 42,
+   "workerStartedSha256": "5dd55473ec08821c0029e7d224e2d73c849a833e7f5a08b6db794b085998dbb2"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 133769,
+     "sha256": "ae0937551dfb30bc48527b6e48fa97a1dba7a4835847b3e2ed17bf47f553faed"
+    },
+    "train.tar.gz": {
+     "bytes": 448685,
+     "sha256": "545ea61127c03c6234c24c7d228f17044c3098bdeb7fe80f0280402ffa35280e"
+    },
+    "validation.tar.gz": {
+     "bytes": 150069,
+     "sha256": "a34a7a210a9226e82d1f9ff5ea75c6f97fe1db523860eb535366e48fdaecc15b"
+    }
+   },
+   "complete": true,
+   "folder": "w43",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "50a1ceda5cb82b1c3d517d4d0cbe6d73dc3934bdc98e6cf3f8ee9a6e6b90f2c9",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 43,
+   "workerStartedSha256": "9ce4771da481751386ac12e8ef7c2a5f966185423e772d0d116b27d432f2521d"
+  },
+  {
+   "archives": {
+    "SEALED-test.tar.gz": {
+     "bytes": 137853,
+     "sha256": "e1123354f8384fcda7804a0c04a7fe73bc2890da8aefde7970d15b90e760623e"
+    },
+    "train.tar.gz": {
+     "bytes": 460567,
+     "sha256": "abee0c16525884b952d110afc0d8059d5eb46cc269ad569b7e4f173999175f4e"
+    },
+    "validation.tar.gz": {
+     "bytes": 158131,
+     "sha256": "a7884d3696074a38818688d91f2042c58a794dfdc2e3fbce054152dc1197f768"
+    }
+   },
+   "complete": true,
+   "folder": "w44",
+   "half": null,
+   "nonzeroReturncodes": 0,
+   "receiptSha256": "aeaba8bf97fd61fd93530a3bd57c2d131fc21fb17e618cc02abfdc3efb3059d0",
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "sources": 40,
+   "splitCounts": {
+    "test": 8,
+    "train": 24,
+    "validation": 8
+   },
+   "verified": true,
+   "worker": 44,
+   "workerStartedSha256": "8fa5626076904921dbd151ed7f6fc6d5ca17f9b5aca8f11bc4b53032690c4712"
+  }
+ ],
+ "deviations": [
+  "Export check was one-way (reviewer read of a 288 MiB share blob), chosen by Philipp 2026-10-16 17:42Z.",
+  "Three RUN_COMMITs of the cloud wrapper (v1 W=1, v2 W=0,3,9,14,15,17, v3 others); same producer, plan, bundle.",
+  "W=7,8,27,34 died in container restarts; Philipp authorized a rerun (card 'Redistribute all', 20:18Z) as 8 half-workers at RUN_COMMIT 35d0b6a5 with unchanged worker code restricted to own[h::2].",
+  "W=11 ran on a 2.80GHz Xeon, others 2.10GHz; decisions use fixed simulation counts on the same binary."
+ ],
+ "environmentSha256": "a8d7adf464e58e4689c8d6976cddd7b3f373bcd2b14eda9e3643c0d1635ecd25",
+ "frozenTxtSha256": "51fbe5bbbabc74e224f36a5092cad48fae9193ae7772905950df146008b1da8d",
+ "ledger": "\u00a7497",
+ "planSha256": "4b49a40427dde2470044847e8e843cc349a460e183d6fa2ddbdda4c0494d14a3",
+ "pr": 572,
+ "schema": "heart-outcome-cloud-delivery-index-v1",
+ "sourceAccounting": {
+  "allVerified": true,
+  "byFolder": 49,
+  "originalWorkers": 41,
+  "problems": [],
+  "rerunHalves": 8,
+  "sources": 1800
+ },
+ "superseded": [
+  {
+   "folder": "w07",
+   "partialArchive": {
+    "bytes": 539080,
+    "sha256": "2b6f55fe356e50d6666e9691328e1810314f6fab7b7e7197e4b60b55de57edff"
+   },
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "status": "container restart, censored",
+   "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
+  },
+  {
+   "folder": "w08",
+   "partialArchive": {
+    "bytes": 542050,
+    "sha256": "94a90ed4940f4c6582a7bd67c0da4bbfe325444575eecee6cb97ba045fbc7331"
+   },
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "status": "container restart, censored",
+   "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
+  },
+  {
+   "folder": "w27",
+   "partialArchive": {
+    "bytes": 54782,
+    "sha256": "2617ac4a51bb244c3185525460d9466b9290231f55bf27098832fe1221300c03"
+   },
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "status": "container restart, censored",
+   "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
+  },
+  {
+   "folder": "w34",
+   "partialArchive": {
+    "bytes": 544161,
+    "sha256": "55ffe8e11bcc24468550f20cae85bb91adcb18c45c137fc48483af7d6f08fc07"
+   },
+   "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
+   "status": "container restart, censored",
+   "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
+  }
+ ],
+ "testCustody": "No SEALED-test or partial archive was opened, unpacked or summarized by the lead."
+}
