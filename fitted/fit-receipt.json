@@ -1,0 +1,16 @@
+{
+  "cpuModel": "AMD Ryzen 5 7500F 6-Core Processor",
+  "files": {
+    "coverage.json": "3204fc907205c145b60480c7f43980c3f4afdfa216257a75cbfc1a9240a1bd90",
+    "resources.json": "d6f195f3b54a1c6fe9458e11aa767a774466baa936f32583cd6a5a5002fa37a4",
+    "selected.pt": "caa1d43bb2dd454d957295e5b2f7638cdd8693487d4457c39c6d0bbcc653c3ec",
+    "selection.json": "f155040381c3b52e13fd4b477f5e0cf6b61d4cd417686eb0ff5fc5f6473f78ab",
+    "training.json": "02a340b5041a44f3eddcbb6b84d21f14af6637b0ae1923ac68f23e6e285a1190",
+    "vocabulary.json": "0905ce8d25cef77b1dfbd29c16bbb49bcbab9cd947bf5dbece593e33261f9c41"
+  },
+  "freezeSha256": "a0555a2282cadfeb865a638df56204605b10dd43b7101584de5c3d73dc57f791",
+  "gpu": "NVIDIA GeForce RTX 3060 Ti",
+  "logSha256": "a38bb7f17b5555e67cb70e21ed26f1b8aafd6fe55d714496113dc3fbc5fae10a",
+  "returncode": 0,
+  "seconds": 176.4583583509666
+}

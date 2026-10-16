@@ -1,0 +1,138 @@
+{
+  "baseline": {
+    "aggregate": {
+      "concordance": 0.6207613503995366,
+      "mse": 0.03305207675265313,
+      "regret": 0.03368598280363952
+    },
+    "perSource": {
+      "110164040": {
+        "concordance": 0.6284692482762336,
+        "mse": 0.005866250169356415,
+        "regret": 0.025794074182763208
+      },
+      "110164041": {
+        "concordance": 0.6943795664151395,
+        "mse": 0.13133665409102174,
+        "regret": 0.04589061239105439
+      },
+      "110164042": {
+        "concordance": 0.5901206636500754,
+        "mse": 0.033037250296497345,
+        "regret": 0.03800545256098767
+      },
+      "110164043": {
+        "concordance": 0.7035714285714285,
+        "mse": 0.001066697425513488,
+        "regret": 0.012132479068655022
+      },
+      "110164044": {
+        "concordance": 0.5463086749851456,
+        "mse": 0.03535848693232647,
+        "regret": 0.02720679830582863
+      },
+      "110164045": {
+        "concordance": 0.6595904948620771,
+        "mse": 0.00270141791276524,
+        "regret": 0.012169627658498564
+      },
+      "110164046": {
+        "concordance": 0.5814878892733565,
+        "mse": 0.039029931418990756,
+        "regret": 0.05581511986829727
+      },
+      "110164047": {
+        "concordance": 0.5621628371628371,
+        "mse": 0.016019925774753554,
+        "regret": 0.0524736983930314
+      }
+    }
+  },
+  "checkpointSha256": "caa1d43bb2dd454d957295e5b2f7638cdd8693487d4457c39c6d0bbcc653c3ec",
+  "corpusManifestSha256": "5a45c78f948e946e4ae85dc2ffe721b61850065b1b3dcde76e8a0d2d69249e36",
+  "device": "cuda",
+  "epoch": 3,
+  "freezeSha256": "a0555a2282cadfeb865a638df56204605b10dd43b7101584de5c3d73dc57f791",
+  "init": 0,
+  "inputDim": 6567,
+  "key": [
+    0.027261,
+    0.025822323454057716,
+    1032065
+  ],
+  "runtime": {
+    "cudaBuild": "12.1",
+    "defaultDtype": "torch.float32",
+    "deterministicAlgorithms": false,
+    "files": {
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/numpy/__init__.py": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/numpy/core/_multiarray_umath.py": "4fcf07660143e550ae5d109278b6cfa23f7d9ca512760cb0f315b27fa7aa8714",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/sklearn/__init__.py": "ce663dfdb31bdbd4292166527e43a4f861b31b445d2ee894e725e82c1e738f78",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/sklearn/utils/_openmp_helpers.cpython-312-x86_64-linux-gnu.so": "05bd1a4de7d6bb345c8e80227748fb4cb5b27a7499a140a983a7b17119899a84",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/torch/_C.cpython-312-x86_64-linux-gnu.so": "e6190c3da05837dd3cb7b736fd3d20ae0fff97e6331ee0be3b0a2eac469c3b8a",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/torch/__init__.py": "e1b5bf4151bd246a21e3ac5318f6edfcf2e6ef0fd4f233bfb77a264698ec1319",
+      "/usr/bin/python3.12": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "numpy": "2.5.1",
+    "platform": "Linux-7.1.5-76070105-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "sklearn": "1.9.0",
+    "tf32Cudnn": true,
+    "tf32Matmul": false,
+    "torch": "2.5.1+cu121"
+  },
+  "seconds": 152.96314541000174,
+  "toolSha256": "9c8b30e7608088bfca755a94f079a0bdad8c45382179e1b1fd1d99894efa7a94",
+  "validation": {
+    "aggregate": {
+      "concordance": 0.6365235476102833,
+      "mse": 0.025822323454057716,
+      "regret": 0.027261162692355748
+    },
+    "perSource": {
+      "110164040": {
+        "concordance": 0.6150776817137111,
+        "mse": 0.00595523558571693,
+        "regret": 0.020534625374354555
+      },
+      "110164041": {
+        "concordance": 0.7323503242475574,
+        "mse": 0.10801678295510712,
+        "regret": 0.038050099824081564
+      },
+      "110164042": {
+        "concordance": 0.5143288084464556,
+        "mse": 0.017172896281726573,
+        "regret": 0.030964205461776723
+      },
+      "110164043": {
+        "concordance": 0.7880952380952382,
+        "mse": 0.0008565271220916434,
+        "regret": 0.009977626451212784
+      },
+      "110164044": {
+        "concordance": 0.5565396613190731,
+        "mse": 0.026756792364397188,
+        "regret": 0.015665967216347026
+      },
+      "110164045": {
+        "concordance": 0.5761458641914354,
+        "mse": 0.002709373426469265,
+        "regret": 0.020472780085300197
+      },
+      "110164046": {
+        "concordance": 0.689586422804416,
+        "mse": 0.030573744609591037,
+        "regret": 0.03338811587341789
+      },
+      "110164047": {
+        "concordance": 0.62006438006438,
+        "mse": 0.014537235287361954,
+        "regret": 0.04903588125235523
+      }
+    }
+  },
+  "variant": "attention",
+  "vocabularySha256": "0905ce8d25cef77b1dfbd29c16bbb49bcbab9cd947bf5dbece593e33261f9c41",
+  "weight": 1.0
+}
