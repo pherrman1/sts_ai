@@ -52,9 +52,10 @@ canaries `110163994/995` passed and were independently reviewed. The Codex prefl
 (blocked on export and capacity) is in the
 [preflight evidence](../../experiments/evidence/arm_c_native_preflight_20261016/REPORT.md).
 The old `110163xxx` cohort must not be resumed or pooled.
-The Codex cloud session exposed four CPU-equivalents and32GiB;64-worker
-capacity and session lifetime are unverified. Its available tools do not expose
-an arbitrary-file publication/download-link path, so corpus delivery is blocked.
+The initial Codex-only preflight exposed four CPU-equivalents and32GiB, with
+unknown session lifetime and no available artifact-publication tool. That route
+was blocked; the project's hosted threads subsequently supplied the qualified
+capacity and project-share transport used by the completed campaign.
 The [local review](../../experiments/evidence/arm_c_native_preflight_review_20261016/REPORT.md)
 records preparation corrections and verifies the old local stop receipts.
 The project's hosted cloud threads (4 vCPU/15 GiB each, mixed Intel/AMD CPUs) rebuild
@@ -77,9 +78,14 @@ keeps the six-fit public-record student grid and X2-B decision/cost gates, but
 collects fresh source-disjoint targets under the new rollout policy. §491/492
 V4 targets and §493 gameplay outcomes are excluded. Repeated-label child counters
 verify actual C use; independently reviewed observational canaries precede the
-64-source 40/8/16 split and one-shot TEST. No result or qualified student exists
-yet. Arm C is the chosen research teacher; §493's NOT_SHOWN verdict and production
+64-source 40/8/16 split and one-shot TEST. The completed result above did not
+qualify the student. Arm C is the chosen research teacher; §493's NOT_SHOWN verdict and production
 defaults remain unchanged. No RL loop or automatic student deployment follows.
+The completed corpus is permanently sealed against another TEST dispatch by
+manifest/result identity. Retry recovery refuses unknown ownership and live
+producer groups; workers require the reviewed CPU/canary pair before dispatch.
+See [campaign guard operations](../operations/ooc-label-pipeline.md#arm-c-native-campaign-guards).
+No further experiment or native integration is authorized by these guard repairs.
 
 ## Arm C inside A20 Heart rollouts (§493)
 

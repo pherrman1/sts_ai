@@ -1,5 +1,12 @@
 # §494 native cloud collection: COMPLETE (2026-10-16)
 
+This is the **historical collection-stage snapshot**, before fitting and TEST.
+Fitting and one-shot TEST subsequently completed with verdict **NOT_SHOWN**;
+see [the retained result](fit/eval/fit/test-result.json) and
+[ledger §494, “Fit and one-shot TEST”](../../ledger-06.md#fit-and-one-shot-test-2026-10-16).
+The frozen launcher and raw artifacts below describe that completed run; they
+are historical evidence, not instructions to launch another campaign.
+
 **64/64 fresh sources collected, all return 0 on attempt 1, inside the single deadline. No fit, no TEST opening.**
 
 ## Frozen identities
@@ -45,7 +52,7 @@
 - The first cross-CPU canary thread was refused by its auto-mode classifier for running a script from the share;
   launcher scripts were moved into the repository at a pinned commit and a fresh thread ran it.
 
-## Not done
+## Not yet done at the collection snapshot
 - No fit and no TEST opening. Before TEST, the CPU-cost comparison must be frozen and reviewed: the teacher ran
   on one cloud CPU model, so a same-model cloud evaluator is the qualified option.
 - No native student deployment, default change or gameplay claim.

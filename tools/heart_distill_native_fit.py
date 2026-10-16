@@ -9,8 +9,10 @@ Subcommands (all refuse to overwrite; TEST capture bytes are copied by hash, nev
                                         runtime, bind the fitted selection, freeze the CPU-cost rule
   test CORPUS NEW_ROOT TEST_PLAN_SHA256 one-shot TEST through the unchanged trainer; no retry
 
-TEST is one-shot across roots: `test` creates CORPUS/TEST-OPENED.json exclusively before the
-trainer runs, and both `prepare-test` and `test` refuse once it exists.
+This campaign's TEST is consumed. A committed manifest/result seal retires both
+prepare-test and test for every delivery of this corpus, independent of its path.
+The historical directory latch is not a distributed, corpus-global authority.
+There is no override or authorization for another campaign in this adapter.
 
 CORPUS is the directory holding corpus-manifest.json, corpus-train-validation.tar and
 corpus-test-SEALED.tar. The fit may run on another machine (Philipp's GPU); the CPU-cost
@@ -32,6 +34,12 @@ import time
 HERE = Path(__file__).resolve().parent
 SOURCE = '9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3'
 CORPUS_MANIFEST_SHA256 = 'cd8929b1226531390d06a6c38250065f9d6e37d00c1903dd688b9ae4c5f11c19'
+# Permanent historical fact, separate from the accepted-input pin. Do not clear on
+# restaging, relocating, failures or a future change to the accepted-input pin.
+CONSUMED_CORPORA = {
+    'cd8929b1226531390d06a6c38250065f9d6e37d00c1903dd688b9ae4c5f11c19':
+        'e8cf578b54334501a26db4b6fca17016fc2e9ca07b83bcad86b8c83139bfa3b8',
+}
 PRODUCER_SHA256 = '86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecbacf'
 STUDENT_C_SHA256 = 'eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509'
 COLLECTION_CPU = 'Intel(R) Xeon(R) Processor @ 2.10GHz'
@@ -74,6 +82,16 @@ def cpu_model():
         if line.startswith('model name'):
             return line.split(':', 1)[1].strip()
     return None
+
+
+def require_unopened_test(corpus):
+    """Check metadata only, before staging or touching an evaluator/TEST archive."""
+    identity = sha(Path(corpus) / 'corpus-manifest.json')
+    if identity in CONSUMED_CORPORA:
+        raise FileExistsError('TEST consumed for corpus ' + identity +
+                              '; retained result ' + CONSUMED_CORPORA[identity] + '; no reopening')
+    if identity != CORPUS_MANIFEST_SHA256:
+        raise ValueError('not the frozen native corpus; no new campaign authorization')
 
 
 def trainer(root):
@@ -245,6 +263,7 @@ def fit(root):
 
 
 def prepare_test(corpus, producer, student_c, fitted, new_root, repo=None):
+    require_unopened_test(corpus)
     fitted, new_root = Path(fitted), Path(new_root)
     if cpu_model() != COLLECTION_CPU:
         raise ValueError('TEST must run on the collection CPU model: ' + COLLECTION_CPU)
@@ -293,6 +312,7 @@ def prepare_test(corpus, producer, student_c, fitted, new_root, repo=None):
 
 
 def test(corpus, root, plan_sha):
+    require_unopened_test(corpus)
     corpus, root = Path(corpus), Path(root)
     if sha(corpus / 'corpus-manifest.json') != CORPUS_MANIFEST_SHA256:
         raise ValueError('not the frozen native corpus')

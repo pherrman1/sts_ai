@@ -17,6 +17,10 @@ are kept only when the local disk survived (a lost container takes them with it)
 source with a share receipt (any return code, including timeout 124) is never rerun.
 Each source's outputs reach the share as their own archive (sealed for TEST) BEFORE its
 receipt, so a receipt on the share always means its data is there too.
+
+Recovery now requires verified original process identity and group absence. It never
+signals orphan groups from shared claims; ambiguous ownership or another namespace
+requires manual investigation. Only the live Popen owner may stop its own session.
 """
 import argparse
 import ast
@@ -40,6 +44,8 @@ PRODUCER_SHA256 = '86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecb
 STUDENT_C_SHA256 = 'eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509'
 GLOBAL_SECONDS = 21600
 MAX_ATTEMPTS = 2
+QUALIFIED_CPU = 'Intel(R) Xeon(R) Processor @ 2.10GHz'
+QUALIFIED_CANARY_SHA256 = '08383bac4da2b5eb65bb11e38fc0aefd9b01f56f4f4892163269966314853bba'
 
 
 def _load(name, path):
@@ -162,7 +168,7 @@ def read_deadline(share, plan_sha):
 def run_unit(plan, repo, bundle_dir, out, seed, deadline, capture=True, tag=None, attempt=1, on_start=None):
     """Run one guarded unit to a local receipt. Mirrors the reviewed runner's unit().
 
-    on_start(pgid) is called once the producer's process group exists."""
+    on_start(identity) records the owned child before waiting for it."""
     contract = student_contract_fn(repo)
     bundle_sha = verify_bundle(bundle_dir)
     remaining = deadline - time.time()
@@ -185,18 +191,44 @@ def run_unit(plan, repo, bundle_dir, out, seed, deadline, capture=True, tag=None
     with base.with_suffix('.log').open('x') as log:
         with subprocess.Popen(spec['command'], cwd=spec['cwd'], env=env, stdout=log,
                               stderr=subprocess.STDOUT, start_new_session=True) as child:
-            if on_start:
-                on_start(child.pid)
             try:
+                if on_start:
+                    identity = process_identity(child.pid)
+                    if identity is None:
+                        raise RuntimeError('producer identity unavailable; recovery must fail closed')
+                    on_start(identity)
                 rc = child.wait(timeout=spec['timeoutSeconds'])
             except subprocess.TimeoutExpired:
-                os.killpg(child.pid, signal.SIGTERM)
+                try:
+                    os.killpg(child.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
                 try:
                     child.wait(timeout=5)
                 except subprocess.TimeoutExpired:
-                    os.killpg(child.pid, signal.SIGKILL)
+                    try:
+                        os.killpg(child.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                     child.wait()
                 rc = 124
+            except Exception:
+                # This child/session was just created by this Popen and has not been
+                # reaped. Abort it if durable ownership recording fails; never leave
+                # a producer running while the worker reports an interrupted attempt.
+                try:
+                    os.killpg(child.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                try:
+                    child.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(child.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    child.wait()
+                raise
     result.update(returncode=rc, seconds=time.time() - start)
     if rc == 0:
         try:
@@ -265,59 +297,121 @@ def claim_attempt(share, seed, w, boot_id):
     claims.mkdir(parents=True, exist_ok=True)
     if (receipts / f'seed-{seed}.receipt.json').exists():
         return None
+    here = process_identity(os.getpid())
+    if here is None or here['bootId'] != boot_id:
+        raise RuntimeError('current process identity is unavailable or inconsistent')
     previous = [n for n in range(1, MAX_ATTEMPTS + 1) if (claims / f'seed-{seed}.attempt{n}.json').exists()]
     if previous:
         last_path = claims / f'seed-{seed}.attempt{previous[-1]}.json'
         last = json.loads(last_path.read_text())
-        if last['bootId'] == boot_id:
-            if _alive(last['pid']):
-                raise RuntimeError(f'source {seed} attempt {previous[-1]} still running here')
-            started = claims / f'seed-{seed}.attempt{previous[-1]}.child.json'
-            if started.exists():  # the worker died; its producer group may still be running
-                _kill_group(json.loads(started.read_text())['pgid'])
+        owner = checked_identity(last.get('identity'), here)
+        current = process_identity(owner['pid'])
+        if current and current['startTicks'] == owner['startTicks'] and current['state'] != 'Z':
+            raise RuntimeError(f'source {seed} attempt {previous[-1]} owner still present')
+        started = claims / f'seed-{seed}.attempt{previous[-1]}.child.json'
+        if not started.exists():
+            raise RuntimeError('missing producer identity; absence of a record is not proof of exit')
+        producer = checked_identity(json.loads(started.read_text()).get('identity'), here)
+        if producer['pid'] != producer['pgid'] or producer['pid'] != producer['session']:
+            raise RuntimeError('producer is not the recorded session/group leader')
+        current = process_identity(producer['pid'])
+        if current and current['startTicks'] == producer['startTicks'] and current['state'] != 'Z':
+            raise RuntimeError('previous producer still present; its owner must stop it before retry')
+        if _group_running(producer['pgid']):
+            raise RuntimeError('previous producer group still present; no automatic orphan signalling')
     attempt = len(previous) + 1
     if attempt > MAX_ATTEMPTS:
         raise RuntimeError(f'source {seed} interrupted {MAX_ATTEMPTS} times; INCOMPLETE, no further rerun')
     fd = os.open(claims / f'seed-{seed}.attempt{attempt}.json', os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     with os.fdopen(fd, 'w') as f:
-        json.dump({'seed': seed, 'worker': w, 'attempt': attempt, 'bootId': boot_id, 'pid': os.getpid(),
+        json.dump({'seed': seed, 'worker': w, 'attempt': attempt, 'identity': here,
                    'time': time.time()}, f, sort_keys=True)
     return attempt
 
 
-def _kill_group(pgid):
-    """Terminate an orphaned producer group and wait until none of it remains."""
-    for sig, wait in ((signal.SIGTERM, 10), (signal.SIGKILL, 30)):
+def process_identity(pid):
+    """Read identity without signalling. Missing processes differ from unreadable metadata."""
+    proc = Path('/proc') / str(pid)
+    try:
+        fields = (proc / 'stat').read_text().rsplit(')', 1)[1].split()
+        state, pgid, session, ticks = fields[0], int(fields[2]), int(fields[3]), int(fields[19])
+        boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
         try:
-            os.killpg(pgid, sig)
-        except ProcessLookupError:
-            return
-        end = time.time() + wait
-        while time.time() < end:
-            if not _group_running(pgid):
-                return
-            time.sleep(0.2)
-    raise RuntimeError(f'orphaned producer group {pgid} did not exit')
+            namespace = os.readlink(proc / 'ns/pid')
+            command = hashlib.sha256((proc / 'cmdline').read_bytes()).hexdigest()
+            executable = os.readlink(proc / 'exe')
+        except FileNotFoundError:
+            # A child can become a zombie before its on_start callback. Its PID/start time
+            # remain observable until Popen reaps it; it cannot do work or create children.
+            if (proc / 'stat').read_text().rsplit(')', 1)[1].split()[0] != 'Z':
+                raise RuntimeError('live process command/executable identity unavailable')
+            state, command, executable = 'Z', None, None
+            namespace = os.readlink('/proc/self/ns/pid')
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError, IndexError) as error:
+        raise RuntimeError('process identity cannot be inspected safely') from error
+    if not boot or not namespace or ticks <= 0:
+        raise RuntimeError('incomplete process identity')
+    return {'pid': pid, 'startTicks': ticks, 'pgid': pgid, 'session': session,
+            'bootId': boot, 'pidNamespace': namespace, 'commandSha256': command,
+            'executable': executable, 'state': state}
+
+
+def checked_identity(value, here):
+    """Legacy, malformed and foreign-namespace claims cannot authorize recovery."""
+    if (not isinstance(value, dict)
+            or any(type(value.get(k)) is not int or value[k] <= 0
+                   for k in ('pid', 'startTicks', 'pgid', 'session'))
+            or any(value.get(k) != here[k] for k in ('bootId', 'pidNamespace'))
+            or not isinstance(value.get('state'), str)
+            or (value['state'] != 'Z' and
+                (not isinstance(value.get('commandSha256'), str) or len(value['commandSha256']) != 64
+                 or not isinstance(value.get('executable'), str) or not value['executable']))):
+        raise RuntimeError('ambiguous prior process ownership; manual investigation required')
+    return value
 
 
 def _group_running(pgid):
-    """True while any non-zombie process of the group exists (zombies hold no CPU or files)."""
+    """Refuse uncertain metadata, then require kernel proof that the group is absent.
+
+    A /proc snapshot can miss a child forked during enumeration. Signal zero is
+    an existence/permission probe only; it never terminates or otherwise signals
+    a process. Even a zombie-only group blocks recovery until it is reaped.
+    """
     for stat in Path('/proc').glob('[0-9]*/stat'):
         try:
             fields = stat.read_text().rsplit(')', 1)[1].split()
-        except OSError:
+        except FileNotFoundError:
             continue
-        if int(fields[2]) == pgid and fields[0] != 'Z':
+        except (OSError, ValueError, IndexError) as error:
+            raise RuntimeError('cannot establish producer group absence') from error
+        try:
+            active = int(fields[2]) == pgid and fields[0] != 'Z'
+        except (ValueError, IndexError) as error:
+            raise RuntimeError('malformed process group metadata') from error
+        if active:
             return True
-    return False
-
-
-def _alive(pid):
     try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
         return False
+    except OSError as error:
+        raise RuntimeError('kernel could not establish producer group absence') from error
+    return True
+
+
+def require_qualified_cpu(share):
+    """Only the independently qualified CPU/canary pair may dispatch this campaign.
+
+    Another CPU needs separate qualification and review before updating these pins.
+    A canary running concurrently, or an existing archive, confers no authority.
+    """
+    if host_identity()['cpuModel'] != QUALIFIED_CPU:
+        raise RuntimeError('CPU is not qualified; refuse source dispatch before canary review')
+    deadline = json.loads((Path(share) / 'deadline.json').read_text())
+    if deadline.get('canarySha256') != QUALIFIED_CANARY_SHA256:
+        raise RuntimeError('deadline is not bound to the independently reviewed CPU canary')
 
 
 def export_file(src, dst):
@@ -347,6 +441,7 @@ def worker(plan_path, plan_sha, repo, bundle_dir, local, share, w):
         raise ValueError('worker assignment is not split-pure; TEST could not be sealed separately')
     split = splits.pop()
     deadline = read_deadline(share, plan_sha)
+    require_qualified_cpu(share)  # before claims, local outputs, pool or source subprocesses
     local, share = Path(local), Path(share)
     local.mkdir(parents=True, exist_ok=True)
     (share / 'sources').mkdir(parents=True, exist_ok=True)
@@ -365,8 +460,8 @@ def worker(plan_path, plan_sha, repo, bundle_dir, local, share, w):
                 for p in old:
                     os.replace(p, keep / p.name)
         child = share / 'claims' / f'seed-{seed}.attempt{attempt}.child.json'
-        def started(pgid):
-            write_json(child, {'pgid': pgid, 'bootId': boot, 'time': time.time()})
+        def started(identity):
+            write_json(child, {'identity': identity, 'time': time.time()})
         try:
             receipt = run_unit(plan, repo, bundle_dir, local, seed, deadline, attempt=attempt, on_start=started)
         except Exception as error:  # no receipt: recorded as a failed attempt, not rerun here
