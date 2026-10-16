@@ -1323,7 +1323,8 @@ train again, reopen TEST or deploy the student.
   PID namespace, process start ticks, session/group and command/executable
   metadata. Recovery never signals a group named in an old shared claim. A
   retry is permitted only in the verified original namespace after the prior
-  worker, producer and non-zombie group members have exited. Legacy or missing
+  worker and producer have exited and the kernel confirms the entire group is
+  absent (signal-zero probe; zombie-only groups still block). Legacy or missing
   child records, unreadable process metadata and another host/namespace require
   manual investigation; no second claim is created. The source's live `Popen`
   owner retains responsibility for timeout and launch-recording cleanup.

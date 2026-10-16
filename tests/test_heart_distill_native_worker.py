@@ -250,6 +250,18 @@ class NativeWorkerTest(unittest.TestCase):
         with unittest.mock.patch.object(wk.Path, 'glob', return_value=[fake]):
             with self.assertRaises(RuntimeError): wk._group_running(123)
 
+    def test_vanished_snapshot_requires_kernel_group_absence(self):
+        gone = unittest.mock.Mock()
+        gone.read_text.side_effect = FileNotFoundError('process exited after glob')
+        with unittest.mock.patch.object(wk.Path, 'glob', return_value=[gone]):
+            with unittest.mock.patch.object(wk.os, 'killpg') as probe:
+                self.assertTrue(wk._group_running(123))
+                probe.assert_called_once_with(123, 0)
+            with unittest.mock.patch.object(wk.os, 'killpg', side_effect=PermissionError('unknown')):
+                with self.assertRaises(RuntimeError): wk._group_running(123)
+            with unittest.mock.patch.object(wk.os, 'killpg', side_effect=ProcessLookupError('absent')):
+                self.assertFalse(wk._group_running(123))
+
     def test_child_record_failure_aborts_our_owned_process(self):
         bundle = self.make_bundle()
         # A synthetic producer that would outlive a failed on_start callback.

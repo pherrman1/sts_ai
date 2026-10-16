@@ -373,7 +373,12 @@ def checked_identity(value, here):
 
 
 def _group_running(pgid):
-    """True while any non-zombie process of the group exists (zombies hold no CPU or files)."""
+    """Refuse uncertain metadata, then require kernel proof that the group is absent.
+
+    A /proc snapshot can miss a child forked during enumeration. Signal zero is
+    an existence/permission probe only; it never terminates or otherwise signals
+    a process. Even a zombie-only group blocks recovery until it is reaped.
+    """
     for stat in Path('/proc').glob('[0-9]*/stat'):
         try:
             fields = stat.read_text().rsplit(')', 1)[1].split()
@@ -387,7 +392,13 @@ def _group_running(pgid):
             raise RuntimeError('malformed process group metadata') from error
         if active:
             return True
-    return False
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError as error:
+        raise RuntimeError('kernel could not establish producer group absence') from error
+    return True
 
 
 def require_qualified_cpu(share):
