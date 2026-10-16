@@ -17,7 +17,7 @@ class NativePlanTest(unittest.TestCase):
         env = plan['environment']
         self.assertEqual(env['STS_OOC_MCTS_LEAF_POLICY'], 'heart1')
         self.assertEqual(env['STS_OOC_MCTS_PRIOR'], 'heart1')
-        self.assertNotIn('CPU_SECONDS', env)
+        self.assertNotIn('STS_OOC_MCTS_CPU_SECONDS', env)
         self.assertEqual([c['seed'] for c in plan['canaries']], [110163994,110163994,110163995])
         for count in (0,65,True):
             with self.assertRaises(ValueError): p.assignment(REPO,count)
@@ -32,6 +32,8 @@ class NativePlanTest(unittest.TestCase):
         self.assertEqual(p.shard_spec(plan,110164000,'/bundle','/output',21600)['timeoutSeconds'],3600)
         for seed, remaining in [(110163000,10),(110164064,10),(110164000,0),(110164000,21601)]:
             with self.assertRaises(ValueError): p.shard_spec(plan,seed,'/bundle','/output',remaining)
+        for seed in (110164000.0, '110164000', True, None):
+            with self.assertRaises(ValueError): p.shard_spec(plan,seed,'/bundle','/output',10)
 
 
 if __name__ == '__main__': unittest.main()

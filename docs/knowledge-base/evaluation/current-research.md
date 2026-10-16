@@ -52,6 +52,11 @@ durable raw-artifact export remain unqualified. The preparation-only adapter
 it cannot launch games, fit, or open TEST. See the
 [preflight evidence](../../experiments/evidence/arm_c_native_preflight_20261016/REPORT.md).
 The old `110163xxx` cohort must not be resumed or pooled.
+The current cloud session exposes four CPU-equivalents and32GiB;64-worker
+capacity and session lifetime are unverified. Its available tools do not expose
+an arbitrary-file publication/download-link path, so corpus delivery is blocked.
+The [local review](../../experiments/evidence/arm_c_native_preflight_review_20261016/REPORT.md)
+records preparation corrections and verifies the old local stop receipts.
 
 A separately authorized continuation uses the exact frozen Arm C for both tree
 priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)

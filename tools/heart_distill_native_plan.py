@@ -72,6 +72,8 @@ def assignment(repo, workers):
 
 def shard_spec(plan, seed, bundle, output, remaining_seconds):
     """Return a reviewable invocation, without opening any source output."""
+    if type(seed) is not int:
+        raise ValueError('source seed must be an integer')
     matches = [s for s in plan['sources'] if s['seed'] == seed]
     if len(matches) != 1:
         raise ValueError('source is not uniquely assigned')

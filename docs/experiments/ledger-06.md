@@ -19255,7 +19255,7 @@ possible C rollout policies. §492's failed value-student gate remains unchanged
 
 ## §494 Arm C rollout-target distillation (2026-10-16)
 
-**Prospective; not yet launched.** The user selected Arm C as the continuing
+**Local attempt INCOMPLETE; no fit or TEST.** The user selected Arm C as the continuing
 research rollout policy and authorized distillation for it. Baseline main
 `bcdfaedd3044d6da351c084adb540f94a3fe0ebf`; [frozen-plan protocol](evidence/arm_c_rollout_distill_20261016/PROTOCOL.md).
 The intervention is C rather than V4 rollout targets, holding C tree priors,
@@ -19265,6 +19265,13 @@ extensions, TEST once. Repeated-label child counters prove teacher use.
 Independent source/design review and canary parity/support/custody review must
 pass before cohort launch. Three local workers,1200s/unit,6hcohort cap, bounded
 GPU fitting. Prior §491/492/493 evidence and verdicts remain unchanged.
+
+The local attempt passed its canaries but stopped when source `110163000`
+exceeded the fixed1200s wall cap (return124). Sources001..004 completed;
+005..007 were interrupted;56 remained unstarted. No failed unit was retried,
+replaced or pooled, and no corpus manifest, fit or TEST-opening latch exists.
+The coordinating local session verified the preserved campaign-stop and failed
+source receipts; see the [review evidence](evidence/arm_c_native_preflight_review_20261016/REPORT.md).
 
 **Knowledge impact:** capture teacher provenance and current research direction.
 
