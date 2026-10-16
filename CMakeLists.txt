@@ -188,6 +188,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/heart1_policy.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/differential_replay_native.cpp
@@ -207,6 +208,10 @@ target_include_directories(one_combat PUBLIC json/include)
 target_include_directories(one_combat PRIVATE apps)
 link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
+
+add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
+set_tests_properties(heart_outcome_capture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
 add_executable(screen_leaf_snapshot_test

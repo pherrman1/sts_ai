@@ -6,6 +6,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/heart_outcome_capture.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
 #include "one_combat/screen_leaf_net.h"
@@ -3687,6 +3688,16 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
+    } else if (mode == "heartoutcomeselftest") {
+        return one_combat::heartOutcomeSelfTest();
+    } else if (mode == "heartoutcomegen") {
+        if (argc != 6 || std::string(argv[2]) != "1"
+                || (std::string(argv[5]) != "on" && std::string(argv[5]) != "off"))
+            throw std::runtime_error("usage: one_combat heartoutcomegen 1 SEED OUT.jsonl on|off");
+        const std::string seed(argv[3]);
+        if (seed.empty() || seed.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("heart outcome seed must be a nonnegative integer");
+        return one_combat::heartOutcomeGen(std::stoull(seed), argv[4], std::string(argv[5]) == "on");
     } else if (mode == "oocselectivesilverspec") {
         try { std::cout << one_combat::oocSelectiveSilverAuditSpec().dump() << '\n'; return 0; }
         catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
