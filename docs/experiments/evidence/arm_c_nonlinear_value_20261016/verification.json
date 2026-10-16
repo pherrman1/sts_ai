@@ -1,0 +1,18 @@
+{
+  "command": "python3 unittest.defaultTestLoader.discover + TextTestRunner",
+  "patterns": [
+    "test_heart1_*.py",
+    "test_heart_rollout_distill.py",
+    "test_heart_distill_native_*.py"
+  ],
+  "environment": {
+    "STS_TEST_SILVERBOT": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+    "STS_TEST_ARM_C": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models/student-c-68fe88be.pt"
+  },
+  "tests": 61,
+  "pass": true,
+  "skipped": 0,
+  "errors": 0,
+  "failures": 0,
+  "note": "Excluded unchanged historical recovery allowlist test; its baseline failure is documented in PR570."
+}

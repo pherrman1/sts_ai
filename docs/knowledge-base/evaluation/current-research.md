@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-16 for the frozen Arm C affine value-head fit (§495, VALIDATION_ONLY and worse than X2-B), the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-16 for the nonlinear Arm C value-head fit and data/target diagnostics (§496), the frozen Arm C affine value-head fit (§495, VALIDATION_ONLY and worse than X2-B), the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -40,6 +40,43 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## Arm C nonlinear frozen-feature value head (§496)
+
+The authorized nonlinear follow-up completed on the unchanged §495 cached
+representation: TRAIN-only standardization, 64→64 ReLU→1, 4,225 trainable
+parameters, original Arm C encoder/policy untouched. Six fixed fits used
+10/20/40-source TRAIN prefixes and two initializations, each with 1,000 updates.
+Only the full 40-source runs were eligible for model selection by raw validation
+MSE. The selected head is initialization 0, step 100.
+
+**VALIDATION_ONLY; still worse than X2-B.** Raw MSE improves over the affine
+head (0.03736 vs 0.03956) but trails X2-B (0.03305). Sibling concordance falls
+to 0.55385 (affine 0.58979, X2-B 0.62076); regret is 0.03704 (affine 0.03834,
+X2-B 0.03369). This does not support native integration or a gameplay pilot.
+The new sidecar head is not loadable by the current affine-only native loader.
+
+Mean best validation MSE across the two initializations is 0.04560 / 0.04421 /
+0.03896 for 10 / 20 / 40 TRAIN sources. The selected head's train MSE is 0.01101
+vs validation 0.03736; at step 1,000 train MSE falls to 0.00417 while validation
+is 0.03921. **Inference:** more source diversity may help generalization;
+additional epochs are not the obvious remedy. The prefixes are fixed rather
+than randomized replicates, and all use the same eight reused validation
+sources, so this is descriptive evidence, not a confirmed sample-size law.
+
+A descriptive label audit found 1,038,724 / 1,188,480 TRAIN repeats (87.40%)
+and 151,738 / 174,144 validation repeats (87.13%) stop at a nonterminal X2-B
+bootstrap. Other repeats end in CTM-simulated terminal outcomes. No observed
+full-run Heart outcomes were used. X2-B is a comparator, not a direct input,
+residual or imitation target; training uses the collected continuation mean.
+More of the same labels can improve that surrogate without establishing Heart
+calibration. Outcome-based supervision and fresh Heart evaluation remain a
+separate next experiment; do not assign a source game's observed outcome to its
+counterfactual leaf states as though those branches had been played.
+
+See [protocol and evidence](../../experiments/evidence/arm_c_nonlinear_value_20261016/PROTOCOL.md)
+and ledger §496. No new collection, TEST opening, native integration, speed
+qualification, gameplay, RL or default change. All prior verdicts remain intact.
 
 ## Arm C frozen-encoder value head (§495)
 
