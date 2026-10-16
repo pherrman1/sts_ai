@@ -19728,3 +19728,32 @@ development protocol may explicitly weight reached early states; any revised
 candidate needs genuinely fresh prospective holdout evidence. Stop before native
 integration. **Knowledge impact:** current development-weighting evidence,
 cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.
+
+## §502 — §498 outcome head as a sibling-leaf ranker (2026-10-17)
+
+**HEAD_RANKS_WORSE_THAN_X2B** (offline, zero game seeds, no fits). Workstream 2 of the
+post-§500 plan: does the observed-outcome head order the sibling leaves MCTS compares?
+The frozen §498 head (`head.json` `2c478bca…`) was applied to the Arm C student's pooled
+value-head input, now exported by `one_combat heart1score`. Native parity first: on the
+8 VALIDATION sources of delivery `w00` (1,219 states) the C++ student plus head
+reproduces §498's per-source mean probability to 3.9e-9.
+
+Groups: the 48 §494 TRAIN+VALIDATION sources (110164000–047; 21,291 leaves, 777
+multi-action groups), §494 group metrics against 64-rollout means, paired source
+bootstrap (2,000, RNG 20261017). The §494 TEST and the consumed §499 TEST were not read.
+
+| 777 groups | Concordance | Regret |
+| --- | ---: | ---: |
+| §498 outcome head | 0.527 | 0.0374 |
+| X2-B | 0.601 | 0.0278 |
+| One rollout3 | 0.565 | 0.0305 |
+
+Head − X2-B concordance −0.074 [−0.097, −0.048], regret +0.0096 [+0.0057, +0.0140];
+head − one rollout3 concordance −0.038 [−0.068, −0.007]. Same sign on TRAIN and
+VALIDATION separately. Act 1 0.504 vs X2-B 0.622; card rewards 0.506 vs 0.584; the head
+leads only on map screens (0.618 vs 0.524). Targets are rollout surrogates ending in
+X2-B and favour X2-B; they are not Heart outcomes. **Inference:** the head does not
+resolve one-step sibling differences, and marginal calibration fixes would not change
+that. Not a qualified leaf; no native leaf option, gameplay or default change.
+[Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
+**Knowledge impact:** observed-outcome leaf status and native public-record parity.

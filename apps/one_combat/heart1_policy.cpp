@@ -903,7 +903,7 @@ Output Net::forwardRecord(const Record &r) const {
     const int nObs = nDeck + nRelic + nPot + 1 + nMap;
     const int nChoice = r.choiceCount();
     const int n = nObs + nChoice;
-    if (nChoice == 0) throw std::runtime_error("heart1: no choices to score");
+    // Choice-less records still have a value (pooled observation tokens); callers that need logits check choiceCount.
     std::vector<float> x(std::size_t(n) * kDim, 0.f);
     int t = 0;
     const auto row = [&](int i) { return x.data() + std::size_t(i) * kDim; };
