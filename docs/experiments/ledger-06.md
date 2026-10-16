@@ -19144,3 +19144,21 @@ corpus is excluded. Neither attempt was pooled with V3.
 research are updated. A new independently reviewed research protocol is required
 for any future qualification; no automatic TEST retry, native port, gameplay A/B,
 or default promotion follows from this failed attempt.
+
+
+## §492 Authorized software-fault recovery of §491 TEST (2026-10-16)
+
+**Prospective status: reviewed preparation pending.** After the §491 failure
+was reported, the user explicitly instructed: “Rerun the necessary parts with
+the bug fixed and continue”. This authorizes one isolated evaluation recovery
+on the same already-opened 16-source holdout, with unchanged selected model,
+vocabulary, source data and scientific gates. It is not a fresh independent
+TEST. The original §491 failure and latch remain preserved.
+
+[Recovery amendment](evidence/heart_rollout_distill_recovery_20261016/PROTOCOL.md)
+fixes one 600-second attempt using the merged variable-name repair, hash-only
+preparation, a separate recovery directory/latch, and separate original-producer
+and recovery-analysis source identities. No seeds are generated and no fitting
+or reselection is repeated. Exact result and custody will be recorded here.
+
+**Knowledge impact:** experiment evidence and maintained current research status.

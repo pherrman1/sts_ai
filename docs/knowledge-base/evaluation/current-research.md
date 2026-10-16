@@ -65,6 +65,12 @@ its raw cloud corpus remains unavailable. Future qualification requires a new
 independently reviewed protocol; this failed opened TEST cannot be retried
 automatically. No student-driven policy iteration was performed.
 
+The user has subsequently authorized one isolated software-fault recovery on
+the same already-opened holdout under [§492's amendment](../../experiments/evidence/heart_rollout_distill_recovery_20261016/PROTOCOL.md).
+Preparation preserves the original selected weights, vocabulary, data and gates;
+no collection, fitting or selection is repeated. Its execution/result remains
+pending independent preparation review. This is not a fresh independent TEST.
+
 ## Fair native OOC decision quality (§395)
 
 The controlled non-MCTS research reference uses public-eight-future native
