@@ -1,7 +1,9 @@
 """No seeds or real corpus: mathematical fit and frozen-policy safety checks."""
 import importlib.util
+import os
 from pathlib import Path
 import sys
+import time
 import unittest
 from unittest.mock import patch
 
@@ -72,6 +74,28 @@ class ValueHeadTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'archive changed'):
                     head.load_tv(root)
             self.assertEqual(accessed, ['corpus-manifest.json', 'corpus-train-validation.tar'])
+
+    @unittest.skipUnless(os.environ.get('STS_TEST_SILVERBOT') and os.environ.get('STS_TEST_ARM_C'),
+                         'optional original silverbot dependency and pinned checkpoint')
+    def test_actual_arm_c_cached_head_matches_forward_and_preserves_policy(self):
+        from test_heart_rollout_distill import record
+        repo = Path(os.environ['STS_TEST_SILVERBOT'])
+        checkpoint = Path(os.environ['STS_TEST_ARM_C'])
+        self.assertEqual(head.sha(checkpoint), head.CHECKPOINT_SHA)
+        torch.set_num_threads(2)
+        for device in ['cpu'] + (['cuda'] if torch.cuda.is_available() else []):
+            with self.subTest(device=device):
+                network, net = head.load_net(repo, checkpoint, device)
+                rows = [{'record': record()}]
+                features, initial, policy = head.encode(network, net, rows, device, time.monotonic()+60)
+                with torch.no_grad():
+                    net.value_head.weight.fill_(.0123)
+                    net.value_head.bias.fill_(.45)
+                cached = net.value_head(features.to(device)).squeeze(1).cpu()
+                after_features, after_values, after_policy = head.encode(network, net, rows, device, time.monotonic()+60)
+                self.assertEqual(policy, after_policy)
+                self.assertTrue(torch.equal(features, after_features))
+                torch.testing.assert_close(cached, torch.tensor(after_values), atol=1e-6, rtol=0)
 
 
 if __name__ == '__main__':

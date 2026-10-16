@@ -51,7 +51,9 @@ squares with a free bias and L2 weight penalty at exactly
 Each source contributes equal total MSE weight. Select the candidate with
 minimum source-balanced **raw-output VALIDATION MSE**, ties in alpha order.
 Cast fitted head to checkpoint float32 before validation and saving.
-Fit cap1800 seconds, two CPU threads, no retries/resumption/adaptive expansion.
+Fit cap1800 seconds enforced by an external `timeout --signal=TERM
+--kill-after=10s 1800s` wrapper as well as cooperative internal checks; two CPU
+threads, no retries/resumption/adaptive expansion.
 One exclusive fit-started latch precedes corpus row reading.
 
 Report raw MSE plus [0,1]-clamped sibling concordance/regret against X2-B,
