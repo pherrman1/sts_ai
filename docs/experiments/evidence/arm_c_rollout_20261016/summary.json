@@ -1,0 +1,62 @@
+{
+  "cohortWallSeconds": 854.3796739578247,
+  "copies": {
+    "build-receipt-v2.json": {
+      "sha256": "490335e1b08e69f3b7c43deb6ba86d872ff0c2bd8b2f38dd129895fe098199b6",
+      "source": "build-receipt.json"
+    },
+    "canary-result-v2.json": {
+      "sha256": "8a10868b2e8dc297652c0299ff2e2f6c8a19f04a55bdbb3f7bf417e3f5c1c6ce",
+      "source": "canary-result.json"
+    },
+    "canary-reviewed-v2.json": {
+      "sha256": "aa614f12181c47429db36c36298ee2e868553c0ac2d44339061307cb243a0cb9",
+      "source": "canary-reviewed.json"
+    },
+    "cohort-started.json": {
+      "sha256": "40d259100ba48c26d8da7a81b2037e38714d908a63302c5996dc113ce0ae23dd",
+      "source": "cohort-started.json"
+    },
+    "freeze-v2.json": {
+      "sha256": "aef389617fd69da5de902e78008a7f5c723d42938c1425f6b3e684c94a60828b",
+      "source": "freeze.json"
+    },
+    "prelaunch-review-v2.json": {
+      "sha256": "81919844e4b2dc7cccf48bd2f10b946284c64b8531a7185636c2987d96f7a6f7",
+      "source": "prelaunch-review.json"
+    },
+    "prepared-v2.json": {
+      "sha256": "b194e2990080dc5e6ff14cff2f8c0df3fb076899f904c0f617d036b748a24266",
+      "source": "prepared.json"
+    },
+    "result.json": {
+      "sha256": "16f1402f242baf1c95cf1a71c34bce2695e7b265dc77e1a152c9a2c17b7f20b5",
+      "source": "cohort-result.json"
+    }
+  },
+  "localRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016-v2",
+  "newTraining": false,
+  "noReplacementsOrExtensions": true,
+  "originalStoppedRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016",
+  "resourceQualification": "PASS",
+  "runtimePromotion": false,
+  "sourceSha": "53152577c1c1c1a70bd69581ea184e18a26b330e",
+  "totalProcessCpuSeconds": 2481.66,
+  "usage": {
+    "armc": {
+      "heart1_leaf_fallbacks": 0,
+      "heart1_leaf_steps": 511121,
+      "heart1_prior_fallbacks": 0,
+      "heart1_prior_nodes": 34536,
+      "prior_leaf_steps": 0
+    },
+    "chain": {
+      "heart1_leaf_fallbacks": 0,
+      "heart1_leaf_steps": 0,
+      "heart1_prior_fallbacks": 0,
+      "heart1_prior_nodes": 169267,
+      "prior_leaf_steps": 0
+    }
+  },
+  "verdict": "NOT_SHOWN"
+}

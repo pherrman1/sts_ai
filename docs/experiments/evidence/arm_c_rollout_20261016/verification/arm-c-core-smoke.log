@@ -1,0 +1,188 @@
+Test project /home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/build/linux-gcc-debug-ccache
+      Start  19: live_ooc_protocol
+      Start 125: silver_searcher
+ 1/88 Test #125: silver_searcher .............................   Passed    4.15 sec
+      Start  94: strategicmarggen_replay_keeps_path
+ 2/88 Test  #94: strategicmarggen_replay_keeps_path ..........   Passed    3.94 sec
+      Start 126: silver_wire_state
+ 3/88 Test #126: silver_wire_state ...........................   Passed    3.32 sec
+      Start  95: strategicmarggen_replay_matches_source
+ 4/88 Test  #95: strategicmarggen_replay_matches_source ......   Passed    2.66 sec
+      Start  13: live_advisor_protocol
+ 5/88 Test  #13: live_advisor_protocol .......................   Passed    2.25 sec
+      Start  70: vwin_refresh_branch_parity
+ 6/88 Test  #70: vwin_refresh_branch_parity ..................   Passed    2.19 sec
+      Start  99: ooc_policy_parity
+ 7/88 Test  #99: ooc_policy_parity ...........................   Passed    2.10 sec
+      Start  26: ooc_tok_net_fast
+ 8/88 Test  #26: ooc_tok_net_fast ............................   Passed    1.95 sec
+      Start 212: generator_policy_parity
+ 9/88 Test #212: generator_policy_parity .....................   Passed    1.69 sec
+      Start  93: strategicgen2_policy_keeps_path
+10/88 Test  #93: strategicgen2_policy_keeps_path .............   Passed    1.63 sec
+      Start  18: live_ooc_parity
+11/88 Test  #18: live_ooc_parity .............................   Passed    1.14 sec
+      Start  42: cardqueue_overflow
+12/88 Test  #42: cardqueue_overflow ..........................   Passed    1.08 sec
+      Start  30: paired_analysis_selftest
+13/88 Test  #30: paired_analysis_selftest ....................   Passed    1.18 sec
+      Start  20: live_game_driver
+14/88 Test  #20: live_game_driver ............................   Passed    0.91 sec
+      Start 104: learned_stop_teacher_contract
+15/88 Test #104: learned_stop_teacher_contract ...............   Passed    0.88 sec
+      Start  72: vwin_refresh_corpus_selftest
+16/88 Test  #72: vwin_refresh_corpus_selftest ................   Passed    0.92 sec
+      Start 103: a20_teacher_large_analysis
+17/88 Test #103: a20_teacher_large_analysis ..................   Passed    0.83 sec
+      Start  14: live_game_runtime
+18/88 Test  #14: live_game_runtime ...........................   Passed    0.68 sec
+      Start 100: teacher_schema_compat
+19/88 Test #100: teacher_schema_compat .......................   Passed    0.52 sec
+      Start 213: ooc_selective_silver_sampler
+20/88 Test #213: ooc_selective_silver_sampler ................   Passed    0.50 sec
+      Start  74: vwin_e3_cf_selftest
+21/88 Test  #74: vwin_e3_cf_selftest .........................   Passed    0.27 sec
+      Start 105: ctm_offline_score_rows
+22/88 Test #105: ctm_offline_score_rows ......................   Passed    0.43 sec
+      Start 214: ooc_selective_silver_analysis
+23/88 Test #214: ooc_selective_silver_analysis ...............   Passed    0.42 sec
+      Start  51: silver_escape_penalty
+24/88 Test  #51: silver_escape_penalty .......................   Passed    0.30 sec
+      Start  68: vwin_refresh_fatal_runout_fight_count
+25/88 Test  #68: vwin_refresh_fatal_runout_fight_count .......   Passed    0.25 sec
+      Start  65: vwin_refresh_match_and_keep_isolation
+26/88 Test  #65: vwin_refresh_match_and_keep_isolation .......   Passed    0.23 sec
+      Start  61: vwin_refresh_compound_decision_contract
+27/88 Test  #61: vwin_refresh_compound_decision_contract .....   Passed    0.24 sec
+      Start  63: match_and_keep_boss_draft_oracle
+28/88 Test  #63: match_and_keep_boss_draft_oracle ............   Passed    0.24 sec
+      Start  66: vwin_refresh_reward_continuation
+29/88 Test  #66: vwin_refresh_reward_continuation ............   Passed    0.24 sec
+      Start  60: vwin_refresh_producer_contract
+30/88 Test  #60: vwin_refresh_producer_contract ..............   Passed    0.24 sec
+      Start  69: vwin_refresh_rejects_vpath_override
+31/88 Test  #69: vwin_refresh_rejects_vpath_override .........   Passed    0.23 sec
+      Start  64: act_fight_probe_all_ooc_root_state
+32/88 Test  #64: act_fight_probe_all_ooc_root_state ..........   Passed    0.23 sec
+      Start  62: vwin_refresh_decision_sink_contract
+33/88 Test  #62: vwin_refresh_decision_sink_contract .........   Passed    0.23 sec
+      Start  56: ooc_semantic_producer
+34/88 Test  #56: ooc_semantic_producer .......................   Passed    0.24 sec
+      Start 102: a20_teacher_analysis
+35/88 Test #102: a20_teacher_analysis ........................   Passed    0.26 sec
+      Start  67: vwin_refresh_card_reward_classification
+36/88 Test  #67: vwin_refresh_card_reward_classification .....   Passed    0.23 sec
+      Start  73: vwin_e1_focal_selftest
+37/88 Test  #73: vwin_e1_focal_selftest ......................   Passed    0.12 sec
+      Start  75: vwin_outcome_curve_selftest
+38/88 Test  #75: vwin_outcome_curve_selftest .................   Passed    0.07 sec
+      Start  17: live_ooc_policy
+39/88 Test  #17: live_ooc_policy .............................   Passed    0.11 sec
+      Start  57: combat_evaluator_semantic_branch_contract
+40/88 Test  #57: combat_evaluator_semantic_branch_contract ...   Passed    0.12 sec
+      Start 122: card_pile_engine
+41/88 Test #122: card_pile_engine ............................   Passed    0.09 sec
+      Start  53: ooc_semantic
+42/88 Test  #53: ooc_semantic ................................   Passed    0.08 sec
+      Start  45: first_strong_exclusions
+43/88 Test  #45: first_strong_exclusions .....................   Passed    0.08 sec
+      Start  15: render_ooc_mcts
+44/88 Test  #15: render_ooc_mcts .............................   Passed    0.06 sec
+      Start 101: a20_teacher_runner
+45/88 Test #101: a20_teacher_runner ..........................   Passed    0.06 sec
+      Start  58: battle_start_runout_contract
+46/88 Test  #58: battle_start_runout_contract ................   Passed    0.07 sec
+      Start  22: native_differential_replay
+47/88 Test  #22: native_differential_replay ..................   Passed    0.05 sec
+      Start  21: differential_trace
+48/88 Test  #21: differential_trace ..........................   Passed    0.04 sec
+      Start  27: ooc_mcts
+49/88 Test  #27: ooc_mcts ....................................   Passed    0.11 sec
+      Start  36: check_replay_selftest
+50/88 Test  #36: check_replay_selftest .......................   Passed    0.04 sec
+      Start  16: ooc_graph_logic
+51/88 Test  #16: ooc_graph_logic .............................   Passed    0.02 sec
+      Start   9: ooc_public_futures
+52/88 Test   #9: ooc_public_futures ..........................   Passed    0.02 sec
+      Start   7: native_ooc_card_win_rank
+53/88 Test   #7: native_ooc_card_win_rank ....................   Passed    0.01 sec
+      Start   8: native_ooc_shop_features
+54/88 Test   #8: native_ooc_shop_features ....................   Passed    0.01 sec
+      Start  55: ooc_semantic_pipeline
+55/88 Test  #55: ooc_semantic_pipeline .......................   Passed    0.01 sec
+      Start   3: neow_transform_curse
+56/88 Test   #3: neow_transform_curse ........................   Passed    0.01 sec
+      Start   2: rest_recall_filter
+57/88 Test   #2: rest_recall_filter ..........................   Passed    0.01 sec
+      Start   5: full_hp_rest_filter
+58/88 Test   #5: full_hp_rest_filter .........................   Passed    0.00 sec
+      Start   4: potion_reward_swap
+59/88 Test   #4: potion_reward_swap ..........................   Passed    0.00 sec
+      Start   6: remove_obtain_weight
+60/88 Test   #6: remove_obtain_weight ........................   Passed    0.00 sec
+      Start  50: match_and_keep
+61/88 Test  #50: match_and_keep ..............................   Passed    0.01 sec
+      Start 121: card_pile
+62/88 Test #121: card_pile ...................................   Passed    0.00 sec
+      Start 106: ooc_semantic_smith
+63/88 Test #106: ooc_semantic_smith ..........................   Passed    0.00 sec
+      Start  48: monster_ai_java_parity
+64/88 Test  #48: monster_ai_java_parity ......................   Passed    0.00 sec
+      Start  40: battlecontext_roundtrip
+65/88 Test  #40: battlecontext_roundtrip .....................   Passed    0.00 sec
+      Start  52: ooc_reward_continuation
+66/88 Test  #52: ooc_reward_continuation .....................   Passed    0.00 sec
+      Start  44: issue_fixes
+67/88 Test  #44: issue_fixes .................................   Passed    0.00 sec
+      Start 124: stasis_large_pile
+68/88 Test #124: stasis_large_pile ...........................   Passed    0.00 sec
+      Start 123: violence_large_draw_pile
+69/88 Test #123: violence_large_draw_pile ....................   Passed    0.00 sec
+      Start  46: simulator_correctness_pr9_19
+70/88 Test  #46: simulator_correctness_pr9_19 ................   Passed    0.00 sec
+      Start 115: simhealth_selection_failure
+71/88 Test #115: simhealth_selection_failure .................   Passed    0.00 sec
+      Start 107: relic_reward_sapphire
+72/88 Test #107: relic_reward_sapphire .......................   Passed    0.00 sec
+      Start  47: simulator_relic_fidelity
+73/88 Test  #47: simulator_relic_fidelity ....................   Passed    0.00 sec
+      Start 110: darkling_victory
+74/88 Test #110: darkling_victory ............................   Passed    0.00 sec
+      Start  41: designer_in_spire
+75/88 Test  #41: designer_in_spire ...........................   Passed    0.00 sec
+      Start 215: ooc_selective_seed_guard_rejects_zero
+76/88 Test #215: ooc_selective_seed_guard_rejects_zero .......   Passed    0.00 sec
+      Start 114: gamblers_brew_legality
+77/88 Test #114: gamblers_brew_legality ......................   Passed    0.00 sec
+      Start 112: time_eater_exhaust
+78/88 Test #112: time_eater_exhaust ..........................   Passed    0.00 sec
+      Start 111: poison_lose_hp
+79/88 Test #111: poison_lose_hp ..............................   Passed    0.00 sec
+      Start 120: battle_equality
+80/88 Test #120: battle_equality .............................   Passed    0.00 sec
+      Start 109: awakened_one_stage2
+81/88 Test #109: awakened_one_stage2 .........................   Passed    0.00 sec
+      Start 116: training_integrity
+82/88 Test #116: training_integrity ..........................   Passed    0.00 sec
+      Start  49: ironclad_card_java_parity
+83/88 Test  #49: ironclad_card_java_parity ...................   Passed    0.00 sec
+      Start 113: simhealth_gamble_empty_hand
+84/88 Test #113: simhealth_gamble_empty_hand .................   Passed    0.00 sec
+      Start 108: thorns_retaliation
+85/88 Test #108: thorns_retaliation ..........................   Passed    0.00 sec
+      Start  43: keys_collect
+86/88 Test  #43: keys_collect ................................   Passed    0.00 sec
+      Start   1: run_goal
+87/88 Test   #1: run_goal ....................................   Passed    0.00 sec
+88/88 Test  #19: live_ooc_protocol ...........................   Passed  1062.74 sec
+
+100% tests passed out of 88
+
+Label Time Summary:
+core              =  21.65 sec*proc (63 tests)
+integration       = 1078.68 sec*proc (24 tests)
+research-repro    =  10.61 sec*proc (22 tests)
+smoke             = 1081.17 sec*proc (28 tests)
+tooling           =   3.13 sec*proc (10 tests)
+
+Total Test time (real) = 1062.75 sec

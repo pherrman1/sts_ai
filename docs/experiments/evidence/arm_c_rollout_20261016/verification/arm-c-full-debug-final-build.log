@@ -1,0 +1,41 @@
+[  1%] Built target screen_leaf_gbm_test
+[  2%] Built target screen_leaf_snapshot_test
+[ 19%] Built target sts_core_objects
+[ 19%] Built target ooc_tok_net_fast_test
+[ 20%] Built target ooc-mcts-test
+[ 21%] Built target runic-dome-lifecycle-test
+[ 23%] Built target silver-public-pair-probe
+[ 23%] Built target silver-useless-replay
+[ 23%] Built target combat-knowledge-neutrality-test
+[ 24%] Built target run_goal_test
+[ 25%] Built target main
+[ 25%] Built target rest_recall_filter_test
+[ 26%] Built target neow_transform_curse_test
+[ 27%] Built target potion_reward_swap_test
+[ 44%] Built target sts_core_pic_objects
+[ 44%] Built target full_hp_rest_filter_test
+[ 45%] Built target remove_obtain_weight_test
+[ 47%] Built target native_ooc_card_win_rank_test
+[ 48%] Built target native_ooc_shop_features_test
+[ 50%] Built target test_ooc_public_futures
+[ 51%] Built target screen_leaf_continuations_test
+[ 51%] Building CXX object CMakeFiles/test_live_ooc_policy.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 51%] Building CXX object CMakeFiles/one_combat_advisor.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 52%] Building CXX object CMakeFiles/live_ooc_parity_test.dir/apps/one_combat/ooc_mcts_adapter.cpp.o
+[ 66%] Built target one_combat
+[ 69%] Built target live_ctm_importer_test
+[ 71%] Built target live_silver_importer_test
+[ 72%] Built target one_combat_feature_test
+[ 74%] Built target one_combat_tree_test
+[ 75%] Built target parity_test
+[ 78%] Built target unit-test
+[ 79%] Built target small-test
+[ 80%] Built target combat-predictor-input-test
+[ 83%] Built target combat_transition_runtime_probe
+[ 84%] Built target slaythespire
+[ 84%] Linking CXX executable test_live_ooc_policy
+[ 84%] Linking CXX executable live_ooc_parity_test
+[ 84%] Linking CXX executable one_combat_advisor
+[ 89%] Built target test_live_ooc_policy
+[ 93%] Built target live_ooc_parity_test
+[100%] Built target one_combat_advisor

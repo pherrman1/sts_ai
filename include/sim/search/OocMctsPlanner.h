@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <array>
 #include <map>
@@ -79,6 +80,9 @@ struct OocMctsConfig {
     // Explicit online candidate: after simulation 512, stop at a >=20% root
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
+    // Optional research budget checked after each completed simulation. The
+    // host includes model/root preparation in its deadline. Empty is unchanged.
+    std::function<bool()> budgetExhausted;
     bool captureValueDistribution = false; // root-only observational aggregates
     // Pool a sampled successor into an earlier particle of the same chance node
     // when the provider reports an equal outcomeEquivalenceKey. The particle list
@@ -131,6 +135,7 @@ struct OocMctsMetrics {
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;
     std::uint64_t earlyStopVisitGap20 = 0;
+    std::uint64_t earlyStopBudget = 0;
     std::uint64_t savedSimulations = 0;
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
     double hypotheticalTailWallSeconds = 0;

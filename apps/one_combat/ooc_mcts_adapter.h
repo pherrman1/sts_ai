@@ -32,6 +32,9 @@ struct OocContinuationMetrics {
     std::map<std::string, std::uint64_t> heart1PriorReasons;
     // STS_OOC_MCTS_LEAF_POLICY=prior: rollout steps decided by the V4 policy head.
     std::uint64_t priorLeafSteps = 0;
+    // Explicit LEAF_POLICY=heart1: separate from both tree-prior and V4 rollout use.
+    std::uint64_t heart1LeafSteps = 0, heart1LeafFallbacks = 0;
+    std::map<std::string, std::uint64_t> heart1LeafReasons;
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
@@ -86,6 +89,12 @@ struct OocAdapterOptions {
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
     // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
     bool priorLeafPolicy = false;
+    // Same supported candidates/rules as prior, but heart1 scores every candidate
+    // or the unchanged continuation chain handles the step. Requires a loaded net.
+    bool heart1LeafPolicy = false;
+    // Optional per-decision thread CPU allowance; checked between simulations.
+    // Zero preserves the simulation-bounded search. Never includes real combat.
+    double cpuBudgetSeconds = 0;
     // STS_OOC_MCTS_ROLLOUT_SHOP=greedy: shops in leaf rollouts buy the single
     // best item per decision instead of the first item of the best affordable
     // bundle. Live OOC MCTS turns it on by default (ADR-0032); the struct

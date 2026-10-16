@@ -1,0 +1,22 @@
+{
+  "reviewer": "heart_review",
+  "frozenSourceSha": "53152577c1c1c1a70bd69581ea184e18a26b330e",
+  "implementationReview": "PASS",
+  "prospectiveDesignReview": "PASS",
+  "canaryResourceAndCustodyReview": "PASS",
+  "rawResultScientificAndCustodyReview": "PASS",
+  "verdictConfirmedUnchanged": "NOT_SHOWN",
+  "cohortResultSha256": "16f1402f242baf1c95cf1a71c34bce2695e7b265dc77e1a152c9a2c17b7f20b5",
+  "newGamesExecutedByReviewer": 0,
+  "cohortCliInvokedByReviewer": false,
+  "readOnlyUnitValidationsRecomputed": 64,
+  "primaryStatisticsIndependentlyReproduced": true,
+  "findings": [],
+  "notes": [
+    "All60 frozen bundle files/runtime/build/source/model/tool/protocol identities verified",
+    "Exact32pairs/all64completion receipts+artifacts and canary approval ordering verified",
+    "One discordant pair, bootstrap[0,.09375] and exactMcNemarp1.0 do not establish improvement",
+    "ResourcePASS is same per-decision allowance and support; totalrunCPU differs with trajectories",
+    "No default promotion, training or adaptive extension qualifies"
+  ]
+}

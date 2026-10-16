@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "error": "unit failed: canary-110161990-chain",
+      "seed": 110161990
+    },
+    {
+      "error": "cohort stopped/deadline reached",
+      "seed": 110161991
+    }
+  ],
+  "pass": false,
+  "verdict": "INCOMPLETE"
+}

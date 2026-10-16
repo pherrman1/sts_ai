@@ -890,6 +890,14 @@ add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard
     $<TARGET_FILE:one_combat> oocmctsselftest)
 set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;STS_OOC_STRATEGIC_TOK_NN=${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native")
+add_test(NAME arm_c_rollout_analysis COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/test_arm_c_rollout_493.py -q)
+set_tests_properties(arm_c_rollout_analysis PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "tooling")
+add_test(NAME arm_c_rollout_startup COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/test_arm_c_rollout_startup.py $<TARGET_FILE:one_combat>)
+set_tests_properties(arm_c_rollout_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration")
 add_test(NAME ooc_leaf_capture_startup COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/test_ooc_leaf_capture_startup.py $<TARGET_FILE:one_combat>)
 set_tests_properties(ooc_leaf_capture_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

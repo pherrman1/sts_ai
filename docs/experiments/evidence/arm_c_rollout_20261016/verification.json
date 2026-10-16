@@ -1,0 +1,33 @@
+{
+  "debugFullBuild": "PASS",
+  "coreSmoke": {
+    "passed": 88,
+    "failed": 0,
+    "seconds": 1062.75,
+    "note": "Suite started before final diagnostics-guard/log-only repair; final affected checks rerun afterward."
+  },
+  "finalDebugFocused": {
+    "passed": 5,
+    "failed": 0,
+    "seconds": 4.68
+  },
+  "finalReleaseFocused": {
+    "passed": 3,
+    "failed": 0,
+    "seconds": 1.88
+  },
+  "syntheticTests": 6,
+  "startupCases": 8,
+  "logs": {
+    "verification/repository-health.json": "fea06b02e2a11b1a627cb7d4acbc07cf4598d293a17cd3a3763ce82f8da258bc",
+    "verification/synthetic.log": "68d69c99f86394f9720f0a45b18feb85723c253912cd5e0b9c13ffce130b4866",
+    "verification/arm-c-full-debug-final-build.log": "f74c712f134c632024eaa64b7dbc2922f08a3bec2e00903671c15767f0f6e39a",
+    "verification/health-tests.log": "f54f9dec11507bfd6d7f2f595e563340585f211409cb1e49697082def7fc5420",
+    "verification/arm-c-core-smoke.log": "e9e0bc48470a5e74df8a3531643e3b8fb4caf9664eaeb138282abf4a1b5a90ad",
+    "verification/release-focused.log": "8f4b5943f1df133f987c49a7b2ff568887ddad4b278619504502ea07c5a5f558",
+    "verification/core-smoke-receipt.json": "96f94914526490bf8f8d5602175bbd332ffc629e59f1cc0a53ec3cc7a9dec30e",
+    "verification/arm-c-repo-health.json": "fead243958c03c8eefbcc1b41fd62d386af7ddf9bfe398d553958d00d64764cc",
+    "verification/arm-c-doctor.log": "9c9ba43f924871d844caad6d5b63058ebbbaf64f9037ae81aedbd32c5fffd064",
+    "verification/arm-c-focused-final.log": "1f39852e20e5d3731c37acc181a1134dd08992d7cd51baf656987a0ef2a5e2a5"
+  }
+}
