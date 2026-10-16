@@ -1,0 +1,42 @@
+{
+  "schema": "heart-outcome-holdout-artifact-receipt-v1",
+  "frozenSourceSha": "8f79207b7a04ed0f96773608099166c854e152dd",
+  "baselineSha": "0e3c31879e66cd701a09923d1f878bde5d407ba4",
+  "verdict": "HOLDOUT_SIGNAL_CALIBRATION_NOT_SHOWN",
+  "artifacts": {
+    "freeze.json": "70f489ef026f2f12ee5834a5ef0b2ba50109b262bba4b99608c295826d0921a1",
+    "opening-reviewed.json": "d224812fcb5615761bba30430ae922ae3bb1d2234329582ddcb0f0fed557a3a6",
+    "command.json": "18e9e9b9e80b5553777cc13d9245f8c02471fa1da72ff7fc23bebef16f4a48a6",
+    "process-identity.json": "080183970a9bc1b8bce2a98a973fc69c881ba73e104420c7d9b01343f2d61aab",
+    "run.log": "c16c5639d4ff6f194c6e85f3dc780058f204d647c3f5f588212d801d19de1816",
+    "exit.json": "fb91cfa0f9b6397694a8469a66e4b175a48be7799ba8691a45734a2874ae294d",
+    "result.json": "8b658f7d73bde12c45dc1031c5b1fe5fcab9a45b0b65b589814ece27a659f4e3",
+    "test-sources.jsonl": "8584bf879de1388c13591c3be8eab5ea53aedaf62d7104fce6b33395eccf6044",
+    "test-predictions.pt": "8be7b7a261bb6c4a3f76a1655b8cfcc60cf5dc7e21580e2a4bcdc9ed27469fc6",
+    "result-reviewed.json": "7404ca96490ac3167a185274b04c741a29e653608d27bc299ebb70d80a7a2c25"
+  },
+  "rawRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-holdout-20261017-v1",
+  "canonicalOpeningSha256": "c750603b79c21f75c5fea543cdb0b29cc2d02c6bd904a8c2128af137bcbc58e2",
+  "testOpeningCount": 1,
+  "openedArchives": 49,
+  "supersededArchivesParsed": 0,
+  "nativeIntegration": false,
+  "fittingPerformed": false,
+  "focusedPython": {
+    "passed": 57,
+    "seconds": 2.016,
+    "logSha256": "e5406aff5b1bbb0e0c51bec2a0c1bab815119eb630104488e45fc52a30a42f30"
+  },
+  "independentFocusedPython": {
+    "passed": 16,
+    "seconds": 1.738,
+    "extraSyntheticFull360SourceRun": true
+  },
+  "checksNotRun": [
+    "new gameplay seeds",
+    "native integration/build/inference speed",
+    "training/recalibration",
+    "RL"
+  ],
+  "knowledgeImpact": "current TEST verdict/custody, mean-bias limitations, offline procedure and code routing; no defaults"
+}

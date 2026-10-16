@@ -1,5 +1,8 @@
 # Claude coordinator: observed Heart-outcome collection
 
+**Historical completed-campaign handoff; do not re-dispatch these seeds.**
+The [recovered corpus import](../heart_outcome_import_20261016/REPORT.md) is complete.
+
 Repository: `pherrman1/sts_ai`. Setup/evidence PR:
 https://github.com/pherrman1/sts_ai/pull/572
 

@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-16 for observed Heart-outcome collector preparation (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -43,22 +43,77 @@ contracts now bind native Silver teachers.
 
 ## Observed Heart-outcome supervision (§497)
 
-A separate collector now prepares actual visited-state/full-run Heart labels
-under fixed exact 10k Silver and the existing Arm C prior+rollout/CTM search
-teacher. This replaces the **future label source**, without changing the teacher
-or training a new model yet. The old rollout/X2-B targets remain preserved for
-possible warm start or auxiliary fitting; prior §491–496 verdicts are unchanged.
+The recovered native Claude delivery has passed independent import/seal review:
+**TRAIN_VALIDATION_READY**. Exactly 49 accepted deliveries cover 1,800 planned
+sources (41 original workers plus 8 replacement halves for lost 7/8/27/34).
+TRAIN has 126 Heart wins/954 losses across 1,080 runs; VALIDATION has 47/313 across
+360 runs. All 228,146 actual public state records in these 1,440 development runs
+pass framing, schema, provenance, Arm C runtime and real-driver trace checks.
+The unchanged TRAIN 20/20 and VALIDATION 5/5 class gates pass.
 
-Implementation/design and independent local-canary review passed: exact
-capture OFF/ON trace/action parity, 219/219 and 215/215 valid actual observations,
-100% Arm C prior/rollout scoring. Both unique canaries died at the Heart; this
-is collector qualification, not a value-model or gameplay result. No cloud
-workers or cohort sources have launched. Prepared Claude capacity is
-1,800 source-disjoint runs over 45 workers × 4 cores: 1,080 TRAIN, 360 VALIDATION and 360 sealed TEST. Cloud canary/export review and a single immutable activation/deadline are
-required before dispatch. Full-run outcomes describe the fixed behavior policy,
-not action-counterfactual values or demonstrated optimal Heart-win probability.
+§499 has now opened all 49 accepted TEST archives exactly once, after independent
+source/design and exact-freeze approval. All 360 TEST sources and 55,718 actual
+observations pass deep receipt/trace/schema/model-use/activation-clock/support
+checks: 43 Heart wins, 317 losses. The four superseded partial archives remain
+opaque. All 53 archive bytes remain unchanged. The never-merge transport branch
+`claude/heart-outcome-data` at `e3b649c` remains separate from main. §497/498
+closed-TEST statements are preserved historical snapshots, not current custody.
 
-[Protocol and evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
+The teacher remains fixed exact 10k Silver, Arm C prior+rollout and calibrated
+A20 CTM/public X2-B-guided search; outcome labels are actual Heart results.
+
+§498 fitted a 4,225-parameter 64 → 64 ReLU → 1 probability head on the frozen original
+Arm C pooled representation. **VALIDATION_ONLY**, positive against the TRAIN
+win-rate constant: BCE 0.350551 vs 0.388347, Brier 0.103368 vs 0.113704, AUROC 0.7153.
+Two fixed 2,000-update initializations completed; validation selected init 1/step 300.
+All 79 original tensors, validation pooled features and policy logits remain
+bitwise equal. V1's unsupported deterministic CUDA sampler failed before any
+optimizer update/score; v2 prospectively repaired CPU sampling and reused only
+its exact bound feature cache. Independent source/design and result reviews PASS.
+
+§499 exact verdict: **HOLDOUT_SIGNAL_CALIBRATION_NOT_SHOWN**. The frozen head
+passes the preregistered source-balanced aggregate signal criterion on unseen
+runs: BCE 0.327599 vs 0.365854, Brier 0.095877 vs 0.105185, AUROC 0.7311; both paired
+source-bootstrap upper bounds for model-minus-constant are below 0. Visitation-
+weighted diagnostics also improve. No model/normalization/candidate changed.
+
+The three fixed source-uniform early landmarks all fail the marginal mean-bias
+interval-within ±5 pp gate. At start, mean prediction 7.19% vs 11.94% observed Heart
+outcomes; Act 1 floor≥8 gives 7.15% vs 12.01%; floor≥16 gives 6.11% vs 12.61%. Start
+and floor 8 ranking is near chance (AUC 0.519/0.516); proper losses there are worse
+than the frozen constant. No native leaf, gameplay/speed, conditional calibration,
+RL or promotion is qualified. The current TEST is consumed and must not be used
+to select/regrade a revised candidate.
+
+§500 tested the weighting hypothesis on the existing TRAIN/VALIDATION cache:
+two fixed initializations per arm, unchanged normalization/architecture/policy,
+equal-source vs equal-state sampling, and common validation visitation-BCE
+selection. **VALIDATION_WEIGHTING_NOT_SHOWN**. Equal-state weighting improves
+validation visitation BCE 0.462407 → 0.453411 and Brier 0.143088 → 0.141157;
+start bias improves −4.80 → −1.09 pp, and Act 1 floor≥8 −3.83 → −2.32 pp.
+But floor≥16 bias worsens −1.03 → −4.18 pp, failing the fixed requirement that
+all three absolute point biases improve. Only start passes the treatment's
+descriptive marginal ±5 pp interval gate. Independent source/design and exact
+result/custody reviews PASS. The retrained control uses the same common selection
+rule as treatment; it is not §498's immutable selected head.
+
+This is reused-validation development evidence, not new holdout qualification.
+Inverse future-length weighting may contribute to some early mismatch, but its
+removal does not uniformly fix it; representation, source count and checkpoint
+selection remain alternatives. A separately specified loss giving explicit weight
+to early reached states could be tested on development data; any changed candidate
+needs fresh prospective holdout evidence. The consumed TEST is excluded from §500.
+Stop before native integration; no RL, policy/trunk update or default change.
+
+The original encoder ignores public battle/memory extras; public-record/native
+parity and counterfactual leaf support remain unqualified. Recovery/one-way-export
+and unverified cross-CPU byte parity limitations remain explicit. Prior §491–496
+verdicts are unchanged.
+
+[Import evidence](../../experiments/evidence/heart_outcome_import_20261016/REPORT.md),
+[value-head evidence](../../experiments/evidence/heart_outcome_value_20261017/REPORT.md),
+[one-shot holdout evidence](../../experiments/evidence/heart_outcome_holdout_20261017/REPORT.md),
+[weighting evidence](../../experiments/evidence/heart_outcome_weighting_20261017/REPORT.md).
 
 ## Arm C rollout-target distillation (§494)
 

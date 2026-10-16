@@ -1,0 +1,31 @@
+{
+  "audit": {
+    "budgets": "Two arms x two initializations x2000updates, evaluateevery100;600s fit+analytics and external900s TERM/KILL10s; exclusive fit latch; no automatic retry.",
+    "custody": "Exact pinned development cache/parent freeze/result/review/head and reviewed development import report/review/source manifest; no archive reader or TEST artifact path.",
+    "scientificBoundary": "Reused TRAIN/VALIDATION development comparison only. Landmark and bootstrap intervals descriptive and not selection-adjusted; no new holdout/generalization/native/gameplay qualification.",
+    "selection": "Lowest common validation visitation BCE, then earlier step, then init0.",
+    "trainingOnlyVariable": "Source-balanced vs equal-row visitation sampling/loss distribution; fixed feature cache, normalization, architecture, paired initial tensors/bias, optimizer and common validation visitation BCE selection."
+  },
+  "baselineSha": "3c2c42098727110e42e3fc310c6a1d3372662be2",
+  "independentChecks": {
+    "archiveAccessExclusionPassed": true,
+    "cleanCommittedSourceAndThreeScopedPaths": true,
+    "consumedFitLatchPassed": true,
+    "deterministicCudaFitPassed": true,
+    "noRealFitOrEncodingDuringReview": true,
+    "noTestArtifactsAccessedDuringReview": true,
+    "seconds": 0.79,
+    "selectionTieRegressionPassed": true,
+    "syntheticTestsPassed": 11
+  },
+  "protocolSha256": "6b17e6b24f331661fa435c1046304a3d801eeb3b3054cac9b7e90e4f22708766",
+  "reviewer": "heart_review",
+  "schema": "heart-outcome-weighting-independent-source-review-v1",
+  "scope": "Freeze and one registered four-fit TRAIN/VALIDATION-only experiment; consumed TEST must remain untouched; stop and report before native integration.",
+  "sourceSha": "94c0bf784568a817f298fe29aa1ebc5840863273",
+  "testAccessAuthorized": false,
+  "testsSha256": "2b5a48f249b59228ce68a3b4dd496db5264a629ab689dc7ab40a629da3b463e4",
+  "toolSha256": "7eb2048a8af8957bf22385849ebecadf9cb9768a07f4b32d8de039b689b07b1a",
+  "utc": "2026-10-16T23:07:15.055388+00:00",
+  "verdict": "PASS"
+}
