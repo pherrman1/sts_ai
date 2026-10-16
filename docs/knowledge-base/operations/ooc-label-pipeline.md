@@ -74,6 +74,25 @@ Preserve the reviewed protocol, runtime identities, raw logs, caches, both
 candidate checkpoints and independent exact-result review. TEST opening and
 native integration require separate work after reporting the offline verdict.
 
+### One-shot observed-outcome holdout
+
+`tools/heart_outcome_holdout.py freeze|run` consumes only the §498 selected head.
+Its prospective §499 protocol fixes all360 TEST sources and all49 accepted
+sealed TEST archives. The canonical local import root owns one durable exclusive
+`test-opened.json`; copied/symlink roots and consumed-latch attempts are refused.
+A clean reviewed source and a separate review of the exact freeze precede opening.
+Four superseded partial archives remain opaque. Deep receipt/trace/schema/model-
+use and activation-clock checks must pass for every source; no row filtering,
+retraining, model selection or retry follows an opening failure.
+
+Aggregate source-balanced BCE/Brier compare to the frozen TRAIN-rate constant.
+Separate one-record-per-reached-source landmarks (start, Act1 floor8 and16) assess
+marginal mean-bias tolerance without future-length weights. Even a PASS does not
+prove conditional calibration, early ranking, native leaf utility or speed.
+Preserve predictions, exact source manifests and independent result review.
+Native integration remains a separate user decision after reporting the verdict.
+
+
 ## Boundaries and contracts
 
 The whole-combat input is the canonical 1,766-value rich combat feature vector captured at `decisionIdx=0`, before a committed player action. Labels and diagnostics are read from `GameContext` only after `BattleContext::exitBattle` returns. On victory, `exitBattle` calls `regainControl`, whose normal callback is `GameContext::afterBattle`; the CSV boundary is therefore post-battle/post-`afterBattle` reward-screen entry, not the earlier `g_onBattleExitPersistent` RAW hook. Survival is unaffected. Ending HP includes normal post-combat healing and post-battle effects such as Face of Cleric. Reward generation may already have consumed reward RNG and populated reward state, although reward contents are not emitted. The diagnostic columns do not reconstruct the complete post-battle `GameContext` and must not be treated as a complete transition target. RNG state is neither exposed nor learned, and navigation/act transition remain outside the target.
