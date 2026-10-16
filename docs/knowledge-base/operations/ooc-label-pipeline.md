@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -45,7 +45,8 @@ is relabeled or silently filtered to pass it. The producer's different cloud
 Python/NumPy freeze is verified as provenance, not executed locally or relaxed.
 
 The current recovered corpus passes readiness: 1,080 TRAIN/360 VALIDATION runs,
-126/47 Heart wins, 228,146 valid observations. The 49 TEST archives and 4 superseded
+126/47 Heart wins, 228,146 valid observations. At import, the 49 TEST archives and 4 superseded
+partials remained opaque. §499 later opened the 49 TEST archives once; the four
 partials remain opaque. Independent TRAIN/VALIDATION validation must not be
 reported as independent TEST framing or outcome verification. Keep raw data on
 the never-merge transport branch/ignored local root and compact audit evidence
@@ -77,7 +78,7 @@ native integration require separate work after reporting the offline verdict.
 ### One-shot observed-outcome holdout
 
 `tools/heart_outcome_holdout.py freeze|run` consumes only the §498 selected head.
-Its prospective §499 protocol fixes all360 TEST sources and all49 accepted
+Its prospective §499 protocol fixes all 360 TEST sources and all 49 accepted
 sealed TEST archives. The canonical local import root owns one durable exclusive
 `test-opened.json`; copied/symlink roots and consumed-latch attempts are refused.
 A clean reviewed source and a separate review of the exact freeze precede opening.
@@ -86,10 +87,16 @@ use and activation-clock checks must pass for every source; no row filtering,
 retraining, model selection or retry follows an opening failure.
 
 Aggregate source-balanced BCE/Brier compare to the frozen TRAIN-rate constant.
-Separate one-record-per-reached-source landmarks (start, Act1 floor8 and16) assess
+Separate one-record-per-reached-source landmarks (start, Act 1 floor 8 and 16) assess
 marginal mean-bias tolerance without future-length weights. Even a PASS does not
 prove conditional calibration, early ranking, native leaf utility or speed.
 Preserve predictions, exact source manifests and independent result review.
+Current §499 has consumed the canonical opening. All 360 sources pass audit;
+the result is HOLDOUT_SIGNAL_CALIBRATION_NOT_SHOWN: aggregate gains survive,
+but the fixed early marginal mean-bias gates fail. Preserve the latch, prediction
+cache, source manifest and exact verdict; never clear the latch for another run.
+A changed head needs new prospective holdout evidence. §498's source-balanced
+fitting does not itself establish calibrated early/initial-state probabilities.
 Native integration remains a separate user decision after reporting the verdict.
 
 

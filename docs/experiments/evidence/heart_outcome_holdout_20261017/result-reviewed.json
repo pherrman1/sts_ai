@@ -1,0 +1,113 @@
+{
+  "canonicalOpeningLatchSha256": "c750603b79c21f75c5fea543cdb0b29cc2d02c6bd904a8c2128af137bcbc58e2",
+  "checks": {
+    "aggregateAndVisitationBootstrapReproducedAbsTolerance": 1e-12,
+    "all360UniqueFrozenSourceOwners": true,
+    "all3RawFirstEligibleLandmarksAndBiasBootstrapReproduced": true,
+    "all53ArchivesRehashed": true,
+    "alreadyOpenedTestArchivesReadForIndependentAudit": 49,
+    "bootstrapResamples": 10000,
+    "cachedHeadCpuGpuMaxLogitAbsDifference": 9.5367431640625e-07,
+    "canonicalOpeningRetained": true,
+    "exactFrozenRuntimeEncoderDependenciesAndParent": true,
+    "independentCachedTinyHeadForward": true,
+    "independentEncoderForwardRepeated": false,
+    "independentFitOrEvaluatorRun": false,
+    "rawReceiptsAndAll7FileHashesPerSource": 360,
+    "rawStatesMetadataLabelsOrderCoverageMatched": 55718,
+    "registeredEvaluatorExit0": true,
+    "registeredExternal3600SecondTimeout": true,
+    "sourceAndOpeningApprovalChain": true,
+    "sourceBalancedMetricsAucSubgroupScoresReproduced": true,
+    "supersededPartialArchivesParsed": 0,
+    "tensorInvariantGuardedRunEvidenceReviewed": true
+  },
+  "fittingPerformedDuringReview": false,
+  "freezeSha256": "70f489ef026f2f12ee5834a5ef0b2ba50109b262bba4b99608c295826d0921a1",
+  "independentResult": {
+    "constantBce": 0.3658538038737998,
+    "constantBrier": 0.1051851851851856,
+    "earlyMeanBiasPass": false,
+    "landmarks": {
+      "act1_floor16": {
+        "adequate": true,
+        "auc": 0.6407835180271573,
+        "bias95": [
+          -0.1003879491404908,
+          -0.030702142506667363
+        ],
+        "earlyMeanBiasPass": false,
+        "meanProbability": 0.061105584370110495,
+        "outcomeRate": 0.12609970674486803,
+        "sources": 341,
+        "wins": 43
+      },
+      "act1_floor8": {
+        "adequate": true,
+        "auc": 0.5158361018826155,
+        "bias95": [
+          -0.08299582052358663,
+          -0.016135518728598818
+        ],
+        "earlyMeanBiasPass": false,
+        "meanProbability": 0.07152204768332551,
+        "outcomeRate": 0.12011173184357543,
+        "sources": 358,
+        "wins": 43
+      },
+      "start": {
+        "adequate": true,
+        "auc": 0.5192575746460263,
+        "bias95": [
+          -0.08129402852846626,
+          -0.014689463003883275
+        ],
+        "earlyMeanBiasPass": false,
+        "meanProbability": 0.07188996527805125,
+        "outcomeRate": 0.11944444444444444,
+        "sources": 360,
+        "wins": 43
+      }
+    },
+    "losses": 317,
+    "pairedModelMinusConstant95": [
+      [
+        -0.05467797525670201,
+        -0.015599000135931003
+      ],
+      [
+        -0.022273065366458355,
+        -0.003250799452451351
+      ]
+    ],
+    "primarySignalPass": true,
+    "sourceBalancedAuc": 0.7311090187069486,
+    "sourceBalancedBce": 0.32759882775740423,
+    "sourceBalancedBrier": 0.09587741754315164,
+    "sources": 360,
+    "states": 55718,
+    "wins": 43
+  },
+  "limitations": [
+    "The full-trajectory source-balanced primary signal passes, but all three registered early marginal mean-bias equivalence gates are not established.",
+    "Failure to contain a 95 percent bias interval within plus/minus0.05 is not proof absolute error exceeds0.05; start/floor8 point biases are within that tolerance while intervals cross its boundary.",
+    "Early mean probabilities underpredict observed reached-source outcomes; start/floor8 AUROC is close to chance.",
+    "Source-uniform/within-run-state-uniform aggregate population differs from native visitation or fixed-landmark value.",
+    "Fixed behavior outcomes do not qualify native/public parity, counterfactual leaf support, gameplay utility or optimal value.",
+    "Inherited data recovery/export/cross-CPU limitations remain."
+  ],
+  "nativeIntegration": false,
+  "openingReviewSha256": "d224812fcb5615761bba30430ae922ae3bb1d2234329582ddcb0f0fed557a3a6",
+  "predictionsSha256": "8be7b7a261bb6c4a3f76a1655b8cfcc60cf5dc7e21580e2a4bcdc9ed27469fc6",
+  "resultSha256": "8b658f7d73bde12c45dc1031c5b1fe5fcab9a45b0b65b589814ece27a659f4e3",
+  "reviewer": "heart_review",
+  "runtimePromotion": false,
+  "schema": "heart-outcome-holdout-independent-result-review-v1",
+  "scientificVerdict": "HOLDOUT_SIGNAL_CALIBRATION_NOT_SHOWN",
+  "selectedCheckpointSha256": "68c20b521b53a72896293b72442839eb5abfbb7c43222030556874b0a7593de1",
+  "sourceManifestSha256": "8584bf879de1388c13591c3be8eab5ea53aedaf62d7104fce6b33395eccf6044",
+  "sourceSha": "8f79207b7a04ed0f96773608099166c854e152dd",
+  "testState": "49acceptedTESTarchives opened and consumed; 4supersededpartialarchives remainopaque; no retry/adaptation authorized",
+  "utc": "2026-10-16T22:55:29.435430+00:00",
+  "verdict": "PASS"
+}
