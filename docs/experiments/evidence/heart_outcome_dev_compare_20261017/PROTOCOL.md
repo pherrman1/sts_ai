@@ -111,6 +111,15 @@ bootstrap (`heart_outcome_weighting.compare`, RNG 500).
   visitation BCE of the two 540-source draws exceeds arm A's by ≥ 0.002.
   Otherwise `MORE_SOURCES_NOT_SHOWN`. Descriptive: two draws, reused VALIDATION.
 
+Secondary, descriptive, not a verdict input: the four selected heads (and
+`public_block`, for arms C/D) are handed to the §502 sibling harness, which
+scores them on its §494 TRAIN+VALIDATION sibling groups (within-parent
+concordance and regret against 64-rollout means, next to X2-B and one
+rollout3). §502 found the frozen §498 head near chance there (0.527 vs X2-B
+0.601), so a head that improves outcome BCE but not sibling concordance is
+still not a leaf candidate. That scoring runs after this run's result is
+written and cannot change any verdict above.
+
 Interpretation fixed now: a representation signal argues for an explicit
 scalar/count channel (or later trunk fine-tuning, which can also move the
 policy) before more data; a sources signal without it argues that workstream 3's
