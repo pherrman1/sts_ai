@@ -1,0 +1,13 @@
+{
+  "REPORT.md": "2d4ea51cacef66fb4201dd56e30e0209a5b6721e9ffd4a8e94b2c3a20f7a6f19",
+  "assignment-prepared.json": "2fc5816bea93d775bdb32aded964bee4b27a4ce856f3e744031041f741959235",
+  "build.log": "737c2c5e1d13391c6f93ef252d78e33779b246df468d30b7f74ec629b7e342b6",
+  "configure.log.gz": "11d84008cb16ee3f915693556b1991f009a4cb558e841ddd5263d4a8cd40f8cf",
+  "identity.json": "b12da239af678214c2cf54147646068caa7542f80f1353e4117ecad5555644c6",
+  "model-export.log": "0a72d8641f8f1c9a4cc3f6f531a70e6bd8bcd07f614f95a9934f1b0e91b28cec",
+  "native-score.log": "5124124c44b219bf614abf0cf36a84e39c0cf6331f8151251708513331bb37f9",
+  "runtime.json": "9253f4452b019e0483dfd730a26ed425ea450df806621e0e2f2b1e3e83a0cec6",
+  "synthetic-record.jsonl": "98767c642ffdd959b1f79b9c5515b37ad85f1c7393baea0acaed1e9442bfb8dd",
+  "synthetic-score.jsonl": "6d90732ae5f0eb40d312e699e0fc5956f9682a95f03ef3062931038f13f0f194",
+  "unit-checks.log": "15f6dc6580ba907260e8900ada5bd0cb38044dfc7c956968f3af599fcf0ebd12"
+}

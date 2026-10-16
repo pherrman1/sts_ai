@@ -1,0 +1,394 @@
+{
+  "canaries": [
+    {
+      "capture": false,
+      "seed": 110163994
+    },
+    {
+      "capture": true,
+      "seed": 110163994
+    },
+    {
+      "capture": true,
+      "seed": 110163995
+    }
+  ],
+  "deadlineRule": "one coordinator persists start/deadline once at collection launch; never reset",
+  "environment": {
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "1",
+    "STS_COLLECT_KEYS": "1",
+    "STS_EXECUTABLE_GIT_SHA": "9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3",
+    "STS_FAIR": "1",
+    "STS_OOC_HEART1": "studentc.bin",
+    "STS_OOC_MCTS": "1",
+    "STS_OOC_MCTS_CPUCT": "1.5",
+    "STS_OOC_MCTS_EARLY_STOP": "1",
+    "STS_OOC_MCTS_LEAF_COMBATS": "3",
+    "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_MAX_DEPTH": "32",
+    "STS_OOC_MCTS_PRIOR": "heart1",
+    "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+    "STS_OOC_MCTS_SIMS": "512",
+    "STS_OOC_MCTS_TEMPERATURE": "1",
+    "STS_OOC_MCTS_TREE_RULES": "1",
+    "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+    "STS_OOC_MCTS_WIDEN_K": "4",
+    "STS_OOC_PUBLIC_FUTURES": "8",
+    "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+    "STS_OOC_STRATEGIC_EVENT": "1",
+    "STS_OOC_STRATEGIC_MARGIN": "1.0",
+    "STS_OOC_STRATEGIC_REST": "1",
+    "STS_OOC_STRATEGIC_SHOP": "1",
+    "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+    "STS_OOC_STRATEGIC_TREASURE": "1",
+    "STS_REST_WIN": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_LEARNED_STOP": "0",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_STOP_AFTER_ACT": "0"
+  },
+  "globalCollectionSeconds": 21600,
+  "requiredBeforeDispatch": [
+    "independent adapter review",
+    "frozen producer/model/runtime/protocol",
+    "completion-anchored independent canary review",
+    "verified durable native artifact export"
+  ],
+  "runnerSha256": "9934fbd7155efdcb38f048816233c9c32f012ae79969585ac6aa827b7f3fbb53",
+  "schema": "arm-c-native-plan-v1",
+  "sourceSha": "9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3",
+  "sourceTimeoutSeconds": 3600,
+  "sources": [
+    {
+      "seed": 110164000,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164001,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164002,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164003,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164004,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164005,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164006,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164007,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164008,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164009,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164010,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164011,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164012,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164013,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164014,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164015,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164016,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164017,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164018,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164019,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164020,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164021,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164022,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164023,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164024,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164025,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164026,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164027,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164028,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164029,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164030,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164031,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164032,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164033,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164034,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164035,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164036,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164037,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164038,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164039,
+      "split": "train",
+      "worker": 0
+    },
+    {
+      "seed": 110164040,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164041,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164042,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164043,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164044,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164045,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164046,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164047,
+      "split": "validation",
+      "worker": 0
+    },
+    {
+      "seed": 110164048,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164049,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164050,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164051,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164052,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164053,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164054,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164055,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164056,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164057,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164058,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164059,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164060,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164061,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164062,
+      "split": "test",
+      "worker": 0
+    },
+    {
+      "seed": 110164063,
+      "split": "test",
+      "worker": 0
+    }
+  ],
+  "state": "PREPARED_NOT_AUTHORIZED_TO_DISPATCH",
+  "testCustody": "separate sealed archive; hash/receipt transport only; no content inspection",
+  "workerHostEnvironmentRequired": [
+    "HOME",
+    "PATH"
+  ]
+}

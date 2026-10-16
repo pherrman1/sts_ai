@@ -43,6 +43,16 @@ contracts now bind native Silver teachers.
 
 ## Arm C rollout-target distillation (§494)
 
+The fresh native-session continuation is **BLOCKED at preflight**: seeds
+`110164000..063` (40/8/16), 3600s/source and one six-hour deadline; qualification
+canaries `110163994/995` remain unrun. The exact `9d83adbb` source builds and
+Arm C loads/scores a synthetic public record, but producer/canary review and
+durable raw-artifact export remain unqualified. The preparation-only adapter
+`tools/heart_distill_native_plan.py` emits assignments and shard specifications;
+it cannot launch games, fit, or open TEST. See the
+[preflight evidence](../../experiments/evidence/arm_c_native_preflight_20261016/REPORT.md).
+The old `110163xxx` cohort must not be resumed or pooled.
+
 A separately authorized continuation uses the exact frozen Arm C for both tree
 priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)
 keeps the six-fit public-record student grid and X2-B decision/cost gates, but

@@ -19267,3 +19267,24 @@ pass before cohort launch. Three local workers,1200s/unit,6hcohort cap, bounded
 GPU fitting. Prior §491/492/493 evidence and verdicts remain unchanged.
 
 **Knowledge impact:** capture teacher provenance and current research direction.
+
+### Native-session fresh continuation preflight (2026-10-16)
+
+**BLOCKED; zero game seeds, canaries, fits or TEST openings.** Fresh fixed
+`110164000..063` split40/8/16 and qualification `110163994/995`; 3600s/source,
+one six-hour collection deadline. Exact source `9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3`
+built with GCC14.2 Release; new binary
+`0e183d657e4dfa54f19952b265895f2cafb50230a63459c54d17ba146290a7e4`.
+Required checkpoint/native hashes matched; synthetic public-record scoring
+succeeded. This is not canary or gameplay qualification. Nine focused unit
+checks passed. Five visible CPUs, four CPU-equivalent cgroup quota,32GiB cap;
+no dedicated-core claim or known session-expiry guarantee. Durable export and
+independent review remain blocked/unqualified. Preparation-only assignment/shard
+specification adapter and [raw evidence](evidence/arm_c_native_preflight_20261016/REPORT.md)
+are retained. No third-party resources or credentials were provisioned/restored.
+
+The handoff reports the prior110163xxx attempt stopped INCOMPLETE with no fit
+or TEST; its local raw artifacts are unavailable here and were not re-audited.
+Do not resume/retry/pool it. Prior verdicts and defaults remain unchanged.
+
+**Knowledge impact:** current research status and prospective execution boundary.
