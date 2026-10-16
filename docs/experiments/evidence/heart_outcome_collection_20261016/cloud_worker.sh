@@ -4,7 +4,7 @@
 # bundle locally, runs `heart_outcome_collect.py worker` unchanged, and exports its outputs to the share.
 # setup is local-only: it clones and builds under $HOME and touches no share path. run copies the weights from the
 # read-only share copy, re-prepares and hash-checks the frozen plan/bundle, runs the worker, and writes only deliveries/wWW.
-# Usage: bash cloud_worker.sh setup W | run W ACTIVATION_SHA256 | status W   (W unpadded, 0..44)
+# Usage: bash cloud_worker.sh setup W | run W ACTIVATION_SHA256 [H] | status W   (W unpadded, 0..44; H = rerun half)
 set -euo pipefail
 SOURCE=7527b5d5d07467688101212660461995665512b9
 TRANSPORT=d65a365599bb0e32a5b26a4c59aa19dcd1ca0195
@@ -41,6 +41,11 @@ setup)
   ;;
 run)
   ACT="${3:-}"
+  H="${4:-}"   # rerun half (Philipp 2026-10-16 ~20:10Z): only for lost workers 7, 8, 27, 34; H = 0 or 1
+  if [ -n "$H" ]; then
+    [[ "$W" =~ ^(7|8|27|34)$ && "$H" =~ ^[01]$ ]] || { echo "STOP: rerun only for W 7/8/27/34 and half 0/1"; exit 2; }
+    D=$SH/deliveries/r$WW-$H
+  fi
   [[ "$ACT" =~ ^[0-9a-f]{64}$ ]] || { echo "STOP: give the approved activation SHA256"; exit 2; }
   [ -x $S/build/linux-gcc-release/one_combat ] && [ ! -e $L/campaign ] || { echo "STOP: no setup or worker already started here"; exit 1; }
   [ ! -e $D ] || { echo "STOP: delivery dir for w$WW already exists on the share"; exit 1; }
@@ -57,11 +62,16 @@ run)
   B=$L/campaign/bundle
   ( while [ ! -f $L/out/worker-receipt.json ]; do
       n=$(find $L/out -name '*.receipt.json' 2>/dev/null | wc -l || true)
-      echo "$(date -u +%FT%TZ) receipts=$n/40 one_combat=$(pgrep -c one_combat || true)" > $D/progress.txt.partial && mv $D/progress.txt.partial $D/progress.txt
+      echo "$(date -u +%FT%TZ) receipts=$n/$([ -n "$H" ] && echo 20 || echo 40) one_combat=$(pgrep -c one_combat || true)" > $D/progress.txt.partial && mv $D/progress.txt.partial $D/progress.txt
       sleep 300; done ) &
   set +e
-  python3 $B/heart_outcome_collect.py worker --plan $L/campaign/plan.json --bundle $B \
-    --activation $L/campaign/activation.json --out $L/out --worker $W --activation-sha256 $ACT > $L/worker.log 2>&1
+  if [ -n "$H" ]; then
+    python3 $R/docs/experiments/evidence/heart_outcome_collection_20261016/rerun_half.py $B $L/campaign/plan.json \
+      $L/campaign/activation.json $L/out $W $H $ACT > $L/worker.log 2>&1
+  else
+    python3 $B/heart_outcome_collect.py worker --plan $L/campaign/plan.json --bundle $B \
+      --activation $L/campaign/activation.json --out $L/out --worker $W --activation-sha256 $ACT > $L/worker.log 2>&1
+  fi
   rc=$?
   set -e
   put $L/worker.log $D/worker.log || true
@@ -69,7 +79,7 @@ run)
   if [ -f $L/out/worker-receipt.json ]; then
     for f in train.tar.gz validation.tar.gz SEALED-test.tar.gz; do put $L/out/$f $D/$f || { echo "STOP: export $f" >> $L/worker.log; exit 1; }; done
     put $L/out/worker-receipt.json $D/worker-receipt.json   # receipt last: its presence means the archives are there
-    echo "WORKER_OK W=$W rc=$rc receipt=$(sha256sum < $D/worker-receipt.json | cut -d' ' -f1)" >> $L/worker.log
+    echo "WORKER_OK W=$W${H:+ H=$H} rc=$rc receipt=$(sha256sum < $D/worker-receipt.json | cut -d' ' -f1)" >> $L/worker.log
   else
     # Preserve partial raw outputs (may include TEST sources, hence sealed name; never unpacked by the lead).
     [ -d $L/out ] && tar -czf $L/SEALED-partial-out.tar.gz -C $L out && put $L/SEALED-partial-out.tar.gz $D/SEALED-partial-out.tar.gz || true
