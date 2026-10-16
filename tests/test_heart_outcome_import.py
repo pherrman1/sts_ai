@@ -92,6 +92,26 @@ class ImportTests(unittest.TestCase):
         files['.trace.jsonl']=lines([trace])
         with self.assertRaisesRegex(ValueError,'public observation'):self.verify(refresh(files))
 
+    def test_public_observation_uses_exact_producer_hp_and_gold_caps(self):
+        files=payload();trace=json.loads(files['.trace.jsonl'])
+        trace['pre'].update(hp=250,maxHp=260,gold=2200)
+        rows=[json.loads(l) for l in files['.states.jsonl'].splitlines()]
+        rows[1]['record']['obs.fixed_observation'][:3]=[200,200,1800]
+        files['.trace.jsonl']=lines([trace]);files['.states.jsonl']=lines(rows)
+        self.assertEqual(self.verify(refresh(files))['states'],1)
+        rows[1]['record']['obs.fixed_observation'][:3]=[250,260,2200]
+        files['.states.jsonl']=lines(rows)
+        with self.assertRaisesRegex(ValueError,'public observation'):self.verify(refresh(files))
+
+    def test_class_gate_exact_boundaries_and_each_shortfall(self):
+        gate={'trainWins':20,'trainLosses':20,'validationWins':5,'validationLosses':5}
+        counts={'train':{'wins':20,'losses':20},'validation':{'wins':5,'losses':5}}
+        self.assertTrue(audit.class_coverage_ready(counts,gate))
+        for split in audit.SPLITS:
+            for label in ('wins','losses'):
+                insufficient=copy.deepcopy(counts);insufficient[split][label]-=1
+                self.assertFalse(audit.class_coverage_ready(insufficient,gate))
+
     def test_prior_fallback_or_telemetry_drift_refused(self):
         files=payload();s=json.loads(files['.mcts.csv.support.jsonl']);s['heart1_prior_fallbacks']=5
         files['.mcts.csv.support.jsonl']=lines([s])

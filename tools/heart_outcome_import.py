@@ -208,7 +208,7 @@ def verify_unit(seed, payload, plan, policy, scratch):
                 and SCREENS[state['screen']] == pre['screen'], 'state is not aligned to actual public trace')
         if state['supported']:
             record = state['record'];fixed = record['obs.fixed_observation']
-            require(fixed[:4] == [pre['hp'],pre['maxHp'],pre['gold'],pre['floor']]
+            require(fixed[:4] == [min(pre['hp'],200),min(pre['maxHp'],200),min(pre['gold'],1800),pre['floor']]
                     and [record['obs.mapX'],record['obs.mapY']] == [pre['x'],pre['y']], 'public observation disagrees with trace')
     post = trace[-1]['post']
     require([footer[k] for k in ('finalAct','finalFloor','finalHp')] == [post[k] for k in ('act','floor','hp')], 'outcome/trace endpoint mismatch')
@@ -216,6 +216,11 @@ def verify_unit(seed, payload, plan, policy, scratch):
             'finalAct':footer['finalAct'],'finalFloor':footer['finalFloor'],'seconds':receipt['seconds'],
             'receiptSha256':digest(payload['.receipt.json']), 'trajectorySha256':digest(payload['.states.jsonl']),
             'priorShare':contract['share'],'rolloutShare':contract['rolloutShare']}
+
+
+def class_coverage_ready(counts, gate):
+    return all(counts[split][label] >= gate[split+suffix]
+               for split in SPLITS for label,suffix in (('wins','Wins'),('losses','Losses')))
 
 
 def audit(root, out):
@@ -244,8 +249,7 @@ def audit(root, out):
                          'states':sum(s['states'] for s in rows),'supportedStates':sum(s['supportedStates'] for s in rows),
                          'finalActCounts':dict(sorted(Counter(s['finalAct'] for s in rows).items()))}
     gate = plan['trainingGate']
-    enough = all(counts[split][label] >= gate[split+suffix]
-                 for split in SPLITS for label,suffix in (('wins','Wins'),('losses','Losses')))
+    enough = class_coverage_ready(counts, gate)
     report = {'schema':'heart-outcome-import-audit-v1','transportCommit':TRANSPORT,'deliveryIndexSha256':INDEX,
               'producerSourceSha':SOURCE,'planSha256':PLAN,'bundleSha256':BUNDLE,'activationSha256':ACTIVATION,
               'verdict':'TRAIN_VALIDATION_READY' if enough else 'INSUFFICIENT_CLASS_COVERAGE',
