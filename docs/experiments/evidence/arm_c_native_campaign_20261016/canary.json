@@ -1,0 +1,61 @@
+{
+  "artifacts": {
+    "canary-capture.csv": "81fd8836f8159bb805e7a0836c06531774a839992d1d757b22a7a9313af333d0",
+    "canary-capture.csv.meta.json": "173da8737545649ce38712b456db0a87e930b49f7e69d0ef845277bcf5865cb5",
+    "canary-capture.log": "65aa5ccd8f1ef2a9c095f85fba3a1126eb703b280c957013fbb79af176fb7b84",
+    "canary-capture.mcts.csv": "d9ca74eb5183267d433001b7db0cdeb788b5d337192c1093f801c90c0cb12f00",
+    "canary-capture.mcts.csv.actions.jsonl": "8351efcabe8ec191e4bab7eb2a18998ba941830f1c2521c622ed90efcca7c0fb",
+    "canary-capture.mcts.csv.support.jsonl": "d7af3c7d6c1d76e7ab6f06c0402319a4d9536e5df37316f09b8a002c5cadbafc",
+    "canary-capture.receipt.json": "778ed461bee94296aa9feb662a799a5c6bd8253a2f31e4a1e993f89089a14efb",
+    "canary-capture.sib.jsonl": "aced7a05e2eda762a0e14ec99e06676e10e41cd0445c6795a6f45df249fedf99",
+    "canary-capture.trace.jsonl": "0117d4b1231652146a2735618f669367c83a1b0e1a26b3fb7dba2eace2c7b92a",
+    "canary-control.csv": "adee53957dbe72b61c81e52899742722152df578f143c08de7ede50005a27fbd",
+    "canary-control.csv.meta.json": "6cf8bf707182f2e43c07ff6d3244c6cbe4079f80d42d52dea1ebfb8c4d6476ca",
+    "canary-control.log": "77f1075bd2d89722aea375ad83e6c108b53dbf069ce06a4a695299bef400ce69",
+    "canary-control.mcts.csv": "01f7c614842b5a357285b0d525c4b1fbed8e69764c43ac3b02e70c8255c1da89",
+    "canary-control.mcts.csv.actions.jsonl": "8351efcabe8ec191e4bab7eb2a18998ba941830f1c2521c622ed90efcca7c0fb",
+    "canary-control.mcts.csv.support.jsonl": "d7af3c7d6c1d76e7ab6f06c0402319a4d9536e5df37316f09b8a002c5cadbafc",
+    "canary-control.receipt.json": "9c6c64828715188f1bf893c937bf422758855ba29543136b3fb5bd57953d34ac",
+    "canary-control.trace.jsonl": "0117d4b1231652146a2735618f669367c83a1b0e1a26b3fb7dba2eace2c7b92a",
+    "canary-second.csv": "8d03b313aa09ca00d622a114e38ee861a3f03f339bb53496cb8b197ef343806c",
+    "canary-second.csv.meta.json": "2693511e8c67f178907fcaea9666de66664c3701500ba144626a7220384db764",
+    "canary-second.log": "3dbcf2f0f5e1f68a2e5a3d28ec7778e05c832a09957be2ffac3e2d0e095f52cd",
+    "canary-second.mcts.csv": "f5f609407662959413265b4dd0e32cfe0737270175e73d29d508b4c45257e80c",
+    "canary-second.mcts.csv.actions.jsonl": "7aaa639e4118d457a43b289d4e8cb7cad90cec6d89bba8cc5faee3ade9206ec6",
+    "canary-second.mcts.csv.support.jsonl": "f7c607f0a1a6cb2dc301951b9054b4050b6e5371669180d26a8ada38494cc637",
+    "canary-second.receipt.json": "bf29ef20fa29fad8fab9329056891b6460265e8d854a0ae3ca5864bde52f2f59",
+    "canary-second.sib.jsonl": "8680e24e23428bef5d7db5f1c2f0a99f2f901b476bf9b3a6a94e90eb592a267f",
+    "canary-second.trace.jsonl": "e35a62de0af6660ce9254404d7dd051b01c9161a0cf0234d01ba5f2ac80e9f89"
+  },
+  "coverage": {
+    "canary-capture": {
+      "accepted": 352,
+      "groups": 13,
+      "invalidGroups": 0,
+      "raw": 352,
+      "rejected": 0
+    },
+    "canary-second": {
+      "accepted": 411,
+      "groups": 15,
+      "invalidGroups": 0,
+      "raw": 411,
+      "rejected": 0
+    }
+  },
+  "gatePass": true,
+  "parity": {
+    ".mcts.csv.actions.jsonl": true,
+    ".trace.jsonl": true
+  },
+  "receipts": {
+    "canary-capture": "778ed461bee94296aa9feb662a799a5c6bd8253a2f31e4a1e993f89089a14efb",
+    "canary-control": "9c6c64828715188f1bf893c937bf422758855ba29543136b3fb5bd57953d34ac",
+    "canary-second": "bf29ef20fa29fad8fab9329056891b6460265e8d854a0ae3ca5864bde52f2f59"
+  },
+  "returncodes": [
+    0,
+    0,
+    0
+  ]
+}

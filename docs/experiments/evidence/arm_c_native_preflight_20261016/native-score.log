@@ -1,0 +1,10 @@
+[collect keys ON]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[native OOC optional Ruby Recall excluded when keys off and another action is legal]
+[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]
+[native OOC public encounter mixture: 8 futures]
+[native OOC shop deck-size correction ON]
+[Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+heart1score records=1 -> /workspace/preflight-evidence/synthetic-score.jsonl

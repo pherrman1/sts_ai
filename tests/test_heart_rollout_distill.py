@@ -104,6 +104,52 @@ class DistillTest(unittest.TestCase):
             bad=dict(support);bad[field]=value
             with self.assertRaises(ValueError):student_contract(text,bad,1)
         with self.assertRaises(ValueError):student_contract(text.replace('prior=heart1','prior=policy'),support,1)
+    def test_arm_c_rollout_contract_and_fresh_study(self):
+        from run_heart_distill_pilot import student_contract,study_config
+        old=study_config(); new=study_config(True)
+        self.assertEqual(old['leafPolicy'],'v4')
+        self.assertEqual((new['leafPolicy'],new['sourceStart'],new['canarySeeds']),
+                         ('heart1',110163000,[110162994,110162995]))
+        self.assertTrue(set(range(new['sourceStart'],new['sourceStart']+64)).isdisjoint(range(110161000,110162032)))
+        text='[heart1] loaded studentc.bin (dim 64, heads 4, hidden 256, layers 2, trim_map 1)\n prior=heart1 temperature=1 leaf_policy=heart1'
+        support={'seed':1,'heart1_prior_nodes':100,'heart1_prior_fallbacks':0,'prior_leaf_steps':0,
+                 'heart1_leaf_steps':100,'heart1_leaf_fallbacks':0}
+        self.assertEqual(student_contract(text,support,1,'heart1')['rolloutSteps'],100)
+        for field,value in [('heart1_leaf_steps',0),('heart1_leaf_fallbacks',20),('heart1_leaf_steps',True)]:
+            bad=dict(support);bad[field]=value
+            with self.assertRaises(ValueError):student_contract(text,bad,1,'heart1')
+        with self.assertRaises(ValueError):student_contract(text.replace('leaf_policy=heart1','leaf_policy=v4'),support,1,'heart1')
+    def test_repeat_teacher_policy_contract_is_not_parent_use(self):
+        r={'seed':1,'decision':0,'ordinal':0,'parent':0,'action':0,'parentScreen':5,'act':1,'floor':12,'value':.5,
+           'extra':{'record':record(),'x2b':.5,'rolloutCpuSeconds':.064,'anchorCpuSeconds':.001,
+                    'recordSchema':'heart1-public-record-v2','recordPublicParityQualified':False,
+                    'repeats':[{'value':.6}]*64,'rolloutPolicy':'heart1','heart1RolloutSteps':100,'heart1RolloutFallbacks':0}}
+        self.assertIsNotNone(h.validate_row(r,1,'heart1'))
+        for field,value in [('rolloutPolicy','v4'),('heart1RolloutSteps',True),('heart1RolloutFallbacks',20)]:
+            bad=copy.deepcopy(r);bad['extra'][field]=value
+            self.assertIsNone(h.validate_row(bad,1,'heart1'))
+        empty=copy.deepcopy(r);empty['extra']['heart1RolloutSteps']=0
+        self.assertIsNotNone(h.validate_row(empty,1,'heart1')) # an individual terminal/rule-only label is allowed
+        with self.assertRaises(ValueError):h.validate_rows([empty],1,'heart1')
+        legacy=copy.deepcopy(r)
+        for field in ('rolloutPolicy','heart1RolloutSteps','heart1RolloutFallbacks'):del legacy['extra'][field]
+        self.assertIsNotNone(h.validate_row(legacy,1))
+        self.assertIsNone(h.validate_row(legacy,1,'heart1'))
+    def test_canary_approval_preserves_original_completion_hashes(self):
+        import run_heart_distill_pilot as p
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); freeze={}
+            p.write(root/'freeze.json',freeze); fs=p.sha(root/'freeze.json')
+            raw=root/'canary.sib.jsonl';raw.write_text('original')
+            canary={'artifacts':{raw.name:p.sha(raw)}};p.write(root/'canary.json',canary);cs=p.sha(root/'canary.json')
+            approval={'verdict':'PASS','freezeSha256':fs,'canarySha256':cs};p.write(root/'canary-reviewed.json',approval)
+            with patch.object(p,'verify_bundle'),patch.object(p,'verify_tools'):
+                self.assertEqual(p.verify_canary_approval(root,freeze,fs,canary,cs),p.sha(root/'canary-reviewed.json'))
+                raw.write_text('changed')
+                with self.assertRaises(ValueError):p.verify_canary_approval(root,freeze,fs,canary,cs)
+                canary['artifacts'][raw.name]=p.sha(raw);p.write(root/'canary.json',canary)
+                approval['canarySha256']=p.sha(root/'canary.json');p.write(root/'canary-reviewed.json',approval)
+                with self.assertRaises(ValueError):p.verify_canary_approval(root,freeze,fs,canary,cs)
     def test_bad_record_fails_closed(self):
         r=record();r['obs.deck.upgrades'].pop()
         with self.assertRaises(ValueError):encode_record(r)
