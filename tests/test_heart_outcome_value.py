@@ -86,9 +86,9 @@ class OutcomeValueTest(unittest.TestCase):
     def test_consumed_run_never_reenters_encoder(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory);review = out/'review.json';review.write_text('{}')
-            frozen = {'identity':{},'custody':{},'splits':value.SPLITS,'reviewSha256':value.sha(review),'encodingSeconds':3600}
+            frozen = {'identity':{},'custody':{},'recovery':None,'splits':value.SPLITS,'reviewSha256':value.sha(review),'encodingSeconds':3600}
             (out/'freeze.json').write_text(json.dumps(frozen))
-            args = SimpleNamespace(out=out,review=review)
+            args = SimpleNamespace(out=out,review=review,cache=None)
             with patch.object(value,'identity',return_value={}), patch.object(value,'audit_inputs',return_value=([],{})), patch.object(value,'load_net',side_effect=RuntimeError('synthetic stop')) as loader:
                 with self.assertRaisesRegex(RuntimeError,'synthetic stop'): value.run(args)
                 with self.assertRaises(FileExistsError): value.run(args)
@@ -121,6 +121,28 @@ class OutcomeValueTest(unittest.TestCase):
             again,_ = value.encode_batch(network,net,[{'record':companion}],alternate,device)
             self.assertTrue(torch.equal(original,again))
             self.assertTrue(all(torch.equal(v.detach().cpu(),before[k]) for k,v in net.state_dict().items()))
+
+    @unittest.skipUnless(torch.cuda.is_available(),'CUDA deterministic optimizer regression')
+    def test_deterministic_cuda_fit_uses_cpu_sampler(self):
+        torch.use_deterministic_algorithms(True)
+        x = torch.zeros(8,64,device='cuda');x[4:,0]=1
+        y = torch.tensor([0.]*4+[1.]*4,device='cuda')
+        w = torch.full((8,),1/8,device='cuda',dtype=torch.float64)
+        first,_ = value.train_one(x,y,w,x,y,w,0,time.monotonic()+20,steps=10,every=5)
+        second,_ = value.train_one(x,y,w,x,y,w,0,time.monotonic()+20,steps=10,every=5)
+        self.assertEqual(first['validationBce'],second['validationBce'])
+        self.assertTrue(all(torch.equal(v,second['state'][k]) for k,v in first['state'].items()))
+
+    def test_cache_label_order_and_split_validation(self):
+        manifest = [{'seed':1,'split':'train','label':0,'states':1},{'seed':2,'split':'validation','label':1,'states':1}]
+        cache = {split:{'x':torch.zeros(1,64),'meta':[{'seed':seed,'label':label,'index':0}]} for split,seed,label in [('train',1,0),('validation',2,1)]}
+        with patch.object(value,'SPLITS',{'train':[1],'validation':[2]}):
+            value.validate_cache(cache,manifest)
+            cache['validation']['meta'][0]['label'] = 0
+            with self.assertRaises(ValueError):value.validate_cache(cache,manifest)
+            cache['validation']['meta'][0]['label'] = 1
+            cache['validation']['meta'][0]['index'] = 1
+            with self.assertRaises(ValueError):value.validate_cache(cache,manifest)
 
     def test_expired_fit_does_not_train(self):
         x = torch.zeros(4,64);y = torch.tensor([0.,0.,1.,1.]);w = torch.full((4,),.25,dtype=torch.float64)

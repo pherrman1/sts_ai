@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import shutil
 import subprocess
 import sys
 import time
@@ -30,6 +31,17 @@ REVIEW = 'e07fce84e152dc4d0bf10c6c8ae833c37ff0d7ed8d49b41ac18fea71b59e01be'
 PROTOCOL = REPO/'docs/experiments/evidence/heart_outcome_value_20261017/PROTOCOL.md'
 SPLITS = {'train': list(range(110180000,110181080)), 'validation': list(range(110181080,110181440))}
 STEPS, EVERY, BATCH, ENCODE_BATCH = 2000, 100, 512, 32
+
+# A single explicit software-fault recovery, never an arbitrary cache/resume path.
+PARENT_CACHE = {
+    'pooled.pt':'a066eb69a74c16fc5e2d4e75b3c269937e269be1b82e5d2cbfb667cdbd442a25',
+    'freeze.json':'fbe456e5fca242e6c9e0da6728813a18cffc6295098a8909372d974d16d6932e',
+    'cache.json':'bf0fdb0a70a07a153b277734a260894bb84d72185aa02c0455f131d9301a471b',
+    'fit-started.json':'3de7e800d5d3f8ecbdb39c5439e17904c3793282cf005148c001d16055246edc',
+    'failure.json':'6d987a64026660014804bc295619164012ba36488ea397cea84cf1572cf9da30',
+    'exit.json':'37c1cd0f0c7b9f26303cbdef49d40efc9adb42f4dcbe0de23d77dd0e9fd64561',
+    'run.log':'a86ee5e44eadc3ddbcdf91199f9b66afd71edfd36d3aad395ae2a88f66aa56d2',
+}
 
 
 def git(path, *args):
@@ -92,6 +104,45 @@ def audit_inputs(args):
         'importReviewSha256':REVIEW, 'archives':archives, 'sealedCustody':report['sealedCustody']}
 
 
+def recovery(args, current, custody):
+    if args.cache is None:
+        return None
+    require(args.cache.resolve() != args.out.resolve(), 'cannot resume the failed root')
+    require(all(sha(args.cache/name) == checksum for name,checksum in PARENT_CACHE.items()), 'parent recovery evidence changed')
+    require(not list(args.cache.glob('candidate-*')) and not (args.cache/'value-head.pt').exists()
+            and not (args.cache/'result.json').exists(), 'parent exposed model scores/outputs')
+    parent = json.loads((args.cache/'freeze.json').read_text())
+    require(parent['identity']['sourceSha'] == '449573acd77300f3e8a68fb39da64a2166472ed2'
+            and parent['custody'] == custody and parent['splits'] == SPLITS, 'parent source/data differ')
+    for key,expected in parent['identity'].items():
+        if key not in ('sourceSha','tools'):
+            require(current[key] == expected, 'parent encoder/runtime changed: '+key)
+    allowed = {'tools/heart_outcome_value.py','tests/test_heart_outcome_value.py',str(PROTOCOL.relative_to(REPO))}
+    for name,expected in parent['identity']['tools'].items():
+        if name not in allowed:
+            require(current['tools'][name] == expected, 'parent reader/encoder tool changed')
+    return {'root':str(args.cache.resolve()),'files':PARENT_CACHE,
+            'parentVerdict':'INVALID_SOFTWARE_BEFORE_UPDATES','optimizerUpdates':0,'scoresObserved':False}
+
+
+def validate_cache(cache, manifest):
+    require(set(cache) == set(SPLITS), 'cache split mismatch')
+    source = {r['seed']:r for r in manifest}
+    for split in SPLITS:
+        entry = cache[split];meta = entry['meta'];x = entry['x']
+        require(x.shape == (sum(r['states'] for r in manifest if r['split'] == split),64)
+                and x.dtype == torch.float32 and torch.isfinite(x).all().item(), 'cache dimensions/finite gate')
+        require(len(meta) == len(x) and sorted(set(r['seed'] for r in meta)) == SPLITS[split], 'cache source ownership')
+        seen = Counter()
+        for row in meta:
+            original = source[row['seed']]
+            # Require the original per-source observation order.
+            require(row['label'] == original['label'] and row['index'] == seen[row['seed']]
+                    and original['split'] == split, 'cache outcome/order mismatch')
+            seen[row['seed']] += 1
+        require(all(seen[seed] == source[seed]['states'] for seed in seen), 'cache source state count')
+
+
 def freeze(args):
     require(not git(REPO,'status','--porcelain'), 'freeze requires clean committed source')
     args.out.mkdir(parents=True,exist_ok=True)
@@ -102,8 +153,10 @@ def freeze(args):
             and approved['toolSha256'] == sha(Path(__file__)) and approved['protocolSha256'] == sha(PROTOCOL),
             'exact source/design review missing')
     _, custody = audit_inputs(args)
+    recovered = recovery(args,ident,custody)
+    require(recovered is None or approved.get('recoveryCacheSha256') == PARENT_CACHE['pooled.pt'], 'cache recovery not approved')
     write(args.out/'freeze.json', {'schema':'heart-outcome-value-freeze-v1','identity':ident,
-        'custody':custody,'reviewSha256':sha(args.review),'splits':SPLITS,
+        'custody':custody,'recovery':recovered,'reviewSha256':sha(args.review),'splits':SPLITS,
         'architecture':'64->64 ReLU->1 sigmoid; frozen Arm C encoder/policy',
         'initializations':[0,1],'steps':STEPS,'evaluateEvery':EVERY,'batch':BATCH,
         'encodingSeconds':3600,'fittingSeconds':600,'testOpeningAuthorized':False})
@@ -267,9 +320,10 @@ def train_one(x,y,w,vx,vy,vw,init,deadline,steps=STEPS,every=EVERY):
     with torch.no_grad(): head.layers[-1].bias.fill_(torch.logit((y.double()*w).sum()).item())
     optimizer = torch.optim.AdamW(head.parameters(),lr=.001,weight_decay=.001)
     history,best = [],None
+    sampling_weights = w.detach().cpu()
     for step in range(1,steps+1):
         require(time.monotonic() < deadline, 'fitting wall cap')
-        ids = torch.multinomial(w,BATCH,replacement=True)
+        ids = torch.multinomial(sampling_weights,BATCH,replacement=True).to(x.device)
         optimizer.zero_grad(set_to_none=True)
         loss = F.binary_cross_entropy_with_logits(head(x[ids]),y[ids])
         require(torch.isfinite(loss).item(), 'nonfinite fit loss')
@@ -290,7 +344,9 @@ def run(args):
     require(frozen['identity'] == identity(args), 'frozen implementation/runtime changed')
     require(sha(args.review) == frozen['reviewSha256'], 'source approval changed')
     manifest,custody = audit_inputs(args)
-    require(custody == frozen['custody'] and frozen['splits'] == SPLITS, 'frozen inputs changed')
+    recovered = recovery(args,frozen['identity'],custody)
+    require(custody == frozen['custody'] and frozen['splits'] == SPLITS
+            and recovered == frozen['recovery'], 'frozen inputs changed')
     write(args.out/'cache-started.json',{'freezeSha256':sha(args.out/'freeze.json'),'pid':os.getpid()})
     started = time.monotonic();deadline = started+frozen['encodingSeconds']
     torch.set_num_threads(2);torch.use_deterministic_algorithms(True)
@@ -302,12 +358,20 @@ def run(args):
     companion_identity = {k:companion_row[k] for k in ('seed','index')}
     companion_identity['recordSha256'] = audit.digest(json.dumps(companion,sort_keys=True).encode())
     cache = {}
-    for split in SPLITS:
-        print('encoding',split,flush=True)
-        x,meta,policy,companion = encode(args,manifest,split,network,net,companion,deadline)
-        cache[split] = {'x':x,'meta':meta,'policySha256':policy}
-        print('encoded',split,len(meta),'seconds',round(time.monotonic()-started,2),flush=True)
-    torch.save(cache,args.out/'pooled.pt')
+    if recovered is None:
+        for split in SPLITS:
+            print('encoding',split,flush=True)
+            x,meta,policy,companion = encode(args,manifest,split,network,net,companion,deadline)
+            cache[split] = {'x':x,'meta':meta,'policySha256':policy}
+            print('encoded',split,len(meta),'seconds',round(time.monotonic()-started,2),flush=True)
+        torch.save(cache,args.out/'pooled.pt')
+    else:
+        cache = torch.load(args.cache/'pooled.pt',map_location='cpu',weights_only=True)
+        validate_cache(cache,manifest)
+        require(companion_identity == json.loads((args.cache/'cache.json').read_text())['companion'], 'parent companion differs')
+        shutil.copyfile(args.cache/'pooled.pt',args.out/'pooled.pt')
+        require(sha(args.out/'pooled.pt') == PARENT_CACHE['pooled.pt'], 'copied parent cache changed')
+        print('reused exact failed-v1 public feature cache; zero parent updates',flush=True)
     write(args.out/'cache.json',{'pooledSha256':sha(args.out/'pooled.pt'),'freezeSha256':sha(args.out/'freeze.json'),
         'counts':{k:len(v['meta']) for k,v in cache.items()},'companion':companion_identity,'seconds':time.monotonic()-started})
     write(args.out/'fit-started.json',{'freezeSha256':sha(args.out/'freeze.json'),'pooledSha256':sha(args.out/'pooled.pt')})
@@ -344,7 +408,8 @@ def run(args):
     require(abs(val['aggregate']['bce']-selected['validationBce']) < 1e-6,'reported BCE differs from selection loss')
     baseline = metric(vy.cpu().numpy(),np.full(len(vy),constant),vw.cpu().numpy())
     _,custody_after = audit_inputs(args)
-    require(custody_after == custody and frozen['identity'] == identity(args),'inputs/runtime changed during run')
+    require(custody_after == custody and frozen['identity'] == identity(args)
+            and recovery(args,frozen['identity'],custody_after) == recovered,'inputs/runtime/recovery changed during run')
     report = {'schema':'heart-outcome-value-result-v1','verdict':'VALIDATION_ONLY','selected':selected,
         'developmentSignal':all(val['aggregate'][k] < baseline[k] for k in ('bce','brier')),
         'train':diagnostics(cache['train']['meta'],tp,constant,tlogits),'validation':val,
@@ -355,7 +420,7 @@ def run(args):
         'encodingAndParitySeconds':time.monotonic()-started-fit_seconds,'fittingSeconds':fit_seconds,
         'checkpointSha256':sha(args.out/'value-head.pt'),'headSha256':sha(args.out/'head.json'),
         'pooledSha256':sha(args.out/'pooled.pt'),'freezeSha256':sha(args.out/'freeze.json'),
-        'testRead':False,'nativeIntegration':False,'runtimePromotion':False,'gameplayQualified':False,
+        'recovery':recovered,'testRead':False,'nativeIntegration':False,'runtimePromotion':False,'gameplayQualified':False,
         'sealedArchivesHashedOnly':53}
     write(args.out/'result.json',report)
     print(json.dumps({'verdict':report['verdict'],'selected':selected,'validation':val['aggregate'],
@@ -365,6 +430,7 @@ def run(args):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('command',choices=('freeze','run'))
+    p.add_argument('--cache',type=Path,default=None,help='Only pinned failed-v1 cache is accepted; never resumes its fit')
     for name in ('import-root','checkpoint','silverbot','review','out'):
         p.add_argument('--'+name,type=Path,required=True)
     args = p.parse_args()

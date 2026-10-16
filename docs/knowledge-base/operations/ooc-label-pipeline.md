@@ -58,7 +58,9 @@ No fitting, TEST opening or native head integration is performed by the importer
 consumer of the completed import report/review and source manifest. It verifies
 archive and trajectory hashes without repeating the full importer, decodes only
 TRAIN/VALIDATION, and hashes the 53 sealed objects as opaque bytes. A new exclusive
-cache/fit latch prevents implicit restart. Original Arm C tensors are frozen;
+cache/fit latch prevents implicit restart. A separately reviewed recovery accepts
+only the pinned pre-update software-fault cache, without resuming the failed root.
+Original Arm C tensors are frozen;
 only a 64→64 ReLU→1 probability head is optimized with source-balanced BCE.
 Feature normalization uses TRAIN alone, and checkpoint selection uses VALIDATION.
 The emitted head is an offline artifact, with no native loader or default change.
