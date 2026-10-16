@@ -1,0 +1,10 @@
+{
+  "baseSha": "9129e5b850ba45114820956522cbc92c238c2afe",
+  "bundleSha256": "47dbc4b849b2f98e1ed948c8542e416a7de68ba330307ba89e851eca3b98cbd0",
+  "cloudCohortAuthorizedByThisReceipt": false,
+  "planSha256": "f52f7548d3d814293f666e789eeb29ddb8c83c393551c6fa723f298264618a7f",
+  "reviewer": "heart_review",
+  "scope": "native source/design and all four repaired blockers; independent Python15/15 and Release selftest1/1; eligible local canaries only",
+  "sourceSha": "7527b5d5d07467688101212660461995665512b9",
+  "verdict": "PASS"
+}

@@ -19349,3 +19349,53 @@ corpus does not show the regret gain. Offline only: no native port, gameplay or 
 Evidence: [fit and TEST](evidence/arm_c_native_campaign_20261016/fit/) (fitted outputs, plan, latch, result).
 
 **Knowledge impact:** current research status; execution evidence and TEST verdict for §494.
+
+## §497 Observed full-run A20 Heart-outcome collection setup (2026-10-16)
+
+**Implementation/design and independent local canary PASS; cloud cohort
+PREPARED_NOT_DISPATCHED. No trained-value or gameplay verdict.**
+
+User authorized actual completed-run Heart outcome supervision and clarified
+available cloud capacity is up to 45 Claude workers with four cores each.
+Historical §494 sibling/rollout records and summary CSVs do not bind public
+visited-state boundaries to complete outcomes; preserve them and the §491–496
+verdicts rather than pooling or reconstructing missing states.
+
+- Baseline main `9129e5b850ba45114820956522cbc92c238c2afe`; frozen independently
+  reviewed producer `7527b5d5d07467688101212660461995665512b9`.
+- New guarded `heartoutcomegen` command observes only actual `runFullRunOOC`
+  driver boundaries. Complete healthy terminal footer determines Heart 1/0;
+  partial, timeout, health failure or invalid source supplies no label.
+- Frozen teacher: original Arm C native `eff2f74f…` tree prior **and** rollout
+  policy, calibrated A20 CTM, native/public X2-B, rollout3, 512 OOC sims/early-stop1,
+  no CPU_SECONDS, keys/full-run, exact 10k project-fair native Silver combat.
+- Local fixed canaries 110179994 OFF/ON and 110179995 ON; cloud qualification
+  separately 110179996 OFF/ON and 110179997 ON. Source cap 3600 s, no retries.
+- Prepared fresh cohort 110180000..110181799: 1,080 TRAIN / 360 VALIDATION / 360 TEST,
+ 45 round-robin workers × 40 sources, at most 4 single-thread producers each and one
+ six-hour global deadline. Worker approval chain, original canary hashes and ≥256 MiB
+ durable cross-container export must pass before one exclusive activation.
+- Focused checks: GCC 13.3 Release/Debug target builds; Debug CTest 5/5 (1.31s),
+  Python 15/15, seed-guard 5/5 (0.166s), repository health and diff PASS.
+  Independent source/design review PASS at exact source (Python 15/15 in 0.058 s,
+  Release writer 1/1 in 0.12 s). Full core/smoke and authoritative CI not claimed.
+- Local runner completed once with rc 0. OFF/ON source 110179994:435.421s/426.028s,
+  exact trace/action/outcome parity, ON 219/219 supported records; source 110179995:
+  394.086s,215/215 supported. Both unique sources completed healthy at Heart
+  deaths (Act4/floor56). Prior/rollout scoring 100%, zero legacy prior leaves.
+  Independent completion review PASS verified all 24 completion-anchored files,
+  receipts, bundle/runtime and original tool bytes. Canary manifest
+  `10b3ebacf49866f5cef1aa2791eca4f058fdfabcf7aa627a0a2dd04ae5f308aa`;
+  separate local review `94409181283676a3cc9435bf077f5dc7f6d136d74de56083bbb79b8f8c92f684`.
+  No M&K observed; public/native parity remains unqualified. Timings descriptive,
+  not a speed or Heart-quality comparison; canaries excluded from fitting.
+- No native value-head integration, policy retraining, fitting, TEST opening,
+  default change, RL loop or third-party cloud provisioning. Cloud workers
+  launched 0. After delivery, separate import/seal and class-coverage audit,
+  followed by a reviewed training protocol, are required.
+
+[Protocol](evidence/heart_outcome_collection_20261016/PROTOCOL.md),
+[qualification](evidence/heart_outcome_collection_20261016/REPORT.md),
+[Claude handoff](evidence/heart_outcome_collection_20261016/CLAUDE_HANDOFF.md).
+**Knowledge impact:** observed-outcome capture semantics in maintained OOC label
+pipeline; prospective supervision/data-custody status in current research.
