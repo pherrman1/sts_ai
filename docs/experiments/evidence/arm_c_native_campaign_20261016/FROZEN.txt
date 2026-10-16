@@ -1,0 +1,12 @@
+RUN_COMMIT a64e0a32768ac5410440a3fcead825a795a4005f (PR #568 head, delta re-review PASS 10:44Z)
+scientific source 9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3 (C++ identical to RUN_COMMIT)
+producer one_combat 86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecbacf (Ubuntu GCC 13.3, linux-gcc-release)
+studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509 (share copy student-c-488/)
+plan32.json b4c28ae0ebeb07aa5a0002b3c4d18c406305eb578285259cf49ac91d38a5f89e (32 workers, contiguous pairs)
+bundle.json f8ecb31a159c3a429ebb4946d23944251360b9579623354c55cd098961998b19
+canaries started 2026-10-16T10:45:24Z in lead container (Intel Xeon @2.1GHz)
+UPDATE 10:51Z: canaries in the lead container run tool code at a64e0a32. Workers and the cross-CPU canary use
+RUN_COMMIT 820877819e65faa5affaf098c5a8b6f29f551dc7 (= ac769d33 tools + launcher scripts; tools/tests diff vs a64e0a32
+is only the worker CLI summary print fix). Delta checks PASS on ac769d33 and 8208778.
+BRIEF-worker.md b2f7a77f564d0beec3928bf00297e72898f1f74026eaa4421d34899912ad1e21
+BRIEF-canary-cpu2.md 44a5654727059f9d0ac414051b77fe133c8168d4abd0af59506b6e5d44ab4f78

@@ -43,16 +43,13 @@ contracts now bind native Silver teachers.
 
 ## Arm C rollout-target distillation (§494)
 
-The fresh native-session continuation is **BLOCKED at preflight**: seeds
-`110164000..063` (40/8/16), 3600s/source and one six-hour deadline; qualification
-canaries `110163994/995` remain unrun. The exact `9d83adbb` source builds and
-Arm C loads/scores a synthetic public record, but producer/canary review and
-durable raw-artifact export remain unqualified. The preparation-only adapter
-`tools/heart_distill_native_plan.py` emits assignments and shard specifications;
-it cannot launch games, fit, or open TEST. See the
+The fresh native-session continuation **completed collection; no fit or TEST yet**:
+seeds `110164000..063` (40/8/16), 3600s/source and one six-hour deadline; qualification
+canaries `110163994/995` passed and were independently reviewed. The Codex preflight
+(blocked on export and capacity) is in the
 [preflight evidence](../../experiments/evidence/arm_c_native_preflight_20261016/REPORT.md).
 The old `110163xxx` cohort must not be resumed or pooled.
-The current cloud session exposes four CPU-equivalents and32GiB;64-worker
+The Codex cloud session exposed four CPU-equivalents and32GiB;64-worker
 capacity and session lifetime are unverified. Its available tools do not expose
 an arbitrary-file publication/download-link path, so corpus delivery is blocked.
 The [local review](../../experiments/evidence/arm_c_native_preflight_review_20261016/REPORT.md)
@@ -63,8 +60,11 @@ identically to the Codex AMD build, and passed a cross-container 300 MiB export 
 trip through the project share; see the
 [native campaign qualification](../../experiments/evidence/arm_c_native_campaign_20261016/QUALIFICATION.md).
 `tools/heart_distill_native_worker.py` adds bundle, deadline, canary and fixed-shard
-worker execution (rerun-once on lost attempts); it awaits independent review before
-any canary or source runs.
+worker execution (rerun-once on lost attempts). After independent review and canary
+review, **collection completed 64/64 sources** (all rc 0, attempt 1, one CPU model;
+TRAIN 663 / VALIDATION 114 groups); raw corpus and sealed TEST are on the project
+share. No fit or TEST has run; see the
+[collection report](../../experiments/evidence/arm_c_native_campaign_20261016/REPORT.md).
 
 A separately authorized continuation uses the exact frozen Arm C for both tree
 priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)

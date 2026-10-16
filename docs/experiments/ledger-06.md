@@ -19295,3 +19295,19 @@ or TEST; its local raw artifacts are unavailable here and were not re-audited.
 Do not resume/retry/pool it. Prior verdicts and defaults remain unchanged.
 
 **Knowledge impact:** current research status and prospective execution boundary.
+
+### Native cloud collection (2026-10-16)
+
+**COLLECTION COMPLETE: 64/64 fresh sources, all rc 0 on attempt 1; no fit or TEST opening.**
+The hosted cloud build of `9d83adbb` reproduced the original local producer byte-for-byte
+(`86a7569f…`), so no new producer was introduced. Execution used `tools/heart_distill_native_worker.py`
+(PR #568, RUN_COMMIT `b8aea900`, independently reviewed): 32 cloud threads x 2 contiguous sources, one
+deadline 11:31:09Z-17:31:09Z, per-source archives exported before receipts, TEST sealed. Canaries on
+`110163994/995` passed exact OFF/ON trace parity, 352/352 and 411/411 valid rows and 100% Arm C scoring
+(independent review PASS); a second-container 995 matched except timing fields. All workers ran on one CPU
+model. TRAIN 663 / VALIDATION 114 multi-action groups, 100% valid rows, every source covered; longest source
+3,398 s of the 3,600 s cap. Raw corpus and sealed TEST are on the project share with verified hashes; see the
+[collection report](evidence/arm_c_native_campaign_20261016/REPORT.md).
+Fitting and TEST remain unrun; the CPU-cost comparison must be frozen and reviewed before any TEST opening.
+
+**Knowledge impact:** current research status; execution evidence for §494.

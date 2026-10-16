@@ -1,0 +1,8 @@
+{
+  "canarySha256": "08383bac4da2b5eb65bb11e38fc0aefd9b01f56f4f4892163269966314853bba",
+  "deadlineEpoch": 1792171869.2844381,
+  "planSha256": "b4c28ae0ebeb07aa5a0002b3c4d18c406305eb578285259cf49ac91d38a5f89e",
+  "rule": "created once by the lead; never reset or extended",
+  "startEpoch": 1792150269.2844381,
+  "startUtc": "2026-10-16T11:31:09Z"
+}
