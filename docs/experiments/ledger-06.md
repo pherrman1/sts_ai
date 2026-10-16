@@ -19655,3 +19655,76 @@ A future TRAIN/VALIDATION weighting comparison may address early bias; a changed
 candidate needs fresh prospective holdout evidence. Stop before native integration.
 **Knowledge impact:** current holdout verdict/exposed-data custody, mean-bias
 limitations, evaluator procedure and tool routing; no production-default change.
+
+## §500 — development-only source versus visitation outcome weighting
+
+**VALIDATION_WEIGHTING_NOT_SHOWN** (2026-10-17). User authorized testing the
+weighting hypothesis after §499. Reused only the independently audited TRAIN/
+VALIDATION §498 public pooled-feature cache:1,080/360 source runs,171,442/56,704
+actual states,126/47 Heart wins. No new games, encoder forwards, raw archive or
+TEST access. Existing TEST remains consumed; §499's verdict is unchanged.
+
+- Frozen reviewed source `94c0bf784568a817f298fe29aa1ebc5840863273`, baseline
+  `3c2c42098727110e42e3fc310c6a1d3372662be2`. Same original Arm C checkpoint,
+  policy/representation, §498 TRAIN normalization and4,225-parameter64→64 ReLU→1
+  head architecture. Common initial tensors/bias logit(126/1080), AdamW .001/.001,
+  minibatch512,2,000 updates × inits0/1 × two arms =8,000 updates/80 checkpoint
+  records. Only sampling/loss weighting differs: equal source then state, versus
+  equal recorded state. Deterministic CPUfloat64 sampler, CUDAfloat32/TF32off,
+  RTX3060Ti,2CPUthreads. No trunk/policy gradient or head warm start.
+- Both arms use common validation visitation BCE to select checkpoint, then
+  earlier step/init0 ties. The retrained control is source init1/step800;
+  treatment visitation init1/step600. This is not a comparison to the immutable
+  §498 selected head, which had a different validation selection population.
+
+| VALIDATION population/metric | Source-weighted fit | Visitation-weighted fit |
+| --- | ---: | ---: |
+| Visitation BCE |0.462407|0.453411|
+| Visitation Brier |0.143088|0.141157|
+| Visitation AUROC |0.665120|0.668981|
+| Source-balanced BCE |0.355095|0.353966|
+| Source-balanced Brier |0.104525|0.103939|
+
+Frozen TRAIN-rate constant's visitation BCE/Brier are0.498733/0.155509.
+Treatment-minus-control visitation BCE −0.008996, descriptive95%
+[−0.015750,−0.002421]; Brier −0.001931,[−0.003488,−0.000267]. These are10,000
+paired source-cluster ratio resamples, not individual-state independent samples;
+intervals do not account for checkpoint selection or reused validation.
+
+| VALIDATION actual landmark | Sources/wins | Source prediction | Visitation prediction | Outcome | Source bias (pp) | Visitation bias (pp) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Start/index0 |360/47|8.25%|11.97%|13.06%|−4.80|−1.09|
+| First Act1floor≥8 |358/47|9.29%|10.81%|13.13%|−3.83|−2.32|
+| First Act1floor≥16 |350/47|12.40%|9.25%|13.43%|−1.03|−4.18|
+
+Treatment bias95% intervals are[−4.66,+2.28], [−5.88,+1.13], [−7.85,−0.61]pp.
+Only start passes its pointwise interval-entirely-within±5pp marginal gate;
+all adequacy gates pass. Floor16 is worse, so the prospective requirement of
+both proper scores improving AND all three absolute point biases improving
+fails. Do not replace the exact negative verdict with an aggregate-only PASS.
+Even marginal bias PASS would not qualify conditional calibration/ranking.
+
+Both paired inits have identical initial tensor hashes; all saved normalization
+buffers match §498 exactly. Exclusive fit latch before updates; no retry/extra
+fit, recalibration or candidate swap. Same pinned cache/model/runtime hashes
+before/after. Four fits plus analytics/custody17.063s; external900s TERM/10sKILL
+wrapper exit0 in22.962s. Feature reuse avoids redundant six-minute encoding.
+These are offline processing timings, not native leaf latency or gameplay.
+
+- Python68/68PASS2.086s, including pinned actual encoder/head synthetic CPU/CUDA;
+  independent new11/11PASS0.790s. Review found and repaired a tie-order mismatch
+  before freezing/fitting. C++/gameplay checks omitted: no related runtime change.
+- Freeze `26fd05ab9f091ffed78c389fbfc927f7ee57a370d81170c5f402990669e4e0dc`;
+  result `6b3fcbd7aed6f85f0aa5e138e14f5764ea72a51f0120aee5c314b66bb0dcb4c0`;
+  selected prediction cache `f56acaefca8ecb65ef764833b2cfcc93f93d63cc2af114e65d840a0aa4fd639e`.
+
+[Protocol/report and review receipts](evidence/heart_outcome_weighting_20261017/REPORT.md).
+Raw outputs remain in ignored `build/heart-outcome-weighting-20261017-v1`.
+Equal-state weighting partly helps early bias but does not uniformly solve it.
+**Inference:** inverse future-length weighting is not a sufficient explanation
+within this fixed comparison; frozen representation/data and checkpoint selection
+remain alternatives. A new
+development protocol may explicitly weight reached early states; any revised
+candidate needs genuinely fresh prospective holdout evidence. Stop before native
+integration. **Knowledge impact:** current development-weighting evidence,
+cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.

@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -98,6 +98,29 @@ cache, source manifest and exact verdict; never clear the latch for another run.
 A changed head needs new prospective holdout evidence. §498's source-balanced
 fitting does not itself establish calibrated early/initial-state probabilities.
 Native integration remains a separate user decision after reporting the verdict.
+
+
+### Development weighting comparison
+
+`tools/heart_outcome_weighting.py freeze|run` is the separate §500 cache-only
+consumer. It pins the independently reviewed §498 feature cache, selected head's
+TRAIN normalization, import manifest/review/report, original encoder/model/runtime
+and source review. It parses no raw archives, performs no encoder forward and
+cannot consume TEST. Preserve the canonical consumed TEST latch unchanged.
+
+The fixed four-fit comparison changes only source-balanced versus equal-state
+training sampling, with common initial tensors, normalization, constant bias,
+architecture, optimizer budget and validation visitation-BCE selection. CPU
+float64 sampling remains deterministic; ties use lower loss, earlier step, init0.
+All head checkpoints, histories, selected TRAIN/VALIDATION logits and exclusive
+fit latch persist. No resume, extra fit or automatic native integration.
+
+Current §500 is VALIDATION_WEIGHTING_NOT_SHOWN: aggregate validation losses and
+start/floor8 point biases improve, but floor16 bias worsens. This does not qualify
+uniform early calibration or a native leaf. Bootstrap intervals are descriptive,
+pointwise and unadjusted for checkpoint selection/reused validation. Any follow-up
+training requires a separately frozen development protocol; confirmation requires
+fresh prospective holdout data. [Current evidence](../../experiments/evidence/heart_outcome_weighting_20261017/REPORT.md).
 
 
 ## Boundaries and contracts

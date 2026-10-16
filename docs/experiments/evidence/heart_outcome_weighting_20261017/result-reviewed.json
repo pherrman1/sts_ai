@@ -1,0 +1,133 @@
+{
+  "candidateSha256": {
+    "source-0": "e641f21607be7b51310262fa9c3722d6bdc96831c000a5b8bf0fa7534dbe07b7",
+    "source-1": "86b0398ac36403aef9b549361a8985c5200d702f757f8d72eedc3de8e70d9670",
+    "visitation-0": "af09fd3bb2e562679b91a4b3b5795552714355e3fe2eb6015f824b59f15c5862",
+    "visitation-1": "648693620c6a01b393bb34819e68e0b8692dbaecd1d9d75a91abed771290f290"
+  },
+  "checks": {
+    "all12ArmSplitLandmarkCoverageIntervalsGatesReproduced": true,
+    "allFourCandidateValidationBceReproduced": true,
+    "allFourFitsAnd80MetricRecords": true,
+    "allSourceOwnershipLabelsIndicesCountsValidated": true,
+    "analyticalAbsTolerance": 1e-12,
+    "cpuGpuLogitMaxAbsDifference": 9.5367431640625e-07,
+    "developmentImportReportReviewManifestHashes": true,
+    "earliestStepThenInitTieRuleAndSelectionMinima": true,
+    "exactFrozenImplementationRuntimeDependencies": true,
+    "exclusiveFitLatchPreserved": true,
+    "external900SecondTimeoutAndExit0": true,
+    "fixedNormalizationBuffersAllFourCandidates": true,
+    "noConsumedHoldoutArtifactOrOutcomeAccess": true,
+    "noRawArchiveAccess": true,
+    "optimizerOrEncoderInvokedDuringReview": false,
+    "pairedInitialTensorsAndBiasMatched": true,
+    "pairedSourceRatioBootstrapAndLandmarkChangesReproduced": true,
+    "parentDevelopmentCacheAndArtifactsHashes": true,
+    "selectedCheckpointCpuForwardComparedToSavedPredictions": true,
+    "trainValidationBothPopulationProperScoresAucCalibrationReproduced": true
+  },
+  "encoderForwardDuringReview": false,
+  "fittingDuringReview": false,
+  "freezeSha256": "26fd05ab9f091ffed78c389fbfc927f7ee57a370d81170c5f402990669e4e0dc",
+  "independentMeasurements": {
+    "landmarkBiasMeans": {
+      "act1_floor16": {
+        "source": -0.010327160843034835,
+        "visitation": -0.04178063448197384
+      },
+      "act1_floor8": {
+        "source": -0.03833926613646484,
+        "visitation": -0.02319611969729185
+      },
+      "start": {
+        "source": -0.048037410752462505,
+        "visitation": -0.010856099650520746
+      }
+    },
+    "pairedComparison": {
+      "landmarkBiasChange": {
+        "act1_floor16": {
+          "descriptive95": [
+            -0.03575399347996451,
+            -0.027249974844995046
+          ],
+          "mean": -0.031453473638939
+        },
+        "act1_floor8": {
+          "descriptive95": [
+            0.013344133098774585,
+            0.01690733394310498
+          ],
+          "mean": 0.015143146439172996
+        },
+        "start": {
+          "descriptive95": [
+            0.03631909676109962,
+            0.038055274841805056
+          ],
+          "mean": 0.03718131110194176
+        }
+      },
+      "metrics": [
+        "bce",
+        "brier"
+      ],
+      "sourceClusterDescriptive95": [
+        [
+          -0.015750390575922524,
+          -0.0034884486431848776
+        ],
+        [
+          -0.002420638412368606,
+          -0.0002673596003127867
+        ]
+      ],
+      "treatmentMinusControl": [
+        -0.008996198846318913,
+        -0.0019306814242317206
+      ]
+    },
+    "sourceSelected": {
+      "arm": "source",
+      "init": 1,
+      "initialTensorSha256": "e8a2f4fb3cb8bce2c38118ee54df708764748e51bc3ba0ee6dd72931773be38e",
+      "sha256": "86b0398ac36403aef9b549361a8985c5200d702f757f8d72eedc3de8e70d9670",
+      "step": 800,
+      "validationVisitationBce": 0.46240713042585474
+    },
+    "sourceValidationVisitationBce": 0.4624071291909189,
+    "sourceValidationVisitationBrier": 0.14308807337860885,
+    "visitationSelected": {
+      "arm": "visitation",
+      "init": 1,
+      "initialTensorSha256": "e8a2f4fb3cb8bce2c38118ee54df708764748e51bc3ba0ee6dd72931773be38e",
+      "sha256": "648693620c6a01b393bb34819e68e0b8692dbaecd1d9d75a91abed771290f290",
+      "step": 600,
+      "validationVisitationBce": 0.45341093176250546
+    },
+    "visitationValidationVisitationBce": 0.45341093034460017,
+    "visitationValidationVisitationBrier": 0.14115739195437713
+  },
+  "interpretation": [
+    "Validation visitation proper losses improve, and start/floor8 absolute point biases improve, but floor16 absolute bias worsens; the exact preregistered conjunction therefore fails.",
+    "The result is reused-validation development evidence, not fresh generalization or selection-adjusted significance.",
+    "Control is retrained with common visitation validation selection, not the unchanged original selected head.",
+    "Fixed normalization and paired initial tensors isolate the registered sampling-objective comparison; this does not establish optimal weighting or prove weighting cannot help.",
+    "Mean-bias margin gates are descriptive and do not qualify conditional calibration, ranking or native leaf utility."
+  ],
+  "nativeIntegration": false,
+  "normalizationTensorSha256": "00e80849b24b6d3c489825a2c2e8c6bf24374029d4e186531aa6af03daefcad2",
+  "predictionsSha256": "f56acaefca8ecb65ef764833b2cfcc93f93d63cc2af114e65d840a0aa4fd639e",
+  "resultSha256": "6b3fcbd7aed6f85f0aa5e138e14f5764ea72a51f0120aee5c314b66bb0dcb4c0",
+  "reviewer": "heart_review",
+  "runtimePromotion": false,
+  "schema": "heart-outcome-weighting-independent-result-review-v1",
+  "scientificVerdict": "VALIDATION_WEIGHTING_NOT_SHOWN",
+  "sourceReviewSha256": "e84632a20bf320ca12fa1400551331ef6aa2c354cd8d08ad3645d3f1c1d42545",
+  "sourceSha": "94c0bf784568a817f298fe29aa1ebc5840863273",
+  "testAccessAuthorized": false,
+  "testReadDuringReview": false,
+  "utc": "2026-10-16T23:10:21.607360+00:00",
+  "verdict": "PASS"
+}

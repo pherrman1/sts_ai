@@ -1,0 +1,20 @@
+{
+  "rawBinaryArtifactsPublished": false,
+  "root": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-weighting-20261017-v1",
+  "sha256": {
+    "command.json": "7665f1e4fbd4f9fe2359038badb042f1bb2cb052d8acc5e5332542b903b9b39f",
+    "exit.json": "1216457756f7633528002caec08784e4a6c59ce6f61b6df4115c629595256fbc",
+    "fit-started.json": "7a06eb47be5c5ac3b0e639d9c7ab2086680e59ef7efcf900099a62e99e340f46",
+    "freeze.json": "26fd05ab9f091ffed78c389fbfc927f7ee57a370d81170c5f402990669e4e0dc",
+    "predictions.pt": "f56acaefca8ecb65ef764833b2cfcc93f93d63cc2af114e65d840a0aa4fd639e",
+    "process-identity.json": "d1232b03ca4a8615ba8b2dc2b9d18bd539c5f17d1a81e9e7cd382ac626c5a185",
+    "result-reviewed.json": "5946a1414d18bdd99a71c58c52d138b776d75559c935ebffc6166094d157bb3a",
+    "result.json": "6b3fcbd7aed6f85f0aa5e138e14f5764ea72a51f0120aee5c314b66bb0dcb4c0",
+    "run.log": "c222714361a22bd68c2dd8a282589982eec6881d5d5a72f24d66e408a9fd90ab",
+    "source-0.pt": "e641f21607be7b51310262fa9c3722d6bdc96831c000a5b8bf0fa7534dbe07b7",
+    "source-1.pt": "86b0398ac36403aef9b549361a8985c5200d702f757f8d72eedc3de8e70d9670",
+    "visitation-0.pt": "af09fd3bb2e562679b91a4b3b5795552714355e3fe2eb6015f824b59f15c5862",
+    "visitation-1.pt": "648693620c6a01b393bb34819e68e0b8692dbaecd1d9d75a91abed771290f290"
+  },
+  "testAccess": false
+}
