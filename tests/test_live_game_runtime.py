@@ -335,6 +335,30 @@ class LiveGameRuntimeTest(unittest.TestCase):
                 self.assertEqual(result.stdout, override if override is not None else
                                  str(self.manager.current / "models" / (primary or CTM_NAME)))
 
+    def test_qualified_launcher_preserves_explicit_primary_without_injecting_other_models(self):
+        self.qualified_sources()
+        self.manager.install(self.advisor, qualified_ctm=True)
+        source = (Path(__file__).parents[1] / "tools/live_game_start.sh").read_text()
+        block = source.split("  # ensure/install validated this manifest;", 1)[1].split(
+            '  if [[ -f "$runtime_root/current/models/v_win_trees.txt"', 1)[0]
+        keys = ("STS_CTM_MODEL", "STS_CTM_BREW_FALLBACK_MODEL", "STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL")
+        for override in (None, "", "/explicit/legacy.native"):
+            env = {k: v for k, v in os.environ.items() if k not in keys}
+            if override is not None:
+                env[keys[0]] = override
+            report = "import os,json;print(json.dumps([os.environ.get(k) for k in " + repr(keys) + "]))"
+            script = ('set -euo pipefail\nruntime_root=' + shlex.quote(str(self.manager.root))
+                      + '\n# ensure/install validated this manifest;' + block
+                      + '\npython3 -c ' + shlex.quote(report))
+            result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            actual = json.loads(result.stdout)
+            if override is None:
+                names = (CTM_CURRENT_FAST_NAME, CTM_CURRENT_NAME, CTM_A20_FAST_NAME, CTM_A20_NAME)
+                self.assertEqual(actual, [str(self.manager.current / "models" / name) for name in names])
+            else:
+                self.assertEqual(actual, [override, None, None, None])
+
     def test_build_advisor_packages_only_wrapper_selected_fallback_preset(self):
         fallback = self.repo / "build/linux-gcc-release/one_combat_advisor"
         requested = self.repo / "build/linux-gcc-release-ccache/one_combat_advisor"

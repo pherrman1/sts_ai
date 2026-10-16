@@ -125,12 +125,20 @@ fi
 runtime_root=${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$home_dir/.local/share}/sts-ai/live-runtime}
 if ((runtime_available)); then
   export STS_MODEL_INSPECTOR_ADVISOR=${STS_MODEL_INSPECTOR_ADVISOR:-$runtime_root/current/one_combat_advisor}
-  if [[ ! ${STS_LIVE_OOC_ARM_C+x} && -f "$runtime_root/current/models/arm_c_student.bin" ]]; then
+  if [[ ! ${STS_LIVE_OOC_ARM_C+x} ]] && python3 - "$runtime_root/current/manifest.json" <<'PY_ARM_C'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as stream:
+    selected = "armCModelSha256" in json.load(stream)
+raise SystemExit(0 if selected else 1)
+PY_ARM_C
+  then
     export STS_LIVE_OOC_ARM_C="$runtime_root/current/models/arm_c_student.bin"
   fi
   # ensure/install validated this manifest; use its primary so legacy releases
   # remain usable and explicit model overrides retain precedence.
+  use_manifest_ctm=0
   if [[ ! ${STS_CTM_MODEL+x} ]]; then
+    use_manifest_ctm=1
     ctm_primary=$(python3 - "$runtime_root/current/manifest.json" <<'PY_CTM'
 import json, sys
 with open(sys.argv[1], encoding="utf-8") as stream:
@@ -148,7 +156,7 @@ if m.get("ctmStackVersion") == 2:
     print(m["ctmFallback"], m["ctmA20Primary"], m["ctmA20Fallback"])
 PY_CTM_STACK
   )
-  if [[ -n "$qualified_names" ]]; then
+  if [[ -n "$qualified_names" && "$use_manifest_ctm" == 1 ]]; then
     read -r ctm_fallback ctm_a20 ctm_a20_fallback <<< "$qualified_names"
     [[ ${STS_CTM_BREW_FALLBACK_MODEL+x} ]] || export STS_CTM_BREW_FALLBACK_MODEL="$runtime_root/current/models/$ctm_fallback"
     [[ ${STS_LIVE_CTM_A20_MODEL+x} ]] || export STS_LIVE_CTM_A20_MODEL="$runtime_root/current/models/$ctm_a20"
