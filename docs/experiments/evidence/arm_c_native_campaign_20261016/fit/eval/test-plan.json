@@ -1,0 +1,38 @@
+{
+  "attemptLimit": 1,
+  "cpuCostComparison": {
+    "collectionCpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "evaluatorCpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "rule": "unchanged trainer test(): speedup = mean per-rollout producer CPU seconds (rolloutCpuSeconds/64, measured during collection on the collection CPU model) / (single-row tensor inference + feature encoding + required X2-B anchor CPU), inference and encoding timed by process_time on this host with torch threads=1; gate >=4x is part of the unchanged TEST gate"
+  },
+  "fitGpu": "NVIDIA GeForce RTX 3060 Ti",
+  "fitReceiptSha256": "005bd50725d2ee3ab8ef236d9ccdcd9d0b213ef0214ecbe4ca66e9a3b5b4a6e4",
+  "fitRuntime": {
+    "cudaBuild": "12.1",
+    "defaultDtype": "torch.float32",
+    "deterministicAlgorithms": false,
+    "files": {
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/numpy/__init__.py": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/numpy/core/_multiarray_umath.py": "4fcf07660143e550ae5d109278b6cfa23f7d9ca512760cb0f315b27fa7aa8714",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/sklearn/__init__.py": "ce663dfdb31bdbd4292166527e43a4f861b31b445d2ee894e725e82c1e738f78",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/sklearn/utils/_openmp_helpers.cpython-312-x86_64-linux-gnu.so": "05bd1a4de7d6bb345c8e80227748fb4cb5b27a7499a140a983a7b17119899a84",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/torch/_C.cpython-312-x86_64-linux-gnu.so": "e6190c3da05837dd3cb7b736fd3d20ae0fff97e6331ee0be3b0a2eac469c3b8a",
+      "/home/philippherrmann/.local/lib/python3.12/site-packages/torch/__init__.py": "e1b5bf4151bd246a21e3ac5318f6edfcf2e6ef0fd4f233bfb77a264698ec1319",
+      "/usr/bin/python3.12": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "numpy": "2.5.1",
+    "platform": "Linux-7.1.5-76070105-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "sklearn": "1.9.0",
+    "tf32Cudnn": true,
+    "tf32Matmul": false,
+    "torch": "2.5.1+cu121"
+  },
+  "fitSeconds": 176.4583583509666,
+  "fittedFreezeSha256": "a0555a2282cadfeb865a638df56204605b10dd43b7101584de5c3d73dc57f791",
+  "fittedSelectionSha256": "f155040381c3b52e13fd4b477f5e0cf6b61d4cd417686eb0ff5fc5f6473f78ab",
+  "freezeSha256": "31337e9bfa8b56f1a7440d923c3fdca2b580f30d8334c5cfcf403dbe058a4af6",
+  "selectionSha256": "ec5f80d25c1d9ee8df213f3eb1db516606fc61bc7df7b6c07ed0e69ad81f1844",
+  "timeoutSeconds": 600,
+  "trainerSha256": "9c8b30e7608088bfca755a94f079a0bdad8c45382179e1b1fd1d99894efa7a94"
+}

@@ -1,0 +1,21 @@
+{
+  "archive": "sources/seed-110164003.attempt1.tar.gz",
+  "archiveSha256": "f006f986f015601434e29c69e82fdbcb7e76e3188348a08095bc5c3025c40486",
+  "attempt": 1,
+  "files": {
+    "seed-110164003.csv": "440c60744db85222f965b42f21701e16a40dc795cb5fc80e20d38c35a722c6f5",
+    "seed-110164003.csv.meta.json": "93b6e40df8af00f9bfefb8ff3a6537cfd38498137051efbcdb8d08b3e8970ed7",
+    "seed-110164003.log": "83cf90eb434a5ebf74e98e2231be2a071160d55a4ae1de6a9124823304c69f9f",
+    "seed-110164003.mcts.csv": "b2cf164e75f51e6028efff5c376db6cbc0a72b6a70ce696222ada85e84c02aa7",
+    "seed-110164003.mcts.csv.actions.jsonl": "4a9184b3eac2155a991821356731424ad2c6ad1b26933aaec30972766f48fae6",
+    "seed-110164003.mcts.csv.support.jsonl": "5f44e1593cdc9ee5a9691ae1adb0e392cf95b944cee2e43b726f9d3cf2135bcc",
+    "seed-110164003.receipt.json": "7967521b8932d5b6e264d505ad9adb7ef0fa219ce6bc6c98d33dd20a641dce2a",
+    "seed-110164003.sib.jsonl": "80bcf30e3976c16e57e1ca6655b05baa668cd5615918916aa02cf81a6c7ed95c",
+    "seed-110164003.trace.jsonl": "6a6a8bfc5b1f6a368072ee3b48e912cb41f5676e4cae2bd5adafb9f4dee658c4"
+  },
+  "receiptSha256": "7967521b8932d5b6e264d505ad9adb7ef0fa219ce6bc6c98d33dd20a641dce2a",
+  "returncode": 0,
+  "seed": 110164003,
+  "split": "train",
+  "worker": 2
+}

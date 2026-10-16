@@ -1,7 +1,7 @@
-"""Preparation-only native session coordinator/shard adapter. Never launches games.
+"""Native session assignment and shard specification. Never launches games itself.
 
-Independent review, producer/canary qualification and durable export are still
-required before implementing dispatch. No fit or TEST reader is provided.
+tools/heart_distill_native_worker.py executes these specifications after review.
+No fit or TEST reader is provided.
 """
 import argparse
 import ast
@@ -60,7 +60,9 @@ def assignment(repo, workers):
         'canaries': [{'seed': 110163994, 'capture': False},
                      {'seed': 110163994, 'capture': True},
                      {'seed': 110163995, 'capture': True}],
-        'sources': [{'seed': seed, 'worker': i % workers,
+        # Contiguous fixed blocks keep each worker split-pure when 8, 16, 32 or 64 workers
+        # are used, so TEST outputs leave only through separately sealed worker archives.
+        'sources': [{'seed': seed, 'worker': i // -(-64 // workers),
                      'split': 'train' if i < 40 else 'validation' if i < 48 else 'test'}
                     for i, seed in enumerate(range(110164000, 110164064))],
         'requiredBeforeDispatch': ['independent adapter review', 'frozen producer/model/runtime/protocol',
@@ -70,25 +72,37 @@ def assignment(repo, workers):
     }
 
 
-def shard_spec(plan, seed, bundle, output, remaining_seconds):
-    """Return a reviewable invocation, without opening any source output."""
+def shard_spec(plan, seed, bundle, output, remaining_seconds, capture=True, tag=None):
+    """Return a reviewable invocation, without opening any source output.
+
+    Cohort sources always capture under seed-SEED. Canaries need their frozen
+    capture flag and an explicit tag; nothing else can be specified.
+    """
     if type(seed) is not int:
         raise ValueError('source seed must be an integer')
     matches = [s for s in plan['sources'] if s['seed'] == seed]
+    if matches:
+        if capture is not True or tag is not None:
+            raise ValueError('cohort sources always capture under their seed name')
+    else:
+        matches = [c for c in plan['canaries'] if c['seed'] == seed and c['capture'] is capture]
+        if not tag or not str(tag).startswith('canary-') or '/' in str(tag):
+            raise ValueError('canary units need a canary-* tag')
     if len(matches) != 1:
         raise ValueError('source is not uniquely assigned')
     if not 0 < remaining_seconds <= 21600:
         raise ValueError('remaining deadline must be positive and at most six hours')
-    base = Path(output).resolve() / f'seed-{seed}'
+    base = Path(output).resolve() / (tag or f'seed-{seed}')
     env = dict(plan['environment'])
     env.update(STS_OOC_MCTS_TRACE=str(base.with_suffix('.mcts.csv')),
-               STS_OOC_DECISION_TRACE=str(base.with_suffix('.trace.jsonl')),
-               STS_OOC_SIBLING_CAPTURE=str(base.with_suffix('.sib.jsonl')),
-               STS_OOC_SIBLING_EVERY='4', STS_OOC_SIBLING_REPEATS='64',
-               STS_OOC_SIBLING_LONG='0', STS_OOC_SIBLING_MAX_DEPTH='1',
-               STS_OOC_SIBLING_MAX_LEAVES='64')
+               STS_OOC_DECISION_TRACE=str(base.with_suffix('.trace.jsonl')))
+    if capture:
+        env.update(STS_OOC_SIBLING_CAPTURE=str(base.with_suffix('.sib.jsonl')),
+                   STS_OOC_SIBLING_EVERY='4', STS_OOC_SIBLING_REPEATS='64',
+                   STS_OOC_SIBLING_LONG='0', STS_OOC_SIBLING_MAX_DEPTH='1',
+                   STS_OOC_SIBLING_MAX_LEAVES='64')
     bundle = Path(bundle).resolve()
-    return {'assignment': matches[0], 'environment': env, 'cwd': str(bundle),
+    return {'assignment': matches[0], 'environment': env, 'cwd': str(bundle), 'base': str(base),
             'command': ['bash', str(bundle / 'seed_guard.sh'), str(bundle / 'one_combat'),
                         'bestbench', '10000', '1', '20', str(seed), str(base.with_suffix('.csv'))],
             'timeoutSeconds': min(3600, remaining_seconds),

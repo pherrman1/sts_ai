@@ -1,0 +1,1554 @@
+{
+ "110164000": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 167475,
+   "scored": 11386,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 348,
+   "groups": 14,
+   "invalidGroups": 0,
+   "raw": 348,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 706.3,
+  "splitOk": true,
+  "worker": 1
+ },
+ "110164001": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 171088,
+   "scored": 14010,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 463,
+   "groups": 18,
+   "invalidGroups": 0,
+   "raw": 463,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1197.7,
+  "splitOk": true,
+  "worker": 1
+ },
+ "110164002": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 280730,
+   "scored": 18521,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 572,
+   "groups": 23,
+   "invalidGroups": 0,
+   "raw": 572,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1527.6,
+  "splitOk": true,
+  "worker": 2
+ },
+ "110164003": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 217384,
+   "scored": 12529,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 292,
+   "groups": 12,
+   "invalidGroups": 0,
+   "raw": 292,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 799.9,
+  "splitOk": true,
+  "worker": 2
+ },
+ "110164004": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 292848,
+   "scored": 22466,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 602,
+   "groups": 26,
+   "invalidGroups": 0,
+   "raw": 602,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1635.2,
+  "splitOk": true,
+  "worker": 3
+ },
+ "110164005": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 309097,
+   "scored": 20329,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 482,
+   "groups": 19,
+   "invalidGroups": 0,
+   "raw": 482,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1484.5,
+  "splitOk": true,
+  "worker": 3
+ },
+ "110164006": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 208809,
+   "scored": 11934,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 204,
+   "groups": 9,
+   "invalidGroups": 0,
+   "raw": 204,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 630.6,
+  "splitOk": true,
+  "worker": 4
+ },
+ "110164007": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 132569,
+   "scored": 9568,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 206,
+   "groups": 9,
+   "invalidGroups": 0,
+   "raw": 206,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 610.5,
+  "splitOk": true,
+  "worker": 4
+ },
+ "110164008": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 233022,
+   "scored": 10924,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 628,
+   "groups": 22,
+   "invalidGroups": 0,
+   "raw": 628,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1272.0,
+  "splitOk": true,
+  "worker": 5
+ },
+ "110164009": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 276822,
+   "scored": 15435,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 843,
+   "groups": 24,
+   "invalidGroups": 0,
+   "raw": 843,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1514.1,
+  "splitOk": true,
+  "worker": 5
+ },
+ "110164010": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 293936,
+   "scored": 17756,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 692,
+   "groups": 18,
+   "invalidGroups": 0,
+   "raw": 692,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1763.5,
+  "splitOk": true,
+  "worker": 6
+ },
+ "110164011": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 183703,
+   "scored": 11070,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 381,
+   "groups": 15,
+   "invalidGroups": 0,
+   "raw": 381,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 768.7,
+  "splitOk": true,
+  "worker": 6
+ },
+ "110164012": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 243109,
+   "scored": 14701,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 462,
+   "groups": 14,
+   "invalidGroups": 0,
+   "raw": 462,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1305.3,
+  "splitOk": true,
+  "worker": 7
+ },
+ "110164013": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 287507,
+   "scored": 19669,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 666,
+   "groups": 23,
+   "invalidGroups": 0,
+   "raw": 666,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1554.0,
+  "splitOk": true,
+  "worker": 7
+ },
+ "110164014": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 102933,
+   "scored": 6633,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 271,
+   "groups": 8,
+   "invalidGroups": 0,
+   "raw": 271,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 628.4,
+  "splitOk": true,
+  "worker": 8
+ },
+ "110164015": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 258729,
+   "scored": 18528,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 812,
+   "groups": 22,
+   "invalidGroups": 0,
+   "raw": 812,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1833.5,
+  "splitOk": true,
+  "worker": 8
+ },
+ "110164016": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 69063,
+   "scored": 5158,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 217,
+   "groups": 8,
+   "invalidGroups": 0,
+   "raw": 217,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 303.7,
+  "splitOk": true,
+  "worker": 9
+ },
+ "110164017": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 245064,
+   "scored": 14561,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 577,
+   "groups": 14,
+   "invalidGroups": 0,
+   "raw": 577,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1800.9,
+  "splitOk": true,
+  "worker": 9
+ },
+ "110164018": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 275524,
+   "scored": 16490,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 385,
+   "groups": 22,
+   "invalidGroups": 0,
+   "raw": 385,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1269.9,
+  "splitOk": true,
+  "worker": 10
+ },
+ "110164019": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 34499,
+   "scored": 2058,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 81,
+   "groups": 4,
+   "invalidGroups": 0,
+   "raw": 81,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 160.4,
+  "splitOk": true,
+  "worker": 10
+ },
+ "110164020": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 127578,
+   "scored": 8365,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 257,
+   "groups": 9,
+   "invalidGroups": 0,
+   "raw": 257,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 661.6,
+  "splitOk": true,
+  "worker": 11
+ },
+ "110164021": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 246679,
+   "scored": 13187,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 408,
+   "groups": 15,
+   "invalidGroups": 0,
+   "raw": 408,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1260.4,
+  "splitOk": true,
+  "worker": 11
+ },
+ "110164022": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 297243,
+   "scored": 20235,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 512,
+   "groups": 26,
+   "invalidGroups": 0,
+   "raw": 512,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1629.4,
+  "splitOk": true,
+  "worker": 12
+ },
+ "110164023": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 189700,
+   "scored": 11756,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 555,
+   "groups": 20,
+   "invalidGroups": 0,
+   "raw": 555,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1059.6,
+  "splitOk": true,
+  "worker": 12
+ },
+ "110164024": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 188601,
+   "scored": 11902,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 398,
+   "groups": 17,
+   "invalidGroups": 0,
+   "raw": 398,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1033.3,
+  "splitOk": true,
+  "worker": 13
+ },
+ "110164025": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 186935,
+   "scored": 11254,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 228,
+   "groups": 13,
+   "invalidGroups": 0,
+   "raw": 228,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 703.3,
+  "splitOk": true,
+  "worker": 13
+ },
+ "110164026": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 293091,
+   "scored": 13685,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 466,
+   "groups": 20,
+   "invalidGroups": 0,
+   "raw": 466,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1481.4,
+  "splitOk": true,
+  "worker": 14
+ },
+ "110164027": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 104295,
+   "scored": 5560,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 21,
+   "groups": 3,
+   "invalidGroups": 0,
+   "raw": 21,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 155.5,
+  "splitOk": true,
+  "worker": 14
+ },
+ "110164028": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 152201,
+   "scored": 10546,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 266,
+   "groups": 16,
+   "invalidGroups": 0,
+   "raw": 266,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 739.6,
+  "splitOk": true,
+  "worker": 15
+ },
+ "110164029": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 232130,
+   "scored": 17117,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 634,
+   "groups": 19,
+   "invalidGroups": 0,
+   "raw": 634,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1491.3,
+  "splitOk": true,
+  "worker": 15
+ },
+ "110164030": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 420184,
+   "scored": 22540,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 1375,
+   "groups": 29,
+   "invalidGroups": 0,
+   "raw": 1375,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 3397.8,
+  "splitOk": true,
+  "worker": 16
+ },
+ "110164031": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 340978,
+   "scored": 22624,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 818,
+   "groups": 27,
+   "invalidGroups": 0,
+   "raw": 818,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 2098.5,
+  "splitOk": true,
+  "worker": 16
+ },
+ "110164032": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 357757,
+   "scored": 19473,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 822,
+   "groups": 24,
+   "invalidGroups": 0,
+   "raw": 822,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 2470.9,
+  "splitOk": true,
+  "worker": 17
+ },
+ "110164033": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 376628,
+   "scored": 12934,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 501,
+   "groups": 26,
+   "invalidGroups": 0,
+   "raw": 501,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1776.1,
+  "splitOk": true,
+  "worker": 17
+ },
+ "110164034": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 256029,
+   "scored": 15422,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 506,
+   "groups": 14,
+   "invalidGroups": 0,
+   "raw": 506,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1247.0,
+  "splitOk": true,
+  "worker": 18
+ },
+ "110164035": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 358632,
+   "scored": 23474,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 411,
+   "groups": 22,
+   "invalidGroups": 0,
+   "raw": 411,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1614.6,
+  "splitOk": true,
+  "worker": 18
+ },
+ "110164036": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 284624,
+   "scored": 15921,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 477,
+   "groups": 19,
+   "invalidGroups": 0,
+   "raw": 477,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1601.2,
+  "splitOk": true,
+  "worker": 19
+ },
+ "110164037": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 139381,
+   "scored": 10066,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 347,
+   "groups": 9,
+   "invalidGroups": 0,
+   "raw": 347,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 629.8,
+  "splitOk": true,
+  "worker": 19
+ },
+ "110164038": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 89356,
+   "scored": 5328,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 154,
+   "groups": 5,
+   "invalidGroups": 0,
+   "raw": 154,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 349.2,
+  "splitOk": true,
+  "worker": 20
+ },
+ "110164039": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 163612,
+   "scored": 11342,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 230,
+   "groups": 6,
+   "invalidGroups": 0,
+   "raw": 230,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 776.4,
+  "splitOk": true,
+  "worker": 20
+ },
+ "110164040": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 209393,
+   "scored": 13244,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 436,
+   "groups": 16,
+   "invalidGroups": 0,
+   "raw": 436,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1110.9,
+  "splitOk": true,
+  "worker": 21
+ },
+ "110164041": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 96581,
+   "scored": 8710,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 281,
+   "groups": 11,
+   "invalidGroups": 0,
+   "raw": 281,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 496.0,
+  "splitOk": true,
+  "worker": 21
+ },
+ "110164042": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 209258,
+   "scored": 14331,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 429,
+   "groups": 17,
+   "invalidGroups": 0,
+   "raw": 429,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1203.0,
+  "splitOk": true,
+  "worker": 22
+ },
+ "110164043": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 132155,
+   "scored": 9393,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 137,
+   "groups": 10,
+   "invalidGroups": 0,
+   "raw": 137,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 516.9,
+  "splitOk": true,
+  "worker": 22
+ },
+ "110164044": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 149619,
+   "scored": 10499,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 122,
+   "groups": 8,
+   "invalidGroups": 0,
+   "raw": 122,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 450.9,
+  "splitOk": true,
+  "worker": 23
+ },
+ "110164045": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 300873,
+   "scored": 18968,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 654,
+   "groups": 24,
+   "invalidGroups": 0,
+   "raw": 654,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 1605.1,
+  "splitOk": true,
+  "worker": 23
+ },
+ "110164046": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 212371,
+   "scored": 14942,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 457,
+   "groups": 17,
+   "invalidGroups": 0,
+   "raw": 457,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 985.9,
+  "splitOk": true,
+  "worker": 24
+ },
+ "110164047": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": {
+   "fallback": 0,
+   "priorLeafSteps": 0,
+   "rolloutFallbacks": 0,
+   "rolloutShare": 1.0,
+   "rolloutSteps": 234216,
+   "scored": 15506,
+   "shape": "64/4/256/2/trim1",
+   "share": 1.0
+  },
+  "coverage": {
+   "accepted": 205,
+   "groups": 11,
+   "invalidGroups": 0,
+   "raw": 205,
+   "rejected": 0
+  },
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "filesOk": true,
+  "innerOk": true,
+  "rc": 0,
+  "seconds": 792.1,
+  "splitOk": true,
+  "worker": 24
+ },
+ "110164048": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 25
+ },
+ "110164049": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 25
+ },
+ "110164050": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 26
+ },
+ "110164051": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 26
+ },
+ "110164052": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 27
+ },
+ "110164053": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 27
+ },
+ "110164054": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 28
+ },
+ "110164055": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 28
+ },
+ "110164056": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 29
+ },
+ "110164057": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 29
+ },
+ "110164058": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 30
+ },
+ "110164059": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 30
+ },
+ "110164060": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 31
+ },
+ "110164061": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 31
+ },
+ "110164062": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 32
+ },
+ "110164063": {
+  "archiveOk": true,
+  "attempt": 1,
+  "contract": null,
+  "coverage": null,
+  "cpu": null,
+  "filesOk": null,
+  "innerOk": null,
+  "rc": 0,
+  "seconds": null,
+  "splitOk": true,
+  "worker": 32
+ }
+}
