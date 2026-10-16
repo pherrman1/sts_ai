@@ -110,6 +110,10 @@ def raw_mse(pred, target, weights):
     return float(((pred.double() - target.double()).square() * weights.double()).sum())
 
 
+def eligible_improvement(size, candidate, current):
+    return size == 40 and (current is None or candidate['validationRawMse'] < current['validationRawMse'])
+
+
 def fit_one(x, target, rows, vx, vy, validation_weights, init, deadline,
             steps=STEPS, evaluate_every=EVAL_EVERY):
     torch.manual_seed(init)
@@ -185,7 +189,7 @@ def fit(args):
             candidates.append(candidate)
             history.append({'sources': size, 'init': init, 'checkpoints': logs})
             print(json.dumps({k: candidate[k] for k in ('sources', 'init', 'step', 'trainRawMse', 'validationRawMse')}), flush=True)
-            if size == 40 and (selected is None or best['validationRawMse'] < selected['validationRawMse']):
+            if eligible_improvement(size, best, selected):
                 selected = {**candidate, 'state': best_state}
     if time.monotonic() > deadline or frozen['identity'] != identity(args):
         raise ValueError('budget exceeded or frozen inputs changed during fit')

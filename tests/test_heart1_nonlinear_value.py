@@ -32,8 +32,14 @@ class NonlinearValueTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(nonlinear.ValueHead(x)(x)).all())
 
     def test_only_full_train_prefix_can_be_selected_by_protocol(self):
-        self.assertEqual(nonlinear.SIZES, (10, 20, 40))
-        self.assertEqual(nonlinear.INITS, (0, 1))
+        incumbent = {'validationRawMse': .03}
+        better = {'validationRawMse': .01}
+        for size in (10, 20):
+            self.assertFalse(nonlinear.eligible_improvement(size, better, None))
+            self.assertFalse(nonlinear.eligible_improvement(size, better, incumbent))
+        self.assertTrue(nonlinear.eligible_improvement(40, better, incumbent))
+        self.assertFalse(nonlinear.eligible_improvement(40, incumbent, better))
+        self.assertFalse(nonlinear.eligible_improvement(40, incumbent, incumbent))
 
     def test_cache_tampering_refuses_before_tensor_load(self):
         with tempfile.TemporaryDirectory() as d:
