@@ -1,0 +1,12 @@
+{
+  "activationSha256": "9f66ee277e52874b8c74dcd11561027f827029b336da28f81c534e3c5a041b22",
+  "affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "cpuMax": "max 100000",
+  "planSha256": "4b49a40427dde2470044847e8e843cc349a460e183d6fa2ddbdda4c0494d14a3",
+  "worker": 27
+}

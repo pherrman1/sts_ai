@@ -1,0 +1,24 @@
+[heart1] loaded studentc.bin (dim 64, heads 4, hidden 256, layers 2, trim_map 1)
+[collect keys ON]
+[ooc-strat-tok-net] loaded selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 1006 trees, 428 feats from models/candidates/v_win_x2b_public_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[OOC MCTS default win model: models/candidates/v_win_x2b_public_trees.txt]
+[native OOC optional Ruby Recall excluded when keys off and another action is legal]
+[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]
+[native OOC public encounter mixture: 8 futures]
+[native OOC shop deck-size correction ON]
+[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20 boss_survival_logit_shift=-0.18325317250506112 active_lizard_correction=1
+[live OOC MCTS ON sims=512 combat_model=selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native brew_fallback_model=selfplay/models/combat_transition_near_full_escape_pathb_r2.native dispatch=precombat_entropic_brew active_lizard_correction=1 prior=heart1 cpu_seconds=0 temperature=1 cpuct=1.5 widen_k=4 widen_alpha=0.75 max_depth=32 root_selection=visits early_stop=1 gap_stop_20=0 merge_outcomes=1 leaf_value=native leaf_combats=3 leaf_policy=heart1 rollout_shop=greedy]
+[ooc-mcts-config] {"noncombatOutcomes":"sampled","prior":"heart1","cpuSeconds":0,"temperature":1,"cPuct":1.5,"wideningK":4,"wideningAlpha":0.75,"maxDepth":32,"rootSelection":"visits","earlyStop":true,"gapStop20":false,"mergeOutcomes":true,"leafValue":"native","leafWinModel":null,"leafCombats":3,"leafPolicy":"heart1","simulations":512,"combatModel":"selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native","brewFallbackModel":"selfplay/models/combat_transition_near_full_escape_pathb_r2.native","dispatchRule":"precombat_entropic_brew_to_standard","activeLizardCorrection":true,"priorTrace":""}
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+[ctm-a20] ascension-20 decisions use pathb-a20
+[ooc-combat-transition] {"activeLizardEnabled":true,"fallbackSupportFailures":0,"fastSupportFailures":0,"lizardBoundaryExclusions":0,"lizardConsumedLosses":0,"lizardConsumedWins":6,"lizardOrdinaryWins":420,"lizardPreparations":426,"lizardSamples":426,"lizardSupportFailures":0,"seed":110179996,"standardBrewFallbackPreparations":3}
+[public OOC receipt seed=110179996 futures=8 scorers=0]

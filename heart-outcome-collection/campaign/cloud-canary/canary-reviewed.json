@@ -1,0 +1,12 @@
+{
+  "bundleSha256": "836a34129c99bfd68e691ed802f0a403cd75e37db7effd0e1b01f51b4697f6d5",
+  "canarySha256": "fc1ee227c7af3d9cb19727ef84dd0ae463a1d05d6df6e1f960a9fca3efb1b5ea",
+  "durableExportRoundtrip": true,
+  "exportReceiptSha256": "2bdeb88ac924d5d4617ba822a935614edb33022cb171ae3ee2206b17f218dd7b",
+  "planSha256": "4b49a40427dde2470044847e8e843cc349a460e183d6fa2ddbdda4c0494d14a3",
+  "reviewEvidence": "reproduced binary 178e7076, plan 4b49a404 and bundle/environment byte-identical from its own clone at 3c033a2 (= 7527b5d producer); canary.json fc1ee227 all 24 file hashes, off/on trace+action parity, receipts rc0, model/rollout share 1.0, 0 fallbacks, 230/230 and 207/207 supported; export blob 2796e9c9 read from a different boot_id; wrapper/brief no science/reuse/TEST-leak issues",
+  "reviewer": "independent Claude review thread \"Review heart-outcome collection launch\" (session cse_014riF83QPczzqVxkFwoj14h), 2026-10-16T17:13:22Z",
+  "runCommit": "3c033a2009dd6cfa920905c4a137450a853266b5",
+  "sourceSha": "7527b5d5d07467688101212660461995665512b9",
+  "verdict": "PASS"
+}

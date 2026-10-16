@@ -1,0 +1,11 @@
+{
+  "bytes": 301989888,
+  "destinationHost": "vm/158f9362-d5d3-430e-ba2e-c849c99727b2",
+  "direction": "one-way: lead container wrote to the share, independent reviewer container read and hashed it (read-only); returnedSha256 is the destination read hash",
+  "evidence": "review thread cmsg_01Gm4mB9c3iJfz3vtwJcJzmn4dFHh2sNnrSnMdjt3xFjSw message cmsg_01Gm4mB9c3iJfz3vtwJcJzmnUmfNV9Bvzck8RnsvFCgych",
+  "reason": "two dedicated two-way blob helper threads were refused by the auto-mode classifier; interpretation put to Philipp on a decision card",
+  "returnedSha256": "2796e9c915ab380a63e53c30a4d7d11784f9a77e93d3a91c60ab05763c1e97f4",
+  "sharePath": "/mnt/project-files/heart-outcome-collection/export-check/export-blob.bin",
+  "sourceHost": "vm/ed1903ad-5f85-463f-b488-5aa7106009d2",
+  "sourceSha256": "2796e9c915ab380a63e53c30a4d7d11784f9a77e93d3a91c60ab05763c1e97f4"
+}

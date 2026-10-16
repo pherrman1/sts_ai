@@ -1,0 +1,11 @@
+Observed Heart-outcome collection §497 (PR 572), cloud cohort
+producer source 7527b5d5d07467688101212660461995665512b9; RUN_COMMIT 3c033a2009dd6cfa920905c4a137450a853266b5 (branch claude/project-thread-u1da11)
+one_combat 178e7076934097987e473ab04c2dc80eec5368f9dcb12b274a631bad62f43e4e (Ubuntu GCC 13.3, linux-gcc-release; = Codex local)
+studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509 (data branch d65a365 bundle/studentc.bin)
+plan.json 4b49a40427dde2470044847e8e843cc349a460e183d6fa2ddbdda4c0494d14a3; bundle.json 836a34129c99bfd68e691ed802f0a403cd75e37db7effd0e1b01f51b4697f6d5 (Python 3.13.16, NumPy 2.5.3)
+cloud canary.json fc1ee227c7af3d9cb19727ef84dd0ae463a1d05d6df6e1f960a9fca3efb1b5ea (110179996 OFF/ON, 110179997 ON, PASS)
+canary-reviewed.json 584317a6fb3a69554509641dcf69006d3d32619ea4697cbb2922026b4697eaa0; export-roundtrip.json 2bdeb88ac924d5d4617ba822a935614edb33022cb171ae3ee2206b17f218dd7b (one-way reviewer read, Philipp chose "Reviewer read" 17:42:43Z)
+activation.json 9f66ee277e52874b8c74dcd11561027f827029b336da28f81c534e3c5a041b22; COHORT-STARTED.json cdbdfdf77d7c7dd17baae3531af2133ad0f7cc9c544871e6c5a2a3ecf3b63609
+activated 2026-10-16T17:43:29Z, global deadline 2026-10-16T23:43:29Z (never reset)
+seeds 110180000..110181799 (worker W: 110180000+W+45k, k=0..39; TRAIN 1080 / VALIDATION 360 / TEST 360), 45 workers W=0..44, 4 processes each
+BRIEF-worker.md 9a5b9a83746f91a0b991b22dc8790b49446f613f2c937e6923b537b1f8d198ad
