@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import shutil
 from pathlib import Path
 import tarfile
 import tempfile
@@ -41,6 +42,31 @@ def tar_add(tar, name, data):
     info = tarfile.TarInfo(name)
     info.size = len(data)
     tar.addfile(info, io.BytesIO(data))
+
+
+class ConsumedTestSealTest(unittest.TestCase):
+    def test_completed_corpus_and_copied_delivery_refuse_before_setup(self):
+        packet = REPO / 'docs/experiments/evidence/arm_c_native_campaign_20261016'
+        self.assertEqual(nf.CONSUMED_CORPORA[nf.CORPUS_MANIFEST_SHA256],
+                         nf.sha(packet / 'fit/eval/fit/test-result.json'))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); original = root / 'original'; original.mkdir()
+            shutil.copy2(packet / 'corpus-manifest.json', original / 'corpus-manifest.json')
+            copied = root / 'copied'; shutil.copytree(original, copied)
+            with unittest.mock.patch.object(nf, 'stage') as stage, \
+                    unittest.mock.patch.object(nf, 'verify') as verify, \
+                    unittest.mock.patch.object(nf.subprocess, 'run') as evaluator:
+                for corpus in (original, copied):
+                    with self.assertRaisesRegex(FileExistsError, 'TEST consumed'):
+                        nf.prepare_test(corpus, root/'binary', root/'model', root/'fit', root/'eval')
+                    with self.assertRaisesRegex(FileExistsError, 'TEST consumed'):
+                        nf.test(corpus, root/'eval', 'unreviewed')
+                    self.assertFalse((corpus / nf.LATCH).exists())
+                stage.assert_not_called(); verify.assert_not_called(); evaluator.assert_not_called()
+                self.assertFalse((root/'eval').exists())
+            (copied/'corpus-manifest.json').write_text('{}')
+            with self.assertRaisesRegex(ValueError, 'no new campaign authorization'):
+                nf.require_unopened_test(copied)
 
 
 @unittest.skipUnless(HAVE_TRAINER_DEPS, 'trainer dependencies (torch, sklearn) not installed')

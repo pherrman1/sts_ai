@@ -1313,6 +1313,36 @@ Proceed only if survival clearly beats the constant baseline, calibration is rea
 
 Old terminal outcomes are not truth for a materially changed teacher.
 
+## Arm C native campaign guards
+
+The §494 native campaign is complete with `NOT_SHOWN`. Its worker and fit
+adapters are campaign-specific research tools, not permission to run more seeds,
+train again, reopen TEST or deploy the student.
+
+- `heart_distill_native_worker.py` records worker and producer boot identity,
+  PID namespace, process start ticks, session/group and command/executable
+  metadata. Recovery never signals a group named in an old shared claim. A
+  retry is permitted only in the verified original namespace after the prior
+  worker, producer and non-zombie group members have exited. Legacy or missing
+  child records, unreadable process metadata and another host/namespace require
+  manual investigation; no second claim is created. The source's live `Popen`
+  owner retains responsibility for timeout and launch-recording cleanup.
+- Source dispatch requires the already reviewed CPU model and exact canary
+  digest bound to the deadline, before any claim, worker pool or source launch.
+  A new CPU needs separate qualification and review before those pins change.
+  An archive or a concurrently running canary grants no dispatch authority.
+  The launcher retained in the campaign evidence is a historical snapshot.
+- `heart_distill_native_fit.py` permanently seals the consumed native corpus
+  manifest `cd8929b1…1c19` to the retained result `e8cf578b…fa3b8`.
+  `prepare-test` and `test` refuse that identity at every delivery path before
+  evaluator setup or TEST access. No CLI override authorizes another corpus.
+  The old directory latch is defense in depth, not a globally atomic authority
+  on rclone. Any future campaign needs a separately reviewed one-shot authority.
+
+The raw corpus, frozen manifests, selected weights, latches and result remain
+unchanged. Guard regressions use synthetic data/processes only; they do not
+reopen the real TEST or qualify native integration.
+
 ## Known limitations and deferred work
 
 - The scientific run supplies the exact frozen producer SHA, server-built executable hash, and loaded-artifact hashes after the implementation commit.

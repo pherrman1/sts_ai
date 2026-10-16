@@ -38,6 +38,11 @@ class NativeWorkerTest(unittest.TestCase):
         self.plan_sha = wk.sha(self.plan_path)
         self.canary = self.root / 'canary.json'
         self.canary.write_text(json.dumps({'gatePass': True}))
+        for name, value in [('QUALIFIED_CPU', wk.host_identity()['cpuModel']),
+                            ('QUALIFIED_CANARY_SHA256', wk.sha(self.canary))]:
+            patch = unittest.mock.patch.object(wk, name, value)
+            patch.start()
+            self.addCleanup(patch.stop)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -82,9 +87,9 @@ class NativeWorkerTest(unittest.TestCase):
         self.assertEqual(wk.claim_attempt(share, 7, 1, here), 1)
         with self.assertRaises(RuntimeError):  # same container, claimant (this process) still alive
             wk.claim_attempt(share, 7, 1, here)
-        self.assertEqual(wk.claim_attempt(share, 7, 1, 'boot-b'), 2)
         with self.assertRaises(RuntimeError):
-            wk.claim_attempt(share, 7, 1, 'boot-c')
+            wk.claim_attempt(share, 7, 1, 'boot-b')
+        self.assertFalse((share / 'claims/seed-7.attempt2.json').exists())
         (share / 'receipts/seed-8.receipt.json').write_text('{}')
         self.assertIsNone(wk.claim_attempt(share, 8, 1, 'boot-a'))
 
@@ -137,7 +142,7 @@ class NativeWorkerTest(unittest.TestCase):
         out.mkdir(parents=True)
         (out / 'seed-110164000.log').write_text('partial')
         for seed in (110164000, 110164001):
-            wk.claim_attempt(share, seed, 1, 'lost-container')
+            self.prior_claim(share, seed)
         done = wk.worker(self.plan_path, self.plan_sha, REPO, bundle, out, share, 1)
         self.assertEqual([o['attempt'] for o in done['outcomes']], [2, 2])
         r = json.loads((share / 'receipts/seed-110164000.receipt.json').read_text())
@@ -156,18 +161,118 @@ class NativeWorkerTest(unittest.TestCase):
             wk.main()
         self.assertIn('worker done w03-train [[110164004, "receipted", 0], [110164005, "receipted", 0]]', out.getvalue())
 
-    def test_orphaned_producer_is_killed_before_rerun(self):
+    def dead_identity(self):
+        child = subprocess.Popen(['sleep', '300'], start_new_session=True)
+        try:
+            identity = wk.process_identity(child.pid)
+        finally:
+            child.terminate()
+            child.wait(timeout=5)
+        return identity
+
+    def prior_claim(self, share, seed, owner=None, producer=None):
+        claims = share / 'claims'
+        claims.mkdir(parents=True, exist_ok=True)
+        (claims / f'seed-{seed}.attempt1.json').write_text(json.dumps(
+            {'identity': owner or self.dead_identity()}))
+        (claims / f'seed-{seed}.attempt1.child.json').write_text(json.dumps(
+            {'identity': producer or self.dead_identity()}))
+
+    def test_live_orphan_is_not_signalled_or_retried(self):
         share = self.root / 'share'
         here = wk.host_identity()['bootId']
         orphan = subprocess.Popen(['sleep', '300'], start_new_session=True)
         self.addCleanup(lambda: orphan.poll() is None and orphan.kill())
-        (share / 'claims').mkdir(parents=True)
-        dead = subprocess.Popen(['true']); dead.wait()
-        (share / 'claims/seed-9.attempt1.json').write_text(json.dumps({'bootId': here, 'pid': dead.pid}))
-        (share / 'claims/seed-9.attempt1.child.json').write_text(json.dumps({'pgid': orphan.pid}))
+        self.prior_claim(share, 9, producer=wk.process_identity(orphan.pid))
+        with unittest.mock.patch.object(wk.os, 'killpg') as signal_group:
+            with self.assertRaises(RuntimeError):
+                wk.claim_attempt(share, 9, 1, here)
+            signal_group.assert_not_called()
+        self.assertIsNone(orphan.poll())
+        self.assertFalse((share / 'claims/seed-9.attempt2.json').exists())
+        orphan.terminate(); orphan.wait(timeout=5)
         self.assertEqual(wk.claim_attempt(share, 9, 1, here), 2)
-        orphan.wait(timeout=5)
-        self.assertIsNotNone(orphan.returncode)
+
+    def test_ambiguous_claims_never_create_retry(self):
+        here = wk.host_identity()['bootId']
+        for case in ('legacy', 'missing-child', 'foreign-boot', 'foreign-namespace', 'bad-identity'):
+            with self.subTest(case=case):
+                share = self.root / case
+                self.prior_claim(share, 9)
+                claim = share / 'claims/seed-9.attempt1.json'
+                data = json.loads(claim.read_text())
+                if case == 'legacy': data = {'bootId': here, 'pid': 123}
+                elif case == 'missing-child': (share / 'claims/seed-9.attempt1.child.json').unlink()
+                elif case == 'foreign-boot': data['identity']['bootId'] = 'other'
+                elif case == 'foreign-namespace': data['identity']['pidNamespace'] = 'pid:[other]'
+                else: data['identity']['startTicks'] = None
+                claim.write_text(json.dumps(data))
+                with self.assertRaises(RuntimeError): wk.claim_attempt(share, 9, 1, here)
+                self.assertFalse((share / 'claims/seed-9.attempt2.json').exists())
+
+    def test_pid_reuse_cannot_authorize_signalling_or_skip_live_group(self):
+        share = self.root / 'share'
+        owner = wk.process_identity(os.getpid())
+        owner['startTicks'] -= 1  # old worker exited; this numeric PID has been reused
+        self.prior_claim(share, 9, owner=owner)
+        with unittest.mock.patch.object(wk, '_group_running', return_value=True), \
+                unittest.mock.patch.object(wk.os, 'killpg') as signal_group:
+            with self.assertRaises(RuntimeError): wk.claim_attempt(share, 9, 1, owner['bootId'])
+            signal_group.assert_not_called()
+        self.assertFalse((share / 'claims/seed-9.attempt2.json').exists())
+        with unittest.mock.patch.object(wk, '_group_running', side_effect=RuntimeError('unreadable proc')):
+            with self.assertRaises(RuntimeError): wk.claim_attempt(share, 9, 1, owner['bootId'])
+        self.assertFalse((share / 'claims/seed-9.attempt2.json').exists())
+        self.assertEqual(wk.claim_attempt(share, 9, 1, owner['bootId']), 2)
+
+    def test_cpu_qualification_precedes_any_source_or_claim(self):
+        share = self.root / 'share'
+        wk.create_deadline(self.plan_path, share, self.canary)
+        archive = share / 'canaries/w01-canary.tar.gz'
+        archive.parent.mkdir(); archive.write_bytes(b'not a qualification approval')
+        for pin in ('QUALIFIED_CPU', 'QUALIFIED_CANARY_SHA256'):
+            with self.subTest(pin=pin), unittest.mock.patch.object(wk, pin, 'unqualified'), \
+                    unittest.mock.patch.object(wk, 'run_unit') as source:
+                with self.assertRaises(RuntimeError):
+                    wk.worker(self.plan_path, self.plan_sha, REPO, self.root / 'no-bundle',
+                              self.root / 'no-output', share, 1)
+                source.assert_not_called()
+                self.assertFalse((share / 'claims').exists())
+                self.assertFalse((self.root / 'no-output').exists())
+
+    def test_group_inspection_errors_are_not_absence(self):
+        fake = unittest.mock.Mock()
+        fake.read_text.side_effect = PermissionError('unreadable')
+        with unittest.mock.patch.object(wk.Path, 'glob', return_value=[fake]):
+            with self.assertRaises(RuntimeError): wk._group_running(123)
+        fake.read_text.side_effect = None
+        fake.read_text.return_value = 'malformed stat'
+        with unittest.mock.patch.object(wk.Path, 'glob', return_value=[fake]):
+            with self.assertRaises(RuntimeError): wk._group_running(123)
+
+    def test_child_record_failure_aborts_our_owned_process(self):
+        bundle = self.make_bundle()
+        # A synthetic producer that would outlive a failed on_start callback.
+        (bundle/'one_combat').write_text('#!/bin/sh\nexec sleep 300\n')
+        manifest = json.loads((bundle/'bundle.json').read_text())
+        wk.PRODUCER_SHA256 = manifest['files']['one_combat'] = wk.sha(bundle/'one_combat')
+        manifest['producerSha256'] = wk.PRODUCER_SHA256
+        (bundle/'bundle.json').write_text(json.dumps(manifest))
+        real_popen = wk.subprocess.Popen
+        children = []
+        def launch(*args, **kwargs):
+            child = real_popen(*args, **kwargs)
+            children.append(child)
+            return child
+        def fail_record(identity): raise OSError('cannot record child')
+        with unittest.mock.patch.object(wk.subprocess, 'Popen', side_effect=launch):
+            with self.assertRaisesRegex(OSError, 'cannot record child'):
+                wk.run_unit(self.plan, REPO, bundle, self.root, 110164000,
+                            wk.time.time()+30, on_start=fail_record)
+        # check_output() also uses Popen while verifying the frozen contract.
+        self.assertTrue(children)
+        self.assertTrue(all(child.poll() is not None for child in children))
+        self.assertFalse((self.root/'seed-110164000.receipt.json').exists())
 
     def test_receipt_is_published_after_data(self):
         bundle = self.make_bundle()
