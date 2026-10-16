@@ -1,0 +1,45 @@
+{
+  "pass": true,
+  "resources": {
+    "armc": {
+      "aborted": 0,
+      "allRoots": 121,
+      "budgetStoppedFraction": 1.0,
+      "ceilingHitFraction": 0.0,
+      "cpuMax": 0.27239741500000036,
+      "cpuMedian": 0.2551777070000001,
+      "cpuP95": 0.2667029442999988,
+      "overshootMax": 0.022397415000000365,
+      "overshootP95": 0.01670294429999882,
+      "pass": true,
+      "rootBoundaryBypasses": 3,
+      "simulationsMedian": 29.0,
+      "singletons": 31,
+      "validSearches": 87
+    },
+    "chain": {
+      "aborted": 0,
+      "allRoots": 124,
+      "budgetStoppedFraction": 1.0,
+      "ceilingHitFraction": 0.0,
+      "cpuMax": 0.2548540610000014,
+      "cpuMedian": 0.2513154419999999,
+      "cpuP95": 0.2523972871500007,
+      "overshootMax": 0.004854061000001408,
+      "overshootP95": 0.002397287150000694,
+      "pass": true,
+      "rootBoundaryBypasses": 3,
+      "simulationsMedian": 171.0,
+      "singletons": 29,
+      "validSearches": 92
+    }
+  },
+  "sources": 2,
+  "unitReceiptHashes": {
+    "canary-110161992-armc.receipt.json": "c37fdeb599606de86bb6b3fa8da1cb10dac46aa1f6f8092c2abf48815260ed89",
+    "canary-110161992-chain.receipt.json": "defa8d42ec7393e5f25440fa0df671a8b19638f58e55a77204e99dba3da379d2",
+    "canary-110161993-armc.receipt.json": "a47e84630cda78a9d848939557ef9c155670c9d4af509a881505464f8549ddc2",
+    "canary-110161993-chain.receipt.json": "eebbb1e411f53f83a050591fe114241c0135c384964ee5878c62cca26e3d2010"
+  },
+  "units": 4
+}

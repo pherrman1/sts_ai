@@ -758,10 +758,13 @@ This input is parity-unqualified for learned leaf deployment; limited hidden
 field invariance fixtures do not prove live parity. The default-off path remains
 unchanged. The [Heart-domain pilot](../../experiments/evidence/heart_rollout_distill_20261016/README.md)
 completed its 64 sources and six fits with Arm C as tree prior and fixed V4
-rollouts, but is **INVALID_TEST_EXECUTION** after a post-latch evaluator crash.
-Validation selected a count MLP/X2-B blend; no TEST or compression-cost result
-exists. The repository evaluator repair has a synthetic end-to-end regression;
-the preserved TEST was not rerun. No learned leaf or default is promoted.
+rollouts. The original post-latch evaluator crash remains `INVALID_TEST_EXECUTION`.
+The [user-authorized §492 software-fault recovery](../../experiments/evidence/heart_rollout_distill_recovery_20261016/README.md)
+reused the exact selected weights/data on the same already-opened holdout and
+returned `NOT_SHOWN`: lower prediction MSE did not qualify decision quality or
+compression speed. Original failure/latch remain preserved; no learned leaf or
+default is promoted. The separate [§493 rollout-policy pilot](../../experiments/evidence/arm_c_rollout_20261016/README.md)
+is also `NOT_SHOWN` for Heart kills; its explicit C rollout option remains off.
 
 `STS_OOC_MCTS_LEAF_CAPTURE=<new.jsonl>` is a default-off, simulator-only
 observational canary for #507. It requires enabled MCTS with the native CTM

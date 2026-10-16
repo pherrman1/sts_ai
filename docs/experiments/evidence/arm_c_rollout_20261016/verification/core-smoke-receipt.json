@@ -1,0 +1,9 @@
+{
+  "passed": 88,
+  "failed": 0,
+  "seconds": 1062.75,
+  "logSha256": "e9e0bc48470a5e74df8a3531643e3b8fb4caf9664eaeb138282abf4a1b5a90ad",
+  "finalAdapterGuardAndLogChangesCoveredBy": "arm-c-focused-final.log",
+  "fullSuiteNote": "Full suite started before the final diagnostics-guard and log-label repair. All88passed; final affected adapter/startup checks were rerun afterward (5/5 Debug and3/3 Release). Planner/functional rollout code unchanged by that repair.",
+  "finalNativeSource": "3c31c27641ecbe66859e4e1d7c162706a1edc2c8"
+}

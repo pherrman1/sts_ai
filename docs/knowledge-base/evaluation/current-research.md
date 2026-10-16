@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-16 for the NOT_SHOWN software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -43,13 +43,29 @@ contracts now bind native Silver teachers.
 
 ## Arm C inside A20 Heart rollouts (§493)
 
-Authorized, prospective pilot: Arm C stays the tree prior in both arms; compare
-its explicit `LEAF_POLICY=heart1` rollout decisions with the existing V4/heuristic
-chain. Both get the same 0.25 thread-CPU-second allowance per OOC decision, checked
-after completed simulations, with exact-10k Silver actual combat and three CTM
-leaf combats fixed. Two paired support/resource canaries precede 32 fresh paired
-Heart runs. No performance result exists yet, and no default change is proposed.
-[Protocol](../../experiments/evidence/arm_c_rollout_20261016/PROTOCOL.md).
+The completed 32-pair pilot is **NOT_SHOWN**: Arm C rollouts killed the Heart on
+2/32 sources versus 1/32 for the existing chain, +3.125 pp with paired bootstrap
+95% CI [0, +9.375] pp and exact McNemar p=1.0. Only one pair differs on the primary
+outcome; improvement and noninferiority are unqualified. Mean floor 33.281 vs
+30.875 is descriptive, not an alternative promotion endpoint.
+
+Both arms used Arm C tree priors, exact-10k Silver real combat, three CTM leaf
+combats and native X2-B. Their shared 0.25 thread-CPU-second OOC decision allowance
+passed resource gates: every nontrivial completed search stopped on budget, no
+ceiling hits or aborts; median simulations 28 with C vs 161 with the chain.
+Actual median CPU was 254.74 vs 251.50ms. Total CPU/run was 40.550 vs 37.002s,
+including different trajectory/decision counts, not equal-total-CPU matching.
+All 511,121 C rollout steps and both arms' model-prior builds scored with no
+fallback. No training, extension, default change or promotion follows.
+
+The explicit `LEAF_POLICY=heart1` feature remains optional; legacy `prior` still
+uses V4. A stopped initial canary exposed a no-search boundary classification
+bug in the validator; the preserved failed attempt was excluded, and a narrow
+reviewed repair preceded fresh accepted canaries and the untouched cohort.
+[Evidence](../../experiments/evidence/arm_c_rollout_20261016/README.md),
+[protocol/amendment](../../experiments/evidence/arm_c_rollout_20261016/PROTOCOL.md).
+The evidence applies to greedy C rollouts at this allowance; sampling and larger
+allowances remain open questions.
 
 ## A20 Heart rollout distillation (§§491–492)
 

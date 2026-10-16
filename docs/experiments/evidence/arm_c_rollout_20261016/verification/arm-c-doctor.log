@@ -1,0 +1,16 @@
+PASS: repository root: /home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed
+PASS: expected path exists: CMakeLists.txt
+PASS: expected path exists: CMakePresets.json
+PASS: expected path exists: pyproject.toml
+PASS: expected path exists: uv.lock
+PASS: expected path exists: json
+PASS: expected path exists: pybind11
+PASS: expected path exists: tools/seed_guard.sh
+PASS: submodules initialized and at recorded revisions
+PASS: cmake available: /home/philippherrmann/.local/bin/cmake
+PASS: g++ available: /usr/bin/g++
+PASS: python3 available: /usr/bin/python3
+PASS: uv available: uv 0.12.3 (x86_64-unknown-linux-gnu)
+Resolved 105 packages in 0.69ms
+PASS: uv.lock is consistent with pyproject.toml
+Environment doctor: all checks passed.

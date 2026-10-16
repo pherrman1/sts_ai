@@ -1,0 +1,14 @@
+{
+  "reviewer": "heart_review",
+  "sourceSha": "53152577c1c1c1a70bd69581ea184e18a26b330e",
+  "implementation": "PASS",
+  "prospectiveScientificDesign": "PASS",
+  "freshCanarySeedsOnly": [
+    110161992,
+    110161993
+  ],
+  "cohortStillClosed": true,
+  "syntheticPassed": 6,
+  "nativeUnchangedFrom": "3c31c27641ecbe66859e4e1d7c162706a1edc2c8",
+  "originalCanaryPreserved": true
+}

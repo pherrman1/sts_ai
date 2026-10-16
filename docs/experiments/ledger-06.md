@@ -19192,20 +19192,62 @@ Arm C remains the producer tree prior only and V4 rollout policy fixed.
 
 ## §493 Arm C policy inside A20 Heart rollouts (2026-10-16)
 
-**Prospective status: version-2 canary review pending.** Philipp authorized
-the proposed experiment with “Let's go then”. Arm C is tree prior in both arms;
-only the rollout policy changes from the current V4/heuristic continuation chain
-to loaded Arm C argmax on the same supported candidate sets, with mandatory rules
-and chain fallback fixed. The first version completed one control canary source, then stopped on a validator
-classification error before treatment or cohort. Its bundle remains preserved;
-version2 uses fresh canaries after a narrow no-search boundary classification fix.
-No cohort efficacy result exists.
+**Verdict: `NOT_SHOWN`; resource qualification PASS.** All 32 fresh A20 Heart
+pairs completed (64 runs). Arm C rollouts killed the Heart on 2/32 sources versus
+1/32 for the existing chain: +3.125 pp, paired bootstrap 95% CI [0, +9.375] pp,
+exact two-sided McNemar p=1.0. One treatment-only win, zero control-only wins,
+one shared win. This sparse discordance does not establish improved Heart play.
+[Protocol/amendment](evidence/arm_c_rollout_20261016/PROTOCOL.md),
+[full evidence](evidence/arm_c_rollout_20261016/README.md),
+[exact result](evidence/arm_c_rollout_20261016/result.json).
 
-The [prospective protocol](evidence/arm_c_rollout_20261016/PROTOCOL.md) fixes
-0.25 thread-CPU seconds per decision, a completion-boundary budget (not a hard
-cap), simulation ceiling 8,192, two separate paired resource canaries and 32
-fresh A20 Heart pairs. Exact-10k Silver actual combat, three CTM leaf combats,
-native X2-B, key collection and all other controls are fixed. Independent review
-and canary acceptance precede the cohort. No training or default promotion.
+Philipp authorized the proposed comparison with “Let's go then”. Frozen reviewed
+source `53152577c1c1c1a70bd69581ea184e18a26b330e`; native binary `d1301472…`.
+Both arms used exact distilled Arm C (`eff2f74f…`) as tree prior, exact-10k native
+Silver actual combat, calibrated A20 CTM with three leaf combats, native X2-B,
+Heart/key collection and identical search/rule settings. Only the rollout policy
+changed: current `LEAF_POLICY=v4` chain versus explicit `heart1` argmax over the
+same supported candidate sets, with unchanged mandatory steps/chain fallback.
+The legacy `prior` value remains V4 policy-head rollouts.
+
+Both arms got the same 0.25 thread-CPU-second allowance per OOC decision, starting
+before model/root preparation and checked after completed simulations; ceiling
+8,192, other stopping rules disabled. This is not a hard deadline or equal total
+CPU/run. Seeds `110162000..031`, three single-thread workers, AB/BA source-order
+counterbalancing, 900 seconds/unit clamped to the remaining four-hour phase.
+No missing pairs, failed units, replacement, retry, extension or outcome tuning.
+Cohort wall 854.38s; whole-process CPU 2,481.66s, entirely local.
+
+Resource gates passed: 1,519 control/1,683 C nontrivial searches, 100% budget stops,
+zero ceiling hits/aborts. Median completed simulations 161 vs 28; median actual
+search CPU 251.50 vs 254.74ms. p95 overshoot 2.925 vs 15.381ms; maximum 7.930 vs
+39.645ms, within the unchanged 25/100ms thresholds. Mean whole-process CPU/run
+37.002 vs 40.550s; OOC search CPU 11.944 vs 13.457s; actual-combat CPU 24.807 vs
+26.845s. Different trajectory lengths/decision counts contribute to total cost.
+Every prior build used C (169,267/34,536), zero fallbacks; C treatment executed
+511,121 model-scored rollout steps with zero fallbacks, control zero. No V4
+policy-head rollout steps in either arm. Boundary/singleton bypasses are separate.
+
+Descriptive only: mean floor 30.875 vs 33.281; reached Act3 11 vs 13, Act4 6 vs 4;
+mean final HP 1.031 vs 2.813. These outcomes do not replace the Heart-kill primary,
+and conditional success among different reached-act subsets is not a paired effect.
+No per-inference timing benefit or true value-head qualification follows.
+
+Version1's first control canary completed but the validator misclassified one
+normal zero-attempt/no-search root_boundary as an invalid selected action. It
+stopped INCOMPLETE before treatment, second canary or cohort; no outcomes were
+used for tuning. Original bundle/latch/protocol/metadata remain preserved.
+A narrow independently reviewed validator repair excluded only exact validated
+no-search boundaries and retained rejection of malformed/invalid search results.
+Version2 used fresh paired canaries `110161992/993`; all four units and separate
+source/design/canary/custody reviews passed before cohort opening. No native,
+model, gate or cohort changes; no pooling with the stopped attempt.
+
+The full Debug build and 88/88 core/smoke checks passed; final affected Debug5/5,
+Release3/3, synthetic6/6 and startup8 cases passed. The full suite started before
+a final diagnostics-guard/log-only repair; affected checks were repeated afterward.
+No new value student, policy iteration, default promotion or further seeds follow
+from this pilot. The result tests greedy C rollouts at this allowance, not all
+possible C rollout policies. §492's failed value-student gate remains unchanged.
 
 **Knowledge impact:** optional rollout/CPU controls, current research and evidence.

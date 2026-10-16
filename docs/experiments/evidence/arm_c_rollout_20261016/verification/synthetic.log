@@ -1,0 +1,11 @@
+test_accepted_unit_receipts_and_files_are_rechecked (__main__.ResearchTests.test_accepted_unit_receipts_and_files_are_rechecked) ... ok
+test_budget_boundary_and_excluded_roots (__main__.ResearchTests.test_budget_boundary_and_excluded_roots) ... ok
+test_illegal_or_empty_completed_search_rejected (__main__.ResearchTests.test_illegal_or_empty_completed_search_rejected) ... ok
+test_post_run_bytes_and_source_identity_rejected (__main__.ResearchTests.test_post_run_bytes_and_source_identity_rejected) ... ok
+test_primary_requires_interval_and_exact_test (__main__.ResearchTests.test_primary_requires_interval_and_exact_test) ... ok
+test_root_boundary_is_no_search_with_exact_bypass_contract (__main__.ResearchTests.test_root_boundary_is_no_search_with_exact_bypass_contract) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.294s
+
+OK

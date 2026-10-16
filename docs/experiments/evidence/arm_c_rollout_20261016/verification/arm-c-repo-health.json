@@ -1,0 +1,126 @@
+{
+  "added_tracked_paths": [
+    "docs/experiments/evidence/arm_c_rollout_20261016/PROTOCOL.md",
+    "tests/test_arm_c_rollout_493.py",
+    "tests/test_arm_c_rollout_startup.py",
+    "tools/arm_c_rollout_493.py"
+  ],
+  "baseline": "5d5e86b9cbf1dd758d3a4f5e014b13a66260be46",
+  "baseline_metrics": {
+    "active_markdown": {
+      "bytes": 6296427,
+      "files": 763
+    },
+    "one_combat_cpp": {
+      "bytes": 240502
+    },
+    "root_scripts": [
+      "analyze_card_cf_reliability.py",
+      "eval_ensemble.py",
+      "export_combat_model.py",
+      "export_ooc_checkpoint.py",
+      "export_strategic.py",
+      "export_strategic_tok.py",
+      "export_win_model.py",
+      "paired_analysis.py",
+      "parity_test.py",
+      "strategic_gate_contract.py",
+      "strategic_metrics.py",
+      "strategic_split.py",
+      "strategic_tok_contract.py",
+      "strategic_tok_net.py",
+      "strategic_tok_state_cache.py",
+      "train_boss_survival.py",
+      "train_card_cf.py",
+      "train_combat_cpsi.py",
+      "train_combat_deepsets.py",
+      "train_combat_dist.py",
+      "train_combat_pvnet.py",
+      "train_combat_transition_entry.py",
+      "train_deckset.py",
+      "train_meta_entity.py",
+      "train_ooc_checkpoint.py",
+      "train_ooc_encounter.py",
+      "train_ooc_next_action.py",
+      "train_path_cf.py",
+      "train_rest_cf.py",
+      "train_strategic.py",
+      "train_strategic_ppo.py",
+      "train_strategic_qiso.py",
+      "train_strategic_tok.py",
+      "train_value.py",
+      "train_value_combat.py",
+      "train_value_deckaware.py",
+      "train_value_rich.py",
+      "train_value_xgb.py",
+      "train_winrate.py",
+      "v_server.py"
+    ],
+    "tracked_bytes": 920010574,
+    "tracked_files": 8496
+  },
+  "current": {
+    "head": "3c31c27641ecbe66859e4e1d7c162706a1edc2c8",
+    "metrics": {
+      "active_markdown": {
+        "bytes": 6304435,
+        "files": 764
+      },
+      "one_combat_cpp": {
+        "bytes": 240502
+      },
+      "root_scripts": [
+        "analyze_card_cf_reliability.py",
+        "eval_ensemble.py",
+        "export_combat_model.py",
+        "export_ooc_checkpoint.py",
+        "export_strategic.py",
+        "export_strategic_tok.py",
+        "export_win_model.py",
+        "paired_analysis.py",
+        "parity_test.py",
+        "strategic_gate_contract.py",
+        "strategic_metrics.py",
+        "strategic_split.py",
+        "strategic_tok_contract.py",
+        "strategic_tok_net.py",
+        "strategic_tok_state_cache.py",
+        "train_boss_survival.py",
+        "train_card_cf.py",
+        "train_combat_cpsi.py",
+        "train_combat_deepsets.py",
+        "train_combat_dist.py",
+        "train_combat_pvnet.py",
+        "train_combat_transition_entry.py",
+        "train_deckset.py",
+        "train_meta_entity.py",
+        "train_ooc_checkpoint.py",
+        "train_ooc_encounter.py",
+        "train_ooc_next_action.py",
+        "train_path_cf.py",
+        "train_rest_cf.py",
+        "train_strategic.py",
+        "train_strategic_ppo.py",
+        "train_strategic_qiso.py",
+        "train_strategic_tok.py",
+        "train_value.py",
+        "train_value_combat.py",
+        "train_value_deckaware.py",
+        "train_value_rich.py",
+        "train_value_xgb.py",
+        "train_winrate.py",
+        "v_server.py"
+      ],
+      "tracked_bytes": 920054523,
+      "tracked_files": 8500
+    }
+  },
+  "documentation": {
+    "current_broken": []
+  },
+  "hard_failures": {},
+  "status": "pass",
+  "warnings": [
+    "active Markdown growth"
+  ]
+}
