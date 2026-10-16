@@ -13,6 +13,7 @@
 #include "one_combat/ooc_checkpoint_policy.h"
 #include "one_combat/ooc_mcts_adapter.h"
 #include "one_combat/ooc_v4_encoding.h"
+#include "one_combat/heart1_policy.h"
 #include "sim/search/OocSemanticAction.h"
 
 namespace {
@@ -28,6 +29,36 @@ int main(int argc, char **argv) {
         using namespace one_combat;
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        {
+            // Native shop actions retain physical slots after purchases. A
+            // compacted card vector silently shifts tokens or throws at slot 6.
+            const CardId ids[] = {CardId::BASH, CardId::STRIKE_RED, CardId::DEFEND_RED,
+                CardId::ANGER, CardId::CLEAVE, CardId::IRON_WAVE, CardId::POMMEL_STRIKE};
+            for (const int ascension : {0, 20}) for (unsigned sold = 0; sold < 128; ++sold) {
+                auto shop = gc;
+                shop.ascension = ascension;
+                shop.screenState = ScreenState::SHOP_ROOM;
+                shop.curRoom = Room::SHOP;
+                shop.gold = 999;
+                shop.info.shop = Shop{};
+                std::fill(std::begin(shop.info.shop.prices), std::end(shop.info.shop.prices), -1);
+                unsigned remaining = 0;
+                for (int slot = 0; slot < 7; ++slot) if (!(sold & (1u << slot))) {
+                    ++remaining;
+                    shop.info.shop.cards[slot] = Card(ids[slot], slot % 2);
+                    shop.info.shop.cardPrice(slot) = 50;
+                }
+                heart1::Choice choice;
+                require(heart1::buildChoice(shop, choice), "Arm C partial shop was unencoded");
+                require(choice.record.offeredCards.size() == remaining, "Arm C shop dropped a legal card token");
+                for (std::size_t i = 0; i < choice.record.offeredCards.size(); ++i) {
+                    const auto slot = choice.actions[i].getIdx1();
+                    require(!(sold & (1u << slot)) && choice.record.offeredCards[i] == int(ids[slot])
+                            && choice.record.offeredUpgrades[i] == slot % 2,
+                            "Arm C shop token lost its physical native card slot");
+                }
+            }
+        }
         {
             // Source-qualified EventHelper interval table; all cells, including
             // saturation and zero-width overwritten last-cell behavior.

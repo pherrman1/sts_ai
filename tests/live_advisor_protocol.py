@@ -12,6 +12,8 @@ class AdvisorProtocolTest(unittest.TestCase):
         env.pop("STS_DIFFERENTIAL_TRACE", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
+        for key in ("STS_LIVE_OOC_ARM_C", "STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
+            env.pop(key, None)
         env.update(ctm_env or {})
         if differential:
             env["STS_DIFFERENTIAL_TRACE"] = "1"
@@ -32,6 +34,60 @@ class AdvisorProtocolTest(unittest.TestCase):
             capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
+
+    def test_explicit_arm_c_missing_or_empty_fails_without_protocol_fallback(self):
+        for path in ("", "/definitely/missing/studentc.bin"):
+            env = {**os.environ, "STS_LIVE_OOC_ARM_C": path}
+            proc = subprocess.run([sys.argv[1]], input='{"kind":"hello","protocol":"sts_model_inspector_v1"}\n',
+                                  capture_output=True, text=True, env=env, timeout=10)
+            self.assertEqual(proc.returncode, 2)
+            self.assertEqual(proc.stdout, "")
+            self.assertIn("STS_LIVE_OOC_ARM_C", proc.stderr)
+
+    def test_qualified_ascension_stacks_load_and_partial_a20_config_fails_closed(self):
+        models = self.model.parent
+        base = models / "combat_transition_deepsets_pathb_r2_lizard.native"
+        env = {"STS_CTM_BREW_FALLBACK_MODEL": str(models / "combat_transition_near_full_escape_pathb_r2.native"),
+               "STS_LIVE_CTM_A20_MODEL": str(models / "combat_transition_deepsets_pathb_a20_lizard.native"),
+               "STS_LIVE_CTM_A20_FALLBACK_MODEL": str(models / "combat_transition_near_full_escape_pathb_a20.native")}
+        hello = json.dumps({"kind": "hello", "protocol": "sts_model_inspector_v1"})
+        response, = self.run_advisor([hello], base, ctm_env=env)
+        self.assertEqual(response["ctmStatus"], "OK", response)
+        self.assertTrue(response["ctmStack"]["activeLizard"])
+        self.assertIn("bossSurvivalLogitShift", response["ctmStack"]["ascension20"])
+        entry = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                 "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
+                 "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",
+                 "potionCapacity": 3, "potionKeepValue": 4.0, "isBurningElite": False,
+                 "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0, "bottleBinding": -1}],
+                 "relics": [], "potions": ["Potion Slot"] * 5}
+        for ascension in (0, 20):
+            entry["ascension"] = ascension
+            wire = json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "qualified-dispatch", "sequence": 1, "observationHash": str(ascension),
+                "observation": dict(entry, combatEntry=entry, combatEntryHash=str(ascension))})
+            routed, = self.run_advisor([wire], base, ctm_env=env)
+            direct_env = {"STS_CTM_BREW_FALLBACK_MODEL": env[
+                "STS_LIVE_CTM_A20_FALLBACK_MODEL" if ascension == 20 else "STS_CTM_BREW_FALLBACK_MODEL"],
+                "STS_CTM_ACTIVE_LIZARD": "1"}
+            direct, = self.run_advisor([wire], env["STS_LIVE_CTM_A20_MODEL"] if ascension == 20 else base,
+                                      ctm_env=direct_env)
+            r = routed["evaluators"][0]
+            d = direct["evaluators"][0]
+            self.assertEqual(r["status"], "OK", routed)
+            self.assertEqual(r["ctmStackScope"], "ascension20" if ascension == 20 else "base")
+            for key in ("deathProbability", "winningHpHistogram"):
+                self.assertEqual(r[key], d[key], key)
+        for missing in ("STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
+            for value in (None, ""):
+                partial = dict(env)
+                if value is None:
+                    partial.pop(missing)
+                else:
+                    partial[missing] = value
+                response, = self.run_advisor([hello], base, ctm_env=partial)
+                self.assertEqual(response["ctmStatus"], "SCHEMA_MISMATCH", response)
+                self.assertIsNone(response["ctmStack"])
 
     def test_completed_single_selection_is_exact_model_free_confirmation(self):
         for task, owner in (("WARCRY", "common.PutOnDeckAction"), ("FORETHOUGHT", "unique.ForethoughtAction"),

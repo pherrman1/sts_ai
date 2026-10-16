@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-09 for the advisor keeping the pre-#418 CTM stack; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -380,7 +380,41 @@ select that manifest's primary at launch. Legacy single-model manifests and
 explicit standard-primary overrides remain supported. `STS_CTM_BREW_FALLBACK_MODEL`
 and strict `STS_CTM_ACTIVE_LIZARD=0|1` override the qualified stack; advisor
 hello/forecast and OOC responses identify the loaded artifacts and setting.
-The advisor deliberately still uses this pre-#418 stack, not the pathb-r2 default of `one_combat` OOC MCTS (ledger §412; open follow-up).
+Existing installations retain that pre-#418 stack until explicitly upgraded with
+`tools/live_game_start.sh --qualified-ctm --restart-game --probe`. This installs
+a version-2 runtime receipt containing the production pathb-r2 Lizard fast and
+escape/Brew fallback pair, plus the calibrated pathb-a20 pair. The advisor uses
+the A20 pair for ascension 20 and the base pair below 20, in both imagined OOC
+combats and combat-entry forecasts. The native loader verifies the built-in
+artifact contracts; a partial A20 configuration or research-manifest override
+fails closed. `ctmStackScope` identifies the selected stack. Legacy releases
+and explicit legacy overrides remain supported.
+
+The frozen distilled Arm C model can be installed explicitly:
+
+```bash
+tools/live_game_start.sh --arm-c /absolute/path/to/studentc.bin \
+  --qualified-ctm --restart-game --probe
+```
+
+The installer requires SHA-256
+`eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509`,
+copies the weights into the stable runtime as `models/arm_c_student.bin`, and
+pins them in `armCModelSha256`. Refreshes preserve this explicit selection;
+repair cannot replace it with a cached legacy runtime. The launcher exports
+`STS_LIVE_OOC_ARM_C` to the inspector's advisor child. Empty, missing or invalid
+explicit weights fail startup. With no selection, the prior stays V4.
+
+Arm C currently supplies the **tree prior only**, through the same native
+heart1 candidate mapping as simulator OOC MCTS; the live rollout chain, leaf
+value, 512-simulation budget and Silver combat policy remain as configured
+before this opt-in. Unencoded Arm C nodes retain the existing live prior
+(equal logits when reward-pity history is incomplete). Every response with a
+loaded model carries `armCModel`; successful searched OOC decisions report
+`prior=arm_c`, `armCPriorNodes`, `armCPriorFallbacks` and per-reason counts.
+Model loading, scored prior use, live action mapping, complete-run coverage,
+and gameplay quality are separate claims. This connection does not qualify
+the offline Arm C rollout-policy experiment or A20 training/live parity (#506).
 Only validated production qualification enables Lizard correction automatically;
 integration-candidate metadata requires explicit opt-in. An explicitly empty
 or whitespace model override reaches the native loader unchanged and fails,
@@ -1014,6 +1048,17 @@ v4`, `--strict-ooc`, `--strict-silver`, and `--max-steps` control coverage and
 stopping. The default resumes an advertised save; `--new-run` refuses to
 replace a save or live run. Without a save, an explicit new-run/character
 request is required. Ascension and seed are passed through to MCP.
+
+The MCP `SHOP_ROOM` merchant entrance is a mechanical inventory reveal. The
+driver requires exactly one visible `shop` entry, one matching MCP action, and
+an exact act/floor identity. It enters once, lets the OOC provider evaluate the
+opened `SHOP_SCREEN`, then proceeds after that provider cancels the shop.
+These clicks are traced as `shop_navigation` and work with `--strict-ooc`;
+they do not increment fallback or unsupported counters. Failed or dry-run
+clicks cannot mark a shop entered. Differential capture retains its explicit
+unsupported boundary because the native replay schema does not represent this
+inventory reveal. Arm C shop tokens preserve the native physical slot after
+any purchase; removing sold slots before indexing changes card identities.
 
 In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.
 Non-skippable Discovery/Colorless Potion offers support exactly three distinct,

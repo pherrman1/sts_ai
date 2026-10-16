@@ -12,6 +12,8 @@ Ensure the stable runtime, then start or verify ModTheSpire + MCPTheSpire.
   --run                    start the driver immediately when MCP is ready
   --super-fast             enable the installed SuperFastMode mod
   --refresh-runtime        build and atomically publish this worktree's advisor
+  --arm-c PATH             install the frozen Arm C OOC prior (also refreshes runtime)
+  --qualified-ctm          install the qualified A0 and calibrated A20 stacks
   --deploy-inspector       build and atomically deploy the Java inspector JAR
   --restart-game           safely restart the expected ModTheSpire process
   --foreground             keep a newly started ModTheSpire attached
@@ -35,6 +37,8 @@ runtime_tool=${STS_LIVE_RUNTIME_TOOL:-$repo_root/tools/live_game_runtime.py}
 check_only=0 probe=0 foreground=0 allow_missing_advisor=0 refresh_runtime=0
 deploy_inspector=0 restart_game=0 allow_missing_ooc=0 wait_seconds=45
 run_driver=0 super_fast=0
+arm_c_source=
+qualified_ctm=0
 driver_args=()
 while (($#)); do
   case "$1" in
@@ -47,6 +51,12 @@ while (($#)); do
     --allow-missing-advisor) allow_missing_advisor=1 ;;
     --allow-missing-ooc) allow_missing_ooc=1 ;;
     --refresh-runtime) refresh_runtime=1 ;;
+    --arm-c)
+      (($# >= 2)) || die "--arm-c requires a weights path"
+      [[ -n "$2" ]] || die "--arm-c requires a nonempty weights path"
+      arm_c_source=$2; refresh_runtime=1; shift
+      ;;
+    --qualified-ctm) qualified_ctm=1; refresh_runtime=1 ;;
     --deploy-inspector) deploy_inspector=1 ;;
     --restart-game) restart_game=1 ;;
     --wait)
@@ -99,7 +109,10 @@ fi
 runtime_command=ensure
 ((refresh_runtime)) && runtime_command=install
 runtime_available=1
-if ! python3 "$runtime_tool" "$runtime_command"; then
+runtime_args=()
+[[ -z "$arm_c_source" ]] || runtime_args+=(--arm-c-source "$arm_c_source")
+((!qualified_ctm)) || runtime_args+=(--qualified-ctm)
+if ! python3 "$runtime_tool" "$runtime_command" "${runtime_args[@]}"; then
   ((allow_missing_advisor)) || die "stable runtime $runtime_command failed"
   runtime_available=0
   warn "stable runtime unavailable; continuing in explicit MCP-only mode"
@@ -112,6 +125,9 @@ fi
 runtime_root=${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$home_dir/.local/share}/sts-ai/live-runtime}
 if ((runtime_available)); then
   export STS_MODEL_INSPECTOR_ADVISOR=${STS_MODEL_INSPECTOR_ADVISOR:-$runtime_root/current/one_combat_advisor}
+  if [[ ! ${STS_LIVE_OOC_ARM_C+x} && -f "$runtime_root/current/models/arm_c_student.bin" ]]; then
+    export STS_LIVE_OOC_ARM_C="$runtime_root/current/models/arm_c_student.bin"
+  fi
   # ensure/install validated this manifest; use its primary so legacy releases
   # remain usable and explicit model overrides retain precedence.
   if [[ ! ${STS_CTM_MODEL+x} ]]; then
@@ -123,6 +139,20 @@ print(manifest.get("ctmPrimary", "combat_transition_near_full_except_smoke_v2.na
 PY_CTM
     )
     export STS_CTM_MODEL="$runtime_root/current/models/$ctm_primary"
+  fi
+  qualified_names=$(python3 - "$runtime_root/current/manifest.json" <<'PY_CTM_STACK'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as stream:
+    m = json.load(stream)
+if m.get("ctmStackVersion") == 2:
+    print(m["ctmFallback"], m["ctmA20Primary"], m["ctmA20Fallback"])
+PY_CTM_STACK
+  )
+  if [[ -n "$qualified_names" ]]; then
+    read -r ctm_fallback ctm_a20 ctm_a20_fallback <<< "$qualified_names"
+    [[ ${STS_CTM_BREW_FALLBACK_MODEL+x} ]] || export STS_CTM_BREW_FALLBACK_MODEL="$runtime_root/current/models/$ctm_fallback"
+    [[ ${STS_LIVE_CTM_A20_MODEL+x} ]] || export STS_LIVE_CTM_A20_MODEL="$runtime_root/current/models/$ctm_a20"
+    [[ ${STS_LIVE_CTM_A20_FALLBACK_MODEL+x} ]] || export STS_LIVE_CTM_A20_FALLBACK_MODEL="$runtime_root/current/models/$ctm_a20_fallback"
   fi
   if [[ -f "$runtime_root/current/models/v_win_trees.txt" ]]; then
     export STS_LIVE_OOC_WIN_MODEL=${STS_LIVE_OOC_WIN_MODEL:-$runtime_root/current/models/v_win_trees.txt}

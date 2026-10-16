@@ -8,7 +8,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tools.live_game_runtime import CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, RuntimeFailure, RuntimeManager, sha256
+from tools.live_game_runtime import (CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS,
+    CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME,
+    CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, ARM_C_NAME,
+    RuntimeFailure, RuntimeManager, sha256)
 
 
 class LiveGameRuntimeTest(unittest.TestCase):
@@ -69,6 +72,103 @@ class LiveGameRuntimeTest(unittest.TestCase):
         active = self.manager.record_active(Path(self.temp.name) / "missing.jar", os.getpid())
         for key in CTM_STACK_KEYS:
             self.assertEqual(active[key], manifest[key])
+
+    def test_arm_c_is_explicit_pinned_self_contained_and_preserved_on_refresh(self):
+        first = self.install()
+        self.assertNotIn("armCModelSha256", first)
+        source = Path(self.temp.name) / "studentc.bin"
+        source.write_bytes(b"arm-c-fixture")
+        with mock.patch("tools.live_game_runtime.ARM_C_SHA256", sha256(source)):
+            manifest = self.manager.install(self.advisor, arm_c_source=source)
+            self.assertNotEqual(first["runtimeId"], manifest["runtimeId"])
+            self.assertEqual((self.manager.current / "models" / ARM_C_NAME).read_bytes(), source.read_bytes())
+            self.assertEqual(manifest["armCModelSha256"], sha256(source))
+            source.unlink()
+            self.assertEqual(self.manager.install(self.advisor), manifest)
+            (self.manager.current / "models" / ARM_C_NAME).write_bytes(b"corrupt")
+            with self.assertRaisesRegex(RuntimeFailure, "hash mismatch"):
+                self.manager.validate_release()
+
+    def test_wrong_arm_c_weights_fail_before_activation(self):
+        before = self.install()
+        source = Path(self.temp.name) / "wrong.bin"
+        source.write_bytes(b"different-model")
+        with self.assertRaisesRegex(RuntimeFailure, "Arm C SHA-256"):
+            self.manager.install(self.advisor, arm_c_source=source)
+        self.assertEqual(self.manager.validate_release(), before)
+
+    def test_active_arm_c_selection_requires_matching_explicit_weights(self):
+        self.install()
+        source = Path(self.temp.name) / "studentc.bin"
+        source.write_bytes(b"arm-c-fixture")
+        with mock.patch("tools.live_game_runtime.ARM_C_SHA256", sha256(source)):
+            self.manager.install(self.advisor, arm_c_source=source)
+            for override, expected in ((None, False), ("", False), ("/missing", False), (str(source), True)):
+                env = {k: v for k, v in os.environ.items() if k != "STS_LIVE_OOC_ARM_C"}
+                if override is not None:
+                    env["STS_LIVE_OOC_ARM_C"] = override
+                with self.subTest(override=override), mock.patch.dict(os.environ, env, clear=True):
+                    active = self.manager.record_active(Path(self.temp.name) / "missing.jar", os.getpid())
+                    self.assertIs(active["armCMatchesInstalled"], expected)
+
+    def qualified_sources(self):
+        for name in (CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME):
+            (self.repo / "selfplay/models" / name).write_bytes(name.encode())
+
+    def test_qualified_ctm_pins_both_ascensions_and_survives_refresh(self):
+        self.qualified_sources()
+        manifest = self.manager.install(self.advisor, qualified_ctm=True)
+        self.assertEqual(manifest["ctmStackVersion"], 2)
+        self.assertEqual(manifest["ctmPrimary"], CTM_CURRENT_FAST_NAME)
+        self.assertEqual(manifest["ctmFallback"], CTM_CURRENT_NAME)
+        self.assertEqual(manifest["ctmA20Primary"], CTM_A20_FAST_NAME)
+        self.assertEqual(manifest["ctmA20Fallback"], CTM_A20_NAME)
+        self.assertEqual(self.manager.install(self.advisor), manifest)
+        env = {"STS_LIVE_CTM_A20_MODEL": str(self.manager.current / "models" / CTM_A20_FAST_NAME),
+               "STS_LIVE_CTM_A20_FALLBACK_MODEL": str(self.manager.current / "models" / CTM_A20_NAME)}
+        with mock.patch.dict(os.environ, env):
+            active = self.manager.record_active(Path(self.temp.name) / "missing.jar", os.getpid())
+            self.assertIs(active["ctmMatchesInstalled"], True)
+        with mock.patch.dict(os.environ, {**env, "STS_LIVE_CTM_A20_MODEL": ""}):
+            active = self.manager.record_active(Path(self.temp.name) / "missing.jar", os.getpid())
+            self.assertIs(active["ctmMatchesInstalled"], False)
+
+    def test_qualified_ctm_partial_receipts_and_corruption_fail_closed(self):
+        self.qualified_sources()
+        manifest = self.manager.install(self.advisor, qualified_ctm=True)
+        receipt = self.manager.current / "manifest.json"
+        for missing in (*CTM_STACK_KEYS, *CTM_QUALIFIED_KEYS):
+            with self.subTest(missing=missing):
+                receipt.write_text(json.dumps({k: v for k, v in manifest.items() if k != missing}))
+                with self.assertRaises(RuntimeFailure):
+                    self.manager.validate_release()
+        receipt.write_text(json.dumps(manifest))
+        for name in (CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME):
+            with self.subTest(corrupt=name):
+                artifact = self.manager.current / "models" / name
+                old = artifact.read_bytes()
+                artifact.write_bytes(b"corrupt")
+                with self.assertRaisesRegex(RuntimeFailure, "hash mismatch"):
+                    self.manager.validate_release()
+                artifact.write_bytes(old)
+
+    def test_missing_a20_source_preserves_previous_release(self):
+        before = self.install()
+        self.qualified_sources()
+        (self.repo / "selfplay/models" / CTM_A20_NAME).unlink()
+        with self.assertRaisesRegex(RuntimeFailure, "A20 CTM model missing"):
+            self.manager.install(self.advisor, qualified_ctm=True)
+        self.assertEqual(self.manager.validate_release(), before)
+
+    def test_repair_never_downgrades_selected_ctm_stack_to_cached_legacy(self):
+        self.install()
+        self.qualified_sources()
+        self.manager.install(self.advisor, qualified_ctm=True)
+        (self.manager.current / "one_combat_advisor").write_bytes(b"broken")
+        with mock.patch.object(self.manager, "build_advisor", return_value=self.advisor):
+            repaired = self.manager.ensure()
+        self.assertEqual(repaired["ctmStackVersion"], 2)
+        self.assertEqual(self.manager.validate_release(), repaired)
 
     def test_legacy_single_model_manifest_remains_valid(self):
         manifest = self.install()

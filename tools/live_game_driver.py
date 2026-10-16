@@ -1244,6 +1244,16 @@ class Driver:
                         return match, None
         if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "SHOP_ROOM":
             return choose_deterministic_action(screen, candidates), None
+        return self.shop_navigation_action(screen, game, candidates)
+
+    def shop_navigation_action(self, screen: Mapping[str, Any], game: Mapping[str, Any],
+                               candidates: Sequence[LegalAction]) -> tuple[LegalAction, tuple[int, int] | None]:
+        # Opening the merchant reveals inventory without spending resources.
+        # After the shop policy cancels, proceed once rather than re-entering.
+        # Neither transition evaluates or purchases an item.
+        labels = _list(screen.get("choice_list"))
+        if len(labels) != 1 or _choice_label(labels[0]).strip().lower() != "shop":
+            raise IntegrationFailure("SHOP_ROOM navigation requires the exact single shop entry")
         act, floor = game.get("act", screen.get("act")), screen.get("floor", game.get("floor"))
         if type(act) is not int or type(floor) is not int:
             raise DriverError("SHOP_ROOM navigation requires exact act/floor identity")
@@ -1337,9 +1347,16 @@ class Driver:
         snapshot = None
         evaluator = None
         shop_entry_key = None
+        shop_navigation = False
         candidates = [action] if action else build_legal_actions(screen, commands, game_state)
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
+        # The differential native schema has no inventory-reveal transition;
+        # keep its existing explicit unsupported boundary before any click.
+        if (action is None and not self.differential_trace
+                and _text(screen.get("screen_type", screen.get("screenType"))).upper() == "SHOP_ROOM"):
+            action, shop_entry_key = self.shop_navigation_action(screen, game_state, candidates)
+            shop_navigation = True
         reveal_card = False
         if action is None:
             reveal_candidates = candidates
@@ -1363,7 +1380,9 @@ class Driver:
         if self.differential_trace:
             row["pre_action_state"] = {"screen": screen, "game_state": game_state}
         if action:
-            row["decision_source"] = "card_reward_reveal" if reveal_card else "run_control"
+            row["decision_source"] = "shop_navigation" if shop_navigation else "card_reward_reveal" if reveal_card else "run_control"
+            if shop_entry_key is not None:
+                row["shop_entry_room"] = list(shop_entry_key)
         else:
             combat = _is_combat(screen)
             inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}

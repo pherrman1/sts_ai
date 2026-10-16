@@ -251,6 +251,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/live_ooc_state.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/live_ooc_policy.cpp
+    apps/one_combat/heart1_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
@@ -286,6 +287,7 @@ if(STS_NODE_EXECUTABLE)
 endif()
 
 add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
+    apps/one_combat/heart1_policy.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp
@@ -302,6 +304,7 @@ add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
+    apps/one_combat/heart1_policy.cpp
     apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp

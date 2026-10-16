@@ -1053,14 +1053,15 @@ class OocDriverTest(unittest.TestCase):
                 path.write_text(json.dumps(raw))
                 return await original(state, previous)
             reader.read_for = capture
-            driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"))
+            driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"), strict_ooc=True)
             asyncio.run(driver.run())
             mutations = [(tool, arguments) for tool, arguments in client.calls if tool in {"choose", "cancel", "proceed"}]
             self.assertEqual(mutations, [("choose", {"choice_index": 1}), ("choose", {"choice_index": 1}),
                                          ("cancel", {}), ("proceed", {})])
             self.assertEqual(driver.entered_shop_rooms, {(1, 4)})
             self.assertEqual(driver.counters["ooc_v4_ok"], 2)
-            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 2)
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+            self.assertEqual(driver.counters["ooc_v4_unsupported"], 0)
 
     def test_shop_entry_is_not_recorded_on_dry_run_or_failed_call(self):
         for dry_run in (True, False):
@@ -1085,6 +1086,19 @@ class OocDriverTest(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(DriverError, "MCP action failed"):
                         asyncio.run(driver.run())
+                self.assertEqual(driver.entered_shop_rooms, set())
+
+    def test_strict_shop_navigation_rejects_ambiguous_or_nonmerchant_choices(self):
+        for choices in (["shop", "buy"], ["purchase"], []):
+            with self.subTest(choices=choices), tempfile.TemporaryDirectory() as directory:
+                screen = {"screen_type": "SHOP_ROOM", "floor": 4,
+                          "choice_list": choices, "ready_for_command": True}
+                client = FakeClient(screen, ["choose", "proceed"], game_state={"act": 1})
+                driver = Driver(client, InspectorReader(Path(directory) / "absent.json"),
+                                TraceWriter(Path(directory) / "trace"), strict_ooc=True)
+                with self.assertRaisesRegex(IntegrationFailure, "exact single shop entry"):
+                    asyncio.run(driver.run())
+                self.assertFalse(any(tool in {"choose", "proceed"} for tool, _ in client.calls))
                 self.assertEqual(driver.entered_shop_rooms, set())
 
     def test_skipped_reward_is_not_reopened_and_distinct_identical_group_survives(self):
