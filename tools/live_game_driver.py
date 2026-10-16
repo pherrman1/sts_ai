@@ -978,13 +978,19 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
                          for reward in occurrences)
     sozu = any(_mapping(relic).get("id") == "Sozu" for relic in _list(game.get("relics")))
     constrained_potions = sozu or (free_slots is not None and potion_rewards > free_slots)
+    # The advisor defers forced potion collection while a public relic is
+    # pending (it may change the belt or pickup effects). Reveal the cards so
+    # the provider can evaluate all siblings instead of waiting on each other.
+    relic_pending = belt_known and any(index + 1 in choice_indexes
+        and _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "RELIC"
+        for index, reward in enumerate(occurrences))
     if not any(index + 1 in choice_indexes
                and _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "CARD"
                for index, reward in enumerate(occurrences)):
         return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind == "POTION" and constrained_potions:
+        if kind == "POTION" and (constrained_potions or relic_pending):
             continue
         if kind in {"GOLD", "STOLEN_GOLD", "POTION"} and index + 1 in choice_indexes:
             # Collect scalar gold and claimable potions first. Public relics

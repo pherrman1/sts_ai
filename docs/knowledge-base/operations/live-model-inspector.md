@@ -701,10 +701,14 @@ Sozu excludes these candidates. Direct V4 reports
 score the additional action; MCTS uses its uniform-prior fallback.
 
 The live driver opens an unrevealed card reward after gold and freely
-collectable potions in that combat reward have been collected. Visible
-relic/key rewards and constrained potion rewards may remain as exact parent
-continuations while a card group is open. This also supports manually opening
-a card group before collecting visible gold or relic rewards.
+collectable potions in that combat reward have been collected. A visible relic
+defers forced potion collection because it can affect capacity or pickup
+effects. With a known public belt, the driver instead reveals the card group
+and leaves both the relic and potion to the provider, avoiding a parent-reward
+ordering deadlock. Visible relic/key rewards and constrained potion rewards
+remain exact parent continuations while a card group is open. This also
+supports manually opening a card group before collecting visible gold or relic
+rewards.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat

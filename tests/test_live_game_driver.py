@@ -400,6 +400,19 @@ class LiveGameDriverTest(unittest.TestCase):
         candidates = build_legal_actions(screen, ["choose"], game)
         self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 3})
 
+    def test_card_reveal_breaks_public_relic_potion_ordering_deadlock(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Preserved Insect", "Fairy in a Bottle", "card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [{"reward_type": "RELIC"}, {"reward_type": "POTION"}, {"reward_type": "CARD"}]},
+                "potions": [{"id": "Potion Slot"}] * 3}
+        candidates = build_legal_actions(screen, ["choose", "proceed"], game)
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 3})
+        # Without the relic, the existing qualified forced-potion path applies.
+        without_relic = [c for c in candidates if c.mcp_arguments != {"choice_index": 1}]
+        self.assertIsNone(card_reward_reveal_action(screen, game, without_relic))
+        game.pop("potions")
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+
     def test_multiple_card_groups_reveal_first_undeclined_physical_occurrence(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Card", "Card", "Card"],
                   "ready_for_command": True}
