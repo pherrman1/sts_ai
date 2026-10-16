@@ -158,10 +158,13 @@ def unit(plan, bundle, out, seed, tag, capture=True, seconds=3600):
             rc = child.wait(timeout=seconds)
         except subprocess.TimeoutExpired:
             # Only our live owned Popen session is signalled; no stale shared claims.
-            os.killpg(child.pid, signal.SIGTERM)
+            try: os.killpg(child.pid, signal.SIGTERM)
+            except ProcessLookupError: pass
             try: child.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                os.killpg(child.pid, signal.SIGKILL); child.wait()
+                try: os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError: pass
+                child.wait()
             rc = 124
     receipt = {'seed': seed, 'returncode': rc, 'seconds': time.monotonic()-started,
                'sourceSha': plan['sourceSha'], 'binarySha256': sha(bundle / 'one_combat'),
@@ -283,6 +286,12 @@ def main():
     p.add_argument('--role', choices=('local','cloud'), default='local')
     p.add_argument('--worker', type=int)
     a = p.parse_args()
+    required = {'prepare': ('binary','student','out'), 'canary': ('plan','bundle','out'),
+                'activate': ('plan','bundle','approval','out'),
+                'worker': ('plan','bundle','activation','out','worker')}
+    for key in required[a.command]:
+        if getattr(a,key) is None:
+            p.error('--'+key+' is required for '+a.command)
     if a.command == 'prepare': prepare(a.repo, a.binary, a.student, a.out)
     elif a.command == 'canary': canary(a.plan, a.bundle.resolve(), a.out.resolve(), a.role)
     elif a.command == 'activate': activate(a.plan, a.bundle, a.approval, a.out)

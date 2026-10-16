@@ -5,6 +5,7 @@ import sys
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'tools'))
 import heart_outcome_collect as collect
@@ -69,6 +70,42 @@ class OutcomeTests(unittest.TestCase):
         checked=subprocess.run(['bash',str(guard),'guard-only','one_combat','heartoutcomegen','2','7','unused','on'],capture_output=True)
         self.assertNotEqual(checked.returncode,0)
         self.assertIn(b'exactly one',checked.stderr)
+
+    def test_activation_requires_exact_canary_and_export_and_is_once(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); bundle=root/'bundle';bundle.mkdir()
+            collect.write(bundle/'bundle.json',{})
+            plan=root/'plan.json';collect.write(plan,{})
+            q=root/'qualification';q.mkdir()
+            canary=q/'canary.json';collect.write(canary,{'verdict':'PASS','role':'cloud',
+                'planSha256':collect.sha(plan),'bundleSha256':collect.sha(bundle/'bundle.json'),'files':{}})
+            export=q/'export-roundtrip.json';collect.write(export,{'bytes':256*1024**2,
+                'sourceHost':'vm-a','destinationHost':'vm-b','sourceSha256':'a'*64,'returnedSha256':'a'*64})
+            data={'verdict':'PASS','sourceSha':'b'*40,'planSha256':collect.sha(plan),
+                'bundleSha256':collect.sha(bundle/'bundle.json'),'durableExportRoundtrip':True,
+                'canarySha256':collect.sha(canary),'exportReceiptSha256':collect.sha(export)}
+            review=q/'review.json';collect.write(review,data)
+            with patch.object(collect,'verify_plan',return_value={'sourceSha':'b'*40}):
+                bad=q/'bad.json';collect.write(bad,{**data,'canarySha256':'wrong'})
+                with self.assertRaisesRegex(ValueError,'qualification'):
+                    collect.activate(plan,bundle,bad,root/'activation.json')
+                self.assertFalse((root/'COHORT-STARTED.json').exists())
+                collect.activate(plan,bundle,review,root/'activation.json')
+                activated=json.loads((root/'activation.json').read_text())
+                self.assertEqual(activated['deadlineUtc']-activated['startedUtc'],21600)
+                with self.assertRaises(FileExistsError):
+                    collect.activate(plan,bundle,review,root/'activation.json')
+
+    def test_worker_refuses_expired_campaign_before_source_execution(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);bundle=root/'bundle';bundle.mkdir()
+            collect.write(bundle/'bundle.json',{});plan=root/'plan.json';collect.write(plan,{})
+            activation=root/'activation.json';collect.write(activation,{'planSha256':collect.sha(plan),
+                'bundleSha256':collect.sha(bundle/'bundle.json'),'startedUtc':0,'deadlineUtc':21600})
+            with patch.object(collect,'verify_plan'),patch.object(collect,'unit') as unit:
+                with self.assertRaisesRegex(ValueError,'expired'):
+                    collect.worker(plan,bundle,activation,root/'worker',0)
+            unit.assert_not_called();self.assertFalse((root/'worker').exists())
 
 
 if __name__=='__main__':unittest.main()
