@@ -670,6 +670,34 @@ void tests() {
         cfg = config; cfg.wideningAlpha = alpha; rejects([&] { OocMctsPlanner bad(cfg); });
     }
     rejects([&] { planner.search(t, 0, 0); });
+    {
+        OocMctsConfig limited;
+        unsigned completed = 0;
+        limited.budgetExhausted = [&] { return ++completed == 3; };
+        auto a = deterministic();
+        const auto stopped = OocMctsPlanner(limited).search(a, 0, 20);
+        auto b = deterministic();
+        const auto prefix = OocMctsPlanner(OocMctsConfig{}).search(b, 0, 3);
+        require(stopped.metrics.simulations == 3 && stopped.metrics.earlyStopBudget == 1
+            && stopped.metrics.savedSimulations == 17 && !stopped.aborted
+            && stopped.selectedAction == prefix.selectedAction,
+            "budget stop retains completed prefix and normal selection");
+        for (std::size_t i=0;i<prefix.rootActions.size();++i)
+            require(stopped.rootActions[i].visits == prefix.rootActions[i].visits
+                && stopped.rootActions[i].q == prefix.rootActions[i].q,
+                "budget callback does not alter completed backups");
+        limited.budgetExhausted = [] { return false; };
+        a = deterministic(); b = deterministic();
+        const auto full = OocMctsPlanner(limited).search(a, 0, 20);
+        const auto original = OocMctsPlanner(OocMctsConfig{}).search(b, 0, 20);
+        require(full.metrics.simulations == 20 && !full.metrics.earlyStopBudget
+            && full.selectedAction == original.selectedAction,
+            "unexpired optional budget preserves ordinary search");
+        limited.budgetExhausted = [] { return true; };
+        a = deterministic();
+        require(OocMctsPlanner(limited).search(a,0,20).metrics.simulations == 1,
+            "expired budget completes at least one simulation");
+    }
 }
 }
 int main() {

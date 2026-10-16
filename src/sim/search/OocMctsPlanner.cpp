@@ -256,6 +256,11 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                         std::move(checkpointActions)});
                 ++checkpointIndex;
             }
+            if (remaining && config.budgetExhausted && config.budgetExhausted()) {
+                search.metrics.earlyStopBudget = true;
+                search.metrics.savedSimulations = remaining;
+                break;
+            }
             if (config.observeRootLock && !config.selectByMeanQ
                 && !search.metrics.hypotheticalLockSimulation && search.rootWinnerLocked(node, remaining)) {
                 search.metrics.hypotheticalLockSimulation = search.metrics.simulations;

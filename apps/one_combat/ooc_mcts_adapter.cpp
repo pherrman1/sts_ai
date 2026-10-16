@@ -758,8 +758,8 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!dependencies.policyAvailable || !dependencies.policyLogits
             || !dependencies.policyAvailable())
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
-    if (options.heart1Prior && !dependencies.heart1PolicyLogits)
-        throw std::runtime_error("STS_OOC_MCTS_PRIOR=heart1 requires STS_OOC_HEART1");
+    if ((options.heart1Prior || options.heart1LeafPolicy) && !dependencies.heart1PolicyLogits)
+        throw std::runtime_error("OOC MCTS heart1 prior/leaf policy requires STS_OOC_HEART1");
     if (options.heart1Prior && !options.priorTracePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE does not support STS_OOC_MCTS_PRIOR=heart1");
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
@@ -2083,7 +2083,7 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         else {
             if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
             bool applied = false;
-            if (options.priorLeafPolicy) {
+            if (options.priorLeafPolicy || options.heart1LeafPolicy) {
                 const std::string screen = t_decisionLog ? logScreen(child.gc) : std::string{};
 #ifndef STS_LIVE_ADVISOR
                 if (options.treeRules && oocTreeRuleStep(child.gc)) applied = true;
@@ -2095,15 +2095,25 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                     bool unique = !actions.empty();
                     for (auto action : actions) if (!ids.insert(action.bits).second) unique = false;
                     if (unique) {
-                        const auto logits = dependencies.policyLogits(child.gc, child.path, actions);
-                        if (logits.size() != actions.size())
-                            throw std::runtime_error("OOC MCTS rollout policy-logit count mismatch");
-                        const auto best = std::max_element(logits.begin(), logits.end()) - logits.begin();
-                        actions[best].execute(child.gc); applied = true;
-                        ++continuation_.priorLeafSteps;
+                        std::optional<std::vector<double>> logits;
+                        if (options.heart1LeafPolicy) {
+                            logits = dependencies.heart1PolicyLogits(child.gc, actions, &continuation_.heart1LeafReasons);
+                            if (!logits) ++continuation_.heart1LeafFallbacks;
+                        } else logits = dependencies.policyLogits(child.gc, child.path, actions);
+                        if (logits) {
+                            if (logits->size() != actions.size())
+                                throw std::runtime_error("OOC MCTS rollout policy-logit count mismatch");
+                            if (!std::all_of(logits->begin(), logits->end(), [](double x) { return std::isfinite(x); }))
+                                throw std::runtime_error("OOC MCTS nonfinite rollout policy logit");
+                            const auto best = std::max_element(logits->begin(), logits->end()) - logits->begin();
+                            actions[best].execute(child.gc); applied = true;
+                            if (options.heart1LeafPolicy) ++continuation_.heart1LeafSteps;
+                            else ++continuation_.priorLeafSteps;
+                        }
                     }
                 }
-                if (applied && t_decisionLog) t_decisionLog->add("rollout_step", screen + " | prior leaf policy");
+                if (applied && t_decisionLog) t_decisionLog->add("rollout_step", screen
+                    + (options.heart1LeafPolicy ? " | heart1 leaf policy/rule" : " | prior leaf policy"));
             }
             if (!applied && options.uniformLeafPolicy && v4DecisionSupported(child.gc)) {
                 const auto actions = v4CandidateActions(child.gc);
@@ -2140,7 +2150,7 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                         t_decisionLog->rollout->at("steps").push_back({{"floor", before->floor},
                             {"screen", screen}, {"by", handler}, {"result", detail}});
                 }
-            } else if (t_decisionLog) {
+            } else if (t_decisionLog && options.uniformLeafPolicy) {
                 t_decisionLog->add("rollout_step", logScreen(child.gc) + " | uniform leaf policy");
             }
         }
@@ -2306,8 +2316,12 @@ void applyLiveControl(const std::string &key, const std::string &value,
         else invalid();
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") {
-        if (value != "v4" && value != "uniform" && value != "prior") invalid();
+        if (value != "v4" && value != "uniform" && value != "prior" && value != "heart1") invalid();
         opts.uniformLeafPolicy = value == "uniform"; opts.priorLeafPolicy = value == "prior";
+        opts.heart1LeafPolicy = value == "heart1";
+    }
+    else if (key == "STS_OOC_MCTS_CPU_SECONDS") {
+        const double x = number(); if (x < 0 || x > 10) invalid(); opts.cpuBudgetSeconds = x;
     }
     else if (key == "STS_OOC_MCTS_ROLLOUT_SHOP") opts.greedyRolloutShop = choice("planner", "greedy");
     else if (key == "STS_OOC_MCTS_TREE_RULES") opts.treeRules = choice("0", "1");
@@ -2328,7 +2342,7 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
-    "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES"
+    "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -2629,6 +2643,16 @@ void configureLiveOocMcts() {
     liveOptions.greedyRolloutShop = true;
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
+    if (liveOptions.cpuBudgetSeconds > 0 && (liveConfig.allowUnqualifiedRootStop
+            || liveConfig.stopAt512VisitGap20 || liveConfig.observeRootLock
+            || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") || std::getenv("STS_OOC_SIBLING_CAPTURE")
+            || std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE") || std::getenv("STS_OOC_MCTS_CHECKPOINT_TRACE")
+            || std::getenv("STS_OOC_MCTS_REUSE_TRACE") || std::getenv("STS_OOC_MCTS_GRAPH_FILE")
+            || std::getenv("STS_OOC_MCTS_DECISION_LOG")
+            || std::getenv("STS_OOC_MCTS_PRIOR_TRACE")))
+        throw std::runtime_error("STS_OOC_MCTS_CPU_SECONDS requires EARLY_STOP=0, no gap/lock or leaf/prior capture");
+    if (liveOptions.heart1LeafPolicy && !heart1::enabled())
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_POLICY=heart1 requires STS_OOC_HEART1");
     // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
     if (!std::getenv("STS_OOC_MCTS_LEAF_VALUE")) applyLiveControl("STS_OOC_MCTS_LEAF_VALUE", "screengbm", liveConfig, liveOptions);
     if (liveOptions.screenLeaf) {
@@ -2793,6 +2817,7 @@ void configureLiveOocMcts() {
         auto provenance = oocLeafCaptureProvenance(identity, files);
         provenance["effectiveLeaf"] = {{"combats", liveOptions.leafCombats},
             {"uniformPolicy", liveOptions.uniformLeafPolicy}, {"priorPolicy", liveOptions.priorLeafPolicy},
+            {"heart1Policy", liveOptions.heart1LeafPolicy},
             {"sampleNoncombat", liveOptions.sampleNoncombat},
             {"stopAtMapCheckpoint", liveOptions.stopAtMapCheckpoint}, {"collectKeys", liveOptions.collectKeys}};
         pendingLeafCapturePath = capturePath;
@@ -2807,6 +2832,7 @@ void configureLiveOocMcts() {
             " dispatch=precombat_entropic_brew" : std::string{})
         << " active_lizard_correction=" << (activeLizardEnabled?"1":"0")
         << " prior=" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
+        << " cpu_seconds=" << liveOptions.cpuBudgetSeconds
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
@@ -2814,14 +2840,15 @@ void configureLiveOocMcts() {
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
-        << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
+        << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
         << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
-        << "\",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
+        << "\",\"cpuSeconds\":" << liveOptions.cpuBudgetSeconds
+        << ",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
@@ -2829,7 +2856,7 @@ void configureLiveOocMcts() {
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << "\",\"leafWinModel\":" << (liveOptions.leafWinNet ? "\"" + liveOptions.leafWinPath + "\"" : std::string("null"))
-        << ",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
+        << ",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << "\",\"simulations\":" << liveSimulations
         << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
         << (!brewFallbackArtifact.empty() ? std::string("\"")+brewFallbackArtifact+"\"" : "null")
@@ -2855,7 +2882,7 @@ void requireLeafProbeTeacher(int ascension) {
             || liveOptions.leafCombats != 3 || !liveOptions.checkpointLeaves
             || !liveOptions.sampleNoncombat || liveOptions.stopAtMapCheckpoint
             || liveOptions.uniformLeafPolicy || liveOptions.priorLeafPolicy || liveOptions.uniformPrior
-            || liveOptions.heart1Prior
+            || liveOptions.heart1Prior || liveOptions.heart1LeafPolicy || liveOptions.cpuBudgetSeconds > 0
             || liveOptions.constantLeaf || liveOptions.directLeaf || liveOptions.screenLeaf
             || liveOptions.bossLeaf || liveOptions.bossRollout)
         throw std::runtime_error("replay_requires_a20_native_4096_rollout3_v4_teacher");
@@ -3347,6 +3374,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected) {
+    const double cpuStart = liveOptions.cpuBudgetSeconds > 0 ? threadCpuSeconds() : 0;
     ImaginedScope scope;
     struct ReplayRootScope {
         bool active = false;
@@ -3374,6 +3402,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         replayRoot.active = true;
     }
     auto config = liveConfig;
+    if (liveOptions.cpuBudgetSeconds > 0) {
+        const double deadline = cpuStart + liveOptions.cpuBudgetSeconds;
+        config.budgetExhausted = [deadline] { return threadCpuSeconds() >= deadline; };
+    }
     config.seed = oocMctsSearchSeed(seed, index);
     auto options = liveOptions;
     auto capture = liveLeafCapture ? liveLeafCapture->begin(seed, index, config.seed,
@@ -3719,7 +3751,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             {"outcome_particles", m.outcomeParticles}, {"transition_samples", m.transitionSamples},
             {"ctm_samples", samples}, {"leaf_evaluations", m.leafEvaluations},
             {"max_depth", m.maxDepthReached}, {"depth_sum", m.depthSum},
-            {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20}};
+            {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20},
+            {"cpu_budget_seconds", liveOptions.cpuBudgetSeconds}, {"early_stop_budget", m.earlyStopBudget}};
     }
     if (!liveCheckpointTrace.empty()) {
         ImaginedScope scope;
@@ -3775,6 +3808,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.screenLeafEvaluations+=continuation.screenLeafEvaluations; c.screenLeafFallbacks+=continuation.screenLeafFallbacks;
     c.heart1PriorNodes+=continuation.heart1PriorNodes; c.heart1PriorFallbacks+=continuation.heart1PriorFallbacks;
     c.priorLeafSteps+=continuation.priorLeafSteps;
+    c.heart1LeafSteps+=continuation.heart1LeafSteps; c.heart1LeafFallbacks+=continuation.heart1LeafFallbacks;
+    for (auto &[reason,count] : continuation.heart1LeafReasons) c.heart1LeafReasons[reason]+=count;
     for (auto &[reason,count] : continuation.heart1PriorReasons) c.heart1PriorReasons[reason]+=count;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
@@ -3791,6 +3826,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     m.trivialRootBypasses += result.metrics.trivialRootBypasses;
     m.earlyStopLockedRoot += result.metrics.earlyStopLockedRoot;
     m.earlyStopVisitGap20 += result.metrics.earlyStopVisitGap20;
+    m.earlyStopBudget += result.metrics.earlyStopBudget;
     m.savedSimulations += result.metrics.savedSimulations;
     m.simulations += result.metrics.simulations;
     m.simulationAttempts += result.metrics.simulationAttempts;
@@ -3962,7 +3998,11 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         {"heart1_prior_nodes",m.continuation.heart1PriorNodes},
         {"heart1_prior_fallbacks",m.continuation.heart1PriorFallbacks},
         {"heart1_prior_reasons",m.continuation.heart1PriorReasons},
-        {"prior_leaf_steps",m.continuation.priorLeafSteps}}.dump() << '\n';
+        {"prior_leaf_steps",m.continuation.priorLeafSteps},
+        {"cpu_budget_stops",m.search.earlyStopBudget},
+        {"heart1_leaf_steps",m.continuation.heart1LeafSteps},
+        {"heart1_leaf_fallbacks",m.continuation.heart1LeafFallbacks},
+        {"heart1_leaf_reasons",m.continuation.heart1LeafReasons}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
@@ -5289,6 +5329,55 @@ void oocMctsAdapterSelfTest() {
         std::mt19937_64 priorRng(20261006);
         (void)priorPlayout.evaluateLeaf(0,priorRng);
         require(priorPlayout.continuationMetrics().priorLeafSteps>=1,"prior leaf policy decides the campfire");
+        OocAdapterOptions heartOptions = priorOptions;
+        heartOptions.priorLeafPolicy = false; heartOptions.heart1LeafPolicy = true;
+        auto deps = defaultOocMctsDependencies();
+        unsigned calls = 0;
+        deps.heart1PolicyLogits = [&](const GameContext &, const std::vector<GameAction> &actions,
+                                     std::map<std::string,std::uint64_t> *) {
+            ++calls;
+            std::vector<double> logits(actions.size(), -1.0);
+            logits.back() = 1.0;
+            return std::optional<std::vector<double>>(logits);
+        };
+        deps.policyLogits = [](const GameContext &, const PathHistory &, const std::vector<GameAction> &)
+                -> std::vector<double> { throw std::runtime_error("unexpected V4 rollout scoring"); };
+        OocGameContextModel heartPlayout(pending,path,bossSampler,heartOptions,deps);
+        std::mt19937_64 heartRng(20261006);
+        (void)heartPlayout.evaluateLeaf(0,heartRng);
+        require(calls && heartPlayout.continuationMetrics().heart1LeafSteps == calls
+            && heartPlayout.continuationMetrics().heart1LeafFallbacks == 0
+            && heartPlayout.continuationMetrics().priorLeafSteps == 0,
+            "heart1 rollout uses its own logits and counters, never V4 policy head");
+        deps.heart1PolicyLogits = [](const GameContext &, const std::vector<GameAction> &,
+                                   std::map<std::string,std::uint64_t> *)
+                -> std::optional<std::vector<double>> { return std::nullopt; };
+        OocGameContextModel fallback(pending,path,bossSampler,heartOptions,deps);
+        auto chainOptions = heartOptions; chainOptions.heart1LeafPolicy = false;
+        OocGameContextModel chain(pending,path,bossSampler,chainOptions,deps);
+        std::mt19937_64 fallbackRng(20261006), chainRng(20261006);
+        require(fallback.evaluateLeaf(0,fallbackRng) == chain.evaluateLeaf(0,chainRng)
+            && fallbackRng == chainRng && fallback.continuationMetrics().heart1LeafFallbacks > 0
+            && fallback.continuationMetrics().heart1LeafSteps == 0,
+            "unscored heart1 rollout preserves continuation-chain result and RNG");
+        for (const bool wrongSize : {false,true}) {
+            deps.heart1PolicyLogits = [wrongSize](const GameContext &, const std::vector<GameAction> &actions,
+                                               std::map<std::string,std::uint64_t> *) {
+                return std::optional<std::vector<double>>(std::vector<double>(wrongSize ? 0 : actions.size(),
+                    std::numeric_limits<double>::quiet_NaN()));
+            };
+            bool rejected = false;
+            try {
+                OocGameContextModel invalid(pending,path,bossSampler,heartOptions,deps);
+                std::mt19937_64 invalidRng(20261006); (void)invalid.evaluateLeaf(0,invalidRng);
+            } catch (const std::runtime_error &) { rejected = true; }
+            require(rejected,"heart1 rollout rejects malformed or nonfinite scored output");
+        }
+        deps.heart1PolicyLogits = {};
+        bool rejected = false;
+        try { OocGameContextModel missing(pending,path,bossSampler,heartOptions,deps); }
+        catch (const std::runtime_error &) { rejected = true; }
+        require(rejected,"explicit heart1 rollout fails closed without model seam");
     }
     {
         OocMctsResult capped; capped.aborted=true;
@@ -5312,10 +5401,16 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","prior",parsed,opts);
         require(opts.priorLeafPolicy && !opts.uniformLeafPolicy,"prior leaf policy parsed");
+        applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","heart1",parsed,opts);
+        require(opts.heart1LeafPolicy && !opts.priorLeafPolicy && !opts.uniformLeafPolicy,"heart1 leaf parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","uniform",parsed,opts);
-        require(!opts.priorLeafPolicy && opts.uniformLeafPolicy,"uniform leaf policy clears prior");
+        require(!opts.priorLeafPolicy && !opts.heart1LeafPolicy && opts.uniformLeafPolicy,"uniform leaf clears model policy");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","v4",parsed,opts);
         require(!opts.priorLeafPolicy && !opts.uniformLeafPolicy,"chain leaf policy parsed");
+        applyLiveControl("STS_OOC_MCTS_CPU_SECONDS","0.25",parsed,opts);
+        require(opts.cpuBudgetSeconds == .25,"CPU allowance parsed");
+        applyLiveControl("STS_OOC_MCTS_CPU_SECONDS","0",parsed,opts);
+        require(opts.cpuBudgetSeconds == 0,"CPU allowance rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","5",parsed,opts);
         require(opts.leafCombats == 5,"five-combat rollout parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
@@ -5332,6 +5427,7 @@ void oocMctsAdapterSelfTest() {
             && bossLeafUtility({true,1,1})==0 && bossLeafUtility({true,0,1})==1,
             "boss leaf survival/HP utility");
         for (const auto &invalid : std::vector<std::pair<std::string,std::string>>{
+            {"STS_OOC_MCTS_CPU_SECONDS","-1"},{"STS_OOC_MCTS_CPU_SECONDS","nan"},{"STS_OOC_MCTS_CPU_SECONDS","11"},
             {"STS_OOC_MCTS_EARLY_STOP","true"},{"STS_OOC_MCTS_EARLY_STOP","2"},{"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
             {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},

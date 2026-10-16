@@ -41,6 +41,16 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
 
+## Arm C inside A20 Heart rollouts (§493)
+
+Authorized, prospective pilot: Arm C stays the tree prior in both arms; compare
+its explicit `LEAF_POLICY=heart1` rollout decisions with the existing V4/heuristic
+chain. Both get the same 0.25 thread-CPU-second allowance per OOC decision, checked
+after completed simulations, with exact-10k Silver actual combat and three CTM
+leaf combats fixed. Two paired support/resource canaries precede 32 fresh paired
+Heart runs. No performance result exists yet, and no default change is proposed.
+[Protocol](../../experiments/evidence/arm_c_rollout_20261016/PROTOCOL.md).
+
 ## A20 Heart rollout distillation (§§491–492)
 
 The selected public heart1-record student is **NOT_SHOWN** after the user-authorized

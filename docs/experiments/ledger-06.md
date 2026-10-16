@@ -19188,3 +19188,21 @@ new gameplay A/B, policy iteration or default promotion follows from this result
 Arm C remains the producer tree prior only and V4 rollout policy fixed.
 
 **Knowledge impact:** experiment evidence and maintained current research status.
+
+
+## §493 Arm C policy inside A20 Heart rollouts (2026-10-16)
+
+**Prospective status: implementation/design review pending.** Philipp authorized
+the proposed experiment with “Let's go then”. Arm C is tree prior in both arms;
+only the rollout policy changes from the current V4/heuristic continuation chain
+to loaded Arm C argmax on the same supported candidate sets, with mandatory rules
+and chain fallback fixed. No gameplay seeds have run for this experiment yet.
+
+The [prospective protocol](evidence/arm_c_rollout_20261016/PROTOCOL.md) fixes
+0.25 thread-CPU seconds per decision, a completion-boundary budget (not a hard
+cap), simulation ceiling 8,192, two separate paired resource canaries and 32
+fresh A20 Heart pairs. Exact-10k Silver actual combat, three CTM leaf combats,
+native X2-B, key collection and all other controls are fixed. Independent review
+and canary acceptance precede the cohort. No training or default promotion.
+
+**Knowledge impact:** optional rollout/CPU controls, current research and evidence.
