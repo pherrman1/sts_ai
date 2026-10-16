@@ -1,0 +1,77 @@
+{
+  "sourceSha": "7834789511280c81295503dbbbb6154c7a12f18a",
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "tests/test_heart_distill_recovery.py",
+        "-q"
+      ],
+      "returncode": 0,
+      "seconds": 1.6958663609693758,
+      "log": "verification/01.log",
+      "sha256": "c1137b31b49a0808a886a3a5a5b3596da83143968a6e6c2afbc373bf16368621"
+    },
+    {
+      "command": [
+        "python3",
+        "tests/test_heart_rollout_distill.py",
+        "-q"
+      ],
+      "returncode": 0,
+      "seconds": 1.809013877005782,
+      "log": "verification/02.log",
+      "sha256": "d98e8c1730ba7c2d3f62a45a2c6f2cfca61bfa6be8ebe5ea3a59f04c340a6e6b"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "tools/recover_heart_distill_test.py",
+        "tests/test_heart_distill_recovery.py"
+      ],
+      "returncode": 0,
+      "seconds": 0.022459845000412315,
+      "log": "verification/03.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "bash",
+        "tools/agent/doctor.sh"
+      ],
+      "returncode": 0,
+      "seconds": 0.05476422799983993,
+      "log": "verification/04.log",
+      "sha256": "43ff94d0b7b43b786b425c114d148f9695e85cafe476cfd68cfd9e003486ac52"
+    },
+    {
+      "command": [
+        "env",
+        "PYTHONPATH=.",
+        "python3",
+        "tests/test_repo_health.py",
+        "-q"
+      ],
+      "returncode": 0,
+      "seconds": 0.06400737399235368,
+      "log": "verification/05.log",
+      "sha256": "c305df4553ace99996614631772be6c06e50c1fd06e758e8a22df32677a39c7c"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "seconds": 0.01128907798556611,
+      "log": "verification/06.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "cppRepeated": false,
+  "reason": "Python recovery wrapper and evidence only; simulator/evaluator scientific functions unchanged from merged reviewed source",
+  "priorCppEvidence": "../heart_rollout_distill_20261016/verification.json"
+}

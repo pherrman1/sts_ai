@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01/run/heart_rollout_distill.py",
+    "test",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01/fit"
+  ],
+  "originalCustodyRechecked": true,
+  "recoveryFreezeSha256": "47ebea2fd41ce01b1de3405452a48458f9303a30322cdabccdd0924b93e30c1e",
+  "recoverySelectionSha256": "9cbbea78739da382dc08e30f68e8ede6907e82d2c14a9cd2632e58b0881afe30",
+  "resultSha256": "be8a1e73ad78991aa55c3ee41d3865b9f20028efc80b774b43ee2c5ec8df25ea",
+  "returncode": 0,
+  "seconds": 8.769302662985865
+}

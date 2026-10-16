@@ -1,0 +1,52 @@
+{
+  "additionalFits": 0,
+  "checkpointSha256": "403632b4fcacfaeb7932e69395cb0fd896855527aed8263f36067098b6ba6875",
+  "classification": "AUTHORIZED_SOFTWARE_FAULT_RECOVERY_SAME_OPENED_HOLDOUT",
+  "custody": {
+    "fit/selection.json": "9cbbea78739da382dc08e30f68e8ede6907e82d2c14a9cd2632e58b0881afe30",
+    "fit/test-opened.json": "79c2dddd222c1a02d46742018b055d1704718fbe6295e52111b494b8a5e7634e",
+    "fit/test-result.json": "be8a1e73ad78991aa55c3ee41d3865b9f20028efc80b774b43ee2c5ec8df25ea",
+    "freeze.json": "47ebea2fd41ce01b1de3405452a48458f9303a30322cdabccdd0924b93e30c1e",
+    "recovery-authorization.json": "cb4b0fb68b5d709f36bcd1fffdd712d1889484c940c2a6863f59f21ab3c278a4",
+    "recovery-receipt.json": "9fe8652c09059bf97c6f7b95f102fc85102019a80a9702a66402b847e19a763c",
+    "test-recovery.log": "d9f3f38acc7e8f8a63fde85c56f95fff23b1bb147237bf9d058262f52a74f27b"
+  },
+  "gates": {
+    "concordance": {
+      "baseline": 0.6167206395153827,
+      "pass": false,
+      "requiredGain": 0.02,
+      "student": 0.6189455450234146
+    },
+    "pythonSpeedup": {
+      "minimum": 4,
+      "pass": false,
+      "value": 1.4934420246274664
+    },
+    "regret": {
+      "baseline": 0.02304024754409089,
+      "pass": false,
+      "requiredRatioAtMost": 0.9,
+      "student": 0.025438172217508888
+    },
+    "regretImprovement95CI": {
+      "pass": false,
+      "requiredLowerBoundAbove": 0,
+      "value": [
+        -0.007124772669157764,
+        0.002174110663737121
+      ]
+    }
+  },
+  "independentReplication": false,
+  "newSeeds": 0,
+  "originalFailurePreserved": true,
+  "originalRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc",
+  "producerSourceSha": "cbded890a06f4ec76ad72c8333d07df25ad54e5f",
+  "recoveryAnalysisSha": "7834789511280c81295503dbbbb6154c7a12f18a",
+  "recoveryRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01",
+  "runtimePromotion": false,
+  "selectionRepeated": false,
+  "verdict": "NOT_SHOWN",
+  "vocabularySha256": "d90c7388a43f6f5f4aca6d296c2c24c6ab9e926dba94a0edf1a1a892148eaf67"
+}

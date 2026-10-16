@@ -19144,3 +19144,47 @@ corpus is excluded. Neither attempt was pooled with V3.
 research are updated. A new independently reviewed research protocol is required
 for any future qualification; no automatic TEST retry, native port, gameplay A/B,
 or default promotion follows from this failed attempt.
+
+
+## §492 Authorized software-fault recovery of §491 TEST (2026-10-16)
+
+**Verdict: `NOT_SHOWN`.** After the §491 failure was reported, the user instructed
+“Rerun the necessary parts with the bug fixed and continue”. One corrected
+evaluation returned zero in 8.77 seconds under the independently reviewed
+[prospective amendment](evidence/heart_rollout_distill_recovery_20261016/PROTOCOL.md).
+This is software-fault recovery on the **same already-opened holdout**, not a new
+independent TEST. The original §491 `INVALID_TEST_EXECUTION` bundle, latch and
+failure remain unchanged. [Full evidence](evidence/heart_rollout_distill_recovery_20261016/README.md),
+[exact output](evidence/heart_rollout_distill_recovery_20261016/test-result.json),
+[gate/custody summary](evidence/heart_rollout_distill_recovery_20261016/result.json).
+
+Recovery analysis source `7834789511280c81295503dbbbb6154c7a12f18a` mechanically
+allows only the merged evaluator variable-name repair against the original frozen
+evaluator. Original producer source remains `cbded890a06f4ec76ad72c8333d07df25ad54e5f`.
+Selected weights/vocabulary, all semantic selection fields, corpus, reference
+models, native binary, runtime and scientific gates are unchanged. Only explicit
+freeze/evaluator custody references change in selection. Original custody was
+verified before and after recovery. No new seeds, fits or model selection.
+
+The frozen count MLP (init 0, epoch 22, 50/50 X2-B blend) retained all 7,716 rows,
+259 multi-action groups and all 16 TEST sources `110161048..063`. Coverage passes.
+Source-mean student versus X2-B: MSE 0.019559 vs 0.043148 (54.67% lower), concordance
+0.618946 vs 0.616721 (+0.002225, below required +0.02), regret 0.025438 vs 0.023040
+(1.104×, required at most 0.90×). Paired source-bootstrap regret-improvement 95% CI
+[-0.007125, +0.002174] crosses zero. Lower prediction error did not establish
+better sibling action choices. Neither improvement nor harm is resolved by the CI.
+
+Mean rollout CPU was 944.39 µs, Python feature construction 551.17 µs, single-row
+tensor inference 66.17 µs, required X2-B 15.02 µs. Complete measured Python speedup
+is 1.493×, failing the frozen 4× gate; tensor-only 14.27× omits necessary work and
+is not a deployment claim. Native speed remains unqualified. All four candidate
+conditions fail; no gate is relaxed and no other checkpoint/blend is tested.
+
+The prespecified frozen Opus reference, single-rollout and fixed half-rollout
+hybrid remain descriptive diagnostics, not fallback selections. No controlled
+encoding-superiority or true Heart-win prediction claim follows. The public
+schema's BATTLE/Match and Keep/native parity is not qualified. No native port,
+new gameplay A/B, policy iteration or default promotion follows from this result.
+Arm C remains the producer tree prior only and V4 rollout policy fixed.
+
+**Knowledge impact:** experiment evidence and maintained current research status.
