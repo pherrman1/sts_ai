@@ -1,0 +1,7 @@
+{
+  "binarySha256": "86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecbacf",
+  "nativeRunCommit": "b8aea9001674c28dd2dd6abf2cf15d02ddafcfd8",
+  "note": "hosted rebuild of the reviewed source, byte-identical to the original local producer",
+  "returncode": 0,
+  "reviewedSha": "9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3"
+}
