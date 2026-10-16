@@ -31,6 +31,7 @@
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
 #include "heart1_policy.h"
+#include "screen_leaf_snapshot.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
@@ -2210,7 +2211,7 @@ struct LiveSiblingCapture {
 std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
 nlohmann::json pendingLeafCaptureProvenance;
-std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
+std::string liveTrace, liveRootLockTrace, liveCheckpointTrace, liveRootTrace;
 // Research only (STS_OOC_MCTS_COMBAT_RESOLVER=silver): resolves each imagined
 // combat by playing it with native Silver at a flat budget with the root prior
 // on. The six combat RNG streams are redrawn from the planner RNG (counters
@@ -2566,6 +2567,7 @@ void configureLiveOocMcts() {
         if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot open output");
     }
     liveRootLockTrace.clear();
+    liveRootTrace.clear();
     liveCheckpointTrace.clear();
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
@@ -2694,6 +2696,13 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
     liveConfig.observeRootLock = !liveRootLockTrace.empty();
+    // Observation only (heart outcome round 2): one row per live root with
+    // candidate keys, normalized visits, public record and native snapshot.
+    if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_TRACE"); trace && *trace) {
+        liveRootTrace = trace;
+        std::ofstream out(liveRootTrace, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_TRACE cannot open output");
+    }
     if (const char *trace = std::getenv("STS_OOC_MCTS_REUSE_TRACE")) liveReuseTrace = trace;
     if (!liveReuseTrace.empty()) {
         if (!liveGraphPath.empty())
@@ -3379,7 +3388,8 @@ int oocLeafReplaySelfTest() {
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
-    OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected) {
+    OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected,
+    nlohmann::json *rootActions) {
     const double cpuStart = liveOptions.cpuBudgetSeconds > 0 ? threadCpuSeconds() : 0;
     ImaginedScope scope;
     struct ReplayRootScope {
@@ -3599,6 +3609,12 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     }
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     if (selected && result.selectedAction) *selected = model.candidate(0, *result.selectedAction);
+    if (rootActions) {
+        *rootActions = nlohmann::json::array();
+        for (const auto &action : result.rootActions)
+            rootActions->push_back({{"id", action.id}, {"key", model.candidate(0, action.id).key},
+                {"prior", action.prior}, {"visits", action.visits}, {"q", action.q}});
+    }
     if (config.observeRootLock) {
         const auto &m = result.metrics;
         const bool completed = !result.aborted && m.simulations == simulations;
@@ -3710,10 +3726,25 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     }
     collectForcedRewardGold(gc);
     std::optional<OocGameContextModel::Candidate> selected;
+    nlohmann::json rootRow;
+    if (!liveRootTrace.empty()) {
+        // Taken before search and execution: the exact root state. Failures are
+        // recorded, never thrown, so the observer cannot change the run.
+        rootRow = {{"schema", "ooc-root-trace-v1"}, {"seed", seed}, {"decisionIndex", index},
+            {"searchSeed", oocMctsSearchSeed(seed, index)}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"selector", int(gc.info.selectScreenType)}};
+        try { rootRow["snapshot"] = screen_leaf::snapshotJson(gc, path); }
+        catch (const std::exception &error) { rootRow["snapshot"] = nullptr; rootRow["snapshotError"] = error.what(); }
+        nlohmann::json record;
+        std::string reason;
+        if (heart1::buildPublicLeafRecord(gc, record, &reason)) rootRow["record"] = std::move(record);
+        else rootRow["recordError"] = reason.empty() ? "unencoded_screen" : reason;
+    }
+    nlohmann::json rootActions;
     const auto result = [&] {
         try {
             return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSamplerFor(gc),
-                samples, &continuation, &selected);
+                samples, &continuation, &selected, rootRow.is_null() ? nullptr : &rootActions);
         } catch (const std::exception &error) {
             if (leafStabilityMode) failStability(error.what());
             if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", error.what())};
@@ -3849,6 +3880,22 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             decisionProfile["executed"] = executed;
             decisionProfile["execution_reason"] = reason;
             writeRunProfile(decisionProfile);
+        }
+        if (!rootRow.is_null()) {
+            std::uint64_t visits = 0;
+            for (const auto &a : rootActions) visits += a.at("visits").get<std::uint64_t>();
+            for (auto &a : rootActions)
+                a["visitShare"] = visits ? double(a.at("visits").get<std::uint64_t>()) / double(visits) : 0.0;
+            rootRow.update({{"aborted", result.aborted}, {"abortReason", result.abortReason},
+                {"requestedSimulations", liveSimulations}, {"completedSimulations", result.metrics.simulations},
+                {"singletonBypass", result.metrics.trivialRootBypasses > 0},
+                {"selectedId", result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+                {"selectedKey", selected ? selected->key : ""}, {"rootActions", std::move(rootActions)},
+                {"executed", executed}, {"reason", reason}});
+            std::lock_guard<std::mutex> lock(liveTraceMutex);
+            std::ofstream out(liveRootTrace, std::ios::app);
+            if (!out || !(out << rootRow.dump() << '\n'))
+                throw std::runtime_error("STS_OOC_MCTS_ROOT_TRACE write failed");
         }
         if (liveTrace.empty()) return;
         std::lock_guard<std::mutex> lock(liveTraceMutex);

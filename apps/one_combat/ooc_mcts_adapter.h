@@ -318,7 +318,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::uint64_t runSeed, std::uint64_t decisionIndex, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
-    std::optional<OocGameContextModel::Candidate> *selected = nullptr);
+    std::optional<OocGameContextModel::Candidate> *selected = nullptr,
+    nlohmann::json *rootActions = nullptr);
 // Research (§425 gold scoring): one decision with the live OOC MCTS
 // configuration on a copied state; returns the root summary as JSON.
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,
