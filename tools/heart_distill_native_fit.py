@@ -7,7 +7,10 @@ Subcommands (all refuse to overwrite; TEST capture bytes are copied by hash, nev
   prepare-test CORPUS PRODUCER STUDENTC FITTED NEW_ROOT
                                         evaluator on the collection CPU model: re-stage with this
                                         runtime, bind the fitted selection, freeze the CPU-cost rule
-  test NEW_ROOT TEST_PLAN_SHA256        one-shot TEST through the unchanged trainer; no retry
+  test CORPUS NEW_ROOT TEST_PLAN_SHA256 one-shot TEST through the unchanged trainer; no retry
+
+TEST is one-shot across roots: `test` creates CORPUS/TEST-OPENED.json exclusively before the
+trainer runs, and both `prepare-test` and `test` refuse once it exists.
 
 CORPUS is the directory holding corpus-manifest.json, corpus-train-validation.tar and
 corpus-test-SEALED.tar. The fit may run on another machine (Philipp's GPU); the CPU-cost
@@ -47,6 +50,7 @@ OPUS490 = ('docs/experiments/evidence/ooc_sibling_leaf_capture64_20261015/tv_wit
 FIRST = 110164000
 SPLITS = {'train': list(range(FIRST, FIRST + 40)), 'validation': list(range(FIRST + 40, FIRST + 48)),
           'test': list(range(FIRST + 48, FIRST + 64))}
+LATCH = 'TEST-OPENED.json'
 FIT_SECONDS = 1200
 TEST_SECONDS = 600
 
@@ -244,6 +248,8 @@ def prepare_test(corpus, producer, student_c, fitted, new_root, repo=None):
     fitted, new_root = Path(fitted), Path(new_root)
     if cpu_model() != COLLECTION_CPU:
         raise ValueError('TEST must run on the collection CPU model: ' + COLLECTION_CPU)
+    if (Path(corpus) / LATCH).exists():
+        raise FileExistsError('TEST was already opened for this corpus; no re-preparation')
     receipt = json.loads((fitted / 'fit-receipt.json').read_text())
     freeze = json.loads((fitted / 'freeze.json').read_text())
     selection_path = fitted / 'fit/selection.json'
@@ -286,8 +292,10 @@ def prepare_test(corpus, producer, student_c, fitted, new_root, repo=None):
     return sha(new_root / 'test-plan.json')
 
 
-def test(root, plan_sha):
-    root = Path(root)
+def test(corpus, root, plan_sha):
+    corpus, root = Path(corpus), Path(root)
+    if sha(corpus / 'corpus-manifest.json') != CORPUS_MANIFEST_SHA256:
+        raise ValueError('not the frozen native corpus')
     if sha(root / 'test-plan.json') != plan_sha:
         raise ValueError('test plan is not the reviewed one')
     if cpu_model() != COLLECTION_CPU:
@@ -297,6 +305,8 @@ def test(root, plan_sha):
     if (sha(root / 'freeze.json') != plan['freezeSha256'] or sha(root / 'fit/selection.json') != plan['selectionSha256']
             or (root / 'fit/test-opened.json').exists() or (root / 'test-receipt.json').exists()):
         raise ValueError('frozen selection changed or TEST already opened; no retry')
+    write_json(corpus / LATCH, {'testPlanSha256': plan_sha, 'selectionSha256': plan['selectionSha256'],
+                                'root': str(root.resolve()), 'time': time.time()})  # global, exclusive
     started = time.monotonic()
     with (root / 'test.log').open('x') as log:
         try:
@@ -328,8 +338,8 @@ def main():
             raise SystemExit(1)
     elif a[0] == 'prepare-test' and len(a) == 6:
         print('test-plan', prepare_test(*a[1:]))
-    elif a[0] == 'test' and len(a) == 3:
-        r = test(a[1], a[2])
+    elif a[0] == 'test' and len(a) == 4:
+        r = test(a[1], a[2], a[3])
         print('test returncode', r['returncode'], 'result', r['resultSha256'])
         if r['returncode']:
             raise SystemExit(1)

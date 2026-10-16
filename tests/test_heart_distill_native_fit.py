@@ -147,14 +147,25 @@ class NativeFitTest(unittest.TestCase):
             self.assertEqual(selection['freezeSha256'], nf.sha(ev / 'freeze.json'))
             plan = json.loads((ev / 'test-plan.json').read_text())
             self.assertEqual(plan['fittedSelectionSha256'], nf.sha(data / 'fit/selection.json'))
+            # A second prepared root is allowed before the opening ...
+            plan2 = nf.prepare_test(self.corpus, self.producer, self.student, data, self.root / 'eval2')
             with self.assertRaises(ValueError):
-                nf.test(ev, '0' * 64)
+                nf.test(self.corpus, ev, '0' * 64)
             self.assertFalse((ev / 'fit/test-opened.json').exists())
-            result = nf.test(ev, plan_sha)
+            self.assertFalse((self.corpus / nf.LATCH).exists())
+            result = nf.test(self.corpus, ev, plan_sha)
             self.assertEqual(result['returncode'], 0)
             self.assertIsNotNone(result['resultSha256'])
+            latch = json.loads((self.corpus / nf.LATCH).read_text())
+            self.assertEqual(latch['testPlanSha256'], plan_sha)
             with self.assertRaises((ValueError, FileExistsError)):
-                nf.test(ev, plan_sha)
+                nf.test(self.corpus, ev, plan_sha)
+            # ... but after it, no other root can open TEST or be prepared.
+            with self.assertRaises(FileExistsError):
+                nf.test(self.corpus, self.root / 'eval2', plan2)
+            self.assertFalse((self.root / 'eval2/fit/test-opened.json').exists())
+            with self.assertRaises(FileExistsError):
+                nf.prepare_test(self.corpus, self.producer, self.student, data, self.root / 'eval3')
 
     def test_prepare_test_refuses_changed_selection(self):
         self.stage()
