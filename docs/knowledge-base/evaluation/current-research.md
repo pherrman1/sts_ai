@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-16 for the frozen Arm C affine value-head fit (§495, VALIDATION_ONLY and worse than X2-B), the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -40,6 +40,30 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## Arm C frozen-encoder value head (§495)
+
+The original Arm C student was trained on policy KL only. Its value head existed
+but received no value objective. The separately authorized fit now trains only
+its existing affine value head (65 parameters) on §494's 40 TRAIN sources;
+the encoder, policy head and value normalization remain exactly unchanged.
+All 18,570 TRAIN and 2,721 VALIDATION rows were preserved. Six fixed ridge
+penalties were selected by raw source-balanced VALIDATION MSE; alpha 0.01 won.
+Full VALIDATION policy logits and pooled features stayed bitwise identical.
+
+**VALIDATION_ONLY; worse than X2-B on this development split.** Fitted raw MSE
+0.03956 vs X2-B 0.03305, sibling concordance 0.5898 vs 0.6208, and regret 0.03834
+vs 0.03369. This does not support a gameplay pilot with this head. It does not
+show that the representation cannot support a richer value head or joint
+training; those are untested interventions. No native integration, speed
+qualification, new seeds, TEST reopening, RL or default change was performed.
+The consumed §494 TEST remains retired and its NOT_SHOWN verdict unchanged.
+The original encoder still ignores extra captured battle/memory fields.
+
+The fitted checkpoint and a portable two-tensor head replacement are preserved;
+see [protocol and evidence](../../experiments/evidence/arm_c_value_head_20261016/PROTOCOL.md)
+and ledger §495. The trained scalar predicts CTM/Arm C rollout targets ending in
+X2-B, not calibrated actual Heart-kill probability.
 
 ## Arm C rollout-target distillation (§494)
 

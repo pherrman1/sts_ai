@@ -1,0 +1,6 @@
+{
+  "baseline": "9129e5b8",
+  "test": "test_exact_merged_repair_matches_original",
+  "baselineFailure": "repair exceeds the exact variable-rename allowlist",
+  "affectedFilesUnchanged": true
+}
