@@ -1,7 +1,7 @@
 # Observed A20 Heart-outcome corpus preparation (§497)
 
 User authorized setup of complete-run outcome learning and clarified available
-cloud resources are **Claude workers**, up to45 with four CPU cores each. No
+cloud resources are **Claude workers**, up to 45 with four CPU cores each. No
 third-party infrastructure/account provisioning and no Codex cloud dispatch.
 Base: main `9129e5b850ba45114820956522cbc92c238c2afe`. Previous §494–496 targets,
 models and TEST verdicts remain unchanged and are not pooled with this corpus.
@@ -22,7 +22,7 @@ claim of every primitive-action state. Never use MCTS particles or forked
 counterfactual continuations as observed trajectories.
 
 The new `heartoutcomegen 1 SEED OUT.jsonl on|off` command fixes A20 Ironclad,
-keys on, full run, no forced relic and exact10k ordinary project-fair native
+keys on, full run, no forced relic and exact 10k ordinary project-fair native
 Silver real combats with allocated reuse cap32768. Existing §494 teacher:
 Arm C tree prior and rollout policy, calibrated A20 CTM, rollout3/native public
 X2-B,512 OOC simulation cap, early-stop1, no CPU_SECONDS limit. Fixed simulations
@@ -84,12 +84,12 @@ published immutable activation hash; an unapproved activation cannot start sourc
 Python and NumPy versions are frozen with the bundle. Reuse the existing encoder
 for full supported-record schema validation and the reviewed Arm C runtime contract
 (loaded64/4/256/2/trim1,≥90% prior and rollout scoring, zero legacy prior leaves).
-Semantic failures receive censored failure receipts and all partial outputs are archived. A ≥256MiB cross-container artifact export roundtrip
+Semantic failures receive censored failure receipts and all partial outputs are archived. A ≥256 MiB cross-container artifact export roundtrip
 with matching hashes is required before the one exclusive activation latch.
 Cloud operation is delegated via the coordinator handoff; no cloud workers are
 claimed active from preparation alone. Keep all partial/failure artifacts.
 
-Before fitting, a separate import/seal audit must verify all1800 source receipts,
+Before fitting, a separate import/seal audit must verify all 1,800 source receipts,
 unique source ownership, exact assignments/splits, identical frozen producer,
 complete valid framing, coverage and loaded/scored Arm C telemetry. TRAIN needs
 ≥20 Heart wins and≥20 losses; VALIDATION≥5 wins/≥5 losses, without peeking at TEST

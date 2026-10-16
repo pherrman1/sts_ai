@@ -44,15 +44,17 @@ contracts now bind native Silver teachers.
 ## Observed Heart-outcome supervision (§497)
 
 A separate collector now prepares actual visited-state/full-run Heart labels
-under fixed exact10k Silver and the existing Arm C prior+rollout/CTM search
+under fixed exact 10k Silver and the existing Arm C prior+rollout/CTM search
 teacher. This replaces the **future label source**, without changing the teacher
 or training a new model yet. The old rollout/X2-B targets remain preserved for
 possible warm start or auxiliary fitting; prior §491–496 verdicts are unchanged.
 
-Implementation/design review passed. Local canary qualification is in progress;
-no cloud workers or cohort sources have launched. Prepared Claude capacity is
-1,800 source-disjoint runs over45workers×4cores,1080TRAIN/360VALIDATION/360sealed
-TEST. Cloud canary/export review and a single immutable activation/deadline are
+Implementation/design and independent local-canary review passed: exact
+capture OFF/ON trace/action parity, 219/219 and 215/215 valid actual observations,
+100% Arm C prior/rollout scoring. Both unique canaries died at the Heart; this
+is collector qualification, not a value-model or gameplay result. No cloud
+workers or cohort sources have launched. Prepared Claude capacity is
+1,800 source-disjoint runs over 45 workers × 4 cores: 1,080 TRAIN, 360 VALIDATION and 360 sealed TEST. Cloud canary/export review and a single immutable activation/deadline are
 required before dispatch. Full-run outcomes describe the fixed behavior policy,
 not action-counterfactual values or demonstrated optimal Heart-win probability.
 

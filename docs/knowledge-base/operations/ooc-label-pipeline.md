@@ -27,9 +27,10 @@ rechecks independent cloud-canary approval, export qualification and an immutabl
 activation SHA with one shared deadline. Partial/invalid sources retain failed
 receipts and raw artifacts; TEST is transported in separate sealed archives.
 
-This is preparation/qualification for outcome supervision, not a trained value
-head or RL loop. Future fits must split/weight by whole source and preserve
-TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
+This trajectory JSONL uses its own frozen plan/bundle/unit receipts, separate
+from the whole-combat CSV contract below. This is preparation/qualification for
+outcome supervision, not a trained value head or RL loop. Future fits must
+split/weight by whole source and preserve TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
 and [qualification evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
 
 ## Boundaries and contracts
