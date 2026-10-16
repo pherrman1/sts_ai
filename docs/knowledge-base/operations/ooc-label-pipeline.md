@@ -33,6 +33,25 @@ outcome supervision, not a trained value head or RL loop. Future fits must
 split/weight by whole source and preserve TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
 and [qualification evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
 
+### Recovered outcome-corpus import
+
+`tools/heart_outcome_import.py ROOT OUT` validates the pinned §497 transport and
+explicit recovery mapping against main's delivery index. It parses only literal
+TRAIN/VALIDATION archive names, checks complete eight-file units and receipt
+hashes, reuses the frozen trajectory/schema/Arm C contract, and aligns records
+with the actual public driver trace. HP/maxHP/gold alignment uses producer
+caps 200/200/1800. A strict whole-source class gate determines readiness; nothing
+is relabeled or silently filtered to pass it. The producer's different cloud
+Python/NumPy freeze is verified as provenance, not executed locally or relaxed.
+
+The current recovered corpus passes readiness: 1,080 TRAIN/360 VALIDATION runs,
+126/47 Heart wins, 228,146 valid observations. The 49 TEST archives and 4 superseded
+partials remain opaque. Independent TRAIN/VALIDATION validation must not be
+reported as independent TEST framing or outcome verification. Keep raw data on
+the never-merge transport branch/ignored local root and compact audit evidence
+in the [import report](../../experiments/evidence/heart_outcome_import_20261016/REPORT.md).
+No fitting, TEST opening or native head integration is performed by the importer.
+
 ## Boundaries and contracts
 
 The whole-combat input is the canonical 1,766-value rich combat feature vector captured at `decisionIdx=0`, before a committed player action. Labels and diagnostics are read from `GameContext` only after `BattleContext::exitBattle` returns. On victory, `exitBattle` calls `regainControl`, whose normal callback is `GameContext::afterBattle`; the CSV boundary is therefore post-battle/post-`afterBattle` reward-screen entry, not the earlier `g_onBattleExitPersistent` RAW hook. Survival is unaffected. Ending HP includes normal post-combat healing and post-battle effects such as Face of Cleric. Reward generation may already have consumed reward RNG and populated reward state, although reward contents are not emitted. The diagnostic columns do not reconstruct the complete post-battle `GameContext` and must not be treated as a complete transition target. RNG state is neither exposed nor learned, and navigation/act transition remain outside the target.

@@ -1,8 +1,10 @@
 # Observed Heart-outcome collector qualification
 
-Status: **local collector qualification PASS**, including independent source/design
-and completion-anchored canary review. Cloud collection is prepared, not dispatched. No model fitting,
-TEST opening, native value-head integration, gameplay comparison or promotion.
+This is the retained **local collector qualification PASS** packet. Cloud
+collection subsequently completed; the recovered delivery is now
+[import/seal qualified](../heart_outcome_import_20261016/REPORT.md) for future
+TRAIN/VALIDATION development, with TEST sealed. No value head has been fitted
+or integrated from this outcome corpus.
 
 Frozen producer source `7527b5d5d07467688101212660461995665512b9`, base
 `9129e5b850ba45114820956522cbc92c238c2afe`. Later evidence/documentation commits

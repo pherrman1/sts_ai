@@ -9,8 +9,8 @@ SHA256 `e3621c3873dc0155edd651f787802412560b632ee6cca3f32b6e4ed2be746026`.
 Existing archived data satisfy this task; no new game seeds, canaries or fits.
 
 The current user explicitly directs use of original `wWW` deliveries excluding
-lost workers7,8,27,34, replaced by both `rWW-0` and `rWW-1`. This is41 original
-workers and8 replacement halves,49 accepted deliveries/1800 unique source seeds.
+lost workers 7, 8, 27, 34, replaced by both `rWW-0` and `rWW-1`. This is 41 original
+workers and 8 replacement halves,49 accepted deliveries/1800 unique source seeds.
 All four original partial archives remain superseded opaque evidence. No
 outcome-dependent choice of delivery or source is permitted. Preserve the
 recorded recovery deviations; do not claim unchanged no-retry compliance.
@@ -34,16 +34,16 @@ Every member must be a regular canonical assigned-source path, with a complete
 healthy footer, fixed public schema, actual driver origin/trace alignment,
 ordered coverage, objective/keys/A20/full-run, frozen policy/environment and
 pinned Arm C load/scoring contract (>=90% prior and rollout, zero legacy leaves).
-All1080 TRAIN and360 VALIDATION sources must pass; invalid/incomplete units are
+All 1,080 TRAIN and 360 VALIDATION sources must pass; invalid/incomplete units are
 not relabeled as deaths or silently filtered. A failed audit stops without
 training. Source-balanced later learning must split by whole run.
 
 ## TEST and partial custody
 
-Hash bytes only: all49 `SEALED-test.tar.gz` files and4 superseded
+Hash bytes only: all 49 `SEALED-test.tar.gz` files and 4 superseded
 `SEALED-partial-out.tar.gz` files. Never open a tar parser on them, list their
 members, extract receipts or trajectories, read labels/logs, or compute TEST
-outcome counts. The360 TEST source completions are producer receipt attestations,
+outcome counts. The 360 TEST source completions are producer receipt attestations,
 not independently parsed TEST framing/clock claims. No fitting or TEST-opening
 latch is created by this audit. Any eventual TEST use needs a separately reviewed
 one-shot protocol.

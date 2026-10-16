@@ -19453,3 +19453,63 @@ fitting, outcome summary, trained-value or gameplay verdict.**
   audit, then a reviewed training protocol.
 
 **Knowledge impact:** none beyond this entry; the data are not yet imported.
+
+### §497 recovered-delivery local import and seal audit
+
+**TRAIN_VALIDATION_READY; independent importer and result reviews PASS. TEST
+remains sealed. No fitting, new game seeds or native value-head integration.**
+
+- User supplied never-merge transport branch `claude/heart-outcome-data`, pinned
+  `e3b649ced5a392f78e9412787a84d458cffd60a1`, and explicitly selected original
+  `wWW` deliveries plus `rWW-H` replacements for lost 7/8/27/34. The 41 accepted
+  originals plus 8 replacement halves cover 1,800 unique planned sources. Original
+  lost-worker partials remain superseded opaque evidence, not usable examples.
+- All 379 regular files were inventoried; all 378 SHA256SUMS entries passed before
+  and after validation. The delivery index is byte-identical to main, full SHA
+  `e3621c3873dc0155edd651f787802412560b632ee6cca3f32b6e4ed2be746026`.
+  Primary local main updated to `b35c179ebedfa33935198dc784004a52f58eef8b`.
+- Importer `747f47e935c5c35c41dd5599f0905dd7a270806a` was reviewed and frozen
+  before the full label audit. A comparison bug caught before that audit was
+  fixed to respect native public-observation HP/maxHP/gold caps 200/200/1800.
+  Python importer 12/12 and collector 15/15 pass; focused CTest 2/2 passes.
+- All 1,440 TRAIN/VALIDATION trajectories pass complete healthy footer, eight-file
+  framing, seven-file receipt hashes, public schema, ordered actual-trace
+  alignment and exact source/binary/model/policy/environment bindings. Prior
+  and rollout scoring coverage is 100% for all sources, zero fallback/legacy.
+
+| Split | Complete runs | Heart kills | Other completed outcomes | Valid observations |
+| --- | ---: | ---: | ---: | ---: |
+| TRAIN |1080|126|954|171442 /171442|
+| VALIDATION |360|47|313|56704 /56704|
+
+The unchanged TRAIN 20 wins/20 losses and VALIDATION 5/5 gate passes. Outcome
+counts are complete runs, not independent state samples. Future fits need
+source-disjoint selection and source-balanced weights; no model-quality or
+performance verdict follows from the 228,146 validated observations.
+
+- Independent result review recomputed raw TRAIN/VALIDATION footer counts and
+  hash/identity bindings. Result SHA
+  `aafe46933b03b153fc3b3032f0afa3f860663b15e9d96e015f3af06688328d33`;
+  1440-source manifest SHA
+  `1d2c6b03f95ca4750eb9869627f590d11fafeb69f04c43077d927d524117f5c6`;
+  separate review SHA
+  `e07fce84e152dc4d0bf10c6c8ae833c37ff0d7ed8d49b41ac18fea71b59e01be`.
+- All 49 TEST archives and 4 superseded partials were opaque hashes only: no
+  archive-member listing, extraction, trajectory/receipt/log reading or TEST
+  label counts. Completion of 360 TEST sources is attested by worker receipts,
+  not independent parsing of their inner framing/clocks. TEST stays closed
+  pending a separately reviewed one-shot protocol.
+- The recorded recovery and one-way export are deviations, not an unchanged
+  execution of the original no-retry/roundtrip protocol. Correction to the
+  cloud-update wording above: fixed simulations and identical binary hashes
+  do not by themselves establish byte-identical behavior on W11's different
+  CPU; "only wall time differs" was unverified. No cross-CPU timing or
+  behavior-quality conclusion is drawn. The review timestamp string also does
+  not independently establish final export-approval chronology.
+
+[Import protocol/report](evidence/heart_outcome_import_20261016/REPORT.md).
+Raw data/logs/source manifest persist under the ignored local root
+`build/heart-outcome-import-20261016-v1`; the corpus transport branch is not
+merged or copied into main. Prior §491–496 verdicts remain unchanged.
+**Knowledge impact:** current corpus readiness/custody and reproducible import
+procedure are updated in maintained OOC research/pipeline knowledge.

@@ -1,0 +1,28 @@
+{
+  "transportCommit": "e3b649ced5a392f78e9412787a84d458cffd60a1",
+  "baseSha": "b35c179ebedfa33935198dc784004a52f58eef8b",
+  "auditorSourceSha": "747f47e935c5c35c41dd5599f0905dd7a270806a",
+  "checksummedFiles": 378,
+  "regularTransportFiles": 379,
+  "acceptedDeliveries": 49,
+  "attestedSources": 1800,
+  "parsedTrainValidationSources": 1440,
+  "testAssignedSources": 360,
+  "testArchivesOpened": 0,
+  "partialArchivesOpened": 0,
+  "hashes": {
+    "transport.tar": "1d6928bd3e0df0213433fad2948f48f4b0f9d8b0505f81becdbb22fd05d6a5c7",
+    "sha256sum-check.log": "e644a5678f7817a80789f77d1cc8428d3a9057c5f649dc0b86b66fbc41c7dacd",
+    "audit.log": "70b0f7f81ae7f7c525c802742d149c370622bd5390c02c4545b57bb3f0619a5d",
+    "focused-checks.log": "77e6a2b3c8cc079fba98fe95de235ded0d3716fc12c414a3e6d3452400597d5a",
+    "audit/import-audit.json": "aafe46933b03b153fc3b3032f0afa3f860663b15e9d96e015f3af06688328d33",
+    "audit/train-validation-sources.jsonl": "1d2c6b03f95ca4750eb9869627f590d11fafeb69f04c43077d927d524117f5c6"
+  },
+  "dataManifestSha256": "418dc6eaa8b6a7845c88f2c53d615363f4c8ab51354e44c5d51d21daf59235f2",
+  "deliveryIndexSha256": "e3621c3873dc0155edd651f787802412560b632ee6cca3f32b6e4ed2be746026",
+  "gamesLaunched": 0,
+  "fitsLaunched": 0,
+  "testOpened": false,
+  "transportBranchMerged": false,
+  "nativeValueIntegration": false
+}
