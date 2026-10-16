@@ -6,6 +6,7 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
+import unittest.mock
 
 REPO = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('worker', REPO / 'tools/heart_distill_native_worker.py')
@@ -142,6 +143,18 @@ class NativeWorkerTest(unittest.TestCase):
         r = json.loads((share / 'receipts/seed-110164000.receipt.json').read_text())
         self.assertIn('interrupted-attempt1/seed-110164000.log', r['files'])
         self.assertEqual(r['archive'], 'sources/seed-110164000.attempt2.tar.gz')
+
+    def test_worker_command_line_reports_outcomes(self):
+        bundle = self.make_bundle()
+        share = self.root / 'share'
+        wk.create_deadline(self.plan_path, share, self.canary)
+        argv = ['x', 'worker', str(self.plan_path), self.plan_sha, str(bundle), str(self.root / 'w3' / 'out'),
+                str(share), '3']
+        import contextlib, io, sys
+        out = io.StringIO()
+        with unittest.mock.patch.object(sys, 'argv', argv), contextlib.redirect_stdout(out):
+            wk.main()
+        self.assertIn('worker done w03-train [[110164004, "receipted", 0], [110164005, "receipted", 0]]', out.getvalue())
 
     def test_orphaned_producer_is_killed_before_rerun(self):
         share = self.root / 'share'

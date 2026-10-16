@@ -443,7 +443,8 @@ def main():
         print('canary gatePass', s['gatePass'])
     else:
         done = worker(a.plan, a.plan_sha, repo, a.bundle, a.local, a.share, a.w)
-        print('worker done', done['tar'], done['tarSha256'])
+        print('worker done', f"w{done['worker']:02d}-{done['split']}",
+              json.dumps([[o.get('seed'), o['state'], o.get('returncode')] for o in done['outcomes']]))
 
 
 if __name__ == '__main__':
