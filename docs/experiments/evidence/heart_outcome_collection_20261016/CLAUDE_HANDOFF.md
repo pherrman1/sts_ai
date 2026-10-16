@@ -1,7 +1,8 @@
 # Claude coordinator: observed Heart-outcome collection
 
 Execute only this finite collection protocol after reviewing the attached PR's
-final exact SHA and PROTOCOL.md. This is not model training or an RL loop.
+final evidence packet and PROTOCOL.md. Frozen reviewed producer source:
+`7527b5d5d07467688101212660461995665512b9` (source/design PASS). This is not model training or an RL loop.
 Do not use GCP, paid provider infrastructure, credentials, or Codex workers.
 
 1. In one native Claude VM, check out the exact independently reviewed source
@@ -13,7 +14,12 @@ Do not use GCP, paid provider infrastructure, credentials, or Codex workers.
    teacher environment is extracted from that pinned historical runner.
    Obtain original Arm C native weights SHA
    `eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509`
-   from the existing project artifacts. Do not train or substitute weights.
+   from the existing project artifacts. A verified retrieval source is transport
+   commit `d65a365599bb0e32a5b26a4c59aa19dcd1ca0195`, path `bundle/studentc.bin`
+   on `claude/arm-c-native-data`: fetch that branch, extract only this blob with
+   `git show COMMIT:bundle/studentc.bin > STUDENTC`, and verify SHA256 before use.
+   This transport branch is never merged; do not read its sealed TEST corpus.
+   Do not train or substitute weights.
 2. Run synthetic tests and the native `heartoutcomeselftest` without game seeds.
    Run `tools/heart_outcome_collect.py prepare --repo REPO --binary BINARY
    --student STUDENTC --out CAMPAIGN` from a clean reviewed checkout. The helper
