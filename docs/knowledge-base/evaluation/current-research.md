@@ -43,7 +43,10 @@ contracts now bind native Silver teachers.
 
 ## Arm C rollout-target distillation (§494)
 
-The fresh native-session continuation **completed collection; no fit or TEST yet**:
+The fresh native-session continuation **completed collection, fit and one-shot TEST: NOT_SHOWN**
+(student vs X2-B on TEST: concordance 0.656 vs 0.630, regret 0.0171 vs 0.0194, 6.8x cheaper
+than one rollout3, but the regret-improvement bootstrap [−0.0016, +0.0080] includes zero; no
+promotion; ledger §494 "Fit and one-shot TEST"):
 seeds `110164000..063` (40/8/16), 3600s/source and one six-hour deadline; qualification
 canaries `110163994/995` passed and were independently reviewed. The Codex preflight
 (blocked on export and capacity) is in the
@@ -63,8 +66,10 @@ trip through the project share; see the
 worker execution (rerun-once on lost attempts). After independent review and canary
 review, **collection completed 64/64 sources** (all rc 0, attempt 1, one CPU model;
 TRAIN 663 / VALIDATION 114 groups); raw corpus and sealed TEST are on the project
-share. No fit or TEST has run; see the
+share; see the
 [collection report](../../experiments/evidence/arm_c_native_campaign_20261016/REPORT.md).
+`tools/heart_distill_native_fit.py` fit the unchanged six-fit grid once on Philipp's GPU and ran
+TEST once on the collection CPU model behind a global latch.
 
 A separately authorized continuation uses the exact frozen Arm C for both tree
 priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)

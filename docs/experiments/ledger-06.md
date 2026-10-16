@@ -19308,6 +19308,44 @@ deadline 11:31:09Z-17:31:09Z, per-source archives exported before receipts, TEST
 model. TRAIN 663 / VALIDATION 114 multi-action groups, 100% valid rows, every source covered; longest source
 3,398 s of the 3,600 s cap. Raw corpus and sealed TEST are on the project share with verified hashes; see the
 [collection report](evidence/arm_c_native_campaign_20261016/REPORT.md).
-Fitting and TEST remain unrun; the CPU-cost comparison must be frozen and reviewed before any TEST opening.
 
-**Knowledge impact:** current research status; execution evidence for §494.
+### Fit and one-shot TEST (2026-10-16)
+
+**TEST: NOT_SHOWN. The selected student beats X2-B on TEST concordance and regret and is 6.8x cheaper than
+one rollout3, but the per-source bootstrap lower bound on the regret improvement is below zero; no promotion.**
+
+- Adapter: `tools/heart_distill_native_fit.py` (PR #568 `c9cad8d`, independent review PASS after one FAIL fixed
+  with a global one-shot latch). It stages the unchanged trainer (`9c8b30e7`, from `9d83adbb`) on the native
+  corpus, hash-bound per source; TEST capture bytes are copied but not parsed before the latch.
+- Transport: never-merge branch `claude/arm-c-native-data` (Philipp's OK 13:31Z) carries the corpus (TEST as the
+  sealed `corpus-test-SEALED.tar`, `42b035fe…`, hash-only), the producer and `studentc.bin` (`057d61a`), and
+  the returned fit outputs (`d65a365`, no capture files).
+- Fit (Philipp: "Local GPU", 13:12Z): one run of the unchanged six fits on an RTX 3060 Ti, rc 0 in 176 s;
+  coverage gate PASS (TRAIN 663 / VALIDATION 114 groups, 100% valid rows, every source). Selected
+  `attention`, init 0, epoch 3, blend weight 1.0; VALIDATION regret 0.0273 vs X2-B 0.0337.
+- CPU-cost comparison, frozen before TEST: TEST re-staged in a cloud thread on the collection CPU model
+  (Intel Xeon @2.10GHz), so the trainer's own speedup compares rollout cost and student cost on the same CPU
+  model. Plan `test-plan.json` `5a92dcac…` posted on #568 before opening; binding review PASS; Philipp
+  "Open TEST" 13:43Z. One attempt, rc 0 in 48 s; result `e8cf578b…`.
+
+| TEST (16 sources, 254 groups, 7,321/7,321 valid rows) | concordance | regret | MSE |
+|---|---|---|---|
+| Selected student | 0.6557 | 0.01708 | 0.0248 |
+| X2-B baseline | 0.6304 | 0.01941 | 0.0355 |
+| Opus §490 frozen reference | 0.6007 | 0.01938 | 0.0203 |
+| One scheduled rollout3 | 0.5195 | 0.03020 | 0.0548 |
+| Half student + half rollout3 | 0.5549 | 0.02520 | 0.0206 |
+
+| Gate | Value | Required | Result |
+|---|---|---|---|
+| Concordance gain over X2-B | +0.0253 | ≥ +0.02 | pass |
+| Regret ratio to X2-B | 0.880 | ≤ 0.9 | pass |
+| Regret improvement, 95% source bootstrap (2000, RNG 20261016) | [−0.0016, +0.0080] | lower > 0 | **fail** |
+| CPU speedup over one rollout3 (Python features + inference + X2-B) | 6.82x | ≥ 4x | pass |
+
+Mean rollout3 CPU per rollout was 22.0 ms; student tensor inference 2.47 ms, feature encoding 0.75 ms.
+Inference: with 16 TEST sources the bootstrap is wide; the point estimates favour the student, but this
+corpus does not show the regret gain. Offline only: no native port, gameplay or default change.
+Evidence: [fit and TEST](evidence/arm_c_native_campaign_20261016/fit/) (fitted outputs, plan, latch, result).
+
+**Knowledge impact:** current research status; execution evidence and TEST verdict for §494.
