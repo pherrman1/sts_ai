@@ -1,8 +1,8 @@
-import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
 import tarfile
 import tempfile
 import unittest
@@ -35,6 +35,8 @@ class NativeWorkerTest(unittest.TestCase):
         self.plan_path = self.root / 'plan.json'
         self.plan_path.write_text(json.dumps(self.plan, sort_keys=True))
         self.plan_sha = wk.sha(self.plan_path)
+        self.canary = self.root / 'canary.json'
+        self.canary.write_text(json.dumps({'gatePass': True}))
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -87,10 +89,14 @@ class NativeWorkerTest(unittest.TestCase):
 
     def test_deadline_created_once_and_bound(self):
         share = self.root / 'share'
-        value = wk.create_deadline(self.plan_path, share)
+        failed = self.root / 'failed.json'
+        failed.write_text(json.dumps({'gatePass': False}))
+        with self.assertRaises(ValueError):
+            wk.create_deadline(self.plan_path, share, failed)
+        value = wk.create_deadline(self.plan_path, share, self.canary)
         self.assertEqual(value['deadlineEpoch'] - value['startEpoch'], 21600)
         with self.assertRaises(FileExistsError):
-            wk.create_deadline(self.plan_path, share)
+            wk.create_deadline(self.plan_path, share, self.canary)
         self.assertEqual(wk.read_deadline(share, self.plan_sha), value['deadlineEpoch'])
         with self.assertRaises(ValueError):
             wk.read_deadline(share, '0' * 64)
@@ -104,34 +110,69 @@ class NativeWorkerTest(unittest.TestCase):
     def test_worker_end_to_end_with_sealed_test(self):
         bundle = self.make_bundle()
         share = self.root / 'share'
-        wk.create_deadline(self.plan_path, share)
+        wk.create_deadline(self.plan_path, share, self.canary)
         done = wk.worker(self.plan_path, self.plan_sha, REPO, bundle, self.root / 'w25' / 'out', share, 25)
-        self.assertEqual(done['tar'], 'w25-test-SEALED.tar.gz')
         self.assertEqual([o['returncode'] for o in done['outcomes']], [0, 0])
         for seed in (110164048, 110164049):
             r = json.loads((share / f'receipts/seed-{seed}.receipt.json').read_text())
-            self.assertEqual((r['attempt'], r['returncode'], r['studentPriorContract']['share']), (1, 0, 1.0))
-            self.assertIn('captureSha256', r)
+            self.assertEqual((r['attempt'], r['returncode'], r['split']), (1, 0, 'test'))
+            self.assertEqual(r['archive'], f'sources/seed-{seed}.attempt1-SEALED.tar.gz')
+            self.assertEqual(wk.sha(share / r['archive']), r['archiveSha256'])
             self.assertNotIn('opaque', json.dumps(r))
-        self.assertEqual(wk.sha(share / done['tar']), done['tarSha256'])
-        with tarfile.open(share / done['tar']) as tar:
-            self.assertIn('w25-test-SEALED/seed-110164048.sib.jsonl', tar.getnames())
-        self.assertEqual(json.loads((share / 'w25-test-SEALED.DONE.json').read_text())['tarSha256'], done['tarSha256'])
+            with tarfile.open(share / r['archive']) as tar:
+                inner = f'seed-{seed}.attempt1-SEALED/seed-{seed}.receipt.json'
+                local = json.loads(tar.extractfile(inner).read())
+            self.assertEqual(local['studentPriorContract']['share'], 1.0)
+            self.assertEqual(local['environment']['HOME'], os.environ.get('HOME', ''))
+            self.assertIn('captureSha256', local)
+        self.assertTrue((share / 'w25-test.DONE.json').exists())
         with self.assertRaises(ValueError):
             wk.worker(self.plan_path, '0' * 64, REPO, bundle, self.root / 'x', share, 1)
 
     def test_interrupted_attempt_is_preserved_and_rerun(self):
         bundle = self.make_bundle()
         share, out = self.root / 'share', self.root / 'w1' / 'out'
-        wk.create_deadline(self.plan_path, share)
+        wk.create_deadline(self.plan_path, share, self.canary)
         out.mkdir(parents=True)
         (out / 'seed-110164000.log').write_text('partial')
         for seed in (110164000, 110164001):
             wk.claim_attempt(share, seed, 1, 'lost-container')
         done = wk.worker(self.plan_path, self.plan_sha, REPO, bundle, out, share, 1)
         self.assertEqual([o['attempt'] for o in done['outcomes']], [2, 2])
-        self.assertIn('interrupted-attempt1/seed-110164000.log', done['files'])
-        self.assertEqual(done['tar'], 'w01-train.tar.gz')
+        r = json.loads((share / 'receipts/seed-110164000.receipt.json').read_text())
+        self.assertIn('interrupted-attempt1/seed-110164000.log', r['files'])
+        self.assertEqual(r['archive'], 'sources/seed-110164000.attempt2.tar.gz')
+
+    def test_orphaned_producer_is_killed_before_rerun(self):
+        share = self.root / 'share'
+        here = wk.host_identity()['bootId']
+        orphan = subprocess.Popen(['sleep', '300'], start_new_session=True)
+        self.addCleanup(lambda: orphan.poll() is None and orphan.kill())
+        (share / 'claims').mkdir(parents=True)
+        dead = subprocess.Popen(['true']); dead.wait()
+        (share / 'claims/seed-9.attempt1.json').write_text(json.dumps({'bootId': here, 'pid': dead.pid}))
+        (share / 'claims/seed-9.attempt1.child.json').write_text(json.dumps({'pgid': orphan.pid}))
+        self.assertEqual(wk.claim_attempt(share, 9, 1, here), 2)
+        orphan.wait(timeout=5)
+        self.assertIsNotNone(orphan.returncode)
+
+    def test_receipt_is_published_after_data(self):
+        bundle = self.make_bundle()
+        share = self.root / 'share'
+        wk.create_deadline(self.plan_path, share, self.canary)
+        order = []
+        real = wk.export_file
+        def spy(src, dst):
+            order.append(Path(dst).parent.name)
+            return real(src, dst)
+        wk.export_file = spy
+        self.addCleanup(lambda: setattr(wk, 'export_file', real))
+        wk.worker(self.plan_path, self.plan_sha, REPO, bundle, self.root / 'w2' / 'out', share, 2)
+        per_source = [d for d in order if d in ('sources', 'receipts')]
+        self.assertEqual(sorted(per_source), ['receipts', 'receipts', 'sources', 'sources'])
+        for i, d in enumerate(per_source):
+            if d == 'receipts':
+                self.assertGreaterEqual(per_source[:i].count('sources'), per_source[:i + 1].count('receipts'))
 
 
 if __name__ == '__main__':

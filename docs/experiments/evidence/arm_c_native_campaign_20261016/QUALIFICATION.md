@@ -33,10 +33,14 @@ No game seed, canary, fit or TEST was run. Lead container = this thread's cloud 
 - Not measured: a guaranteed maximum session lifetime. Each unit is <=3600 s + ~5 min build, inside one watcher.
 
 ## Decisions and execution design (pending independent review)
-- Interruption rule (Philipp, decision card 10:33Z): a source whose attempt ends without a receipt
-  (process or container lost) is rerun whole once inside the same deadline; partial outputs move to
-  `interrupted-attemptN/` and stay in the worker archive. A source with any receipt (including rc 124) is never rerun.
+- Interruption rule (Philipp, decision card 10:33Z): a source whose attempt ends without a share receipt
+  (process or container lost) is rerun whole once inside the same deadline, after any orphaned producer group of
+  the earlier attempt is killed. Partial outputs move to `interrupted-attemptN/` and enter the rerun's archive only
+  when the local disk survived; a lost container loses them. A source with a share receipt (any rc, including 124)
+  is never rerun.
 - Execution: `tools/heart_distill_native_worker.py` (bundle / deadline / unit / canary / worker). Plan uses
-  contiguous split-pure blocks; proposed 32 workers x 2 concurrent sources; workers 25-32 hold only TEST and export
-  `wWW-test-SEALED.tar.gz` with names/hashes only. One `deadline.json` created once (O_EXCL) by the lead.
+  contiguous split-pure blocks; proposed 32 workers x 2 concurrent sources. Each source's outputs are exported as
+  `sources/seed-N.attemptA[-SEALED].tar.gz` (sealed for TEST, names/hashes only) BEFORE its share receipt, so a
+  receipt implies its data. One `deadline.json` is created once (O_EXCL) by the lead and only if `canary.json`
+  has `gatePass: true`.
 - Workers are launched by the project coordinator as Haiku threads (Philipp, 10:33Z).

@@ -3,7 +3,7 @@
 Subcommands (receipts expose completion/custody only; capture JSONL is never parsed
 here, so TEST stays opaque):
   bundle REPO BINARY STUDENTC OUT       assemble and hash the frozen producer bundle
-  deadline PLAN SHARE                   lead only: create the single immutable 6 h deadline
+  deadline PLAN SHARE CANARY_JSON       lead only, after canary review: the single 6 h deadline
   unit PLAN BUNDLE OUT SEED TAG [--no-capture]
                                         one canary unit (seed must be a frozen canary)
   canary PLAN BUNDLE OUT                lead: frozen canaries + parity/coverage gates
@@ -11,9 +11,12 @@ here, so TEST stays opaque):
                                         run worker W's fixed sources concurrently, export
 
 Interruption rule (Philipp, 2026-10-16 10:33Z): a source whose attempt ended without a
-receipt (process or container lost) is rerun whole exactly once, inside the same
-deadline; partial outputs are preserved and the attempt is recorded. A source with a
-receipt (any return code, including timeout 124) is never rerun.
+share receipt (process or container lost) is rerun whole exactly once, inside the same
+deadline, after any orphaned producer of the earlier attempt is killed. Partial outputs
+are kept only when the local disk survived (a lost container takes them with it). A
+source with a share receipt (any return code, including timeout 124) is never rerun.
+Each source's outputs reach the share as their own archive (sealed for TEST) BEFORE its
+receipt, so a receipt on the share always means its data is there too.
 """
 import argparse
 import ast
@@ -130,11 +133,15 @@ def verify_bundle(path):
 
 # ---------------------------------------------------------------- deadline
 
-def create_deadline(plan_path, share):
+def create_deadline(plan_path, share, canary_json):
+    """Refuses unless the frozen canary gates passed; independent canary review is still
+    required before the lead runs this."""
+    if json.loads(Path(canary_json).read_text()).get('gatePass') is not True:
+        raise ValueError('canary gates did not pass; no collection deadline')
     share = Path(share)
     share.mkdir(parents=True, exist_ok=True)
     start = time.time()
-    value = {'planSha256': sha(plan_path), 'startEpoch': start, 'deadlineEpoch': start + GLOBAL_SECONDS,
+    value = {'planSha256': sha(plan_path), 'canarySha256': sha(canary_json), 'startEpoch': start, 'deadlineEpoch': start + GLOBAL_SECONDS,
              'startUtc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(start)),
              'rule': 'created once by the lead; never reset or extended'}
     fd = os.open(share / 'deadline.json', os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -152,8 +159,10 @@ def read_deadline(share, plan_sha):
 
 # ---------------------------------------------------------------- one unit
 
-def run_unit(plan, repo, bundle_dir, out, seed, deadline, capture=True, tag=None, attempt=1):
-    """Run one guarded unit to a local receipt. Mirrors the reviewed runner's unit()."""
+def run_unit(plan, repo, bundle_dir, out, seed, deadline, capture=True, tag=None, attempt=1, on_start=None):
+    """Run one guarded unit to a local receipt. Mirrors the reviewed runner's unit().
+
+    on_start(pgid) is called once the producer's process group exists."""
     contract = student_contract_fn(repo)
     bundle_sha = verify_bundle(bundle_dir)
     remaining = deadline - time.time()
@@ -161,18 +170,23 @@ def run_unit(plan, repo, bundle_dir, out, seed, deadline, capture=True, tag=None
         raise RuntimeError(f'global deadline passed before unit {seed}')
     spec = plan_mod.shard_spec(plan, seed, bundle_dir, out, min(GLOBAL_SECONDS, remaining), capture, tag)
     base = Path(spec['base'])
+    env = dict(spec['environment'])
+    for name in plan['workerHostEnvironmentRequired']:  # HOME, PATH, as the reviewed runner supplies
+        env[name] = os.environ.get(name, '/usr/bin:/bin' if name == 'PATH' else '')
     receipt = base.with_suffix('.receipt.json')
     if receipt.exists() or list(base.parent.glob(base.name + '.*')):
         raise ValueError('unit output already exists: ' + str(base))
     start = time.time()
     result = {'seed': seed, 'capture': capture, 'tag': tag, 'attempt': attempt,
               'assignment': spec['assignment'], 'command': spec['command'],
-              'environment': spec['environment'], 'timeoutSeconds': spec['timeoutSeconds'],
+              'environment': env, 'timeoutSeconds': spec['timeoutSeconds'],
               'deadlineEpoch': deadline, 'bundleSha256': bundle_sha, 'host': host_identity(),
               'started': start}
     with base.with_suffix('.log').open('x') as log:
-        with subprocess.Popen(spec['command'], cwd=spec['cwd'], env=spec['environment'], stdout=log,
+        with subprocess.Popen(spec['command'], cwd=spec['cwd'], env=env, stdout=log,
                               stderr=subprocess.STDOUT, start_new_session=True) as child:
+            if on_start:
+                on_start(child.pid)
             try:
                 rc = child.wait(timeout=spec['timeoutSeconds'])
             except subprocess.TimeoutExpired:
@@ -253,9 +267,14 @@ def claim_attempt(share, seed, w, boot_id):
         return None
     previous = [n for n in range(1, MAX_ATTEMPTS + 1) if (claims / f'seed-{seed}.attempt{n}.json').exists()]
     if previous:
-        last = json.loads((claims / f'seed-{seed}.attempt{previous[-1]}.json').read_text())
-        if last['bootId'] == boot_id and _alive(last['pid']):
-            raise RuntimeError(f'source {seed} attempt {previous[-1]} still running here')
+        last_path = claims / f'seed-{seed}.attempt{previous[-1]}.json'
+        last = json.loads(last_path.read_text())
+        if last['bootId'] == boot_id:
+            if _alive(last['pid']):
+                raise RuntimeError(f'source {seed} attempt {previous[-1]} still running here')
+            started = claims / f'seed-{seed}.attempt{previous[-1]}.child.json'
+            if started.exists():  # the worker died; its producer group may still be running
+                _kill_group(json.loads(started.read_text())['pgid'])
     attempt = len(previous) + 1
     if attempt > MAX_ATTEMPTS:
         raise RuntimeError(f'source {seed} interrupted {MAX_ATTEMPTS} times; INCOMPLETE, no further rerun')
@@ -264,6 +283,33 @@ def claim_attempt(share, seed, w, boot_id):
         json.dump({'seed': seed, 'worker': w, 'attempt': attempt, 'bootId': boot_id, 'pid': os.getpid(),
                    'time': time.time()}, f, sort_keys=True)
     return attempt
+
+
+def _kill_group(pgid):
+    """Terminate an orphaned producer group and wait until none of it remains."""
+    for sig, wait in ((signal.SIGTERM, 10), (signal.SIGKILL, 30)):
+        try:
+            os.killpg(pgid, sig)
+        except ProcessLookupError:
+            return
+        end = time.time() + wait
+        while time.time() < end:
+            if not _group_running(pgid):
+                return
+            time.sleep(0.2)
+    raise RuntimeError(f'orphaned producer group {pgid} did not exit')
+
+
+def _group_running(pgid):
+    """True while any non-zombie process of the group exists (zombies hold no CPU or files)."""
+    for stat in Path('/proc').glob('[0-9]*/stat'):
+        try:
+            fields = stat.read_text().rsplit(')', 1)[1].split()
+        except OSError:
+            continue
+        if int(fields[2]) == pgid and fields[0] != 'Z':
+            return True
+    return False
 
 
 def _alive(pid):
@@ -303,6 +349,7 @@ def worker(plan_path, plan_sha, repo, bundle_dir, local, share, w):
     deadline = read_deadline(share, plan_sha)
     local, share = Path(local), Path(share)
     local.mkdir(parents=True, exist_ok=True)
+    (share / 'sources').mkdir(parents=True, exist_ok=True)
     boot = host_identity()['bootId']
 
     def one(source):
@@ -317,13 +364,31 @@ def worker(plan_path, plan_sha, repo, bundle_dir, local, share, w):
                 keep.mkdir(exist_ok=True)
                 for p in old:
                     os.replace(p, keep / p.name)
+        child = share / 'claims' / f'seed-{seed}.attempt{attempt}.child.json'
+        def started(pgid):
+            write_json(child, {'pgid': pgid, 'bootId': boot, 'time': time.time()})
         try:
-            receipt = run_unit(plan, repo, bundle_dir, local, seed, deadline, attempt=attempt)
+            receipt = run_unit(plan, repo, bundle_dir, local, seed, deadline, attempt=attempt, on_start=started)
         except Exception as error:  # no receipt: recorded as a failed attempt, not rerun here
             write_json(local / f'seed-{seed}.attempt{attempt}.error.json', {'error': str(error)}, exclusive=False)
             raise
-        export_file(local / f'seed-{seed}.receipt.json', share / 'receipts' / f'seed-{seed}.receipt.json')
-        return {'seed': seed, 'state': 'receipted', 'returncode': receipt['returncode'], 'attempt': attempt}
+        # Data first, receipt last: the share receipt is the completion marker.
+        name = f'seed-{seed}.attempt{attempt}' + ('-SEALED' if split == 'test' else '')
+        members = sorted(local.glob(f'seed-{seed}.*')) + sorted(local.glob(f'interrupted-attempt*/seed-{seed}.*'))
+        archive = local.parent / (name + '.tar.gz')
+        with tarfile.open(archive, 'x:gz') as tar:
+            for p in members:
+                tar.add(p, arcname=f'{name}/{p.relative_to(local)}')
+        files = {str(p.relative_to(local)): sha(p) for p in members}
+        archive_sha = export_file(archive, share / 'sources' / (name + '.tar.gz'))
+        wrapper = local.parent / f'seed-{seed}.share-receipt.json'
+        write_json(wrapper, {'seed': seed, 'split': split, 'worker': w, 'attempt': attempt,
+                             'returncode': receipt['returncode'], 'receiptSha256': sha(local / f'seed-{seed}.receipt.json'),
+                             'archive': 'sources/' + name + '.tar.gz', 'archiveSha256': archive_sha, 'files': files},
+                   exclusive=False)
+        export_file(wrapper, share / 'receipts' / f'seed-{seed}.receipt.json')
+        return {'seed': seed, 'state': 'receipted', 'returncode': receipt['returncode'], 'attempt': attempt,
+                'archive': 'sources/' + name + '.tar.gz', 'archiveSha256': archive_sha}
 
     with ThreadPoolExecutor(max_workers=len(mine)) as pool:
         futures = [pool.submit(one, s) for s in mine]
@@ -333,18 +398,15 @@ def worker(plan_path, plan_sha, repo, bundle_dir, local, share, w):
                 outcomes.append(f.result())
             except Exception as error:
                 outcomes.append({'state': 'error', 'error': str(error)})
-    name = f'w{w:02d}-{split}' + ('-SEALED' if split == 'test' else '')
-    tar_path = local.parent / (name + '.tar.gz')
-    files = {str(p.relative_to(local)): sha(p) for p in sorted(local.rglob('*')) if p.is_file()}
-    with tarfile.open(tar_path, 'x:gz') as tar:
-        tar.add(local, arcname=name)
-    tar_sha = export_file(tar_path, share / (name + '.tar.gz'))
+    name = f'w{w:02d}-{split}'
     done = {'worker': w, 'split': split, 'seeds': [s['seed'] for s in mine], 'outcomes': outcomes,
-            'planSha256': plan_sha, 'deadlineEpoch': deadline, 'finished': time.time(),
-            'host': host_identity(), 'tar': name + '.tar.gz', 'tarSha256': tar_sha, 'files': files,
-            'testCustody': 'sealed; file names and hashes only' if split == 'test' else None}
+            'planSha256': plan_sha, 'deadlineEpoch': deadline, 'finished': time.time(), 'host': host_identity(),
+            'testCustody': 'sealed per-source archives; file names and hashes only' if split == 'test' else None}
     write_json(local.parent / (name + '.DONE.json'), done, exclusive=False)
-    export_file(local.parent / (name + '.DONE.json'), share / (name + '.DONE.json'))
+    target = share / (name + '.DONE.json')
+    if target.exists():  # a later invocation after an in-process rerun keeps the first record
+        target = share / f'{name}.DONE.{int(time.time())}.json'
+    export_file(local.parent / (name + '.DONE.json'), target)
     return done
 
 
@@ -352,7 +414,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('bundle'); [b.add_argument(n, type=Path) for n in ('repo', 'binary', 'studentc', 'out')]
-    d = sub.add_parser('deadline'); d.add_argument('plan', type=Path); d.add_argument('share', type=Path)
+    d = sub.add_parser('deadline')
+    for n in ('plan', 'share', 'canary_json'):
+        d.add_argument(n, type=Path)
     u = sub.add_parser('unit')
     for n in ('plan', 'bundle', 'out'):
         u.add_argument(n, type=Path)
@@ -368,7 +432,7 @@ def main():
     if a.cmd == 'bundle':
         print('bundle ok', bundle(a.repo, a.binary, a.studentc, a.out))
     elif a.cmd == 'deadline':
-        print(json.dumps(create_deadline(a.plan, a.share)))
+        print(json.dumps(create_deadline(a.plan, a.share, a.canary_json)))
     elif a.cmd == 'unit':
         a.out.mkdir(parents=True, exist_ok=True)
         r = run_unit(json.loads(a.plan.read_text()), repo, a.bundle, a.out, a.seed, time.time() + 3660,
