@@ -1860,9 +1860,9 @@ with the search and its chain.
   trim_map …)`). Student C (dim 64, 2 layers, 4 heads, trim) matches
   silverbot's torch forward to 1.6e-5 on 3,000 tree-node records at about
   1.5 ms per call (heart1 about 31 ms).
-  Its original distillation (`tools/distill.py`, Arm C checkpoint at68fe88be)
+  Its original distillation (`tools/distill.py`, Arm C checkpoint at `68fe88be`)
   trained policy logits only; the original checkpoint's value head was not supervised.
-  `tools/heart1/train_value_head.py` can fit just the65 affine value parameters
+  `tools/heart1/train_value_head.py` can fit just the 65 affine value parameters
   on the completed §494 TRAIN/VALIDATION corpus while preserving all other
   tensors and policy logits. The §495 fit is development-only and worse than
   X2-B on validation; no learned-head native leaf integration is qualified.

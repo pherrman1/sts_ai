@@ -48,12 +48,12 @@ but received no value objective. The separately authorized fit now trains only
 its existing affine value head (65 parameters) on §494's 40 TRAIN sources;
 the encoder, policy head and value normalization remain exactly unchanged.
 All 18,570 TRAIN and 2,721 VALIDATION rows were preserved. Six fixed ridge
-penalties were selected by raw source-balanced VALIDATION MSE; alpha0.01 won.
+penalties were selected by raw source-balanced VALIDATION MSE; alpha 0.01 won.
 Full VALIDATION policy logits and pooled features stayed bitwise identical.
 
 **VALIDATION_ONLY; worse than X2-B on this development split.** Fitted raw MSE
-0.03956 vs X2-B0.03305, sibling concordance0.5898 vs0.6208, and regret0.03834
-vs0.03369. This does not support a gameplay pilot with this head. It does not
+0.03956 vs X2-B 0.03305, sibling concordance 0.5898 vs 0.6208, and regret 0.03834
+vs 0.03369. This does not support a gameplay pilot with this head. It does not
 show that the representation cannot support a richer value head or joint
 training; those are untested interventions. No native integration, speed
 qualification, new seeds, TEST reopening, RL or default change was performed.
@@ -62,7 +62,7 @@ The original encoder still ignores extra captured battle/memory fields.
 
 The fitted checkpoint and a portable two-tensor head replacement are preserved;
 see [protocol and evidence](../../experiments/evidence/arm_c_value_head_20261016/PROTOCOL.md)
-and ledger§495. The trained scalar predicts CTM/Arm C rollout targets ending in
+and ledger §495. The trained scalar predicts CTM/Arm C rollout targets ending in
 X2-B, not calibrated actual Heart-kill probability.
 
 ## Arm C rollout-target distillation (§494)

@@ -19357,37 +19357,37 @@ useful leaf estimate by training only its existing value head? User authorized
 this fit after the original training script proved the value head was included
 but never supervised (policy KL only). No native integration/gameplay/RL follows.
 
-**Frozen design and provenance:** baseline main9129e5b8; independently reviewed
+**Frozen design and provenance:** baseline main `9129e5b8`; independently reviewed
 fit source `deb1ecaae17f9baa73f189f88b40ac8b2c1f73a2`; freezeSHA
 `8c0f03ceb73cb0075dc72d96711365e7f3c94612a2825426d920b531746692f9`.
-Exact §494 completed native corpus; only TRAIN110164000..039 and
-VALIDATION110164040..047, all48source receipts/archive/capture hashes verified.
-18,570 TRAIN rows/663groups; 2,721 VALIDATION rows/114groups, all accepted.
+Exact §494 completed native corpus; only TRAIN `110164000..039` and
+VALIDATION `110164040..047`, all 48 source receipts/archive/capture hashes verified.
+18,570 TRAIN rows / 663 groups; 2,721 VALIDATION rows / 114 groups, all accepted.
 The consumed TEST archive was neither opened nor hashed. Labels remain the
-mean of64 Arm C/CTM rollout3 continuations ending in X2-B, not Heart outcomes.
-Original C checkpointSHA53739a43…e020, original silverbot encoder/masks/map trim.
-Only `value_head.weight` and `.bias` trained,65parameters; all77other tensors
+mean of 64 Arm C/CTM rollout3 continuations ending in X2-B, not Heart outcomes.
+Original C checkpoint SHA `53739a43…e020`, original silverbot encoder/masks/map trim.
+Only `value_head.weight` and `.bias` trained,65 parameters; all 77 other tensors
 including shared encoder/policy/value normalization remain exactly equal.
-Six fixed source-balanced ridge candidates alpha0,1e-6,1e-4,.01,1,100;
+Six fixed source-balanced ridge candidates alpha 0, 1e-6, 1e-4, .01, 1, 100;
 select minimum raw source-balanced validation MSE, with no TEST evaluation.
 
 **Input support and checks:** original Python network asserts a batch contains
 some choice. Empty-choice leaf inputs are preserved, with a separate first
-eligible TRAIN companion appended to each32target batch; it has no cross-example
-attention and its outputs are discarded. CPU/CUDA synthetic empty1/32 BATTLE
+eligible TRAIN companion appended to each 32-target batch; it has no cross-example
+attention and its outputs are discarded. CPU/CUDA synthetic empty 1/32 BATTLE
 and event batches prove companion independence bitwise. Existing extra public
 battle/memory fields are still ignored by the frozen encoder. Exact-source
-independent review PASS;10/10 focused checks (including original Arm C CPU/CUDA)
-PASS2.251s, independent10/10PASS2.406s; final affected54/54PASS4.332s
+independent review PASS; 10/10 focused checks (including original Arm C CPU/CUDA)
+PASS in 2.251 s, independent 10/10 PASS in 2.406 s; final affected 54/54 PASS in 4.332 s
 with CPU/CUDA dependencies enabled. Independent result/custody audit PASS,
-reproducing saved metrics exactly without refitting. Doctor/lock and health PASS. Broader56tests:
-53PASS,2optional dependency skips,1existing historical recovery allowlist error,
-reproduced on unchanged main9129e5b8 (`baseline-test-failure.json`); no broad
+reproducing saved metrics exactly without refitting. Doctor/lock and health PASS. Broader 56 tests:
+53 PASS, 2 optional dependency skips, 1 existing historical recovery allowlist error,
+reproduced on unchanged main `9129e5b8` (`baseline-test-failure.json`); no broad
 C++ build since this change has no native/build/runtime modifications.
 
 **Executed result: VALIDATION_ONLY, negative relative to X2-B.** One local
-RTX3060Ti fit under external1800s hard timeout, rc0,55.764s wall (53.191s
-internal); selected alpha0.01. Full VALIDATION policy logits and pooled features
+RTX 3060 Ti fit under external 1800 s hard timeout, rc 0, 55.764 s wall (53.191 s
+internal); selected alpha 0.01. Full VALIDATION policy logits and pooled features
 bitwise identical before/after; cached-head vs full-network value max difference
 1.19209e-7. Fitted checkpointSHA
 `b91757a62e0905fe2ba31e06f61efc57cab4160a879b96b7d7f97ca21dc2640f`.
@@ -19398,13 +19398,13 @@ bitwise identical before/after; cached-head vs full-network value max difference
 | Bounded sibling concordance |0.589793|0.620761|
 | Bounded decision regret |0.0383357|0.0336860|
 
-Untrained head raw MSE0.514234; TRAIN-mean constant raw MSE0.0530071.
-TRAIN fitted bounded MSE0.0181823. The fitted head learns target signal but
+Untrained head raw MSE 0.514234; TRAIN-mean constant raw MSE 0.0530071.
+TRAIN fitted bounded MSE 0.0181823. The fitted head learns target signal but
 falls behind X2-B on every selected validation decision measure. **Inference:**
-this65parameter frozen-representation probe is insufficient as a replacement;
+this 65-parameter frozen-representation probe is insufficient as a replacement;
 this does not separate limited affine capacity from missing representation
 information. Reused VALIDATION is development evidence, not qualification.
-Do not run the proposed32-seed gameplay pilot from this negative result.
+Do not run the proposed 32-seed gameplay pilot from this negative result.
 No fresh game seeds, native integration, speed claim, TEST opening, RL or
 production/default changes. Prior §491–494 verdicts unchanged.
 
