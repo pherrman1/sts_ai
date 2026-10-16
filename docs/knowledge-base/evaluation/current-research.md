@@ -57,6 +57,14 @@ capacity and session lifetime are unverified. Its available tools do not expose
 an arbitrary-file publication/download-link path, so corpus delivery is blocked.
 The [local review](../../experiments/evidence/arm_c_native_preflight_review_20261016/REPORT.md)
 records preparation corrections and verifies the old local stop receipts.
+The project's hosted cloud threads (4 vCPU/15 GiB each, mixed Intel/AMD CPUs) rebuild
+the original producer byte-identically (`86a7569f…`), score the synthetic record
+identically to the Codex AMD build, and passed a cross-container 300 MiB export round
+trip through the project share; see the
+[native campaign qualification](../../experiments/evidence/arm_c_native_campaign_20261016/QUALIFICATION.md).
+`tools/heart_distill_native_worker.py` adds bundle, deadline, canary and fixed-shard
+worker execution (rerun-once on lost attempts); it awaits independent review before
+any canary or source runs.
 
 A separately authorized continuation uses the exact frozen Arm C for both tree
 priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)
