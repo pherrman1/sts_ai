@@ -7,6 +7,10 @@ Do not use GCP, paid provider infrastructure, credentials, or Codex workers.
 1. In one native Claude VM, check out the exact independently reviewed source
    SHA from the PR evidence packet. Build Release `one_combat` with the recorded
    GCC/CMake commands and pinned submodules; retain logs and source/binary hashes.
+   Python must be≥3.11 with NumPy installed; `prepare` pins the exact Python
+   and NumPy versions for every worker. Ensure Git object
+   `9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3` is available: the unchanged
+   teacher environment is extracted from that pinned historical runner.
    Obtain original Arm C native weights SHA
    `eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509`
    from the existing project artifacts. Do not train or substitute weights.
@@ -36,12 +40,16 @@ Do not use GCP, paid provider infrastructure, credentials, or Codex workers.
 7. One coordinator runs `activate --plan CAMPAIGN/plan.json --bundle
    CAMPAIGN/bundle --approval CAMPAIGN/cloud-canary/canary-reviewed.json
    --out CAMPAIGN/activation.json`. Preserve the exclusive COHORT-STARTED latch
-   and fixed six-hour deadline. Never recreate/reset it, including after loss.
+   and fixed six-hour deadline. Compute and publish activation.json SHA256
+   in the reviewed dispatch packet. Never recreate/reset it, including after loss.
 8. Dispatch exactly45 native Claude workers, IDs0..44, at most4 concurrent source
    processes each. Copy the **same frozen bundle, plan and activation** to all.
+   Also copy COHORT-STARTED.json and the entire reviewed cloud-canary directory
+   under the same relative campaign paths. Every worker verifies the approval
+   chain and original canary hashes before starting sources.
    Each runs `python3 BUNDLE/heart_outcome_collect.py worker --plan PLAN.json
    --bundle BUNDLE --activation ACTIVATION.json --out FRESH_WORKER_DIRECTORY
-   --worker W`. Every worker owns only its assigned40seeds. Never rerun a lost
+   --worker W --activation-sha256 APPROVED_ACTIVATION_SHA256`. Every worker owns only its assigned40seeds. Never rerun a lost
    or failed source/worker in another container or directory. Report actual
    requested/launched/running/completed capacity separately;45 availability is
    a requested ceiling, not proof of successful launch.

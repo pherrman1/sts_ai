@@ -5,6 +5,7 @@ No provider API, fit, TEST opener, or retry. Worker outputs remain split-separat
 Only complete integrity-checked real trajectories can supply value labels.
 """
 import argparse
+import ast
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
@@ -12,11 +13,14 @@ import os
 from pathlib import Path
 import shutil
 import signal
+import platform
+import numpy as np
 import subprocess
 import tarfile
 import time
 
 from heart_distill_native_plan import scientific_environment
+from heart_record_encoder import encode_record
 
 FIRST = 110180000
 COUNT = 1800
@@ -43,6 +47,8 @@ def assignments():
 
 def verify_bundle(bundle):
     manifest = json.loads((bundle / 'bundle.json').read_text())
+    if manifest.get('runtime') != {'python': platform.python_version(), 'numpy': np.__version__}:
+        raise ValueError('bundle Python/NumPy runtime changed')
     if manifest['files'].get('studentc.bin') != STUDENT_C:
         raise ValueError('not exact Arm C')
     for name, digest in manifest['files'].items():
@@ -68,14 +74,15 @@ def prepare(repo, binary, student, out):
         target = bundle / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(repo / rel, target)
-    for name in ('heart_outcome_collect.py', 'heart_distill_native_plan.py', 'run_heart_distill_pilot.py'):
+    for name in ('heart_outcome_collect.py', 'heart_distill_native_plan.py', 'run_heart_distill_pilot.py', 'heart_record_encoder.py'):
         shutil.copy2(repo / 'tools' / name, bundle / name)
     env = scientific_environment(repo)
     env['STS_EXECUTABLE_GIT_SHA'] = source
     write(bundle/'environment.json', env)
     files = ['one_combat', 'studentc.bin', 'seed_guard.sh', 'heart_outcome_collect.py',
-             'heart_distill_native_plan.py', 'run_heart_distill_pilot.py', 'environment.json', *paths]
-    write(bundle / 'bundle.json', {'sourceSha': source, 'files': {p: sha(bundle / p) for p in files}})
+             'heart_distill_native_plan.py', 'run_heart_distill_pilot.py', 'heart_record_encoder.py', 'environment.json', *paths]
+    write(bundle / 'bundle.json', {'sourceSha': source, 'runtime': {'python': platform.python_version(), 'numpy': np.__version__},
+        'files': {p: sha(bundle / p) for p in files}})
     write(out / 'plan.json', {'schema': 'heart-outcome-plan-v1', 'sourceSha': source,
         'state': 'PREPARED_NOT_DISPATCHED', 'bundleSha256': sha(bundle / 'bundle.json'),
         'environment': env, 'sources': assignments(), 'workers': 45, 'processesPerWorker': 4,
@@ -133,6 +140,10 @@ def trajectory(path, seed, source, capture=True):
             if (not isinstance(record, dict) or record.get('screen_state') != state.get('screen')
                     or any(k in record for k in ('seed', 'rng', 'target', 'label', 'outcome'))):
                 raise ValueError('invalid public record or label leakage')
+            try:
+                encode_record(record)
+            except (KeyError, TypeError, ValueError, OverflowError) as error:
+                raise ValueError('invalid supported public-record schema') from error
             supported += 1
         elif not state.get('reason') or 'record' in state:
             raise ValueError('unsupported boundary is not accounted')
@@ -143,7 +154,16 @@ def trajectory(path, seed, source, capture=True):
     return header, footer, states
 
 
-def unit(plan, bundle, out, seed, tag, capture=True, seconds=3600):
+def runtime_contract(bundle, text, support, seed):
+    # Reuse only the pure reviewed function; importing the old runner imports fit tools.
+    tree = ast.parse((bundle/'run_heart_distill_pilot.py').read_text())
+    node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'student_contract')
+    namespace = {}
+    exec(compile(ast.Module(body=[node], type_ignores=[]), '<pinned student_contract>', 'exec'), namespace)
+    return namespace['student_contract'](text, support, seed, 'heart1')
+
+
+def unit(plan, bundle, out, seed, tag, capture=True, seconds=3600, expected_policy=None):
     base = out / tag
     write(base.with_suffix('.started.json'), {'seed': seed, 'capture': capture, 'sourceSha': plan['sourceSha']})
     env = {'HOME': os.environ['HOME'], 'PATH': os.environ.get('PATH', '/usr/bin:/bin'), **plan['environment']}
@@ -169,17 +189,23 @@ def unit(plan, bundle, out, seed, tag, capture=True, seconds=3600):
     receipt = {'seed': seed, 'returncode': rc, 'seconds': time.monotonic()-started,
                'sourceSha': plan['sourceSha'], 'binarySha256': sha(bundle / 'one_combat'),
                'host': os.uname().nodename, 'command': cmd, 'environment': env}
+    receipt['processReturncode'] = rc
     if rc == 0:
-        header, footer, _ = trajectory(base.with_suffix('.states.jsonl'), seed, plan['sourceSha'], capture)
-        support = [json.loads(l) for l in base.with_suffix('.mcts.csv.support.jsonl').read_text().splitlines()]
-        if len(support) != 1 or support[0]['seed'] != seed:
-            raise ValueError('missing/cross-source model-use telemetry')
-        s = support[0]
-        if (s['heart1_prior_nodes'] <= 0 or s['heart1_leaf_steps'] <= 0 or s['prior_leaf_steps'] != 0
-                or s['heart1_leaf_steps'] / (s['heart1_leaf_steps']+s['heart1_leaf_fallbacks']) < .9):
-            raise ValueError('Arm C prior/rollout scoring not qualified')
-        receipt.update(states=footer['states'], supportedStates=footer['supportedStates'],
-                       policy=header['policy'], modelUse=s)
+        try:
+            header, footer, _ = trajectory(base.with_suffix('.states.jsonl'), seed, plan['sourceSha'], capture)
+            if not isinstance(header.get('policy'), dict) or not header['policy']:
+                raise ValueError('missing effective teacher policy')
+            if expected_policy is not None and header['policy'] != expected_policy:
+                raise ValueError('effective teacher policy changed')
+            support = [json.loads(l) for l in base.with_suffix('.mcts.csv.support.jsonl').read_text().splitlines()]
+            if len(support) != 1:
+                raise ValueError('missing/cross-source model-use telemetry')
+            contract = runtime_contract(bundle, base.with_suffix('.log').read_text(), support[0], seed)
+            receipt.update(states=footer['states'], supportedStates=footer['supportedStates'],
+                           policy=header['policy'], modelUse=contract)
+        except (ValueError, KeyError, TypeError, OSError, StopIteration) as error:
+            # A normally exited but invalid producer is censored, never labeled a death.
+            receipt.update(returncode=65, contractError=str(error))
     receipt['files'] = {p.name: sha(p) for p in sorted(out.glob(tag+'.*')) if p.is_file()}
     write(base.with_suffix('.receipt.json'), receipt)
     return receipt
@@ -191,22 +217,25 @@ def canary(plan_path, bundle, out, role):
     first, second = plan['canaries'][role]
     receipts = []
     for seed, capture, tag in ((first, False, 'off'), (first, True, 'on'), (second, True, 'second')):
-        r = unit(plan, bundle, out, seed, tag, capture)
+        r = unit(plan, bundle, out, seed, tag, capture,
+                 expected_policy=receipts[0]['policy'] if receipts else None)
         receipts.append(r)
         if r['returncode']:
             raise ValueError('canary failed; no retry or cohort dispatch')
-    if (out/'off.trace.jsonl').read_bytes() != (out/'on.trace.jsonl').read_bytes():
-        raise ValueError('capture changed actual action/state trace')
+    for suffix in ('.trace.jsonl', '.mcts.csv.actions.jsonl'):
+        if (out/('off'+suffix)).read_bytes() != (out/('on'+suffix)).read_bytes():
+            raise ValueError('capture changed actual action/state trace')
     a = trajectory(out/'off.states.jsonl', first, plan['sourceSha'], False)[1]
     b = trajectory(out/'on.states.jsonl', first, plan['sourceSha'])[1]
     if any(a[k] != b[k] for k in ('label','heartKilled','finalFloor','finalAct','finalHp')):
         raise ValueError('capture changed run outcome')
     write(out/'canary.json', {'verdict': 'PASS', 'role': role, 'planSha256': sha(plan_path),
-        'bundleSha256': sha(bundle/'bundle.json'), 'traceParity': True, 'outcomeParity': True,
+        'bundleSha256': sha(bundle/'bundle.json'), 'traceParity': True, 'actionParity': True,
+        'outcomeParity': True, 'policy': receipts[0]['policy'],
         'files': {p.name: sha(p) for p in sorted(out.iterdir()) if p.is_file()}})
 
 
-def activate(plan_path, bundle, approval, out):
+def qualification(plan_path, bundle, approval):
     plan = verify_plan(plan_path, bundle)
     review = json.loads(approval.read_text())
     canary_path = approval.parent/'canary.json'
@@ -222,26 +251,47 @@ def activate(plan_path, bundle, approval, out):
             or qualified.get('verdict') != 'PASS' or qualified.get('role') != 'cloud'
             or qualified.get('planSha256') != sha(plan_path)
             or qualified.get('bundleSha256') != sha(bundle/'bundle.json')
+            or not isinstance(qualified.get('policy'), dict) or not qualified['policy']
+            or qualified.get('actionParity') is not True
             or export.get('bytes', 0) < 256*1024**2 or export.get('sourceHost') == export.get('destinationHost')
             or not export.get('sourceSha256') or export.get('sourceSha256') != export.get('returnedSha256')):
         raise ValueError('missing exact reviewed canary/export qualification')
     for name, digest in qualified['files'].items():
         if sha(approval.parent/name) != digest:
             raise ValueError('completion-anchored canary artifact changed')
+    return qualified
+
+
+def activate(plan_path, bundle, approval, out):
+    qualified = qualification(plan_path, bundle, approval)
+    approval_rel = str(approval.resolve().relative_to(plan_path.parent.resolve()))
     if out.resolve() != (plan_path.parent/'activation.json').resolve():
         raise ValueError('activation must use the one fixed coordinator path')
     started = time.time()
     write(plan_path.parent/'COHORT-STARTED.json', {'planSha256': sha(plan_path), 'startedUtc': started})
     write(out, {'planSha256': sha(plan_path), 'bundleSha256': sha(bundle/'bundle.json'),
-        'approvalSha256': sha(approval), 'startedUtc': started, 'deadlineUtc': started+21600})
+        'approvalSha256': sha(approval), 'approvalRelativePath': approval_rel,
+        'latchSha256': sha(plan_path.parent/'COHORT-STARTED.json'), 'policy': qualified['policy'],
+        'startedUtc': started, 'deadlineUtc': started+21600})
 
 
-def worker(plan_path, bundle, activation, out, worker_id):
+def worker(plan_path, bundle, activation, out, worker_id, activation_sha):
     plan = verify_plan(plan_path, bundle)
+    if not activation_sha or sha(activation) != activation_sha:
+        raise ValueError('activation differs from coordinator approved identity')
     act = json.loads(activation.read_text())
     if (act.get('planSha256') != sha(plan_path) or act.get('bundleSha256') != sha(bundle/'bundle.json')
-            or act['deadlineUtc']-act['startedUtc'] != 21600 or time.time() >= act['deadlineUtc']):
+            or act['deadlineUtc']-act['startedUtc'] != 21600
+            or not act['startedUtc'] <= time.time() < act['deadlineUtc']):
         raise ValueError('wrong/expired global activation')
+    approval = activation.parent/act['approvalRelativePath']
+    approval.resolve().relative_to(activation.parent.resolve())
+    qualified = qualification(plan_path, bundle, approval)
+    latch = activation.parent/'COHORT-STARTED.json'
+    if (sha(approval) != act['approvalSha256'] or sha(latch) != act['latchSha256']
+            or qualified['policy'] != act['policy']
+            or json.loads(latch.read_text()) != {'planSha256': sha(plan_path), 'startedUtc': act['startedUtc']}):
+        raise ValueError('activation qualification chain changed')
     if type(worker_id) is not int or not 0 <= worker_id < 45:
         raise ValueError('worker id must be0..44')
     quota = Path('/sys/fs/cgroup/cpu.max')
@@ -253,14 +303,22 @@ def worker(plan_path, bundle, activation, out, worker_id):
     out.mkdir(parents=True, exist_ok=False)
     write(out/'worker-started.json', {'worker': worker_id, 'planSha256': sha(plan_path),
         'activationSha256': sha(activation), 'cpuMax': quota_text, 'affinity': sorted(os.sched_getaffinity(0))})
+    for split in ('train', 'validation', 'test'):
+        (out/split).mkdir()
     def run(entry):
-        remaining = act['deadlineUtc']-time.time()
-        if remaining <= 0:
-            raise TimeoutError('global cohort deadline expired')
+        seed = entry['seed']
         split_dir = out / entry['split']
-        split_dir.mkdir(exist_ok=True)
-        return unit(plan, bundle, split_dir, entry['seed'], 'seed-'+str(entry['seed']),
-                    seconds=min(3600, remaining))
+        try:
+            remaining = act['deadlineUtc']-time.time()
+            if remaining <= 0:
+                raise TimeoutError('global cohort deadline expired; source not launched')
+            return unit(plan, bundle, split_dir, seed, 'seed-'+str(seed),
+                        seconds=min(3600, remaining), expected_policy=act['policy'])
+        except Exception as error:
+            # Preserve partial output and finish all archive/receipt accounting.
+            failed = {'seed': seed, 'returncode': 70, 'collectionError': str(error)}
+            write(split_dir/('seed-'+str(seed)+'.collection-failure.json'), failed)
+            return failed
     entries = [s for s in plan['sources'] if s['worker'] == worker_id]
     with ThreadPoolExecutor(max_workers=4) as pool:
         receipts = list(pool.map(run, entries))
@@ -285,17 +343,18 @@ def main():
         p.add_argument('--'+name, type=Path)
     p.add_argument('--role', choices=('local','cloud'), default='local')
     p.add_argument('--worker', type=int)
+    p.add_argument('--activation-sha256')
     a = p.parse_args()
     required = {'prepare': ('binary','student','out'), 'canary': ('plan','bundle','out'),
                 'activate': ('plan','bundle','approval','out'),
-                'worker': ('plan','bundle','activation','out','worker')}
+                'worker': ('plan','bundle','activation','out','worker','activation_sha256')}
     for key in required[a.command]:
         if getattr(a,key) is None:
             p.error('--'+key+' is required for '+a.command)
     if a.command == 'prepare': prepare(a.repo, a.binary, a.student, a.out)
     elif a.command == 'canary': canary(a.plan, a.bundle.resolve(), a.out.resolve(), a.role)
     elif a.command == 'activate': activate(a.plan, a.bundle, a.approval, a.out)
-    else: worker(a.plan, a.bundle.resolve(), a.activation, a.out.resolve(), a.worker)
+    else: worker(a.plan, a.bundle.resolve(), a.activation, a.out.resolve(), a.worker, a.activation_sha256)
 
 
 if __name__ == '__main__':

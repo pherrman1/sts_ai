@@ -51,7 +51,7 @@ policy, not an optimal-policy win probability or action-counterfactual value.
 ## Exact seeds, budgets and gates
 
 Local qualification:110179994 captureOFF/ON and110179995 ON, sequential,
-3600s per unit. Compare exact real state/offer/post traces and final outcome,
+3600s per unit. Compare exact real state/offer/post traces, MCTS action traces and final outcome,
 verify frame/support/model-use integrity. These canaries are excluded from fit.
 Claude qualification uses110179996 OFF/ON and110179997 ON on its actual producer.
 Record exact binary/model/tool/source and hardware/resource identities. A cloud
@@ -69,7 +69,12 @@ prevents claiming a complete corpus. No TEST evaluation or aggregate outcome
 peek by the coordinator: separate SEALED-test archive, hashes/receipts only.
 
 Independent approval must bind plan, source, bundle, completion-anchored canary
-hash and original files. A ≥256MiB cross-container artifact export roundtrip
+hash and original files. Workers reverify this approval chain and the coordinator
+published immutable activation hash; an unapproved activation cannot start sources.
+Python and NumPy versions are frozen with the bundle. Reuse the existing encoder
+for full supported-record schema validation and the reviewed Arm C runtime contract
+(loaded64/4/256/2/trim1,≥90% prior and rollout scoring, zero legacy prior leaves).
+Semantic failures receive censored failure receipts and all partial outputs are archived. A ≥256MiB cross-container artifact export roundtrip
 with matching hashes is required before the one exclusive activation latch.
 Cloud operation is delegated via the coordinator handoff; no cloud workers are
 claimed active from preparation alone. Keep all partial/failure artifacts.
