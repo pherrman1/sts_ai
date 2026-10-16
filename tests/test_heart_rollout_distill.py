@@ -49,6 +49,46 @@ class DistillTest(unittest.TestCase):
         self.assertNotEqual(a,encode_record(r))
         r['leaf.matchSlots'][0]['card']=1
         with self.assertRaises(ValueError):encode_record(r)
+    def test_synthetic_one_shot_reaches_result_and_refuses_reopening(self):
+        # Synthetic metadata/tensors only: never opens a preserved research corpus.
+        torch.set_num_threads(1)
+        features,tokens=encode_record(record())
+        rows=[];groups=[]
+        for group in range(200):
+            groups.append([len(rows),len(rows)+1])
+            for action in (0,1):
+                rows.append({'seed':1,'group':(1,group,0),'action':action,'screen':5,
+                    'act':1,'floor':12,'target':.45+.1*action,'x2b':.4+.2*action,
+                    'r0':.35+.3*action,'cpu':.1,'anchorCpu':.0001,
+                    'features':features,'tokens':tokens,'record':record()})
+        vectorizer=h.DictVectorizer(sparse=False,dtype=h.np.float32).fit([features])
+        vocab=list(vectorizer.get_feature_names_out())
+        net=h.Net(len(vocab),'counts')
+        for parameter in net.parameters():torch.nn.init.zeros_(parameter)
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);out=root/'fit';out.mkdir()
+            (root/'freeze.json').write_text(json.dumps({'splits':{'test':[1]}}))
+            (root/'corpus-manifest.json').write_text('{}')
+            torch.save(net.state_dict(),out/'selected.pt')
+            (out/'vocabulary.json').write_text(json.dumps(vocab))
+            selection={'variant':'counts','weight':.5,
+                'checkpointSha256':h.sha(out/'selected.pt'),'vocabularySha256':h.sha(out/'vocabulary.json'),
+                'freezeSha256':h.sha(root/'freeze.json'),'toolSha256':h.sha(h.__file__),
+                'corpusManifestSha256':h.sha(root/'corpus-manifest.json')}
+            (out/'selection.json').write_text(json.dumps(selection))
+            coverage={'groups':200,'accepted':400,'raw':400,'sourcesWithGroups':1,'expectedSources':1}
+            with patch.object(h,'verify_tools'),patch.object(h,'verify_bundle'),patch.object(h,'verify_corpus'), \
+                 patch.object(h,'load_split',return_value=(rows,groups,coverage)) as load, \
+                 patch.object(h,'predict_reference',return_value=[r['x2b'] for r in rows]):
+                h.test(root,out)
+                result=json.loads((out/'test-result.json').read_text())
+                self.assertEqual(result['verdict'],'NOT_SHOWN')
+                self.assertFalse(result['runtimePromotion'])
+                self.assertIn('tensorInferenceCpuSeconds',result)
+                self.assertIn('domainMseDiagnostics',result)
+                with self.assertRaises(FileExistsError):h.test(root,out)
+                self.assertEqual(load.call_count,1)
+
     def test_native_screen_enum_contract(self):
         import re
         header=(Path(__file__).resolve().parents[1]/'include/game/GameContext.h').read_text()

@@ -19086,49 +19086,61 @@ Rollout3 itself ends in X2-B and is not ground truth (Philipp).
 
 ## §491 Public heart1-record rollout-distillation pilot at A20 Heart (2026-10-16)
 
-**Status:** prospective bounded pilot, not a result or runtime promotion.
-Separate Heart-objective PR #562 is merged. Opus §490/PR #561 is historical
-keys-off Act3 evidence; its published checkpoint is a frozen diagnostic only.
-The source-disjoint new cohort targets 64-repeat expected rollout3 values,
-using heart1-format public records rather than the earlier X2-B feature bundle.
-No AlphaZero-style learning loop is included.
+**Verdict: `INVALID_TEST_EXECUTION`.** All 64 sources and six fits completed,
+but the one-shot TEST evaluator crashed after creating its opening latch.
+No TEST result, compression-cost verdict, native qualification, or gameplay
+claim exists. TEST was not retried and its metrics were not reconstructed.
+[Evidence and result](evidence/heart_rollout_distill_20261016/README.md),
+[frozen protocol](evidence/heart_rollout_distill_20261016/PROTOCOL.md),
+[machine-readable classification](evidence/heart_rollout_distill_20261016/result.json).
 
-[Prospective protocol](evidence/heart_rollout_distill_20261016/PROTOCOL.md)
-freezes 64 fresh source seeds (40 TRAIN, 8 VALIDATION, 16 untouched TEST),
-three local workers, canary parity/support gates, hard source/cohort/fit caps,
-and counts/pooling/attention representations with two initializations each.
-Validation alone chooses checkpoint and X2-B blend. Per-action regret and
-concordance, source bootstrap and full Python feature/inference cost determine
-the one-shot TEST verdict. No gameplay-strength claim follows from a fit.
+Frozen source `cbded890a06f4ec76ad72c8333d07df25ad54e5f` follows the user's
+clarification: distilled heart1 **Arm C as tree prior only**, V4 rollout chain
+held fixed. A20 Ironclad collects keys and targets the Heart after separate
+PR #562. Exact-10k native Silver real combat, calibrated A20 CTM, OOC source
+budget 512, rollout3, every fourth searched decision, at most 64 captured leaves
+at depth one, and 64 repeat returns per leaf. These are surrogate targets,
+not observed Heart-win probabilities. No AlphaZero-style learning loop.
 
-Generation requires a clean independently reviewed source and immutable binary,
-model, tool, dependency, protocol and build identities. Raw artifacts, receipts,
-selection and the TEST latch remain in the persistent local run directory;
-failed gates are retained without replacement seeds or adaptive extensions.
+Canaries `110159994/995` passed exact capture-off/on decision/action parity and
+347/347 plus 528/528 valid rows (14/22 complete multi-action groups). Independent
+source/design and canary/custody reviews passed before cohort analysis. All
+64 sources `110161000..063` returned zero in 2,751.97 seconds of collection wall
+time on three local workers. Every source's attempted model-prior calls were
+scored by Arm C, with zero fallback and zero prior-leaf steps. Its exact native
+hash is pinned in the freeze. Historical Opus §490 is an out-of-domain reference
+only; its raw cloud corpus was unavailable. No historical data was pooled.
 
-**Knowledge impact:** maintained OOC architecture capture contract and current
-research status; protocol/evidence and results belong here.
+TRAIN (`..000..039`): 18,009 accepted rows, 656 groups, all 40 sources.
+VALIDATION (`..040..047`): 3,847 accepted rows, 122 groups, all 8 sources.
+Both retained 100% of captured rows. Counts/pooling/attention, two initializations
+each, completed 180 total epochs in 144.24 seconds on the local RTX 3060 Ti.
+Validation selected the count MLP (849,281 parameters, 6,504 input features),
+initialization 0, epoch 22, blended 50/50 with X2-B.
 
+**Validation-only selection evidence:** source-mean MSE 0.019057 versus X2-B
+0.039653, per-action concordance 0.681960 versus 0.647172, and regret 0.021319
+versus 0.023182. These eight sources selected the model/epoch/blend; they are
+not untouched TEST. They establish neither encoding superiority nor a passing
+candidate. The selected checkpoint and vocabulary custody are preserved.
 
-The first freeze (`7622669e`) stopped at the canary coverage gate, before any
-cohort collection, fitting or TEST opening. Decision/action parity passed;
-complete-parent acceptance was257/449 (57.2%) and211/275 (76.7%). The missing
-inputs were unresolved battle-start states (126 rows) and Match and Keep
-(1 and2 rows, causing whole-parent rejection). BATTLE rows were UNDECIDED,
-not analytical terminals. [Failure receipt](evidence/heart_rollout_distill_20261016/canary-v1-result.json)
-and the original protocol remain preserved. Revised schema v2 extends only
-capture observations with the CURRENT public encounter and a memory-game board
-that masks unseen identities/upgrades. The unchanged80% gate,64-label target,
-whole-parent rejection, unused cohort and selection rules remain prospective;
-fresh canaries and a new source/binary/tool freeze are required.
+The evaluator reused `a` for per-source baseline metrics, overwriting the token
+attribute tensor. Its latency warmup then raised `KeyError: slice(None, 1,
+None)` after TEST opening. The frozen bundle remains unchanged. A repository-only
+name repair gives the tensor and metrics distinct names; a synthetic end-to-end
+regression reproduces the original failure, passes after the repair, and checks
+that reopening is rejected before another data load. All 18 Python tests pass.
+The repair is for future invocations; it does not recover or rerun this TEST.
 
+Earlier attempts remain preserved: v1 failed its support canary before any
+cohort, exposing unresolved BATTLE and Match and Keep record gaps. The leaf-only
+public schema repair records the current public encounter and masks unseen
+board identities/upgrades, leaving trained heart1 choice construction unchanged.
+V2 passed canaries, then was stopped at the user's prior change with 11 completed
+V4-prior sources and three interrupted units, before fitting/TEST. That partial
+corpus is excluded. Neither attempt was pooled with V3.
 
-Schema-v2 canaries passed:355/355 and678/678 rows, no invalid groups and exact
-capture-off/on decision/action parity. The user then requested distilled heart1
-Arm C, clarified as **tree prior only**. The V4-prior collection was stopped
-with11 completed sources and3 interrupted units, before fitting or any TEST
-opening. Its partial corpus is preserved, excluded from training, and never
-pooled with the replacement. [Scope-change receipt](evidence/heart_rollout_distill_20261016/scope-v2-stop.json).
-Version3 freezes Arm C's published exact native weights, unchanged V4 rollout
-chain, fresh source range110161000..063 and fresh canaries110159994/995.
-Require actual Arm C load and>=90% prior scoring on every source. This changes the source distribution with a fixed rollout target policy, not paired evidence for Arm C versus V4 gameplay.
+**Knowledge impact:** OOC capture/qualification status and maintained current
+research are updated. A new independently reviewed research protocol is required
+for any future qualification; no automatic TEST retry, native port, gameplay A/B,
+or default promotion follows from this failed attempt.

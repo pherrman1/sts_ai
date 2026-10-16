@@ -287,25 +287,27 @@ def test(root,out):
     vocab=json.loads((out/'vocabulary.json').read_text()); v=DictVectorizer(sparse=False,dtype=np.float32)
     v.vocabulary_={k:i for i,k in enumerate(vocab)}; v.feature_names_=vocab
     check_tensor_bound((rows,),len(vocab))
-    x,b,y,k,e,a=tensor_rows(rows,v); torch.set_num_threads(1)
+    x,b,y,k,e,token_attrs=tensor_rows(rows,v); torch.set_num_threads(1)
     net=Net(len(vocab),selection['variant']); net.load_state_dict(torch.load(out/'selected.pt',weights_only=True)); net.eval()
-    with torch.no_grad(): pred=np.concatenate([net(x[i:i+128],b[i:i+128],k[i:i+128],e[i:i+128],a[i:i+128]).numpy() for i in range(0,len(rows),128)])
+    with torch.no_grad(): pred=np.concatenate([net(x[i:i+128],b[i:i+128],k[i:i+128],e[i:i+128],token_attrs[i:i+128]).numpy() for i in range(0,len(rows),128)])
     weight=selection['weight']; pred=weight*pred+(1-weight)*b.numpy()
     student=metrics(rows,groups,pred); baseline=metrics(rows,groups,b.numpy())
     sources=freeze['splits']['test']; deltas=[]
     for seed in sources:
-        a=baseline['perSource'].get(str(seed),{}); z=student['perSource'].get(str(seed),{})
-        if 'regret' in a and 'regret' in z: deltas.append(a['regret']-z['regret'])
+        baseline_source=baseline['perSource'].get(str(seed),{})
+        student_source=student['perSource'].get(str(seed),{})
+        if 'regret' in baseline_source and 'regret' in student_source:
+            deltas.append(baseline_source['regret']-student_source['regret'])
     rng=np.random.default_rng(20261016)
     boot=np.array([np.mean(rng.choice(deltas,len(deltas),replace=True)) for _ in range(2000)]) if deltas else np.array([0.])
     ci=np.quantile(boot,[.025,.975]).tolist()
     with torch.no_grad():
-        for _ in range(100): net(x[:1],b[:1],k[:1],e[:1],a[:1])
+        for _ in range(100): net(x[:1],b[:1],k[:1],e[:1],token_attrs[:1])
         begin=time.process_time()
-        for _ in range(1000): net(x[:1],b[:1],k[:1],e[:1],a[:1])
+        for _ in range(1000): net(x[:1],b[:1],k[:1],e[:1],token_attrs[:1])
         latency=(time.process_time()-begin)/1000
         begin=time.process_time()
-        for _ in range(100): net(x[:32],b[:32],k[:32],e[:32],a[:32])
+        for _ in range(100): net(x[:32],b[:32],k[:32],e[:32],token_attrs[:32])
         latency32=(time.process_time()-begin)/100/32
     begin=time.process_time()
     for r in rows[:100]:
