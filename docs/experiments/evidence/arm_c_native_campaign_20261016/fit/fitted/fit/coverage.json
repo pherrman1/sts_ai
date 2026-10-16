@@ -1,0 +1,460 @@
+{
+  "freezeSha256": "a0555a2282cadfeb865a638df56204605b10dd43b7101584de5c3d73dc57f791",
+  "train": {
+    "accepted": 18570,
+    "expectedSources": 40,
+    "groups": 663,
+    "invalidGroups": 0,
+    "perSource": {
+      "110164000": {
+        "accepted": 348,
+        "groups": 14,
+        "invalidGroups": 0,
+        "raw": 348,
+        "rejected": 0
+      },
+      "110164001": {
+        "accepted": 463,
+        "groups": 18,
+        "invalidGroups": 0,
+        "raw": 463,
+        "rejected": 0
+      },
+      "110164002": {
+        "accepted": 572,
+        "groups": 23,
+        "invalidGroups": 0,
+        "raw": 572,
+        "rejected": 0
+      },
+      "110164003": {
+        "accepted": 292,
+        "groups": 12,
+        "invalidGroups": 0,
+        "raw": 292,
+        "rejected": 0
+      },
+      "110164004": {
+        "accepted": 602,
+        "groups": 26,
+        "invalidGroups": 0,
+        "raw": 602,
+        "rejected": 0
+      },
+      "110164005": {
+        "accepted": 482,
+        "groups": 19,
+        "invalidGroups": 0,
+        "raw": 482,
+        "rejected": 0
+      },
+      "110164006": {
+        "accepted": 204,
+        "groups": 9,
+        "invalidGroups": 0,
+        "raw": 204,
+        "rejected": 0
+      },
+      "110164007": {
+        "accepted": 206,
+        "groups": 9,
+        "invalidGroups": 0,
+        "raw": 206,
+        "rejected": 0
+      },
+      "110164008": {
+        "accepted": 628,
+        "groups": 22,
+        "invalidGroups": 0,
+        "raw": 628,
+        "rejected": 0
+      },
+      "110164009": {
+        "accepted": 843,
+        "groups": 24,
+        "invalidGroups": 0,
+        "raw": 843,
+        "rejected": 0
+      },
+      "110164010": {
+        "accepted": 692,
+        "groups": 18,
+        "invalidGroups": 0,
+        "raw": 692,
+        "rejected": 0
+      },
+      "110164011": {
+        "accepted": 381,
+        "groups": 15,
+        "invalidGroups": 0,
+        "raw": 381,
+        "rejected": 0
+      },
+      "110164012": {
+        "accepted": 462,
+        "groups": 14,
+        "invalidGroups": 0,
+        "raw": 462,
+        "rejected": 0
+      },
+      "110164013": {
+        "accepted": 666,
+        "groups": 23,
+        "invalidGroups": 0,
+        "raw": 666,
+        "rejected": 0
+      },
+      "110164014": {
+        "accepted": 271,
+        "groups": 8,
+        "invalidGroups": 0,
+        "raw": 271,
+        "rejected": 0
+      },
+      "110164015": {
+        "accepted": 812,
+        "groups": 22,
+        "invalidGroups": 0,
+        "raw": 812,
+        "rejected": 0
+      },
+      "110164016": {
+        "accepted": 217,
+        "groups": 8,
+        "invalidGroups": 0,
+        "raw": 217,
+        "rejected": 0
+      },
+      "110164017": {
+        "accepted": 577,
+        "groups": 14,
+        "invalidGroups": 0,
+        "raw": 577,
+        "rejected": 0
+      },
+      "110164018": {
+        "accepted": 385,
+        "groups": 22,
+        "invalidGroups": 0,
+        "raw": 385,
+        "rejected": 0
+      },
+      "110164019": {
+        "accepted": 81,
+        "groups": 4,
+        "invalidGroups": 0,
+        "raw": 81,
+        "rejected": 0
+      },
+      "110164020": {
+        "accepted": 257,
+        "groups": 9,
+        "invalidGroups": 0,
+        "raw": 257,
+        "rejected": 0
+      },
+      "110164021": {
+        "accepted": 408,
+        "groups": 15,
+        "invalidGroups": 0,
+        "raw": 408,
+        "rejected": 0
+      },
+      "110164022": {
+        "accepted": 512,
+        "groups": 26,
+        "invalidGroups": 0,
+        "raw": 512,
+        "rejected": 0
+      },
+      "110164023": {
+        "accepted": 555,
+        "groups": 20,
+        "invalidGroups": 0,
+        "raw": 555,
+        "rejected": 0
+      },
+      "110164024": {
+        "accepted": 398,
+        "groups": 17,
+        "invalidGroups": 0,
+        "raw": 398,
+        "rejected": 0
+      },
+      "110164025": {
+        "accepted": 228,
+        "groups": 13,
+        "invalidGroups": 0,
+        "raw": 228,
+        "rejected": 0
+      },
+      "110164026": {
+        "accepted": 466,
+        "groups": 20,
+        "invalidGroups": 0,
+        "raw": 466,
+        "rejected": 0
+      },
+      "110164027": {
+        "accepted": 21,
+        "groups": 3,
+        "invalidGroups": 0,
+        "raw": 21,
+        "rejected": 0
+      },
+      "110164028": {
+        "accepted": 266,
+        "groups": 16,
+        "invalidGroups": 0,
+        "raw": 266,
+        "rejected": 0
+      },
+      "110164029": {
+        "accepted": 634,
+        "groups": 19,
+        "invalidGroups": 0,
+        "raw": 634,
+        "rejected": 0
+      },
+      "110164030": {
+        "accepted": 1375,
+        "groups": 29,
+        "invalidGroups": 0,
+        "raw": 1375,
+        "rejected": 0
+      },
+      "110164031": {
+        "accepted": 818,
+        "groups": 27,
+        "invalidGroups": 0,
+        "raw": 818,
+        "rejected": 0
+      },
+      "110164032": {
+        "accepted": 822,
+        "groups": 24,
+        "invalidGroups": 0,
+        "raw": 822,
+        "rejected": 0
+      },
+      "110164033": {
+        "accepted": 501,
+        "groups": 26,
+        "invalidGroups": 0,
+        "raw": 501,
+        "rejected": 0
+      },
+      "110164034": {
+        "accepted": 506,
+        "groups": 14,
+        "invalidGroups": 0,
+        "raw": 506,
+        "rejected": 0
+      },
+      "110164035": {
+        "accepted": 411,
+        "groups": 22,
+        "invalidGroups": 0,
+        "raw": 411,
+        "rejected": 0
+      },
+      "110164036": {
+        "accepted": 477,
+        "groups": 19,
+        "invalidGroups": 0,
+        "raw": 477,
+        "rejected": 0
+      },
+      "110164037": {
+        "accepted": 347,
+        "groups": 9,
+        "invalidGroups": 0,
+        "raw": 347,
+        "rejected": 0
+      },
+      "110164038": {
+        "accepted": 154,
+        "groups": 5,
+        "invalidGroups": 0,
+        "raw": 154,
+        "rejected": 0
+      },
+      "110164039": {
+        "accepted": 230,
+        "groups": 6,
+        "invalidGroups": 0,
+        "raw": 230,
+        "rejected": 0
+      }
+    },
+    "raw": 18570,
+    "rejected": 0,
+    "sourcesWithGroups": 40,
+    "strata": {
+      "act=1;screen=1;keys=0,0,0": 1744,
+      "act=1;screen=1;keys=0,0,1": 75,
+      "act=1;screen=1;keys=0,1,0": 64,
+      "act=1;screen=1;keys=0,1,1": 128,
+      "act=1;screen=2;keys=0,0,0": 213,
+      "act=1;screen=2;keys=0,0,1": 716,
+      "act=1;screen=2;keys=0,1,0": 16,
+      "act=1;screen=2;keys=0,1,1": 214,
+      "act=1;screen=3;keys=0,1,1": 2,
+      "act=1;screen=5;keys=0,0,0": 1648,
+      "act=1;screen=5;keys=0,0,1": 1172,
+      "act=1;screen=5;keys=0,1,0": 72,
+      "act=1;screen=5;keys=0,1,1": 450,
+      "act=1;screen=7;keys=0,0,0": 74,
+      "act=1;screen=7;keys=0,0,1": 388,
+      "act=1;screen=7;keys=0,1,1": 356,
+      "act=1;screen=7;keys=1,0,0": 9,
+      "act=1;screen=7;keys=1,0,1": 7,
+      "act=1;screen=7;keys=1,1,1": 9,
+      "act=1;screen=8;keys=0,0,0": 173,
+      "act=1;screen=8;keys=0,0,1": 184,
+      "act=1;screen=8;keys=0,1,1": 36,
+      "act=2;screen=1;keys=0,0,1": 167,
+      "act=2;screen=1;keys=0,1,1": 239,
+      "act=2;screen=2;keys=0,0,1": 222,
+      "act=2;screen=2;keys=0,1,1": 419,
+      "act=2;screen=3;keys=0,0,1": 128,
+      "act=2;screen=3;keys=0,1,1": 190,
+      "act=2;screen=4;keys=0,0,1": 3,
+      "act=2;screen=4;keys=0,1,1": 24,
+      "act=2;screen=5;keys=0,0,1": 1371,
+      "act=2;screen=5;keys=0,1,1": 2004,
+      "act=2;screen=7;keys=0,0,1": 118,
+      "act=2;screen=7;keys=0,1,1": 340,
+      "act=2;screen=7;keys=1,0,1": 7,
+      "act=2;screen=7;keys=1,1,1": 15,
+      "act=2;screen=8;keys=0,0,1": 398,
+      "act=2;screen=8;keys=0,1,1": 630,
+      "act=3;screen=1;keys=0,0,1": 80,
+      "act=3;screen=1;keys=0,1,1": 252,
+      "act=3;screen=1;keys=1,0,1": 176,
+      "act=3;screen=1;keys=1,1,1": 153,
+      "act=3;screen=2;keys=0,0,1": 374,
+      "act=3;screen=2;keys=0,1,1": 178,
+      "act=3;screen=2;keys=1,0,1": 142,
+      "act=3;screen=2;keys=1,1,1": 102,
+      "act=3;screen=3;keys=0,1,1": 64,
+      "act=3;screen=4;keys=0,1,1": 64,
+      "act=3;screen=4;keys=1,1,1": 11,
+      "act=3;screen=5;keys=0,1,1": 1064,
+      "act=3;screen=5;keys=1,1,1": 670,
+      "act=3;screen=6;keys=0,1,1": 64,
+      "act=3;screen=6;keys=1,1,1": 64,
+      "act=3;screen=7;keys=1,1,1": 50,
+      "act=3;screen=8;keys=0,1,1": 459,
+      "act=4;screen=2;keys=1,1,1": 14,
+      "act=4;screen=8;keys=1,1,1": 564
+    }
+  },
+  "validation": {
+    "accepted": 2721,
+    "expectedSources": 8,
+    "groups": 114,
+    "invalidGroups": 0,
+    "perSource": {
+      "110164040": {
+        "accepted": 436,
+        "groups": 16,
+        "invalidGroups": 0,
+        "raw": 436,
+        "rejected": 0
+      },
+      "110164041": {
+        "accepted": 281,
+        "groups": 11,
+        "invalidGroups": 0,
+        "raw": 281,
+        "rejected": 0
+      },
+      "110164042": {
+        "accepted": 429,
+        "groups": 17,
+        "invalidGroups": 0,
+        "raw": 429,
+        "rejected": 0
+      },
+      "110164043": {
+        "accepted": 137,
+        "groups": 10,
+        "invalidGroups": 0,
+        "raw": 137,
+        "rejected": 0
+      },
+      "110164044": {
+        "accepted": 122,
+        "groups": 8,
+        "invalidGroups": 0,
+        "raw": 122,
+        "rejected": 0
+      },
+      "110164045": {
+        "accepted": 654,
+        "groups": 24,
+        "invalidGroups": 0,
+        "raw": 654,
+        "rejected": 0
+      },
+      "110164046": {
+        "accepted": 457,
+        "groups": 17,
+        "invalidGroups": 0,
+        "raw": 457,
+        "rejected": 0
+      },
+      "110164047": {
+        "accepted": 205,
+        "groups": 11,
+        "invalidGroups": 0,
+        "raw": 205,
+        "rejected": 0
+      }
+    },
+    "raw": 2721,
+    "rejected": 0,
+    "sourcesWithGroups": 8,
+    "strata": {
+      "act=1;screen=1;keys=0,0,0": 398,
+      "act=1;screen=2;keys=0,0,0": 44,
+      "act=1;screen=2;keys=0,0,1": 87,
+      "act=1;screen=2;keys=0,1,0": 4,
+      "act=1;screen=2;keys=0,1,1": 23,
+      "act=1;screen=5;keys=0,0,0": 317,
+      "act=1;screen=5;keys=0,0,1": 134,
+      "act=1;screen=5;keys=0,1,0": 3,
+      "act=1;screen=5;keys=0,1,1": 128,
+      "act=1;screen=7;keys=0,0,0": 9,
+      "act=1;screen=7;keys=0,1,1": 74,
+      "act=1;screen=7;keys=1,0,0": 1,
+      "act=1;screen=7;keys=1,1,1": 2,
+      "act=1;screen=8;keys=0,0,0": 22,
+      "act=1;screen=8;keys=0,0,1": 30,
+      "act=2;screen=1;keys=0,0,1": 4,
+      "act=2;screen=1;keys=0,1,1": 25,
+      "act=2;screen=2;keys=0,0,1": 16,
+      "act=2;screen=2;keys=0,1,1": 111,
+      "act=2;screen=3;keys=0,0,1": 64,
+      "act=2;screen=3;keys=0,1,1": 64,
+      "act=2;screen=4;keys=0,1,1": 20,
+      "act=2;screen=5;keys=0,0,1": 64,
+      "act=2;screen=5;keys=0,1,1": 514,
+      "act=2;screen=7;keys=0,0,1": 15,
+      "act=2;screen=7;keys=0,1,1": 29,
+      "act=2;screen=7;keys=1,0,1": 1,
+      "act=2;screen=7;keys=1,1,1": 2,
+      "act=2;screen=8;keys=0,0,1": 14,
+      "act=2;screen=8;keys=0,1,1": 103,
+      "act=3;screen=2;keys=0,1,1": 4,
+      "act=3;screen=2;keys=1,1,1": 24,
+      "act=3;screen=5;keys=0,1,1": 255,
+      "act=3;screen=5;keys=1,1,1": 69,
+      "act=3;screen=8;keys=0,1,1": 13,
+      "act=3;screen=8;keys=1,1,1": 20,
+      "act=4;screen=2;keys=1,1,1": 4,
+      "act=4;screen=8;keys=1,1,1": 10
+    }
+  }
+}

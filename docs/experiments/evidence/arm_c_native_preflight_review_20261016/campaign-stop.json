@@ -1,0 +1,32 @@
+{
+  "verdict": "INCOMPLETE",
+  "reason": "Frozen source110163000 exceeded1200s wall cap; no failed-source retry/replacement permitted. Remaining collection stopped before fitting/TEST.",
+  "failedSeed": 110163000,
+  "failedReceiptReturncode": 124,
+  "originalProcess": {
+    "pid": 697054,
+    "startTicks": "38604675",
+    "cmdline": "python3 tools/run_heart_distill_pilot.py /home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed /home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1 9d83adbbbcc0fabf2c8bcd8c6a87f9782d0acbc3 /home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models/studentc.bin --arm-c-rollout ",
+    "freezeSha256": "de66eb0d8e13c9cd2e208350d3d96d1b8c28bbfb96692f00109f21ac1e33ce70"
+  },
+  "interruptedActive": [
+    {
+      "pid": 712645,
+      "startTicks": "38858297",
+      "cmdline": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/run/one_combat bestbench 10000 1 20 110163005 /home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/seed-110163005.csv "
+    },
+    {
+      "pid": 714013,
+      "startTicks": "38876970",
+      "cmdline": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/run/one_combat bestbench 10000 1 20 110163006 /home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/seed-110163006.csv "
+    },
+    {
+      "pid": 715247,
+      "startTicks": "38883821",
+      "cmdline": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/run/one_combat bestbench 10000 1 20 110163007 /home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/seed-110163007.csv "
+    }
+  ],
+  "time": 1792141159.4181774,
+  "fitExists": false,
+  "cloudScientificSourcesLaunched": 0
+}

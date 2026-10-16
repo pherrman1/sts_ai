@@ -43,6 +43,34 @@ contracts now bind native Silver teachers.
 
 ## Arm C rollout-target distillation (§494)
 
+The fresh native-session continuation **completed collection, fit and one-shot TEST: NOT_SHOWN**
+(student vs X2-B on TEST: concordance 0.656 vs 0.630, regret 0.0171 vs 0.0194, 6.8x cheaper
+than one rollout3, but the regret-improvement bootstrap [−0.0016, +0.0080] includes zero; no
+promotion; ledger §494 "Fit and one-shot TEST"):
+seeds `110164000..063` (40/8/16), 3600s/source and one six-hour deadline; qualification
+canaries `110163994/995` passed and were independently reviewed. The Codex preflight
+(blocked on export and capacity) is in the
+[preflight evidence](../../experiments/evidence/arm_c_native_preflight_20261016/REPORT.md).
+The old `110163xxx` cohort must not be resumed or pooled.
+The Codex cloud session exposed four CPU-equivalents and32GiB;64-worker
+capacity and session lifetime are unverified. Its available tools do not expose
+an arbitrary-file publication/download-link path, so corpus delivery is blocked.
+The [local review](../../experiments/evidence/arm_c_native_preflight_review_20261016/REPORT.md)
+records preparation corrections and verifies the old local stop receipts.
+The project's hosted cloud threads (4 vCPU/15 GiB each, mixed Intel/AMD CPUs) rebuild
+the original producer byte-identically (`86a7569f…`), score the synthetic record
+identically to the Codex AMD build, and passed a cross-container 300 MiB export round
+trip through the project share; see the
+[native campaign qualification](../../experiments/evidence/arm_c_native_campaign_20261016/QUALIFICATION.md).
+`tools/heart_distill_native_worker.py` adds bundle, deadline, canary and fixed-shard
+worker execution (rerun-once on lost attempts). After independent review and canary
+review, **collection completed 64/64 sources** (all rc 0, attempt 1, one CPU model;
+TRAIN 663 / VALIDATION 114 groups); raw corpus and sealed TEST are on the project
+share; see the
+[collection report](../../experiments/evidence/arm_c_native_campaign_20261016/REPORT.md).
+`tools/heart_distill_native_fit.py` fit the unchanged six-fit grid once on Philipp's GPU and ran
+TEST once on the collection CPU model behind a global latch.
+
 A separately authorized continuation uses the exact frozen Arm C for both tree
 priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)
 keeps the six-fit public-record student grid and X2-B decision/cost gates, but

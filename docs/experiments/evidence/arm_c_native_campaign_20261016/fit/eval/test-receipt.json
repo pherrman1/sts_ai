@@ -1,0 +1,8 @@
+{
+  "cpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "logSha256": "d9f3f38acc7e8f8a63fde85c56f95fff23b1bb147237bf9d058262f52a74f27b",
+  "resultSha256": "e8cf578b54334501a26db4b6fca17016fc2e9ca07b83bcad86b8c83139bfa3b8",
+  "returncode": 0,
+  "seconds": 47.59365907399996,
+  "testPlanSha256": "5a92dcac5f2a49da9a7574a66f8c61f227f92f9edbc86345364b71a938715e25"
+}
