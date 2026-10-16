@@ -19409,7 +19409,8 @@ fitting, outcome summary, trained-value or gameplay verdict.**
 - Philipp asked (2026-10-16 16:25Z) to carry out this plan with Haiku Claude
   workers. Cloud canary 110179996 OFF/ON and 110179997 ON PASS with exact
   trace/action parity (230/230 and 207/207 supported); GCC 13.3 cloud producer
-  binary byte-identical to the local one (`178e7076…`). canary
+  binary byte-identical to the local one (`178e7076…`). Share
+  `heart-outcome-collection/campaign/cloud-canary/`: canary
   `fc1ee227…`, reviewed canary `584317a6…`.
 - Export check deviation: Philipp chose a one-way reviewer read (17:42Z): a
   288 MiB share blob hashed read-only from a different container (boot_id
