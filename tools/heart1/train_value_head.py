@@ -11,6 +11,7 @@ import copy
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,7 @@ import tarfile
 import time
 
 import numpy as np
+os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
 import torch
 
 TOOLS = Path(__file__).resolve().parents[1]
@@ -70,6 +72,7 @@ def identities(args):
                 'tools/heart1_leaf_reference.py')},
             'python': sys.version, 'pythonSha256': sha(Path(sys.executable).resolve()),
             'torch': torch.__version__, 'numpy': np.__version__,
+            'cublasWorkspaceConfig': os.environ['CUBLAS_WORKSPACE_CONFIG'],
             'torchBinarySha256': sha(torch._C.__file__),
             'sourceSha': subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()}
 
@@ -214,7 +217,7 @@ def fit(args):
     if frozen['identity'] != identities(args) or frozen['splits'] != SPLITS or frozen['device'] != args.device:
         raise ValueError('frozen identities changed')
     # A consumed or interrupted attempt is never resumed implicitly.
-    write_json(args.out / 'fit-started.json', {'freezeSha256': sha(args.out / 'freeze.json'), 'pid': __import__('os').getpid()})
+    write_json(args.out / 'fit-started.json', {'freezeSha256': sha(args.out / 'freeze.json'), 'pid': os.getpid()})
     started = time.monotonic()
     deadline = started + frozen['maxSeconds']
     torch.set_num_threads(2)
@@ -262,6 +265,8 @@ def fit(args):
     if time.monotonic() > deadline:
         raise TimeoutError('frozen wall cap')
     torch.save(after, args.out / 'arm-c-value.pt')
+    write_json(args.out / 'head.json', {'originalCheckpointSha256': CHECKPOINT_SHA,
+        'value_head.weight': weight.tolist(), 'value_head.bias': bias.tolist()})
     train_mean = float((ty.double() * tw).sum())
     report = {'schema': 'arm-c-value-head-result-v1', 'verdict': 'VALIDATION_ONLY',
         'selectedAlpha': alpha, 'trainableParameters': weight.numel() + bias.numel(),
@@ -276,6 +281,7 @@ def fit(args):
         'train': metrics(train, tg, np.clip(torch.nn.functional.linear(tx, weight, bias).squeeze(1).numpy(), 0, 1)),
         'coverage': {'train': tc, 'validation': vc}, 'candidates': candidates,
         'checkpointSha256': sha(args.out / 'arm-c-value.pt'),
+        'headSha256': sha(args.out / 'head.json'),
         'pooledSha256': sha(args.out / 'pooled.pt'), 'custodySha256': sha(args.out / 'custody.json'),
         'freezeSha256': sha(args.out / 'freeze.json'), 'seconds': time.monotonic() - started,
         'testRead': False, 'nativeQualified': False, 'heartWinPredictionQualified': False,
