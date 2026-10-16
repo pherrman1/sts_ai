@@ -1,0 +1,8 @@
+{
+  "verdict": "PASS",
+  "reviewer": "/root/heart_review",
+  "sourceSha": "3399cda718634250a6a0eb9549904cfe57b5b37a",
+  "freezeSha256": "d62f32cb0fe0e4c26fc4d4300de0567f1b3d910bb7daa9df9b6da76fb36756ec",
+  "independentChecks": "7/7 PASS0.665s; additional deterministic CUDA synthetic training PASS; finaldiffcheckclean",
+  "scope": "one fixed six-fit600second TRAIN/VALIDATION campaign; no TEST/native/gameplay"
+}

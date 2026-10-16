@@ -1,0 +1,638 @@
+[
+  {
+    "checkpoints": [
+      {
+        "step": 50,
+        "trainRawMse": 0.007667095190669681,
+        "validationRawMse": 0.043111208959343214
+      },
+      {
+        "step": 100,
+        "trainRawMse": 0.005405779335526761,
+        "validationRawMse": 0.04346769420596472
+      },
+      {
+        "step": 150,
+        "trainRawMse": 0.004628039777684069,
+        "validationRawMse": 0.04484174248036913
+      },
+      {
+        "step": 200,
+        "trainRawMse": 0.004236281663193393,
+        "validationRawMse": 0.046499462440081595
+      },
+      {
+        "step": 250,
+        "trainRawMse": 0.003915986533302272,
+        "validationRawMse": 0.046866025136444216
+      },
+      {
+        "step": 300,
+        "trainRawMse": 0.0037247455552259614,
+        "validationRawMse": 0.045905842629502626
+      },
+      {
+        "step": 350,
+        "trainRawMse": 0.0037270892350865794,
+        "validationRawMse": 0.04630233199640773
+      },
+      {
+        "step": 400,
+        "trainRawMse": 0.003711325855434046,
+        "validationRawMse": 0.046148593153009176
+      },
+      {
+        "step": 450,
+        "trainRawMse": 0.003520365281686503,
+        "validationRawMse": 0.046476619309901206
+      },
+      {
+        "step": 500,
+        "trainRawMse": 0.003221697300206089,
+        "validationRawMse": 0.047072826793921545
+      },
+      {
+        "step": 550,
+        "trainRawMse": 0.0031087681952638333,
+        "validationRawMse": 0.0474120745758503
+      },
+      {
+        "step": 600,
+        "trainRawMse": 0.0031053144499283416,
+        "validationRawMse": 0.047110837111693976
+      },
+      {
+        "step": 650,
+        "trainRawMse": 0.0029711554720142984,
+        "validationRawMse": 0.046228766378385966
+      },
+      {
+        "step": 700,
+        "trainRawMse": 0.0031817975879799175,
+        "validationRawMse": 0.044841879482584036
+      },
+      {
+        "step": 750,
+        "trainRawMse": 0.002866459932367298,
+        "validationRawMse": 0.0458233902024638
+      },
+      {
+        "step": 800,
+        "trainRawMse": 0.0028579063606948003,
+        "validationRawMse": 0.04590212617743101
+      },
+      {
+        "step": 850,
+        "trainRawMse": 0.0028578381542712626,
+        "validationRawMse": 0.046333079020523284
+      },
+      {
+        "step": 900,
+        "trainRawMse": 0.0030246319777011655,
+        "validationRawMse": 0.046844063345643686
+      },
+      {
+        "step": 950,
+        "trainRawMse": 0.002846940856311992,
+        "validationRawMse": 0.04694980726664544
+      },
+      {
+        "step": 1000,
+        "trainRawMse": 0.0028482935618602805,
+        "validationRawMse": 0.046626663195835416
+      }
+    ],
+    "init": 0,
+    "sources": 10
+  },
+  {
+    "checkpoints": [
+      {
+        "step": 50,
+        "trainRawMse": 0.007739578501200093,
+        "validationRawMse": 0.04809520241831183
+      },
+      {
+        "step": 100,
+        "trainRawMse": 0.005658425704406342,
+        "validationRawMse": 0.05126330824735097
+      },
+      {
+        "step": 150,
+        "trainRawMse": 0.004748502451368782,
+        "validationRawMse": 0.05338883016511661
+      },
+      {
+        "step": 200,
+        "trainRawMse": 0.004488068850293514,
+        "validationRawMse": 0.05290233670120469
+      },
+      {
+        "step": 250,
+        "trainRawMse": 0.004214136560650443,
+        "validationRawMse": 0.0573002125803007
+      },
+      {
+        "step": 300,
+        "trainRawMse": 0.0036319594064170412,
+        "validationRawMse": 0.056622604830931574
+      },
+      {
+        "step": 350,
+        "trainRawMse": 0.0036710537297987554,
+        "validationRawMse": 0.05533716978300708
+      },
+      {
+        "step": 400,
+        "trainRawMse": 0.0033755913830682107,
+        "validationRawMse": 0.059279468838555865
+      },
+      {
+        "step": 450,
+        "trainRawMse": 0.0033089236702184355,
+        "validationRawMse": 0.059164468440733725
+      },
+      {
+        "step": 500,
+        "trainRawMse": 0.0031992342700635328,
+        "validationRawMse": 0.05816344118828246
+      },
+      {
+        "step": 550,
+        "trainRawMse": 0.0032891445403230436,
+        "validationRawMse": 0.05865158281986951
+      },
+      {
+        "step": 600,
+        "trainRawMse": 0.0034255583089192188,
+        "validationRawMse": 0.0621456587649872
+      },
+      {
+        "step": 650,
+        "trainRawMse": 0.0032865282485822385,
+        "validationRawMse": 0.058933486947965456
+      },
+      {
+        "step": 700,
+        "trainRawMse": 0.0030025304051551054,
+        "validationRawMse": 0.05914347734119765
+      },
+      {
+        "step": 750,
+        "trainRawMse": 0.0030127718598403465,
+        "validationRawMse": 0.06046399416245045
+      },
+      {
+        "step": 800,
+        "trainRawMse": 0.0029435712948424893,
+        "validationRawMse": 0.05885216031663244
+      },
+      {
+        "step": 850,
+        "trainRawMse": 0.0028163035885934713,
+        "validationRawMse": 0.05847214314393531
+      },
+      {
+        "step": 900,
+        "trainRawMse": 0.0030912709467410255,
+        "validationRawMse": 0.06226880536697989
+      },
+      {
+        "step": 950,
+        "trainRawMse": 0.0026481522490432513,
+        "validationRawMse": 0.059911686098295086
+      },
+      {
+        "step": 1000,
+        "trainRawMse": 0.0026526912777538455,
+        "validationRawMse": 0.058934347925666805
+      }
+    ],
+    "init": 1,
+    "sources": 10
+  },
+  {
+    "checkpoints": [
+      {
+        "step": 50,
+        "trainRawMse": 0.00973501431857389,
+        "validationRawMse": 0.04275927704310366
+      },
+      {
+        "step": 100,
+        "trainRawMse": 0.0072174926154743475,
+        "validationRawMse": 0.04545914702240009
+      },
+      {
+        "step": 150,
+        "trainRawMse": 0.006093055048341086,
+        "validationRawMse": 0.04618718406941891
+      },
+      {
+        "step": 200,
+        "trainRawMse": 0.005374060098669222,
+        "validationRawMse": 0.04749422883821418
+      },
+      {
+        "step": 250,
+        "trainRawMse": 0.004916690766795777,
+        "validationRawMse": 0.049460290809932875
+      },
+      {
+        "step": 300,
+        "trainRawMse": 0.004792027616973054,
+        "validationRawMse": 0.04992725197283437
+      },
+      {
+        "step": 350,
+        "trainRawMse": 0.004463186885814756,
+        "validationRawMse": 0.05144574692682719
+      },
+      {
+        "step": 400,
+        "trainRawMse": 0.004334634026293184,
+        "validationRawMse": 0.05089155586262917
+      },
+      {
+        "step": 450,
+        "trainRawMse": 0.004071843674955125,
+        "validationRawMse": 0.05090947595188344
+      },
+      {
+        "step": 500,
+        "trainRawMse": 0.003936920714456389,
+        "validationRawMse": 0.051734270321980205
+      },
+      {
+        "step": 550,
+        "trainRawMse": 0.0039791756353830515,
+        "validationRawMse": 0.049929684217201065
+      },
+      {
+        "step": 600,
+        "trainRawMse": 0.0038609988190561845,
+        "validationRawMse": 0.0511052705926946
+      },
+      {
+        "step": 650,
+        "trainRawMse": 0.003865320390615449,
+        "validationRawMse": 0.05049330516280499
+      },
+      {
+        "step": 700,
+        "trainRawMse": 0.0037118516430929257,
+        "validationRawMse": 0.05026861684929575
+      },
+      {
+        "step": 750,
+        "trainRawMse": 0.003639970677766447,
+        "validationRawMse": 0.050495193925515894
+      },
+      {
+        "step": 800,
+        "trainRawMse": 0.0036133344447265036,
+        "validationRawMse": 0.04984332579266469
+      },
+      {
+        "step": 850,
+        "trainRawMse": 0.003493981261821884,
+        "validationRawMse": 0.05166701838186061
+      },
+      {
+        "step": 900,
+        "trainRawMse": 0.0034211801824871896,
+        "validationRawMse": 0.050245402863644345
+      },
+      {
+        "step": 950,
+        "trainRawMse": 0.003441918220457499,
+        "validationRawMse": 0.05025491027175798
+      },
+      {
+        "step": 1000,
+        "trainRawMse": 0.0033339326779806147,
+        "validationRawMse": 0.05081073953464334
+      }
+    ],
+    "init": 0,
+    "sources": 20
+  },
+  {
+    "checkpoints": [
+      {
+        "step": 50,
+        "trainRawMse": 0.009879134386224859,
+        "validationRawMse": 0.04566277998376077
+      },
+      {
+        "step": 100,
+        "trainRawMse": 0.0069820607399963585,
+        "validationRawMse": 0.04704785604795184
+      },
+      {
+        "step": 150,
+        "trainRawMse": 0.005795707068659653,
+        "validationRawMse": 0.04759909260177469
+      },
+      {
+        "step": 200,
+        "trainRawMse": 0.005575363670383641,
+        "validationRawMse": 0.04932019668171859
+      },
+      {
+        "step": 250,
+        "trainRawMse": 0.004789677705646828,
+        "validationRawMse": 0.0499722156500239
+      },
+      {
+        "step": 300,
+        "trainRawMse": 0.00460856730125487,
+        "validationRawMse": 0.05257404093854904
+      },
+      {
+        "step": 350,
+        "trainRawMse": 0.004235616302577976,
+        "validationRawMse": 0.051929938641538276
+      },
+      {
+        "step": 400,
+        "trainRawMse": 0.004200725380704429,
+        "validationRawMse": 0.051750293943764764
+      },
+      {
+        "step": 450,
+        "trainRawMse": 0.004011454424081169,
+        "validationRawMse": 0.05023337307688355
+      },
+      {
+        "step": 500,
+        "trainRawMse": 0.003870421010043971,
+        "validationRawMse": 0.05017024692905585
+      },
+      {
+        "step": 550,
+        "trainRawMse": 0.00372783498358428,
+        "validationRawMse": 0.05115093089142984
+      },
+      {
+        "step": 600,
+        "trainRawMse": 0.003816115979518486,
+        "validationRawMse": 0.052550974591632174
+      },
+      {
+        "step": 650,
+        "trainRawMse": 0.003744922178878514,
+        "validationRawMse": 0.05023872573725715
+      },
+      {
+        "step": 700,
+        "trainRawMse": 0.0036720989136440375,
+        "validationRawMse": 0.05326742873864673
+      },
+      {
+        "step": 750,
+        "trainRawMse": 0.00350243106633359,
+        "validationRawMse": 0.051715039878594354
+      },
+      {
+        "step": 800,
+        "trainRawMse": 0.0033989425629190493,
+        "validationRawMse": 0.05166397357723661
+      },
+      {
+        "step": 850,
+        "trainRawMse": 0.003496192372067634,
+        "validationRawMse": 0.05066037432827893
+      },
+      {
+        "step": 900,
+        "trainRawMse": 0.0032927056954786156,
+        "validationRawMse": 0.05157532867023601
+      },
+      {
+        "step": 950,
+        "trainRawMse": 0.0033613438522337273,
+        "validationRawMse": 0.049374844459344064
+      },
+      {
+        "step": 1000,
+        "trainRawMse": 0.003277365153027919,
+        "validationRawMse": 0.05037893454592905
+      }
+    ],
+    "init": 1,
+    "sources": 20
+  },
+  {
+    "checkpoints": [
+      {
+        "step": 50,
+        "trainRawMse": 0.0145453083182581,
+        "validationRawMse": 0.03936396187334477
+      },
+      {
+        "step": 100,
+        "trainRawMse": 0.011011636526692568,
+        "validationRawMse": 0.037364502752232555
+      },
+      {
+        "step": 150,
+        "trainRawMse": 0.009170740150352089,
+        "validationRawMse": 0.03822960594177581
+      },
+      {
+        "step": 200,
+        "trainRawMse": 0.008071351589616629,
+        "validationRawMse": 0.03832363030075024
+      },
+      {
+        "step": 250,
+        "trainRawMse": 0.007352461176594973,
+        "validationRawMse": 0.03822969511920716
+      },
+      {
+        "step": 300,
+        "trainRawMse": 0.00662929746391909,
+        "validationRawMse": 0.03934806930976388
+      },
+      {
+        "step": 350,
+        "trainRawMse": 0.006210418218259933,
+        "validationRawMse": 0.03888459403503988
+      },
+      {
+        "step": 400,
+        "trainRawMse": 0.005801078935081258,
+        "validationRawMse": 0.03879532642558703
+      },
+      {
+        "step": 450,
+        "trainRawMse": 0.005565104907077143,
+        "validationRawMse": 0.0401752699613664
+      },
+      {
+        "step": 500,
+        "trainRawMse": 0.005326464545008146,
+        "validationRawMse": 0.03939715789920742
+      },
+      {
+        "step": 550,
+        "trainRawMse": 0.005168940898822674,
+        "validationRawMse": 0.04000592880741634
+      },
+      {
+        "step": 600,
+        "trainRawMse": 0.004950931580576693,
+        "validationRawMse": 0.037601009076007726
+      },
+      {
+        "step": 650,
+        "trainRawMse": 0.005067268299223289,
+        "validationRawMse": 0.04037948124556581
+      },
+      {
+        "step": 700,
+        "trainRawMse": 0.004547158951047648,
+        "validationRawMse": 0.03875411080028983
+      },
+      {
+        "step": 750,
+        "trainRawMse": 0.0046687098422395126,
+        "validationRawMse": 0.039340265706241065
+      },
+      {
+        "step": 800,
+        "trainRawMse": 0.004492636710176993,
+        "validationRawMse": 0.0384100311442508
+      },
+      {
+        "step": 850,
+        "trainRawMse": 0.004384169434348941,
+        "validationRawMse": 0.03814264072283952
+      },
+      {
+        "step": 900,
+        "trainRawMse": 0.004316564343851546,
+        "validationRawMse": 0.039204522386133187
+      },
+      {
+        "step": 950,
+        "trainRawMse": 0.004456179630513989,
+        "validationRawMse": 0.0390848562032921
+      },
+      {
+        "step": 1000,
+        "trainRawMse": 0.004171576162793588,
+        "validationRawMse": 0.0392139813339417
+      }
+    ],
+    "init": 0,
+    "sources": 40
+  },
+  {
+    "checkpoints": [
+      {
+        "step": 50,
+        "trainRawMse": 0.015201710027513193,
+        "validationRawMse": 0.04126549581485605
+      },
+      {
+        "step": 100,
+        "trainRawMse": 0.011209701850537806,
+        "validationRawMse": 0.04055614907296659
+      },
+      {
+        "step": 150,
+        "trainRawMse": 0.009434594754544275,
+        "validationRawMse": 0.042470877754045636
+      },
+      {
+        "step": 200,
+        "trainRawMse": 0.008038605745353457,
+        "validationRawMse": 0.04380635947691137
+      },
+      {
+        "step": 250,
+        "trainRawMse": 0.007022211504955071,
+        "validationRawMse": 0.04439907450382965
+      },
+      {
+        "step": 300,
+        "trainRawMse": 0.006542774796941236,
+        "validationRawMse": 0.04602236357713228
+      },
+      {
+        "step": 350,
+        "trainRawMse": 0.006015955651695771,
+        "validationRawMse": 0.046336542983991584
+      },
+      {
+        "step": 400,
+        "trainRawMse": 0.005750476176859608,
+        "validationRawMse": 0.04686795830227403
+      },
+      {
+        "step": 450,
+        "trainRawMse": 0.005694697982783109,
+        "validationRawMse": 0.046253486507102384
+      },
+      {
+        "step": 500,
+        "trainRawMse": 0.0053076964306449075,
+        "validationRawMse": 0.046556609291690795
+      },
+      {
+        "step": 550,
+        "trainRawMse": 0.0050727377185645515,
+        "validationRawMse": 0.04719901467057264
+      },
+      {
+        "step": 600,
+        "trainRawMse": 0.004901940015720808,
+        "validationRawMse": 0.0476342448774288
+      },
+      {
+        "step": 650,
+        "trainRawMse": 0.00470015899409321,
+        "validationRawMse": 0.04790747876512741
+      },
+      {
+        "step": 700,
+        "trainRawMse": 0.004530267386280028,
+        "validationRawMse": 0.04702006381396654
+      },
+      {
+        "step": 750,
+        "trainRawMse": 0.004527373370467662,
+        "validationRawMse": 0.04698219294671073
+      },
+      {
+        "step": 800,
+        "trainRawMse": 0.004663819416384024,
+        "validationRawMse": 0.0457397487813726
+      },
+      {
+        "step": 850,
+        "trainRawMse": 0.004235781412586996,
+        "validationRawMse": 0.04727156222746201
+      },
+      {
+        "step": 900,
+        "trainRawMse": 0.004660767995904923,
+        "validationRawMse": 0.04632103968139946
+      },
+      {
+        "step": 950,
+        "trainRawMse": 0.004276289870003364,
+        "validationRawMse": 0.046494595131357744
+      },
+      {
+        "step": 1000,
+        "trainRawMse": 0.004440239942142493,
+        "validationRawMse": 0.047658853680557264
+      }
+    ],
+    "init": 1,
+    "sources": 40
+  }
+]

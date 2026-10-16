@@ -1829,7 +1829,7 @@ trajectories diverge. Default-off and other decision families are unchanged.
 
 ### heart1 policy adapter (opt-in)
 
-Last verified: 2026-10-16 for original Arm C policy-only training and the §495 frozen value-head fit; 2026-10-15 for distilled-student weights (network size and map trim from the file) and §488, reward-potion
+Last verified: 2026-10-16 for original Arm C policy-only training and the §§495–496 frozen value-head fits; 2026-10-15 for distilled-student weights (network size and map trim from the file) and §488, reward-potion
 swaps (ADR-0039), the Neow curse fix (ADR-0038), the OOC MCTS prior hook and the AVX forward pass; 2026-10-14 for the
 native port and its parity harness.
 
@@ -1866,6 +1866,12 @@ with the search and its chain.
   on the completed §494 TRAIN/VALIDATION corpus while preserving all other
   tensors and policy logits. The §495 fit is development-only and worse than
   X2-B on validation; no learned-head native leaf integration is qualified.
+  The §496 follow-up, `tools/heart1/train_nonlinear_value.py`, trains a separate
+  64→64 ReLU→1 readout on the audited frozen pooled features. It leaves the
+  original encoder/policy checkpoint unchanged, including its value norm.
+  Its checkpoint is a sidecar with TRAIN normalization buffers, not an artifact
+  the current affine-only C++ loader can consume. It also trails X2-B on the
+  development split; no native integration or learned-leaf promotion follows.
 - Policy: temperature 0, the first maximum logit in token order. Gold, and
   relics on screens without a key reward, are taken before the decision, as
   silverbot does. A single offered choice is executed directly. Screens

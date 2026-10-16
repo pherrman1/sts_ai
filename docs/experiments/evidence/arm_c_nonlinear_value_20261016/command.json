@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=10s",
+    "600s",
+    "python3",
+    "tools/heart1/train_nonlinear_value.py",
+    "fit",
+    "--corpus",
+    "/home/philippherrmann/armc494/data/corpus",
+    "--cache",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-value-head-20261016-v1",
+    "--checkpoint",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models/student-c-68fe88be.pt",
+    "--out",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-nonlinear-value-20261016-v1",
+    "--device",
+    "cuda"
+  ],
+  "cwd": "/home/philippherrmann/Documents/sts/sts_lightspeed-worktrees/native-campaign-guards"
+}

@@ -1,0 +1,7 @@
+{"sources": 10, "init": 0, "step": 50, "trainRawMse": 0.007667095190669681, "validationRawMse": 0.043111208959343214}
+{"sources": 10, "init": 1, "step": 50, "trainRawMse": 0.007739578501200093, "validationRawMse": 0.04809520241831183}
+{"sources": 20, "init": 0, "step": 50, "trainRawMse": 0.00973501431857389, "validationRawMse": 0.04275927704310366}
+{"sources": 20, "init": 1, "step": 50, "trainRawMse": 0.009879134386224859, "validationRawMse": 0.04566277998376077}
+{"sources": 40, "init": 0, "step": 100, "trainRawMse": 0.011011636526692568, "validationRawMse": 0.037364502752232555}
+{"sources": 40, "init": 1, "step": 100, "trainRawMse": 0.011209701850537806, "validationRawMse": 0.04055614907296659}
+{"verdict": "VALIDATION_ONLY", "selected": {"init": 0, "step": 100, "validationRawMse": 0.037364502752232555}, "headSha256": "75d718ee649be3f1b0ef0a844ba782e46f1773164e2c98950c31633c2f1da001", "seconds": 20.86884531698888}

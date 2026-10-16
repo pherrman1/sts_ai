@@ -19417,3 +19417,89 @@ plus the original pinned Arm C checkpoint reconstructs the fitted weights.
 
 **Knowledge impact:** maintained research status and heart1 architecture now
 separate original untrained value head from this frozen-encoder development fit.
+
+## §496 Nonlinear Arm C frozen-feature head and data-quantity diagnostics (2026-10-16)
+
+**Question and authorization:** User requested the nonlinear head after §495
+and asked whether more data is needed and whether X2-B is the right target for
+Heart kills. One bounded development experiment, no new collection or native
+integration. Baseline PR570 `b36b8c965e4df7036c2911b009626bd746ee253c`;
+independently reviewed fit source `3399cda718634250a6a0eb9549904cfe57b5b37a`.
+
+**Frozen configuration:** audited §495 cache SHA `78c2d95e…32aa`, original unchanged
+C checkpoint SHA `53739a43…e020`, original §494 TRAIN/VALIDATION custody/splits.
+No TEST archive access/hash, no encoder recomputation. All 18,570 TRAIN rows /
+663 groups and 2,721 validation rows / 114 groups retained. TRAIN-only
+standardization → Linear(64,64) → ReLU → Linear(64,1), 4,225 parameters.
+Fixed prefixes of 10/20/40 TRAIN sources × initializations 0/1, exactly 1,000
+AdamW updates each (lr 0.001, wd 0.001), equal-source raw MSE, minibatches≤512,
+validation every 50 updates. Only 40-source checkpoints eligible for selection;
+no adaptive continuation or smaller-prefix promotion. Freeze SHA
+`d62f32cb0fe0e4c26fc4d4300de0567f1b3d910bb7daa9df9b6da76fb36756ec`.
+Local RTX 3060 Ti, two CPU threads, deterministic kernels/no TF32; external 600 s
+hard timeout. One campaign completed rc0 in 23.499 s wall, 20.869 s internal.
+
+**Result: VALIDATION_ONLY, negative relative to X2-B.** Selected 40-source
+initialization 0 at step 100 by raw validation MSE. Original C checkpoint and
+cached features unchanged; no encoder/policy parameters enter the optimizer.
+New head SHA
+`75d718ee649be3f1b0ef0a844ba782e46f1773164e2c98950c31633c2f1da001`.
+
+| Validation measure | Nonlinear C head | Affine C head (§495) | X2-B |
+| --- | ---: | ---: | ---: |
+| Raw MSE |0.0373645|0.0395591|0.0330521|
+| Bounded sibling concordance |0.553848|0.589793|0.620761|
+| Bounded regret |0.0370446|0.0383357|0.0336860|
+
+Learning curve (best scheduled validation checkpoint per initialization;
+smaller-prefix models remain ineligible for the saved head):
+
+| TRAIN sources | Init0 MSE | Init1 MSE | Mean |
+| --- | ---: | ---: | ---: |
+|10|0.0431112|0.0480952|0.0456032|
+|20|0.0427593|0.0456628|0.0442110|
+|40|0.0373645|0.0405561|0.0389603|
+
+Selected train MSE 0.0110116 vs validation 0.0373645. At step 1,000, selected
+initialization's train MSE 0.00417158 vs validation 0.0392140. **Inference:**
+more source diversity may help, while simply training longer does not close
+this generalization gap. The fixed-prefix/two-initialization/eight-reused-
+validation-source diagnostic is not a randomized or fresh data-size confirmation.
+MSE improvement over the affine head did not translate into improved concordance;
+do not reselect after inspecting the ranking metrics.
+
+**Descriptive target audit (not used for model selection):** of 1,188,480 TRAIN
+repeats, 1,038,724 (87.40%) are nonterminal X2-B bootstraps; 149,756 are simulated
+terminal outcomes (116,453 failures, 33,303 successes). Validation: 174,144 total,
+151,738 bootstrap (87.13%); 22,406 simulated terminal (21,578 failures, 828
+successes). The OOC code applies `runGoalVictory` at terminal states, but the
+continuations use CTM and a three-combat horizon. These are not observed
+fixed-Silver whole-run Heart outcomes. X2-B is not a direct feature, residual
+or loss target for this head; it is a comparator and the nonterminal bootstrap
+inside the collected continuation targets. More such targets can improve
+surrogate estimation but cannot establish Heart calibration. Future actual
+outcome labels must correspond to visited states/played continuations, not
+unplayed counterfactuals assigned their source run's outcome.
+
+**Checks:** source/design independent PASS; 7/7 synthetic checks PASS in 0.648 s,
+independent 7/7 PASS in 0.665 s plus deterministic CUDA synthetic training PASS.
+Final 61/61 affected checks PASS in 4.241 s including original C CPU/CUDA regressions;
+unchanged historical recovery allowlist failure excluded (see §495 baseline
+reproduction). No native build or speed benchmark: native/build files unchanged.
+Independent result/custody audit PASS: selected predictions/metrics and all
+label-repeat counts reproduced exactly without refitting or re-encoding.
+No new game seeds, TEST reopening, native integration, gameplay, RL or default
+promotion. Prior §491–495 verdicts and artifacts remain unchanged.
+
+**Evidence:** [protocol](evidence/arm_c_nonlinear_value_20261016/PROTOCOL.md),
+[result](evidence/arm_c_nonlinear_value_20261016/result.json),
+[training history](evidence/arm_c_nonlinear_value_20261016/training.json),
+[target audit](evidence/arm_c_nonlinear_value_20261016/target-audit.json), and
+[portable head](evidence/arm_c_nonlinear_value_20261016/head.json).
+Local `build/arm-c-nonlinear-value-20261016-v1/nonlinear-head.pt` binds the
+sidecar to the exact original encoder hash. Current native affine loader does
+not consume this sidecar; its integration is outside the authorized work.
+
+**Knowledge impact:** current research/data-target understanding and heart1
+architecture now distinguish frozen nonlinear readout training from native
+support and Heart-outcome value learning.

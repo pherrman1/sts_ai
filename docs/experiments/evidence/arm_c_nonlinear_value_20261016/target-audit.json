@@ -1,0 +1,26 @@
+{
+  "kind": "descriptive target audit only; not a model-selection input",
+  "testRead": false,
+  "corpusManifestSha256": "cd8929b1226531390d06a6c38250065f9d6e37d00c1903dd688b9ae4c5f11c19",
+  "counts": {
+    "train": {
+      "sources": 40,
+      "rows": 18570,
+      "repeats": 1188480,
+      "bootstrappedNonterminal": 1038724,
+      "simulatedTerminal": 149756,
+      "terminalFailure": 116453,
+      "terminalSuccess": 33303
+    },
+    "validation": {
+      "sources": 8,
+      "rows": 2721,
+      "repeats": 174144,
+      "bootstrappedNonterminal": 151738,
+      "simulatedTerminal": 22406,
+      "terminalFailure": 21578,
+      "terminalSuccess": 828
+    }
+  },
+  "note": "Terminal flags are CTM-simulated continuation outcomes, not observed Silver whole-run Heart results; nonterminal values use X2-B."
+}
