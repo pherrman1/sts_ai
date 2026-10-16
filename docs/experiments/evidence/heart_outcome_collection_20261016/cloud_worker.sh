@@ -2,7 +2,8 @@
 # Observed Heart-outcome cohort (§497) cloud worker wrapper. Run from the repository checkout at RUN_COMMIT.
 # The frozen producer source 7527b5d is cloned separately; this wrapper only rebuilds/verifies the frozen
 # bundle locally, runs `heart_outcome_collect.py worker` unchanged, and exports its outputs to the share.
-# setup is local-only: it builds and prepares under $HOME and only reads the share; run writes only deliveries/wWW.
+# setup is local-only: it clones and builds under $HOME and touches no share path. run copies the weights from the
+# read-only share copy, re-prepares and hash-checks the frozen plan/bundle, runs the worker, and writes only deliveries/wWW.
 # Usage: bash cloud_worker.sh setup W | run W ACTIVATION_SHA256 | status W   (W unpadded, 0..44)
 set -euo pipefail
 SOURCE=7527b5d5d07467688101212660461995665512b9
@@ -26,7 +27,6 @@ put() {  # copy one file to the share atomically and verify the share bytes
 case "${1:-}" in
 setup)
   [ ! -e $L ] || { echo "STOP: $L already exists (container reused); report, do not rerun"; exit 1; }
-  [ ! -e $D ] || { echo "STOP: delivery dir for w$WW already exists on the share"; exit 1; }
   mkdir -p $L
   [ -d $S ] || git clone -q --no-checkout $R $S
   git -C $S checkout -q --detach $SOURCE
@@ -37,26 +37,26 @@ setup)
      || { echo "STOP: build failed"; tail -20 $L/build.log; exit 1; }
   got=$(sha256sum $S/build/linux-gcc-release/one_combat | cut -d' ' -f1)
   [ "$got" = "$BINARY_SHA" ] || { echo "STOP: producer sha $got"; exit 1; }
+  echo "setup ok: W=$W source $SOURCE producer $got cpu=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs) nproc=$(nproc) host=$(hostname)"
+  ;;
+run)
+  ACT="${3:-}"
+  [[ "$ACT" =~ ^[0-9a-f]{64}$ ]] || { echo "STOP: give the approved activation SHA256"; exit 2; }
+  [ -x $S/build/linux-gcc-release/one_combat ] && [ ! -e $L/campaign ] || { echo "STOP: no setup or worker already started here"; exit 1; }
+  [ ! -e $D ] || { echo "STOP: delivery dir for w$WW already exists on the share"; exit 1; }
   cp /mnt/project-files/student-c-488/studentc.bin $L/studentc.bin  # read-only share copy, same bytes as $TRANSPORT:bundle/studentc.bin
   [ "$(sha256sum $L/studentc.bin | cut -d' ' -f1)" = "$STUDENT_C" ] || { echo "STOP: studentc sha"; exit 1; }
   python3 $S/tools/heart_outcome_collect.py prepare --repo $S --binary $S/build/linux-gcc-release/one_combat \
     --student $L/studentc.bin --out $L/campaign > $L/prepare.log 2>&1 || { echo "STOP: prepare failed"; tail -5 $L/prepare.log; exit 1; }
   [ "$(sha256sum $L/campaign/plan.json | cut -d' ' -f1)" = "$PLAN_SHA" ] || { echo "STOP: plan sha differs"; exit 1; }
   [ "$(sha256sum $L/campaign/bundle/bundle.json | cut -d' ' -f1)" = "$BUNDLE_SHA" ] || { echo "STOP: bundle sha differs"; exit 1; }
-  echo "setup ok: W=$W source $SOURCE producer $got plan $PLAN_SHA cpu=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs) nproc=$(nproc) host=$(hostname)"
-  ;;
-run)
-  ACT="${3:-}"
-  [[ "$ACT" =~ ^[0-9a-f]{64}$ ]] || { echo "STOP: give the approved activation SHA256"; exit 2; }
-  [ -f $L/campaign/plan.json ] && [ ! -e $L/out ] || { echo "STOP: no setup or worker already started here"; exit 1; }
-  [ ! -e $D ] || { echo "STOP: delivery dir for w$WW already exists on the share"; exit 1; }
   cp $SH/campaign/activation.json $SH/campaign/COHORT-STARTED.json $L/campaign/
   cp -r $SH/campaign/cloud-canary $L/campaign/cloud-canary
   [ "$(sha256sum $L/campaign/activation.json | cut -d' ' -f1)" = "$ACT" ] || { echo "STOP: activation sha differs"; exit 1; }
   mkdir -p $D
   B=$L/campaign/bundle
   ( while [ ! -f $L/out/worker-receipt.json ]; do
-      n=$(find $L/out -name '*.receipt.json' 2>/dev/null | wc -l)
+      n=$(find $L/out -name '*.receipt.json' 2>/dev/null | wc -l || true)
       echo "$(date -u +%FT%TZ) receipts=$n/40 one_combat=$(pgrep -c one_combat || true)" > $D/progress.txt.partial && mv $D/progress.txt.partial $D/progress.txt
       sleep 300; done ) &
   set +e
