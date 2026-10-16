@@ -166,16 +166,39 @@ def load_net(repo, checkpoint, device):
     return network, net
 
 
-def encode(network, net, rows, device, deadline):
+def has_choices(record):
+    return any(record[k] for k in ('cards_offered.cards', 'relics_offered',
+        'potions_offered', 'fixed_actions', 'paths_offered'))
+
+
+def select_companion(rows):
+    # Fixed source order, independent of targets and VALIDATION.
+    for index, row in enumerate(rows):
+        if has_choices(row['record']):
+            return row['record'], {'rowIndex': index, 'seed': row['seed'],
+                'recordSha256': sha_bytes(json.dumps(row['record'], sort_keys=True).encode())}
+    raise ValueError('TRAIN has no eligible companion record')
+
+
+def encode(network, net, rows, device, deadline, companion=None):
     features, values = [], []
     policy = hashlib.sha256()
     for start in range(0, len(rows), BATCH):
         if time.monotonic() > deadline:
             raise TimeoutError('frozen 1800-second wall cap')
-        records = [{**trim_record(r['record']), 'chosen_idx': 0, 'outcome': 0.} for r in rows[start:start+BATCH]]
+        chunk = rows[start:start+BATCH]
+        records = [{**trim_record(r['record']), 'chosen_idx': 0, 'outcome': 0.} for r in chunk]
+        # silverbot asserts at least one choice anywhere in a batch. A separate
+        # TRAIN example satisfies that assertion without inventing target choices.
+        # Its transformer has no cross-example attention. Discard its outputs.
+        if companion is not None:
+            if not has_choices(companion):
+                raise ValueError('companion must have an actual choice')
+            records.append({**trim_record(companion), 'chosen_idx': 0, 'outcome': 0.})
         batch = network.move_to_device(network.collate_fn(records), device)
         with torch.inference_mode():
             logits, value, pooled = net(batch, return_pooled=True)
+        logits, value, pooled = logits[:len(chunk)], value[:len(chunk)], pooled[:len(chunk)]
         if not torch.isfinite(pooled).all() or not torch.isfinite(value).all() or torch.isnan(logits).any():
             raise ValueError('nonfinite network output')
         policy.update(logits.cpu().contiguous().numpy().tobytes())
@@ -229,10 +252,11 @@ def fit(args):
     write_json(args.out / 'custody.json', custody)
     network, net = load_net(args.silverbot, args.checkpoint, args.device)
     before = {k: v.detach().cpu().clone() for k, v in net.state_dict().items()}
+    companion, companion_identity = select_companion(data['train'][0])
     embeddings = {}
     for split, (rows, _, _) in data.items():
         print('encoding', split, len(rows), flush=True)
-        embeddings[split] = encode(network, net, rows, args.device, deadline)
+        embeddings[split] = encode(network, net, rows, args.device, deadline, companion)
     torch.save({k: v[0] for k, v in embeddings.items()}, args.out / 'pooled.pt')
     train, tg, tc = data['train']
     val, vg, vc = data['validation']
@@ -256,7 +280,7 @@ def fit(args):
     after = {k: v.detach().cpu().clone() for k, v in net.state_dict().items()}
     changed = assert_frozen(before, after)
     # Whole VALIDATION pass checks real forward outputs and exact prior invariance.
-    features_after, full_pred, policy_after = encode(network, net, val, args.device, deadline)
+    features_after, full_pred, policy_after = encode(network, net, val, args.device, deadline, companion)
     if policy_before != policy_after or not torch.equal(vx, features_after):
         raise ValueError('policy/encoder forward parity failed')
     diff = float(np.max(np.abs(full_pred - pred)))
@@ -273,11 +297,15 @@ def fit(args):
         'changedTensors': changed, 'frozenTensors': len(before) - len(changed),
         'policyLogitsBitwiseEqual': True, 'validationPolicySha256': policy_before,
         'pooledBitwiseEqual': True, 'fullVsCachedValueMaxAbs': diff,
+        'companion': companion_identity,
         'validation': metrics(val, vg, np.clip(pred, 0, 1)),
         'validationRawMse': best[0],
         'baselines': {'x2b': metrics(val, vg, [r['x2b'] for r in val]),
             'initialHead': metrics(val, vg, np.clip(initial_val, 0, 1)),
             'trainMean': metrics(val, vg, [train_mean] * len(val))},
+        'baselineRawMse': {'x2b': metrics(val, vg, [r['x2b'] for r in val])['aggregate']['mse'],
+            'initialHead': metrics(val, vg, initial_val)['aggregate']['mse'],
+            'trainMean': metrics(val, vg, [train_mean] * len(val))['aggregate']['mse']},
         'train': metrics(train, tg, np.clip(torch.nn.functional.linear(tx, weight, bias).squeeze(1).numpy(), 0, 1)),
         'coverage': {'train': tc, 'validation': vc}, 'candidates': candidates,
         'checkpointSha256': sha(args.out / 'arm-c-value.pt'),

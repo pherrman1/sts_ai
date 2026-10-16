@@ -44,7 +44,8 @@ their existing `recordPublicParityQualified=false` limitation.
 
 Freeze reviewed source, model/corpus/tool/dependency/runtime identities before
 fitting. No game seeds run. Local GPU encodes each TRAIN/VALIDATION row once in
-fixed batches of32, eval mode, float32, deterministic kernels, no TF32. Cache
+fixed batches of32 target rows plus one independent TRAIN companion, eval mode,
+float32, deterministic kernels, no TF32. Cache
 the existing pooled64 representation. Local CPU solves source-balanced least
 squares with a free bias and L2 weight penalty at exactly
 `alpha = [0, 1e-6, 1e-4, 0.01, 1, 100]`. No architecture or optimizer search.
@@ -55,6 +56,18 @@ Fit cap1800 seconds enforced by an external `timeout --signal=TERM
 --kill-after=10s 1800s` wrapper as well as cooperative internal checks; two CPU
 threads, no retries/resumption/adaptive expansion.
 One exclusive fit-started latch precedes corpus row reading.
+
+The original Python network asserts that a batch contains at least one choice,
+while captured battle/memory leaves may offer none. Always append a separate
+companion: the first TRAIN row in source order with any actual offered choice,
+chosen independently of targets/VALIDATION. Record its source/row index and
+record hash. It has no cross-example attention; target records and encoder are
+unchanged. Exclude companion outputs from features, values, policy hashes and
+metrics. Before fitting, synthetic CPU/CUDA checks must demonstrate empty32
+and empty1 target batches work, and changing companion content at fixed batch
+shape leaves target outputs unchanged. Preserve all original target rows.
+Arm C's original encoder still ignores the extra public battle/memory fields;
+this fit does not repair or qualify its leaf input representation.
 
 Report raw MSE plus [0,1]-clamped sibling concordance/regret against X2-B,
 initial untrained head, and TRAIN-mean constant using the existing source-
