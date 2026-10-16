@@ -2,6 +2,7 @@
 # Observed Heart-outcome cohort (§497) cloud worker wrapper. Run from the repository checkout at RUN_COMMIT.
 # The frozen producer source 7527b5d is cloned separately; this wrapper only rebuilds/verifies the frozen
 # bundle locally, runs `heart_outcome_collect.py worker` unchanged, and exports its outputs to the share.
+# setup is local-only: it builds and prepares under $HOME and only reads the share; run writes only deliveries/wWW.
 # Usage: bash cloud_worker.sh setup W | run W ACTIVATION_SHA256 | status W   (W unpadded, 0..44)
 set -euo pipefail
 SOURCE=7527b5d5d07467688101212660461995665512b9
@@ -36,8 +37,7 @@ setup)
      || { echo "STOP: build failed"; tail -20 $L/build.log; exit 1; }
   got=$(sha256sum $S/build/linux-gcc-release/one_combat | cut -d' ' -f1)
   [ "$got" = "$BINARY_SHA" ] || { echo "STOP: producer sha $got"; exit 1; }
-  git -C $R fetch -q origin claude/arm-c-native-data
-  git -C $R show $TRANSPORT:bundle/studentc.bin > $L/studentc.bin
+  cp /mnt/project-files/student-c-488/studentc.bin $L/studentc.bin  # read-only share copy, same bytes as $TRANSPORT:bundle/studentc.bin
   [ "$(sha256sum $L/studentc.bin | cut -d' ' -f1)" = "$STUDENT_C" ] || { echo "STOP: studentc sha"; exit 1; }
   python3 $S/tools/heart_outcome_collect.py prepare --repo $S --binary $S/build/linux-gcc-release/one_combat \
     --student $L/studentc.bin --out $L/campaign > $L/prepare.log 2>&1 || { echo "STOP: prepare failed"; tail -5 $L/prepare.log; exit 1; }
