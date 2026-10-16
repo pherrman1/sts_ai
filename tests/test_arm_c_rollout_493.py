@@ -13,7 +13,8 @@ from arm_c_rollout_493 import analyze, mcnemar, resource_summary, verify_custody
 def decision(**changes):
     return {'singleton_bypass':0,'aborted':False,'completed_simulations':500,
             'executed':True,'selected_action':1,'actions':[{'id':1}],
-            'thread_cpu_seconds':.251,'early_stop_budget':1,**changes}
+            'thread_cpu_seconds':.251,'early_stop_budget':1,'attempts':500,
+            'early_stop_lock':0,'early_stop_gap':0,**changes}
 
 
 class ResearchTests(unittest.TestCase):
@@ -29,6 +30,18 @@ class ResearchTests(unittest.TestCase):
         for changes in ({'selected_action':9},{'completed_simulations':0},{'executed':False}, {'thread_cpu_seconds':float('nan')}):
             with self.assertRaises(ValueError):resource_summary([decision(**changes)])
         with self.assertRaises(ValueError):resource_summary([decision(singleton_bypass=1)])
+
+    def test_root_boundary_is_no_search_with_exact_bypass_contract(self):
+        boundary=decision(execution_reason='root_boundary',completed_simulations=0,
+                          executed=False,selected_action=None,actions=[],early_stop_budget=0,attempts=0)
+        result=resource_summary([decision(),boundary])
+        self.assertTrue(result['pass']);self.assertEqual(result['validSearches'],1)
+        self.assertEqual(result['rootBoundaryBypasses'],1)
+        for change in ({'completed_simulations':1},{'selected_action':1},{'actions':[{'id':1}]},
+                       {'executed':True},{'aborted':True},{'singleton_bypass':1},
+                       {'attempts':1},{'early_stop_budget':1},{'early_stop_lock':1},{'early_stop_gap':1}):
+            with self.assertRaisesRegex(ValueError,'root-boundary'):
+                resource_summary([decision(),{**boundary,**change}])
 
     def fixture(self,root,treatment,control):
         seeds=list(range(1,len(treatment)+1))

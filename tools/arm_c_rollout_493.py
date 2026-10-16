@@ -19,7 +19,7 @@ import numpy as np
 
 STUDENT_SHA = 'eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509'
 EVIDENCE = Path('docs/experiments/evidence/arm_c_rollout_20261016')
-CANARIES = [110161990, 110161991]
+CANARIES = [110161992, 110161993]
 SEEDS = list(range(110162000, 110162032))
 ARMS = ('chain', 'armc')
 
@@ -124,7 +124,15 @@ def quantile(values, q):
 
 
 def resource_summary(decisions):
-    valid=[d for d in decisions if not d['singleton_bypass'] and not d['aborted']]
+    boundaries=[d for d in decisions if d.get('execution_reason')=='root_boundary']
+    for d in boundaries:
+        require(not d['aborted'] and not d['singleton_bypass'] and not d['executed']
+                and d['attempts']==0 and d['completed_simulations']==0
+                and not d['early_stop_budget'] and not d['early_stop_lock'] and not d['early_stop_gap']
+                and d['selected_action'] is None and not d['actions'],
+                'malformed root-boundary bypass')
+    valid=[d for d in decisions if not d['singleton_bypass'] and not d['aborted']
+           and d.get('execution_reason')!='root_boundary']
     require(valid,'no nontrivial completed searches')
     for d in valid:
         require(d['completed_simulations']>0 and d['executed']
@@ -136,6 +144,7 @@ def resource_summary(decisions):
     ceiling=sum(d['completed_simulations']==8192 for d in valid)/len(valid)
     result={'validSearches':len(valid),'allRoots':len(decisions),
             'singletons':sum(bool(d['singleton_bypass']) for d in decisions),
+            'rootBoundaryBypasses':len(boundaries),
             'aborted':sum(bool(d['aborted']) for d in decisions),
             'budgetStoppedFraction':stops,'ceilingHitFraction':ceiling,
             'cpuMedian':quantile(cpu,.5),'cpuP95':quantile(cpu,.95),'cpuMax':max(cpu),

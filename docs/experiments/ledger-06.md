@@ -19192,11 +19192,14 @@ Arm C remains the producer tree prior only and V4 rollout policy fixed.
 
 ## §493 Arm C policy inside A20 Heart rollouts (2026-10-16)
 
-**Prospective status: implementation/design review pending.** Philipp authorized
+**Prospective status: version-2 canary review pending.** Philipp authorized
 the proposed experiment with “Let's go then”. Arm C is tree prior in both arms;
 only the rollout policy changes from the current V4/heuristic continuation chain
 to loaded Arm C argmax on the same supported candidate sets, with mandatory rules
-and chain fallback fixed. No gameplay seeds have run for this experiment yet.
+and chain fallback fixed. The first version completed one control canary source, then stopped on a validator
+classification error before treatment or cohort. Its bundle remains preserved;
+version2 uses fresh canaries after a narrow no-search boundary classification fix.
+No cohort efficacy result exists.
 
 The [prospective protocol](evidence/arm_c_rollout_20261016/PROTOCOL.md) fixes
 0.25 thread-CPU seconds per decision, a completion-boundary budget (not a hard

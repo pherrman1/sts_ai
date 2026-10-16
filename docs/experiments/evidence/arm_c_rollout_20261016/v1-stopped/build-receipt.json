@@ -1,0 +1,15 @@
+{
+  "binarySha256": "d13014727ca0e4385f449a6e7c4c9ee9de2b5652a5d680aa48c512c5bd079283",
+  "command": [
+    "cmake",
+    "--build",
+    "--preset",
+    "linux-gcc-release-ccache-build",
+    "--target",
+    "one_combat",
+    "-j",
+    "4"
+  ],
+  "logSha256": "b1cfc85b9588d956a2cccd3c1272dcd99dc150e5aab0b5aabf1eef136d4056c4",
+  "reviewedSha": "3c31c27641ecbe66859e4e1d7c162706a1edc2c8"
+}

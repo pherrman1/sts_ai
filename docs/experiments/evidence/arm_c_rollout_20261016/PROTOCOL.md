@@ -37,7 +37,7 @@ artifacts, but use fresh paired seeds. No historical pooling/relabeling/reselect
 
 Freeze reviewed source, clean checkout, binary/build receipt, all bundled models,
 runner/validator/seed-guard/protocol and exact clean environment before gameplay.
-One-shot canary seeds110161990/991, each both arms. Do not inspect canary efficacy
+One-shot canary seeds110161992/993, each both arms. Do not inspect canary efficacy
 for tuning. Every launch goes through bundled seed_guard.sh. Native-Silver,
 configuration, binary/model custody, exact seed/sidecar, legal executed selection,
 Arm C prior in both arms and rollout usage counters must validate. Control has
@@ -73,3 +73,21 @@ label/distillation protocol; no automatic fresh training from this campaign.
 
 Knowledge impact: explicit rollout/CPU-control implementation contracts, §493
 experiment evidence and maintained current research status.
+
+
+## Pre-cohort validator amendment (version 2)
+
+Version1's first control unit110161990 completed normally, but the validator
+classified a normal root-boundary fallback (no search/actions, zero simulations,
+no execution) as a completed search requiring an action. It stopped INCOMPLETE
+before treatment, second canary or cohort. Preserve that original bundle/latch;
+no outcomes were inspected or used for tuning. The native code is unchanged.
+
+Version2 excludes only an exact validated root_boundary no-search event from
+the completed-search resource denominator and reports its bypass count. Any such
+event with simulations, selection, actions, execution, abort or singleton markers
+is rejected; malformed actual search results still fail. CPU/control/coverage/
+quality gates remain unchanged. Synthetic positive/negative regression fixtures
+and independent review precede a new frozen bundle with fresh paired canary seeds
+110161992/993. The untouched32cohortseeds remain110162000..031. No retry in the
+original bundle, pooling, replacement of cohort seeds or threshold relaxation.
