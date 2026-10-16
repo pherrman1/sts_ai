@@ -1044,6 +1044,7 @@ Output Net::forwardRecord(const Record &r) const {
     }
     for (int d = 0; d < kDim; ++d) pooled[d] /= float(n);
     out.value = dot(valueHead_.w.data(), pooled.data(), kDim) + valueHead_.b[0];
+    out.pooled = std::move(pooled);
     return out;
 }
 
@@ -1266,7 +1267,7 @@ namespace {
 nlohmann::json scoreJson(const Net &model, const Record &record) {
     const Output out = model.forward(record);
     const int best = int(std::max_element(out.logits.begin(), out.logits.end()) - out.logits.begin());
-    return {{"logits", out.logits}, {"value", out.value}, {"argmax", best}};
+    return {{"logits", out.logits}, {"value", out.value}, {"pooled", out.pooled}, {"argmax", best}};
 }
 
 Net loadOrThrow(const std::string &path) {
