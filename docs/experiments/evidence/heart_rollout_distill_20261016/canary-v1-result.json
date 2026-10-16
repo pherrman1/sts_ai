@@ -1,0 +1,38 @@
+{
+  "canary": {
+    "coverage": [
+      {
+        "accepted": 257,
+        "groups": 13,
+        "invalidGroups": 3,
+        "raw": 449,
+        "rejected": 192
+      },
+      {
+        "accepted": 211,
+        "groups": 10,
+        "invalidGroups": 1,
+        "raw": 275,
+        "rejected": 64
+      }
+    ],
+    "parity": true
+  },
+  "cohortGenerated": false,
+  "diagnosis": {
+    "capture": {
+      "battleWithoutEncoding": 126,
+      "matchAndKeepWithoutEncoding": 1
+    },
+    "second": {
+      "matchAndKeepWithoutEncoding": 2
+    }
+  },
+  "freezeSha256": "de91257018abc0757ead9305d57d4222d1b3203759452760b22202ecdf4f7e88",
+  "note": "BATTLE rows are UNDECIDED, not exact terminals. Never assign them exact terminal values.",
+  "rawDirectory": "/home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/build/heart-rollout-distill-20261016",
+  "sourceSha": "7622669e50c6ba27e3487b36f12c3eac087d6eb0",
+  "testOpened": false,
+  "trainingStarted": false,
+  "verdict": "INVALID_CANARY_SUPPORT"
+}

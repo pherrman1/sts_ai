@@ -39,10 +39,12 @@ run)
       ts=$(date -u +%Y%m%dT%H%M%SZ); mkdir -p "$OUT/aborted-$ts"; mv "$b".* "$OUT/aborted-$ts/"
     fi
   done
-  xargs -P $N -I{} bash "$UNIT" "$REPO" "$RUN" "$OUT" cap 20 {} 1 < "$OUT/units.txt"
+  xargs -P $N -I{} bash "$UNIT" "$REPO" "$RUN" "$OUT" cap 20 {} 1 < "$OUT/units.txt" \
+    || { echo "STOP: unit dispatcher failed"; exit 2; }
   for s in $(cat "$OUT/units.txt"); do
     [ -f "$OUT/cap-a20-$s.done" ] || { echo "STOP: missing .done for $s"; exit 2; }
-    [ -s "$OUT/cap-a20-$s.sib.jsonl" ] || echo "WARN: empty capture for $s"
+    grep -Eq '^tag=[^ ]+ rc=0( |$)' "$OUT/cap-a20-$s.done" || { echo "STOP: failed unit $s"; exit 2; }
+    [ -s "$OUT/cap-a20-$s.sib.jsonl" ] || { echo "STOP: empty capture for $s"; exit 2; }
   done
   cd "$BASE" && tar czf "w$WW.tar.gz" out || { echo "STOP: tar failed"; exit 2; }
   tsha=$(sha256sum "w$WW.tar.gz" | cut -d' ' -f1)

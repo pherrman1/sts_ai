@@ -1,0 +1,35 @@
+{
+  "cppReviewedSha": "64710e912e1971c48733495a057b66052c80a94d",
+  "pilotReviewedSha": "cbded890a06f4ec76ad72c8333d07df25ad54e5f",
+  "coreSmoke": {
+    "passed": 88,
+    "failed": 0,
+    "seconds": 1065.06
+  },
+  "focused": {
+    "passed": 4,
+    "failed": 0,
+    "seconds": 11.4
+  },
+  "python": {
+    "passed": 17,
+    "failed": 0,
+    "seconds": 0.097
+  },
+  "cudaSmokeVariants": [
+    "counts",
+    "pool",
+    "attention"
+  ],
+  "logs": {
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-v2-debug-build.log": "2cc9deabc7cf39738fdd01b4591940972ab826088c59472753b4022bebeb8313",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-v2-core-smoke.log": "ada599acb2e8ec8d3e4277a2cf96e7316c2002bc17cf7d97eca828e1f970617e",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-v2-focused.log": "cc02bf593d666dc976605018306f2f0f6192bf3b04bee9451a6f7d40ace05006",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-v2-release-final-build.log": "6a74ab828ffbfd18b2fdbf37652d282669b7fe93bff83e8ae42169a934550e3b",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-v2-native-selftest.log": "91d3dc64d70ad818c58e74a993146ae5cb2d1e97e86690128188ae8893920608",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-doctor.log": "a648d662812d547d9b5f8944947d6a9f69e0454bb27c737d8cdae18db6d6eac5",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-v3-repo-health.json": "158dbcc565a10f78ee961987e8e568383d60cfc2968757da451e5f85636ec422",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-health-tests.log": "f23ca79fe934cf219d02db809ecbf396965864d76ae86269b34d683b323cdb5e",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/verification/heart-distill-uv.log": "37b9466237fca97aa8fc453d5ccf040dd441c660d0aa3462f0369458005494b6"
+  }
+}

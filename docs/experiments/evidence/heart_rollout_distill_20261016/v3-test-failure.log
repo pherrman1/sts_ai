@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/run/heart_rollout_distill.py", line 347, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/run/heart_rollout_distill.py", line 345, in main
+    a=ap.parse_args(); (fit if a.mode=='fit' else test)(a.data,a.out)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/run/heart_rollout_distill.py", line 303, in test
+    for _ in range(100): net(x[:1],b[:1],k[:1],e[:1],a[:1])
+                                                     ~^^^^
+KeyError: slice(None, 1, None)

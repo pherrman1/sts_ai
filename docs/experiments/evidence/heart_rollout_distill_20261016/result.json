@@ -1,0 +1,80 @@
+{
+  "collection": {
+    "medianSourceWallSeconds": 121.28566431999207,
+    "minimumStudentPriorShare": 1.0,
+    "returnCodes": [
+      0
+    ],
+    "sources": 64,
+    "wallSeconds": 2751.9712891578674
+  },
+  "custody": {
+    "build-receipt.json": "1bd0d76ba7e825a123a98a064da0a03616234ba969114b833c56007b572d506b",
+    "corpus-manifest.json": "d8fd3a983c11051f4c22f54c22398901905125cee95cb659f05560bf4a935d84",
+    "failure.json": "11e880b5134cae8b0f57ce12e80013377e4d78d209f8c3cee991bd1173aead63",
+    "fit/selected.pt": "403632b4fcacfaeb7932e69395cb0fd896855527aed8263f36067098b6ba6875",
+    "fit/selection.json": "eb06232a6708f3c4d999fc0a79bc99ad68f041caf94b08176d8277e34f1c3188",
+    "fit/test-opened.json": "a31361238be3aa2b301354d0f0b068729cfb0ccba5694229a0fd1da416cd0064",
+    "fit/vocabulary.json": "d90c7388a43f6f5f4aca6d296c2c24c6ab9e926dba94a0edf1a1a892148eaf67",
+    "freeze.json": "c436ef5527f97c2932b83831eac5d043108be1e14eb26e45a6dc26f3a4563bad",
+    "test.log": "42cf9680cc28584cb1811194834a635af5ea026666002b466ef3051a20d27b75"
+  },
+  "failure": {
+    "reason": "Per-source baseline metrics variable a overwrote token attributes tensor before latency warmup",
+    "testMetricsReconstructed": false,
+    "testOpened": true,
+    "testResultPersisted": false,
+    "testRetryPerformed": false,
+    "type": "KeyError"
+  },
+  "qualification": {
+    "compressionCost": false,
+    "gameplay": false,
+    "heartWinPrediction": false,
+    "nativeSpeedup": false,
+    "runtimePromotion": false,
+    "testEfficacy": false
+  },
+  "rawDirectory": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc",
+  "selection": {
+    "checkpointSha256": "403632b4fcacfaeb7932e69395cb0fd896855527aed8263f36067098b6ba6875",
+    "epoch": 22,
+    "init": 0,
+    "inputDim": 6504,
+    "seconds": 144.23932786704972,
+    "variant": "counts",
+    "vocabularySha256": "d90c7388a43f6f5f4aca6d296c2c24c6ab9e926dba94a0edf1a1a892148eaf67",
+    "weight": 0.5
+  },
+  "sourceSha": "cbded890a06f4ec76ad72c8333d07df25ad54e5f",
+  "trainValidationCoverage": {
+    "train": {
+      "accepted": 18009,
+      "expectedSources": 40,
+      "groups": 656,
+      "raw": 18009,
+      "sourcesWithGroups": 40
+    },
+    "validation": {
+      "accepted": 3847,
+      "expectedSources": 8,
+      "groups": 122,
+      "raw": 3847,
+      "sourcesWithGroups": 8
+    }
+  },
+  "validationOnly": {
+    "notUntouchedTest": true,
+    "student": {
+      "concordance": 0.6819600196084243,
+      "mse": 0.019056825874271488,
+      "regret": 0.021318791087415155
+    },
+    "x2b": {
+      "concordance": 0.6471718590110641,
+      "mse": 0.03965344158135076,
+      "regret": 0.02318158492680912
+    }
+  },
+  "verdict": "INVALID_TEST_EXECUTION"
+}

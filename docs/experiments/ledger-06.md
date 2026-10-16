@@ -19074,10 +19074,73 @@ within-parent loss; seed 0; training is deterministic (a repeat run reproduced t
 
 **Interpretation (Inference):** by §489's formula, the net's 0.645 matches the mean of about 12 independent rollout3
 calls, X2-B's 0.596 about 9; the gain over X2-B comes mostly from card-reward parents, where X2-B barely ranks
-siblings. Cleaner labels moved the net from 0.561 (§489, 8-rollout labels) to 0.645; whether more data, features or
-a larger net move it further is untested. The held-out ranking says nothing yet about play: a C++ port and a paired
+siblings. The fresh 64-label corpus produced 0.645 versus 0.561 in §489 (8-label corpus); the label-count effect
+was not isolated from the new source seeds and capture sampling. Whether more data, features or a larger net move
+it further is untested. The held-out ranking says nothing yet about play: a C++ port and a paired
 run with the net as (or blended into) the OOC MCTS leaf are needed, and the net's per-call cost is not measured.
 Rollout3 itself ends in X2-B and is not ground truth (Philipp).
 
 **Knowledge impact:** `docs/knowledge-base/architecture/out-of-combat.md` (result line) and
 `docs/knowledge-base/operations/environment-variables.md` (`_REPEATS` cap).
+
+
+## §491 Public heart1-record rollout-distillation pilot at A20 Heart (2026-10-16)
+
+**Verdict: `INVALID_TEST_EXECUTION`.** All 64 sources and six fits completed,
+but the one-shot TEST evaluator crashed after creating its opening latch.
+No TEST result, compression-cost verdict, native qualification, or gameplay
+claim exists. TEST was not retried and its metrics were not reconstructed.
+[Evidence and result](evidence/heart_rollout_distill_20261016/README.md),
+[frozen protocol](evidence/heart_rollout_distill_20261016/PROTOCOL.md),
+[machine-readable classification](evidence/heart_rollout_distill_20261016/result.json).
+
+Frozen source `cbded890a06f4ec76ad72c8333d07df25ad54e5f` follows the user's
+clarification: distilled heart1 **Arm C as tree prior only**, V4 rollout chain
+held fixed. A20 Ironclad collects keys and targets the Heart after separate
+PR #562. Exact-10k native Silver real combat, calibrated A20 CTM, OOC source
+budget 512, rollout3, every fourth searched decision, at most 64 captured leaves
+at depth one, and 64 repeat returns per leaf. These are surrogate targets,
+not observed Heart-win probabilities. No AlphaZero-style learning loop.
+
+Canaries `110159994/995` passed exact capture-off/on decision/action parity and
+347/347 plus 528/528 valid rows (14/22 complete multi-action groups). Independent
+source/design and canary/custody reviews passed before cohort analysis. All
+64 sources `110161000..063` returned zero in 2,751.97 seconds of collection wall
+time on three local workers. Every source's attempted model-prior calls were
+scored by Arm C, with zero fallback and zero prior-leaf steps. Its exact native
+hash is pinned in the freeze. Historical Opus §490 is an out-of-domain reference
+only; its raw cloud corpus was unavailable. No historical data was pooled.
+
+TRAIN (`..000..039`): 18,009 accepted rows, 656 groups, all 40 sources.
+VALIDATION (`..040..047`): 3,847 accepted rows, 122 groups, all 8 sources.
+Both retained 100% of captured rows. Counts/pooling/attention, two initializations
+each, completed 180 total epochs in 144.24 seconds on the local RTX 3060 Ti.
+Validation selected the count MLP (849,281 parameters, 6,504 input features),
+initialization 0, epoch 22, blended 50/50 with X2-B.
+
+**Validation-only selection evidence:** source-mean MSE 0.019057 versus X2-B
+0.039653, per-action concordance 0.681960 versus 0.647172, and regret 0.021319
+versus 0.023182. These eight sources selected the model/epoch/blend; they are
+not untouched TEST. They establish neither encoding superiority nor a passing
+candidate. The selected checkpoint and vocabulary custody are preserved.
+
+The evaluator reused `a` for per-source baseline metrics, overwriting the token
+attribute tensor. Its latency warmup then raised `KeyError: slice(None, 1,
+None)` after TEST opening. The frozen bundle remains unchanged. A repository-only
+name repair gives the tensor and metrics distinct names; a synthetic end-to-end
+regression reproduces the original failure, passes after the repair, and checks
+that reopening is rejected before another data load. All 18 Python tests pass.
+The repair is for future invocations; it does not recover or rerun this TEST.
+
+Earlier attempts remain preserved: v1 failed its support canary before any
+cohort, exposing unresolved BATTLE and Match and Keep record gaps. The leaf-only
+public schema repair records the current public encounter and masks unseen
+board identities/upgrades, leaving trained heart1 choice construction unchanged.
+V2 passed canaries, then was stopped at the user's prior change with 11 completed
+V4-prior sources and three interrupted units, before fitting/TEST. That partial
+corpus is excluded. Neither attempt was pooled with V3.
+
+**Knowledge impact:** OOC capture/qualification status and maintained current
+research are updated. A new independently reviewed research protocol is required
+for any future qualification; no automatic TEST retry, native port, gameplay A/B,
+or default promotion follows from this failed attempt.

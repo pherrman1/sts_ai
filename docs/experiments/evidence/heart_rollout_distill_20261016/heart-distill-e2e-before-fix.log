@@ -1,0 +1,15 @@
+======================================================================
+ERROR: test_synthetic_one_shot_reaches_result_and_refuses_reopening (__main__.DistillTest.test_synthetic_one_shot_reaches_result_and_refuses_reopening)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/tests/test_heart_rollout_distill.py", line 83, in test_synthetic_one_shot_reaches_result_and_refuses_reopening
+    h.test(root,out)
+  File "/home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/tools/heart_rollout_distill.py", line 303, in test
+    for _ in range(100): net(x[:1],b[:1],k[:1],e[:1],a[:1])
+                                                     ~^^^^
+KeyError: slice(None, 1, None)
+
+----------------------------------------------------------------------
+Ran 1 test in 0.052s
+
+FAILED (errors=1)
