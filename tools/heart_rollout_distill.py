@@ -29,9 +29,15 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def validate_row(r,seed):
+def validate_row(r,seed,expected_policy=None):
     if r['seed']!=seed: raise ValueError('cross-source row')
     e=r.get('extra',{}); reps=e.get('repeats',[])
+    if expected_policy is not None:
+        scored=e.get('heart1RolloutSteps'); fallback=e.get('heart1RolloutFallbacks')
+        if (e.get('rolloutPolicy')!=expected_policy
+                or any(type(v) is not int or v<0 for v in (scored,fallback))
+                or (scored+fallback>0 and scored/(scored+fallback)<.9)):
+            return None
     if (len(reps)!=64 or any('value' not in v for v in reps) or 'record' not in e or 'x2b' not in e
             or e.get('recordSchema')!='heart1-public-record-v2' or e.get('recordPublicParityQualified') is not False):
         return None
@@ -44,20 +50,23 @@ def validate_row(r,seed):
     return {'seed':seed,'group':(seed,r['decision'],r['parent']),'action':r['action'],
         'screen':r['parentScreen'],'act':r['act'],'floor':r['floor'],'target':float(np.mean(vals)),
         'variance':float(np.var(vals,ddof=1)/64),'x2b':float(e['x2b']),'r0':float(r['value']),
+        'teacherSteps':e.get('heart1RolloutSteps',0),'teacherFallbacks':e.get('heart1RolloutFallbacks',0),
         'cpu':cpu/64,'anchorCpu':anchor,'features':f,'tokens':tokens,'record':e['record']}
 
 
-def validate_rows(raw,seed):
+def validate_rows(raw,seed,expected_policy=None):
     rows=[]; bad=set(); seen=set(); count=0
     for r in raw:
         count+=1; identity=(r['decision'],r['ordinal'])
         if identity in seen: raise ValueError('duplicate capture ordinal')
         seen.add(identity); group=(seed,r['decision'],r['parent'])
-        row=validate_row(r,seed)
+        row=validate_row(r,seed,expected_policy)
         if row is None: bad.add(group)
         else: rows.append(row)
     # Complete means every retained captured sibling is valid, not exhaustive legal-action coverage.
     rows=[r for r in rows if r['group'] not in bad]
+    if expected_policy=='heart1' and not any(r['teacherSteps']>0 for r in rows):
+        raise ValueError('source has no verified Arm C repeated-label scoring')
     groups=defaultdict(list)
     for i,r in enumerate(rows): groups[r['group']].append(i)
     groups=[g for g in groups.values() if len({rows[i]['action'] for i in g})>=2]
@@ -93,7 +102,8 @@ def load_split(root,freeze,split):
     rows=[]; groups=[]; totals=Counter(); per={}; strata=Counter()
     for seed in freeze['splits'][split]:
         path=(root/f'seed-{seed}').with_suffix('.sib.jsonl')
-        source,sg,counts=validate_rows((json.loads(line) for line in path.open()),seed)
+        source,sg,counts=validate_rows((json.loads(line) for line in path.open()),seed,
+                                     freeze.get('capturePolicyContract'))
         offset=len(rows); groups += [[offset+i for i in g] for g in sg]; rows+=source
         per[str(seed)]=counts
         for k,v in counts.items():totals[k]+=v

@@ -19251,3 +19251,19 @@ from this pilot. The result tests greedy C rollouts at this allowance, not all
 possible C rollout policies. §492's failed value-student gate remains unchanged.
 
 **Knowledge impact:** optional rollout/CPU controls, current research and evidence.
+
+
+## §494 Arm C rollout-target distillation (2026-10-16)
+
+**Prospective; not yet launched.** The user selected Arm C as the continuing
+research rollout policy and authorized distillation for it. Baseline main
+`bcdfaedd3044d6da351c084adb540f94a3fe0ebf`; [frozen-plan protocol](evidence/arm_c_rollout_distill_20261016/PROTOCOL.md).
+The intervention is C rather than V4 rollout targets, holding C tree priors,
+rollout3/X2-B/CTM and the six-fit public-record model/selection/gate protocol fixed.
+Fresh seeds `110163000..063` split40/8/16; canaries `110162994/995`, no pooling or
+extensions, TEST once. Repeated-label child counters prove teacher use.
+Independent source/design review and canary parity/support/custody review must
+pass before cohort launch. Three local workers,1200s/unit,6hcohort cap, bounded
+GPU fitting. Prior §491/492/493 evidence and verdicts remain unchanged.
+
+**Knowledge impact:** capture teacher provenance and current research direction.

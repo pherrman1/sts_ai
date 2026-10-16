@@ -752,7 +752,10 @@ When sibling capture is enabled, each forked child also records a weight-free
 heart1 public observation (`extra.record`, schema `heart1-public-record-v2`,
 with current public battle-start encounter and masked public Match and Keep
 state extensions),
-separate X2-B CPU and total repeat-rollout CPU. `buildChoice`/`recordToJson`
+separate X2-B CPU and total repeat-rollout CPU. Repeat-only metadata also records
+`extra.rolloutPolicy`, `extra.heart1RolloutSteps` and `extra.heart1RolloutFallbacks`
+from the forked label child. These are provenance/counters, never student inputs;
+§494 requires them for its C-policy labels without rejecting legacy §491 data. `buildChoice`/`recordToJson`
 need no released network weights. Unsupported records carry `recordError`.
 This input is parity-unqualified for learned leaf deployment; limited hidden
 field invariance fixtures do not prove live parity. The default-off path remains

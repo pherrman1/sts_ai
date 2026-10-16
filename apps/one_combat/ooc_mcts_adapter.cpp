@@ -1755,8 +1755,14 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             }
         };
         const auto rolloutStart = std::clock();
+        const auto heart1StepsBefore = continuation_.heart1LeafSteps;
+        const auto heart1FallbacksBefore = continuation_.heart1LeafFallbacks;
         evaluations("repeats", capture.repeats, 1);
         out["rolloutCpuSeconds"] = double(std::clock() - rolloutStart) / CLOCKS_PER_SEC;
+        out["rolloutPolicy"] = options.heart1LeafPolicy ? "heart1" :
+            options.uniformLeafPolicy ? "uniform" : options.priorLeafPolicy ? "prior" : "v4";
+        out["heart1RolloutSteps"] = continuation_.heart1LeafSteps - heart1StepsBefore;
+        out["heart1RolloutFallbacks"] = continuation_.heart1LeafFallbacks - heart1FallbacksBefore;
         if (capture.longRepeats) {
             options.leafCombats = 5;  // child process only
             evaluations("long5", capture.longRepeats, 2);

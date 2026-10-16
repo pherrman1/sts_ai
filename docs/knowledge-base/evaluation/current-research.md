@@ -41,6 +41,18 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
 
+## Arm C rollout-target distillation (§494)
+
+A separately authorized continuation uses the exact frozen Arm C for both tree
+priors and rollout decisions. The [prospective protocol](../../experiments/evidence/arm_c_rollout_distill_20261016/PROTOCOL.md)
+keeps the six-fit public-record student grid and X2-B decision/cost gates, but
+collects fresh source-disjoint targets under the new rollout policy. §491/492
+V4 targets and §493 gameplay outcomes are excluded. Repeated-label child counters
+verify actual C use; independently reviewed observational canaries precede the
+64-source 40/8/16 split and one-shot TEST. No result or qualified student exists
+yet. Arm C is the chosen research teacher; §493's NOT_SHOWN verdict and production
+defaults remain unchanged. No RL loop or automatic student deployment follows.
+
 ## Arm C inside A20 Heart rollouts (§493)
 
 The completed 32-pair pilot is **NOT_SHOWN**: Arm C rollouts killed the Heart on
