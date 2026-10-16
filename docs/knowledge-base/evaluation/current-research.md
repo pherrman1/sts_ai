@@ -58,10 +58,12 @@ transport branch `claude/heart-outcome-data` at `e3b649c` is never merged; its
 index matches main. Only compact audit evidence and tooling belong on main.
 
 The teacher remains fixed exact 10k Silver with Arm C prior+rollout and calibrated
-A20 CTM/public X2-B-guided search. Actual completed Heart outcomes replace the
-future supervision target, not the teacher or prior §491–496 verdicts. No new
-head was fitted, deployed or qualified. Next is a reviewed frozen TRAIN fitting/
-VALIDATION selection protocol with source-balanced weights; TEST stays sealed.
+A20 CTM/public X2-B-guided search. Actual completed Heart outcomes supply the
+next supervision target; the teacher and prior §491–496 verdicts remain unchanged. §498 implements a bounded nonlinear
+value-head experiment on the frozen Arm C pooled representation: source-balanced
+BCE, two initializations, validation-only checkpoint selection and a TRAIN win-rate
+constant baseline. No new head is deployed or qualified; TEST stays sealed.
+[Value-head protocol](../../experiments/evidence/heart_outcome_value_20261017/PROTOCOL.md).
 Recorded recovery/one-way-export deviations and unverified cross-CPU byte parity
 remain explicit. Public-record/native parity is still unqualified.
 

@@ -52,6 +52,20 @@ the never-merge transport branch/ignored local root and compact audit evidence
 in the [import report](../../experiments/evidence/heart_outcome_import_20261016/REPORT.md).
 No fitting, TEST opening or native head integration is performed by the importer.
 
+### Offline observed-outcome value head
+
+`tools/heart_outcome_value.py freeze|run` is a separate, review-bound §498
+consumer of the completed import report/review and source manifest. It verifies
+archive and trajectory hashes without repeating the full importer, decodes only
+TRAIN/VALIDATION, and hashes the 53 sealed objects as opaque bytes. A new exclusive
+cache/fit latch prevents implicit restart. Original Arm C tensors are frozen;
+only a 64→64 ReLU→1 probability head is optimized with source-balanced BCE.
+Feature normalization uses TRAIN alone, and checkpoint selection uses VALIDATION.
+The emitted head is an offline artifact, with no native loader or default change.
+Preserve the reviewed protocol, runtime identities, raw logs, caches, both
+candidate checkpoints and independent exact-result review. TEST opening and
+native integration require separate work after reporting the offline verdict.
+
 ## Boundaries and contracts
 
 The whole-combat input is the canonical 1,766-value rich combat feature vector captured at `decisionIdx=0`, before a committed player action. Labels and diagnostics are read from `GameContext` only after `BattleContext::exitBattle` returns. On victory, `exitBattle` calls `regainControl`, whose normal callback is `GameContext::afterBattle`; the CSV boundary is therefore post-battle/post-`afterBattle` reward-screen entry, not the earlier `g_onBattleExitPersistent` RAW hook. Survival is unaffected. Ending HP includes normal post-combat healing and post-battle effects such as Face of Cleric. Reward generation may already have consumed reward RNG and populated reward state, although reward contents are not emitted. The diagnostic columns do not reconstruct the complete post-battle `GameContext` and must not be treated as a complete transition target. RNG state is neither exposed nor learned, and navigation/act transition remain outside the target.
