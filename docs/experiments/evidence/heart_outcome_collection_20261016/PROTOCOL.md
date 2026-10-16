@@ -29,6 +29,16 @@ X2-B,512 OOC simulation cap, early-stop1, no CPU_SECONDS limit. Fixed simulation
 avoid hardware-speed-dependent decisions. The collector adds no learned leaf.
 X2-B may guide the frozen search, but is not emitted as the outcome label.
 
+## Existing artifact inventory
+
+The preserved §494 native sibling corpus contains counterfactual rollout targets
+ending in X2-B, with separate full-run CSV summaries. It does not bind public
+records at actually visited driver boundaries to complete-run outcomes. Existing
+§495–496 fits reuse those surrogate targets; summary CSVs cannot reconstruct
+visited states. No historical TEST bytes were opened for this inventory. Keep
+those artifacts and verdicts; the fresh producer is needed for this different
+supervision contract, rather than recollecting an existing qualified corpus.
+
 ## Records and censoring
 
 Exclusive fresh JSONL per source: header with source/policy/objective, ordered
