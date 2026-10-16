@@ -78,7 +78,9 @@ def main(root, out):
         d = root / "deliveries" / f"w{w:02d}"
         assert not (d / "worker-receipt.json").exists()
         p = d / "SEALED-partial-out.tar.gz"
-        superseded.append({"folder": f"w{w:02d}", "runCommit": run_commit(w), "status": "container restart, censored",
+        cause = ("died during the account usage-limit interruption 18:44-19:13Z (last progress 18:49:33Z)" if w == 27
+                 else "died in the container-restart wave 19:24-19:27Z")
+        superseded.append({"folder": f"w{w:02d}", "runCommit": run_commit(w), "status": cause + ", censored",
                            "partialArchive": {"sha256": sha(p), "bytes": p.stat().st_size},
                            "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"})
     assert len(covered) == 1800 and set(covered) == set(split), "source accounting"
@@ -93,8 +95,12 @@ def main(root, out):
            "deviations": [
                "Export check was one-way (reviewer read of a 288 MiB share blob), chosen by Philipp 2026-10-16 17:42Z.",
                "Three RUN_COMMITs of the cloud wrapper (v1 W=1, v2 W=0,3,9,14,15,17, v3 others); same producer, plan, bundle.",
-               "W=7,8,27,34 died in container restarts; Philipp authorized a rerun (card 'Redistribute all', 20:18Z) "
-               "as 8 half-workers at RUN_COMMIT 35d0b6a5 with unchanged worker code restricted to own[h::2].",
+               "W=27 died during the account usage-limit interruption (18:44-19:13Z); W=7,8,34 died in the "
+               "container-restart wave (19:24-19:27Z).",
+               "Philipp chose card option 'Redistribute all' (20:18Z: stop running workers, redistribute over 45 new "
+               "workers), not the recommended 'Rerun lost 160'. Only the lost 160 sources were rerun, as 8 half-workers "
+               "at RUN_COMMIT 35d0b6a5 with unchanged worker code restricted to own[h::2]; stopping the running "
+               "workers got no answer from Philipp and, on the lead's judgment, was not carried out.",
                "W=11 ran on a 2.80GHz Xeon, others 2.10GHz; decisions use fixed simulation counts on the same binary.",
            ],
            "testCustody": "No SEALED-test or partial archive was opened, unpacked or summarized by the lead."}

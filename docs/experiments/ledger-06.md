@@ -19423,21 +19423,27 @@ fitting, outcome summary, trained-value or gameplay verdict.**
   used after auto-mode refusals of worker setup in fresh threads (v1
   `3c033a20` W=1; v2 `98cc07bb` W=0,3,9,14,15,17; v3 `33c3c110` others); the
   producer, plan, bundle and worker code are identical across them.
-- Container restarts killed W=7, 8, 27, 34 mid-run (about 18:49Z and
-  19:24–19:27Z). Their `SEALED-partial-out.tar.gz` archives are kept as
-  superseded raw evidence and were never unpacked. Deviation authorized by
-  Philipp (card "Redistribute all", 20:18Z): their 160 sources were rerun as
-  eight half-workers (W, h) at `35d0b6a5` via
+- W=27 died during the account usage-limit interruption 18:44–19:13Z (last
+  progress 18:49:33Z); W=7, 8, 34 died in the container-restart wave
+  19:24–19:27Z. Their `SEALED-partial-out.tar.gz` archives are kept as
+  superseded raw evidence and were never unpacked.
+- Rerun deviation: Philipp asked (20:06Z) to redistribute the running and lost
+  work over 45 new workers and chose the card option "Redistribute all" (stop
+  the running workers and redistribute everything, 20:18Z), not the recommended
+  "Rerun lost 160". Only the lost 160 sources were rerun, as eight half-workers
+  (W, h) at `35d0b6a5` via
   [`rerun_half.py`](evidence/heart_outcome_collection_20261016/rerun_half.py),
-  which runs the unchanged worker on its sources `[h::2]` (20 each). All 160
-  sources are taken from the reruns, irrespective of the partial content.
+  which runs the unchanged worker on its sources `[h::2]` (20 each). Stopping
+  the still-running original workers was put to Philipp, got no answer, and on
+  the lead's judgment was not carried out; they ran to completion. All 160
+  lost sources are taken from the reruns, irrespective of the partial content.
 - W=11 ran on a 2.80 GHz Xeon, the others on 2.10 GHz; decisions use fixed
   simulation counts on the same binary, so only wall time differs.
 - Delivered 41 original workers plus 8 rerun halves by 21:29Z, all inside the
   deadline: 1,080 TRAIN / 360 VALIDATION / 360 TEST sources, 32.8 MB of
   archives. Delivery index
   [`delivery-index.json`](evidence/heart_outcome_collection_20261016/delivery-index.json)
-  `5ddf833a…` (built by
+  `e3621c38…` (built by
   [`make_delivery_index.py`](evidence/heart_outcome_collection_20261016/make_delivery_index.py),
   from receipts and archive hashes only) binds plan, activation, bundle, every
   receipt and archive hash and the superseded partials; the share copy is

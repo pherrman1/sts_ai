@@ -1526,7 +1526,8 @@
  "deviations": [
   "Export check was one-way (reviewer read of a 288 MiB share blob), chosen by Philipp 2026-10-16 17:42Z.",
   "Three RUN_COMMITs of the cloud wrapper (v1 W=1, v2 W=0,3,9,14,15,17, v3 others); same producer, plan, bundle.",
-  "W=7,8,27,34 died in container restarts; Philipp authorized a rerun (card 'Redistribute all', 20:18Z) as 8 half-workers at RUN_COMMIT 35d0b6a5 with unchanged worker code restricted to own[h::2].",
+  "W=27 died during the account usage-limit interruption (18:44-19:13Z); W=7,8,34 died in the container-restart wave (19:24-19:27Z).",
+  "Philipp chose card option 'Redistribute all' (20:18Z: stop running workers, redistribute over 45 new workers), not the recommended 'Rerun lost 160'. Only the lost 160 sources were rerun, as 8 half-workers at RUN_COMMIT 35d0b6a5 with unchanged worker code restricted to own[h::2]; stopping the running workers got no answer from Philipp and, on the lead's judgment, was not carried out.",
   "W=11 ran on a 2.80GHz Xeon, others 2.10GHz; decisions use fixed simulation counts on the same binary."
  ],
  "environmentSha256": "a8d7adf464e58e4689c8d6976cddd7b3f373bcd2b14eda9e3643c0d1635ecd25",
@@ -1551,7 +1552,7 @@
     "sha256": "2b6f55fe356e50d6666e9691328e1810314f6fab7b7e7197e4b60b55de57edff"
    },
    "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
-   "status": "container restart, censored",
+   "status": "died in the container-restart wave 19:24-19:27Z, censored",
    "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
   },
   {
@@ -1561,7 +1562,7 @@
     "sha256": "94a90ed4940f4c6582a7bd67c0da4bbfe325444575eecee6cb97ba045fbc7331"
    },
    "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
-   "status": "container restart, censored",
+   "status": "died in the container-restart wave 19:24-19:27Z, censored",
    "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
   },
   {
@@ -1571,7 +1572,7 @@
     "sha256": "2617ac4a51bb244c3185525460d9466b9290231f55bf27098832fe1221300c03"
    },
    "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
-   "status": "container restart, censored",
+   "status": "died during the account usage-limit interruption 18:44-19:13Z (last progress 18:49:33Z), censored",
    "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
   },
   {
@@ -1581,7 +1582,7 @@
     "sha256": "55ffe8e11bcc24468550f20cae85bb91adcb18c45c137fc48483af7d6f08fc07"
    },
    "runCommit": "33c3c1107a9419a9ebc1a783411b166fde5340aa",
-   "status": "container restart, censored",
+   "status": "died in the container-restart wave 19:24-19:27Z, censored",
    "use": "superseded raw evidence; never unpacked; all 40 sources taken from reruns"
   }
  ],
