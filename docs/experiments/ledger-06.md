@@ -19513,3 +19513,70 @@ Raw data/logs/source manifest persist under the ignored local root
 merged or copied into main. Prior §491–496 verdicts remain unchanged.
 **Knowledge impact:** current corpus readiness/custody and reproducible import
 procedure are updated in maintained OOC research/pipeline knowledge.
+
+## §498 — observed Heart-outcome nonlinear head on frozen Arm C
+
+**VALIDATION_ONLY; positive development comparison with the constant. Independent
+source/design and exact-result/custody reviews PASS. TEST sealed; no native
+integration, gameplay/speed qualification, RL or default promotion.**
+
+- Reused §497's exact recovered actual-trajectory corpus: TRAIN 1,080 runs/126 Heart
+  wins/171,442 states, VALIDATION 360/47/56,704; seeds 110180000–110181439 split at
+  110181080. No new seeds, transport merge, superseded partials or old surrogate
+  labels/cache. Teacher remains A20 Heart+keys, exact 10k project-fair native
+  Silver real combats, Arm C prior+rollout, calibrated CTM, rollout3/public X2-B,
+  512 OOC sims/earlystop1. X2-B guides the fixed teacher, never supplies labels.
+- Train only a 4,225-parameter 64 → 64 ReLU → 1 BCE head; original Arm C pooled encoder
+  and policy remain fixed. TRAIN-only source-balanced normalization, source-
+  balanced sampling, AdamW .001/weight decay .001, batch 512; exactly 2 initializations
+  × 2,000 updates, evaluate every 100. Validation selected init 1/step 300 among 40
+  checkpoints; init 0 also selected step 300, BCE 0.351242. No adaptive extra fits.
+
+| Source-balanced metric | TRAIN | VALIDATION | Constant VALIDATION |
+| --- | ---: | ---: | ---: |
+| BCE |0.312713|0.350551|0.388347|
+| Brier |0.090373|0.103368|0.113704|
+| Weighted state AUROC |0.749243|0.715277|0.500000|
+
+Constant=TRAIN source win rate 126/1080. Whole-source 1,000-resample paired bootstrap
+selected minus constant: BCE −0.0377961, descriptive 95%[−0.0557265,−0.0194511];
+Brier −0.0103355,[−0.0172529,−0.00358405]. Intervals are descriptive after selection.
+Act 1 AUROC 0.577 remains weak; Act 4 weighted mean 0.3748 underpredicts 0.4347 outcome
+rate. Inverse total future trajectory length changes the conditional sampling
+population; source-balanced loss improvement does not establish calibrated
+native `V_pi(s)`/initial-state probability. Current records also do not qualify
+counterfactual CTM leaves or full native/public parity. No exact native X2-B
+baseline was reconstructed from clipped inputs.
+
+- Frozen v1 source `449573acd77300f3e8a68fb39da64a2166472ed2` completed both fresh
+  encodings in 359.96 s, then strict deterministic CUDA multinomial failed before
+  first loss/backward/optimizer update. No model score/checkpoint existed.
+  Preserve **INVALID_SOFTWARE_BEFORE_UPDATES**, all failed receipts/latches/cache.
+- Prospectively reviewed v2 source `c7e857216cd2c450c388c265c1951e5d97cc25e8` uses
+  deterministic CPU draws from the same distribution, indices moved to GPU.
+  Exact v1 cache/source/runtime/import/failure/companion hashes bind reuse in a
+  separate sibling root with fresh latches. Full validation encoding repeats.
+  Source review also fixed probability-clipped reported BCE before v1 launch;
+  all reported BCE now uses stable logits and matches selection loss.
+- V2 exits 0 in 106.899 s; fitting 5.118 s, remaining cache/parity/provenance 97.941 s.
+  Local RTX 3060 Ti/two CPU threads, strict float32 determinism/TF32off/CUBLAS4096:8,
+  external 4,200 s hard cap, 3,600 s encoding/parity and 600 s fitting caps. These are
+  offline processing times, not native inference latency or cost evidence.
+- All 79 original model tensors, validation pooled features and policy logits are
+  bitwise equal; composed versus cached probability max abs 5.96e-8. Python 41/41
+  passes; independent 14/14 plus 6 negative recovery tests pass. Independent CPU
+  cached-head recomputation reproduces metrics/normalization/selection/bootstrap;
+  encoder parity is guarded-run evidence, not independently re-encoded.
+- Rehashed 98 development archives, all 53 opaque TEST/partial objects and 7 v1
+  parent bindings. No TEST member listing/content reading or opening latch.
+  Data transport remains never-merge, original evidence unchanged.
+- Freeze `b5d2e023ecb4c4ba8ff82c827c43a0aa4c5a11b5d5106d5bec79c0984d2b2a44`;
+  result `eeee2c1ace7382fa5fa3c4f51b4caeb6e08ea3d04bc54553d299e7f7e22c356c`;
+  selected checkpoint `68c20b521b53a72896293b72442839eb5abfbb7c43222030556874b0a7593de1`.
+
+[Protocol, report and compact evidence](evidence/heart_outcome_value_20261017/REPORT.md).
+Raw v1/v2 artifacts persist under ignored `build/heart-outcome-value-20261017-v*`.
+Next: separately reviewed one-shot TEST/early-game calibration before any native
+integration. No retraining/regrading or TEST opening is authorized by this result.
+**Knowledge impact:** current research status/limitations, offline pipeline and
+code routing updated; prior §491–497 verdicts and production defaults unchanged.

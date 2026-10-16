@@ -1,0 +1,83 @@
+{
+  "checkpointSha256": "68c20b521b53a72896293b72442839eb5abfbb7c43222030556874b0a7593de1",
+  "checks": {
+    "all40CheckpointHistoryRecords": true,
+    "cacheSourceOwnershipLabelsOrderCounts": true,
+    "currentRuntimeAndDependencyHashes": true,
+    "developmentArchiveHashes": 98,
+    "exactReviewedImportReportReviewManifest": true,
+    "external4200SecondTimeoutExit0": true,
+    "guardedRunEncoderPolicyPooledParityEvidenceReviewed": true,
+    "independentlyRepeatedEncoderForward": false,
+    "lowestValidationBceSelection": true,
+    "noRepeatFitOrEncoding": true,
+    "opaqueSealedArchiveHashes": 53,
+    "originalEncoderCheckpointUnchanged": true,
+    "originalFailureBeforeOptimizerUpdate": true,
+    "portableHeadTensorEquality": true,
+    "sealedArchivesParsed": false,
+    "selectedCheckpointCandidateEquality": true,
+    "trainOnlySourceBalancedNormalization": true,
+    "twoFixedInitializations": true
+  },
+  "developmentSignal": true,
+  "freezeSha256": "b5d2e023ecb4c4ba8ff82c827c43a0aa4c5a11b5d5106d5bec79c0984d2b2a44",
+  "gameplayQualification": false,
+  "independentCpuRecomputation": {
+    "bootstrapEndpointsAgreeAbsTolerance": 1e-07,
+    "constant": {
+      "bce": 0.3883469345903955,
+      "brier": 0.11370370370370371
+    },
+    "train": {
+      "bce": 0.3127127728156742,
+      "brier": 0.09037286161612662,
+      "sources": 1080,
+      "states": 171442,
+      "wins": 126
+    },
+    "validation": {
+      "auc": 0.715276851103675,
+      "bce": 0.3505508135314316,
+      "brier": 0.10336822974644769,
+      "sources": 360,
+      "states": 56704,
+      "wins": 47
+    }
+  },
+  "limitations": [
+    "Validation-selected model and descriptive bootstrap intervals are not independent TEST evidence.",
+    "Target population selects a run uniformly then one recorded state uniformly within that run; inverse total trajectory length can change conditional outcome probabilities relative to native visitation or fixed landmarks.",
+    "Act1 validation AUC about0.577 and Act4 weighted mean prediction0.3748 vs outcome rate0.4347 limit calibration interpretation.",
+    "Recorded outcomes belong to frozen behavior; counterfactual leaf support/public-native parity and gameplay utility remain unqualified.",
+    "Inherited recovery/export/cross-CPU corpus limitations remain unchanged."
+  ],
+  "nativeIntegrationAuthorized": false,
+  "parentRecovery": {
+    "files": {
+      "cache.json": "bf0fdb0a70a07a153b277734a260894bb84d72185aa02c0455f131d9301a471b",
+      "exit.json": "37c1cd0f0c7b9f26303cbdef49d40efc9adb42f4dcbe0de23d77dd0e9fd64561",
+      "failure.json": "6d987a64026660014804bc295619164012ba36488ea397cea84cf1572cf9da30",
+      "fit-started.json": "3de7e800d5d3f8ecbdb39c5439e17904c3793282cf005148c001d16055246edc",
+      "freeze.json": "fbe456e5fca242e6c9e0da6728813a18cffc6295098a8909372d974d16d6932e",
+      "pooled.pt": "a066eb69a74c16fc5e2d4e75b3c269937e269be1b82e5d2cbfb667cdbd442a25",
+      "run.log": "a86ee5e44eadc3ddbcdf91199f9b66afd71edfd36d3aad395ae2a88f66aa56d2"
+    },
+    "optimizerUpdates": 0,
+    "parentVerdict": "INVALID_SOFTWARE_BEFORE_UPDATES",
+    "root": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v1",
+    "scoresObserved": false
+  },
+  "pooledSha256": "a066eb69a74c16fc5e2d4e75b3c269937e269be1b82e5d2cbfb667cdbd442a25",
+  "portableHeadSha256": "2c478bca6692e8c69cd70c78cf7cf1758c07c3ed884a97bb64d813424019942c",
+  "resultSha256": "eeee2c1ace7382fa5fa3c4f51b4caeb6e08ea3d04bc54553d299e7f7e22c356c",
+  "reviewer": "heart_review",
+  "runtimePromotion": false,
+  "schema": "heart-outcome-value-independent-result-review-v1",
+  "scientificVerdict": "VALIDATION_ONLY",
+  "sourceReviewSha256": "a7d6dc9a98233037cf249f7df020a01d57fd4b2c5f28a38bd514f3bde6ea6eeb",
+  "sourceSha": "c7e857216cd2c450c388c265c1951e5d97cc25e8",
+  "testClosed": true,
+  "utc": "2026-10-16T22:32:14.435059+00:00",
+  "verdict": "PASS"
+}

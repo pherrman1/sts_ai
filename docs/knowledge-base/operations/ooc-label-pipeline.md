@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -63,6 +63,12 @@ only the pinned pre-update software-fault cache, without resuming the failed roo
 Original Arm C tensors are frozen;
 only a 64→64 ReLU→1 probability head is optimized with source-balanced BCE.
 Feature normalization uses TRAIN alone, and checkpoint selection uses VALIDATION.
+CPU multinomial samples source-balanced weights deterministically; CUDA trains
+the head. Strict deterministic CUDA multinomial is unsupported in Torch 2.5.1.
+Stable BCE uses logits throughout reporting/selection/bootstrap, without loss
+clipping. Because inverse total trajectory length depends on the future, this
+weighted state population does not establish calibrated native/start-state value;
+fixed-landmark calibration needs separate qualification.
 The emitted head is an offline artifact, with no native loader or default change.
 Preserve the reviewed protocol, runtime identities, raw logs, caches, both
 candidate checkpoints and independent exact-result review. TEST opening and
