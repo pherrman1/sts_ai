@@ -6142,7 +6142,7 @@ static nlohmann::json combatTransitionRowJson(
 // #418 targeted CTM support collections. Each setup forces a rare state the
 // ordinary corpus barely reaches; the manifest names the setup so its rows are
 // qualified as their own slice, never mixed into the ordinary distribution.
-enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW };
+enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW, ACT4_FORK };
 
 static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
     if (name.empty()) return ForcedCtmSetup::NONE;
@@ -6150,6 +6150,7 @@ static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
     if (name == "high_maxhp") return ForcedCtmSetup::HIGH_MAXHP;
     if (name == "lizard_fairy") return ForcedCtmSetup::LIZARD_FAIRY;
     if (name == "lizard_brew") return ForcedCtmSetup::LIZARD_BREW;
+    if (name == "act4_fork") return ForcedCtmSetup::ACT4_FORK;
     throw std::runtime_error("combattransitionforcedgen: unknown setup " + name);
 }
 
@@ -6173,8 +6174,26 @@ static void applyForcedCtmSetupOnce(ForcedCtmSetup setup, GameContext &gc, std::
             gc.obtainRelic(RelicId::LIZARD_TAIL);
             break;
         case ForcedCtmSetup::NONE:
+        case ForcedCtmSetup::ACT4_FORK:
             break;
     }
+}
+
+// act4_fork: no CTM corpus had Act-4 rows before ADR-0041 (the Shield and Spear and
+// Heart encounter embeddings of every shipped stack are untrained). At the first Act-3
+// boss, before its fight, the run is sent into Act 4 as if the Act-3 boss fight(s) were
+// won with all three keys held: the keys are granted, the A20 second boss's floor is
+// counted, then the native Act-3 victory room runs (floor, relic hooks, Act-4
+// transition with its heal). The boss fights, their combat-end effects and the key
+// costs are skipped, so these rows are their own slice.
+static void enterForcedAct4(GameContext &gc) {
+    if (gc.ascension >= 20) ++gc.floorNum;
+    gc.obtainKey(Key::EMERALD_KEY);
+    gc.obtainKey(Key::RUBY_KEY);
+    gc.obtainKey(Key::SAPPHIRE_KEY);
+    gc.enterAct3VictoryRoom();
+    if (gc.act != 4 || gc.screenState != ScreenState::MAP_SCREEN)
+        throw std::runtime_error("combattransitionforcedgen act4_fork: Act-4 transition failed");
 }
 
 // Before every fight, ahead of the pre-combat capture.
@@ -6217,11 +6236,18 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
     t_curPath = &path;
     std::ostringstream out;
     int fightIdx = 0;
+    // act4_fork writes only the forked Act-4 fights; earlier fights are played, not recorded.
+    bool recording = setup != ForcedCtmSetup::ACT4_FORK;
     using RT = search::GameAction::RewardsActionType;
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
-            if (setup != ForcedCtmSetup::NONE) {
+            if (!recording && gc.act == 3 && gc.curRoom == Room::BOSS) {
+                enterForcedAct4(gc);
+                recording = true;
+                continue;
+            }
+            if (setup != ForcedCtmSetup::NONE && setup != ForcedCtmSetup::ACT4_FORK) {
                 if (fightIdx == 0) applyForcedCtmSetupOnce(setup, gc, seed);
                 applyForcedCtmSetupPerFight(setup, gc);
             }
@@ -6254,11 +6280,13 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 // including for loss and unresolved outcomes.
                 bc.exitBattle(gc);
             }
-            nlohmann::json row = combatTransitionRowJson(
-                seed, fightIdx++, battleAct, battleFloor, battleRoom,
-                battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
-                predictorInput);
-            out << row.dump() << '\n';
+            if (recording) {
+                nlohmann::json row = combatTransitionRowJson(
+                    seed, fightIdx++, battleAct, battleFloor, battleRoom,
+                    battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
+                    predictorInput);
+                out << row.dump() << '\n';
+            }
         } else if (deployedOoc) {
             deployedOocPolicyStep(gc, agent);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {

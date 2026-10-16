@@ -124,7 +124,7 @@ def assemble(index_path: Path, corpus_root: Path, scope: str, out: Path) -> dict
     return summary
 
 
-SCOPES = ("none", "ritual_writhing", "high_maxhp", "lizard_fairy", "lizard_brew")
+SCOPES = ("none", "ritual_writhing", "high_maxhp", "lizard_fairy", "lizard_brew", "act4_fork")
 
 
 WIN = 1

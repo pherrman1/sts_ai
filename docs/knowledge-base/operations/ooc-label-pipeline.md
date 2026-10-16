@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -171,6 +171,17 @@ rows. Setups:
 - `lizard_fairy` and `lizard_brew`: an unused Lizard Tail is added, and while
   it is unused the Fairy Potion or Entropic Brew is refilled before each fight
   when a slot is free.
+- `act4_fork`: at the first Act-3 boss, before its fight, the run is sent into
+  Act 4 as if the boss fight(s) were won with all three keys (keys granted, the
+  A20 second boss's floor counted, then the native Act-3 victory room and Act-4
+  transition with its heal). Only the forked Act-4 fights (Shield and Spear,
+  the Heart) are written; earlier fights are played but not recorded, and runs
+  that die before the Act-3 boss write no rows. The skipped boss fights and key
+  costs make these rows a separate slice. Use it with
+  `STS_CTM_GEN_DEPLOYED_OOC=1` so Act-4 rest and shop screens get the deployed
+  OOC step. Before this setup no CTM corpus had Act-4 rows: the Shield and
+  Spear and Heart encounter-embedding rows are byte-identical across every
+  shipped stack (production, pathb-r2, pathb-a20), so they never trained.
 Mark of the Bloom with an active Tail is already on the exact path, so it has
 no setup.
 
