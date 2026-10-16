@@ -1,0 +1,12 @@
+{
+  "analysisReviewedSha": "7834789511280c81295503dbbbb6154c7a12f18a",
+  "authority": "Rerun the necessary parts with the bug fixed and continue",
+  "newAttemptLimit": 1,
+  "originalFreezeSha256": "c436ef5527f97c2932b83831eac5d043108be1e14eb26e45a6dc26f3a4563bad",
+  "originalRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc",
+  "originalSelectionSha256": "eb06232a6708f3c4d999fc0a79bc99ad68f041caf94b08176d8277e34f1c3188",
+  "originalTestLatchSha256": "a31361238be3aa2b301354d0f0b068729cfb0ccba5694229a0fd1da416cd0064",
+  "producerReviewedSha": "cbded890a06f4ec76ad72c8333d07df25ad54e5f",
+  "samePreviouslyOpenedHoldout": true,
+  "timeoutSeconds": 600
+}
