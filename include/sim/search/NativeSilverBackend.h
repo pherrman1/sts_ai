@@ -107,7 +107,7 @@ namespace sts::search {
         double escapePenalty, eliteEscapePenalty;
         // "g6_builtin", "hand_written", or "file" (path in STS_SILVER_ROLLOUT_CARD_TABLE).
         std::string rolloutCardTable;
-        int rolloutUniform, rolloutsPerLeaf;
+        int rolloutUniform, rolloutsPerLeaf, rolloutZeroCostCap;
     };
     NativeSilverLeafSettings nativeSilverLeafSettings();
     bool nativeSilverLearnedStopEnabled();

@@ -1033,7 +1033,7 @@ namespace sts::search {
             : rollout.cardTable == kSilverRolloutCardTableG6 ? "g6_builtin" : "file";
         return {g_options.finalFightLeaf, g_options.noLossPotionCredit, g_options.relicHealLeaf,
                 g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
-                table, rollout.uniform, rollout.perLeaf};
+                table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap};
     }
 
     bool nativeSilverLearnedStopEnabled() {

@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -256,6 +256,16 @@ fights. §479 (A20, 689 fights): uniform playouts lose 22.8 fight score at no
 CPU saving per simulation; a learned card table and 2 or 4 playouts per leaf
 at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040).
+From the 50th card played in a turn, the greedy playout no longer gives
+zero-cost non-attacks first priority, so a replayable zero-cost draw (two
+Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn
+without attacking (#544: such playouts ran about 143k actions to the engine
+loop guard). The cap also fires in long non-looping turns (for example
+Corruption decks), where free skills past the 50th card are no longer played
+first. `STS_SILVER_ROLLOUT_ZERO_COST_CAP=N` sets it, and `0` restores the
+uncapped order. A tree descent that passes the 5000-node depth backstop now ends in
+a rollout from the current node, counted in `descentBoundRollouts`, instead of
+throwing `SilverSearcher::step descent exceeded depth bound`.
 `one_combat` loads no learned combat model for play. `CombatValueNet` remains
 for `vnettest`, and `CombatDistValueNet` only for `parity_test`.
 

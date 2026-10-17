@@ -63,7 +63,7 @@ nlohmann::json effectiveSilverLeafSpecification() {
             {"relic_heal_leaf", leaf.relicHealLeaf}, {"a20_boss_heal_fix", leaf.a20BossHealFix},
             {"escape_penalty", {leaf.escapePenalty, leaf.eliteEscapePenalty}},
             {"rollout_card_table", table}, {"rollout_uniform", leaf.rolloutUniform},
-            {"rollouts_per_leaf", leaf.rolloutsPerLeaf}};
+            {"rollouts_per_leaf", leaf.rolloutsPerLeaf}, {"rollout_zero_cost_cap", leaf.rolloutZeroCostCap}};
 }
 
 nlohmann::json effectiveOocPolicySpecification() {

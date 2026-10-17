@@ -73,6 +73,7 @@ namespace sts::search {
         std::int64_t chanceTranspositions = 0;
         std::int64_t rolloutPlayouts = 0;   // playouts run to combat end from tree leaves
         std::int64_t rolloutActions = 0;    // actions taken inside those playouts
+        std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -187,6 +188,9 @@ namespace sts::search {
             int uniform = 0;
             int perLeaf = 1;
             const int *cardTable = nullptr;
+            // #544: zero-cost non-attacks lose first priority from this many cards
+            // in a turn (STS_SILVER_ROLLOUT_ZERO_COST_CAP; 0 = no cap).
+            int zeroCostCap = 50;
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();

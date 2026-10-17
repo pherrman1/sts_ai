@@ -570,6 +570,11 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
 
     // Priority order: zero-cost non-attacks, non-zero-cost cards, zero-cost attacks. The AoE
     // override applies only when the pick came from the non-zero-cost cards.
+    // #544: without a cap, two Finesse (or any replayable zero-cost draw) loop to
+    // the 1000-card cap every turn and the playout never attacks.
+    if (zeroCostSkillTurnCap > 0 && bc.player.cardsPlayedThisTurn >= zeroCostSkillTurnCap) {
+        zeroCostNonAttacks.clear();
+    }
     const fixed_list<int,10> *priority[3] = {&zeroCostNonAttacks, &nonZeroCostCards, &zeroCostAttacks};
     int bestCardIdx = -1;
     const fixed_list<int,10> *chosen = nullptr;
