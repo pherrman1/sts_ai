@@ -43,6 +43,14 @@ def assignments(workers, per_worker):
     return out
 
 
+def sibling_env(every):
+    """§494 sibling rollout labels (64 Arm C rollout3 repeats per root child) on every Nth searched root; 0 = off."""
+    if not every:
+        return {}
+    return {'STS_OOC_SIBLING_EVERY': str(every), 'STS_OOC_SIBLING_REPEATS': '64', 'STS_OOC_SIBLING_LONG': '0',
+            'STS_OOC_SIBLING_MAX_DEPTH': '1', 'STS_OOC_SIBLING_MAX_LEAVES': '64'}
+
+
 def verify_bundle(bundle):
     manifest = json.loads((bundle/'bundle.json').read_text())
     if manifest.get('runtime') != {'python': platform.python_version(), 'numpy': np.__version__}:
@@ -59,10 +67,10 @@ TOOLS = ('heart_outcome_round2.py', 'heart_outcome_collect.py', 'heart_distill_n
          'run_heart_distill_pilot.py', 'heart_record_encoder.py')
 
 
-def prepare(repo, binary, student, out, workers, per_worker):
+def prepare(repo, binary, student, out, workers, per_worker, sibling_every=0):
     if sha(student) != STUDENT_C:
         raise ValueError('wrong Arm C weights')
-    if len(per_worker) != 3 or min(per_worker) < 1 or workers < 1:
+    if len(per_worker) != 3 or min(per_worker) < 1 or workers < 1 or sibling_every < 0:
         raise ValueError('need a positive train/validation/confirm count per worker')
     source = subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
     if subprocess.check_output(['git', '-C', str(repo), 'status', '--porcelain'], text=True).strip():
@@ -92,6 +100,7 @@ def prepare(repo, binary, student, out, workers, per_worker):
         'sources': assignments(workers, per_worker), 'processesPerWorker': 4,
         'sourceSeconds': SOURCE_SECONDS, 'campaignSeconds': CAMPAIGN_SECONDS, 'canaries': CANARIES,
         'rootTrace': 'ooc-root-trace-v1: candidate keys, priors, visits, Q, public record, replay-only native snapshot',
+        'sibling': sibling_env(sibling_every),
         'confirmCustody': 'sealed archive only, no inspection or fitting before candidate selection is frozen',
         'beforeDispatch': ['independent source review', 'completion-anchored independent canary review',
                            'durable export check from a different container', 'one global activation/deadline'],
@@ -157,6 +166,8 @@ def unit(plan, bundle, out, seed, tag, capture=True, seconds=SOURCE_SECONDS, exp
                STS_OOC_MCTS_TRACE=str(base.with_suffix('.mcts.csv')))
     if capture:
         env['STS_OOC_MCTS_ROOT_TRACE'] = str(base.with_suffix('.roots.jsonl'))
+        if plan.get('sibling'):
+            env.update(plan['sibling'], STS_OOC_SIBLING_CAPTURE=str(base.with_suffix('.sib.jsonl')))
     cmd = ['bash', str(bundle/'seed_guard.sh'), str(bundle/'one_combat'),
            'heartoutcomegen', '1', str(seed), str(base.with_suffix('.states.jsonl')), 'on' if capture else 'off']
     started = time.monotonic()
@@ -341,6 +352,7 @@ def main():
         p.add_argument('--'+name, type=Path)
     p.add_argument('--workers', type=int)
     p.add_argument('--per-worker', type=int, nargs=3, metavar=('TRAIN', 'VALIDATION', 'CONFIRM'))
+    p.add_argument('--sibling-every', type=int, default=0)
     p.add_argument('--role', choices=('local', 'cloud'), default='local')
     p.add_argument('--worker', type=int)
     p.add_argument('--half', type=int, choices=(0, 1))
@@ -352,7 +364,7 @@ def main():
     for key in required[a.command]:
         if getattr(a, key) is None:
             p.error('--'+key.replace('_', '-')+' is required for '+a.command)
-    if a.command == 'prepare': prepare(a.repo, a.binary, a.student, a.out, a.workers, a.per_worker)
+    if a.command == 'prepare': prepare(a.repo, a.binary, a.student, a.out, a.workers, a.per_worker, a.sibling_every)
     elif a.command == 'canary': canary(a.plan, a.bundle.resolve(), a.out.resolve(), a.role)
     elif a.command == 'activate': activate(a.plan, a.bundle, a.approval, a.out)
     else: worker(a.plan, a.bundle.resolve(), a.activation, a.out.resolve(), a.worker, a.activation_sha256, a.half)
