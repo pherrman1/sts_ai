@@ -45,7 +45,7 @@ accepts only `on|off` files; `policy` files need a new reader.
 
 Every decision row has `decisionIndex`, `by` (the real driver's handler:
 `mcts`, `chain`, `heart_key`, `tree_rule`, ...), `mctsConsulted` and
-`v4Fallback` (MCTS consulted but the chain policy acted). When OOC MCTS was
+`v4Fallback` (MCTS consulted but the chain policy acted, including roots that were leaf boundaries; `executionReason` says which). When OOC MCTS was
 consulted the row also has:
 - `heart1Record`: the trained heart1 choice record (`recordToJson`, token
   order of `heart1::buildChoice`) of the state the search sees, after forced
