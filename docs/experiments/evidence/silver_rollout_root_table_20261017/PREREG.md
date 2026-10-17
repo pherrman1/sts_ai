@@ -24,7 +24,7 @@ shifted to the same scale. The rollout's category rules (zero-cost first, block 
 `one_combat ctmsilvergen` at Ascension 20, armset `roottable`, the §479 harness otherwise unchanged
 (`run.sh`, `env.sh` here): plain Silver 10k source runs whose out-of-combat choices come from distilled heart1
 student C (`STS_OOC_HEART1=studentc.bin`, sha256 `eff2f74f…`, greedy, no OOC MCTS; the strategic chain only for
-choices student C does not encode), with keys off and `STS_STOP_AFTER_ACT=3` (the harness requires keys off, so no Act 4),
+choices student C does not encode), with the global keys flag off (`STS_COLLECT_KEYS=0`, required by the harness) and `STS_STOP_AFTER_ACT=3`. Student C still takes Heart keys on its own (`heartKeyActionAllowed` does not mask them when keys are off), and this harness does not apply `STS_STOP_AFTER_ACT`, so a source run that holds all three keys continues to Act 4 and its Act-4 fights are replayed too (smoke: 1 of 4 sources, seed 111158023),
 all boss, elite and event fights plus about one normal fight in three, replayed from the same pre-fight states
 with R = 2 combat-RNG redraws per arm. Arms: `greedy2500`, `roottable2500`, `greedy2650`, `roottable2650`,
 no tree prior.
@@ -54,6 +54,6 @@ paired per fight, 95% bootstrap over source seeds (10,000 resamples, RNG seed 0)
 ## Known limitations
 
 - Source runs use greedy student C, not the full OOC MCTS stack; fights are only a state sample.
-- No Act 4 / Heart fights (harness requires keys off).
+- Act 4 / Heart fights appear only in sources where student C collected all keys by itself; they are reported as part of `boss`/`elite` and not separately labeled.
 - The prior was trained on A0 gen-6 roots and on hand cards only; off-hand cards are scored out of
   distribution.
