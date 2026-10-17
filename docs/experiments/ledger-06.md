@@ -20121,6 +20121,26 @@ research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000�
 Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
 
+## §514 — Fixed OOC rules before and inside the search, with keys on (2026-10-17)
+
+**KEEP_RULES; opt-in potion leave, default off.** Offline count on the 1,408 open §503 A20 runs (TRAIN + VALIDATION,
+student C prior `STS_OOC_MCTS_PRIOR=heart1`, keys on; SEALED-confirm not opened). Firings: chest 3,380, reward relic
+10,077, gold 30,148, potion pickup 13,158, potion swap by rank 1,452, empty-screen leave 4,439 (key rule 4,778 belongs
+to the keys thread). The relic rule matches heart1's own take-free-rewards convention. The 7 reviewed relics went to
+search and were left 291 of 760 times. The swap rank dropped a Fairy 4 times.
+
+Every REWARDS root with a "discard potion" candidate had a uniform prior: 1,281 roots in 553 runs. Search discarded
+there 505 times and then took the declined reward potion, 455 times a lower-ranked one (mean keep-value loss 1.32 HP-equivalent
+per fight over all 505, ADR-0039 units). On the 758 such roots that also offered cards, search left the screen 171 times, forgoing the card reward. A PR #591 (`7fb7933`, heart1full) smoke on 22 seeds per arm (111155002–023, 128 sims)
+gives the prior back to discard roots that still offer cards. The remaining "leave or discard" root stays uniform
+(10 of 19), with 6 discards. New research option `STS_POTION_REWARD_DECLINE_LEAVE=1` makes the tree rules leave
+such a screen. In a 16-seed-per-arm smoke (binary from `b771aa1` plus this change, as committed in `c528115`; seeds 111155024–039), cards-less discard roots went 1 → 0, with 1 vs 1 win;
+this is a smoke, not an A/B. **Inference:** the effect is about one slightly worse potion per three runs, too small to
+test; the default is Philipp's call. If Sapphire becomes a search decision, the relic rule must stand down while a
+Sapphire is offered (keys thread). Seeds 111155000–039 used (000–001 failed at startup, no gameplay).
+[Report](evidence/ooc_fixed_rules_20261017/REPORT.md).
+**Knowledge impact:** `STS_POTION_REWARD_DECLINE_LEAVE` in environment-variables and the out-of-combat reward flow.
+
 ## §516 — A20 Silver budget: learned stopping matches flat 10k at 0.41x CPU; gen-6 prior adds Act-4 reaches, not Heart kills (2026-10-17)
 
 **Question (Philipp, 2026-10-17, thread "Audit performance and throughput"):** "yes set up a20 silver budget test";

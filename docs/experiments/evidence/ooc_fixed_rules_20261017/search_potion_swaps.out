@@ -1,0 +1,2 @@
+n 505 followed by take Counter({True: 505}) discarded the worst held 368 runs 378 by act [(1, 178), (2, 153), (3, 172), (4, 2)]
+rank loss (discarded - taken)/100: mean 1.32 median 1.04, >0: 455, <=0: 50

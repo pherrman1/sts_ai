@@ -84,3 +84,15 @@ std::optional<search::GameAction> search::potionRewardAction(const GameContext &
     if (!discard.isValidAction(gc)) return std::nullopt;
     return discard;
 }
+
+bool search::potionRewardDeclineLeaveEnabled() {
+    const char *value = std::getenv("STS_POTION_REWARD_DECLINE_LEAVE");
+    if (!value || !*value || std::string(value) == "0") return false;
+    if (std::string(value) == "1") return true;
+    throw std::runtime_error("STS_POTION_REWARD_DECLINE_LEAVE must be 0 or 1");
+}
+
+bool search::potionRewardDeclined(const GameContext &gc) {
+    return gc.screenState == ScreenState::REWARDS && gc.info.rewardsContainer.potionCount > 0
+        && !gc.hasRelic(RelicId::SOZU) && !potionRewardAction(gc);
+}
