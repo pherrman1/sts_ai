@@ -20120,3 +20120,32 @@ research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000�
 [Result](evidence/silver_potion_weights_20261017/RESULT.md), [analysis.json](evidence/silver_potion_weights_20261017/analysis.json).
 Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
+
+## §516 — A20 Silver budget: learned stopping matches flat 10k at 0.41x CPU; gen-6 prior adds Act-4 reaches, not Heart kills (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Audit performance and throughput"):** "yes set up a20 silver budget test";
+card "Add learned+prior"; 16:32Z: "maybe do 512 seeds then on 8 workers." Can learned stopping (ADR-0026) replace
+the flat exact 10k Silver budget of the A20 research stack, and does the gen-6 MLP prior (§476) on top change that?
+**Design:** [PLAN](evidence/silver_budget_a20_20261017/PLAN.md), pre-launch review PASS. Plain A20 full runs (keys,
+Heart objective, no OOC MCTS), student C `policyStep` out of combat, no V4 net loaded. Arms `F` flat exact 10k,
+`L` learned stopping, `LP` L + g6_E as root prior (weight 400) and tree prior K=8 (new research flag
+`STS_SILVER_TREE_PRIOR_MIN_VISITS`, PR #603). RUN_COMMIT `d83b4ab9` (code main `e413c1f3`, binary `a6ad3c56…`).
+Seeds 111135100–111135611. Primary: reached Act 4, paired Newcombe 95% interval, non-inferior if the lower bound
+> −5 pp.
+**Result.** 1,536/1,536 units rc=0, 512 seeds valid; 8 tars verified from a second container.
+- **Heart kills:** F 27, L 30, LP 27 of 512. L − F +0.6 pp [−1.7, +2.9]; LP − F 0.0 [−2.3, +2.3].
+- **Reached Act 4 (primary):** F 77, L 75, LP 97.
+  - L − F −0.4 pp [−3.4, +2.6], NON_INFERIOR.
+  - LP − F +3.9 pp [+0.4, +7.4], McNemar p = 0.035, NON_INFERIOR. The gain is not a pre-registered hypothesis.
+- **CPU per run:** F 53.5 s, L 21.9 s (0.41x), LP 28.2 s (0.53x).
+- **OOC decisions:** student C 96.6–97.0% in every arm, the key rule 2.6–2.8%, Match and Keep 0.6–0.7%. Match
+  and Keep's card choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move
+  them to student C).
+**Interpretation:** at A20, learned stopping plays as well as flat 10k on both endpoints at 0.41x the CPU, which
+makes it the cheaper Silver budget for student-C self-play. The prior's extra Act-4 reaches did not convert: Heart
+kills per Act-4 run were 28% for LP against 35% for F and 40% for L. **Inference:** the prior helps Acts 1–3 combats
+but not the Act-4 fights; that needs a targeted check before any claim. Defaults are unchanged (research stacks set
+the budget explicitly). Seeds 111135100–111135611 are used; performance-audit smokes used 111135000–111135004.
+[Result](evidence/silver_budget_a20_20261017/RESULT.md), [report.json](evidence/silver_budget_a20_20261017/report.json).
+Raw: `/mnt/project-files/audit-2026-10-17/silver-budget-a20/runs/w0{1..8}.tar.gz`.
+**Knowledge impact:** learned-stopping paragraph in `architecture/combat-search.md`.
