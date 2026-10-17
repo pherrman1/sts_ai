@@ -3075,6 +3075,43 @@ int testSilverEscapePenalty() {
     return 0;
 }
 
+// Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
+int testSilverPotionWeights() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_potion_weights FAIL: " << msg << '\n';
+        return 1;
+    };
+    const auto w = search::parseSilverPotionWeights("ATTACK_POTION=20,SWIFT_POTION=0.5,*=7", 11);
+    if (w[static_cast<int>(Potion::ATTACK_POTION)] != 20 || w[static_cast<int>(Potion::SWIFT_POTION)] != 0.5
+        || w[static_cast<int>(Potion::BLOCK_POTION)] != 7) return fail("parse with default");
+    if (search::parseSilverPotionWeights("FIRE_POTION=3", 11)[static_cast<int>(Potion::SMOKE_BOMB)] != 11)
+        return fail("fallback weight");
+    for (const char *bad : {"NOT_A_POTION=1", "FIRE_POTION", "FIRE_POTION=x", "FIRE_POTION=1x"}) {
+        bool threw = false;
+        try { search::parseSilverPotionWeights(bad, 11); } catch (const std::runtime_error &) { threw = true; }
+        if (!threw) return fail(std::string("accepted ") + bad);
+    }
+    GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
+    gc.curRoom = Room::MONSTER;
+    gc.potions[0] = Potion::ATTACK_POTION;
+    gc.potions[1] = Potion::SWIFT_POTION;
+    gc.potionCount = 2;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::SilverSearchContext context;
+    context.act = 1;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    BattleContext end = bc;
+    end.outcome = Outcome::PLAYER_VICTORY;
+    const double flat = searcher.scoreEndState(end);
+    searcher.evalWeights.potionTypeWeightsOn = true;
+    searcher.evalWeights.potionTypeWeights = w;
+    const double typed = searcher.scoreEndState(end);
+    if (std::abs((typed - flat) - (20.5 - 2 * 11)) > 1e-9) return fail("victory potion score not per type");
+    std::cout << "silver_potion_weights PASS\n";
+    return 0;
+}
+
 // #544: a replayable zero-cost draw (two Finesse) must not trap Silver's
 // rollout policy in a loop that never attacks. Before the fix every playout
 // here ran ~142k actions to the engine's loop guard and scored that loss
@@ -6086,6 +6123,8 @@ int main(int argc, const char* argv[]) {
         return testSimulatorCorrectnessPr9To19();
     } else if (command == "silver_escape_penalty") {
         return testSilverEscapePenalty();
+    } else if (command == "silver_potion_weights") {
+        return testSilverPotionWeights();
     } else if (command == "silver_rollout_zero_cost_loop") {
         return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {

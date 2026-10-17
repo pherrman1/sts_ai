@@ -20095,3 +20095,28 @@ matter.
 
 **Evidence:** [prereg, arms, results and report](evidence/ritual_refit_ab_20261017/REPORT.md).
 **Knowledge impact:** Ritual Dagger acquisition is rare at A0; random-seed A/Bs cannot measure Ritual-head changes.
+
+## §513 — per-type Silver potion weights vs flat 11 in whole A20 runs: NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Silver leaf evaluation"):** "yes set that up", on testing per-type potion
+weights in Silver's leaf after §510; 16:31Z: "ooc should be studnet C. lets do 128 seeds on 4 workers".
+**Design:** [PREREG](evidence/silver_potion_weights_20261017/PREREG.md), independent pre-launch review PASS. New
+research option `STS_SILVER_POTION_WEIGHTS` (PR #610; unset = flat 11). Three arms on the §473 `off` stack with
+student C as the OOC policy, **pre-#594 shop rules** (RUN_COMMIT `56e03b29`, based on `da1ce052`; binary
+`0f4bc4a1…`): `base` flat 11; `level` 7.8 (§510 non-Fairy price), Fairy and Smoke Bomb 11; `type` §510 per-type
+prices shrunk toward 7.8 (3.5 Swift … 12.3 Attack), Fairy and Smoke Bomb 11. Whole runs, so the score is not Silver's
+own formula. A20 seeds 111152000–111152127; primary Δfloor type − base, paired bootstrap.
+**Result: NOT_SHOWN on all three contrasts.** 384/384 units rc=0, nothing dropped; 4 tars verified from a second
+container. Mean floor base 36.65, level 35.85, type 35.28; act-3 clears 36 / 30 / 35 of 128. Type − base Δfloor
+−1.37 [−3.45, +0.74]; level − base −0.80 [−2.96, +1.36]; type − level −0.57 [−2.55, +1.37]. Boss deaths 48 / 58 /
+55. Student C took 98.9% of OOC decisions in every arm; the rest (1.1%, 440) were Match and Keep, whose card
+choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move them to student C).
+**Interpretation:** no detectable effect at ±2 floors; both point estimates negative. Descriptively, lower weights
+leave Silver about 0.1 fewer potions at the first boss battle of each act (battles starting on floors 16, 33, 50:
+1.27 vs 1.15 / 1.14). **Inference:** that is the §385
+direction (cheaper potions get spent earlier) without a visible gain. Per the decision rule the option stays
+research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000–111152127 and smokes
+111153900–111153903, 111153948–949 are used.
+[Result](evidence/silver_potion_weights_20261017/RESULT.md), [analysis.json](evidence/silver_potion_weights_20261017/analysis.json).
+Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
+**Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.

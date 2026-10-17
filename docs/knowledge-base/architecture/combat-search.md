@@ -249,8 +249,13 @@ death-save term (+0.3 × max HP, 0.6 with Sacred Bark), and without Fairy potion
 price at 7.8 [6.1, 9.8]; **Inference:** the flat 11 may overprice non-Fairy
 potions (post hoc). Per-type prices differ: Fairy about 44, Attack/Blood/Skill
 potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. Apart from the
-Fairy death-save term the formula has no per-type weights; whether they would
-help play is untested.
+Fairy death-save term the default formula has no per-type weights.
+Research-only `STS_SILVER_POTION_WEIGHTS=NAME=w,...[,*=w]` (Potion enum names;
+unlisted types take `*`, else 11; an unknown name aborts) replaces the count
+with per-type weights in native Silver (`one_combat`); the live advisor ignores
+it. Ledger-06 §513 (A20, student C OOC, 128 paired seeds) did not show an effect (NOT_SHOWN) of
+the §510-derived per-type weights or a flat 7.8 vs flat 11: floors −1.37
+[−3.45, +0.74] and −0.80 [−2.96, +1.36]. The flat 11 stays.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

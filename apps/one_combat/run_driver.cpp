@@ -20,6 +20,7 @@
 #include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "heart1_policy.h"
+#include "ooc_v4_encoding.h"
 #include "sim/search/PotionRewardPolicy.h"
 #include "ooc_profile.h"
 #include "run_profile.h"
@@ -211,6 +212,37 @@ thread_local std::function<void(const sts::GameContext &, const one_combat::Path
 
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
 
+// STS_MATCH_AND_KEEP_HEART1: unset or 1 = with STS_OOC_HEART1 loaded, a Match
+// and Keep card that live OOC MCTS does not value is valued by heart1 as one
+// argmax rollout step on the lone offer; 0 = the V4/one-ply chain (before
+// 2026-10-17). Read per valuation, so tests can switch it.
+static bool matchAndKeepHeart1() {
+    const char *value = std::getenv("STS_MATCH_AND_KEEP_HEART1");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_MATCH_AND_KEEP_HEART1 must be 0 or 1");
+}
+
+// STS_MATCH_AND_KEEP_CURSE_FIX: unset or 1 = a curse is never a wanted Match
+// and Keep pair; 0 = curses are valued like any card (before 2026-10-17). The
+// lone-card-reward valuation is out of distribution for curses: V4 and heart1
+// both took Shame, Writhe or Regret there.
+static bool matchAndKeepCurseFix() {
+    const char *value = std::getenv("STS_MATCH_AND_KEEP_CURSE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_MATCH_AND_KEEP_CURSE_FIX must be 0 or 1");
+}
+
+static bool matchAndKeepHeart1Step(GameContext &offer) {
+    if (!one_combat::heart1::enabled() || !matchAndKeepHeart1()) return false;
+    const auto actions = one_combat::v4CandidateActions(offer);
+    const auto logits = one_combat::heart1::priorLogits(offer, actions, nullptr);
+    if (!logits || logits->size() != actions.size()) return false;
+    actions[std::max_element(logits->begin(), logits->end()) - logits->begin()].execute(offer);
+    return true;
+}
+
 bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                             const one_combat::PathHistory &path, std::uint64_t runSeed,
                             std::uint64_t decisionIndex, one_combat::LiveOocMctsMetrics *mctsMetrics) {
@@ -220,16 +252,19 @@ bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bo
         cache = MatchAndKeepWantCache{gc.seed, gc.act, gc.floorNum, {}};
     }
     const auto want = [&](const Card &card) {
+        if (card.getType() == CardType::CURSE && matchAndKeepCurseFix()) return false;
         const auto key = std::make_pair(static_cast<int>(card.id), card.isUpgraded());
         if (const auto it = cache.want.find(key); it != cache.want.end()) return it->second;
         // The active primary guide values the card as a lone card reward:
-        // OOC MCTS when enabled, otherwise the ordinary V4/one-ply chain.
+        // live OOC MCTS when enabled, else heart1 when loaded, else the
+        // ordinary V4/one-ply chain.
         const bool take = one_combat::oocHypotheticalCardTaken(gc, path, card, [&](GameContext &offer) {
             if (mctsMetrics) {
                 const std::uint64_t index = (decisionIndex << 12)
                     ^ (static_cast<std::uint64_t>(card.id) << 1) ^ std::uint64_t(card.isUpgraded());
                 if (one_combat::oocMctsPolicyStep(offer, path, runSeed, index, *mctsMetrics)) return;
             }
+            if (matchAndKeepHeart1Step(offer)) return;
             const bool saved = t_oocHypotheticalStep;
             t_oocHypotheticalStep = true;
             try {

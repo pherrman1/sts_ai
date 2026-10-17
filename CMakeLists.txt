@@ -499,6 +499,8 @@ set_tests_properties(match_and_keep PROPERTIES LABELS "core")
 add_test(NAME silver_escape_penalty COMMAND $<TARGET_FILE:unit-test> silver_escape_penalty)
 add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> silver_rollout_zero_cost_loop)
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
+add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_potion_weights)
+set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
@@ -529,6 +531,10 @@ set_tests_properties(vwin_refresh_decision_sink_contract PROPERTIES
 add_test(NAME match_and_keep_boss_draft_oracle
     COMMAND $<TARGET_FILE:one_combat> matchandkeep_oracle_selftest)
 set_tests_properties(match_and_keep_boss_draft_oracle PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME match_and_keep_curse_fix
+    COMMAND $<TARGET_FILE:one_combat> matchandkeep_curse_selftest)
+set_tests_properties(match_and_keep_curse_fix PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME act_fight_probe_all_ooc_root_state
     COMMAND $<TARGET_FILE:one_combat> actfightprobeallooc_rootstate_selftest)
