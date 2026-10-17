@@ -12,6 +12,8 @@ inside TRAIN; VALIDATION is never read here. TEST sources never occur.
   examples --pilot DIR [--pilot DIR] --out DIR
   fit      --examples DIR --out DIR
   export   --fit DIR --out DIR      (writes candidate .native files)
+  evaluate --examples DIR --fit DIR --out DIR   (paired VALIDATION scores)
+  package  --fit EXPORT_DIR --decision JSON --out DIR   (research candidate + manifest)
 """
 from __future__ import annotations
 import argparse
@@ -317,12 +319,49 @@ def export(args):
     v.write(args.out/'export.json', out); print(json.dumps(out, indent=1))
 
 
+CANDIDATE_ID = 'pathb-r2-ritual-refit'
+
+
+def package(args):
+    """Research candidate: refit artifacts re-identified, writhingRitual set, manifest written."""
+    import ctm_candidate as cand
+    exported = json.loads((args.fit/'export.json').read_text())
+    decision = json.loads(args.decision.read_text())
+    v.require(decision.get('classification') == 'RITUAL_REFIT_OWNER_OVERRIDE' and decision.get('owner')
+              and decision.get('evaluationSha256'), 'owner qualification decision required')
+    args.out.mkdir(parents=True, exist_ok=False)
+    qualification = dict(classification=decision['classification'], decisionSha256=sha(args.decision),
+                         evaluationSha256=decision['evaluationSha256'])
+    def finish(header):
+        v.require(header['researchCandidate'] == {'candidateId': 'pathb-r2'}, 'unexpected base candidate')
+        v.require('writhing_ritual_intersection' in header['supportExclusions']
+                  and 'writhingRitual' not in header.get('capabilities', {}), 'base already lifts the exclusion')
+        return dict(header, researchCandidate={'candidateId': CANDIDATE_ID},
+                    capabilities=dict(header.get('capabilities', {}), writhingRitual={}),
+                    supportExclusions=[r for r in header['supportExclusions'] if r != 'writhing_ritual_intersection'],
+                    ritualRefit=dict(header['ritualRefit'], qualified=False, ownerOverride=qualification))
+    path, digest = exported['standard']; v.require(sha(path) == digest, 'exported standard differs')
+    header, payload = cand.read(path)
+    standard = args.out/Path(path).name; cand.write(standard, finish(header), payload)
+    path, digest = exported['fast']; v.require(sha(path) == digest, 'exported fast differs')
+    header, payload = cand.read(path); header = finish(header); control = sha(standard)
+    header['experimentalSurvival'] = dict(header['experimentalSurvival'], controlSha256=control)
+    header['experimentalDeepSets'] = dict(header['experimentalDeepSets'], controlSha256=control)
+    fast = args.out/Path(path).name; cand.write(fast, header, payload)
+    result = cand.manifest(standard, args.out/'candidate-manifest.json', fast)
+    result.update(standard=[str(standard), sha(standard)], fast=[str(fast), sha(fast)],
+                  env=dict(result['env'], STS_OOC_MCTS_COMBAT_MODEL=str(fast.resolve()),
+                           STS_OOC_MCTS_BREW_FALLBACK_MODEL=str(standard.resolve()), STS_OOC_MCTS_ACTIVE_LIZARD='1'))
+    v.write(args.out/'package.json', result); print(json.dumps(result, indent=1))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('command', choices=('examples', 'fit', 'export', 'evaluate'))
+    parser.add_argument('command', choices=('examples', 'fit', 'export', 'evaluate', 'package'))
     parser.add_argument('--pilot', type=Path, action='append')
     parser.add_argument('--examples', type=Path); parser.add_argument('--fit', type=Path)
     parser.add_argument('--out', type=Path, required=True); parser.add_argument('--device', default='cuda')
+    parser.add_argument('--decision', type=Path)
     parser.add_argument('--partition', choices=('TRAIN', 'VALIDATION'), default='VALIDATION')
     args = parser.parse_args()
     if args.command == 'examples':
@@ -339,6 +378,8 @@ def main():
         v.write(args.out/'examples.json', summary); print(json.dumps(summary, indent=1))
     elif args.command == 'fit':
         fit(args)
+    elif args.command == 'package':
+        package(args)
     elif args.command == 'evaluate':
         args.out.mkdir(parents=True, exist_ok=False)
         result = dict(cohorts=evaluate(args), examplesSha256=sha(args.examples/'examples.pkl'),
