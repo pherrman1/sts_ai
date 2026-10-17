@@ -326,7 +326,11 @@ class RuntimeManager:
                     raise RuntimeFailure("runtime Arm C SHA-256 is not the frozen student")
                 arm_c_source = self.current.resolve() / "models" / ARM_C_NAME
         if self.current.exists():
-            qualified_ctm = qualified_ctm or self.load_manifest().get("ctmStackVersion") == 2
+            previous = self.load_manifest()
+            # Qualified fields retain the explicit selection even when the
+            # version field is damaged; repair must not select a legacy cache.
+            qualified_ctm = (qualified_ctm or previous.get("ctmStackVersion") == 2
+                             or any(key in previous for key in CTM_QUALIFIED_KEYS))
         if arm_c_source is not None:
             arm_c_source = arm_c_source.expanduser().resolve()
             if not arm_c_source.is_file() or sha256(arm_c_source) != ARM_C_SHA256:
@@ -428,7 +432,8 @@ class RuntimeManager:
         except RuntimeFailure:
             if self.current.exists():
                 previous = self.load_manifest()
-                if "armCModelSha256" in previous or previous.get("ctmStackVersion") == 2:
+                if ("armCModelSha256" in previous or previous.get("ctmStackVersion") == 2
+                        or any(key in previous for key in CTM_QUALIFIED_KEYS)):
                     return self.install()
             head, dirty = self.git_state()
             cached = None if dirty else self.find_cached(head)

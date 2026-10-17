@@ -408,6 +408,9 @@ combats and combat-entry forecasts. The native loader verifies the built-in
 artifact contracts; a partial A20 configuration or research-manifest override
 fails closed. `ctmStackScope` identifies the selected stack. Legacy releases
 and explicit legacy overrides remain supported.
+Refresh and repair preserve an explicitly selected qualified stack even if
+its version field is missing or malformed while qualified receipt fields
+remain. Such a receipt cannot select a cached legacy release during repair.
 An explicit `STS_CTM_MODEL` suppresses automatic fallback/A20 environment
 injection; dependent overrides then come only from the caller. This preserves
 legacy single-model launches and explicit empty-value failures.

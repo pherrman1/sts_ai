@@ -170,6 +170,24 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual(repaired["ctmStackVersion"], 2)
         self.assertEqual(self.manager.validate_release(), repaired)
 
+    def test_repair_preserves_qualified_selection_with_missing_or_invalid_stack_version(self):
+        self.install()
+        self.qualified_sources()
+        selected = self.manager.install(self.advisor, qualified_ctm=True)
+        for version in (None, "2", 1):
+            with self.subTest(version=version):
+                partial = dict(selected)
+                if version is None:
+                    partial.pop("ctmStackVersion")
+                else:
+                    partial["ctmStackVersion"] = version
+                (self.manager.current / "manifest.json").write_text(json.dumps(partial))
+                with mock.patch.object(self.manager, "build_advisor", return_value=self.advisor):
+                    repaired = self.manager.ensure()
+                self.assertEqual(repaired["ctmStackVersion"], 2)
+                self.assertEqual(self.manager.validate_release(), repaired)
+                selected = repaired
+
     def test_legacy_single_model_manifest_remains_valid(self):
         manifest = self.install()
         for key in CTM_STACK_KEYS:
