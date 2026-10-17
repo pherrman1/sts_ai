@@ -367,6 +367,12 @@ nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// Policy-target capture (heartoutcomegen policy). arm: the next
+// oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1
+// tokens, prior/visits/Q, checkpoints, selection, flags) without changing the
+// search. take: that row (null when no step consumed the arm) and disarms.
+void armOocPolicyTarget();
+nlohmann::json takeOocPolicyTarget();
 // Offers `card` alone as a card reward on a detached copy of `gc`, runs one
 // decision of the caller's OOC guide (`step`) inside the imagined scope, and
 // reports whether the guide added the card. Used to value Match and Keep cards.

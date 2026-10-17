@@ -36,6 +36,10 @@ struct BossEntryHook {
 extern thread_local BossEntryHook *t_bossEntryHook;
 // Default-off research observation of the actual driver-owned context; never a hypothetical policy copy.
 extern thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
+// Called after each real OOC decision with its index and handler ("mcts",
+// "chain", "heart_key", ...). While set, the driver arms
+// one_combat::armOocPolicyTarget before the OOC MCTS step.
+extern thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
 
 // Install the STS_FORCE_RELIC run-start override with native initial relic
 // data, preserving the override's relic-pool removal behavior.

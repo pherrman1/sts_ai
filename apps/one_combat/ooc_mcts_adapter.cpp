@@ -3626,11 +3626,24 @@ int oocLeafReplaySelfTest() {
     std::cout << "ooc_leaf_replay_selftest PASS transport bounds, isolation, exact comparator, MAP target\n";
     return 0;
 }
+namespace {
+// Policy-target capture (heartoutcomegen policy): the real driver arms one root;
+// oocMctsPolicyStep hands that root's summary slot to selectOocMctsAction.
+thread_local bool t_policyTargetArmed = false;
+thread_local nlohmann::json *t_policyTargetRoot = nullptr;
+thread_local nlohmann::json t_policyTargetRow;
+}
+void armOocPolicyTarget() { t_policyTargetArmed = true; t_policyTargetRow = nullptr; }
+nlohmann::json takeOocPolicyTarget() {
+    t_policyTargetArmed = false;
+    return std::exchange(t_policyTargetRow, nullptr);
+}
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected,
     nlohmann::json *rootActions) {
+    nlohmann::json *const policyRoot = std::exchange(t_policyTargetRoot, nullptr);
     const double cpuStart = liveOptions.cpuBudgetSeconds > 0 ? threadCpuSeconds() : 0;
     ImaginedScope scope;
     struct ReplayRootScope {
@@ -3716,6 +3729,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
                 if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
         }
     }
+    // Checkpoints only read root statistics; the singleton shortcut stays.
+    if (policyRoot && !sole && config.rootCheckpointSimulations.empty())
+        for (const std::uint64_t checkpoint : {128, 256, 512, 1024, 2048, 4096})
+            if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
     nlohmann::json reuseRow;
     if (reuseObserved) {
         if (t_reuseIndex.seed != seed || t_reuseIndex.decision >= index) t_reuseIndex = {};
@@ -3850,6 +3867,45 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     }
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     if (selected && result.selectedAction) *selected = model.candidate(0, *result.selectedAction);
+    if (policyRoot) {
+        using nlohmann::json;
+        const auto actionsJson = [&](const std::vector<sts::search::OocRootActionStats> &actions) {
+            auto output = json::array();
+            for (const auto &a : actions) {
+                const auto &c = model.candidate(0, a.id);
+                output.push_back({{"id", a.id}, {"key", c.key}, {"bits", c.primitive.bits},
+                    {"semantic", c.semantic.has_value()},
+                    {"compound", c.compoundSelector != sts::CardSelectScreenType::INVALID},
+                    {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+            }
+            return output;
+        };
+        auto checkpoints = json::array();   // keys and priors are on the candidates
+        for (const auto &c : result.rootCheckpoints) {
+            auto actions = json::array();
+            for (const auto &a : c.actions) actions.push_back({{"id", a.id}, {"visits", a.visits}, {"q", a.q}});
+            checkpoints.push_back({{"simulations", c.simulations}, {"actions", actions}});
+        }
+        // Root value estimate for completing unvisited actions offline (rollout3 has no value net).
+        double visitedQ = 0;
+        std::uint64_t rootVisits = 0, maxVisits = 0;
+        for (const auto &a : result.rootActions) {
+            visitedQ += double(a.visits) * a.q;
+            rootVisits += a.visits;
+            maxVisits = std::max<std::uint64_t>(maxVisits, a.visits);
+        }
+        const auto &m = result.metrics;
+        *policyRoot = {{"searchSeed", config.seed}, {"requestedSimulations", simulations},
+            {"rootVisits", rootVisits}, {"maxVisits", maxVisits},
+            {"rootMeanQ", rootVisits ? json(visitedQ / double(rootVisits)) : json(nullptr)},
+            {"completedSimulations", m.simulations}, {"attempts", m.simulationAttempts},
+            {"singleton", sole.has_value()}, {"aborted", result.aborted}, {"abortReason", result.abortReason},
+            {"earlyStopLock", m.earlyStopLockedRoot}, {"earlyStopGap20", m.earlyStopVisitGap20},
+            {"earlyStopBudget", m.earlyStopBudget}, {"savedSimulations", m.savedSimulations},
+            {"selectionRule", config.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
+            {"selectedId", result.selectedAction ? json(*result.selectedAction) : json(nullptr)},
+            {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
+    }
     if (rootActions) {
         *rootActions = nlohmann::json::array();
         for (const auto &action : result.rootActions)
@@ -4010,6 +4066,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         failStability("scheduled_root_bypassed_mcts");
     if (leafReplayMode && index != 0)
         throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_bypassed_mcts")};
+    const bool policyTarget = std::exchange(t_policyTargetArmed, false);
     ++metrics.decisions;
     if (!liveEnabled) {
         if (leafStabilityMode) failStability("mcts_disabled_during_stability_probe");
@@ -4028,6 +4085,25 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         ++metrics.fallback; ++metrics.continuation.supportReasons["semantic_observer_active"]; return false;
     }
     collectForcedRewardGold(gc);
+    // Policy targets record the state the search sees (after forced gold).
+    nlohmann::json policyRoot, policyRow;
+    std::optional<heart1::Choice> policyChoice;
+    struct PolicyRootScope { ~PolicyRootScope() { t_policyTargetRoot = nullptr; } } policyRootScope;
+    if (policyTarget) {
+        heart1::Choice choice;
+        std::string reason;
+        const bool encoded = heart1::buildChoice(gc, choice, &reason) && choice.record.choiceCount() > 0;
+        policyRow = {{"type", "decision"}, {"decisionIndex", index}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"searchSeed", oocMctsSearchSeed(seed, index)},
+            {"heart1Record", encoded ? heart1::recordToJson(choice.record) : nlohmann::json(nullptr)}};
+        if (encoded) {
+            policyRow["heart1Tokens"] = choice.actions.size();
+            policyChoice = std::move(choice);
+        } else {
+            policyRow["heart1Reason"] = reason.empty() ? "no_choice" : reason;
+        }
+        t_policyTargetRoot = &policyRoot;
+    }
     std::optional<OocGameContextModel::Candidate> selected;
     nlohmann::json rootRow;
     if (!liveRootTrace.empty()) {
@@ -4056,6 +4132,21 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     }();
     if (leafReplayMode)
         throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_returned_without_replay")};
+    if (policyTarget) {
+        if (!policyRoot.is_null() && policyChoice) {
+            std::vector<GameAction> primitives;
+            for (const auto &c : policyRoot["candidates"]) primitives.emplace_back(c["bits"].get<std::uint32_t>());
+            const auto tokens = heart1::mapChoiceTokens(*policyChoice, gc.hasRelic(RelicId::SINGING_BOWL), primitives);
+            for (std::size_t i = 0; i < tokens.size(); ++i) {
+                policyRoot["candidates"][i]["heart1Tokens"] = tokens[i].tokens;
+                policyRoot["candidates"][i]["heart1Map"] = tokens[i].kind;
+            }
+        }
+        policyRow["searched"] = !policyRoot.is_null();
+        policyRow["root"] = std::move(policyRoot);
+        policyRow["selectedKey"] = selected ? selected->key : "";
+        policyRow["selectedBits"] = selected ? nlohmann::json(selected->primitive.bits) : nlohmann::json(nullptr);
+    }
     profile.stop();
     const double wallElapsed = std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     const double cpuElapsed = threadCpuSeconds()-cpuStart;
@@ -4180,6 +4271,11 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto rootScreen = gc.screenState;
     const auto rootSelector = gc.info.selectScreenType;
     const auto traceDecision = [&](bool executed, const std::string &reason) {
+        if (policyTarget) {
+            policyRow["executed"] = executed;
+            policyRow["executionReason"] = reason;
+            t_policyTargetRow = std::move(policyRow);
+        }
         if (!decisionProfile.is_null()) {
             decisionProfile["executed"] = executed;
             decisionProfile["execution_reason"] = reason;
