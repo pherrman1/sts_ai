@@ -62,6 +62,19 @@ class Round2Tests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.check(bad)
 
+    def test_requalify_only_root_trace_order_censoring(self):
+        rows = [root(138), root((140 << 12) ^ 50), root(149)]
+        good = {'returncode': 65, 'processReturncode': 0, 'contractError': r2.ROOT_TRACE_MISMATCH,
+                'states': 3, 'policy': {'a': 1}, 'modelUse': {}}
+        with tempfile.TemporaryDirectory() as d:
+            a, b = Path(d)/'roots.jsonl', Path(d)/'actions.jsonl'
+            a.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+            b.write_text(''.join(json.dumps(action(r))+'\n' for r in rows))
+            self.assertTrue(r2.requalify(good, a, b, 7))
+            for change in ({'processReturncode': 124}, {'contractError': 'other'}, {'returncode': 0}):
+                self.assertFalse(r2.requalify({**good, **change}, a, b, 7))
+            self.assertFalse(r2.requalify({k: v for k, v in good.items() if k != 'modelUse'}, a, b, 7))
+
     def test_bad_visits_duplicate_keys_and_leaks_refused(self):
         bad = root(0); bad['rootActions'][0]['visitShare'] = .9
         dup = root(0, keys=('a', 'a'))

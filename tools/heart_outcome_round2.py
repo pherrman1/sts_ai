@@ -362,9 +362,92 @@ def worker(plan_path, bundle, activation, out, worker_id, activation_sha, half=N
         'complete': all(r['returncode'] == 0 for r in receipts)})
 
 
+ROOT_TRACE_MISMATCH = 'root trace row does not match the live decision'
+
+
+def requalify(receipt, roots, actions, seed):
+    """True for a source censored only by the pre-4473ce6 root-trace order check (Match and Keep roots).
+
+    root_trace is the last check in unit(), so states/policy/modelUse being recorded means every
+    earlier contract check passed; the archived trace is re-validated with the corrected rule."""
+    if (receipt.get('returncode') != 65 or receipt.get('processReturncode') != 0
+            or receipt.get('contractError') != ROOT_TRACE_MISMATCH
+            or not all(k in receipt for k in ('states', 'policy', 'modelUse'))):
+        return False
+    return root_trace(roots, actions, seed).get('hypotheticalRoots', 0) > 0
+
+
+def index(plan_path, activation, deliveries, out):
+    """Delivery index: receipt/archive hashes per worker; TRAIN/VALIDATION outcomes. Never opens SEALED archives."""
+    import tempfile
+    plan = json.loads(plan_path.read_text())
+    act_sha = sha(activation)
+    split_of = {s['seed']: s['split'] for s in plan['sources']}
+    workers, sources = {}, {}
+    for d in sorted(deliveries.iterdir()):
+        receipt = d/'worker-receipt.json'
+        if not receipt.exists():
+            workers[d.name] = {'status': 'no-receipt', 'files': sorted(p.name for p in d.iterdir())}
+            continue
+        rec = json.loads(receipt.read_text())
+        want = [s['seed'] for s in plan['sources'] if s['worker'] == rec['worker']]
+        if rec.get('half') is not None:
+            want = want[rec['half']::2]
+        if (rec['sources'] != want or rec['activationSha256'] != act_sha or rec['planSha256'] != sha(plan_path)
+                or any(sha(d/n) != h for n, h in rec['archives'].items())):
+            raise ValueError(d.name+': receipt does not match plan, activation or archives')
+        workers[d.name] = {'status': 'verified', 'receiptSha256': sha(receipt), 'archives': rec['archives']}
+        codes = dict(zip(rec['sources'], rec['returncodes']))
+        for seed, rc in codes.items():
+            sources[seed] = {'split': split_of[seed], 'worker': rec['worker'], 'returncode': rc}
+        for split in ('train', 'validation'):
+            with tarfile.open(d/(split+'.tar.gz')) as tar, tempfile.TemporaryDirectory() as tmp:
+                members = {m.name: m for m in tar.getmembers()}
+                for seed in (s for s in rec['sources'] if split_of[s] == split):
+                    base, row = f'{split}/seed-{seed}', sources[seed]
+                    if base+'.receipt.json' not in members:
+                        row['status'] = 'censored'
+                        continue
+                    unit_receipt = json.loads(tar.extractfile(members[base+'.receipt.json']).read())
+                    usable = unit_receipt['returncode'] == 0
+                    if not usable and unit_receipt['returncode'] == 65:
+                        paths = []
+                        for suffix in ('.roots.jsonl', '.mcts.csv.actions.jsonl'):
+                            path = Path(tmp)/('x'+suffix)
+                            path.write_bytes(tar.extractfile(members[base+suffix]).read())
+                            paths.append(path)
+                        usable = requalify(unit_receipt, *paths, seed)
+                        row['requalified'] = usable
+                    row['status'] = 'usable' if usable else 'censored'
+                    if usable:
+                        footer = json.loads(tar.extractfile(members[base+'.states.jsonl']).read().splitlines()[-1])
+                        if footer.get('complete') is not True or footer.get('integrityPassed') is not True:
+                            raise ValueError(f'{seed}: usable source without a complete footer')
+                        row['label'] = footer['label']
+        for seed in (s for s in rec['sources'] if split_of[s] == 'confirm'):
+            sources[seed]['status'] = 'sealed'
+    summary = {}
+    for split in SPLITS:
+        rows = [r for r in sources.values() if r['split'] == split]
+        planned = sum(s['split'] == split for s in plan['sources'])
+        entry = {'planned': planned, 'delivered': len(rows), 'returncode0': sum(r['returncode'] == 0 for r in rows),
+                 'returncode65': sum(r['returncode'] == 65 for r in rows),
+                 'otherNonzero': sum(r['returncode'] not in (0, 65) for r in rows)}
+        if split != 'confirm':
+            usable = [r for r in rows if r['status'] == 'usable']
+            entry.update(usable=len(usable), requalified=sum(bool(r.get('requalified')) for r in rows),
+                         heartWins=sum(r['label'] == 1 for r in usable))
+        summary[split] = entry
+    write(out, {'schema': 'heart-outcome-round2-delivery-index-v1', 'planSha256': sha(plan_path),
+                'activationSha256': act_sha, 'requalifyTool': 'tools/heart_outcome_round2.py requalify (4473ce6+)',
+                'summary': summary, 'workers': workers,
+                'sources': {str(k): sources[k] for k in sorted(sources)}})
+    return summary
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('prepare', 'canary', 'activate', 'worker'))
+    p.add_argument('command', choices=('prepare', 'canary', 'activate', 'worker', 'index'))
     p.add_argument('--repo', type=Path, default=Path(__file__).resolve().parents[1])
     for name in ('binary', 'student', 'plan', 'bundle', 'out', 'approval', 'activation'):
         p.add_argument('--'+name, type=Path)
@@ -373,18 +456,21 @@ def main():
     p.add_argument('--sibling-every', type=int, default=0)
     p.add_argument('--role', choices=('local', 'cloud'), default='local')
     p.add_argument('--worker', type=int)
+    p.add_argument('--deliveries', type=Path)
     p.add_argument('--half', type=int, choices=(0, 1))
     p.add_argument('--activation-sha256')
     a = p.parse_args()
     required = {'prepare': ('binary', 'student', 'out', 'workers', 'per_worker'), 'canary': ('plan', 'bundle', 'out'),
                 'activate': ('plan', 'bundle', 'approval', 'out'),
-                'worker': ('plan', 'bundle', 'activation', 'out', 'worker', 'activation_sha256')}
+                'worker': ('plan', 'bundle', 'activation', 'out', 'worker', 'activation_sha256'),
+                'index': ('plan', 'activation', 'deliveries', 'out')}
     for key in required[a.command]:
         if getattr(a, key) is None:
             p.error('--'+key.replace('_', '-')+' is required for '+a.command)
     if a.command == 'prepare': prepare(a.repo, a.binary, a.student, a.out, a.workers, a.per_worker, a.sibling_every)
     elif a.command == 'canary': canary(a.plan, a.bundle.resolve(), a.out.resolve(), a.role)
     elif a.command == 'activate': activate(a.plan, a.bundle, a.approval, a.out)
+    elif a.command == 'index': print(json.dumps(index(a.plan, a.activation, a.deliveries, a.out), indent=1))
     else: worker(a.plan, a.bundle.resolve(), a.activation, a.out.resolve(), a.worker, a.activation_sha256, a.half)
 
 
