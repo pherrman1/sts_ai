@@ -19799,3 +19799,29 @@ only 0.530, each below X2-B with the 95% upper bound ≤ −0.040. Pooled+public
 BCE gain does not transfer to sibling ordering.
 [Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
 **Knowledge impact:** observed-outcome leaf status and native public-record parity.
+
+## §504 — §494 rollout student as the OOC MCTS leaf vs rollout3 at A20 (2026-10-17)
+
+**S WORSE, S3 NOT_SHOWN; no default change.** Pre-registered paired A/B
+([plan](evidence/rollout_student_leaf_20261017/PLAN.md)), authorized by Philipp (2026-10-17 08:20Z "3 arms on 8
+workers"), independent pre-launch review PASS. 128 fresh A20 seeds 111000400–527, full runs with keys (Heart
+objective), Arm C environment (`studentc.bin` heart1 prior and leaf policy, native leaf, 3 leaf combats, cpuct 1.5,
+widen 4/0.75, depth 32, early stop, tree rules, 8 public futures, fair play, exact Silver). Arms: C rollout3 leaf at
+512 simulations; S `STS_OOC_MCTS_LEAF_STUDENT` (the PR 584 native §494 student, `653db96e…`) at 512; S3 the student
+at 1536. Run commit `2efd7f35`, code `2709f712`, binary `4004a823…` on 8 hosted workers; 384/384 units rc 0, no
+exclusions; 0 student fallbacks in 9.0M student leaf evaluations.
+
+| Arm | Reached Act 4 | Heart kills | Act-1 deaths | Mean floor | MCTS CPU s/decision | Wall s/run |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| C rollout3, 512 | 45 | 20 | 18 | 39.9 | 4.44 | 453 |
+| S student, 512 | 31 | 12 | 34 | 35.4 | 1.11 | 142 |
+| S3 student, 1536 | 32 | 12 | 30 | 36.1 | 3.25 | 313 |
+
+Primary endpoint, reached Act 4 (CSV `act` ≥ 4): S − C −10.9 pp [−20.3, −1.6] (seed bootstrap 2,000,
+RNG 20261017), discordant 11 vs 25, exact McNemar p = 0.029, **WORSE**; S3 − C −10.2 pp [−19.5, 0.0], 14 vs 27,
+p = 0.060, **NOT_SHOWN**. Floors −4.48 and −3.80. No run in any arm cleared Act 3 without the keys. S3 used
+0.73x the control's MCTS CPU per decision, not the planned ~1x. **Inference:** the deficit sits mostly in act 1, and
+more simulations with the cheap leaf do not recover it; §494's small offline ranking gain over X2-B does not
+translate into play. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
+[Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
+**Knowledge impact:** learned OOC leaf status in current-research.

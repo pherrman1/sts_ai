@@ -1,6 +1,6 @@
 # Pre-registered A20 paired A/B: §494 student leaf vs rollout3 leaf
 
-Status: **authorized, not yet run.** Philipp, 2026-10-17 08:20Z: "Merge, use 8
+Status: **run complete 2026-10-17; result in [RESULT.md](RESULT.md) (ledger §504).** Philipp, 2026-10-17 08:20Z: "Merge, use 8
 arms", then 08:20Z: "I mean 3 arms on 8 workers". Launch still requires the
 independent pre-launch review. Code commit: `2709f712` (PR 584 merge); the run
 commit is the reviewed commit carrying this file and the worker scripts.
