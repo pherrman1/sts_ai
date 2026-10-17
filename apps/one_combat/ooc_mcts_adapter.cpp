@@ -3763,8 +3763,18 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         auto checkpoints = json::array();
         for (const auto &c : result.rootCheckpoints)
             checkpoints.push_back({{"simulations", c.simulations}, {"actions", actionsJson(c.actions)}});
+        // Root value estimate for completing unvisited actions offline (rollout3 has no value net).
+        double visitedQ = 0;
+        std::uint64_t rootVisits = 0, maxVisits = 0;
+        for (const auto &a : result.rootActions) {
+            visitedQ += double(a.visits) * a.q;
+            rootVisits += a.visits;
+            maxVisits = std::max<std::uint64_t>(maxVisits, a.visits);
+        }
         const auto &m = result.metrics;
         *policyRoot = {{"searchSeed", config.seed}, {"requestedSimulations", simulations},
+            {"rootVisits", rootVisits}, {"maxVisits", maxVisits},
+            {"rootMeanQ", rootVisits ? json(visitedQ / double(rootVisits)) : json(nullptr)},
             {"completedSimulations", m.simulations}, {"attempts", m.simulationAttempts},
             {"singleton", sole.has_value()}, {"aborted", result.aborted}, {"abortReason", result.abortReason},
             {"earlyStopLock", m.earlyStopLockedRoot}, {"earlyStopGap20", m.earlyStopVisitGap20},
