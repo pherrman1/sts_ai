@@ -1,0 +1,97 @@
+{
+  "combatTeacher": {
+    "combat_backend": "native_silver",
+    "environment": {
+      "STS_EXECUTABLE_GIT_SHA": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793",
+      "STS_FAIR": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+      "STS_SILVER_FINAL_BOSS_BINARY": "0",
+      "STS_SILVER_FINAL_FIGHT_LEAF": "0",
+      "STS_SILVER_LEARNED_STOP": "1",
+      "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK": "0",
+      "STS_SILVER_LEARNED_STOP_BOSS_MAX": "0",
+      "STS_SILVER_NO_LOSS_POTION_CREDIT": "0",
+      "STS_SILVER_RELIC_HEAL_LEAF": "0",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_ROLLOUTS_PER_LEAF": "1",
+      "STS_SILVER_ROLLOUT_CARD_TABLE": "0",
+      "STS_SILVER_ROLLOUT_UNIFORM": "0",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_SEARCH_SINGLETON_ROOTS": "0",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "executable_sha256": "74b95ff524a1743772b98ad55007d758222d3675b4bee731cc9c5a19a29ba330",
+    "git_sha": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793",
+    "model_artifacts": [
+      {
+        "path": "models/v_rich_trees.txt",
+        "role": "ooc_floor_value",
+        "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+      },
+      {
+        "path": "models/v_win_trees.txt",
+        "role": "ooc_win_value",
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+      }
+    ],
+    "rng_regime": "project_fair",
+    "search_configuration": {
+      "adaptive": false,
+      "belief": "not_applicable_silver_private_chance_search",
+      "budget_policy": "learned_stop",
+      "chance_widening_alpha": 0.52389,
+      "chance_widening_c": 3.7028,
+      "direct_learned_leaf": false,
+      "end_turn_widening_alpha": 0.52389,
+      "end_turn_widening_c": 3.7028,
+      "exploration_parameter": 25.0,
+      "exploration_parameter_chance": 25.0,
+      "final_boss_binary": false,
+      "final_fight_leaf": false,
+      "learned_stop_model": "gbt-770201c31f7b",
+      "learned_stop_threshold": 0.0323,
+      "learned_visit_puct": false,
+      "no_loss_potion_credit": false,
+      "particles": "not_applicable_silver_private_chance_search",
+      "pruning": false,
+      "relic_heal_leaf": false,
+      "reuse_cap": 32768,
+      "reuse_cap_mode": "allocated",
+      "rollout_action_limit": 1000,
+      "rollout_policy": "legacy_greedy",
+      "rollout_uniform": 0,
+      "rollouts_per_leaf": 1,
+      "root_prior": false,
+      "sequential_halving": false,
+      "simulation_budgets": [
+        10000
+      ]
+    },
+    "teacher_id": "silver-ordinary-fair-learnedstop-ritual-corrected-b94da9bc13f8"
+  },
+  "csv": {
+    "path": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/ritual-corrected-canary-20261017/rows.jsonl",
+    "sha256": "fd4727e0072757b067ad13fcab128d091af7da9d18c60a1a11a8e46777300d6a"
+  },
+  "forcedSetup": "ritual_writhing",
+  "format": "jsonl",
+  "integrity": {
+    "completedSeeds": 1,
+    "quarantinedSeeds": 0,
+    "requestedSeeds": 1,
+    "rows": 24
+  },
+  "oocPolicy": "pathb_chain",
+  "predictorInputFieldSchemaHash": "1a92692da9247008",
+  "predictorInputSchemaVersion": "combat_predictor_input_v1",
+  "producerExecutableSha256": "74b95ff524a1743772b98ad55007d758222d3675b4bee731cc9c5a19a29ba330",
+  "producerGitSha": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793",
+  "rowSchemaVersion": "combat_transition_row_v2",
+  "schemaVersion": "combat_transition_v1",
+  "seedSpec": {
+    "count": 1,
+    "start": 52000001
+  }
+}

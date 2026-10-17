@@ -1,0 +1,61 @@
+{
+  "afterGitStatus": "",
+  "beforeGitStatus": "",
+  "command": [
+    "cmake",
+    "--build",
+    "--preset",
+    "linux-gcc-release-ccache-build",
+    "--target",
+    "one_combat",
+    "one_combat_advisor",
+    "--parallel",
+    "2"
+  ],
+  "commands": [
+    {
+      "argv": [
+        "cmake",
+        "--preset",
+        "linux-gcc-release-ccache"
+      ],
+      "log": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/ritual-corrected-build/configure.log",
+      "logSha256": "97ace76f911317ed3e36ae656a04e1391701d29a497a6c430a6f1e1437161641",
+      "returnCode": 0,
+      "wallSeconds": 0.7040460360003635
+    },
+    {
+      "argv": [
+        "cmake",
+        "--build",
+        "--preset",
+        "linux-gcc-release-ccache-build",
+        "--target",
+        "one_combat",
+        "one_combat_advisor",
+        "--parallel",
+        "2"
+      ],
+      "log": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/ritual-corrected-build/build.log",
+      "logSha256": "fce821d14f93625014e1ee3345785e6c7f34916f69ee08067fb9d5cc66f1447d",
+      "returnCode": 0,
+      "wallSeconds": 244.90286917396588
+    }
+  ],
+  "completedUnix": 1792228911.0990965,
+  "executable": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+  "executableSha256": "74b95ff524a1743772b98ad55007d758222d3675b4bee731cc9c5a19a29ba330",
+  "logPath": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/ritual-corrected-build/build.log",
+  "logSha256": "fce821d14f93625014e1ee3345785e6c7f34916f69ee08067fb9d5cc66f1447d",
+  "returnCode": 0,
+  "reviewedLivePrSha": "8879b5314136c8f9acfe999e40c202e33fde0571",
+  "schema": "reviewed_source_build_v1",
+  "sourceCleanAfterBuild": true,
+  "sourceCleanBeforeBuild": true,
+  "sourceSha": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793",
+  "sourceTree": "e51ec7321a36116ac27281f819d331ce67a306c6",
+  "startedUnix": 1792228665.4556298,
+  "verdict": "PASS",
+  "workdir": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed",
+  "workingDirectory": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed"
+}

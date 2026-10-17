@@ -58,6 +58,9 @@ namespace sts::search {
             // ADR-0036: a Smoke Bomb escape forfeits the fight's rewards (§473 values); "0,0" restores escape = win.
             double escapePenalty = kDefaultEscapePenalty;
             double eliteEscapePenalty = kDefaultEliteEscapePenalty;
+            // Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
+            bool potionTypeWeightsOn = false;
+            std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -534,6 +537,8 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
+                    searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -832,6 +837,10 @@ namespace sts::search {
             g_options.eliteEscapePenalty = std::strtod(elite, &end);
             if (end == elite || *end != '\0' || g_options.escapePenalty < 0 || g_options.eliteEscapePenalty < 0)
                 throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_POTION_WEIGHTS"); raw && *raw) {
+            g_options.potionTypeWeightsOn = true;
+            g_options.potionTypeWeights = parseSilverPotionWeights(raw, SilverEvalWeights{}.potionWeight);
         }
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;

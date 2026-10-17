@@ -320,7 +320,93 @@ std::unique_ptr<const nlohmann::json> loadResearchCandidateIdentity() {
     std::ostringstream text;text << file.rdbuf();
     return parseResearchCandidateIdentity(text.str());
 }
-// The production CTM stack: the §423 Lizard-capable pathb-r2 candidate, promoted with its
+// The production A0 CTM stack since 2026-10-17: pathb-r2 with only its Ritual Dagger heads
+// refit on corrected-producer rows (ledger §507, owner override of one no-regression margin)
+// and the writhingRitual capability, so Writhing Mass with a Ritual Dagger is supported.
+// These are the exact bytes of its research-candidate manifest
+// (docs/experiments/evidence/ctm_ritual_refit_20261017/candidate-manifest.json).
+constexpr char kRitualRefitProductionCandidateManifest[]=R"json({
+  "activeLizard": {
+    "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+    "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "frozenQrArtifactSha256": "1f84297b48a44e9da7872f406f0a7c27fd3a8861fd001dc0fbb36379801b7e39",
+    "rModel": {
+      "featureMean": [
+        0.8445601195995526
+      ],
+      "featureScale": [
+        0.19684100508001456
+      ],
+      "standardizedCoefficients": [
+        2.376042280595386,
+        0.852911158290625
+      ]
+    },
+    "rModelSha256": "394d4889e66d39759cca8975a10d959f14919ce30fe18af5cffaf806c413466b"
+  },
+  "candidateId": "pathb-r2-ritual-refit",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "d63c829c019e7e2798232e4f3bcfc5ac02a93d74c33000634d075e36bb0cc5f7"
+      },
+      "lizardBrew": {
+        "rModel": {
+          "featureMean": [
+            0.9220745124444445
+          ],
+          "featureScale": [
+            0.1254272163284112
+          ],
+          "standardizedCoefficients": [
+            1.9365468362108325,
+            0.5448779953885916
+          ]
+        }
+      },
+      "lizardFairy": {},
+      "writhingRitual": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "8c5ab91fb9d88be3fedc30c0afb5ccf4839a87c8df0aa07e132301d6e11ea4ac"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "domainSha256": "011fd040cce01c69497af2a07c737f8f1a2e753680ab02a298939f8b90d7a4b7",
+  "fast": {
+    "artifactSha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
+    "downstreamCheckpointSha256": "06709aed52532085e99a47c5c7f07174a915038227232954cc16d60fa35809d4",
+    "maxHpHpCheckpointSha256": "006a5e08fde3d634a4f4b2e482059401c0b1bba58b93c4d59d8263ee026da60f",
+    "potionSpecialistCheckpointSha256": "ccf2a504308d4b6f3c1b73d3766abbdb9a4d360e4610288f53e055ddea897811",
+    "survival": {
+      "checkpointSha256": "0a1b72ee75cb059c6c2398f69bf7aeb536c41f0a55dcaf6b193c46e28fff6a15",
+      "preparedManifestSha256": "99eef8e2cb67e2f858a39d83acf741993572baaa0dfe47e36e4eb7d6ffc3386e",
+      "preparedSha256": "719c9a44dd5aec612eb2ea76621f0bd0b39f09ab75216aaee9d7e0c7a0e62091",
+      "scalarInvSha256": "f9271e11abc2c2e3abe02fa2f96726220283a63d6f853d4f9b56144a542b8f03",
+      "scalarMeanSha256": "1f72985840a3dce838d2849834bff4876b58d3f8e4b0235ebac8565e7b60f0c4"
+    }
+  },
+  "schema": "ctm_research_candidate_v3",
+  "standard": {
+    "artifactSha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
+    "sources": {
+      "HP": "9b2194fba7ff2d6c285e1ca47275afe4ff3699f98c744a42f9890be049ebf3ab",
+      "downstream": "95e07d97c34a2b220a2ed5d570b2680b190f647c5a5cca945c52a2109e8cd0f0",
+      "maxHP": "045ce23c1fe62253eb4f0f0d6ad0754e4c6455db823c0caa8225485fd20b2938",
+      "potion": "e506d8c68b73cbfcdf826d8ab3a1653f8b468d16f5ad32a50099c241ef4565ef",
+      "survival": "bb422855174d76e92c3ce7f4fa21097be154173685e05af387cc4fb527acad8e"
+    }
+  },
+  "supportCensus": {
+    "allSupportedIndexSha256": "8f8f186b07c28b1b5dd47cb02d87826b32300a5aae9367a14e7085c4f37e0d0a",
+    "testSupportedIndexSha256": "83991199cdb67f02a3a0f77e9fc75b1b6619736b37c639adf24c28d5998185b9"
+  }
+}
+)json";
+constexpr char kRitualRefitProductionCandidateManifestSha256[]="1a13abb74b655fa5676b43b1a5f17929b0897cebfd1023f8f20d0a346c202b0e";
+// The previous production CTM stack: the §423 Lizard-capable pathb-r2 candidate, promoted with its
 // artifact bytes unchanged. These are the exact bytes of its ctm_research_candidate_v3 manifest
 // (candidate-v3-lizard.json, 64da1776), so a default load pins exactly what the §423 and §426
 // runs pinned through STS_CTM_RESEARCH_CANDIDATE_MANIFEST. It differs from the #418 manifest
@@ -483,7 +569,9 @@ const std::vector<const nlohmann::json *> &productionCandidateIdentities() {
         parseEmbeddedManifest(kProductionCandidateManifest,kProductionCandidateManifestSha256);
     static const std::unique_ptr<const nlohmann::json> previous=
         parseEmbeddedManifest(kPreviousProductionCandidateManifest,kPreviousProductionCandidateManifestSha256);
-    static const std::vector<const nlohmann::json *> identities={current.get(),previous.get()};
+    static const std::unique_ptr<const nlohmann::json> ritualRefit=
+        parseEmbeddedManifest(kRitualRefitProductionCandidateManifest,kRitualRefitProductionCandidateManifestSha256);
+    static const std::vector<const nlohmann::json *> identities={ritualRefit.get(),current.get(),previous.get()};
     return identities;
 }
 

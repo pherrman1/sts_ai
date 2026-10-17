@@ -1,0 +1,109 @@
+{
+  "checks": {
+    "act4Rows": 0,
+    "actCounts": {
+      "1": 9,
+      "2": 9,
+      "3": 6
+    },
+    "allRetainedRowsWithinActs1to3": true,
+    "ascension": 0,
+    "contiguousFightIndices": true,
+    "contract": {
+      "completedSeeds": 1,
+      "noAct4Seeds": 0,
+      "outcomes": {
+        "0": 0,
+        "1": 24,
+        "2": 0
+      },
+      "quarantinedRows": 0,
+      "quarantinedSeeds": 0,
+      "requestedSeeds": 1,
+      "rows": 24,
+      "sourceSeeds": 1,
+      "teacherId": "silver-ordinary-fair-learnedstop-ritual-corrected-b94da9bc13f8"
+    },
+    "custody": "Source/executable/build receipt/packet/review/freeze/latch/teacher/data and manifest identities verified",
+    "growthExamples": [
+      {
+        "act": 2,
+        "changes": [
+          {
+            "delta": 3,
+            "index": 10,
+            "misc": 15,
+            "upgraded": false
+          }
+        ],
+        "combatOutcome": 1,
+        "encounter": 28,
+        "fightIdx": 12,
+        "floor": 22,
+        "writhingIntersection": false
+      },
+      {
+        "act": 3,
+        "changes": [
+          {
+            "delta": 3,
+            "index": 10,
+            "misc": 18,
+            "upgraded": false
+          }
+        ],
+        "combatOutcome": 1,
+        "encounter": 49,
+        "fightIdx": 18,
+        "floor": 35,
+        "writhingIntersection": true
+      }
+    ],
+    "rows": 24,
+    "wallSeconds": 16.34412451798562,
+    "writhingIntersectionRows": 3
+  },
+  "classificationScope": "Source-bound corrected producer diagnostic only",
+  "evidenceSha256": {
+    "build-receipt.json": "9456c56403b3cb8806c08cb67b6d1ea4e4a8df3490256cc95776d5b65186dbc2",
+    "exit.json": "e4c2ec0d0ce849e5bef4260faba3949df49eae336a065e3ad02441aeced7240d",
+    "freeze.json": "d119e6fd2da6101ebaa1a36fa8a3a8daec67271943ccd80773a3a937ac7589d5",
+    "result.json": "d5a9ef357dadb55a32f5d3b7080a6b81f232a5639adf7371e218ac0aff60306b",
+    "rows.jsonl": "fd4727e0072757b067ad13fcab128d091af7da9d18c60a1a11a8e46777300d6a",
+    "rows.jsonl.manifest.json": "ed0da129d18748c29de3f45ff3aece3028165c7048331d31e9a051bcb55a51ac",
+    "rows.jsonl.provenance.json": "0bce79dacaf5524e945557927fdb924d26348cc70a35be689009bddcc0ef1081",
+    "run-started.json": "d566cb98de380f006e1dce255331568d878891d99900368459d3d16768bb808f",
+    "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout.log": "860371a456a761aca4d6a85572ef80e56f26353f827f1b28e16eac5872151993",
+    "teacher.json": "83b00ee112392e585a2f4a0645fd9657a5a078990989a743267d8e616661a287"
+  },
+  "findings": [],
+  "interpretation": [
+    "Two actual persistent base-Dagger increases were observed: fight 12, 15 to 18; fight 18 Writhing Mass, 18 to 21. This establishes positive transfer on this one retained TRAIN source.",
+    "All 24 rows are in Acts 1\u20133 (9, 9, 6); key collection being enabled did not produce Act-4 rows in this retained corpus.",
+    "No accounting discrepancy found. Growth and throughput are descriptive; this is not model qualification, balanced training coverage, upgraded/multicopy coverage, or historical-teacher parity.",
+    "Future collection must explicitly freeze STS_COLLECT_KEYS and the desired OOC objective; do not alter or rerun this completed canary to manufacture a historical comparison."
+  ],
+  "limits": [
+    "No rerun, collection, fit, or model inference performed",
+    "Only the authorized retained TRAIN canary rows and source membership metadata reviewed; no TEST payload accessed",
+    "The result is not a gameplay quality or support-promotion verdict"
+  ],
+  "packetIdentity": {
+    "PROTOCOL.md": "18a7859b896fc21e6b98f48a7e6348cf290c0791a35cf30a0183fd071e01fa83",
+    "canary.py": "477df786bf18a72e3aceb2df25dbde82af129bf783c88f32844868bf1075456e",
+    "selection.json": "06cc10b0cc4c676942fb479a523552f54afaea992640a2b90609f21f42fd55fc",
+    "teacher-template.json": "7d3312c2afe1e14185c00e55679f41f1193ce577b4311a9cdb9b280917c6490d",
+    "test_canary.py": "73d9f079ff9eb59cf419d593fb80bfe44b9018ecc8a45f14004fe5370b178f66"
+  },
+  "sourceSha": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793",
+  "teacherCharacterization": {
+    "collectKeys": true,
+    "collectKeysEvidence": "STS_COLLECT_KEYS absent from frozen environment and null in producer provenance; stdout reports [collect keys ON]; apps/one_combat.cpp:3097 defaults true",
+    "combat": "Native Silver project_fair, ordinary 10000 caller budget with plain learned stopping; legacy greedy rollout and three leaf terms disabled",
+    "historicalTeacherReproduction": false,
+    "ooc": "pathb_chain with source-current defaults",
+    "pairedComparison": false
+  },
+  "verdict": "PASS"
+}
