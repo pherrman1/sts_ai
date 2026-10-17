@@ -43,7 +43,11 @@ the selected key, the public heart1 record and a replay-only native snapshot.
 Snapshots fail, and are recorded as `snapshotError`, when the root state carries
 an untagged continuation callback (most REWARDS/MAP roots); the exact replay key
 for every root is (producer binary SHA, seed, decisionIndex), because the frozen
-run is deterministic. `tools/heart_outcome_round2.py` runs the unchanged §497
+run is deterministic. Match and Keep adds hypothetical card-valuation roots with
+indices `(real index << 12) ^ card bits`. These are not monotonic and can repeat,
+so they also need the row position. The validator accepts them from `fed1b9d`.
+Sources that the earlier worker check censored with returncode 65 are
+re-qualified at import (`heart_outcome_round2.py requalify`/`index`). `tools/heart_outcome_round2.py` runs the unchanged §497
 teacher with this trace, an optional §494 sibling subsample (`--sibling-every`,
 default off), TRAIN/VALIDATION development splits and a sealed CONFIRM split.
 [Plan](../../experiments/evidence/heart_outcome_round2_20261017/PLAN.md).

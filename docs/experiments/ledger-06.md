@@ -19731,8 +19731,9 @@ cache-only fitting procedure and exposed-TEST boundary; no native/RL/default cha
 
 ## §503 — Heart-outcome collection round 2: root trace and prepared cohort
 
-**PREPARED_NOT_DISPATCHED; canaries PASS. No fitting, CONFIRM opening, native
-integration or default change.**
+**COLLECTED: 2,048/2,048 sources delivered and verified; every TRAIN/VALIDATION
+source usable; CONFIRM sealed. No fitting, CONFIRM opening, native integration or
+default change.**
 
 Philipp passed on Codex's three-workstream plan (2026-10-16 23:40Z) and asked for
 a thread for workstream 3: more independent observed Heart outcomes under the
@@ -19761,6 +19762,39 @@ confirmation cohort. Base main `217ed7a`; producer source `d8fd2a1`.
 - Philipp chose (2026-10-17 08:23Z) "Do A+S on 32 workers": 2,048 sources
   (1,088 TRAIN / 320 VALIDATION / 640 CONFIRM), plan `dc730f45…`, same producer
   and bundle; re-qualified with a new cloud canary on that plan.
+
+
+Collection record (2026-10-17):
+
+- Pre-launch review and delta review PASS (canary-reviewed `e7700092…`,
+  export check `30dcd684…`). Activation `545699a5…` at 08:59:00Z, deadline
+  14:59:00Z. 32 Haiku cloud workers at RUN_COMMIT `3a02692`, brief `5cf06dab…`.
+  Worker setups refused by the cloud auto-mode classifier were relaunched in fresh
+  threads before running anything (no source ran twice); the 49-session project
+  limit delayed W=29 to about 09:58Z. All 32 workers wrote receipts by about
+  13:44Z; no container restarts, no lost workers, no reruns.
+- Each receipt matches the plan's sources, the activation and its archive hashes
+  ([delivery index](evidence/heart_outcome_round2_20261017/delivery-index.json),
+  sha256 `02c59f5b…`). No timeouts (124) or collection failures (70).
+- Deviation: 166 sources (86 TRAIN, 28 VALIDATION, 52 CONFIRM) returned 65
+  "root trace row does not match the live decision". Match and Keep values each
+  offered card with a hypothetical OOC root indexed `(real index << 12) ^ card
+  bits` (`run_driver.cpp::matchAndKeepPolicyStep`). Those indices are not
+  monotonic and can repeat. The worker's check (at `3a02692`) assumed strictly
+  increasing indices. Root trace validation is the last check in a unit, so
+  states, policy and model-use checks had all passed. The corrected rule (real
+  indices strictly increasing and unique; hypothetical indices `>= 1 << 12`, base
+  above the previous real index) re-qualifies all 114 TRAIN/VALIDATION cases with
+  complete, integrity-passed footers (`tools/heart_outcome_round2.py`
+  `requalify`/`index`, `fed1b9d`). The 52 CONFIRM cases are re-qualified only at
+  the sealed import. For hypothetical roots, the replay key needs the row position
+  as well as (seed, decisionIndex).
+- Outcomes (development splits only): TRAIN 148/1,088 Heart wins (13.6%),
+  VALIDATION 33/320 (10.3%). CONFIRM outcomes stay inside the
+  `SEALED-confirm.tar.gz` archives.
+- TRAIN/VALIDATION cost: mean 770 s, p90 1,267 s, max 2,754 s per source, all
+  inside the 3,600 s cap. Root trace: 107,275 roots, 76,761 searched, native
+  snapshots 24.3%. Sibling subsample: 330,386 rows across 1,408 sources.
 
 **Knowledge impact:** root-trace capture contract added to the maintained OOC
 label pipeline page.
