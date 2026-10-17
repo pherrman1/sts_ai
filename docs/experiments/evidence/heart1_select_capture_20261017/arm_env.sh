@@ -2,7 +2,7 @@
 # The §504 control arm C (docs/experiments/evidence/rollout_student_leaf_20261017/arm_env.sh, arm C) copied
 # literally: A20 Heart objective, keys collected, full runs, student C tree prior and rollout policy, 512 sims.
 #   off  as arm C (parity reference)
-#   cap  + STS_OOC_HEART1_CAPTURE (every 8th prior call, plus every card select a source opens), labelled by
+#   cap  + STS_OOC_HEART1_CAPTURE (every 16th prior call, every 4th card select a source opens), labelled by
 #        heart1 (STS_OOC_HEART1_TEACHER); observation only, decisions must equal "off"
 capture_env_args() {
   local mode=$1 base=$2 run=$3
@@ -25,6 +25,6 @@ capture_env_args() {
   if [ "$mode" = cap ]; then
     [ -s "$run/heart1.bin" ] || { echo "missing $run/heart1.bin" >&2; return 1; }
     printf '%s\n' "STS_OOC_HEART1_TEACHER=$run/heart1.bin" "STS_OOC_HEART1_CAPTURE=$base.capture.jsonl" \
-      STS_OOC_HEART1_CAPTURE_EVERY=8
+      STS_OOC_HEART1_CAPTURE_EVERY=16 STS_OOC_HEART1_CAPTURE_SELECT_EVERY=4
   fi
 }

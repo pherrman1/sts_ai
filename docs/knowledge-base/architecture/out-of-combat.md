@@ -1909,9 +1909,11 @@ with the search and its chain.
 - Distillation capture: `STS_OOC_HEART1_CAPTURE=<jsonl>` appends rows from
   `heart1::priorLogits` (so it needs a heart1 tree prior or heart1 leaf policy):
   every `STS_OOC_HEART1_CAPTURE_EVERY`-th call (default 8) the node itself
-  (`kind: node`), and on every call each card select that a rest, shop-removal,
-  event or boss-relic source opens on a copy of the state (`kind: select`,
-  with `parent_screen`/`parent_bits`). The tree only reaches those selects as
+  (`kind: node`), and every `STS_OOC_HEART1_CAPTURE_SELECT_EVERY`-th (default 1)
+  card select that a rest, shop-removal, event or boss-relic source opens on a
+  copy of the state (`kind: select`, with `parent_screen`/`parent_bits`). Rows
+  also carry `act` and `deck_misc` (card `misc` in deck order, which heart1
+  does not see). The tree only reaches those selects as
   compound candidates, so without this they are never captured. Labels come
   from `STS_OOC_HEART1_TEACHER` (default: the serving weights); `serve` holds
   the serving weights' logits. A record already written by the process is

@@ -1257,9 +1257,9 @@ namespace {
 // STS_OOC_HEART1_CAPTURE: distillation rows from prior calls (observation only).
 struct Capture {
     std::string path;
-    std::uint64_t every = 8;
+    std::uint64_t every = 8, selectEvery = 1;
     std::mutex mutex;
-    std::uint64_t calls = 0;
+    std::uint64_t calls = 0, selects = 0;
     std::unordered_set<std::size_t> seen;
 };
 
@@ -1279,6 +1279,7 @@ Capture *capture() {
         auto *out = new Capture;
         out->path = p;
         out->every = positiveKnob("STS_OOC_HEART1_CAPTURE_EVERY", 8);
+        out->selectEvery = positiveKnob("STS_OOC_HEART1_CAPTURE_SELECT_EVERY", 1);
         return out;
     }();
     return c;
@@ -1335,12 +1336,15 @@ void captureRow(Capture &c, nlohmann::json row, const Choice &choice, const std:
 }
 
 nlohmann::json captureBase(const GameContext &gc, const char *kind) {
-    return {{"kind", kind}, {"seed", std::to_string(gc.seed)}, {"act", gc.act}, {"floor", gc.floorNum},
-            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}};
+    // deck_misc follows obs.deck.cards (Ritual Dagger damage, Genetic Algorithm block), which heart1 does not see.
+    std::vector<int> misc;
+    for (const auto &c : gc.deck.cards) misc.push_back(c.misc);
+    return {{"kind", kind}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}, {"deck_misc", misc}};
 }
 
-// Every EVERY-th prior call writes the node; every call with a source that opens a
-// card select writes that select (the state the tree reaches only as a compound
+// Every EVERY-th prior call writes the node; every SELECT_EVERY-th card select that a
+// source opens is written too (the state the tree reaches only as a compound
 // candidate, so the prior is never asked there).
 void captureCall(const GameContext &gc, const Choice &choice, const std::vector<float> &serve,
                  const std::vector<GA> &actions) {
@@ -1366,6 +1370,10 @@ void captureCall(const GameContext &gc, const Choice &choice, const std::vector<
         if (next.outcome != GameOutcome::UNDECIDED || next.screenState != ScreenState::CARD_SELECT
                 || !buildChoice(next, select) || select.record.choiceCount() < 2)
             continue;
+        {
+            std::lock_guard<std::mutex> lock(c.mutex);
+            if (c.selects++ % c.selectEvery != 0) continue;
+        }
         auto row = captureBase(next, "select");
         row["parent_screen"] = int(gc.screenState);
         row["parent_bits"] = a.bits;
