@@ -366,6 +366,33 @@ int main(int argc, char **argv) {
             && forcedBefore == test::oocStateFingerprint(forcedMap),
             "live advisor returns sole map action without model sampling or mutation: "
                 + forcedDecision.reason + " candidates=" + std::to_string(forcedDecision.candidates.size()));
+        {
+            // Force a hypothetical combat from two legal map choices. Refusal
+            // sentinels identify the sampler without training, model weights,
+            // campaign traversal or a successful imagined outcome.
+            struct DispatchSampler final : CombatTransitionSampler {
+                mutable int calls=0;
+                CombatRuntimeSupport support(const GameContext &,const CombatPredictorInputV1 &) const override {
+                    ++calls;return {false,"dispatch_probe"};
+                }
+                CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+                    throw std::runtime_error("dispatch probe must not sample an unsupported combat");
+                }
+            };
+            for(int ascension:{0,1,20}) for(bool configured:{false,true}) {
+                auto route=gc;route.ascension=ascension;route.screenState=ScreenState::MAP_SCREEN;
+                route.curMapNodeX=route.curMapNodeY=-1;route.curEvent=Event::INVALID;
+                route.map=std::make_shared<Map>();
+                for(int x:{0,1}) {route.map->nodes[0][x].room=Room::MONSTER;route.map->nodes[0][x].addEdge(0);}
+                auto base=std::make_shared<DispatchSampler>(), a20=std::make_shared<DispatchSampler>();
+                LiveOocMctsPolicy dispatch(*model,base,&unusedWin,&unusedFloor,{},configured?a20:nullptr);
+                const auto result=dispatch.score(route,{},0);
+                const bool useA20=ascension==20 && configured;
+                require(!result.supported && (useA20?a20->calls:base->calls)>0
+                        && (useA20?base->calls:a20->calls)==0,
+                        "live MCTS did not dispatch the hypothetical combat to the exact ascension stack");
+            }
+        }
         auto emptyRewards = forcedMap;
         emptyRewards.screenState = ScreenState::REWARDS;
         emptyRewards.info.rewardsContainer.clear();
