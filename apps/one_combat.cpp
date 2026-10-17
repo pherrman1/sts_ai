@@ -3637,6 +3637,23 @@ int main(int argc, char **argv) {
                   << " -> " << out << '\n';
         strategicMargGen(nSeeds, outerSims, H, maxPerRun, out, seedOff);
 
+    } else if (mode == "potionpriceprobe") {
+        // Paired-continuation resource prices (research only):
+        // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA]
+        if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8]\n"; return 2; }
+        const int nSeeds = std::stoi(argv[2]);
+        const std::uint64_t seedStart = std::stoull(argv[3]);
+        const int sims = std::stoi(argv[4]);
+        const int asc = std::stoi(argv[5]);
+        const std::string out = argv[6];
+        const int statesPerRun = argc > 7 ? std::stoi(argv[7]) : 4;
+        const int fightsAhead = argc > 8 ? std::stoi(argv[8]) : 3;
+        const int hpDelta = argc > 9 ? std::stoi(argv[9]) : 8;
+        std::cout << "potionpriceprobe seeds " << seedStart << ".." << seedStart + nSeeds - 1
+                  << " sims=" << sims << " asc=" << asc << " statesPerRun=" << statesPerRun
+                  << " fightsAhead=" << fightsAhead << " hpDelta=" << hpDelta << " -> " << out << '\n';
+        potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta);
+
     } else if (mode == "oocfactoreval") {
         // nDecisions is explicit for tools/seed_guard.sh and checked against
         // the manifest by the offline workflow.

@@ -19925,3 +19925,35 @@ A ranking-selected candidate is a new hypothesis that needs its own frozen proto
 CONFIRM. Two combined launches failed on GPU memory before any optimizer step; kept as `failed-*`.
 [Report](evidence/arm_c_value_finetune_20261017/REPORT.md).
 **Knowledge impact:** learned OOC value-head status in current-research.
+
+## §510 — potion prices by paired continuation at A20 (2026-10-17)
+
+**Flat 11 per potion CONSISTENT (pre-registered); without Fairy about 8; per-type prices spread widely.** Philipp (2026-10-17 12:04Z, thread
+"Silver leaf evaluation") asked to measure what Silver's flat 11-HP potion term should be at A20, per
+potion type. [Pre-registration](evidence/potion_price_probe_20261017/PREREG.md), independent pre-launch
+review PASS. New research mode `potionpriceprobe` at `5dfabf90`. Each A20 source run (exact-10k Silver,
+V4 OOC policy, OOC MCTS off) samples up to 8 battle-start states that hold potions. Paired copies of each
+state share all RNG and the policy state: unchanged, one per held potion type with that potion removed,
+and HP −12. Each copy plays the next 3 fights, then the A20 floor model values it. Seeds
+111110000–111110999 on two cloud containers, 3 h each: 498 seeds ran, the unstarted rest stay unused.
+3,550 states, 5,220 potion rows, 0 invalid, 7 terminal states dropped.
+
+Primary (A20 floor model): 1 HP = 0.092 floors [0.074, 0.111]. The pooled potion price is **9.9 HP-eq
+[7.9, 12.3], CONSISTENT_WITH_11**; the §385 range of 2-8 is not excluded (lower bound 7.9). The production
+floor model gives 8.6 [6.7, 11.0]. Public X2-B after the same continuation gives 11.2 [8.7, 14.4]. The A20
+win model gives 16.6 [12.0, 23.4]. Per type (descriptive; 26 of 33 types with n ≥ 100): Fairy 44 [33, 58];
+Attack 21, Blood 18, Skill 15, Fear 14 and Power 13 (CIs above 0). Weak, Block, Speed, Swift, Essence of
+Steel and Liquid Bronze price near 0 (−6 to +1, with wide CIs).
+
+Post hoc (review): Silver already scores Fairy separately, as 11 + 0.3 × max HP through its death-save
+term. Without Fairy (4,916 rows) potions price at 7.8 HP-eq [6.1, 9.8] (production floor model 7.8
+[5.8, 10.1], X2-B 8.5 [6.3, 10.9]; A20 win model 10.1 [6.7, 15.0]).
+**Inference:** the flat 11 may overprice non-Fairy potions at A20; this split was not pre-registered.
+§385's low X2-B prices may have come from static post-fight pricing, since X2-B after play gives 8.5-11
+(§385 lives on closed PR #422). Per-type weights are untested in play. No default change. Reproducing
+needs `5dfabf90`, since #592 changed Silver rollouts on main (its `STS_SILVER_ROLLOUT_ZERO_COST_CAP=0`
+switch is still rejected by `one_combat`'s option allow-list on main).
+Seeds 111110000–111110999 and smokes 111119900–111119905 are used; the reviewer reserved 111119950–959.
+[Result](evidence/potion_price_probe_20261017/RESULT.md), [analysis.json](evidence/potion_price_probe_20261017/analysis.json).
+Raw: `/mnt/project-files/potion-price-probe/ppp-w0{0,1}.tar.gz`.
+**Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
