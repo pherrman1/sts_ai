@@ -2311,10 +2311,19 @@ public:
 // Opt-in (STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=N): keeps the CTM for every
 // combat it supports and plays only the combats it refuses with plain Silver at
 // N simulations, instead of aborting the whole search to the V4 fallback.
-// Counts per refusal reason are reported per run as [ooc-silver-fallback].
+// Opt-in (STS_OOC_MCTS_ACT4_SILVER_SIMS=M): also plays Shield and Spear and the
+// Heart with plain Silver at M simulations, because no CTM was trained on them.
+// Either count may be 0 (that route off). Counts per reason are reported per run
+// as [ooc-silver-fallback]; Act-4 combats count as "act4_silver".
 class SilverFallbackCombatTransitionSampler final : public CombatTransitionSampler {
     std::shared_ptr<const CombatTransitionSampler> inner_;
     int simulations_;
+    int act4Simulations_;
+    bool act4(const CombatPredictorInputV1 &input) const {
+        return act4Simulations_ > 0
+            && (input.globals.encounter == static_cast<int>(sts::MonsterEncounter::SHIELD_AND_SPEAR)
+                || input.globals.encounter == static_cast<int>(sts::MonsterEncounter::THE_HEART));
+    }
     mutable std::mutex mutex_;
     mutable std::map<std::string, std::uint64_t> reasons_;
     void count(const std::string &reason) const {
@@ -2322,17 +2331,22 @@ class SilverFallbackCombatTransitionSampler final : public CombatTransitionSampl
         ++reasons_[reason.empty() ? "unspecified" : reason];
     }
 public:
-    SilverFallbackCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int simulations)
-        : inner_(std::move(inner)), simulations_(simulations) {}
+    SilverFallbackCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int simulations,
+                                          int act4Simulations = 0)
+        : inner_(std::move(inner)), simulations_(simulations), act4Simulations_(act4Simulations) {}
     std::map<std::string, std::uint64_t> takeReasons() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return std::exchange(reasons_, {});
     }
     std::unique_ptr<PreparedCombatTransition> prepare(const GameContext &gc,
             const CombatPredictorInputV1 &input) const override {
-        auto prepared = inner_->prepare(gc, input);
-        if (prepared->support().supported) return prepared;
-        count(prepared->support().reason);
+        const bool act4Route = act4(input);
+        std::unique_ptr<PreparedCombatTransition> prepared;
+        if (!act4Route) {
+            prepared = inner_->prepare(gc, input);
+            if (prepared->support().supported || simulations_ == 0) return prepared;
+        }
+        count(act4Route ? "act4_silver" : prepared->support().reason);
         class SilverPrepared final : public PreparedCombatTransition {
             GameContext gc_;
             int simulations_;
@@ -2344,10 +2358,11 @@ public:
                 return playImaginedCombatWithSilver(gc_, rng, simulations_, false);
             }
         };
-        return std::make_unique<SilverPrepared>(gc, simulations_);
+        return std::make_unique<SilverPrepared>(gc, act4Route ? act4Simulations_ : simulations_);
     }
-    CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
-        return {true, {}};
+    CombatRuntimeSupport support(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        if (simulations_ > 0 || act4(input)) return {true, {}};
+        return inner_->support(gc, input);
     }
     CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &input) const override {
         return inner_->forecastSupport(input);
@@ -2361,14 +2376,20 @@ public:
     bool modelsSmokeBombEscape() const override { return inner_->modelsSmokeBombEscape(); }
     CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &input,
                                std::mt19937_64 &rng) const override {
+        if (act4(input)) {
+            count("act4_silver");
+            return playImaginedCombatWithSilver(gc, rng, act4Simulations_, false);
+        }
         const auto support = inner_->support(gc, input);
         if (support.supported) return inner_->sample(gc, input, rng);
+        if (simulations_ == 0) return {};
         count(support.reason);
         return playImaginedCombatWithSilver(gc, rng, simulations_, false);
     }
 };
 int liveSilverResolverSims = 0;
 int liveUnsupportedSilverSims = 0;
+int liveAct4SilverSims = 0;
 
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
@@ -2648,6 +2669,7 @@ void configureLiveOocMcts() {
     liveFallbackSampler.reset();
     liveFallbackSamplerA20.reset();
     liveUnsupportedSilverSims = 0;
+    liveAct4SilverSims = 0;
     const char *enabled = std::getenv("STS_OOC_MCTS");
     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
         throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
@@ -2700,6 +2722,9 @@ void configureLiveOocMcts() {
     const char *unsupportedSilver = std::getenv("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
     if (unsupportedSilver && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS requires STS_OOC_MCTS=1");
+    const char *act4Silver = std::getenv("STS_OOC_MCTS_ACT4_SILVER_SIMS");
+    if (act4Silver && !liveEnabled)
+        throw std::runtime_error("STS_OOC_MCTS_ACT4_SILVER_SIMS requires STS_OOC_MCTS=1");
     if (!liveEnabled) return;
     decisionLogPath.clear();
     if (const char *path = std::getenv("STS_OOC_MCTS_DECISION_LOG"); path && *path) decisionLogPath = path;
@@ -2927,20 +2952,27 @@ void configureLiveOocMcts() {
             << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
             << " active_lizard_correction=1\n" << std::setprecision(6);
     }
-    if (unsupportedSilver) {
-        const std::string value = unsupportedSilver;
+    const auto silverSims = [&](const char *raw, const char *name) {
+        const std::string value = raw;
         if (value.empty() || value.size() > 6 || value.find_first_not_of("0123456789") != std::string::npos
                 || std::stoi(value) < 1)
-            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS must be in 1..999999");
+            throw std::runtime_error(std::string(name) + " must be in 1..999999");
         if (silverResolver)
-            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS excludes STS_OOC_MCTS_COMBAT_RESOLVER");
+            throw std::runtime_error(std::string(name) + " excludes STS_OOC_MCTS_COMBAT_RESOLVER");
         if (std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
-            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS excludes STS_OOC_MCTS_LEAF_CAPTURE");
-        liveUnsupportedSilverSims = std::stoi(value);
-        liveFallbackSampler = std::make_shared<SilverFallbackCombatTransitionSampler>(liveSampler, liveUnsupportedSilverSims);
+            throw std::runtime_error(std::string(name) + " excludes STS_OOC_MCTS_LEAF_CAPTURE");
+        return std::stoi(value);
+    };
+    if (unsupportedSilver) liveUnsupportedSilverSims = silverSims(unsupportedSilver, "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
+    if (act4Silver) liveAct4SilverSims = silverSims(act4Silver, "STS_OOC_MCTS_ACT4_SILVER_SIMS");
+    if (unsupportedSilver || act4Silver) {
+        liveFallbackSampler = std::make_shared<SilverFallbackCombatTransitionSampler>(
+            liveSampler, liveUnsupportedSilverSims, liveAct4SilverSims);
         if (liveSamplerA20)
-            liveFallbackSamplerA20 = std::make_shared<SilverFallbackCombatTransitionSampler>(liveSamplerA20, liveUnsupportedSilverSims);
+            liveFallbackSamplerA20 = std::make_shared<SilverFallbackCombatTransitionSampler>(
+                liveSamplerA20, liveUnsupportedSilverSims, liveAct4SilverSims);
         std::cout << "[ooc-mcts-silver-fallback] unsupported_silver_sims=" << liveUnsupportedSilverSims
+            << " act4_silver_sims=" << liveAct4SilverSims
             << " root_prior=off redraw=seed_and_six_combat_streams\n";
     }
     if (const char *capturePath = std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")) {
@@ -4092,7 +4124,8 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         std::uint64_t total = 0;
         for (const auto &entry : reasons) total += entry.second;
         std::cerr << "[ooc-silver-fallback] " << nlohmann::json{{"seed", seed},
-            {"silverSims", liveUnsupportedSilverSims}, {"resolvedByReason", reasons},
+            {"silverSims", liveUnsupportedSilverSims}, {"act4SilverSims", liveAct4SilverSims},
+            {"resolvedByReason", reasons},
             {"resolved", total}}.dump() << '\n';
     }
     EntropicBrewFallbackCombatTransitionSampler::Metrics brewMetrics;
@@ -6655,6 +6688,26 @@ void oocMctsAdapterSelfTest() {
             && fallback.takeReasons().empty() && test::oocStateFingerprint(fight)==fightBefore
             && !sts::search::g_disallowImaginedCombat,
             "Silver fallback resolves refused combats deterministically per planner RNG and counts them");
+        // STS_OOC_MCTS_ACT4_SILVER_SIMS alone: other refusals still abort; Act-4 combats skip the CTM.
+        const SilverFallbackCombatTransitionSampler act4Only(std::make_shared<AlwaysUnsupported>(),0,16);
+        require(!act4Only.support(fight,input).supported && !act4Only.prepare(fight,input)->support().supported
+            && act4Only.sample(fight,input,first).outcome==CombatRuntimeSample::Outcome::UNSUPPORTED
+            && act4Only.takeReasons().empty(), "Act-4 route leaves other refused combats to the abort path");
+        auto heart=detachedCopy(live);
+        heart.act=4; heart.floorNum=55;
+        heart.curRoom=Room::BOSS;
+        heart.enterBattle(MonsterEncounter::THE_HEART);
+        const auto heartBefore=test::oocStateFingerprint(heart);
+        const auto heartInput=captureCombatPredictorInput(heart,MonsterEncounter::THE_HEART,0.0);
+        std::mt19937_64 third(2),fourth(2);
+        const auto preparedHeart=act4Only.prepare(heart,heartInput);
+        const auto h1=preparedHeart->sample(third), h2=act4Only.sample(heart,heartInput,fourth);
+        const auto heartReasons=act4Only.takeReasons();
+        require(preparedHeart->support().supported && act4Only.support(heart,heartInput).supported
+            && h1.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED && h1.outcome==h2.outcome
+            && h1.rawPost.curHp==h2.rawPost.curHp && heartReasons.size()==1 && heartReasons.at("act4_silver")==2
+            && test::oocStateFingerprint(heart)==heartBefore && !sts::search::g_disallowImaginedCombat,
+            "Act-4 route plays the Heart with Silver and never asks the CTM");
     }
     auto sole=detachedCopy(live);
     int firstNode=-1;
