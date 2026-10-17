@@ -2681,13 +2681,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return index;
     }
 
+    // Vanilla sets monsterAttacksQueued after dispatching enemies and leaves
+    // it true throughout the following player turn. AbstractRoom$1 resets it
+    // only when the player ends that turn; it is not pending enemy work.
+    // Actual enemy/pre-turn queues are checked separately by each continuation.
+    static boolean playerSelectionTurn(boolean turnHasEnded, boolean endTurnQueued, boolean isEndingTurn) {
+        return !turnHasEnded && !endTurnQueued && !isEndingTurn;
+    }
+
     private static String publicPendingActionsJson(boolean opening) {
         return publicPendingActionsJson(opening,null);
     }
 
     private static String publicPendingActionsJson(boolean opening,String sourceTask) {
         com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
-        if(manager==null || manager.turnHasEnded || manager.monsterAttacksQueued
+        if(manager==null || !playerSelectionTurn(manager.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !manager.preTurnActions.isEmpty() || !manager.monsterQueue.isEmpty()
                 || (sourceTask==null && (!manager.cardQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()))
                 || manager.actions.size()>128) return null;
@@ -2793,7 +2801,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String publicTail=publicPendingActionsJson(false);
         if(publicTail!=null) return publicTail.equals("[]") ? "none" : "public_actions";
         com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
-        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+        if (actions == null || !playerSelectionTurn(actions.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !actions.preTurnActions.isEmpty() || !actions.monsterQueue.isEmpty()) return null;
         int cleanups = 0;
         for (Object pending : actions.actions) {
@@ -2877,7 +2885,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String cardRewardContinuation() {
         com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
-        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+        if (actions == null || !playerSelectionTurn(actions.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
                 || !actions.monsterQueue.isEmpty()) return "unsupported";
         if (actions.actions.isEmpty() && AbstractDungeon.player.limbo.isEmpty()) return "none";
@@ -2929,7 +2937,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
     private static List<Integer> toolboxDrawsAfter() {
         com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
-        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+        if (actions == null || !playerSelectionTurn(actions.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
                 || !actions.monsterQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()) return null;
         List<String> classes = new ArrayList<>(); List<Integer> amounts = new ArrayList<>();
@@ -2985,7 +2993,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         return actions.actions.size() <= 128 && hasRelic("Nilry's Codex") && codexEndTurnContinuation(classes,
                 AbstractDungeon.player.endTurnQueued && !AbstractDungeon.player.isEndingTurn,
-                !actions.turnHasEnded && !actions.monsterAttacksQueued && actions.preTurnActions.isEmpty()
+                !actions.turnHasEnded && actions.preTurnActions.isEmpty()
                     && pendingCardQueue(new IdentityHashMap<AbstractMonster,Integer>(),true).error==null
                     && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
                 AbstractDungeon.player.maxOrbs == 0 && AbstractDungeon.player.orbs.isEmpty());

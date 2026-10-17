@@ -1088,6 +1088,12 @@ combat and returns Silver `UNSUPPORTED` with `silver_unmapped_selection_task`,
 allowing the normal deterministic combat fallback. Hand selections project the
 screen's actual `canPickZero` value. The driver still stops on any genuine
 boundary mismatch instead of reinterpreting OOC output as a Silver result.
+Player selection continuations use the player's actual end-turn flags and
+require empty enemy and pre-turn queues. Vanilla's `monsterAttacksQueued` is
+not a pending-work flag: it remains true after the enemy turn and resets only
+at the next player end-turn action. Rejecting that flag alone incorrectly
+rejects later-turn Warcry and other otherwise qualified selections. Codex
+retains its explicit end-turn continuation contract and queue validation.
 Warcry, base Forethought, Armaments, Dual Wield, Exhume, Headbutt, one-card ExhaustAction,
 Secret Technique and Secret Weapon derive their
 selection task from the active vanilla action class, with exact screen/count

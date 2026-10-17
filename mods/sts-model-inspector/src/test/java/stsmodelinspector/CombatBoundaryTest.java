@@ -8,6 +8,12 @@ import com.google.gson.JsonObject;
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
     public static void main(String[] args) {
+        // Later-turn Warcry has a stale monsterAttacksQueued=true even with
+        // no enemy/pre-turn work. Only the actual player end-turn lifecycle
+        // flags can prohibit an otherwise qualified player selection.
+        for (int flags=0; flags<8; ++flags)
+            if (STSModelInspector.playerSelectionTurn((flags&1)!=0,(flags&2)!=0,(flags&4)!=0) != (flags==0))
+                throw new AssertionError("player selection end-turn lifecycle guard");
         if (STSModelInspector.awakenedNativePhase(null, false) != null
                 || STSModelInspector.awakenedNativePhase(true, false) != 0
                 || STSModelInspector.awakenedNativePhase(false, true) != 0
