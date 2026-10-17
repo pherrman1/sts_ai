@@ -1,5 +1,6 @@
 """Controlled Ritual coverage pilot launcher boundaries; no native run."""
 from pathlib import Path
+import subprocess
 import sys
 import unittest
 
@@ -55,6 +56,13 @@ class RitualCoveragePilotTest(unittest.TestCase):
                     dict(review, recipeSha256="0" * 64)):
             with self.assertRaises(ValueError):
                 pilot.approval_check(bad, approval, identity)
+
+    def test_script_execution_can_import_every_analysis_module(self):
+        # Run as a script (not -m) from outside the repo, as an operator would.
+        script = Path(pilot.__file__).resolve()
+        code = ("import runpy,sys; sys.argv=[%r]; g=runpy.run_path(%r, run_name='pilot'); "
+                "g['analysis_imports_check']()") % (str(script), str(script))
+        subprocess.run([sys.executable, "-c", code], check=True, cwd="/")
 
 
 if __name__ == "__main__":

@@ -18,10 +18,13 @@ import resource
 import signal
 import struct
 import subprocess
+import sys
 import time
 from types import SimpleNamespace
 
 REPO = Path(__file__).resolve().parents[1]
+# Analysis imports `tools.*`; script execution only puts tools/ on sys.path.
+sys.path.insert(0, str(REPO))
 PROTOCOL = REPO / "docs/experiments/evidence/ritual_coverage_pilot_20261017/PROTOCOL.md"
 LIVE_SHA = "8879b5314136c8f9acfe999e40c202e33fde0571"
 SPLIT = Path("/home/philippherrmann/Documents/sts/wt-ctm-retrain/build/ctm-retrain-a69f8862/p1/split_manifest.json")
@@ -216,7 +219,19 @@ def freeze(args):
     write(args.out / "freeze.json", frozen)
 
 
+ANALYSIS_MODULES = ("combat_transition_surrogate", "combat_transition_contract", "combat_predictor_input_contract",
+                    "combat_transition_sparse_events", "combat_transition_potion_trajectory",
+                    "combat_transition_composed", "combat_transition_near_full_support")
+
+
+def analysis_imports_check():
+    import importlib
+    for name in ANALYSIS_MODULES:
+        importlib.import_module("tools." + name)
+
+
 def verify_freeze(out):
+    analysis_imports_check()
     frozen = read(out / "freeze.json")
     require(frozen["recipe"] == recipe() and frozen["packetIdentity"] == packet_identity(), "recipe/packet changed")
     require(source_identity(frozen["identity"]["executable"], frozen["identity"]["sourceSha"]) == frozen["identity"],
@@ -590,8 +605,10 @@ def run(out):
                 checkpoint_wait = next_index >= 12 and any(not result.get("finished") for result in results[:12])
             for index, entry in list(active.items()):
                 elapsed = time.monotonic() - entry["start"]; proc = entry["proc"]
-                timed_out = elapsed >= BUDGET["unitSeconds"] or bool(stop_reason)
-                rc = stop_process(proc) if timed_out and proc.poll() is None else proc.poll()
+                # A unit that already exited is never relabelled as timed out.
+                rc = proc.poll(); timed_out = False
+                if rc is None and (elapsed >= BUDGET["unitSeconds"] or stop_reason):
+                    rc = stop_process(proc); timed_out = True
                 if rc is None:
                     continue
                 execution = dict(returnCode=rc, timedOut=timed_out, wallSeconds=time.monotonic() - entry["start"], affinityCpu=entry["cpu"])
