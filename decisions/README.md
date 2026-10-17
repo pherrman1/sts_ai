@@ -29,6 +29,9 @@ the replacement.
 - [ADR-0043](0043-az-loop-gumbel-policy-target.md) makes the planned AlphaZero-style OOC loop train its
   policy on Gumbel completed-Q targets rather than raw visit shares (no default changes).
 
+- [ADR-0042](0042-heart1full-prior-default.md) makes heart1full the live OOC MCTS tree prior when
+  `STS_OOC_HEART1` is set (`STS_OOC_MCTS_PRIOR=heart1` or `=policy` restores the old prior).
+
 - [ADR-0041](0041-a20-heart-objective.md) sets whole-run defaults to A20 Ironclad
   Heart kills, required key collection and goal-aware terminal labels.
 

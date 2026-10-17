@@ -232,6 +232,9 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         std::vector<CombatEvalFight> *combatCapture = nullptr);
 // Effective OOC policy identity: teacher checks and the bestbench sidecar.
 nlohmann::json effectiveOocPolicySpecification();
+// Effective Silver leaf valuation (leaf terms, escape penalty, rollout card table)
+// for data manifests; defaults are recorded, not only the environment as set.
+nlohmann::json effectiveSilverLeafSpecification();
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance = false,
                                                  bool requireOocPolicy = false,
