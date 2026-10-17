@@ -45,6 +45,8 @@
 #include <cmath>
 #include <cstdio>
 #include <atomic>
+#include <limits>
+#include "sim/search/PotionRewardPolicy.h"
 #include <iomanip>
 #include <iostream>
 #include <set>
@@ -1390,6 +1392,34 @@ void OocGameContextModel::applyTargetPrior(const GameContext &gc, const std::vec
         ++reasons["target:scored"];
     }
 }
+// STS_OOC_MCTS_POTION_KEEP_PRIOR: discard candidates on a reward screen are scored relative to
+// "Leave rewards" by ADR-0039 keep values. Discarding only gains the best reward potion when the
+// belt is full and Sozu is absent; otherwise the gain is nothing and the discard is a pure loss.
+static bool applyPotionKeepPrior(const GameContext &gc,
+    const std::vector<OocGameContextModel::Candidate> &actions, std::vector<double> &logits) {
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    std::vector<std::size_t> discards;
+    std::optional<double> leave;
+    double bestOther = -std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < actions.size(); ++i) {
+        const auto effect = actions[i].semantic ? std::optional(actions[i].semantic->effect) : std::nullopt;
+        if (effect == sts::search::OocSemanticEffect::DISCARD_POTION) discards.push_back(i);
+        else if (effect == sts::search::OocSemanticEffect::LEAVE_REWARDS) leave = logits[i];
+        else bestOther = std::max(bestOther, logits[i]);
+    }
+    if (discards.empty()) return false;
+    const double base = leave ? *leave : std::isfinite(bestOther) ? bestOther : 0.0;
+    const auto &r = gc.info.rewardsContainer;
+    int offered = 0;
+    if (gc.potionCount >= gc.potionCapacity && !gc.hasRelic(RelicId::SOZU))
+        for (int i = 0; i < r.potionCount; ++i) offered = std::max(offered, sts::search::potionKeepRank(r.potions[i]));
+    for (const auto i : discards) {
+        const int slot = actions[i].primitive.getIdx1();
+        const int held = slot >= 0 && slot < gc.potionCapacity ? sts::search::potionKeepRank(gc.potions[slot]) : 0;
+        logits[i] = base + double(offered - std::max(held, 0)) / 100.0;
+    }
+    return true;
+}
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
     OocProfileScope priorBuild(OocProfileBucket::PriorBuild);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
@@ -1411,11 +1441,22 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     }
     bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
     std::vector<double> weights;
+    std::optional<std::vector<double>> logits;
     if (!uniform) {
-        const auto logits = policyLogits(id);
+        logits = policyLogits(id);
         uniform = cached.heart1OnlyFailed;
-        if (!uniform) weights = oocPolicyWeights(logits, options.priorTemperature);
+        if (uniform) logits.reset();
     }
+    if (options.potionKeepPrior && !options.uniformPrior) {
+        // A uniform node scores its other candidates 0, so discards sit relative to that.
+        auto keep = logits ? *logits : std::vector<double>(actions.size(), 0.0);
+        if (applyPotionKeepPrior(state(id), actions, keep)) {
+            logits = keep;
+            uniform = false;
+            if (t_decisionLog) t_decisionLog->add("potion_keep_prior", id == 0 ? "root" : "tree");
+        }
+    }
+    if (!uniform) weights = oocPolicyWeights(*logits, options.priorTemperature);
     if (uniform) weights.assign(actions.size(), 1.0);
     if (!uniform) {
         std::map<std::uint32_t, std::size_t> counts;
@@ -2505,6 +2546,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
         opts.heart1LeafPolicy = value == "heart1";
     }
     else if (key == "STS_OOC_MCTS_TARGET_PRIOR") opts.targetPrior = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_POTION_KEEP_PRIOR") opts.potionKeepPrior = choice("0", "1");
     else if (key == "STS_OOC_MCTS_LEAF_SELECTS") opts.heart1LeafSelects = choice("chain", "heart1");
     else if (key == "STS_OOC_MCTS_CPU_SECONDS") {
         const double x = number(); if (x < 0 || x > 10) invalid(); opts.cpuBudgetSeconds = x;
@@ -2529,7 +2571,7 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
     "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS",
-    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS"
+    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS", "STS_OOC_MCTS_POTION_KEEP_PRIOR"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -6006,6 +6048,10 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","heart1",parsed,opts);
         require(opts.targetPrior && opts.heart1LeafSelects,"target prior and heart1 leaf selects parsed");
         applyLiveControl("STS_OOC_MCTS_TARGET_PRIOR","0",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_POTION_KEEP_PRIOR","1",parsed,opts);
+        require(opts.potionKeepPrior,"potion keep prior parsed");
+        applyLiveControl("STS_OOC_MCTS_POTION_KEEP_PRIOR","0",parsed,opts);
+        require(!opts.potionKeepPrior,"potion keep prior rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","chain",parsed,opts);
         require(!opts.targetPrior && !opts.heart1LeafSelects,"target prior and leaf selects rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","v4",parsed,opts);
@@ -6036,7 +6082,7 @@ void oocMctsAdapterSelfTest() {
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},{"STS_OOC_MCTS_LEAF_COMBATS","4"},
             {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_POLICY","Prior"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
-            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
+            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_POTION_KEEP_PRIOR","yes"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
             rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
     }
     const PathHistory *saved=t_curPath; t_curPath=&path;
@@ -7230,6 +7276,44 @@ void oocMctsAdapterSelfTest() {
         }
         require(goldOrPotion != rules && (rewardModel.state(0).potionCount == (rules ? 1 : 0)),
             "tree rules take gold and a potion with belt space before the root");
+    }
+    // STS_OOC_MCTS_POTION_KEEP_PRIOR: a full belt whose potions all outrank the reward (the rule
+    // declines) gives the uniform root discard candidates; the option ranks them by keep value,
+    // all below "Leave rewards", and leaves other candidates flat.
+    for (const bool keepPrior : {false, true}) {
+        auto rewardRoot = makeRewardRoot();
+        rewardRoot.info.rewardsContainer.addPotion(Potion::ELIXIR_POTION);
+        const Potion held[] = {Potion::BLOOD_POTION, Potion::HEART_OF_IRON, Potion::FRUIT_JUICE};
+        rewardRoot.potionCount = 0;
+        for (int slot = 0; slot < rewardRoot.potionCapacity; ++slot) {
+            rewardRoot.potions[slot] = held[slot % 3]; ++rewardRoot.potionCount;
+        }
+        PathHistory rewardPath;
+        rewardPath.update(rewardRoot);
+        OocAdapterOptions keepOptions;
+        keepOptions.potionKeepPrior = keepPrior;
+        OocGameContextModel rewardModel(rewardRoot, rewardPath, {}, keepOptions);
+        std::map<Potion, double> discard;
+        double leave = -1, other = -1;
+        bool otherFlat = true;
+        for (const auto &a : rewardModel.legalActions(0)) {
+            const auto &c = rewardModel.candidate(0, a.id);
+            if (c.semantic->effect == OocSemanticEffect::DISCARD_POTION)
+                discard[rewardRoot.potions[c.primitive.getIdx1()]] = a.prior;
+            else if (c.semantic->effect == OocSemanticEffect::LEAVE_REWARDS) leave = a.prior;
+            else { otherFlat &= other < 0 || std::abs(other - a.prior) < 1e-12; other = a.prior; }
+        }
+        require(discard.size() == 3 && leave > 0 && otherFlat, "potion keep prior fixture");
+        const double ratio = discard.at(Potion::HEART_OF_IRON) / leave;
+        if (!keepPrior)
+            require(std::abs(ratio - 1) < 1e-12 && std::abs(discard.at(Potion::BLOOD_POTION) - leave) < 1e-12,
+                "without the potion keep prior the discard root stays uniform");
+        else
+            require(std::abs(ratio - std::exp((47.0 - 666.0) / 100.0)) < 1e-9
+                && discard.at(Potion::BLOOD_POTION) < discard.at(Potion::FRUIT_JUICE)
+                && discard.at(Potion::FRUIT_JUICE) < discard.at(Potion::HEART_OF_IRON)
+                && (other < 0 || std::abs(other - leave) < 1e-12),
+                "potion keep prior ranks discards by keep value below leave");
     }
     {
         OocSemanticAction first{OocSemanticEffect::BOTTLE_CARD, OocSemanticSource::SELECTOR,

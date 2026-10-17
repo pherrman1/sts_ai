@@ -1606,6 +1606,14 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    then often discards a held potion to take the worse reward (§514; 505 times
    in 1,408 §503 runs). `STS_POTION_REWARD_DECLINE_LEAVE=1` (research option,
    default off) leaves such a screen when nothing else is on it.
+   `STS_OOC_MCTS_POTION_KEEP_PRIOR=1` (research option, default off) instead
+   gives every reward-screen "discard potion" candidate in the tree the logit
+   of "Leave rewards" plus (keep value of the best reward potion it makes room
+   for minus keep value of the discarded potion) / 100; the gain is zero with a
+   free slot, with Sozu or without a reward potion. On a uniform node the other
+   candidates keep logit 0. It is a stopgap until the AlphaZero-style loop
+   trains a discard output (student C has none; see
+   [current-research.md](../evaluation/current-research.md)).
    The effective teacher specification includes `potion_reward_swap: true`
    for unset/`1`; `=0` omits it and restores the legacy pickup, which took
    reward potion 0 only when
