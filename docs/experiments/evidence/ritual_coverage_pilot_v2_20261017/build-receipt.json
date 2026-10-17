@@ -1,0 +1,23 @@
+{
+  "command": [
+    "cmake",
+    "--build",
+    "build/linux-gcc-release-ccache",
+    "--target",
+    "one_combat",
+    "--parallel",
+    "8"
+  ],
+  "executable": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+  "executableSha256": "d02d4a1da1081b1dd3190f1eddacb7cc1f6b350fa02cd39ca3e93662b423da0b",
+  "logPath": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/ritual-coverage-pilot-v2-build-5e282b6c/build.log",
+  "logSha256": "37c6616c70711ff8ee4bb46355b2e0aeb7389150fc5f6d1675d6b0f248ee65df",
+  "returnCode": 0,
+  "reviewedLivePrSha": "8879b5314136c8f9acfe999e40c202e33fde0571",
+  "schema": "reviewed_source_build_v1",
+  "sourceCleanAfterBuild": true,
+  "sourceCleanBeforeBuild": true,
+  "sourceSha": "5e282b6c3e063b9346d0af9d7e8ab1e83bdc4eee",
+  "wallSeconds": 0.21030282974243164,
+  "workingDirectory": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed"
+}

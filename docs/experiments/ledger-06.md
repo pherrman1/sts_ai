@@ -19858,3 +19858,83 @@ future teachers must explicitly freeze the key objective.
 
 **Evidence:** [protocol, build, RAW receipts and independent result review](evidence/ritual_corrected_canary_20261017/REPORT.md).
 **Knowledge impact:** positive corrected-producer behavior; qualification remains open.
+
+## §505 — controlled Ritual/Writhing coverage pilot (2026-10-17)
+
+**Question:** can the corrected producer, with controlled Writhing/Dagger/potion
+pre-states, yield replicated positive Ritual growth across the twelve cells?
+Frozen source `55837b02`, 8 TRAIN + 4 VALIDATION sources × 12 cells = 144 units,
+A0, 10,000 simulations, eight single-thread workers, 60 s/unit.
+
+**Result:** `PILOT_COVERAGE_INCONCLUSIVE`. 144/144 units valid in 223 s;
+494 Writhing targets, only 25 (5%) with positive growth; 43 coverage cells
+short, including every VALIDATION `cellPositive` cell. No retry, fit, TEST
+access or support change.
+
+**ELI5:** the controlled setup works, but even with Daggers forced into the
+deck the bot rarely finishes Writhing Mass with one, so there are still too
+few positive examples to train or qualify on.
+
+**Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_20261017/REPORT.md).
+**Knowledge impact:** positive-label scarcity is behavioral, not a producer defect; qualification remains open.
+
+## §506 — controlled Ritual coverage pilot v2: scaled sources (2026-10-17)
+
+**Question:** with 5× disjoint sources (40 TRAIN + 20 VALIDATION, 720 units)
+and everything else as in §505, is positive Ritual growth replicated per cell?
+Frozen source `5e282b6c`, same executable, eight workers.
+
+**Result:** `PILOT_COVERAGE_INCONCLUSIVE`, driven only by the Smoke cells.
+720/720 valid in 1,306 s; 2,906 targets, 175 (6.0%) positive. All eight
+natural/Brew cells meet every threshold in TRAIN and VALIDATION; the four
+Smoke cells reach at most 1 TRAIN positive source. No fit, TEST access or
+support change.
+
+**ELI5:** with enough games, the Dagger-kill examples now show up reliably,
+except when a Smoke Bomb is in the belt, where they almost never happen.
+
+**Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_v2_20261017/REPORT.md).
+**Knowledge impact:** non-Smoke Ritual coverage is now adequate for review; Smoke-belt Writhing remains uncovered.
+
+## §507 — Ritual-only CTM head refit on corrected pilot rows (2026-10-17)
+
+**Question:** does refitting only `ritual.*` on corrected §505/§506 rows fix the
+deployed heads' Dagger-growth underprediction (≈0.5% predicted vs 7–10%
+observed on Writhing) without regressing other Dagger fights?
+Frozen source `a7179dc7`; 6,445 deduplicated examples; epochs by TRAIN source CV.
+
+**Result:** `RITUAL_REFIT_NOT_QUALIFIED`, with 4 of 5 criteria passing:
+- Writhing not escaped: NLL 0.514 → 0.350, CI [−0.267, −0.063]. Predicted growth 0.6% → 6.2% vs 8.3% observed.
+- Escaped fights stay at 0.
+- Non-Writhing: point estimate 0.4429 → 0.4406, but CI upper +0.0107 > the +0.005 bound (24 sources). That is the only failure.
+
+No deployment, TEST access or capability change.
+
+**ELI5:** the new Dagger head is much better on Writhing Mass and not worse
+elsewhere on average, but the "not worse elsewhere" test didn't have enough
+games to prove it to the margin we set in advance.
+
+**Evidence:** [protocol, fit, tensors and VALIDATION scores](evidence/ctm_ritual_refit_20261017/REPORT.md).
+**Knowledge impact:** deployed Ritual heads are miscalibrated on corrected data; exposure-gap gate cannot detect it.
+**Override (2026-10-17):** Philipp accepted the refit with criterion 4 waived.
+It is packaged as research candidate `pathb-r2-ritual-refit` with `writhingRitual`.
+The native runtime supports and samples all 518 checked Writhing+Dagger
+VALIDATION states, where the deployed pair supports none. It is not the default stack.
+
+## §508 — Ritual-refit CTM vs deployed CTM in A0 OOC MCTS, 64 paired seeds (2026-10-17)
+
+**Result:** uninformative. All 64 pairs are identical: 58/64 act-3 clears in both arms, mean floor 49.55 in both,
+128/128 rc=0. The refit candidate loaded in every `ritual` unit. No run held a Ritual Dagger, so its head was
+never queried, and no OOC MCTS support abort occurred in either arm. Setup:
+- Seeds 111000800–863.
+- Arm C prior, §488 stack at A0.
+- The arms differed only in the CTM pair.
+- Run commit `607d683b`, independent pre-launch review PASS.
+
+No default change.
+
+**ELI5:** the bot never picked up a Ritual Dagger in these 64 games, so the new Dagger model never got a chance to
+matter.
+
+**Evidence:** [prereg, arms, results and report](evidence/ritual_refit_ab_20261017/REPORT.md).
+**Knowledge impact:** Ritual Dagger acquisition is rare at A0; random-seed A/Bs cannot measure Ritual-head changes.

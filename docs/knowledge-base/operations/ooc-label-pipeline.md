@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for controlled Ritual/Writhing research setups; 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -267,6 +267,23 @@ a separate slice for training and qualification, not ordinary-distribution
 rows. Setups:
 - `ritual_writhing`: Ritual Dagger is added before the first fight, and every
   act 3 hallway fight becomes Writhing Mass.
+- `ritual_writhing_v2_{base,upgraded}_{single,double}_{natural,brew,smoke}`:
+  twelve research-only public-state interventions. They retain the once-run
+  Dagger prefix, then normalize each Act-3 hallway ROOT before predictor and
+  RAW pre capture: one/two physical master Daggers at damage 15/[15,30] and
+  the declared upgrade state. Surplus Daggers are removed and missing copies
+  appended without acquisition hooks; every repeated reset is explicit.
+  Natural leaves the belt unchanged. Brew/Smoke uses an existing named potion,
+  the lowest free active slot, or the last active slot when full, by direct
+  placement even under Sozu. These are controlled valid public states, not
+  normal acquisition or gameplay-frequency evidence. The helper validates
+  deck caches/bottles and preserves all fourteen RNG streams transactionally.
+  Versioned `ritualWrithingIntervention` manifest receipts bind original state,
+  normalized ROOT, predictor and RAW pre; RAW row schema remains unchanged.
+  Group all variants/fights by original source and retain exact duplicate raw
+  prefixes; analysis contributes each identical observation once. A legal
+  temporary upgrade can give a base pre-state Dagger +5. Initial named-potion
+  presence does not prove use, and Smoke escape does not imply Ritual growth.
 - `high_maxhp`: max HP is set to 150..220 at full HP, deterministic per seed.
 - `lizard_fairy` and `lizard_brew`: an unused Lizard Tail is added, and while
   it is unused the Fairy Potion or Entropic Brew is refilled before each fight
@@ -290,6 +307,14 @@ rows. Setups:
   uniform weight decay in the survival encoder, so they never got a gradient.
 Mark of the Bloom with an active Tail is already on the exact path, so it has
 no setup.
+The controlled coverage pilot uses `tools/ctm_ritual_coverage_pilot.py` and its
+[frozen protocol](../../experiments/evidence/ritual_coverage_pilot_20261017/PROTOCOL.md).
+It prepares/rechecks source/build/teacher/model/split custody, a fixed
+source-group/cell order and explicit current teacher settings; execution needs
+separate user resource approval. Its development coverage result authorizes
+neither fitting nor support promotion. Existing fit commands must not be used
+as a Ritual-only fit: some train all downstream heads and open TEST.
+
 
 In Python, `validate_teacher` (`tools/ooc_pipeline_contract.py`) treats an
 absent or `flat_exact` `budget_policy` as the exact-10k contract, which must

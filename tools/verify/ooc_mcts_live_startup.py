@@ -31,8 +31,8 @@ def assert_sampled_configuration(output):
 def assert_promoted_default_configuration(output):
     config = assert_sampled_configuration(output)
     expected = {
-        'combatModel': 'selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native',
-        'brewFallbackModel': 'selfplay/models/combat_transition_near_full_escape_pathb_r2.native',
+        'combatModel': 'selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native',
+        'brewFallbackModel': 'selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native',
         'dispatchRule': 'precombat_entropic_brew_to_standard',
         'activeLizardCorrection': True,
     }
