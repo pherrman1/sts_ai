@@ -1,4 +1,4 @@
-# Per-type Silver potion weights vs flat 11, paired whole A20 runs: result (ledger-06 §511, 2026-10-17)
+# Per-type Silver potion weights vs flat 11, paired whole A20 runs: result (ledger-06 §513, 2026-10-17)
 
 Pre-registration: [PREREG.md](PREREG.md). Analysis: [analysis.json](analysis.json)
 (`tools/analyze_silver_potion_weights.py` at the run commit).

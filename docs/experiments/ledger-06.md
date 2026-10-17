@@ -19958,7 +19958,7 @@ Seeds 111110000–111110999 and smokes 111119900–111119905 are used; the revie
 Raw: `/mnt/project-files/potion-price-probe/ppp-w0{0,1}.tar.gz`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
 
-## §511 — per-type Silver potion weights vs flat 11 in whole A20 runs: NOT_SHOWN (2026-10-17)
+## §513 — per-type Silver potion weights vs flat 11 in whole A20 runs: NOT_SHOWN (2026-10-17)
 
 **Question (Philipp, 2026-10-17, thread "Silver leaf evaluation"):** "yes set that up", on testing per-type potion
 weights in Silver's leaf after §510; 16:31Z: "ooc should be studnet C. lets do 128 seeds on 4 workers".

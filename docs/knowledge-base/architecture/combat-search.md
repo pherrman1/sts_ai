@@ -253,7 +253,7 @@ Fairy death-save term the default formula has no per-type weights.
 Research-only `STS_SILVER_POTION_WEIGHTS=NAME=w,...[,*=w]` (Potion enum names;
 unlisted types take `*`, else 11; an unknown name aborts) replaces the count
 with per-type weights in native Silver (`one_combat`); the live advisor ignores
-it. Ledger-06 §511 (A20, student C OOC, 128 paired seeds) found no effect of the
+it. Ledger-06 §513 (A20, student C OOC, 128 paired seeds) found no effect of the
 §510-derived per-type weights or a flat 7.8 vs flat 11: floors −1.37
 [−3.45, +0.74] and −0.80 [−2.96, +1.36], both NOT_SHOWN. The flat 11 stays.
 
