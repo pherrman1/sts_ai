@@ -20110,7 +20110,9 @@ own formula. A20 seeds 111152000–111152127; primary Δfloor type − base, pai
 container. Mean floor base 36.65, level 35.85, type 35.28; act-3 clears 36 / 30 / 35 of 128. Type − base Δfloor
 −1.37 [−3.45, +0.74]; level − base −0.80 [−2.96, +1.36]; type − level −0.57 [−2.55, +1.37]. Boss deaths 48 / 58 /
 55. Student C took 98.9% of OOC decisions in every arm; the rest (1.1%, 440) were Match and Keep, whose card
-choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move them to student C).
+choices go through the chain's card-reward step: the V4 token net (loaded in every arm) where it clears the margin-1
+gate, otherwise the native GBM card-reward fallback `serverCardRewardPolicy` (`run_driver.cpp`; #616 moves them to
+student C).
 **Interpretation:** no detectable effect at ±2 floors; both point estimates negative. Descriptively, lower weights
 leave Silver about 0.1 fewer potions at the first boss battle of each act (battles starting on floors 16, 33, 50:
 1.27 vs 1.15 / 1.14). **Inference:** that is the §385
