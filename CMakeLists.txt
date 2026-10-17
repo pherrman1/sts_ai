@@ -190,6 +190,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/rollout_student.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/differential_replay_native.cpp
     apps/one_combat/run_trace.cpp

@@ -35,9 +35,12 @@ struct OocContinuationMetrics {
     // Explicit LEAF_POLICY=heart1: separate from both tree-prior and V4 rollout use.
     std::uint64_t heart1LeafSteps = 0, heart1LeafFallbacks = 0;
     std::map<std::string, std::uint64_t> heart1LeafReasons;
+    // STS_OOC_MCTS_LEAF_STUDENT: leaves valued by the §494 student, and those that kept their rollout.
+    std::uint64_t studentLeafEvaluations = 0, studentLeafFallbacks = 0;
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
+class RolloutStudent;
 struct CompactTreeNet;
 // Borrowed inputs/results for a synchronous diagnostic. References must not be
 // retained after the observer returns; hidden state/RNG are replay metadata.
@@ -92,6 +95,11 @@ struct OocAdapterOptions {
     // Same supported candidates/rules as prior, but heart1 scores every candidate
     // or the unchanged continuation chain handles the step. Requires a loaded net.
     bool heart1LeafPolicy = false;
+    // Research option (default unset, STS_OOC_MCTS_LEAF_STUDENT=<weights>): nonterminal
+    // leaves with a public heart1 record take the §494 rollout-target student's
+    // prediction on their X2-B anchor instead of a rollout; others keep the rollout.
+    std::shared_ptr<const RolloutStudent> rolloutStudent;
+    std::string rolloutStudentPath;
     // Optional per-decision thread CPU allowance; checked between simulations.
     // Zero preserves the simulation-bounded search. Never includes real combat.
     double cpuBudgetSeconds = 0;

@@ -31,6 +31,7 @@
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
 #include "heart1_policy.h"
+#include "rollout_student.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
@@ -1993,6 +1994,22 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             t_decisionLog->rollout = &t_decisionLog->sampleRollouts.back();
         }
     }
+#ifndef STS_LIVE_ADVISOR
+    if (options.rolloutStudent && !terminal) {
+        // Same record and anchor as the §494 sibling capture that trained the student.
+        const auto &leaf = state(id);
+        std::optional<double> value;
+        try {
+            nlohmann::json record;
+            if (leaf.outcome == sts::GameOutcome::UNDECIDED && one_combat::heart1::buildPublicLeafRecord(leaf, record)) {
+                OocProfileScope inference(OocProfileBucket::LeafValue);
+                value = options.rolloutStudent->predict(record, anchorValue(leaf, pathHistory(id)));
+            }
+        } catch (const std::exception &) {}
+        if (value) { ++continuation_.studentLeafEvaluations; return *value; }
+        ++continuation_.studentLeafFallbacks;
+    }
+#endif
     if (id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN
             && options.stopAtMapCheckpoint)
         return leafValue(id);
@@ -2689,6 +2706,21 @@ void configureLiveOocMcts() {
         liveOptions.leafWinPath = model;
 #endif
     }
+    if (const char *student = std::getenv("STS_OOC_MCTS_LEAF_STUDENT"); student && *student) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT is unavailable in the live advisor");
+#else
+        // The §494 student learned rollout values on the native leaf anchor; sibling
+        // capture's repeat rollouts would be replaced by the student itself.
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT requires STS_OOC_MCTS=1 and STS_OOC_MCTS_LEAF_VALUE=native");
+        if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT excludes leaf and sibling capture");
+        liveOptions.rolloutStudent = std::make_shared<const RolloutStudent>(student);
+        liveOptions.rolloutStudentPath = student;
+#endif
+    }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
@@ -2849,6 +2881,7 @@ void configureLiveOocMcts() {
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
+        << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -2869,7 +2902,9 @@ void configureLiveOocMcts() {
         << ",\"dispatchRule\":\""
         << (!brewFallbackArtifact.empty() ? "precombat_entropic_brew_to_standard" : "single_artifact")
         << "\",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
-        << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\"}\n";
+        << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\""
+        << (liveOptions.rolloutStudent ? ",\"leafStudent\":\"" + liveOptions.rolloutStudentPath + "\"" : std::string{})
+        << "}\n";
     std::cout.precision(precision);
 }
 void finalizeLiveOocMctsCapture() {
@@ -3815,6 +3850,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.heart1PriorNodes+=continuation.heart1PriorNodes; c.heart1PriorFallbacks+=continuation.heart1PriorFallbacks;
     c.priorLeafSteps+=continuation.priorLeafSteps;
     c.heart1LeafSteps+=continuation.heart1LeafSteps; c.heart1LeafFallbacks+=continuation.heart1LeafFallbacks;
+    c.studentLeafEvaluations+=continuation.studentLeafEvaluations; c.studentLeafFallbacks+=continuation.studentLeafFallbacks;
     for (auto &[reason,count] : continuation.heart1LeafReasons) c.heart1LeafReasons[reason]+=count;
     for (auto &[reason,count] : continuation.heart1PriorReasons) c.heart1PriorReasons[reason]+=count;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
@@ -4008,7 +4044,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         {"cpu_budget_stops",m.search.earlyStopBudget},
         {"heart1_leaf_steps",m.continuation.heart1LeafSteps},
         {"heart1_leaf_fallbacks",m.continuation.heart1LeafFallbacks},
-        {"heart1_leaf_reasons",m.continuation.heart1LeafReasons}}.dump() << '\n';
+        {"heart1_leaf_reasons",m.continuation.heart1LeafReasons},
+        {"student_leaf_evaluations",m.continuation.studentLeafEvaluations},
+        {"student_leaf_fallbacks",m.continuation.studentLeafFallbacks}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
