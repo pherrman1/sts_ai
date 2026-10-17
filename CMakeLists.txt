@@ -122,6 +122,14 @@ add_test(NAME potion_reward_swap COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(potion_reward_swap PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(shop_rules_fix_test tests/shop_rules_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(shop_rules_fix_test PRIVATE include json/include)
+add_test(NAME shop_rules_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:shop_rules_fix_test>)
+set_tests_properties(shop_rules_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
@@ -200,6 +208,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/silver_synth_replay.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
+    apps/one_combat/potion_price_probe.cpp
     apps/one_combat/strategic_gen.cpp
     apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp

@@ -211,7 +211,8 @@ bool isValidShopAction(const GameContext &gc, const search::GameAction a) {
             if (select > 2) {
                 return false;
             }
-            return s.potionPrice(select) != -1 && gc.gold >= s.potionPrice(select);
+            return s.potionPrice(select) != -1 && gc.gold >= s.potionPrice(select)
+                && (!Shop::rulesFixEnabled() || (gc.potionCount < gc.potionCapacity && !gc.hasRelic(RelicId::SOZU)));
 
 
         case search::GameAction::RewardsActionType::RELIC:
@@ -536,7 +537,8 @@ std::vector<search::GameAction> getAllShopActions(const sts::GameContext &gc) {
 
     for (int i = 0; i < 3; ++i) {
         auto price = s.potionPrice(i);
-        if (price != -1 && gc.gold >= price) {
+        if (price != -1 && gc.gold >= price
+                && (!Shop::rulesFixEnabled() || (gc.potionCount < gc.potionCapacity && !gc.hasRelic(RelicId::SOZU)))) {
             actions.emplace_back(search::GameAction::RewardsActionType::POTION, i);
         }
     }
