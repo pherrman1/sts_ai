@@ -1125,6 +1125,12 @@ no active overlay, no choices/cancel action, and agreeing run coordinates.
 It records `boss_completion` and waits for the following boss or actual terminal screen; it does
 not declare victory from the boss-room phase alone. Differential capture
 retains the native unsupported boundary for this UI-only transition.
+The following `Spire Heart` story in `VictoryRoom` is also mechanical: the
+installed JAR's button handler advances its single index-zero option through
+the narrative screens, then opens the end screen or the final-act door.
+The driver requires that exact room/event identity, enabled physical choice,
+and Act 3 victory-room floor (51, or 52 at A20). It records
+`victory_dialogue`; other one-choice events still require their provider.
 
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have

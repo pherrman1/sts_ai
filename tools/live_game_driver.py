@@ -978,6 +978,30 @@ def boss_completion_proceed_action(screen: Mapping[str, Any], game: Mapping[str,
     return action if action.mcp_tool == "proceed" and action.mcp_arguments == {} else None
 
 
+def victory_dialogue_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                            candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance the sole physical choice in vanilla's post-Act-3 story."""
+    act, floor = game.get("act", screen.get("act")), game.get("floor", screen.get("floor"))
+    ascension = game.get("ascension_level", game.get("ascension"))
+    if (type(act) is not int or act != 3 or type(floor) is not int
+            or type(ascension) is not int or not 0 <= ascension <= 20
+            or floor != (52 if ascension == 20 else 51)
+            or screen.get("floor") != floor or screen.get("screen_type") != "EVENT"
+            or screen.get("room_type") != "VictoryRoom" or screen.get("room_phase") != "EVENT"
+            or screen.get("ready_for_command") is not True or screen.get("in_game") is not True
+            or screen.get("can_cancel") is not False or screen.get("can_proceed") is not False
+            or len(_list(screen.get("choice_list"))) != 1 or len(candidates) != 1):
+        return None
+    state = _mapping(screen.get("screen_state"))
+    options = _list(state.get("options"))
+    if (state.get("event_id") != "Spire Heart" or len(options) != 1
+            or _mapping(options[0]).get("choice_index") != 0
+            or _mapping(options[0]).get("disabled") is not False):
+        return None
+    action = candidates[0]
+    return action if action.mcp_tool == "choose" and action.mcp_arguments == {"choice_index": 1} else None
+
+
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                               candidates: Sequence[LegalAction]) -> LegalAction | None:
     """Open one card group with public relic/key or constrained potion siblings."""
@@ -1380,12 +1404,16 @@ class Driver:
         shop_entry_key = None
         shop_navigation = False
         boss_completion = False
+        victory_dialogue = False
         candidates = [action] if action else build_legal_actions(screen, commands, game_state)
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
         if action is None and not self.differential_trace:
             action = boss_completion_proceed_action(screen, game_state, candidates)
             boss_completion = action is not None
+            if action is None:
+                action = victory_dialogue_action(screen, game_state, candidates)
+                victory_dialogue = action is not None
         # The differential native schema has no inventory-reveal transition;
         # keep its existing explicit unsupported boundary before any click.
         if (action is None and not self.differential_trace
@@ -1415,8 +1443,10 @@ class Driver:
         if self.differential_trace:
             row["pre_action_state"] = {"screen": screen, "game_state": game_state}
         if action:
-            row["decision_source"] = ("boss_completion" if boss_completion else "shop_navigation" if shop_navigation
-                                      else "card_reward_reveal" if reveal_card else "run_control")
+            row["decision_source"] = ("victory_dialogue" if victory_dialogue else
+                                      "boss_completion" if boss_completion else
+                                      "shop_navigation" if shop_navigation else
+                                      "card_reward_reveal" if reveal_card else "run_control")
             if shop_entry_key is not None:
                 row["shop_entry_room"] = list(shop_entry_key)
         else:

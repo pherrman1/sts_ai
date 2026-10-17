@@ -9,7 +9,7 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action, boss_completion_proceed_action,
+    _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
     hand_selection_transaction, grid_selection_transaction,
 )
 
@@ -1099,6 +1099,50 @@ class OocDriverTest(unittest.TestCase):
             with self.assertRaisesRegex(DriverError, "native completion boundary"):
                 asyncio.run(driver.run())
             self.assertFalse(any(tool == "proceed" for tool, _ in client.calls))
+
+    def test_victory_dialogue_requires_exact_public_story_surface(self):
+        screen = {"screen_type": "EVENT", "room_type": "VictoryRoom", "room_phase": "EVENT",
+                  "ready_for_command": True, "in_game": True, "can_cancel": False, "can_proceed": False,
+                  "floor": 51, "choice_list": ["[Continue]"], "screen_state": {"event_id": "Spire Heart",
+                  "options": [{"choice_index": 0, "disabled": False}]}}
+        game = {"act": 3, "floor": 51, "ascension_level": 0}
+        candidates = build_legal_actions(screen, ["choose"], game)
+        self.assertIsNotNone(victory_dialogue_action(screen, game, candidates))
+        self.assertIsNotNone(victory_dialogue_action({**screen, "floor": 52},
+                {**game, "floor": 52, "ascension_level": 20}, candidates))
+        for key, value in [("room_type", "EventRoom"), ("can_cancel", True), ("floor", 50),
+                           ("ready_for_command", False), ("choice_list", ["Continue", "Leave"])]:
+            self.assertIsNone(victory_dialogue_action({**screen, key: value}, game, candidates))
+        for state in ({"event_id": "MindBloom", "options": screen["screen_state"]["options"]},
+                      {"event_id": "Spire Heart", "options": [{"choice_index": 1, "disabled": False}]},
+                      {"event_id": "Spire Heart", "options": [{"choice_index": 0, "disabled": True}]}):
+            self.assertIsNone(victory_dialogue_action({**screen, "screen_state": state}, game, candidates))
+
+    def test_strict_victory_story_advances_without_a_policy(self):
+        screen = {"screen_type": "EVENT", "room_type": "VictoryRoom", "room_phase": "EVENT",
+                  "ready_for_command": True, "in_game": True, "can_cancel": False, "can_proceed": False,
+                  "floor": 51, "choice_list": ["[Continue]"], "screen_state": {"event_id": "Spire Heart",
+                  "options": [{"choice_index": 0, "disabled": False}]}}
+        class StoryClient(FakeClient):
+            async def call(self, tool, arguments=None):
+                if tool == "choose":
+                    self.calls.append((tool, arguments or {}))
+                    self.states = [{"screen_type": "GAME_OVER", "screen_state": {"victory": True},
+                                    "ready_for_command": True}]
+                    return {"success": True}
+                return await super().call(tool, arguments)
+        with tempfile.TemporaryDirectory() as directory:
+            client = StoryClient(screen, ["choose"], game_state={"act": 3, "floor": 51, "ascension_level": 0})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def no_policy(*args, **kwargs):
+                raise AssertionError("victory story asked a policy")
+            reader.read_for = no_policy
+            trace = TraceWriter(Path(directory) / "trace")
+            driver = Driver(client, reader, trace, strict_ooc=True, strict_silver=True)
+            asyncio.run(driver.run())
+            self.assertEqual(driver.outcome, "victory")
+            self.assertEqual(list(trace.recent)[0]["decision_source"], "victory_dialogue")
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
 
     def test_actual_shop_room_alias_and_enter_once_then_leave(self):
         with tempfile.TemporaryDirectory() as directory:
