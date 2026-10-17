@@ -44,6 +44,28 @@ By act, head vs X2-B concordance: act 1 0.504 vs 0.622 (333 groups), act 2 0.529
 rewards 0.506 vs 0.584 (317), events 0.452 vs 0.738 (103), map 0.618 vs 0.524 (189;
 one rollout3 0.642). Row-level Pearson with the target: head 0.41, X2-B 0.65.
 
+## Addendum: §501 development heads
+
+The four §501 heads (branch `claude/project-thread-q185p8` at `a30643d`, `heads/*.json`,
+SHA256SUMS match) were scored the same way. Native parity first: each head's mean
+prediction on the first state of all 360 VALIDATION runs matches its §501 start-landmark
+mean to ≤3.7e-9 ([start-parity-501-heads.json](start-parity-501-heads.json)), which also
+checks the copied public block.
+
+| 777 groups | Concordance | Regret | − X2-B concordance, 95% |
+| --- | ---: | ---: | --- |
+| §498 head | 0.527 | 0.0374 | [−0.097, −0.048] |
+| §501 equal | 0.507 | 0.0393 | [−0.122, −0.063] |
+| §501 early | 0.520 | 0.0378 | [−0.112, −0.048] |
+| §501 pooled + public | 0.521 | 0.0366 | [−0.105, −0.053] |
+| §501 public only | 0.530 | 0.0315 | [−0.099, −0.040] |
+| X2-B | 0.601 | 0.0278 | |
+| One rollout3 | 0.565 | 0.0305 | |
+
+The pooled+public arm's better VALIDATION BCE (0.4298 vs 0.4534) does not carry over to
+sibling ordering; no outcome head comes within 0.04 of X2-B. Full splits and strata:
+[siblings-501-heads.json](siblings-501-heads.json).
+
 ## Limits
 
 - Targets are means of Arm C rollout3 values, which end in an X2-B evaluation at the
@@ -51,7 +73,7 @@ one rollout3 0.642). Row-level Pearson with the target: head 0.41, X2-B 0.65.
   outcomes. They favour X2-B. Still, the head is near chance on act-1 and card-reward
   siblings, where §498/§499 already showed weak early ranking (act-1 AUROC 0.58).
 - Labels are rollout surrogates; this does not test gameplay. The head is the
-  immutable §498 candidate; §500/§501 heads are not covered.
+  immutable §498 candidate plus the four §501 heads (addendum); §500 heads are not covered.
 - Ranking siblings by observed Heart outcome directly is not affordable: at a 12%
   win rate, separating two siblings by 2 pp needs several hundred full runs each.
 

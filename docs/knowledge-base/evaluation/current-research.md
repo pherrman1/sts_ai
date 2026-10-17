@@ -108,8 +108,9 @@ Stop before native integration; no RL, policy/trunk update or default change.
 §502 applied the §498 head to the §494 sibling leaves (777 TRAIN+VALIDATION groups,
 64-rollout mean targets, no seeds or fits): concordance 0.527 vs X2-B 0.601 and one
 rollout3 0.565; head − X2-B −0.074 [−0.097, −0.048]; near chance on act 1 (0.504) and
-card rewards (0.506), ahead only on map screens. **HEAD_RANKS_WORSE_THAN_X2B**: the head
-is not a leaf candidate; within-sibling discrimination, not marginal calibration, is the
+card rewards (0.506), ahead only on map screens. The four §501 development heads score
+0.507–0.530, including pooled+public at 0.521. **HEAD_RANKS_WORSE_THAN_X2B**: no outcome
+head is a leaf candidate; within-sibling discrimination, not marginal calibration, is the
 gap. `one_combat heart1score` exports the pooled vector, and the native student plus head
 reproduces §498 per-source validation means to 3.9e-9, so the public-record encoding
 matches natively; parity with live search states beyond public records is still open.

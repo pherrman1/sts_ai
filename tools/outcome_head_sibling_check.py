@@ -8,6 +8,9 @@ exports that vector, so no torch is needed.
   parity   <one_combat> <studentc.bin> <validation dir> <work dir>
            score §497 VALIDATION states and compare per-source mean probability with
            the §498 result.json (states: supported real-driver boundaries).
+  start-parity <one_combat> <studentc.bin> <validation dir> <work dir> <dev result.json> <heads dir>
+           score each VALIDATION run's first state with every §501 head and compare the
+           mean with that arm's VALIDATION start-landmark mean prediction.
   siblings <one_combat> <studentc.bin> <§494 extracted sources dir> <work dir> [head.json ...]
            score every §494 sibling leaf and compare each head with X2-B and the single
            scheduled rollout3 on the §494 group metrics (64-rollout mean targets).
@@ -92,6 +95,23 @@ def parity(binary, weights, valdir, work):
         out.append({'seed': int(seed), 'states': len(records), 'native': float(p.mean()), 'reference': ref,
                     'absDiff': abs(float(p.mean()) - ref)})
     return {'sources': out, 'maxAbsDiff': max(o['absDiff'] for o in out)}
+
+
+def start_parity(binary, weights, valdir, work, result, heads_dir):
+    paths = sorted(glob.glob(f'{valdir}/seed-*.states.jsonl'))
+    first = [json.loads(open(p).readlines()[1]) for p in paths]
+    if not all(f['index'] == 0 and f['supported'] for f in first):
+        raise ValueError('first state is not a supported index-0 observation')
+    records = [f['record'] for f in first]
+    pooled = [r['pooled'] for r in score(binary, weights, records, work, 'start')]
+    public = [public_block(r, f['act']) for r, f in zip(records, first)]
+    arms = json.loads(Path(result).read_text())['arms']
+    out = {'sources': len(paths)}
+    for arm in sorted(arms):
+        native = float(head_prob(load_head(Path(heads_dir) / f'{arm}.json'), pooled, public).mean())
+        ref = arms[arm]['validation']['landmarks']['start']['model']['meanProbability']
+        out[arm] = {'native': native, 'reference': ref, 'absDiff': abs(native - ref)}
+    return out
 
 
 def load_siblings(root):
@@ -184,4 +204,4 @@ def siblings(binary, weights, root, work, *head_files):
 
 if __name__ == '__main__':
     command, args = sys.argv[1], sys.argv[2:]
-    print(json.dumps({'parity': parity, 'siblings': siblings}[command](*args), indent=1))
+    print(json.dumps({'parity': parity, 'start-parity': start_parity, 'siblings': siblings}[command](*args), indent=1))

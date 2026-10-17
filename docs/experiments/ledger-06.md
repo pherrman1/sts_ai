@@ -19755,5 +19755,10 @@ leads only on map screens (0.618 vs 0.524). Targets are rollout surrogates endin
 X2-B and favour X2-B; they are not Heart outcomes. **Inference:** the head does not
 resolve one-step sibling differences, and marginal calibration fixes would not change
 that. Not a qualified leaf; no native leaf option, gameplay or default change.
+
+The four §501 development heads (`a30643d`; start-landmark parity on 360 VALIDATION runs
+≤3.7e-9) do no better: concordance equal 0.507, early 0.520, pooled+public 0.521, public
+only 0.530, each below X2-B with the 95% upper bound ≤ −0.040. Pooled+public's VALIDATION
+BCE gain does not transfer to sibling ordering.
 [Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
 **Knowledge impact:** observed-outcome leaf status and native public-record parity.
