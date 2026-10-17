@@ -5,14 +5,14 @@
 # unchanged, and writes only deliveries/wWW (or rWW-H for a lost-worker half rerun).
 # Usage: bash cloud_worker.sh setup W | run W ACTIVATION_SHA256 [H] | status W   (W unpadded; H = rerun half 0/1)
 set -euo pipefail
-BRANCH=__BRANCH__
-SOURCE=__SOURCE__
+SOURCE=d8fd2a105a8d2a481b7639e26c683f75e382e3d4
 STUDENT_C=eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
-BINARY_SHA=__BINARY_SHA__
-PLAN_SHA=__PLAN_SHA__
-BUNDLE_SHA=__BUNDLE_SHA__
-WORKERS=__WORKERS__
-PER_WORKER="__PER_WORKER__"
+BINARY_SHA=0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52
+PLAN_SHA=c88256cea6734fe0a0e891c88bf9c40f67fb5d78ce5e45d0ff7ac9f707c06cfc
+BUNDLE_SHA=5810761da0ac09d5ba8a476655e5cd225906a0a86a72f100a65d090c3d40b59c
+WORKERS=45
+PER_WORKER="34 10 20"
+SIBLING_EVERY=8   # 0 = no sibling subsample (then PLAN_SHA babf5c7a…, same bundle)
 SH=/mnt/project-files/heart-outcome-round2
 R=/home/user/sts_ai
 S=$HOME/heart2-src
@@ -29,7 +29,6 @@ case "${1:-}" in
 setup)
   [ ! -e $L ] || { echo "STOP: $L already exists (container reused); report, do not rerun"; exit 1; }
   mkdir -p $L
-  git -C $R fetch -q origin $BRANCH
   [ -d $S ] || git clone -q --no-checkout $R $S
   git -C $S checkout -q --detach $SOURCE
   git -C $S submodule update -q --init --recursive
@@ -54,7 +53,7 @@ run)
   cp /mnt/project-files/student-c-488/studentc.bin $L/studentc.bin
   [ "$(sha256sum $L/studentc.bin | cut -d' ' -f1)" = "$STUDENT_C" ] || { echo "STOP: studentc sha"; exit 1; }
   python3 $S/tools/heart_outcome_round2.py prepare --repo $S --binary $S/build/linux-gcc-release/one_combat \
-    --student $L/studentc.bin --out $L/campaign --workers $WORKERS --per-worker $PER_WORKER > $L/prepare.log 2>&1 \
+    --student $L/studentc.bin --out $L/campaign --workers $WORKERS --per-worker $PER_WORKER --sibling-every $SIBLING_EVERY > $L/prepare.log 2>&1 \
     || { echo "STOP: prepare failed"; tail -5 $L/prepare.log; exit 1; }
   [ "$(sha256sum $L/campaign/plan.json | cut -d' ' -f1)" = "$PLAN_SHA" ] || { echo "STOP: plan sha differs"; exit 1; }
   [ "$(sha256sum $L/campaign/bundle/bundle.json | cut -d' ' -f1)" = "$BUNDLE_SHA" ] || { echo "STOP: bundle sha differs"; exit 1; }

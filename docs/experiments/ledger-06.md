@@ -19728,3 +19728,36 @@ development protocol may explicitly weight reached early states; any revised
 candidate needs genuinely fresh prospective holdout evidence. Stop before native
 integration. **Knowledge impact:** current development-weighting evidence,
 cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.
+
+## §503 — Heart-outcome collection round 2: root trace and prepared cohort
+
+**PREPARED_NOT_DISPATCHED; canaries PASS. No fitting, CONFIRM opening, native
+integration or default change.**
+
+Philipp passed on Codex's three-workstream plan (2026-10-16 23:40Z) and asked for
+a thread for workstream 3: more independent observed Heart outcomes under the
+same fixed §497 teacher, with separate development data and a fresh sealed
+confirmation cohort. Base main `217ed7a`; producer source `d8fd2a1`.
+
+- New observation-only `STS_OOC_MCTS_ROOT_TRACE` (one row per live OOC root:
+  all candidate keys, priors, visits, visit shares, Q, public record, native
+  snapshot); schema agreed with workstream 2 through the coordinator.
+- Same teacher: the new producer (`0e17e0f2…`, GCC 13.3 cloud build, reproduced
+  from a fresh clone) rerunning §497 cloud canary 110179996 with capture off
+  reproduces §497's trace and action files byte for byte and its outcome footer.
+- Canaries 111100000/111100001 (local role) and 111100002/111100003 (cloud role)
+  PASS: OFF/ON trace, action and outcome parity; root trace overhead within noise.
+  Native snapshots cover only 17–27% of roots (untagged continuations); the replay
+  key (binary SHA, seed, decisionIndex) covers all of them.
+- Optional §494 sibling subsample every 8th searched root (64 rollout3 repeats):
+  play byte-identical, +80% CPU per source (824 vs 458 s on 111100001).
+- Seeds 111000000–111000002 consumed by aborted earlier canary attempts (a null
+  root-actions bug at terminal roots, fixed). Reserved 111100000–111109999.
+- Size options and the recommended plan (45 workers, 64 sources each, 1,530
+  TRAIN / 450 VALIDATION / 900 CONFIRM, siblings every 8th root) are in the
+  [plan](evidence/heart_outcome_round2_20261017/PLAN.md). Dispatch needs
+  Philipp's go with the worker count, an independent pre-launch review and a
+  durable export check.
+
+**Knowledge impact:** root-trace capture contract added to the maintained OOC
+label pipeline page.
