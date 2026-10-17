@@ -1,7 +1,9 @@
 # heart1 card-select capture and student C re-distillation (plan, 2026-10-17)
 
 Status: proposed. The capture needs Philipp's authorization and a coordinator seed block; nothing here has run
-beyond the smoke below. No § number taken.
+beyond the smoke below. No § number taken. Capture seeds: 111156100–111156163 (coordinator block).
+PR #597 (logits-only forward) also edits `priorLogits`; when it lands, the serving forward there becomes
+`logitsOnly=true` (bit-identical logits) and the teacher keeps the full pass (value).
 
 ## Why
 
@@ -40,7 +42,7 @@ distill the card_select thing".
 
 ## Proposed run (needs authorization)
 
-- 64 A20 seeds (block from the coordinator), 8 cloud workers x 8 seeds, 4 units at a time, `_EVERY=16`,
+- 64 A20 seeds 111156100–111156163, 8 cloud workers x 8 seeds, 4 units at a time, `_EVERY=16`,
   `_SELECT_EVERY=4`. A check on the final binary at these rates (seed 111156003, stopped after Act 1): 9,021 rows
   (5,199 node, 3,822 select), 382 s, rc=0, `deck_misc` present. **Inference**: 20–30k rows and ~20–25 min per
   full run, about 1.3–1.8M rows, ~25 core-h, ~1–1.5 h wall, ~0.4 GB gzipped on the share (`heart1-select-capture/`).
