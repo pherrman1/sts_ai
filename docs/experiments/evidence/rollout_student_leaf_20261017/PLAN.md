@@ -27,7 +27,7 @@ Command per run: `bash tools/seed_guard.sh one_combat bestbench 10000 1 20 <seed
 
 ## Seeds
 
-128 fresh source seeds `111000200..111000327`, one run per seed per arm.
+128 fresh source seeds `111000400..111000527`, one run per seed per arm.
 
 ## Endpoints and decision rule
 
