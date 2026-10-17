@@ -1,4 +1,6 @@
 #include "sim/search/RunGoal.h"
+#include <cstring>
+#include <stdexcept>
 #include "one_combat/ooc_selective_silver_audit.h"
 #include "one_combat/ooc_selective_silver_sampler.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
@@ -3050,6 +3052,16 @@ static std::string unsupportedSilverOption() {
     return {};
 }
 
+// Default-on switches accept only 0 or 1 when set: atoi would read a typo,
+// "true" or an empty value as 0 and silently turn the switch off.
+static bool envSwitch(const char *name, bool fallback) {
+    const char *value = std::getenv(name);
+    if (!value) return fallback;
+    if (std::strcmp(value, "1") == 0) return true;
+    if (std::strcmp(value, "0") == 0) return false;
+    throw std::runtime_error(std::string(name) + " must be 0 or 1 when set");
+}
+
 int main(int argc, char **argv) {
     g_mainBinaryPath = argc > 0 ? argv[0] : "one_combat";
     g_mainArgv.clear();
@@ -3094,15 +3106,12 @@ int main(int argc, char **argv) {
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 
-    g_collectKeys = true;  // Whole-run objective: collect keys and defeat the Heart.
-    if (const char *d = std::getenv("STS_COLLECT_KEYS")) {
-        g_collectKeys = std::atoi(d) != 0;
-    }
+    g_collectKeys = envSwitch("STS_COLLECT_KEYS", true);  // Whole-run objective: collect keys and defeat the Heart.
     std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
 
     one_combat::configureRestVPolicyFromEnvironment();
-    if (const char *d = std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
-        g_restWin = std::atoi(d) != 0;
+    if (std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
+        g_restWin = envSwitch("STS_REST_WIN", true);
         if (g_restWin) std::cout << "[win-rate rest policy ON]\n";
     }
     if (const char *d = std::getenv("STS_CARD_WIN")) {       // A/B: card picks by P(win) instead of V_floor
@@ -3333,8 +3342,7 @@ int main(int argc, char **argv) {
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
         // for an explicit legacy-server comparison.
-        const char *d = std::getenv("STS_NATIVE_OOC");
-        g_nativeOoc = !d || std::atoi(d) != 0;
+        g_nativeOoc = envSwitch("STS_NATIVE_OOC", true);
         if (g_nativeOoc) {
             // Without STS_WIN_NET, live OOC MCTS uses the public X2-B win
             // model (§449, ADR-0029); every other run keeps B0. STS_WIN_NET=1
