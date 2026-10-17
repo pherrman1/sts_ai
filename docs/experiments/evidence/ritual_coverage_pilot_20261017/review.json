@@ -1,0 +1,18 @@
+{
+  "independent": true,
+  "nonBlockingNotes": [
+    "CPUs 6/7 are SMT siblings of 0/1",
+    "per-worker peak RSS unmeasured",
+    "--out under build/",
+    "fail-closed stops"
+  ],
+  "packetIdentity": {
+    "docs/experiments/evidence/ritual_coverage_pilot_20261017/PROTOCOL.md": "c9505606776249824d46a24447385c26e4deb7d3862cea044ec0bd3916d5d5cf",
+    "tests/test_ctm_ritual_coverage_pilot.py": "fe0106ae8a7a516f0103a7f649590ed35985b7e91f0d060b834681118333e796",
+    "tools/ctm_ritual_coverage_pilot.py": "56ad1850c61d350c368fa18273fe3063898fb710f6ed392dff43d1bb54d5bb82"
+  },
+  "recipeSha256": "f4b715b3f7e0634b8cf305744fc3e8a0af6adb6acb882bb83e3cc8827e0d6b55",
+  "reviewer": "independent read-only Claude subagent a4f59f088fc45df92 (two passes; first FAIL on script imports, fixed in 55837b02)",
+  "sourceSha": "55837b02584dbb166ba44bc8613332701c69738d",
+  "verdict": "PASS"
+}

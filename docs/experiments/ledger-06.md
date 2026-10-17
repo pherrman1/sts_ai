@@ -19858,3 +19858,22 @@ future teachers must explicitly freeze the key objective.
 
 **Evidence:** [protocol, build, RAW receipts and independent result review](evidence/ritual_corrected_canary_20261017/REPORT.md).
 **Knowledge impact:** positive corrected-producer behavior; qualification remains open.
+
+## §505 — controlled Ritual/Writhing coverage pilot (2026-10-17)
+
+**Question:** can the corrected producer, with controlled Writhing/Dagger/potion
+pre-states, yield replicated positive Ritual growth across the twelve cells?
+Frozen source `55837b02`, 8 TRAIN + 4 VALIDATION sources × 12 cells = 144 units,
+A0, 10,000 simulations, eight single-thread workers, 60 s/unit.
+
+**Result:** `PILOT_COVERAGE_INCONCLUSIVE`. 144/144 units valid in 223 s;
+494 Writhing targets, only 25 (5%) with positive growth; 43 coverage cells
+short, including every VALIDATION `cellPositive` cell. No retry, fit, TEST
+access or support change.
+
+**ELI5:** the controlled setup works, but even with Daggers forced into the
+deck the bot rarely finishes Writhing Mass with one, so there are still too
+few positive examples to train or qualify on.
+
+**Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_20261017/REPORT.md).
+**Knowledge impact:** positive-label scarcity is behavioral, not a producer defect; qualification remains open.
