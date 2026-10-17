@@ -198,6 +198,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_datasets.cpp
     apps/one_combat/silver_synth_gen.cpp
     apps/one_combat/silver_synth_replay.cpp
+    apps/one_combat/silver_chance_probe.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/strategic_gen.cpp

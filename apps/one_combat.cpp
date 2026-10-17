@@ -4031,6 +4031,10 @@ int main(int argc, char **argv) {
     } else if (mode == "silverpolicymlpcheck") {
         if (argc < 5) { std::cerr << "usage: one_combat silverpolicymlpcheck MODEL FEATURE_PREFIX OUT.txt [GBM_MODEL]\n"; return 2; }
         silverPolicyMlpCheck(argv[2], argv[3], argv[4], argc >= 6 ? argv[5] : "");
+    } else if (mode == "silverchanceprobe") {
+        if (argc < 12) { std::cerr << "usage: one_combat silverchanceprobe N_SEEDS SEED_OFFSET ASC OUT.jsonl RUN_SIMS K BUDGETS ROLLOUTS EVERY_HARD EVERY_HALLWAY\n"; return 2; }
+        silverChanceProbe(std::stoi(argv[2]), std::stoll(argv[3]), std::stoi(argv[4]), argv[5], std::stoi(argv[6]),
+                          std::stoi(argv[7]), argv[8], std::stoi(argv[9]), std::stoi(argv[10]), std::stoi(argv[11]));
     } else if (mode == "silversynthreplay") {
         silverSynthReplay(argc >= 4 && std::string(argv[2]) == "names" ? argv[3] : "");
     } else if (mode == "combattransitionlizardtargetcandidategen") {

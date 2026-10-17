@@ -646,6 +646,7 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
         for (auto &e : chance.edges) {
             if (e.node == child) {
                 ++stats.chanceSiblingReuse;
+                ++e.draws;
                 return &e;
             }
         }
@@ -657,6 +658,15 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
         return &chance.edges.back();
     }
 
+    if (chanceSelection == 1) {
+        // Stratified: the outcome furthest below its share of the samples drawn.
+        Edge *best = &chance.edges[0];
+        for (auto &e : chance.edges) {
+            if (static_cast<std::int64_t>(e.visitCount) * best->draws
+                    < static_cast<std::int64_t>(best->visitCount) * e.draws) best = &e;
+        }
+        return best;
+    }
     // At the cap: re-select an existing outcome in proportion to its visits.
     std::int64_t totalVisits = 0;
     for (const auto &e : chance.edges) {

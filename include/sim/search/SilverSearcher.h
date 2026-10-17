@@ -152,6 +152,7 @@ namespace sts::search {
             Node *node = nullptr;
             int rngAdvanceSteps = 0;   // chance outcome edge: N in seed base + N
             std::int32_t visitCount = 0;
+            std::int32_t draws = 1;    // chance outcome edge: widening samples that produced it
         };
 
         struct Node {
@@ -173,6 +174,11 @@ namespace sts::search {
         double chanceWideningAlpha = 0.52389;
         double endTurnWideningC = 3.7028;
         double endTurnWideningAlpha = 0.52389;
+        // Research-only chance re-selection at the widening cap: 0 (default)
+        // picks an existing outcome in proportion to its visits (Silver's DPW);
+        // 1 picks the outcome with the fewest visits per widening sample, so
+        // visits track the sampled outcome frequencies.
+        int chanceSelection = 0;
         SilverEvalWeights evalWeights;
         SilverSearchStats stats;
         SilverTreeProfile *profile = nullptr; // optional caller-owned diagnostics; default off

@@ -337,6 +337,10 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);
 void silverSynthReplay(const std::string &namesPath = "");
+// Audit probe (silver_chance_probe.cpp): planner-seed agreement of sampled roots
+// under two chance re-selection rules, and root rollout end states.
+void silverChanceProbe(int nSeeds, long long seedOffset, int asc, const std::string &outPath, int runSims,
+                       int k, const std::string &budgetList, int rollouts, int everyHard, int everyHallway);
 // combat_policy_mlp_v1 logits of every root in a silversynthfeatures file
 // (Python parity check) plus per-root timing, optionally against a GBM prior.
 void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefix, const std::string &outPath,
