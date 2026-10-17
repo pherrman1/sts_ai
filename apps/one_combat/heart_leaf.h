@@ -16,6 +16,11 @@ constexpr const char *kHeartLeafFeatureSchema = "heart-leaf-features-v2";
 // v2 plus "hlCritic": the manifest's critic tree model (a distillation of the
 // heart1 value head) evaluated on the v2 features.
 constexpr const char *kHeartLeafCriticFeatureSchema = "heart-leaf-features-v3";
+// v3 with the hidden encounter-queue columns zeroed before the critic and the
+// residual see them (ADR-0029 removed the same fields from the public X2-B).
+constexpr const char *kHeartLeafPublicFeatureSchema = "heart-leaf-features-v4";
+// The rich columns v4 zeroes.
+const std::vector<std::string> &heartLeafHiddenQueueNames();
 constexpr const char *kHeartLeafAnchorPath = "models/candidates/v_win_x2b_public_trees.txt";
 constexpr const char *kHeartLeafAnchorSha256 = "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90";
 
@@ -36,7 +41,7 @@ public:
     // Manifest JSON: schema "heart-leaf-v1", featureSchema, residual (path
     // relative to the manifest), residualSha256, anchorSha256, anchorSlope, optional
     // act4Offset (logit added on Act-4 states);
-    // with featureSchema v3 also critic and criticSha256 (a margin tree model).
+    // with featureSchema v3 or v4 also critic and criticSha256 (a margin tree model).
     explicit HeartLeafModel(const std::string &manifestPath);
     double anchorMargin(const std::vector<float> &rich) const { return anchor_.margin(rich); }
     double value(const sts::GameContext &gc, const PathHistory &path) const;
@@ -46,7 +51,7 @@ public:
     const std::string &manifestSha256() const { return sha_; }
 private:
     CompactTreeNet anchor_, residual_, critic_;
-    bool hasCritic_ = false;
+    bool hasCritic_ = false, maskHiddenQueue_ = false;
     double slope_ = 1.0, act4Offset_ = 0.0;
     std::string path_, sha_;
 };

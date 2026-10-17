@@ -71,9 +71,9 @@ nlohmann::json effectiveSilverLeafSpecification() {
     // Recorded only when not the default 1000, so teacher files written before
     // STS_SILVER_ROLLOUT_ACTION_CAP existed still match.
     if (leaf.rolloutActionCap != 1000) spec["rollout_action_cap"] = leaf.rolloutActionCap;
-    // Research option; recorded only when on so earlier specifications stay comparable.
-    if (const char *path = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE"); path && *path)
-        spec["rollout_root_table"] = {{"path", path}, {"sha256", fileSha256(path)}};
+    // Recorded only when on (ADR-0046 default), so =0 specifications match earlier ones.
+    if (!leaf.rolloutRootTable.empty())
+        spec["rollout_root_table"] = {{"path", leaf.rolloutRootTable}, {"sha256", fileSha256(leaf.rolloutRootTable)}};
     return spec;
 }
 
@@ -5855,15 +5855,15 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             add("table", 2500, {0, 1, tablePtr}, table);
         }
     } else if (armSet == "roottable") {
-        // Rollout root table: production greedy rollouts (ADR-0040 table) vs the per-root table
+        // Rollout root table: greedy rollouts with the ADR-0040 table vs the per-root table
         // scored by STS_CTMSILVER_ROOT_TABLE_MODEL, plain Silver at every budget in
-        // STS_CTMSILVER_SWEEP_SIMS. Source run and control keep the production rollouts.
+        // STS_CTMSILVER_SWEEP_SIMS. Source run and control keep the ADR-0040 table (§519, §521).
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const auto &envRollout = search::SilverSearcher::envRolloutConfig();
         if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != search::kSilverRolloutCardTableG6
-                || !env("STS_SILVER_ROLLOUT_ROOT_TABLE").empty())
-            throw std::runtime_error("ctm vs silver: roottable requires the production rollout options "
-                                     "(STS_SILVER_ROLLOUT_* and STS_SILVER_ROLLOUT_ROOT_TABLE unset)");
+                || env("STS_SILVER_ROLLOUT_ROOT_TABLE") != "0")
+            throw std::runtime_error("ctm vs silver: roottable requires the ADR-0040 rollouts "
+                                     "(STS_SILVER_ROLLOUT_* unset, STS_SILVER_ROLLOUT_ROOT_TABLE=0)");
         const std::string model = env("STS_CTMSILVER_ROOT_TABLE_MODEL");
         auto net = std::make_unique<search::CombatValueNet>();
         if (model.empty() || !net->load(model) || !net->isPolicyMlp)
