@@ -2193,11 +2193,13 @@ std::shared_ptr<const CombatTransitionSampler> liveSampler;
 // STS_OOC_MCTS_A20_CTM (§470; on by default with the automatic stack, ADR-0033): the bundled A20 stack, used for
 // ascension-20 decisions.
 std::shared_ptr<const CombatTransitionSampler> liveSamplerA20;
+// STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS: liveSampler / liveSamplerA20 wrapped by the Silver fallback.
+std::shared_ptr<const CombatTransitionSampler> liveFallbackSampler, liveFallbackSamplerA20;
 std::shared_ptr<const CombatTransitionSampler> liveSamplerFor(const GameContext &gc) {
-    if (!liveSamplerA20 || gc.ascension < 20) return liveSampler;
+    if (!liveSamplerA20 || gc.ascension < 20) return liveFallbackSampler ? liveFallbackSampler : liveSampler;
     static std::atomic<bool> announced{false};
     if (!announced.exchange(true)) std::cout << "[ctm-a20] ascension-20 decisions use pathb-a20\n";
-    return liveSamplerA20;
+    return liveFallbackSamplerA20 ? liveFallbackSamplerA20 : liveSamplerA20;
 }
 std::unique_ptr<OocLeafCaptureSink> liveLeafCapture;
 // STS_OOC_SIBLING_CAPTURE (research, default off): OocSiblingLeafCapture rows
@@ -2211,13 +2213,69 @@ std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
 nlohmann::json pendingLeafCaptureProvenance;
 std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
+// Plays one imagined combat with native Silver at a flat budget, root prior on
+// or off. The hidden combat future is redrawn from the planner RNG: gc.seed,
+// from which BattleContext::init re-derives four streams (seed + floor), and
+// the six carried streams (counters kept), as redrawNativeFuture does for the
+// selective audit. Before 2026-10-17 the research resolver redrew only the
+// carried streams, so its combats replayed the real hidden future (§411's
+// Silver arms; same defect as the §408 mechanism correction). The Silver
+// planner seed comes from the same RNG. A Silver stall or failure returns
+// UNSUPPORTED.
+CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std::mt19937_64 &rng,
+                                                 int simulations, bool rootPrior) {
+    GameContext gc = detachedCopy(source);
+    gc.seed = rng();
+    for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
+                        &gc.potionRng, &gc.shuffleRng}) {
+        const auto counter = stream->counter;
+        *stream = sts::Random(rng());
+        stream->counter = counter;
+    }
+    const std::uint64_t plannerSeed = rng(), agentSeed = rng();
+    namespace S = sts::search;
+    struct Scope {
+        bool disallow = S::g_disallowImaginedCombat;
+        std::optional<std::uint64_t> planner = S::g_nativeSilverPlannerSeedOverride;
+        std::optional<bool> prior = S::g_nativeSilverRootPriorOverride;
+        std::optional<S::NativeSilverBudgetOverride> budget = S::g_nativeSilverBudgetOverride;
+        std::function<void(const sts::BattleContext &, GameContext &)> raw = std::move(sts::g_onBattleExitRaw);
+        std::function<void(const sts::BattleContext &)> decision = std::move(S::g_onCombatDecision);
+        ~Scope() {
+            S::g_disallowImaginedCombat = disallow; S::g_nativeSilverPlannerSeedOverride = planner;
+            S::g_nativeSilverRootPriorOverride = prior; S::g_nativeSilverBudgetOverride = budget;
+            sts::g_onBattleExitRaw = std::move(raw); S::g_onCombatDecision = std::move(decision);
+        }
+    } scope;
+    S::g_disallowImaginedCombat = false;
+    S::g_nativeSilverPlannerSeedOverride = plannerSeed;
+    S::g_nativeSilverRootPriorOverride = rootPrior;
+    S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
+    std::optional<CombatTransitionPersistentState> rawPost;
+    sts::g_onBattleExitRaw = [&](const sts::BattleContext &, GameContext &g) {
+        if (!rawPost) rawPost = captureCombatTransitionState(g);
+    };
+    S::ScumSearchAgent2 agent;
+    agent.simulationCountBase = simulations;
+    agent.rng.seed(static_cast<unsigned>(agentSeed));
+    sts::BattleContext bc;
+    try {
+        agent.playoutBattle(gc, bc);
+    } catch (const S::OocSearchUnsupported &) {
+        throw;
+    } catch (const std::exception &) {
+        return {};
+    }
+    if (bc.outcome == sts::Outcome::PLAYER_LOSS) return {CombatRuntimeSample::Outcome::DEATH, {}};
+    if (bc.outcome != sts::Outcome::PLAYER_VICTORY) return {};
+    bc.exitBattle(gc);
+    if (!rawPost) return {};
+    return {rawPost->smokeBombUsed ? CombatRuntimeSample::Outcome::ESCAPE
+                                   : CombatRuntimeSample::Outcome::VICTORY, *rawPost};
+}
 // Research only (STS_OOC_MCTS_COMBAT_RESOLVER=silver): resolves each imagined
-// combat by playing it with native Silver at a flat budget with the root prior
-// on. The six combat RNG streams are redrawn from the planner RNG (counters
-// kept), so the real hidden future never reaches the search, and the Silver
-// planner seed comes from the same RNG. Every combat is supported; a Silver
-// stall or failure returns UNSUPPORTED, which aborts that search as a CTM
-// support miss does.
+// combat with playImaginedCombatWithSilver, root prior on. Every combat is
+// supported; a Silver failure aborts that search as a CTM support miss does.
 class SilverCombatTransitionSampler final : public CombatTransitionSampler {
     int simulations_;
 public:
@@ -2228,56 +2286,71 @@ public:
     bool modelsSmokeBombEscape() const override { return true; }
     CombatRuntimeSample sample(const GameContext &source, const CombatPredictorInputV1 &,
                                std::mt19937_64 &rng) const override {
-        GameContext gc = detachedCopy(source);
-        for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
-                            &gc.potionRng, &gc.shuffleRng}) {
-            const auto counter = stream->counter;
-            *stream = sts::Random(rng());
-            stream->counter = counter;
-        }
-        const std::uint64_t plannerSeed = rng(), agentSeed = rng();
-        namespace S = sts::search;
-        struct Scope {
-            bool disallow = S::g_disallowImaginedCombat;
-            std::optional<std::uint64_t> planner = S::g_nativeSilverPlannerSeedOverride;
-            std::optional<bool> prior = S::g_nativeSilverRootPriorOverride;
-            std::optional<S::NativeSilverBudgetOverride> budget = S::g_nativeSilverBudgetOverride;
-            std::function<void(const sts::BattleContext &, GameContext &)> raw = std::move(sts::g_onBattleExitRaw);
-            std::function<void(const sts::BattleContext &)> decision = std::move(S::g_onCombatDecision);
-            ~Scope() {
-                S::g_disallowImaginedCombat = disallow; S::g_nativeSilverPlannerSeedOverride = planner;
-                S::g_nativeSilverRootPriorOverride = prior; S::g_nativeSilverBudgetOverride = budget;
-                sts::g_onBattleExitRaw = std::move(raw); S::g_onCombatDecision = std::move(decision);
+        return playImaginedCombatWithSilver(source, rng, simulations_, true);
+    }
+};
+// Opt-in (STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=N): keeps the CTM for every
+// combat it supports and plays only the combats it refuses with plain Silver at
+// N simulations, instead of aborting the whole search to the V4 fallback.
+// Counts per refusal reason are reported per run as [ooc-silver-fallback].
+class SilverFallbackCombatTransitionSampler final : public CombatTransitionSampler {
+    std::shared_ptr<const CombatTransitionSampler> inner_;
+    int simulations_;
+    mutable std::mutex mutex_;
+    mutable std::map<std::string, std::uint64_t> reasons_;
+    void count(const std::string &reason) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ++reasons_[reason.empty() ? "unspecified" : reason];
+    }
+public:
+    SilverFallbackCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int simulations)
+        : inner_(std::move(inner)), simulations_(simulations) {}
+    std::map<std::string, std::uint64_t> takeReasons() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return std::exchange(reasons_, {});
+    }
+    std::unique_ptr<PreparedCombatTransition> prepare(const GameContext &gc,
+            const CombatPredictorInputV1 &input) const override {
+        auto prepared = inner_->prepare(gc, input);
+        if (prepared->support().supported) return prepared;
+        count(prepared->support().reason);
+        class SilverPrepared final : public PreparedCombatTransition {
+            GameContext gc_;
+            int simulations_;
+            CombatRuntimeSupport support_{true, {}};
+        public:
+            SilverPrepared(const GameContext &gc, int simulations) : gc_(detachedCopy(gc)), simulations_(simulations) {}
+            const CombatRuntimeSupport &support() const override { return support_; }
+            CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
+                return playImaginedCombatWithSilver(gc_, rng, simulations_, false);
             }
-        } scope;
-        S::g_disallowImaginedCombat = false;
-        S::g_nativeSilverPlannerSeedOverride = plannerSeed;
-        S::g_nativeSilverRootPriorOverride = true;
-        S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
-        std::optional<CombatTransitionPersistentState> rawPost;
-        sts::g_onBattleExitRaw = [&](const sts::BattleContext &, GameContext &g) {
-            if (!rawPost) rawPost = captureCombatTransitionState(g);
         };
-        S::ScumSearchAgent2 agent;
-        agent.simulationCountBase = simulations_;
-        agent.rng.seed(static_cast<unsigned>(agentSeed));
-        sts::BattleContext bc;
-        try {
-            agent.playoutBattle(gc, bc);
-        } catch (const S::OocSearchUnsupported &) {
-            throw;
-        } catch (const std::exception &) {
-            return {};
-        }
-        if (bc.outcome == sts::Outcome::PLAYER_LOSS) return {CombatRuntimeSample::Outcome::DEATH, {}};
-        if (bc.outcome != sts::Outcome::PLAYER_VICTORY) return {};
-        bc.exitBattle(gc);
-        if (!rawPost) return {};
-        return {rawPost->smokeBombUsed ? CombatRuntimeSample::Outcome::ESCAPE
-                                       : CombatRuntimeSample::Outcome::VICTORY, *rawPost};
+        return std::make_unique<SilverPrepared>(gc, simulations_);
+    }
+    CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+        return {true, {}};
+    }
+    CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastSupport(input);
+    }
+    CombatTransitionExpectation forecastExpectation(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastExpectation(input);
+    }
+    CombatTransitionExpectation expectation(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        return inner_->expectation(gc, input);
+    }
+    bool modelsSmokeBombEscape() const override { return inner_->modelsSmokeBombEscape(); }
+    CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &input,
+                               std::mt19937_64 &rng) const override {
+        const auto support = inner_->support(gc, input);
+        if (support.supported) return inner_->sample(gc, input, rng);
+        count(support.reason);
+        return playImaginedCombatWithSilver(gc, rng, simulations_, false);
     }
 };
 int liveSilverResolverSims = 0;
+int liveUnsupportedSilverSims = 0;
+
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
     x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -2553,6 +2626,9 @@ std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
 }
 void configureLiveOocMcts() {
     liveSamplerA20.reset();
+    liveFallbackSampler.reset();
+    liveFallbackSamplerA20.reset();
+    liveUnsupportedSilverSims = 0;
     const char *enabled = std::getenv("STS_OOC_MCTS");
     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
         throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
@@ -2601,6 +2677,9 @@ void configureLiveOocMcts() {
         if (one_combat::heart1::enabled()) (void)one_combat::heart1::net();
         liveSibling = std::move(sibling);
     }
+    const char *unsupportedSilver = std::getenv("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
+    if (unsupportedSilver && !liveEnabled)
+        throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS requires STS_OOC_MCTS=1");
     if (!liveEnabled) return;
     decisionLogPath.clear();
     if (const char *path = std::getenv("STS_OOC_MCTS_DECISION_LOG"); path && *path) decisionLogPath = path;
@@ -2805,6 +2884,22 @@ void configureLiveOocMcts() {
         std::cout << std::setprecision(17) << "[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20"
             << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
             << " active_lizard_correction=1\n" << std::setprecision(6);
+    }
+    if (unsupportedSilver) {
+        const std::string value = unsupportedSilver;
+        if (value.empty() || value.size() > 6 || value.find_first_not_of("0123456789") != std::string::npos
+                || std::stoi(value) < 1)
+            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS must be in 1..999999");
+        if (silverResolver)
+            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS excludes STS_OOC_MCTS_COMBAT_RESOLVER");
+        if (std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS excludes STS_OOC_MCTS_LEAF_CAPTURE");
+        liveUnsupportedSilverSims = std::stoi(value);
+        liveFallbackSampler = std::make_shared<SilverFallbackCombatTransitionSampler>(liveSampler, liveUnsupportedSilverSims);
+        if (liveSamplerA20)
+            liveFallbackSamplerA20 = std::make_shared<SilverFallbackCombatTransitionSampler>(liveSamplerA20, liveUnsupportedSilverSims);
+        std::cout << "[ooc-mcts-silver-fallback] unsupported_silver_sims=" << liveUnsupportedSilverSims
+            << " root_prior=off redraw=seed_and_six_combat_streams\n";
     }
     if (const char *capturePath = std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")) {
         if (silverResolver || liveOptions.screenLeaf || liveOptions.bossLeaf
@@ -3905,6 +4000,17 @@ bool executeOocMctsRoot(GameContext &gc, const OocGameContextModel::Candidate &s
 }
 
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int realCombats) {
+    if (liveFallbackSampler) {
+        std::map<std::string, std::uint64_t> reasons;
+        for (const auto &sampler : {liveFallbackSampler, liveFallbackSamplerA20})
+            if (const auto fallback = std::dynamic_pointer_cast<const SilverFallbackCombatTransitionSampler>(sampler))
+                for (const auto &[reason, n] : fallback->takeReasons()) reasons[reason] += n;
+        std::uint64_t total = 0;
+        for (const auto &entry : reasons) total += entry.second;
+        std::cerr << "[ooc-silver-fallback] " << nlohmann::json{{"seed", seed},
+            {"silverSims", liveUnsupportedSilverSims}, {"resolvedByReason", reasons},
+            {"resolved", total}}.dump() << '\n';
+    }
     EntropicBrewFallbackCombatTransitionSampler::Metrics brewMetrics;
     const auto hybridSampler=std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSampler);
     if (hybridSampler) brewMetrics=hybridSampler->takeMetrics();
@@ -6444,6 +6550,26 @@ void oocMctsAdapterSelfTest() {
         && unsupportedMetrics.continuation.supportReasons.at("test unsupported")==1
         && test::oocStateFingerprint(live)==before && !sts::search::g_disallowImaginedCombat,
         "unsupported live search returns untouched decision to existing V4 with reconciled abort metrics");
+    {
+        // STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS: a refused combat is played by Silver, counted by reason,
+        // on a redrawn future; the source state is untouched.
+        auto fight=detachedCopy(live);
+        fight.curRoom=Room::MONSTER;
+        fight.enterBattle(MonsterEncounter::CULTIST);
+        const auto fightBefore=test::oocStateFingerprint(fight);
+        const auto input=captureCombatPredictorInput(fight,MonsterEncounter::CULTIST,0.0);
+        const SilverFallbackCombatTransitionSampler fallback(std::make_shared<AlwaysUnsupported>(),64);
+        const auto prepared=fallback.prepare(fight,input);
+        std::mt19937_64 first(1),second(1);
+        const auto a=prepared->sample(first), b=fallback.sample(fight,input,second);
+        const auto reasons=fallback.takeReasons();
+        require(prepared->support().supported && fallback.support(fight,input).supported
+            && a.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED && a.outcome==b.outcome
+            && a.rawPost.curHp==b.rawPost.curHp && reasons.size()==1 && reasons.at("test unsupported")==2
+            && fallback.takeReasons().empty() && test::oocStateFingerprint(fight)==fightBefore
+            && !sts::search::g_disallowImaginedCombat,
+            "Silver fallback resolves refused combats deterministically per planner RNG and counts them");
+    }
     auto sole=detachedCopy(live);
     int firstNode=-1;
     for (auto &node : sole.map->nodes[0]) {
