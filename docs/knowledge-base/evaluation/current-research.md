@@ -226,7 +226,8 @@ act better than both but has almost no level change between acts. The retrained
 `heart_leaf_td2` adds a tree distillation of that critic as an input and an Act-4 offset. On the
 §503 CONFIRM set (640 runs) it beats Platt X2-B on BCE (0.3345 vs 0.3479) and AUC (0.750 vs
 0.726) and calibrates acts 2-4, but under-predicts Act 1 (0.093 vs 0.130) and fails the gate;
-CONFIRM is spent. Philipp asked for a paired A20 A/B of td2 against the X2-B leaf anyway (§522).
+CONFIRM is spent. Philipp asked for a paired A20 A/B of td2 against the X2-B leaf anyway; §522 (512 pairs) is NOT_SHOWN
+(reached Act 4 124 vs 137, Heart kills 42 vs 46) with more Act-1 deaths (114 vs 69).
 td1/td2 also read the hidden encounter queue (`nextEliteId`, `nextFight0..2`), real in the §503
 roots but sampled in play; `heart_leaf_td3` (feature schema v4) zeroes those columns and matches
 td2 on VALIDATION (BCE 0.3034, AUC 0.731).
