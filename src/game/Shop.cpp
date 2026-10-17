@@ -87,6 +87,7 @@ void Shop::applyDiscount(float factor) {
 }
 
 void Shop::buyCard(GameContext &gc, int idx) {
+    const CardType boughtType = cards[idx].getType();
     gc.deck.obtain(gc, cards[idx], 1);
     gc.loseGold(cardPrice(idx), true);
 
@@ -97,6 +98,15 @@ void Shop::buyCard(GameContext &gc, int idx) {
                     CardRarity::RARE : CardRarity::UNCOMMON;
             cards[idx] = gc.previewObtainCard(getColorlessCardFromPool(gc.cardRng, rarity));
             cardPrice(idx) = getNewCardPrice(gc, rarity, true);
+        } else if (rulesFixEnabled()) {
+            // ShopScreen.purchaseCard: rollRarity() at shop odds, then
+            // getCardFromPool(rarity, boughtCard.type, false); no common powers exist.
+            CardRarity rarity = rollCardRarityShop(gc.cardRng, gc.cardRarityFactor);
+            if (boughtType == CardType::POWER && rarity == CardRarity::COMMON) {
+                rarity = CardRarity::UNCOMMON;
+            }
+            cards[idx] = gc.previewObtainCard(getRandomClassCardOfTypeAndRarity(gc.mathUtilRng, gc.cc, boughtType, rarity));
+            cardPrice(idx) = getNewCardPrice(gc, rarity, false);
         } else {
             CardRarity rarity = gc.rollCardRarity(Room::SHOP);
             cards[idx] = gc.previewObtainCard(getRandomClassCardOfRarity(gc.mathUtilRng, gc.cc, rarity));
@@ -236,6 +246,8 @@ int Shop::getNewPrice(GameContext &gc, int basePrice) {
 int Shop::getRemoveCost(const GameContext &gc) {
     int cost;
     if (gc.hasRelic(RelicId::SMILING_MASK)) {
+        // ShopScreen.init sets the Smiling Mask price after Courier/Membership.
+        if (rulesFixEnabled()) return SMILING_MASK_PRICE;
         cost = SMILING_MASK_PRICE;
     } else {
         cost = BASE_REMOVE_PRICE+(REMOVE_PRICE_INCREASE*gc.shopRemoveCount);

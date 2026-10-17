@@ -63,6 +63,22 @@ int main() {
         require(restock >= 35 && restock <= 85, "Courier potion restock price out of range");
         courier.info.shop.buyRelic(courier, 0);
         require(courier.info.shop.relicPrice(0) > 0, "Courier relic restock is unpriced");
+        // Courier restocks a bought class card with a card of the same type.
+        for (int k = 0; k < 4; ++k) {
+            for (int i = 0; i < 5; ++i) {
+                const CardType type = courier.info.shop.cards[i].getType();
+                courier.gold = 999;
+                courier.info.shop.buyCard(courier, i);
+                require(courier.info.shop.cards[i].getType() == type, "Courier card restock changed type");
+                require(courier.info.shop.cardPrice(i) > 0, "Courier card restock is unpriced");
+            }
+        }
+        // Smiling Mask's 50-gold removal is not discounted by Courier or Membership.
+        auto mask = gc;
+        mask.relics.add(RelicInstance{RelicId::SMILING_MASK, 0});
+        mask.relics.add(RelicInstance{RelicId::THE_COURIER, 0});
+        mask.relics.add(RelicInstance{RelicId::MEMBERSHIP_CARD, 0});
+        require(Shop::getRemoveCost(mask) == 50, "Smiling Mask removal was discounted");
 
         setenv("STS_SHOP_RULES_FIX", "0", 1);
         const auto l15 = shopAt(15), l16 = shopAt(16);
@@ -76,6 +92,10 @@ int main() {
         legacy.relics.add(RelicInstance{RelicId::THE_COURIER, 0});
         legacy.info.shop.buyPotion(legacy, 0);
         require(legacy.info.shop.potionPrice(0) == 1, "legacy: Courier potion restock must cost 1");
+        auto legacyMask = shopAt(20);
+        legacyMask.relics.add(RelicInstance{RelicId::SMILING_MASK, 0});
+        legacyMask.relics.add(RelicInstance{RelicId::THE_COURIER, 0});
+        require(Shop::getRemoveCost(legacyMask) == 40, "legacy: Smiling Mask removal must take Courier");
         unsetenv("STS_SHOP_RULES_FIX");
         std::cout << "shop_rules_fix: OK\n";
         return 0;
