@@ -2926,6 +2926,15 @@ void configureLiveOocMcts() {
     // STS_OOC_MCTS_PRIOR=heart1 restores the V4-gated heart1 prior, =policy the V4 prior.
     if (!std::getenv("STS_OOC_MCTS_PRIOR") && heart1::enabled())
         applyLiveControl("STS_OOC_MCTS_PRIOR", "heart1full", liveConfig, liveOptions);
+    // ADR-TBD (Philipp 2026-10-17): weights with the select-distill inputs (x_act, e.g. student_sel.bin) default
+    // to TARGET_PRIOR=1 and, under heart1full + LEAF_POLICY=heart1, LEAF_SELECTS=heart1. Student C (no x_act)
+    // is unchanged; STS_OOC_MCTS_TARGET_PRIOR=0 / STS_OOC_MCTS_LEAF_SELECTS=chain restore the old behaviour.
+    if (heart1::enabled() && heart1::net().extraInputs()) {
+        if (!std::getenv("STS_OOC_MCTS_TARGET_PRIOR") && liveOptions.heart1Prior)
+            applyLiveControl("STS_OOC_MCTS_TARGET_PRIOR", "1", liveConfig, liveOptions);
+        if (!std::getenv("STS_OOC_MCTS_LEAF_SELECTS") && liveOptions.heart1LeafPolicy && liveOptions.heart1Coverage)
+            applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS", "heart1", liveConfig, liveOptions);
+    }
     // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
     if (!std::getenv("STS_OOC_MCTS_LEAF_VALUE")) applyLiveControl("STS_OOC_MCTS_LEAF_VALUE", "screengbm", liveConfig, liveOptions);
     if (liveOptions.screenLeaf) {
@@ -3171,6 +3180,7 @@ void configureLiveOocMcts() {
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
+        << (liveOptions.targetPrior ? " target_prior=1" : "") << (liveOptions.heart1LeafSelects ? " leaf_selects=heart1" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
