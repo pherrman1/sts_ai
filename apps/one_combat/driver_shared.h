@@ -333,6 +333,8 @@ void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
 void silverAzFocusGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
                       const std::string &encounter, int replicates, int otherSims, int treeMinVisits, int rootBonus);
 // Paired online check of two MLP tree priors on one encounter (silverfocusevalgen, §469).
+void act4Replay(int nStates, const std::string &statesPath, const std::string &outPrefix, long long seedOffset,
+                const std::string &simsList, int replicates);
 void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                         const std::string &encounter, int replicates, int otherSims, int armSims, int treeMinVisits,
                         const std::string &priorA, const std::string &priorB);
