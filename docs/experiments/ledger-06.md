@@ -19759,7 +19759,9 @@ Ti, 79.7 s, exit 0, tests 18/18. Arm A reproduces §500's 0.453411 to 6.8e-8.
 
 Intervals are descriptive, not adjusted for selection or reused VALIDATION.
 Not a search-leaf qualification; selected heads exported for the §502 sibling
-harness. Any candidate needs the fresh sealed cohort.
+harness. §502 found their sibling concordance at 0.507–0.530 vs X2-B 0.601
+(PR #582), so the outcome-BCE gain gives no search utility. Any candidate
+needs the fresh sealed cohort.
 [Report](evidence/heart_outcome_dev_compare_20261017/REPORT.md). **Knowledge
 impact:** current outcome-head development evidence and the new cache-plus-
 public-block tool; no default change.

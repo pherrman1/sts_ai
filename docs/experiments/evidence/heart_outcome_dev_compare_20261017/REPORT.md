@@ -76,7 +76,13 @@ act-1 reweighting idea is not supported. Data still matters at the low end.
 None of this qualifies a search leaf. §502 found the §498 head near chance at
 ranking sibling actions. The four selected heads are exported in
 [heads/](heads/) (JSON in the §498 head layout, SHA256SUMS) for §502's sibling
-harness; that scoring is descriptive and changes no verdict here. A candidate
+harness; that scoring is descriptive and changes no verdict here.
+
+§502 scored the four selected heads on its 777 TRAIN+VALIDATION §494 sibling
+groups (PR #582): concordance with 64-rollout means is 0.507 (A), 0.520 (B),
+0.521 (C) and 0.530 (D), against X2-B 0.601 and one rollout3 0.565. Every
+head − X2-B upper bound is ≤ −0.040. C's outcome-BCE gain does not carry over
+to ranking sibling actions; no arm shows search utility. A candidate
 built on arm C needs the fresh sealed confirmation cohort from the new
 collection; the consumed §499 TEST is excluded.
 
