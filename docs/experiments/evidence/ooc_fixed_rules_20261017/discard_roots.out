@@ -1,0 +1,2 @@
+(hasDiscard, hasCard, uniformPrior) -> roots [((False, False, True), 705), ((False, True, False), 29945), ((False, True, True), 1283), ((True, False, True), 523), ((True, True, True), 758)]
+uniform discard screens: selected [('discard', 505), ('leave', 429), ('card', 255), ('skipcard', 86), ('ooc:v1:effect=13:source=7:reward=none:gr', 5), ('ooc:v1:effect=8:source=7:reward=relic,96', 1)] runs 553

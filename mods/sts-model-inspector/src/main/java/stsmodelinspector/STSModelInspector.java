@@ -1378,10 +1378,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (AbstractDungeon.pathX == null || AbstractDungeon.pathY == null
                 || AbstractDungeon.map == null
                 || AbstractDungeon.pathX.size() != AbstractDungeon.pathY.size()
-                || AbstractDungeon.pathX.size() < 2) return "";
+                || AbstractDungeon.pathX.isEmpty()) return "";
         int currentIndex = AbstractDungeon.pathX.size() - 1;
         if (AbstractDungeon.pathX.get(currentIndex) != currentX
                 || AbstractDungeon.pathY.get(currentIndex) != currentY) return "";
+        if (currentIndex == 0) return previousRoomAtActEntry(AbstractDungeon.actNum,
+                AbstractDungeon.floorNum, currentY,
+                CardCrawlGame.metricData == null ? null : CardCrawlGame.metricData.path_per_floor,
+                RelicOfferRecorder.completedCombatFloors(AbstractDungeon.actNum-1, AbstractDungeon.floorNum));
         int previousX = AbstractDungeon.pathX.get(currentIndex - 1);
         int previousY = AbstractDungeon.pathY.get(currentIndex - 1);
         if (previousY < 0 || previousY >= AbstractDungeon.map.size()) return "";
@@ -1389,6 +1393,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (row == null || previousX < 0 || previousX >= row.size()) return "";
         com.megacrit.cardcrawl.map.MapRoomNode previous = row.get(previousX);
         return previous == null || previous.room == null ? "" : roomClass(previous.room);
+    }
+
+    static String previousRoomAtActEntry(int act, int floor, int currentY,
+            List<String> resolved, List<Integer> completedCombatFloors) {
+        if (act < 2 || act > 3 || currentY != 0 || floor != 17*(act-1)+1
+                || resolved == null || completedCombatFloors == null
+                || resolved.size() < floor-1 || resolved.size() > floor) return "";
+        // A one-node current-act path has no preceding map coordinate. Its
+        // public metrics must instead prove the boss and omitted boss chest.
+        if (resolved.get(floor-2) != null
+                || !"BOSS".equals(metricRoomClass(resolved.get(floor-3)))
+                || !completedCombatFloors.contains(floor-2)) return "";
+        return "BOSS_TREASURE";
     }
 
     private static String roomClass(AbstractRoom room) {
@@ -1539,16 +1556,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    static <T> boolean replacedSlimeBossParent(String encounter, String id, T identity,
+            boolean dead, boolean liveLargeChild, Set<T> replaced) {
+        if (!"SLIME_BOSS".equals(encounter) || !"SlimeBoss".equals(id) || identity == null || !dead) return false;
+        // The original Java parent stays in MonsterGroup after replacement.
+        // Keep its retirement when the large children later split or die.
+        if (liveLargeChild) replaced.add(identity);
+        return replaced.contains(identity);
+    }
+
     private static boolean replacedSlimeBossParent(String encounter,
                                                     AbstractMonster candidate,
                                                     List<AbstractMonster> monsters) {
-        if (!"SLIME_BOSS".equals(encounter) || candidate == null
-                || !"SlimeBoss".equals(candidate.id) || !candidate.isDeadOrEscaped()) return false;
+        if (candidate == null) return false;
+        boolean liveLargeChild=false;
         for (AbstractMonster monster : monsters) {
             if (monster == null || monster == candidate || monster.isDeadOrEscaped()) continue;
-            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) return true;
+            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) liveLargeChild=true;
         }
-        return false;
+        return replacedSlimeBossParent(encounter,candidate.id,candidate,candidate.isDeadOrEscaped(),
+                liveLargeChild,replacedMonsterParents);
     }
 
     private static int preferredMonsterSlot(String encounter, String id, int sameIdOrdinal,
@@ -1797,6 +1824,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private String combatEntryJson(AbstractRoom room, String encounter) {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
         String previous = lastRoomClass;
+        if (previous.isEmpty()) previous = previousRoomClassFromPath(
+                AbstractDungeon.currMapNode.x, AbstractDungeon.currMapNode.y);
         // A freshly started inspector can observe a saved run directly inside
         // the act boss before observeRoomTransition has rebuilt its in-memory
         // latch. The persisted metric path includes the boss sentinel, so use
@@ -1867,7 +1896,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             case "E": return "ELITE";
             case "M": return "MONSTER";
             case "T": return "TREASURE";
-            case "B": return "BOSS";
+            case "B": case "BOSS": return "BOSS";
             default: return "";
         }
     }
@@ -1962,10 +1991,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
+    static int combatCardMisc(String id, int misc, int timesUpgraded, int baseDamage) {
+        if ("Searing Blow".equals(id)) return timesUpgraded;
+        if ("Rampage".equals(id)) return baseDamage - 8;
+        return misc;
+    }
+
     private static String cardJson(AbstractCard card) {
         return "{\"id\":\"" + escapeJson(card.cardID) + "\",\"uuid\":\"" +
                 escapeJson(String.valueOf(card.uuid)) + "\",\"upgraded\":" +
-                (card.upgraded ? "true" : "false") + ",\"misc\":" + card.misc +
+                (card.upgraded ? "true" : "false") + ",\"misc\":" +
+                combatCardMisc(card.cardID, card.misc, card.timesUpgraded, card.baseDamage) +
                 ",\"cost\":" + card.cost + ",\"costForTurn\":" + card.costForTurn +
                 ",\"freeToPlayOnce\":" + (card.freeToPlayOnce ? "true" : "false") +
                 ",\"retain\":" + (card.retain ? "true" : "false") + "}";
@@ -2313,6 +2349,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if ("Looter".equals(id) || "Mugger".equals(id))
             return readIntField(monster, "stolenGold");
+        return statelessMonsterMiscInfo(id);
+    }
+
+    static Integer publicMonsterMiscInfo(boolean runicDome, java.util.function.Supplier<Integer> visible) {
+        return runicDome ? Integer.valueOf(0) : visible.get();
+    }
+
+    static Integer statelessMonsterMiscInfo(String id) {
         // Explicit zero is safe only for monsters whose native move logic does
         // not consult miscInfo. Unknown/reflectively inaccessible state is
         // omitted and therefore rejected by the importer.
@@ -2328,6 +2372,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || "Exploder".equals(id) || "FungiBeast".equals(id)
                 || "GiantHead".equals(id) || "JawWorm".equals(id)
                 || "GremlinFat".equals(id) || "GremlinLeader".equals(id)
+                || "GremlinWarrior".equals(id) || "GremlinTsundere".equals(id)
                 || "GremlinNob".equals(id)
                 || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
                 || "SpikeSlime_S".equals(id) || "Lagavulin".equals(id)
@@ -2531,7 +2576,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if ("ARMAMENTS".equals(task) || "EXHUME".equals(task) || "DUAL_WIELD".equals(task)) {
             Object action = AbstractDungeon.actionManager.currentAction;
             boolean armaments = "ARMAMENTS".equals(task), dualWield = "DUAL_WIELD".equals(task);
-            Integer copies = dualWield ? readIntField(action,"dupeAmount") : 0;
+            Integer copies = dualWield ? readIntField(action,"dupeAmount") : Integer.valueOf(0);
             Object held = readObjectField(action, armaments ? "cannotUpgrade" : dualWield ? "cannotDuplicate" : "exhumes");
             if (!(held instanceof List) || (dualWield ? copies == null || copies < 1 || copies > 2
                     : !Boolean.FALSE.equals(readBooleanField(action, armaments ? "upgraded" : "upgrade"))))
@@ -2681,13 +2726,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return index;
     }
 
+    // Vanilla sets monsterAttacksQueued after dispatching enemies and leaves
+    // it true throughout the following player turn. AbstractRoom$1 resets it
+    // only when the player ends that turn; it is not pending enemy work.
+    // Actual enemy/pre-turn queues are checked separately by each continuation.
+    static boolean playerSelectionTurn(boolean turnHasEnded, boolean endTurnQueued, boolean isEndingTurn) {
+        return !turnHasEnded && !endTurnQueued && !isEndingTurn;
+    }
+
     private static String publicPendingActionsJson(boolean opening) {
         return publicPendingActionsJson(opening,null);
     }
 
     private static String publicPendingActionsJson(boolean opening,String sourceTask) {
         com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
-        if(manager==null || manager.turnHasEnded || manager.monsterAttacksQueued
+        if(manager==null || !playerSelectionTurn(manager.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !manager.preTurnActions.isEmpty() || !manager.monsterQueue.isEmpty()
                 || (sourceTask==null && (!manager.cardQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()))
                 || manager.actions.size()>128) return null;
@@ -2793,7 +2846,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String publicTail=publicPendingActionsJson(false);
         if(publicTail!=null) return publicTail.equals("[]") ? "none" : "public_actions";
         com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
-        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+        if (actions == null || !playerSelectionTurn(actions.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !actions.preTurnActions.isEmpty() || !actions.monsterQueue.isEmpty()) return null;
         int cleanups = 0;
         for (Object pending : actions.actions) {
@@ -2877,7 +2930,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String cardRewardContinuation() {
         com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
-        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+        if (actions == null || !playerSelectionTurn(actions.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
                 || !actions.monsterQueue.isEmpty()) return "unsupported";
         if (actions.actions.isEmpty() && AbstractDungeon.player.limbo.isEmpty()) return "none";
@@ -2929,7 +2982,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
     private static List<Integer> toolboxDrawsAfter() {
         com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
-        if (actions == null || actions.turnHasEnded || actions.monsterAttacksQueued
+        if (actions == null || !playerSelectionTurn(actions.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !actions.preTurnActions.isEmpty() || !actions.cardQueue.isEmpty()
                 || !actions.monsterQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()) return null;
         List<String> classes = new ArrayList<>(); List<Integer> amounts = new ArrayList<>();
@@ -2985,7 +3038,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         return actions.actions.size() <= 128 && hasRelic("Nilry's Codex") && codexEndTurnContinuation(classes,
                 AbstractDungeon.player.endTurnQueued && !AbstractDungeon.player.isEndingTurn,
-                !actions.turnHasEnded && !actions.monsterAttacksQueued && actions.preTurnActions.isEmpty()
+                !actions.turnHasEnded && actions.preTurnActions.isEmpty()
                     && pendingCardQueue(new IdentityHashMap<AbstractMonster,Integer>(),true).error==null
                     && actions.monsterQueue.isEmpty() && AbstractDungeon.player.limbo.isEmpty(),
                 AbstractDungeon.player.maxOrbs == 0 && AbstractDungeon.player.orbs.isEmpty());
@@ -3083,6 +3136,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
+    static boolean orphanedHandSelection(boolean playerDecision, boolean retrieved, int selectedCount) {
+        return playerDecision && !retrieved && selectedCount > 0;
+    }
+
     private static String combatJson() {
         int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         String selection = cardSelectionJson();
@@ -3114,6 +3171,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (AbstractPower power : AbstractDungeon.player.powers)
             if ("Vulnerable".equals(power.ID)) trackedPlayerVulnerableSeen = true;
         StringBuilder out = new StringBuilder("{");
+        // A timed-out selection owner can disappear while its selected cards
+        // remain outside every pile. Do not search this apparently stable but
+        // incomplete root (or later reinterpret those cards as new copies).
+        if (AbstractDungeon.handCardSelectScreen != null
+                && orphanedHandSelection(isPlayerDecisionPoint(),
+                    AbstractDungeon.handCardSelectScreen.wereCardsRetrieved,
+                    AbstractDungeon.handCardSelectScreen.selectedCards.size()))
+            out.append("\"orphanedHandSelection\":true,");
         if(RunicDomeCapture.bindingFailure()!=null)out.append("\"occupantBindingError\":\"").append(escapeJson(RunicDomeCapture.bindingFailure())).append("\",");
         out.append("\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
@@ -3260,6 +3325,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if (monster == null) continue;
                 if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
                 if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
+                // SpawnMonsterAction adds the new object without removing the
+                // old corpse. Its native slot now belongs to the verified new
+                // occupant; never serialize the retired corpse at slot -1.
+                if (RunicDomeCapture.retiredDeadOccupant(monster)) continue;
                 if (!first) out.append(',');
                 first = false;
                 int slot = emittedSlots.containsKey(monster) ? emittedSlots.get(monster) : -1;
@@ -3303,7 +3372,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 // A post-roll private counter can disclose a hidden intent.
                 // Dome counters are reconstructed from the separately captured
                 // public history; never export the live post-roll counter.
-                Integer miscInfo = runicDome ? 0 : monsterMiscInfo(monster);
+                Integer miscInfo = publicMonsterMiscInfo(runicDome, () -> monsterMiscInfo(monster));
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
                 Integer uniquePower0 = runicDome ? null : monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);

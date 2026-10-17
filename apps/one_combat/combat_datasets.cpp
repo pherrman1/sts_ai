@@ -5,12 +5,15 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
+#include "one_combat/ritual_writhing_setup.h"
 #include "one_combat/combat_transition_runtime.h"
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
 #include "one_combat/ooc_native_fallback.h"
 #include "run_driver.h"
 #include "sim/search/SilverRolloutAgent.h"
+#include "sim/search/SilverRolloutCardTable.h"
+#include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
 #include "sim/search/PotionRewardPolicy.h"
 
@@ -59,11 +62,18 @@ nlohmann::json effectiveSilverLeafSpecification() {
         const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE");
         table = {{"path", path ? path : ""}, {"sha256", path ? fileSha256(path) : ""}};
     }
-    return {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
+    nlohmann::json spec = {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
             {"relic_heal_leaf", leaf.relicHealLeaf}, {"a20_boss_heal_fix", leaf.a20BossHealFix},
             {"escape_penalty", {leaf.escapePenalty, leaf.eliteEscapePenalty}},
             {"rollout_card_table", table}, {"rollout_uniform", leaf.rolloutUniform},
             {"rollouts_per_leaf", leaf.rolloutsPerLeaf}, {"rollout_zero_cost_cap", leaf.rolloutZeroCostCap}};
+    // Recorded only when not the default 1000, so teacher files written before
+    // STS_SILVER_ROLLOUT_ACTION_CAP existed still match.
+    if (leaf.rolloutActionCap != 1000) spec["rollout_action_cap"] = leaf.rolloutActionCap;
+    // Recorded only when on (ADR-0046 default), so =0 specifications match earlier ones.
+    if (!leaf.rolloutRootTable.empty())
+        spec["rollout_root_table"] = {{"path", leaf.rolloutRootTable}, {"sha256", fileSha256(leaf.rolloutRootTable)}};
+    return spec;
 }
 
 nlohmann::json effectiveOocPolicySpecification() {
@@ -171,6 +181,10 @@ nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["native_ooc_card_win_rank"] = true;
     if (sts::search::potionRewardSwapEnabled())
         policy["flags"]["potion_reward_swap"] = true;
+    if (sts::Shop::rulesFixEnabled())
+        policy["flags"]["shop_rules_fix"] = true;
+    if (sts::engineFidelityFix())
+        policy["flags"]["engine_fidelity_fix"] = true;
     if (one_combat::heart1::enabled()) {
         const char *weights = std::getenv("STS_OOC_HEART1");
         policy["flags"]["ooc_heart1"] = true;
@@ -1689,7 +1703,14 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
         } else {
             if (!vwin || !vwin->captureRefresh) {
-                runFullRunOocPolicyStep(gc, agent, false, true);
+                // Same order as runFullRunOOC without live OOC MCTS: a pending Heart key, then
+                // STS_OOC_HEART1 (student C), then the chain for choices it does not encode.
+                // Before this, the policy specification recorded ooc_heart1 but the chain played.
+                if (!search::heartKeyAction(gc, g_collectKeys) && one_combat::heart1::enabled()
+                        && !one_combat::liveOocMctsEnabled() && one_combat::heart1::policyStep(gc)) {
+                } else {
+                    runFullRunOocPolicyStep(gc, agent, false, true);
+                }
             } else {
                 vwinRefreshRunPolicyStep(*vwin, gc, path, agent);
             }
@@ -1860,6 +1881,9 @@ int learnedStopTeacherSelfTest() {
     auto wrongTable = withLeaf;
     wrongTable["search_configuration"]["silver_leaf"]["rollout_card_table"] = "hand_written";
     expect("rejects rollout card table mismatch", loads(wrongTable, true), false);
+    auto wrongCap = withLeaf;
+    wrongCap["search_configuration"]["silver_leaf"]["rollout_action_cap"] = 0;
+    expect("rejects rollout action cap mismatch", loads(wrongCap, true), false);
     auto wrongHeal = base;
     wrongHeal["search_configuration"]["a20_boss_heal_fix"] = false;
     expect("rejects A20 boss heal fix mismatch", loads(wrongHeal, true), false);
@@ -5277,12 +5301,26 @@ struct TreePriorScope {
 // and the control keep the production rollouts.
 struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0;
                       std::string priorModel; bool finalFightLeaf = false;
-                      search::SilverSearcher::RolloutConfig rollout = {}; std::string cardTable; };
+                      search::SilverSearcher::RolloutConfig rollout = {}; std::string cardTable;
+                      std::string rootTableModel;
+                      std::optional<search::NativeSilverSearchParams> params; };
 struct RolloutScope {
     explicit RolloutScope(const search::SilverSearcher::RolloutConfig &config) {
         search::g_nativeSilverRolloutOverride = config;
     }
     ~RolloutScope() { search::g_nativeSilverRolloutOverride.reset(); }
+};
+// widen518: this arm's Silver search constants (chance widening per category).
+struct SearchParamsScope {
+    explicit SearchParamsScope(const search::NativeSilverSearchParams &p) { search::g_nativeSilverSearchParamOverride = p; }
+    ~SearchParamsScope() { search::g_nativeSilverSearchParamOverride.reset(); }
+};
+// roottable armset: this arm's replays build a per-root rollout card table with this model.
+struct RolloutRootTableScope {
+    explicit RolloutRootTableScope(const search::CombatValueNet *net) {
+        search::g_nativeSilverRolloutRootTableOverride = net;
+    }
+    ~RolloutRootTableScope() { search::g_nativeSilverRolloutRootTableOverride = nullptr; }
 };
 struct FinalFightLeafScope {
     explicit FinalFightLeafScope(bool on) { search::g_nativeSilverFinalFightLeafOverride = on; }
@@ -5522,11 +5560,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
     if (teacherLarge && replicates != 16)
         throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
-    // Ascension 20 is allowed only for the mlpsweep armset (§476/§479) and teacher_a20; every other armset is A0.
-    const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479";
+    // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable and widen518 armsets
+    // (§476/§479/§519/§518) and teacher_a20; every other armset is A0.
+    const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479" || armSet == "roottable"
+            || armSet == "widen518";
     if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
-                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep or rollout479)");
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable or widen518)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5588,15 +5628,50 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // (STS_CTMSILVER_MLP_PRIOR_PREV); STS_CTMSILVER_HALLWAY_EVERY = n > 1 replays
     // only about one NORMAL fight in n (hash of seed and fight index).
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
-            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479" && !teacherA20)
+            && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479"
+            && armSet != "roottable" && armSet != "widen518" && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479 or teacher_a20");
+                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable, widen518 "
+                                 "or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
     int hallwayEvery = 1;
     std::vector<int> sweepSims;
-    if (armSet == "mlpsweep" || armSet == "rollout479") {
+    if (sweepArmSet) {
+        const char *every = std::getenv("STS_CTMSILVER_HALLWAY_EVERY");
+        if (every && *every) {
+            char *end = nullptr;
+            const long n = std::strtol(every, &end, 10);
+            if (*end != '\0' || n < 1 || n > 1000)
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_HALLWAY_EVERY must be 1..1000");
+            hallwayEvery = static_cast<int>(n);
+        }
+    }
+    if (armSet == "widen518") {
+        // §518: Silver at 2,500 simulations with the gen-6 MLP tree prior (STS_CTMSILVER_MLP_PRIOR, K = 8,
+        // as the §476 mlp arms) on the same redraws, changing only the chance-node widening constants per
+        // category (end of turn vs every other chance node). spire = the constants of tfriedel/spire-mentor's
+        // STS2 search (end turn C 5.79, alpha 0.44; draws C 2, alpha 0.5).
+        const char *mlpEnv = std::getenv("STS_CTMSILVER_MLP_PRIOR");
+        const std::string mlp = mlpEnv ? mlpEnv : "";
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: widen518 requires STS_CTMSILVER_MLP_PRIOR");
+        auto net = std::make_unique<search::CombatValueNet>();
+        if (!net->load(mlp) || !net->isPolicyMlp)
+            throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp model from " + mlp);
+        priorNets[mlp] = std::move(net);
+        constexpr int budget = 2500;
+        const search::NativeSilverSearchParams base;
+        auto endWide = base; endWide.endTurnWideningC = 2 * base.endTurnWideningC;
+        auto otherNarrow = base; otherNarrow.chanceWideningC = 2.0; otherNarrow.chanceWideningAlpha = 0.5;
+        auto spire = otherNarrow; spire.endTurnWideningC = 5.79; spire.endTurnWideningAlpha = 0.44;
+        arms = {{"control", sims, false, false, 1}};
+        for (const auto &[name, p] : std::vector<std::pair<std::string, search::NativeSilverSearchParams>>{
+                 {"base", base}, {"endwide", endWide}, {"othernarrow", otherNarrow}, {"spire", spire}}) {
+            arms.push_back({name + "2500", budget, true, true, replicates, 8, mlp});
+            arms.back().params = p;
+        }
+    } else if (armSet == "mlpsweep" || armSet == "rollout479") {
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR"), prev = env("STS_CTMSILVER_MLP_PRIOR_PREV");
         if (mlp.empty()) throw std::runtime_error("ctm vs silver: " + armSet + " requires STS_CTMSILVER_MLP_PRIOR");
@@ -5610,14 +5685,6 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             sweepSims.push_back(static_cast<int>(b));
         }
         if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: " + armSet + " requires STS_CTMSILVER_SWEEP_SIMS");
-        const std::string every = env("STS_CTMSILVER_HALLWAY_EVERY");
-        if (!every.empty()) {
-            char *end = nullptr;
-            const long n = std::strtol(every.c_str(), &end, 10);
-            if (*end != '\0' || n < 1 || n > 1000)
-                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_HALLWAY_EVERY must be 1..1000");
-            hallwayEvery = static_cast<int>(n);
-        }
         for (const auto &path : {mlp, prev}) {
             if (path.empty() || priorNets.count(path)) continue;
             auto net = std::make_unique<search::CombatValueNet>();
@@ -5652,6 +5719,45 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             add("perleaf2_", 1250, {0, 2, nullptr}, "");
             add("perleaf4_", 625, {0, 4, nullptr}, "");
             add("table", 2500, {0, 1, tablePtr}, table);
+        }
+    } else if (armSet == "roottable") {
+        // Rollout root table: greedy rollouts with the ADR-0040 table vs the per-root table
+        // scored by STS_CTMSILVER_ROOT_TABLE_MODEL, plain Silver at every budget in
+        // STS_CTMSILVER_SWEEP_SIMS. Source run and control keep the ADR-0040 table (§519, §521).
+        const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+        const auto &envRollout = search::SilverSearcher::envRolloutConfig();
+        if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != search::kSilverRolloutCardTableG6
+                || env("STS_SILVER_ROLLOUT_ROOT_TABLE") != "0")
+            throw std::runtime_error("ctm vs silver: roottable requires the ADR-0040 rollouts "
+                                     "(STS_SILVER_ROLLOUT_* unset, STS_SILVER_ROLLOUT_ROOT_TABLE=0)");
+        const std::string model = env("STS_CTMSILVER_ROOT_TABLE_MODEL");
+        auto net = std::make_unique<search::CombatValueNet>();
+        if (model.empty() || !net->load(model) || !net->isPolicyMlp)
+            throw std::runtime_error("ctm vs silver: roottable requires STS_CTMSILVER_ROOT_TABLE_MODEL "
+                                     "(a combat_policy_mlp model)");
+        priorNets[model] = std::move(net);
+        std::stringstream list(env("STS_CTMSILVER_SWEEP_SIMS"));
+        for (std::string item; std::getline(list, item, ',');) {
+            char *end = nullptr;
+            const long b = std::strtol(item.c_str(), &end, 10);
+            if (item.empty() || *end != '\0' || b < 1 || b > 100000
+                    || std::find(sweepSims.begin(), sweepSims.end(), static_cast<int>(b)) != sweepSims.end())
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_SWEEP_SIMS must list distinct budgets 1..100000");
+            sweepSims.push_back(static_cast<int>(b));
+        }
+        if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: roottable requires STS_CTMSILVER_SWEEP_SIMS");
+        if (const std::string every = env("STS_CTMSILVER_HALLWAY_EVERY"); !every.empty()) {
+            char *end = nullptr;
+            const long n = std::strtol(every.c_str(), &end, 10);
+            if (*end != '\0' || n < 1 || n > 1000)
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_HALLWAY_EVERY must be 1..1000");
+            hallwayEvery = static_cast<int>(n);
+        }
+        arms = {{"control", sims, false, false, 1}};
+        for (const int b : sweepSims) {
+            arms.push_back({"greedy" + std::to_string(b), b, false, true, replicates});
+            arms.push_back({"roottable" + std::to_string(b), b, false, true, replicates});
+            arms.back().rootTableModel = model;
         }
     } else if (teacherA20) {
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR");
@@ -5776,9 +5882,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                            {"rolloutCardTable", a.cardTable.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.cardTable)},
                            {"rolloutCardTableSha256", a.cardTable.empty() ? nlohmann::json(nullptr)
                                                                           : nlohmann::json(fileSha256(a.cardTable))},
+                           {"rolloutRootTableModel", a.rootTableModel.empty() ? nlohmann::json(nullptr)
+                                                                              : nlohmann::json(a.rootTableModel)},
+                           {"rolloutRootTableModelSha256", a.rootTableModel.empty() ? nlohmann::json(nullptr)
+                                                                   : nlohmann::json(fileSha256(a.rootTableModel))},
                            {"priorModel", a.priorModel.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.priorModel)},
                            {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
                                                                      : nlohmann::json(fileSha256(a.priorModel))}});
+    for (std::size_t i = 0; i < arms.size(); ++i)
+        if (const auto &p = arms[i].params)
+            armSpec[i]["searchParams"] = {{"exploration", p->exploration}, {"explorationChance", p->explorationChance},
+                {"chanceWideningC", p->chanceWideningC}, {"chanceWideningAlpha", p->chanceWideningAlpha},
+                {"endTurnWideningC", p->endTurnWideningC}, {"endTurnWideningAlpha", p->endTurnWideningAlpha}};
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
     int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0, capturedStates = 0, hallwaySkipped = 0;
     std::map<std::string, int> unsupportedReasons;
@@ -5991,6 +6106,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         if (arm.name != "control") leafScope.emplace(arm.finalFightLeaf);
                         std::optional<RolloutScope> rolloutScope;
                         if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
+                        RolloutRootTableScope rootTableScope(arm.rootTableModel.empty() ? nullptr
+                                                             : priorNets.at(arm.rootTableModel).get());
+                        std::optional<SearchParamsScope> paramsScope;
+                        if (arm.params) paramsScope.emplace(*arm.params);
                         result = evaluate();
                     }
                     if (teacherA20 && !result.valid && ctmTeacherA20ValidEscape(result.quarantineReason,
@@ -6180,11 +6299,12 @@ static nlohmann::json combatTransitionRowJson(
 // #418 targeted CTM support collections. Each setup forces a rare state the
 // ordinary corpus barely reaches; the manifest names the setup so its rows are
 // qualified as their own slice, never mixed into the ordinary distribution.
-enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW, ACT4_FORK };
+enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, CONTROLLED_RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW, ACT4_FORK };
 
 static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
     if (name.empty()) return ForcedCtmSetup::NONE;
     if (name == "ritual_writhing") return ForcedCtmSetup::RITUAL_WRITHING;
+    if (one_combat::parseRitualWrithingSetup(name)) return ForcedCtmSetup::CONTROLLED_RITUAL_WRITHING;
     if (name == "high_maxhp") return ForcedCtmSetup::HIGH_MAXHP;
     if (name == "lizard_fairy") return ForcedCtmSetup::LIZARD_FAIRY;
     if (name == "lizard_brew") return ForcedCtmSetup::LIZARD_BREW;
@@ -6196,6 +6316,7 @@ static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
 static void applyForcedCtmSetupOnce(ForcedCtmSetup setup, GameContext &gc, std::uint64_t seed) {
     switch (setup) {
         case ForcedCtmSetup::RITUAL_WRITHING:
+        case ForcedCtmSetup::CONTROLLED_RITUAL_WRITHING:
             gc.deck.obtain(gc, CardId::RITUAL_DAGGER);
             break;
         case ForcedCtmSetup::HIGH_MAXHP: {
@@ -6261,11 +6382,18 @@ static bool ctmGenDeployedOoc() {
     throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC must be 0 or 1 when set");
 }
 
+// Deployed-OOC screens played by heart1 (STS_OOC_HEART1) vs the ordinary deployed step.
+static std::atomic<long long> g_ctmGenHeart1Steps{0}, g_ctmGenChainSteps{0};
+
 static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
                                               const WholeCombatTeacher &teacher,
                                               ForcedCtmSetup setup = ForcedCtmSetup::NONE,
                                               bool deployedOoc = false,
-                                              bool *reachedAct4 = nullptr) {
+                                              bool *reachedAct4 = nullptr,
+                                              const std::optional<one_combat::RitualWrithingSetup> &controlled = std::nullopt,
+                                              nlohmann::json *interventions = nullptr,
+                                              nlohmann::json *annotations = nullptr,
+                                              nlohmann::json *failures = nullptr) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -6275,10 +6403,18 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
     t_curPath = &path;
     std::ostringstream out;
     int fightIdx = 0;
+    bool interventionStarted = false;
     // act4_fork writes only the forked Act-4 fights; earlier fights are played, not recorded.
     bool recording = setup != ForcedCtmSetup::ACT4_FORK;
     using RT = search::GameAction::RewardsActionType;
+    int currentFight = 0;
+    std::string stage = "source_start";
+    nlohmann::json currentAttempt = nlohmann::json::object();
+    const auto runLoop = [&] {
     while (gc.outcome == GameOutcome::UNDECIDED) {
+        currentFight = fightIdx;
+        stage = "screen_step";
+        currentAttempt = nlohmann::json::object();
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
             if (!recording && gc.act == 3 && gc.curRoom == Room::BOSS) {
@@ -6287,10 +6423,27 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 if (reachedAct4) *reachedAct4 = true;
                 continue;
             }
+            stage = "battle_setup";
+            std::optional<nlohmann::json> intervention;
             if (setup != ForcedCtmSetup::NONE && setup != ForcedCtmSetup::ACT4_FORK) {
                 if (fightIdx == 0) applyForcedCtmSetupOnce(setup, gc, seed);
-                applyForcedCtmSetupPerFight(setup, gc);
+                if (controlled && gc.act == 3 && gc.curRoom == Room::MONSTER) {
+                    stage = "normalization";
+                    currentAttempt = {{"before", one_combat::combatTransitionStateJson(
+                        one_combat::captureCombatTransitionState(gc))},
+                        {"originalEncounter", static_cast<int>(gc.info.encounter)}};
+                    const auto originalPredictor = one_combat::combatPredictorInputJson(
+                        one_combat::captureCombatPredictorInput(gc, gc.info.encounter, potionKeepValue(gc)));
+                    currentAttempt["originalPredictorInput"] = originalPredictor;
+                    intervention = one_combat::applyRitualWrithingSetup(gc, *controlled);
+                    currentAttempt["normalizedAttempt"] = *intervention;
+                    (*intervention)["originalPredictorInput"] = originalPredictor;
+                    interventionStarted = true;
+                    (*intervention)["sourceSeed"] = seed;
+                    (*intervention)["fightIdx"] = fightIdx;
+                } else applyForcedCtmSetupPerFight(setup, gc);
             }
+            stage = "predictor_capture";
             const GameContext pre = gc;
             const int battleAct = gc.act;
             const int battleFloor = gc.floorNum;
@@ -6300,6 +6453,13 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 one_combat::captureCombatPredictorInput(
                     pre, static_cast<MonsterEncounter>(battleEncounter),
                     potionKeepValue(gc)));
+            if (intervention) {
+                stage = "normalized_root_assertion";
+                (*intervention)["predictorInput"] = predictorInput;
+                if (intervention->at("after") != one_combat::combatTransitionStateJson(
+                        one_combat::captureCombatTransitionState(pre)))
+                    throw std::runtime_error("controlled Ritual ROOT differs from RAW pre");
+            }
             std::optional<one_combat::CombatTransitionRecord> record;
             int rawCaptureCount = 0;
             bool decided = false;
@@ -6312,6 +6472,7 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                         if (rawCaptureCount == 1)
                             record = one_combat::captureCombatTransition(pre, ended, raw);
                     });
+                stage = "combat_and_raw_exit";
                 agent.playoutBattle(gc, bc);
                 decided = bc.outcome != Outcome::UNDECIDED;
                 runValid = trainingRunValid(decided);
@@ -6320,15 +6481,34 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 // including for loss and unresolved outcomes.
                 bc.exitBattle(gc);
             }
+            stage = "raw_pre_assertion_and_serialization";
             if (recording) {
                 nlohmann::json row = combatTransitionRowJson(
                     seed, fightIdx++, battleAct, battleFloor, battleRoom,
                     battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
                     predictorInput);
+                if (controlled) {
+                    if (annotations) annotations->push_back({{"sourceSeed", seed}, {"fightIdx", currentFight},
+                        {"sourceGroup", seed}, {"commonPrefixCandidate", !interventionStarted},
+                        {"targetIntervention", intervention.has_value()}});
+                    if (intervention) {
+                        if (record && one_combat::combatTransitionStateJson(record->pre) != intervention->at("after"))
+                            throw std::runtime_error("controlled Ritual capture used pre-intervention ROOT");
+                        (*intervention)["rawPreMatchesNormalizedRoot"] = record.has_value();
+                        if (interventions) interventions->push_back(std::move(*intervention));
+                    }
+                }
                 out << row.dump() << '\n';
             }
         } else if (deployedOoc) {
-            deployedOocPolicyStep(gc, agent);
+            // As in the run driver: heart1 takes every screen it encodes, the deployed step the
+            // rest. The teacher's ooc_policy names heart1 whenever it is set, so it must also play.
+            if (one_combat::heart1::enabled() && one_combat::heart1::policyStep(gc)) {
+                ++g_ctmGenHeart1Steps;
+            } else {
+                deployedOocPolicyStep(gc, agent);
+                ++g_ctmGenChainSteps;
+            }
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -6344,6 +6524,11 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             agent.stepOutOfCombatPolicy(gc);
         }
     }
+    };
+    if (controlled) {
+        if (!failures) throw std::runtime_error("controlled source requires failure receipt storage");
+        one_combat::guardRitualWrithingSource(gc, seed, currentFight, stage, currentAttempt, *failures, runLoop);
+    } else runLoop();
     t_curPath = nullptr;
     return out.str();
 }
@@ -6470,6 +6655,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                                 bool allowStaleProvenance,
                                 const std::string &forcedSetup) {
     const ForcedCtmSetup setup = parseForcedCtmSetup(forcedSetup);
+    const auto controlled = one_combat::parseRitualWrithingSetup(forcedSetup);
     if (setup != ForcedCtmSetup::NONE && allowStaleProvenance)
         throw std::runtime_error("combattransitionforcedgen: forced setups need a current teacher");
     trainingCampaignStart();
@@ -6489,18 +6675,25 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
     int completed = 0;
+    nlohmann::json interventionRows = nlohmann::json::array();
+    nlohmann::json rowAnnotations = nlohmann::json::array(), sourceFailures = nlohmann::json::array();
     int noAct4 = 0;  // act4_fork: runs that ended before the Act-3 boss (not a quarantine)
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
         bool reachedAct4 = false;
+        nlohmann::json sourceInterventions = nlohmann::json::array();
+        nlohmann::json sourceAnnotations = nlohmann::json::array(), failures = nlohmann::json::array();
         const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup,
-                                                                 deployedOoc, &reachedAct4);
+                                                                 deployedOoc, &reachedAct4, controlled, &sourceInterventions, &sourceAnnotations, &failures);
         #pragma omp critical(combat_transition_write)
         {
             f << generated;
             f.flush();
+            for (auto &receipt : sourceInterventions) interventionRows.push_back(std::move(receipt));
+            for (auto &annotation : sourceAnnotations) rowAnnotations.push_back(std::move(annotation));
+            for (const auto &failure : failures) sourceFailures.push_back(failure);
             rows += std::count(generated.begin(), generated.end(), '\n');
-            if (!generated.empty()) ++completed;
+            if (!generated.empty() && failures.empty()) ++completed;
             else if (setup == ForcedCtmSetup::ACT4_FORK && !reachedAct4) ++noAct4;
         }
     }
@@ -6522,24 +6715,45 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
                         {"quarantinedSeeds", quarantined}, {"rows", rows}}}
     };
+    if (controlled) {
+        manifest["ritualWrithingIntervention"] = one_combat::ritualWrithingDescriptor(*controlled);
+        manifest["ritualWrithingIntervention"]["targets"] = std::move(interventionRows);
+        manifest["ritualWrithingIntervention"]["rowAnnotations"] = std::move(rowAnnotations);
+        manifest["ritualWrithingIntervention"]["sourceFailures"] = sourceFailures;
+        manifest["ritualWrithingIntervention"]["terminalInvalid"] = !sourceFailures.empty();
+        manifest["ritualWrithingIntervention"]["deduplication"] =
+            "retain_all_raw; preparation_groups_exact_predictor_plus_transition_including_outcome_across_cells_by_sourceSeed";
+    }
     if (setup == ForcedCtmSetup::ACT4_FORK) manifest["integrity"]["noAct4Seeds"] = noAct4;
-    if (deployedOoc) manifest["policy"] = effectiveOocPolicySpecification();
+    if (deployedOoc) {
+        manifest["policy"] = effectiveOocPolicySpecification();
+        manifest["oocSteps"] = {{"heart1", g_ctmGenHeart1Steps.load()}, {"deployed", g_ctmGenChainSteps.load()}};
+    }
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
+    mf.close();
     std::cout << (allowStaleProvenance
                      ? "combattransitionlizardtargetcandidategen teacher="
                      : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen teacher="
                      : "combattransitiongen teacher=") << teacher.id << " completed="
               << completed << '/' << nSeeds << " quarantined=" << quarantined
               << (setup == ForcedCtmSetup::ACT4_FORK ? " no_act4=" + std::to_string(noAct4) : std::string())
-              << " rows=" << rows << " -> " << outfile << '\n';
+              << " rows=" << rows
+              << (deployedOoc ? " ooc_heart1=" + std::to_string(g_ctmGenHeart1Steps.load())
+                                    + " ooc_deployed=" + std::to_string(g_ctmGenChainSteps.load())
+                              : std::string())
+              << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, allowStaleProvenance
                                 ? "combattransitionlizardtargetcandidategen"
                                 : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen"
                                 : "combattransitiongen", nSeeds, completed,
                             quarantined, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);
+    // All partial rows, failure receipts, provenance and manifest are durable
+    // before a nonzero terminal error leaves the driver (outside OpenMP).
+    if (!sourceFailures.empty())
+        throw std::runtime_error("controlled Ritual producer source failed; partial evidence retained");
 }
 
 

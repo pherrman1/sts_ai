@@ -1,0 +1,2 @@
+off [(('cards-only', 'prior'), 313), (('cards-only', 'uniform'), 27), (('discard', 'uniform'), 4), (('relic', 'prior'), 5), (('relic', 'uniform'), 6)] discard-screen picks [('leave rewards', 2), ('card', 1), ('discard', 1)]
+on [(('cards-only', 'prior'), 311), (('cards-only', 'uniform'), 23), (('discard', 'uniform'), 4), (('relic', 'prior'), 5), (('relic', 'uniform'), 6)] discard-screen picks [('card', 2), ('discard', 1), ('leave rewards', 1)]

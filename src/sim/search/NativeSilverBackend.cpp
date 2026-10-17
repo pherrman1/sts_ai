@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
+#include <cctype>
 #include <iostream>
 #include <atomic>
 #include <charconv>
@@ -56,6 +58,9 @@ namespace sts::search {
             // ADR-0036: a Smoke Bomb escape forfeits the fight's rewards (§473 values); "0,0" restores escape = win.
             double escapePenalty = kDefaultEscapePenalty;
             double eliteEscapePenalty = kDefaultEliteEscapePenalty;
+            // Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
+            bool potionTypeWeightsOn = false;
+            std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -66,6 +71,9 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
+            std::string rolloutRootTablePath;
+            int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -73,6 +81,25 @@ namespace sts::search {
         };
         Options g_options;
         CombatValueNet g_rootPriorNet;
+        CombatValueNet g_rolloutRootTableNet;
+        std::mutex g_rolloutRootTableMutex;
+        std::string g_rolloutRootTableLoadedPath;
+
+        // The rollout root table model, loaded at first use (and again if a later install names
+        // another path). A model that does not load is fatal.
+        const CombatValueNet &rolloutRootTableNet() {
+            std::lock_guard lock(g_rolloutRootTableMutex);
+            const auto &path = g_options.rolloutRootTablePath;
+            if (g_rolloutRootTableLoadedPath != path) {
+                g_rolloutRootTableNet = CombatValueNet{};
+                if (!g_rolloutRootTableNet.load(path) || !g_rolloutRootTableNet.isPolicyMlp)
+                    throw std::runtime_error("STS_SILVER_ROLLOUT_ROOT_TABLE: cannot load a combat_policy_mlp model "
+                                             "from " + path + " (=0 restores the ADR-0040 table)");
+                g_rolloutRootTableLoadedPath = path;
+                std::cerr << "[silver] rollout root table model loaded: " << path << "\n";
+            }
+            return g_rolloutRootTableNet;
+        }
         std::mutex g_stopTraceMutex;
         std::ofstream g_stopTraceFile;
         std::string g_uselessTrace;
@@ -528,6 +555,8 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
+                    searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -547,9 +576,20 @@ namespace sts::search {
                 if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
                     searcher->nodePrior = nativeSilverPolicyPrior;
                     searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
+                } else if (!searcher->rootPrior.empty() && g_options.treePriorMinVisits > 0
+                        && !g_nativeSilverRootPriorOverride) {
+                    // Whole-run §452 tree prior; research thread overrides keep their own setting.
+                    searcher->nodePrior = nativeSilverPolicyPrior;
+                    searcher->treePriorMinVisits = g_options.treePriorMinVisits;
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
+                        ? g_nativeSilverRolloutRootTableOverride
+                        : g_options.rolloutRootTablePath.empty() ? nullptr : &rolloutRootTableNet()) {
+                    nativeSilverRolloutRootTable(searcher->rootSearchState(), *tableNet, searcher->rootCardTable);
+                    searcher->rolloutConfig.cardTable = searcher->rootCardTable.data();
+                }
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -816,6 +856,10 @@ namespace sts::search {
             if (end == elite || *end != '\0' || g_options.escapePenalty < 0 || g_options.eliteEscapePenalty < 0)
                 throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
         }
+        if (const char *raw = std::getenv("STS_SILVER_POTION_WEIGHTS"); raw && *raw) {
+            g_options.potionTypeWeightsOn = true;
+            g_options.potionTypeWeights = parseSilverPotionWeights(raw, SilverEvalWeights{}.potionWeight);
+        }
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;
         }
@@ -859,6 +903,24 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE must be all or override");
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
+        }
+        // ADR-0046: the per-root rollout card table is on by default with the bundled gen-6 E
+        // prior; STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
+        // selects another combat_policy_mlp model. The model loads at the first search
+        // (rolloutRootTableNet), so commands without Silver need not find it.
+        {
+            const char *raw = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE");
+            const std::string path = raw && *raw ? raw : kDefaultRolloutRootTableModel;
+            g_options.rolloutRootTablePath = path == "0" ? "" : path;
+        }
+        if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
+            char *end = nullptr;
+            const long value = std::strtol(raw, &end, 10);
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value > (1L << 30))
+                throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS must be a non-negative integer");
+            g_options.treePriorMinVisits = static_cast<int>(value);
+            if (value > 0 && g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS requires STS_SILVER_ROOT_PRIOR");
         }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
@@ -994,8 +1056,64 @@ namespace sts::search {
         return prior;
     }
 
+    void nativeSilverRolloutRootTable(const BattleContext &state, const CombatValueNet &net, std::vector<int> &table) {
+        // Every distinct (card id, upgraded) in hand, draw and discard pile is scored once as
+        // "play it now" at the root state, aimed where the rollout aims it (attacks: lowest-HP
+        // monster, other targeted cards: highest HP). Cards first seen inside a playout keep
+        // their ADR-0040 entry, shifted by the mean gap between the two scales on the scored cards.
+        constexpr int kEntries = 372 * 2;
+        table.assign(kSilverRolloutCardTableG6, kSilverRolloutCardTableG6 + kEntries);
+        int lowHp = -1, highHp = -1;
+        for (int i = 0; i < state.monsters.monsterCount; ++i) {
+            const auto &m = state.monsters.arr[i];
+            if (!m.isTargetable()) continue;
+            if (lowHp < 0 || m.curHp < state.monsters.arr[lowHp].curHp) lowHp = i;
+            if (highHp < 0 || m.curHp > state.monsters.arr[highHp].curHp) highHp = i;
+        }
+        const int stateCount = combatFeatureCount();
+        const int actionCount = combatPolicyFeatureCount() - stateCount;
+        thread_local std::vector<float> features, actions;
+        thread_local std::vector<int> keys, targets;
+        thread_local std::vector<double> scores;
+        features.resize(stateCount);
+        combatExtractFeatures(state, features.data());
+        keys.clear();
+        targets.clear();
+        std::bitset<kEntries> seen;
+        auto add = [&](CardInstance c, bool inHand) {
+            if (!inHand) c.costForTurn = c.cost;   // a pile copy's turn cost is stale
+            const int id = static_cast<int>(c.getId());
+            if (id < 0 || id >= 372) return;
+            const int key = id * 2 + (c.isUpgraded() ? 1 : 0);
+            if (seen.test(key)) return;
+            seen.set(key);
+            const int target = !c.requiresTarget() ? -1 : c.getType() == CardType::ATTACK ? lowHp : highHp;
+            actions.resize(static_cast<std::size_t>(keys.size() + 1) * actionCount);
+            combatFillCardPlayFeatures(state, c, target,
+                                       actions.data() + static_cast<std::size_t>(keys.size()) * actionCount);
+            keys.push_back(key);
+            targets.push_back(target);
+        };
+        for (int i = 0; i < state.cards.cardsInHand; ++i) add(state.cards.hand[i], true);
+        for (const auto &c : state.cards.drawPile) add(c, false);
+        for (const auto &c : state.cards.discardPile) add(c, false);
+        const int n = static_cast<int>(keys.size());
+        if (n == 0) return;
+        scores.resize(n);
+        net.predictPolicyMlp(features.data(), actions.data(), targets.data(), n, scores.data());
+        double shift = 0;
+        for (int i = 0; i < n; ++i) shift += -scores[i] * 1000.0 - kSilverRolloutCardTableG6[keys[i]];
+        shift /= n;
+        for (int k = 0; k < kEntries; ++k) table[k] = static_cast<int>(std::lround(table[k] + shift));
+        for (int i = 0; i < n; ++i) table[keys[i]] = static_cast<int>(std::lround(-scores[i] * 1000.0));
+    }
+
     const std::string &nativeSilverRootPriorPath() {
         return g_options.rootPriorPath;
+    }
+
+    int nativeSilverTreePriorMinVisits() {
+        return g_options.treePriorMinVisits;
     }
 
     double nativeSilverRootPriorWeight() {
@@ -1039,7 +1157,8 @@ namespace sts::search {
             : rollout.cardTable == kSilverRolloutCardTableG6 ? "g6_builtin" : "file";
         return {g_options.finalFightLeaf, g_options.noLossPotionCredit, g_options.relicHealLeaf,
                 g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
-                table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap};
+                table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap, rollout.actionCap,
+                g_options.rolloutRootTablePath};
     }
 
     bool nativeSilverLearnedStopEnabled() {
@@ -1069,6 +1188,7 @@ namespace sts::search {
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
+    thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride = nullptr;
     thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;

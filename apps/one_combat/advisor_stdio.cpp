@@ -3,6 +3,7 @@
 #include "live_ooc_importer.h"
 #include "live_ooc_state.h"
 #include "live_ooc_policy.h"
+#include "heart1_policy.h"
 #include "differential_state.h"
 #include "ooc_v4_encoding.h"
 #include "../ooc_strategic_tok_net.h"
@@ -155,6 +156,15 @@ void validateCapturedLiveOocMapping(const one_combat::advisor::LiveOocStateV1 &s
     } else {
         for (const auto &action : one_combat::v4CandidateActions(state.projected))
             if (action.isValidAction(state.projected)) expected.push_back(action.bits);
+        if (state.projected.screenState == sts::ScreenState::SHOP_ROOM) {
+            const auto bindings = sts::search::enumerateOocSemanticPrimitiveBindings(state.projected);
+            if (bindings.supported && bindings.complete)
+                for (const auto &binding : bindings.bindings) {
+                    const sts::search::GameAction action(binding.primitiveBits);
+                    if (action.isPotionDiscard() && action.isValidAction(state.projected))
+                        expected.push_back(action.bits);
+                }
+        }
     }
     if (expected.empty()) return;
     one_combat::advisor::validateLiveOocActionSet(state, expected);
@@ -596,6 +606,8 @@ json oocResponse(const one_combat::advisor::Request &request,
                                            {"leaf", "v_win_compact_tree"}, {"simulations", decision.trivialRootBypass ? 0 : 512},
                                            {"selection", decision.trivialRootBypass ? "sole_legal_action" : "visits_then_q"}, {"identity", identity}};
                     if (decision.trivialRootBypass) evaluator["model"]["configuredSimulations"] = 512;
+                    if (!decision.searchModel.is_null())
+                        evaluator["model"].update(decision.searchModel);
                 } else {
                     evaluator["model"] = {{"kind", "ooc_v4_q"}, {"identity", identity}};
                 }
@@ -724,8 +736,15 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         silverRootIdentity.clear();
         silverSimulations = 0;
     };
-    const auto unsupported = [&](const std::string &reason) {
-        clearSession();
+    const auto unsupported = [&](const std::string &reason, bool dropSession = true) {
+        if (dropSession) clearSession();
+        else {
+            // Partial UI selection snapshots are not decisions. Retain only
+            // the matching combat's validated graph; invalidate the root and
+            // budget so the next valid snapshot is fully imported/searched.
+            silverRootIdentity.clear();
+            silverSimulations = 0;
+        }
         evaluator["status"] = "UNSUPPORTED";
         evaluator["reason"] = reason;
         return evaluator;
@@ -770,8 +789,9 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         return evaluator;
     }
     const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
-    if (!imported.ok) return unsupported(imported.reason);
-    const auto entry = request.observation.value("combatEntryHash", std::string());
+    if (!imported.ok) return unsupported(imported.reason,
+        !session || sessionIdentity != request.session || combatEntryIdentity != entryIdentity);
+    const auto &entry = entryIdentity;
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
     if (!matchingSession && imported.playerTurn == 1 && imported.decisionInTurn == 0) {
@@ -884,6 +904,21 @@ json silverEvaluator(const one_combat::advisor::Request &request,
 
 int main() {
     one_combat::advisor::LatestObservation latest;
+    std::shared_ptr<one_combat::heart1::Net> armC;
+    json armCIdentity = nullptr;
+    if (const char *path = std::getenv("STS_LIVE_OOC_ARM_C")) {
+        if (!*path) {
+            std::cerr << "STS_LIVE_OOC_ARM_C cannot be empty\n";
+            return 2;
+        }
+        armC = std::make_shared<one_combat::heart1::Net>();
+        std::string error;
+        if (!armC->load(path, &error)) {
+            std::cerr << "STS_LIVE_OOC_ARM_C: " << error << '\n';
+            return 2;
+        }
+        armCIdentity = modelIdentity(path);
+    }
     auto oocModel = std::make_unique<OocStrategicTokNet>();
     std::string oocIdentity = "unavailable";
     if (const char *path = std::getenv("STS_LIVE_OOC_MODEL"); path && *path) {
@@ -924,6 +959,7 @@ int main() {
         if (loaded) oocFloorIdentity = modelIdentity(path);
     }
     std::shared_ptr<one_combat::CombatTransitionSampler> ctm;
+    std::shared_ptr<one_combat::CombatTransitionSampler> ctmA20;
     json ctmStack = nullptr;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
     std::string ctmIdentity = "unavailable";
@@ -949,10 +985,10 @@ int main() {
                 throw std::invalid_argument("STS_CTM_BREW_FALLBACK_MODEL cannot be empty");
             const auto &metadata = primary->runtime().metadata();
             const bool productionLizard = primary->runtime().hasActiveLizardCorrection()
-                && metadata.value("defaultForOocMcts", false)
+                && (primary->runtime().productionCandidate() || (metadata.value("defaultForOocMcts", false)
                 && metadata.at("activeLizardCorrection").value("qualified", false)
                 && metadata.at("activeLizardCorrection").value("status", std::string())
-                    == "production_default_when_ooc_enabled";
+                    == "production_default_when_ooc_enabled"));
             // The loader also accepts frozen integration candidates. Their
             // correction requires an explicit opt-in, never implicit promotion.
             bool activeLizard = productionLizard;
@@ -970,15 +1006,37 @@ int main() {
             if (hybrid) {
                 const std::string fallback = fallbackOverride ? fallbackOverride :
                     (std::filesystem::path(path).parent_path() /
-                        "combat_transition_near_full_except_smoke_v2.native").string();
+                        (!primary->runtime().productionCandidate()
+                            ? "combat_transition_near_full_except_smoke_v2.native"
+                            : primary->runtime().identity().at("candidateId") == "pathb-r2-ritual-refit"
+                            ? "combat_transition_near_full_escape_pathb_r2_ritual_refit.native"
+                            : "combat_transition_near_full_escape_pathb_r2.native")).string();
                 ctm = std::make_shared<one_combat::EntropicBrewFallbackCombatTransitionSampler>(
                     path, fallback, activeLizard);
                 ctmStack["brewFallback"] = modelIdentity(fallback);
             } else ctm = std::move(primary);
+            const char *a20Path = std::getenv("STS_LIVE_CTM_A20_MODEL");
+            const char *a20Fallback = std::getenv("STS_LIVE_CTM_A20_FALLBACK_MODEL");
+            if (a20Path || a20Fallback) {
+                if (!a20Path || !*a20Path || !a20Fallback || !*a20Fallback)
+                    throw std::invalid_argument("both nonempty STS_LIVE_CTM_A20_MODEL and STS_LIVE_CTM_A20_FALLBACK_MODEL are required");
+                if (std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST"))
+                    throw std::invalid_argument("live A20 CTM requires the built-in qualified manifest");
+                auto a20 = std::make_shared<one_combat::EntropicBrewFallbackCombatTransitionSampler>(
+                    a20Path, a20Fallback, activeLizard);
+                const auto &identity = a20->fastRuntime().identity();
+                if (identity.value("candidateId", std::string()) != "pathb-a20"
+                        || !identity.contains("bossSurvivalLogitShift"))
+                    throw std::invalid_argument("live A20 CTM requires the qualified calibrated pathb-a20 stack");
+                ctmA20 = std::move(a20);
+                ctmStack["ascension20"] = {{"primary", modelIdentity(a20Path)},
+                    {"brewFallback", modelIdentity(a20Fallback)}, {"activeLizard", activeLizard},
+                    {"bossSurvivalLogitShift", identity.at("bossSurvivalLogitShift")}};
+            }
             ctmIdentity = ctmStack.dump();
             ctmStatus = "OK";
         } catch (const std::exception &e) {
-            ctm.reset(); ctmStack = nullptr;
+            ctm.reset(); ctmA20.reset(); ctmStack = nullptr;
             ctmStatus = "SCHEMA_MISMATCH"; ctmReason = e.what();
         }
     }
@@ -987,7 +1045,7 @@ int main() {
         oocPolicy = std::make_unique<one_combat::LiveOocV4QPolicy>(*oocModel);
     else
         oocPolicy = std::make_unique<one_combat::LiveOocMctsPolicy>(*oocModel, ctm,
-                                                                      &oocWinModel, &oocFloorModel);
+                                                                      &oocWinModel, &oocFloorModel, armC, ctmA20);
     std::string line;
     while (std::getline(std::cin, line)) {
         json response;
@@ -1041,6 +1099,7 @@ int main() {
                             if (!imported.ok) response = one_combat::advisor::errorResponse(
                                 request, imported.code, imported.message);
                             else {
+                                const auto requestCtm = input.globals.ascension == 20 && ctmA20 ? ctmA20 : ctm;
                                 const std::string entryHash = request.observation.value(
                                     "combatEntryHash", request.observationHash);
                                 json evaluator;
@@ -1049,8 +1108,9 @@ int main() {
                                     evaluator["latencyMicros"] = 0;
                                 } else {
                                     const auto started = std::chrono::steady_clock::now();
-                                    const auto support = ctm->forecastSupport(input);
+                                    const auto support = requestCtm->forecastSupport(input);
                                     evaluator = {{"id", "ctm_combat_entry_v2"},
+                                        {"ctmStackScope", input.globals.ascension == 20 && ctmA20 ? "ascension20" : "base"},
                                         {"scope", "combat_entry"}, {"combatEntryHash", entryHash},
                                         {"potionKeepValue", input.globals.potionKeepValue},
                                         {"modelIdentity", ctmIdentity}, {"ctmStack", ctmStack}};
@@ -1058,7 +1118,7 @@ int main() {
                                         evaluator["status"] = "UNSUPPORTED";
                                         evaluator["reason"] = support.reason;
                                     } else {
-                                        const auto result = ctm->forecastExpectation(input);
+                                        const auto result = requestCtm->forecastExpectation(input);
                                         evaluator["status"] = "OK";
                                         evaluator["deathProbability"] = result.death;
                                         evaluator["winningHpHistogramMin"] = result.winningHpMin;
@@ -1116,6 +1176,7 @@ int main() {
                 }
             }
         }
+        if (armC) response["armCModel"] = armCIdentity;
         std::cout << response.dump() << '\n' << std::flush;
     }
     return 0;

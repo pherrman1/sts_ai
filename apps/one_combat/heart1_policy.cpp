@@ -1,6 +1,7 @@
 #include "heart1_policy.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -12,14 +13,18 @@
 #include <map>
 #include <mutex>
 #include <stdexcept>
+#include <string>
+#include <unordered_set>
 
 #include "constants/Events.h"
 #include "game/Map.h"
 #include "game/Neow.h"
+#include "sim/search/RunGoal.h"
 
 using namespace sts;
 using GA = sts::search::GameAction;
 using RT = sts::search::GameAction::RewardsActionType;
+extern bool g_collectKeys;
 
 namespace one_combat::heart1 {
 namespace {
@@ -208,7 +213,9 @@ void encodeObservation(const GameContext &gc, Record &r) {
     for (const auto &c : gc.deck.cards) {
         r.deckCards.push_back(static_cast<int>(c.id));
         r.deckUpgrades.push_back(c.getUpgraded());
+        r.deckMisc.push_back(c.misc);
     }
+    r.act = gc.act;
     for (const auto &relic : gc.relics.relics) {
         r.relics.push_back(static_cast<int>(relic.id));
         r.relicCounters.push_back(relic.data);
@@ -252,8 +259,8 @@ void encodeObservation(const GameContext &gc, Record &r) {
     r.mapY = gc.curMapNodeY;
 }
 
-// The pybind getters for reward and shop cards drop INVALID entries before
-// silverbot indexes them with the action's idx; keep that indexing.
+// Reward groups expose their valid cards in order. Shop action indices instead
+// remain physical slots after a purchase, so shops must not use this helper.
 template <typename Cards>
 std::vector<Card> validCards(const Cards &cards, int n) {
     std::vector<Card> out;
@@ -272,7 +279,10 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
     out = Choice{};
     Record &r = out.record;
     std::vector<GA> cardActs, relicActs, potionActs, fixedActs, pathActs;
-    const auto actions = GA::getAllActionsInState(gc);
+    auto actions = GA::getAllActionsInState(gc);
+    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const GA &a) {
+        return !search::heartKeyActionAllowed(gc, g_collectKeys, a);
+    }), actions.end());
     const auto fixed = [&](const FixedChoice &c, const GA &a) {
         r.fixedActions.push_back(c);
         fixedActs.push_back(a);
@@ -329,10 +339,9 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
             break;
         case ScreenState::SHOP_ROOM: {
             const auto &shop = gc.info.shop;
-            const auto shopCards = validCards(shop.cards, 7);
             for (const auto &a : actions) {
                 switch (a.getRewardsActionType()) {
-                    case RT::CARD: card(shopCards.at(a.getIdx1()), a); break;
+                    case RT::CARD: card(shop.cards[a.getIdx1()], a); break;
                     case RT::RELIC:
                         r.offeredRelics.push_back(static_cast<int>(shop.relics[a.getIdx1()]));
                         relicActs.push_back(a);
@@ -423,6 +432,7 @@ nlohmann::json recordToJson(const Record &r) {
     for (const auto &p : r.mapPathXs) pathXs.push_back({p[0], p[1], p[2]});
     return {{"obs.fixed_observation", r.fixedObservation},
             {"obs.deck.cards", r.deckCards}, {"obs.deck.upgrades", r.deckUpgrades},
+            {"obs.deck.misc", r.deckMisc}, {"obs.act", r.act},
             {"obs.relics.relics", r.relics}, {"obs.relics.relic_counters", r.relicCounters},
             {"obs.potions", r.potions},
             {"obs.map.xs", r.mapXs}, {"obs.map.ys", r.mapYs}, {"obs.map.roomTypes", r.mapRooms},
@@ -483,6 +493,8 @@ Record recordFromJson(const nlohmann::json &j) {
     r.fixedObservation = ints("obs.fixed_observation");
     r.deckCards = ints("obs.deck.cards");
     r.deckUpgrades = ints("obs.deck.upgrades");
+    if (j.contains("obs.deck.misc")) r.deckMisc = ints("obs.deck.misc");
+    r.act = j.value("obs.act", 0);
     r.relics = ints("obs.relics.relics");
     if (j.contains("obs.relics.relic_counters")) r.relicCounters = ints("obs.relics.relic_counters");
     r.potions = ints("obs.potions");
@@ -848,6 +860,12 @@ bool Net::load(const std::string &file, std::string *error) {
     cone_ = fixedVec(PA + "cone", 3);
     reachesBurn_ = embedding(PA + "reaches_burn.weight");
     choicePosition_ = embedding("choice_embed.position_embedding.weight");
+    extraInputs_ = tensors.count("x_act.weight") > 0;
+    if (extraInputs_) {
+        deckMisc_ = fixedVec("x_deck_misc", 1);
+        relicCounter_ = fixedVec("x_relic_counter", 1);
+        act_ = embedding("x_act.weight");
+    }
     blocks_.assign(layers, {});
     for (int i = 0; i < layers; ++i) {
         const std::string L = "layers." + std::to_string(i) + ".";
@@ -890,12 +908,12 @@ static Record trimmedMap(const Record &in) {
     return r;
 }
 
-Output Net::forward(const Record &record) const {
-    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record));
-    return forwardRecord(record);
+Output Net::forward(const Record &record, bool logitsOnly) const {
+    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record), logitsOnly);
+    return forwardRecord(record, logitsOnly);
 }
 
-Output Net::forwardRecord(const Record &r) const {
+Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
     const int kDim = dim_, kHeads = heads_, kHeadDim = dim_ / heads_, kHidden = hidden_;
     const DagFeatures dag = mapDagFeatures(r);
     const int nDeck = int(r.deckCards.size()), nRelic = int(r.relics.size()), nPot = int(r.potions.size());
@@ -909,12 +927,32 @@ Output Net::forwardRecord(const Record &r) const {
     const auto row = [&](int i) { return x.data() + std::size_t(i) * kDim; };
     const auto position = [&](const Embedding &e, int key) { addEmbedding(e, key, row(t)); ++t; };
 
+    // student_inputs.py clamps: misc and relic counters to [-1, 999], act to [0, 4];
+    // the extra inputs are added after silverbot's token sum (position included).
+    const auto clampInput = [](int v, int lo, int hi) { return float(std::min(std::max(v, lo), hi)); };
     for (int i = 0; i < nDeck; ++i) {
         addEmbedding(card_, r.deckCards[i], row(t));
         addEmbedding(upgrade_, r.deckUpgrades[i], row(t));
-        position(obsPosition_, 0);
+        if (extraInputs_) {
+            addEmbedding(obsPosition_, 0, row(t));
+            const float misc = clampInput(i < int(r.deckMisc.size()) ? r.deckMisc[i] : 0, -1, 999);
+            addFixedVec(deckMisc_, &misc, row(t));
+            ++t;
+        } else {
+            position(obsPosition_, 0);
+        }
     }
-    for (int i = 0; i < nRelic; ++i) { addEmbedding(relic_, r.relics[i], row(t)); position(obsPosition_, 1); }
+    for (int i = 0; i < nRelic; ++i) {
+        addEmbedding(relic_, r.relics[i], row(t));
+        if (extraInputs_) {
+            addEmbedding(obsPosition_, 1, row(t));
+            const float counter = clampInput(i < int(r.relicCounters.size()) ? r.relicCounters[i] : 0, -1, 999);
+            addFixedVec(relicCounter_, &counter, row(t));
+            ++t;
+        } else {
+            position(obsPosition_, 1);
+        }
+    }
     for (int i = 0; i < nPot; ++i) { addEmbedding(potion_, r.potions[i], row(t)); position(obsPosition_, 2); }
     {
         const auto &fo = r.fixedObservation;
@@ -926,7 +964,13 @@ Output Net::forwardRecord(const Record &r) const {
         addEmbedding(keyEmerald_, fo[8], row(t));
         addEmbedding(keySapphire_, fo[9], row(t));
         addEmbedding(screen_, r.screenState, row(t));
-        position(obsPosition_, 3);
+        if (extraInputs_) {
+            addEmbedding(obsPosition_, 3, row(t));
+            addEmbedding(act_, int(clampInput(r.act, 0, 4)), row(t));
+            ++t;
+        } else {
+            position(obsPosition_, 3);
+        }
     }
     // Map tokens: the per-token additions of silverbot's order, one feature at a
     // time over all map rows so each projection runs batched.
@@ -998,11 +1042,15 @@ Output Net::forwardRecord(const Record &r) const {
     std::vector<float> xn(std::size_t(n) * kDim), qkv(std::size_t(n) * 3 * kDim), att(std::size_t(n) * kDim);
     std::vector<float> h1(std::size_t(n) * kHidden), h2(std::size_t(n) * kHidden), scores(n);
     const float scale = 1.0f / std::sqrt(float(kHeadDim));
-    for (const auto &b : blocks_) {
+    for (std::size_t bi = 0; bi < blocks_.size(); ++bi) {
+        const auto &b = blocks_[bi];
+        // Every row is computed independently after the keys and values, so the
+        // last block can skip the rows no logit reads.
+        const int q0 = logitsOnly && bi + 1 == blocks_.size() ? nObs : 0, nq = n - q0;
         for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm1, xn.data() + std::size_t(i) * kDim);
         linear(b.inProj, xn.data(), n, qkv.data());
         for (int hd = 0; hd < kHeads; ++hd) {
-            for (int i = 0; i < n; ++i) {
+            for (int i = q0; i < n; ++i) {
                 const float *q = qkv.data() + std::size_t(i) * 3 * kDim + hd * kHeadDim;
                 float mx = -std::numeric_limits<float>::infinity();
                 for (int j = 0; j < n; ++j) {
@@ -1021,20 +1069,29 @@ Output Net::forwardRecord(const Record &r) const {
                 }
             }
         }
-        linear(b.outProj, att.data(), n, x.data(), /*accumulate=*/true);
-        for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm2, xn.data() + std::size_t(i) * kDim);
-        linear(b.w1, xn.data(), n, h1.data());
-        linear(b.v, xn.data(), n, h2.data());
-        for (std::size_t i = 0; i < h1.size(); ++i) {
+        const std::size_t o0 = std::size_t(q0) * kDim, h0 = std::size_t(q0) * kHidden;
+        linear(b.outProj, att.data() + o0, nq, x.data() + o0, /*accumulate=*/true);
+        for (int i = q0; i < n; ++i) rmsNorm(row(i), b.norm2, xn.data() + std::size_t(i) * kDim);
+        linear(b.w1, xn.data() + o0, nq, h1.data() + h0);
+        linear(b.v, xn.data() + o0, nq, h2.data() + h0);
+        for (std::size_t i = h0; i < h1.size(); ++i) {
             const float a = h1[i];
             h1[i] = a / (1.0f + std::exp(-a)) * h2[i];
         }
-        linear(b.w2, h1.data(), n, x.data(), /*accumulate=*/true);
+        linear(b.w2, h1.data() + h0, nq, x.data() + o0, /*accumulate=*/true);
     }
-    for (int i = 0; i < n; ++i) rmsNorm(row(i), finalNorm_, xn.data() + std::size_t(i) * kDim);
 
     Output out;
     out.logits.resize(nChoice);
+    if (logitsOnly) {
+        for (int c = 0; c < nChoice; ++c) {
+            float *xc = xn.data() + std::size_t(nObs + c) * kDim;
+            rmsNorm(row(nObs + c), finalNorm_, xc);
+            out.logits[c] = dot(choiceLogits_.w.data(), xc, kDim) + choiceLogits_.b[0];
+        }
+        return out;
+    }
+    for (int i = 0; i < n; ++i) rmsNorm(row(i), finalNorm_, xn.data() + std::size_t(i) * kDim);
     for (int c = 0; c < nChoice; ++c)
         out.logits[c] = dot(choiceLogits_.w.data(), xn.data() + std::size_t(nObs + c) * kDim, kDim) + choiceLogits_.b[0];
     std::vector<float> pooled(kDim, 0.f), vn(kDim);
@@ -1086,12 +1143,14 @@ bool policyStep(GameContext &gc) {
     if (nChoice == 0) return freeTaken > 0;
     int chosen = 0;
     Output scored;
+    const char *trace = std::getenv("STS_OOC_HEART1_TRACE");
+    const bool tracing = trace && *trace;
     if (nChoice > 1) {
-        scored = model.forward(choice.record);
+        scored = model.forward(choice.record, /*logitsOnly=*/!tracing);
         // Temperature 0: np.argmax, first maximum in token order.
         chosen = int(std::max_element(scored.logits.begin(), scored.logits.end()) - scored.logits.begin());
     }
-    if (const char *trace = std::getenv("STS_OOC_HEART1_TRACE"); trace && *trace && nChoice > 1) {
+    if (tracing && nChoice > 1) {
         nlohmann::json line = {{"seed", std::to_string(gc.seed)}, {"act", gc.act}, {"floor", gc.floorNum},
                                {"record", recordToJson(choice.record)}, {"logits", scored.logits},
                                {"value", scored.value}, {"chosen", chosen},
@@ -1163,6 +1222,39 @@ std::optional<std::vector<double>> mapPriorLogits(const Choice &choice, const st
     return out;
 }
 
+std::vector<TokenMapping> mapChoiceTokens(const Choice &choice, bool singingBowl, const std::vector<GA> &actions) {
+    const Record &r = choice.record;
+    const std::size_t fixedStart = r.offeredCards.size() + r.offeredRelics.size() + r.offeredPotions.size();
+    const auto fixedToken = [&](int fa) {
+        for (std::size_t k = 0; k < r.fixedActions.size(); ++k)
+            if (r.fixedActions[k].action == fa) return int(fixedStart + k);
+        return -1;
+    };
+    const bool rewards = r.screenState == static_cast<int>(ScreenState::REWARDS);
+    const bool shop = r.screenState == static_cast<int>(ScreenState::SHOP_ROOM);
+    std::vector<TokenMapping> out(actions.size());
+    for (std::size_t a = 0; a < actions.size(); ++a) {
+        const auto action = actions[a];
+        auto &m = out[a];
+        for (std::size_t i = 0; i < choice.actions.size(); ++i)
+            if (choice.actions[i].bits == action.bits) m.tokens.push_back(int(i));
+        if (!m.tokens.empty()) { m.kind = "token"; continue; }
+        // Same order and rules as mapPriorLogits.
+        if (rewards && action.getRewardsActionType() == GA::RewardsActionType::CARD && action.getIdx2() == 5) {
+            const int t = fixedToken(singingBowl ? FA_SINGING_BOWL : FA_SKIP);
+            if (t >= 0) { m.tokens = {t}; m.kind = singingBowl ? "bowl" : "skip_card"; }
+            else m.kind = "none";
+        } else if (rewards && action.getRewardsActionType() == GA::RewardsActionType::GOLD) {
+            m.kind = "gold";
+        } else if ((rewards || shop) && action.isPotionDiscard()) {
+            m.kind = "discard_potion";
+        } else {
+            m.kind = "none";
+        }
+    }
+    return out;
+}
+
 void priorMappingSelfTest() {
     const auto require = [](bool ok, const char *what) {
         if (!ok) throw std::runtime_error(std::string("heart1 prior mapping selftest: ") + what);
@@ -1230,6 +1322,23 @@ void priorMappingSelfTest() {
         &tally);
     require(got && *got == std::vector<double>{0.5, 2.0, -1.0, 2.0, -1.0, -1.0},
             "skip card -> skip token, gold -> best, discard -> lowest");
+    {
+        // mapChoiceTokens must name exactly the logits mapPriorLogits used.
+        const std::vector<GA> primitives{GA(RT::CARD, 0, 0), GA(RT::CARD, 0, 1), GA(RT::CARD, 0, 5),
+            GA(RT::GOLD, 0), GA(0xc0000001u), GA(RT::SKIP)};
+        const auto tokens = mapChoiceTokens(c, false, primitives);
+        const std::vector<std::string> kinds{"token", "token", "skip_card", "gold", "discard_potion", "token"};
+        require(tokens.size() == primitives.size(), "token mapping size");
+        for (std::size_t i = 0; i < tokens.size(); ++i) {
+            require(tokens[i].kind == kinds[i], "token mapping kind");
+            double v = tokens[i].kind == "gold" ? 2.0 : tokens[i].kind == "discard_potion" ? -1.0
+                : -std::numeric_limits<double>::infinity();
+            for (const int t : tokens[i].tokens) v = std::max(v, double(logits.at(t)));
+            require(v == (*got)[i], "token mapping agrees with mapPriorLogits");
+        }
+        require(mapChoiceTokens(c, true, {GA(RT::CARD, 0, 5)})[0].kind == "none"
+                && mapChoiceTokens(c, false, {GA(RT::RELIC, 0)})[0].kind == "none", "unmapped token kinds");
+    }
     require(tally["scored:REWARDS"] == 1 && tally["mapped:REWARDS:skip_card"] == 1
             && tally["mapped:REWARDS:gold"] == 1 && tally["mapped:REWARDS:discard_potion"] == 1, "tally of mappings");
     require(!mapPriorLogits(c, logits, true, {GA(RT::CARD, 0, 5)}, &tally)
@@ -1251,6 +1360,136 @@ nlohmann::json leafAnnotation(const GameContext &gc) {
     return {{"value", scored.value}, {"record", recordToJson(choice.record)}};
 }
 
+namespace {
+// STS_OOC_HEART1_CAPTURE: distillation rows from prior calls (observation only).
+struct Capture {
+    std::string path;
+    std::uint64_t every = 8, selectEvery = 1;
+    std::mutex mutex;
+    std::uint64_t calls = 0, selects = 0;
+    std::unordered_set<std::size_t> seen;
+};
+
+std::uint64_t positiveKnob(const char *key, std::uint64_t fallback) {
+    const char *p = std::getenv(key);
+    if (!p || !*p) return fallback;
+    char *end = nullptr;
+    const unsigned long long v = std::strtoull(p, &end, 10);
+    if (*end || v == 0) throw std::runtime_error(std::string(key) + " must be a positive integer");
+    return std::uint64_t(v);
+}
+
+Capture *capture() {
+    static Capture *c = [] () -> Capture * {
+        const char *p = std::getenv("STS_OOC_HEART1_CAPTURE");
+        if (!p || !*p) return nullptr;
+        auto *out = new Capture;
+        out->path = p;
+        out->every = positiveKnob("STS_OOC_HEART1_CAPTURE_EVERY", 8);
+        out->selectEvery = positiveKnob("STS_OOC_HEART1_CAPTURE_SELECT_EVERY", 1);
+        return out;
+    }();
+    return c;
+}
+
+// The capture labels with STS_OOC_HEART1_TEACHER when set (e.g. heart1 while a
+// student serves the prior), else with the serving net.
+const Net &teacher() {
+    static const Net *t = [] {
+        const char *p = std::getenv("STS_OOC_HEART1_TEACHER");
+        if (!p || !*p) return &net();
+        auto *model = new Net;
+        std::string error;
+        if (!model->load(p, &error)) throw std::runtime_error("STS_OOC_HEART1_TEACHER: " + error);
+        std::fprintf(stderr, "[heart1] capture teacher %s (dim %d, layers %d)\n", p, model->dim(), model->layers());
+        return static_cast<const Net *>(model);
+    }();
+    return *t;
+}
+
+// Sources whose successor can be a card select (smith, toke, shop removal,
+// event options, boss relics such as Astrolabe).
+bool maySelect(const GameContext &gc, const GA &a) {
+    switch (gc.screenState) {
+        case ScreenState::REST_ROOM: case ScreenState::EVENT_SCREEN: case ScreenState::BOSS_RELIC_REWARDS:
+            return true;
+        case ScreenState::SHOP_ROOM: return a.getRewardsActionType() == RT::CARD_REMOVE;
+        default: return false;
+    }
+}
+
+// One JSON line per new record (records already written by this process are skipped).
+void captureRow(Capture &c, nlohmann::json row, const Choice &choice, const std::vector<float> *serve) {
+    const auto record = recordToJson(choice.record);
+    const std::size_t key = std::hash<std::string>{}(record.dump());
+    {
+        std::lock_guard<std::mutex> lock(c.mutex);
+        if (!c.seen.insert(key).second) return;
+    }
+    const Output scored = teacher().forward(choice.record);
+    std::vector<std::uint32_t> tokenBits;
+    for (const auto &a : choice.actions) tokenBits.push_back(a.bits);
+    row["record"] = record;
+    row["logits"] = scored.logits;
+    row["value"] = scored.value;
+    row["token_bits"] = tokenBits;
+    if (serve) row["serve"] = *serve;
+    const std::string line = row.dump() + '\n';
+    std::lock_guard<std::mutex> lock(c.mutex);
+    // One append write per line, so forked writers do not interleave.
+    std::FILE *f = std::fopen(c.path.c_str(), "a");
+    if (!f || std::fwrite(line.data(), 1, line.size(), f) != line.size() || std::fclose(f) != 0)
+        throw std::runtime_error("STS_OOC_HEART1_CAPTURE: write failed");
+}
+
+nlohmann::json captureBase(const GameContext &gc, const char *kind) {
+    // deck_misc follows obs.deck.cards (Ritual Dagger damage, Genetic Algorithm block), which heart1 does not see.
+    std::vector<int> misc;
+    for (const auto &c : gc.deck.cards) misc.push_back(c.misc);
+    return {{"kind", kind}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}, {"deck_misc", misc}};
+}
+
+// Every EVERY-th prior call writes the node; every SELECT_EVERY-th card select that a
+// source opens is written too (the state the tree reaches only as a compound
+// candidate, so the prior is never asked there).
+void captureCall(const GameContext &gc, const Choice &choice, const std::vector<float> &serve,
+                 const std::vector<GA> &actions) {
+    Capture &c = *capture();
+    std::uint64_t call;
+    {
+        std::lock_guard<std::mutex> lock(c.mutex);
+        call = c.calls++;
+    }
+    if (call % c.every == 0) {
+        auto row = captureBase(gc, "node");
+        std::vector<std::uint32_t> bits;
+        for (const auto a : actions) bits.push_back(a.bits);
+        row["src_bits"] = bits;
+        captureRow(c, std::move(row), choice, &serve);
+    }
+    for (const auto a : actions) {
+        if (!maySelect(gc, a) || !a.isValidAction(gc)) continue;
+        GameContext next = gc;
+        if (gc.map) next.map = std::make_shared<Map>(*gc.map);
+        a.execute(next);
+        Choice select;
+        if (next.outcome != GameOutcome::UNDECIDED || next.screenState != ScreenState::CARD_SELECT
+                || !buildChoice(next, select) || select.record.choiceCount() < 2)
+            continue;
+        {
+            std::lock_guard<std::mutex> lock(c.mutex);
+            if (c.selects++ % c.selectEvery != 0) continue;
+        }
+        auto row = captureBase(next, "select");
+        row["parent_screen"] = int(gc.screenState);
+        row["parent_bits"] = a.bits;
+        const auto served = enabled() ? net().forward(select.record, /*logitsOnly=*/true).logits : std::vector<float>{};
+        captureRow(c, std::move(row), select, &served);
+    }
+}
+}  // namespace
+
 std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions,
                                                std::map<std::string, std::uint64_t> *tally) {
     Choice choice;
@@ -1259,7 +1498,21 @@ std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std:
         if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
         return std::nullopt;
     }
-    return mapPriorLogits(choice, net().forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
+    const auto logits = net().forward(choice.record, /*logitsOnly=*/true).logits;
+    if (capture()) captureCall(gc, choice, logits, actions);
+    return mapPriorLogits(choice, logits, gc.hasRelic(RelicId::SINGING_BOWL), actions, tally);
+}
+
+std::optional<std::vector<double>> priorLogits(const Net &model, const GameContext &gc,
+                                               const std::vector<GA> &actions,
+                                               std::map<std::string, std::uint64_t> *tally) {
+    Choice choice;
+    if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE
+            || !buildChoice(gc, choice) || choice.record.choiceCount() == 0) {
+        if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
+        return std::nullopt;
+    }
+    return mapPriorLogits(choice, model.forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
                           actions, tally);
 }
 
@@ -1297,6 +1550,49 @@ int scoreCommand(int argc, char **argv) {
     }
     std::printf("heart1score records=%d -> %s\n", n, argv[4]);
     return 0;
+}
+
+int logitsCheckCommand(int argc, char **argv) {
+    if (argc != 4 && argc != 5) {
+        std::fprintf(stderr, "usage: one_combat heart1logitscheck <weights.bin> <records.jsonl> [reps]\n");
+        return 2;
+    }
+    const Net model = loadOrThrow(argv[2]);
+    const int reps = argc == 5 ? std::max(1, std::stoi(argv[4])) : 1;
+    std::ifstream in(argv[3]);
+    if (!in) throw std::runtime_error("heart1logitscheck: cannot open records");
+    std::vector<Record> records;
+    std::string line;
+    while (std::getline(in, line))
+        if (!line.empty()) {
+            const auto j = nlohmann::json::parse(line);
+            records.push_back(recordFromJson(j.contains("record") ? j.at("record") : j));
+        }
+    // Bitwise: the logits-only pass must reproduce every full-pass logit.
+    int mismatches = 0, logits = 0;
+    for (const auto &r : records) {
+        const auto full = model.forward(r).logits, fast = model.forward(r, /*logitsOnly=*/true).logits;
+        logits += int(full.size());
+        if (full.size() != fast.size() || std::memcmp(full.data(), fast.data(), full.size() * sizeof(float)) != 0)
+            ++mismatches;
+    }
+    const auto time = [&](bool logitsOnly) {
+        const auto start = std::chrono::steady_clock::now();
+        float sink = 0;
+        for (int k = 0; k < reps; ++k)
+            for (const auto &r : records) {
+                const auto out = model.forward(r, logitsOnly);
+                if (!out.logits.empty()) sink += out.logits[0];
+            }
+        const double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+        return std::make_pair(s, sink);
+    };
+    const auto full = time(false), fast = time(true);
+    const double calls = double(records.size()) * reps;
+    std::printf("heart1logitscheck records=%zu logits=%d mismatched_records=%d full_us=%.1f logits_only_us=%.1f speedup=%.3f (%g)\n",
+                records.size(), logits, mismatches, 1e6 * full.first / calls, 1e6 * fast.first / calls,
+                full.first / fast.first, double(full.second + fast.second));
+    return mismatches == 0 ? 0 : 1;
 }
 
 int replayCommand(int argc, char **argv) {

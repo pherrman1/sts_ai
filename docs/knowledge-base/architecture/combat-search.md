@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -40,6 +40,11 @@ explicit sims argument selects flat Silver at that budget in every mode; only
 `run`, `bestbench` and `reprobench` called without a sims argument use a
 budget policy by default: learned stopping (ADR-0026, which replaced the #199
 adaptive default of ADR-0018). `STS_SILVER_ADAPTIVE=1` selects #199.
+At A20 with student C out of combat (§516, 512 paired full runs), learned
+stopping matched flat exact 10k (Heart kills 30 vs 27, reached Act 4 −0.4 pp
+[−3.4, +2.6]) at 0.41x the run CPU; adding the gen-6 MLP prior as root and
+tree prior (`STS_SILVER_TREE_PRIOR_MIN_VISITS=8`) reached Act 4 more often
+(+3.9 pp, not pre-registered) without more Heart kills.
 
 ### Removed searchers and tooling
 
@@ -133,6 +138,19 @@ flags; piles, hand and player block are excluded). At the cap, in a
 search and the count resets. The guard only reads the live state, so a combat
 that never reaches the cap plays exactly as without it; the skipped root is
 not passed to root observers or traces.
+
+Every Silver playout inside search also stops after 1,000 actions, including
+card selections and uniform-policy actions. This bound is independent of the
+live decision guard and the rollout agent's per-turn card-play counter. A
+capped playout keeps its unresolved state and uses the existing heuristic
+value; it does not fabricate a terminal outcome. `SilverSearchStats` records
+`rolloutActionLimitHits`, and endpoint profiling records the capped state as
+`nonterminal`. Shorter playouts retain their action/RNG behavior. This bounds
+free draw/reshuffle loops at the playout decision boundary (#544); it does not
+bound work inside a single simulator action. The cap changes default play where a
+playout runs longer than 1,000 actions (A0 seed 111139580 dies on floor 50 instead
+of reaching floor 55). `STS_SILVER_ROLLOUT_ACTION_CAP=N` sets it, and `0` restores
+uncapped playouts.
 
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
@@ -230,6 +248,23 @@ set in `NativeSilverBackend.cpp`). No later map has a burning elite, so that
 escape rules out the Heart (ADR-0041), which the reward penalty does not price.
 The live wire carries no keys or map, so the advisor path does not apply it.
 
+Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §510
+measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
+potion removed vs unchanged, next 3 fights played, then the A20 floor model,
+calibrated by a −12 HP copy). The pooled price is 9.9 HP-eq [7.9, 12.3],
+consistent with 11 (pre-registered). Fairy in a Bottle is also scored by the
+death-save term (+0.3 × max HP, 0.6 with Sacred Bark), and without Fairy potions
+price at 7.8 [6.1, 9.8]; **Inference:** the flat 11 may overprice non-Fairy
+potions (post hoc). Per-type prices differ: Fairy about 44, Attack/Blood/Skill
+potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. Apart from the
+Fairy death-save term the default formula has no per-type weights.
+Research-only `STS_SILVER_POTION_WEIGHTS=NAME=w,...[,*=w]` (Potion enum names;
+unlisted types take `*`, else 11; an unknown name aborts) replaces the count
+with per-type weights in native Silver (`one_combat`); the live advisor ignores
+it. Ledger-06 §513 (A20, student C OOC, 128 paired seeds) did not show an effect (NOT_SHOWN) of
+the §510-derived per-type weights or a flat 7.8 vs flat 11: floors −1.37
+[−3.45, +0.74] and −0.80 [−2.96, +1.36]. The flat 11 stays.
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
@@ -262,6 +297,28 @@ fights. §479 (A20, 689 fights): uniform playouts lose 22.8 fight score at no
 CPU saving per simulation; a learned card table and 2 or 4 playouts per leaf
 at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040).
+Default since ADR-0046 (`STS_SILVER_ROLLOUT_ROOT_TABLE`: unset = bundled
+`models/combat_policy_mlp_g6_E.txt`, `0` = the fixed ADR-0040 table, or another
+`combat_policy_mlp` model): that fixed table is replaced by one built once per searched root
+(`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
+upgrade) in hand, draw and discard pile as a play at the root state, aimed
+where the rollout aims it (attacks at the lowest-HP monster, other targeted
+cards at the highest). Every playout of that search uses those scores as its
+card-play order; cards not in those piles (made during the playout) keep their
+ADR-0040 entry, shifted by the mean gap between the two scales. The rollout's
+category rules (zero-cost first, block check, AoE) are unchanged. Cost is one
+prior call per root, not per playout step. The `ctmsilvergen` armset `roottable`
+compares `greedy<b>` and `roottable<b>` (model `STS_CTMSILVER_ROOT_TABLE_MODEL`)
+at each budget in `STS_CTMSILVER_SWEEP_SIMS`; per-thread override
+`g_nativeSilverRolloutRootTableOverride`. §519 (A20, gen-6 E, 1,426 fights): at
+equal simulations the root table scores +2.7 [+0.6, +4.8] better, but it costs
+5.1% more CPU per simulation (longer playouts plus the build), and against
+greedy at 6% more simulations it is +1.9 [−0.1, +3.9] at 1.007x CPU per fight:
+not CPU-matched and not shown. §521 repeats it at 10k: +1.8
+[−0.4, +4.0] against greedy at 10,700 at 1.008x CPU per fight (NOT_CPU_MATCHED,
+NOT_SHOWN), +1.8 [−0.2, +3.9] at equal simulations; 7% more greedy simulations
+buy nothing at 10k (−0.02). Philipp made it the default anyway (ADR-0046); the
+`roottable` armset requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`.
 From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn
@@ -359,7 +416,10 @@ at least `treePriorMinVisits` simulations is scored once (cached on the node)
 and its visited edges get the same bonus; wherever a prior is known, untried
 edges are tried in descending prior order. The backend enables it only through
 the thread override `g_nativeSilverTreePriorOverride` (K), on searches that
-have a root prior; `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452`
+have a root prior, or for whole runs through `STS_SILVER_TREE_PRIOR_MIN_VISITS=K`
+(research, default 0 = off; requires `STS_SILVER_ROOT_PRIOR`; ignored on
+searches where a thread sets the root-prior override, so research arms keep
+their own setting); `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452`
 (or `treeprior452k8`) uses it for paired fight-level arms at 2k. At equal 2k
 simulations K = 8 raised the fight score over plain 2k (+1.17 [+0.53, +1.79]),
 at 2.9x the CPU. At matched CPU (§453, `cpumatch453`) it was not shown to
@@ -525,17 +585,19 @@ invocation details from
   fields such as `uniqueId` and retain state.
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
-- At a mid-card selection the advisor's root lacks monster reactions to the
-  card's pre-selection effects, apart from the Guardian's deferred Mode Shift
-  (see Live advisor). Copies queued by a spent
-  Double Tap, Duplication or Necronomicon are present only when the producer
-  sends `pendingCardQueue`, which the mod does not emit yet (issue #328).
+- Mid-card selections require an explicitly qualified public continuation.
+  Java captures verified pending card/action queues, including vanilla Double
+  Tap, Duplication and Necronomicon copies. Unknown owners, callbacks or queued
+  effects remain unsupported; see the [live continuation contract](../operations/live-model-inspector.md).
 - The Guardian's `miscInfo` is its native shift threshold, separate from the
   remaining Mode Shift power. The Java producer reads `dmgThreshold`,
   `dmgThresholdIncrease` and `isOpen`: Java increments on entering Defensive
   Mode, while native increments on Twin Slam, so the defensive projection
   subtracts the increment (10). This also works without an earlier observation
-  of the fight. Missing fields or a non-vanilla increment remain unsupported.
+  of the fight. Native phase parity covers A0/A9/A19/A20 thresholds. Captured
+  A20 offense-after-damage, defense and return-to-offense roots are replayed by
+  `live_silver_importer_test`; live MCP and accepted Silver roots agreed on the
+  threshold sequence 40, 40, 50. Missing fields or a non-vanilla increment remain unsupported.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 

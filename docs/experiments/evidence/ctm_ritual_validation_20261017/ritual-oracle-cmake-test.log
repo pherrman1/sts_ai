@@ -1,0 +1,11 @@
+Test project /home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-debug-ccache
+    Start 208: ctm_ritual_kill_budget
+1/1 Test #208: ctm_ritual_kill_budget ...........   Passed    0.05 sec
+
+100% tests passed out of 1
+
+Label Time Summary:
+core     =   0.05 sec*proc (1 test)
+smoke    =   0.05 sec*proc (1 test)
+
+Total Test time (real) =   0.06 sec

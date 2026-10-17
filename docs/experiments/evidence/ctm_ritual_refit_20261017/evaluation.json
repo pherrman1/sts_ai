@@ -1,0 +1,192 @@
+{
+  "cohorts": {
+    "fast": {
+      "deployedNll": 0.379913994252147,
+      "deployedPredictedGrowth": 0.07536788370611644,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.04323130637661997,
+      "nllDifferenceCI": [
+        -0.07571109255637883,
+        -0.012080301532115686
+      ],
+      "observedGrowth": 0.11515151515151516,
+      "observedGrowthCI": [
+        0.09349040789718756,
+        0.13758779715961716
+      ],
+      "positives": 209,
+      "refitNll": 0.3366826878755271,
+      "refitPredictedGrowth": 0.10645660947207823,
+      "rows": 1815,
+      "sources": 24
+    },
+    "nonWrithing": {
+      "deployedNll": 0.44291321189301963,
+      "deployedPredictedGrowth": 0.12349671703901083,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.002311642181274971,
+      "nllDifferenceCI": [
+        -0.015711141249827157,
+        0.01071411044374205
+      ],
+      "observedGrowth": 0.16066725197541704,
+      "observedGrowthCI": [
+        0.1321499896630848,
+        0.189949959000021
+      ],
+      "positives": 183,
+      "refitNll": 0.44060156971174463,
+      "refitPredictedGrowth": 0.16287674296719265,
+      "rows": 1139,
+      "sources": 24
+    },
+    "standard": {
+      "deployedNll": 0.5089015229291486,
+      "deployedPredictedGrowth": 0.018925173421501146,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.1272116074951575,
+      "nllDifferenceCI": [
+        -0.22247790491238487,
+        -0.041460253916934815
+      ],
+      "observedGrowth": 0.09071274298056156,
+      "observedGrowthCI": [
+        0.05049840510366826,
+        0.12870700677662697
+      ],
+      "positives": 42,
+      "refitNll": 0.3816899154339911,
+      "refitPredictedGrowth": 0.09261729548875623,
+      "rows": 463,
+      "sources": 20
+    },
+    "writhingBrew": {
+      "deployedNll": 0.5677462076456035,
+      "deployedPredictedGrowth": 0.007387032135149439,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.17689080179935487,
+      "nllDifferenceCI": [
+        -0.29315269063657634,
+        -0.0676905559953948
+      ],
+      "observedGrowth": 0.09615384615384616,
+      "observedGrowthCI": [
+        0.05113483626588466,
+        0.14177898446490217
+      ],
+      "positives": 35,
+      "refitNll": 0.39085540584624856,
+      "refitPredictedGrowth": 0.06209178964770248,
+      "rows": 364,
+      "sources": 20
+    },
+    "writhingEscaped": {
+      "deployedNll": 0.0,
+      "deployedPredictedGrowth": 0.0,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": 0.0,
+      "nllDifferenceCI": [
+        0.0,
+        0.0
+      ],
+      "observedGrowth": 0.0,
+      "observedGrowthCI": [
+        0.0,
+        0.0
+      ],
+      "positives": 0,
+      "refitNll": 0.0,
+      "refitPredictedGrowth": 0.0,
+      "rows": 321,
+      "sources": 20
+    },
+    "writhingNatural": {
+      "deployedNll": 0.3762214623917765,
+      "deployedPredictedGrowth": 0.005479142595573354,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.10450616737870892,
+      "nllDifferenceCI": [
+        -0.20963894005881592,
+        0.004168075384098936
+      ],
+      "observedGrowth": 0.062162162162162166,
+      "observedGrowthCI": [
+        0.02099192146436241,
+        0.10174610093964928
+      ],
+      "positives": 23,
+      "refitNll": 0.27171529501306757,
+      "refitPredictedGrowth": 0.06487902084214461,
+      "rows": 370,
+      "sources": 20
+    },
+    "writhingNotEscaped": {
+      "deployedNll": 0.5142874771854441,
+      "deployedPredictedGrowth": 0.005980811140981699,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.16470762212634593,
+      "nllDifferenceCI": [
+        -0.26729807090488067,
+        -0.06302296631322615
+      ],
+      "observedGrowth": 0.08312958435207823,
+      "observedGrowthCI": [
+        0.04497239475500345,
+        0.12071363470652569
+      ],
+      "positives": 68,
+      "refitNll": 0.3495798550590982,
+      "refitPredictedGrowth": 0.06183856205804854,
+      "rows": 818,
+      "sources": 20
+    },
+    "writhingSmokeNotEscaped": {
+      "deployedNll": 0.7960169752099616,
+      "deployedPredictedGrowth": 0.0018738410187924795,
+      "infiniteNllRows": {
+        "deployed": 0,
+        "refit": 0
+      },
+      "nllDifference": -0.33697128844961177,
+      "nllDifferenceCI": [
+        -0.5222200657309272,
+        -0.16522818852603363
+      ],
+      "observedGrowth": 0.10638297872340426,
+      "observedGrowthCI": [
+        0.06666666666666667,
+        0.14285714285714285
+      ],
+      "positives": 10,
+      "refitNll": 0.4590456867603498,
+      "refitPredictedGrowth": 0.04231164489496261,
+      "rows": 94,
+      "sources": 10
+    }
+  },
+  "examplesSha256": "d3e9a6598534793f63d2b6e239afb8bffd8d1ee456b6927821c2fb29989f3a71",
+  "fitSha256": "d1314aa747e95424424dcbd3a6264bb046fe8c5482ab8a18c98bd90cb1631ee7",
+  "partition": "VALIDATION",
+  "testEvaluated": false
+}

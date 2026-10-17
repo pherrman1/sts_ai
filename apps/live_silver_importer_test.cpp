@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <set>
@@ -1251,22 +1252,26 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 }
 void verifyGuardianProducerThresholds() {
     // Values are shaped by the verified Java fields, not copied from wire miscInfo.
-    for (int phase = 0; phase < 3; ++phase) {
+    for (int ascension : {0, 9, 19, 20}) for (int phase = 0; phase < 3; ++phase) {
+        // Keep the existing starter-card fixture and vary only Guardian's
+        // ascension rules; native curse costs are not Java card projections.
         GameContext game(CharacterClass::IRONCLAD, 0, 0);
+        game.ascension = ascension;
         game.floorNum = 16;
         BattleContext battle;
         battle.init(game, MonsterEncounter::THE_GUARDIAN);
         auto &guardian = battle.monsters.arr[0];
         const bool javaOpen = phase != 1;
-        const int javaThreshold = phase == 0 ? 30 : 40;
-        guardian.miscInfo = phase == 2 ? 40 : 30;
+        const int initialThreshold = ascension >= 19 ? 40 : ascension >= 9 ? 35 : 30;
+        const int javaThreshold = initialThreshold + (phase == 0 ? 0 : 10);
+        guardian.miscInfo = initialThreshold + (phase == 2 ? 10 : 0);
         if (phase == 0) guardian.setStatus<MonsterStatus::MODE_SHIFT>(12);
         else if (phase == 1) {
             guardian.removeStatus<MonsterStatus::MODE_SHIFT>();
-            guardian.buff<MonsterStatus::SHARP_HIDE>(3);
+            guardian.buff<MonsterStatus::SHARP_HIDE>(ascension >= 19 ? 4 : 3);
             guardian.setMove(MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
         } else {
-            guardian.setStatus<MonsterStatus::MODE_SHIFT>(40);
+            guardian.setStatus<MonsterStatus::MODE_SHIFT>(initialThreshold + 10);
             guardian.setMove(MonsterMoveId::THE_GUARDIAN_WHIRLWIND);
         }
         CombatKnowledgeState knowledge;
@@ -1279,16 +1284,97 @@ void verifyGuardianProducerThresholds() {
         one_combat::advisor::SilverImportContext context;
         context.session = "guardian-producer";
         const auto imported = one_combat::advisor::importSilverRoot(observation, context);
-        if (!imported.ok) throw std::runtime_error("Guardian producer import: " + imported.reason);
+        if (!imported.ok) throw std::runtime_error("Guardian producer import: A"
+            + std::to_string(ascension) + " phase=" + std::to_string(phase) + ": " + imported.reason);
         expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(expected, imported.wire))
             throw std::runtime_error("Guardian producer threshold lost phase parity");
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
     verifyGuardianProducerThresholds();
     try {
+        {
+            const std::string path = argc > 2 ? argv[2] : "tests/fixtures/live_guardian_a20_phases.json";
+            std::ifstream input(path);
+            if (!input) throw std::runtime_error("cannot read captured Guardian phases: " + path);
+            json fixture; input >> fixture;
+            if (fixture.at("schema") != "live_guardian_a20_phases_v1" || fixture.at("phases").size() != 3)
+                throw std::runtime_error("captured Guardian phase fixture schema");
+            int previousSequence = -1;
+            for (const auto &phase : fixture.at("phases")) {
+                auto observation = phase.at("observation");
+                const auto &source = phase.at("source");
+                for (const auto *key : {"session", "sequence", "observationHash"})
+                    observation[key] = source.at(key);
+                if (source.at("sequence").get<int>() <= previousSequence)
+                    throw std::runtime_error("captured Guardian phase order");
+                previousSequence = source.at("sequence").get<int>();
+                one_combat::advisor::SilverImportContext context;
+                const auto imported = one_combat::advisor::importSilverRoot(observation, context);
+                if (!imported.ok) throw std::runtime_error("captured Guardian import: " + imported.reason);
+                const auto &expected = phase.at("expected");
+                const auto battle = battleContextFromWire(imported.wire);
+                const auto &guardian = battle.monsters.arr[0];
+                if (imported.wire.ascension != 20 || battle.turn + 1 != expected.at("turn")
+                    || guardian.id != MonsterId::THE_GUARDIAN || guardian.curHp != expected.at("guardianHp")
+                    || guardian.curHp != phase.at("mcpGuardian").at("current_hp")
+                    || guardian.miscInfo != expected.at("miscInfo")
+                    || guardian.getStatus<MonsterStatus::MODE_SHIFT>() != expected.at("modeShift")
+                    || guardian.getStatus<MonsterStatus::SHARP_HIDE>() != expected.at("sharpHide"))
+                    throw std::runtime_error("captured Guardian threshold/power parity");
+                SilverSearchSession session;
+                const auto decision = session.decide(imported.wire, 1);
+                if (!decision.accepted || one_combat::advisor::selectedLiveAction(
+                        decision.action, context, observation).is_null())
+                    throw std::runtime_error("captured Guardian search/lowering refused");
+            }
+            std::cout << "captured A20 Guardian offense/defense/return search parity passed\n";
+        }
+        {
+            const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Slime Boss fixture: "+path);
+            json observation; input >> observation;
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Slime Boss split import: "+imported.reason);
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Slime Boss split search: "+decision.failureReason);
+            for(const auto &action:decision.legalActions) {
+                const auto live=one_combat::advisor::selectedLiveAction(action,context,observation);
+                if(live.is_null() || (action.target>=0 && live.value("targetIndex",-1)!=(action.target==0?1:2)))
+                    throw std::runtime_error("captured Slime Boss sparse target lowering failed");
+            }
+            auto targeted=decision.action;
+            targeted.type=silver_bridge::SemanticActionType::CARD;
+            targeted.card.uniqueId=imported.wire.hand.back().uniqueId;
+            targeted.target=2;
+            for(bool potion:{false,true}) {
+                targeted.type=potion?silver_bridge::SemanticActionType::POTION:silver_bridge::SemanticActionType::CARD;
+                targeted.potionSlot=0;targeted.discardPotion=false;
+                auto reordered=observation;
+                auto &monsters=reordered["silverRoot"]["combat"]["monsters"];
+                std::swap(monsters[0],monsters[1]);
+                if(one_combat::advisor::selectedLiveAction(targeted,context,reordered).value("targetIndex",-1)!=1)
+                    throw std::runtime_error("sparse reordered target did not follow MCP list order");
+                monsters[0]["dead"]=true;
+                if(!one_combat::advisor::selectedLiveAction(targeted,context,reordered).is_null())
+                    throw std::runtime_error("dead sparse target was lowered");
+                for(int target:{1,4}) {
+                    targeted.target=target;
+                    if(!one_combat::advisor::selectedLiveAction(targeted,context,observation).is_null())
+                        throw std::runtime_error("missing sparse target was lowered");
+                }
+                targeted.target=2;
+                monsters[0]["dead"]=false;monsters[1]["slot"]=2;monsters[1]["idx"]=2;
+                if(!one_combat::advisor::selectedLiveAction(targeted,context,reordered).is_null())
+                    throw std::runtime_error("duplicate sparse slot was lowered");
+            }
+            std::cout << "captured Slime Boss split search and target lowering passed\n";
+        }
         {
             GameContext game(CharacterClass::IRONCLAD, 0x71517u, 0);
             game.act = 1;
@@ -1336,6 +1422,34 @@ int main() {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
             fixture(MonsterEncounter::GREMLIN_NOB, "Gremlin Nob", 3, "ELITE", 0xB003u)};
+        for (const auto &[id, upgraded, misc, damage] : std::vector<std::tuple<CardId, bool, int, int>>{
+                {CardId::SEARING_BLOW, false, 0, 12}, {CardId::SEARING_BLOW, true, 1, 16},
+                {CardId::SEARING_BLOW, true, 2, 21}, {CardId::SEARING_BLOW, true, 4, 34},
+                {CardId::RAMPAGE, false, 0, 8}, {CardId::RAMPAGE, false, 5, 13},
+                {CardId::RAMPAGE, true, 16, 24}, {CardId::RITUAL_DAGGER, true, 27, 27}}) {
+            auto observation = genericObservation(fixtures[0], "combat-card-growth");
+            auto &combat = observation["silverRoot"]["combat"];
+            auto &card = combat["hand"][0];
+            card["id"] = cardStringIds[static_cast<int>(id)];
+            card["upgraded"] = upgraded; card["misc"] = misc;
+            card["cost"] = card["costForTurn"] = id == CardId::SEARING_BLOW ? 2 : 1;
+            combat.erase("strikeCount");
+            one_combat::advisor::SilverImportContext context;
+            const auto imported = one_combat::advisor::importSilverRoot(observation, context);
+            if (!imported.ok) throw std::runtime_error("combat card growth import: " + imported.reason);
+            auto battle = battleContextFromWire(imported.wire);
+            const auto physicalId = battle.cards.hand[0].uniqueId;
+            const auto hp = battle.monsters.arr[0].curHp;
+            sts::search::Action(sts::search::ActionType::CARD, 0, 0).execute(battle);
+            if (hp - battle.monsters.arr[0].curHp != damage)
+                throw std::runtime_error("combat card growth damage was not preserved");
+            if (id == CardId::RAMPAGE) {
+                const auto played = std::find_if(battle.cards.discardPile.begin(), battle.cards.discardPile.end(),
+                    [physicalId](const auto &c) { return c.uniqueId == physicalId; });
+                if (played == battle.cards.discardPile.end() || played->specialData != misc + (upgraded ? 8 : 5))
+                    throw std::runtime_error("imported Rampage lost its next growth increment");
+            }
+        }
         {
             const auto domeObservation=[&](int which,int completed) {
                 auto obs=genericObservation(fixtures[which],which==0?"dome-cultist":"dome-jaw");
@@ -3307,6 +3421,14 @@ int main() {
                 throw std::runtime_error("Discovery offer was silently truncated or flattened");
         }
         auto unknownSelection = nativeSelection;
+        // A timed-out hand-selection action can disappear after confirmation
+        // without retrieving its selected physical card. The remaining piles
+        // can otherwise look importable despite the missing card.
+        auto orphanedSelection = genericObservation(fixtures[0], "orphaned-hand-selection");
+        orphanedSelection["silverRoot"]["combat"]["orphanedHandSelection"] = true;
+        if (one_combat::advisor::importSilverRoot(orphanedSelection).reason
+                != "silver_orphaned_hand_selection")
+            throw std::runtime_error("abandoned hand selection was accepted as ordinary play");
         unknownSelection["silverRoot"]["combat"]["cardSelect"]["task"] = "";
         // Unknown selectors must not become normal play or be obscured by an
         // unrelated unsupported projection field at a resumed combat boundary.

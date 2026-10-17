@@ -1,0 +1,55 @@
+{
+  "candidateId": "pathb-r2-ritual-refit",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "d63c829c019e7e2798232e4f3bcfc5ac02a93d74c33000634d075e36bb0cc5f7"
+      },
+      "lizardBrew": {
+        "rModel": {
+          "featureMean": [
+            0.9220745124444445
+          ],
+          "featureScale": [
+            0.1254272163284112
+          ],
+          "standardizedCoefficients": [
+            1.9365468362108325,
+            0.5448779953885916
+          ]
+        }
+      },
+      "lizardFairy": {},
+      "writhingRitual": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "8c5ab91fb9d88be3fedc30c0afb5ccf4839a87c8df0aa07e132301d6e11ea4ac"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "env": {
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST": "docs/experiments/evidence/ctm_ritual_refit_20261017/candidate-manifest.json",
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256": "1a13abb74b655fa5676b43b1a5f17929b0897cebfd1023f8f20d0a346c202b0e",
+    "STS_OOC_MCTS_ACTIVE_LIZARD": "1",
+    "STS_OOC_MCTS_BREW_FALLBACK_MODEL": "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
+    "STS_OOC_MCTS_COMBAT_MODEL": "selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native"
+  },
+  "fast": [
+    "build/ritual-refit-a7179dc7/candidate/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+    "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec"
+  ],
+  "interim": false,
+  "manifest": "build/ritual-refit-a7179dc7/candidate/candidate-manifest.json",
+  "manifestSha256": "1a13abb74b655fa5676b43b1a5f17929b0897cebfd1023f8f20d0a346c202b0e",
+  "repoPaths": {
+    "fast": "selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+    "manifest": "docs/experiments/evidence/ctm_ritual_refit_20261017/candidate-manifest.json",
+    "standard": "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native"
+  },
+  "standard": [
+    "build/ritual-refit-a7179dc7/candidate/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
+    "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e"
+  ]
+}
