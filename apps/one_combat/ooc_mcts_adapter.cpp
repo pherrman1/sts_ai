@@ -1397,7 +1397,7 @@ void OocGameContextModel::applyTargetPrior(const GameContext &gc, const std::vec
 // belt is full and Sozu is absent; otherwise the gain is nothing and the discard is a pure loss.
 static bool applyPotionKeepPrior(const GameContext &gc,
     const std::vector<OocGameContextModel::Candidate> &actions, std::vector<double> &logits) {
-    if (gc.screenState != ScreenState::REWARDS) return false;
+    if (gc.screenState != sts::ScreenState::REWARDS) return false;
     std::vector<std::size_t> discards;
     std::optional<double> leave;
     double bestOther = -std::numeric_limits<double>::infinity();
@@ -1411,7 +1411,7 @@ static bool applyPotionKeepPrior(const GameContext &gc,
     const double base = leave ? *leave : std::isfinite(bestOther) ? bestOther : 0.0;
     const auto &r = gc.info.rewardsContainer;
     int offered = 0;
-    if (gc.potionCount >= gc.potionCapacity && !gc.hasRelic(RelicId::SOZU))
+    if (gc.potionCount >= gc.potionCapacity && !gc.hasRelic(sts::RelicId::SOZU))
         for (int i = 0; i < r.potionCount; ++i) offered = std::max(offered, sts::search::potionKeepRank(r.potions[i]));
     for (const auto i : discards) {
         const int slot = actions[i].primitive.getIdx1();
