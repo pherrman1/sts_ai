@@ -2498,6 +2498,64 @@ static int matchAndKeepOracleSelfTest() {
     return 0;
 }
 
+// STS_MATCH_AND_KEEP_CURSE_FIX: a seen curse pair is never valued (no cache
+// entry) and never flipped; =0 values it like any card, as before 2026-10-17.
+static int matchAndKeepCurseSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("Match and Keep curse selftest: " + message);
+    };
+    struct Guard {
+        const PathHistory *path = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        std::optional<std::string> fix = [] {
+            const char *v = std::getenv("STS_MATCH_AND_KEEP_CURSE_FIX");
+            return v ? std::optional<std::string>(v) : std::nullopt;
+        }();
+        ~Guard() {
+            t_curPath = path; one_combat::restoreOocPolicyThreadState(policy);
+            if (fix) setenv("STS_MATCH_AND_KEEP_CURSE_FIX", fix->c_str(), 1);
+            else unsetenv("STS_MATCH_AND_KEEP_CURSE_FIX");
+        }
+    } guard;
+    GameContext base(CharacterClass::IRONCLAD, 74007001, 0);
+    for (int i = 0; i < 16 && base.screenState != ScreenState::MAP_SCREEN; ++i) {
+        const auto actions = search::GameAction::getAllActionsInState(base);
+        require(!actions.empty(), "fixture reaches the first map screen");
+        actions.front().execute(base);
+    }
+    require(base.screenState == ScreenState::MAP_SCREEN, "fixture is at the map");
+    base.curRoom = Room::EVENT; base.curEvent = Event::MATCH_AND_KEEP;
+    base.screenState = ScreenState::EVENT_SCREEN;
+    base.info.eventData = 5;
+    base.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    base.info.toSelectCards.clear();
+    for (int i = 0; i < 12; ++i)
+        base.info.toSelectCards.push_back({Card(i < 2 ? CardId::SHAME : CardId::BASH),
+            i < 2 ? GameContext::MATCH_AND_KEEP_SEEN : GameContext::MATCH_AND_KEEP_UNSEEN});
+    const auto shame = std::make_pair(static_cast<int>(CardId::SHAME), false);
+    PathHistory path;
+    search::ScumSearchAgent2 agent;
+    const auto click = [&](const char *fix) {
+        setenv("STS_MATCH_AND_KEEP_CURSE_FIX", fix, 1);
+        one_combat::restoreOocPolicyThreadState(OocPolicyThreadState{});
+        t_curPath = &path;
+        GameContext gc = base;
+        runFullRunOocPolicyStep(gc, agent, false, false);
+        int faceUp = -1;
+        for (int i = 0; i < 12; ++i)
+            if (gc.info.toSelectCards[i].deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP) faceUp = i;
+        return std::make_pair(faceUp, one_combat::captureOocPolicyThreadState().matchAndKeepWant.want.count(shame));
+    };
+    const auto fixed = click("1");
+    require(fixed.first == 2 && fixed.second == 0, "fix: the curse pair is skipped without a valuation");
+    require(click("0").second == 1, "=0: the curse pair is valued like any card");
+    bool threw = false;
+    try { click("2"); } catch (const std::runtime_error &) { threw = true; }
+    require(threw, "an invalid switch value is fatal");
+    std::cout << "Match and Keep curse selftest: PASS\n";
+    return 0;
+}
+
 static int actFightProbeRootStateSelfTest() {
     auto require = [](bool ok, const std::string &message) {
         if (!ok) throw std::runtime_error("act-fight root-state selftest: " + message);
@@ -4293,6 +4351,13 @@ int main(int argc, char **argv) {
     } else if (mode == "matchandkeep_oracle_selftest") {
         if (argc != 2) return 2;
         try { return matchAndKeepOracleSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "matchandkeep_curse_selftest") {
+        if (argc != 2) return 2;
+        try { return matchAndKeepCurseSelfTest(); }
         catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 1;

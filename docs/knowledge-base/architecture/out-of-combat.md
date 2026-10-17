@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -1051,9 +1051,21 @@ attempts, and a matched pair is added to the deck. Its clicks are not searched:
 `sim/search/MatchAndKeepPolicy` for real runs and for OOC MCTS continuations.
 The pattern reads a slot's card only after that slot was flipped. Each seen
 card is valued by the active primary guide as a lone card reward
-(`oocHypotheticalCardTaken`): OOC MCTS when it is enabled, otherwise the
-ordinary V4/one-ply chain; inside a search only the chain is used, so no search
-nests inside another.
+(`oocHypotheticalCardTaken`): live OOC MCTS at a real decision when it is
+enabled; otherwise, with `STS_OOC_HEART1` loaded, one heart1 argmax step over
+the offer's take and skip (the same step a heart1 rollout takes); otherwise the
+ordinary V4/one-ply chain. Inside a search the live MCTS is never used, so no
+search nests inside another. heart1 has no Match and Keep token and
+`v4DecisionSupported` excludes the event, so tree nodes and rollouts never send
+its clicks to a prior or rollout policy; only this valuation does.
+`STS_MATCH_AND_KEEP_HEART1=0` restores the chain valuation (before 2026-10-17).
+A curse is never a wanted pair (`STS_MATCH_AND_KEEP_CURSE_FIX`, default on, `=0`
+restores the old valuation): offered as a lone card reward, a curse is outside
+what V4 and heart1 were trained on, and both took Shame, Writhe and Regret there.
+The engine follows the game's `GremlinMatchGame` card set: rare, uncommon and
+common class cards, a colorless uncommon (a second curse at A15+), a curse and
+the starter card, shuffled with `miscRng`. The fixed pattern can still match a
+curse when the second flip of an attempt has only unseen slots left.
 
 A compound may combine a source option with one target only when its complete
 candidate set is public before the source click and that click reveals no new
@@ -1929,10 +1941,36 @@ with the search and its chain.
   silverbot does. A single offered choice is executed directly. Screens
   silverbot does not encode (Match and Keep, Bonfire Spirits, any unmapped
   event) fall back to the ordinary chain, where silverbot would call its own
-  `pick_gameaction`.
+  `pick_gameaction`; the Match and Keep pattern there values its cards with
+  heart1.
 - Diagnostics: `STS_OOC_HEART1_TRACE=<jsonl>` appends each scored decision's
   record and logits. `one_combat heart1score` scores records offline;
   `one_combat heart1replay` replays one seed's action bits for the harness.
+- Distillation capture: `STS_OOC_HEART1_CAPTURE=<jsonl>` appends rows from
+  `heart1::priorLogits` (so it needs a heart1 tree prior or heart1 leaf policy):
+  every `STS_OOC_HEART1_CAPTURE_EVERY`-th call (default 8) the node itself
+  (`kind: node`), and every `STS_OOC_HEART1_CAPTURE_SELECT_EVERY`-th (default 1)
+  card select that a rest, shop-removal, event or boss-relic source opens on a
+  copy of the state (`kind: select`, with `parent_screen`/`parent_bits`). Rows
+  also carry `act` and `deck_misc` (card `misc` in deck order, which heart1
+  does not see). The tree only reaches those selects as
+  compound candidates, so without this they are never captured. Labels come
+  from `STS_OOC_HEART1_TEACHER` (default: the serving weights); `serve` holds
+  the serving weights' logits. A record already written by the process is
+  skipped. The returned prior is unchanged. `tools/heart1/distill.py` trains a
+  student on these rows (KL to the teacher; `--init` fine-tunes).
+- Student input extension (Philipp 2026-10-17, value-model audit blind spots):
+  records carry `obs.deck.misc` (card `misc` in deck order: Ritual Dagger
+  damage, Genetic Algorithm block) and `obs.act`; heart1 itself ignores them
+  and its relic counters. A weights file with `x_act.weight` (and
+  `x_deck_misc`, `x_relic_counter` FixedVec inputs) adds them to the deck,
+  relic and fixed-observation tokens after silverbot's sum (misc and counters
+  clamped to [-1, 999], act to [0, 4]). Training side:
+  `tools/heart1/student_inputs.py` (`distill.py --extra-inputs`), zero-initialised,
+  so student C loads unchanged; native logits with all-zero `x_*` tensors equal
+  student C's bit for bit (300 capture records). Torch-native parity of
+  nonzero `x_*` is checked with `student_inputs.py perturb/score` where torch
+  and silverbot are built.
 - Parity: `tools/heart1/heart1_reference.py score` runs silverbot's own
   `collate_fn` and `NN` on our records; `tools/heart1/heart1_parity_seeds.py
   early` replays silverbot's engine's early-game decisions (Neow to the first
