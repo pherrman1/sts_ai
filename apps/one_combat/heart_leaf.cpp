@@ -124,7 +124,8 @@ HeartLeafModel::HeartLeafModel(const std::string &manifestPath) : path_(manifest
     std::ifstream in(manifestPath);
     if (!in) throw std::runtime_error("heart leaf: cannot open manifest " + manifestPath);
     const auto manifest = nlohmann::json::parse(in);
-    if (manifest.at("schema") != "heart-leaf-v1" || manifest.at("featureSchema") != kHeartLeafFeatureSchema)
+    hasCritic_ = manifest.at("featureSchema") == kHeartLeafCriticFeatureSchema;
+    if (manifest.at("schema") != "heart-leaf-v1" || (!hasCritic_ && manifest.at("featureSchema") != kHeartLeafFeatureSchema))
         throw std::runtime_error("heart leaf: unknown manifest or feature schema");
     if (manifest.at("anchorSha256") != kHeartLeafAnchorSha256 || fileSha256Hex(kHeartLeafAnchorPath) != kHeartLeafAnchorSha256)
         throw std::runtime_error("heart leaf: anchor is not the pinned public X2-B");
@@ -133,10 +134,21 @@ HeartLeafModel::HeartLeafModel(const std::string &manifestPath) : path_(manifest
     if (fileSha256Hex(residual) != manifest.at("residualSha256").get<std::string>())
         throw std::runtime_error("heart leaf: residual hash mismatch");
     slope_ = manifest.at("anchorSlope").get<double>();
-    if (!std::isfinite(slope_)) throw std::runtime_error("heart leaf: invalid anchor slope");
+    act4Offset_ = manifest.value("act4Offset", 0.0);
+    if (!std::isfinite(slope_) || !std::isfinite(act4Offset_)) throw std::runtime_error("heart leaf: invalid anchor slope or offset");
     if (!anchor_.load(kHeartLeafAnchorPath, richIdxMap(), "HeartLeaf anchor") || !anchor_.logistic)
         throw std::runtime_error("heart leaf: cannot load anchor");
-    if (!residual_.load(residual, heartLeafIdxMap(), "HeartLeaf residual") || residual_.logistic)
+    auto residualIdx = heartLeafIdxMap();
+    if (hasCritic_) {
+        const auto critic = (std::filesystem::path(manifestPath).parent_path()
+            / manifest.at("critic").get<std::string>()).string();
+        if (fileSha256Hex(critic) != manifest.at("criticSha256").get<std::string>())
+            throw std::runtime_error("heart leaf: critic hash mismatch");
+        if (!critic_.load(critic, heartLeafIdxMap(), "HeartLeaf critic") || critic_.logistic)
+            throw std::runtime_error("heart leaf: critic must be a margin (logistic 0) tree model");
+        residualIdx.emplace("hlCritic", int(residualIdx.size()));
+    }
+    if (!residual_.load(residual, residualIdx, "HeartLeaf residual") || residual_.logistic)
         throw std::runtime_error("heart leaf: residual must be a margin (logistic 0) tree model");
     sha_ = fileSha256Hex(manifestPath);
 }
@@ -151,7 +163,18 @@ double HeartLeafModel::valueFromFeatures(const std::vector<float> &raw) const {
     if (raw.size() != heartLeafIdxMap().size()) throw std::runtime_error("heart leaf: feature width");
     static const int anchorColumn = heartLeafIdxMap().at("x2bMargin");
     const double anchor = raw[anchorColumn];
-    const double margin = slope_ * anchor + residual_.predict(raw);
+    double residual;
+    if (hasCritic_) {
+        // The fit used XGBoost's float32 critic predictions as the column, so
+        // the critic is summed the same way (a double sum flips residual splits).
+        auto withCritic = raw;
+        withCritic.push_back(critic_.marginFloat32(raw));
+        residual = residual_.predict(withCritic);
+    } else {
+        residual = residual_.predict(raw);
+    }
+    static const int act4Column = heartLeafIdxMap().at("hlAct4");
+    const double margin = slope_ * anchor + residual + (raw[act4Column] != 0 ? act4Offset_ : 0.0);
     const double value = 1.0 / (1.0 + std::exp(-margin));
     if (!std::isfinite(value)) throw std::runtime_error("heart leaf: nonfinite value");
     return std::clamp(value, 0.0, 1.0);

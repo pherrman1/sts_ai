@@ -13,6 +13,9 @@
 
 namespace one_combat {
 constexpr const char *kHeartLeafFeatureSchema = "heart-leaf-features-v2";
+// v2 plus "hlCritic": the manifest's critic tree model (a distillation of the
+// heart1 value head) evaluated on the v2 features.
+constexpr const char *kHeartLeafCriticFeatureSchema = "heart-leaf-features-v3";
 constexpr const char *kHeartLeafAnchorPath = "models/candidates/v_win_x2b_public_trees.txt";
 constexpr const char *kHeartLeafAnchorSha256 = "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90";
 
@@ -31,17 +34,20 @@ std::string fileSha256Hex(const std::string &path);
 class HeartLeafModel {
 public:
     // Manifest JSON: schema "heart-leaf-v1", featureSchema, residual (path
-    // relative to the manifest), residualSha256, anchorSha256, anchorSlope.
+    // relative to the manifest), residualSha256, anchorSha256, anchorSlope, optional
+    // act4Offset (logit added on Act-4 states);
+    // with featureSchema v3 also critic and criticSha256 (a margin tree model).
     explicit HeartLeafModel(const std::string &manifestPath);
     double anchorMargin(const std::vector<float> &rich) const { return anchor_.margin(rich); }
     double value(const sts::GameContext &gc, const PathHistory &path) const;
-    // `raw` is heartLeafFeatureVec(); its x2bMargin column is the anchor margin.
+    // `raw` is heartLeafFeatureVec() (v2); its x2bMargin column is the anchor margin.
     double valueFromFeatures(const std::vector<float> &raw) const;
     const std::string &manifestPath() const { return path_; }
     const std::string &manifestSha256() const { return sha_; }
 private:
-    CompactTreeNet anchor_, residual_;
-    double slope_ = 1.0;
+    CompactTreeNet anchor_, residual_, critic_;
+    bool hasCritic_ = false;
+    double slope_ = 1.0, act4Offset_ = 0.0;
     std::string path_, sha_;
 };
 } // namespace one_combat

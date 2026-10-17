@@ -17,7 +17,16 @@ regresses on the soft label
 so rollouts carry the differences between states and real Heart outcomes z
 anchor the level. VALIDATION picks the round count; nothing else is read.
 
+With ``--critic H1ROWS`` (rows of `heartleaftail` run with STS_OOC_HEART1
+set), a tree regression of the heart1 value head on the same features is fit
+on TRAIN roots and appended as column ``hlCritic`` (feature schema v3); the
+native model evaluates it from the features, so heart1 is not needed at play.
+
 Usage: heart_leaf_fit.py fit --tails T.jsonl... --runs DIR... --out DIR
+       heart_leaf_fit.py score --manifest M --roots R.jsonl... --runs DIR... --split S --out F
+
+``score`` evaluates a frozen manifest from its exported tree files (no
+XGBoost) on `heartleaftail` root rows of one split and writes the gate report.
 """
 import argparse
 import glob
@@ -69,13 +78,13 @@ def dense(sparse, out=None):
     return x
 
 
-def load_outcomes(dirs):
+def load_outcomes(dirs, allowed=("train", "validation")):
     """seed -> (split, Heart label) from complete healthy footers."""
     out = {}
     for d in dirs:
         for f in glob.glob(os.path.join(d, "**", "seed-*.states.jsonl"), recursive=True):
             split = os.path.basename(os.path.dirname(f))
-            if split not in ("train", "validation"):
+            if split not in allowed:
                 raise SystemExit(f"refusing non TRAIN/VALIDATION file {f}")
             with open(f) as fh:
                 last = None
@@ -176,10 +185,22 @@ def report(name, p, d, rows):
         if r.sum() == 0:
             continue
         wa = run_weights(d["seed"][r])
-        out["acts"][a] = {"rows": int(r.sum()), "mean_pred": float(np.average(p[r], weights=wa)),
+        out["acts"][a] = {"rows": int(r.sum()), "runs": int(len(np.unique(d["seed"][r]))),
+                          "mean_pred": float(np.average(p[r], weights=wa)),
                           "mean_z": float(np.average(d["z"][r], weights=wa)),
-                          "bce": bce(p[r], d["z"][r], wa), "auc": auc(p[r], d["z"][r], wa)}
+                          "bce": bce(p[r], d["z"][r], wa), "auc": auc(p[r], d["z"][r], wa),
+                          "calib_gap_ci95": calib_ci(p[r], d["z"][r], d["seed"][r])}
     return out
+
+
+def calib_ci(p, z, seeds, n_boot=2000):
+    """Run-bootstrap 95% interval of the run-weighted mean(p) - mean(z) (descriptive)."""
+    u, inv = np.unique(seeds, return_inverse=True)
+    cnt = np.bincount(inv)
+    gap = np.bincount(inv, weights=p - z) / cnt          # per-run mean gap; runs weigh the same
+    rng = np.random.default_rng(0)
+    draws = gap[rng.integers(0, len(u), size=(n_boot, len(u)))].mean(axis=1)
+    return [float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975))]
 
 
 def fit(args):
@@ -207,12 +228,37 @@ def fit(args):
     print(json.dumps({"roots": len(m_root), "ends": len(m_end), "trainRuns": int(len(np.unique(d["seed"][train]))),
                       "valRuns": int(len(np.unique(d["seed"][val]))), "platt": [a, b]}), flush=True)
     reports = [report("x2b_raw", sigmoid(m_root), d, val), report("x2b_platt", sigmoid(a + b * m_root), d, val)]
+    names = NAMES
+    critic_info = None
+    if args.critic:
+        h1 = {}
+        with open(args.critic) as f:
+            for line in f:
+                r = json.loads(line)
+                h1[(r["seed"], r["decisionIndex"])] = r.get("heart1Value")
+        hv = np.array([np.nan if h1.get((s, k)) is None else h1[(s, k)] for s, k in zip(d["seed"], d["decision"])])
+        ok_tr, ok_va = train & ~np.isnan(hv), val & ~np.isnan(hv)
+        cparams = {"objective": "reg:squarederror", "eta": 0.05, "max_depth": 6, "subsample": 0.8,
+                   "colsample_bytree": 0.5, "lambda": 5.0, "nthread": args.threads, "seed": 0}
+        cbst = xgb.train(cparams, xgb.DMatrix(d["X"][ok_tr], label=hv[ok_tr], feature_names=NAMES), 600,
+                         evals=[(xgb.DMatrix(d["X"][ok_va], label=hv[ok_va], feature_names=NAMES), "val")],
+                         early_stopping_rounds=50, verbose_eval=False)
+        c_trees = cbst.best_iteration + 1
+        cpred = lambda X: np.concatenate([cbst.predict(xgb.DMatrix(X[s:s + 100000], feature_names=NAMES),
+                                                       iteration_range=(0, c_trees)) for s in range(0, len(X), 100000)])
+        c_root, c_end = cpred(d["X"]), cpred(d["E"])
+        corr = float(np.corrcoef(c_root[ok_va], hv[ok_va])[0, 1])
+        critic_info = {"bst": cbst, "trees": int(c_trees), "valCorr": corr, "missing": int(np.isnan(hv).sum()),
+                       "params": cparams, "source": os.path.basename(args.critic), "sourceSha256": sha256(args.critic)}
+        print(json.dumps({"critic": {k: v for k, v in critic_info.items() if k != "bst"}}), flush=True)
+        d = dict(d, X=np.c_[d["X"], c_root].astype(np.float32), E=np.c_[d["E"], c_end].astype(np.float32))
+        names = NAMES + ["hlCritic"]
     n_rep = d["repeats"]
     end_value = sigmoid(a + b * m_end)       # round 0 tail values
     params = {"objective": "binary:logistic", "eval_metric": "logloss", "eta": args.eta, "max_depth": args.depth,
               "min_child_weight": args.min_child, "subsample": 0.8, "colsample_bytree": 0.5, "lambda": 5.0,
               "nthread": args.threads, "seed": 0, "base_score": 0.5}
-    dtr_kw = dict(feature_names=NAMES)
+    dtr_kw = dict(feature_names=names)
     best = None; rounds = []
     for k in range(1, args.rounds + 1):
         tail_sum = d["term_sum"] + np.bincount(d["owner"], weights=end_value, minlength=len(m_root))
@@ -237,8 +283,33 @@ def fit(args):
         rounds.append(rep)
         print(json.dumps({k2: rep[k2] for k2 in ("model", "trees", "bce_runweighted", "auc_runweighted", "mean_pred", "mean_z")}), flush=True)
         if best is None or rep["bce_runweighted"] < best[0]:
-            best = (rep["bce_runweighted"], k, bst, n_trees, p_root)
-    _, k_best, bst, n_trees, p_best = best
+            best = (rep["bce_runweighted"], k, bst, n_trees, p_root, y)
+    _, k_best, bst, n_trees, p_best, y_best = best
+    act4_offset = 0.0
+    if args.act4_offset:
+        # Rollout tails into the Heart overrate Act 4 (the CTM is untrained there),
+        # so Act-4 states get one logit offset fitted to real outcomes on
+        # out-of-fold TRAIN margins (4 seed folds, the selected round's labels and tree count).
+        fold = (d["seed"] * 2654435761) % 2**32 % 4
+        oof = np.zeros(len(m_root))
+        for f in range(4):
+            fit_rows, held = train & (fold != f), train & (fold == f)
+            bf = xgb.train(params, xgb.DMatrix(d["X"][fit_rows], label=y_best[fit_rows],
+                                               weight=run_weights(d["seed"][fit_rows]),
+                                               base_margin=a + b * m_root[fit_rows], **dtr_kw), num_boost_round=n_trees)
+            oof[held] = bf.predict(xgb.DMatrix(d["X"][held], base_margin=a + b * m_root[held], **dtr_kw), output_margin=True)
+        r4 = train & (d["act"] == 4)
+        w4 = run_weights(d["seed"][r4])
+        lo, hi = -3.0, 3.0
+        for _ in range(60):
+            c = 0.5 * (lo + hi)
+            lo, hi = (c, hi) if np.average(sigmoid(oof[r4] + c) - d["z"][r4], weights=w4) < 0 else (lo, c)
+        act4_offset = 0.5 * (lo + hi)
+        p_best = sigmoid(np.log(p_best / (1 - p_best)) + act4_offset * (d["act"] == 4))
+        rep = report(f"td_round{k_best}_act4offset", p_best, d, val)
+        rep["act4Offset"] = act4_offset
+        rounds.append(rep)
+        print(json.dumps({k2: rep[k2] for k2 in ("model", "act4Offset", "bce_runweighted", "auc_runweighted")}), flush=True)
     os.makedirs(args.out, exist_ok=True)
     trees = os.path.join(args.out, "heart_leaf_residual.trees")
     export_booster(bst, trees, n_trees)
@@ -247,18 +318,24 @@ def fit(args):
     text = [("logistic 0" if l.startswith("logistic ") else f"base_score {a:.17g}" if l.startswith("base_score ") else l) for l in text]
     with open(trees, "w", newline="\n") as f:
         f.write("\n".join(text) + "\n")
-    manifest = {"schema": "heart-leaf-v1", "featureSchema": "heart-leaf-features-v2",
+    manifest = {"schema": "heart-leaf-v1",
+                "featureSchema": "heart-leaf-features-v3" if critic_info else "heart-leaf-features-v2",
                 "residual": os.path.basename(trees), "residualSha256": sha256(trees),
-                "anchorSha256": ANCHOR_SHA, "anchorSlope": b,
+                "anchorSha256": ANCHOR_SHA, "anchorSlope": b, "act4Offset": act4_offset,
                 "training": {"tails": [os.path.basename(t) for t in args.tails], "tailSha256": [sha256(t) for t in args.tails],
                              "anchorWeight": args.anchor, "rounds": args.rounds, "selectedRound": k_best,
                              "trees": n_trees, "params": params, "platt": [a, b]}}
+    if critic_info:
+        critic = os.path.join(args.out, "heart_leaf_critic.trees")
+        export_booster(critic_info["bst"], critic, critic_info["trees"])   # margin model: base + sum(trees)
+        manifest["critic"], manifest["criticSha256"] = os.path.basename(critic), sha256(critic)
+        manifest["training"]["critic"] = {k: v for k, v in critic_info.items() if k != "bst"}
     with open(os.path.join(args.out, "heart_leaf.json"), "w") as f:
         json.dump(manifest, f, indent=1, sort_keys=True)
     imp = bst.get_score(importance_type="total_gain")
     total = sum(imp.values()) or 1.0
     result = {"baselines": reports, "rounds": rounds, "selectedRound": k_best,
-              "extraGainShare": {n: imp.get(n, 0.0) / total for n in EXTRA},
+              "extraGainShare": {n: imp.get(n, 0.0) / total for n in EXTRA + (["hlCritic"] if critic_info else [])},
               "topGain": sorted(((v / total, n) for n, v in imp.items()), reverse=True)[:25]}
     with open(os.path.join(args.out, "report.json"), "w") as f:
         json.dump(result, f, indent=1)
@@ -267,10 +344,121 @@ def fit(args):
     pick = rng.choice(len(m_root), size=min(2000, len(m_root)), replace=False)
     with open(os.path.join(args.out, "parity.jsonl"), "w") as f:
         for i in pick:
-            nz = np.nonzero(d["X"][i])[0]
+            nz = np.nonzero(d["X"][i][:WIDTH])[0]   # v2 features; the native model adds hlCritic
             f.write(json.dumps({"i": nz.tolist(), "v": d["X"][i][nz].astype(float).tolist(),
                                 "value": float(p_best[i])}) + "\n")
     print(json.dumps({"selectedRound": k_best, "manifest": os.path.join(args.out, "heart_leaf.json")}))
+
+
+def load_trees(path):
+    """CompactTreeNet text file -> (feature names, logistic, base, trees as node arrays)."""
+    lines = open(path).read().split("\n")
+    nf = int(lines[0].split()[1])
+    feats = [l.split()[1] for l in lines[1:1 + nf]]
+    i = 1 + nf
+    logistic, base, nt = int(lines[i].split()[1]), float(lines[i + 1].split()[1]), int(lines[i + 2].split()[1])
+    i += 3
+    trees = []
+    for _ in range(nt):
+        n = int(lines[i].split()[2]); i += 1
+        feat = np.full(n, -1, np.int64); thr = np.zeros(n, np.float32); yes = np.zeros(n, np.int64); no = np.zeros(n, np.int64)
+        for k in range(n):
+            t = lines[i + k].split()
+            if t[0] == "L":
+                thr[k] = np.float32(float(t[1]))
+            else:
+                feat[k], thr[k], yes[k], no[k] = int(t[1]), np.float32(float(t[2])), int(t[3]), int(t[4])
+        trees.append((feat, thr, yes, no)); i += n
+    return feats, logistic, base, trees
+
+
+def tree_leaves(model, X):
+    """Per-tree leaf values (float32) for the rows of X, whose columns are in the model's feature order."""
+    _, _, _, trees = model
+    out = np.zeros((len(trees), len(X)), np.float32)
+    rows = np.arange(len(X))
+    for t, (feat, thr, yes, no) in enumerate(trees):
+        node = np.zeros(len(X), np.int64)
+        while True:
+            inner = feat[node] >= 0
+            if not inner.any():
+                break
+            n = node[inner]
+            go_yes = X[rows[inner], feat[n]] < thr[n]
+            node[inner] = np.where(go_yes, yes[n], no[n])
+        out[t] = thr[node]
+    return out
+
+
+def manifest_values(manifest_path, X):
+    """The native HeartLeafModel value for v2 feature rows X (columns NAMES)."""
+    man = json.load(open(manifest_path))
+    base_dir = os.path.dirname(os.path.abspath(manifest_path))
+    for key in ("residual", "critic"):
+        if key in man and sha256(os.path.join(base_dir, man[key])) != man[key + "Sha256"]:
+            raise SystemExit(f"{key} hash mismatch")
+    if man["anchorSha256"] != ANCHOR_SHA:
+        raise SystemExit("manifest anchor is not the pinned X2-B")
+    cols = {n: i for i, n in enumerate(NAMES)}
+    Xf = X.astype(np.float32)
+    if man["featureSchema"] == "heart-leaf-features-v3":
+        critic = load_trees(os.path.join(base_dir, man["critic"]))
+        assert not critic[1]
+        c = np.full(len(X), np.float32(critic[2]), np.float32)
+        for leaf in tree_leaves((None, None, None, critic[3]), Xf[:, [cols[n] for n in critic[0]]]):
+            c = c + leaf                      # float32, tree by tree, like XGBoost
+        Xf = np.c_[Xf, c]
+        cols["hlCritic"] = len(NAMES)
+    elif man["featureSchema"] != "heart-leaf-features-v2":
+        raise SystemExit("unknown feature schema")
+    res = load_trees(os.path.join(base_dir, man["residual"]))
+    assert not res[1]
+    r = res[2] + tree_leaves((None, None, None, res[3]), Xf[:, [cols[n] for n in res[0]]]).astype(np.float64).sum(axis=0)
+    m = man["anchorSlope"] * X[:, COL["x2bMargin"]] + r + man.get("act4Offset", 0.0) * (X[:, COL["hlAct4"]] != 0)
+    return sigmoid(m), man
+
+
+def score(args):
+    allowed = (args.split,)
+    outcomes = load_outcomes(args.runs, allowed=allowed)
+    X, meta = [], []
+    for p in args.roots:
+        with open(p) as fh:
+            for line in fh:
+                r = json.loads(line)
+                if r["seed"] not in outcomes:
+                    continue
+                x = np.zeros(WIDTH, np.float32)
+                x[r["root"]["i"]] = r["root"]["v"]
+                X.append(x)
+                meta.append((r["seed"], r["act"], outcomes[r["seed"]][1]))
+    X = np.stack(X); meta = np.array(meta)
+    d = {"seed": meta[:, 0], "act": meta[:, 1], "z": meta[:, 2].astype(float)}
+    rows = np.ones(len(X), bool)
+    p, man = manifest_values(args.manifest, X)
+    a, b = man["training"]["platt"]
+    m = X[:, COL["x2bMargin"]].astype(np.float64)
+    reps = {"platt": report("x2b_platt", sigmoid(a + b * m), d, rows), "candidate": report("candidate", p, d, rows)}
+    # Paired run bootstrap of the BCE difference (candidate - Platt X2-B), descriptive.
+    u, inv = np.unique(d["seed"], return_inverse=True)
+    cnt = np.bincount(inv)
+    def run_bce(q):
+        q = np.clip(q, 1e-7, 1 - 1e-7)
+        return np.bincount(inv, weights=-(d["z"] * np.log(q) + (1 - d["z"]) * np.log(1 - q))) / cnt
+    diff = run_bce(p) - run_bce(sigmoid(a + b * m))
+    rng = np.random.default_rng(0)
+    boot = diff[rng.integers(0, len(u), size=(2000, len(u)))].mean(axis=1)
+    gate = {"bce": reps["candidate"]["bce_runweighted"] < reps["platt"]["bce_runweighted"],
+            "calibration_acts_1_3": all(abs(reps["candidate"]["acts"][k]["mean_pred"] - reps["candidate"]["acts"][k]["mean_z"]) <= 0.03
+                                        for k in (1, 2, 3) if k in reps["candidate"]["acts"]),
+            "auc": reps["candidate"]["auc_runweighted"] >= reps["platt"]["auc_runweighted"] - 0.01}
+    result = {"split": args.split, "manifestSha256": sha256(args.manifest), "rootSha256": [sha256(r) for r in args.roots],
+              "runs": int(len(u)), "rows": int(len(X)), "reports": reps,
+              "bceDiffRunMean": float(diff.mean()), "bceDiffCi95": [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))],
+              "gate": gate, "verdict": "PASS" if all(gate.values()) else "FAIL"}
+    with open(args.out, "w") as f:
+        json.dump(result, f, indent=1)
+    print(json.dumps({k: result[k] for k in ("split", "runs", "rows", "bceDiffRunMean", "bceDiffCi95", "gate", "verdict")}))
 
 
 def main():
@@ -287,10 +475,20 @@ def main():
     f.add_argument("--depth", type=int, default=5)
     f.add_argument("--min-child", type=float, default=2.0)
     f.add_argument("--threads", type=int, default=4)
+    f.add_argument("--critic", help="heartleaftail rows with heart1Value: add the distilled hlCritic column")
+    f.add_argument("--act4-offset", action="store_true", help="fit one Act-4 logit offset on out-of-fold TRAIN")
     f.add_argument("--inner-holdout", type=int, default=0, help="tune on TRAIN only: seeds %% N == 0 are held out")
+    s = sub.add_parser("score")
+    s.add_argument("--manifest", required=True)
+    s.add_argument("--roots", nargs="+", required=True, help="heartleaftail rows (REPEATS may be 0)")
+    s.add_argument("--runs", nargs="+", required=True)
+    s.add_argument("--split", required=True, choices=["validation", "confirm"])
+    s.add_argument("--out", required=True)
     args = ap.parse_args()
     if args.cmd == "fit":
         fit(args)
+    else:
+        score(args)
 
 
 if __name__ == "__main__":
