@@ -1,0 +1,418 @@
+{
+ "comparison": {
+  "pairs": 512,
+  "excluded": [],
+  "reached_act4": {
+   "H": 124,
+   "C": 137,
+   "discordant_H_only": 46,
+   "discordant_C_only": 59,
+   "mcnemar_p": 0.24143171756517745,
+   "delta": -0.025390625,
+   "delta_ci95": [
+    -0.064453125,
+    0.013671875
+   ]
+  },
+  "label": "NOT_SHOWN",
+  "heart_kills": {
+   "H": 42,
+   "C": 46,
+   "discordant_H_only": 24,
+   "discordant_C_only": 28,
+   "mcnemar_p": 0.6778086391424605,
+   "delta": -0.0078125,
+   "delta_ci95": [
+    -0.03515625,
+    0.021484375
+   ]
+  },
+  "delta_floor_mean": -3.107421875
+ },
+ "arms": {
+  "C": {
+   "units": 512,
+   "act1_deaths": 69,
+   "mcts_cpu_sec_per_decision": 2.6800218948856402,
+   "sec_per_run": 275.4699609375
+  },
+  "H": {
+   "units": 512,
+   "act1_deaths": 114,
+   "mcts_cpu_sec_per_decision": 2.6752691845104506,
+   "sec_per_run": 251.589819140625
+  }
+ },
+ "behaviour": {
+  "C": {
+   "act4_campfire": {
+    "rest": 76,
+    "smith": 48,
+    "lift": 3,
+    "dig": 8,
+    "leave": 2
+   },
+   "act4_campfire_hp_frac_mean": {
+    "rest": 0.902472460088163,
+    "smith": 0.9460619496465495,
+    "lift": 0.9748427672955975,
+    "dig": 0.9261015783847032,
+    "leave": 0.9959677419354839
+   },
+   "act4_campfire_hp_traced": {
+    "rest": 76,
+    "smith": 48,
+    "lift": 3,
+    "dig": 8,
+    "leave": 2
+   },
+   "event_options": {
+    "ANCIENT_WRITING": {
+     "1": 64
+    },
+    "AUGMENTER": {
+     "1": 1,
+     "2": 61
+    },
+    "BIG_FISH": {
+     "0": 18,
+     "1": 53
+    },
+    "COLOSSEUM": {
+     "0": 18,
+     "1": 17
+    },
+    "CURSED_TOME": {
+     "0": 48,
+     "1": 6,
+     "2": 48,
+     "3": 48,
+     "4": 48,
+     "5": 47,
+     "6": 1
+    },
+    "DEAD_ADVENTURER": {
+     "0": 62,
+     "1": 5
+    },
+    "DESIGNER_IN_SPIRE": {
+     "1": 6
+    },
+    "FACE_TRADER": {
+     "0": 33,
+     "1": 1
+    },
+    "FALLING": {
+     "0": 11,
+     "1": 1,
+     "2": 50
+    },
+    "FORGOTTEN_ALTAR": {
+     "1": 56,
+     "2": 7
+    },
+    "GHOSTS": {
+     "0": 9,
+     "1": 49
+    },
+    "GOLDEN_IDOL": {
+     "1": 76
+    },
+    "GOLDEN_SHRINE": {
+     "0": 43
+    },
+    "HYPNOTIZING_COLORED_MUSHROOMS": {
+     "0": 22,
+     "1": 2
+    },
+    "KNOWING_SKULL": {
+     "0": 14,
+     "1": 3,
+     "2": 1,
+     "3": 15
+    },
+    "MASKED_BANDITS": {
+     "1": 64
+    },
+    "MINDBLOOM": {
+     "0": 67
+    },
+    "MYSTERIOUS_SPHERE": {
+     "0": 52,
+     "1": 10
+    },
+    "NEOW": {
+     "0": 181,
+     "1": 224,
+     "2": 107
+    },
+    "NLOTH": {
+     "2": 6
+    },
+    "OLD_BEGGAR": {
+     "1": 4
+    },
+    "OMINOUS_FORGE": {
+     "1": 1
+    },
+    "PLEADING_VAGRANT": {
+     "0": 33,
+     "1": 2,
+     "2": 18
+    },
+    "SCRAP_OOZE": {
+     "0": 167,
+     "1": 5
+    },
+    "SECRET_PORTAL": {
+     "1": 11
+    },
+    "SENSORY_STONE": {
+     "0": 2,
+     "2": 56
+    },
+    "SHINING_LIGHT": {
+     "0": 51,
+     "1": 7
+    },
+    "THE_CLERIC": {
+     "0": 72
+    },
+    "THE_DIVINE_FOUNTAIN": {
+     "0": 4
+    },
+    "THE_JOUST": {
+     "0": 3,
+     "1": 4
+    },
+    "THE_LIBRARY": {
+     "0": 35,
+     "1": 13
+    },
+    "THE_MAUSOLEUM": {
+     "0": 54
+    },
+    "THE_MOAI_HEAD": {
+     "0": 7
+    },
+    "THE_NEST": {
+     "0": 65
+    },
+    "THE_SSSSSERPENT": {
+     "1": 61
+    },
+    "THE_WOMAN_IN_BLUE": {
+     "1": 10,
+     "2": 24
+    },
+    "TOMB_OF_LORD_RED_MASK": {
+     "0": 9,
+     "1": 45,
+     "2": 3
+    },
+    "VAMPIRES": {
+     "0": 3,
+     "2": 55
+    },
+    "WE_MEET_AGAIN": {
+     "0": 29,
+     "2": 14
+    },
+    "WHEEL_OF_CHANGE": {
+     "0": 36
+    },
+    "WINDING_HALLS": {
+     "1": 12,
+     "2": 50
+    },
+    "WING_STATUE": {
+     "1": 33,
+     "2": 4
+    },
+    "WORLD_OF_GOOP": {
+     "0": 58,
+     "1": 11
+    }
+   }
+  },
+  "H": {
+   "act4_campfire": {
+    "lift": 4,
+    "rest": 77,
+    "smith": 40,
+    "leave": 3
+   },
+   "act4_campfire_hp_frac_mean": {
+    "lift": 0.9152078065739571,
+    "rest": 0.8986741367974963,
+    "smith": 0.9374221530302069,
+    "leave": 0.9617313584294441
+   },
+   "act4_campfire_hp_traced": {
+    "lift": 4,
+    "rest": 76,
+    "smith": 39,
+    "leave": 3
+   },
+   "event_options": {
+    "ANCIENT_WRITING": {
+     "1": 58
+    },
+    "AUGMENTER": {
+     "2": 60
+    },
+    "BIG_FISH": {
+     "0": 15,
+     "1": 61
+    },
+    "COLOSSEUM": {
+     "0": 12,
+     "1": 12
+    },
+    "CURSED_TOME": {
+     "0": 45,
+     "1": 1,
+     "2": 45,
+     "3": 45,
+     "4": 45,
+     "5": 43,
+     "6": 2
+    },
+    "DEAD_ADVENTURER": {
+     "0": 70,
+     "1": 2
+    },
+    "DESIGNER_IN_SPIRE": {
+     "1": 8
+    },
+    "FACE_TRADER": {
+     "0": 36,
+     "1": 4
+    },
+    "FALLING": {
+     "0": 11,
+     "2": 49
+    },
+    "FORGOTTEN_ALTAR": {
+     "1": 56,
+     "2": 5
+    },
+    "GHOSTS": {
+     "0": 28,
+     "1": 31
+    },
+    "GOLDEN_IDOL": {
+     "1": 74
+    },
+    "GOLDEN_SHRINE": {
+     "0": 36
+    },
+    "HYPNOTIZING_COLORED_MUSHROOMS": {
+     "0": 21
+    },
+    "KNOWING_SKULL": {
+     "0": 10,
+     "3": 14
+    },
+    "MASKED_BANDITS": {
+     "1": 48
+    },
+    "MINDBLOOM": {
+     "0": 57
+    },
+    "MYSTERIOUS_SPHERE": {
+     "0": 56,
+     "1": 6
+    },
+    "NEOW": {
+     "0": 177,
+     "1": 220,
+     "2": 115
+    },
+    "NLOTH": {
+     "2": 5
+    },
+    "OLD_BEGGAR": {
+     "1": 3
+    },
+    "PLEADING_VAGRANT": {
+     "0": 33,
+     "1": 1,
+     "2": 18
+    },
+    "SCRAP_OOZE": {
+     "0": 170,
+     "1": 2
+    },
+    "SECRET_PORTAL": {
+     "1": 7
+    },
+    "SENSORY_STONE": {
+     "2": 60
+    },
+    "SHINING_LIGHT": {
+     "0": 51,
+     "1": 6
+    },
+    "THE_CLERIC": {
+     "0": 73
+    },
+    "THE_DIVINE_FOUNTAIN": {
+     "0": 1
+    },
+    "THE_JOUST": {
+     "0": 3,
+     "1": 3
+    },
+    "THE_LIBRARY": {
+     "0": 38,
+     "1": 5
+    },
+    "THE_MAUSOLEUM": {
+     "0": 55
+    },
+    "THE_MOAI_HEAD": {
+     "0": 5
+    },
+    "THE_NEST": {
+     "0": 51
+    },
+    "THE_SSSSSERPENT": {
+     "1": 62
+    },
+    "THE_WOMAN_IN_BLUE": {
+     "1": 7,
+     "2": 21
+    },
+    "TOMB_OF_LORD_RED_MASK": {
+     "0": 7,
+     "1": 42,
+     "2": 3
+    },
+    "VAMPIRES": {
+     "2": 54
+    },
+    "WE_MEET_AGAIN": {
+     "0": 30,
+     "2": 8
+    },
+    "WHEEL_OF_CHANGE": {
+     "0": 36
+    },
+    "WINDING_HALLS": {
+     "1": 12,
+     "2": 53
+    },
+    "WING_STATUE": {
+     "1": 36,
+     "2": 6
+    },
+    "WORLD_OF_GOOP": {
+     "0": 60,
+     "1": 16
+    }
+   }
+  }
+ },
+ "nonzero_rc": []
+}

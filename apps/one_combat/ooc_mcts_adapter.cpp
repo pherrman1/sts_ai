@@ -783,6 +783,8 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     auto root = detachedCopy(gc);
     collectForcedRewardGold(root);
 #ifndef STS_LIVE_ADVISOR
+    // The live advisor plays root rules as live actions before searching, so
+    // its root must keep the observed candidate set.
     if (options.treeRules) while (oocTreeRuleStep(root)) {}
 #endif
     auto history = path;
@@ -1540,13 +1542,11 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
             }
         }
     }
-#ifndef STS_LIVE_ADVISOR
     if (options.treeRules && child.gc.outcome == sts::GameOutcome::UNDECIDED) {
         bool applied = false;
         while (oocTreeRuleStep(child.gc)) applied = true;
         if (applied) child.path.update(child.gc);
     }
-#endif
     if (!options.sampleNoncombat && options.checkpointLeaves && !enteredCombat) edge.deterministic = states.size();
     if (t_decisionLog) {
         const auto &source = state(id);
@@ -2230,10 +2230,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             bool applied = false;
             if (options.priorLeafPolicy || options.heart1LeafPolicy) {
                 const std::string screen = t_decisionLog ? logScreen(child.gc) : std::string{};
-#ifndef STS_LIVE_ADVISOR
                 if (options.treeRules && oocTreeRuleStep(child.gc)) applied = true;
                 else
-#endif
                 if (v4DecisionSupported(child.gc)
                         || (options.heart1LeafPolicy && options.heart1Coverage
                             && (heart1FullScreen(child.gc) || options.heart1LeafSelects))) {

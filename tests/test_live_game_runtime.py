@@ -10,7 +10,8 @@ from unittest import mock
 
 from tools.live_game_runtime import (CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS,
     CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME,
-    CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, ARM_C_NAME,
+    CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_WIN_SOURCE, LEGACY_OOC_WIN_NAME,
+    OOC_FLOOR_NAME, ARM_C_NAME,
     ROLLOUT_ROOT_TABLE_NAME, RuntimeFailure, RuntimeManager, sha256)
 
 
@@ -30,7 +31,8 @@ class LiveGameRuntimeTest(unittest.TestCase):
         (models / CTM_NAME).write_bytes(b"ctm")
         (models / CTM_FAST_NAME).write_bytes(b"fast-ctm")
         (models / OOC_NAME).write_bytes(b"ooc")
-        (root_models / OOC_WIN_NAME).write_bytes(b"win")
+        (self.repo / OOC_WIN_SOURCE).parent.mkdir(parents=True, exist_ok=True)
+        (self.repo / OOC_WIN_SOURCE).write_bytes(b"win")
         (root_models / OOC_FLOOR_NAME).write_bytes(b"floor")
         (root_models / ROLLOUT_ROOT_TABLE_NAME).write_bytes(b"root-table")
         subprocess.run(["git", "add", "."], cwd=self.repo, check=True)
@@ -58,6 +60,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual((release / f"models/{OOC_WIN_NAME}").read_bytes(), b"win")
         self.assertEqual((release / f"models/{OOC_FLOOR_NAME}").read_bytes(), b"floor")
         self.assertEqual(manifest["oocWinModelSha256"], sha256(release / f"models/{OOC_WIN_NAME}"))
+        self.assertEqual(manifest["oocWinModelName"], OOC_WIN_NAME)
         self.assertEqual(manifest["oocFloorModelSha256"], sha256(release / f"models/{OOC_FLOOR_NAME}"))
         self.assertEqual((release / f"models/{ROLLOUT_ROOT_TABLE_NAME}").read_bytes(), b"root-table")
         self.assertEqual(manifest["rolloutRootTableSha256"],
@@ -279,9 +282,19 @@ class LiveGameRuntimeTest(unittest.TestCase):
             self.install()
 
     def test_missing_source_win_model_fails_clearly(self):
-        (self.repo / f"models/{OOC_WIN_NAME}").unlink()
+        (self.repo / OOC_WIN_SOURCE).unlink()
         with self.assertRaisesRegex(RuntimeFailure, "tracked OOC win model missing"):
             self.install()
+
+    def test_pre_x2b_release_keeps_its_legacy_win_model_name(self):
+        manifest = self.install()
+        release = self.manager.current.resolve()
+        (release / f"models/{OOC_WIN_NAME}").rename(release / f"models/{LEGACY_OOC_WIN_NAME}")
+        del manifest["oocWinModelName"]
+        (release / "manifest.json").write_text(json.dumps(manifest))
+        self.assertEqual(self.manager.validate_release(), manifest)
+        self.assertEqual(self.manager.desired_config(manifest)["oocWinModel"],
+                         str(self.manager.current / "models" / LEGACY_OOC_WIN_NAME))
 
     def test_missing_source_floor_model_fails_clearly(self):
         (self.repo / f"models/{OOC_FLOOR_NAME}").unlink()
@@ -349,7 +362,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.install()
         source = (Path(__file__).parents[1] / "tools/live_game_start.sh").read_text()
         block = source.split("  # ensure/install validated this manifest;", 1)[1].split(
-            '  if [[ -f "$runtime_root/current/models/v_win_trees.txt"', 1)[0]
+            '  # Public X2-B (ADR-0029)', 1)[0]
         for primary in (CTM_FAST_NAME, None):
             manifest = self.manager.load_manifest()
             if primary is None:
@@ -373,7 +386,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.manager.install(self.advisor, qualified_ctm=True)
         source = (Path(__file__).parents[1] / "tools/live_game_start.sh").read_text()
         block = source.split("  # ensure/install validated this manifest;", 1)[1].split(
-            '  if [[ -f "$runtime_root/current/models/v_win_trees.txt"', 1)[0]
+            '  # Public X2-B (ADR-0029)', 1)[0]
         keys = ("STS_CTM_MODEL", "STS_CTM_BREW_FALLBACK_MODEL", "STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL")
         for override in (None, "", "/explicit/legacy.native"):
             env = {k: v for k, v in os.environ.items() if k not in keys}
