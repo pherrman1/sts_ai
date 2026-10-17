@@ -42,3 +42,28 @@ Dagger fights it is neutral-to-better, but the preregistered margin was tighter
 than 24 sources can resolve. Lifting the A0 guard needs one of two things:
 - an explicit owner override, recorded with this evidence; or
 - a new protocol with a powered non-regression check (more VALIDATION sources).
+
+## Owner override and research candidate (2026-10-17)
+
+Philipp chose to override the failed criterion 4 ([decision.json](decision.json)).
+`ctm_ritual_refit.py package` re-identified both refit artifacts as research
+candidate `pathb-r2-ritual-refit`. It added the `writhingRitual` capability,
+dropped the `writhing_ritual_intersection` exclusion and re-bound the fast
+artifact's control to the new standard artifact. It also recorded the override in
+each header's `ritualRefit` field and wrote the v3 manifest
+([package.json](package.json)). The files are tracked under `selfplay/models/`:
+- fast `3bbff6b6…`
+- standard `2f0f5d97…`
+- manifest `combat_transition_pathb_r2_ritual_refit_manifest.json`, SHA-256 `1a13abb7…`
+
+Native check with `combat_transition_runtime_probe`:
+- `--pair-identity` loads the pair with active Lizard (`identity=pathb-r2-ritual-refit`).
+- `--benchmark` on 518 corrected Writhing + Dagger VALIDATION states supports and
+  samples all of them through the hybrid: 334 fast, 184 Brew fallback.
+- The deployed pair supports none of these states.
+
+This is not the default stack. Selecting it needs the env in `package.json`:
+`STS_OOC_MCTS_COMBAT_MODEL`, `STS_OOC_MCTS_BREW_FALLBACK_MODEL`,
+`STS_OOC_MCTS_ACTIVE_LIZARD=1` and the manifest pair. Python/native parity of
+the new Ritual tensors was not run separately; the scorer code and tensor
+shapes are unchanged.

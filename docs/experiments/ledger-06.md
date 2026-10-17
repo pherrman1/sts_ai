@@ -19916,3 +19916,7 @@ games to prove it to the margin we set in advance.
 
 **Evidence:** [protocol, fit, tensors and VALIDATION scores](evidence/ctm_ritual_refit_20261017/REPORT.md).
 **Knowledge impact:** deployed Ritual heads are miscalibrated on corrected data; exposure-gap gate cannot detect it.
+**Override (2026-10-17):** Philipp accepted the refit with criterion 4 waived.
+It is packaged as research candidate `pathb-r2-ritual-refit` with `writhingRitual`.
+The native runtime supports and samples all 518 checked Writhing+Dagger
+VALIDATION states, where the deployed pair supports none. It is not the default stack.
