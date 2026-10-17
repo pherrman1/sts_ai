@@ -741,8 +741,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             require(type == CardType::ATTACK || type == CardType::SKILL
                     || type == CardType::POWER || type == CardType::CURSE,
                     "non-permanent card in deck");
-            // Reconstruct bookkeeping without acquisition effects or obtainRaw's
-            // historical double-counting. Match ordinary Deck::obtain state.
+            // Reconstruct bookkeeping without acquisition effects.
+            // Match ordinary Deck::obtain state.
             g.deck.cards.push_back(c);
             if (type != CardType::CURSE || c.canTransform()) {
                 ++g.deck.cardTypeCounts[static_cast<int>(type)];
