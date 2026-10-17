@@ -206,6 +206,40 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def _pile_display_only_change(screen: Mapping[str, Any], game: Mapping[str, Any],
+                              current_screen: Mapping[str, Any], current_game: Mapping[str, Any]) -> bool:
+    """Classify a cached positive stat appearing/disappearing; never authorize a click."""
+    if not (_is_combat(screen) and _is_combat(current_screen)
+            and screen.get("screen_type") == current_screen.get("screen_type") == "NONE"):
+        return False
+    before = {"screen": _canonical_combat_piles(screen), "game": _canonical_combat_piles(game)}
+    after = {"screen": _canonical_combat_piles(current_screen), "game": _canonical_combat_piles(current_game)}
+    changed = False
+    def strip_display_pair(left, right):
+        nonlocal changed
+        for pile in ("draw_pile", "discard_pile"):
+            a, b = left.get(pile), right.get(pile)
+            if not (isinstance(a, list) and isinstance(b, list) and len(a) == len(b)):
+                continue
+            for old, new in zip(a, b):
+                if not (isinstance(old, dict) and isinstance(new, dict)):
+                    continue
+                for stat in ("damage", "block", "magic_number"):
+                    if (stat in old) == (stat in new) or "base_" + stat in old or "base_" + stat in new:
+                        continue
+                    value = old.get(stat, new.get(stat))
+                    if type(value) is int and value > 0:
+                        old.pop(stat, None)
+                        new.pop(stat, None)
+                        changed = True
+        for key in ("combat_state", "combatState"):
+            if isinstance(left.get(key), dict) and isinstance(right.get(key), dict):
+                strip_display_pair(left[key], right[key])
+    for key in before:
+        strip_display_pair(before[key], after[key])
+    return changed and _without_readiness(before) == _without_readiness(after)
+
+
 def _ready(value: Any) -> bool:
     data = _mapping(value)
     return data.get("ready_for_command", data.get("readyForCommand", True)) is True
@@ -1376,8 +1410,9 @@ class Driver:
         # The second selection closes this mandatory grid automatically.
         return result
 
-    async def step(self, step: int) -> bool:
+    async def step(self, step: int, _display_refreshes: int = 0) -> bool:
         started = time.monotonic()
+        previous_inspector = self.previous_inspector
         self.context = {"step": step, "timestamp": datetime.now(timezone.utc).isoformat()}
         row = self.context
         screen, commands, game_state = await self.read_ready_snapshot()
@@ -1563,6 +1598,18 @@ class Driver:
         if transition_identity(current_screen, current_game) != transition_identity(screen, game_state):
             row["observed_state"] = {"screen": screen, "game_state": game_state}
             row["pre_action_state"] = {"screen": current_screen, "game_state": current_game}
+            if (not self.differential_trace and row.get("decision_source") == "silver"
+                    and _display_refreshes < 3
+                    and _pile_display_only_change(screen, game_state, current_screen, current_game)):
+                # No action occurred. Discard this decision and correlate/map a
+                # fresh snapshot; do not weaken the pre-click state identity.
+                self.previous_inspector = previous_inspector
+                self.counters["silver_ok"] -= 1
+                self.counters["combat_display_refreshes"] += 1
+                row.update(decision_source="combat_display_refresh", display_refresh=_display_refreshes + 1)
+                self.trace.write(row)
+                await asyncio.sleep(self.poll_interval)
+                return await self.step(step, _display_refreshes + 1)
             raise DriverError("MCP state changed while awaiting the advisor; no action executed")
         if action.mcp_tool not in {"select_cards_transaction", "select_grid_transaction"} and action.mcp_tool not in _tool_names(current_commands):
             raise DriverError("selected MCP command is no longer advertised; no action executed")

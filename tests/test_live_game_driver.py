@@ -976,6 +976,59 @@ class OocDriverTest(unittest.TestCase):
             self.assertFalse(any(tool in {"choose", "skip"} for tool, _ in client.calls))
             self.assertIsNotNone(driver.failure_path)
 
+    def test_cached_pile_stat_appearance_restarts_decision_before_clicking(self):
+        for drift in ("display", "hp", "hand", "cost", "uuid", "zero", "positive_change", "oscillating"):
+            with self.subTest(drift=drift), tempfile.TemporaryDirectory() as directory:
+                from copy import deepcopy
+                screen = combat_screen(session="s", sequence=1, observationHash="h")
+                before = {"current_hp": 80, "discard_pile": [
+                    {"id": "Anger", "uuid": "anger-copy", "cost": 0}]}
+                after = deepcopy(before)
+                after["discard_pile"][0]["damage"] = 6
+                if drift == "hp": after["current_hp"] = 79
+                if drift == "hand": after["hand"] = [{"uuid": "another-card"}]
+                if drift in {"cost", "uuid"}: after["discard_pile"][0][drift] = "changed"
+                if drift == "zero": after["discard_pile"][0]["damage"] = 0
+                if drift == "positive_change":
+                    before["discard_pile"][0]["damage"] = 6
+                    after["discard_pile"][0]["damage"] = 9
+                client = FakeClient(screen, ["play_card"], game_state=before)
+                original = client.call
+                reads = []
+                async def call(tool, arguments=None):
+                    if tool == "get_game_state":
+                        reads.append(tool)
+                        if drift == "oscillating":
+                            return deepcopy(before if len(reads) % 2 else after)
+                        return deepcopy(before if len(reads) == 1 else after)
+                    return await original(tool, arguments)
+                client.call = call
+                reader = InspectorReader(inspector_file(directory, "OK", selectedLiveAction={
+                    "kind": "card", "cardUuid": "strike-1", "targetIndex": 1}), timeout=.02)
+                original_read = reader.read_for
+                advisor_reads = []
+                async def read_for(state, previous=None):
+                    advisor_reads.append(state)
+                    self.assertFalse(any(tool == "play_card" for tool, _ in client.calls))
+                    return await original_read(state, previous)
+                reader.read_for = read_for
+                trace = TraceWriter(Path(directory) / "trace")
+                driver = Driver(client, reader, trace, strict_silver=True, max_steps=1,
+                                poll_interval=.001, poll_timeout=.05)
+                if drift == "display":
+                    asyncio.run(driver.run())
+                    self.assertEqual(len(advisor_reads), 2)
+                    self.assertEqual(sum(tool == "play_card" for tool, _ in client.calls), 1)
+                    rows = [json.loads(line) for line in trace.path.read_text().splitlines()]
+                    self.assertEqual(rows[0]["decision_source"], "combat_display_refresh")
+                    self.assertNotIn("executed_mcp_tool", rows[0])
+                    self.assertEqual(driver.counters["silver_ok"], 1)
+                else:
+                    with self.assertRaisesRegex(DriverError, "changed while awaiting"):
+                        asyncio.run(driver.run())
+                    self.assertFalse(any(tool == "play_card" for tool, _ in client.calls))
+                    self.assertEqual(len(advisor_reads), 4 if drift == "oscillating" else 1)
+
     def test_missing_ooc_snapshot_cannot_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, path = self.make(directory)

@@ -1217,6 +1217,17 @@ The producer marks `orphanedHandSelection`; native import refuses it with
 `silver_orphaned_hand_selection` before searching incomplete piles. It never
 deduplicates card UUIDs or mutates the game to repair an abandoned selection.
 
+MCP can advertise readiness before a Soul animation initializes a newly created
+card's cached damage/block/magic display in draw or discard. If the pre-click
+check changes only by the presence of a positive cached stat in those piles,
+the driver discards the unexecuted Silver decision and reads/correlates/maps a
+fresh snapshot. It allows at most three consecutive refreshes per action and
+traces each as `combat_display_refresh`; discarded decisions do not count as
+accepted Silver actions. The state identity itself stays strict. Changes to
+HP, energy, hand, costs, UUIDs, order, base fields or two different present
+stat values still stop before mutation. Zero/absent ambiguity remains strict,
+and differential replay does not use this refresh path.
+
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
 rewards or proceeds instead of reopening the skipped group. These identities
