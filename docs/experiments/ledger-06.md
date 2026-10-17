@@ -19729,6 +19729,77 @@ candidate needs genuinely fresh prospective holdout evidence. Stop before native
 integration. **Knowledge impact:** current development-weighting evidence,
 cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.
 
+## §501 — development value-head comparison on the frozen Arm C cache
+
+**REPRESENTATION_LOSS_SIGNAL; EARLY_WEIGHTING_NOT_SHOWN; MORE_SOURCES_SIGNAL
+(fragile)** (2026-10-17). Philipp authorized the run. Pre-registered protocol
+(263025f/ae39f38) on the §498 cache and §497 TRAIN/VALIDATION only: 1,080/360
+sources, 126/47 wins. No TEST, encoder forward, game seeds, native or default
+change. Fourteen fits of the §500 recipe (AdamW, 2,000 updates, inits 0/1,
+VALIDATION visitation BCE selection) at source `ae39f38` on Philipp's RTX 3060
+Ti, 79.7 s, exit 0, tests 18/18. Arm A reproduces §500's 0.453411 to 6.8e-8.
+
+| VALIDATION arm | Visitation BCE | Brier | AUROC | Δ BCE vs A, 95% |
+| --- | ---: | ---: | ---: | --- |
+| A equal-state, pooled 64 | 0.45341 | 0.14116 | 0.669 | – |
+| B act-1 states ×2 | 0.45169 | 0.14122 | 0.675 | −0.0017 [−0.0092, +0.0055] |
+| C pooled + 37 public scalars/counts | 0.42983 | 0.13425 | 0.725 | −0.0236 [−0.0414, −0.0062] |
+| D public block only | 0.44878 | 0.14011 | 0.660 | −0.0046 [−0.0255, +0.0161] |
+
+- Early bias (start/floor 8/floor 16, pp): A −1.09/−2.32/−4.18; B
+  −4.85/−2.46/−5.15 (worse everywhere); C −2.69/−2.79/+2.25.
+- Learning curve, VALIDATION BCE (two nested draws): 135 sources
+  0.491/0.492, 270 0.470/0.464, 540 0.448/0.464, 1,080 0.453. The rule fires,
+  but draw 0 at 540 beats the full fit and small-subset fits select at step
+  100, so 540 → 1,080 is unresolved.
+- Encoder audit (silverbot 84ab3ea network.py): relic counters, battle
+  encounter, memory slots and act are not inputs; the value input is a mean
+  over all tokens. **Inference:** the frozen pooled representation drops value
+  information that a plain scalar/count block restores.
+
+Intervals are descriptive, not adjusted for selection or reused VALIDATION.
+Not a search-leaf qualification; selected heads exported for the §502 sibling
+harness. §502 found their sibling concordance at 0.507–0.530 vs X2-B 0.601
+(PR #582), so the outcome-BCE gain gives no search utility. Any candidate
+needs the fresh sealed cohort.
+[Report](evidence/heart_outcome_dev_compare_20261017/REPORT.md). **Knowledge
+impact:** current outcome-head development evidence and the new cache-plus-
+public-block tool; no default change.
+
+## §502 — §498 outcome head as a sibling-leaf ranker (2026-10-17)
+
+**HEAD_RANKS_WORSE_THAN_X2B** (offline, zero game seeds, no fits). Workstream 2 of the
+post-§500 plan: does the observed-outcome head order the sibling leaves MCTS compares?
+The frozen §498 head (`head.json` `2c478bca…`) was applied to the Arm C student's pooled
+value-head input, now exported by `one_combat heart1score`. Native parity first: on the
+8 VALIDATION sources of delivery `w00` (1,219 states) the C++ student plus head
+reproduces §498's per-source mean probability to 3.9e-9.
+
+Groups: the 48 §494 TRAIN+VALIDATION sources (110164000–047; 21,291 leaves, 777
+multi-action groups), §494 group metrics against 64-rollout means, paired source
+bootstrap (2,000, RNG 20261017). The §494 TEST and the consumed §499 TEST were not read.
+
+| 777 groups | Concordance | Regret |
+| --- | ---: | ---: |
+| §498 outcome head | 0.527 | 0.0374 |
+| X2-B | 0.601 | 0.0278 |
+| One rollout3 | 0.565 | 0.0305 |
+
+Head − X2-B concordance −0.074 [−0.097, −0.048], regret +0.0096 [+0.0057, +0.0140];
+head − one rollout3 concordance −0.038 [−0.068, −0.007]. Same sign on TRAIN and
+VALIDATION separately. Act 1 0.504 vs X2-B 0.622; card rewards 0.506 vs 0.584; the head
+leads only on map screens (0.618 vs 0.524). Targets are rollout surrogates ending in
+X2-B and favour X2-B; they are not Heart outcomes. **Inference:** the head does not
+resolve one-step sibling differences, and marginal calibration fixes would not change
+that. Not a qualified leaf; no native leaf option, gameplay or default change.
+
+The four §501 development heads (`a30643d`; start-landmark parity on 360 VALIDATION runs
+≤3.7e-9) do no better: concordance equal 0.507, early 0.520, pooled+public 0.521, public
+only 0.530, each below X2-B with the 95% upper bound ≤ −0.040. Pooled+public's VALIDATION
+BCE gain does not transfer to sibling ordering.
+[Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
+**Knowledge impact:** observed-outcome leaf status and native public-record parity.
+
 ## §503 — Heart-outcome collection round 2: root trace and prepared cohort
 
 **COLLECTED: 2,048/2,048 sources delivered and verified; every TRAIN/VALIDATION
@@ -19798,3 +19869,29 @@ Collection record (2026-10-17):
 
 **Knowledge impact:** root-trace capture contract added to the maintained OOC
 label pipeline page.
+
+## §504 — §494 rollout student as the OOC MCTS leaf vs rollout3 at A20 (2026-10-17)
+
+**S WORSE, S3 NOT_SHOWN; no default change.** Pre-registered paired A/B
+([plan](evidence/rollout_student_leaf_20261017/PLAN.md)), authorized by Philipp (2026-10-17 08:20Z "3 arms on 8
+workers"), independent pre-launch review PASS. 128 fresh A20 seeds 111000400–527, full runs with keys (Heart
+objective), Arm C environment (`studentc.bin` heart1 prior and leaf policy, native leaf, 3 leaf combats, cpuct 1.5,
+widen 4/0.75, depth 32, early stop, tree rules, 8 public futures, fair play, exact Silver). Arms: C rollout3 leaf at
+512 simulations; S `STS_OOC_MCTS_LEAF_STUDENT` (the PR 584 native §494 student, `653db96e…`) at 512; S3 the student
+at 1536. Run commit `2efd7f35`, code `2709f712`, binary `4004a823…` on 8 hosted workers; 384/384 units rc 0, no
+exclusions; 0 student fallbacks in 9.0M student leaf evaluations.
+
+| Arm | Reached Act 4 | Heart kills | Act-1 deaths | Mean floor | MCTS CPU s/decision | Wall s/run |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| C rollout3, 512 | 45 | 20 | 18 | 39.9 | 4.44 | 453 |
+| S student, 512 | 31 | 12 | 34 | 35.4 | 1.11 | 142 |
+| S3 student, 1536 | 32 | 12 | 30 | 36.1 | 3.25 | 313 |
+
+Primary endpoint, reached Act 4 (CSV `act` ≥ 4): S − C −10.9 pp [−20.3, −1.6] (seed bootstrap 2,000,
+RNG 20261017), discordant 11 vs 25, exact McNemar p = 0.029, **WORSE**; S3 − C −10.2 pp [−19.5, 0.0], 14 vs 27,
+p = 0.060, **NOT_SHOWN**. Floors −4.48 and −3.80. No run in any arm cleared Act 3 without the keys. S3 used
+0.73x the control's MCTS CPU per decision, not the planned ~1x. **Inference:** the deficit sits mostly in act 1, and
+more simulations with the cheap leaf do not recover it. In play the student, distilled from rollout3 leaf means,
+is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
+[Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
+**Knowledge impact:** learned OOC leaf status in current-research.
