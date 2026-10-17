@@ -87,8 +87,9 @@ New ledger entries and ADRs use placeholders (`§TBD`, `§TBD-b`, `ADR-TBD`, fil
 `decisions/TBD-<slug>.md`). The session that merges the PR runs
 `python3 tools/ledger_assign.py assign` on the branch after merging main (`--skip`
 lists numbers reserved by work still in flight) and commits the result.
-`python3 tools/ledger_assign.py check <reviewed-sha> <new-sha>` (with the same
-`--skip`/`--skip-adr`) recomputes the numbering against current main and confirms
+Commit with the message `assign` prints, which records the skip lists.
+`python3 tools/ledger_assign.py check <reviewed-sha> <new-sha>` (it reads the
+skip lists from that message) recomputes the numbering against current main and confirms
 that the new head differs from the reviewed one only by a clean main merge and
 exactly that numbering. After a PASS, that merge-plus-numbering commit is the only
 push allowed without a delta review. Placeholders inside `code spans`, fenced
