@@ -1,0 +1,21 @@
+# E_d64_sel_xin parity (2026-10-17, local 3060 Ti)
+code: origin/main 65190792 (contains 360055d0); one_combat Release, CMAKE_POLICY_VERSION_MINIMUM=3.5
+data: claude/heart1-distill-data 814aa76a; tars sha256 OK; extracted path w0N/out/ (brief said x/out/)
+silverbot: daniel-ziegler/sts_lightspeed 84ab3ea
+
+## Step 1: student C export
+c.bin sha256 eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509 == studentc.bin (no heart1score compare needed)
+
+## Step 2: gate P (pert.pt from student_inputs.py perturb)
+pert.bin sha256 a8c948fa5cd4fbb63d27b31e4014821551547341e58d811d37e11f6d7c739f04
+lines=390 count_mismatch(torch,native)=0 max|torch-native|=8.941e-06
+pert vs c.bin (native): count_mismatch=0 max|pert-c|=3.7339 lines_moved=390/390
+GATE P: PASS
+
+## Step 3 deviation
+Brief's --mult 2 failed loading --init (student C is mult 4, hidden 256). Rerun with --mult 4, approved by Philipp. All other flags as in brief.
+
+## Post-train check: student_sel (torch vs native, same 390 records; 'pert' row = student_sel vs c.bin)
+lines=390 count_mismatch(torch,native)=0 max|torch-native|=8.821e-06
+pert vs c.bin (native): count_mismatch=0 max|pert-c|=25.7022 lines_moved=390/390
+GATE P: PASS
