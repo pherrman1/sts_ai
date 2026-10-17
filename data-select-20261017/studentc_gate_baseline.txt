@@ -1,0 +1,13 @@
+c.jsonl
+   ('new', 'all') 117058 57.20%
+   ('new', 'node', 'act1') 30129 90.12%
+   ('new', 'node', 'act2') 33475 85.27%
+   ('new', 'node', 'act3') 7710 81.95%
+   ('new', 'node', 'act4') 121 67.77%
+   ('new', 'select', 'DUPLICATE') 272 46.69%
+   ('new', 'select', 'OBTAIN') 776 78.48%
+   ('new', 'select', 'REMOVE') 19782 0.06%
+   ('new', 'select', 'TRANSFORM') 1823 0.11%
+   ('new', 'select', 'TRANSFORM_UPGRADE') 1124 0.00%
+   ('new', 'select', 'UPGRADE') 21846 18.80%
+   ('old', 'all') 126045 92.99%
