@@ -17,10 +17,12 @@
 #include "constants/Events.h"
 #include "game/Map.h"
 #include "game/Neow.h"
+#include "sim/search/RunGoal.h"
 
 using namespace sts;
 using GA = sts::search::GameAction;
 using RT = sts::search::GameAction::RewardsActionType;
+extern bool g_collectKeys;
 
 namespace one_combat::heart1 {
 namespace {
@@ -273,7 +275,10 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
     out = Choice{};
     Record &r = out.record;
     std::vector<GA> cardActs, relicActs, potionActs, fixedActs, pathActs;
-    const auto actions = GA::getAllActionsInState(gc);
+    auto actions = GA::getAllActionsInState(gc);
+    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const GA &a) {
+        return !search::heartKeyActionAllowed(gc, g_collectKeys, a);
+    }), actions.end());
     const auto fixed = [&](const FixedChoice &c, const GA &a) {
         r.fixedActions.push_back(c);
         fixedActs.push_back(a);

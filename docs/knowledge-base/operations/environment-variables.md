@@ -147,6 +147,10 @@ enable flag:
 | `STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC` | — | −1.0 | `main` |
 | `STS_OOC_STRATEGIC_MARGIN_MAP` | — | −1.0 | `main` |
 | `STS_COLLECT_KEYS` | Heart objective: mandatory Emerald/Sapphire rewards, Act-3 Ruby Recall and a final-act route to the visible burning elite. Explicit `0` restores keys-off play; any value other than `0` or `1` is fatal (an empty value or `true` used to turn keys off). | `1` (on in `one_combat`) | `one_combat::main`, `heartKeyAction` |
+| `STS_KEY_SAPPHIRE` | Sapphire timing under `STS_COLLECT_KEYS`: `first` (ADR-0041, first chest), `act3` (keep earlier chest relics, take the key at the first Act-3 chest), `policy` (policy decides; Act-3 treasure row backstop). | `first` | `heartKeyRules` (`RunGoal.cpp`) |
+| `STS_KEY_RUBY` | Ruby Recall timing: `first` (ADR-0041, first Act-3 campfire), `hp` (first Act-3 campfire at HP ≥ `STS_KEY_RUBY_MIN_HP`, else the pre-boss row), `policy` (policy decides; pre-boss row backstop). | `first` | `heartKeyRules` |
+| `STS_KEY_RUBY_MIN_HP` | HP fraction for `STS_KEY_RUBY=hp`. | `0.6` | `heartKeyRules` |
+| `STS_KEY_EMERALD` | Act-3 Emerald route: `first` (ADR-0041, first legal reaching edge), `mask` (policy/MCTS chooses among edges that still reach the burning elite), `policy` (alias of `mask`). In Acts 1-2 the policy always decides whether to take the burning elite. | `first` | `heartKeyRules` |
 
 ## OOC model-driven decisions
 
