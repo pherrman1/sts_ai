@@ -79,6 +79,13 @@ int main() {
         mask.relics.add(RelicInstance{RelicId::THE_COURIER, 0});
         mask.relics.add(RelicInstance{RelicId::MEMBERSHIP_CARD, 0});
         require(Shop::getRemoveCost(mask) == 50, "Smiling Mask removal was discounted");
+        // Buying Membership Card with Smiling Mask keeps the removal at 50.
+        auto maskShop = gc;
+        maskShop.relics.add(RelicInstance{RelicId::SMILING_MASK, 0});
+        maskShop.info.shop.setup(maskShop);
+        maskShop.info.shop.relics[0] = RelicId::MEMBERSHIP_CARD;
+        maskShop.info.shop.buyRelic(maskShop, 0);
+        require(maskShop.info.shop.removeCost == 50, "Membership purchase discounted Smiling Mask removal");
 
         setenv("STS_SHOP_RULES_FIX", "0", 1);
         const auto l15 = shopAt(15), l16 = shopAt(16);
@@ -96,6 +103,12 @@ int main() {
         legacyMask.relics.add(RelicInstance{RelicId::SMILING_MASK, 0});
         legacyMask.relics.add(RelicInstance{RelicId::THE_COURIER, 0});
         require(Shop::getRemoveCost(legacyMask) == 40, "legacy: Smiling Mask removal must take Courier");
+        auto legacyMaskShop = shopAt(20);
+        legacyMaskShop.relics.add(RelicInstance{RelicId::SMILING_MASK, 0});
+        legacyMaskShop.info.shop.setup(legacyMaskShop);
+        legacyMaskShop.info.shop.relics[0] = RelicId::MEMBERSHIP_CARD;
+        legacyMaskShop.info.shop.buyRelic(legacyMaskShop, 0);
+        require(legacyMaskShop.info.shop.removeCost == 25, "legacy: Membership purchase must halve Smiling Mask removal");
         unsetenv("STS_SHOP_RULES_FIX");
         std::cout << "shop_rules_fix: OK\n";
         return 0;
