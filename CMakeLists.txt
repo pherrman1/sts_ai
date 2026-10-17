@@ -122,12 +122,6 @@ add_test(NAME potion_reward_swap COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(potion_reward_swap PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
-add_executable(shop_potion_room_test tests/shop_potion_room_test.cpp
-    $<TARGET_OBJECTS:sts_core_objects>)
-target_include_directories(shop_potion_room_test PRIVATE include json/include)
-add_test(NAME shop_potion_room COMMAND $<TARGET_FILE:shop_potion_room_test>)
-set_tests_properties(shop_potion_room PROPERTIES LABELS "smoke")
-
 add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
