@@ -1082,7 +1082,10 @@ any purchase; removing sold slots before indexing changes card identities.
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have
 holes after Slime Boss splits or a summon replaces an occupant; array position
-is not a native slot. Missing/dead targets, duplicate slots and contradictory
+is not a native slot. Once a dead Slime Boss has been observed replaced by
+its large children, the producer remembers that physical parent's retirement
+through subsequent splits and deaths; it cannot reappear with slot -1 after
+the large children leave the list. Missing/dead targets, duplicate slots and contradictory
 slot/idx fields are rejected for both card and potion actions.
 
 In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.

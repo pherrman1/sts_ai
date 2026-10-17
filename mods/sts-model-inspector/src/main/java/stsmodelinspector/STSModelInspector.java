@@ -1539,16 +1539,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    static <T> boolean replacedSlimeBossParent(String encounter, String id, T identity,
+            boolean dead, boolean liveLargeChild, Set<T> replaced) {
+        if (!"SLIME_BOSS".equals(encounter) || !"SlimeBoss".equals(id) || identity == null || !dead) return false;
+        // The original Java parent stays in MonsterGroup after replacement.
+        // Keep its retirement when the large children later split or die.
+        if (liveLargeChild) replaced.add(identity);
+        return replaced.contains(identity);
+    }
+
     private static boolean replacedSlimeBossParent(String encounter,
                                                     AbstractMonster candidate,
                                                     List<AbstractMonster> monsters) {
-        if (!"SLIME_BOSS".equals(encounter) || candidate == null
-                || !"SlimeBoss".equals(candidate.id) || !candidate.isDeadOrEscaped()) return false;
+        if (candidate == null) return false;
+        boolean liveLargeChild=false;
         for (AbstractMonster monster : monsters) {
             if (monster == null || monster == candidate || monster.isDeadOrEscaped()) continue;
-            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) return true;
+            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) liveLargeChild=true;
         }
-        return false;
+        return replacedSlimeBossParent(encounter,candidate.id,candidate,candidate.isDeadOrEscaped(),
+                liveLargeChild,replacedMonsterParents);
     }
 
     private static int preferredMonsterSlot(String encounter, String id, int sameIdOrdinal,

@@ -7,7 +7,22 @@ import com.google.gson.JsonObject;
 
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
+    private static void verifyRetiredSlimeBoss() {
+        Object boss=new Object();java.util.Set<Object> retired=new java.util.HashSet<>();
+        if(!STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","SlimeBoss",boss,true,true,retired))
+            throw new AssertionError("initial boss split parent was retained");
+        // Once both large children split (or die), they no longer prove the
+        // original parent's retirement in the current monster list.
+        if(!STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","SlimeBoss",boss,true,false,retired))
+            throw new AssertionError("boss parent resurrected after both large children split");
+        if(STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","SlimeBoss",boss,false,false,retired)
+                || STSModelInspector.replacedSlimeBossParent("LARGE_SLIME","SlimeBoss",boss,true,true,retired)
+                || STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","SlimeBoss",new Object(),true,false,retired)
+                || STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","AcidSlime_L",boss,true,true,retired))
+            throw new AssertionError("unqualified parent was hidden");
+    }
     public static void main(String[] args) {
+        verifyRetiredSlimeBoss();
         // Later-turn Warcry has a stale monsterAttacksQueued=true even with
         // no enemy/pre-turn work. Only the actual player end-turn lifecycle
         // flags can prohibit an otherwise qualified player selection.
