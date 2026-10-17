@@ -27,6 +27,15 @@ namespace sts {
         static constexpr int SMILING_MASK_PRICE = 50;
         static constexpr float COURIER_FACTOR = 0.80f;
         static constexpr float MEMBERSHIP_CARD_FACTOR = 0.50f;
+        static constexpr float ASCENSION_16_FACTOR = 1.10f;
+
+        // STS_SHOP_RULES_FIX: unset or 1 (default) follows the game's ShopScreen:
+        // ascension 16+ raises prices by 10%, Courier restocks are priced, and a
+        // potion is bought only into a free slot without Sozu. 0 restores the
+        // legacy rules (ascension 16+ x0.8, 1-gold Courier potions, unpriced
+        // Courier relics, Courier twice on restocked cards, potions lost to a
+        // full belt). Other values are fatal.
+        static bool rulesFixEnabled();
 
         void setup(GameContext &gc);
         void setupCards(GameContext &gc);
