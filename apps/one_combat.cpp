@@ -6,6 +6,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/rollout_student.h"
 #include "one_combat/heart_outcome_capture.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
@@ -3880,6 +3881,8 @@ int main(int argc, char **argv) {
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits
         return one_combat::heart1::replayCommand(argc, argv);
+    } else if (mode == "rolloutstudentscore") {  // §494 rollout student parity on captured sibling rows
+        return one_combat::rolloutStudentScoreCommand(argc, argv);
     } else if (mode == "winnettest") {    // validate C++ WinNet (OOC win trees) vs Python predictions
         // Reads a tierb-schema CSV (state block between `chosen` and `won`),
         // runs the native WinNet on the rich state of each row, and prints
