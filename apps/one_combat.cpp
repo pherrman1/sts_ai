@@ -3120,7 +3120,8 @@ static bool envSwitch(const char *name, bool fallback) {
     if (!value) return fallback;
     if (std::strcmp(value, "1") == 0) return true;
     if (std::strcmp(value, "0") == 0) return false;
-    throw std::runtime_error(std::string(name) + " must be 0 or 1 when set");
+    std::cerr << "error: " << name << " must be 0 or 1 when set\n";
+    std::exit(2);
 }
 
 int main(int argc, char **argv) {
@@ -3167,6 +3168,9 @@ int main(int argc, char **argv) {
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 
+    // Action.cpp reads this switch lazily, mid-run; check it here so a bad
+    // value stops the run at startup instead of failing inside a search.
+    envSwitch("STS_MULTISELECT_CANONICAL", true);
     g_collectKeys = envSwitch("STS_COLLECT_KEYS", true);  // Whole-run objective: collect keys and defeat the Heart.
     std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
 

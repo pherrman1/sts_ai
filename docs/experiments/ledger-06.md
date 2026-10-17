@@ -20245,3 +20245,66 @@ one; not tested.
 The pre-launch reviewer used 111139400–111139411.
 **Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
 `operations/environment-variables.md`.
+
+## §518 — Silver chance-node widening per category at A20 (spire-mentor constants): all three labels NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "spire-mentor engine ideas"):** after reading tfriedel/spire-mentor (STS2,
+MIT), which uses separate progressive-widening constants for end-of-turn and other chance nodes and reports
++6.35 pp full-run win rate from that: "yes lets try"; 20:01Z: "use the gen6 prior thing with 2.5k simulations and
+the 4 arms. then use 8 workers."
+**Design:** [PREREG](evidence/silver_widening_a20_518_20261017/PREREG.md), independent pre-launch and delta review
+PASS (PR #622). Research-only armset `widen518` of fight-level `ctmsilvergen` sets the existing per-arm
+`g_nativeSilverSearchParamOverride`; no production path changes. All arms Silver at exact 2,500 simulations with
+g6_E (`ca9bd7f2…`) as root prior (weight 400) and tree prior (K = 8): `base2500` both categories C 3.7028,
+alpha 0.52389; `endwide2500` end-turn C doubled (7.4056); `othernarrow2500` other chance nodes C 2, alpha 0.5;
+`spire2500` othernarrow plus end turn C 5.79, alpha 0.44. A20, sources by plain exact-10k Silver with student C
+(`eff2f74f…`) out of combat, keys flag off, `STS_SILVER_LEARNED_STOP=0`, hallway every 3rd, R = 2 redraws paired
+across arms, §479 fight score, bootstrap over source seeds. RUN_COMMIT `90133e7e` (code `32bb3552` = main
+`14845363` incl. #613, binary `49a3e18a…`), seeds 111180100–111180355, 8 workers × 32.
+**Result: NOT_SHOWN on all three labels.** 256/256 sources, 32/32 shards rc=0, 8 tars verified from a second
+container; 3,043 valid fights (615 boss, 1,310 elite, 982 normal, 136 event; 108 in Act 4), 14 excluded for
+escapes. The 11 control-replay mismatches are all escape fights among those 14. Source 111180117 contributed no
+replayed fight. Win rate 93.49 / 93.51 / 93.33 / 93.31% (base / endwide / othernarrow / spire).
+- `endwide2500 − base2500`: score +0.20 [−1.02, +1.37], win +0.02 pp [−0.40, +0.42], HP lost −0.16 [−0.42, +0.09].
+- `othernarrow2500 − base2500`: score −0.44 [−1.55, +0.73], win −0.16 pp [−0.55, +0.24].
+- `spire2500 − base2500`: score −0.40 [−1.80, +1.03], win −0.18 pp [−0.64, +0.30].
+- Subsets (descriptive): bosses +1.37 / +1.34 / +0.42 with CIs about ±5; elites +0.24 / −1.21 / −0.94; Act 4
+  (108 fights) endwide +6.99 [−4.07, +18.19], spire −3.93 [−18.75, +10.24], spire − endwide −10.92
+  [−23.14, +0.93].
+- CPU per fight vs base: endwide 0.992 [0.976, 1.005], othernarrow 0.980 [0.965, 0.992], spire 0.976
+  [0.962, 0.987]; narrower other nodes save about 2% CPU.
+**Interpretation:** at A20 with the gen-6 prior at 2,500 simulations, splitting the widening constants per category
+does not change fight results detectably: every all-fight score CI lies within about ±1.8 points (well under one
+potion, 11) and every win CI within ±0.7 pp. This matches §369 (A0, both categories together): Silver's constants
+sit on a flat region. spire-mentor's +6.35 pp does not transfer as a fight-level effect here (**Inference**: their
+narrower end-turn setting was the baseline that gained; Silver's single setting is already wider). The labels are
+not corrected for multiplicity. The final-fight leaf was off in every arm, and event fights count in the normal
+subset (reviewer notes). Pre-registered decision: no default changes and the per-category idea is closed for this
+setting; the armset stays research-only.
+[result.json](evidence/silver_widening_a20_518_20261017/result.json). Raw:
+`/mnt/project-files/silver-widening-518/w0{1..8}.tar` (sha256 `74773603…`, `aaa442ef…`, `a9acaee9…`, `a83ece5a…`,
+`8e69db90…`, `29b77e29…`, `2035aecd…`, `772e01c7…`). Seeds used: 111180000–111180011 (smokes) and
+111180100–111180355 (run); the rest of 111180000–111189999 is unused.
+**Knowledge impact:** one sentence added to the per-context search constants paragraph in
+`evaluation/current-research.md`.
+## §525 — Blended Silver leaf (one rollout mixed with a learned value) on the §397 corpus, offline: FAIL (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "StS AI community scan", V1):** "okay versuche mal v1 zu machen". §397 Gate A
+tested a learned leaf V replacing one SimpleAgent rollout (R1); AlphaGo-style mixing `B = (1−α)·R1 + α·V` on the
+same probe child was never tested in native Silver. Outside evidence: evangambit/sts2 `rl/FINDINGS.md` (StS2) found a
+value head ties a rollout only from ~60 simulations and never beats it.
+**Design:** [PREREG](evidence/silver_blend_leaf_20261017/PREREG.md), written before any blend score. Frozen §397
+corpus, features re-extracted with `silversynthfeatures` on main `623a8b60`, `vcont-natpert` (primary) and
+`vroll-natpert` retrained with the unchanged §397 recipe, α from {0.1..0.9} on natural validation fold 3, §397 groups,
+regret and concordance on natural test fold 4. No gameplay seeds.
+**Result: FAIL.** α = 0.8 (vcont) and 0.7 (vroll). On 2,006 natural test groups (43 seeds): R1 regret 3.989,
+primary blend 3.972, −0.017 [−0.436, +0.377] vs R1 (concordance 0.6887 vs 0.6730); vroll blend −0.037
+[−0.397, +0.327]. Both blends' point estimates sit at a second rollout (B − R2 +0.038 and +0.019), but "at least as good as R2" is
+not shown (upper bounds +0.483 and +0.374 above the pre-registered +0.1; `blendAtLeastR2` false). Deviation from
+§397: the re-extraction gives R1 3.989 (§397 4.017), R4 − R1 −0.352 [−0.735, +0.040] (§397 −0.47 [−0.78, −0.14])
+and 145,000 vcont rows (§397 146,984); **Inference:** probe rollouts redrawn on current main and 1–7 roots per
+unit dropped on `rootEdgeMismatch`. The leaf-variance headroom here is ~0.35–0.5 regret. Retrained V alone matches
+§397 within 0.3 (vcont − R1 +0.19). V1 closed; no native implementation.
+[Result](evidence/silver_blend_leaf_20261017/RESULT.md), [blend_gate.json](evidence/silver_blend_leaf_20261017/blend_gate.json).
+Models: `/mnt/project-files/silver-blend-leaf/models/`.
+**Knowledge impact:** negative result added to `research/combat-search/leaf-evaluation.md` (rejected approaches).

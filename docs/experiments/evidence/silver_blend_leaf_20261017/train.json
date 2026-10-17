@@ -1,0 +1,14 @@
+{
+  "rows": 3064557,
+  "width": 1788,
+  "vcont-natpert": {
+    "train": 145000,
+    "val": 46679,
+    "iters": 536
+  },
+  "vroll-natpert": {
+    "train": 337490,
+    "val": 108339,
+    "iters": 1447
+  }
+}
