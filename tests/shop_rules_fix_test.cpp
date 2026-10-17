@@ -86,6 +86,20 @@ int main() {
         maskShop.info.shop.relics[0] = RelicId::MEMBERSHIP_CARD;
         maskShop.info.shop.buyRelic(maskShop, 0);
         require(maskShop.info.shop.removeCost == 50, "Membership purchase discounted Smiling Mask removal");
+        // Buying Smiling Mask mid-visit sets the removal to 50 over a Membership discount.
+        auto buyMask = gc;
+        buyMask.relics.add(RelicInstance{RelicId::MEMBERSHIP_CARD, 0});
+        buyMask.info.shop.setup(buyMask);
+        require(buyMask.info.shop.removeCost != 50, "Membership removal should start discounted");
+        buyMask.info.shop.relics[0] = RelicId::SMILING_MASK;
+        buyMask.info.shop.buyRelic(buyMask, 0);
+        require(buyMask.info.shop.removeCost == 50, "buying Smiling Mask did not set removal to 50");
+        // A removal already used this visit stays unavailable.
+        auto usedRemove = gc;
+        usedRemove.info.shop.removeCost = -1;
+        usedRemove.info.shop.relics[0] = RelicId::SMILING_MASK;
+        usedRemove.info.shop.buyRelic(usedRemove, 0);
+        require(usedRemove.info.shop.removeCost == -1, "buying Smiling Mask re-enabled a used removal");
 
         setenv("STS_SHOP_RULES_FIX", "0", 1);
         const auto l15 = shopAt(15), l16 = shopAt(16);
@@ -109,6 +123,13 @@ int main() {
         legacyMaskShop.info.shop.relics[0] = RelicId::MEMBERSHIP_CARD;
         legacyMaskShop.info.shop.buyRelic(legacyMaskShop, 0);
         require(legacyMaskShop.info.shop.removeCost == 25, "legacy: Membership purchase must halve Smiling Mask removal");
+        auto legacyBuyMask = shopAt(20);
+        legacyBuyMask.relics.add(RelicInstance{RelicId::MEMBERSHIP_CARD, 0});
+        legacyBuyMask.info.shop.setup(legacyBuyMask);
+        const int legacyRemove = legacyBuyMask.info.shop.removeCost;
+        legacyBuyMask.info.shop.relics[0] = RelicId::SMILING_MASK;
+        legacyBuyMask.info.shop.buyRelic(legacyBuyMask, 0);
+        require(legacyBuyMask.info.shop.removeCost == legacyRemove, "legacy: buying Smiling Mask must keep removal");
         unsetenv("STS_SHOP_RULES_FIX");
         std::cout << "shop_rules_fix: OK\n";
         return 0;

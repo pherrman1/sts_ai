@@ -141,6 +141,11 @@ void Shop::buyRelic(GameContext &gc, int idx) {
         }
     }
 
+    // SmilingMask.onEquip in a shop sets the purge cost to 50, overriding discounts.
+    if (rulesFixEnabled() && r == RelicId::SMILING_MASK && removeCost != -1) {
+        removeCost = SMILING_MASK_PRICE;
+    }
+
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         relics[idx] = gc.returnRandomRelic(rollRelicTier(gc.merchantRng), true, false);
         const int price = getNewPrice(gc, getRelicBasePrice(relics[idx]));
