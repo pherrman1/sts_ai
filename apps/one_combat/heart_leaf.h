@@ -12,7 +12,7 @@
 #include "run_features.h"
 
 namespace one_combat {
-constexpr const char *kHeartLeafFeatureSchema = "heart-leaf-features-v1";
+constexpr const char *kHeartLeafFeatureSchema = "heart-leaf-features-v2";
 constexpr const char *kHeartLeafAnchorPath = "models/candidates/v_win_x2b_public_trees.txt";
 constexpr const char *kHeartLeafAnchorSha256 = "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90";
 

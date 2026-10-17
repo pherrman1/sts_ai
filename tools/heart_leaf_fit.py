@@ -32,7 +32,8 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 N_CARDS, N_RELICS, N_POTIONS = 372, 181, 48
-EXTRA = ["x2bMargin", "hlFloorsToBoss", "hlAct4", "hlKeys", "hlHpFrac", "hlDaggerDamage", "hlSearingLevel"]
+EXTRA = ["x2bMargin", "hlFloorsToBoss", "hlAct4", "hlKeys", "hlHpFrac", "hlDaggerDamage", "hlSearingLevel",
+         "hlBurningEliteAhead", "hlBurningEliteDist", "hlBlueOpen", "hlRedOpen", "hlGreenOpen", "hlKeysClosed"]
 ANCHOR = "models/candidates/v_win_x2b_public_trees.txt"
 ANCHOR_SHA = "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90"
 
@@ -98,7 +99,7 @@ def load_tails(paths, outcomes):
                 r = json.loads(line)
                 if r["seed"] not in outcomes:
                     continue
-                if r.get("featureSchema") != "heart-leaf-features-v1":
+                if r.get("featureSchema") != "heart-leaf-features-v2":
                     raise SystemExit("unknown feature schema")
                 tails = [t for t in r.get("tails", []) if "error" not in t]
                 if not tails:
@@ -246,7 +247,7 @@ def fit(args):
     text = [("logistic 0" if l.startswith("logistic ") else f"base_score {a:.17g}" if l.startswith("base_score ") else l) for l in text]
     with open(trees, "w", newline="\n") as f:
         f.write("\n".join(text) + "\n")
-    manifest = {"schema": "heart-leaf-v1", "featureSchema": "heart-leaf-features-v1",
+    manifest = {"schema": "heart-leaf-v1", "featureSchema": "heart-leaf-features-v2",
                 "residual": os.path.basename(trees), "residualSha256": sha256(trees),
                 "anchorSha256": ANCHOR_SHA, "anchorSlope": b,
                 "training": {"tails": [os.path.basename(t) for t in args.tails], "tailSha256": [sha256(t) for t in args.tails],

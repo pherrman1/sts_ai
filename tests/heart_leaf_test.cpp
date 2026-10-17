@@ -36,6 +36,8 @@ int main() {
     require(column(x, "hlSearingLevel") == 3, "Searing Blow level counts every upgrade");
     require(column(x, "hlFloorsToBoss") == 3 && column(x, "hlAct4") == 1, "Act 4 distance is to the Heart");
     require(column(x, "hlKeys") == 2, "all three keys count");
+    require(column(x, "hlGreenOpen") == 0 && column(x, "hlKeysClosed") == 1, "a missing key closes in Act 4");
+    require(column(base, "hlBlueOpen") == 1 && column(base, "hlKeysClosed") == 0, "Act 1 keys are open");
     if (failures) return 1;
     std::cout << "PASS heart leaf features\n";
     return 0;

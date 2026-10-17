@@ -15,7 +15,8 @@ namespace one_combat {
 
 const std::vector<std::string> &heartLeafExtraNames() {
     static const std::vector<std::string> names{"x2bMargin", "hlFloorsToBoss", "hlAct4", "hlKeys",
-        "hlHpFrac", "hlDaggerDamage", "hlSearingLevel"};
+        "hlHpFrac", "hlDaggerDamage", "hlSearingLevel", "hlBurningEliteAhead", "hlBurningEliteDist",
+        "hlBlueOpen", "hlRedOpen", "hlGreenOpen", "hlKeysClosed"};
     return names;
 }
 
@@ -32,6 +33,39 @@ const std::unordered_map<std::string, int> &heartLeafIdxMap() {
 
 int heartLeafBossFloor(int act) { return act <= 1 ? 16 : act == 2 ? 33 : act == 3 ? 50 : 56; }
 
+namespace {
+// Rows ahead to this act's burning elite along the map edges from the current
+// node (0 when standing on it), or -1 when it is not reachable.
+int burningEliteDistance(const sts::GameContext &gc) {
+    if (gc.map == nullptr || gc.act >= 4) return -1;
+    const sts::Map &map = *gc.map;
+    const int ex = map.burningEliteX, ey = map.burningEliteY;
+    if (ex < 0 || ey < 0 || ex >= 7 || ey >= 15) return -1;
+    const int base = std::max(gc.curMapNodeY, 0);
+    if (gc.curMapNodeY >= 0 && gc.curMapNodeX == ex && gc.curMapNodeY == ey) return 0;
+    std::array<bool, 7> reach{};
+    int row;
+    if (gc.curMapNodeY < 0) {
+        row = 0;
+        for (const sts::MapNode &n : map.nodes[0]) if (n.edgeCount > 0) reach[n.x] = true;
+    } else {
+        row = gc.curMapNodeY + 1;
+        const sts::MapNode &cur = map.getNode(gc.curMapNodeX, gc.curMapNodeY);
+        for (int i = 0; i < cur.edgeCount; ++i) reach[cur.edges[i]] = true;
+    }
+    for (int y = row; y <= std::min(ey, 14); ++y) {
+        if (y == ey) return reach[ex] ? y - base : -1;
+        std::array<bool, 7> next{};
+        for (int x = 0; x < 7; ++x) if (reach[x]) {
+            const sts::MapNode &n = map.getNode(x, y);
+            for (int i = 0; i < n.edgeCount; ++i) next[n.edges[i]] = true;
+        }
+        reach = next;
+    }
+    return -1;
+}
+} // namespace
+
 void appendHeartLeafExtras(std::vector<float> &values, const sts::GameContext &gc, double x2bMargin) {
     int dagger = 0, searing = 0;
     for (int i = 0; i < gc.deck.size(); ++i) {
@@ -46,6 +80,21 @@ void appendHeartLeafExtras(std::vector<float> &values, const sts::GameContext &g
     values.push_back(gc.maxHp > 0 ? float(gc.curHp) / float(gc.maxHp) : 0.0f);
     values.push_back(float(dagger));
     values.push_back(float(searing));
+    // Keys: a missing key is open while a later act or a reachable room of
+    // its kind this act remains (chest for Sapphire, campfire for Ruby,
+    // burning elite for Emerald). A closed key forfeits Act 4.
+    const int elite = burningEliteDistance(gc);
+    const FwdMap fm = forwardMapFeatures(gc);
+    const bool later = gc.act < 3;
+    const bool blueOpen = !gc.blueKey && gc.act < 4 && (later || fm.cTreasure > 0);
+    const bool redOpen = !gc.redKey && gc.act < 4 && (later || fm.cRest > 0);
+    const bool greenOpen = !gc.greenKey && gc.act < 4 && (later || elite >= 0);
+    values.push_back(elite >= 0 && !gc.greenKey ? 1.0f : 0.0f);
+    values.push_back(elite >= 0 && !gc.greenKey ? float(elite) : 99.0f);
+    values.push_back(blueOpen ? 1.0f : 0.0f);
+    values.push_back(redOpen ? 1.0f : 0.0f);
+    values.push_back(greenOpen ? 1.0f : 0.0f);
+    values.push_back(float((!gc.blueKey && !blueOpen) + (!gc.redKey && !redOpen) + (!gc.greenKey && !greenOpen)));
 }
 
 std::vector<float> heartLeafFeatureVec(const sts::GameContext &gc, const PathHistory &path, double x2bMargin) {
