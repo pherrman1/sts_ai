@@ -1340,6 +1340,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverRootPrior = search::nativeSilverRootPriorPath();
             meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
             meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
+            meta.silverTreePriorMinVisits = search::nativeSilverTreePriorMinVisits();
         }
         if (g_oocStrategicTokNet.ok) {
             meta.oocStrategicTokNet = g_oocStrategicTokNet.path;

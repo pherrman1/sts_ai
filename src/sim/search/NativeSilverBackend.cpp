@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <iostream>
 #include <atomic>
 #include <charconv>
@@ -869,7 +870,7 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
             char *end = nullptr;
             const long value = std::strtol(raw, &end, 10);
-            if (end == raw || *end != '\0' || value < 0 || value > (1L << 30))
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value > (1L << 30))
                 throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS must be a non-negative integer");
             g_options.treePriorMinVisits = static_cast<int>(value);
             if (value > 0 && g_options.rootPriorPath.empty())
