@@ -76,5 +76,5 @@ at 80 max HP), consistent with 44 [33, 58].
 ## Reproduction
 
 Smoke seeds used: 111119900–111119904 (pre-registration) and 111119905 (the `run_slice.sh` smoke).
-PR #592 (on main after this run) changed Silver rollouts; reproduce with `5dfabf90` or set
-`STS_SILVER_ROLLOUT_ZERO_COST_CAP=0`.
+PR #592 (on main after this run) changed Silver rollouts; reproduce with `5dfabf90`. Its
+`STS_SILVER_ROLLOUT_ZERO_COST_CAP=0` switch is rejected by `one_combat`'s option allow-list on main.

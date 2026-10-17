@@ -19851,7 +19851,8 @@ term. Without Fairy (4,916 rows) potions price at 7.8 HP-eq [6.1, 9.8] (producti
 **Inference:** the flat 11 may overprice non-Fairy potions at A20; this split was not pre-registered.
 §385's low X2-B prices may have come from static post-fight pricing, since X2-B after play gives 8.5-11
 (§385 lives on closed PR #422). Per-type weights are untested in play. No default change. Reproducing
-needs `5dfabf90` or `STS_SILVER_ROLLOUT_ZERO_COST_CAP=0`, since #592 changed Silver rollouts on main.
+needs `5dfabf90`, since #592 changed Silver rollouts on main (its `STS_SILVER_ROLLOUT_ZERO_COST_CAP=0`
+switch is still rejected by `one_combat`'s option allow-list on main).
 Seeds 111110000–111110999 and smokes 111119900–111119905 are used; the reviewer reserved 111119950–959.
 [Result](evidence/potion_price_probe_20261017/RESULT.md), [analysis.json](evidence/potion_price_probe_20261017/analysis.json).
 Raw: `/mnt/project-files/potion-price-probe/ppp-w0{0,1}.tar.gz`.
