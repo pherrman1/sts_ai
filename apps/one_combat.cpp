@@ -10,6 +10,7 @@
 #include "one_combat/heart1_policy.h"
 #include "one_combat/rollout_student.h"
 #include "one_combat/heart_outcome_capture.h"
+#include "one_combat/heart_leaf_tail.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
 #include "one_combat/screen_leaf_net.h"
@@ -3086,6 +3087,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""},
+        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3779,13 +3781,26 @@ int main(int argc, char **argv) {
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
     } else if (mode == "heartoutcomegen") {
+        const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"
-                || (std::string(argv[5]) != "on" && std::string(argv[5]) != "off"))
-            throw std::runtime_error("usage: one_combat heartoutcomegen 1 SEED OUT.jsonl on|off");
+                || (capture != "on" && capture != "off" && capture != "policy"))
+            throw std::runtime_error("usage: one_combat heartoutcomegen 1 SEED OUT.jsonl on|off|policy");
         const std::string seed(argv[3]);
         if (seed.empty() || seed.find_first_not_of("0123456789") != std::string::npos)
             throw std::runtime_error("heart outcome seed must be a nonnegative integer");
-        return one_combat::heartOutcomeGen(std::stoull(seed), argv[4], std::string(argv[5]) == "on");
+        return one_combat::heartOutcomeGen(std::stoull(seed), argv[4], capture != "off", capture == "policy");
+    } else if (mode == "heartleafparity") {
+        if (argc != 4) throw std::runtime_error("usage: one_combat heartleafparity MANIFEST.json ROWS.jsonl");
+        return one_combat::heartLeafParity(argv[2], argv[3]);
+    } else if (mode == "heartleaftail") {
+        if (argc < 6) throw std::runtime_error("usage: one_combat heartleaftail SALT REPEATS OUT.jsonl ROOTS.jsonl...");
+        for (int i : {2, 3}) {
+            const std::string value(argv[i]);
+            if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("heartleaftail SALT and REPEATS must be nonnegative integers");
+        }
+        return one_combat::heartLeafTailGen(std::stoull(argv[2]), unsigned(std::stoul(argv[3])), argv[4],
+                                            std::vector<std::string>(argv + 5, argv + argc));
     } else if (mode == "oocselectivesilverspec") {
         try { std::cout << one_combat::oocSelectiveSilverAuditSpec().dump() << '\n'; return 0; }
         catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }

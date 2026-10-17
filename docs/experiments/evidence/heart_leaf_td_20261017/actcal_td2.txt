@@ -1,0 +1,14 @@
+trees 129
+TRAIN in-sample
+  act 1 pred 0.093 real 0.136
+  act 2 pred 0.140 real 0.158
+  act 3 pred 0.260 real 0.270
+  act 4 pred 0.620 real 0.457
+TRAIN OOF
+  act 1 pred 0.093 real 0.136
+  act 2 pred 0.136 real 0.158
+  act 3 pred 0.254 real 0.270
+  act 4 pred 0.609 real 0.457
+offsets {1: 0.44809000264481014, 2: 0.2001821183144249, 3: 0.10300808929517907, 4: -0.7656943176980435}
+raw bce 0.3046 auc 0.731 a1 0.087/0.103 a2 0.128/0.119 a3 0.235/0.202 a4 0.571/0.423
+actcal bce 0.3153 auc 0.721 a1 0.128/0.103 a2 0.148/0.119 a3 0.250/0.202 a4 0.418/0.423
