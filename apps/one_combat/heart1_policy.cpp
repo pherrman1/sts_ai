@@ -253,8 +253,8 @@ void encodeObservation(const GameContext &gc, Record &r) {
     r.mapY = gc.curMapNodeY;
 }
 
-// The pybind getters for reward and shop cards drop INVALID entries before
-// silverbot indexes them with the action's idx; keep that indexing.
+// Reward groups expose their valid cards in order. Shop action indices instead
+// remain physical slots after a purchase, so shops must not use this helper.
 template <typename Cards>
 std::vector<Card> validCards(const Cards &cards, int n) {
     std::vector<Card> out;
@@ -330,10 +330,9 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
             break;
         case ScreenState::SHOP_ROOM: {
             const auto &shop = gc.info.shop;
-            const auto shopCards = validCards(shop.cards, 7);
             for (const auto &a : actions) {
                 switch (a.getRewardsActionType()) {
-                    case RT::CARD: card(shopCards.at(a.getIdx1()), a); break;
+                    case RT::CARD: card(shop.cards[a.getIdx1()], a); break;
                     case RT::RELIC:
                         r.offeredRelics.push_back(static_cast<int>(shop.relics[a.getIdx1()]));
                         relicActs.push_back(a);
@@ -1276,6 +1275,19 @@ std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std:
         return std::nullopt;
     }
     return mapPriorLogits(choice, net().forward(choice.record, /*logitsOnly=*/true).logits, gc.hasRelic(RelicId::SINGING_BOWL),
+                          actions, tally);
+}
+
+std::optional<std::vector<double>> priorLogits(const Net &model, const GameContext &gc,
+                                               const std::vector<GA> &actions,
+                                               std::map<std::string, std::uint64_t> *tally) {
+    Choice choice;
+    if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE
+            || !buildChoice(gc, choice) || choice.record.choiceCount() == 0) {
+        if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
+        return std::nullopt;
+    }
+    return mapPriorLogits(choice, model.forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
                           actions, tally);
 }
 
