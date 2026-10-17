@@ -9,7 +9,9 @@ with one contiguous seedSpec plus shard manifests under `blocks/`.  This
 adapter builds that layout for one forced-setup scope without changing audit
 semantics: every shard manifest is the unit's own manifest with only
 `csv.path` rewritten to the local file, and seeds the generator skipped
-(STALLED) are listed as quarantined in the merged manifest.
+(STALLED) are listed as quarantined in the merged manifest. In the act4_fork
+scope, seeds whose run ended before the Act-3 boss are counted in
+`integrity.noAct4Seeds`, not quarantined.
 
 `union` then joins assembled scopes into one corpus for the Phase-1 and
 Phase-2 chains, dropping rows outside production candidate support (see
@@ -63,7 +65,7 @@ def assemble(index_path: Path, corpus_root: Path, scope: str, out: Path) -> dict
     blocks.mkdir(parents=True, exist_ok=True)
     teacher = shared = None
     covered: set[int] = set()
-    rows = 0
+    rows = no_act4 = 0
     merged = out / "corpus.jsonl"
     with merged.open("wb") as sink:
         for f in files:
@@ -77,6 +79,7 @@ def assemble(index_path: Path, corpus_root: Path, scope: str, out: Path) -> dict
                 raise ValueError(f"{data}: forcedSetup {manifest.get('forcedSetup')!r} is not {scope!r}")
             if manifest["integrity"]["quarantinedSeeds"]:
                 raise ValueError(f"{data}: unit has quarantined seeds")
+            no_act4 += int(manifest["integrity"].get("noAct4Seeds", 0))
             ident = {k: manifest[k] for k in ("schemaVersion", "rowSchemaVersion",
                                               "predictorInputSchemaVersion", "predictorInputFieldSchemaHash",
                                               "format", "producerGitSha", "producerExecutableSha256")}
@@ -107,13 +110,15 @@ def assemble(index_path: Path, corpus_root: Path, scope: str, out: Path) -> dict
         "combatTeacher": teacher,
         "seedSpec": {"start": lo, "count": hi - lo},
         "csv": {"path": str(merged.resolve()), "sha256": sha256(merged)},
-        "integrity": {"requestedSeeds": hi - lo, "completedSeeds": len(covered),
+        "integrity": {"requestedSeeds": hi - lo, "completedSeeds": len(covered) - no_act4,
                       "quarantinedSeeds": len(stalled), "rows": rows},
         "quarantined": stalled,
         "forcedSetup": scope,
         "ctmCorpusAdapter": {"schema": SCHEMA, "indexSha256": sha256(index_path),
                              "units": len(units), "files": len(files)},
     })
+    if scope == "act4_fork":
+        merged_manifest["integrity"]["noAct4Seeds"] = no_act4
     validate_manifest(merged_manifest)
     (out / "corpus.jsonl.manifest.json").write_text(
         json.dumps(merged_manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")

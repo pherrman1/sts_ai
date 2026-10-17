@@ -6179,8 +6179,8 @@ static void applyForcedCtmSetupOnce(ForcedCtmSetup setup, GameContext &gc, std::
     }
 }
 
-// act4_fork: no CTM corpus had Act-4 rows before ADR-0041 (the Shield and Spear and
-// Heart encounter embeddings of every shipped stack are untrained). At the first Act-3
+// act4_fork: no CTM corpus has Act-4 rows (the Shield and Spear and Heart encounter
+// embeddings of every shipped stack are untrained). At the first Act-3
 // boss, before its fight, the run is sent into Act 4 as if the Act-3 boss fight(s) were
 // won with all three keys held: the keys are granted, the A20 second boss's floor is
 // counted, then the native Act-3 victory room runs (floor, relic hooks, Act-4
@@ -6226,7 +6226,8 @@ static bool ctmGenDeployedOoc() {
 static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
                                               const WholeCombatTeacher &teacher,
                                               ForcedCtmSetup setup = ForcedCtmSetup::NONE,
-                                              bool deployedOoc = false) {
+                                              bool deployedOoc = false,
+                                              bool *reachedAct4 = nullptr) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -6245,6 +6246,7 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             if (!recording && gc.act == 3 && gc.curRoom == Room::BOSS) {
                 enterForcedAct4(gc);
                 recording = true;
+                if (reachedAct4) *reachedAct4 = true;
                 continue;
             }
             if (setup != ForcedCtmSetup::NONE && setup != ForcedCtmSetup::ACT4_FORK) {
@@ -6439,6 +6441,9 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     const bool deployedOoc = ctmGenDeployedOoc();
     if (deployedOoc && lizardCandidateMode)
         throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC is only for combattransitiongen/forcedgen");
+    // Act 4 has rest and shop screens the pathb chain's fixed OOC rules don't cover.
+    if (setup == ForcedCtmSetup::ACT4_FORK && !deployedOoc)
+        throw std::runtime_error("combattransitionforcedgen act4_fork requires STS_CTM_GEN_DEPLOYED_OOC=1");
     // The deployed step reads the global OOC settings, so its teacher must pin them (ooc_policy).
     const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance,
                                                 deployedOoc, !lizardCandidateMode);
@@ -6446,17 +6451,22 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
     int completed = 0;
+    int noAct4 = 0;  // act4_fork: runs that ended before the Act-3 boss (not a quarantine)
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup, deployedOoc);
+        bool reachedAct4 = false;
+        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup,
+                                                                 deployedOoc, &reachedAct4);
         #pragma omp critical(combat_transition_write)
         {
             f << generated;
             f.flush();
             rows += std::count(generated.begin(), generated.end(), '\n');
             if (!generated.empty()) ++completed;
+            else if (setup == ForcedCtmSetup::ACT4_FORK && !reachedAct4) ++noAct4;
         }
     }
+    const int quarantined = nSeeds - completed - noAct4;
     f.close();
     nlohmann::json manifest = {
         {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
@@ -6472,8 +6482,9 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"csv", {{"path", std::filesystem::absolute(outfile).string()},
                   {"sha256", fileSha256(outfile)}}},
         {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
-                        {"quarantinedSeeds", nSeeds - completed}, {"rows", rows}}}
+                        {"quarantinedSeeds", quarantined}, {"rows", rows}}}
     };
+    if (setup == ForcedCtmSetup::ACT4_FORK) manifest["integrity"]["noAct4Seeds"] = noAct4;
     if (deployedOoc) manifest["policy"] = effectiveOocPolicySpecification();
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
@@ -6482,13 +6493,14 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                      ? "combattransitionlizardtargetcandidategen teacher="
                      : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen teacher="
                      : "combattransitiongen teacher=") << teacher.id << " completed="
-              << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
+              << completed << '/' << nSeeds << " quarantined=" << quarantined
+              << (setup == ForcedCtmSetup::ACT4_FORK ? " no_act4=" + std::to_string(noAct4) : std::string())
               << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, allowStaleProvenance
                                 ? "combattransitionlizardtargetcandidategen"
                                 : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen"
                                 : "combattransitiongen", nSeeds, completed,
-                            nSeeds - completed, g_trainingHealthFailures.load(),
+                            quarantined, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);
 }
 

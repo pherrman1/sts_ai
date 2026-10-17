@@ -33,10 +33,10 @@ def learned_teacher():
     return t
 
 
-def write_unit(path: Path, start: int, count: int, setup: str, skip=()):
+def write_unit(path: Path, start: int, count: int, setup: str, skip=(), no_act4=()):
     rows = []
     for seed in range(start, start + count):
-        if seed in skip:
+        if seed in skip or seed in no_act4:
             continue
         for fight, outcome in ((0, 1), (1, seed % 2 + 1)):
             rows.append({
@@ -60,6 +60,8 @@ def write_unit(path: Path, start: int, count: int, setup: str, skip=()):
                       "rows": len(rows)},
         "forcedSetup": setup,
     }
+    if setup == "act4_fork":
+        manifest["integrity"].update(completedSeeds=count - len(no_act4), noAct4Seeds=len(no_act4))
     Path(str(path) + ".manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     return {"path": f"part-a/{path.name}", "sha256": sha256(path), "rows": len(rows),
             "seeds": manifest["seedSpec"]}
@@ -158,6 +160,35 @@ class TestCtmCorpusAdapter(unittest.TestCase):
                              {"none": (0, 14), "lizard_fairy": (14, 4), "high_maxhp": (18, 4)})
             seeds = [json.loads(l)["sourceSeed"] for l in (root / "union" / "corpus.jsonl").read_text().splitlines()]
             self.assertEqual(seeds, sorted(seeds))
+
+    def test_act4_fork_seeds_that_never_reach_act4_are_not_quarantined(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); index = self.build(root)
+            data = json.loads(index.read_text())
+            data["units"].append({"unit": "act4_fork-700-4", "setup": "act4_fork", "files": [
+                write_unit(root / "part-a" / "act4_fork-700-4.jsonl", 700, 4, "act4_fork", no_act4=(701, 703))]})
+            index.write_text(json.dumps(data))
+            out = root / "act4"
+            summary = assemble(index, root, "act4_fork", out)
+            self.assertEqual((summary["rows"], summary["quarantined"]), (4, []))
+            manifest = json.loads((out / "corpus.jsonl.manifest.json").read_text())
+            self.assertEqual(manifest["integrity"], {"requestedSeeds": 4, "completedSeeds": 2,
+                                                     "quarantinedSeeds": 0, "noAct4Seeds": 2, "rows": 4})
+            self.assertEqual(validate_corpus(manifest)["noAct4Seeds"], 2)
+            experiment.audit(argparse.Namespace(corpus_manifest=str(out / "corpus.jsonl.manifest.json"),
+                                                shard_root=str(out), output_dir=str(root / "audit")))
+            audit = json.loads((root / "audit" / "corpus_audit.json").read_text())
+            self.assertEqual(audit["split"]["excludedQuarantinedSeeds"], [701, 703])
+            assemble(index, root, "none", root / "none")
+            union({"none": root / "none", "act4_fork": out}, root / "union", lambda row: [])
+            experiment.audit(argparse.Namespace(corpus_manifest=str(root / "union" / "corpus.jsonl.manifest.json"),
+                                                shard_root=None, output_dir=str(root / "audit-union")))
+            audit = json.loads((root / "audit-union" / "corpus_audit.json").read_text())
+            self.assertEqual(audit["split"]["excludedQuarantinedSeeds"], [105, 701, 703])
+            # The count only exists for act4_fork; elsewhere it fails closed.
+            manifest["forcedSetup"] = "none"
+            with self.assertRaisesRegex(ValueError, "noAct4Seeds"):
+                validate_corpus(manifest)
 
     def test_label_reasons_reject_unrepresentable_winning_maxhp_gain(self):
         values = [0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]

@@ -436,6 +436,8 @@ def audit(args: argparse.Namespace) -> None:
     if not corpus_path.is_file():
         raise ValueError(f"corpus does not exist: {corpus_path}")
     union = final_manifest.get("forcedSetup") == "union"
+    # act4_fork shards cover seeds that ended before Act 4 and wrote no rows.
+    rows_define_completed = union or final_manifest.get("forcedSetup") == "act4_fork"
     if union:
         # Each union scope names its own shards; --shard-root is not used.
         shard_entries, expected, covered = union_inventory(final_manifest)
@@ -505,7 +507,9 @@ def audit(args: argparse.Namespace) -> None:
         card_changes.update(card_ids)
     if rows != int(final_manifest["integrity"]["rows"]):
         raise ValueError(f"merged row count mismatch {rows}")
-    if union:
+    if rows_define_completed:
+        if not union:
+            covered = completed_seeds
         completed_seeds = set(source_rows)
         if not completed_seeds <= covered or len(completed_seeds) != int(final_manifest["integrity"]["completedSeeds"]):
             raise ValueError("union rows do not reconcile with the scopes' validated shards")

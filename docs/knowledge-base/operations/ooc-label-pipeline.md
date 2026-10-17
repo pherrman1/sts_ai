@@ -268,10 +268,16 @@ rows. Setups:
   the Heart) are written; earlier fights are played but not recorded, and runs
   that die before the Act-3 boss write no rows. The skipped boss fights and key
   costs make these rows a separate slice. Use it with
-  `STS_CTM_GEN_DEPLOYED_OOC=1` so Act-4 rest and shop screens get the deployed
-  OOC step. Before this setup no CTM corpus had Act-4 rows: the Shield and
-  Spear and Heart encounter-embedding rows are byte-identical across every
-  shipped stack (production, pathb-r2, pathb-a20), so they never trained.
+  `STS_CTM_GEN_DEPLOYED_OOC=1` (required: the mode refuses to run without it)
+  so Act-4 rest and shop screens get the deployed OOC step. A seed that ends
+  before the Act-3 boss is a normal outcome, not a quarantine: the manifest
+  counts it in `integrity.noAct4Seeds` (`completedSeeds` counts the seeds with
+  rows), `tools/ctm_corpus_adapter.py assemble` accepts such units, and `audit`
+  of an `act4_fork` scope excludes those seeds from the split like quarantined
+  ones. No CTM corpus has Act-4 rows yet: in every shipped stack (production,
+  pathb-r2, pathb-a20) the Shield and Spear and Heart encounter-embedding rows
+  are byte-identical in the hp, max_hp and potion encoders and differ only by
+  uniform weight decay in the survival encoder, so they never got a gradient.
 Mark of the Bloom with an active Tail is already on the exact path, so it has
 no setup.
 
