@@ -321,6 +321,8 @@ int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
+// heart1full (STS_OOC_MCTS_PRIOR): heart1 decides a root the search returns no action for.
+bool liveOocMctsHeart1Fallback(const GameContext &gc);
 // True when the live search takes its tree prior from heart1.
 bool liveOocMctsUsesHeart1();
 // STS_OOC_SIBLING_CAPTURE is configured (heart1, when loaded, only annotates leaves).

@@ -996,6 +996,14 @@ std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId
     }
     throw std::runtime_error("OOC MCTS invalid outcome");
 }
+// heart1full scores screens V4 cannot encode, except card selects other than
+// UPGRADE: student C was distilled with no CARD_SELECT rows and removes the best
+// card (audit-2026-10-17 heart1-distill finding 1), so those stay uniform in the
+// tree and go to the chain in rollouts.
+static bool heart1FullScreen(const GameContext &gc) {
+    return gc.screenState != sts::ScreenState::CARD_SELECT
+        || gc.info.selectScreenType == sts::CardSelectScreenType::UPGRADE;
+}
 OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search::OocStateId id) const {
     const auto &snapshot = states.at(id);
     if (!snapshot.metadata) {
@@ -1070,7 +1078,8 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 value.sourcePriorCovered = qualified == sources;
             }
         }
-        if (options.heart1Coverage && !value.sourcePriorCovered && value.candidates.size() > 1)
+        if (options.heart1Coverage && !value.sourcePriorCovered && value.candidates.size() > 1
+                && heart1FullScreen(gc))
             value.sourcePriorCovered = value.heart1OnlyCoverage = true;
         value.boundary = value.candidates.empty();
         value.edges.resize(value.candidates.size());
@@ -2132,7 +2141,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                 if (options.treeRules && oocTreeRuleStep(child.gc)) applied = true;
                 else
 #endif
-                if (v4DecisionSupported(child.gc)) {
+                if (v4DecisionSupported(child.gc)
+                        || (options.heart1LeafPolicy && options.heart1Coverage && heart1FullScreen(child.gc))) {
                     const auto actions = v4CandidateActions(child.gc);
                     std::set<std::uint32_t> ids;
                     bool unique = !actions.empty();
@@ -2180,6 +2190,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                 std::optional<LogSnapshot> before;
                 std::string screen;
                 if (t_decisionLog) { before.emplace(child.gc); screen = logScreen(child.gc); }
+                if (options.heart1LeafPolicy)
+                    ++continuation_.heart1LeafReasons["chain:screen" + std::to_string(static_cast<int>(child.gc.screenState))];
                 dependencies.continuationStep(child.gc, child.path, rng);
                 if (t_decisionLog) {
                     const auto [detail, kinds] = logDiff(*before, LogSnapshot(child.gc));
@@ -2631,6 +2643,9 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
+bool liveOocMctsHeart1Fallback(const GameContext &gc) {
+    return liveEnabled && liveOptions.heart1Coverage && heart1FullScreen(gc);
+}
 bool liveOocMctsUsesHeart1() { return liveEnabled && liveOptions.heart1Prior; }
 bool liveOocSiblingCaptureEnabled() { return liveEnabled && liveSibling.has_value(); }
 nlohmann::json liveOocMctsSpecification() {
@@ -2778,6 +2793,10 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_CPU_SECONDS requires EARLY_STOP=0, no gap/lock or leaf/prior capture");
     if (liveOptions.heart1LeafPolicy && !heart1::enabled())
         throw std::runtime_error("STS_OOC_MCTS_LEAF_POLICY=heart1 requires STS_OOC_HEART1");
+    // Philipp 2026-10-17: with heart1 weights loaded, heart1full is the default tree prior.
+    // STS_OOC_MCTS_PRIOR=heart1 restores the V4-gated heart1 prior, =policy the V4 prior.
+    if (!std::getenv("STS_OOC_MCTS_PRIOR") && heart1::enabled())
+        applyLiveControl("STS_OOC_MCTS_PRIOR", "heart1full", liveConfig, liveOptions);
     // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
     if (!std::getenv("STS_OOC_MCTS_LEAF_VALUE")) applyLiveControl("STS_OOC_MCTS_LEAF_VALUE", "screengbm", liveConfig, liveOptions);
     if (liveOptions.screenLeaf) {
@@ -4951,6 +4970,14 @@ void oocMctsAdapterSelfTest() {
             OocGameContextModel unscored(shop,path,{},fullOptions,shopDeps);
             require(flat(unscored.legalActions(0)) && unscored.continuationMetrics().heart1PriorFallbacks==1,
                 "heart1full without a heart1 score stays uniform");
+            shopScores=true;
+            auto remove=detachedCopy(duplicates);
+            remove.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+            OocGameContextModel removeFull(remove,path,{},fullOptions,shopDeps);
+            const auto removeActions=removeFull.legalActions(0);
+            require(removeActions.size()>2 && flat(removeActions)
+                && removeFull.continuationMetrics().heart1PriorNodes==0,
+                "heart1full keeps a REMOVE select uniform (student C has no CARD_SELECT training)");
             OocAdapterOptions coverageOnly; coverageOnly.heart1Coverage=true;
             bool rejected=false;
             try { OocGameContextModel bad(shop,path,{},coverageOnly,shopDeps); } catch(const std::invalid_argument &) { rejected=true; }
