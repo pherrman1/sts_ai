@@ -54,7 +54,7 @@ each header's `ritualRefit` field and wrote the v3 manifest
 ([package.json](package.json)). The files are tracked under `selfplay/models/`:
 - fast `3bbff6b6…`
 - standard `2f0f5d97…`
-- manifest `combat_transition_pathb_r2_ritual_refit_manifest.json`, SHA-256 `1a13abb7…`
+- manifest [candidate-manifest.json](candidate-manifest.json), SHA-256 `1a13abb7…`
 
 Native check with `combat_transition_runtime_probe`:
 - `--pair-identity` loads the pair with active Lizard (`identity=pathb-r2-ritual-refit`).

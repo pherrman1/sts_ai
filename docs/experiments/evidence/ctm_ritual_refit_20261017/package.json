@@ -30,7 +30,7 @@
     }
   },
   "env": {
-    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST": "selfplay/models/combat_transition_pathb_r2_ritual_refit_manifest.json",
+    "STS_CTM_RESEARCH_CANDIDATE_MANIFEST": "docs/experiments/evidence/ctm_ritual_refit_20261017/candidate-manifest.json",
     "STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256": "1a13abb74b655fa5676b43b1a5f17929b0897cebfd1023f8f20d0a346c202b0e",
     "STS_OOC_MCTS_ACTIVE_LIZARD": "1",
     "STS_OOC_MCTS_BREW_FALLBACK_MODEL": "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
@@ -45,7 +45,7 @@
   "manifestSha256": "1a13abb74b655fa5676b43b1a5f17929b0897cebfd1023f8f20d0a346c202b0e",
   "repoPaths": {
     "fast": "selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
-    "manifest": "selfplay/models/combat_transition_pathb_r2_ritual_refit_manifest.json",
+    "manifest": "docs/experiments/evidence/ctm_ritual_refit_20261017/candidate-manifest.json",
     "standard": "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native"
   },
   "standard": [
