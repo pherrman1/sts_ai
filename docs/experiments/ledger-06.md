@@ -20287,7 +20287,7 @@ setting; the armset stays research-only.
 111180100–111180355 (run); the rest of 111180000–111189999 is unused.
 **Knowledge impact:** one sentence added to the per-context search constants paragraph in
 `evaluation/current-research.md`.
-## §TBD — Blended Silver leaf (one rollout mixed with a learned value) on the §397 corpus, offline: FAIL (2026-10-17)
+## §525 — Blended Silver leaf (one rollout mixed with a learned value) on the §397 corpus, offline: FAIL (2026-10-17)
 
 **Question (Philipp, 2026-10-17, thread "StS AI community scan", V1):** "okay versuche mal v1 zu machen". §397 Gate A
 tested a learned leaf V replacing one SimpleAgent rollout (R1); AlphaGo-style mixing `B = (1−α)·R1 + α·V` on the
