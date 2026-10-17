@@ -20189,18 +20189,21 @@ valid only if the per-fight CPU ratio point estimate is ≤ 1.00.
 verified from a second container; 1,426 valid fights (6 excluded for escapes, 3 control-replay mismatches). Primary
 `roottable2500 − greedy2650`: score +1.87 [−0.15, +3.94], win +0.6 pp [−0.1, +1.2]; CPU per fight ratio 1.007
 [0.987, 1.027]. The root table costs 5.1% more CPU per simulation (1.051 [1.039, 1.064]; table build plus playouts
-of 17.0 vs 15.8 actions), more than the 6% extra simulations bought back at 2650. Descriptive, equal simulations:
+of 17.0 vs 15.8 actions), less than the 6% extra simulations at 2650; the CPU miss comes from decisions per fight:
+the root-table arm takes 1.4% more search decisions (72,277 vs 71,257), so at equal simulations it costs 1.066x CPU
+per fight against 1.059x for greedy2650, hence 1.007. Descriptive, not pre-registered, equal simulations:
 `roottable2500 − greedy2500` score +2.69 [+0.61, +4.80], win +0.8 pp [+0.1, +1.6] at 1.066 CPU per fight;
 `roottable2650 − greedy2650` +0.92 [−1.00, +2.94]; `greedy2650 − greedy2500` +0.83 [−0.85, +2.49]. Win rates
 92.0 / 92.8 / 92.3 / 92.5% (greedy2500 / roottable2500 / greedy2650 / roottable2650). Bosses (269 fights)
 `roottable2500 − greedy2650` +5.4 [−2.0, +13.0]; Act 4 (43) +10.2 [−7.7, +28.1].
-**Interpretation:** a per-root distilled table is a better playout picker than the fixed ADR-0040 table at equal
-simulations, but the gain is about the size of what its own CPU overhead would buy as extra simulations, consistent
+**Interpretation:** a per-root distilled table is descriptively a better playout picker than the fixed ADR-0040
+table at equal simulations (+2.69 [+0.61, +4.80], not pre-registered), but the gain is about the size of what its own CPU overhead would buy as extra simulations, consistent
 with §479 (simulations beat playout quality). Pre-registered decision: stop; the option stays research-only and off.
 **Inference:** a cheaper build (cache per turn, or fewer scored cards) could turn the equal-sims edge into a CPU-matched
 one; not tested.
 [result.json](evidence/silver_rollout_root_table_20261017/result.json). Raw:
 `/mnt/project-files/silver-rollout-root-table/w0{1..4}.tar` (sha256 `8fb4460d…`, `73428220…`, `991356f1…`,
-`e0f75673…`). Seeds 111158000–111158227 used (smokes 000–024, reviewer 050–099).
+`e0f75673…`). Seeds used: 111158000–111158024 (smokes) and 111158100–111158227 (run); 111158025–111158099 unused.
+The pre-launch reviewer used 111139400–111139411.
 **Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
 `operations/environment-variables.md`.
