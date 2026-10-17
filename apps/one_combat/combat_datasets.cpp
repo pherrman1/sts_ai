@@ -171,6 +171,8 @@ nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["native_ooc_card_win_rank"] = true;
     if (sts::search::potionRewardSwapEnabled())
         policy["flags"]["potion_reward_swap"] = true;
+    if (sts::Shop::rulesFixEnabled())
+        policy["flags"]["shop_rules_fix"] = true;
     if (one_combat::heart1::enabled()) {
         const char *weights = std::getenv("STS_OOC_HEART1");
         policy["flags"]["ooc_heart1"] = true;
