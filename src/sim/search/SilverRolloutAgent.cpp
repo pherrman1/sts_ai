@@ -339,10 +339,6 @@ constexpr std::array<CardId,13>  defensiveCards = {
     // Silver's rollout-policy constants at their production defaults.
     constexpr int kBlockOffset = 4;
     constexpr int kAoeMin = 2;
-    // #544: past this many plays in one turn, zero-cost non-attacks lose their
-    // first priority. Without it, two Finesse (or any replayable zero-cost draw)
-    // loop until the 1000-card cap every turn and the playout never attacks.
-    constexpr int kZeroCostSkillTurnCap = 50;
 
     int cardPriority(const CardInstance &c) {
         return 2 * cardPriorityMap[static_cast<int>(c.id)] + (c.isUpgraded() ? -1 : 0);
@@ -574,7 +570,9 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
 
     // Priority order: zero-cost non-attacks, non-zero-cost cards, zero-cost attacks. The AoE
     // override applies only when the pick came from the non-zero-cost cards.
-    if (bc.player.cardsPlayedThisTurn >= kZeroCostSkillTurnCap) {
+    // #544: without a cap, two Finesse (or any replayable zero-cost draw) loop to
+    // the 1000-card cap every turn and the playout never attacks.
+    if (zeroCostSkillTurnCap > 0 && bc.player.cardsPlayedThisTurn >= zeroCostSkillTurnCap) {
         zeroCostNonAttacks.clear();
     }
     const fixed_list<int,10> *priority[3] = {&zeroCostNonAttacks, &nonZeroCostCards, &zeroCostAttacks};

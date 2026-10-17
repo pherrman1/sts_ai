@@ -694,6 +694,9 @@ const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutC
         c.cardTable = kSilverRolloutCardTableG6;
         if (const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE"); path && *path)
             c.cardTable = std::string(path) == "0" ? nullptr : SilverRolloutAgent::loadPlayTable(path);
+        // #544: "0" restores the uncapped zero-cost-first rollout priority.
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_ZERO_COST_CAP"); raw && *raw)
+            c.zeroCostCap = std::max(0, std::atoi(raw));
         return c;
     }();
     return config;
@@ -712,6 +715,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
     }
     rolloutAgent.playTable = rolloutConfig.cardTable;
+    rolloutAgent.zeroCostSkillTurnCap = rolloutConfig.zeroCostCap;
     const int uniform = rolloutConfig.uniform;
     const int playouts = uniform > 0 ? uniform : rolloutConfig.perLeaf;
     double value = 0;

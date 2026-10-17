@@ -260,7 +260,10 @@ From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn
 without attacking (#544: such playouts ran about 143k actions to the engine
-loop guard). A tree descent that passes the 5000-node depth backstop now ends in
+loop guard). The cap also fires in long non-looping turns (for example
+Corruption decks), where free skills past the 50th card are no longer played
+first. `STS_SILVER_ROLLOUT_ZERO_COST_CAP=N` sets it, and `0` restores the
+uncapped order. A tree descent that passes the 5000-node depth backstop now ends in
 a rollout from the current node, counted in `descentBoundRollouts`, instead of
 throwing `SilverSearcher::step descent exceeded depth bound`.
 `one_combat` loads no learned combat model for play. `CombatValueNet` remains
