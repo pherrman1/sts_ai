@@ -71,7 +71,7 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
-            // Research-only per-root rollout card table (STS_SILVER_ROLLOUT_ROOT_TABLE).
+            // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
             std::string rolloutRootTablePath;
             int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
             // No-progress loop guard: after this many consecutive free player
@@ -82,6 +82,24 @@ namespace sts::search {
         Options g_options;
         CombatValueNet g_rootPriorNet;
         CombatValueNet g_rolloutRootTableNet;
+        std::mutex g_rolloutRootTableMutex;
+        std::string g_rolloutRootTableLoadedPath;
+
+        // The rollout root table model, loaded at first use (and again if a later install names
+        // another path). A model that does not load is fatal.
+        const CombatValueNet &rolloutRootTableNet() {
+            std::lock_guard lock(g_rolloutRootTableMutex);
+            const auto &path = g_options.rolloutRootTablePath;
+            if (g_rolloutRootTableLoadedPath != path) {
+                g_rolloutRootTableNet = CombatValueNet{};
+                if (!g_rolloutRootTableNet.load(path) || !g_rolloutRootTableNet.isPolicyMlp)
+                    throw std::runtime_error("STS_SILVER_ROLLOUT_ROOT_TABLE: cannot load a combat_policy_mlp model "
+                                             "from " + path + " (=0 restores the ADR-0040 table)");
+                g_rolloutRootTableLoadedPath = path;
+                std::cerr << "[silver] rollout root table model loaded: " << path << "\n";
+            }
+            return g_rolloutRootTableNet;
+        }
         std::mutex g_stopTraceMutex;
         std::ofstream g_stopTraceFile;
         std::string g_uselessTrace;
@@ -568,7 +586,7 @@ namespace sts::search {
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
                 if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
                         ? g_nativeSilverRolloutRootTableOverride
-                        : g_options.rolloutRootTablePath.empty() ? nullptr : &g_rolloutRootTableNet) {
+                        : g_options.rolloutRootTablePath.empty() ? nullptr : &rolloutRootTableNet()) {
                     nativeSilverRolloutRootTable(searcher->rootSearchState(), *tableNet, searcher->rootCardTable);
                     searcher->rolloutConfig.cardTable = searcher->rootCardTable.data();
                 }
@@ -886,13 +904,14 @@ namespace sts::search {
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
         }
-        g_options.rolloutRootTablePath.clear();
-        if (const char *path = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE"); path && *path) {
-            g_rolloutRootTableNet = CombatValueNet{};
-            if (!g_rolloutRootTableNet.load(path) || !g_rolloutRootTableNet.isPolicyMlp)
-                throw std::runtime_error(std::string("STS_SILVER_ROLLOUT_ROOT_TABLE: cannot load a "
-                                                     "combat_policy_mlp model from ") + path);
-            g_options.rolloutRootTablePath = path;
+        // ADR-0046: the per-root rollout card table is on by default with the bundled gen-6 E
+        // prior; STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
+        // selects another combat_policy_mlp model. The model loads at the first search
+        // (rolloutRootTableNet), so commands without Silver need not find it.
+        {
+            const char *raw = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE");
+            const std::string path = raw && *raw ? raw : kDefaultRolloutRootTableModel;
+            g_options.rolloutRootTablePath = path == "0" ? "" : path;
         }
         if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
             char *end = nullptr;
@@ -1138,7 +1157,8 @@ namespace sts::search {
             : rollout.cardTable == kSilverRolloutCardTableG6 ? "g6_builtin" : "file";
         return {g_options.finalFightLeaf, g_options.noLossPotionCredit, g_options.relicHealLeaf,
                 g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
-                table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap, rollout.actionCap};
+                table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap, rollout.actionCap,
+                g_options.rolloutRootTablePath};
     }
 
     bool nativeSilverLearnedStopEnabled() {

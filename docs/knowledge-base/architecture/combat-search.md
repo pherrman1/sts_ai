@@ -297,8 +297,9 @@ fights. §479 (A20, 689 fights): uniform playouts lose 22.8 fight score at no
 CPU saving per simulation; a learned card table and 2 or 4 playouts per leaf
 at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040).
-Research option, off by default: `STS_SILVER_ROLLOUT_ROOT_TABLE=<combat_policy_mlp
-model>` replaces that fixed table with one built once per searched root
+Default since ADR-0046 (`STS_SILVER_ROLLOUT_ROOT_TABLE`: unset = bundled
+`models/combat_policy_mlp_g6_E.txt`, `0` = the fixed ADR-0040 table, or another
+`combat_policy_mlp` model): that fixed table is replaced by one built once per searched root
 (`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
 upgrade) in hand, draw and discard pile as a play at the root state, aimed
 where the rollout aims it (attacks at the lowest-HP monster, other targeted
@@ -313,7 +314,11 @@ at each budget in `STS_CTMSILVER_SWEEP_SIMS`; per-thread override
 equal simulations the root table scores +2.7 [+0.6, +4.8] better, but it costs
 5.1% more CPU per simulation (longer playouts plus the build), and against
 greedy at 6% more simulations it is +1.9 [−0.1, +3.9] at 1.007x CPU per fight:
-not CPU-matched and not shown, so it stays off.
+not CPU-matched and not shown. §521 repeats it at 10k: +1.8
+[−0.4, +4.0] against greedy at 10,700 at 1.008x CPU per fight (NOT_CPU_MATCHED,
+NOT_SHOWN), +1.8 [−0.2, +3.9] at equal simulations; 7% more greedy simulations
+buy nothing at 10k (−0.02). Philipp made it the default anyway (ADR-0046); the
+`roottable` armset requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`.
 From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn
