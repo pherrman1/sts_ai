@@ -13,4 +13,4 @@ st=$(date +%s)
 env -i PATH="$PATH" HOME="$HOME" OMP_NUM_THREADS=1 "${E[@]}" bash tools/seed_guard.sh "$RUN/one_combat" \
   combattransitionforcedgen "$N" 10000 20 "$U.jsonl" "$LO" "$RUN/teacher.json" act4_fork > "$U.log" 2>&1
 rc=$?
-echo "unit=$NAME-$LO n=$N rc=$rc sec=$(( $(date +%s) - st )) $(grep -h '^combattransition' "$U.log" | tail -1 | grep -o 'completed=[^ ]* quarantined=[^ ]* no_act4=[^ ]* rows=[0-9]*')" > "$U.done"
+echo "unit=$NAME-$LO n=$N rc=$rc sec=$(( $(date +%s) - st )) $(grep -h '^combattransition' "$U.log" | tail -1 | grep -o 'completed=[^ ]* quarantined=[^ ]* no_act4=[^ ]* rows=[0-9]* ooc_heart1=[0-9]* ooc_deployed=[0-9]*')" > "$U.done"

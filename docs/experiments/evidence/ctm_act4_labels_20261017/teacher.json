@@ -1,7 +1,7 @@
 {
-  "teacher_id": "silver-ordinary-fair-learnedstop-ctm-act4-79263192",
-  "git_sha": "79263192c3025402861c274ffaec9395e5c0df33",
-  "executable_sha256": "5e88ec0aa4216cd001d5bb9849dcd42861501d79f9e8f082320e6e9e8e49279a",
+  "teacher_id": "silver-ordinary-fair-learnedstop-ctm-act4-studentc-25270409",
+  "git_sha": "252704094c761beb8a30a2f3ee6766cea51ec057",
+  "executable_sha256": "e18043287fc5dcb1008996f99b68a30002027a1639674c50c9ffc111da35b439",
   "combat_backend": "native_silver",
   "rng_regime": "project_fair",
   "search_configuration": {
@@ -36,7 +36,7 @@
     "STS_SILVER_ADAPTIVE": "0",
     "STS_SILVER_VNET_LEAF_DIRECT": "0",
     "STS_SILVER_LEARNED_STOP": "1",
-    "STS_EXECUTABLE_GIT_SHA": "79263192c3025402861c274ffaec9395e5c0df33",
+    "STS_EXECUTABLE_GIT_SHA": "252704094c761beb8a30a2f3ee6766cea51ec057",
     "STS_CTM_GEN_DEPLOYED_OOC": "1",
     "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
     "STS_OOC_STRATEGIC_REST": "1",
@@ -45,7 +45,8 @@
     "STS_OOC_STRATEGIC_TREASURE": "1",
     "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
     "STS_OOC_STRATEGIC_MARGIN": "1.0",
-    "STS_COLLECT_KEYS": "0"
+    "STS_COLLECT_KEYS": "0",
+    "STS_OOC_HEART1": "build/studentc.bin"
   },
   "model_artifacts": [
     {
@@ -77,6 +78,7 @@
       "native_ooc_shop_deck_size_fix": true,
       "neow_v": false,
       "ooc_action_nn": false,
+      "ooc_heart1": true,
       "ooc_map_route": false,
       "ooc_shop_beam": false,
       "ooc_strategic_boss_relic": true,
@@ -93,6 +95,7 @@
       "potion_reward_swap": true,
       "remove_low_obtain_weight": true,
       "rest_win": true,
+      "shop_rules_fix": true,
       "shop_win": false,
       "skip_optional_recall": true
     },
@@ -111,6 +114,11 @@
         "path": "selfplay/models/ooc_strategic_tok_final.native",
         "role": "ooc_strategic_tok",
         "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+      },
+      {
+        "path": "build/studentc.bin",
+        "role": "ooc_heart1",
+        "sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
       }
     ],
     "native_ooc": true,

@@ -15,8 +15,11 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../../../.." && pwd)"
 SHARE=/mnt/project-files/ctm-a20/act4-labels
 RUN=$HOME/ctmact4-$TAG OUT=$HOME/ctmact4-$TAG/out
-CODE=79263192c3025402861c274ffaec9395e5c0df33
-EXPECT_BIN=5e88ec0aa4216cd001d5bb9849dcd42861501d79f9e8f082320e6e9e8e49279a
+CODE=252704094c761beb8a30a2f3ee6766cea51ec057
+EXPECT_BIN=e18043287fc5dcb1008996f99b68a30002027a1639674c50c9ffc111da35b439
+# Student C (heart1-distill) out of combat: the teacher sets STS_OOC_HEART1=build/studentc.bin (Philipp 17:11Z).
+STUDENT_SRC=/mnt/project-files/student-c-488/studentc.bin
+STUDENT_SHA=eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
 stop() { echo "STOP: $*"; exit 1; }
 units() {
   if [ "$W" = 0 ]; then echo "act4 111157000 4"; return; fi
@@ -35,14 +38,17 @@ setup)
   cp build/linux-gcc-release/one_combat "$RUN/one_combat"
   got=$(sha256sum "$RUN/one_combat" | cut -d' ' -f1)
   [ "$got" = "$EXPECT_BIN" ] || stop "binary sha256 $got != $EXPECT_BIN ($(g++ --version | head -1))"
+  cp "$STUDENT_SRC" build/studentc.bin || stop "cannot copy $STUDENT_SRC"
+  [ "$(sha256sum build/studentc.bin | cut -d' ' -f1)" = "$STUDENT_SHA" ] || stop "studentc.bin sha256 differs from $STUDENT_SHA"
   cp "$HERE/teacher.json" "$RUN/teacher.json"
   python3 -c "import json,sys;t=json.load(open(sys.argv[1]));assert t['git_sha']==sys.argv[2] and t['environment']['STS_EXECUTABLE_GIT_SHA']==sys.argv[2]" \
     "$RUN/teacher.json" "$CODE" || stop "teacher does not match the code commit"
   { echo "worker=$W of $N run=$(git rev-parse HEAD) code=$CODE binary=$EXPECT_BIN $(g++ --version | head -1) host=$(hostname)/$(cat /proc/sys/kernel/random/boot_id)"
-    sha256sum "$HERE"/*.sh "$HERE"/teacher.json; } > "$OUT/FROZEN.txt"
+    sha256sum "$HERE"/*.sh "$HERE"/teacher.json build/studentc.bin; } > "$OUT/FROZEN.txt"
   echo "setup ok: $(head -1 "$OUT/FROZEN.txt")" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"
+  [ "$(sha256sum build/studentc.bin 2>/dev/null | cut -d' ' -f1)" = "$STUDENT_SHA" ] || stop "build/studentc.bin missing or changed; rerun setup"
   units > "$OUT/units.txt"; NU=$(wc -l < "$OUT/units.txt")
   xargs -P 4 -L 1 bash "$HERE/run_unit.sh" "$REPO" "$RUN" "$OUT" < "$OUT/units.txt"
   n=$(ls "$OUT"/*.done 2>/dev/null | wc -l)
