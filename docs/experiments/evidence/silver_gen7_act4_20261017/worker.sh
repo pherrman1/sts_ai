@@ -5,19 +5,21 @@
 # lines 25u+1..25u+25 and uses seeds SEED0 + 25u .. (state i of the file has seed SEED0 + i).
 # Lane L = 4(W-1)+i takes units u = L mod 4N. Stall rule: a unit running > 7200 s gets a gdb backtrace
 # in OUT/<tag>.stall.txt and is killed (rc 137); no rerun. A failed unit does not stop the run.
-# usage: bash worker.sh W N OUT_DIR STATES    (run from the repository checkout at RUN_COMMIT)
+# usage: bash worker.sh W N OUT_DIR STATES    (run from the repository checkout at the run commit)
 set -euo pipefail
 W="$1"; N="$2"; OUT="$3"; STATES="$4"
-SHA=__RUN_COMMIT__
-BIN_SHA=__BIN_SHA__
-STATES_SHA=__STATES_SHA__
+CODE=0646798bc142f5eb9ae0b5d2e7c8cad8e61eeff1   # code commit; the run commit adds only docs on top
+BIN_SHA=09a611b12c65a0351149d9bbd0a0cb43d406e06f9e81b92af38362287f292bd4
+STATES_SHA=c095368c31a753d421103f8aea9aef7b301a7969f64e90df92555abd3d661917
 PRIOR=docs/experiments/evidence/silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt
 PRIOR_SHA=ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228
 PER=25; SEED0=111170200; SEEDMAX=111179999; COPIES=2; SIMS=40000; STALL=7200
 [[ "$W" =~ ^[1-9][0-9]*$ && "$N" =~ ^[1-9][0-9]*$ ]] || { echo "bad W/N: $W/$N (unpadded integers)"; exit 1; }
 (( W <= N && N <= 16 )) || { echo "bad W/N: $W/$N"; exit 1; }
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
-[ "$(git rev-parse HEAD)" = "$SHA" ] || { echo "checkout is not $SHA"; exit 1; }
+git merge-base --is-ancestor "$CODE" HEAD && git diff --quiet "$CODE" HEAD -- . ":(exclude)docs" \
+  || { echo "checkout is not $CODE plus docs"; exit 1; }
+SHA=$(git rev-parse HEAD)
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "tracked changes in checkout"; exit 1; }
 RUN="$HOME/gen7a4-w$W"
 [ -e "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ] && { echo "OUT not empty: $OUT"; exit 1; }

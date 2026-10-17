@@ -1,8 +1,8 @@
 # Silver prior gen 7, Act-4 self-play: cloud worker W (W = 1..N, unpadded; WW = W zero-padded, e.g. 03)
 
-Philipp requested this run (2026-10-17 19:01Z "lets do the next prior generation"; worker count __N__ from him).
+Philipp requested this run (2026-10-17 19:01Z "lets do the next prior generation"; worker count 16 from him).
 Plan: `docs/experiments/evidence/silver_gen7_act4_20261017/PLAN.md` at the run commit.
-Run commit **__RUN_COMMIT__**. N = __N__. Data generation only: do no analysis, do not post to GitHub, do not change
+Run commit **__RUN_COMMIT__** (filled in the share copy; the repo copy cannot name its own commit). N = 16. Data generation only: do no analysis, do not post to GitHub, do not change
 seeds, scripts, environment, binary or settings. Run nothing from `/mnt/project-files` (only copy the states data
 file from there). At the end you upload exactly two files: `/mnt/project-files/silver-az-mlp/gen7-act4/wWW.tar`
 and then `/mnt/project-files/silver-az-mlp/gen7-act4/wWW.DONE.txt`. Write nothing else there.
@@ -16,18 +16,18 @@ git checkout --detach __RUN_COMMIT__
 git submodule update --init --recursive
 cmake --preset linux-gcc-release && cmake --build build/linux-gcc-release --target one_combat -j4
 cp /mnt/project-files/silver-az-mlp/gen7-act4/act4-states.jsonl $HOME/act4-states.jsonl
-sha256sum $HOME/act4-states.jsonl   # must be __STATES_SHA__; stop otherwise
+sha256sum $HOME/act4-states.jsonl   # must be c095368c31a753d421103f8aea9aef7b301a7969f64e90df92555abd3d661917; stop otherwise
 ```
 
 ## 2. Run
 Pass W unpadded to worker.sh (3, never 03); WW only in file names.
 ```sh
 W=<your W>; WW=$(printf %02d $W)
-echo "FROZEN commit=__RUN_COMMIT__ W=$W N=__N__ seeds=111170200+state sims=40000 copies=2" > $HOME/gen7a4-w$WW.frozen
-cd /home/user/sts_ai; setsid nohup bash docs/experiments/evidence/silver_gen7_act4_20261017/worker.sh $W __N__ $HOME/gen7a4-out-w$WW $HOME/act4-states.jsonl > $HOME/gen7a4-w$WW.run.log 2>&1 < /dev/null &
+echo "FROZEN commit=__RUN_COMMIT__ W=$W N=16 seeds=111170200+state sims=40000 copies=2" > $HOME/gen7a4-w$WW.frozen
+cd /home/user/sts_ai; setsid nohup bash docs/experiments/evidence/silver_gen7_act4_20261017/worker.sh $W 16 $HOME/gen7a4-out-w$WW $HOME/act4-states.jsonl > $HOME/gen7a4-w$WW.run.log 2>&1 < /dev/null &
 ```
 The script checks the checkout, tracked changes, binary sha256, prior and states file, then runs 4 lanes of
-`one_combat silverazact4gen` (units of 25 fight starts, 2 copies each, ~35-40 min per unit). It stops at once on a
+`one_combat silverazact4gen` (units of 25 fight starts, 2 copies each, ~35-40 min per unit; with N = 16 about 2.5 h in total). It stops at once on a
 problem ("bad W/N", "checkout is not", "tracked changes", "not empty", "sha256 mismatch", "bad state count",
 "no units"); report that message verbatim and stop. Its last line on success is `WORKER_END units ok K of M`.
 
