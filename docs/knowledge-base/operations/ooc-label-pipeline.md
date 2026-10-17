@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for controlled Ritual/Writhing research setups; 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for `heartoutcomegen ... policy` search policy-target rows; 2026-10-17 for controlled Ritual/Writhing research setups; 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -51,6 +51,49 @@ re-qualified at import (`heart_outcome_round2.py requalify`/`index`). `tools/hea
 teacher with this trace, an optional §494 sibling subsample (`--sibling-every`,
 default off), TRAIN/VALIDATION development splits and a sealed CONFIRM split.
 [Plan](../../experiments/evidence/heart_outcome_round2_20261017/PLAN.md).
+
+### OOC search policy targets (`policy` mode)
+
+`one_combat heartoutcomegen 1 SEED OUT.jsonl policy` writes everything `on`
+writes, plus one `"type":"decision"` row per real OOC decision, right after
+that boundary's state row (`stateIndex`). `on` and `off` output bytes are
+unchanged; only `policy` adds the header keys `policyTargets: true` and
+`decisionSchema: "ooc-policy-target-v1"` and the footer counts `decisions`
+and `searchedDecisions`. The §497 `tools/heart_outcome_collect.py` validator
+accepts only `on|off` files; `policy` files need a new reader.
+
+Every decision row has `decisionIndex`, `by` (the real driver's handler:
+`mcts`, `chain`, `heart_key`, `tree_rule`, ...), `mctsConsulted` and
+`v4Fallback` (MCTS consulted but the V4 chain acted, including roots that were leaf boundaries; `executionReason` says which; `by: heart1_fallback` is not V4). When OOC MCTS was
+consulted the row also has:
+- `heart1Record`: the trained heart1 choice record (`recordToJson`, token
+  order of `heart1::buildChoice`) of the state the search sees, after forced
+  reward gold; `null` with `heart1Reason` when heart1 has no encoding;
+- `searchSeed`, `selectedKey`, `selectedBits` (exact action bits for replay),
+  `executed`, `executionReason`;
+- `root` (`null` when the root was terminal or a leaf boundary): requested and
+  completed simulations, attempts, `singleton`, `aborted`/`abortReason`,
+  `earlyStopLock`, `earlyStopGap20`, `earlyStopBudget`, `savedSimulations`,
+  `selectionRule`, `selectedId`, `rootVisits`, `maxVisits`, `rootMeanQ`
+  (visit-weighted root Q, the value for completing unvisited actions offline);
+  `candidates` with `id`, `key`, `bits`, `semantic`, `compound`, `prior`,
+  `visits`, `q`, `heart1Tokens` (token indices) and `heart1Map`
+  (`token|skip_card|bowl|gold|discard_potion|none`, the rules of
+  `heart1::mapPriorLogits`); and `checkpoints` (`id`, `visits`, `q` after
+  128/256/512/... completed simulations, recorded inside the live search).
+
+Checkpoints only read root statistics; the singleton bypass and every early
+stop are kept, so capture does not change play. A same-seed `off`/`on`/`policy`
+canary must give byte-identical `STS_OOC_DECISION_TRACE` and
+`STS_OOC_MCTS_TRACE` action files, and `policy` minus its decision rows and
+the added header/footer keys must equal `on`. Match and Keep's hypothetical
+card searches are never recorded. This is capture only: no target fitting,
+training or playout-cap randomization.
+`STS_OOC_MCTS_ROOT_TRACE` (§503, above) already writes per-root candidates
+with prior/visits/Q, the public record and a snapshot to a separate file; policy
+mode adds checkpoints, heart1 token indices, stop/abort/fallback flags and root
+visit statistics in the trajectory itself, with no snapshots or Match and Keep
+hypothetical roots.
 
 ### Recovered outcome-corpus import
 

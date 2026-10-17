@@ -198,6 +198,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/screen_leaf_probes.cpp
     apps/one_combat/screen_leaf_net.cpp
     apps/one_combat/screen_leaf_gbm.cpp
+    apps/one_combat/heart_leaf.cpp apps/one_combat/heart_leaf_tail.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
@@ -258,6 +259,12 @@ add_executable(screen_leaf_gbm_test
     apps/one_combat/compact_tree.cpp)
 target_include_directories(screen_leaf_gbm_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_gbm_features COMMAND screen_leaf_gbm_test)
+add_executable(heart_leaf_test tests/heart_leaf_test.cpp
+    apps/one_combat/heart_leaf.cpp apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(heart_leaf_test PRIVATE include json/include apps)
+link_ctm_crypto(heart_leaf_test)
+add_test(NAME heart_leaf_features COMMAND heart_leaf_test)
 add_executable(screen_leaf_continuations_test
     apps/one_combat/screen_leaf_snapshot.cpp
     apps/one_combat/screen_leaf_continuations.cpp

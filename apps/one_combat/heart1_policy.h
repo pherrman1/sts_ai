@@ -184,6 +184,17 @@ std::optional<std::vector<double>> mapPriorLogits(const Choice &, const std::vec
                                                   bool singingBowl,
                                                   const std::vector<sts::search::GameAction> &,
                                                   std::map<std::string, std::uint64_t> *tally = nullptr);
+// The token side of mapPriorLogits, for policy-target capture: per primitive,
+// the choice-token indices it maps to (several when one primitive sits behind
+// several tokens) and how: "token", "skip_card", "bowl", "gold" (no token; the
+// prior takes the best logit), "discard_potion" (no token; the lowest logit) or
+// "none" where mapPriorLogits falls back to V4.
+struct TokenMapping {
+    std::vector<int> tokens;
+    std::string kind;
+};
+std::vector<TokenMapping> mapChoiceTokens(const Choice &, bool singingBowl,
+                                          const std::vector<sts::search::GameAction> &);
 // Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
 void priorMappingSelfTest();
 

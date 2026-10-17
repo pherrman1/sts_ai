@@ -15,6 +15,7 @@
 
 namespace sts {
     class BattleContext;
+    struct CardInstance;
 }
 
 namespace sts::search {
@@ -47,6 +48,9 @@ namespace sts::search {
     // Fill only the per-action feature block (out points at the action sub-vector).
     // Lets a caller extract the shared state block once and refill this per edge.
     void combatFillActionFeatures(const BattleContext &bc, const Action &action, float *actionOut);
+    // Action block of playing card `c` (in hand or not) at monster `targetIdx` (-1 = none);
+    // equals combatFillActionFeatures for a hand card's CARD action.
+    void combatFillCardPlayFeatures(const BattleContext &bc, const CardInstance &c, int targetIdx, float *actionOut);
     // Monster slot an action targets: the card's target index when the action
     // block marks it as targeting a living enemy (aTargetsEnemy = 1), else -1.
     int  combatActionTargetSlot(const BattleContext &bc, const Action &action);
