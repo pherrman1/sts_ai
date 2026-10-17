@@ -18,7 +18,8 @@ so documentation can talk about the placeholders without being rewritten.
   check REVIEWED NEW [--base REF] [--skip ...] [--skip-adr ...]
       Proves that NEW = (REVIEWED, or a clean automatic merge of REVIEWED with a base commit) + exactly the
       rewrite `assign` computes against REF with the same skip lists, and that REF is merged into NEW.
-      Exit 0 means the review of REVIEWED still covers NEW. Use the same --skip/--skip-adr as the assign.
+      Exit 0 means the review of REVIEWED still covers NEW. Without --skip/--skip-adr it reads them from
+      NEW's commit message, as written by assign's suggested message.
 """
 from __future__ import annotations
 
@@ -177,8 +178,9 @@ def cmd_assign(a) -> int:
             subprocess.run(["git", "mv", f, dest], check=True)
         with open(dest, "w") as fh:
             fh.write(text)
-    print(f"done; commit, then reviewers run: python3 tools/ledger_assign.py check <reviewed> <new> --base {a.base}"
-          + (f" --skip {a.skip}" if a.skip else "") + (f" --skip-adr {a.skip_adr}" if a.skip_adr else ""))
+    flags = f"--base {a.base}" + (f" --skip {a.skip}" if a.skip else "") + (f" --skip-adr {a.skip_adr}" if a.skip_adr else "")
+    print("done; commit with this message (check reads the skip lists from it):\n"
+          f"  Assign ledger/ADR numbers at merge (ledger_assign {flags})")
     return 0
 
 
@@ -199,7 +201,10 @@ def cmd_check(a) -> int:
             raise SystemExit(f"the merged commit {pp[1][:12]} is not on {a.base}")
     if not ok("merge-base", "--is-ancestor", a.base, new_c):
         raise SystemExit(f"{a.base} is not merged into NEW; numbers may collide with entries merged since")
-    secs, adrs, renames, expected = plan(a.base, p, parse_skip(a.skip), parse_skip(a.skip_adr))
+    msg = git("log", "-1", "--format=%B", new_c)
+    skip = a.skip or (m.group(1) if (m := re.search(r"--skip (\S+?)[) ]", msg)) else "")
+    skip_adr = a.skip_adr or (m.group(1) if (m := re.search(r"--skip-adr (\S+?)[) ]", msg)) else "")
+    secs, adrs, renames, expected = plan(a.base, p, parse_skip(skip), parse_skip(skip_adr))
     want = {renames.get(f, f): t for f, t in expected.items()}
     gone = set(renames)
     bad = []

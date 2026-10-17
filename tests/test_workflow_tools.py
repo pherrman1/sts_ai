@@ -82,6 +82,15 @@ class LedgerAssignTest(unittest.TestCase):
         p = run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path, check=False)
         self.assertNotEqual(p.returncode, 0)
 
+    def test_check_reads_skip_lists_from_commit_message(self):
+        out = run(self.tool + ["assign", "--base", "main", "--skip", "8-9", "--skip-adr", "4"], self.r.path).stdout
+        msg = out.strip().splitlines()[-1].strip()
+        self.assertIn("--skip 8-9 --skip-adr 4)", msg)
+        git(self.r.path, "add", "-A")
+        git(self.r.path, "commit", "-q", "-m", msg)
+        new = git(self.r.path, "rev-parse", "HEAD")
+        run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path)
+
     def test_check_rejects_colliding_numbers(self):
         for path, old, new in [("docs/experiments/ledger-01.md", "§TBD — new (see ADR-TBD)", "§5 — new (see ADR-0001)"),
                                ("docs/experiments/ledger-01.md", "§TBD-b", "§100"),
@@ -282,6 +291,12 @@ class CloudWorkerTest(unittest.TestCase):
         rows = json.loads(run(verify, self.r.path, check=False).stdout)
         self.assertEqual(rows[1]["state"], "BAD")
         self.assertIn("hashes differ", rows[1]["detail"])
+
+    def test_dot_unit_ids_rejected(self):
+        (self.r.path / self.c / "units.txt").write_text("..\n111 a\n")
+        self.r.commit("dot unit")
+        p = run(self.w + ["setup", self.c, "1"], self.r.path, self.env, check=False)
+        self.assertIn("starts with a dot", p.stdout)
 
     def test_padded_worker_number_rejected(self):
         p = run(self.w + ["setup", self.c, "01"], self.r.path, self.env, check=False)

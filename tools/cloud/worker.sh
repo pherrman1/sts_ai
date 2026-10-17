@@ -109,6 +109,8 @@ setup)
   [ -z "$(git status --porcelain --untracked-files=no)" ] || stop "checkout not clean"
   dup=$(grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" | while IFS= read -r u; do unit_id "$u"; echo; done | sort | uniq -d | head -1)
   [ -z "$dup" ] || stop "units.txt has two units with the same id $dup"
+  bad=$(grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" | while IFS= read -r u; do unit_id "$u"; echo; done | grep -m1 '^\.')
+  [ -z "$bad" ] || stop "unit id '$bad' starts with a dot; unit lines must not start with '.'"
   if [ -f "$RUN/FROZEN.txt" ] && ! frozen_identity | cmp -s - "$RUN/FROZEN.txt"; then
     stop "$RUN holds a different freeze (other commit, binary or campaign files); use a fresh container"
   fi
@@ -133,7 +135,7 @@ setup)
 start)
   [ -f "$RUN/FROZEN.txt" ] || stop "run setup first"
   is_running && stop "already running"
-  setsid nohup bash "$SELF" run "$C" "$W" > "$RUN/run.log" 2>&1 < /dev/null &
+  setsid nohup bash "$SELF" run "$C" "$W" >> "$RUN/run.log" 2>&1 < /dev/null &  # append: keep earlier attempts' log
   echo "started; log $RUN/run.log" ;;
 run)
   [ -f "$RUN/FROZEN.txt" ] || stop "run setup first"
@@ -169,6 +171,7 @@ PY
   echo "WORKER_OK $TAG tar_sha256=$TSHA" ;;
 _unit)
   u=${4:-}; id=$(unit_id "$u"); UO="$OUT/units/$id"
+  case "$id" in ''|.*) echo "rc=bad-id" > "$OUT/units/_bad_id.failed"; exit 0;; esac  # never rm -rf "$OUT/units/.."
   [ -e "$UO.done" ] && exit 0
   [ -e "$RUN/STOP" ] && exit 0
   rm -rf "$UO" "$UO.log" "$UO.failed"  # a retry starts from an empty dir (one_combat appends to its CSVs)
@@ -185,6 +188,7 @@ wait)
     if ! is_running && { sleep 5; ! is_running && [ ! -e "$RUN/FINISHED" ]; }; then echo "NOT RUNNING"; tail -5 "$RUN/run.log" 2>/dev/null; exit 2; fi
     sleep 60; t=$((t + 60))
   done
+  [ -e "$RUN/FINISHED" ] && { echo "FINISHED"; tail -1 "$RUN/run.log" 2>/dev/null; exit 0; }
   echo "still running after $((lim / 60)) min: $(ls "$OUT"/units/*.done 2>/dev/null | wc -l)/$(wc -l < "$OUT/units.txt") units" ;;
 status)
   echo "units done $(ls "$OUT"/units/*.done 2>/dev/null | wc -l)/$(wc -l < "$OUT/units.txt" 2>/dev/null || my_units | wc -l)" \
