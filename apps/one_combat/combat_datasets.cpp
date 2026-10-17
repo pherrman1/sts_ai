@@ -67,6 +67,9 @@ nlohmann::json effectiveSilverLeafSpecification() {
             {"escape_penalty", {leaf.escapePenalty, leaf.eliteEscapePenalty}},
             {"rollout_card_table", table}, {"rollout_uniform", leaf.rolloutUniform},
             {"rollouts_per_leaf", leaf.rolloutsPerLeaf}, {"rollout_zero_cost_cap", leaf.rolloutZeroCostCap}};
+    // Recorded only when not the default 1000, so teacher files written before
+    // STS_SILVER_ROLLOUT_ACTION_CAP existed still match.
+    if (leaf.rolloutActionCap != 1000) spec["rollout_action_cap"] = leaf.rolloutActionCap;
     // Research option; recorded only when on so earlier specifications stay comparable.
     if (const char *path = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE"); path && *path)
         spec["rollout_root_table"] = {{"path", path}, {"sha256", fileSha256(path)}};
@@ -1878,6 +1881,9 @@ int learnedStopTeacherSelfTest() {
     auto wrongTable = withLeaf;
     wrongTable["search_configuration"]["silver_leaf"]["rollout_card_table"] = "hand_written";
     expect("rejects rollout card table mismatch", loads(wrongTable, true), false);
+    auto wrongCap = withLeaf;
+    wrongCap["search_configuration"]["silver_leaf"]["rollout_action_cap"] = 0;
+    expect("rejects rollout action cap mismatch", loads(wrongCap, true), false);
     auto wrongHeal = base;
     wrongHeal["search_configuration"]["a20_boss_heal_fix"] = false;
     expect("rejects A20 boss heal fix mismatch", loads(wrongHeal, true), false);

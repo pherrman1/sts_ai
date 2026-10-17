@@ -146,6 +146,14 @@ add_test(NAME full_hp_rest_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(full_hp_rest_filter PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(deck_obtain_raw_test tests/deck_obtain_raw_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(deck_obtain_raw_test PRIVATE include json/include)
+add_test(NAME deck_obtain_raw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:deck_obtain_raw_test>)
+set_tests_properties(deck_obtain_raw PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 add_executable(remove_obtain_weight_test tests/remove_obtain_weight_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(remove_obtain_weight_test PRIVATE include json/include)

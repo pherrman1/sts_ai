@@ -337,7 +337,16 @@ int testSilverRolloutLimit() {
     (void)lethal.rolloutValue(bc);
     if (lethal.stats.rolloutActions != 1 || lethal.stats.rolloutActionLimitHits != 0
             || lethalProfile.endpoints[search::SilverTreeProfile::VICTORY].total[1] != 1) return 1;
-    std::cout << "silver_rollout_limit PASS: bounded free draw cycle; terminal path preserved\n";
+    // STS_SILVER_ROLLOUT_ACTION_CAP sets the bound (0 = uncapped, not exercised here).
+    bc.monsters.arr[0].buff<MS::INVINCIBLE>(1); bc.monsters.arr[0].setStatus<MS::INVINCIBLE>(0);
+    bc.monsters.arr[0].curHp = bc.monsters.arr[0].maxHp;
+    search::SilverSearcher custom(bc, {}); custom.rolloutConfig = {}; custom.rolloutConfig.actionCap = 37;
+    (void)custom.rolloutValue(bc);
+    if (custom.stats.rolloutActions != 37 || custom.stats.rolloutActionLimitHits != 1) {
+        std::cerr << "silver_rollout_limit FAIL custom cap actions=" << custom.stats.rolloutActions << '\n';
+        return 1;
+    }
+    std::cout << "silver_rollout_limit PASS: bounded free draw cycle; terminal path preserved; cap configurable\n";
     return 0;
 }
 

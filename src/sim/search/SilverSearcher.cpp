@@ -697,6 +697,9 @@ const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutC
         // #544: "0" restores the uncapped zero-cost-first rollout priority.
         if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_ZERO_COST_CAP"); raw && *raw)
             c.zeroCostCap = std::max(0, std::atoi(raw));
+        // #544/#579: "0" restores uncapped playouts.
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_ACTION_CAP"); raw && *raw)
+            c.actionCap = std::max(0, std::atoi(raw));
         return c;
     }();
     return config;
@@ -740,8 +743,10 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
     // resets and the selected rollout policy. A free draw/reshuffle cycle must
     // not monopolize an advisor request (#544). Preserve an unresolved endpoint
     // for the existing heuristic instead of inventing a victory or a death.
-    constexpr int kMaxRolloutActions = 1000;
-    while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < kMaxRolloutActions) {
+    // STS_SILVER_ROLLOUT_ACTION_CAP=0 restores uncapped playouts.
+    const int maxActions = rolloutConfig.actionCap > 0 ? rolloutConfig.actionCap
+                                                      : std::numeric_limits<int>::max();
+    while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < maxActions) {
         Action action;
         if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
                 || bc.inputState == InputState::CARD_SELECT)) {
@@ -760,7 +765,7 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
         action.execute(bc);
         ++rolloutDepth;
     }
-    if (bc.outcome == Outcome::UNDECIDED && rolloutDepth == kMaxRolloutActions)
+    if (bc.outcome == Outcome::UNDECIDED && rolloutDepth == maxActions)
         ++stats.rolloutActionLimitHits;
     ++stats.rolloutPlayouts;
     stats.rolloutActions += rolloutDepth;

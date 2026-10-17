@@ -1,6 +1,7 @@
 # Issue 61: `Deck::obtainRaw` double-counts stats on save load
 
-- **Status:** open
+- **Status:** closed
+- **Fixed by:** #624 (`Deck::obtainRaw` now counts each card once, like `Deck::obtain`; the `Deck.cpp:193-212` line references below describe the pre-fix code)
 - **Tier:** Medium
 - **Date:** 2026-08-10
 - **Source:** Investigator audit 2026-08-10, `src/game/Deck.cpp:193-212`
