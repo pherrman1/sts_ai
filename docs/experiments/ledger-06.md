@@ -20287,3 +20287,21 @@ setting; the armset stays research-only.
 111180100–111180355 (run); the rest of 111180000–111189999 is unused.
 **Knowledge impact:** one sentence added to the per-context search constants paragraph in
 `evaluation/current-research.md`.
+## §TBD — Blended Silver leaf (one rollout mixed with a learned value) on the §397 corpus, offline: FAIL (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "StS AI community scan", V1):** "okay versuche mal v1 zu machen". §397 Gate A
+tested a learned leaf V replacing one SimpleAgent rollout (R1); AlphaGo-style mixing `B = (1−α)·R1 + α·V` on the
+same probe child was never tested in native Silver. Outside evidence: evangambit/sts2 `rl/FINDINGS.md` (StS2) found a
+value head ties a rollout only from ~60 simulations and never beats it.
+**Design:** [PREREG](evidence/silver_blend_leaf_20261017/PREREG.md), written before any blend score. Frozen §397
+corpus, features re-extracted with `silversynthfeatures` on main `623a8b60`, `vcont-natpert` (primary) and
+`vroll-natpert` retrained with the unchanged §397 recipe, α from {0.1..0.9} on natural validation fold 3, §397 groups,
+regret and concordance on natural test fold 4. No gameplay seeds.
+**Result: FAIL.** α = 0.8 (vcont) and 0.7 (vroll). On 2,006 natural test groups (43 seeds): R1 regret 3.989,
+primary blend 3.972, −0.017 [−0.436, +0.377] vs R1 (concordance 0.6887 vs 0.6730); vroll blend −0.037
+[−0.397, +0.327]. Both blends equal a second rollout (B − R2 +0.038 and +0.019, CIs span zero). R4 − R1 −0.352
+[−0.735, +0.040], so the corpus leaves only ~0.35–0.5 regret of leaf-variance headroom. Retrained V alone matches
+§397 within 0.3 (vcont − R1 +0.19). V1 closed; no native implementation.
+[Result](evidence/silver_blend_leaf_20261017/RESULT.md), [blend_gate.json](evidence/silver_blend_leaf_20261017/blend_gate.json).
+Models: `/mnt/project-files/silver-blend-leaf/models/`.
+**Knowledge impact:** negative result added to `research/combat-search/leaf-evaluation.md` (rejected approaches).
