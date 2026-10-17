@@ -1,0 +1,63 @@
+{
+ "act4Offset": -0.8243373336822801,
+ "anchorSha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+ "anchorSlope": 0.7989767574376448,
+ "critic": "heart_leaf_critic.trees",
+ "criticSha256": "22343b590b3eaefaba7818449f0bfeb48e17bfad9a776a6c88e57c19dc5d22fc",
+ "featureSchema": "heart-leaf-features-v4",
+ "residual": "heart_leaf_residual.trees",
+ "residualSha256": "0a2d7d9f854635231e63a5ef107fc69926010a5aa5d18b6852d3c23927fbde77",
+ "schema": "heart-leaf-v1",
+ "training": {
+  "anchorWeight": 0.5,
+  "critic": {
+   "missing": 0,
+   "params": {
+    "colsample_bytree": 0.5,
+    "eta": 0.05,
+    "lambda": 5.0,
+    "max_depth": 6,
+    "nthread": 4,
+    "objective": "reg:squarederror",
+    "seed": 0,
+    "subsample": 0.8
+   },
+   "source": "h1rows.jsonl",
+   "sourceSha256": "b69c492df2872c5a07870b116eccfcbd2eab26d784340ac1bfe0dea0a1b95181",
+   "trees": 598,
+   "valCorr": 0.9362207852621393
+  },
+  "params": {
+   "base_score": 0.5,
+   "colsample_bytree": 0.5,
+   "eta": 0.03,
+   "eval_metric": "logloss",
+   "lambda": 5.0,
+   "max_depth": 5,
+   "min_child_weight": 2.0,
+   "nthread": 4,
+   "objective": "binary:logistic",
+   "seed": 0,
+   "subsample": 0.8
+  },
+  "platt": [
+   -3.2742325543789503,
+   0.7989767574376448
+  ],
+  "rounds": 3,
+  "selectedRound": 1,
+  "tailSha256": [
+   "8946dda4cad2a94b85e86f3642d10e5ba6342d09ce4e71f88b187ab7f07a6348",
+   "d4ecb04c4bcd5b3cb13b58149a3593254999c5d50eeb169728e9f429a9632b2f",
+   "68248cd180482bc52195377ad918d077d191e5a83b0f2e8bb244631cafe03b06",
+   "6327f9a7c48bea723cbb0134b4b8148ac9bc95ddafff52cc38fcb6b63a24e159"
+  ],
+  "tails": [
+   "out0.jsonl",
+   "out1.jsonl",
+   "out2.jsonl",
+   "out3.jsonl"
+  ],
+  "trees": 208
+ }
+}

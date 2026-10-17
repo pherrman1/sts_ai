@@ -20177,6 +20177,9 @@ the §503 CONFIRM set (640 runs, 83 Heart kills, 12,458 MAP roots): BCE 0.3345 v
 0.438/0.459, but **act 1 0.093/0.130 (|Δ| 0.037 > 0.03, FAIL**; X2-B 0.040). No A/B on td2;
 CONFIRM is spent. **Inference:** the act-1 under-prediction is systematic (TRAIN out of fold 0.093
 vs 0.136). The §497 TEST stays sealed.
+td3 (Philipp, 22:34Z: fix the hidden-queue leak): td2's recipe with feature schema v4, which zeroes the
+ADR-0029 hidden queue columns (`nextEliteId`, `nextFight0..2`) the §503 real-game roots carried. VALIDATION BCE
+0.3034, AUC 0.731, act 3 0.228/0.202, about td2's numbers (no held-out test left).
 [Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
 **Knowledge impact:** `operations/environment-variables.md` (new option),
 `evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
@@ -20287,3 +20290,132 @@ setting; the armset stays research-only.
 111180100–111180355 (run); the rest of 111180000–111189999 is unused.
 **Knowledge impact:** one sentence added to the per-context search constants paragraph in
 `evaluation/current-research.md`.
+
+## §521 — Silver rollout root table at 10k simulations: NOT_CPU_MATCHED, score NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z, thread "Distilled Silver playout picker"):** "can you compare on 10k
+simulations?" after §519; 20:03Z "8 workers"; 20:13Z "merge 612 and go".
+**Design:** [PREREG](evidence/silver_rollout_root_table_10k_20261017/PREREG.md), independent pre-launch review PASS
+(PR #626). §519 unchanged except `STS_CTMSILVER_SWEEP_SIMS=10000,10700`: arms `greedy`/`roottable` at 10,000 and
+10,700 simulations, R = 2, gen-6 E table model and tree prior, student C source runs, keys flag off. RUN_COMMIT
+`72066f46` (code `42e54fac`, binary `bb117ec2…`), A20 seeds 111190500–111190627, 8 cloud workers. Primary
+`roottable10000 − greedy10700` score, label valid only if the per-fight CPU ratio point estimate is ≤ 1.00.
+**Result: NOT_CPU_MATCHED; the score contrast is NOT_SHOWN as well.** 128/128 seeds, 32/32 shards rc=0, 8 tars
+verified from a second container; 1,403 valid fights (7 excluded for escapes, 6 control-replay mismatches; 25 in Act
+4). Primary `roottable10000 − greedy10700`: score +1.79 [−0.40, +3.99], win +0.5 pp [−0.2, +1.1], HP lost −0.45
+[−0.98, +0.08]; CPU per fight 1.008 [0.991, 1.025]. The root table costs 5.8% more CPU per simulation (1.058 [1.044,
+1.072]; playouts 16.9 vs 15.5 actions) and takes 2.0% more search decisions per fight (25.1 vs 24.6), so at equal
+simulations it costs 1.079x per fight against 1.070x for greedy10700. Descriptive, not pre-registered:
+`roottable10000 − greedy10000` +1.77 [−0.24, +3.87]; `roottable10700 − greedy10700` +2.11 [−0.05, +4.35];
+`greedy10700 − greedy10000` −0.02 [−1.69, +1.73]. Win rates 92.6 / 93.1 / 92.6 / 93.2% (greedy10000 / roottable10000
+/ greedy10700 / roottable10700). Bosses (262) primary +5.9 [−2.9, +14.5]; Act 4 (25) −2.7 [−38.4, +24.8].
+**Interpretation:** the root table's point estimate is about the same at 10k as at 2.5k (§519: +2.69 at equal
+simulations), but at 10k it is not significant at equal simulations either. Unlike §519, 7% more simulations buy
+nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not measurably have used.
+**Inference:** at the production budget, a cheaper root table (or the same one at no simulation cost) could be a
+small free gain; across §519 and §521 the equal-simulation contrast is positive in all four budget pairs, but each CI
+touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off.
+[result.json](evidence/silver_rollout_root_table_10k_20261017/result.json). Raw:
+`/mnt/project-files/silver-rollout-root-table-10k/w0{1..8}.tar` (sha256 `8c4bb455…`, `47c5c9fb…`, `4f656e30…`,
+`0e6c3ce7…`, `91834bb7…`, `4ad02fcd…`, `470b53da…`, `8be914d1…`). Seeds 111190500–111190627 used; reviewer smokes
+from 111190700–111190799.
+**Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
+`operations/environment-variables.md`.
+## §525 — Blended Silver leaf (one rollout mixed with a learned value) on the §397 corpus, offline: FAIL (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "StS AI community scan", V1):** "okay versuche mal v1 zu machen". §397 Gate A
+tested a learned leaf V replacing one SimpleAgent rollout (R1); AlphaGo-style mixing `B = (1−α)·R1 + α·V` on the
+same probe child was never tested in native Silver. Outside evidence: evangambit/sts2 `rl/FINDINGS.md` (StS2) found a
+value head ties a rollout only from ~60 simulations and never beats it.
+**Design:** [PREREG](evidence/silver_blend_leaf_20261017/PREREG.md), written before any blend score. Frozen §397
+corpus, features re-extracted with `silversynthfeatures` on main `623a8b60`, `vcont-natpert` (primary) and
+`vroll-natpert` retrained with the unchanged §397 recipe, α from {0.1..0.9} on natural validation fold 3, §397 groups,
+regret and concordance on natural test fold 4. No gameplay seeds.
+**Result: FAIL.** α = 0.8 (vcont) and 0.7 (vroll). On 2,006 natural test groups (43 seeds): R1 regret 3.989,
+primary blend 3.972, −0.017 [−0.436, +0.377] vs R1 (concordance 0.6887 vs 0.6730); vroll blend −0.037
+[−0.397, +0.327]. Both blends' point estimates sit at a second rollout (B − R2 +0.038 and +0.019), but "at least as good as R2" is
+not shown (upper bounds +0.483 and +0.374 above the pre-registered +0.1; `blendAtLeastR2` false). Deviation from
+§397: the re-extraction gives R1 3.989 (§397 4.017), R4 − R1 −0.352 [−0.735, +0.040] (§397 −0.47 [−0.78, −0.14])
+and 145,000 vcont rows (§397 146,984); **Inference:** probe rollouts redrawn on current main and 1–7 roots per
+unit dropped on `rootEdgeMismatch`. The leaf-variance headroom here is ~0.35–0.5 regret. Retrained V alone matches
+§397 within 0.3 (vcont − R1 +0.19). V1 closed; no native implementation.
+[Result](evidence/silver_blend_leaf_20261017/RESULT.md), [blend_gate.json](evidence/silver_blend_leaf_20261017/blend_gate.json).
+Models: `/mnt/project-files/silver-blend-leaf/models/`.
+**Knowledge impact:** negative result added to `research/combat-search/leaf-evaluation.md` (rejected approaches).
+
+## §524 — Card-select student (heart1 card-select distillation) vs student C in the A20 Heart stack: NOT_SHOWN (2026-10-17)
+
+**Question:** Does student C, re-distilled on heart1's card-select labels with keys-on and Act-4 states, play better
+as the OOC tree prior and rollout policy when card-select targets are scored by it? Requested by Philipp 2026-10-17
+16:10Z ("we definitely want to distill the card_select thing"). He folded the student input change in at 17:28Z, and
+he authorized the A/B at 21:45Z: "64 seeds" card, "use 8 workers for that".
+
+**Capture.** `STS_OOC_HEART1_CAPTURE` (#615, merged 360055d0), RUN_COMMIT e703d7bc, binary 5eff2ad7.
+- 64 A20 seeds 111156100–111156163 in the A20 Heart stack with student C: keys on, Act 4 included.
+- 765,286 node rows and 390,406 card-select rows, labelled by heart1.
+- 8 tars verified; data branch `claude/heart1-distill-data` 814aa76a.
+- On these rows student C agreed with heart1 on REMOVE 0.06%, TRANSFORM 0.11% and UPGRADE 18.8% of the time.
+
+**Student.** `student_sel.bin` `cf6bf7fb…`, on Philipp's 3060 Ti; data branch 5a7245aa, `results/E_d64_sel_xin/`.
+- Recipe: student C's (d64, 2 layers, mult 4, 4 heads, trimmed map) initialised from it, with the zero-initialised
+  relic-counter, act and card-misc inputs, lr 3e-4, 6 epochs, old 1.01M rows plus the new capture.
+- Torch-native parity: max diff 8.8e-6 on 390 records; perturbed inputs moved every record.
+- Offline gate `GATE.md`, written before training, scored natively on 243,103 held-out rows (seed % 8 == 7): PASS.
+  - REMOVE 97.6%, TRANSFORM 97.5%, UPGRADE 89.6%;
+  - node rows 96/94/91% in acts 1–3, vs 90/85/82% for student C;
+  - old rows 94.0% vs 93.0%.
+
+**A/B.** PREREG `evidence/student_sel_ab_20261017/PREREG.md`, frozen and reviewed before launch. Run: RUN_COMMIT
+aa9bb56f, code 623a8b60, binary `2b94132f…`, `tools/cloud/worker.sh`, 8 workers.
+- Arms: A = the capture's stack with student C. B = A + `STS_OOC_HEART1=student_sel.bin`,
+  `STS_OOC_MCTS_TARGET_PRIOR=1` and `STS_OOC_MCTS_LEAF_SELECTS=heart1`.
+- Seeds: 64 paired A20 seeds 111193400–111193463.
+- Primary: reached Act 4, exact McNemar.
+
+**Result: NOT_SHOWN.**
+- 128/128 units rc=0, 0 excluded; `verify_campaign.py` OK on all 8 workers.
+- Reached Act 4: B 22 vs A 18, +6.3 pp [−6.3, +18.8], discordant 11 vs 7, p = 0.48.
+- Descriptive:
+  - Heart kills 10 vs 7, mean floor +0.53;
+  - deaths by act: A 5/28/13/11, B 9/21/12/12;
+  - seconds per run 330 vs 297 (1.11x);
+  - MCTS CPU per OOC decision 3.06 vs 2.78 s.
+- Decision logs: B's rollouts scored all 750,765 card-select steps with the student. A's used heart1 on 500,167
+  (UPGRADE and the like), the chain on 148,442 and the shop-removal rule on 118,773.
+
+**Interpretation:** the student now copies heart1's card selects. Within 64 pairs that is not shown to change how
+often runs reach Act 4 (the CI admits about +19 to −6 pp). The Heart-kill difference (10 vs 7) is far below what 64
+pairs can resolve.
+
+**Decision (pre-registered):** no default change. `student_sel.bin` stays an opt-in weights file, and the tree's
+non-UPGRADE select exclusion (`heart1FullScreen`) stays. Lifting the exclusion only follows a result that shows the
+student helps.
+
+[report.json](evidence/student_sel_ab_20261017/report.json). Raw: `/mnt/project-files/student-sel-ab/w0{1..8}.tar`
+(sha256 in `worker_tars.txt`).
+
+Seeds used:
+- 111156000–111156004 (capture smokes), 111156100–111156163 (capture);
+- 111193400–111193463 (A/B), 111193464 (author smoke), 111193465–111193469 (pre-launch reviewer).
+
+**Knowledge impact:** `architecture/out-of-combat.md` (card-select student paragraph, `TARGET_PRIOR` /
+`LEAF_SELECTS` rows).
+
+## §522 — Heart leaf td2 vs the X2-B leaf in A20 OOC MCTS: NOT_SHOWN, more Act-1 deaths (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z):** "yes lets try a parid a20 a/b" of the §515 td2 Heart leaf, after its
+CONFIRM_FAIL; card "512 pairs" on 8 workers. **Design:** [PLAN](evidence/heart_leaf_ab_20261017/PLAN.md),
+pre-launch review PASS. A20 Heart stack with student C OOC (`STS_OOC_HEART1` heart1full prior),
+`STS_SILVER_LEARNED_STOP=0`; arm H adds `STS_OOC_MCTS_LEAF_HEART_MODEL=heart_leaf_td2`, arm C keeps the X2-B leaf.
+RUN_COMMIT 82d85b0e, binary `20d03790…`, seeds 111191000–111191511, 1,024 units rc 0, no exclusions.
+- **Reached Act 4 (primary):** H 124, C 137, −2.5 pp [−6.4, +1.4], McNemar p = 0.24, **NOT_SHOWN**.
+- **Heart kills:** 42 vs 46, −0.8 pp [−3.5, +2.1].
+- **Act-1 deaths:** 114 vs 69 (discordant 61 vs 16, p < 0.0001), mostly at the act-1 boss; act-3 deaths 93 vs 118
+  (post hoc). Mean final floor −3.1. Same MCTS CPU per decision.
+**Interpretation:** the td2 leaf does not help in play and loses Act-1 runs. **Inference:** its Act-1
+under-prediction (§515) flattens leaf differences there. td2 also read the hidden encounter queue in training
+(shuffle test on VALIDATION: no effect); `heart_leaf_td3` (schema v4, #642) removes it but has no held-out or play
+test. No default change; whether to continue the Heart leaf line is Philipp's call.
+[Result](evidence/heart_leaf_ab_20261017/RESULT.md), [report.json](evidence/heart_leaf_ab_20261017/report.json).
+Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
+**Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
