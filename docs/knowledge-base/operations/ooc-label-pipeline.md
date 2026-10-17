@@ -33,6 +33,25 @@ outcome supervision, not a trained value head or RL loop. Future fits must
 split/weight by whole source and preserve TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
 and [qualification evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
 
+### Round-2 root trace (§503)
+
+`STS_OOC_MCTS_ROOT_TRACE=PATH` (observation only; excluded from the policy
+specification like every `_TRACE` key) writes one `ooc-root-trace-v1` row per
+live OOC MCTS root, aligned with `mcts.csv.actions.jsonl`: every root candidate
+with its `ooc:v1` key, prior, visits, visit share and Q, completed simulations,
+the selected key, the public heart1 record and a replay-only native snapshot.
+Snapshots fail, and are recorded as `snapshotError`, when the root state carries
+an untagged continuation callback (most REWARDS/MAP roots); the exact replay key
+for every root is (producer binary SHA, seed, decisionIndex), because the frozen
+run is deterministic. Match and Keep adds hypothetical card-valuation roots with
+indices `(real index << 12) ^ card bits`. These are not monotonic and can repeat,
+so they also need the row position. The validator accepts them from `fed1b9d`.
+Sources that the earlier worker check censored with returncode 65 are
+re-qualified at import (`heart_outcome_round2.py requalify`/`index`). `tools/heart_outcome_round2.py` runs the unchanged §497
+teacher with this trace, an optional §494 sibling subsample (`--sibling-every`,
+default off), TRAIN/VALIDATION development splits and a sealed CONFIRM split.
+[Plan](../../experiments/evidence/heart_outcome_round2_20261017/PLAN.md).
+
 ### OOC search policy targets (`policy` mode)
 
 `one_combat heartoutcomegen 1 SEED OUT.jsonl policy` writes everything `on`
@@ -45,7 +64,7 @@ accepts only `on|off` files; `policy` files need a new reader.
 
 Every decision row has `decisionIndex`, `by` (the real driver's handler:
 `mcts`, `chain`, `heart_key`, `tree_rule`, ...), `mctsConsulted` and
-`v4Fallback` (MCTS consulted but the chain policy acted, including roots that were leaf boundaries; `executionReason` says which). When OOC MCTS was
+`v4Fallback` (MCTS consulted but the V4 chain acted, including roots that were leaf boundaries; `executionReason` says which; `by: heart1_fallback` is not V4). When OOC MCTS was
 consulted the row also has:
 - `heart1Record`: the trained heart1 choice record (`recordToJson`, token
   order of `heart1::buildChoice`) of the state the search sees, after forced
@@ -70,6 +89,11 @@ canary must give byte-identical `STS_OOC_DECISION_TRACE` and
 the added header/footer keys must equal `on`. Match and Keep's hypothetical
 card searches are never recorded. This is capture only: no target fitting,
 training or playout-cap randomization.
+`STS_OOC_MCTS_ROOT_TRACE` (§503, above) already writes per-root candidates
+with prior/visits/Q, the public record and a snapshot to a separate file; policy
+mode adds checkpoints, heart1 token indices, stop/abort/fallback flags and root
+visit statistics in the trajectory itself, with no snapshots or Match and Keep
+hypothetical roots.
 
 ### Recovered outcome-corpus import
 

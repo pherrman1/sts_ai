@@ -28,6 +28,8 @@
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
 
+extern bool g_collectKeys;   // ScumSearchAgent2.cpp; STS_COLLECT_KEYS
+
 namespace sts::search {
 
     namespace {
@@ -441,6 +443,10 @@ namespace sts::search {
                 // The first A20 act-3 boss goes straight into the second: no act heal.
                 context.actHealFollows = !(g_options.a20BossHealFix && gc.act == 3 && gc.ascension >= 20
                     && gc.curRoom == Room::BOSS && bc.encounter != gc.secondBoss);
+                // Escaping the act-3 burning elite without the Emerald Key ends any Heart attempt.
+                context.escapeForfeitsRun = g_collectKeys && !g_options.stopAfterAct3 && gc.act == 3
+                    && gc.curRoom == Room::ELITE && !gc.hasKey(Key::EMERALD_KEY) && gc.map
+                    && gc.map->burningEliteX == gc.curMapNodeX && gc.map->burningEliteY == gc.curMapNodeY;
                 context.noLossPotionCredit = g_options.noLossPotionCredit;
                 context.relicHealLeaf = g_options.relicHealLeaf;
             }

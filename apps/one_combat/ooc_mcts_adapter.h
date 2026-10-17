@@ -68,6 +68,10 @@ struct OocAdapterOptions {
     // Research option (default off, STS_OOC_MCTS_PRIOR=heart1, needs STS_OOC_HEART1):
     // tree priors from heart1's logits where it scores every candidate source, V4 elsewhere.
     bool heart1Prior = false;
+    // Research option (default off, STS_OOC_MCTS_PRIOR=heart1full): as heart1, but a node whose
+    // sources V4 cannot encode (discards, non-upgrade selectors, ...) is still scored by heart1;
+    // only a node heart1 cannot score keeps the uniform prior.
+    bool heart1Coverage = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
@@ -204,6 +208,9 @@ private:
         bool boundary = true;
         std::vector<Candidate> candidates;
         bool sourcePriorCovered = false;
+        // heart1full: covered only because heart1 may score it; no V4 fallback exists.
+        bool heart1OnlyCoverage = false;
+        bool heart1OnlyFailed = false;
         // Physical V4 sources for each retained semantic choice (same order as candidates).
         std::vector<std::vector<GameAction>> priorSourceGroups;
         std::vector<Edge> edges;
@@ -314,6 +321,8 @@ int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
+// heart1full (STS_OOC_MCTS_PRIOR): heart1 decides a root the search returns no action for.
+bool liveOocMctsHeart1Fallback(const GameContext &gc);
 // True when the live search takes its tree prior from heart1.
 bool liveOocMctsUsesHeart1();
 // STS_OOC_SIBLING_CAPTURE is configured (heart1, when loaded, only annotates leaves).
@@ -326,7 +335,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::uint64_t runSeed, std::uint64_t decisionIndex, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
-    std::optional<OocGameContextModel::Candidate> *selected = nullptr);
+    std::optional<OocGameContextModel::Candidate> *selected = nullptr,
+    nlohmann::json *rootActions = nullptr);
 // Research (§425 gold scoring): one decision with the live OOC MCTS
 // configuration on a copied state; returns the root summary as JSON.
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,

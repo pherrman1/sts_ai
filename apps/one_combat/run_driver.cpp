@@ -542,6 +542,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else {
                 if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
                 if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) traceBy = "mcts";
+                else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc))
+                    traceBy = "heart1_fallback";
                 else runFullRunOocPolicyStep(gc, agent, restV, shopV);
             }
             if (t_realOocDecisionObserver) t_realOocDecisionObserver(index, traceBy);

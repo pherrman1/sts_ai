@@ -1,6 +1,7 @@
 #include "heart_outcome_capture.h"
 #include "driver_shared.h"
 #include "heart1_policy.h"
+#include <cstdlib>
 #include "ooc_mcts_adapter.h"
 
 extern bool g_collectKeys;
@@ -41,7 +42,8 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
         {"ascension", 20}, {"objective", "heart"}, {"collectKeys", true}, {"stopAfterAct", 0},
         {"combatSimulations", 10000}, {"capture", capture},
         {"producerSha", trainingExecutableGitSha()}, {"policy", effectiveOocPolicySpecification()},
-        {"recordSchema", "heart1-public-record-v2"}, {"recordPublicParityQualified", false}};
+        {"recordSchema", "heart1-public-record-v2"}, {"recordPublicParityQualified", false},
+        {"rootTrace", std::getenv("STS_OOC_MCTS_ROOT_TRACE") != nullptr}};
     // Only policy mode adds keys, so on/off files keep their exact bytes.
     if (policyTargets) {
         header["policyTargets"] = true;
@@ -79,7 +81,7 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
             row["stateIndex"] = rows - 1;
             row["by"] = by;
             row["mctsConsulted"] = row.contains("root");
-            row["v4Fallback"] = row["mctsConsulted"].get<bool>() && std::string(by) != "mcts";
+            row["v4Fallback"] = row["mctsConsulted"].get<bool>() && std::string(by) == "chain";
             ++decisions;
             writer.write(row);
         };
