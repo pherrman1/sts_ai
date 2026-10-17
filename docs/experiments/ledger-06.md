@@ -19896,3 +19896,30 @@ more simulations with the cheap leaf do not recover it. In play the student, dis
 is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
 [Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
 **Knowledge impact:** learned OOC leaf status in current-research.
+
+## §511 — Heart leaf v1: TD-fitted tree leaf on §503 rollout tails, offline gate (2026-10-17)
+
+**GATE_FAIL (act-3 calibration)**, offline, research-only, no default change (issue #605). New
+opt-in leaf `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (requires `STS_OOC_MCTS_LEAF_VALUE=native`):
+value = sigmoid(0.799 · margin(public X2-B) + residual), the residual a 204-tree XGBoost margin
+model over the rich vector plus Act-4-correct boss distance, keys held and key reachability,
+HP fraction, Ritual Dagger damage and Searing Blow level (`heart-leaf-features-v2`). Targets:
+fitted TD on 16 live-configured rollout3 tails per root (`one_combat heartleaftail`, salt
+111159000; non-terminal ends valued by the previous round), mixed 50/50 with the real Heart
+outcome. Rows: 27,114 §503 TRAIN+VALIDATION MAP roots with native snapshots; CONFIRM and §497
+TEST unopened.
+
+On VALIDATION (320 runs, run-weighted) against X2-B with a TRAIN Platt map: BCE 0.3065 vs 0.3133
+(PASS), AUC 0.724 vs 0.699 (PASS), mean prediction vs Heart rate 0.085/0.103, 0.132/0.119 and
+**0.240/0.202 in Act 3** (|Δ| 0.038 > 0.03, FAIL; X2-B Platt 0.090; raw X2-B 0.898). Act 4 (78
+roots, not gated) 0.592 vs 0.423. TD rounds 2–3 did not improve VALIDATION BCE. Native parity
+2.8e-7; a one-seed A20 Act-1 smoke (111159001) ran cleanly. The key inputs carry ≤ 0.1% of the
+gain: **Inference:** §503 has little key-timing variation; the #611 key-flag runs are planned
+training data.
+
+Descriptive, for Philipp's question: heart1's value head (`heart1.bin` `1e92f2a6`) on the same
+roots ranks within an act better than X2-B (AUC acts 1–4: 0.60, 0.74, 0.78, 0.74 vs 0.56, 0.68,
+0.68, 0.65) but pooled only 0.53, because its level barely changes between acts.
+[Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
+**Knowledge impact:** `operations/environment-variables.md` (new option),
+`evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
