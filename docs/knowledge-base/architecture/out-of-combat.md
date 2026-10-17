@@ -1604,6 +1604,17 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    burning elite while Emerald is missing. Earlier acts retain normal path
    decisions. The helper also runs in the fallback chain and tree-rule
    projection. Explicit `STS_COLLECT_KEYS=0` restores keys-off behavior.
+   Opt-in variants, default off (`RunGoal.h` `HeartKeyRules`):
+   `STS_KEY_SAPPHIRE=act3` forbids the key before Act 3 and takes it at the
+   first Act-3 chest (every act has a treasure row); `=policy` lets the policy
+   choose, with the Act-3 treasure row as backstop. `STS_KEY_RUBY=hp` Recalls
+   at the first Act-3 campfire with HP at least `STS_KEY_RUBY_MIN_HP` (0.6),
+   else at the pre-boss row; `=policy` forces only the pre-boss row.
+   `STS_KEY_EMERALD=mask` turns the Act-3 route rule into a mask: candidate
+   lists (`v4CandidateActions`, the MCTS semantic enumeration, heart1's
+   choice) drop edges that no longer reach the burning elite, and the rule
+   forces an edge only when one remains. Fallback-chain Recall sites and the
+   chest relic rule follow the variant (`heartRecallRequired`).
    `runGoalVictory` keeps missing-key Act-3 clears out of Heart win labels;
    explicit benchmark horizons retain their separate Act-clear semantics.
    Sites: `apps/one_combat.cpp` REWARDS chains + `restWinPolicy`,

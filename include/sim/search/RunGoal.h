@@ -15,11 +15,11 @@ inline bool runGoalVictory(const GameContext &gc, bool collectKeys, int stopAfte
 
 // Opt-in key-rule variants; the defaults are the ADR-0041 rules. Read once from
 // STS_KEY_SAPPHIRE (first|act3|policy), STS_KEY_RUBY (first|hp|policy),
-// STS_KEY_RUBY_MIN_HP (fraction, default 0.5) and STS_KEY_EMERALD (first|mask).
+// STS_KEY_RUBY_MIN_HP (fraction, default 0.6) and STS_KEY_EMERALD (first|mask).
 struct HeartKeyRules {
     enum class Sapphire { FIRST, ACT3, POLICY } sapphire = Sapphire::FIRST;
     enum class Ruby { FIRST, HP, POLICY } ruby = Ruby::FIRST;
-    double rubyMinHp = 0.5;
+    double rubyMinHp = 0.6;
     enum class Emerald { FIRST, MASK } emerald = Emerald::FIRST;
     bool isDefault() const {
         return sapphire == Sapphire::FIRST && ruby == Ruby::FIRST && emerald == Emerald::FIRST;
@@ -35,6 +35,9 @@ HeartKeyRules &heartKeyRules();
 // forces only the pre-boss row. mask forces an Act-3 edge only when a single
 // edge still reaches the burning elite.
 std::optional<GameAction> heartKeyAction(const GameContext &gc, bool collectKeys);
+// Fallback-chain Recall condition: the historical "Act 3+ without Ruby" rule,
+// narrowed to heartKeyAction's choice under an opt-in Ruby variant.
+bool heartRecallRequired(const GameContext &gc, bool collectKeys);
 // False only for an action an opt-in variant forbids: Sapphire before Act 3
 // (act3), or an Act-3 edge that no longer reaches the burning elite (mask).
 bool heartKeyActionAllowed(const GameContext &gc, bool collectKeys, const GameAction &action);

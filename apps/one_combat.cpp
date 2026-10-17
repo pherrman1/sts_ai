@@ -2211,7 +2211,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
         } else if (inRemoveSelect) {
             one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (search::heartRecallRequired(gc, g_collectKeys)) {
                 search::GameAction(2, 0).execute(gc);   // recall: take the ruby key
             } else {
                 auto actions = search::GameAction::getAllActionsInState(gc);

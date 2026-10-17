@@ -102,9 +102,13 @@ int main() {
 
         gc.screenState = ScreenState::REST_ROOM; gc.redKey = false; gc.act = 3; gc.curMapNodeY = 5;
         gc.maxHp = 80; gc.curHp = 30;
+        require(heartRecallRequired(gc, true) && !heartRecallRequired(gc, false), "fallback Recall by default");
         rules.ruby = HeartKeyRules::Ruby::HP;
         require(!heartKeyAction(gc, true), "hp: low-HP campfire defers Recall");
-        gc.curHp = 40;
+        require(!heartRecallRequired(gc, true), "hp: fallback chain defers Recall too");
+        gc.curHp = 47;
+        require(!heartKeyAction(gc, true), "hp: just below the default 0.6 threshold");
+        gc.curHp = 48;
         require(heartKeyAction(gc, true).has_value(), "hp: Recall at the threshold");
         gc.curHp = 10; gc.curMapNodeY = 14;
         require(heartKeyAction(gc, true).has_value(), "hp: pre-boss campfire backstop");

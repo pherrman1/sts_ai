@@ -272,6 +272,10 @@ static bool takeRewardRelicRuleStep(GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
     if (gc.screenState != ScreenState::REWARDS) return false;
     const auto &r = gc.info.rewardsContainer;
+    // STS_KEY_SAPPHIRE=policy: taking the paired relic would remove the key offer.
+    if (r.sapphireKey && !search::heartKeyRules().isDefault() && g_collectKeys && gc.keysEnabled
+            && search::heartKeyActionAllowed(gc, g_collectKeys, search::GameAction(RT::KEY, 0)))
+        return false;
     for (int i = 0; i < r.relicCount; ++i) {
         if (reviewedRewardRelic(r.relics[i]) || !search::GameAction(RT::RELIC, i).isValidAction(gc)) continue;
         search::GameAction(RT::RELIC, i).execute(gc);

@@ -93,6 +93,11 @@ std::optional<GameAction> heartKeyAction(const GameContext &gc, bool collectKeys
         // Sapphire must precede its paired relic, which removes the key offer.
         if (take && GameAction(RT::KEY, 0).isValidAction(gc)) return GameAction(RT::KEY, 0);
     }
+    // A deferred Sapphire needs its Act-3 chest opened, Cursed Key or not.
+    if (gc.screenState == ScreenState::TREASURE_ROOM && rules.sapphire != HeartKeyRules::Sapphire::FIRST
+            && !gc.blueKey && gc.act >= 3
+            && (rules.sapphire == HeartKeyRules::Sapphire::ACT3 || gc.curMapNodeY >= 8)
+            && GameAction(0).isValidAction(gc)) return GameAction(0);
     if (gc.screenState == ScreenState::REST_ROOM && gc.act >= 3 && !gc.redKey
             && GameAction(2).isValidAction(gc)) {
         // The last map row is always a campfire (Map.cpp restRow).
@@ -116,6 +121,13 @@ std::optional<GameAction> heartKeyAction(const GameContext &gc, bool collectKeys
     }
     if (rules.emerald == HeartKeyRules::Emerald::MASK && reaching > 1) return std::nullopt;
     return first;
+}
+
+bool heartRecallRequired(const GameContext &gc, bool collectKeys) {
+    if (!collectKeys || gc.act < 3 || gc.hasKey(Key::RUBY_KEY)) return false;
+    if (heartKeyRules().ruby == HeartKeyRules::Ruby::FIRST) return true;
+    const auto key = heartKeyAction(gc, collectKeys);
+    return key && gc.screenState == ScreenState::REST_ROOM && key->bits == GameAction(2).bits;
 }
 
 bool heartKeyActionAllowed(const GameContext &gc, bool collectKeys, const GameAction &action) {
