@@ -22,7 +22,8 @@ stack; `1000` restores the old floor) with the native `SilverSearcher` (the same
 ADR-0021; responses carry `"engine": "native_silver"`). The combat
 panel's `Silver +9k` button raises the requested root budget to 10,000; each later
 click adds another 10,000 (20,000, 30,000, ...). The advisor searches the larger
-of the request and `STS_LIVE_SILVER_SIMS`. The retained Silver root is
+of the request and `STS_LIVE_SILVER_SIMS`, so under the default 10,000 floor the
+first click changes nothing and the budget grows from the second click on. The retained Silver root is
 continued incrementally, and any gameplay state change resets the next decision
 to the default. The panel reports the requested budget, accumulated root visits, and
 total simulations returned by the advisor.
@@ -85,7 +86,8 @@ observation into a separate transition-capable root, uses the shared
 `CombatTransitionSampler` for combat-entry chance transitions, the loaded V4
 strategic model for policy priors, and the public X2-B win tree
 (`v_win_x2b_public_trees.txt`, ADR-0029; releases installed earlier carry the
-B0 `v_win_trees.txt`) for compact-tree leaf values. The default search budget
+B0 `v_win_trees.txt`) for compact-tree leaf values. New installs copy only the
+X2-B tree; `STS_LIVE_OOC_WIN_MODEL=<repo>/models/v_win_trees.txt` restores B0. The default search budget
 is exactly 512 simulations. With `STS_LIVE_OOC_RESEARCH_STACK=1` (default) the
 search uses the A20 research configuration of §504/§522: three leaf combats
 (rollout3), PUCT 1.5, widening K 4 and α 0.75, depth 32, early stop, outcome
@@ -101,7 +103,10 @@ sibling card rewards); otherwise leaves still stop at the map checkpoint
 
 Keys follow ADR-0041 in the advisor as in `one_combat`: `STS_COLLECT_KEYS`
 (default `1`, strict `0|1`) sets the terminal objective, the rollout chain's
-key step, the free-reward rule and Recall. Before any search the advisor
+key step, the free-reward rule and Recall. `0` is consistent keys-off play as in
+`one_combat` (no key candidates, Act-3 victory counts as a win). It does not
+restore the pre-fix live mix, whose tree kept key candidates and the Heart
+objective while its rollouts ran keys-off. Before any search the advisor
 plays the Heart key rule (`heartKeyAction`: Emerald, Sapphire before its
 paired relic, Act-3 Recall, the final-act route to the burning elite) as a
 forced click (`mode=fixed_rule`). With the research stack the remaining tree
