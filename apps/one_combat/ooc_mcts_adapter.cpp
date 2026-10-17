@@ -766,6 +766,8 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
     if ((options.heart1Prior || options.heart1LeafPolicy) && !dependencies.heart1PolicyLogits)
         throw std::runtime_error("OOC MCTS heart1 prior/leaf policy requires STS_OOC_HEART1");
+    if (options.heart1Coverage && !options.heart1Prior)
+        throw std::invalid_argument("OOC MCTS heart1 coverage requires the heart1 prior");
     if (options.heart1Prior && !options.priorTracePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE does not support STS_OOC_MCTS_PRIOR=heart1");
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
@@ -1068,6 +1070,8 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 value.sourcePriorCovered = qualified == sources;
             }
         }
+        if (options.heart1Coverage && !value.sourcePriorCovered && value.candidates.size() > 1)
+            value.sourcePriorCovered = value.heart1OnlyCoverage = true;
         value.boundary = value.candidates.empty();
         value.edges.resize(value.candidates.size());
         snapshot.metadata = std::move(value);
@@ -1135,6 +1139,12 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     if (options.heart1Prior) {
         heart1Logits = dependencies.heart1PolicyLogits(gc, sources, &continuation_.heart1PriorReasons);
         ++(heart1Logits ? continuation_.heart1PriorNodes : continuation_.heart1PriorFallbacks);
+    }
+    if (cached.heart1OnlyCoverage && !heart1Logits) {
+        // V4 cannot score these sources: the node keeps its uniform prior.
+        cached.heart1OnlyFailed = true;
+        cached.logits = std::vector<double>(actions.size(), 0.0);
+        return *cached.logits;
     }
     const auto sourceLogits = heart1Logits ? *heart1Logits : dependencies.policyLogits(gc, snapshot.path, sources);
     if (sourceLogits.size() != sources.size())
@@ -1343,9 +1353,14 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
         tracePrior(id, cached, result);
         return result;
     }
-    const bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
-    auto weights = uniform ? std::vector<double>(actions.size(), 1.0)
-                                      : oocPolicyWeights(policyLogits(id), options.priorTemperature);
+    bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
+    std::vector<double> weights;
+    if (!uniform) {
+        const auto logits = policyLogits(id);
+        uniform = cached.heart1OnlyFailed;
+        if (!uniform) weights = oocPolicyWeights(logits, options.priorTemperature);
+    }
+    if (uniform) weights.assign(actions.size(), 1.0);
     if (!uniform) {
         std::map<std::uint32_t, std::size_t> counts;
         for (const auto &a : actions) ++counts[a.primitive.bits];
@@ -2403,8 +2418,10 @@ void applyLiveControl(const std::string &key, const std::string &value,
         return x;
     };
     if (key == "STS_OOC_MCTS_PRIOR") {
-        if (value != "policy" && value != "uniform" && value != "heart1") invalid();
-        opts.uniformPrior = value == "uniform"; opts.heart1Prior = value == "heart1";
+        if (value != "policy" && value != "uniform" && value != "heart1" && value != "heart1full") invalid();
+        opts.uniformPrior = value == "uniform";
+        opts.heart1Prior = value == "heart1" || value == "heart1full";
+        opts.heart1Coverage = value == "heart1full";
     }
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
         opts.constantLeaf = opts.bossLeaf = opts.bossRollout = opts.directLeaf = opts.screenLeaf = opts.screenGbm = false;
@@ -2970,7 +2987,7 @@ void configureLiveOocMcts() {
         << (!brewFallbackArtifact.empty() ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
             " dispatch=precombat_entropic_brew" : std::string{})
         << " active_lizard_correction=" << (activeLizardEnabled?"1":"0")
-        << " prior=" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
+        << " prior=" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Coverage ? "heart1full" : liveOptions.heart1Prior ? "heart1" : "policy")
         << " cpu_seconds=" << liveOptions.cpuBudgetSeconds
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
@@ -2986,7 +3003,7 @@ void configureLiveOocMcts() {
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
-        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
+        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Coverage ? "heart1full" : liveOptions.heart1Prior ? "heart1" : "policy")
         << "\",\"cpuSeconds\":" << liveOptions.cpuBudgetSeconds
         << ",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
@@ -4902,6 +4919,43 @@ void oocMctsAdapterSelfTest() {
         try { OocGameContextModel bad(duplicates,path,{},heart1Options,noHeart1); } catch(const std::runtime_error &) { threw=true; }
         require(threw,"heart1 prior without STS_OOC_HEART1 is fatal");
         one_combat::heart1::priorMappingSelfTest();
+        {
+            // STS_OOC_MCTS_PRIOR=heart1full: a full-belt shop adds discard sources V4 lacks,
+            // so plain heart1 stays uniform there; heart1full scores it with heart1.
+            auto shop=detachedCopy(gc);
+            shop.screenState=ScreenState::SHOP_ROOM; shop.gold=200;
+            std::fill(std::begin(shop.info.shop.prices),std::end(shop.info.shop.prices),-1);
+            shop.info.shop.potions[0]=Potion::FIRE_POTION; shop.info.shop.potionPrice(0)=50;
+            shop.potionCount=0;
+            for(int slot=0;slot<shop.potionCapacity;++slot) { shop.potions[slot]=Potion::BLOCK_POTION; ++shop.potionCount; }
+            auto shopDeps=deps; bool shopScores=true;
+            shopDeps.heart1PolicyLogits=[&](const GameContext &, const std::vector<GameAction> &actions,
+                    std::map<std::string,std::uint64_t> *) -> std::optional<std::vector<double>> {
+                if(!shopScores) return std::nullopt;
+                std::vector<double> logits;
+                for(std::size_t i=0;i<actions.size();++i) logits.push_back(-double(i));
+                return logits;
+            };
+            const auto flat=[](const std::vector<sts::search::OocPlannerAction> &actions) {
+                for(const auto &a:actions) if(a.prior!=actions.front().prior) return false;
+                return true;
+            };
+            OocGameContextModel plain(shop,path,{},heart1Options,shopDeps);
+            const auto plainActions=plain.legalActions(0);
+            require(plainActions.size()>2 && flat(plainActions),"heart1 keeps the uniform full-belt shop prior");
+            auto fullOptions=heart1Options; fullOptions.heart1Coverage=true;
+            OocGameContextModel full(shop,path,{},fullOptions,shopDeps);
+            require(!flat(full.legalActions(0)) && full.continuationMetrics().heart1PriorNodes==1,
+                "heart1full scores the full-belt shop with heart1");
+            shopScores=false;
+            OocGameContextModel unscored(shop,path,{},fullOptions,shopDeps);
+            require(flat(unscored.legalActions(0)) && unscored.continuationMetrics().heart1PriorFallbacks==1,
+                "heart1full without a heart1 score stays uniform");
+            OocAdapterOptions coverageOnly; coverageOnly.heart1Coverage=true;
+            bool rejected=false;
+            try { OocGameContextModel bad(shop,path,{},coverageOnly,shopDeps); } catch(const std::invalid_argument &) { rejected=true; }
+            require(rejected,"heart1 coverage without the heart1 prior is rejected");
+        }
     }
     {
         // Keys off: a sapphire key must not compete with its paired relic.
