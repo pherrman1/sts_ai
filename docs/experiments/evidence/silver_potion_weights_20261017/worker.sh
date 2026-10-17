@@ -37,9 +37,13 @@ setup)
   got=$(sha256sum "$RUN/one_combat" | cut -d' ' -f1)
   [ "$got" = "$EXPECT_BIN" ] || stop "binary sha256 $got != $EXPECT_BIN ($(g++ --version | head -1))"
   echo "$CODE" > "$RUN/GITSHA"
+  want=$(awk '$1=="studentc_bin"{print $2}' "$D/weights.txt")
+  cp /mnt/project-files/rollout-student-494/studentc.bin "$RUN/studentc.bin" || stop "cannot copy studentc.bin"
+  got=$(sha256sum "$RUN/studentc.bin" | cut -d' ' -f1)
+  [ "$got" = "$want" ] || stop "studentc.bin sha256 $got != $want"
   python3 tools/analyze_silver_potion_weights.py selftest >/dev/null || stop "analysis selftest"
   { echo "worker=$W run=$RUNC code=$CODE binary=$EXPECT_BIN $(g++ --version | head -1)"
-    sha256sum "$D"/*.sh "$D"/PREREG.md "$D"/NWORKERS "$D"/COHORT "$D"/WEIGHTS_TYPE tools/analyze_silver_potion_weights.py; } > "$OUT/FROZEN.txt"
+    sha256sum "$D"/*.sh "$D"/PREREG.md "$D"/NWORKERS "$D"/COHORT "$D"/WEIGHTS_TYPE "$D"/weights.txt "$RUN/studentc.bin" tools/analyze_silver_potion_weights.py; } > "$OUT/FROZEN.txt"
   echo "setup ok: $(head -1 "$OUT/FROZEN.txt")" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"

@@ -14,7 +14,7 @@ otherwise NOT_SHOWN. Descriptive: act-3 clears (won), exact McNemar, end HP, bos
 Validity: a unit with rc != 0 is allowed only when its log names a ``[bestbench-seed-failure]``, it hit the 4 h
 timeout (rc=124), or the worker recorded a stall (``stall-ARM-SEED.txt``); such seeds drop out of all pairs and are
 counted. Every unit's ``.env`` must set STS_SILVER_POTION_WEIGHTS to its arm's value (unset for base) and must not
-set STS_SILVER_ESCAPE_PENALTY. Any other gap, failure, wrong ``.env`` or non-cohort row labels the result INVALID.
+set STS_SILVER_ESCAPE_PENALTY, and must load student C (STS_OOC_HEART1=.../studentc.bin). Any other gap, failure, wrong ``.env`` or non-cohort row labels the result INVALID.
 """
 import glob, json, os, re, sys
 import numpy as np
@@ -42,7 +42,8 @@ def env_ok(path, arm, expect):
         env = dict(l.rstrip("\n").split("=", 1) for l in open(path) if "=" in l)
     except OSError:
         return False
-    return env.get("STS_SILVER_POTION_WEIGHTS") == expect[arm] and "STS_SILVER_ESCAPE_PENALTY" not in env
+    return (env.get("STS_SILVER_POTION_WEIGHTS") == expect[arm] and "STS_SILVER_ESCAPE_PENALTY" not in env
+            and env.get("STS_OOC_HEART1", "").endswith("/studentc.bin"))
 
 
 def cohort_from_file():
@@ -138,7 +139,7 @@ def selftest():
                     f.write(hdr + f"{s},{w},{51 if w else 33},3,50,80,0,-1,-1,10\n")
                 open(os.path.join(t, f"{arm}-{s}.done"), "w").write(f"tag={arm}-{s} rc=0")
                 open(os.path.join(t, f"{arm}-{s}.env"), "w").write(
-                    "STS_X=1\n" + (f"STS_SILVER_POTION_WEIGHTS={expect[arm]}\n" if expect[arm] else ""))
+                    "STS_OOC_HEART1=/r/studentc.bin\n" + (f"STS_SILVER_POTION_WEIGHTS={expect[arm]}\n" if expect[arm] else ""))
         res = analyze(*load([t], expect), cohort)
         assert res["pairs"] == 100 and res["label"]["type-base"] == "BETTER" and res["label"]["level-base"] == "NOT_SHOWN", res
         assert res["label"]["type-level"] == "BETTER", res
@@ -150,14 +151,16 @@ def selftest():
         res = analyze(*load([t], expect), cohort)
         assert res["pairs"] == 98 and res["label"] != "INVALID", res
         assert res["dropped_seeds"] == {"base": [107], "level": [], "type": [108]}, res
-        open(os.path.join(t, "level-110.env"), "w").write("STS_SILVER_POTION_WEIGHTS=T\n")
-        assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # wrong weights
-        open(os.path.join(t, "level-110.env"), "w").write("STS_SILVER_POTION_WEIGHTS=L\nSTS_SILVER_ESCAPE_PENALTY=0,0\n")
-        assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # escape penalty overridden
-        open(os.path.join(t, "base-111.env"), "w").write("STS_SILVER_POTION_WEIGHTS=L\n")
         open(os.path.join(t, "level-110.env"), "w").write("STS_SILVER_POTION_WEIGHTS=L\n")
+        assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # student C not loaded
+        open(os.path.join(t, "level-110.env"), "w").write("STS_OOC_HEART1=/r/studentc.bin\nSTS_SILVER_POTION_WEIGHTS=T\n")
+        assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # wrong weights
+        open(os.path.join(t, "level-110.env"), "w").write("STS_OOC_HEART1=/r/studentc.bin\nSTS_SILVER_POTION_WEIGHTS=L\nSTS_SILVER_ESCAPE_PENALTY=0,0\n")
+        assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # escape penalty overridden
+        open(os.path.join(t, "base-111.env"), "w").write("STS_OOC_HEART1=/r/studentc.bin\nSTS_SILVER_POTION_WEIGHTS=L\n")
+        open(os.path.join(t, "level-110.env"), "w").write("STS_OOC_HEART1=/r/studentc.bin\nSTS_SILVER_POTION_WEIGHTS=L\n")
         assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # base with weights
-        open(os.path.join(t, "base-111.env"), "w").write("STS_X=1\n")
+        open(os.path.join(t, "base-111.env"), "w").write("STS_OOC_HEART1=/r/studentc.bin\n")
         open(os.path.join(t, "base-105.done"), "w").write("tag=base-105 rc=1")
         assert analyze(*load([t], expect), cohort)["label"] == "INVALID"            # failed unit
     assert len(cohort_from_file()) <= 2000 and expected_weights()["type"].endswith("*=7.8")
