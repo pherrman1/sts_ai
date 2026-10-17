@@ -33,6 +33,25 @@ outcome supervision, not a trained value head or RL loop. Future fits must
 split/weight by whole source and preserve TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
 and [qualification evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
 
+### Round-2 root trace (§503)
+
+`STS_OOC_MCTS_ROOT_TRACE=PATH` (observation only; excluded from the policy
+specification like every `_TRACE` key) writes one `ooc-root-trace-v1` row per
+live OOC MCTS root, aligned with `mcts.csv.actions.jsonl`: every root candidate
+with its `ooc:v1` key, prior, visits, visit share and Q, completed simulations,
+the selected key, the public heart1 record and a replay-only native snapshot.
+Snapshots fail, and are recorded as `snapshotError`, when the root state carries
+an untagged continuation callback (most REWARDS/MAP roots); the exact replay key
+for every root is (producer binary SHA, seed, decisionIndex), because the frozen
+run is deterministic. Match and Keep adds hypothetical card-valuation roots with
+indices `(real index << 12) ^ card bits`. These are not monotonic and can repeat,
+so they also need the row position. The validator accepts them from `fed1b9d`.
+Sources that the earlier worker check censored with returncode 65 are
+re-qualified at import (`heart_outcome_round2.py requalify`/`index`). `tools/heart_outcome_round2.py` runs the unchanged §497
+teacher with this trace, an optional §494 sibling subsample (`--sibling-every`,
+default off), TRAIN/VALIDATION development splits and a sealed CONFIRM split.
+[Plan](../../experiments/evidence/heart_outcome_round2_20261017/PLAN.md).
+
 ### Recovered outcome-corpus import
 
 `tools/heart_outcome_import.py ROOT OUT` validates the pinned §497 transport and
@@ -145,7 +164,7 @@ instead of resolving `git rev-parse HEAD` from the launcher's working
 directory. Git working-tree variables remain independently relevant to dirty
 state and other Git-derived diagnostics.
 
-`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; reserve its `.provenance.json` sidecar alongside fresh outputs in the frozen experiment manifest.
+`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; reserve its `.provenance.json` sidecar alongside fresh outputs in the frozen experiment manifest. Since 2026-10-17 every `.provenance.json` sidecar (`silver_leaf`), the Silver synthetic/AZ/focus manifests and the manifests that embed a `combatTeacher` (`silverLeaf`) record the effective Silver leaf valuation: the four ADR-0035 terms, the ADR-0036 escape penalty, the ADR-0040 rollout card table (`g6_builtin`, `hand_written` or a file path with its SHA-256), the rollout counts and the #544 zero-cost cap. Defaults are recorded, not only the variables that were set. A teacher whose `search_configuration` has a `silver_leaf` block, or an `a20_boss_heal_fix` field, must match the effective settings or the loader refuses it. Data from different Silver leaf settings can be told apart by that block, so compare it before pooling corpora.
 
 #### RAW combat-transition producer
 

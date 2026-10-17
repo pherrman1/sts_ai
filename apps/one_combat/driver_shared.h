@@ -232,6 +232,9 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         std::vector<CombatEvalFight> *combatCapture = nullptr);
 // Effective OOC policy identity: teacher checks and the bestbench sidecar.
 nlohmann::json effectiveOocPolicySpecification();
+// Effective Silver leaf valuation (leaf terms, escape penalty, rollout card table)
+// for data manifests; defaults are recorded, not only the environment as set.
+nlohmann::json effectiveSilverLeafSpecification();
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance = false,
                                                  bool requireOocPolicy = false,
@@ -507,6 +510,10 @@ void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, lo
 
 std::string strategicHeader();
 
+// potionpriceprobe (research): paired-continuation resource prices.
+void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
+                      const std::string &outFile, int statesPerRun, int fightsAhead,
+                      int hpDelta);
 void strategicMargGen(int nSeeds, int outerSims,
                              int H, int maxPerRun, const std::string &outFile,
                              long long seedOffset);

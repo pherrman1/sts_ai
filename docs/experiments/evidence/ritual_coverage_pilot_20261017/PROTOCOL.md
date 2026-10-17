@@ -15,9 +15,9 @@ and identified potion paths in controlled Writhing combat states?
 The preserved old TRAIN/VALIDATION intersection has only three positive TRAIN
 labels and no positive VALIDATION labels. The old native producer lost lethal
 Dagger growth and credited half-dead phases; rows lack the history needed to
-repair labels and later pre-states. The artifact-bound §503 diagnostic used
+repair labels and later pre-states. The artifact-bound §511 diagnostic used
 the actual deployed children, but its 143 all-zero VALIDATION targets cannot
-qualify positive growth. The reviewed §504 one-source corrected canary emits
+qualify positive growth. The reviewed §512 one-source corrected canary emits
 24 valid RAW rows in 16.344 s, including Writhing 18→21, but guarantees only
 one ordinary Dagger and no potion/upgrade/copy coverage. No preserved corpus
 therefore supplies the corrected, provenance-bound cells required here.

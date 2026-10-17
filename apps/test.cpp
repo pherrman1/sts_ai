@@ -3023,7 +3023,7 @@ int testSilverEscapePenalty() {
         return 1;
     };
     // Whether Silver's first action is to drink the Smoke Bomb in slot 0.
-    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty) {
+    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty, bool forfeitsRun = false) {
         GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
         gc.curRoom = elite ? Room::ELITE : Room::MONSTER;
         gc.curHp = hp;
@@ -3034,6 +3034,7 @@ int testSilverEscapePenalty() {
         search::SilverSearchContext context;
         context.act = 1;
         context.eliteRewards = elite;
+        context.escapeForfeitsRun = forfeitsRun;
         search::SilverSearcher searcher(silverSearchRoot(bc), context);
         searcher.evalWeights.escapePenalty = elite ? 0 : penalty;
         searcher.evalWeights.eliteEscapePenalty = elite ? penalty : 0;
@@ -3053,6 +3054,9 @@ int testSilverEscapePenalty() {
     // The HP cap keeps a low-HP emergency escape preferred.
     if (!flees(10, MonsterEncounter::GREMLIN_NOB, true, 40)) return fail("low-HP elite escape suppressed");
     if (!flees(10, MonsterEncounter::JAW_WORM, false, 15)) return fail("low-HP escape suppressed");
+    // ADR-0041: escaping the act-3 burning elite without the Emerald Key rules out the Heart.
+    if (flees(10, MonsterEncounter::GREMLIN_NOB, true, 40, true)) return fail("run-forfeiting escape still taken");
+    if (flees(80, MonsterEncounter::CULTIST, false, 0, true)) return fail("run-forfeiting escape still taken at full HP");
     // The live wire path has no room: elite-trigger fights come from the encounter.
     auto wireElite = [](Room room, MonsterEncounter encounter) {
         GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
@@ -3068,6 +3072,37 @@ int testSilverEscapePenalty() {
     if (wireElite(Room::MONSTER, MonsterEncounter::JAW_WORM)) return fail("wire normal fight marked elite");
     if (!wireElite(Room::EVENT, MonsterEncounter::LAGAVULIN_EVENT)) return fail("wire Dead Adventurer fight not elite");
     std::cout << "silver_escape_penalty PASS\n";
+    return 0;
+}
+
+// #544: a replayable zero-cost draw (two Finesse) must not trap Silver's
+// rollout policy in a loop that never attacks. Before the fix every playout
+// here ran ~142k actions to the engine's loop guard and scored that loss
+// above a win through the per-draw bonus.
+int testSilverRolloutZeroCostLoop() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_rollout_zero_cost_loop FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 111129000, 20);
+    gc.curRoom = Room::MONSTER;
+    gc.deck = {};
+    for (int i = 0; i < 2; ++i) gc.deck.obtainRaw(Card(CardId::STRIKE_RED));
+    for (int i = 0; i < 2; ++i) gc.deck.obtainRaw(Card(CardId::DEFEND_RED));
+    for (int i = 0; i < 2; ++i) gc.deck.obtainRaw(Card(CardId::FINESSE));
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::JAW_WORM);
+    search::SilverSearchContext context;
+    context.act = 1;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    const double value = searcher.rolloutValue(silverSearchRoot(bc));
+    if (searcher.stats.rolloutPlayouts != 1) return fail("expected one playout");
+    if (searcher.stats.rolloutActions > 2000)
+        return fail("playout took " + std::to_string(searcher.stats.rolloutActions) + " actions");
+    if (value < searcher.evalWeights.winBonus) return fail("playout did not win: value " + std::to_string(value));
+    searcher.search(200);
+    if (searcher.stats.rolloutActions > 200 * 2000) return fail("search playouts still loop");
+    std::cout << "silver_rollout_zero_cost_loop PASS\n";
     return 0;
 }
 
@@ -6051,6 +6086,8 @@ int main(int argc, const char* argv[]) {
         return testSimulatorCorrectnessPr9To19();
     } else if (command == "silver_escape_penalty") {
         return testSilverEscapePenalty();
+    } else if (command == "silver_rollout_zero_cost_loop") {
+        return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {

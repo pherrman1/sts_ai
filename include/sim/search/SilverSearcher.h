@@ -37,6 +37,11 @@ namespace sts::search {
         // Research-only (STS_SILVER_RELIC_HEAL_LEAF): victory HP includes the
         // post-combat relic heals (Meat on the Bone, Burning Blood, Black Blood).
         bool relicHealLeaf = false;
+        // A Smoke Bomb escape forfeits the run's goal: the act-3 burning elite
+        // with the Emerald Key still missing while keys are collected (ADR-0041).
+        // No later map has a burning elite, so escaping rules out the Heart and
+        // the search does not consider Smoke Bomb.
+        bool escapeForfeitsRun = false;
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
@@ -74,6 +79,7 @@ namespace sts::search {
         std::int64_t rolloutPlayouts = 0;   // playouts run to combat end from tree leaves
         std::int64_t rolloutActions = 0;    // actions taken inside those playouts
         std::int64_t rolloutActionLimitHits = 0; // nonterminal playouts stopped at the action cap
+        std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -188,6 +194,9 @@ namespace sts::search {
             int uniform = 0;
             int perLeaf = 1;
             const int *cardTable = nullptr;
+            // #544: zero-cost non-attacks lose first priority from this many cards
+            // in a turn (STS_SILVER_ROLLOUT_ZERO_COST_CAP; 0 = no cap).
+            int zeroCostCap = 50;
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();

@@ -1,0 +1,85 @@
+{
+ "comparisons": [
+  {
+   "treatment": "S",
+   "control": "C",
+   "pairs": 128,
+   "excluded": [],
+   "clears": {
+    "S": 31,
+    "C": 45
+   },
+   "discordant_treatment_only": 11,
+   "discordant_control_only": 25,
+   "mcnemar_p": 0.028816719655878842,
+   "delta_clear": -0.109375,
+   "delta_clear_ci95": [
+    -0.203125,
+    -0.015625
+   ],
+   "label": "WORSE",
+   "heart_kills": {
+    "S": 12,
+    "C": 20
+   },
+   "delta_floor_mean": -4.484375
+  },
+  {
+   "treatment": "S3",
+   "control": "C",
+   "pairs": 128,
+   "excluded": [],
+   "clears": {
+    "S3": 32,
+    "C": 45
+   },
+   "discordant_treatment_only": 14,
+   "discordant_control_only": 27,
+   "mcnemar_p": 0.05958388801809633,
+   "delta_clear": -0.1015625,
+   "delta_clear_ci95": [
+    -0.1953125,
+    0.0
+   ],
+   "label": "NOT_SHOWN",
+   "heart_kills": {
+    "S3": 12,
+    "C": 20
+   },
+   "delta_floor_mean": -3.8046875
+  }
+ ],
+ "arms": {
+  "C": {
+   "units": 128,
+   "act1_deaths": 18,
+   "mcts_cpu_sec_per_decision": 4.44085184920279,
+   "sec_per_run": 453.06354140625,
+   "student_leaf_evaluations": 0,
+   "student_leaf_fallbacks": 0,
+   "student_fallback_rate": 0.0,
+   "fallback_defect": false
+  },
+  "S": {
+   "units": 128,
+   "act1_deaths": 34,
+   "mcts_cpu_sec_per_decision": 1.1108972861908577,
+   "sec_per_run": 142.01669375,
+   "student_leaf_evaluations": 2251885,
+   "student_leaf_fallbacks": 0,
+   "student_fallback_rate": 0.0,
+   "fallback_defect": false
+  },
+  "S3": {
+   "units": 128,
+   "act1_deaths": 30,
+   "mcts_cpu_sec_per_decision": 3.248882545207737,
+   "sec_per_run": 312.705134375,
+   "student_leaf_evaluations": 6775220,
+   "student_leaf_fallbacks": 0,
+   "student_fallback_rate": 0.0,
+   "fallback_defect": false
+  }
+ },
+ "nonzero_rc": []
+}

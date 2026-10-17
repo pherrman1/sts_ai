@@ -1,6 +1,6 @@
 # §494 rollout student as a native OOC MCTS leaf: port, parity and smoke
 
-Date: 2026-10-17. Status: **port only, default off; no gameplay claim.**
+Date: 2026-10-17. Status: **port, default off; gameplay result in §504 (WORSE).**
 
 ## What changed
 
@@ -51,5 +51,5 @@ decision drops about 3.4x at equal sims. One seed says nothing about strength.
 
 ## Next
 
-The pre-registered A20 paired A/B is in [PLAN.md](PLAN.md). It has not run and
-waits for Philipp's explicit authorization.
+The pre-registered A20 paired A/B ([PLAN.md](PLAN.md)) ran as ledger §504:
+[RESULT.md](RESULT.md).

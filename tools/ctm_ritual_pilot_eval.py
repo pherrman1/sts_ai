@@ -55,7 +55,7 @@ def load_rows(pilot_dirs):
 
 def evaluate(rows, artifacts_spec, device):
     import os
-    # The deployed artifacts' HP classes come from the same retrain pins (§503).
+    # The deployed artifacts' HP classes come from the same retrain pins (§511).
     v.require(not os.environ.get('STS_CTM_PINS') or Path(os.environ['STS_CTM_PINS']).resolve() == v.PINS.resolve(),
               'conflicting data pins')
     os.environ['STS_CTM_PINS'] = str(v.PINS)

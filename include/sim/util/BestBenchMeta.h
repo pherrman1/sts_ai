@@ -76,6 +76,7 @@ struct BenchConfigSidecar {
     std::string silverRootPrior;            // "" when the research root prior is off
     std::string silverRootPriorSha256;
     double silverRootPriorWeight = 0.0;
+    int silverTreePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (0 = no tree prior)
     std::string oocStrategicTokNet;         // "" when the V4 token net is not loaded
     std::string oocStrategicTokNetSha256;
     bool oocStrategicTokConstGuard = false; // STS_OOC_STRATEGIC_TOK_CONST_GUARD
@@ -189,6 +190,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverRootPrior\":\"" << detail::jsonEscape(c.silverRootPrior) << '\"';
     o << ",\"silverRootPriorSha256\":\"" << detail::jsonEscape(c.silverRootPriorSha256) << '\"';
     o << ",\"silverRootPriorWeight\":" << c.silverRootPriorWeight;
+    o << ",\"silverTreePriorMinVisits\":" << c.silverTreePriorMinVisits;
     o << ",\"oocStrategicTokNet\":\"" << detail::jsonEscape(c.oocStrategicTokNet) << '\"';
     o << ",\"oocStrategicTokNetSha256\":\"" << detail::jsonEscape(c.oocStrategicTokNetSha256) << '\"';
     o << ",\"oocStrategicTokConstGuard\":" << (c.oocStrategicTokConstGuard ? "true" : "false");
