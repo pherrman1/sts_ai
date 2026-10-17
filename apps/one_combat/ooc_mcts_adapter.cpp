@@ -412,7 +412,12 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
             while (i > 0 && draw == gc.eliteMonsterList[i-1]);
             gc.eliteMonsterList[i] = draw;
         }
-        if (gc.act == 3 && gc.ascension >= 20) {
+        // The second A20 boss is hidden until the first boss falls; once its
+        // fight has started (a BATTLE leaf after a sampled first-boss win) it is
+        // revealed, and Silver reads gc.secondBoss to recognise the final fight.
+        const bool secondBossRevealed = gc.screenState == sts::ScreenState::BATTLE
+            && gc.info.encounter == gc.secondBoss;
+        if (gc.act == 3 && gc.ascension >= 20 && !secondBossRevealed) {
             const sts::MonsterEncounter bosses[] = {sts::MonsterEncounter::AWAKENED_ONE,
                 sts::MonsterEncounter::TIME_EATER, sts::MonsterEncounter::DONU_AND_DECA};
             do { gc.secondBoss = bosses[gc.monsterRng.random(2)]; } while (gc.secondBoss == gc.boss);
@@ -5385,6 +5390,26 @@ void oocMctsAdapterSelfTest() {
         sampleNoncombatFuture(source,left);
         require(visible(source)==before && source.map==map && source.boss==boss
             && source.info.haveSelectedCards.size()==progress,"public state and sequential selector progress preserved");
+        {
+            // A20 Act 3: after a sampled first-boss win the leaf is the second boss
+            // fight, so the revealed second boss must survive resampling.
+            auto fight=detachedCopy(gc); fight.act=3; fight.ascension=20;
+            fight.monsterList.clear(); fight.monsterListOffset=0;
+            fight.eliteMonsterList.clear(); fight.eliteMonsterListOffset=0;
+            fight.boss=MonsterEncounter::AWAKENED_ONE; fight.secondBoss=MonsterEncounter::TIME_EATER;
+            fight.curRoom=Room::BOSS; fight.screenState=ScreenState::BATTLE;
+            fight.info.encounter=MonsterEncounter::TIME_EATER;
+            auto hidden=detachedCopy(fight); hidden.screenState=ScreenState::MAP_SCREEN;
+            std::set<int> hiddenDraws;
+            for(int n=0;n<16;++n) {
+                auto f=detachedCopy(fight); sampleNoncombatFuture(f,left);
+                require(f.secondBoss==MonsterEncounter::TIME_EATER,"revealed A20 second boss resampled");
+                auto h=detachedCopy(hidden); sampleNoncombatFuture(h,left);
+                hiddenDraws.insert(int(h.secondBoss));
+            }
+            require(hiddenDraws.size()==2 && !hiddenDraws.count(int(MonsterEncounter::AWAKENED_ONE)),
+                "hidden A20 second boss is drawn from the two other bosses");
+        }
         source=detachedCopy(gc); source.screenState=ScreenState::MAP_SCREEN;
         OocGameContextModel mapModel(source,path,{},sampled);
         std::set<int> encounters;
