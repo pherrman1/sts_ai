@@ -33,6 +33,7 @@
 #include "heart1_policy.h"
 #include "screen_leaf_snapshot.h"
 #include "rollout_student.h"
+#include "heart_leaf.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
@@ -44,6 +45,8 @@
 #include <cmath>
 #include <cstdio>
 #include <atomic>
+#include <limits>
+#include "sim/search/PotionRewardPolicy.h"
 #include <iomanip>
 #include <iostream>
 #include <set>
@@ -1389,6 +1392,34 @@ void OocGameContextModel::applyTargetPrior(const GameContext &gc, const std::vec
         ++reasons["target:scored"];
     }
 }
+// STS_OOC_MCTS_POTION_KEEP_PRIOR: discard candidates on a reward screen are scored relative to
+// "Leave rewards" by ADR-0039 keep values. Discarding only gains the best reward potion when the
+// belt is full and Sozu is absent; otherwise the gain is nothing and the discard is a pure loss.
+static bool applyPotionKeepPrior(const GameContext &gc,
+    const std::vector<OocGameContextModel::Candidate> &actions, std::vector<double> &logits) {
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    std::vector<std::size_t> discards;
+    std::optional<double> leave;
+    double bestOther = -std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < actions.size(); ++i) {
+        const auto effect = actions[i].semantic ? std::optional(actions[i].semantic->effect) : std::nullopt;
+        if (effect == sts::search::OocSemanticEffect::DISCARD_POTION) discards.push_back(i);
+        else if (effect == sts::search::OocSemanticEffect::LEAVE_REWARDS) leave = logits[i];
+        else bestOther = std::max(bestOther, logits[i]);
+    }
+    if (discards.empty()) return false;
+    const double base = leave ? *leave : std::isfinite(bestOther) ? bestOther : 0.0;
+    const auto &r = gc.info.rewardsContainer;
+    int offered = 0;
+    if (gc.potionCount >= gc.potionCapacity && !gc.hasRelic(RelicId::SOZU))
+        for (int i = 0; i < r.potionCount; ++i) offered = std::max(offered, sts::search::potionKeepRank(r.potions[i]));
+    for (const auto i : discards) {
+        const int slot = actions[i].primitive.getIdx1();
+        const int held = slot >= 0 && slot < gc.potionCapacity ? sts::search::potionKeepRank(gc.potions[slot]) : 0;
+        logits[i] = base + double(offered - std::max(held, 0)) / 100.0;
+    }
+    return true;
+}
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
     OocProfileScope priorBuild(OocProfileBucket::PriorBuild);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
@@ -1410,11 +1441,22 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     }
     bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
     std::vector<double> weights;
+    std::optional<std::vector<double>> logits;
     if (!uniform) {
-        const auto logits = policyLogits(id);
+        logits = policyLogits(id);
         uniform = cached.heart1OnlyFailed;
-        if (!uniform) weights = oocPolicyWeights(logits, options.priorTemperature);
+        if (uniform) logits.reset();
     }
+    if (options.potionKeepPrior && !options.uniformPrior) {
+        // A uniform node scores its other candidates 0, so discards sit relative to that.
+        auto keep = logits ? *logits : std::vector<double>(actions.size(), 0.0);
+        if (applyPotionKeepPrior(state(id), actions, keep)) {
+            logits = keep;
+            uniform = false;
+            if (t_decisionLog) t_decisionLog->add("potion_keep_prior", id == 0 ? "root" : "tree");
+        }
+    }
+    if (!uniform) weights = oocPolicyWeights(*logits, options.priorTemperature);
     if (uniform) weights.assign(actions.size(), 1.0);
     if (!uniform) {
         std::map<std::uint32_t, std::size_t> counts;
@@ -1740,6 +1782,10 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
     if (options.screenLeafGbm && options.screenLeafGbm->hasAnchor()) {
         OocProfileScope predict(OocProfileBucket::LeafPredict);
         return options.screenLeafGbm->anchor(richFeatureVec(gc, path));
+    }
+    if (options.heartLeaf) {
+        OocProfileScope predict(OocProfileBucket::LeafPredict);
+        return options.heartLeaf->value(gc, path);
     }
     if (options.leafWinNet) {
         OocProfileScope predict(OocProfileBucket::LeafPredict);
@@ -2521,6 +2567,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
         opts.heart1LeafPolicy = value == "heart1";
     }
     else if (key == "STS_OOC_MCTS_TARGET_PRIOR") opts.targetPrior = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_POTION_KEEP_PRIOR") opts.potionKeepPrior = choice("0", "1");
     else if (key == "STS_OOC_MCTS_LEAF_SELECTS") opts.heart1LeafSelects = choice("chain", "heart1");
     else if (key == "STS_OOC_MCTS_CPU_SECONDS") {
         const double x = number(); if (x < 0 || x > 10) invalid(); opts.cpuBudgetSeconds = x;
@@ -2545,7 +2592,7 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
     "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS",
-    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS"
+    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS", "STS_OOC_MCTS_POTION_KEEP_PRIOR"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -2909,6 +2956,17 @@ void configureLiveOocMcts() {
         liveOptions.leafWinPath = model;
 #endif
     }
+    if (const char *model = std::getenv("STS_OOC_MCTS_LEAF_HEART_MODEL"); model && *model) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART_MODEL is unavailable in the live advisor");
+#else
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART_MODEL requires STS_OOC_MCTS_LEAF_VALUE=native and no STS_OOC_MCTS_LEAF_WIN_MODEL");
+        liveOptions.heartLeaf = std::make_shared<const HeartLeafModel>(model);
+        liveOptions.heartLeafPath = model;
+#endif
+    }
     if (const char *student = std::getenv("STS_OOC_MCTS_LEAF_STUDENT"); student && *student) {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT is unavailable in the live advisor");
@@ -2916,7 +2974,7 @@ void configureLiveOocMcts() {
         // The §494 student learned rollout values on the native leaf anchor; sibling
         // capture's repeat rollouts would be replaced by the student itself.
         const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
-        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet || liveOptions.heartLeaf)
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT requires STS_OOC_MCTS=1 and STS_OOC_MCTS_LEAF_VALUE=native");
         if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT excludes leaf and sibling capture");
@@ -3082,7 +3140,7 @@ void configureLiveOocMcts() {
             identity = native->runtime().identity();
         std::vector<std::pair<std::string, std::string>> files = {
             {"ctm", artifact}, {"brewFallbackCtm", brewFallbackArtifact},
-            {"leafWinOverride", liveOptions.leafWinPath}};
+            {"leafWinOverride", liveOptions.leafWinPath}, {"leafHeartModel", liveOptions.heartLeafPath}};
         if (const char *manifest = std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST"))
             files.emplace_back("ctmManifest", manifest);
         auto provenance = oocLeafCaptureProvenance(identity, files);
@@ -3115,6 +3173,7 @@ void configureLiveOocMcts() {
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
+        << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -3137,6 +3196,8 @@ void configureLiveOocMcts() {
         << "\",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
         << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\""
         << (liveOptions.rolloutStudent ? ",\"leafStudent\":\"" + liveOptions.rolloutStudentPath + "\"" : std::string{})
+        << (liveOptions.heartLeaf ? ",\"leafHeartModel\":\"" + liveOptions.heartLeafPath + "\",\"leafHeartModelSha256\":\""
+            + liveOptions.heartLeaf->manifestSha256() + "\"" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -3644,11 +3705,24 @@ int oocLeafReplaySelfTest() {
     std::cout << "ooc_leaf_replay_selftest PASS transport bounds, isolation, exact comparator, MAP target\n";
     return 0;
 }
+namespace {
+// Policy-target capture (heartoutcomegen policy): the real driver arms one root;
+// oocMctsPolicyStep hands that root's summary slot to selectOocMctsAction.
+thread_local bool t_policyTargetArmed = false;
+thread_local nlohmann::json *t_policyTargetRoot = nullptr;
+thread_local nlohmann::json t_policyTargetRow;
+}
+void armOocPolicyTarget() { t_policyTargetArmed = true; t_policyTargetRow = nullptr; }
+nlohmann::json takeOocPolicyTarget() {
+    t_policyTargetArmed = false;
+    return std::exchange(t_policyTargetRow, nullptr);
+}
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected,
     nlohmann::json *rootActions) {
+    nlohmann::json *const policyRoot = std::exchange(t_policyTargetRoot, nullptr);
     const double cpuStart = liveOptions.cpuBudgetSeconds > 0 ? threadCpuSeconds() : 0;
     ImaginedScope scope;
     struct ReplayRootScope {
@@ -3734,6 +3808,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
                 if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
         }
     }
+    // Checkpoints only read root statistics; the singleton shortcut stays.
+    if (policyRoot && !sole && config.rootCheckpointSimulations.empty())
+        for (const std::uint64_t checkpoint : {128, 256, 512, 1024, 2048, 4096})
+            if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
     nlohmann::json reuseRow;
     if (reuseObserved) {
         if (t_reuseIndex.seed != seed || t_reuseIndex.decision >= index) t_reuseIndex = {};
@@ -3868,6 +3946,45 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     }
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     if (selected && result.selectedAction) *selected = model.candidate(0, *result.selectedAction);
+    if (policyRoot) {
+        using nlohmann::json;
+        const auto actionsJson = [&](const std::vector<sts::search::OocRootActionStats> &actions) {
+            auto output = json::array();
+            for (const auto &a : actions) {
+                const auto &c = model.candidate(0, a.id);
+                output.push_back({{"id", a.id}, {"key", c.key}, {"bits", c.primitive.bits},
+                    {"semantic", c.semantic.has_value()},
+                    {"compound", c.compoundSelector != sts::CardSelectScreenType::INVALID},
+                    {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+            }
+            return output;
+        };
+        auto checkpoints = json::array();   // keys and priors are on the candidates
+        for (const auto &c : result.rootCheckpoints) {
+            auto actions = json::array();
+            for (const auto &a : c.actions) actions.push_back({{"id", a.id}, {"visits", a.visits}, {"q", a.q}});
+            checkpoints.push_back({{"simulations", c.simulations}, {"actions", actions}});
+        }
+        // Root value estimate for completing unvisited actions offline (rollout3 has no value net).
+        double visitedQ = 0;
+        std::uint64_t rootVisits = 0, maxVisits = 0;
+        for (const auto &a : result.rootActions) {
+            visitedQ += double(a.visits) * a.q;
+            rootVisits += a.visits;
+            maxVisits = std::max<std::uint64_t>(maxVisits, a.visits);
+        }
+        const auto &m = result.metrics;
+        *policyRoot = {{"searchSeed", config.seed}, {"requestedSimulations", simulations},
+            {"rootVisits", rootVisits}, {"maxVisits", maxVisits},
+            {"rootMeanQ", rootVisits ? json(visitedQ / double(rootVisits)) : json(nullptr)},
+            {"completedSimulations", m.simulations}, {"attempts", m.simulationAttempts},
+            {"singleton", sole.has_value()}, {"aborted", result.aborted}, {"abortReason", result.abortReason},
+            {"earlyStopLock", m.earlyStopLockedRoot}, {"earlyStopGap20", m.earlyStopVisitGap20},
+            {"earlyStopBudget", m.earlyStopBudget}, {"savedSimulations", m.savedSimulations},
+            {"selectionRule", config.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
+            {"selectedId", result.selectedAction ? json(*result.selectedAction) : json(nullptr)},
+            {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
+    }
     if (rootActions) {
         *rootActions = nlohmann::json::array();
         for (const auto &action : result.rootActions)
@@ -3907,6 +4024,68 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (leafStabilityMode) validateStabilityRoot(result, model);
     return result;
 }
+#ifndef STS_LIVE_ADVISOR
+nlohmann::json liveRootLeafTails(const GameContext &gc, const PathHistory &path, const OocPolicyThreadState &policy,
+    std::uint64_t salt, unsigned repeats) {
+    if (!liveEnabled) throw std::runtime_error("liveRootLeafTails requires STS_OOC_MCTS=1");
+    // The end-state hook sits on the native leaf dependency; every other leaf skips it.
+    if (liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf
+            || liveOptions.directLeaf || liveOptions.leafWinNet || liveOptions.heartLeaf || liveOptions.rolloutStudent
+            || !liveOptions.leafCombats)
+        throw std::runtime_error("liveRootLeafTails requires the native rollout leaf (STS_OOC_MCTS_LEAF_VALUE=native)");
+    static const CompactTreeNet anchor = [] {
+        CompactTreeNet net;
+        if (fileSha256Hex(kHeartLeafAnchorPath) != kHeartLeafAnchorSha256
+                || !net.load(kHeartLeafAnchorPath, richIdxMap(), "HeartLeaf tail anchor") || !net.logistic)
+            throw std::runtime_error("liveRootLeafTails cannot load the pinned public X2-B");
+        return net;
+    }();
+    ImaginedScope scope;
+    restoreOocPolicyThreadState(policy);
+    auto deps = defaultOocMctsDependencies();
+    const auto nativeLeaf = deps.leafValue;
+    std::optional<nlohmann::json> end;
+    deps.leafValue = [&](const GameContext &state, const PathHistory &at) {
+        const double value = nativeLeaf(state, at);
+        auto raw = richFeatureVec(state, at);
+        const double margin = anchor.margin(raw);
+        appendHeartLeafExtras(raw, state, margin);
+        nlohmann::json idx = nlohmann::json::array(), val = nlohmann::json::array();
+        for (std::size_t i = 0; i < raw.size(); ++i) if (raw[i] != 0) { idx.push_back(i); val.push_back(raw[i]); }
+        end = nlohmann::json{{"x2b", value}, {"floor", state.floorNum}, {"act", state.act},
+            {"screen", int(state.screenState)}, {"i", std::move(idx)}, {"v", std::move(val)}};
+        return value;
+    };
+    auto options = liveOptions;
+    options.siblingCapture.reset();
+    options.leafObserver = {};
+    options.priorTracePath.clear();
+    OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options), std::move(deps));
+    if (model.terminalValue(0)) throw std::runtime_error("liveRootLeafTails root is terminal");
+    nlohmann::json rows = nlohmann::json::array();
+    for (unsigned r = 0; r < repeats; ++r) {
+        restoreOocPolicyThreadState(policy);
+        end.reset();
+        std::seed_seq seq{salt, std::uint64_t(r)};
+        std::mt19937_64 stream(seq);
+        try {
+            const auto e = model.evaluateLeafWithOutcome(0, stream);
+            nlohmann::json row = {{"value", e.value}, {"terminal", e.terminal}, {"endFloor", e.endpoint ? e.endpoint->floor : -1}};
+            if (!e.terminal) {
+                if (!end) throw std::runtime_error("non-terminal rollout end bypassed the native leaf");
+                if (std::abs(end->at("x2b").get<double>() - e.value) > 1e-12)
+                    throw std::runtime_error("rollout end value is not the native leaf value");
+                row["end"] = std::move(*end);
+            }
+            rows.push_back(std::move(row));
+        } catch (const sts::search::OocSearchUnsupported &u) {
+            rows.push_back({{"error", u.what()}});
+        }
+    }
+    restoreOocPolicyThreadState(policy);
+    return rows;
+}
+#endif
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &gc, const PathHistory &path,
     std::uint64_t runSeed, std::uint64_t decisionIndex) {
     if (!liveEnabled) throw std::runtime_error("scoreLiveOocMctsDecision requires STS_OOC_MCTS=1");
@@ -3966,6 +4145,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         failStability("scheduled_root_bypassed_mcts");
     if (leafReplayMode && index != 0)
         throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_bypassed_mcts")};
+    const bool policyTarget = std::exchange(t_policyTargetArmed, false);
     ++metrics.decisions;
     if (!liveEnabled) {
         if (leafStabilityMode) failStability("mcts_disabled_during_stability_probe");
@@ -3984,6 +4164,25 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         ++metrics.fallback; ++metrics.continuation.supportReasons["semantic_observer_active"]; return false;
     }
     collectForcedRewardGold(gc);
+    // Policy targets record the state the search sees (after forced gold).
+    nlohmann::json policyRoot, policyRow;
+    std::optional<heart1::Choice> policyChoice;
+    struct PolicyRootScope { ~PolicyRootScope() { t_policyTargetRoot = nullptr; } } policyRootScope;
+    if (policyTarget) {
+        heart1::Choice choice;
+        std::string reason;
+        const bool encoded = heart1::buildChoice(gc, choice, &reason) && choice.record.choiceCount() > 0;
+        policyRow = {{"type", "decision"}, {"decisionIndex", index}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"searchSeed", oocMctsSearchSeed(seed, index)},
+            {"heart1Record", encoded ? heart1::recordToJson(choice.record) : nlohmann::json(nullptr)}};
+        if (encoded) {
+            policyRow["heart1Tokens"] = choice.actions.size();
+            policyChoice = std::move(choice);
+        } else {
+            policyRow["heart1Reason"] = reason.empty() ? "no_choice" : reason;
+        }
+        t_policyTargetRoot = &policyRoot;
+    }
     std::optional<OocGameContextModel::Candidate> selected;
     nlohmann::json rootRow;
     if (!liveRootTrace.empty()) {
@@ -4012,6 +4211,21 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     }();
     if (leafReplayMode)
         throw LeafReplayComplete{replayReport("NOT_REACHED", "decision0_returned_without_replay")};
+    if (policyTarget) {
+        if (!policyRoot.is_null() && policyChoice) {
+            std::vector<GameAction> primitives;
+            for (const auto &c : policyRoot["candidates"]) primitives.emplace_back(c["bits"].get<std::uint32_t>());
+            const auto tokens = heart1::mapChoiceTokens(*policyChoice, gc.hasRelic(RelicId::SINGING_BOWL), primitives);
+            for (std::size_t i = 0; i < tokens.size(); ++i) {
+                policyRoot["candidates"][i]["heart1Tokens"] = tokens[i].tokens;
+                policyRoot["candidates"][i]["heart1Map"] = tokens[i].kind;
+            }
+        }
+        policyRow["searched"] = !policyRoot.is_null();
+        policyRow["root"] = std::move(policyRoot);
+        policyRow["selectedKey"] = selected ? selected->key : "";
+        policyRow["selectedBits"] = selected ? nlohmann::json(selected->primitive.bits) : nlohmann::json(nullptr);
+    }
     profile.stop();
     const double wallElapsed = std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     const double cpuElapsed = threadCpuSeconds()-cpuStart;
@@ -4136,6 +4350,11 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto rootScreen = gc.screenState;
     const auto rootSelector = gc.info.selectScreenType;
     const auto traceDecision = [&](bool executed, const std::string &reason) {
+        if (policyTarget) {
+            policyRow["executed"] = executed;
+            policyRow["executionReason"] = reason;
+            t_policyTargetRow = std::move(policyRow);
+        }
         if (!decisionProfile.is_null()) {
             decisionProfile["executed"] = executed;
             decisionProfile["execution_reason"] = reason;
@@ -5867,6 +6086,10 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","heart1",parsed,opts);
         require(opts.targetPrior && opts.heart1LeafSelects,"target prior and heart1 leaf selects parsed");
         applyLiveControl("STS_OOC_MCTS_TARGET_PRIOR","0",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_POTION_KEEP_PRIOR","1",parsed,opts);
+        require(opts.potionKeepPrior,"potion keep prior parsed");
+        applyLiveControl("STS_OOC_MCTS_POTION_KEEP_PRIOR","0",parsed,opts);
+        require(!opts.potionKeepPrior,"potion keep prior rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","chain",parsed,opts);
         require(!opts.targetPrior && !opts.heart1LeafSelects,"target prior and leaf selects rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","v4",parsed,opts);
@@ -5897,7 +6120,7 @@ void oocMctsAdapterSelfTest() {
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},{"STS_OOC_MCTS_LEAF_COMBATS","4"},
             {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_POLICY","Prior"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
-            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
+            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_POTION_KEEP_PRIOR","yes"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
             rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
     }
     const PathHistory *saved=t_curPath; t_curPath=&path;
@@ -7111,6 +7334,44 @@ void oocMctsAdapterSelfTest() {
         }
         require(goldOrPotion != rules && (rewardModel.state(0).potionCount == (rules ? 1 : 0)),
             "tree rules take gold and a potion with belt space before the root");
+    }
+    // STS_OOC_MCTS_POTION_KEEP_PRIOR: a full belt whose potions all outrank the reward (the rule
+    // declines) gives the uniform root discard candidates; the option ranks them by keep value,
+    // all below "Leave rewards", and leaves other candidates flat.
+    for (const bool keepPrior : {false, true}) {
+        auto rewardRoot = makeRewardRoot();
+        rewardRoot.info.rewardsContainer.addPotion(Potion::ELIXIR_POTION);
+        const Potion held[] = {Potion::BLOOD_POTION, Potion::HEART_OF_IRON, Potion::FRUIT_JUICE};
+        rewardRoot.potionCount = 0;
+        for (int slot = 0; slot < rewardRoot.potionCapacity; ++slot) {
+            rewardRoot.potions[slot] = held[slot % 3]; ++rewardRoot.potionCount;
+        }
+        PathHistory rewardPath;
+        rewardPath.update(rewardRoot);
+        OocAdapterOptions keepOptions;
+        keepOptions.potionKeepPrior = keepPrior;
+        OocGameContextModel rewardModel(rewardRoot, rewardPath, {}, keepOptions);
+        std::map<Potion, double> discard;
+        double leave = -1, other = -1;
+        bool otherFlat = true;
+        for (const auto &a : rewardModel.legalActions(0)) {
+            const auto &c = rewardModel.candidate(0, a.id);
+            if (c.semantic->effect == OocSemanticEffect::DISCARD_POTION)
+                discard[rewardRoot.potions[c.primitive.getIdx1()]] = a.prior;
+            else if (c.semantic->effect == OocSemanticEffect::LEAVE_REWARDS) leave = a.prior;
+            else { otherFlat &= other < 0 || std::abs(other - a.prior) < 1e-12; other = a.prior; }
+        }
+        require(discard.size() == 3 && leave > 0 && otherFlat, "potion keep prior fixture");
+        const double ratio = discard.at(Potion::HEART_OF_IRON) / leave;
+        if (!keepPrior)
+            require(std::abs(ratio - 1) < 1e-12 && std::abs(discard.at(Potion::BLOOD_POTION) - leave) < 1e-12,
+                "without the potion keep prior the discard root stays uniform");
+        else
+            require(std::abs(ratio - std::exp((47.0 - 666.0) / 100.0)) < 1e-9
+                && discard.at(Potion::BLOOD_POTION) < discard.at(Potion::FRUIT_JUICE)
+                && discard.at(Potion::FRUIT_JUICE) < discard.at(Potion::HEART_OF_IRON)
+                && (other < 0 || std::abs(other - leave) < 1e-12),
+                "potion keep prior ranks discards by keep value below leave");
     }
     {
         OocSemanticAction first{OocSemanticEffect::BOTTLE_CARD, OocSemanticSource::SELECTOR,

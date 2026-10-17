@@ -39,6 +39,11 @@ struct FixedChoice {
 struct Record {
     std::vector<int> fixedObservation;  // 10 entries
     std::vector<int> deckCards, deckUpgrades;
+    // Student input extension (not read by heart1 itself): card misc in deck order
+    // (Ritual Dagger damage, Genetic Algorithm block) and the act; records from
+    // before it have no misc (all 0) and act 0.
+    std::vector<int> deckMisc;
+    int act = 0;
     std::vector<int> relics, relicCounters;
     std::vector<int> potions;
     std::vector<int> mapXs, mapYs, mapRooms;
@@ -102,6 +107,7 @@ public:
     int hidden() const { return hidden_; }
     int layers() const { return int(blocks_.size()); }
     bool trimMap() const { return trimMap_; }
+    bool extraInputs() const { return extraInputs_; }
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
@@ -127,6 +133,11 @@ private:
     FixedVec gold_, pathX_, cone_;
     Embedding pathRoom_, reachesBurn_;
     Embedding choicePosition_;
+    // Optional student inputs (tools/heart1/student_inputs.py): x_deck_misc on deck
+    // tokens, x_relic_counter on relic tokens, x_act on the fixed-observation token.
+    bool extraInputs_ = false;
+    FixedVec deckMisc_, relicCounter_;
+    Embedding act_;
     std::vector<Block> blocks_;
     std::vector<float> finalNorm_, valueNorm_;
     Linear choiceLogits_, valueHead_;
@@ -157,6 +168,15 @@ std::optional<std::vector<double>> priorLogits(const sts::GameContext &,
 std::optional<std::vector<double>> priorLogits(const Net &, const sts::GameContext &,
                                                const std::vector<sts::search::GameAction> &,
                                                std::map<std::string, std::uint64_t> *tally = nullptr);
+// STS_OOC_HEART1_CAPTURE=<out.jsonl> (distillation data, observation only):
+// every STS_OOC_HEART1_CAPTURE_EVERY-th (default 8) priorLogits call writes the
+// node ("kind":"node"), and every STS_OOC_HEART1_CAPTURE_SELECT_EVERY-th (default 1)
+// card select that a rest, shop removal, event or boss-relic source opens on a state
+// copy is written ("kind":"select"). Rows carry the
+// record, STS_OOC_HEART1_TEACHER's token logits/value (default: the serving net)
+// and the serving net's logits ("serve"), plus act and deck card misc; repeated records are written once.
+// The returned logits are unchanged.
+
 // The mapping step of priorLogits, given the choice and its token logits:
 // skip one card reward -> silverbot's skip token (bowl token with Singing
 // Bowl); gold -> the node's best logit; a potion discard -> the node's lowest.
@@ -164,6 +184,17 @@ std::optional<std::vector<double>> mapPriorLogits(const Choice &, const std::vec
                                                   bool singingBowl,
                                                   const std::vector<sts::search::GameAction> &,
                                                   std::map<std::string, std::uint64_t> *tally = nullptr);
+// The token side of mapPriorLogits, for policy-target capture: per primitive,
+// the choice-token indices it maps to (several when one primitive sits behind
+// several tokens) and how: "token", "skip_card", "bowl", "gold" (no token; the
+// prior takes the best logit), "discard_potion" (no token; the lowest logit) or
+// "none" where mapPriorLogits falls back to V4.
+struct TokenMapping {
+    std::vector<int> tokens;
+    std::string kind;
+};
+std::vector<TokenMapping> mapChoiceTokens(const Choice &, bool singingBowl,
+                                          const std::vector<sts::search::GameAction> &);
 // Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
 void priorMappingSelfTest();
 

@@ -42,6 +42,7 @@ class ScreenLeafNet;
 class ScreenLeafGbm;
 class RolloutStudent;
 struct CompactTreeNet;
+class HeartLeafModel;
 // Borrowed inputs/results for a synchronous diagnostic. References must not be
 // retained after the observer returns; hidden state/RNG are replay metadata.
 struct OocLeafObservation {
@@ -77,6 +78,12 @@ struct OocAdapterOptions {
     // instead of an equal share of its source's prior. Student C's selector head is untrained
     // (audit-2026-10-17 heart1-distill finding 1): use with heart1 or a student distilled on selects.
     bool targetPrior = false;
+    // Research option (default off, STS_OOC_MCTS_POTION_KEEP_PRIOR=1): on reward screens a "discard
+    // potion" candidate gets logit = leave + (keep value of the best reward potion it makes room for
+    // - keep value of the discarded potion) / 100 (ADR-0039 keep values, HP-equivalent per fight).
+    // Student C has no discard action (heart1 lacks one), so such nodes are otherwise uniform or
+    // put discards at heart1's lowest logit. Stopgap until AZ-loop policy targets learn discards.
+    bool potionKeepPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
@@ -96,6 +103,10 @@ struct OocAdapterOptions {
     // place of the process v_win (STS_OOC_MCTS_LEAF_WIN_MODEL).
     std::shared_ptr<const CompactTreeNet> leafWinNet;
     std::string leafWinPath;
+    // Research option (default unset, issue #605): Heart-objective leaf, a residual
+    // on the pinned public X2-B (STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>).
+    std::shared_ptr<const HeartLeafModel> heartLeaf;
+    std::string heartLeafPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
@@ -347,6 +358,13 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr,
     nlohmann::json *rootActions = nullptr);
+// Research (issue #605 Heart leaf targets): `repeats` leaf evaluations of the
+// snapshot root under the live configuration, each from a fresh stream seeded
+// by (salt, r). `atEnd` receives every rollout endpoint that the leaf model
+// would score (non-terminal ends); the returned list has one row per repeat:
+// {"terminal", "value"} and, for non-terminal ends, the end's heart features.
+nlohmann::json liveRootLeafTails(const GameContext &, const PathHistory &, const OocPolicyThreadState &,
+    std::uint64_t salt, unsigned repeats);
 // Research (§425 gold scoring): one decision with the live OOC MCTS
 // configuration on a copied state; returns the root summary as JSON.
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,
@@ -355,6 +373,12 @@ nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// Policy-target capture (heartoutcomegen policy). arm: the next
+// oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1
+// tokens, prior/visits/Q, checkpoints, selection, flags) without changing the
+// search. take: that row (null when no step consumed the arm) and disarms.
+void armOocPolicyTarget();
+nlohmann::json takeOocPolicyTarget();
 // Offers `card` alone as a card reward on a detached copy of `gc`, runs one
 // decision of the caller's OOC guide (`step`) inside the imagined scope, and
 // reports whether the guide added the card. Used to value Match and Keep cards.

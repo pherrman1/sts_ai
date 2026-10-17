@@ -209,6 +209,7 @@ void runFloorProfileSelfTest() {
 thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
+thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
 
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
 
@@ -334,7 +335,11 @@ bool oocTreeRuleStep(GameContext &gc) {
         if (const auto potion = search::potionRewardAction(gc)) { potion->execute(gc); return true; }
     }
     // Nothing left (keys only count when STS_COLLECT_KEYS is on): leaving is the only sensible action.
-    if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0
+    // STS_POTION_REWARD_DECLINE_LEAVE=1: a potion the pickup declined counts as nothing left, so
+    // search cannot swap a held potion for it by discarding (a uniform-prior root, fixed-rules audit).
+    const bool potionsLeft = r.potionCount > 0
+        && !(search::potionRewardDeclineLeaveEnabled() && search::potionRewardDeclined(gc));
+    if (r.cardRewardCount == 0 && r.relicCount == 0 && !potionsLeft
         && !(g_collectKeys && (r.emeraldKey || r.sapphireKey))) {
         search::GameAction(RT::SKIP).execute(gc); return true;
     }
@@ -602,16 +607,19 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
-            } else if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) {
-                traceBy = "mcts";
-            } else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) {
-                traceBy = "heart1_fallback";
-            } else runFullRunOocPolicyStep(gc, agent, restV, shopV);
+            } else {
+                if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
+                if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) traceBy = "mcts";
+                else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc))
+                    traceBy = "heart1_fallback";
+                else runFullRunOocPolicyStep(gc, agent, restV, shopV);
+            }
             if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
                     && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
                 std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
                              static_cast<unsigned long long>(seed), keyMaskFloor, traceBy, t_oocChainHandler,
                              gc.curMapNodeX);
+            if (t_realOocDecisionObserver) t_realOocDecisionObserver(index, traceBy);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
                               {"handler", std::string(traceBy) == "chain" ? t_oocChainHandler : ""},

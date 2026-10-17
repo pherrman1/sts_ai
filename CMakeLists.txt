@@ -114,6 +114,14 @@ add_test(NAME neow_transform_curse COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
 set_tests_properties(neow_transform_curse PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(engine_fidelity_fix_test tests/engine_fidelity_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(engine_fidelity_fix_test PRIVATE include json/include)
+add_test(NAME engine_fidelity_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:engine_fidelity_fix_test>)
+set_tests_properties(engine_fidelity_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(potion_reward_swap_test PRIVATE include json/include)
@@ -137,6 +145,14 @@ add_test(NAME full_hp_rest_filter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
     $<TARGET_FILE:full_hp_rest_filter_test>)
 set_tests_properties(full_hp_rest_filter PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(deck_obtain_raw_test tests/deck_obtain_raw_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(deck_obtain_raw_test PRIVATE include json/include)
+add_test(NAME deck_obtain_raw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:deck_obtain_raw_test>)
+set_tests_properties(deck_obtain_raw PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 add_executable(remove_obtain_weight_test tests/remove_obtain_weight_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
@@ -182,6 +198,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/screen_leaf_probes.cpp
     apps/one_combat/screen_leaf_net.cpp
     apps/one_combat/screen_leaf_gbm.cpp
+    apps/one_combat/heart_leaf.cpp apps/one_combat/heart_leaf_tail.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
@@ -242,6 +259,12 @@ add_executable(screen_leaf_gbm_test
     apps/one_combat/compact_tree.cpp)
 target_include_directories(screen_leaf_gbm_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_gbm_features COMMAND screen_leaf_gbm_test)
+add_executable(heart_leaf_test tests/heart_leaf_test.cpp
+    apps/one_combat/heart_leaf.cpp apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(heart_leaf_test PRIVATE include json/include apps)
+link_ctm_crypto(heart_leaf_test)
+add_test(NAME heart_leaf_features COMMAND heart_leaf_test)
 add_executable(screen_leaf_continuations_test
     apps/one_combat/screen_leaf_snapshot.cpp
     apps/one_combat/screen_leaf_continuations.cpp
@@ -292,6 +315,9 @@ set_tests_properties(live_game_runtime PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 add_test(NAME render_ooc_mcts COMMAND python3 -m unittest tests.test_render_ooc_mcts)
 set_tests_properties(render_ooc_mcts PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME workflow_tools COMMAND python3 -m unittest tests.test_workflow_tools)
+set_tests_properties(workflow_tools PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 find_program(STS_NODE_EXECUTABLE node)
 if(STS_NODE_EXECUTABLE)
@@ -1078,3 +1104,45 @@ add_test(NAME ooc_selective_silver_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/
 set_tests_properties(ooc_selective_silver_analysis PROPERTIES LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ooc_selective_seed_guard_rejects_zero COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh $<TARGET_FILE:one_combat> oocselectivesilvergen 0 97151001 /tmp/audit-unused-plan /tmp/audit-unused-output)
 set_tests_properties(ooc_selective_seed_guard_rejects_zero PROPERTIES WILL_FAIL TRUE LABELS "core;research-repro")
+
+# Tests that import torch, xgboost, scipy or sklearn. Cloud containers lack these packages, so run
+# `ctest -LE needs-ml-python` there; a failure in the rest is then a real failure.
+set(STS_ML_PYTHON_TESTS
+    semantic_confirmation_analysis
+    analyze_postcombat_raw_terminal_selftest
+    export_win_model_selftest
+    ctm_near_full_inputs_selftest
+    ctm_retrain_pins_selftest
+    export_combat_transition_near_full_override_selftest
+    ctm_exposure_cohorts_selftest
+    ctm_qualify_fixtures_selftest
+    ctm_hp_domain_selftest
+    ctm_escape_selftest
+    combat_transition_attention_hpo_promote_selftest
+    combat_transition_attention_ablation_selftest
+    combat_transition_shared_hp_encoder_selftest
+    combat_transition_shared_maxhp_encoder_selftest
+    combat_transition_shared_encoder_distill_selftest
+    combat_transition_shared_encoder_potion_selftest
+    combat_transition_survival_deepset_train_selftest
+    combat_transition_survival_deepset_sweep_selftest
+    combat_transition_survival_platt_selftest
+    combat_transition_survival_mlp_selftest
+    combat_transition_survival_mlp_head_selftest
+    combat_transition_survival_deepset_aux_selftest
+    combat_transition_survival_wide96_selftest
+    combat_transition_wide96_pretrain_selftest
+    combat_transition_potion_trajectory_selftest
+    combat_transition_near_full_downstream_selftest
+    combat_transition_shared_hp_downstream_selftest
+    combat_transition_near_full_sampler_selftest
+    combat_transition_near_full_relic_ancestral_selftest
+    ctm_research_candidate_loader
+    ctm_escape_runtime
+    ctm_writhing_ritual_runtime
+)
+foreach(t IN LISTS STS_ML_PYTHON_TESTS)
+    if(TEST ${t})
+        set_property(TEST ${t} APPEND PROPERTY LABELS needs-ml-python)
+    endif()
+endforeach()

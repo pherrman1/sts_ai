@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the per-playout action cap (#544); 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -40,6 +40,11 @@ explicit sims argument selects flat Silver at that budget in every mode; only
 `run`, `bestbench` and `reprobench` called without a sims argument use a
 budget policy by default: learned stopping (ADR-0026, which replaced the #199
 adaptive default of ADR-0018). `STS_SILVER_ADAPTIVE=1` selects #199.
+At A20 with student C out of combat (§516, 512 paired full runs), learned
+stopping matched flat exact 10k (Heart kills 30 vs 27, reached Act 4 −0.4 pp
+[−3.4, +2.6]) at 0.41x the run CPU; adding the gen-6 MLP prior as root and
+tree prior (`STS_SILVER_TREE_PRIOR_MIN_VISITS=8`) reached Act 4 more often
+(+3.9 pp, not pre-registered) without more Heart kills.
 
 ### Removed searchers and tooling
 
@@ -142,7 +147,10 @@ value; it does not fabricate a terminal outcome. `SilverSearchStats` records
 `rolloutActionLimitHits`, and endpoint profiling records the capped state as
 `nonterminal`. Shorter playouts retain their action/RNG behavior. This bounds
 free draw/reshuffle loops at the playout decision boundary (#544); it does not
-bound work inside a single simulator action.
+bound work inside a single simulator action. The cap changes default play where a
+playout runs longer than 1,000 actions (A0 seed 111139580 dies on floor 50 instead
+of reaching floor 55). `STS_SILVER_ROLLOUT_ACTION_CAP=N` sets it, and `0` restores
+uncapped playouts.
 
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
@@ -289,6 +297,23 @@ fights. §479 (A20, 689 fights): uniform playouts lose 22.8 fight score at no
 CPU saving per simulation; a learned card table and 2 or 4 playouts per leaf
 at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040).
+Research option, off by default: `STS_SILVER_ROLLOUT_ROOT_TABLE=<combat_policy_mlp
+model>` replaces that fixed table with one built once per searched root
+(`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
+upgrade) in hand, draw and discard pile as a play at the root state, aimed
+where the rollout aims it (attacks at the lowest-HP monster, other targeted
+cards at the highest). Every playout of that search uses those scores as its
+card-play order; cards not in those piles (made during the playout) keep their
+ADR-0040 entry, shifted by the mean gap between the two scales. The rollout's
+category rules (zero-cost first, block check, AoE) are unchanged. Cost is one
+prior call per root, not per playout step. The `ctmsilvergen` armset `roottable`
+compares `greedy<b>` and `roottable<b>` (model `STS_CTMSILVER_ROOT_TABLE_MODEL`)
+at each budget in `STS_CTMSILVER_SWEEP_SIMS`; per-thread override
+`g_nativeSilverRolloutRootTableOverride`. §519 (A20, gen-6 E, 1,426 fights): at
+equal simulations the root table scores +2.7 [+0.6, +4.8] better, but it costs
+5.1% more CPU per simulation (longer playouts plus the build), and against
+greedy at 6% more simulations it is +1.9 [−0.1, +3.9] at 1.007x CPU per fight:
+not CPU-matched and not shown, so it stays off.
 From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn

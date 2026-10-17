@@ -20110,7 +20110,9 @@ own formula. A20 seeds 111152000–111152127; primary Δfloor type − base, pai
 container. Mean floor base 36.65, level 35.85, type 35.28; act-3 clears 36 / 30 / 35 of 128. Type − base Δfloor
 −1.37 [−3.45, +0.74]; level − base −0.80 [−2.96, +1.36]; type − level −0.57 [−2.55, +1.37]. Boss deaths 48 / 58 /
 55. Student C took 98.9% of OOC decisions in every arm; the rest (1.1%, 440) were Match and Keep, whose card
-choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move them to student C).
+choices go through the chain's card-reward step: the V4 token net (loaded in every arm) where it clears the margin-1
+gate, otherwise the native GBM card-reward fallback `serverCardRewardPolicy` (`run_driver.cpp`; #616 moves them to
+student C).
 **Interpretation:** no detectable effect at ±2 floors; both point estimates negative. Descriptively, lower weights
 leave Silver about 0.1 fewer potions at the first boss battle of each act (battles starting on floors 16, 33, 50:
 1.27 vs 1.15 / 1.14). **Inference:** that is the §385
@@ -20120,3 +20122,126 @@ research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000�
 [Result](evidence/silver_potion_weights_20261017/RESULT.md), [analysis.json](evidence/silver_potion_weights_20261017/analysis.json).
 Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
+
+## §514 — Fixed OOC rules before and inside the search, with keys on (2026-10-17)
+
+**KEEP_RULES; opt-in potion leave, default off.** Offline count on the 1,408 open §503 A20 runs (TRAIN + VALIDATION,
+student C prior `STS_OOC_MCTS_PRIOR=heart1`, keys on; SEALED-confirm not opened). Firings: chest 3,380, reward relic
+10,077, gold 30,148, potion pickup 13,158, potion swap by rank 1,452, empty-screen leave 4,439 (key rule 4,778 belongs
+to the keys thread). The relic rule matches heart1's own take-free-rewards convention. The 7 reviewed relics went to
+search and were left 291 of 760 times. The swap rank dropped a Fairy 4 times.
+
+Every REWARDS root with a "discard potion" candidate had a uniform prior: 1,281 roots in 553 runs. Search discarded
+there 505 times and then took the declined reward potion, 455 times a lower-ranked one (mean keep-value loss 1.32 HP-equivalent
+per fight over all 505, ADR-0039 units). On the 758 such roots that also offered cards, search left the screen 171 times, forgoing the card reward. A PR #591 (`7fb7933`, heart1full) smoke on 22 seeds per arm (111155002–023, 128 sims)
+gives the prior back to discard roots that still offer cards. The remaining "leave or discard" root stays uniform
+(10 of 19), with 6 discards. New research option `STS_POTION_REWARD_DECLINE_LEAVE=1` makes the tree rules leave
+such a screen. In a 16-seed-per-arm smoke (binary from `b771aa1` plus this change, as committed in `c528115`; seeds 111155024–039), cards-less discard roots went 1 → 0, with 1 vs 1 win;
+this is a smoke, not an A/B. **Inference:** the effect is about one slightly worse potion per three runs, too small to
+test; the default is Philipp's call. If Sapphire becomes a search decision, the relic rule must stand down while a
+Sapphire is offered (keys thread). Seeds 111155000–039 used (000–001 failed at startup, no gameplay).
+[Report](evidence/ooc_fixed_rules_20261017/REPORT.md).
+**Knowledge impact:** `STS_POTION_REWARD_DECLINE_LEAVE` in environment-variables and the out-of-combat reward flow.
+
+## §515 — Heart leaf: TD-fitted tree leaf on §503 rollout tails, VALIDATION gate and CONFIRM (2026-10-17)
+
+**td1 GATE_FAIL (act-3 calibration); retrained td2 CONFIRM_FAIL (act-1 calibration), better BCE
+and AUC than X2-B on CONFIRM**, offline, research-only, no default change (issue #605). New
+opt-in leaf `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (requires `STS_OOC_MCTS_LEAF_VALUE=native`):
+value = sigmoid(0.799 · margin(public X2-B) + residual), the residual a 204-tree XGBoost margin
+model over the rich vector plus Act-4-correct boss distance, keys held and key reachability,
+HP fraction, Ritual Dagger damage and Searing Blow level (`heart-leaf-features-v2`). Targets:
+fitted TD on 16 live-configured rollout3 tails per root (`one_combat heartleaftail`, salt
+111159000; non-terminal ends valued by the previous round), mixed 50/50 with the real Heart
+outcome. Rows: 27,114 §503 TRAIN+VALIDATION MAP roots with native snapshots; CONFIRM and §497
+TEST unopened.
+
+On VALIDATION (320 runs, run-weighted) against X2-B with a TRAIN Platt map: BCE 0.3065 vs 0.3133
+(PASS), AUC 0.724 vs 0.699 (PASS), mean prediction vs Heart rate 0.085/0.103, 0.132/0.119 and
+**0.240/0.202 in Act 3** (|Δ| 0.038 > 0.03, FAIL; X2-B Platt 0.090; raw X2-B 0.898). Act 4 (78
+roots, not gated) 0.592 vs 0.423. TD rounds 2–3 did not improve VALIDATION BCE. Native parity
+2.8e-7; a one-seed A20 Act-1 smoke (111159001) ran cleanly. The key inputs carry ≤ 0.1% of the
+gain: **Inference:** §503 has little key-timing variation; the #611 key-flag runs are planned
+training data.
+
+Descriptive, for Philipp's question: heart1's value head (`heart1.bin` `1e92f2a6`) on the same
+roots ranks within an act better than X2-B (AUC acts 1–4: 0.60, 0.74, 0.78, 0.74 vs 0.56, 0.68,
+0.68, 0.65) but pooled only 0.53, because its level barely changes between acts.
+
+Retrain td2 (Philipp: "Retrain, then CONFIRM"; PREREG amendment 2, reviewed at `91bf3e28`): adds
+`hlCritic`, a 600-tree regression of the heart1 value head on the same features (schema v3,
+evaluated natively), and an Act-4 logit offset (−0.713) from out-of-fold TRAIN, because the
+rollout tails overrate Act 4. VALIDATION BCE 0.3038, AUC 0.735, act 3 0.233/0.202. Scored once on
+the §503 CONFIRM set (640 runs, 83 Heart kills, 12,458 MAP roots): BCE 0.3345 vs Platt X2-B
+0.3479 (paired −0.0134 [−0.0189, −0.0073]), AUC 0.750 vs 0.726, acts 2-3 within 0.023, Act 4
+0.438/0.459, but **act 1 0.093/0.130 (|Δ| 0.037 > 0.03, FAIL**; X2-B 0.040). No A/B on td2;
+CONFIRM is spent. **Inference:** the act-1 under-prediction is systematic (TRAIN out of fold 0.093
+vs 0.136). The §497 TEST stays sealed.
+[Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
+**Knowledge impact:** `operations/environment-variables.md` (new option),
+`evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
+
+## §516 — A20 Silver budget: learned stopping matches flat 10k at 0.41x CPU; gen-6 prior adds Act-4 reaches, not Heart kills (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Audit performance and throughput"):** "yes set up a20 silver budget test";
+card "Add learned+prior"; 16:32Z: "maybe do 512 seeds then on 8 workers." Can learned stopping (ADR-0026) replace
+the flat exact 10k Silver budget of the A20 research stack, and does the gen-6 MLP prior (§476) on top change that?
+**Design:** [PLAN](evidence/silver_budget_a20_20261017/PLAN.md), pre-launch review PASS. Plain A20 full runs (keys,
+Heart objective, no OOC MCTS), student C `policyStep` out of combat, no V4 net loaded. Arms `F` flat exact 10k,
+`L` learned stopping, `LP` L + g6_E as root prior (weight 400) and tree prior K=8 (new research flag
+`STS_SILVER_TREE_PRIOR_MIN_VISITS`, PR #603). RUN_COMMIT `d83b4ab9` (code main `e413c1f3`, binary `a6ad3c56…`).
+Seeds 111135100–111135611. Primary: reached Act 4, paired Newcombe 95% interval, non-inferior if the lower bound
+> −5 pp.
+**Result.** 1,536/1,536 units rc=0, 512 seeds valid; 8 tars verified from a second container.
+- **Heart kills:** F 27, L 30, LP 27 of 512. L − F +0.6 pp [−1.7, +2.9]; LP − F 0.0 [−2.3, +2.3].
+- **Reached Act 4 (primary):** F 77, L 75, LP 97.
+  - L − F −0.4 pp [−3.4, +2.6], NON_INFERIOR.
+  - LP − F +3.9 pp [+0.4, +7.4], McNemar p = 0.035, NON_INFERIOR. The gain is not a pre-registered hypothesis.
+- **CPU per run:** F 53.5 s, L 21.9 s (0.41x), LP 28.2 s (0.53x).
+- **OOC decisions:** student C 96.6–96.7% in every arm, the key rule 2.6–2.8%, Match and Keep 0.5–0.7% (850
+  decisions). Match and Keep's card choices come from the native GBM card-reward fallback (`serverCardRewardPolicy`),
+  since no V4 net is loaded; #616 moves them to student C.
+**Interpretation:** at A20, learned stopping plays as well as flat 10k on both endpoints at 0.41x the CPU, which
+makes it the cheaper Silver budget for student-C self-play. The prior's extra Act-4 reaches did not convert: Heart
+kills per Act-4 run were 28% for LP against 35% for F and 40% for L. **Inference:** the prior helps Acts 1–3 combats
+but not the Act-4 fights; that needs a targeted check before any claim. Defaults are unchanged (research stacks set
+the budget explicitly). Seeds 111135100–111135611 are used; performance-audit smokes used 111135000–111135004.
+[Result](evidence/silver_budget_a20_20261017/RESULT.md), [report.json](evidence/silver_budget_a20_20261017/report.json).
+Raw: `/mnt/project-files/audit-2026-10-17/silver-budget-a20/runs/w0{1..8}.tar.gz`.
+**Knowledge impact:** learned-stopping paragraph in `architecture/combat-search.md`.
+
+## §519 — Silver rollout card table rebuilt per root by the gen-6 prior: NOT_CPU_MATCHED, score NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Distilled Silver playout picker"):** "we could still do the distilling more
+harshely i think. or runt he models once for each root / turn, value all cards and just play the highest value
+cards"; 17:04Z: "4 workers, 128 seeds on 4 cores".
+**Design:** [PREREG](evidence/silver_rollout_root_table_20261017/PREREG.md), independent pre-launch review PASS
+(PR #612). New research option `STS_SILVER_ROLLOUT_ROOT_TABLE` (unset = ADR-0040 g6 table): at each searched root the
+gen-6 E policy MLP (`ca9bd7f2…`) scores every distinct card in hand, draw and discard once, and the greedy playout
+uses those scores as its card table. Fight-level `ctmsilvergen` at A20, armset `roottable`: arms `greedy`/`roottable`
+at 2500 and 2650 simulations, R = 2 redraws, hallway every 3rd, §479 score and bootstrap. Source runs use student C
+(`eff2f74f…`), keys off (student C still collects keys, so 43 fights are in Act 4). RUN_COMMIT `6d597adc` (code
+`0f5e81cf`, binary `aa0e78dd…`), seeds 111158100–111158227. Primary: `roottable2500 − greedy2650` score, label
+valid only if the per-fight CPU ratio point estimate is ≤ 1.00.
+**Result: NOT_CPU_MATCHED; the score contrast is NOT_SHOWN as well.** 128/128 seeds, 16/16 shards rc=0, 4 tars
+verified from a second container; 1,426 valid fights (6 excluded for escapes, 3 control-replay mismatches). Primary
+`roottable2500 − greedy2650`: score +1.87 [−0.15, +3.94], win +0.6 pp [−0.1, +1.2]; CPU per fight ratio 1.007
+[0.987, 1.027]. The root table costs 5.1% more CPU per simulation (1.051 [1.039, 1.064]; table build plus playouts
+of 17.0 vs 15.8 actions), less than the 6% extra simulations at 2650; the CPU miss comes from decisions per fight:
+the root-table arm takes 1.4% more search decisions (72,277 vs 71,257), so at equal simulations it costs 1.066x CPU
+per fight against 1.059x for greedy2650, hence 1.007. Descriptive, not pre-registered, equal simulations:
+`roottable2500 − greedy2500` score +2.69 [+0.61, +4.80], win +0.8 pp [+0.1, +1.6] at 1.066 CPU per fight;
+`roottable2650 − greedy2650` +0.92 [−1.00, +2.94]; `greedy2650 − greedy2500` +0.83 [−0.85, +2.49]. Win rates
+92.0 / 92.8 / 92.3 / 92.5% (greedy2500 / roottable2500 / greedy2650 / roottable2650). Bosses (269 fights)
+`roottable2500 − greedy2650` +5.4 [−2.0, +13.0]; Act 4 (43) +10.2 [−7.7, +28.1].
+**Interpretation:** a per-root distilled table is descriptively a better playout picker than the fixed ADR-0040
+table at equal simulations (+2.69 [+0.61, +4.80], not pre-registered), but the gain is about the size of what its own CPU overhead would buy as extra simulations, consistent
+with §479 (simulations beat playout quality). Pre-registered decision: stop; the option stays research-only and off.
+**Inference:** a cheaper build (cache per turn, or fewer scored cards) could turn the equal-sims edge into a CPU-matched
+one; not tested.
+[result.json](evidence/silver_rollout_root_table_20261017/result.json). Raw:
+`/mnt/project-files/silver-rollout-root-table/w0{1..4}.tar` (sha256 `8fb4460d…`, `73428220…`, `991356f1…`,
+`e0f75673…`). Seeds used: 111158000–111158024 (smokes) and 111158100–111158227 (run); 111158025–111158099 unused.
+The pre-launch reviewer used 111139400–111139411.
+**Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
+`operations/environment-variables.md`.
