@@ -15,6 +15,12 @@
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "heart1_policy.h"
+#include "run_driver.h"
+#include "sim/search/RunGoal.h"
+
+#include <cstdlib>
+
+extern bool g_collectKeys;
 
 namespace one_combat {
 namespace {
@@ -178,6 +184,15 @@ LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
     return scoreLiveOocV4(projected, path, model_, rewardPityHistoryComplete_);
 }
 
+bool liveOocResearchStack() {
+    const char *raw = std::getenv("STS_LIVE_OOC_RESEARCH_STACK");
+    if (!raw) return true;
+    const std::string value(raw);
+    if (value == "1") return true;
+    if (value == "0") return false;
+    throw std::invalid_argument("STS_LIVE_OOC_RESEARCH_STACK must be 0 or 1");
+}
+
 LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
                                      std::shared_ptr<const CombatTransitionSampler> sampler,
                                      const CompactTreeNet *oocWinModel,
@@ -211,6 +226,18 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     options.sampleNoncombat = true;
     options.checkpointLeaves = true;
     options.heart1Prior = bool(armC_);
+    // ADR-0041: the terminal objective and every rule below share the
+    // process key setting (STS_COLLECT_KEYS, default on).
+    options.collectKeys = g_collectKeys;
+    if (researchStack_) {
+        // The A20 research stack (§504 control, §522 arm C): rollout3 with
+        // the student's leaf policy, the heart1full prior (ADR-0042), tree
+        // rules and merging (ADR-0031), greedy rollout shops (ADR-0032).
+        options.leafCombats = 3;
+        options.treeRules = true;
+        options.greedyRolloutShop = true;
+        options.heart1Coverage = options.heart1LeafPolicy = bool(armC_);
+    }
     // Qualified public question-room history reconstructs the native chance
     // counters; successors update those counters through normal transitions.
     options.stopAtMapCheckpoint = !mapHistoryComplete_;
@@ -284,7 +311,14 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
     dependencies.continuationStep = [this](sts::GameContext &gc, PathHistory &history,
                                            std::mt19937_64 &) {
-        if (collectFreeOocReward(gc, false)) { history.update(gc); return; }
+        // Required key choices precede every other rule (ADR-0041); the
+        // free-reward rule would take Sapphire's paired relic first.
+        if (const auto key = sts::search::heartKeyAction(gc, g_collectKeys)) {
+            key->execute(gc);
+            history.update(gc);
+            return;
+        }
+        if (collectFreeOocReward(gc, g_collectKeys)) { history.update(gc); return; }
         // The default simulator checkpoint chain uses these same native
         // compact-tree fallback decisions after its V4 gate. The shared
         // functions prevent a second shop/rest/card policy from drifting.
@@ -294,7 +328,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             return;
         }
         if (gc.screenState == ScreenState::REST_ROOM
-                && nativeWinRestStep(gc, history, *winModel_, false)) {
+                && nativeWinRestStep(gc, history, *winModel_, g_collectKeys)) {
             history.update(gc);
             return;
         }
@@ -347,6 +381,15 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         config.captureTree = captureTree_;
         config.captureValueDistribution = true;
         config.treeNodeCap = treeNodeCap_;
+        if (researchStack_) {
+            config.cPuct = 1.5;
+            config.wideningK = 4;
+            config.wideningAlpha = 0.75;
+            config.maxDepth = 32;
+            config.selectByMeanQ = false;
+            config.allowUnqualifiedRootStop = true;
+            config.mergeEquivalentOutcomes = true;
+        }
         const auto search = searchWithSoleRootShortcut(provider, config, provider.soleLegalAction(0), 512);
         if (search.aborted) {
             unsupportedResult.reason = "OOC_MCTS_ABORTED:" + search.abortReason;
@@ -368,13 +411,18 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         result.rootHp = projected.curHp;
         result.rootMaxHp = projected.maxHp;
         result.rootFloor = projected.floorNum;
-        result.searchModel = {{"ctmStackScope", projected.ascension == 20 && samplerA20_ ? "ascension20" : "base"}};
+        result.searchModel = {{"ctmStackScope", projected.ascension == 20 && samplerA20_ ? "ascension20" : "base"},
+            {"searchStack", researchStack_ ? "a20_research" : "legacy"}, {"collectKeys", options.collectKeys},
+            {"leafCombats", options.leafCombats}, {"treeRules", options.treeRules},
+            {"wideningK", config.wideningK}, {"wideningAlpha", config.wideningAlpha}, {"maxDepth", config.maxDepth}};
         if (armC_) {
             const auto &metrics = provider.continuationMetrics();
-            result.searchModel.update({{"prior", "arm_c"}, {"rolloutPolicy", "v4_chain"},
+            result.searchModel.update({{"prior", options.heart1Coverage ? "arm_c_full" : "arm_c"},
+                {"rolloutPolicy", options.heart1LeafPolicy ? "arm_c" : "v4_chain"},
                 {"armCPriorNodes", metrics.heart1PriorNodes},
                 {"armCPriorFallbacks", metrics.heart1PriorFallbacks},
-                {"armCPriorReasons", metrics.heart1PriorReasons}});
+                {"armCPriorReasons", metrics.heart1PriorReasons},
+                {"armCLeafSteps", metrics.heart1LeafSteps}, {"armCLeafFallbacks", metrics.heart1LeafFallbacks}});
         }
         result.candidates.reserve(rootActions.size());
         for (const auto &root : rootActions) {

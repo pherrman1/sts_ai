@@ -78,6 +78,13 @@ private:
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &, const PathHistory &,
                              const OocStrategicTokNet &, bool rewardPityHistoryComplete = true);
 
+// STS_LIVE_OOC_RESEARCH_STACK (default 1): live OOC MCTS runs the A20
+// research configuration of ledger §504/§522 (rollout3 leaf with the heart1
+// leaf policy, heart1full prior, tree rules, outcome merging, greedy rollout
+// shops, widening 4/0.75, depth 32, early stop). 0 restores the bare pre-fix
+// search. Any other value is fatal.
+bool liveOocResearchStack();
+
 class LiveOocMctsPolicy final : public LiveOocPolicy {
 public:
     LiveOocMctsPolicy(const OocStrategicTokNet &,
@@ -102,6 +109,7 @@ private:
     const CompactTreeNet *winModel_;
     const CompactTreeNet *floorModel_;
     std::shared_ptr<const heart1::Net> armC_;
+    bool researchStack_ = liveOocResearchStack();
     mutable std::uint64_t searchSeed_ = 0;
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;
