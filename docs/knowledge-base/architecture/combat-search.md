@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -318,7 +318,13 @@ not CPU-matched and not shown. §521 repeats it at 10k: +1.8
 [−0.4, +4.0] against greedy at 10,700 at 1.008x CPU per fight (NOT_CPU_MATCHED,
 NOT_SHOWN), +1.8 [−0.2, +3.9] at equal simulations; 7% more greedy simulations
 buy nothing at 10k (−0.02). Philipp made it the default anyway (ADR-0046); the
-`roottable` armset requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`.
+`roottable` armset requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`. The live advisor
+does the same in every `NativeSilverAdvisorSession::decide` (extends keep that
+root's table): `one_combat_advisor` loads the model once at start, unset =
+`models/combat_policy_mlp_g6_E.txt` beside the executable (the installed release,
+which `tools/live_game_runtime.py` pins as `rolloutRootTableSha256`), else under the
+working directory; `0` restores the ADR-0040 table, a model that does not load
+exits 2, and each Silver evaluator reports `rolloutRootTable` (model fingerprint or `off`).
 From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn

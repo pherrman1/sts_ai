@@ -2,14 +2,18 @@ import copy
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None, differential=False, ctm_env=None):
+    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None, differential=False, ctm_env=None,
+                    executable=None, cwd=None):
         env = os.environ.copy()
+        env.pop("STS_SILVER_ROLLOUT_ROOT_TABLE", None)
         env.pop("STS_DIFFERENTIAL_TRACE", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
@@ -31,8 +35,8 @@ class AdvisorProtocolTest(unittest.TestCase):
         else:
             env["STS_SILVER_DEBUG_TREE_NODE_CAP"] = str(tree_node_cap)
         proc = subprocess.run(
-            [sys.argv[1]], input="\n".join(rows) + "\n", text=True,
-            capture_output=True, check=True, env=env)
+            [executable or sys.argv[1]], input="\n".join(rows) + "\n", text=True,
+            capture_output=True, check=True, env=env, cwd=cwd)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
 
@@ -444,6 +448,35 @@ class AdvisorProtocolTest(unittest.TestCase):
             evaluator = next(e for e in rows[-1]["evaluators"] if e["id"] == "silver_player_decision_v2")
             self.assertEqual(evaluator["reason"], "silver_missing_predecessor")
             self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_silver_rollout_root_table_default_and_opt_out(self):
+        # ADR-0046: on by default with the bundled gen-6 E model, found beside the
+        # executable (installed release layout) whatever the working directory.
+        wire = json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                           "session": "root-table", "sequence": 1, "observationHash": "root-table-1",
+                           "observation": self.silver_observation()})
+        bundled = Path("models/combat_policy_mlp_g6_E.txt").resolve()
+        with tempfile.TemporaryDirectory() as directory:
+            release = Path(directory)
+            (release / "models").mkdir()
+            shutil.copy2(sys.argv[1], release / "one_combat_advisor")
+            shutil.copy2(bundled, release / "models" / bundled.name)
+            cases = ((None, None, None), ("0", None, "off"), (None, release / "one_combat_advisor", None))
+            for value, executable, expected in cases:
+                with self.subTest(value=value, executable=executable):
+                    row = self.run_advisor([wire], self.model, executable=executable,
+                                           ctm_env={"STS_SILVER_ROLLOUT_ROOT_TABLE": value} if value else None,
+                                           cwd=directory if executable else None)[0]
+                    silver = next(e for e in row["evaluators"] if e["id"] == "silver_player_decision_v2")
+                    self.assertEqual(silver["status"], "OK", silver)
+                    if expected:
+                        self.assertEqual(silver["rolloutRootTable"], expected)
+                    else:
+                        self.assertRegex(silver["rolloutRootTable"], r"^fnv1a64:[0-9a-f]{16}$")
+            env = dict(os.environ, STS_SILVER_ROLLOUT_ROOT_TABLE=str(release / "missing.txt"))
+            proc = subprocess.run([sys.argv[1]], input="", text=True, capture_output=True, env=env)
+            self.assertEqual(proc.returncode, 2)
+            self.assertIn("=0 restores the ADR-0040 table", proc.stderr)
 
     def test_silver_rankings_include_physical_live_actions(self):
         observation = self.silver_observation()

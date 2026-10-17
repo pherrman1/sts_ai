@@ -11,7 +11,7 @@ from unittest import mock
 from tools.live_game_runtime import (CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS,
     CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME,
     CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, ARM_C_NAME,
-    RuntimeFailure, RuntimeManager, sha256)
+    ROLLOUT_ROOT_TABLE_NAME, RuntimeFailure, RuntimeManager, sha256)
 
 
 class LiveGameRuntimeTest(unittest.TestCase):
@@ -32,6 +32,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         (models / OOC_NAME).write_bytes(b"ooc")
         (root_models / OOC_WIN_NAME).write_bytes(b"win")
         (root_models / OOC_FLOOR_NAME).write_bytes(b"floor")
+        (root_models / ROLLOUT_ROOT_TABLE_NAME).write_bytes(b"root-table")
         subprocess.run(["git", "add", "."], cwd=self.repo, check=True)
         subprocess.run(["git", "commit", "-qm", "fixture"], cwd=self.repo, check=True)
         self.advisor = base / "advisor"
@@ -58,6 +59,9 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual((release / f"models/{OOC_FLOOR_NAME}").read_bytes(), b"floor")
         self.assertEqual(manifest["oocWinModelSha256"], sha256(release / f"models/{OOC_WIN_NAME}"))
         self.assertEqual(manifest["oocFloorModelSha256"], sha256(release / f"models/{OOC_FLOOR_NAME}"))
+        self.assertEqual((release / f"models/{ROLLOUT_ROOT_TABLE_NAME}").read_bytes(), b"root-table")
+        self.assertEqual(manifest["rolloutRootTableSha256"],
+                         sha256(release / f"models/{ROLLOUT_ROOT_TABLE_NAME}"))
         self.assertEqual(manifest["advisorSha256"], sha256(release / "one_combat_advisor"))
         self.assertNotIn("/.codex/worktrees/", json.dumps(self.manager.desired_config(manifest)))
         self.assertFalse(any(path.name.startswith(".current.") for path in self.manager.root.iterdir()))
@@ -283,6 +287,17 @@ class LiveGameRuntimeTest(unittest.TestCase):
         (self.repo / f"models/{OOC_FLOOR_NAME}").unlink()
         with self.assertRaisesRegex(RuntimeFailure, "tracked OOC floor model missing"):
             self.install()
+
+    def test_missing_source_rollout_root_table_fails_clearly(self):
+        (self.repo / f"models/{ROLLOUT_ROOT_TABLE_NAME}").unlink()
+        with self.assertRaisesRegex(RuntimeFailure, "tracked rollout root table model missing"):
+            self.install()
+
+    def test_tampered_rollout_root_table_invalidates_release(self):
+        self.install()
+        (self.manager.current / "models" / ROLLOUT_ROOT_TABLE_NAME).write_bytes(b"changed")
+        with self.assertRaisesRegex(RuntimeFailure, "runtime artifact hash mismatch"):
+            self.manager.validate_release()
 
     def test_status_does_not_require_mcp_and_reports_active_mismatch(self):
         manifest = self.install()

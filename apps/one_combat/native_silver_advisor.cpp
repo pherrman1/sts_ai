@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "live_silver_importer.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverWireState.h"
 
@@ -17,7 +18,8 @@ using sts::search::SilverSearcher;
 
 }
 
-NativeSilverAdvisorSession::NativeSilverAdvisorSession() = default;
+NativeSilverAdvisorSession::NativeSilverAdvisorSession(const sts::search::CombatValueNet *rolloutRootTable)
+    : rolloutRootTable_(rolloutRootTable) {}
 NativeSilverAdvisorSession::~NativeSilverAdvisorSession() = default;
 
 NativeSilverDecision NativeSilverAdvisorSession::decide(const silver_bridge::BattleStateWire &wire,
@@ -69,6 +71,12 @@ NativeSilverDecision NativeSilverAdvisorSession::decide(const silver_bridge::Bat
     } else {
         searcher_->setRoot(root);
         lastFallbackReason_ = "candidate_missing";
+    }
+    if (rolloutRootTable_) {
+        // ADR-0046, as in runNativeSilverCombat; extend() keeps this root's table.
+        sts::search::nativeSilverRolloutRootTable(searcher_->rootSearchState(), *rolloutRootTable_,
+                                                  searcher_->rootCardTable);
+        searcher_->rolloutConfig.cardTable = searcher_->rootCardTable.data();
     }
     outcomes_.reset();
     searcher_->outcomes = &outcomes_;
