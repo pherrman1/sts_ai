@@ -118,6 +118,9 @@ def verify_plan(plan_path, bundle):
     return plan
 
 
+HYPOTHETICAL_INDEX = 1 << 12
+
+
 def root_trace(path, actions_path, seed):
     """Every live root has one row aligned with the executed-action trace; returns coverage counts."""
     if path.stat().st_size > ROOT_TRACE_CAP:
@@ -127,14 +130,26 @@ def root_trace(path, actions_path, seed):
     if not rows or len(rows) != len(actions):
         raise ValueError('root trace not aligned with action trace')
     counts = {'roots': len(rows), 'searched': 0, 'snapshots': 0, 'records': 0, 'snapshotErrorsByScreen': {}}
-    previous = -1
+    previous, base, seen = -1, -1, set()
     for row, action in zip(rows, actions):
+        index = row.get('decisionIndex')
+        # Match and Keep values each offered card with a hypothetical root indexed (real index << 12) ^ card bits
+        # (run_driver.cpp matchAndKeepPolicyStep); real indices stay below 1 << 12 and increase strictly.
+        hypothetical = type(index) is int and index >= HYPOTHETICAL_INDEX
         if (row.get('schema') != 'ooc-root-trace-v1' or row.get('seed') != seed
-                or type(row.get('decisionIndex')) is not int or row['decisionIndex'] <= previous
-                or row['decisionIndex'] != action['decisionIndex'] or row.get('selectedKey') != action['selectedKey']
+                or type(index) is not int or index in seen
+                or (index >> 12 if hypothetical else index) <= previous
+                or index != action['decisionIndex'] or row.get('selectedKey') != action['selectedKey']
                 or row.get('executed') != action['executed'] or row.get('selectedId') != action['selectedId']):
             raise ValueError('root trace row does not match the live decision')
-        previous = row['decisionIndex']
+        seen.add(index)
+        if hypothetical:
+            counts['hypotheticalRoots'] = counts.get('hypotheticalRoots', 0)+1
+            base = max(base, index >> 12)
+        elif index <= base:
+            raise ValueError('root trace row does not match the live decision')
+        else:
+            previous = index
         keys = [a['key'] for a in row['rootActions']]
         if len(set(keys)) != len(keys):
             raise ValueError('duplicate root candidate identity')

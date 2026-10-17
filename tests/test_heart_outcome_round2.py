@@ -53,6 +53,15 @@ class Round2Tests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.check(rows, [action(rows[0]), changed])
 
+    def test_match_and_keep_hypothetical_roots_accepted(self):
+        # w08 seed 111101200: real 138, hypothetical (140 << 12) ^ bits ..., then real 149.
+        rows = [root(138), root((140 << 12) ^ 50), root((146 << 12) ^ 20), root(149)]
+        self.assertEqual(self.check(rows)['hypotheticalRoots'], 2)
+        for bad in ([root(138), root((138 << 12) ^ 2)], [root(138), root((140 << 12) ^ 2), root(139)],
+                    [root(138), root((140 << 12) ^ 2), root((140 << 12) ^ 2)]):
+            with self.assertRaises(ValueError):
+                self.check(bad)
+
     def test_bad_visits_duplicate_keys_and_leaks_refused(self):
         bad = root(0); bad['rootActions'][0]['visitShare'] = .9
         dup = root(0, keys=('a', 'a'))
