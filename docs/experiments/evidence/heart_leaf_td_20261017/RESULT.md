@@ -1,4 +1,4 @@
-# §511 Heart leaf v1 (issue #605): offline gate on §503 VALIDATION
+# §515 Heart leaf v1 (issue #605): offline gate on §503 VALIDATION
 
 **Verdict: GATE_FAIL (act-3 calibration), research-only.** Pre-registered in `PREREG.md`
 (plus the v2-feature amendment) before the full fit.

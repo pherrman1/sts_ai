@@ -1341,6 +1341,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverRootPrior = search::nativeSilverRootPriorPath();
             meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
             meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
+            meta.silverTreePriorMinVisits = search::nativeSilverTreePriorMinVisits();
         }
         if (g_oocStrategicTokNet.ok) {
             meta.oocStrategicTokNet = g_oocStrategicTokNet.path;
@@ -2214,7 +2215,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
         } else if (inRemoveSelect) {
             one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (search::heartRecallRequired(gc, g_collectKeys)) {
                 search::GameAction(2, 0).execute(gc);   // recall: take the ruby key
             } else {
                 auto actions = search::GameAction::getAllActionsInState(gc);
@@ -2495,6 +2496,64 @@ static int matchAndKeepOracleSelfTest() {
     require(faceUp == 1, "the policy turned exactly one card");
     require(t_curPath == &path && !search::g_disallowImaginedCombat, "valuation restores path and combat permission");
     std::cout << "Match and Keep oracle selftest: PASS\n";
+    return 0;
+}
+
+// STS_MATCH_AND_KEEP_CURSE_FIX: a seen curse pair is never valued (no cache
+// entry) and never flipped; =0 values it like any card, as before 2026-10-17.
+static int matchAndKeepCurseSelfTest() {
+    auto require = [](bool ok, const std::string &message) {
+        if (!ok) throw std::runtime_error("Match and Keep curse selftest: " + message);
+    };
+    struct Guard {
+        const PathHistory *path = t_curPath;
+        OocPolicyThreadState policy = one_combat::captureOocPolicyThreadState();
+        std::optional<std::string> fix = [] {
+            const char *v = std::getenv("STS_MATCH_AND_KEEP_CURSE_FIX");
+            return v ? std::optional<std::string>(v) : std::nullopt;
+        }();
+        ~Guard() {
+            t_curPath = path; one_combat::restoreOocPolicyThreadState(policy);
+            if (fix) setenv("STS_MATCH_AND_KEEP_CURSE_FIX", fix->c_str(), 1);
+            else unsetenv("STS_MATCH_AND_KEEP_CURSE_FIX");
+        }
+    } guard;
+    GameContext base(CharacterClass::IRONCLAD, 74007001, 0);
+    for (int i = 0; i < 16 && base.screenState != ScreenState::MAP_SCREEN; ++i) {
+        const auto actions = search::GameAction::getAllActionsInState(base);
+        require(!actions.empty(), "fixture reaches the first map screen");
+        actions.front().execute(base);
+    }
+    require(base.screenState == ScreenState::MAP_SCREEN, "fixture is at the map");
+    base.curRoom = Room::EVENT; base.curEvent = Event::MATCH_AND_KEEP;
+    base.screenState = ScreenState::EVENT_SCREEN;
+    base.info.eventData = 5;
+    base.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    base.info.toSelectCards.clear();
+    for (int i = 0; i < 12; ++i)
+        base.info.toSelectCards.push_back({Card(i < 2 ? CardId::SHAME : CardId::BASH),
+            i < 2 ? GameContext::MATCH_AND_KEEP_SEEN : GameContext::MATCH_AND_KEEP_UNSEEN});
+    const auto shame = std::make_pair(static_cast<int>(CardId::SHAME), false);
+    PathHistory path;
+    search::ScumSearchAgent2 agent;
+    const auto click = [&](const char *fix) {
+        setenv("STS_MATCH_AND_KEEP_CURSE_FIX", fix, 1);
+        one_combat::restoreOocPolicyThreadState(OocPolicyThreadState{});
+        t_curPath = &path;
+        GameContext gc = base;
+        runFullRunOocPolicyStep(gc, agent, false, false);
+        int faceUp = -1;
+        for (int i = 0; i < 12; ++i)
+            if (gc.info.toSelectCards[i].deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP) faceUp = i;
+        return std::make_pair(faceUp, one_combat::captureOocPolicyThreadState().matchAndKeepWant.want.count(shame));
+    };
+    const auto fixed = click("1");
+    require(fixed.first == 2 && fixed.second == 0, "fix: the curse pair is skipped without a valuation");
+    require(click("0").second == 1, "=0: the curse pair is valued like any card");
+    bool threw = false;
+    try { click("2"); } catch (const std::runtime_error &) { threw = true; }
+    require(threw, "an invalid switch value is fatal");
+    std::cout << "Match and Keep curse selftest: PASS\n";
     return 0;
 }
 
@@ -3025,9 +3084,9 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
-        {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""},
-        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
-        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""},
+        {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
+        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3593,7 +3652,10 @@ int main(int argc, char **argv) {
         std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
                   << " weight " << search::nativeSilverRootPriorWeight()
                   << (std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE") && std::string(std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE")) == "override"
-                      ? " scope=override (thread opt-in only; live combats plain)" : "") << "]\n";
+                      ? " scope=override (thread opt-in only; live combats plain)" : "")
+                  << (search::nativeSilverTreePriorMinVisits() > 0
+                      ? "; tree prior K=" + std::to_string(search::nativeSilverTreePriorMinVisits()) : std::string{})
+                  << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -3637,6 +3699,23 @@ int main(int argc, char **argv) {
                   << " (Tier-B branch: K=3, 150/100/50, bootstrap=true)"
                   << " -> " << out << '\n';
         strategicMargGen(nSeeds, outerSims, H, maxPerRun, out, seedOff);
+
+    } else if (mode == "potionpriceprobe") {
+        // Paired-continuation resource prices (research only):
+        // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA]
+        if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8]\n"; return 2; }
+        const int nSeeds = std::stoi(argv[2]);
+        const std::uint64_t seedStart = std::stoull(argv[3]);
+        const int sims = std::stoi(argv[4]);
+        const int asc = std::stoi(argv[5]);
+        const std::string out = argv[6];
+        const int statesPerRun = argc > 7 ? std::stoi(argv[7]) : 4;
+        const int fightsAhead = argc > 8 ? std::stoi(argv[8]) : 3;
+        const int hpDelta = argc > 9 ? std::stoi(argv[9]) : 8;
+        std::cout << "potionpriceprobe seeds " << seedStart << ".." << seedStart + nSeeds - 1
+                  << " sims=" << sims << " asc=" << asc << " statesPerRun=" << statesPerRun
+                  << " fightsAhead=" << fightsAhead << " hpDelta=" << hpDelta << " -> " << out << '\n';
+        potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta);
 
     } else if (mode == "oocfactoreval") {
         // nDecisions is explicit for tools/seed_guard.sh and checked against
@@ -3898,6 +3977,8 @@ int main(int argc, char **argv) {
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
 
+    } else if (mode == "heart1logitscheck") {
+        return one_combat::heart1::logitsCheckCommand(argc, argv);
     } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits
@@ -4282,6 +4363,13 @@ int main(int argc, char **argv) {
     } else if (mode == "matchandkeep_oracle_selftest") {
         if (argc != 2) return 2;
         try { return matchAndKeepOracleSelfTest(); }
+        catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
+    } else if (mode == "matchandkeep_curse_selftest") {
+        if (argc != 2) return 2;
+        try { return matchAndKeepCurseSelfTest(); }
         catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 1;

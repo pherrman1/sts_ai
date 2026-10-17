@@ -1,0 +1,845 @@
+{
+  "attemptedUnits": 144,
+  "classification": "PILOT_COVERAGE_INCONCLUSIVE",
+  "coverageSourceGroups": {
+    "actualRoutePositive": {
+      "base_double_FAST": {
+        "TRAIN": [
+          52000001,
+          52000004,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "base_double_STANDARD": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000006
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "base_single_FAST": {
+        "TRAIN": [
+          52000004
+        ],
+        "VALIDATION": []
+      },
+      "base_single_STANDARD": {
+        "TRAIN": [
+          52000004,
+          52000009
+        ],
+        "VALIDATION": []
+      },
+      "upgraded_double_FAST": {
+        "TRAIN": [
+          52000001,
+          52000004,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "upgraded_double_STANDARD": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000005,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "upgraded_single_FAST": {
+        "TRAIN": [],
+        "VALIDATION": []
+      },
+      "upgraded_single_STANDARD": {
+        "TRAIN": [
+          52000004
+        ],
+        "VALIDATION": []
+      }
+    },
+    "cellPositive": {
+      "ritual_writhing_v2_base_double_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000006
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "ritual_writhing_v2_base_double_natural": {
+        "TRAIN": [
+          52000004,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_base_double_smoke": {
+        "TRAIN": [
+          52000001
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_base_single_brew": {
+        "TRAIN": [
+          52000004,
+          52000009
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_base_single_natural": {
+        "TRAIN": [
+          52000004
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_base_single_smoke": {
+        "TRAIN": [],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_upgraded_double_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000005,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_upgraded_double_natural": {
+        "TRAIN": [
+          52000004,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_upgraded_double_smoke": {
+        "TRAIN": [
+          52000001
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_upgraded_single_brew": {
+        "TRAIN": [
+          52000004
+        ],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_upgraded_single_natural": {
+        "TRAIN": [],
+        "VALIDATION": []
+      },
+      "ritual_writhing_v2_upgraded_single_smoke": {
+        "TRAIN": [],
+        "VALIDATION": []
+      }
+    },
+    "cellTargets": {
+      "ritual_writhing_v2_base_double_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_base_double_natural": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_base_double_smoke": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_base_single_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_base_single_natural": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_base_single_smoke": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_upgraded_double_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_upgraded_double_natural": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_upgraded_double_smoke": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_upgraded_single_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_upgraded_single_natural": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "ritual_writhing_v2_upgraded_single_smoke": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      }
+    },
+    "doubleOrdinalPositive": {
+      "base_FAST_0": {
+        "TRAIN": [
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "base_FAST_1": {
+        "TRAIN": [
+          52000001,
+          52000004,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "base_STANDARD_0": {
+        "TRAIN": [
+          52000002,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "base_STANDARD_1": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000006
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "upgraded_FAST_0": {
+        "TRAIN": [
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "upgraded_FAST_1": {
+        "TRAIN": [
+          52000001,
+          52000004,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "upgraded_STANDARD_0": {
+        "TRAIN": [
+          52000002,
+          52000006
+        ],
+        "VALIDATION": []
+      },
+      "upgraded_STANDARD_1": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000005,
+          52000006
+        ],
+        "VALIDATION": []
+      }
+    },
+    "identifiableNamedPotionUse": {
+      "base_double_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "base_double_smoke": {
+        "TRAIN": [
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "base_single_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "base_single_smoke": {
+        "TRAIN": [
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "upgraded_double_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "upgraded_double_smoke": {
+        "TRAIN": [
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      },
+      "upgraded_single_brew": {
+        "TRAIN": [
+          52000001,
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007
+        ]
+      },
+      "upgraded_single_smoke": {
+        "TRAIN": [
+          52000002,
+          52000004,
+          52000005,
+          52000006,
+          52000008,
+          52000009
+        ],
+        "VALIDATION": [
+          52000007,
+          52000011,
+          52000015
+        ]
+      }
+    }
+  },
+  "distinctObservations": 993,
+  "duplicateObservations": 2367,
+  "exclusions": {},
+  "extension": false,
+  "missingCoverage": [
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_base_single_natural",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_base_single_natural",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 2,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_base_single_brew",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_base_single_brew",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_base_single_smoke",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_base_single_smoke",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 2,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_base_double_natural",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_base_double_natural",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 1,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_base_double_brew",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_base_double_smoke",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_base_double_smoke",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_upgraded_single_natural",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_upgraded_single_natural",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_upgraded_single_brew",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_upgraded_single_brew",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_upgraded_single_smoke",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_upgraded_single_smoke",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 2,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_upgraded_double_natural",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_upgraded_double_natural",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_upgraded_double_brew",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "ritual_writhing_v2_upgraded_double_smoke",
+      "required": 3,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "ritual_writhing_v2_upgraded_double_smoke",
+      "required": 2,
+      "table": "cellPositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "base_single_FAST",
+      "required": 3,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "base_single_FAST",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 2,
+      "partition": "TRAIN",
+      "path": "base_single_STANDARD",
+      "required": 3,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "base_single_STANDARD",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "base_double_FAST",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 1,
+      "partition": "VALIDATION",
+      "path": "base_double_STANDARD",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "TRAIN",
+      "path": "upgraded_single_FAST",
+      "required": 3,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_single_FAST",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "upgraded_single_STANDARD",
+      "required": 3,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_single_STANDARD",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_double_FAST",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_double_STANDARD",
+      "required": 2,
+      "table": "actualRoutePositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "base_FAST_0",
+      "required": 2,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "base_FAST_0",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "base_FAST_1",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "base_STANDARD_0",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 1,
+      "partition": "TRAIN",
+      "path": "upgraded_FAST_0",
+      "required": 2,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_FAST_0",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_FAST_1",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_STANDARD_0",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    },
+    {
+      "observed": 0,
+      "partition": "VALIDATION",
+      "path": "upgraded_STANDARD_1",
+      "required": 1,
+      "table": "doubleOrdinalPositive"
+    }
+  ],
+  "modelInference": false,
+  "plannedUnits": 144,
+  "promotion": false,
+  "qualification": false,
+  "retry": false,
+  "sourceGroups": 12,
+  "stopReason": null,
+  "targetOutcomes": {
+    "1": 482,
+    "2": 12
+  },
+  "targetRoutes": {
+    "FAST": 332,
+    "STANDARD": 162
+  },
+  "testAccess": false,
+  "training": false,
+  "validUnits": 144,
+  "wallSeconds": 223.40043160499772
+}

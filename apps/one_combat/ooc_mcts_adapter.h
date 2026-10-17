@@ -73,6 +73,11 @@ struct OocAdapterOptions {
     // sources V4 cannot encode (discards, non-upgrade selectors, ...) is still scored by heart1;
     // only a node heart1 cannot score keeps the uniform prior.
     bool heart1Coverage = false;
+    // Research option (default off, STS_OOC_MCTS_TARGET_PRIOR=1, needs the heart1 prior): a compound
+    // upgrade/remove/transform target gets p(source) * p_heart1(card | the selector the source opens)
+    // instead of an equal share of its source's prior. Student C's selector head is untrained
+    // (audit-2026-10-17 heart1-distill finding 1): use with heart1 or a student distilled on selects.
+    bool targetPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
@@ -104,6 +109,10 @@ struct OocAdapterOptions {
     // Same supported candidates/rules as prior, but heart1 scores every candidate
     // or the unchanged continuation chain handles the step. Requires a loaded net.
     bool heart1LeafPolicy = false;
+    // Research option (default off, STS_OOC_MCTS_LEAF_SELECTS=heart1, needs LEAF_POLICY=heart1 and
+    // heart1full): rollouts also hand every card select (remove, transform, ...) to heart1 instead of
+    // the chain. Same caveat as targetPrior for student C.
+    bool heart1LeafSelects = false;
     // Research option (default unset, STS_OOC_MCTS_LEAF_STUDENT=<weights>): nonterminal
     // leaves with a public heart1 record take the §494 rollout-target student's
     // prediction on their X2-B anchor instead of a rollout; others keep the rollout.
@@ -284,6 +293,7 @@ public:
     std::vector<sts::search::OocPlannerAction> legalActions(sts::search::OocStateId) const override;
     const Candidate &candidate(sts::search::OocStateId, sts::search::OocActionId) const;
     std::vector<double> policyLogits(sts::search::OocStateId) const;
+    void applyTargetPrior(const GameContext &, const std::vector<Candidate> &, std::vector<double> &) const;
     std::optional<sts::search::OocActionId> soleLegalAction(sts::search::OocStateId) const;
     sts::search::OocStateId sampleSuccessor(sts::search::OocStateId, sts::search::OocActionId,
                                             std::mt19937_64 &) override;

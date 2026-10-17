@@ -644,16 +644,18 @@ void BattleContext::updateRelicsOnExit(GameContext &g) const {
 }
 
 void cardOnExit(const CardInstance &c, Deck &deck) {
-    const auto isDeckCard = c.uniqueId < deck.size();
-    if (!isDeckCard) {
+    if (c.getId() != CardId::RITUAL_DAGGER || c.uniqueId < 0 || c.uniqueId >= deck.size()) {
         return;
     }
 
     const auto deckIdx = c.uniqueId;
     auto &deckCard = deck.cards[deckIdx];
 
-    if (c.getId() == CardId::RITUAL_DAGGER) {
-        deckCard.misc = c.specialData;
+    if (deckCard.id == CardId::RITUAL_DAGGER) {
+        // Repeated/purged uses can leave an older copy in the current queue
+        // item. Permanent Dagger damage only increases; no stale copy may
+        // overwrite a newer physical instance or the master deck value.
+        deckCard.misc = std::max(deckCard.misc, c.specialData);
     }
 
     // todo
@@ -679,7 +681,12 @@ void BattleContext::updateCardsOnExit(Deck &deck) const {
         cardOnExit(cards.hand[i], deck);
     }
 
-//    if (curCardQueueItem)
+    // A lethal card ends combat before OnAfterCardUsed returns it to a pile.
+    // Its physical identity still belongs to the master deck, unlike generated
+    // cards. The monotonic merge above also makes completed queue history safe.
+    if (!curCardQueueItem.isEndTurn) {
+        cardOnExit(curCardQueueItem.card, deck);
+    }
 
 }
 

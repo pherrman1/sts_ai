@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 #include "ooc_policy.h"
 #include "ooc_checkpoint_policy.h"
 #include "run_driver.h"
@@ -1040,7 +1041,7 @@ void upgradeSelectVPolicy(GameContext &gc) {
 
 bool restWinPolicy(GameContext &gc) {
     if (nativeWinPolicyAvailable()) return nativeRestWinPolicy(gc);
-    if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+    if (search::heartRecallRequired(gc, g_collectKeys)) {
         search::GameAction(2, 0).execute(gc);
         return true;
     }
