@@ -211,12 +211,16 @@ def main():
                 v[1] += work[(sid, x)][1] if den else 1; v[3] += work[(sid, y)][1] if den else 1
             m, lo, hi = boot_ratio(per_seed)
             result["cpuRatios"][f"{x}/{y}/{kind}"] = {"ratio": m, "ci95": [lo, hi]}
+    # Pre-registered CPU match: the primary label stands only if the point estimate of the
+    # roottable2500 / greedy2650 CPU-per-fight ratio is <= 1.00; otherwise it is NOT_CPU_MATCHED.
+    result["cpuMatched"] = result["cpuRatios"]["roottable2500/greedy2650/perFight"]["ratio"] <= 1.00
     for x, y, pos, neg in LABELED:
-        result["labels"][f"{x}-{y}"] = label(result["contrasts"][f"{x}-{y}/all/score"], pos, neg)
+        lab = label(result["contrasts"][f"{x}-{y}/all/score"], pos, neg)
+        result["labels"][f"{x}-{y}"] = lab if result["cpuMatched"] else "NOT_CPU_MATCHED (score label " + lab + ")"
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "truncatedRows", "shards",
-                                             "roomClasses", "labels", "cpuRatios", "escapes",
+                                             "roomClasses", "labels", "cpuMatched", "cpuRatios", "escapes",
                                              "excludedFightsByRootReason", "invalidArmRowsByReason",
                                              "escapeReplicatesAllFights")}))
     for a, v in result["arms"].items():

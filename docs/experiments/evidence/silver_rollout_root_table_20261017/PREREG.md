@@ -11,7 +11,7 @@ Does a card-play order that sees the fight state make Silver's greedy leaf rollo
 §479 table (ADR-0040 default) gives every card one fixed score; the audit found that any fixed table matches
 Silver's own card choice at most ~48.8% at A20 (37% in act 3), with no gain from splitting by fight, turn or act.
 
-## Intervention (code `b4bfa618`, option default off)
+## Intervention (option default off; code commit in `run.sh`)
 
 `roottable<b>`: at every searched root, gen-6 E (`combat_policy_mlp_g6_E.txt`, sha256 `ca9bd7f2…`, the Silver
 prior) scores each distinct card (id, upgrade) in hand, draw and discard pile as "play it now" at the root state;
@@ -22,7 +22,9 @@ shifted to the same scale. The rollout's category rules (zero-cost first, block 
 ## Design
 
 `one_combat ctmsilvergen` at Ascension 20, armset `roottable`, the §479 harness otherwise unchanged
-(`run.sh`, `env.sh` here): plain Silver 10k source runs with keys off (the harness requires it, so no Act 4),
+(`run.sh`, `env.sh` here): plain Silver 10k source runs whose out-of-combat choices come from distilled heart1
+student C (`STS_OOC_HEART1=studentc.bin`, sha256 `eff2f74f…`, greedy, no OOC MCTS; the strategic chain only for
+choices student C does not encode), with keys off and `STS_STOP_AFTER_ACT=3` (the harness requires keys off, so no Act 4),
 all boss, elite and event fights plus about one normal fight in three, replayed from the same pre-fight states
 with R = 2 combat-RNG redraws per arm. Arms: `greedy2500`, `roottable2500`, `greedy2650`, `roottable2650`,
 no tree prior.
@@ -43,14 +45,15 @@ paired per fight, 95% bootstrap over source seeds (10,000 resamples, RNG seed 0)
     stack (separate authorization), plus a per-turn refresh variant.
   - upper bound < 0 → `ROOTTABLE_HURTS`: stop.
   - otherwise `NOT_SHOWN`: stop; the option stays research-only and off.
-- Also reported (descriptive): CPU per simulation and per fight ratios with bootstrap CIs (the primary label holds
-  only if `roottable2500` CPU per fight ≤ `greedy2650`'s upper CI; otherwise the run is reported as not
-  CPU-matched); `roottable2500 − greedy2500`, `roottable2650 − greedy2650`, per room class, win rate, HP lost,
-  mean rollout length.
+- CPU match: the primary label stands only if the point estimate of the `roottable2500` / `greedy2650` CPU-per-fight
+  ratio (paired over the valid fights) is ≤ 1.00. Otherwise `analyze.py` reports `cpuMatched: false` and the
+  label `NOT_CPU_MATCHED`, and no promotion follows from the score contrast.
+- Also reported (descriptive): CPU per simulation and per fight ratios with bootstrap CIs; `roottable2500 −
+  greedy2500`, `roottable2650 − greedy2650`, per room class, win rate, HP lost, mean rollout length.
 
 ## Known limitations
 
-- Source runs use the harness's frozen out-of-combat policy, not student C; fights are only a state sample.
+- Source runs use greedy student C, not the full OOC MCTS stack; fights are only a state sample.
 - No Act 4 / Heart fights (harness requires keys off).
 - The prior was trained on A0 gen-6 roots and on hand cards only; off-hand cards are scored out of
   distribution.

@@ -5,11 +5,11 @@
 #        smoke: 4 111158009; rerun of a shard lost with the container: same TOTAL BASE, SHARDS "2", fresh OUT_DIR)
 # Optional 5th argument: per-shard timeout (default 12h).
 # Launch detached so it survives the session: setsid nohup bash run.sh OUT TOTAL BASE > OUT.log 2>&1 &
-# Run from a checkout whose apps/ src/ include/ CMakeLists.txt equal code commit b4bfa618, after
+# Run from a checkout whose apps/ src/ include/ CMakeLists.txt equal code commit 0ee9baeb, after
 # `cmake --preset linux-gcc-release && cmake --build build/linux-gcc-release --target one_combat -j4`.
 set -euo pipefail
 OUT="$1"; TOTAL="$2"; BASE="$3"; SHARDS="${4:-0 1 2 3}"; LIMIT="${5:-12h}"
-CODE=b4bfa6180a15cd92c9b4d6eec244a9950c5b48e3
+CODE=0ee9baeb88d044b6315ffa40a4bf88fdd26b5fff
 (( TOTAL % 4 == 0 )) || { echo "TOTAL must be a multiple of 4"; exit 1; }
 PER=$(( TOTAL / 4 ))
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
@@ -25,6 +25,9 @@ cp "$E/../silver_prior_arch_20261014/models/gen6/combat_policy_mlp_g6_E.txt" "$R
 check() { [ "$(sha256sum "$1" | cut -d' ' -f1)" = "$2" ] || { echo "sha256 mismatch: $1"; exit 1; }; }
 if [ -f "$E/BINARY_SHA256" ]; then check "$RUN/one_combat" "$(cat "$E/BINARY_SHA256")"; else echo "no BINARY_SHA256 yet (smoke only)"; fi
 check "$RUN/combat_policy_mlp_g6_E.txt" ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228
+# Student C out-of-combat policy (data, not code): copied from the share and hash-checked.
+cp /mnt/project-files/rollout-student-494/studentc.bin "$RUN/studentc.bin"
+check "$RUN/studentc.bin" eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
 
 sed "s#\$RUN#$RUN#g" "$E/env.sh" > "$RUN/env.sh"
 . "$RUN/env.sh"
@@ -37,7 +40,7 @@ t = json.load(open(f"{r}/teacher.json")); t["ooc_policy"] = json.load(open(f"{r}
 json.dump(t, open(f"{r}/teacher.json", "w"), indent=2)
 PY
 { echo "head=$(git rev-parse HEAD) code=$CODE base=$BASE total=$TOTAL shards=$SHARDS limit=$LIMIT started=$(date -u +%FT%TZ)"
-  sha256sum "$RUN/one_combat" "$RUN/combat_policy_mlp_g6_E.txt" "$RUN/teacher.json"; } > "$OUT/FROZEN.txt"
+  sha256sum "$RUN/one_combat" "$RUN/combat_policy_mlp_g6_E.txt" "$RUN/studentc.bin" "$RUN/teacher.json"; } > "$OUT/FROZEN.txt"
 for i in $SHARDS; do
   [[ "$i" =~ ^[0-3]$ ]] || { echo "bad shard $i"; exit 1; }
   seed=$((BASE + PER*i))

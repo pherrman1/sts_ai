@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Root-table run cloud worker W (1..NWORKERS). From a clean checkout of the run commit:
-#   bash worker.sh setup W    build one_combat (build inputs must equal code commit b4bfa618), check the binary hash
+#   bash worker.sh setup W    build one_combat (build inputs must equal code commit 0ee9baeb), check the binary hash
 #   bash worker.sh run W      run.sh on this worker's 32 seeds (111158100 + 32(W-1) .., 4 shards x 8 seeds, 6 h
 #                             per-shard timeout) into $HOME/xrt-wWW/out; when all 4 shards end with rc=0, upload
 #                             SHARE/wWW.tar and then SHARE/wWW.DONE.txt
@@ -10,9 +10,9 @@ CMD=${1:-} W=${2:-0}
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
 E=docs/experiments/evidence/silver_rollout_root_table_20261017
 NWORKERS=$(cat "$E/NWORKERS")
-CODE=b4bfa6180a15cd92c9b4d6eec244a9950c5b48e3
+CODE=0ee9baeb88d044b6315ffa40a4bf88fdd26b5fff
 stop() { echo "STOP: $*"; exit 1; }
-[[ "$W" =~ ^[0-9]+$ ]] && [ "$W" -ge 1 ] && [ "$W" -le "$NWORKERS" ] || stop "W must be 1..$NWORKERS"
+[[ "$W" =~ ^[1-9][0-9]*$ ]] && [ "$W" -le "$NWORKERS" ] || stop "W must be 1..$NWORKERS, unpadded (got '$W')"
 TAG=w$(printf %02d "$W")
 SHARE=/mnt/project-files/silver-rollout-root-table
 TOP=$HOME/xrt-$TAG OUT=$HOME/xrt-$TAG/out
@@ -35,6 +35,10 @@ run)
   if [ -d "$OUT" ] && [ ! -f "$OUT/DONE.txt" ]; then mv "$OUT" "$TOP/aborted-$(date -u +%Y%m%dT%H%M%SZ)"; fi
   [ -f "$OUT/DONE.txt" ] || bash "$E/run.sh" "$OUT" 32 "$BASE" "0 1 2 3" 6h
   [ -f "$OUT/DONE.txt" ] || stop "not every shard ended with rc=0: $(tr '\n' ';' < "$OUT/shards.txt" 2>/dev/null)"
+  # Refuse to upload an empty run: every shard must have written arm rows.
+  for i in 0 1 2 3; do
+    [ "$(wc -l < "$OUT/shard$i.arms.csv" 2>/dev/null || echo 0)" -ge 2 ] || stop "shard$i wrote no arm rows"
+  done
   { echo "finished=$(date -u +%FT%TZ) worker=$W"; head -1 "$OUT/FROZEN.txt"; cat "$OUT/shards.txt"
     (cd "$OUT" && sha256sum *.csv); } > "$TOP/DONE.txt"
   mkdir -p "$SHARE" || stop "cannot create $SHARE"
