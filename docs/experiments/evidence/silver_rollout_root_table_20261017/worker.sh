@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Root-table run cloud worker W (1..NWORKERS). From a clean checkout of the run commit:
-#   bash worker.sh setup W    build one_combat (build inputs must equal code commit 0ee9baeb), check the binary hash
+#   bash worker.sh setup W    build one_combat (build inputs must equal code commit 40dde917), check the binary hash
 #   bash worker.sh run W      run.sh on this worker's 32 seeds (111158100 + 32(W-1) .., 4 shards x 8 seeds, 6 h
 #                             per-shard timeout) into $HOME/xrt-wWW/out; when all 4 shards end with rc=0, upload
 #                             SHARE/wWW.tar and then SHARE/wWW.DONE.txt
@@ -10,7 +10,7 @@ CMD=${1:-} W=${2:-0}
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
 E=docs/experiments/evidence/silver_rollout_root_table_20261017
 NWORKERS=$(cat "$E/NWORKERS")
-CODE=0ee9baeb88d044b6315ffa40a4bf88fdd26b5fff
+CODE=40dde917cbc0d65be5d4116f59e3c27d7b8aaa74
 stop() { echo "STOP: $*"; exit 1; }
 [[ "$W" =~ ^[1-9][0-9]*$ ]] && [ "$W" -le "$NWORKERS" ] || stop "W must be 1..$NWORKERS, unpadded (got '$W')"
 TAG=w$(printf %02d "$W")
