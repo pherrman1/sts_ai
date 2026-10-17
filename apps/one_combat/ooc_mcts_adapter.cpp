@@ -413,7 +413,12 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
             while (i > 0 && draw == gc.eliteMonsterList[i-1]);
             gc.eliteMonsterList[i] = draw;
         }
-        if (gc.act == 3 && gc.ascension >= 20) {
+        // The second A20 boss is hidden until the first boss falls; once its
+        // fight has started (a BATTLE leaf after a sampled first-boss win) it is
+        // revealed, and Silver reads gc.secondBoss to recognise the final fight.
+        const bool secondBossRevealed = gc.screenState == sts::ScreenState::BATTLE
+            && gc.info.encounter == gc.secondBoss;
+        if (gc.act == 3 && gc.ascension >= 20 && !secondBossRevealed) {
             const sts::MonsterEncounter bosses[] = {sts::MonsterEncounter::AWAKENED_ONE,
                 sts::MonsterEncounter::TIME_EATER, sts::MonsterEncounter::DONU_AND_DECA};
             do { gc.secondBoss = bosses[gc.monsterRng.random(2)]; } while (gc.secondBoss == gc.boss);
@@ -762,6 +767,8 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
     if ((options.heart1Prior || options.heart1LeafPolicy) && !dependencies.heart1PolicyLogits)
         throw std::runtime_error("OOC MCTS heart1 prior/leaf policy requires STS_OOC_HEART1");
+    if (options.heart1Coverage && !options.heart1Prior)
+        throw std::invalid_argument("OOC MCTS heart1 coverage requires the heart1 prior");
     if (options.heart1Prior && !options.priorTracePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE does not support STS_OOC_MCTS_PRIOR=heart1");
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
@@ -990,6 +997,14 @@ std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId
     }
     throw std::runtime_error("OOC MCTS invalid outcome");
 }
+// heart1full scores screens V4 cannot encode, except card selects other than
+// UPGRADE: student C was distilled with no CARD_SELECT rows and removes the best
+// card (audit-2026-10-17 heart1-distill finding 1), so those stay uniform in the
+// tree and go to the chain in rollouts.
+static bool heart1FullScreen(const GameContext &gc) {
+    return gc.screenState != sts::ScreenState::CARD_SELECT
+        || gc.info.selectScreenType == sts::CardSelectScreenType::UPGRADE;
+}
 OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search::OocStateId id) const {
     const auto &snapshot = states.at(id);
     if (!snapshot.metadata) {
@@ -1064,6 +1079,9 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 value.sourcePriorCovered = qualified == sources;
             }
         }
+        if (options.heart1Coverage && !value.sourcePriorCovered && value.candidates.size() > 1
+                && heart1FullScreen(gc))
+            value.sourcePriorCovered = value.heart1OnlyCoverage = true;
         value.boundary = value.candidates.empty();
         value.edges.resize(value.candidates.size());
         snapshot.metadata = std::move(value);
@@ -1131,6 +1149,12 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     if (options.heart1Prior) {
         heart1Logits = dependencies.heart1PolicyLogits(gc, sources, &continuation_.heart1PriorReasons);
         ++(heart1Logits ? continuation_.heart1PriorNodes : continuation_.heart1PriorFallbacks);
+    }
+    if (cached.heart1OnlyCoverage && !heart1Logits) {
+        // V4 cannot score these sources: the node keeps its uniform prior.
+        cached.heart1OnlyFailed = true;
+        cached.logits = std::vector<double>(actions.size(), 0.0);
+        return *cached.logits;
     }
     const auto sourceLogits = heart1Logits ? *heart1Logits : dependencies.policyLogits(gc, snapshot.path, sources);
     if (sourceLogits.size() != sources.size())
@@ -1339,9 +1363,14 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
         tracePrior(id, cached, result);
         return result;
     }
-    const bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
-    auto weights = uniform ? std::vector<double>(actions.size(), 1.0)
-                                      : oocPolicyWeights(policyLogits(id), options.priorTemperature);
+    bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
+    std::vector<double> weights;
+    if (!uniform) {
+        const auto logits = policyLogits(id);
+        uniform = cached.heart1OnlyFailed;
+        if (!uniform) weights = oocPolicyWeights(logits, options.priorTemperature);
+    }
+    if (uniform) weights.assign(actions.size(), 1.0);
     if (!uniform) {
         std::map<std::uint32_t, std::size_t> counts;
         for (const auto &a : actions) ++counts[a.primitive.bits];
@@ -2113,7 +2142,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                 if (options.treeRules && oocTreeRuleStep(child.gc)) applied = true;
                 else
 #endif
-                if (v4DecisionSupported(child.gc)) {
+                if (v4DecisionSupported(child.gc)
+                        || (options.heart1LeafPolicy && options.heart1Coverage && heart1FullScreen(child.gc))) {
                     const auto actions = v4CandidateActions(child.gc);
                     std::set<std::uint32_t> ids;
                     bool unique = !actions.empty();
@@ -2161,6 +2191,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                 std::optional<LogSnapshot> before;
                 std::string screen;
                 if (t_decisionLog) { before.emplace(child.gc); screen = logScreen(child.gc); }
+                if (options.heart1LeafPolicy)
+                    ++continuation_.heart1LeafReasons["chain:screen" + std::to_string(static_cast<int>(child.gc.screenState))];
                 dependencies.continuationStep(child.gc, child.path, rng);
                 if (t_decisionLog) {
                     const auto [detail, kinds] = logDiff(*before, LogSnapshot(child.gc));
@@ -2420,8 +2452,10 @@ void applyLiveControl(const std::string &key, const std::string &value,
         return x;
     };
     if (key == "STS_OOC_MCTS_PRIOR") {
-        if (value != "policy" && value != "uniform" && value != "heart1") invalid();
-        opts.uniformPrior = value == "uniform"; opts.heart1Prior = value == "heart1";
+        if (value != "policy" && value != "uniform" && value != "heart1" && value != "heart1full") invalid();
+        opts.uniformPrior = value == "uniform";
+        opts.heart1Prior = value == "heart1" || value == "heart1full";
+        opts.heart1Coverage = value == "heart1full";
     }
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
         opts.constantLeaf = opts.bossLeaf = opts.bossRollout = opts.directLeaf = opts.screenLeaf = opts.screenGbm = false;
@@ -2631,6 +2665,9 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
+bool liveOocMctsHeart1Fallback(const GameContext &gc) {
+    return liveEnabled && liveOptions.heart1Coverage && heart1FullScreen(gc);
+}
 bool liveOocMctsUsesHeart1() { return liveEnabled && liveOptions.heart1Prior; }
 bool liveOocSiblingCaptureEnabled() { return liveEnabled && liveSibling.has_value(); }
 nlohmann::json liveOocMctsSpecification() {
@@ -2783,6 +2820,10 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_CPU_SECONDS requires EARLY_STOP=0, no gap/lock or leaf/prior capture");
     if (liveOptions.heart1LeafPolicy && !heart1::enabled())
         throw std::runtime_error("STS_OOC_MCTS_LEAF_POLICY=heart1 requires STS_OOC_HEART1");
+    // Philipp 2026-10-17: with heart1 weights loaded, heart1full is the default tree prior.
+    // STS_OOC_MCTS_PRIOR=heart1 restores the V4-gated heart1 prior, =policy the V4 prior.
+    if (!std::getenv("STS_OOC_MCTS_PRIOR") && heart1::enabled())
+        applyLiveControl("STS_OOC_MCTS_PRIOR", "heart1full", liveConfig, liveOptions);
     // Default leaf (ADR-0027): GBM screen leaf on a pinned X2-B anchor. STS_OOC_MCTS_LEAF_VALUE=native rolls back.
     if (!std::getenv("STS_OOC_MCTS_LEAF_VALUE")) applyLiveControl("STS_OOC_MCTS_LEAF_VALUE", "screengbm", liveConfig, liveOptions);
     if (liveOptions.screenLeaf) {
@@ -3006,7 +3047,7 @@ void configureLiveOocMcts() {
         << (!brewFallbackArtifact.empty() ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
             " dispatch=precombat_entropic_brew" : std::string{})
         << " active_lizard_correction=" << (activeLizardEnabled?"1":"0")
-        << " prior=" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
+        << " prior=" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Coverage ? "heart1full" : liveOptions.heart1Prior ? "heart1" : "policy")
         << " cpu_seconds=" << liveOptions.cpuBudgetSeconds
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
@@ -3022,7 +3063,7 @@ void configureLiveOocMcts() {
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
-        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Prior ? "heart1" : "policy")
+        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : liveOptions.heart1Coverage ? "heart1full" : liveOptions.heart1Prior ? "heart1" : "policy")
         << "\",\"cpuSeconds\":" << liveOptions.cpuBudgetSeconds
         << ",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
@@ -4977,6 +5018,51 @@ void oocMctsAdapterSelfTest() {
         try { OocGameContextModel bad(duplicates,path,{},heart1Options,noHeart1); } catch(const std::runtime_error &) { threw=true; }
         require(threw,"heart1 prior without STS_OOC_HEART1 is fatal");
         one_combat::heart1::priorMappingSelfTest();
+        {
+            // STS_OOC_MCTS_PRIOR=heart1full: a full-belt shop adds discard sources V4 lacks,
+            // so plain heart1 stays uniform there; heart1full scores it with heart1.
+            auto shop=detachedCopy(gc);
+            shop.screenState=ScreenState::SHOP_ROOM; shop.gold=200;
+            std::fill(std::begin(shop.info.shop.prices),std::end(shop.info.shop.prices),-1);
+            shop.info.shop.potions[0]=Potion::FIRE_POTION; shop.info.shop.potionPrice(0)=50;
+            shop.potionCount=0;
+            for(int slot=0;slot<shop.potionCapacity;++slot) { shop.potions[slot]=Potion::BLOCK_POTION; ++shop.potionCount; }
+            auto shopDeps=deps; bool shopScores=true;
+            shopDeps.heart1PolicyLogits=[&](const GameContext &, const std::vector<GameAction> &actions,
+                    std::map<std::string,std::uint64_t> *) -> std::optional<std::vector<double>> {
+                if(!shopScores) return std::nullopt;
+                std::vector<double> logits;
+                for(std::size_t i=0;i<actions.size();++i) logits.push_back(-double(i));
+                return logits;
+            };
+            const auto flat=[](const std::vector<sts::search::OocPlannerAction> &actions) {
+                for(const auto &a:actions) if(a.prior!=actions.front().prior) return false;
+                return true;
+            };
+            OocGameContextModel plain(shop,path,{},heart1Options,shopDeps);
+            const auto plainActions=plain.legalActions(0);
+            require(plainActions.size()>2 && flat(plainActions),"heart1 keeps the uniform full-belt shop prior");
+            auto fullOptions=heart1Options; fullOptions.heart1Coverage=true;
+            OocGameContextModel full(shop,path,{},fullOptions,shopDeps);
+            require(!flat(full.legalActions(0)) && full.continuationMetrics().heart1PriorNodes==1,
+                "heart1full scores the full-belt shop with heart1");
+            shopScores=false;
+            OocGameContextModel unscored(shop,path,{},fullOptions,shopDeps);
+            require(flat(unscored.legalActions(0)) && unscored.continuationMetrics().heart1PriorFallbacks==1,
+                "heart1full without a heart1 score stays uniform");
+            shopScores=true;
+            auto remove=detachedCopy(duplicates);
+            remove.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+            OocGameContextModel removeFull(remove,path,{},fullOptions,shopDeps);
+            const auto removeActions=removeFull.legalActions(0);
+            require(removeActions.size()>2 && flat(removeActions)
+                && removeFull.continuationMetrics().heart1PriorNodes==0,
+                "heart1full keeps a REMOVE select uniform (student C has no CARD_SELECT training)");
+            OocAdapterOptions coverageOnly; coverageOnly.heart1Coverage=true;
+            bool rejected=false;
+            try { OocGameContextModel bad(shop,path,{},coverageOnly,shopDeps); } catch(const std::invalid_argument &) { rejected=true; }
+            require(rejected,"heart1 coverage without the heart1 prior is rejected");
+        }
     }
     {
         // Keys off: a sapphire key must not compete with its paired relic.
@@ -5465,6 +5551,26 @@ void oocMctsAdapterSelfTest() {
         sampleNoncombatFuture(source,left);
         require(visible(source)==before && source.map==map && source.boss==boss
             && source.info.haveSelectedCards.size()==progress,"public state and sequential selector progress preserved");
+        {
+            // A20 Act 3: after a sampled first-boss win the leaf is the second boss
+            // fight, so the revealed second boss must survive resampling.
+            auto fight=detachedCopy(gc); fight.act=3; fight.ascension=20;
+            fight.monsterList.clear(); fight.monsterListOffset=0;
+            fight.eliteMonsterList.clear(); fight.eliteMonsterListOffset=0;
+            fight.boss=MonsterEncounter::AWAKENED_ONE; fight.secondBoss=MonsterEncounter::TIME_EATER;
+            fight.curRoom=Room::BOSS; fight.screenState=ScreenState::BATTLE;
+            fight.info.encounter=MonsterEncounter::TIME_EATER;
+            auto hidden=detachedCopy(fight); hidden.screenState=ScreenState::MAP_SCREEN;
+            std::set<int> hiddenDraws;
+            for(int n=0;n<16;++n) {
+                auto f=detachedCopy(fight); sampleNoncombatFuture(f,left);
+                require(f.secondBoss==MonsterEncounter::TIME_EATER,"revealed A20 second boss resampled");
+                auto h=detachedCopy(hidden); sampleNoncombatFuture(h,left);
+                hiddenDraws.insert(int(h.secondBoss));
+            }
+            require(hiddenDraws.size()==2 && !hiddenDraws.count(int(MonsterEncounter::AWAKENED_ONE)),
+                "hidden A20 second boss is drawn from the two other bosses");
+        }
         source=detachedCopy(gc); source.screenState=ScreenState::MAP_SCREEN;
         OocGameContextModel mapModel(source,path,{},sampled);
         std::set<int> encounters;

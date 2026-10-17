@@ -93,7 +93,9 @@ class Net {
 public:
     bool load(const std::string &path, std::string *error);
     // Map rows below the current floor are dropped first for a trim_map network.
-    Output forward(const Record &) const;
+    // logitsOnly: skip what only the value head needs (the last block's
+    // observation rows); the logits are bit-identical, value/pooled stay empty.
+    Output forward(const Record &, bool logitsOnly = false) const;
     const std::string &path() const { return path_; }
     int dim() const { return dim_; }
     int heads() const { return heads_; }
@@ -110,7 +112,7 @@ public:
     };
 
 private:
-    Output forwardRecord(const Record &) const;
+    Output forwardRecord(const Record &, bool logitsOnly) const;
 
     std::string path_;
     int dim_ = 0, heads_ = 0, hidden_ = 0;
@@ -164,6 +166,8 @@ void priorMappingSelfTest();
 // Diagnostics for the parity harness (tools/heart1/); neither uses a seed range.
 // heart1score <weights> <records.jsonl> <out.jsonl>: native logits for records.
 int scoreCommand(int argc, char **argv);
+// heart1logitscheck <weights> <records.jsonl> [reps]: logits-only parity and timing.
+int logitsCheckCommand(int argc, char **argv);
 // heart1replay <weights> <asc> <seed> <plan.json> <out.jsonl>: replay one seed's
 // out-of-combat action bits and write our record and logits where the plan asks.
 int replayCommand(int argc, char **argv);

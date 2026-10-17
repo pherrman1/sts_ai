@@ -3,6 +3,9 @@
 //
 
 #include <cmath>
+#include <cstdlib>
+#include <stdexcept>
+#include <string>
 #include "game/Shop.h"
 #include "game/GameContext.h"
 #include "game/Game.h"
@@ -15,7 +18,7 @@ void Shop::setup(GameContext &gc) {
     setupPotions(gc);
 
     if (gc.ascension >= 16) {
-        applyDiscount(0.80f);
+        applyDiscount(rulesFixEnabled() ? ASCENSION_16_FACTOR : 0.80f);
     }
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         applyDiscount(0.80f);
@@ -84,6 +87,7 @@ void Shop::applyDiscount(float factor) {
 }
 
 void Shop::buyCard(GameContext &gc, int idx) {
+    const CardType boughtType = cards[idx].getType();
     gc.deck.obtain(gc, cards[idx], 1);
     gc.loseGold(cardPrice(idx), true);
 
@@ -94,6 +98,15 @@ void Shop::buyCard(GameContext &gc, int idx) {
                     CardRarity::RARE : CardRarity::UNCOMMON;
             cards[idx] = gc.previewObtainCard(getColorlessCardFromPool(gc.cardRng, rarity));
             cardPrice(idx) = getNewCardPrice(gc, rarity, true);
+        } else if (rulesFixEnabled()) {
+            // ShopScreen.purchaseCard: rollRarity() at shop odds, then
+            // getCardFromPool(rarity, boughtCard.type, false); no common powers exist.
+            CardRarity rarity = rollCardRarityShop(gc.cardRng, gc.cardRarityFactor);
+            if (boughtType == CardType::POWER && rarity == CardRarity::COMMON) {
+                rarity = CardRarity::UNCOMMON;
+            }
+            cards[idx] = gc.previewObtainCard(getRandomClassCardOfTypeAndRarity(gc.mathUtilRng, gc.cc, boughtType, rarity));
+            cardPrice(idx) = getNewCardPrice(gc, rarity, false);
         } else {
             CardRarity rarity = gc.rollCardRarity(Room::SHOP);
             cards[idx] = gc.previewObtainCard(getRandomClassCardOfRarity(gc.mathUtilRng, gc.cc, rarity));
@@ -127,7 +140,8 @@ void Shop::buyRelic(GameContext &gc, int idx) {
 
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         relics[idx] = gc.returnRandomRelic(rollRelicTier(gc.merchantRng), true, false);
-        getNewPrice(gc, getRelicBasePrice(relics[idx]));
+        const int price = getNewPrice(gc, getRelicBasePrice(relics[idx]));
+        if (rulesFixEnabled()) relicPrice(idx) = price;
     } else {
         relicPrice(idx) = -1;
     }
@@ -198,13 +212,27 @@ int Shop::getNewCardPrice(GameContext &gc, CardRarity rarity, bool colorless) {
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         price *= 0.8f;
     }
-    if (gc.hasRelic(RelicId::THE_COURIER)) {
+    if (rulesFixEnabled() ? gc.hasRelic(RelicId::MEMBERSHIP_CARD) : gc.hasRelic(RelicId::THE_COURIER)) {
         price *= 0.5f;
     }
     return static_cast<int>(price);
 }
 
+bool Shop::rulesFixEnabled() {
+    const char *value = std::getenv("STS_SHOP_RULES_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SHOP_RULES_FIX must be 0 or 1");
+}
+
 int Shop::getNewPrice(GameContext &gc, int basePrice) {
+    if (rulesFixEnabled()) {
+        // ShopScreen.getNewPrice: base x random(0.95, 1.05), then Courier and Membership.
+        float price = static_cast<float>(std::round(basePrice * gc.merchantRng.random(0.95f, 1.05f)));
+        if (gc.hasRelic(RelicId::THE_COURIER)) price = std::round(price * COURIER_FACTOR);
+        if (gc.hasRelic(RelicId::MEMBERSHIP_CARD)) price = std::round(price * MEMBERSHIP_CARD_FACTOR);
+        return static_cast<int>(price);
+    }
     basePrice = static_cast<int>(std::round(gc.merchantRng.random(0.95f, 1.05f)));
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         std::round(basePrice * COURIER_FACTOR);
@@ -218,6 +246,8 @@ int Shop::getNewPrice(GameContext &gc, int basePrice) {
 int Shop::getRemoveCost(const GameContext &gc) {
     int cost;
     if (gc.hasRelic(RelicId::SMILING_MASK)) {
+        // ShopScreen.init sets the Smiling Mask price after Courier/Membership.
+        if (rulesFixEnabled()) return SMILING_MASK_PRICE;
         cost = SMILING_MASK_PRICE;
     } else {
         cost = BASE_REMOVE_PRICE+(REMOVE_PRICE_INCREASE*gc.shopRemoveCount);
