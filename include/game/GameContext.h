@@ -348,7 +348,7 @@ namespace sts {
         Room getEventRoomOutcomeHelper(bool lastRoomWasShop);
 
         // actions
-        void damagePlayer(int amount);
+        void damagePlayer(int amount, bool playerOwned = false);
         void playerLoseHp(int amount);
         void playerOnDie();
         void playerHeal(int amount);

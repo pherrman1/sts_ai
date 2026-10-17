@@ -50,6 +50,9 @@ static void check(bool fixed) {
     const int before = gc.curHp;
     gc.damagePlayer(5);
     require(before - gc.curHp == (fixed ? 5 : 1), "Torii and event damage");
+    const int beforeOwned = gc.curHp;
+    gc.damagePlayer(5, true); // Shining Light, Wing Statue and World of Goop name the player as owner
+    require(beforeOwned - gc.curHp == 1, "Torii and player-owned event damage");
 }
 
 int main() {

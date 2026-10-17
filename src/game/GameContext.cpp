@@ -2221,13 +2221,14 @@ Room GameContext::getEventRoomOutcomeHelper(bool lastRoomWasShop) {
     return choice;
 }
 
-void GameContext::damagePlayer(int amount) {
+void GameContext::damagePlayer(int amount, bool playerOwned) {
     if (amount <= 0) return;
 #ifdef sts_asserts
     assert(amount > 0);
 #endif
-    // Event damage has no owner, so the game's Torii never reduces it.
-    if (!engineFidelityFix() && amount <= 5 && relics.has(RelicId::TORII)) {
+    // Torii needs a damage owner: most events pass none, but Wing Statue,
+    // Shining Light and World of Goop pass the player as owner.
+    if ((playerOwned || !engineFidelityFix()) && amount <= 5 && relics.has(RelicId::TORII)) {
         amount = 1;
     }
     playerLoseHp(amount);
@@ -3144,7 +3145,7 @@ void GameContext::chooseEventOption(int idx) {
         case Event::WING_STATUE: {
             switch (idx) {
                 case 0:
-                    damagePlayer(7);
+                    damagePlayer(7, true);
                     openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
                     break;
 
@@ -3503,7 +3504,7 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::SHINING_LIGHT: {
             if (idx == 0) {
-                damagePlayer(info.hpAmount0);
+                damagePlayer(info.hpAmount0, true);
                 auto list = deck.getUpgradeableCardIdxs();
                 java::Collections::shuffle(list.begin(), list.end(), java::Random(miscRng.randomLong()));
                 if (!list.empty()) {
@@ -3855,7 +3856,7 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::WORLD_OF_GOOP: {
             if (idx == 0) {
-                damagePlayer(11);
+                damagePlayer(11, true);
                 obtainGold(75);
                 regainControl();
 

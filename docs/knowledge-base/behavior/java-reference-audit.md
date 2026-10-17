@@ -449,7 +449,7 @@ pinned JAR.
 | Bonfire Spirits, Uncommon offering | `heal(maxHealth)` | healed 10 | **Mismatch, fixed** |
 | Dead Adventurer after three rewards | only Leave remains | Search stayed, with a forced elite fight | **Mismatch, fixed** (the event ends) |
 | Black Star | read only in `MonsterRoomElite.dropReward` | added a relic to the Dead Adventurer fight | **Mismatch, fixed** |
-| Torii | `onAttacked` needs an owner; event damage has none | reduced event damage of 5 or less to 1 | **Mismatch, fixed** |
+| Torii | `onAttacked` needs an owner and `1 < damage <= 5`; Scrap Ooze, Golden Idol, Face Trader and The Nest pass no owner, Wing Statue, Shining Light and World of Goop pass the player | reduced all event damage of 5 or less to 1 | **Mismatch, fixed** |
 | Ectoplasm | `canSpawn`: `actNum <= 1` | always eligible | **Mismatch, fixed** |
 | Burning elite buff | Strength `actNum+1`; +25% max HP; Metallicize `actNum*2+2`; Regenerate `1+actNum*2`; `mapRng.random(0,3)` at combat start | Strength `act`; others equal; draw at map generation gives the same value | **Mismatch, fixed** (Strength) |
 | Shop prices at A16+ | `applyDiscount(1.1f, false)` (purge unchanged) | ×0.8 | **Mismatch**, fixed by `STS_SHOP_RULES_FIX` (#594) |
