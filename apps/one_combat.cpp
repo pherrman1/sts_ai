@@ -3023,7 +3023,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""},
-        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
@@ -3584,7 +3584,10 @@ int main(int argc, char **argv) {
         std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
                   << " weight " << search::nativeSilverRootPriorWeight()
                   << (std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE") && std::string(std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE")) == "override"
-                      ? " scope=override (thread opt-in only; live combats plain)" : "") << "]\n";
+                      ? " scope=override (thread opt-in only; live combats plain)" : "")
+                  << (search::nativeSilverTreePriorMinVisits() > 0
+                      ? "; tree prior K=" + std::to_string(search::nativeSilverTreePriorMinVisits()) : std::string{})
+                  << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()

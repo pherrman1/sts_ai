@@ -41,6 +41,7 @@ namespace sts::search {
                                                 const std::vector<SilverSearcher::Edge> &edges);
     const std::string &nativeSilverRootPriorPath();
     double nativeSilverRootPriorWeight();
+    int nativeSilverTreePriorMinVisits();
     bool nativeSilverAdaptiveEnabled();
     double nativeSilverAdaptiveTopGap();
     // STS_SILVER_EXACT_ROOT_BUDGETS=1: the flat budget applies in boss fights

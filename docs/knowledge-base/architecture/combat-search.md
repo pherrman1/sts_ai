@@ -353,7 +353,10 @@ at least `treePriorMinVisits` simulations is scored once (cached on the node)
 and its visited edges get the same bonus; wherever a prior is known, untried
 edges are tried in descending prior order. The backend enables it only through
 the thread override `g_nativeSilverTreePriorOverride` (K), on searches that
-have a root prior; `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452`
+have a root prior, or for whole runs through `STS_SILVER_TREE_PRIOR_MIN_VISITS=K`
+(research, default 0 = off; requires `STS_SILVER_ROOT_PRIOR`; ignored on
+searches where a thread sets the root-prior override, so research arms keep
+their own setting); `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452`
 (or `treeprior452k8`) uses it for paired fight-level arms at 2k. At equal 2k
 simulations K = 8 raised the fight score over plain 2k (+1.17 [+0.53, +1.79]),
 at 2.9x the CPU. At matched CPU (§453, `cpumatch453`) it was not shown to
