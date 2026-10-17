@@ -1130,9 +1130,11 @@ session for the next stable combat root. Armaments, Dual Wield and Exhume captur
 temporarily held by their owning action so the native source pile remains
 complete. Upgraded Forethought, Gambling Chip/Gambler's Brew, and Purity/Elixir
 emit the whole ordered UUID subset, including the empty subset. The driver
-checks the action owner and selection limit, then clicks descending
-physical indices, validates remaining and selected UUIDs after every click,
-then confirms. This avoids the installed MCP bulk command's ascending-index
+checks the action owner and selection limit, then clicks in the native
+hand order, resolving each UUID against the remaining displayed hand before
+every click. Vanilla appends to `selectedCards.group`, so this also preserves
+the native exhaust/discard effect order. The driver validates remaining and
+selected UUIDs after every click, then confirms. This avoids the installed MCP bulk command's ascending-index
 mutation bug. Exhaust/discard triggers follow the original hand order after
 the selected cards are removed. A partial transaction, unknown owner, missing/duplicate UUID, or
 changed hand stops before any further click. Differential replay excludes UI

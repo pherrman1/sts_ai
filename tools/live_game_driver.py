@@ -1281,7 +1281,7 @@ class Driver:
         selected: list[str] = []
         calls = []
         self.context["transaction_calls"] = calls
-        for uuid in reversed(wanted):
+        for uuid in wanted:
             validate_hand_selection_screen(screen, remaining, selected, pick_count)
             if "choose" not in _tool_names(commands):
                 raise DriverError("Hand selection choose command is no longer advertised")
@@ -1293,7 +1293,7 @@ class Driver:
             if _mapping(result).get("success") is False or _mapping(result).get("error"):
                 raise DriverError("Hand selection failed; transaction stopped")
             remaining.pop(index)
-            selected.insert(0, uuid)
+            selected.append(uuid)
             await self.wait_for_ready_advance(before)
             screen, commands, game = await self.read_ready_snapshot()
         validate_hand_selection_screen(screen, remaining, selected, pick_count)

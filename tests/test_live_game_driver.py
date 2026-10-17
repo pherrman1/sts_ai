@@ -164,7 +164,7 @@ class LiveGameDriverTest(unittest.TestCase):
                                 index = arguments["choice_index"]-1
                                 card = current["hand"].pop(index)
                                 current["screen_state"]["hand"] = list(current["hand"])
-                                current["screen_state"]["selected"].insert(0,card)
+                                current["screen_state"]["selected"].append(card)
                                 current["choice_list"].pop(index)
                                 if len(current["screen_state"]["selected"]) == count:
                                     current["choice_list"] = []
@@ -187,8 +187,14 @@ class LiveGameDriverTest(unittest.TestCase):
                     else:
                         asyncio.run(exercise())
                         calls=[(tool,args) for tool,args in client.calls if tool in {"choose","confirm","select_cards"}]
-                        expected=[("choose",{"choice_index": "abcde".index(uuid)+1}) for uuid in reversed(selected)]
+                        remaining=list("abcde")
+                        expected=[]
+                        for uuid in selected:
+                            index=remaining.index(uuid)
+                            expected.append(("choose",{"choice_index":index+1}))
+                            remaining.pop(index)
                         self.assertEqual(calls,expected+[("confirm",{})])
+                        self.assertEqual([card["uuid"] for card in client.states[0]["screen_state"]["selected"]],selected)
                     for bad in (["c","a"],["a","a"],["absent"]):
                         with self.assertRaises(IntegrationFailure):
                             hand_selection_transaction(dict(kind="card_select",cardUuids=bad),observation,screen)
