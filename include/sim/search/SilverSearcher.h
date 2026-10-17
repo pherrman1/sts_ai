@@ -214,7 +214,7 @@ namespace sts::search {
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();
-        // Research (STS_SILVER_ROLLOUT_ROOT_TABLE): storage of the per-root card-play table
+        // Storage of the per-root card-play table (STS_SILVER_ROLLOUT_ROOT_TABLE, ADR-0046)
         // that rolloutConfig.cardTable points at while that option is on.
         std::vector<int> rootCardTable;
         SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
