@@ -21,8 +21,12 @@ from typing import Any
 CTM_NAME = "combat_transition_near_full_except_smoke_v2.native"
 CTM_FAST_NAME = "combat_transition_deepsets_lizard_t2.native"
 CTM_STACK_KEYS = ("ctmStackVersion", "ctmPrimary", "ctmFastSha256", "ctmActiveLizard")
-CTM_CURRENT_FAST_NAME = "combat_transition_deepsets_pathb_r2_lizard.native"
-CTM_CURRENT_NAME = "combat_transition_near_full_escape_pathb_r2.native"
+CTM_CURRENT_FAST_NAME = "combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native"
+CTM_CURRENT_NAME = "combat_transition_near_full_escape_pathb_r2_ritual_refit.native"
+# Releases installed before the §507 Ritual refit became the A0 default stay valid.
+CTM_QUALIFIED_PAIRS = ((CTM_CURRENT_FAST_NAME, CTM_CURRENT_NAME),
+                       ("combat_transition_deepsets_pathb_r2_lizard.native",
+                        "combat_transition_near_full_escape_pathb_r2.native"))
 CTM_A20_FAST_NAME = "combat_transition_deepsets_pathb_a20_lizard.native"
 CTM_A20_NAME = "combat_transition_near_full_escape_pathb_a20.native"
 CTM_QUALIFIED_KEYS = ("ctmFallback", "ctmA20Primary", "ctmA20Fallback", "ctmA20FastSha256", "ctmA20Sha256")
@@ -137,6 +141,8 @@ class RuntimeManager:
         qualified = manifest.get("ctmStackVersion") == 2
         fallback_name = CTM_CURRENT_NAME if qualified else CTM_NAME
         primary_name = CTM_CURRENT_FAST_NAME if qualified else CTM_FAST_NAME
+        if qualified and (manifest.get("ctmPrimary"), manifest.get("ctmFallback")) in CTM_QUALIFIED_PAIRS:
+            primary_name, fallback_name = manifest["ctmPrimary"], manifest["ctmFallback"]
         checks = (("one_combat_advisor", "advisorSha256", True), (f"models/{fallback_name}", "ctmSha256", False))
         # Old single-model releases remain usable. A partially described new
         # stack must never silently downgrade to that legacy interpretation.
@@ -150,7 +156,7 @@ class RuntimeManager:
                 raise RuntimeFailure("incomplete or unsupported CTM stack manifest")
             checks += ((f"models/{primary_name}", "ctmFastSha256", False),)
         if qualified:
-            if (manifest.get("ctmFallback") != CTM_CURRENT_NAME
+            if (manifest.get("ctmFallback") != fallback_name
                     or manifest.get("ctmA20Primary") != CTM_A20_FAST_NAME
                     or manifest.get("ctmA20Fallback") != CTM_A20_NAME
                     or any(not isinstance(manifest.get(key), str)

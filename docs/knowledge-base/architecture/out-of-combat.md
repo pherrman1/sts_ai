@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-17 for the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -292,11 +292,11 @@ environment model** or a scientifically qualified full OOC planner.
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
 loaded native V4 policy and native win models plus a compatible combat
 artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
-`selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native` artifact and
+`selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native` artifact and
 automatically pairs it with the pinned standard Attention Brew fallback
-`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the
-pathb-r2 stack with the §423 Lizard capabilities since §435, see "Production CTM
-stack since #418" below). An
+`selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native` (the
+pathb-r2 stack with the §423 Lizard capabilities since §435 and, since ADR-0044, refit
+Ritual heads plus `writhingRitual`; see "Production CTM stack since #418" below). An
 explicit combat-model path overrides the automatic stack; explicit artifact
 failures are fatal. Research only (§411): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
 replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
@@ -412,7 +412,13 @@ the same pathb-r2 tensors with `lizardFairy` and `lizardBrew` added to its heade
 pinned by a second built-in manifest (`64da1776…`, the §423 candidate manifest
 byte for byte). Both built-in manifests declare candidate `pathb-r2`; a load
 picks the one that lists the artifact's bytes, so the #418 fast artifact
-(`90806c25…`) still loads as `production` without a manifest. Rollback to the
+(`90806c25…`) still loads as `production` without a manifest. **Since ADR-0044 (§507)** the default is candidate `pathb-r2-ritual-refit`: the same two
+pathb-r2 artifacts with only `ritual.*` refit on corrected-producer rows and the
+`writhingRitual` capability (fast `3bbff6b6…`, standard `2f0f5d97…`), embedded as the
+current built-in manifest (`1a13abb7…`). Rollback to the §435 pair:
+`STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
+and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the
 #418 stack: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2.native`,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
