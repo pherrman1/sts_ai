@@ -24,7 +24,7 @@ actions are discarded by a visit-count target.
   improved policy `softmax(log prior + σ(completedQ))`, not raw visit shares.
   `completedQ` is the root action's search Q where visited and the root value
   otherwise; `σ` is a monotone scaling of per-root normalised Q.
-- The scale of `σ` is fitted offline on held-out roots before training on it,
+- The scale of `σ` is fitted offline on held-out roots before training on it
   (audit recommendation, not Philipp's stated reason: single rollout3
   evaluations are noisy, §489).
 - Captured decision rows keep raw visits, priors and Q as well, so the target can
