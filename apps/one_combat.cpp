@@ -10,6 +10,7 @@
 #include "one_combat/heart1_policy.h"
 #include "one_combat/rollout_student.h"
 #include "one_combat/heart_outcome_capture.h"
+#include "one_combat/heart_leaf_tail.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
 #include "one_combat/screen_leaf_net.h"
@@ -3707,6 +3708,18 @@ int main(int argc, char **argv) {
         if (seed.empty() || seed.find_first_not_of("0123456789") != std::string::npos)
             throw std::runtime_error("heart outcome seed must be a nonnegative integer");
         return one_combat::heartOutcomeGen(std::stoull(seed), argv[4], std::string(argv[5]) == "on");
+    } else if (mode == "heartleafparity") {
+        if (argc != 4) throw std::runtime_error("usage: one_combat heartleafparity MANIFEST.json ROWS.jsonl");
+        return one_combat::heartLeafParity(argv[2], argv[3]);
+    } else if (mode == "heartleaftail") {
+        if (argc < 6) throw std::runtime_error("usage: one_combat heartleaftail SALT REPEATS OUT.jsonl ROOTS.jsonl...");
+        for (int i : {2, 3}) {
+            const std::string value(argv[i]);
+            if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("heartleaftail SALT and REPEATS must be nonnegative integers");
+        }
+        return one_combat::heartLeafTailGen(std::stoull(argv[2]), unsigned(std::stoul(argv[3])), argv[4],
+                                            std::vector<std::string>(argv + 5, argv + argc));
     } else if (mode == "oocselectivesilverspec") {
         try { std::cout << one_combat::oocSelectiveSilverAuditSpec().dump() << '\n'; return 0; }
         catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }

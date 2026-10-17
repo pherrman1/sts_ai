@@ -138,6 +138,13 @@ bool CompactTreeNet::packedCurrent() const {
 }
 
 double CompactTreeNet::predict(const std::vector<float> &raw) const {
+    const double m = margin(raw);
+    if (std::isnan(m)) return m;  // malformed directly filled tree
+    const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
+    return logistic ? std::max(0.0, std::min(1.0, out)) : out;
+}
+
+double CompactTreeNet::margin(const std::vector<float> &raw) const {
     double m = baseMargin;
     if (!packedCurrent()) {
         // Trees filled in directly (tests): walk nodes, with the cycle guard.
@@ -159,8 +166,7 @@ double CompactTreeNet::predict(const std::vector<float> &raw) const {
             m += tr[i].thr;
         }
     }
-    const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
-    return logistic ? std::max(0.0, std::min(1.0, out)) : out;
+    return m;
 }
 
 void CompactTreeNet::predictVariants(const std::vector<float> &base, const std::vector<int> &varying,

@@ -40,6 +40,8 @@ struct CompactTreeNet {
     bool pack();
     bool packedCurrent() const;
     double predict(const std::vector<float> &raw) const;
+    // Base margin plus leaf sum, before the logistic link.
+    double margin(const std::vector<float> &raw) const;
     // Bit-identical to calling predict() on each row in turn. Rows that equal
     // base outside the varying raw features walk each tree together and only
     // separate at splits on varying features; any other row falls back to
