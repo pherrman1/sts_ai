@@ -20121,9 +20121,10 @@ research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000�
 Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
 
-## §515 — Heart leaf v1: TD-fitted tree leaf on §503 rollout tails, offline gate (2026-10-17)
+## §515 — Heart leaf: TD-fitted tree leaf on §503 rollout tails, VALIDATION gate and CONFIRM (2026-10-17)
 
-**GATE_FAIL (act-3 calibration)**, offline, research-only, no default change (issue #605). New
+**td1 GATE_FAIL (act-3 calibration); retrained td2 CONFIRM_FAIL (act-1 calibration), better BCE
+and AUC than X2-B on CONFIRM**, offline, research-only, no default change (issue #605). New
 opt-in leaf `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (requires `STS_OOC_MCTS_LEAF_VALUE=native`):
 value = sigmoid(0.799 · margin(public X2-B) + residual), the residual a 204-tree XGBoost margin
 model over the rich vector plus Act-4-correct boss distance, keys held and key reachability,
@@ -20144,6 +20145,16 @@ training data.
 Descriptive, for Philipp's question: heart1's value head (`heart1.bin` `1e92f2a6`) on the same
 roots ranks within an act better than X2-B (AUC acts 1–4: 0.60, 0.74, 0.78, 0.74 vs 0.56, 0.68,
 0.68, 0.65) but pooled only 0.53, because its level barely changes between acts.
+
+Retrain td2 (Philipp: "Retrain, then CONFIRM"; PREREG amendment 2, reviewed at `91bf3e28`): adds
+`hlCritic`, a 600-tree regression of the heart1 value head on the same features (schema v3,
+evaluated natively), and an Act-4 logit offset (−0.713) from out-of-fold TRAIN, because the
+rollout tails overrate Act 4. VALIDATION BCE 0.3038, AUC 0.735, act 3 0.233/0.202. Scored once on
+the §503 CONFIRM set (640 runs, 83 Heart kills, 12,458 MAP roots): BCE 0.3345 vs Platt X2-B
+0.3479 (paired −0.0134 [−0.0189, −0.0073]), AUC 0.750 vs 0.726, acts 2-3 within 0.023, Act 4
+0.438/0.459, but **act 1 0.093/0.130 (|Δ| 0.037 > 0.03, FAIL**; X2-B 0.040). No A/B on td2;
+CONFIRM is spent. **Inference:** the act-1 under-prediction is systematic (TRAIN out of fold 0.093
+vs 0.136). The §497 TEST stays sealed.
 [Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
 **Knowledge impact:** `operations/environment-variables.md` (new option),
 `evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.

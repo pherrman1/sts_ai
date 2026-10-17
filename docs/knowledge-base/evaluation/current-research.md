@@ -197,7 +197,7 @@ producer groups; workers require the reviewed CPU/canary pair before dispatch.
 See [campaign guard operations](../operations/ooc-label-pipeline.md#arm-c-native-campaign-guards).
 No further experiment or native integration is authorized by these guard repairs.
 
-## Heart leaf v1 (opt-in) — §515 offline gate FAIL
+## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
 
 `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (default off, issue #605) values rollout3 leaf ends
 with a residual on the public X2-B margin, trained by fitted TD on rollout3 tails from §503 MAP
@@ -205,8 +205,12 @@ root snapshots and anchored on real Heart outcomes; it sees Act 4 boss distance,
 reachability, Ritual Dagger damage and Searing Blow level. Key value comes only from the Heart
 labels (no hand-set bonus, Philipp 2026-10-17). `models/candidates/heart_leaf_td1` beats Platt
 X2-B on §503 VALIDATION BCE (0.3065 vs 0.3133) and AUC (0.724 vs 0.699) but over-predicts Act 3
-(0.240 vs 0.202) and fails the pre-registered gate; no gameplay A/B has run. heart1's value head
-ranks states within an act better than both but has almost no level change between acts.
+(0.240 vs 0.202) and fails the pre-registered gate. heart1's value head ranks states within an
+act better than both but has almost no level change between acts. The retrained
+`heart_leaf_td2` adds a tree distillation of that critic as an input and an Act-4 offset. On the
+§503 CONFIRM set (640 runs) it beats Platt X2-B on BCE (0.3345 vs 0.3479) and AUC (0.750 vs
+0.726) and calibrates acts 2-4, but under-predicts Act 1 (0.093 vs 0.130) and fails the gate;
+no gameplay A/B has run and CONFIRM is spent.
 See the [result](../../experiments/evidence/heart_leaf_td_20261017/RESULT.md).
 
 ## §494 student as a native OOC MCTS leaf (opt-in) — loses to rollout3 at A20 (§504)

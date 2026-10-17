@@ -1,6 +1,10 @@
-# §515 Heart leaf v1 (issue #605): offline gate on §503 VALIDATION
+# §515 Heart leaf (issue #605): offline gate on §503 VALIDATION, retrain and CONFIRM
 
-**Verdict: GATE_FAIL (act-3 calibration), research-only.** Pre-registered in `PREREG.md`
+**Verdict: td1 GATE_FAIL on VALIDATION (act-3 calibration); retrained td2 CONFIRM_FAIL
+(act-1 calibration) although it beats Platt X2-B on CONFIRM BCE and AUC. Research-only, no
+A/B.** The td2 section is at the end.
+
+**td1:** Pre-registered in `PREREG.md`
 (plus the v2-feature amendment) before the full fit.
 
 ## Setup
@@ -59,3 +63,42 @@ MCTS-owned, 0 unsupported combats, Act 1 cleared, 104 s.
 heart1's critic ranks states within an act better than X2-B and the new leaf, but its level
 hardly moves between acts (Platt mean 0.113 in Act 3 vs actual 0.202), so pooled it ranks worst.
 **Inference:** a distilled heart1-critic input could add within-act signal to the tree leaf.
+
+## td2: retrain with a distilled heart1 critic, scored once on CONFIRM
+
+Philipp chose "Retrain, then CONFIRM" (2026-10-17 18:13Z) and approved opening CONFIRM in the
+thread (19:42Z). The candidate, the VALIDATION choices and the decision rule are in
+`PREREG.md` amendment 2, written before CONFIRM was extracted. An independent review passed
+the frozen commit `91bf3e28` and rehearsed the CONFIRM procedure on VALIDATION.
+
+- Candidate `models/candidates/heart_leaf_td2/`: manifest `1b1ad13e…`, residual `c7a42e88…`
+  (129 trees, TD round 2), critic `417769c0…` (600 trees, a regression of the heart1 value
+  head on the v2 features; feature schema v3), Act-4 logit offset −0.713 from out-of-fold
+  TRAIN. Native parity 2.1e-7 (`CompactTreeNet::marginFloat32` sums the critic like XGBoost).
+- VALIDATION (used for the choices): BCE 0.3038 vs 0.3133, AUC 0.735 vs 0.699, act 3
+  0.233/0.202 (gate FAIL by 0.001). `score_validation_td2.json`, `variants_td2.*`, `actcal_td2.*`.
+- CONFIRM: all 32 §503 `SEALED-confirm` archives (640 runs, 83 Heart kills), `heartleaftail 0 0`
+  on the `*.roots.jsonl` traces at `91bf3e28` gives 12,458 MAP roots with snapshots
+  (`confirm_roots.jsonl` sha256 `fc12478e…`), then `heart_leaf_fit.py score --split confirm`
+  (`score_confirm_td2.json`). One scoring; a first invocation pointed at the `*.trace.jsonl`
+  files, which carry no roots, and stopped before any row was scored.
+
+| CONFIRM (640 runs) | BCE | AUC | Act 1 pred/actual | Act 2 | Act 3 | Act 4 (not gated) |
+|---|---:|---:|---|---|---|---|
+| X2-B, TRAIN Platt | 0.3479 | 0.726 | 0.090 / 0.130 | 0.135 / 0.150 | 0.292 / 0.253 | 0.349 / 0.459 |
+| **Heart leaf td2** | **0.3345** | **0.750** | **0.093 / 0.130** | 0.128 / 0.150 | 0.230 / 0.253 | 0.438 / 0.459 |
+
+Per-act AUC (td2 vs Platt X2-B): 0.648 vs 0.614, 0.753 vs 0.705, 0.733 vs 0.704, Act 4 0.767 vs 0.750.
+
+1. BCE lower than Platt X2-B: PASS. Paired run-bootstrap difference −0.0134 [−0.0189, −0.0073].
+2. |mean − actual| ≤ 0.03 in acts 1-3: **act 1 0.037 FAIL** (run-bootstrap gap [−0.062, −0.012]);
+   act 2 0.022 and act 3 0.023 PASS. Platt X2-B misses act 1 by 0.040 as well.
+3. AUC not lower by more than 0.01: PASS (+0.024).
+
+**Verdict: CONFIRM_FAIL**, so by the pre-registered rule no A/B runs on td2 and CONFIRM is spent.
+The candidate ranks better than X2-B in every act and corrects the Act-4 level, but under-predicts
+Act-1 Heart kills. **Inference:** this is systematic, not CONFIRM noise: TRAIN shows the same
+under-prediction (0.093 vs 0.136 out of fold), while VALIDATION had a low Heart rate (0.103) and so
+rejected the TRAIN act-1 offset (+0.45) in `actcal_td2`. A later candidate would need a new
+held-out set to test that offset.
+
