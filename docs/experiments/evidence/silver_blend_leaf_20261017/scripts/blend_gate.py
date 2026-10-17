@@ -1,4 +1,4 @@
-"""V1 blended-leaf offline gate (PREREG: /mnt/project-files/silver-blend-leaf/PREREG.md).
+"""V1 blended-leaf offline gate (PREREG: docs/experiments/evidence/silver_blend_leaf_20261017/PREREG.md).
 
 usage: python3 -I blend_gate.py REPO FEATURES_DIR MODELS_DIR OUT_JSON
 """

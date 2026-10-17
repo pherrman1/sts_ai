@@ -20299,8 +20299,11 @@ corpus, features re-extracted with `silversynthfeatures` on main `623a8b60`, `vc
 regret and concordance on natural test fold 4. No gameplay seeds.
 **Result: FAIL.** α = 0.8 (vcont) and 0.7 (vroll). On 2,006 natural test groups (43 seeds): R1 regret 3.989,
 primary blend 3.972, −0.017 [−0.436, +0.377] vs R1 (concordance 0.6887 vs 0.6730); vroll blend −0.037
-[−0.397, +0.327]. Both blends equal a second rollout (B − R2 +0.038 and +0.019, CIs span zero). R4 − R1 −0.352
-[−0.735, +0.040], so the corpus leaves only ~0.35–0.5 regret of leaf-variance headroom. Retrained V alone matches
+[−0.397, +0.327]. Both blends' point estimates sit at a second rollout (B − R2 +0.038 and +0.019), but "at least as good as R2" is
+not shown (upper bounds +0.483 and +0.374 above the pre-registered +0.1; `blendAtLeastR2` false). Deviation from
+§397: the re-extraction gives R1 3.989 (§397 4.017), R4 − R1 −0.352 [−0.735, +0.040] (§397 −0.47 [−0.78, −0.14])
+and 145,000 vcont rows (§397 146,984); **Inference:** probe rollouts redrawn on current main and 1–7 roots per
+unit dropped on `rootEdgeMismatch`. The leaf-variance headroom here is ~0.35–0.5 regret. Retrained V alone matches
 §397 within 0.3 (vcont − R1 +0.19). V1 closed; no native implementation.
 [Result](evidence/silver_blend_leaf_20261017/RESULT.md), [blend_gate.json](evidence/silver_blend_leaf_20261017/blend_gate.json).
 Models: `/mnt/project-files/silver-blend-leaf/models/`.

@@ -1,6 +1,6 @@
 # V1 blended Silver leaf: offline gate (pre-registration)
 
-Written 2026-10-17 ~22:35Z before any blend score was computed. Philipp's go:
+Written 2026-10-17 22:19Z (share file mtime 22:19:03Z) before any blend score was computed. Philipp's go:
 "okay versuche mal v1 zu machen" (community-scan thread, 22:14Z). Offline only:
 no gameplay seeds are driven; the corpus is the frozen §397 corpus.
 

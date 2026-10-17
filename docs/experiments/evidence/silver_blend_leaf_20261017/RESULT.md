@@ -35,10 +35,16 @@ Perturbed test fold 4 (1,976 groups, secondary): B vcont −0.272 [−0.565, +0.
 R2 −0.156, R4 −0.455 [−0.851, −0.130] vs R1.
 
 - **Gate: FAIL.** Concordance rises (0.6887 vs 0.6730) but the regret CI upper bound is +0.377, not < 0.
-- The blend behaves like a second rollout (B − R2 ≈ 0 on both models), not better.
+- The blend's point estimate sits at R2 (B − R2 +0.038 vcont, +0.019 vroll), but "at least as good as R2" is not
+  shown: the B − R2 upper CI bounds are +0.483 and +0.374, above the PREREG margin of +0.1 (`gate.blendAtLeastR2`
+  is `false` in [blend_gate.json](blend_gate.json)).
 - Sanity: the retrained V alone reproduces §397 within 0.3 regret (vcont − R1 +0.19 now vs +0.37 in §397).
-- The gate has little power: even four rollouts are not separated from one on natural test (CI to +0.04).
-  The headroom for any leaf-variance reduction on this corpus is about 0.35–0.5 regret. **Inference:** a blended
-  leaf would at best match a second rollout, and would only pay if V costs less than one rollout.
+- The gate has little power in this re-extraction: four rollouts are not separated from one on natural test
+  (R4 − R1 −0.352 [−0.735, +0.040]).
+- Deviation from §397: this re-extraction gives R1 3.989 (§397 4.017), R4 − R1 −0.352 [−0.735, +0.040] (§397
+  −0.47 [−0.78, −0.14], clearly better there) and 145,000 vcont training rows (§397 146,984). **Inference:** probe
+  rollouts are redrawn by `silversynthfeatures` on current main, and 1–7 roots per unit drop on `rootEdgeMismatch`.
+- In this re-extraction the headroom for any leaf-variance reduction is about 0.35–0.5 regret. **Inference:** a
+  blended leaf would at best match a second rollout, and would only pay if V costs less than one rollout.
 
 Per the pre-registration, FAIL closes V1; no native implementation or gameplay A/B.

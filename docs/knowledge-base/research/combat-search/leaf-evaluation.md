@@ -52,7 +52,7 @@ simulations end (§142).
 - **One-turn bootstrap rollout (A4)** — falsified at gates (§133)
 - **Policy-filtered rollouts (A3)** — pending
 - **Prior-guided rollouts** — significantly negative (−7.0pp, §124c)
-- **Native Silver: learned leaf replacing or mixed with one rollout** — replacement fails (§180 GBM VNet −12.8 floors; §397 Gate A); a blend `(1−α)·R1 + α·V` on the §397 corpus equals a second rollout, regret −0.017 [−0.436, +0.377] vs one rollout, FAIL (§TBD)
+- **Native Silver: learned leaf replacing or mixed with one rollout** — replacement fails (§180 GBM VNet −12.8 floors; §397 Gate A); a blend `(1−α)·R1 + α·V` on the §397 corpus does not beat one rollout, regret −0.017 [−0.436, +0.377], FAIL; its point estimate sits at a second rollout but "at least as good as R2" is not shown (§TBD)
 
 ## Relationships
 
