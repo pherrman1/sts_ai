@@ -19834,3 +19834,27 @@ before training it to predict growth.
 **Evidence:** [protocol, result, census, custody and raw receipts](evidence/ctm_ritual_validation_20261017/REPORT.md).
 **Knowledge impact:** maintained current-research model custody and coverage;
 no production/default change.
+
+
+## §504 — corrected Ritual producer: one TRAIN-source canary (2026-10-17)
+
+**Question:** does the reviewed corrected source emit valid RAW transitions
+and positive permanent Dagger growth in an ordinary teacher trajectory?
+Frozen source `b94da9bc`, reviewed live ancestor `8879b531`, one reused TRAIN
+source 52000001, A0, 10,000 caller simulations, one CPU/no GPU, 300 s/8 GB.
+Current-source Path-B teacher uses explicit historical leaf/rollout settings;
+key collection is ON by current compiled default, not an old-teacher replay.
+
+**Result:** `CORRECTED_PRODUCER_CANARY_GROWTH_OBSERVED`, rc 0, 16.344 s,
+24 valid victory rows (Acts 1/2/3: 9/9/6), zero quarantines or unresolved
+outcomes. Dagger 15→18 at fight 12, then 18→21 against Writhing at fight 18.
+Three intersection rows, one positive. Independent result/custody review PASS.
+No retry, fit, TEST numerical access, support promotion or deployment.
+
+**ELI5:** a real corrected trajectory now records the Dagger growing against
+Writhing Mass. One example does not teach or qualify the model. Upgraded,
+multiple-Dagger and potion coverage still needs a controlled collection plan;
+future teachers must explicitly freeze the key objective.
+
+**Evidence:** [protocol, build, RAW receipts and independent result review](evidence/ritual_corrected_canary_20261017/REPORT.md).
+**Knowledge impact:** positive corrected-producer behavior; qualification remains open.
