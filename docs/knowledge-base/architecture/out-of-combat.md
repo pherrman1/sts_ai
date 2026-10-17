@@ -1960,7 +1960,17 @@ with the search and its chain.
   no CARD_SELECT rows and picks the best card to remove. With
   `STS_OOC_MCTS_LEAF_POLICY=heart1`, heart1full also runs heart1 rollout steps
   on screens V4 cannot encode (same card-select exclusion); the remaining
-  chain steps are counted as `chain:screenN` in `heart1_leaf_reasons`. A live
+  chain steps are counted as `chain:screenN` in `heart1_leaf_reasons`.
+  Two research options, both default off, lift the card-select exclusion and
+  are meant for a heart1 model or a student distilled with CARD_SELECT rows,
+  not student C (audit 2026-10-17). `STS_OOC_MCTS_TARGET_PRIOR=1` (needs a heart1
+  prior) gives each compound target (smith, shop purge, Neow/event remove or
+  transform) its source's prior times heart1's probability for that card on the
+  select the source opens, instead of an equal share; groups heart1 cannot score
+  keep the equal share (`target:scored` / `target:skip_*` in
+  `heart1_prior_reasons`). `STS_OOC_MCTS_LEAF_SELECTS=heart1` (needs
+  `LEAF_POLICY=heart1` and heart1full) also hands every rollout card select to
+  heart1. A live
   root the search returns no action for (abort, CTM refusal) goes to
   `heart1::policyStep` before the V4 chain (decision trace `heart1_fallback`).
   `STS_OOC_MCTS_PRIOR_TRACE` refuses heart1 priors. §486 (A20, 64 paired seeds, `combo`): floors NOT_SHOWN, act-3 clears
