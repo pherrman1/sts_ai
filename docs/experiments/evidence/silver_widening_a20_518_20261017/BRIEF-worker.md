@@ -1,6 +1,6 @@
-# §518 Silver chance-node widening at A20 (fight level): cloud worker W (W = 1..NWORKERS; WW = W zero-padded, e.g. 03)
+# §518 Silver chance-node widening at A20 (fight level): cloud worker W (W = 1..8; WW = W zero-padded, e.g. 03)
 
-Philipp authorized this run (AUTHORIZATION_TBD, thread "spire-mentor engine ideas"). Pre-registration:
+Philipp authorized this run (2026-10-17 20:01Z, thread "spire-mentor engine ideas": "use the gen6 prior thing with 2.5k simulations and the 4 arms. then use 8 workers."). Pre-registration:
 `docs/experiments/evidence/silver_widening_a20_518_20261017/PREREG.md`. Run
 commit **RUN_COMMIT** (branch `claude/project-thread-vizsgc`; the coordinator gives it in your header). Do not change
 seeds, scripts, environment, binary or settings. Run nothing from `/mnt/project-files` (noexec). The run writes to your
@@ -22,7 +22,7 @@ If a permission check blocks any command in this brief (checkout, setup, the lau
 it (no other command, path or copy of the script): reply in your thread with the blocked command and the message, and
 wait for an answer there.
 
-## 2. Run (DURATION_TBD: 4 shards in parallel)
+## 2. Run (roughly 0.5–1.5 h: 4 shards of 8 seeds each, in parallel)
 
 ```sh
 cd /home/user/sts_ai; setsid nohup bash $E/worker.sh run W > $HOME/x518-wWW.run.log 2>&1 < /dev/null &
