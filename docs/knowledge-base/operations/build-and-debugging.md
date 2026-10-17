@@ -120,7 +120,11 @@ simulator regressions; `integration` covers search, Silver, model, and native
 parity boundaries; `tooling` covers maintained operational utilities; and
 `research-repro` preserves analyzer and evidence contracts. Tests may carry
 more than one label. The unfiltered `linux-gcc-test` preset remains the full
-CTest suite.
+CTest suite. Tests that import torch, xgboost, scipy or sklearn also carry
+`needs-ml-python` (list at the end of `CMakeLists.txt`). Cloud containers lack
+those packages, so run `ctest -LE needs-ml-python` there; a remaining failure
+is then real. In a Release build `cardqueue_overflow` still fails by design
+(it needs assertions).
 
 The following complete `tests/agent` discovery is available for changes to
 agent tooling. It was a historical CI step; the current workflow does not run it:

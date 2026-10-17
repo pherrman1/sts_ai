@@ -19,7 +19,9 @@ ledger shards; maintained technical understanding remains in
 ## Lifecycle
 
 Use the deterministic `0001-<slug>.md` filename scheme and the standard ADR
-sections. If a decision changes, add a new ADR that states what it supersedes
+sections. A PR adds a new ADR as `TBD-<slug>.md` with `ADR-TBD` references; the
+number is assigned at merge by `tools/ledger_assign.py` (see
+[agent workflow](../docs/knowledge-base/operations/agent-context-and-workflow.md#ledger-and-adr-numbers)). If a decision changes, add a new ADR that states what it supersedes
 and links the historical record; do not rewrite the old ADR or chronological
 entry. Mark the earlier ADR `superseded` only when current evidence establishes
 the replacement.
