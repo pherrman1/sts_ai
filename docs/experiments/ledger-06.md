@@ -19758,6 +19758,9 @@ confirmation cohort. Base main `217ed7a`; producer source `d8fd2a1`.
   [plan](evidence/heart_outcome_round2_20261017/PLAN.md). Dispatch needs
   Philipp's go with the worker count, an independent pre-launch review and a
   durable export check.
+- Philipp chose (2026-10-17 08:23Z) "Do A+S on 32 workers": 2,048 sources
+  (1,088 TRAIN / 320 VALIDATION / 640 CONFIRM), plan `dc730f45…`, same producer
+  and bundle; re-qualified with a new cloud canary on that plan.
 
 **Knowledge impact:** root-trace capture contract added to the maintained OOC
 label pipeline page.

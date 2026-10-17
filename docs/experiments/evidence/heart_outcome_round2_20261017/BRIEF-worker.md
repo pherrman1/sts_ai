@@ -1,6 +1,6 @@
-# Heart-outcome round 2 worker W (§503; W = 0..44, unpadded: 3, never 03; WW = two digits: 03)
+# Heart-outcome round 2 worker W (§503; W = 0..31, unpadded: 3, never 03; WW = two digits: 03)
 
-Philipp authorized this collection (__AUTH__) with Haiku workers. Worker W runs its 64 fixed sources
+Philipp authorized this collection (2026-10-17 08:23Z: "Do A+S on 32 workers") with Haiku workers. Worker W runs its 64 fixed sources
 (the plan assigns them; seeds from 111101000), four at a time, under one shared deadline. The coordinator's header
 gives you W, ACT (the approved activation SHA256) and, only for a lost-worker rerun, H (0 or 1). Everything (build,
 hash checks, timeouts, receipts, sealed archives, export to the share) is done by the script. Do not change seeds,

@@ -8,11 +8,11 @@ set -euo pipefail
 SOURCE=d8fd2a105a8d2a481b7639e26c683f75e382e3d4
 STUDENT_C=eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
 BINARY_SHA=0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52
-PLAN_SHA=c88256cea6734fe0a0e891c88bf9c40f67fb5d78ce5e45d0ff7ac9f707c06cfc
+PLAN_SHA=dc730f4575c2cfa2cdfdc107eabc6c751497eda9a99c27034a6aebfb72b9ff47
 BUNDLE_SHA=5810761da0ac09d5ba8a476655e5cd225906a0a86a72f100a65d090c3d40b59c
-WORKERS=45
+WORKERS=32
 PER_WORKER="34 10 20"
-SIBLING_EVERY=8   # 0 = no sibling subsample (then PLAN_SHA babf5c7a…, same bundle)
+SIBLING_EVERY=8   # Philipp 2026-10-17 08:23Z: "Do A+S on 32 workers"
 SH=/mnt/project-files/heart-outcome-round2
 R=/home/user/sts_ai
 S=$HOME/heart2-src

@@ -3,6 +3,13 @@
 Status: PREPARED_NOT_DISPATCHED. Needs Philipp's go with the worker count in his words, an independent
 pre-launch review (source, canary, export check) and one activation. Only the coordinator starts worker threads.
 
+## Decision (2026-10-17 08:23Z)
+
+Philipp: "Do A+S on 32 workers". Frozen: 32 workers x 64 sources (34 TRAIN / 10 VALIDATION / 20 CONFIRM each) =
+2,048 sources (1,088 TRAIN, 320 VALIDATION, 640 CONFIRM), seeds 111101000..111103047, siblings every 8th root.
+Plan `dc730f4575c2cfa2cdfdc107eabc6c751497eda9a99c27034a6aebfb72b9ff47`; producer, binary and bundle unchanged
+(`5810761d…`). Cloud canary.json on this plan `95930a8cf88d8834daf93439ea2b6c08833d4bb5340fe31bb8ad05702f590f59` (PASS; on/second traces byte-identical to the reviewed 45-worker canary). The 45-worker A+S plan below was reviewed but superseded; its canary does not qualify this plan.
+
 ## Goal
 
 More independent completed-run Heart outcomes under the unchanged §497 teacher, for development of the value
