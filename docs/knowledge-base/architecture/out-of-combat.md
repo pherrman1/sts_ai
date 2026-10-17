@@ -1576,6 +1576,12 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    best-ranked reward potion. With full slots it discards the worst-ranked held
    potion when the best reward potion ranks strictly higher, then takes it
    (`potionKeepRank`, fitted on CTM fight data). Sozu keeps the legacy pickup.
+   Under the OOC MCTS tree rules a declined reward potion still reaches the
+   search root. Once only "leave" and "discard a held potion" remain, that
+   root's prior is uniform, also under heart1full (PR #591), and search
+   then often discards a held potion to take the worse reward (§511; 505 times
+   in 1,408 §503 runs). `STS_POTION_REWARD_DECLINE_LEAVE=1` (research option,
+   default off) leaves such a screen when nothing else is on it.
    The effective teacher specification includes `potion_reward_swap: true`
    for unset/`1`; `=0` omits it and restores the legacy pickup, which took
    reward potion 0 only when

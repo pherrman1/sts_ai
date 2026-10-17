@@ -294,7 +294,11 @@ bool oocTreeRuleStep(GameContext &gc) {
         if (const auto potion = search::potionRewardAction(gc)) { potion->execute(gc); return true; }
     }
     // Nothing left (keys only count when STS_COLLECT_KEYS is on): leaving is the only sensible action.
-    if (r.cardRewardCount == 0 && r.relicCount == 0 && r.potionCount == 0
+    // STS_POTION_REWARD_DECLINE_LEAVE=1: a potion the pickup declined counts as nothing left, so
+    // search cannot swap a held potion for it by discarding (a uniform-prior root, fixed-rules audit).
+    const bool potionsLeft = r.potionCount > 0
+        && !(search::potionRewardDeclineLeaveEnabled() && search::potionRewardDeclined(gc));
+    if (r.cardRewardCount == 0 && r.relicCount == 0 && !potionsLeft
         && !(g_collectKeys && (r.emeraldKey || r.sapphireKey))) {
         search::GameAction(RT::SKIP).execute(gc); return true;
     }
