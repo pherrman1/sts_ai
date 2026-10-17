@@ -21,6 +21,9 @@ With ``--critic H1ROWS`` (rows of `heartleaftail` run with STS_OOC_HEART1
 set), a tree regression of the heart1 value head on the same features is fit
 on TRAIN roots and appended as column ``hlCritic`` (feature schema v3); the
 native model evaluates it from the features, so heart1 is not needed at play.
+``--mask-hidden-queue`` (schema v4, with ``--critic``) zeroes the hidden encounter
+queue columns ``HIDDEN_QUEUE`` everywhere, as ADR-0029 removed them from X2-B: the
+root rows are real-game snapshots whose queue a player cannot see.
 
 Usage: heart_leaf_fit.py fit --tails T.jsonl... --runs DIR... --out DIR
        heart_leaf_fit.py score --manifest M --roots R.jsonl... --runs DIR... --split S --out F
@@ -60,6 +63,7 @@ def feature_names():
 
 
 NAMES = feature_names()
+HIDDEN_QUEUE = ["nextEliteId", "nextFight0", "nextFight1", "nextFight2"]
 WIDTH = len(NAMES)
 COL = {n: i for i, n in enumerate(NAMES)}
 
@@ -229,6 +233,13 @@ def fit(args):
                       "valRuns": int(len(np.unique(d["seed"][val]))), "platt": [a, b]}), flush=True)
     reports = [report("x2b_raw", sigmoid(m_root), d, val), report("x2b_platt", sigmoid(a + b * m_root), d, val)]
     names = NAMES
+    x_parity = d["X"][:, :WIDTH].copy()   # unmasked, so parity also checks the native v4 masking
+    if args.mask_hidden_queue:
+        if not args.critic:
+            raise SystemExit("--mask-hidden-queue is feature schema v4, which needs --critic")
+        hidden = [COL[n] for n in HIDDEN_QUEUE]
+        d["X"][:, hidden] = 0
+        d["E"][:, hidden] = 0
     critic_info = None
     if args.critic:
         h1 = {}
@@ -319,7 +330,8 @@ def fit(args):
     with open(trees, "w", newline="\n") as f:
         f.write("\n".join(text) + "\n")
     manifest = {"schema": "heart-leaf-v1",
-                "featureSchema": "heart-leaf-features-v3" if critic_info else "heart-leaf-features-v2",
+                "featureSchema": ("heart-leaf-features-v4" if args.mask_hidden_queue else
+                                  "heart-leaf-features-v3" if critic_info else "heart-leaf-features-v2"),
                 "residual": os.path.basename(trees), "residualSha256": sha256(trees),
                 "anchorSha256": ANCHOR_SHA, "anchorSlope": b, "act4Offset": act4_offset,
                 "training": {"tails": [os.path.basename(t) for t in args.tails], "tailSha256": [sha256(t) for t in args.tails],
@@ -344,8 +356,8 @@ def fit(args):
     pick = rng.choice(len(m_root), size=min(2000, len(m_root)), replace=False)
     with open(os.path.join(args.out, "parity.jsonl"), "w") as f:
         for i in pick:
-            nz = np.nonzero(d["X"][i][:WIDTH])[0]   # v2 features; the native model adds hlCritic
-            f.write(json.dumps({"i": nz.tolist(), "v": d["X"][i][nz].astype(float).tolist(),
+            nz = np.nonzero(x_parity[i])[0]   # v2 features; the native model adds hlCritic
+            f.write(json.dumps({"i": nz.tolist(), "v": x_parity[i][nz].astype(float).tolist(),
                                 "value": float(p_best[i])}) + "\n")
     print(json.dumps({"selectedRound": k_best, "manifest": os.path.join(args.out, "heart_leaf.json")}))
 
@@ -401,7 +413,9 @@ def manifest_values(manifest_path, X):
         raise SystemExit("manifest anchor is not the pinned X2-B")
     cols = {n: i for i, n in enumerate(NAMES)}
     Xf = X.astype(np.float32)
-    if man["featureSchema"] == "heart-leaf-features-v3":
+    if man["featureSchema"] == "heart-leaf-features-v4":
+        Xf[:, [COL[n] for n in HIDDEN_QUEUE]] = 0
+    if man["featureSchema"] in ("heart-leaf-features-v3", "heart-leaf-features-v4"):
         critic = load_trees(os.path.join(base_dir, man["critic"]))
         assert not critic[1]
         c = np.full(len(X), np.float32(critic[2]), np.float32)
@@ -476,6 +490,7 @@ def main():
     f.add_argument("--min-child", type=float, default=2.0)
     f.add_argument("--threads", type=int, default=4)
     f.add_argument("--critic", help="heartleaftail rows with heart1Value: add the distilled hlCritic column")
+    f.add_argument("--mask-hidden-queue", action="store_true", help="schema v4: zero the ADR-0029 hidden queue columns")
     f.add_argument("--act4-offset", action="store_true", help="fit one Act-4 logit offset on out-of-fold TRAIN")
     f.add_argument("--inner-holdout", type=int, default=0, help="tune on TRAIN only: seeds %% N == 0 are held out")
     s = sub.add_parser("score")

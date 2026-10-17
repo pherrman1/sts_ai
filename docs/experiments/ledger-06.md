@@ -20177,6 +20177,9 @@ the §503 CONFIRM set (640 runs, 83 Heart kills, 12,458 MAP roots): BCE 0.3345 v
 0.438/0.459, but **act 1 0.093/0.130 (|Δ| 0.037 > 0.03, FAIL**; X2-B 0.040). No A/B on td2;
 CONFIRM is spent. **Inference:** the act-1 under-prediction is systematic (TRAIN out of fold 0.093
 vs 0.136). The §497 TEST stays sealed.
+td3 (Philipp, 22:34Z: fix the hidden-queue leak): td2's recipe with feature schema v4, which zeroes the
+ADR-0029 hidden queue columns (`nextEliteId`, `nextFight0..2`) the §503 real-game roots carried. VALIDATION BCE
+0.3034, AUC 0.731, act 3 0.228/0.202, about td2's numbers (no held-out test left).
 [Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
 **Knowledge impact:** `operations/environment-variables.md` (new option),
 `evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
