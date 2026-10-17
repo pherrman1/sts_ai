@@ -42,7 +42,7 @@ class Round2Tests(unittest.TestCase):
         self.assertEqual([s['split'] for s in sources[-900:]], ['confirm']*900)
 
     def test_valid_trace_counts(self):
-        self.assertEqual(self.check([root(0), root(3)]), {'roots': 2, 'searched': 2, 'snapshots': 2, 'records': 2})
+        self.assertEqual(self.check([root(0), root(3)]), {'roots': 2, 'searched': 2, 'snapshots': 2, 'records': 2, 'snapshotErrorsByScreen': {}})
 
     def test_misaligned_or_reordered_trace_refused(self):
         rows = [root(0), root(3)]
@@ -64,7 +64,9 @@ class Round2Tests(unittest.TestCase):
 
     def test_snapshot_failure_is_counted_not_fatal(self):
         row = root(0); row['snapshot'] = None; row['snapshotError'] = 'unsupported continuation'
-        self.assertEqual(self.check([row])['snapshots'], 0)
+        row['screen'] = 2
+        counts = self.check([row])
+        self.assertEqual((counts['snapshots'], counts['snapshotErrorsByScreen']), (0, {'2': 1}))
 
 
 if __name__ == '__main__':

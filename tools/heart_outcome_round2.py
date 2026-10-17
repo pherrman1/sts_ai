@@ -25,8 +25,8 @@ from heart_distill_native_plan import scientific_environment
 from heart_outcome_collect import STUDENT_C, runtime_contract, sha, trajectory, write
 
 SCHEMA = 'heart-outcome-round2-plan-v1'
-FIRST = 111001000
-CANARIES = {'local': [111000000, 111000001], 'cloud': [111000002, 111000003]}
+FIRST = 111101000
+CANARIES = {'local': [111100000, 111100001], 'cloud': [111100002, 111100003]}
 SPLITS = ('train', 'validation', 'confirm')
 SOURCE_SECONDS = 3600
 CAMPAIGN_SECONDS = 21600
@@ -126,7 +126,7 @@ def root_trace(path, actions_path, seed):
     actions = [json.loads(line) for line in actions_path.read_text().splitlines()]
     if not rows or len(rows) != len(actions):
         raise ValueError('root trace not aligned with action trace')
-    counts = {'roots': len(rows), 'searched': 0, 'snapshots': 0, 'records': 0}
+    counts = {'roots': len(rows), 'searched': 0, 'snapshots': 0, 'records': 0, 'snapshotErrorsByScreen': {}}
     previous = -1
     for row, action in zip(rows, actions):
         if (row.get('schema') != 'ooc-root-trace-v1' or row.get('seed') != seed
@@ -149,6 +149,9 @@ def root_trace(path, actions_path, seed):
             counts['snapshots'] += 1
         elif not row.get('snapshotError'):
             raise ValueError('missing snapshot is not accounted')
+        else:
+            screen = str(row.get('screen'))
+            counts['snapshotErrorsByScreen'][screen] = counts['snapshotErrorsByScreen'].get(screen, 0)+1
         if isinstance(row.get('record'), dict):
             if any(k in row['record'] for k in ('seed', 'rng', 'target', 'label', 'outcome')):
                 raise ValueError('root public record leaks hidden data')

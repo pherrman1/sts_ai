@@ -3740,7 +3740,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         if (heart1::buildPublicLeafRecord(gc, record, &reason)) rootRow["record"] = std::move(record);
         else rootRow["recordError"] = reason.empty() ? "unencoded_screen" : reason;
     }
-    nlohmann::json rootActions;
+    nlohmann::json rootActions = nlohmann::json::array();
     const auto result = [&] {
         try {
             return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSamplerFor(gc),
