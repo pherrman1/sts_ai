@@ -151,6 +151,10 @@ nlohmann::json leafAnnotation(const sts::GameContext &);
 std::optional<std::vector<double>> priorLogits(const sts::GameContext &,
                                                const std::vector<sts::search::GameAction> &,
                                                std::map<std::string, std::uint64_t> *tally = nullptr);
+// Explicitly owned model for the standalone advisor; no process-global load.
+std::optional<std::vector<double>> priorLogits(const Net &, const sts::GameContext &,
+                                               const std::vector<sts::search::GameAction> &,
+                                               std::map<std::string, std::uint64_t> *tally = nullptr);
 // The mapping step of priorLogits, given the choice and its token logits:
 // skip one card reward -> silverbot's skip token (bowl token with Singing
 // Bowl); gold -> the node's best logit; a potion discard -> the node's lowest.

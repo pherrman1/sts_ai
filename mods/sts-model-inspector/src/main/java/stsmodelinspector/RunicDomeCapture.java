@@ -23,6 +23,15 @@ final class RunicDomeCapture {
     private static boolean ready,constructingTorch;
     private static String bindingFailure;
     static String bindingFailure(){return bindingFailure;}
+    static <T> boolean retiredDeadOccupant(T candidate, boolean dead, boolean halfDead,
+            boolean trackingReady, java.util.Map<T,Integer> known, T[] current) {
+        Integer slot=known.get(candidate);
+        return trackingReady && candidate!=null && dead && !halfDead && slot!=null
+                && slot>=0 && slot<current.length && current[slot]!=null && current[slot]!=candidate;
+    }
+    static boolean retiredDeadOccupant(AbstractMonster monster) {
+        return retiredDeadOccupant(monster,monster.isDeadOrEscaped(),monster.halfDead,ready,slots,occupants);
+    }
     static int occupantGeneration(AbstractMonster m){Integer slot=slots.get(m);return slot==null?0:occupantGenerations[slot];}
     private static int capacity;
     static java.util.IdentityHashMap<AbstractMonster,Integer> emittedSlots() {
