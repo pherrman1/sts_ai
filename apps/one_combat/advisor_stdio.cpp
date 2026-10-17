@@ -156,6 +156,15 @@ void validateCapturedLiveOocMapping(const one_combat::advisor::LiveOocStateV1 &s
     } else {
         for (const auto &action : one_combat::v4CandidateActions(state.projected))
             if (action.isValidAction(state.projected)) expected.push_back(action.bits);
+        if (state.projected.screenState == sts::ScreenState::SHOP_ROOM) {
+            const auto bindings = sts::search::enumerateOocSemanticPrimitiveBindings(state.projected);
+            if (bindings.supported && bindings.complete)
+                for (const auto &binding : bindings.bindings) {
+                    const sts::search::GameAction action(binding.primitiveBits);
+                    if (action.isPotionDiscard() && action.isValidAction(state.projected))
+                        expected.push_back(action.bits);
+                }
+        }
     }
     if (expected.empty()) return;
     one_combat::advisor::validateLiveOocActionSet(state, expected);

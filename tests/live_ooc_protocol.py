@@ -110,6 +110,23 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([observation], policy="v4")
         self.assertEqual(response["evaluators"][0]["reason"], "POTION_REPLACEMENT_REQUIRES_MCTS")
 
+    def test_full_belt_shop_validates_discards_before_model_loading(self):
+        observation = self.fixtures["shop_full_belt_replacement"]
+        choices = observation["ooc"]["liveChoices"]
+        self.assertFalse(any(c["nativeAction"]["kind"] == "potion" for c in choices))
+        capacity = observation["ooc"]["publicState"]["potionCapacity"]
+        self.assertEqual([c["liveAction"]["potionSlot"] for c in choices
+                          if c["nativeAction"]["kind"] == "discard_potion"],
+                         list(range(1, capacity + 1)))
+        response, = self.run_rows([observation], model=False, policy="mcts")
+        self.assertNotEqual(response.get("code"), "OOC_ACTION_MAPPING", response)
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE")
+        malformed = copy.deepcopy(observation)
+        malformed["ooc"]["liveChoices"] = [c for c in choices
+                                            if c["nativeAction"]["kind"] != "discard_potion"]
+        response, = self.run_rows([malformed], model=False, policy="mcts")
+        self.assertEqual(response["code"], "OOC_ACTION_MAPPING", response)
+
     def test_selector_preview_scores_confirm_or_return_to_original_grid(self):
         observation = next(row for name,row in self.fixtures.items()
                            if name.startswith("selector_preview_") and row["ooc"]["details"]["type"] == "upgrade")

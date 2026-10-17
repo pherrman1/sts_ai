@@ -1015,6 +1015,10 @@ MCTS enumerates each held-slot discard using public potion identity and duplicat
 occurrence. Sozu prevents these replacement actions. The driver requires the
 advertised `discard_potion` command and slot permission; discarding never takes
 a monster target. The next observation scores the actual refill separately.
+Shop mapping validation includes the semantic discard actions before model
+loading. Both native and captured shop purchases require a free potion slot
+and no Sozu; MCP can advertise a purchase that would not obtain a potion.
+Skipping that blocked click preserves subsequent physical choice indices.
 These new actions use a uniform prior where the frozen V4 action set has no
 matching source; direct V4 reports `POTION_REPLACEMENT_REQUIRES_MCTS`.
 Match and Keep captures physical board slots and a run/event-local memory of

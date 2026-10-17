@@ -202,6 +202,32 @@ int main(int argc, char **argv) {
                     && next.potionCount==replacement.potionCount,"replacement potion not claimable");
             }
             require(discards==replacement.potionCapacity,"duplicate potion slots lost semantic identity");
+            auto shop=replacement;
+            shop.screenState=ScreenState::SHOP_ROOM;shop.gold=100;
+            std::fill(std::begin(shop.info.shop.prices),std::end(shop.info.shop.prices),-1);
+            shop.info.shop.potions[0]=Potion::FIRE_POTION;shop.info.shop.potionPrice(0)=45;
+            const auto shopChoices=enumerateOocSemanticActions(shop);
+            require(shopChoices.supported && shopChoices.complete,"full shop belt enumeration failed");
+            require(std::none_of(shopChoices.actions.begin(),shopChoices.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::BUY_POTION;
+            }),"shop allowed a purchase into a full belt");
+            auto discard=std::find_if(shopChoices.actions.begin(),shopChoices.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::DISCARD_POTION;
+            });
+            require(discard!=shopChoices.actions.end() && executeOocSemanticAction(shop,*discard).ok,
+                    "shop replacement discard unavailable");
+            const auto freed=enumerateOocSemanticActions(shop);
+            auto buy=std::find_if(freed.actions.begin(),freed.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::BUY_POTION;
+            });
+            require(buy!=freed.actions.end() && executeOocSemanticAction(shop,*buy).ok
+                    && shop.gold==55 && shop.potionCount==shop.potionCapacity,
+                    "shop did not obtain the replacement after freeing a slot");
+            shop.relics.add({RelicId::SOZU,0});
+            --shop.potionCount;shop.potions[0]=Potion::EMPTY_POTION_SLOT;
+            shop.gold=100;shop.info.shop.potionPrice(0)=45;
+            require(!sts::search::GameAction(sts::search::GameAction::RewardsActionType::POTION,0).isValidAction(shop),
+                    "Sozu allowed a shop potion purchase");
             replacement.relics.add({RelicId::SOZU,0});
             const auto blocked=enumerateOocSemanticActions(replacement);
             require(std::none_of(blocked.actions.begin(),blocked.actions.end(),[](const auto &a) {

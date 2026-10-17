@@ -1260,7 +1260,8 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
                         "equivalent reward primitives have different live actions");
             }
             require(displayedPrismaticShard || equivalent,
-                    "native/live candidate enumeration disagreement");
+                    "native/live candidate enumeration disagreement: unexpected "
+                    + c.at("nativeAction").dump());
             continue;
         }
         require(observed.insert(bit).second,"duplicate observed primitive mapping");

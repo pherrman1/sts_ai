@@ -1429,12 +1429,19 @@ int main(int argc,char **argv){try{
         }
         if(output)output<<match.dump()<<'\n';++passed;
     }
-    {
-        auto source=base;source.screenState=ScreenState::REWARDS;
-        source.info.rewardsContainer.clear();source.info.rewardsContainer.addPotion(Potion::FRUIT_JUICE);
+    for(bool shop:{false,true}) {
+        auto source=base;
+        if(shop) {
+            source.screenState=ScreenState::SHOP_ROOM;source.gold=100;
+            std::fill(std::begin(source.info.shop.prices),std::end(source.info.shop.prices),-1);
+            source.info.shop.potions[0]=Potion::FRUIT_JUICE;source.info.shop.potionPrice(0)=45;
+        } else {
+            source.screenState=ScreenState::REWARDS;
+            source.info.rewardsContainer.clear();source.info.rewardsContainer.addPotion(Potion::FRUIT_JUICE);
+        }
         source.potionCount=source.potionCapacity;
         for(int i=0;i<source.potionCapacity;++i)source.potions[i]=Potion::FIRE_POTION;
-        auto full=project(source,path,"full_belt_potion_reward");
+        auto full=project(source,path,shop?"shop_full_belt_replacement":"full_belt_potion_reward");
         advisor::LiveOocStateV1 live;const auto imported=advisor::importLiveOocStateV1(full,live);
         check(imported.ok,"full belt import: "+imported.message);
         std::vector<std::uint32_t> bits;

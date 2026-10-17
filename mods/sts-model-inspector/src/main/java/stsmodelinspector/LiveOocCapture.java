@@ -1310,7 +1310,8 @@ final class LiveOocCapture {
             Object item = available.get(i);
             if (item instanceof AbstractCard) add(cs, labels, i, "card", slots.index((AbstractCard)item), 0);
             else if (item instanceof StoreRelic) add(cs, labels, i, "relic", ((Number)field(item, "slot")).intValue(), 0);
-            else if (item instanceof StorePotion) add(cs, labels, i, "potion", ((Number)field(item, "slot")).intValue(), 0);
+            else if (item instanceof StorePotion) captureShopPotionChoice(cs, labels, i,
+                    ((Number)field(item, "slot")).intValue(), hasPotionSlot(), AbstractDungeon.player.hasRelic("Sozu"));
             else if (item instanceof String && shop.purgeAvailable) add(cs, labels, i, "remove", 0, 0);
             else throw new IllegalArgumentException("unknown shop choice type");
         }
@@ -1319,6 +1320,10 @@ final class LiveOocCapture {
             affordablePotion=true;
         addPotionDiscards(cs,affordablePotion);
         button(cs, "cancel", "skip", 0, 0);
+    }
+    static void captureShopPotionChoice(List<Map<String,Object>> choices, List<?> labels,
+            int choiceIndex, int slot, boolean hasSlot, boolean sozu) {
+        if (hasSlot && !sozu) add(choices, labels, choiceIndex, "potion", slot, 0);
     }
     // ShopScreen is reused between rooms, so the owning run/player and node
     // delimit this read-only slot cache. It contains no hidden offers.

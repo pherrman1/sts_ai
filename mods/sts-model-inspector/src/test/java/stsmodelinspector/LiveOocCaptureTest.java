@@ -118,6 +118,16 @@ public final class LiveOocCaptureTest {
                     || !Integer.valueOf(2).equals(((Map<?,?>)discards.get(1).get("liveAction")).get("potionSlot"))))
                 throw new AssertionError("potion discard physical slot mapping");
         }
+        for(int variant=0;variant<3;++variant) {
+            java.util.List<Map<String,Object>> choices=new java.util.ArrayList<>();
+            LiveOocCapture.captureShopPotionChoice(choices,
+                    java.util.Arrays.asList("card", "relic", "potion"), 2, 1,
+                    variant!=1, variant==2);
+            if(choices.size()!=(variant==0?1:0))throw new AssertionError("shop potion capacity/Sozu gate");
+            if(variant==0 && (!Integer.valueOf(3).equals(((Map<?,?>)choices.get(0).get("liveAction")).get("choiceIndex"))
+                    || !Integer.valueOf(1).equals(((Map<?,?>)choices.get(0).get("nativeAction")).get("index"))))
+                throw new AssertionError("shop potion physical choice index shifted");
+        }
         java.util.List<Object> libraryCards=new java.util.ArrayList<>();
         java.util.List<String> libraryLabels=new java.util.ArrayList<>();
         for(int i=0;i<20;++i) {
