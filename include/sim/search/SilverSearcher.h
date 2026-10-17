@@ -208,6 +208,9 @@ namespace sts::search {
             // #544: zero-cost non-attacks lose first priority from this many cards
             // in a turn (STS_SILVER_ROLLOUT_ZERO_COST_CAP; 0 = no cap).
             int zeroCostCap = 50;
+            // #544: every playout stops after this many actions
+            // (STS_SILVER_ROLLOUT_ACTION_CAP; 0 = uncapped, the pre-#579 behavior).
+            int actionCap = 1000;
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();

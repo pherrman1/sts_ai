@@ -60,11 +60,15 @@ nlohmann::json effectiveSilverLeafSpecification() {
         const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE");
         table = {{"path", path ? path : ""}, {"sha256", path ? fileSha256(path) : ""}};
     }
-    return {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
+    nlohmann::json spec = {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
             {"relic_heal_leaf", leaf.relicHealLeaf}, {"a20_boss_heal_fix", leaf.a20BossHealFix},
             {"escape_penalty", {leaf.escapePenalty, leaf.eliteEscapePenalty}},
             {"rollout_card_table", table}, {"rollout_uniform", leaf.rolloutUniform},
             {"rollouts_per_leaf", leaf.rolloutsPerLeaf}, {"rollout_zero_cost_cap", leaf.rolloutZeroCostCap}};
+    // Recorded only when not the default 1000, so teacher files written before
+    // STS_SILVER_ROLLOUT_ACTION_CAP existed still match.
+    if (leaf.rolloutActionCap != 1000) spec["rollout_action_cap"] = leaf.rolloutActionCap;
+    return spec;
 }
 
 nlohmann::json effectiveOocPolicySpecification() {

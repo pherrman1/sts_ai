@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the per-playout action cap (#544); 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -147,7 +147,10 @@ value; it does not fabricate a terminal outcome. `SilverSearchStats` records
 `rolloutActionLimitHits`, and endpoint profiling records the capped state as
 `nonterminal`. Shorter playouts retain their action/RNG behavior. This bounds
 free draw/reshuffle loops at the playout decision boundary (#544); it does not
-bound work inside a single simulator action.
+bound work inside a single simulator action. The cap changes default play where a
+playout runs longer than 1,000 actions (A0 seed 111139580 dies on floor 50 instead
+of reaching floor 55). `STS_SILVER_ROLLOUT_ACTION_CAP=N` sets it, and `0` restores
+uncapped playouts.
 
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
