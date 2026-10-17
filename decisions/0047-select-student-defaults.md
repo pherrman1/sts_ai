@@ -1,4 +1,4 @@
-# ADR-TBD: card-select students default to the target prior and rollout card selects
+# ADR-0047: card-select students default to the target prior and rollout card selects
 
 Date: 2026-10-17
 Status: accepted
