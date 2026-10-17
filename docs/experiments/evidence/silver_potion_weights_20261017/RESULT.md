@@ -14,9 +14,10 @@ Pre-registration: [PREREG.md](PREREG.md). Analysis: [analysis.json](analysis.jso
 - Workers 1 and 2 first launched with a zero-padded W and uploaded empty 0-unit tars; their real runs overwrote them
   before verification. `worker.sh` should refuse a padded W (harness note, no effect on data).
 - OOC decision sources from the traces: student C (`heart1`) took 98.9% of OOC decisions in every arm (base 13,347,
-  level 13,078, type 12,802); the rest (140–150 per arm, 1.1%) were Match and Keep, whose card choices come from the
-  V4 chain's one-ply card-reward policy (`run_driver.cpp`, `oocOnePlyCardRewardPolicy`; open PR #616 would move them
-  to student C).
+  level 13,078, type 12,802); the rest (140–150 per arm, 1.1%) were Match and Keep, whose card choices go through the
+  chain's card-reward step: the V4 token net (`STS_OOC_STRATEGIC_TOK_NN`, loaded in every arm) where
+  `oocOnePlyCardRewardPolicy` clears the margin-1 gate, otherwise the native GBM card-reward fallback
+  `serverCardRewardPolicy` (`run_driver.cpp`; #616 moves them to student C). The split between the two is not traced.
 
 ## Result
 

@@ -1,0 +1,2 @@
+old [(('no_cards', 'uniform', 'discard'), 3), (('no_cards', 'uniform', 'other'), 2), (('with_cards', 'uniform', 'other'), 6)]
+full [(('no_cards', 'uniform', 'discard'), 6), (('no_cards', 'uniform', 'other'), 4), (('with_cards', 'prior', 'other'), 9)]

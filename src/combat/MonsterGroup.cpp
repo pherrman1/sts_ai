@@ -6,6 +6,7 @@
 
 #include "combat/MonsterGroup.h"
 #include "combat/BattleContext.h"
+#include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
 
 
@@ -644,7 +645,7 @@ void MonsterGroup::applyEmeraldEliteBuff(BattleContext &bc, const int buffType, 
 
         switch (buffType) {
             case 0:
-                m.buff<MS::STRENGTH>(act);
+                m.buff<MS::STRENGTH>(engineFidelityFix() ? act + 1 : act);
                 break;
 
             case 1: {

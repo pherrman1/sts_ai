@@ -20110,7 +20110,9 @@ own formula. A20 seeds 111152000–111152127; primary Δfloor type − base, pai
 container. Mean floor base 36.65, level 35.85, type 35.28; act-3 clears 36 / 30 / 35 of 128. Type − base Δfloor
 −1.37 [−3.45, +0.74]; level − base −0.80 [−2.96, +1.36]; type − level −0.57 [−2.55, +1.37]. Boss deaths 48 / 58 /
 55. Student C took 98.9% of OOC decisions in every arm; the rest (1.1%, 440) were Match and Keep, whose card
-choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move them to student C).
+choices go through the chain's card-reward step: the V4 token net (loaded in every arm) where it clears the margin-1
+gate, otherwise the native GBM card-reward fallback `serverCardRewardPolicy` (`run_driver.cpp`; #616 moves them to
+student C).
 **Interpretation:** no detectable effect at ±2 floors; both point estimates negative. Descriptively, lower weights
 leave Silver about 0.1 fewer potions at the first boss battle of each act (battles starting on floors 16, 33, 50:
 1.27 vs 1.15 / 1.14). **Inference:** that is the §385
@@ -20120,6 +20122,26 @@ research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000�
 [Result](evidence/silver_potion_weights_20261017/RESULT.md), [analysis.json](evidence/silver_potion_weights_20261017/analysis.json).
 Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
+
+## §514 — Fixed OOC rules before and inside the search, with keys on (2026-10-17)
+
+**KEEP_RULES; opt-in potion leave, default off.** Offline count on the 1,408 open §503 A20 runs (TRAIN + VALIDATION,
+student C prior `STS_OOC_MCTS_PRIOR=heart1`, keys on; SEALED-confirm not opened). Firings: chest 3,380, reward relic
+10,077, gold 30,148, potion pickup 13,158, potion swap by rank 1,452, empty-screen leave 4,439 (key rule 4,778 belongs
+to the keys thread). The relic rule matches heart1's own take-free-rewards convention. The 7 reviewed relics went to
+search and were left 291 of 760 times. The swap rank dropped a Fairy 4 times.
+
+Every REWARDS root with a "discard potion" candidate had a uniform prior: 1,281 roots in 553 runs. Search discarded
+there 505 times and then took the declined reward potion, 455 times a lower-ranked one (mean keep-value loss 1.32 HP-equivalent
+per fight over all 505, ADR-0039 units). On the 758 such roots that also offered cards, search left the screen 171 times, forgoing the card reward. A PR #591 (`7fb7933`, heart1full) smoke on 22 seeds per arm (111155002–023, 128 sims)
+gives the prior back to discard roots that still offer cards. The remaining "leave or discard" root stays uniform
+(10 of 19), with 6 discards. New research option `STS_POTION_REWARD_DECLINE_LEAVE=1` makes the tree rules leave
+such a screen. In a 16-seed-per-arm smoke (binary from `b771aa1` plus this change, as committed in `c528115`; seeds 111155024–039), cards-less discard roots went 1 → 0, with 1 vs 1 win;
+this is a smoke, not an A/B. **Inference:** the effect is about one slightly worse potion per three runs, too small to
+test; the default is Philipp's call. If Sapphire becomes a search decision, the relic rule must stand down while a
+Sapphire is offered (keys thread). Seeds 111155000–039 used (000–001 failed at startup, no gameplay).
+[Report](evidence/ooc_fixed_rules_20261017/REPORT.md).
+**Knowledge impact:** `STS_POTION_REWARD_DECLINE_LEAVE` in environment-variables and the out-of-combat reward flow.
 
 ## §515 — Heart leaf: TD-fitted tree leaf on §503 rollout tails, VALIDATION gate and CONFIRM (2026-10-17)
 
@@ -20158,3 +20180,32 @@ vs 0.136). The §497 TEST stays sealed.
 [Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
 **Knowledge impact:** `operations/environment-variables.md` (new option),
 `evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
+
+## §516 — A20 Silver budget: learned stopping matches flat 10k at 0.41x CPU; gen-6 prior adds Act-4 reaches, not Heart kills (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Audit performance and throughput"):** "yes set up a20 silver budget test";
+card "Add learned+prior"; 16:32Z: "maybe do 512 seeds then on 8 workers." Can learned stopping (ADR-0026) replace
+the flat exact 10k Silver budget of the A20 research stack, and does the gen-6 MLP prior (§476) on top change that?
+**Design:** [PLAN](evidence/silver_budget_a20_20261017/PLAN.md), pre-launch review PASS. Plain A20 full runs (keys,
+Heart objective, no OOC MCTS), student C `policyStep` out of combat, no V4 net loaded. Arms `F` flat exact 10k,
+`L` learned stopping, `LP` L + g6_E as root prior (weight 400) and tree prior K=8 (new research flag
+`STS_SILVER_TREE_PRIOR_MIN_VISITS`, PR #603). RUN_COMMIT `d83b4ab9` (code main `e413c1f3`, binary `a6ad3c56…`).
+Seeds 111135100–111135611. Primary: reached Act 4, paired Newcombe 95% interval, non-inferior if the lower bound
+> −5 pp.
+**Result.** 1,536/1,536 units rc=0, 512 seeds valid; 8 tars verified from a second container.
+- **Heart kills:** F 27, L 30, LP 27 of 512. L − F +0.6 pp [−1.7, +2.9]; LP − F 0.0 [−2.3, +2.3].
+- **Reached Act 4 (primary):** F 77, L 75, LP 97.
+  - L − F −0.4 pp [−3.4, +2.6], NON_INFERIOR.
+  - LP − F +3.9 pp [+0.4, +7.4], McNemar p = 0.035, NON_INFERIOR. The gain is not a pre-registered hypothesis.
+- **CPU per run:** F 53.5 s, L 21.9 s (0.41x), LP 28.2 s (0.53x).
+- **OOC decisions:** student C 96.6–96.7% in every arm, the key rule 2.6–2.8%, Match and Keep 0.5–0.7% (850
+  decisions). Match and Keep's card choices come from the native GBM card-reward fallback (`serverCardRewardPolicy`),
+  since no V4 net is loaded; #616 moves them to student C.
+**Interpretation:** at A20, learned stopping plays as well as flat 10k on both endpoints at 0.41x the CPU, which
+makes it the cheaper Silver budget for student-C self-play. The prior's extra Act-4 reaches did not convert: Heart
+kills per Act-4 run were 28% for LP against 35% for F and 40% for L. **Inference:** the prior helps Acts 1–3 combats
+but not the Act-4 fights; that needs a targeted check before any claim. Defaults are unchanged (research stacks set
+the budget explicitly). Seeds 111135100–111135611 are used; performance-audit smokes used 111135000–111135004.
+[Result](evidence/silver_budget_a20_20261017/RESULT.md), [report.json](evidence/silver_budget_a20_20261017/report.json).
+Raw: `/mnt/project-files/audit-2026-10-17/silver-budget-a20/runs/w0{1..8}.tar.gz`.
+**Knowledge impact:** learned-stopping paragraph in `architecture/combat-search.md`.
