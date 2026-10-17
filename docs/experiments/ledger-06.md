@@ -20308,10 +20308,10 @@ simulations it costs 1.079x per fight against 1.070x for greedy10700. Descriptiv
 / greedy10700 / roottable10700). Bosses (262) primary +5.9 [−2.9, +14.5]; Act 4 (25) −2.7 [−38.4, +24.8].
 **Interpretation:** the root table's point estimate is about the same at 10k as at 2.5k (§519: +2.69 at equal
 simulations), but at 10k it is not significant at equal simulations either. Unlike §519, 7% more simulations buy
-nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not have used.
+nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not measurably have used.
 **Inference:** at the production budget, a cheaper root table (or the same one at no simulation cost) could be a
 small free gain; across §519 and §521 the equal-simulation contrast is positive in all four budget pairs, but each CI
-touches zero except §519's. Pre-registered decision: stop; the option stays research-only and off.
+touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off.
 [result.json](evidence/silver_rollout_root_table_10k_20261017/result.json). Raw:
 `/mnt/project-files/silver-rollout-root-table-10k/w0{1..8}.tar` (sha256 `8c4bb455…`, `47c5c9fb…`, `4f656e30…`,
 `0e6c3ce7…`, `91834bb7…`, `4ad02fcd…`, `470b53da…`, `8be914d1…`). Seeds 111190500–111190627 used; reviewer smokes

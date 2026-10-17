@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0046](0046-silver-rollout-root-table-default.md) makes Silver's greedy leaf rollouts use a card table
+  built per searched root by the gen-6 E prior (`STS_SILVER_ROLLOUT_ROOT_TABLE=0` restores the ADR-0040 table).
+
 - [ADR-0043](0043-az-loop-gumbel-policy-target.md) makes the planned AlphaZero-style OOC loop train its
   policy on Gumbel completed-Q targets rather than raw visit shares (no default changes).
 
