@@ -68,6 +68,15 @@ struct OocAdapterOptions {
     // Research option (default off, STS_OOC_MCTS_PRIOR=heart1, needs STS_OOC_HEART1):
     // tree priors from heart1's logits where it scores every candidate source, V4 elsewhere.
     bool heart1Prior = false;
+    // Research option (default off, STS_OOC_MCTS_PRIOR=heart1full): as heart1, but a node whose
+    // sources V4 cannot encode (discards, non-upgrade selectors, ...) is still scored by heart1;
+    // only a node heart1 cannot score keeps the uniform prior.
+    bool heart1Coverage = false;
+    // Research option (default off, STS_OOC_MCTS_TARGET_PRIOR=1, needs the heart1 prior): a compound
+    // upgrade/remove/transform target gets p(source) * p_heart1(card | the selector the source opens)
+    // instead of an equal share of its source's prior. Student C's selector head is untrained
+    // (audit-2026-10-17 heart1-distill finding 1): use with heart1 or a student distilled on selects.
+    bool targetPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
@@ -95,6 +104,10 @@ struct OocAdapterOptions {
     // Same supported candidates/rules as prior, but heart1 scores every candidate
     // or the unchanged continuation chain handles the step. Requires a loaded net.
     bool heart1LeafPolicy = false;
+    // Research option (default off, STS_OOC_MCTS_LEAF_SELECTS=heart1, needs LEAF_POLICY=heart1 and
+    // heart1full): rollouts also hand every card select (remove, transform, ...) to heart1 instead of
+    // the chain. Same caveat as targetPrior for student C.
+    bool heart1LeafSelects = false;
     // Research option (default unset, STS_OOC_MCTS_LEAF_STUDENT=<weights>): nonterminal
     // leaves with a public heart1 record take the §494 rollout-target student's
     // prediction on their X2-B anchor instead of a rollout; others keep the rollout.
@@ -204,6 +217,9 @@ private:
         bool boundary = true;
         std::vector<Candidate> candidates;
         bool sourcePriorCovered = false;
+        // heart1full: covered only because heart1 may score it; no V4 fallback exists.
+        bool heart1OnlyCoverage = false;
+        bool heart1OnlyFailed = false;
         // Physical V4 sources for each retained semantic choice (same order as candidates).
         std::vector<std::vector<GameAction>> priorSourceGroups;
         std::vector<Edge> edges;
@@ -272,6 +288,7 @@ public:
     std::vector<sts::search::OocPlannerAction> legalActions(sts::search::OocStateId) const override;
     const Candidate &candidate(sts::search::OocStateId, sts::search::OocActionId) const;
     std::vector<double> policyLogits(sts::search::OocStateId) const;
+    void applyTargetPrior(const GameContext &, const std::vector<Candidate> &, std::vector<double> &) const;
     std::optional<sts::search::OocActionId> soleLegalAction(sts::search::OocStateId) const;
     sts::search::OocStateId sampleSuccessor(sts::search::OocStateId, sts::search::OocActionId,
                                             std::mt19937_64 &) override;
@@ -314,6 +331,8 @@ int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
+// heart1full (STS_OOC_MCTS_PRIOR): heart1 decides a root the search returns no action for.
+bool liveOocMctsHeart1Fallback(const GameContext &gc);
 // True when the live search takes its tree prior from heart1.
 bool liveOocMctsUsesHeart1();
 // STS_OOC_SIBLING_CAPTURE is configured (heart1, when loaded, only annotates leaves).
@@ -326,7 +345,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::uint64_t runSeed, std::uint64_t decisionIndex, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
-    std::optional<OocGameContextModel::Candidate> *selected = nullptr);
+    std::optional<OocGameContextModel::Candidate> *selected = nullptr,
+    nlohmann::json *rootActions = nullptr);
 // Research (§425 gold scoring): one decision with the live OOC MCTS
 // configuration on a copied state; returns the root summary as JSON.
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,

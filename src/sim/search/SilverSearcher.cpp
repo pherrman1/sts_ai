@@ -736,7 +736,12 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
 
 double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bool uniformPolicy) {
     int rolloutDepth = 0;
-    while (bc.outcome == Outcome::UNDECIDED) {
+    // Bound the entire playout, independently of card-play counters, turn
+    // resets and the selected rollout policy. A free draw/reshuffle cycle must
+    // not monopolize an advisor request (#544). Preserve an unresolved endpoint
+    // for the existing heuristic instead of inventing a victory or a death.
+    constexpr int kMaxRolloutActions = 1000;
+    while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < kMaxRolloutActions) {
         Action action;
         if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
                 || bc.inputState == InputState::CARD_SELECT)) {
@@ -755,6 +760,8 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
         action.execute(bc);
         ++rolloutDepth;
     }
+    if (bc.outcome == Outcome::UNDECIDED && rolloutDepth == kMaxRolloutActions)
+        ++stats.rolloutActionLimitHits;
     ++stats.rolloutPlayouts;
     stats.rolloutActions += rolloutDepth;
     recordEndpoint(bc, treeDepth, rolloutDepth);
@@ -869,7 +876,7 @@ void search::SilverSearcher::enumeratePotionActions(Node &node, const BattleCont
         if (p == Potion::FAIRY_POTION) {
             continue;
         }
-        if (p == Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked()) {
+        if (p == Potion::SMOKE_BOMB && (bc.smokeBombEscapeBlocked() || context.escapeForfeitsRun)) {
             continue;
         }
         // Gambler's Brew cannot open an empty GAMBLE selection.

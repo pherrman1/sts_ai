@@ -272,6 +272,11 @@ static bool takeRewardRelicRuleStep(GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
     if (gc.screenState != ScreenState::REWARDS) return false;
     const auto &r = gc.info.rewardsContainer;
+    // Under a non-default key flag that leaves Sapphire as a choice (STS_KEY_SAPPHIRE=policy),
+    // taking the paired relic would remove the key offer.
+    if (r.sapphireKey && !search::heartKeyRules().isDefault() && g_collectKeys && gc.keysEnabled
+            && search::heartKeyActionAllowed(gc, g_collectKeys, search::GameAction(RT::KEY, 0)))
+        return false;
     for (int i = 0; i < r.relicCount; ++i) {
         if (reviewedRewardRelic(r.relics[i]) || !search::GameAction(RT::RELIC, i).isValidAction(gc)) continue;
         search::GameAction(RT::RELIC, i).execute(gc);
@@ -309,6 +314,18 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     tag("unknown");
     if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
         tag("heart_key"); key->execute(gc); return;
+    }
+    // STS_KEY_EMERALD=mask: the map handlers below enumerate unmasked edges, so
+    // the chain takes the first edge that still reaches the burning elite.
+    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isDefault()) {
+        std::optional<search::GameAction> allowed;
+        bool masked = false;
+        for (const auto a : search::GameAction::getAllActionsInState(gc)) {
+            if (!a.isValidAction(gc)) continue;
+            if (!search::heartKeyActionAllowed(gc, g_collectKeys, a)) masked = true;
+            else if (!allowed) allowed = a;
+        }
+        if (masked && allowed) { tag("heart_key_mask"); allowed->execute(gc); return; }
     }
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
         tag("match_and_keep");
@@ -427,7 +444,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
-            || search::nativeSilverReuseCap() != 32768)
+            || search::nativeSilverLearnedStopEnabled() || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
@@ -524,6 +541,18 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
+            // Opt-in key variants mask some actions; report a policy that ignored the mask.
+            std::vector<int> keyMaskAllowedX;
+            if (!search::heartKeyRules().isDefault() && gc.screenState == ScreenState::MAP_SCREEN) {
+                bool masked = false;
+                for (const auto a : search::GameAction::getAllActionsInState(gc)) {
+                    if (!a.isValidAction(gc)) continue;
+                    if (search::heartKeyActionAllowed(gc, g_collectKeys, a)) keyMaskAllowedX.push_back(a.getIdx1());
+                    else masked = true;
+                }
+                if (!masked) keyMaskAllowedX.clear();
+            }
+            const int keyMaskFloor = gc.floorNum;
             if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
                 key->execute(gc); traceBy = "heart_key";
             } else if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
@@ -538,9 +567,16 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
-            } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
-                runFullRunOocPolicyStep(gc, agent, restV, shopV);
-            else traceBy = "mcts";
+            } else if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) {
+                traceBy = "mcts";
+            } else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) {
+                traceBy = "heart1_fallback";
+            } else runFullRunOocPolicyStep(gc, agent, restV, shopV);
+            if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
+                    && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
+                std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
+                             static_cast<unsigned long long>(seed), keyMaskFloor, traceBy, t_oocChainHandler,
+                             gc.curMapNodeX);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
                               {"handler", std::string(traceBy) == "chain" ? t_oocChainHandler : ""},

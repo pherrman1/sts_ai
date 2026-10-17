@@ -114,6 +114,13 @@ final class LiveOocCapture {
             if (!Arrays.asList("NORMAL_QUEUE", "ELITE_QUEUE", "FIXED_EVENT", "BOSS").contains(kind)) {
                 complete = false; return;
             }
+            // The queue draw belongs to the initial group. Summons and splits
+            // mutate its contents (including retained corpses), so later
+            // composition cannot re-identify or invalidate that same fight.
+            // A reconstructed/replacement group still follows validation below.
+            if (group == lastGroup && !entries.isEmpty()
+                    && Integer.valueOf(floor).equals(entries.get(entries.size()-1).get("floor"))
+                    && kind.equals(entries.get(entries.size()-1).get("kind"))) return;
             if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
                     && (encounter == null || encounter.isEmpty())) { complete = false; return; }
             boolean existingQualifiedFight = complete && !entries.isEmpty()
@@ -983,10 +990,21 @@ final class LiveOocCapture {
 
     static boolean captureForcedBossMap(Map<String,Object> out, List<Map<String,Object>> choices,
             List<?> labels, int act, int y, int nodeCount) {
-        // bossNodeAvailable alone only checks the map row. A dismissable map
-        // may have been opened before finishing the last campfire action.
+        // MCP also advertises Return on the completed last campfire's map.
+        // It only dismisses the overlay. Do not qualify an unfinished
+        // campfire where opening the map could bypass a remaining decision.
+        Map<String,Object> state = map(out.get("mcpState"));
+        boolean completedReturn = "MAP".equals(state.get("screen_type"))
+                && Boolean.TRUE.equals(state.get("ready_for_command"))
+                && Boolean.FALSE.equals(state.get("can_proceed"))
+                && Boolean.TRUE.equals(state.get("can_cancel"))
+                && "return".equals(state.get("cancel_button"))
+                && "RestRoom".equals(state.get("room_type"))
+                && "COMPLETE".equals(state.get("room_phase"))
+                && state.get("choice_list") instanceof List
+                && list(state.get("choice_list")).size() == 1;
         if (act < 1 || act > 3 || y != 14 || nodeCount != 0 || labels.size() != 1
-                || !soleMcpContinuation(out, "MAP", false, 1)) return false;
+                || !(soleMcpContinuation(out, "MAP", false, 1) || completedReturn)) return false;
         out.put("details", object("mechanicalTransition", "boss_map",
                 "bossNodeAvailable", true, "nodeChoices", 0));
         add(choices, labels, 0, "option", 0, 0);
@@ -1292,7 +1310,8 @@ final class LiveOocCapture {
             Object item = available.get(i);
             if (item instanceof AbstractCard) add(cs, labels, i, "card", slots.index((AbstractCard)item), 0);
             else if (item instanceof StoreRelic) add(cs, labels, i, "relic", ((Number)field(item, "slot")).intValue(), 0);
-            else if (item instanceof StorePotion) add(cs, labels, i, "potion", ((Number)field(item, "slot")).intValue(), 0);
+            else if (item instanceof StorePotion) captureShopPotionChoice(cs, labels, i,
+                    ((Number)field(item, "slot")).intValue(), hasPotionSlot(), AbstractDungeon.player.hasRelic("Sozu"));
             else if (item instanceof String && shop.purgeAvailable) add(cs, labels, i, "remove", 0, 0);
             else throw new IllegalArgumentException("unknown shop choice type");
         }
@@ -1301,6 +1320,10 @@ final class LiveOocCapture {
             affordablePotion=true;
         addPotionDiscards(cs,affordablePotion);
         button(cs, "cancel", "skip", 0, 0);
+    }
+    static void captureShopPotionChoice(List<Map<String,Object>> choices, List<?> labels,
+            int choiceIndex, int slot, boolean hasSlot, boolean sozu) {
+        if (hasSlot && !sozu) add(choices, labels, choiceIndex, "potion", slot, 0);
     }
     // ShopScreen is reused between rooms, so the owning run/player and node
     // delimit this read-only slot cache. It contains no hidden offers.
@@ -1348,7 +1371,7 @@ final class LiveOocCapture {
         if (s == null || "N".equals(s)) return "NONE";
         switch (s) { case "$": return "SHOP"; case "R": return "REST"; case "?": return "EVENT";
             case "E": return "ELITE"; case "M": return "MONSTER"; case "T": return "TREASURE";
-            case "B": return "BOSS"; default: return "INVALID"; }
+            case "B": case "BOSS": return "BOSS"; default: return "INVALID"; }
     }
     static List<String> canonicalPathHistory(List<String> raw, boolean bossTransitionSentinel,
             String inferredBossPrecedingRoom, int act, List<Integer> combatFloors) {

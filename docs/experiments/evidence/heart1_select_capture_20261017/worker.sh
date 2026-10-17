@@ -12,7 +12,7 @@ REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
 D=docs/experiments/evidence/heart1_select_capture_20261017
 NWORKERS=$(cat "$D/NWORKERS")
 stop() { echo "STOP: $*"; exit 1; }
-[[ "$W" =~ ^[0-9]+$ ]] && [ "$W" -ge 1 ] && [ "$W" -le "$NWORKERS" ] || stop "W must be 1..$NWORKERS"
+[[ "$W" =~ ^[1-9][0-9]*$ ]] && [ "$W" -le "$NWORKERS" ] || stop "W must be 1..$NWORKERS without leading zeros"
 TAG=w$(printf %02d "$W")
 SHARE=/mnt/project-files/heart1-select-capture
 RUN=$HOME/h1sel-$TAG OUT=$HOME/h1sel-$TAG/out
@@ -23,6 +23,16 @@ units() {
     local k=$((n / NWORKERS)) s
     for s in $(seq $((lo + k*(W-1))) $((lo + k*W - 1))); do echo "cap $asc $s"; done
   done < "$D/COHORTS"
+}
+# units.txt must hold exactly cohort-size/NWORKERS lines per cohort, each "cap ASC SEED" with SEED in its cohort.
+check_units() {
+  local want=0 asc lo n mode a s
+  while read -r asc lo n; do [[ "$asc" =~ ^[0-9]+$ ]] && want=$((want + n / NWORKERS)); done < "$D/COHORTS"
+  [ "$want" -gt 0 ] && [ "$(grep -c . "$OUT/units.txt")" = "$want" ] || stop "units.txt must have $want lines"
+  while read -r mode a s; do
+    [ "$mode" = cap ] || stop "bad unit line: $mode $a $s"
+    awk -v a="$a" -v s="$s" '$1==a && s>=$2 && s<$2+$3 {ok=1} END {exit !ok}' "$D/COHORTS" || stop "unit $a $s outside COHORTS"
+  done < "$OUT/units.txt"
 }
 case $CMD in
 setup)
@@ -47,11 +57,13 @@ setup)
     [ "$got" = "$want" ] || stop "$f sha256 $got != $want"
   done < "$D/weights.txt"
   units > "$OUT/units.txt" || stop "unit list"
+  check_units
   { echo "worker=$W run=$RUNC code=$CODE binary=$EXPECT_BIN $(g++ --version | head -1)"
     sha256sum "$D"/*.sh "$D"/PLAN.md "$D"/COHORTS "$D"/NWORKERS "$D"/weights.txt "$RUN"/*.bin; } > "$OUT/FROZEN.txt"
   echo "setup ok: $(head -1 "$OUT/FROZEN.txt"); units $(wc -l < "$OUT/units.txt")" ;;
 run)
   [ -f "$OUT/FROZEN.txt" ] || stop "run setup first"
+  check_units
   NUNITS=$(wc -l < "$OUT/units.txt")
   xargs -P 4 -L 1 bash "$D/run_unit.sh" "$REPO" "$RUN" "$OUT" < "$OUT/units.txt"
   n=$(ls "$OUT"/*.done 2>/dev/null | wc -l)

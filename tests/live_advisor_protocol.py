@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,8 @@ class AdvisorProtocolTest(unittest.TestCase):
         env.pop("STS_DIFFERENTIAL_TRACE", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
+        for key in ("STS_LIVE_OOC_ARM_C", "STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
+            env.pop(key, None)
         env.update(ctm_env or {})
         if differential:
             env["STS_DIFFERENTIAL_TRACE"] = "1"
@@ -32,6 +35,89 @@ class AdvisorProtocolTest(unittest.TestCase):
             capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
+
+    def test_explicit_arm_c_missing_or_empty_fails_without_protocol_fallback(self):
+        for path in ("", "/definitely/missing/studentc.bin"):
+            env = {**os.environ, "STS_LIVE_OOC_ARM_C": path}
+            proc = subprocess.run([sys.argv[1]], input='{"kind":"hello","protocol":"sts_model_inspector_v1"}\n',
+                                  capture_output=True, text=True, env=env, timeout=10)
+            self.assertEqual(proc.returncode, 2)
+            self.assertEqual(proc.stdout, "")
+            self.assertIn("STS_LIVE_OOC_ARM_C", proc.stderr)
+
+    def test_qualified_ascension_stacks_load_and_partial_a20_config_fails_closed(self):
+        models = self.model.parent
+        base = models / "combat_transition_deepsets_pathb_r2_lizard.native"
+        env = {"STS_CTM_BREW_FALLBACK_MODEL": str(models / "combat_transition_near_full_escape_pathb_r2.native"),
+               "STS_LIVE_CTM_A20_MODEL": str(models / "combat_transition_deepsets_pathb_a20_lizard.native"),
+               "STS_LIVE_CTM_A20_FALLBACK_MODEL": str(models / "combat_transition_near_full_escape_pathb_a20.native")}
+        hello = json.dumps({"kind": "hello", "protocol": "sts_model_inspector_v1"})
+        response, = self.run_advisor([hello], base, ctm_env=env)
+        self.assertEqual(response["ctmStatus"], "OK", response)
+        self.assertTrue(response["ctmStack"]["activeLizard"])
+        self.assertIn("bossSurvivalLogitShift", response["ctmStack"]["ascension20"])
+        entry = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                 "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
+                 "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",
+                 "potionCapacity": 3, "potionKeepValue": 4.0, "isBurningElite": False,
+                 "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0, "bottleBinding": -1}],
+                 "relics": [], "potions": ["Potion Slot"] * 5}
+        for ascension in (0, 20):
+            entry["ascension"] = ascension
+            wire = json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "qualified-dispatch", "sequence": 1, "observationHash": str(ascension),
+                "observation": dict(entry, combatEntry=entry, combatEntryHash=str(ascension))})
+            routed, = self.run_advisor([wire], base, ctm_env=env)
+            direct_env = {"STS_CTM_BREW_FALLBACK_MODEL": env[
+                "STS_LIVE_CTM_A20_FALLBACK_MODEL" if ascension == 20 else "STS_CTM_BREW_FALLBACK_MODEL"],
+                "STS_CTM_ACTIVE_LIZARD": "1"}
+            direct, = self.run_advisor([wire], env["STS_LIVE_CTM_A20_MODEL"] if ascension == 20 else base,
+                                      ctm_env=direct_env)
+            r = routed["evaluators"][0]
+            d = direct["evaluators"][0]
+            self.assertEqual(r["status"], "OK", routed)
+            self.assertEqual(r["ctmStackScope"], "ascension20" if ascension == 20 else "base")
+            for key in ("deathProbability", "winningHpHistogram"):
+                self.assertEqual(r[key], d[key], key)
+        # Actual live-loader coverage for the #369/#370 inventory and HP gaps.
+        # The trained-domain checks remain explicit at the low HP edge and
+        # A0's unqualified Writhing Mass/Ritual Dagger intersection.
+        for ascension in (0, 20):
+            baseline = dict(entry, ascension=ascension)
+            variants = [
+                ("smoke", dict(baseline, potions=["SmokeBomb"] + ["Potion Slot"] * 4), "OK"),
+                ("high_hp", dict(baseline, hp=200, maxHp=200), "OK"),
+                ("lizard", dict(baseline, relics=[dict(id="Lizard Tail", data=1)]), "OK"),
+                ("lizard_fairy", dict(baseline, relics=[dict(id="Lizard Tail", data=1)],
+                                      potions=["FairyPotion"] + ["Potion Slot"] * 4), "OK"),
+                ("lizard_brew", dict(baseline, relics=[dict(id="Lizard Tail", data=1)],
+                                     potions=["EntropicBrew"] + ["Potion Slot"] * 4), "OK"),
+                ("low_max_hp", dict(baseline, hp=23, maxHp=23), "UNSUPPORTED"),
+                ("writhing_ritual", dict(baseline, act=3, encounter="WRITHING_MASS",
+                                        deck=[dict(id="RitualDagger", upgraded=False, misc=15, bottleBinding=-1)]),
+                 "OK" if ascension == 20 else "UNSUPPORTED"),
+            ]
+            requests = [json.dumps(dict(protocol="sts_model_inspector_v1", kind="observation",
+                session="qualified-boundaries", sequence=i + 1, observationHash=name,
+                observation=dict(value, combatEntry=value, combatEntryHash=name)))
+                for i, (name, value, _) in enumerate(variants)]
+            for (name, _, expected), response in zip(variants, self.run_advisor(requests, base, ctm_env=env)):
+                evaluator = response["evaluators"][0]
+                self.assertEqual(evaluator["status"], expected, (ascension, name, response))
+                if name == "low_max_hp":
+                    self.assertEqual(evaluator["reason"], "hp_envelope")
+                if name == "writhing_ritual" and ascension == 0:
+                    self.assertEqual(evaluator["reason"], "writhing_ritual_intersection")
+        for missing in ("STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
+            for value in (None, ""):
+                partial = dict(env)
+                if value is None:
+                    partial.pop(missing)
+                else:
+                    partial[missing] = value
+                response, = self.run_advisor([hello], base, ctm_env=partial)
+                self.assertEqual(response["ctmStatus"], "SCHEMA_MISMATCH", response)
+                self.assertIsNone(response["ctmStack"])
 
     def test_completed_single_selection_is_exact_model_free_confirmation(self):
         for task, owner in (("WARCRY", "common.PutOnDeckAction"), ("FORETHOUGHT", "unique.ForethoughtAction"),
@@ -291,7 +377,7 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(results[3]["status"], "ERROR")
         self.assertEqual(results[3]["code"], "UNSUPPORTED")
 
-    def test_silver_rankings_include_physical_live_actions(self):
+    def silver_observation(self):
         entry = {
             "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
             "act": 1, "floor": 1, "hp": 80, "maxHp": 80, "gold": 99,
@@ -316,6 +402,51 @@ class AdvisorProtocolTest(unittest.TestCase):
         }
         observation = dict(entry, combatEntry=entry, combatEntryHash="ranked-actions-entry",
                            silverRoot=root)
+        return observation
+
+    def test_transient_import_refusal_retains_only_matching_combat_predecessor(self):
+        initial = self.silver_observation()
+        refused = copy.deepcopy(initial)
+        refused["silverRoot"]["combat"]["pendingActionQueueError"] = "intermediate_selection"
+        following = copy.deepcopy(initial)
+        root = following["silverRoot"]
+        root["decisionInTurn"] = 1
+        combat = root["combat"]
+        played = combat["hand"].pop()
+        combat.update(energy=2, cardsPlayedThisTurn=1, attacksPlayedThisTurn=1,
+                      discard=[played], curCardQueueItem=dict(card=played, target=0, energyOnUse=3))
+        combat["monsters"][0]["hp"] = 44
+        def wire(observation, sequence, session="transient"):
+            return json.dumps(dict(protocol="sts_model_inspector_v1", kind="observation", session=session,
+                                   sequence=sequence, observationHash=str(sequence), observation=observation))
+        partial = copy.deepcopy(initial)
+        partial["silverRoot"]["combat"]["cardSelect"] = dict(task="", unsupportedReason="silver_selection_live_choices")
+        for interrupted, reason in ((refused,"silver_selection_pending_actions"),
+                                    (partial,"silver_selection_live_choices")):
+            for include_entry_hash in (True, False):
+                observations = copy.deepcopy([initial, interrupted, following])
+                if not include_entry_hash:
+                    for observation in observations:
+                        observation.pop("combatEntryHash")
+                rows = self.run_advisor([wire(observation,i+1) for i, observation in enumerate(observations)], self.model)
+                silver = [next(e for e in row["evaluators"] if e["id"] == "silver_player_decision_v2") for row in rows]
+                self.assertEqual(silver[0]["status"], "OK", rows[0])
+                self.assertEqual(silver[1]["status"], "UNSUPPORTED", rows[1])
+                self.assertEqual(silver[1]["reason"], reason)
+                self.assertNotIn("selectedLiveAction", silver[1])
+                self.assertEqual(silver[2]["status"], "OK", rows[2])
+                self.assertEqual(silver[2]["additionalSimulations"], 1000)
+                self.assertIn("selectedLiveAction", silver[2])
+        other = copy.deepcopy(following)
+        other["silverRoot"]["combatInstance"] = other["combatEntryHash"] = "different-combat"
+        for last in (wire(following,3,"different-session"), wire(other,3)):
+            rows = self.run_advisor([wire(initial,1), wire(refused,2), last], self.model)
+            evaluator = next(e for e in rows[-1]["evaluators"] if e["id"] == "silver_player_decision_v2")
+            self.assertEqual(evaluator["reason"], "silver_missing_predecessor")
+            self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_silver_rankings_include_physical_live_actions(self):
+        observation = self.silver_observation()
         wires = []
         for sequence, budget in enumerate((1000, 10000, 20000), 1):
             wires.append({"protocol": "sts_model_inspector_v1", "kind": "observation",

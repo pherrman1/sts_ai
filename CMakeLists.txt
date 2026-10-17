@@ -122,6 +122,14 @@ add_test(NAME potion_reward_swap COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(potion_reward_swap PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(shop_rules_fix_test tests/shop_rules_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(shop_rules_fix_test PRIVATE include json/include)
+add_test(NAME shop_rules_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:shop_rules_fix_test>)
+set_tests_properties(shop_rules_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
@@ -200,6 +208,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/silver_synth_replay.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/ooc_factor_eval.cpp
+    apps/one_combat/potion_price_probe.cpp
     apps/one_combat/strategic_gen.cpp
     apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
@@ -255,6 +264,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/live_ooc_state.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/live_ooc_policy.cpp
+    apps/one_combat/heart1_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
@@ -290,6 +300,7 @@ if(STS_NODE_EXECUTABLE)
 endif()
 
 add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
+    apps/one_combat/heart1_policy.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp
@@ -306,6 +317,7 @@ add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
+    apps/one_combat/heart1_policy.cpp
     apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp
@@ -320,7 +332,9 @@ link_ctm_crypto(live_ooc_parity_test)
 target_compile_definitions(live_ooc_parity_test PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:live_ooc_parity_test>
-    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native
+    ${CMAKE_CURRENT_BINARY_DIR}/live_ooc_parity_fixtures.jsonl
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json)
 set_tests_properties(live_ooc_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_ooc_protocol.py
@@ -360,7 +374,10 @@ add_executable(live_silver_importer_test apps/live_silver_importer_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_silver_importer_test PRIVATE include json/include apps)
 target_link_options(live_silver_importer_test PRIVATE -Wl,--gc-sections)
-add_test(NAME live_silver_importer COMMAND $<TARGET_FILE:live_silver_importer_test>)
+add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:live_silver_importer_test>
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_slime_boss_split.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_guardian_a20_phases.json)
 
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
@@ -703,6 +720,8 @@ add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine
 add_test(NAME violence_large_draw_pile COMMAND $<TARGET_FILE:unit-test> violence_large_draw_pile)
 add_test(NAME stasis_large_pile COMMAND $<TARGET_FILE:unit-test> stasis_large_pile)
 add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
+add_test(NAME silver_rollout_limit COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:unit-test> silver_rollout_limit)
 add_test(NAME silver_wire_state COMMAND $<TARGET_FILE:unit-test> silver_wire_state)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.

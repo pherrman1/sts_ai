@@ -1,6 +1,8 @@
 # heart1 card-select distillation capture environment. Sourced by run_unit.sh: capture_env_args MODE BASE RUN.
 # The §504 control arm C (docs/experiments/evidence/rollout_student_leaf_20261017/arm_env.sh, arm C) copied
-# literally: A20 Heart objective, keys collected, full runs, student C tree prior and rollout policy, 512 sims.
+# literally except STS_OOC_MCTS_PRIOR, which is left unset so main's default applies (heart1full, ADR-0042), as do
+# main's other defaults (e.g. the A20 shop rules, #594): A20 Heart objective, keys collected, full runs, student C
+# tree prior and rollout policy, 512 sims.
 #   off  as arm C (parity reference)
 #   cap  + STS_OOC_HEART1_CAPTURE (every 16th prior call, every 4th card select a source opens), labelled by
 #        heart1 (STS_OOC_HEART1_TEACHER); observation only, decisions must equal "off"
@@ -17,7 +19,7 @@ capture_env_args() {
     STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native \
     STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 \
     STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0 \
-    "STS_OOC_HEART1=$run/studentc.bin" STS_OOC_MCTS=1 STS_OOC_MCTS_PRIOR=heart1 STS_OOC_MCTS_LEAF_POLICY=heart1 \
+    "STS_OOC_HEART1=$run/studentc.bin" STS_OOC_MCTS=1 STS_OOC_MCTS_LEAF_POLICY=heart1 \
     STS_OOC_MCTS_LEAF_VALUE=native STS_OOC_MCTS_LEAF_COMBATS=3 STS_OOC_MCTS_SIMS=512 \
     STS_OOC_MCTS_CPUCT=1.5 STS_OOC_MCTS_TEMPERATURE=1 STS_OOC_MCTS_ROOT_SELECTION=visits STS_OOC_MCTS_EARLY_STOP=1 \
     STS_OOC_MCTS_MAX_DEPTH=32 STS_OOC_MCTS_TREE_RULES=1 STS_OOC_MCTS_WIDEN_K=4 STS_OOC_MCTS_WIDEN_ALPHA=0.75 \

@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the per-playout action cap (#544); 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -134,6 +134,16 @@ search and the count resets. The guard only reads the live state, so a combat
 that never reaches the cap plays exactly as without it; the skipped root is
 not passed to root observers or traces.
 
+Every Silver playout inside search also stops after 1,000 actions, including
+card selections and uniform-policy actions. This bound is independent of the
+live decision guard and the rollout agent's per-turn card-play counter. A
+capped playout keeps its unresolved state and uses the existing heuristic
+value; it does not fabricate a terminal outcome. `SilverSearchStats` records
+`rolloutActionLimitHits`, and endpoint profiling records the capped state as
+`nonterminal`. Shorter playouts retain their action/RNG behavior. This bounds
+free draw/reshuffle loops at the playout decision boundary (#544); it does not
+bound work inside a single simulator action.
+
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
 post-Mug choice) are deferred in `Monster::pendingMoveRolls` until the move is
@@ -223,6 +233,24 @@ weights. The `SilverEvalWeights` struct defaults stay 0. Before PR #540
 §473 (`12,35` vs `0,0` on the `off` stack, 500 paired seeds per cohort), is
 NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
 only 46 and 21 pairs differ at all. The default follows Philipp's decision.
+
+Native Silver never considers Smoke Bomb in the act-3 burning elite while keys
+are collected and the Emerald Key is missing (`SilverSearchContext::escapeForfeitsRun`,
+set in `NativeSilverBackend.cpp`). No later map has a burning elite, so that
+escape rules out the Heart (ADR-0041), which the reward penalty does not price.
+The live wire carries no keys or map, so the advisor path does not apply it.
+
+Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §510
+measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
+potion removed vs unchanged, next 3 fights played, then the A20 floor model,
+calibrated by a −12 HP copy). The pooled price is 9.9 HP-eq [7.9, 12.3],
+consistent with 11 (pre-registered). Fairy in a Bottle is also scored by the
+death-save term (+0.3 × max HP, 0.6 with Sacred Bark), and without Fairy potions
+price at 7.8 [6.1, 9.8]; **Inference:** the flat 11 may overprice non-Fairy
+potions (post hoc). Per-type prices differ: Fairy about 44, Attack/Blood/Skill
+potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. Apart from the
+Fairy death-save term the formula has no per-type weights; whether they would
+help play is untested.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
@@ -353,7 +381,10 @@ at least `treePriorMinVisits` simulations is scored once (cached on the node)
 and its visited edges get the same bonus; wherever a prior is known, untried
 edges are tried in descending prior order. The backend enables it only through
 the thread override `g_nativeSilverTreePriorOverride` (K), on searches that
-have a root prior; `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452`
+have a root prior, or for whole runs through `STS_SILVER_TREE_PRIOR_MIN_VISITS=K`
+(research, default 0 = off; requires `STS_SILVER_ROOT_PRIOR`; ignored on
+searches where a thread sets the root-prior override, so research arms keep
+their own setting); `ctmsilvergen` with `STS_CTMSILVER_ARMSET=treeprior452`
 (or `treeprior452k8`) uses it for paired fight-level arms at 2k. At equal 2k
 simulations K = 8 raised the fight score over plain 2k (+1.17 [+0.53, +1.79]),
 at 2.9x the CPU. At matched CPU (§453, `cpumatch453`) it was not shown to
@@ -519,17 +550,19 @@ invocation details from
   fields such as `uniqueId` and retain state.
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
-- At a mid-card selection the advisor's root lacks monster reactions to the
-  card's pre-selection effects, apart from the Guardian's deferred Mode Shift
-  (see Live advisor). Copies queued by a spent
-  Double Tap, Duplication or Necronomicon are present only when the producer
-  sends `pendingCardQueue`, which the mod does not emit yet (issue #328).
+- Mid-card selections require an explicitly qualified public continuation.
+  Java captures verified pending card/action queues, including vanilla Double
+  Tap, Duplication and Necronomicon copies. Unknown owners, callbacks or queued
+  effects remain unsupported; see the [live continuation contract](../operations/live-model-inspector.md).
 - The Guardian's `miscInfo` is its native shift threshold, separate from the
   remaining Mode Shift power. The Java producer reads `dmgThreshold`,
   `dmgThresholdIncrease` and `isOpen`: Java increments on entering Defensive
   Mode, while native increments on Twin Slam, so the defensive projection
   subtracts the increment (10). This also works without an earlier observation
-  of the fight. Missing fields or a non-vanilla increment remain unsupported.
+  of the fight. Native phase parity covers A0/A9/A19/A20 thresholds. Captured
+  A20 offense-after-damage, defense and return-to-offense roots are replayed by
+  `live_silver_importer_test`; live MCP and accepted Silver roots agreed on the
+  threshold sequence 40, 40, 50. Missing fields or a non-vanilla increment remain unsupported.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 

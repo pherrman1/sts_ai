@@ -1,4 +1,6 @@
 #include "sim/search/RunGoal.h"
+#include <cstring>
+#include <stdexcept>
 #include "one_combat/ooc_selective_silver_audit.h"
 #include "one_combat/ooc_selective_silver_sampler.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
@@ -182,7 +184,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
         p << "\n    \"" << envs[i] << "\": ";
         if (value) p << '"' << jsonEscape(value) << '"'; else p << "null";
     }
-    p << "\n  }\n}\n";
+    p << "\n  },\n  \"silver_leaf\": " << effectiveSilverLeafSpecification().dump() << "\n}\n";
 }
 
 // ---------------------------------------------------------------------------
@@ -1338,6 +1340,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverRootPrior = search::nativeSilverRootPriorPath();
             meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
             meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
+            meta.silverTreePriorMinVisits = search::nativeSilverTreePriorMinVisits();
         }
         if (g_oocStrategicTokNet.ok) {
             meta.oocStrategicTokNet = g_oocStrategicTokNet.path;
@@ -2211,7 +2214,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
         } else if (inRemoveSelect) {
             one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (search::heartRecallRequired(gc, g_collectKeys)) {
                 search::GameAction(2, 0).execute(gc);   // recall: take the ruby key
             } else {
                 auto actions = search::GameAction::getAllActionsInState(gc);
@@ -3023,8 +3026,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""},
-        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
-        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
+        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3048,6 +3051,16 @@ static std::string unsupportedSilverOption() {
         if (!supported) return name + "=" + value;
     }
     return {};
+}
+
+// Default-on switches accept only 0 or 1 when set: atoi would read a typo,
+// "true" or an empty value as 0 and silently turn the switch off.
+static bool envSwitch(const char *name, bool fallback) {
+    const char *value = std::getenv(name);
+    if (!value) return fallback;
+    if (std::strcmp(value, "1") == 0) return true;
+    if (std::strcmp(value, "0") == 0) return false;
+    throw std::runtime_error(std::string(name) + " must be 0 or 1 when set");
 }
 
 int main(int argc, char **argv) {
@@ -3094,15 +3107,12 @@ int main(int argc, char **argv) {
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 
-    g_collectKeys = true;  // Whole-run objective: collect keys and defeat the Heart.
-    if (const char *d = std::getenv("STS_COLLECT_KEYS")) {
-        g_collectKeys = std::atoi(d) != 0;
-    }
+    g_collectKeys = envSwitch("STS_COLLECT_KEYS", true);  // Whole-run objective: collect keys and defeat the Heart.
     std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
 
     one_combat::configureRestVPolicyFromEnvironment();
-    if (const char *d = std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
-        g_restWin = std::atoi(d) != 0;
+    if (std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
+        g_restWin = envSwitch("STS_REST_WIN", true);
         if (g_restWin) std::cout << "[win-rate rest policy ON]\n";
     }
     if (const char *d = std::getenv("STS_CARD_WIN")) {       // A/B: card picks by P(win) instead of V_floor
@@ -3333,8 +3343,7 @@ int main(int argc, char **argv) {
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
         // for an explicit legacy-server comparison.
-        const char *d = std::getenv("STS_NATIVE_OOC");
-        g_nativeOoc = !d || std::atoi(d) != 0;
+        g_nativeOoc = envSwitch("STS_NATIVE_OOC", true);
         if (g_nativeOoc) {
             // Without STS_WIN_NET, live OOC MCTS uses the public X2-B win
             // model (§449, ADR-0029); every other run keeps B0. STS_WIN_NET=1
@@ -3584,7 +3593,10 @@ int main(int argc, char **argv) {
         std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
                   << " weight " << search::nativeSilverRootPriorWeight()
                   << (std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE") && std::string(std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE")) == "override"
-                      ? " scope=override (thread opt-in only; live combats plain)" : "") << "]\n";
+                      ? " scope=override (thread opt-in only; live combats plain)" : "")
+                  << (search::nativeSilverTreePriorMinVisits() > 0
+                      ? "; tree prior K=" + std::to_string(search::nativeSilverTreePriorMinVisits()) : std::string{})
+                  << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -3628,6 +3640,23 @@ int main(int argc, char **argv) {
                   << " (Tier-B branch: K=3, 150/100/50, bootstrap=true)"
                   << " -> " << out << '\n';
         strategicMargGen(nSeeds, outerSims, H, maxPerRun, out, seedOff);
+
+    } else if (mode == "potionpriceprobe") {
+        // Paired-continuation resource prices (research only):
+        // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA]
+        if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8]\n"; return 2; }
+        const int nSeeds = std::stoi(argv[2]);
+        const std::uint64_t seedStart = std::stoull(argv[3]);
+        const int sims = std::stoi(argv[4]);
+        const int asc = std::stoi(argv[5]);
+        const std::string out = argv[6];
+        const int statesPerRun = argc > 7 ? std::stoi(argv[7]) : 4;
+        const int fightsAhead = argc > 8 ? std::stoi(argv[8]) : 3;
+        const int hpDelta = argc > 9 ? std::stoi(argv[9]) : 8;
+        std::cout << "potionpriceprobe seeds " << seedStart << ".." << seedStart + nSeeds - 1
+                  << " sims=" << sims << " asc=" << asc << " statesPerRun=" << statesPerRun
+                  << " fightsAhead=" << fightsAhead << " hpDelta=" << hpDelta << " -> " << out << '\n';
+        potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta);
 
     } else if (mode == "oocfactoreval") {
         // nDecisions is explicit for tools/seed_guard.sh and checked against
@@ -3877,6 +3906,8 @@ int main(int argc, char **argv) {
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
 
+    } else if (mode == "heart1logitscheck") {
+        return one_combat::heart1::logitsCheckCommand(argc, argv);
     } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits

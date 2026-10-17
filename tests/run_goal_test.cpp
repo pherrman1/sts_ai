@@ -62,6 +62,66 @@ int main() {
         require(!heartKeyAction(gc, true), "unreachable Emerald has no fabricated action");
         gc.act = 2; right.edges[0] = 2;
         require(!heartKeyAction(gc, true), "early-act path choice preserved");
-        std::cout << "PASS Heart goal, key pairing, Recall and public burning-elite route\n";
+
+        // Opt-in variants (STS_KEY_*); the defaults above are the ADR-0041 rules.
+        auto &rules = heartKeyRules();
+        require(rules.isDefault(), "ADR-0041 rules by default");
+        gc.act = 3; gc.greenKey = false; right.edges[0] = 2; left.edges[0] = 2;
+        require(heartKeyAction(gc, true)->getIdx1() == 0, "first reaching edge by default");
+        rules.emerald = HeartKeyRules::Emerald::MASK;
+        require(!heartKeyAction(gc, true), "mask leaves a choice between reaching edges");
+        left.edges[0] = 0;
+        action = heartKeyAction(gc, true);
+        require(action && action->getIdx1() == 1, "mask forces the only reaching edge");
+        require(!heartKeyActionAllowed(gc, true, GameAction(0)) && heartKeyActionAllowed(gc, true, GameAction(1)),
+            "mask forbids the edge that misses the burning elite");
+        require(heartKeyActionAllowed(gc, false, GameAction(0)), "keys off: no mask");
+        gc.act = 2;
+        rules.emerald = HeartKeyRules::Emerald::MASK;
+        require(!heartKeyAction(gc, true) && heartKeyActionAllowed(gc, true, GameAction(0)),
+            "mask: Act-1/2 burning elites stay the policy's choice");
+        gc.act = 3;
+        rules.emerald = HeartKeyRules::Emerald::FIRST;
+        require(heartKeyActionAllowed(gc, true, GameAction(0)), "no mask by default");
+
+        gc.screenState = ScreenState::REWARDS; gc.info.rewardsContainer = {};
+        gc.info.rewardsContainer.sapphireKey = true;
+        gc.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        gc.blueKey = false; gc.act = 1;
+        rules.sapphire = HeartKeyRules::Sapphire::ACT3;
+        require(!heartKeyAction(gc, true), "act3: Act-1 chest keeps its relic");
+        require(!heartKeyActionAllowed(gc, true, GameAction(GameAction::RewardsActionType::KEY, 0))
+            && heartKeyActionAllowed(gc, true, GameAction(GameAction::RewardsActionType::RELIC, 0)),
+            "act3: Sapphire forbidden before Act 3");
+        gc.act = 3; gc.curMapNodeY = 3;
+        require(heartKeyAction(gc, true).has_value(), "act3: first Act-3 chest takes Sapphire");
+        rules.sapphire = HeartKeyRules::Sapphire::POLICY;
+        require(!heartKeyAction(gc, true), "policy: early Act-3 chest is a decision");
+        require(heartKeyActionAllowed(gc, true, GameAction(GameAction::RewardsActionType::KEY, 0)),
+            "policy: Sapphire allowed");
+        gc.curMapNodeY = 8;
+        require(heartKeyAction(gc, true).has_value(), "policy: Act-3 treasure row backstop");
+        gc.info.rewardsContainer.sapphireKey = false; gc.info.rewardsContainer.emeraldKey = true; gc.act = 1;
+        require(heartKeyAction(gc, true).has_value(), "Emerald is always taken");
+        rules.sapphire = HeartKeyRules::Sapphire::FIRST;
+
+        gc.screenState = ScreenState::REST_ROOM; gc.redKey = false; gc.act = 3; gc.curMapNodeY = 5;
+        gc.maxHp = 80; gc.curHp = 30;
+        require(heartRecallRequired(gc, true) && !heartRecallRequired(gc, false), "fallback Recall by default");
+        rules.ruby = HeartKeyRules::Ruby::HP;
+        require(!heartKeyAction(gc, true), "hp: low-HP campfire defers Recall");
+        require(!heartRecallRequired(gc, true), "hp: fallback chain defers Recall too");
+        gc.curHp = 47;
+        require(!heartKeyAction(gc, true), "hp: just below the default 0.6 threshold");
+        gc.curHp = 48;
+        require(heartKeyAction(gc, true).has_value(), "hp: Recall at the threshold");
+        gc.curHp = 10; gc.curMapNodeY = 14;
+        require(heartKeyAction(gc, true).has_value(), "hp: pre-boss campfire backstop");
+        rules.ruby = HeartKeyRules::Ruby::POLICY; gc.curHp = 80; gc.curMapNodeY = 5;
+        require(!heartKeyAction(gc, true), "policy: Recall is a decision before the last row");
+        gc.curMapNodeY = 14;
+        require(heartKeyAction(gc, true).has_value(), "policy: pre-boss campfire backstop");
+        rules = HeartKeyRules{};
+        std::cout << "PASS Heart goal, key pairing, Recall and public burning-elite route, key variants\n";
     } catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
 }
