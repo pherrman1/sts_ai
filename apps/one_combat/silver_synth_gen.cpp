@@ -827,9 +827,12 @@ GameContext act4AzContext(const nlohmann::json &row, std::uint64_t seed, Monster
         gc, one_combat::combatTransitionStateFromJson(row.at("transition").at("pre")));
     for (const auto k : {Key::RUBY_KEY, Key::EMERALD_KEY, Key::SAPPHIRE_KEY}) gc.obtainKey(k);
     const bool heart = enc == MonsterEncounter::THE_HEART;
+    const auto &globals = row.at("predictorInput").at("globals");
+    if (row.value("roomClass", "") != (heart ? "BOSS" : "ELITE"))
+        throw std::runtime_error("silverazact4gen: room does not match the encounter");
     gc.curMapNodeX = 3;
     gc.curMapNodeY = heart ? 3 : 2;
-    gc.floorNum = heart ? 56 : 55;
+    gc.floorNum = globals.at("floor").get<int>();
     gc.curRoom = heart ? Room::BOSS : Room::ELITE;
     gc.enterBattle(enc);
     return gc;

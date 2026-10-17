@@ -4,7 +4,7 @@
 usage: make_states.py OUT.jsonl DIR [DIR ...]   (DIR: an extracted worker tar; act4-*.jsonl[.gz] found recursively)
 
 Keeps the rows silverazact4gen would use (runValid, one capture, no quarantine, act 4, A20, Shield + Spear (56) or
-Heart (57)), fails on a duplicate (sourceSeed, fightIdx), sorts by (sourceSeed, fightIdx) and prints counts.
+Heart (57)) from the frozen label run's source seeds 111160000-111169999 only (no smoke or superseded rows), fails on a duplicate (sourceSeed, fightIdx), sorts by (sourceSeed, fightIdx) and prints counts.
 """
 import glob
 import gzip
@@ -24,7 +24,8 @@ def rows(path):
 def usable(r):
     g = r["predictorInput"]["globals"]
     return (r.get("runValid") is True and r.get("captureStatus") == "exactly_one" and r.get("quarantineReason") == ""
-            and r.get("act") == 4 and g.get("ascension") == 20 and r.get("encounter") in (56, 57))
+            and r.get("act") == 4 and g.get("ascension") == 20 and r.get("encounter") in (56, 57)
+            and 111160000 <= r.get("sourceSeed", -1) <= 111169999)
 
 
 def main(argv):

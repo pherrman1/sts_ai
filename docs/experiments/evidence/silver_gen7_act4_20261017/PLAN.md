@@ -21,7 +21,7 @@ label collection (RUN_COMMIT bcf14d34, student C out of combat, seeds 111160000-
 - Workers: N from Philipp; units of 25 states, 4 lanes per worker (`worker.sh`).
 
 ## Training (after the data is verified)
-Window = gen-6 pack (orig + x5 + g3..g6) + the Act-4 roots, folds by `sourceSeed % 5` for Act-4 rows. Recipe = gen-6 E
+Window = gen-6 pack (orig + x5 + g3..g6) + the Act-4 roots, folds by `sourceSeed % 5` for Act-4 rows (packer change at training time: the packer folds on `seed % 5`; each Act-4 seed maps to one source run through its fight rows' `perturbation.sourceSeed`, so Shield + Spear and Heart of one source run share a fold). Recipe = gen-6 E
 (distilled 128/64 + encounter/monster embeddings, cosine lr) on Philipp's GPU via a data-only branch.
 Offline gate (fixed before any data): gen 7 must not be worse than g6_E on fold-4 orig CE by more than 0.005, and must
 improve fold-4 Act-4 CE over g6_E. Online check and default change are Philipp's call.
