@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -16,13 +16,16 @@ Combat observations now have two separate fail-closed evaluator paths. The
 existing CTM evaluator uses the public combat-entry importer when its model is
 available. The `silver_player_decision_v2` evaluator imports an Ironclad
 decision-0 or decision-1 Silver root, builds a main-engine search state from it
-(`battleContextFromWire`), and runs a 1,000-simulation Silver decision by
-default with the native `SilverSearcher` (the same search `one_combat` uses,
+(`battleContextFromWire`), and runs a 10,000-simulation Silver decision by
+default (`STS_LIVE_SILVER_SIMS`, the flat exact budget of the A20 research
+stack; `1000` restores the old floor) with the native `SilverSearcher` (the same search `one_combat` uses,
 ADR-0021; responses carry `"engine": "native_silver"`). The combat
-panel's `Silver +9k` button raises the active root budget to 10,000; each later
-click adds another 10,000 (20,000, 30,000, ...). The retained Silver root is
+panel's `Silver +9k` button raises the requested root budget to 10,000; each later
+click adds another 10,000 (20,000, 30,000, ...). The advisor searches the larger
+of the request and `STS_LIVE_SILVER_SIMS`, so under the default 10,000 floor the
+first click changes nothing and the budget grows from the second click on. The retained Silver root is
 continued incrementally, and any gameplay state change resets the next decision
-to 1,000. The panel reports the requested budget, accumulated root visits, and
+to the default. The panel reports the requested budget, accumulated root visits, and
 total simulations returned by the advisor.
 One advisor-owned Silver session is retained for the active protocol session
 and `combatEntryHash`; a matching observed successor can therefore report an
@@ -81,9 +84,42 @@ session. A new process starts a new session state.
 The default live OOC evaluator is `mcts_ctm`. It imports the public OOC
 observation into a separate transition-capable root, uses the shared
 `CombatTransitionSampler` for combat-entry chance transitions, the loaded V4
-strategic model for policy priors, and `v_win_trees.txt` for compact-tree leaf
-values. The default search budget is exactly 512 simulations with the native
-OOC MCTS planner's default PUCT and progressive-widening configuration. The
+strategic model for policy priors, and the public X2-B win tree
+(`v_win_x2b_public_trees.txt`, ADR-0029; releases installed earlier carry the
+B0 `v_win_trees.txt`) for compact-tree leaf values. New installs copy only the
+X2-B tree; `STS_LIVE_OOC_WIN_MODEL=<repo>/models/v_win_trees.txt` restores B0. The default search budget
+is exactly 512 simulations. With `STS_LIVE_OOC_RESEARCH_STACK=1` (default) the
+search uses the A20 research configuration of §504/§522: three leaf combats
+(rollout3), PUCT 1.5, widening K 4 and α 0.75, depth 32, early stop, outcome
+merging and tree rules (ADR-0031), greedy rollout shops (ADR-0032), and with
+Arm C loaded the heart1full prior (ADR-0042) and the student as leaf policy.
+`STS_LIVE_OOC_RESEARCH_STACK=0` restores the bare planner defaults (widening 2
+and 0.5, no leaf combats, no tree rules). Responses report `searchStack`,
+`collectKeys`, `leafCombats`, `treeRules` and the widening and depth settings.
+Leaf combats and the student leaf policy run only when public map history is
+qualified (`mapHistoryComplete`: question history, seen relics, no unrevealed
+sibling card rewards); otherwise leaves still stop at the map checkpoint
+(`stopAtMapCheckpoint`), and `armCLeafSteps` stays `0`.
+
+Keys follow ADR-0041 in the advisor as in `one_combat`: `STS_COLLECT_KEYS`
+(default `1`, strict `0|1`) sets the terminal objective, the rollout chain's
+key step, the free-reward rule and Recall. `0` is consistent keys-off play as in
+`one_combat` (no key candidates, Act-3 victory counts as a win). It does not
+restore the pre-fix live mix, whose tree kept key candidates and the Heart
+objective while its rollouts ran keys-off. Before any search the advisor
+plays the Heart key rule (`heartKeyAction`: Emerald, Sapphire before its
+paired relic, Act-3 Recall, the final-act route to the burning elite) as a
+forced click (`mode=fixed_rule`). With the research stack the remaining tree
+rules (`oocTreeRuleAction`: open a chest without Cursed Key, take an
+unreviewed reward relic, gold, a potion with space, leave an empty reward
+screen) are forced the same way; the search tree and rollouts apply them too.
+A key click the live screen does not offer stops with
+`HEART_KEY_RULE_UNLOWERABLE`, except on an opened card group, whose parent
+rewards are projected but not clickable; there the search runs and the rule
+fires on the reward screen the card choice returns to. When the search reports a fallback-eligible
+`UNSUPPORTED` root and Arm C is loaded, the advisor plays student C's argmax
+(`mode=heart1_fallback`, `fallbackFrom` names the reason), as the simulator's
+heart1full fallback; non-UPGRADE card selects stay excluded. The
 search seed is derived from the request observation hash, so repeated
 observations are reproducible without importing live RNG state. V4 remains
 available only as the explicit `STS_LIVE_OOC_POLICY=v4` diagnostic path; it is
@@ -399,8 +435,11 @@ select that manifest's primary at launch. Legacy single-model manifests and
 explicit standard-primary overrides remain supported. `STS_CTM_BREW_FALLBACK_MODEL`
 and strict `STS_CTM_ACTIVE_LIZARD=0|1` override the qualified stack; advisor
 hello/forecast and OOC responses identify the loaded artifacts and setting.
-Existing installations retain that pre-#418 stack until explicitly upgraded with
-`tools/live_game_start.sh --qualified-ctm --restart-game --probe`. This installs
+`tools/live_game_runtime.py install` (and `live_game_start.sh --refresh-runtime`)
+now installs the qualified stacks by default; `--legacy-ctm` restores the old
+choice. `ensure` keeps an existing legacy release, and the launcher refuses to
+start on one unless `--legacy-ctm` (or `--allow-missing-ooc`) is given.
+`tools/live_game_start.sh --qualified-ctm --restart-game --probe` installs
 a version-2 runtime receipt containing the production pathb-r2 Lizard fast and
 escape/Brew fallback pair, plus the calibrated pathb-a20 pair. The advisor uses
 the A20 pair for ascension 20 and the base pair below 20, in both imagined OOC
@@ -428,12 +467,14 @@ copies the weights into the stable runtime as `models/arm_c_student.bin`, and
 pins them in `armCModelSha256`. Refreshes preserve this explicit selection;
 repair cannot replace it with a cached legacy runtime. The launcher exports
 `STS_LIVE_OOC_ARM_C` to the inspector's advisor child. Empty, missing or invalid
-explicit weights fail startup. With no selection, the prior stays V4.
+explicit weights fail startup. With no selection, the prior stays V4, and the
+launcher refuses to start without Arm C, the CTM, the OOC, win or floor model
+unless `--allow-missing-ooc` is given.
 
-Arm C currently supplies the **tree prior only**, through the same native
-heart1 candidate mapping as simulator OOC MCTS; the live rollout chain, leaf
-value, 512-simulation budget and Silver combat policy remain as configured
-before this opt-in. Unencoded Arm C nodes retain the existing live prior
+Arm C supplies the tree prior through the same native heart1 candidate mapping
+as simulator OOC MCTS. With the research stack it is the heart1full prior and
+the rollout leaf policy as well (see above); with `STS_LIVE_OOC_RESEARCH_STACK=0`
+it is the tree prior only. Unencoded Arm C nodes retain the existing live prior
 (equal logits when reward-pity history is incomplete). Every response with a
 loaded model carries `armCModel`; successful searched OOC decisions report
 `prior=arm_c`, `armCPriorNodes`, `armCPriorFallbacks` and per-reason counts.
@@ -589,10 +630,14 @@ and uses Silver only when the snapshot is ready, identity-matched, and
 correlated with the MCP-visible state. A Silver `OK` response must include a
 structured `selectedLiveAction` lowered from the imported physical identity
 and map to exactly one current candidate; zero or multiple matches stop the
-driver. Only an explicit Silver `UNSUPPORTED` result may use the deterministic
-fallback policy, and `--strict-silver` turns that boundary into a stop.
-Non-combat screens use deterministic priorities over the generated legal
-candidates, so no policy can invent an MCP tool name or arguments. The driver
+driver. `--strict-silver` and `--strict-ooc` are on by default, so an explicit
+`UNSUPPORTED` result stops the run; `--no-strict-silver` / `--no-strict-ooc`
+let it use the deterministic fallback policy (first playable card, first
+choice). That fallback chooses only among the generated legal candidates, so
+no policy can invent an MCP tool name or arguments. A failed Silver search or
+lowering keeps the combat's retained session; only an import failure outside
+the matching combat or a process restart mid-combat leaves later roots at
+`silver_missing_predecessor`. The driver
 waits for `ready_for_command` before selecting and after execution, while
 readiness-only changes are ignored for state identity. Combat draw/discard
 pile card display caches have one additional normalization: a positive
