@@ -158,6 +158,34 @@ const std::vector<std::string>& combatPolicyFeatureNames() {
 
 int combatPolicyFeatureCount() { return combatFeatureCount() + kNumAction; }
 
+// Card-play part of the action block (a[4..13]) for card `c` aimed at monster `tgt`
+// (-1 = none). `c` need not be in hand (rollout root table).
+static void fillCardPlayFeatures(const BattleContext &bc, const CardInstance &c, int tgt, float *a) {
+    const auto id = c.getId();
+    a[4]  = (float)(int)id;
+    a[5]  = (float)c.costForTurn;
+    a[6]  = c.isUpgraded() ? 1.f : 0.f;
+    const auto t = c.getType();
+    a[7]  = (t == CardType::ATTACK) ? 1.f : 0.f;
+    a[8]  = (t == CardType::SKILL)  ? 1.f : 0.f;
+    a[9]  = (t == CardType::POWER)  ? 1.f : 0.f;
+    if (tgt >= 0 && tgt < bc.monsters.monsterCount && bc.monsters.arr[tgt].curHp > 0) {
+        a[10] = 1.f;
+        a[11] = (float)bc.monsters.arr[tgt].curHp;
+    }
+    a[12] = (float)Expert::getPlayOrdering(id);
+    a[13] = (float)Expert::getObtainWeight(id, c.isUpgraded());
+}
+
+void combatFillCardPlayFeatures(const BattleContext &bc, const CardInstance &c, int tgt, float *a) {
+    for (int i = 0; i < kNumAction; ++i) a[i] = 0.f;
+    a[0] = 1.f;    // aIsCard
+    a[4] = -1.f;
+    a[5] = -1.f;
+    a[11] = -1.f;
+    fillCardPlayFeatures(bc, c, tgt, a);
+}
+
 // Fill just the kNumAction action features (a = action block, not the state block).
 // Separated so the policy net can extract the WIDE state once per node and only
 // refill this small block per candidate edge (see computeEdgePriors).
@@ -175,24 +203,8 @@ void combatFillActionFeatures(const BattleContext &bc, const Action &action, flo
 
     if (at == ActionType::CARD) {
         const int src = action.getSourceIdx();
-        if (src >= 0 && src < bc.cards.cardsInHand) {
-            const auto &c = bc.cards.hand[src];
-            const auto id = c.getId();
-            a[4]  = (float)(int)id;
-            a[5]  = (float)c.costForTurn;
-            a[6]  = c.isUpgraded() ? 1.f : 0.f;
-            const auto t = c.getType();
-            a[7]  = (t == CardType::ATTACK) ? 1.f : 0.f;
-            a[8]  = (t == CardType::SKILL)  ? 1.f : 0.f;
-            a[9]  = (t == CardType::POWER)  ? 1.f : 0.f;
-            const int tgt = action.getTargetIdx();
-            if (tgt >= 0 && tgt < bc.monsters.monsterCount && bc.monsters.arr[tgt].curHp > 0) {
-                a[10] = 1.f;
-                a[11] = (float)bc.monsters.arr[tgt].curHp;
-            }
-            a[12] = (float)Expert::getPlayOrdering(id);
-            a[13] = (float)Expert::getObtainWeight(id, c.isUpgraded());
-        }
+        if (src >= 0 && src < bc.cards.cardsInHand)
+            fillCardPlayFeatures(bc, bc.cards.hand[src], action.getTargetIdx(), a);
     }
 
     // §3.5: subset-content features for card select actions (hand/discard/

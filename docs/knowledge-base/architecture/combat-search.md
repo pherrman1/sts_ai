@@ -262,6 +262,19 @@ fights. §479 (A20, 689 fights): uniform playouts lose 22.8 fight score at no
 CPU saving per simulation; a learned card table and 2 or 4 playouts per leaf
 at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040).
+Research option, off by default: `STS_SILVER_ROLLOUT_ROOT_TABLE=<combat_policy_mlp
+model>` replaces that fixed table with one built once per searched root
+(`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
+upgrade) in hand, draw and discard pile as a play at the root state, aimed
+where the rollout aims it (attacks at the lowest-HP monster, other targeted
+cards at the highest). Every playout of that search uses those scores as its
+card-play order; cards not in those piles (made during the playout) keep their
+ADR-0040 entry, shifted by the mean gap between the two scales. The rollout's
+category rules (zero-cost first, block check, AoE) are unchanged. Cost is one
+prior call per root, not per playout step. The `ctmsilvergen` armset `roottable`
+compares `greedy<b>` and `roottable<b>` (model `STS_CTMSILVER_ROOT_TABLE_MODEL`)
+at each budget in `STS_CTMSILVER_SWEEP_SIMS`; per-thread override
+`g_nativeSilverRolloutRootTableOverride`. Not yet evaluated.
 From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn

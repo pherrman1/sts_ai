@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <iostream>
 #include <atomic>
 #include <charconv>
@@ -66,6 +67,8 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            // Research-only per-root rollout card table (STS_SILVER_ROLLOUT_ROOT_TABLE).
+            std::string rolloutRootTablePath;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -73,6 +76,7 @@ namespace sts::search {
         };
         Options g_options;
         CombatValueNet g_rootPriorNet;
+        CombatValueNet g_rolloutRootTableNet;
         std::mutex g_stopTraceMutex;
         std::ofstream g_stopTraceFile;
         std::string g_uselessTrace;
@@ -550,6 +554,12 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
+                        ? g_nativeSilverRolloutRootTableOverride
+                        : g_options.rolloutRootTablePath.empty() ? nullptr : &g_rolloutRootTableNet) {
+                    nativeSilverRolloutRootTable(searcher->rootSearchState(), *tableNet, searcher->rootCardTable);
+                    searcher->rolloutConfig.cardTable = searcher->rootCardTable.data();
+                }
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -860,6 +870,14 @@ namespace sts::search {
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
         }
+        g_options.rolloutRootTablePath.clear();
+        if (const char *path = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE"); path && *path) {
+            g_rolloutRootTableNet = CombatValueNet{};
+            if (!g_rolloutRootTableNet.load(path) || !g_rolloutRootTableNet.isPolicyMlp)
+                throw std::runtime_error(std::string("STS_SILVER_ROLLOUT_ROOT_TABLE: cannot load a "
+                                                     "combat_policy_mlp model from ") + path);
+            g_options.rolloutRootTablePath = path;
+        }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
         }
@@ -994,6 +1012,57 @@ namespace sts::search {
         return prior;
     }
 
+    void nativeSilverRolloutRootTable(const BattleContext &state, const CombatValueNet &net, std::vector<int> &table) {
+        // Every distinct (card id, upgraded) in hand, draw and discard pile is scored once as
+        // "play it now" at the root state, aimed where the rollout aims it (attacks: lowest-HP
+        // monster, other targeted cards: highest HP). Cards first seen inside a playout keep
+        // their ADR-0040 entry, shifted by the mean gap between the two scales on the scored cards.
+        constexpr int kEntries = 372 * 2;
+        table.assign(kSilverRolloutCardTableG6, kSilverRolloutCardTableG6 + kEntries);
+        int lowHp = -1, highHp = -1;
+        for (int i = 0; i < state.monsters.monsterCount; ++i) {
+            const auto &m = state.monsters.arr[i];
+            if (!m.isTargetable()) continue;
+            if (lowHp < 0 || m.curHp < state.monsters.arr[lowHp].curHp) lowHp = i;
+            if (highHp < 0 || m.curHp > state.monsters.arr[highHp].curHp) highHp = i;
+        }
+        const int stateCount = combatFeatureCount();
+        const int actionCount = combatPolicyFeatureCount() - stateCount;
+        thread_local std::vector<float> features, actions;
+        thread_local std::vector<int> keys, targets;
+        thread_local std::vector<double> scores;
+        features.resize(stateCount);
+        combatExtractFeatures(state, features.data());
+        keys.clear();
+        targets.clear();
+        std::bitset<kEntries> seen;
+        auto add = [&](const CardInstance &c) {
+            const int id = static_cast<int>(c.getId());
+            if (id < 0 || id >= 372) return;
+            const int key = id * 2 + (c.isUpgraded() ? 1 : 0);
+            if (seen.test(key)) return;
+            seen.set(key);
+            const int target = !c.requiresTarget() ? -1 : c.getType() == CardType::ATTACK ? lowHp : highHp;
+            actions.resize(static_cast<std::size_t>(keys.size() + 1) * actionCount);
+            combatFillCardPlayFeatures(state, c, target,
+                                       actions.data() + static_cast<std::size_t>(keys.size()) * actionCount);
+            keys.push_back(key);
+            targets.push_back(target);
+        };
+        for (int i = 0; i < state.cards.cardsInHand; ++i) add(state.cards.hand[i]);
+        for (const auto &c : state.cards.drawPile) add(c);
+        for (const auto &c : state.cards.discardPile) add(c);
+        const int n = static_cast<int>(keys.size());
+        if (n == 0) return;
+        scores.resize(n);
+        net.predictPolicyMlp(features.data(), actions.data(), targets.data(), n, scores.data());
+        double shift = 0;
+        for (int i = 0; i < n; ++i) shift += -scores[i] * 1000.0 - kSilverRolloutCardTableG6[keys[i]];
+        shift /= n;
+        for (int k = 0; k < kEntries; ++k) table[k] = static_cast<int>(std::lround(table[k] + shift));
+        for (int i = 0; i < n; ++i) table[keys[i]] = static_cast<int>(std::lround(-scores[i] * 1000.0));
+    }
+
     const std::string &nativeSilverRootPriorPath() {
         return g_options.rootPriorPath;
     }
@@ -1069,6 +1138,7 @@ namespace sts::search {
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
+    thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride = nullptr;
     thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
