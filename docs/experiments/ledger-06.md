@@ -19800,6 +19800,77 @@ BCE gain does not transfer to sibling ordering.
 [Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
 **Knowledge impact:** observed-outcome leaf status and native public-record parity.
 
+## §503 — Heart-outcome collection round 2: root trace and prepared cohort
+
+**COLLECTED: 2,048/2,048 sources delivered and verified; every TRAIN/VALIDATION
+source usable; CONFIRM sealed. No fitting, CONFIRM opening, native integration or
+default change.**
+
+Philipp passed on Codex's three-workstream plan (2026-10-16 23:40Z) and asked for
+a thread for workstream 3: more independent observed Heart outcomes under the
+same fixed §497 teacher, with separate development data and a fresh sealed
+confirmation cohort. Base main `217ed7a`; producer source `d8fd2a1`.
+
+- New observation-only `STS_OOC_MCTS_ROOT_TRACE` (one row per live OOC root:
+  all candidate keys, priors, visits, visit shares, Q, public record, native
+  snapshot); schema agreed with workstream 2 through the coordinator.
+- Same teacher: the new producer (`0e17e0f2…`, GCC 13.3 cloud build, reproduced
+  from a fresh clone) rerunning §497 cloud canary 110179996 with capture off
+  reproduces §497's trace and action files byte for byte and its outcome footer.
+- Canaries 111100000/111100001 (local role) and 111100002/111100003 (cloud role)
+  PASS: OFF/ON trace, action and outcome parity; root trace overhead within noise.
+  Native snapshots cover only 17–27% of roots (untagged continuations); the replay
+  key (binary SHA, seed, decisionIndex) covers all of them.
+- Optional §494 sibling subsample every 8th searched root (64 rollout3 repeats):
+  play byte-identical, +80% CPU per source (824 vs 458 s on 111100001).
+- Seeds 111000000–111000002 consumed by aborted earlier canary attempts (a null
+  root-actions bug at terminal roots, fixed). Reserved 111100000–111109999.
+- Size options and the recommended plan (45 workers, 64 sources each, 1,530
+  TRAIN / 450 VALIDATION / 900 CONFIRM, siblings every 8th root) are in the
+  [plan](evidence/heart_outcome_round2_20261017/PLAN.md). Dispatch needs
+  Philipp's go with the worker count, an independent pre-launch review and a
+  durable export check.
+- Philipp chose (2026-10-17 08:23Z) "Do A+S on 32 workers": 2,048 sources
+  (1,088 TRAIN / 320 VALIDATION / 640 CONFIRM), plan `dc730f45…`, same producer
+  and bundle; re-qualified with a new cloud canary on that plan.
+
+
+Collection record (2026-10-17):
+
+- Pre-launch review and delta review PASS (canary-reviewed `e7700092…`,
+  export check `30dcd684…`). Activation `545699a5…` at 08:59:00Z, deadline
+  14:59:00Z. 32 Haiku cloud workers at RUN_COMMIT `3a02692`, brief `5cf06dab…`.
+  Worker setups refused by the cloud auto-mode classifier were relaunched in fresh
+  threads before running anything (no source ran twice); the 49-session project
+  limit delayed W=29 to about 09:58Z. All 32 workers wrote receipts by about
+  13:44Z; no container restarts, no lost workers, no reruns.
+- Each receipt matches the plan's sources, the activation and its archive hashes
+  ([delivery index](evidence/heart_outcome_round2_20261017/delivery-index.json),
+  sha256 `02c59f5b…`). No timeouts (124) or collection failures (70).
+- Deviation: 166 sources (86 TRAIN, 28 VALIDATION, 52 CONFIRM) returned 65
+  "root trace row does not match the live decision". Match and Keep values each
+  offered card with a hypothetical OOC root indexed `(real index << 12) ^ card
+  bits` (`run_driver.cpp::matchAndKeepPolicyStep`). Those indices are not
+  monotonic and can repeat. The worker's check (at `3a02692`) assumed strictly
+  increasing indices. Root trace validation is the last check in a unit, so
+  states, policy and model-use checks had all passed. The corrected rule (real
+  indices strictly increasing and unique; hypothetical indices `>= 1 << 12`, base
+  above the previous real index) re-qualifies all 114 TRAIN/VALIDATION cases with
+  complete, integrity-passed footers (`tools/heart_outcome_round2.py`
+  `requalify`/`index`, `fed1b9d`). The 52 CONFIRM cases are re-qualified only at
+  the sealed import. For hypothetical roots, the replay key needs the row position
+  as well as (seed, decisionIndex).
+- Outcomes (development splits only): TRAIN 148/1,088 Heart wins (13.6%),
+  VALIDATION 33/320 (10.3%). CONFIRM outcomes stay inside the
+  `SEALED-confirm.tar.gz` archives.
+- TRAIN/VALIDATION cost: mean 770 s, p90 1,267 s, max 2,754 s per source, all
+  inside the 3,600 s cap. Root trace, all 1,408 TRAIN/VALIDATION sources
+  re-validated: 118,184 roots, 84,624 searched, 507 Match and Keep hypothetical
+  roots, native snapshots 24.1%. Sibling subsample: 330,386 rows across 1,408 sources.
+
+**Knowledge impact:** root-trace capture contract added to the maintained OOC
+label pipeline page.
+
 ## §504 — §494 rollout student as the OOC MCTS leaf vs rollout3 at A20 (2026-10-17)
 
 **S WORSE, S3 NOT_SHOWN; no default change.** Pre-registered paired A/B
