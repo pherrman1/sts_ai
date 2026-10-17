@@ -2,6 +2,7 @@
 #include "screen_leaf_snapshot.h"
 #include "constants/CardPools.h"
 #include "game/Game.h"
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -117,16 +118,21 @@ int main() {
             gc.addPotionRewards(r); r.addCardReward(gc.createCardReward(Room::EVENT));
             gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
         });
-        for (bool add : {false, true}) {
-            compare({{"kind", "dead_adventurer_rewards"}, {"gold", 31}, {"addRelic", add},
-                     {"relic", int(add ? RelicId::ANCHOR : RelicId::INVALID)}}, [add](auto &gc) {
-                gc.relicsOnCombatEnd(); Rewards r; r.addGold(31); if (add) r.addRelic(RelicId::ANCHOR);
-                if (gc.hasRelic(RelicId::BLACK_STAR))
-                    r.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
-                r.addCardReward(gc.createCardReward(Room::EVENT)); gc.addPotionRewards(r);
-                gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
-            }, true);
+        // Black Star adds a Dead Adventurer relic only under STS_ENGINE_FIDELITY_FIX=0.
+        for (bool legacy : {false, true}) {
+            if (legacy) setenv("STS_ENGINE_FIDELITY_FIX", "0", 1); else unsetenv("STS_ENGINE_FIDELITY_FIX");
+            for (bool add : {false, true}) {
+                compare({{"kind", "dead_adventurer_rewards"}, {"gold", 31}, {"addRelic", add},
+                         {"relic", int(add ? RelicId::ANCHOR : RelicId::INVALID)}}, [add, legacy](auto &gc) {
+                    gc.relicsOnCombatEnd(); Rewards r; r.addGold(31); if (add) r.addRelic(RelicId::ANCHOR);
+                    if (legacy && gc.hasRelic(RelicId::BLACK_STAR))
+                        r.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
+                    r.addCardReward(gc.createCardReward(Room::EVENT)); gc.addPotionRewards(r);
+                    gc.openCombatRewardScreen(r); gc.regainControlAction = toMap;
+                }, true);
+            }
         }
+        unsetenv("STS_ENGINE_FIDELITY_FIX");
         for (bool duplicateMask : {false, true}) {
             compare({{"kind", "masked_bandits_rewards"}, {"gold", 29}}, [](auto &gc) {
                 gc.relicsOnCombatEnd(); Rewards r; r.addGold(29);
