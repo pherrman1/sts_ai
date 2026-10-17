@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# usage: run_unit.sh REPO RUN UNIT_OUT ARM ASC SEED -- one guarded A20 full run (4 h timeout: rc 124).
+# usage: run_unit.sh REPO RUN UNIT_OUT ARM ASC SEED -- one guarded A20 full run (4 h timeout: rc 124); always exits 0.
 # Arms (PREREG.md): A = the A20 Heart stack with student C (the heart1 card-select capture's "off" arm);
 # B = A with student_sel.bin as STS_OOC_HEART1 plus STS_OOC_MCTS_TARGET_PRIOR=1 and STS_OOC_MCTS_LEAF_SELECTS=heart1.
 set -uo pipefail
@@ -28,4 +28,4 @@ start=$(date -u +%FT%TZ)
 env -i "${E[@]}" timeout 4h bash tools/seed_guard.sh "$RUN/one_combat" bestbench 10000 1 "$ASC" "$SEED" "$base.csv" > "$base.log" 2>&1
 rc=$?
 echo "tag=$ARM-a$ASC-$SEED rc=$rc start=$start end=$(date -u +%FT%TZ)" > "$base.done"
-[ "$rc" = 0 ]
+exit 0   # rc is in .done; the analyzer excludes rc!=0 units (PREREG), so the tar always uploads
