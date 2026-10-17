@@ -305,6 +305,42 @@ namespace {
 
 }
 
+// A constructed free draw/reshuffle cycle exercises the playout boundary
+// without replaying the expensive historical self-play campaign (#544).
+int testSilverRolloutLimit() {
+    const GameContext gc(CharacterClass::IRONCLAD, 0x544u, 0);
+    BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
+    while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED)
+        bc.executeActions();
+    bc.cards.cardsInHand = 1;
+    bc.cards.hand[0] = CardInstance(CardId::FLASH_OF_STEEL); bc.cards.hand[0].uniqueId = 101;
+    CardInstance other(CardId::FLASH_OF_STEEL); other.uniqueId = 102;
+    bc.cards.drawPile.clear(); bc.cards.drawPile.addToTop(other);
+    bc.cards.discardPile.clear(); bc.cards.exhaustPile.clear();
+    bc.monsters.arr[0].buff<MS::INVINCIBLE>(1);
+    bc.monsters.arr[0].setStatus<MS::INVINCIBLE>(0);
+    search::SilverSearcher searcher(bc, {});
+    searcher.rolloutConfig = {};
+    search::SilverTreeProfile profile; searcher.profile = &profile;
+    const double value = searcher.rolloutValue(bc);
+    if (!std::isfinite(value) || searcher.stats.rolloutActions != 1000
+            || searcher.stats.rolloutActionLimitHits != 1
+            || profile.endpoints[search::SilverTreeProfile::NONTERMINAL].total[1000] != 1
+            || bc.outcome != Outcome::UNDECIDED || bc.player.cardsPlayedThisTurn != 0) {
+        std::cerr << "silver_rollout_limit FAIL actions=" << searcher.stats.rolloutActions << '\n';
+        return 1;
+    }
+    // A terminating playout still takes its lethal action and records victory.
+    bc.monsters.arr[0].removeStatus<MS::INVINCIBLE>(); bc.monsters.arr[0].curHp = 1;
+    search::SilverSearcher lethal(bc, {}); lethal.rolloutConfig = {};
+    search::SilverTreeProfile lethalProfile; lethal.profile = &lethalProfile;
+    (void)lethal.rolloutValue(bc);
+    if (lethal.stats.rolloutActions != 1 || lethal.stats.rolloutActionLimitHits != 0
+            || lethalProfile.endpoints[search::SilverTreeProfile::VICTORY].total[1] != 1) return 1;
+    std::cout << "silver_rollout_limit PASS: bounded free draw cycle; terminal path preserved\n";
+    return 0;
+}
+
 int testSilverSearcher() {
     int failures = 0;
     auto check = [&](bool ok, const char *what) {
@@ -6100,6 +6136,8 @@ int main(int argc, const char* argv[]) {
         return testCombatKnowledgeBoundary();
     } else if (command == "card_pile_engine") {
         return testCardPileEngine();
+    } else if (command == "silver_rollout_limit") {
+        return testSilverRolloutLimit();
     } else if (command == "silver_searcher") {
         return testSilverSearcher();
     } else if (command == "persistent_latent_damage") {

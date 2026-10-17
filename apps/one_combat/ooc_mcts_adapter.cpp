@@ -769,6 +769,10 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
         throw std::runtime_error("OOC MCTS heart1 prior/leaf policy requires STS_OOC_HEART1");
     if (options.heart1Coverage && !options.heart1Prior)
         throw std::invalid_argument("OOC MCTS heart1 coverage requires the heart1 prior");
+    if (options.targetPrior && !options.heart1Prior)
+        throw std::invalid_argument("OOC MCTS target prior requires the heart1 prior");
+    if (options.heart1LeafSelects && !(options.heart1LeafPolicy && options.heart1Coverage))
+        throw std::invalid_argument("OOC MCTS heart1 leaf selects require LEAF_POLICY=heart1 and heart1full");
     if (options.heart1Prior && !options.priorTracePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE does not support STS_OOC_MCTS_PRIOR=heart1");
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
@@ -1030,8 +1034,9 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 std::set<std::uint32_t> droppedKeys;
                 for (const auto &binding : enumeration.bindings) {
                     if (!GameAction(binding.primitiveBits).isValidAction(gc)) continue;
-                    if (!options.collectKeys && (binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_KEY
-                            || binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_RUBY_KEY)) {
+                    if ((!options.collectKeys && (binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_KEY
+                            || binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_RUBY_KEY))
+                            || !sts::search::heartKeyActionAllowed(gc, options.collectKeys, GameAction(binding.primitiveBits))) {
                         droppedKeys.insert(binding.primitiveBits);
                         continue;
                     }
@@ -1344,6 +1349,46 @@ void OocGameContextModel::tracePrior(sts::search::OocStateId id, Metadata &cache
     if (!out) throw std::runtime_error("STS_OOC_MCTS_PRIOR_TRACE write failed");
     cached.priorTraceWritten = true;
 }
+// STS_OOC_MCTS_TARGET_PRIOR: split a compound source's prior over its target cards by heart1's
+// policy on the selector screen the source opens, instead of equally. A group heart1 cannot
+// score keeps the equal split.
+void OocGameContextModel::applyTargetPrior(const GameContext &gc, const std::vector<Candidate> &actions,
+                                           std::vector<double> &weights) const {
+    std::map<std::uint32_t, std::vector<std::size_t>> groups;
+    for (std::size_t i = 0; i < actions.size(); ++i)
+        if (actions[i].compoundSelector != sts::CardSelectScreenType::INVALID && actions[i].semantic)
+            groups[actions[i].primitive.bits].push_back(i);
+    auto &reasons = continuation_.heart1PriorReasons;
+    for (const auto &[bits, members] : groups) {
+        if (members.size() < 2) continue;
+        auto selector = detachedCopy(gc);
+        GameAction(bits).execute(selector);
+        if (selector.screenState != sts::ScreenState::CARD_SELECT || selector.info.toSelectCount != 1) {
+            ++reasons["target:skip_not_single_select"]; continue;
+        }
+        const auto selectActions = GameAction::getAllActionsInState(selector);
+        const auto logits = dependencies.heart1PolicyLogits(selector, selectActions, &reasons);
+        if (!logits || logits->size() != selectActions.size()) { ++reasons["target:skip_unscored"]; continue; }
+        const auto probs = oocPolicyWeights(*logits, options.priorTemperature);
+        std::vector<double> shares;
+        for (const auto i : members) {
+            auto copy = detachedCopy(gc);
+            const auto executed = sts::search::executeOocSemanticAction(copy, *actions[i].semantic);
+            if (!executed.ok || executed.executedPrimitiveBits.size() != 2
+                    || executed.executedPrimitiveBits.front() != bits) break;
+            const auto pick = std::find_if(selectActions.begin(), selectActions.end(),
+                [&](const auto &a) { return a.bits == executed.executedPrimitiveBits.back(); });
+            if (pick == selectActions.end()) break;
+            shares.push_back(probs[pick - selectActions.begin()]);
+        }
+        double total = 0.0, mass = 0.0;
+        for (const auto s : shares) total += s;
+        if (shares.size() != members.size() || !(total > 0.0)) { ++reasons["target:skip_unmatched"]; continue; }
+        for (const auto i : members) mass += weights[i];
+        for (std::size_t k = 0; k < members.size(); ++k) weights[members[k]] = mass * shares[k] / total;
+        ++reasons["target:scored"];
+    }
+}
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
     OocProfileScope priorBuild(OocProfileBucket::PriorBuild);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
@@ -1375,6 +1420,7 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
         std::map<std::uint32_t, std::size_t> counts;
         for (const auto &a : actions) ++counts[a.primitive.bits];
         for (std::size_t i=0; i<actions.size(); ++i) weights[i] /= counts.at(actions[i].primitive.bits);
+        if (options.targetPrior) applyTargetPrior(state(id), actions, weights);
     }
     std::vector<sts::search::OocPlannerAction> result;
     result.reserve(actions.size());
@@ -2143,7 +2189,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
                 else
 #endif
                 if (v4DecisionSupported(child.gc)
-                        || (options.heart1LeafPolicy && options.heart1Coverage && heart1FullScreen(child.gc))) {
+                        || (options.heart1LeafPolicy && options.heart1Coverage
+                            && (heart1FullScreen(child.gc) || options.heart1LeafSelects))) {
                     const auto actions = v4CandidateActions(child.gc);
                     std::set<std::uint32_t> ids;
                     bool unique = !actions.empty();
@@ -2452,6 +2499,8 @@ void applyLiveControl(const std::string &key, const std::string &value,
         opts.uniformLeafPolicy = value == "uniform"; opts.priorLeafPolicy = value == "prior";
         opts.heart1LeafPolicy = value == "heart1";
     }
+    else if (key == "STS_OOC_MCTS_TARGET_PRIOR") opts.targetPrior = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_LEAF_SELECTS") opts.heart1LeafSelects = choice("chain", "heart1");
     else if (key == "STS_OOC_MCTS_CPU_SECONDS") {
         const double x = number(); if (x < 0 || x > 10) invalid(); opts.cpuBudgetSeconds = x;
     }
@@ -2474,7 +2523,8 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
-    "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS"
+    "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS",
+    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -5025,6 +5075,49 @@ void oocMctsAdapterSelfTest() {
             require(removeActions.size()>2 && flat(removeActions)
                 && removeFull.continuationMetrics().heart1PriorNodes==0,
                 "heart1full keeps a REMOVE select uniform (student C has no CARD_SELECT training)");
+            {
+                // STS_OOC_MCTS_TARGET_PRIOR: smith targets share the smith prior by heart1's
+                // logits on the UPGRADE select the smith opens, not equally.
+                auto campfire=detachedCopy(duplicates); campfire.screenState=ScreenState::REST_ROOM;
+                auto targetDeps=deps;
+                targetDeps.heart1PolicyLogits=[](const GameContext &state, const std::vector<GameAction> &actions,
+                        std::map<std::string,std::uint64_t> *) -> std::optional<std::vector<double>> {
+                    std::vector<double> logits;
+                    for(auto a:actions) logits.push_back(state.screenState==ScreenState::CARD_SELECT
+                        && state.info.toSelectCards[a.getIdx1()].card.id==CardId::BASH ? 3.0 : 0.0);
+                    return logits;
+                };
+                const auto smithPriors=[&](const OocAdapterOptions &o, double &smithMass, double &other) {
+                    OocGameContextModel m(campfire,path,{},o,targetDeps);
+                    std::map<CardId,double> out; smithMass=0; other=0;
+                    for(const auto action:m.legalActions(0)) {
+                        const auto &c=m.candidate(0,action.id);
+                        if(c.compoundSelector!=CardSelectScreenType::UPGRADE) { other+=action.prior; continue; }
+                        out[std::get<OocCardTarget>(c.semantic->target).id]=action.prior; smithMass+=action.prior;
+                    }
+                    const auto &reasons=m.continuationMetrics().heart1PriorReasons;
+                    const auto it=reasons.find("target:scored");
+                    return std::make_pair(out,it==reasons.end() ? 0ull : it->second);
+                };
+                double equalMass=0,equalOther=0,targetMass=0,targetOther=0;
+                const auto [equal,equalScored]=smithPriors(heart1Options,equalMass,equalOther);
+                auto targetOptions=heart1Options; targetOptions.targetPrior=true;
+                const auto [weighted,targetScored]=smithPriors(targetOptions,targetMass,targetOther);
+                require(equal.size()==3 && weighted.size()==3 && equalScored==0 && targetScored==1
+                    && std::abs(equal.at(CardId::BASH)-equal.at(CardId::STRIKE_RED))<1e-12,
+                    "plain heart1 splits the smith prior equally; target prior scores the group once");
+                // Physical selects: 3 Strikes, 2 Defends, Bash; each card class is one candidate.
+                const double z=3*1.0+2*1.0+std::exp(3.0);
+                require(std::abs(targetMass-equalMass)<1e-12 && std::abs(targetOther-equalOther)<1e-12
+                    && std::abs(weighted.at(CardId::BASH)-equalMass*std::exp(3.0)/z/(std::exp(3.0)/z+2.0/z))<1e-9
+                    && std::abs(weighted.at(CardId::STRIKE_RED)-weighted.at(CardId::DEFEND_RED))<1e-12,
+                    "target prior keeps the smith mass and splits it by heart1's select probabilities");
+                OocAdapterOptions targetOnly; targetOnly.targetPrior=true;
+                bool targetRejected=false;
+                try { OocGameContextModel bad(campfire,path,{},targetOnly,targetDeps); }
+                catch(const std::invalid_argument &) { targetRejected=true; }
+                require(targetRejected,"target prior without the heart1 prior is rejected");
+            }
             OocAdapterOptions coverageOnly; coverageOnly.heart1Coverage=true;
             bool rejected=false;
             try { OocGameContextModel bad(shop,path,{},coverageOnly,shopDeps); } catch(const std::invalid_argument &) { rejected=true; }
@@ -5653,6 +5746,29 @@ void oocMctsAdapterSelfTest() {
             && heartPlayout.continuationMetrics().heart1LeafFallbacks == 0
             && heartPlayout.continuationMetrics().priorLeafSteps == 0,
             "heart1 rollout uses its own logits and counters, never V4 policy head");
+        {
+            // STS_OOC_MCTS_LEAF_SELECTS=heart1: a pending REMOVE select in the rollout goes to heart1,
+            // not the chain; without it heart1full leaves it to the chain.
+            auto remove=detachedCopy(pending); remove.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+            auto selectOptions=heartOptions; selectOptions.heart1Coverage=true; selectOptions.heart1Prior=true;
+            const auto removeSteps=[&](const OocAdapterOptions &o) {
+                calls=0;
+                OocGameContextModel m(remove,path,bossSampler,o,deps);
+                std::mt19937_64 rng(20261006); (void)m.evaluateLeaf(0,rng);
+                const auto &reasons=m.continuationMetrics().heart1LeafReasons;
+                return std::make_pair(calls,reasons.count("chain:screen"+std::to_string(int(ScreenState::CARD_SELECT))));
+            };
+            const auto [chainCalls,chainFallback]=removeSteps(selectOptions);
+            selectOptions.heart1LeafSelects=true;
+            const auto [selectCalls,selectFallback]=removeSteps(selectOptions);
+            require(chainFallback==1 && selectFallback==0 && selectCalls>chainCalls,
+                "heart1 leaf selects hand the rollout's REMOVE select to heart1");
+            auto noFull=heartOptions; noFull.heart1LeafSelects=true;
+            bool rejected=false;
+            try { OocGameContextModel bad(remove,path,bossSampler,noFull,deps); }
+            catch(const std::invalid_argument &) { rejected=true; }
+            require(rejected,"heart1 leaf selects without heart1full is rejected");
+        }
         deps.heart1PolicyLogits = [](const GameContext &, const std::vector<GameAction> &,
                                    std::map<std::string,std::uint64_t> *)
                 -> std::optional<std::vector<double>> { return std::nullopt; };
@@ -5709,6 +5825,12 @@ void oocMctsAdapterSelfTest() {
         require(opts.heart1LeafPolicy && !opts.priorLeafPolicy && !opts.uniformLeafPolicy,"heart1 leaf parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","uniform",parsed,opts);
         require(!opts.priorLeafPolicy && !opts.heart1LeafPolicy && opts.uniformLeafPolicy,"uniform leaf clears model policy");
+        applyLiveControl("STS_OOC_MCTS_TARGET_PRIOR","1",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","heart1",parsed,opts);
+        require(opts.targetPrior && opts.heart1LeafSelects,"target prior and heart1 leaf selects parsed");
+        applyLiveControl("STS_OOC_MCTS_TARGET_PRIOR","0",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","chain",parsed,opts);
+        require(!opts.targetPrior && !opts.heart1LeafSelects,"target prior and leaf selects rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","v4",parsed,opts);
         require(!opts.priorLeafPolicy && !opts.uniformLeafPolicy,"chain leaf policy parsed");
         applyLiveControl("STS_OOC_MCTS_CPU_SECONDS","0.25",parsed,opts);
@@ -5737,7 +5859,7 @@ void oocMctsAdapterSelfTest() {
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},{"STS_OOC_MCTS_LEAF_COMBATS","4"},
             {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_POLICY","Prior"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
-            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
+            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
             rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
     }
     const PathHistory *saved=t_curPath; t_curPath=&path;

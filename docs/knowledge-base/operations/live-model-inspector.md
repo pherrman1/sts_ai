@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-09 for the advisor keeping the pre-#418 CTM stack; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -112,7 +112,12 @@ combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
 upgraded/misc/cost/retain/free-play fields, battle-lifetime stable monster
 slots, dead/half-dead/escaping state, relics, potion slots, the combat entry
 identity, and a centralized native mapping
-boundary for runtime IDs. Monster move-history bytes are emitted in Java's
+boundary for runtime IDs. Card `misc` carries native special data: Searing
+Blow uses its public `timesUpgraded` count, and Rampage uses the increase above
+its initial base damage of 8. Vanilla stores Rampage growth in `baseDamage`,
+not `misc`; temporary damage modifiers are not included in that increase.
+Other cards retain Java's `misc`, including Ritual Dagger's stored damage.
+Monster move-history bytes are emitted in Java's
 oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
@@ -355,20 +360,34 @@ command-ready screen. Use `--check` to validate without starting anything and
 directly. `--run -- <driver options>` starts the autonomous driver immediately
 after MCP becomes available, without a separate probe or manual launch gap.
 The driver's initial menu-readiness budget is 45 seconds (`--startup-timeout`);
-this is a timeout, not a delay. Gameplay transition timeouts stay separate.
+this is a timeout, not a delay. Gameplay readiness/post-action transitions use
+`--transition-timeout` (8 seconds by default). Slow rendering or ordinary
+campfire animations can require a larger explicit budget; a timeout never
+authorizes repeating the previous action. The chosen budget is preserved in
+failure reproduction commands. Vanilla `CardCrawlGame.render()` returns before
+updating the game when `getRawDeltaTime()` exceeds 0.1 seconds. Repeated slow
+software-rendered frames can therefore advance an animation much more slowly
+than wall time; extending the wait does not change the animation or reapply its
+effect. Advisor waiting remains separately configured by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 
 ```bash
-tools/live_game_start.sh --super-fast --run -- \
+tools/live_game_start.sh --run -- \
   --new-run --character IRONCLAD --ascension 0 --run-until-error
 ```
 
 `--super-fast` enables an already installed `mods/SuperFastMode.jar` (mod ID
 `superfastmode`). Use `--restart-game` once if the running game lacks that mod.
-Its local configuration is under `~/.config/ModTheSpire/SuperFastMode/`; the
-debug setup uses `deltaMultiplier=4.0`, `isDeltaMultiplied=true`, and
-`isInstantLerp=true`. The external JAR is not a repository artifact. Speed
+Its local configuration is under `~/.config/ModTheSpire/SuperFastMode/`.
+The external JAR is not a repository artifact. Accelerated frame time can
+expire vanilla selection actions on the frame that opens their popup: in
+`ArmamentsAction`, `tickDuration()` may mark the action done before the selected
+card is retrieved. Confirmation then loses the card from the active piles;
+a later discard action may retrieve that stale selection in another combat.
+The installed 10x configuration reproduced this during A20 live verification.
+Use the ordinary launcher without `--super-fast` for integration qualification;
+no speed setting is inferred from a previous session's documentation. Speed
 changes remain subject to the same readiness and observation checks.
 
 `--refresh-runtime` builds only `one_combat_advisor`, copies it and
@@ -380,7 +399,53 @@ select that manifest's primary at launch. Legacy single-model manifests and
 explicit standard-primary overrides remain supported. `STS_CTM_BREW_FALLBACK_MODEL`
 and strict `STS_CTM_ACTIVE_LIZARD=0|1` override the qualified stack; advisor
 hello/forecast and OOC responses identify the loaded artifacts and setting.
-The advisor deliberately still uses this pre-#418 stack, not the pathb-r2 default of `one_combat` OOC MCTS (ledger §412; open follow-up).
+Existing installations retain that pre-#418 stack until explicitly upgraded with
+`tools/live_game_start.sh --qualified-ctm --restart-game --probe`. This installs
+a version-2 runtime receipt containing the production pathb-r2 Lizard fast and
+escape/Brew fallback pair, plus the calibrated pathb-a20 pair. The advisor uses
+the A20 pair for ascension 20 and the base pair below 20, in both imagined OOC
+combats and combat-entry forecasts. The native loader verifies the built-in
+artifact contracts; a partial A20 configuration or research-manifest override
+fails closed. `ctmStackScope` identifies the selected stack. Legacy releases
+and explicit legacy overrides remain supported.
+Refresh and repair preserve an explicitly selected qualified stack even if
+its version field is missing or malformed while qualified receipt fields
+remain. Such a receipt cannot select a cached legacy release during repair.
+An explicit `STS_CTM_MODEL` suppresses automatic fallback/A20 environment
+injection; dependent overrides then come only from the caller. This preserves
+legacy single-model launches and explicit empty-value failures.
+
+The frozen distilled Arm C model can be installed explicitly:
+
+```bash
+tools/live_game_start.sh --arm-c /absolute/path/to/studentc.bin \
+  --qualified-ctm --restart-game --probe
+```
+
+The installer requires SHA-256
+`eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509`,
+copies the weights into the stable runtime as `models/arm_c_student.bin`, and
+pins them in `armCModelSha256`. Refreshes preserve this explicit selection;
+repair cannot replace it with a cached legacy runtime. The launcher exports
+`STS_LIVE_OOC_ARM_C` to the inspector's advisor child. Empty, missing or invalid
+explicit weights fail startup. With no selection, the prior stays V4.
+
+Arm C currently supplies the **tree prior only**, through the same native
+heart1 candidate mapping as simulator OOC MCTS; the live rollout chain, leaf
+value, 512-simulation budget and Silver combat policy remain as configured
+before this opt-in. Unencoded Arm C nodes retain the existing live prior
+(equal logits when reward-pity history is incomplete). Every response with a
+loaded model carries `armCModel`; successful searched OOC decisions report
+`prior=arm_c`, `armCPriorNodes`, `armCPriorFallbacks` and per-reason counts.
+Model loading, scored prior use, live action mapping, complete-run coverage,
+and gameplay quality are separate claims. This connection does not qualify
+the offline Arm C rollout-policy experiment or A20 training/live parity (#506).
+The qualified-stack loader is covered at both ascensions for Smoke Bomb,
+HP 200, active Lizard Tail, Tail + Fairy and Tail + Entropic Brew. The A20
+stack also covers Writhing Mass + Ritual Dagger. The A0 stack still refuses
+that intersection, and both trained domains refuse max HP 23 (their minimum
+is 24). Packaging does not remove these explicit CTM support boundaries or
+qualify a model outside its trained domain.
 Only validated production qualification enables Lizard correction automatically;
 integration-candidate metadata requires explicit opt-in. An explicitly empty
 or whitespace model override reaches the native loader unchanged and fails,
@@ -667,10 +732,14 @@ Sozu excludes these candidates. Direct V4 reports
 score the additional action; MCTS uses its uniform-prior fallback.
 
 The live driver opens an unrevealed card reward after gold and freely
-collectable potions in that combat reward have been collected. Visible
-relic/key rewards and constrained potion rewards may remain as exact parent
-continuations while a card group is open. This also supports manually opening
-a card group before collecting visible gold or relic rewards.
+collectable potions in that combat reward have been collected. A visible relic
+defers forced potion collection because it can affect capacity or pickup
+effects. With a known public belt, the driver instead reveals the card group
+and leaves both the relic and potion to the provider, avoiding a parent-reward
+ordering deadlock. Visible relic/key rewards and constrained potion rewards
+remain exact parent continuations while a card group is open. This also
+supports manually opening a card group before collecting visible gold or relic
+rewards.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat
@@ -968,6 +1037,10 @@ MCTS enumerates each held-slot discard using public potion identity and duplicat
 occurrence. Sozu prevents these replacement actions. The driver requires the
 advertised `discard_potion` command and slot permission; discarding never takes
 a monster target. The next observation scores the actual refill separately.
+Shop mapping validation includes the semantic discard actions before model
+loading. Both native and captured shop purchases require a free potion slot
+and no Sozu; MCP can advertise a purchase that would not obtain a potion.
+Skipping that blocked click preserves subsequent physical choice indices.
 These new actions use a uniform prior where the frozen V4 action set has no
 matching source; direct V4 reports `POTION_REPLACEMENT_REQUIRES_MCTS`.
 Match and Keep captures physical board slots and a run/event-local memory of
@@ -1015,6 +1088,84 @@ stopping. The default resumes an advertised save; `--new-run` refuses to
 replace a save or live run. Without a save, an explicit new-run/character
 request is required. Ascension and seed are passed through to MCP.
 
+At the last campfire's completed map (`y=14`), the single boss entrance
+qualifies as a mechanical action even when MCP advertises `Return`. This
+requires `room_type=RestRoom`, `room_phase=COMPLETE` and the exact `return`
+button; an unfinished campfire remains unqualified. Return only dismisses
+that completed room's map overlay and is not a strategic alternative.
+
+The MCP `SHOP_ROOM` merchant entrance is a mechanical inventory reveal. The
+driver requires exactly one visible `shop` entry, one matching MCP action, and
+an exact act/floor identity. It enters once, lets the OOC provider evaluate the
+opened `SHOP_SCREEN`, then proceeds after that provider cancels the shop.
+These clicks are traced as `shop_navigation` and work with `--strict-ooc`;
+they do not increment fallback or unsupported counters. Failed or dry-run
+clicks cannot mark a shop entered. Differential capture retains its explicit
+unsupported boundary because the native replay schema does not represent this
+inventory reveal. Arm C shop tokens preserve the native physical slot after
+any purchase; removing sold slots before indexing changes card identities.
+
+Visible monster state remains nullable when a field cannot be qualified; it
+is omitted for the importer to refuse instead of being unboxed and crashing
+the game. Runic Dome skips that private-state reader entirely. Vanilla's
+`GremlinWarrior` and `GremlinTsundere` IDs have explicit zero native misc
+state, verified against the installed JAR constants.
+
+Combat-class history retains the initial encounter identity while the same
+monster group remains active. Summons and splits can leave a composition
+that no longer identifies its queue draw; they do not invalidate that captured
+history. A replacement or reconstructed group must still match the recorded
+encounter, and missing initial history remains unsupported.
+Vanilla's persisted `path_taken` uses `BOSS` as well as the visible map's `B`;
+both identify a public boss room. In particular, the opening map of the next
+act can retain row 15 while having no parent in that new map. Its explicit
+boss marker must remain a boss, rather than being replaced by an inferred
+preceding room or an empty transition placeholder. Unknown markers retain
+their existing qualification checks.
+On the opening MAP of Act 2 or 3, vanilla may also retain `(-1, 15)` as the
+current node. The importer represents it as the native unchosen-map position
+`(-1, -1)` only at that act's exact starting floor, with MCP proving a completed
+boss chest, an unchosen first node, no boss/cancel/proceed action, and a complete
+set of row-zero choices with matching physical click indices. The original
+capture remains intact; ordinary row-15 transitions remain unsupported.
+That same public proof retains `BOSS_TREASURE` as the planning root's current
+room, for either `(-1, 15)` or the ordinary `(-1, -1)` unchosen coordinate.
+The first imagined combat therefore receives the same boss-chest predecessor
+as the real first room, instead of inheriting the hypothetical constructor's
+`INVALID` placeholder.
+The first room of a new act has only one current-act path coordinate, so it
+cannot recover CTM's previous room from a second node. Capture recovers
+`BOSS_TREASURE` only when the exact Act 2/3 first-room floor, the matching
+row-zero path coordinate, the persisted boss/chest room records, and a
+completed boss combat metric agree. Combat-entry capture retries that public
+path recovery after save loading if the initial transition latch was empty.
+Missing or contradictory records remain unqualified.
+After the Act 3 boss dies, MCP can expose an empty `COMPLETE` surface rather
+than a reward screen. The strict driver advances its single Proceed button
+only for a living player at Act 3 floor 50 (or floor 51 with verified A20), with a completed MonsterRoomBoss,
+no active overlay, no choices/cancel action, and agreeing run coordinates.
+It records `boss_completion` and waits for the following boss or actual terminal screen; it does
+not declare victory from the boss-room phase alone. Differential capture
+retains the native unsupported boundary for this UI-only transition.
+The following `Spire Heart` story in `VictoryRoom` is also mechanical: the
+installed JAR's button handler advances its single index-zero option through
+the narrative screens, then opens the end screen or the final-act door.
+The driver requires that exact room/event identity, enabled physical choice,
+and Act 3 victory-room floor (51, or 52 at A20). It records
+`victory_dialogue`; other one-choice events still require their provider.
+
+Combat targets are lowered from the captured explicit native `slot`/`idx` to
+MCP's compact living-monster list in its displayed order. The slots can have
+holes after Slime Boss splits or a summon replaces an occupant; array position
+is not a native slot. Once a dead Slime Boss has been observed replaced by
+its large children, the producer remembers that physical parent's retirement
+through subsequent splits and deaths; it cannot reappear with slot -1 after
+the large children leave the list. Other split/summon corpses are omitted only
+when the public birth tracker proves that a known slot belongs to another
+physical occupant. Current corpses, half-dead and unbound living objects are
+not discarded by this rule. Missing/dead targets, duplicate slots and contradictory
+slot/idx fields are rejected for both card and potion actions.
+
 In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.
 Non-skippable Discovery/Colorless Potion offers support exactly three distinct,
 unmodified cards and one or two zero-cost copies. The chosen option lowers to
@@ -1036,6 +1187,12 @@ combat and returns Silver `UNSUPPORTED` with `silver_unmapped_selection_task`,
 allowing the normal deterministic combat fallback. Hand selections project the
 screen's actual `canPickZero` value. The driver still stops on any genuine
 boundary mismatch instead of reinterpreting OOC output as a Silver result.
+Player selection continuations use the player's actual end-turn flags and
+require empty enemy and pre-turn queues. Vanilla's `monsterAttacksQueued` is
+not a pending-work flag: it remains true after the enemy turn and resets only
+at the next player end-turn action. Rejecting that flag alone incorrectly
+rejects later-turn Warcry and other otherwise qualified selections. Codex
+retains its explicit end-turn continuation contract and queue validation.
 Warcry, base Forethought, Armaments, Dual Wield, Exhume, Headbutt, one-card ExhaustAction,
 Secret Technique and Secret Weapon derive their
 selection task from the active vanilla action class, with exact screen/count
@@ -1048,9 +1205,11 @@ session for the next stable combat root. Armaments, Dual Wield and Exhume captur
 temporarily held by their owning action so the native source pile remains
 complete. Upgraded Forethought, Gambling Chip/Gambler's Brew, and Purity/Elixir
 emit the whole ordered UUID subset, including the empty subset. The driver
-checks the action owner and selection limit, then clicks descending
-physical indices, validates remaining and selected UUIDs after every click,
-then confirms. This avoids the installed MCP bulk command's ascending-index
+checks the action owner and selection limit, then clicks in the native
+hand order, resolving each UUID against the remaining displayed hand before
+every click. Vanilla appends to `selectedCards.group`, so this also preserves
+the native exhaust/discard effect order. The driver validates remaining and
+selected UUIDs after every click, then confirms. This avoids the installed MCP bulk command's ascending-index
 mutation bug. Exhaust/discard triggers follow the original hand order after
 the selected cards are removed. A partial transaction, unknown owner, missing/duplicate UUID, or
 changed hand stops before any further click. Differential replay excludes UI
@@ -1062,6 +1221,28 @@ where only one card fits in hand. The driver clicks the ordered physical UUID
 pair using stable GRID indices, checks the offered and selected UUIDs before
 the second click, and lets vanilla close the grid automatically. This differs
 from HAND selections, which remove chosen cards and require confirmation.
+An unsupported partial selection observation emits no executable advice and
+invalidates its cached root/budget, but retains the previously validated Silver
+graph only for the same protocol session and combat entry. The next valid
+snapshot is fully reimported and searched. A different session/combat cannot
+inherit that predecessor; native search/lowering failures still clear it.
+
+At an otherwise stable player decision, an unretrieved, nonempty hand
+selection with no current action is an abandoned transaction, not normal play.
+The producer marks `orphanedHandSelection`; native import refuses it with
+`silver_orphaned_hand_selection` before searching incomplete piles. It never
+deduplicates card UUIDs or mutates the game to repair an abandoned selection.
+
+MCP can advertise readiness before a Soul animation initializes a newly created
+card's cached damage/block/magic display in draw or discard. If the pre-click
+check changes only by the presence of a positive cached stat in those piles,
+the driver discards the unexecuted Silver decision and reads/correlates/maps a
+fresh snapshot. It allows at most three consecutive refreshes per action and
+traces each as `combat_display_refresh`; discarded decisions do not count as
+accepted Silver actions. The state identity itself stays strict. Changes to
+HP, energy, hand, costs, UUIDs, order, base fields or two different present
+stat values still stop before mutation. Zero/absent ambiguity remains strict,
+and differential replay does not use this refresh path.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other

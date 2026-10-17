@@ -1340,6 +1340,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.silverRootPrior = search::nativeSilverRootPriorPath();
             meta.silverRootPriorSha256 = fileSha256(meta.silverRootPrior);
             meta.silverRootPriorWeight = search::nativeSilverRootPriorWeight();
+            meta.silverTreePriorMinVisits = search::nativeSilverTreePriorMinVisits();
         }
         if (g_oocStrategicTokNet.ok) {
             meta.oocStrategicTokNet = g_oocStrategicTokNet.path;
@@ -2213,7 +2214,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
         } else if (inRemoveSelect) {
             one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (search::heartRecallRequired(gc, g_collectKeys)) {
                 search::GameAction(2, 0).execute(gc);   // recall: take the ruby key
             } else {
                 auto actions = search::GameAction::getAllActionsInState(gc);
@@ -3025,7 +3026,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""},
-        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
+        {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""},
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""},
     };
@@ -3593,7 +3594,10 @@ int main(int argc, char **argv) {
         std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
                   << " weight " << search::nativeSilverRootPriorWeight()
                   << (std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE") && std::string(std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE")) == "override"
-                      ? " scope=override (thread opt-in only; live combats plain)" : "") << "]\n";
+                      ? " scope=override (thread opt-in only; live combats plain)" : "")
+                  << (search::nativeSilverTreePriorMinVisits() > 0
+                      ? "; tree prior K=" + std::to_string(search::nativeSilverTreePriorMinVisits()) : std::string{})
+                  << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()

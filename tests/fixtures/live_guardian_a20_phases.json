@@ -1,0 +1,961 @@
+{
+  "schema": "live_guardian_a20_phases_v1",
+  "provenance": {"scope": "One same-run A20 Guardian cycle; actual producer and MCP agree, joined to accepted native Silver roots by session/sequence/hash; integration only, no gameplay-quality estimate", "nativeAndInspectorSource": "d67b58c53bcd28a308b28a2fd94c732f4a41ad97", "advisorSha256": "4321049770b1039970fd2bc6af8ba032c654eeb9c622418e4cde6b1235aa6327", "inspectorJarSha256": "4434eaa698f517575beb6ebce4a12a2c1b272208e064a3384bfdb254b545b8cf"},
+  "phases": [
+    {
+      "phase": "offense_after_damage",
+      "source": {"session": "19a655750c61b", "sequence": 187, "observationHash": "502c5a7f9e5211276372053e4c79862e69037ea041438813be6e9e0165598b50", "producerRecordSha256": "28c6479f707a327285aba192c0f0a4faf5f4663878824409ee695cebb6ecd304", "acceptedSilverTraceRowSha256": "12e03855b6fb56fe699438389d76495ae971e6bb2ed1cc7f4586d96764da9059"},
+      "observation": {
+        "boundary": "combat",
+        "character": "IRONCLAD",
+        "ascension": 20,
+        "act": 1,
+        "floor": 16,
+        "hp": 42,
+        "maxHp": 75,
+        "gold": 3,
+        "deck": [
+          {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false},
+          {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Metallicize", "uuid": "22166372-f917-4a59-811b-1ce78ecc27cb", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Inflame", "uuid": "c047a2de-eb03-44ea-a536-08c3e6f8212e", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false}
+        ],
+        "candidates": [],
+        "combat": {
+          "turn": 1,
+          "energy": 2,
+          "energyPerTurn": 3,
+          "block": 0,
+          "cardsPlayedThisTurn": 1,
+          "attacksPlayedThisTurn": 1,
+          "skillsPlayedThisTurn": 0,
+          "cardsDiscardedThisTurn": 0,
+          "damageTrackingExact": true,
+          "lastTargetedMonster": 0,
+          "lastAttackUnblockedDamage": 0,
+          "timesDamagedThisCombat": 0,
+          "playerVulnerableSeen": false,
+          "cardDrawPerTurn": 5,
+          "playedThisTurn": [
+            {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false}
+          ],
+          "playerPowers": [],
+          "cardSelect": false,
+          "resolving": false,
+          "runicDome": false,
+          "frozenEye": false,
+          "extraRollMoveOnTurn": 0,
+          "skipMonsterTurnBits": 0,
+          "monsterCount": 1,
+          "monstersAlive": 1,
+          "hand": [
+            {"id": "Metallicize", "uuid": "22166372-f917-4a59-811b-1ce78ecc27cb", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"}
+          ],
+          "draw": [
+            {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Inflame", "uuid": "c047a2de-eb03-44ea-a536-08c3e6f8212e", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"}
+          ],
+          "discard": [
+            {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"}
+          ],
+          "exhaust": [],
+          "limbo": [],
+          "stasis": [],
+          "monsters": [
+            {
+              "id": "TheGuardian",
+              "slot": 0,
+              "idx": 0,
+              "occupantGeneration": 1,
+              "hp": 240,
+              "maxHp": 250,
+              "block": 0,
+              "dead": false,
+              "escaping": false,
+              "halfDead": false,
+              "escapeNext": false,
+              "nextMove": 6,
+              "moveHistory": [6],
+              "powers": [
+                {"id": "Mode Shift", "amount": 30}
+              ],
+              "miscInfo": 40,
+              "intent": "DEFEND",
+              "intentDamage": -1
+            }
+          ],
+          "curCardQueueItem": {
+            "card": {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+            "target": 0,
+            "energyOnUse": 3,
+            "isEndTurn": false,
+            "triggerOnUse": true,
+            "ignoreEnergyTotal": false,
+            "freeToPlay": false,
+            "randomTarget": false,
+            "autoplay": false,
+            "regretCardCount": 0,
+            "purgeOnUse": false,
+            "exhaustOnUse": false
+          },
+          "lastCard": {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "target": 0, "energyOnUse": 3},
+          "relics": [
+            {"id": "Burning Blood", "counter": -1, "usedUp": false},
+            {"id": "Bag of Preparation", "counter": -1, "usedUp": false},
+            {"id": "Bottled Tornado", "counter": -1, "usedUp": false}
+          ],
+          "potions": [
+            {"slot": 0, "id": "Regen Potion"},
+            {"slot": 1, "id": "Potion Slot"}
+          ]
+        },
+        "combatEntryHash": "71e188e1d1dc8af09c67d1f244c47851639c9ff56270dc4df18d3c66d63f9bec",
+        "silverSearchBudget": 1000,
+        "combatEntry": {
+          "character": "IRONCLAD",
+          "ascension": 20,
+          "act": 1,
+          "floor": 16,
+          "hp": 42,
+          "maxHp": 75,
+          "gold": 3,
+          "roomClass": "BOSS",
+          "previousRoomClass": "REST",
+          "encounter": "THE_GUARDIAN",
+          "potionKeepValue": 4.0,
+          "isBurningElite": false,
+          "potionCapacity": 2,
+          "deck": [
+            {"id": "AscendersBane", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Bash", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Anger", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Thunderclap", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Twin Strike", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Pommel Strike", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Metallicize", "upgraded": true, "misc": 0, "bottleBinding": 2},
+            {"id": "Battle Trance", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Anger", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Inflame", "upgraded": true, "misc": 0, "bottleBinding": -1}
+          ],
+          "relics": [
+            {"id": "Burning Blood", "data": -1, "usedUp": false},
+            {"id": "Bag of Preparation", "data": -1, "usedUp": false},
+            {"id": "Bottled Tornado", "data": -1, "usedUp": false}
+          ],
+          "potions": ["Regen Potion", "Potion Slot", "Potion Slot", "Potion Slot", "Potion Slot"]
+        },
+        "silverRoot": {
+          "schemaVersion": 4,
+          "playerTurn": 1,
+          "decisionInTurn": 1,
+          "character": "IRONCLAD",
+          "ascension": 20,
+          "act": 1,
+          "floor": 16,
+          "hp": 42,
+          "maxHp": 75,
+          "gold": 3,
+          "potionCapacity": 2,
+          "roomClass": "BOSS",
+          "burningElite": false,
+          "combatInstance": "71e188e1d1dc8af09c67d1f244c47851639c9ff56270dc4df18d3c66d63f9bec",
+          "encounter": "THE_GUARDIAN",
+          "combat": {
+            "turn": 1,
+            "energy": 2,
+            "energyPerTurn": 3,
+            "block": 0,
+            "cardsPlayedThisTurn": 1,
+            "attacksPlayedThisTurn": 1,
+            "skillsPlayedThisTurn": 0,
+            "cardsDiscardedThisTurn": 0,
+            "damageTrackingExact": true,
+            "lastTargetedMonster": 0,
+            "lastAttackUnblockedDamage": 0,
+            "timesDamagedThisCombat": 0,
+            "playerVulnerableSeen": false,
+            "cardDrawPerTurn": 5,
+            "playedThisTurn": [
+              {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false}
+            ],
+            "playerPowers": [],
+            "cardSelect": false,
+            "resolving": false,
+            "runicDome": false,
+            "frozenEye": false,
+            "extraRollMoveOnTurn": 0,
+            "skipMonsterTurnBits": 0,
+            "monsterCount": 1,
+            "monstersAlive": 1,
+            "hand": [
+              {"id": "Metallicize", "uuid": "22166372-f917-4a59-811b-1ce78ecc27cb", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"}
+            ],
+            "draw": [
+              {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Inflame", "uuid": "c047a2de-eb03-44ea-a536-08c3e6f8212e", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"}
+            ],
+            "discard": [
+              {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"}
+            ],
+            "exhaust": [],
+            "limbo": [],
+            "stasis": [],
+            "monsters": [
+              {
+                "id": "TheGuardian",
+                "slot": 0,
+                "idx": 0,
+                "occupantGeneration": 1,
+                "hp": 240,
+                "maxHp": 250,
+                "block": 0,
+                "dead": false,
+                "escaping": false,
+                "halfDead": false,
+                "escapeNext": false,
+                "nextMove": 6,
+                "moveHistory": [6],
+                "powers": [
+                  {"id": "Mode Shift", "amount": 30}
+                ],
+                "miscInfo": 40,
+                "intent": "DEFEND",
+                "intentDamage": -1
+              }
+            ],
+            "curCardQueueItem": {
+              "card": {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+              "target": 0,
+              "energyOnUse": 3,
+              "isEndTurn": false,
+              "triggerOnUse": true,
+              "ignoreEnergyTotal": false,
+              "freeToPlay": false,
+              "randomTarget": false,
+              "autoplay": false,
+              "regretCardCount": 0,
+              "purgeOnUse": false,
+              "exhaustOnUse": false
+            },
+            "lastCard": {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "target": 0, "energyOnUse": 3},
+            "relics": [
+              {"id": "Burning Blood", "counter": -1, "usedUp": false},
+              {"id": "Bag of Preparation", "counter": -1, "usedUp": false},
+              {"id": "Bottled Tornado", "counter": -1, "usedUp": false}
+            ],
+            "potions": [
+              {"slot": 0, "id": "Regen Potion"},
+              {"slot": 1, "id": "Potion Slot"}
+            ]
+          }
+        }
+      },
+      "mcpGuardian": {
+        "is_gone": false,
+        "name": "The Guardian",
+        "current_hp": 240,
+        "id": "TheGuardian",
+        "max_hp": 250,
+        "powers": [
+          {"amount": 30, "id": "Mode Shift"}
+        ],
+        "intent": "DEFEND"
+      },
+      "expected": {"miscInfo": 40, "modeShift": 30, "sharpHide": 0, "turn": 1, "guardianHp": 240}
+    },
+    {
+      "phase": "defense",
+      "source": {"session": "19a655750c61b", "sequence": 196, "observationHash": "194b31203c33ac61731e37ef8eea5044481eabec4daacc3a5ad9f89dff0dfd9d", "producerRecordSha256": "1e01116173ed62e5689cfdaf7418700ac5c8199f7693b929935ced452b12ef92", "acceptedSilverTraceRowSha256": "e122a7149af611db66da119429cdbebedd337b252d36cbd981e4cc065f1a4133"},
+      "observation": {
+        "boundary": "combat",
+        "character": "IRONCLAD",
+        "ascension": 20,
+        "act": 1,
+        "floor": 16,
+        "hp": 51,
+        "maxHp": 75,
+        "gold": 3,
+        "deck": [
+          {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false},
+          {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Metallicize", "uuid": "22166372-f917-4a59-811b-1ce78ecc27cb", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Inflame", "uuid": "c047a2de-eb03-44ea-a536-08c3e6f8212e", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false}
+        ],
+        "candidates": [],
+        "combat": {
+          "turn": 3,
+          "energy": 3,
+          "energyPerTurn": 3,
+          "block": 0,
+          "cardsPlayedThisTurn": 0,
+          "attacksPlayedThisTurn": 0,
+          "skillsPlayedThisTurn": 0,
+          "cardsDiscardedThisTurn": 0,
+          "damageTrackingExact": true,
+          "lastTargetedMonster": 0,
+          "lastAttackUnblockedDamage": 0,
+          "timesDamagedThisCombat": 0,
+          "playerVulnerableSeen": false,
+          "cardDrawPerTurn": 5,
+          "playedThisTurn": [],
+          "playerPowers": [
+            {"id": "Metallicize", "amount": 4},
+            {"id": "Regeneration", "amount": 3},
+            {"id": "Strength", "amount": 3}
+          ],
+          "cardSelect": false,
+          "resolving": false,
+          "runicDome": false,
+          "frozenEye": false,
+          "extraRollMoveOnTurn": 0,
+          "skipMonsterTurnBits": 0,
+          "monsterCount": 1,
+          "monstersAlive": 1,
+          "hand": [
+            {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "HAND"}
+          ],
+          "draw": [
+            {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+            {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"}
+          ],
+          "discard": [
+            {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Anger", "uuid": "55551f83-105a-4c46-b422-0ae1ff0d4bc0", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"}
+          ],
+          "exhaust": [],
+          "limbo": [],
+          "stasis": [],
+          "monsters": [
+            {
+              "id": "TheGuardian",
+              "slot": 0,
+              "idx": 0,
+              "occupantGeneration": 1,
+              "hp": 210,
+              "maxHp": 250,
+              "block": 0,
+              "dead": false,
+              "escaping": false,
+              "halfDead": false,
+              "escapeNext": false,
+              "nextMove": 3,
+              "moveHistory": [1, 3],
+              "powers": [
+                {"id": "Sharp Hide", "amount": 4}
+              ],
+              "miscInfo": 40,
+              "intent": "ATTACK",
+              "intentDamage": 10
+            }
+          ],
+          "curCardQueueItem": {
+            "card": {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+            "target": 0,
+            "energyOnUse": 0,
+            "isEndTurn": false,
+            "triggerOnUse": true,
+            "ignoreEnergyTotal": false,
+            "freeToPlay": false,
+            "randomTarget": false,
+            "autoplay": false,
+            "regretCardCount": 0,
+            "purgeOnUse": false,
+            "exhaustOnUse": false
+          },
+          "lastCard": null,
+          "relics": [
+            {"id": "Burning Blood", "counter": -1, "usedUp": false},
+            {"id": "Bag of Preparation", "counter": -1, "usedUp": false},
+            {"id": "Bottled Tornado", "counter": -1, "usedUp": false}
+          ],
+          "potions": [
+            {"slot": 0, "id": "Potion Slot"},
+            {"slot": 1, "id": "Potion Slot"}
+          ]
+        },
+        "combatEntryHash": "71e188e1d1dc8af09c67d1f244c47851639c9ff56270dc4df18d3c66d63f9bec",
+        "silverSearchBudget": 1000,
+        "combatEntry": {
+          "character": "IRONCLAD",
+          "ascension": 20,
+          "act": 1,
+          "floor": 16,
+          "hp": 42,
+          "maxHp": 75,
+          "gold": 3,
+          "roomClass": "BOSS",
+          "previousRoomClass": "REST",
+          "encounter": "THE_GUARDIAN",
+          "potionKeepValue": 4.0,
+          "isBurningElite": false,
+          "potionCapacity": 2,
+          "deck": [
+            {"id": "AscendersBane", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Bash", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Anger", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Thunderclap", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Twin Strike", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Pommel Strike", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Metallicize", "upgraded": true, "misc": 0, "bottleBinding": 2},
+            {"id": "Battle Trance", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Anger", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Inflame", "upgraded": true, "misc": 0, "bottleBinding": -1}
+          ],
+          "relics": [
+            {"id": "Burning Blood", "data": -1, "usedUp": false},
+            {"id": "Bag of Preparation", "data": -1, "usedUp": false},
+            {"id": "Bottled Tornado", "data": -1, "usedUp": false}
+          ],
+          "potions": ["Regen Potion", "Potion Slot", "Potion Slot", "Potion Slot", "Potion Slot"]
+        },
+        "silverRoot": {
+          "schemaVersion": 4,
+          "playerTurn": 3,
+          "decisionInTurn": 0,
+          "character": "IRONCLAD",
+          "ascension": 20,
+          "act": 1,
+          "floor": 16,
+          "hp": 51,
+          "maxHp": 75,
+          "gold": 3,
+          "potionCapacity": 2,
+          "roomClass": "BOSS",
+          "burningElite": false,
+          "combatInstance": "71e188e1d1dc8af09c67d1f244c47851639c9ff56270dc4df18d3c66d63f9bec",
+          "encounter": "THE_GUARDIAN",
+          "combat": {
+            "turn": 3,
+            "energy": 3,
+            "energyPerTurn": 3,
+            "block": 0,
+            "cardsPlayedThisTurn": 0,
+            "attacksPlayedThisTurn": 0,
+            "skillsPlayedThisTurn": 0,
+            "cardsDiscardedThisTurn": 0,
+            "damageTrackingExact": true,
+            "lastTargetedMonster": 0,
+            "lastAttackUnblockedDamage": 0,
+            "timesDamagedThisCombat": 0,
+            "playerVulnerableSeen": false,
+            "cardDrawPerTurn": 5,
+            "playedThisTurn": [],
+            "playerPowers": [
+              {"id": "Metallicize", "amount": 4},
+              {"id": "Regeneration", "amount": 3},
+              {"id": "Strength", "amount": 3}
+            ],
+            "cardSelect": false,
+            "resolving": false,
+            "runicDome": false,
+            "frozenEye": false,
+            "extraRollMoveOnTurn": 0,
+            "skipMonsterTurnBits": 0,
+            "monsterCount": 1,
+            "monstersAlive": 1,
+            "hand": [
+              {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "HAND"}
+            ],
+            "draw": [
+              {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false, "location": "DRAW"},
+              {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DRAW"}
+            ],
+            "discard": [
+              {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Anger", "uuid": "55551f83-105a-4c46-b422-0ae1ff0d4bc0", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"}
+            ],
+            "exhaust": [],
+            "limbo": [],
+            "stasis": [],
+            "monsters": [
+              {
+                "id": "TheGuardian",
+                "slot": 0,
+                "idx": 0,
+                "occupantGeneration": 1,
+                "hp": 210,
+                "maxHp": 250,
+                "block": 0,
+                "dead": false,
+                "escaping": false,
+                "halfDead": false,
+                "escapeNext": false,
+                "nextMove": 3,
+                "moveHistory": [1, 3],
+                "powers": [
+                  {"id": "Sharp Hide", "amount": 4}
+                ],
+                "miscInfo": 40,
+                "intent": "ATTACK",
+                "intentDamage": 10
+              }
+            ],
+            "curCardQueueItem": {
+              "card": {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+              "target": 0,
+              "energyOnUse": 0,
+              "isEndTurn": false,
+              "triggerOnUse": true,
+              "ignoreEnergyTotal": false,
+              "freeToPlay": false,
+              "randomTarget": false,
+              "autoplay": false,
+              "regretCardCount": 0,
+              "purgeOnUse": false,
+              "exhaustOnUse": false
+            },
+            "lastCard": null,
+            "relics": [
+              {"id": "Burning Blood", "counter": -1, "usedUp": false},
+              {"id": "Bag of Preparation", "counter": -1, "usedUp": false},
+              {"id": "Bottled Tornado", "counter": -1, "usedUp": false}
+            ],
+            "potions": [
+              {"slot": 0, "id": "Potion Slot"},
+              {"slot": 1, "id": "Potion Slot"}
+            ]
+          }
+        }
+      },
+      "mcpGuardian": {
+        "is_gone": false,
+        "move": {"damage": 10},
+        "name": "The Guardian",
+        "current_hp": 210,
+        "id": "TheGuardian",
+        "max_hp": 250,
+        "powers": [
+          {"amount": 4, "id": "Sharp Hide"}
+        ],
+        "intent": "ATTACK"
+      },
+      "expected": {"miscInfo": 40, "modeShift": 0, "sharpHide": 4, "turn": 3, "guardianHp": 210}
+    },
+    {
+      "phase": "returned_to_offense",
+      "source": {"session": "19a655750c61b", "sequence": 206, "observationHash": "f861740d1060f5af2c01a27c545b067ad149373983c58eee8bc467fa1932c653", "producerRecordSha256": "498530ade08a1b481d98cbb82e33630393519f84ce6ae7b3969ae8563c0c1f6f", "acceptedSilverTraceRowSha256": "ca630f14b946888c731f89466a679798e4a3ef855f56ea746ac845e4ee1bad09"},
+      "observation": {
+        "boundary": "combat",
+        "character": "IRONCLAD",
+        "ascension": 20,
+        "act": 1,
+        "floor": 16,
+        "hp": 37,
+        "maxHp": 75,
+        "gold": 3,
+        "deck": [
+          {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false},
+          {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Metallicize", "uuid": "22166372-f917-4a59-811b-1ce78ecc27cb", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false},
+          {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+          {"id": "Inflame", "uuid": "c047a2de-eb03-44ea-a536-08c3e6f8212e", "upgraded": true, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false}
+        ],
+        "candidates": [],
+        "combat": {
+          "turn": 5,
+          "energy": 3,
+          "energyPerTurn": 3,
+          "block": 0,
+          "cardsPlayedThisTurn": 0,
+          "attacksPlayedThisTurn": 0,
+          "skillsPlayedThisTurn": 0,
+          "cardsDiscardedThisTurn": 0,
+          "damageTrackingExact": true,
+          "lastTargetedMonster": 0,
+          "lastAttackUnblockedDamage": 1,
+          "timesDamagedThisCombat": 5,
+          "playerVulnerableSeen": false,
+          "cardDrawPerTurn": 5,
+          "playedThisTurn": [],
+          "playerPowers": [
+            {"id": "Metallicize", "amount": 4},
+            {"id": "Regeneration", "amount": 1},
+            {"id": "Strength", "amount": 3}
+          ],
+          "cardSelect": false,
+          "resolving": false,
+          "runicDome": false,
+          "frozenEye": false,
+          "extraRollMoveOnTurn": 0,
+          "skipMonsterTurnBits": 0,
+          "monsterCount": 1,
+          "monstersAlive": 1,
+          "hand": [
+            {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Anger", "uuid": "55551f83-105a-4c46-b422-0ae1ff0d4bc0", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+            {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"}
+          ],
+          "draw": [],
+          "discard": [
+            {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Anger", "uuid": "34df9287-ac44-4eaf-a2e0-3aa5c4d76975", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Anger", "uuid": "437a9327-a895-46bc-ba82-1c14e4f96d3c", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+            {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"}
+          ],
+          "exhaust": [
+            {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false, "location": "EXHAUST"}
+          ],
+          "limbo": [],
+          "stasis": [],
+          "monsters": [
+            {
+              "id": "TheGuardian",
+              "slot": 0,
+              "idx": 0,
+              "occupantGeneration": 1,
+              "hp": 155,
+              "maxHp": 250,
+              "block": 0,
+              "dead": false,
+              "escaping": false,
+              "halfDead": false,
+              "escapeNext": false,
+              "nextMove": 5,
+              "moveHistory": [4, 5],
+              "powers": [
+                {"id": "Mode Shift", "amount": 50}
+              ],
+              "miscInfo": 50,
+              "intent": "ATTACK",
+              "intentDamage": 5
+            }
+          ],
+          "curCardQueueItem": {
+            "card": {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+            "target": 0,
+            "energyOnUse": 0,
+            "isEndTurn": false,
+            "triggerOnUse": true,
+            "ignoreEnergyTotal": false,
+            "freeToPlay": false,
+            "randomTarget": false,
+            "autoplay": false,
+            "regretCardCount": 0,
+            "purgeOnUse": false,
+            "exhaustOnUse": false
+          },
+          "lastCard": null,
+          "relics": [
+            {"id": "Burning Blood", "counter": -1, "usedUp": false},
+            {"id": "Bag of Preparation", "counter": -1, "usedUp": false},
+            {"id": "Bottled Tornado", "counter": -1, "usedUp": false}
+          ],
+          "potions": [
+            {"slot": 0, "id": "Potion Slot"},
+            {"slot": 1, "id": "Potion Slot"}
+          ]
+        },
+        "combatEntryHash": "71e188e1d1dc8af09c67d1f244c47851639c9ff56270dc4df18d3c66d63f9bec",
+        "silverSearchBudget": 1000,
+        "combatEntry": {
+          "character": "IRONCLAD",
+          "ascension": 20,
+          "act": 1,
+          "floor": 16,
+          "hp": 42,
+          "maxHp": 75,
+          "gold": 3,
+          "roomClass": "BOSS",
+          "previousRoomClass": "REST",
+          "encounter": "THE_GUARDIAN",
+          "potionKeepValue": 4.0,
+          "isBurningElite": false,
+          "potionCapacity": 2,
+          "deck": [
+            {"id": "AscendersBane", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Strike_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Defend_R", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Bash", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Anger", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Thunderclap", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Twin Strike", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Pommel Strike", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Metallicize", "upgraded": true, "misc": 0, "bottleBinding": 2},
+            {"id": "Battle Trance", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Anger", "upgraded": false, "misc": 0, "bottleBinding": -1},
+            {"id": "Inflame", "upgraded": true, "misc": 0, "bottleBinding": -1}
+          ],
+          "relics": [
+            {"id": "Burning Blood", "data": -1, "usedUp": false},
+            {"id": "Bag of Preparation", "data": -1, "usedUp": false},
+            {"id": "Bottled Tornado", "data": -1, "usedUp": false}
+          ],
+          "potions": ["Regen Potion", "Potion Slot", "Potion Slot", "Potion Slot", "Potion Slot"]
+        },
+        "silverRoot": {
+          "schemaVersion": 4,
+          "playerTurn": 5,
+          "decisionInTurn": 0,
+          "character": "IRONCLAD",
+          "ascension": 20,
+          "act": 1,
+          "floor": 16,
+          "hp": 37,
+          "maxHp": 75,
+          "gold": 3,
+          "potionCapacity": 2,
+          "roomClass": "BOSS",
+          "burningElite": false,
+          "combatInstance": "71e188e1d1dc8af09c67d1f244c47851639c9ff56270dc4df18d3c66d63f9bec",
+          "encounter": "THE_GUARDIAN",
+          "combat": {
+            "turn": 5,
+            "energy": 3,
+            "energyPerTurn": 3,
+            "block": 0,
+            "cardsPlayedThisTurn": 0,
+            "attacksPlayedThisTurn": 0,
+            "skillsPlayedThisTurn": 0,
+            "cardsDiscardedThisTurn": 0,
+            "damageTrackingExact": true,
+            "lastTargetedMonster": 0,
+            "lastAttackUnblockedDamage": 1,
+            "timesDamagedThisCombat": 5,
+            "playerVulnerableSeen": false,
+            "cardDrawPerTurn": 5,
+            "playedThisTurn": [],
+            "playerPowers": [
+              {"id": "Metallicize", "amount": 4},
+              {"id": "Regeneration", "amount": 1},
+              {"id": "Strength", "amount": 3}
+            ],
+            "cardSelect": false,
+            "resolving": false,
+            "runicDome": false,
+            "frozenEye": false,
+            "extraRollMoveOnTurn": 0,
+            "skipMonsterTurnBits": 0,
+            "monsterCount": 1,
+            "monstersAlive": 1,
+            "hand": [
+              {"id": "Defend_R", "uuid": "207b8dd4-c58f-45e3-8ed7-dac09b35791b", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Thunderclap", "uuid": "065b5792-a588-4076-948b-f296aae9baee", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Anger", "uuid": "55551f83-105a-4c46-b422-0ae1ff0d4bc0", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Strike_R", "uuid": "c16a77eb-47f8-402c-afde-84a54c32fd1a", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"},
+              {"id": "Twin Strike", "uuid": "2624c11c-2077-429a-b19c-4707bbd7852f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "HAND"}
+            ],
+            "draw": [],
+            "discard": [
+              {"id": "Battle Trance", "uuid": "6cb409f2-8a32-4817-b211-17662860c8c2", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Bash", "uuid": "1a92040f-8073-4bf5-a416-fb5ddc917463", "upgraded": false, "misc": 0, "cost": 2, "costForTurn": 2, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Anger", "uuid": "34df9287-ac44-4eaf-a2e0-3aa5c4d76975", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Anger", "uuid": "b4dec7eb-27de-4a66-bbf9-b520b4dba35b", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Pommel Strike", "uuid": "780ed0c1-773b-43ec-8b29-fd8e5a3661a5", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "f1e60f0e-da45-43dd-93e4-636d97b27944", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "6a7baf8b-faae-4c31-9e05-895f60b0bc49", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "4b11565d-6d72-4bba-881b-0c39953bf922", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "73a056bf-8bd4-479a-8320-cf6e5d84e30f", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "3662a323-5a2f-4f8a-94bc-be5593aaceb9", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Defend_R", "uuid": "b18b3361-f0fc-48ec-992c-e718e943bfe6", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Anger", "uuid": "437a9327-a895-46bc-ba82-1c14e4f96d3c", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"},
+              {"id": "Strike_R", "uuid": "8fca0e9e-d697-4f63-9b16-3ca93a7294dc", "upgraded": false, "misc": 0, "cost": 1, "costForTurn": 1, "freeToPlayOnce": false, "retain": false, "location": "DISCARD"}
+            ],
+            "exhaust": [
+              {"id": "AscendersBane", "uuid": "302b62c1-9048-4549-a22e-b793bc6300c4", "upgraded": false, "misc": 0, "cost": -2, "costForTurn": -2, "freeToPlayOnce": false, "retain": false, "location": "EXHAUST"}
+            ],
+            "limbo": [],
+            "stasis": [],
+            "monsters": [
+              {
+                "id": "TheGuardian",
+                "slot": 0,
+                "idx": 0,
+                "occupantGeneration": 1,
+                "hp": 155,
+                "maxHp": 250,
+                "block": 0,
+                "dead": false,
+                "escaping": false,
+                "halfDead": false,
+                "escapeNext": false,
+                "nextMove": 5,
+                "moveHistory": [4, 5],
+                "powers": [
+                  {"id": "Mode Shift", "amount": 50}
+                ],
+                "miscInfo": 50,
+                "intent": "ATTACK",
+                "intentDamage": 5
+              }
+            ],
+            "curCardQueueItem": {
+              "card": {"id": "Anger", "uuid": "6e5ffc53-de12-45d8-9a81-e639506591fe", "upgraded": false, "misc": 0, "cost": 0, "costForTurn": 0, "freeToPlayOnce": false, "retain": false},
+              "target": 0,
+              "energyOnUse": 0,
+              "isEndTurn": false,
+              "triggerOnUse": true,
+              "ignoreEnergyTotal": false,
+              "freeToPlay": false,
+              "randomTarget": false,
+              "autoplay": false,
+              "regretCardCount": 0,
+              "purgeOnUse": false,
+              "exhaustOnUse": false
+            },
+            "lastCard": null,
+            "relics": [
+              {"id": "Burning Blood", "counter": -1, "usedUp": false},
+              {"id": "Bag of Preparation", "counter": -1, "usedUp": false},
+              {"id": "Bottled Tornado", "counter": -1, "usedUp": false}
+            ],
+            "potions": [
+              {"slot": 0, "id": "Potion Slot"},
+              {"slot": 1, "id": "Potion Slot"}
+            ]
+          }
+        }
+      },
+      "mcpGuardian": {
+        "is_gone": false,
+        "move": {"hits": 4, "damage": 5},
+        "name": "The Guardian",
+        "current_hp": 155,
+        "id": "TheGuardian",
+        "max_hp": 250,
+        "powers": [
+          {"amount": 50, "id": "Mode Shift"}
+        ],
+        "intent": "ATTACK"
+      },
+      "expected": {"miscInfo": 50, "modeShift": 50, "sharpHide": 0, "turn": 5, "guardianHp": 155}
+    }
+  ]
+}
