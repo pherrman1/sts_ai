@@ -444,7 +444,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
-            || search::nativeSilverReuseCap() != 32768)
+            || search::nativeSilverLearnedStopEnabled() || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
@@ -567,9 +567,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
-            } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
-                runFullRunOocPolicyStep(gc, agent, restV, shopV);
-            else traceBy = "mcts";
+            } else if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) {
+                traceBy = "mcts";
+            } else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) {
+                traceBy = "heart1_fallback";
+            } else runFullRunOocPolicyStep(gc, agent, restV, shopV);
             if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
                     && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
                 std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",

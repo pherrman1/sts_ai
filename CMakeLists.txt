@@ -122,6 +122,14 @@ add_test(NAME potion_reward_swap COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(potion_reward_swap PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(shop_rules_fix_test tests/shop_rules_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(shop_rules_fix_test PRIVATE include json/include)
+add_test(NAME shop_rules_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:shop_rules_fix_test>)
+set_tests_properties(shop_rules_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(full_hp_rest_filter_test tests/full_hp_rest_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(full_hp_rest_filter_test PRIVATE include json/include)
@@ -453,7 +461,9 @@ set_tests_properties(ironclad_card_java_parity PROPERTIES LABELS "core")
 add_test(NAME match_and_keep COMMAND $<TARGET_FILE:unit-test> match_and_keep)
 set_tests_properties(match_and_keep PROPERTIES LABELS "core")
 add_test(NAME silver_escape_penalty COMMAND $<TARGET_FILE:unit-test> silver_escape_penalty)
+add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> silver_rollout_zero_cost_loop)
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
+set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
 add_test(NAME ironclad_card_coverage COMMAND $<TARGET_FILE:unit-test> ironclad_card_coverage)
