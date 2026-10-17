@@ -19957,3 +19957,166 @@ Seeds 111110000–111110999 and smokes 111119900–111119905 are used; the revie
 [Result](evidence/potion_price_probe_20261017/RESULT.md), [analysis.json](evidence/potion_price_probe_20261017/analysis.json).
 Raw: `/mnt/project-files/potion-price-probe/ppp-w0{0,1}.tar.gz`.
 **Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
+
+## §511 — current A0 Writhing/Ritual VALIDATION exposure and label coverage (2026-10-17)
+
+**Question:** does the current selected A0 CTM stack reproduce the old
+Writhing/Ritual exposure failure? Reviewed source `f2d0dbd3`, actual fast
+`c6d56bbc…` / standard `b9188de0…`, preserved source-grouped VALIDATION,
+32 upstream draws, sampling seed 20260920, four threads, 300-second limit.
+No game seeds, training, TEST numerical access or support changes.
+
+**Result:** `CURRENT_CHILD_RITUAL_VALIDATION_DIAGNOSTIC`, exit 0, 4.135 seconds,
+143 rows / 68 sources, 142 fast + 1 standard. Conditional NLL 0.0033221452,
+mixture NLL 0.0033055260, gap -0.0000166192; source-bootstrap 95% interval
+[-0.0001389866, 0.0001026931], zero missing masses. Independent result review
+recomputed all scores and bootstrap exactly. Native loader parity on synthetic
+public inputs passed within 1.67e-6.
+
+**Limitation:** all 143 observed Dagger increments are zero. A label-only
+TRAIN/VALIDATION census found just three +5 increments in 1,095 TRAIN rows
+and none in 143 VALIDATION rows; saved targets match pre/post deck data.
+The fast downstream checkpoint differs from the standard checkpoint in the
+old failing report. These results neither repair nor qualify the intersection.
+No fit is justified by the zero-growth cohort alone. Deterministic regression then confirmed lost final-kill growth and false
+half-dead growth. Source repairs and RAW serialization tests now preserve
++3/+5 on eligible final kills, omit revival phases, and share the three-kill
+Awakened budget. These repairs do not qualify models trained on the old
+labels; old rows lack the history needed for reliable relabeling.
+
+**ELI5:** the model predicts “the Dagger does not grow” accurately on these
+examples, but none shows the Dagger growing. We must verify the label producer
+before training it to predict growth.
+
+**Evidence:** [protocol, result, census, custody and raw receipts](evidence/ctm_ritual_validation_20261017/REPORT.md).
+**Knowledge impact:** maintained current-research model custody and coverage;
+no production/default change.
+
+
+## §512 — corrected Ritual producer: one TRAIN-source canary (2026-10-17)
+
+**Question:** does the reviewed corrected source emit valid RAW transitions
+and positive permanent Dagger growth in an ordinary teacher trajectory?
+Frozen source `b94da9bc`, reviewed live ancestor `8879b531`, one reused TRAIN
+source 52000001, A0, 10,000 caller simulations, one CPU/no GPU, 300 s/8 GB.
+Current-source Path-B teacher uses explicit historical leaf/rollout settings;
+key collection is ON by current compiled default, not an old-teacher replay.
+
+**Result:** `CORRECTED_PRODUCER_CANARY_GROWTH_OBSERVED`, rc 0, 16.344 s,
+24 valid victory rows (Acts 1/2/3: 9/9/6), zero quarantines or unresolved
+outcomes. Dagger 15→18 at fight 12, then 18→21 against Writhing at fight 18.
+Three intersection rows, one positive. Independent result/custody review PASS.
+No retry, fit, TEST numerical access, support promotion or deployment.
+
+**ELI5:** a real corrected trajectory now records the Dagger growing against
+Writhing Mass. One example does not teach or qualify the model. Upgraded,
+multiple-Dagger and potion coverage still needs a controlled collection plan;
+future teachers must explicitly freeze the key objective.
+
+**Evidence:** [protocol, build, RAW receipts and independent result review](evidence/ritual_corrected_canary_20261017/REPORT.md).
+**Knowledge impact:** positive corrected-producer behavior; qualification remains open.
+
+## §505 — controlled Ritual/Writhing coverage pilot (2026-10-17)
+
+**Question:** can the corrected producer, with controlled Writhing/Dagger/potion
+pre-states, yield replicated positive Ritual growth across the twelve cells?
+Frozen source `55837b02`, 8 TRAIN + 4 VALIDATION sources × 12 cells = 144 units,
+A0, 10,000 simulations, eight single-thread workers, 60 s/unit.
+
+**Result:** `PILOT_COVERAGE_INCONCLUSIVE`. 144/144 units valid in 223 s;
+494 Writhing targets, only 25 (5%) with positive growth; 43 coverage cells
+short, including every VALIDATION `cellPositive` cell. No retry, fit, TEST
+access or support change.
+
+**ELI5:** the controlled setup works, but even with Daggers forced into the
+deck the bot rarely finishes Writhing Mass with one, so there are still too
+few positive examples to train or qualify on.
+
+**Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_20261017/REPORT.md).
+**Knowledge impact:** positive-label scarcity is behavioral, not a producer defect; qualification remains open.
+
+## §506 — controlled Ritual coverage pilot v2: scaled sources (2026-10-17)
+
+**Question:** with 5× disjoint sources (40 TRAIN + 20 VALIDATION, 720 units)
+and everything else as in §505, is positive Ritual growth replicated per cell?
+Frozen source `5e282b6c`, same executable, eight workers.
+
+**Result:** `PILOT_COVERAGE_INCONCLUSIVE`, driven only by the Smoke cells.
+720/720 valid in 1,306 s; 2,906 targets, 175 (6.0%) positive. All eight
+natural/Brew cells meet every threshold in TRAIN and VALIDATION; the four
+Smoke cells reach at most 1 TRAIN positive source. No fit, TEST access or
+support change.
+
+**ELI5:** with enough games, the Dagger-kill examples now show up reliably,
+except when a Smoke Bomb is in the belt, where they almost never happen.
+
+**Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_v2_20261017/REPORT.md).
+**Knowledge impact:** non-Smoke Ritual coverage is now adequate for review; Smoke-belt Writhing remains uncovered.
+
+## §507 — Ritual-only CTM head refit on corrected pilot rows (2026-10-17)
+
+**Question:** does refitting only `ritual.*` on corrected §505/§506 rows fix the
+deployed heads' Dagger-growth underprediction (≈0.5% predicted vs 7–10%
+observed on Writhing) without regressing other Dagger fights?
+Frozen source `a7179dc7`; 6,445 deduplicated examples; epochs by TRAIN source CV.
+
+**Result:** `RITUAL_REFIT_NOT_QUALIFIED`, with 4 of 5 criteria passing:
+- Writhing not escaped: NLL 0.514 → 0.350, CI [−0.267, −0.063]. Predicted growth 0.6% → 6.2% vs 8.3% observed.
+- Escaped fights stay at 0.
+- Non-Writhing: point estimate 0.4429 → 0.4406, but CI upper +0.0107 > the +0.005 bound (24 sources). That is the only failure.
+
+No deployment, TEST access or capability change.
+
+**ELI5:** the new Dagger head is much better on Writhing Mass and not worse
+elsewhere on average, but the "not worse elsewhere" test didn't have enough
+games to prove it to the margin we set in advance.
+
+**Evidence:** [protocol, fit, tensors and VALIDATION scores](evidence/ctm_ritual_refit_20261017/REPORT.md).
+**Knowledge impact:** deployed Ritual heads are miscalibrated on corrected data; exposure-gap gate cannot detect it.
+**Override (2026-10-17):** Philipp accepted the refit with criterion 4 waived.
+It is packaged as research candidate `pathb-r2-ritual-refit` with `writhingRitual`.
+The native runtime supports and samples all 518 checked Writhing+Dagger
+VALIDATION states, where the deployed pair supports none. It is not the default stack.
+
+## §508 — Ritual-refit CTM vs deployed CTM in A0 OOC MCTS, 64 paired seeds (2026-10-17)
+
+**Result:** uninformative. All 64 pairs are identical: 58/64 act-3 clears in both arms, mean floor 49.55 in both,
+128/128 rc=0. The refit candidate loaded in every `ritual` unit. No run held a Ritual Dagger, so its head was
+never queried, and no OOC MCTS support abort occurred in either arm. Setup:
+- Seeds 111000800–863.
+- Arm C prior, §488 stack at A0.
+- The arms differed only in the CTM pair.
+- Run commit `607d683b`, independent pre-launch review PASS.
+
+No default change.
+
+**ELI5:** the bot never picked up a Ritual Dagger in these 64 games, so the new Dagger model never got a chance to
+matter.
+
+**Evidence:** [prereg, arms, results and report](evidence/ritual_refit_ab_20261017/REPORT.md).
+**Knowledge impact:** Ritual Dagger acquisition is rare at A0; random-seed A/Bs cannot measure Ritual-head changes.
+
+## §513 — per-type Silver potion weights vs flat 11 in whole A20 runs: NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Silver leaf evaluation"):** "yes set that up", on testing per-type potion
+weights in Silver's leaf after §510; 16:31Z: "ooc should be studnet C. lets do 128 seeds on 4 workers".
+**Design:** [PREREG](evidence/silver_potion_weights_20261017/PREREG.md), independent pre-launch review PASS. New
+research option `STS_SILVER_POTION_WEIGHTS` (PR #610; unset = flat 11). Three arms on the §473 `off` stack with
+student C as the OOC policy, **pre-#594 shop rules** (RUN_COMMIT `56e03b29`, based on `da1ce052`; binary
+`0f4bc4a1…`): `base` flat 11; `level` 7.8 (§510 non-Fairy price), Fairy and Smoke Bomb 11; `type` §510 per-type
+prices shrunk toward 7.8 (3.5 Swift … 12.3 Attack), Fairy and Smoke Bomb 11. Whole runs, so the score is not Silver's
+own formula. A20 seeds 111152000–111152127; primary Δfloor type − base, paired bootstrap.
+**Result: NOT_SHOWN on all three contrasts.** 384/384 units rc=0, nothing dropped; 4 tars verified from a second
+container. Mean floor base 36.65, level 35.85, type 35.28; act-3 clears 36 / 30 / 35 of 128. Type − base Δfloor
+−1.37 [−3.45, +0.74]; level − base −0.80 [−2.96, +1.36]; type − level −0.57 [−2.55, +1.37]. Boss deaths 48 / 58 /
+55. Student C took 98.9% of OOC decisions in every arm; the rest (1.1%, 440) were Match and Keep, whose card
+choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move them to student C).
+**Interpretation:** no detectable effect at ±2 floors; both point estimates negative. Descriptively, lower weights
+leave Silver about 0.1 fewer potions at the first boss battle of each act (battles starting on floors 16, 33, 50:
+1.27 vs 1.15 / 1.14). **Inference:** that is the §385
+direction (cheaper potions get spent earlier) without a visible gain. Per the decision rule the option stays
+research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000–111152127 and smokes
+111153900–111153903, 111153948–949 are used.
+[Result](evidence/silver_potion_weights_20261017/RESULT.md), [analysis.json](evidence/silver_potion_weights_20261017/analysis.json).
+Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
+**Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.

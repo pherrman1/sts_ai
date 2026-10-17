@@ -204,6 +204,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_trace.cpp
     apps/one_combat/semantic_pilot.cpp
     apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ritual_writhing_setup.cpp
     apps/one_combat/silver_synth_gen.cpp
     apps/one_combat/silver_synth_replay.cpp
     apps/one_combat/ctm_offline_score.cpp
@@ -379,6 +380,32 @@ add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_slime_boss_split.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_guardian_a20_phases.json)
 
+add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
+    apps/one_combat/combat_transition.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ritual_dagger_persistence_test PRIVATE include json/include apps)
+add_test(NAME ritual_dagger_persistence COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ritual_dagger_persistence_test>)
+set_tests_properties(ritual_dagger_persistence PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(ritual_writhing_setup_test apps/test_ritual_writhing_setup.cpp
+    apps/one_combat/ritual_writhing_setup.cpp apps/one_combat/combat_transition.cpp
+    apps/one_combat/combat_predictor_input.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ritual_writhing_setup_test PRIVATE include json/include apps)
+add_test(NAME ritual_writhing_setup COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ritual_writhing_setup_test>)
+set_tests_properties(ritual_writhing_setup PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(ritual_dagger_eligibility_test apps/test_ritual_dagger_eligibility.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ritual_dagger_eligibility_test PRIVATE include json/include)
+add_test(NAME ritual_dagger_eligibility COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ritual_dagger_eligibility_test>)
+set_tests_properties(ritual_dagger_eligibility PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat_feature_test PUBLIC include)
@@ -472,6 +499,8 @@ set_tests_properties(match_and_keep PROPERTIES LABELS "core")
 add_test(NAME silver_escape_penalty COMMAND $<TARGET_FILE:unit-test> silver_escape_penalty)
 add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> silver_rollout_zero_cost_loop)
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
+add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_potion_weights)
+set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
@@ -963,6 +992,11 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
 link_ctm_crypto(combat_transition_runtime_probe)
+add_test(NAME ctm_ritual_kill_budget COMMAND $<TARGET_FILE:combat_transition_runtime_probe>
+    --ritual-kill-budget-selftest
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
+set_tests_properties(ctm_ritual_kill_budget PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME combat_transition_native_contract COMMAND python3 -m unittest
     tests.test_combat_transition_native_contract -v)
 set_tests_properties(combat_transition_native_contract PROPERTIES

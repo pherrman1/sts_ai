@@ -1,0 +1,10 @@
+ordinary kill base PASS
+regrowing Darkling base FAIL: Ritual growth got 3, expected 0
+last Darkling base PASS
+Awakened One phase one base FAIL: Ritual growth got 3, expected 0
+Minion base PASS
+ordinary kill+ PASS
+regrowing Darkling+ FAIL: Ritual growth got 5, expected 0
+last Darkling+ PASS
+Awakened One phase one+ FAIL: Ritual growth got 5, expected 0
+Minion+ PASS

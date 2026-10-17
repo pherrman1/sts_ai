@@ -1,0 +1,119 @@
+{
+  "archiveRoot": "/home/philippherrmann/Documents/sts/wt-ctm-retrain/build/ctm-retrain-a69f8862",
+  "currentFastIntersectionExposure": {
+    "basis": "Inference: located current-fast qualification is conditional VALIDATION; inherited exposure and old failed intersection report bind the distinct standard head. No matching current-fast intersection exposure result located.",
+    "supportExclusionRetained": true,
+    "verdict": "UNVERIFIED"
+  },
+  "fastConditionalQualification": {
+    "decision": "DEEPSET_DOWNSTREAM_REJECTED",
+    "overridePath": "s19-override.json",
+    "overrideSha256": "a2d28af3a11f2d0352afa616fa0009ff4607450f0b63e19b06c7815843a97e4b",
+    "path": "s19-downstream/qualification.json",
+    "scope": "Conditional teacher-forced VALIDATION, individual Ritual/Writhing aggregates; no composed Writhing/Ritual intersection exposure verdict.",
+    "sha256": "5cca45aeda603a971d07358abb1bbf69a047362ae9ff18d1881ae8d4f20b6487",
+    "waivedFailure": "cards singleton exact-label accuracy drop exceeds 0.5pp"
+  },
+  "fastInheritedQualification": {
+    "bothBindDownstream": "95e07d97c34a2b220a2ed5d570b2680b190f647c5a5cca945c52a2109e8cd0f0",
+    "exposurePath": "s16/final-support-exposure-exact-v2.json",
+    "exposureSha256": "adb54c9ffe67836a3b5da721db071a3e92e8ced7529da34debf9cd32ca4515da",
+    "validityPath": "s16/final-support-raw.json",
+    "validitySha256": "44fc5bbf7522d03b3f914526dc75d121bc8a4e62143aef1e5446ff3746f68605"
+  },
+  "oldFailedExposure": {
+    "downstreamSha256": "95e07d97c34a2b220a2ed5d570b2680b190f647c5a5cca945c52a2109e8cd0f0",
+    "escapeCheckpointIncluded": false,
+    "path": "capabilities/exposure-writhing-ritual.json",
+    "pinsPath": "pins-12.json",
+    "pinsSha256": "c5fc22b3592675bc3b34854d5da59f7755560394e009977d01d5e435a10465db",
+    "sha256": "7cc9cebfd6f32199bac60bf3f4a80e88c4c3e63ef31bfdcf5179881f8fd089fc"
+  },
+  "originalRitualWarmStart": {
+    "fastRitualMatches": [
+      0,
+      6
+    ],
+    "path": "parent/ritual-v1/event.pt",
+    "selectedEpoch": 12,
+    "sha256": "f8358328c4584bb8d8f8dfde24c6e0b6ee8d51cfdbb30c84a603e10ca2248f63",
+    "standardRitualMatches": [
+      0,
+      6
+    ]
+  },
+  "pins": {
+    "pins-10.json": {
+      "fastExporterDownstream": "06709aed52532085e99a47c5c7f07174a915038227232954cc16d60fa35809d4",
+      "sha256": "7c3cf05cdd1a2f47a2d47639ec0a1ccd4c9ef55b4f5657adf09920c61a15d3a8"
+    },
+    "pins-12.json": {
+      "fastExporterDownstream": "06709aed52532085e99a47c5c7f07174a915038227232954cc16d60fa35809d4",
+      "sha256": "c5fc22b3592675bc3b34854d5da59f7755560394e009977d01d5e435a10465db"
+    }
+  },
+  "production": {
+    "fast": {
+      "artifact": "selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+      "downstreamCheckpoint": "s19-downstream/downstream.pt",
+      "downstreamSha256": "06709aed52532085e99a47c5c7f07174a915038227232954cc16d60fa35809d4",
+      "ritualPackedTensorSha256": "80bec2766d582124bf991aef4039f5d74e3e97e157ea34016bff2b547a587168",
+      "selectedEpoch": 11,
+      "sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+      "tensorMatches": {
+        "gold": [
+          8,
+          8
+        ],
+        "relic": [
+          14,
+          14
+        ],
+        "ritual": [
+          6,
+          6
+        ],
+        "writhing": [
+          6,
+          6
+        ]
+      }
+    },
+    "standard": {
+      "artifact": "selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+      "downstreamCheckpoint": "parent/full-union-downstream-v1/downstream.pt",
+      "downstreamSha256": "95e07d97c34a2b220a2ed5d570b2680b190f647c5a5cca945c52a2109e8cd0f0",
+      "ritualPackedTensorSha256": "7ce2c654584e786973e45fbeb2eddcf84c53242b49e77698ba840d5d0256248a",
+      "selectedEpoch": 10,
+      "sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+      "tensorMatches": {
+        "gold": [
+          8,
+          8
+        ],
+        "relic": [
+          14,
+          14
+        ],
+        "ritual": [
+          6,
+          6
+        ],
+        "writhing": [
+          6,
+          6
+        ]
+      }
+    }
+  },
+  "schema": "a0_ritual_artifact_custody_v1",
+  "scope": "Read-only existing artifact/checkpoint tensor comparison and filtered existing aggregate metadata; no corpus or numerical cache arrays opened, no new TEST labels/scoring, fitting or qualification.",
+  "tensorComparison": "Each checkpoint stateDict tensor is CPU contiguous float32 little-endian bytes and is compared with the identically named native payload tensor. Packed Ritual digests concatenate the six tensors in lexicographic tensor-name order.",
+  "upstreamCheckpoints": {
+    "capabilities/esc-fast-fit/escape.pt": "d63c829c019e7e2798232e4f3bcfc5ac02a93d74c33000634d075e36bb0cc5f7",
+    "capabilities/esc-std-fit/escape.pt": "8c5ab91fb9d88be3fedc30c0afb5ccf4839a87c8df0aa07e132301d6e11ea4ac",
+    "p1/deepsets.pt": "0a1b72ee75cb059c6c2398f69bf7aeb536c41f0a55dcaf6b193c46e28fff6a15",
+    "s18-distill/student.pt": "006a5e08fde3d634a4f4b2e482059401c0b1bba58b93c4d59d8263ee026da60f",
+    "s21-specialist/C.pt": "ccf2a504308d4b6f3c1b73d3766abbdb9a4d360e4610288f53e055ddea897811"
+  }
+}
