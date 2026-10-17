@@ -1,0 +1,10 @@
+final Cultist base FAIL: lethal Dagger base lost growth: got 15, expected 18
+final Writhing Mass base FAIL: lethal Dagger base lost growth: got 15, expected 18
+nonfinal Louse base PASS
+Double Tap copy base PASS
+final Cultist+ FAIL: lethal Dagger + lost growth: got 15, expected 20
+final Writhing Mass+ FAIL: lethal Dagger + lost growth: got 15, expected 20
+nonfinal Louse+ PASS
+Double Tap copy+ PASS
+generated Dagger PASS
+nonlethal Dagger PASS

@@ -1,0 +1,46 @@
+{
+  "baseline": "f2d0dbd30b3667a847d3b92332a110baded509b6",
+  "files": {
+    "src/combat/Actions.cpp": {
+      "beforeSha256": "e3db85358b2f341c65f2f528055cdbbd2e40db52ca3234d000a5513693143690",
+      "afterSha256": "1c44b9d0fc46fa6b4f70aad9a74f3f2d639937bf43420725724c1f6795f58558"
+    },
+    "src/combat/BattleContext.cpp": {
+      "beforeSha256": "337a6182843a8a55b1270745c3a7786725be1be84aad50177e7e5df05aedae6a",
+      "afterSha256": "5431a3df43504f4176f41d5579ecd49cacac8c8138323d213bfe862874b0023f"
+    },
+    "apps/one_combat/combat_transition_near_full.cpp": {
+      "beforeSha256": "b9a504fedd5863295ea7eabd1fa3eff555d8843fad96e2a6ec476cc206d633ff",
+      "afterSha256": "de44b3c32565dc7295aeabb803c15250a4aca6e1ba33683b3dab75a628f7ebcf"
+    },
+    "tools/combat_transition_sparse_events.py": {
+      "beforeSha256": "f3daee61994fb1320f32e161b7b880c6864541e0c62ff40949fcff0c90420d41",
+      "afterSha256": "866e5f83afc9c1e749db7268cc9fd98ce3d706b5453e74c8f0e0d1942349a1f2"
+    },
+    "tools/combat_transition_gold_proc_budget.py": {
+      "beforeSha256": "321980547c3243b01375278ef97ac6d8106ba6df675b497a8bb4d34f51429d50",
+      "afterSha256": "327f20e87fe3a749d283edd968c42517ecfe0a3ac7b8a85f9549ae80eb0be367"
+    }
+  },
+  "before": {
+    "persistence": "4 final-kill failures; 6 controls pass",
+    "eligibility": "4 half-dead failures; 6 controls pass",
+    "closure": "2 Python failures and native four-kill-budget failure"
+  },
+  "after": {
+    "dedicatedCases": "14 persistence plus 12 eligibility pass",
+    "rawSerialization": "4 final-hit cases capture 18/20 before screen continuation",
+    "affectedCTests": "10/10 pass in 1.17 s before final explicit positive-phase controls",
+    "closure": "25 Python tests pass in 0.052 s; native CTest passes in 0.05 s",
+    "generatedImplantAlias": "Original Dagger remains 15 and appended Parasite remains misc 0",
+    "eligibilityPositiveControl": "Real Awakened rebirth followed by final-phase +3/+5",
+    "finalDedicatedCTests": "3/3 pass in 0.08 s, including 14 persistence and 12 eligibility cases"
+  },
+  "independentReview": {
+    "persistence": "Java reviewer: no findings, including RAW callback and Implant alias",
+    "eligibility": "native reviewer no findings",
+    "closure": "Java reviewer: no findings; installed Cultists are not Minions"
+  },
+  "modelArtifactsChanged": false,
+  "testLabelsDecoded": false
+}

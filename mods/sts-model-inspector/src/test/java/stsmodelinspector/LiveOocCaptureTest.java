@@ -118,6 +118,16 @@ public final class LiveOocCaptureTest {
                     || !Integer.valueOf(2).equals(((Map<?,?>)discards.get(1).get("liveAction")).get("potionSlot"))))
                 throw new AssertionError("potion discard physical slot mapping");
         }
+        for(int variant=0;variant<3;++variant) {
+            java.util.List<Map<String,Object>> choices=new java.util.ArrayList<>();
+            LiveOocCapture.captureShopPotionChoice(choices,
+                    java.util.Arrays.asList("card", "relic", "potion"), 2, 1,
+                    variant!=1, variant==2);
+            if(choices.size()!=(variant==0?1:0))throw new AssertionError("shop potion capacity/Sozu gate");
+            if(variant==0 && (!Integer.valueOf(3).equals(((Map<?,?>)choices.get(0).get("liveAction")).get("choiceIndex"))
+                    || !Integer.valueOf(1).equals(((Map<?,?>)choices.get(0).get("nativeAction")).get("index"))))
+                throw new AssertionError("shop potion physical choice index shifted");
+        }
         java.util.List<Object> libraryCards=new java.util.ArrayList<>();
         java.util.List<String> libraryLabels=new java.util.ArrayList<>();
         for(int i=0;i<20;++i) {
@@ -213,6 +223,17 @@ public final class LiveOocCaptureTest {
             ok = boss ? LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0)
                     : LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,true,false);
             if (ok || !choices.isEmpty()) throw new AssertionError("cancelable screen was forced");
+            if (boss) {
+                mcp.put("cancel_button","return");mcp.put("room_type","RestRoom");mcp.put("room_phase","COMPLETE");
+                if (!LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0) || choices.size()!=1)
+                    throw new AssertionError("completed campfire map Return blocked forced boss entrance");
+                choices.clear();mcp.put("room_phase","INCOMPLETE");
+                if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0))
+                    throw new AssertionError("unfinished campfire map bypassed its decision");
+                mcp.put("room_phase","COMPLETE");mcp.put("cancel_button","cancel");
+                if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0))
+                    throw new AssertionError("unknown cancel button qualified as map Return");
+            }
             mcp.put("can_cancel",false);
             if (boss) {
                 if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,13,0)
@@ -387,6 +408,19 @@ public final class LiveOocCaptureTest {
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 persistedPath, false, "", 2, java.util.Arrays.asList(16, 18)).get(14)))
             throw new AssertionError("incomplete prior map history was promoted to a boss");
+        java.util.List<String> vanillaBossPath = new java.util.ArrayList<>();
+        for(int act=1;act<=2;++act) {
+            for(int room=0;room<15;++room)vanillaBossPath.add("M");
+            vanillaBossPath.add("BOSS");
+        }
+        java.util.List<String> actThree = LiveOocCapture.canonicalPathHistory(
+                vanillaBossPath,true,"",3,java.util.Arrays.asList(16,33));
+        if(!"BOSS".equals(actThree.get(15)) || !"BOSS".equals(actThree.get(31)))
+            throw new AssertionError("vanilla BOSS path marker lost on Act 3 entry");
+        if(!"BOSS".equals(LiveOocCapture.canonicalPathHistory(
+                vanillaBossPath.subList(0,16),true,"REST",1,
+                java.util.Collections.<Integer>emptyList()).get(15)))
+            throw new AssertionError("public boss room was replaced with its preceding campfire");
         Map<String,Object> openedChest = new HashMap<>();
         java.util.List<Map<String,Object>> openedChoices = new java.util.ArrayList<>();
         LiveOocCapture.captureOpenedTreasure(openedChest, openedChoices, true);
@@ -475,6 +509,21 @@ public final class LiveOocCaptureTest {
             throw new AssertionError("complete combat-class ledger lost fixed-event distinction");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 9)))
             throw new AssertionError("wrong combat metric floor qualified the ledger");
+        LiveOocCapture.CombatClassHistory summoner = new LiveOocCapture.CombatClassHistory();
+        Object summonerGroup = new Object();
+        summoner.observe(player, 12345, 2, 28, true, true, summonerGroup,
+                "ELITE_QUEUE", "GREMLIN_LEADER");
+        // SpawnMonsterAction retains dead objects in the same MonsterGroup.
+        // Its later composition no longer identifies the original queue draw.
+        summoner.observe(player, 12345, 2, 28, true, true, summonerGroup,
+                "ELITE_QUEUE", "");
+        if (!summoner.completeFor(java.util.Arrays.asList(28))
+                || !"GREMLIN_LEADER".equals(summoner.snapshot().get(0).get("encounter")))
+            throw new AssertionError("summons invalidated the captured queue encounter");
+        summoner.observe(player, 12345, 2, 28, true, true, new Object(),
+                "ELITE_QUEUE", "BOOK_OF_STABBING");
+        if (summoner.complete())
+            throw new AssertionError("replacement group bypassed encounter validation");
         combats.observe(new Object(), 12345, 1, 9, false, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
             throw new AssertionError("new observer reconstructed an unbound same-seed ledger");

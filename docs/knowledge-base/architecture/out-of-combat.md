@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -292,11 +292,11 @@ environment model** or a scientifically qualified full OOC planner.
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
 loaded native V4 policy and native win models plus a compatible combat
 artifact. When `STS_OOC_MCTS_COMBAT_MODEL` is unset, it loads the tracked
-`selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native` artifact and
+`selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native` artifact and
 automatically pairs it with the pinned standard Attention Brew fallback
-`selfplay/models/combat_transition_near_full_escape_pathb_r2.native` (the
-pathb-r2 stack with the §423 Lizard capabilities since §435, see "Production CTM
-stack since #418" below). An
+`selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native` (the
+pathb-r2 stack with the §423 Lizard capabilities since §435 and, since ADR-0044, refit
+Ritual heads plus `writhingRitual`; see "Production CTM stack since #418" below). An
 explicit combat-model path overrides the automatic stack; explicit artifact
 failures are fatal. Research only (§411): `STS_OOC_MCTS_COMBAT_RESOLVER=silver`
 replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
@@ -423,7 +423,13 @@ the same pathb-r2 tensors with `lizardFairy` and `lizardBrew` added to its heade
 pinned by a second built-in manifest (`64da1776…`, the §423 candidate manifest
 byte for byte). Both built-in manifests declare candidate `pathb-r2`; a load
 picks the one that lists the artifact's bytes, so the #418 fast artifact
-(`90806c25…`) still loads as `production` without a manifest. Rollback to the
+(`90806c25…`) still loads as `production` without a manifest. **Since ADR-0044 (§507)** the default is candidate `pathb-r2-ritual-refit`: the same two
+pathb-r2 artifacts with only `ritual.*` refit on corrected-producer rows and the
+`writhingRitual` capability (fast `3bbff6b6…`, standard `2f0f5d97…`), embedded as the
+current built-in manifest (`1a13abb7…`). Rollback to the §435 pair:
+`STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native`,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
+and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the
 #418 stack: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2.native`,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
@@ -729,6 +735,8 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint; at A0 with the ADR-0031/0032 defaults at §433 `combo` settings, 0 loses runs vs 3 (−12.5 pp [−21.9, −3.1], about 0.37x wall time, same tree depth; §472), also with 16384 instead of 4096 simulations at about matched CPU (−10.2 pp [−18.8, −1.6]; §475)|
 | `LEAF_POLICY` |v4|`v4` (the policy chain), `uniform` among unique supported legal V4 candidates, or `prior` (research, §487: fixed tree rule steps, then the V4 policy-head argmax on every screen V4 encodes; `prior_leaf_steps` in the support trace); or `heart1` (research §493: the same fixed steps/candidate set, then loaded heart1/Arm C argmax if all candidates score, otherwise the unchanged chain; separate `heart1_leaf_steps`, `heart1_leaf_fallbacks`, `heart1_leaf_reasons`; requires `STS_OOC_HEART1`, independent of tree-prior selection)|
+| `TARGET_PRIOR` |0 (off)|`0` or `1`; `1` (research, needs a heart1 prior) splits a compound source's prior over its target cards by heart1's probability on the single-pick select the source opens, instead of equally; unscorable groups keep the equal split (`target:scored` / `target:skip_*` in `heart1_prior_reasons`). Not for student C, whose select head is untrained (see the heart1full section)|
+| `LEAF_SELECTS` |chain|`chain` or `heart1`; `heart1` (research, needs `LEAF_POLICY=heart1` and heart1full) also hands every rollout card select to heart1 instead of the chain. Same student C caveat as `TARGET_PRIOR`|
 | `CPU_SECONDS` |0 (off)|Research per-decision thread-CPU allowance, finite 0..10 seconds. Starts before model/root preparation, checks after completed simulations, keeps at least one simulation; overshoot/cleanup is measured, not a hard deadline. Requires `EARLY_STOP=0`, gap stopping off, no forked leaf capture, per-rollout decision logs, or lock/checkpoint/reuse/graph/prior diagnostics. Real combat is excluded. `STS_RUN_PROFILE` records actual CPU, completed simulations and `early_stop_budget`; support trace counts `cpu_budget_stops`. Identical per-decision allowance does not imply equal CPU/run. Unset/zero leaves legacy search unchanged.|
 | `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
 | `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
@@ -1615,6 +1623,17 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    burning elite while Emerald is missing. Earlier acts retain normal path
    decisions. The helper also runs in the fallback chain and tree-rule
    projection. Explicit `STS_COLLECT_KEYS=0` restores keys-off behavior.
+   Opt-in variants, default off (`RunGoal.h` `HeartKeyRules`):
+   `STS_KEY_SAPPHIRE=act3` forbids the key before Act 3 and takes it at the
+   first Act-3 chest (every act has a treasure row); `=policy` lets the policy
+   choose, with the Act-3 treasure row as backstop. `STS_KEY_RUBY=hp` Recalls
+   at the first Act-3 campfire with HP at least `STS_KEY_RUBY_MIN_HP` (0.6),
+   else at the pre-boss row; `=policy` forces only the pre-boss row.
+   `STS_KEY_EMERALD=mask` turns the Act-3 route rule into a mask: candidate
+   lists (`v4CandidateActions`, the MCTS semantic enumeration, heart1's
+   choice) drop edges that no longer reach the burning elite, and the rule
+   forces an edge only when one remains; `=policy` is an alias of `mask`; Acts 1-2 stay the policy's choice. Fallback-chain Recall sites and the
+   chest relic rule follow the variant (`heartRecallRequired`).
    `runGoalVictory` keeps missing-key Act-3 clears out of Heart win labels;
    explicit benchmark horizons retain their separate Act-clear semantics.
    Sites: `apps/one_combat.cpp` REWARDS chains + `restWinPolicy`,
@@ -1979,7 +1998,17 @@ with the search and its chain.
   no CARD_SELECT rows and picks the best card to remove. With
   `STS_OOC_MCTS_LEAF_POLICY=heart1`, heart1full also runs heart1 rollout steps
   on screens V4 cannot encode (same card-select exclusion); the remaining
-  chain steps are counted as `chain:screenN` in `heart1_leaf_reasons`. A live
+  chain steps are counted as `chain:screenN` in `heart1_leaf_reasons`.
+  Two research options, both default off, lift the card-select exclusion and
+  are meant for a heart1 model or a student distilled with CARD_SELECT rows,
+  not student C (audit 2026-10-17). `STS_OOC_MCTS_TARGET_PRIOR=1` (needs a heart1
+  prior) gives each compound target (smith, shop purge, Neow/event remove or
+  transform) its source's prior times heart1's probability for that card on the
+  select the source opens, instead of an equal share; groups heart1 cannot score
+  keep the equal share (`target:scored` / `target:skip_*` in
+  `heart1_prior_reasons`). `STS_OOC_MCTS_LEAF_SELECTS=heart1` (needs
+  `LEAF_POLICY=heart1` and heart1full) also hands every rollout card select to
+  heart1. A live
   root the search returns no action for (abort, CTM refusal) goes to
   `heart1::policyStep` before the V4 chain (decision trace `heart1_fallback`).
   `STS_OOC_MCTS_PRIOR_TRACE` refuses heart1 priors. §486 (A20, 64 paired seeds, `combo`): floors NOT_SHOWN, act-3 clears

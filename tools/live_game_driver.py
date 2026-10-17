@@ -206,6 +206,40 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def _pile_display_only_change(screen: Mapping[str, Any], game: Mapping[str, Any],
+                              current_screen: Mapping[str, Any], current_game: Mapping[str, Any]) -> bool:
+    """Classify a cached positive stat appearing/disappearing; never authorize a click."""
+    if not (_is_combat(screen) and _is_combat(current_screen)
+            and screen.get("screen_type") == current_screen.get("screen_type") == "NONE"):
+        return False
+    before = {"screen": _canonical_combat_piles(screen), "game": _canonical_combat_piles(game)}
+    after = {"screen": _canonical_combat_piles(current_screen), "game": _canonical_combat_piles(current_game)}
+    changed = False
+    def strip_display_pair(left, right):
+        nonlocal changed
+        for pile in ("draw_pile", "discard_pile"):
+            a, b = left.get(pile), right.get(pile)
+            if not (isinstance(a, list) and isinstance(b, list) and len(a) == len(b)):
+                continue
+            for old, new in zip(a, b):
+                if not (isinstance(old, dict) and isinstance(new, dict)):
+                    continue
+                for stat in ("damage", "block", "magic_number"):
+                    if (stat in old) == (stat in new) or "base_" + stat in old or "base_" + stat in new:
+                        continue
+                    value = old.get(stat, new.get(stat))
+                    if type(value) is int and value > 0:
+                        old.pop(stat, None)
+                        new.pop(stat, None)
+                        changed = True
+        for key in ("combat_state", "combatState"):
+            if isinstance(left.get(key), dict) and isinstance(right.get(key), dict):
+                strip_display_pair(left[key], right[key])
+    for key in before:
+        strip_display_pair(before[key], after[key])
+    return changed and _without_readiness(before) == _without_readiness(after)
+
+
 def _ready(value: Any) -> bool:
     data = _mapping(value)
     return data.get("ready_for_command", data.get("readyForCommand", True)) is True
@@ -953,6 +987,55 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
     return candidates[0]
 
 
+def boss_completion_proceed_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                                  candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance a verified Act 3 boss's empty completion surface."""
+    act, floor = game.get("act", screen.get("act")), game.get("floor", screen.get("floor"))
+    hp = game.get("current_hp", screen.get("current_hp"))
+    ascension = game.get("ascension_level", game.get("ascension", screen.get("ascension_level")))
+    if (type(act) is not int or act != 3 or type(floor) is not int or floor not in (50, 51)
+            or (floor == 51 and (type(ascension) is not int or ascension != 20))
+            or type(hp) is not int or hp <= 0
+            or screen.get("screen_type") != "COMPLETE" or screen.get("screen_name") != "NONE"
+            or screen.get("room_type") != "MonsterRoomBoss" or screen.get("room_phase") != "COMPLETE"
+            or screen.get("ready_for_command") is not True
+            or screen.get("in_game") is not True or screen.get("is_screen_up") is not False
+            or screen.get("can_cancel") is not False or screen.get("can_proceed") is not True
+            or screen.get("choice_list", []) != [] or len(candidates) != 1):
+        return None
+    if any(key in screen and screen[key] != value for key, value in
+           (("act", act), ("floor", floor), ("current_hp", hp))):
+        return None
+    if any(key in game and game[key] != screen[key] for key in ("room_type", "room_phase")):
+        return None
+    action = candidates[0]
+    return action if action.mcp_tool == "proceed" and action.mcp_arguments == {} else None
+
+
+def victory_dialogue_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                            candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance the sole physical choice in vanilla's post-Act-3 story."""
+    act, floor = game.get("act", screen.get("act")), game.get("floor", screen.get("floor"))
+    ascension = game.get("ascension_level", game.get("ascension"))
+    if (type(act) is not int or act != 3 or type(floor) is not int
+            or type(ascension) is not int or not 0 <= ascension <= 20
+            or floor != (52 if ascension == 20 else 51)
+            or screen.get("floor") != floor or screen.get("screen_type") != "EVENT"
+            or screen.get("room_type") != "VictoryRoom" or screen.get("room_phase") != "EVENT"
+            or screen.get("ready_for_command") is not True or screen.get("in_game") is not True
+            or screen.get("can_cancel") is not False or screen.get("can_proceed") is not False
+            or len(_list(screen.get("choice_list"))) != 1 or len(candidates) != 1):
+        return None
+    state = _mapping(screen.get("screen_state"))
+    options = _list(state.get("options"))
+    if (state.get("event_id") != "Spire Heart" or len(options) != 1
+            or _mapping(options[0]).get("choice_index") != 0
+            or _mapping(options[0]).get("disabled") is not False):
+        return None
+    action = candidates[0]
+    return action if action.mcp_tool == "choose" and action.mcp_arguments == {"choice_index": 1} else None
+
+
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                               candidates: Sequence[LegalAction]) -> LegalAction | None:
     """Open one card group with public relic/key or constrained potion siblings."""
@@ -978,13 +1061,19 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
                          for reward in occurrences)
     sozu = any(_mapping(relic).get("id") == "Sozu" for relic in _list(game.get("relics")))
     constrained_potions = sozu or (free_slots is not None and potion_rewards > free_slots)
+    # The advisor defers forced potion collection while a public relic is
+    # pending (it may change the belt or pickup effects). Reveal the cards so
+    # the provider can evaluate all siblings instead of waiting on each other.
+    relic_pending = belt_known and any(index + 1 in choice_indexes
+        and _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "RELIC"
+        for index, reward in enumerate(occurrences))
     if not any(index + 1 in choice_indexes
                and _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper() == "CARD"
                for index, reward in enumerate(occurrences)):
         return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind == "POTION" and constrained_potions:
+        if kind == "POTION" and (constrained_potions or relic_pending):
             continue
         if kind in {"GOLD", "STOLEN_GOLD", "POTION"} and index + 1 in choice_indexes:
             # Collect scalar gold and claimable potions first. Public relics
@@ -1244,6 +1333,16 @@ class Driver:
                         return match, None
         if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "SHOP_ROOM":
             return choose_deterministic_action(screen, candidates), None
+        return self.shop_navigation_action(screen, game, candidates)
+
+    def shop_navigation_action(self, screen: Mapping[str, Any], game: Mapping[str, Any],
+                               candidates: Sequence[LegalAction]) -> tuple[LegalAction, tuple[int, int] | None]:
+        # Opening the merchant reveals inventory without spending resources.
+        # After the shop policy cancels, proceed once rather than re-entering.
+        # Neither transition evaluates or purchases an item.
+        labels = _list(screen.get("choice_list"))
+        if len(labels) != 1 or _choice_label(labels[0]).strip().lower() != "shop":
+            raise IntegrationFailure("SHOP_ROOM navigation requires the exact single shop entry")
         act, floor = game.get("act", screen.get("act")), screen.get("floor", game.get("floor"))
         if type(act) is not int or type(floor) is not int:
             raise DriverError("SHOP_ROOM navigation requires exact act/floor identity")
@@ -1265,7 +1364,7 @@ class Driver:
         selected: list[str] = []
         calls = []
         self.context["transaction_calls"] = calls
-        for uuid in reversed(wanted):
+        for uuid in wanted:
             validate_hand_selection_screen(screen, remaining, selected, pick_count)
             if "choose" not in _tool_names(commands):
                 raise DriverError("Hand selection choose command is no longer advertised")
@@ -1277,7 +1376,7 @@ class Driver:
             if _mapping(result).get("success") is False or _mapping(result).get("error"):
                 raise DriverError("Hand selection failed; transaction stopped")
             remaining.pop(index)
-            selected.insert(0, uuid)
+            selected.append(uuid)
             await self.wait_for_ready_advance(before)
             screen, commands, game = await self.read_ready_snapshot()
         validate_hand_selection_screen(screen, remaining, selected, pick_count)
@@ -1311,8 +1410,9 @@ class Driver:
         # The second selection closes this mandatory grid automatically.
         return result
 
-    async def step(self, step: int) -> bool:
+    async def step(self, step: int, _display_refreshes: int = 0) -> bool:
         started = time.monotonic()
+        previous_inspector = self.previous_inspector
         self.context = {"step": step, "timestamp": datetime.now(timezone.utc).isoformat()}
         row = self.context
         screen, commands, game_state = await self.read_ready_snapshot()
@@ -1337,9 +1437,24 @@ class Driver:
         snapshot = None
         evaluator = None
         shop_entry_key = None
+        shop_navigation = False
+        boss_completion = False
+        victory_dialogue = False
         candidates = [action] if action else build_legal_actions(screen, commands, game_state)
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
+        if action is None and not self.differential_trace:
+            action = boss_completion_proceed_action(screen, game_state, candidates)
+            boss_completion = action is not None
+            if action is None:
+                action = victory_dialogue_action(screen, game_state, candidates)
+                victory_dialogue = action is not None
+        # The differential native schema has no inventory-reveal transition;
+        # keep its existing explicit unsupported boundary before any click.
+        if (action is None and not self.differential_trace
+                and _text(screen.get("screen_type", screen.get("screenType"))).upper() == "SHOP_ROOM"):
+            action, shop_entry_key = self.shop_navigation_action(screen, game_state, candidates)
+            shop_navigation = True
         reveal_card = False
         if action is None:
             reveal_candidates = candidates
@@ -1363,7 +1478,12 @@ class Driver:
         if self.differential_trace:
             row["pre_action_state"] = {"screen": screen, "game_state": game_state}
         if action:
-            row["decision_source"] = "card_reward_reveal" if reveal_card else "run_control"
+            row["decision_source"] = ("victory_dialogue" if victory_dialogue else
+                                      "boss_completion" if boss_completion else
+                                      "shop_navigation" if shop_navigation else
+                                      "card_reward_reveal" if reveal_card else "run_control")
+            if shop_entry_key is not None:
+                row["shop_entry_room"] = list(shop_entry_key)
         else:
             combat = _is_combat(screen)
             inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}
@@ -1478,6 +1598,18 @@ class Driver:
         if transition_identity(current_screen, current_game) != transition_identity(screen, game_state):
             row["observed_state"] = {"screen": screen, "game_state": game_state}
             row["pre_action_state"] = {"screen": current_screen, "game_state": current_game}
+            if (not self.differential_trace and row.get("decision_source") == "silver"
+                    and _display_refreshes < 3
+                    and _pile_display_only_change(screen, game_state, current_screen, current_game)):
+                # No action occurred. Discard this decision and correlate/map a
+                # fresh snapshot; do not weaken the pre-click state identity.
+                self.previous_inspector = previous_inspector
+                self.counters["silver_ok"] -= 1
+                self.counters["combat_display_refreshes"] += 1
+                row.update(decision_source="combat_display_refresh", display_refresh=_display_refreshes + 1)
+                self.trace.write(row)
+                await asyncio.sleep(self.poll_interval)
+                return await self.step(step, _display_refreshes + 1)
             raise DriverError("MCP state changed while awaiting the advisor; no action executed")
         if action.mcp_tool not in {"select_cards_transaction", "select_grid_transaction"} and action.mcp_tool not in _tool_names(current_commands):
             raise DriverError("selected MCP command is no longer advertised; no action executed")
@@ -1615,6 +1747,7 @@ def _reproduction_command(args: argparse.Namespace) -> str:
                "--continue-run", "--run-until-error", "--mcp-url", args.mcp_url,
                "--inspector", args.inspector, "--inspector-timeout", str(args.inspector_timeout),
                "--startup-timeout", str(args.startup_timeout),
+               "--transition-timeout", str(args.transition_timeout),
                "--ooc-policy", args.ooc_policy]
     for option in ("strict_silver", "strict_ooc", "dry_run"):
         if getattr(args, option):
@@ -1646,6 +1779,7 @@ async def async_main(args: argparse.Namespace) -> int:
                             differential_trace=args.differential_trace,
                             capture_hidden_rng=args.capture_hidden_rng,
                             startup_timeout=args.startup_timeout,
+                            poll_timeout=args.transition_timeout,
                             reproduction_command=reproduction)
             await driver.run()
     except Exception as error:
@@ -1690,11 +1824,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="fresh inspector response budget; OOC MCTS may take tens of seconds")
     parser.add_argument("--startup-timeout", type=float, default=45.0,
                         help="initial menu readiness budget; starts immediately when ready")
+    parser.add_argument("--transition-timeout", type=float, default=8.0,
+                        help="MCP readiness/post-action transition budget, separate from advisor search")
     args = parser.parse_args(argv)
     if args.max_steps is not None and args.max_steps < 0:
         parser.error("--max-steps must be nonnegative")
     if args.ascension is not None and not 0 <= args.ascension <= 20:
         parser.error("--ascension must be between 0 and 20")
+    if not math.isfinite(args.transition_timeout) or args.transition_timeout <= 0:
+        parser.error("--transition-timeout must be finite and positive")
     return asyncio.run(async_main(args))
 
 

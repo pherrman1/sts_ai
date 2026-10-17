@@ -1533,7 +1533,10 @@ void ActData_RitualDaggerAction::operator()(BattleContext &bc) const {
 
         const bool shouldUpgrade = !m.hasStatus<MS::MINION>()
                                    && !m.isAlive()
-                                   && !(m.hasStatus<MS::REGROW>() && bc.monsters.monstersAlive > 0);
+                                   // Vanilla tests halfDead after damage: a
+                                   // Darkling already cleared its Regrow power,
+                                   // and the Awakened One also awaits rebirth.
+                                   && !m.isHalfDead();
         if (shouldUpgrade) {
             auto &c = bc.curCardQueueItem.card;
             const auto upgradeAmt = c.isUpgraded() ? 5 : 3;
