@@ -1100,6 +1100,12 @@ act can retain row 15 while having no parent in that new map. Its explicit
 boss marker must remain a boss, rather than being replaced by an inferred
 preceding room or an empty transition placeholder. Unknown markers retain
 their existing qualification checks.
+On the opening MAP of Act 2 or 3, vanilla may also retain `(-1, 15)` as the
+current node. The importer represents it as the native unchosen-map position
+`(-1, -1)` only at that act's exact starting floor, with MCP proving a completed
+boss chest, an unchosen first node, no boss/cancel/proceed action, and a complete
+set of row-zero choices with matching physical click indices. The original
+capture remains intact; ordinary row-15 transitions remain unsupported.
 
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have

@@ -127,6 +127,34 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([malformed], model=False, policy="mcts")
         self.assertEqual(response["code"], "OOC_ACTION_MAPPING", response)
 
+    def test_captured_act_opening_map_requires_public_first_row_proof(self):
+        observation = json.loads((Path(__file__).parent / "fixtures/live_act3_entry.json").read_text())
+        response, = self.run_rows([observation], model=False, policy="mcts")
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE", response)
+        for defect in range(7):
+            malformed = copy.deepcopy(observation)
+            state = malformed["ooc"]["mcpState"]
+            if defect == 0:
+                state["screen_state"]["first_node_chosen"] = True
+            elif defect == 1:
+                malformed["ooc"]["publicState"]["floor"] = 35
+            elif defect == 2:
+                state["can_cancel"] = True
+            elif defect == 3:
+                state["screen_state"]["next_nodes"][0]["y"] = 1
+            elif defect == 4:
+                state["screen_state"]["current_node"]["x"] = 0
+            elif defect == 5:
+                malformed["ooc"]["liveChoices"][0]["y"] = 1
+            else:
+                x = state["screen_state"]["next_nodes"][0]["x"]
+                for node in malformed["ooc"]["publicState"]["map"]["nodes"]:
+                    if node["x"] == x and node["y"] == 0:
+                        node["edges"] = []
+            response, = self.run_rows([malformed], model=False, policy="mcts")
+            self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
+                                "MODEL_UNAVAILABLE", (defect, response))
+
     def test_selector_preview_scores_confirm_or_return_to_original_grid(self):
         observation = next(row for name,row in self.fixtures.items()
                            if name.startswith("selector_preview_") and row["ooc"]["details"]["type"] == "upgrade")

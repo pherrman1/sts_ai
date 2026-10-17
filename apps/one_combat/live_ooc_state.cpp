@@ -826,6 +826,44 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             next.path.lastNodeKey = static_cast<long>(g.act) * 100000L
                 + static_cast<long>(g.curMapNodeY) * 100L + g.curMapNodeX;
         g.screenState=screen(screenName);
+        // Vanilla can retain the previous boss-room sentinel on the next
+        // act's unchosen map. Normalize only the complete public first-row
+        // boundary; row 15 during an ordinary boss transition stays refused.
+        if (g.screenState==ScreenState::MAP_SCREEN && g.act>=2 && g.act<=3
+                && g.floorNum==17*(g.act-1) && g.curMapNodeX==-1 && g.curMapNodeY==15
+                && o.contains("mcpState") && o.at("mcpState").is_object()) {
+            const auto &mcp=o.at("mcpState");
+            if (mcp.value("screen_type",std::string())=="MAP"
+                    && mcp.value("room_type",std::string())=="TreasureRoomBoss"
+                    && mcp.value("room_phase",std::string())=="COMPLETE"
+                    && mcp.value("ready_for_command",false) && !mcp.value("can_cancel",true)
+                    && !mcp.value("can_proceed",true) && mcp.value("floor",-1)==g.floorNum
+                    && mcp.contains("screen_state") && mcp.at("screen_state").is_object()) {
+                const auto &ui=mcp.at("screen_state");
+                if (!ui.value("first_node_chosen",true) && !ui.value("boss_available",true)
+                        && ui.contains("current_node") && ui.at("current_node").is_object()
+                        && ui.at("current_node").value("x",0)==-1
+                        && ui.at("current_node").value("y",-1)==15
+                        && ui.contains("next_nodes") && ui.at("next_nodes").is_array()
+                        && o.contains("liveChoices") && o.at("liveChoices").is_array()) {
+                    const auto &nodes=ui.at("next_nodes"), &choices=o.at("liveChoices");
+                    bool firstRow=!nodes.empty() && nodes.size()<=7 && nodes.size()==choices.size();
+                    std::set<int> columns;
+                    for (std::size_t i=0;firstRow && i<nodes.size();++i) {
+                        const auto &node=nodes[i], &choice=choices[i];
+                        const int x=integer(node,"x",0,6);
+                        firstRow=node.value("y",-1)==0 && columns.insert(x).second
+                            && choice.value("x",-1)==x && choice.value("y",-1)==0
+                            && primitive(choice,ScreenState::MAP_SCREEN)==search::GameAction(x).bits
+                            && choice.at("liveAction").value("kind",std::string())=="choose"
+                            && choice.at("liveAction").value("choiceIndex",0)==static_cast<int>(i)+1;
+                    }
+                    for (int x=0;firstRow && x<7;++x)
+                        firstRow=(g.map->getNode(x,0).edgeCount>0)==(columns.count(x)>0);
+                    if (firstRow) g.curMapNodeY=-1;
+                }
+            }
+        }
         if (g.screenState == ScreenState::REST_ROOM && o.contains("details")
                 && o.at("details").is_object() && o.at("details").contains("options")) {
             const auto &options = o.at("details").at("options");
