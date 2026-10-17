@@ -355,7 +355,12 @@ command-ready screen. Use `--check` to validate without starting anything and
 directly. `--run -- <driver options>` starts the autonomous driver immediately
 after MCP becomes available, without a separate probe or manual launch gap.
 The driver's initial menu-readiness budget is 45 seconds (`--startup-timeout`);
-this is a timeout, not a delay. Gameplay transition timeouts stay separate.
+this is a timeout, not a delay. Gameplay readiness/post-action transitions use
+`--transition-timeout` (8 seconds by default). Slow rendering or ordinary
+campfire animations can require a larger explicit budget; a timeout never
+authorizes repeating the previous action. The chosen budget is preserved in
+failure reproduction commands. Advisor waiting remains separately configured
+by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 

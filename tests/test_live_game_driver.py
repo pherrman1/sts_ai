@@ -77,6 +77,27 @@ def ooc_inspector_file(directory, screen, status="UNSUPPORTED", **fields):
 
 
 class LiveGameDriverTest(unittest.TestCase):
+    def test_transition_timeout_is_forwarded_and_preserved_for_reproduction(self):
+        from contextlib import asynccontextmanager
+        from unittest.mock import patch
+        @asynccontextmanager
+        async def connection(url):
+            yield FakeClient({"screen_type": "GAME_OVER", "screen_state": {"victory": False}}, [])
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("tools.live_game_driver.connected_mcp", connection), \
+                patch("tools.live_game_driver.Driver", wraps=Driver) as factory:
+            self.assertEqual(main(["--transition-timeout", "45", "--trace", str(Path(directory)/"trace")]), 0)
+            self.assertEqual(factory.call_args.kwargs["poll_timeout"], 45)
+            self.assertIn("--transition-timeout 45.0", factory.call_args.kwargs["reproduction_command"])
+
+    def test_transition_timeout_rejects_unbounded_or_nonpositive_budgets(self):
+        import contextlib, io
+        for value in ("0", "-1", "nan", "inf"):
+            with self.subTest(value=value), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    main(["--transition-timeout", value])
+                self.assertEqual(error.exception.code, 2)
+
     def test_inspector_reader_waits_for_delayed_matching_response(self):
         async def delayed_write(path):
             await asyncio.sleep(0.02)

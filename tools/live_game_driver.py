@@ -1747,6 +1747,7 @@ def _reproduction_command(args: argparse.Namespace) -> str:
                "--continue-run", "--run-until-error", "--mcp-url", args.mcp_url,
                "--inspector", args.inspector, "--inspector-timeout", str(args.inspector_timeout),
                "--startup-timeout", str(args.startup_timeout),
+               "--transition-timeout", str(args.transition_timeout),
                "--ooc-policy", args.ooc_policy]
     for option in ("strict_silver", "strict_ooc", "dry_run"):
         if getattr(args, option):
@@ -1778,6 +1779,7 @@ async def async_main(args: argparse.Namespace) -> int:
                             differential_trace=args.differential_trace,
                             capture_hidden_rng=args.capture_hidden_rng,
                             startup_timeout=args.startup_timeout,
+                            poll_timeout=args.transition_timeout,
                             reproduction_command=reproduction)
             await driver.run()
     except Exception as error:
@@ -1822,11 +1824,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="fresh inspector response budget; OOC MCTS may take tens of seconds")
     parser.add_argument("--startup-timeout", type=float, default=45.0,
                         help="initial menu readiness budget; starts immediately when ready")
+    parser.add_argument("--transition-timeout", type=float, default=8.0,
+                        help="MCP readiness/post-action transition budget, separate from advisor search")
     args = parser.parse_args(argv)
     if args.max_steps is not None and args.max_steps < 0:
         parser.error("--max-steps must be nonnegative")
     if args.ascension is not None and not 0 <= args.ascension <= 20:
         parser.error("--ascension must be between 0 and 20")
+    if not math.isfinite(args.transition_timeout) or args.transition_timeout <= 0:
+        parser.error("--transition-timeout must be finite and positive")
     return asyncio.run(async_main(args))
 
 
