@@ -33,6 +33,25 @@ outcome supervision, not a trained value head or RL loop. Future fits must
 split/weight by whole source and preserve TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
 and [qualification evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
 
+### Round-2 root trace (§503)
+
+`STS_OOC_MCTS_ROOT_TRACE=PATH` (observation only; excluded from the policy
+specification like every `_TRACE` key) writes one `ooc-root-trace-v1` row per
+live OOC MCTS root, aligned with `mcts.csv.actions.jsonl`: every root candidate
+with its `ooc:v1` key, prior, visits, visit share and Q, completed simulations,
+the selected key, the public heart1 record and a replay-only native snapshot.
+Snapshots fail, and are recorded as `snapshotError`, when the root state carries
+an untagged continuation callback (most REWARDS/MAP roots); the exact replay key
+for every root is (producer binary SHA, seed, decisionIndex), because the frozen
+run is deterministic. Match and Keep adds hypothetical card-valuation roots with
+indices `(real index << 12) ^ card bits`. These are not monotonic and can repeat,
+so they also need the row position. The validator accepts them from `fed1b9d`.
+Sources that the earlier worker check censored with returncode 65 are
+re-qualified at import (`heart_outcome_round2.py requalify`/`index`). `tools/heart_outcome_round2.py` runs the unchanged §497
+teacher with this trace, an optional §494 sibling subsample (`--sibling-every`,
+default off), TRAIN/VALIDATION development splits and a sealed CONFIRM split.
+[Plan](../../experiments/evidence/heart_outcome_round2_20261017/PLAN.md).
+
 ### Recovered outcome-corpus import
 
 `tools/heart_outcome_import.py ROOT OUT` validates the pinned §497 transport and
