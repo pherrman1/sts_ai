@@ -57,6 +57,26 @@ class RitualCoveragePilotTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 pilot.approval_check(bad, approval, identity)
 
+    def test_v2_packet_is_disjoint_scaled_and_keeps_v1_recipe(self):
+        import importlib
+        v1 = pilot.digest(pilot.recipe())
+        mod = importlib.reload(pilot)
+        try:
+            mod.select_packet("v2")
+            self.assertEqual(len(mod.TRAIN), 40); self.assertEqual(len(mod.VALIDATION), 20)
+            self.assertFalse(set(mod.TRAIN + mod.VALIDATION) & set(mod.EXCLUDED))
+            self.assertEqual(len(mod.EXCLUDED), 12)
+            self.assertEqual(len(mod.units()), 720); self.assertEqual(mod.BUDGET["units"], 720)
+            r = mod.recipe()
+            self.assertEqual((r["packet"], r["sourceGroups"]), ("v2", 60))
+            self.assertEqual(r["coverage"]["cellPositive"], {"TRAIN": 3, "VALIDATION": 2})
+            self.assertTrue(mod.PROTOCOL.is_file())
+            if mod.SPLIT.is_file():
+                mod.selection_check()
+        finally:
+            importlib.reload(mod)
+        self.assertEqual(pilot.digest(pilot.recipe()), v1)
+
     def test_script_execution_can_import_every_analysis_module(self):
         # Run as a script (not -m) from outside the repo, as an operator would.
         script = Path(pilot.__file__).resolve()

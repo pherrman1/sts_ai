@@ -33,6 +33,19 @@ TEMPLATE = REPO / "build/ritual-corrected-canary-plan/teacher-template.json"
 TEMPLATE_SHA = "7d3312c2afe1e14185c00e55679f41f1193ce577b4311a9cdb9b280917c6490d"
 TRAIN = (52000001, 52000002, 52000003, 52000004, 52000005, 52000006, 52000008, 52000009)
 VALIDATION = (52000007, 52000011, 52000015, 52000019)
+# Scaled packet (§505 follow-up): the next 40 TRAIN / 20 VALIDATION members of
+# 52000000..52000399, excluding every v1 source, so v2 is an independent
+# replication. Cells, budgets per unit and coverage thresholds are unchanged.
+V2_TRAIN = (52000010, 52000012, 52000013, 52000014, 52000016, 52000017, 52000018, 52000022, 52000023,
+            52000024, 52000025, 52000026, 52000027, 52000028, 52000029, 52000030, 52000031, 52000033,
+            52000035, 52000036, 52000037, 52000038, 52000039, 52000040, 52000041, 52000042, 52000043,
+            52000045, 52000046, 52000047, 52000048, 52000049, 52000050, 52000051, 52000052, 52000054,
+            52000055, 52000056, 52000058, 52000059)
+V2_VALIDATION = (52000032, 52000034, 52000057, 52000074, 52000100, 52000104, 52000123, 52000129,
+                 52000159, 52000175, 52000181, 52000183, 52000199, 52000200, 52000203, 52000217,
+                 52000226, 52000235, 52000237, 52000255)
+PACKET = "v1"
+EXCLUDED = ()
 CELLS = tuple("ritual_writhing_v2_" + "_".join((upgrade, copies, potion))
               for upgrade in ("base", "upgraded") for copies in ("single", "double")
               for potion in ("natural", "brew", "smoke"))
@@ -45,6 +58,18 @@ MODEL_PINS = {
     "selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
     "selfplay/models/combat_transition_near_full_escape_pathb_r2.native": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
 }
+
+
+def select_packet(name):
+    """Rebind the module's packet constants; v1 keeps its original recipe digest."""
+    global PACKET, TRAIN, VALIDATION, EXCLUDED, PROTOCOL, BUDGET
+    require(name in ("v1", "v2"), "unknown packet")
+    if name == "v2":
+        EXCLUDED = TRAIN + VALIDATION
+        TRAIN, VALIDATION = V2_TRAIN, V2_VALIDATION
+        PROTOCOL = REPO / "docs/experiments/evidence/ritual_coverage_pilot_v2_20261017/PROTOCOL.md"
+        BUDGET = dict(BUDGET, units=len(CELLS) * (len(TRAIN) + len(VALIDATION)))
+    PACKET = name
 
 
 def require(ok, message):
@@ -87,8 +112,9 @@ def units():
 
 
 def recipe():
-    return dict(schema="ritual_coverage_pilot_v1", budget=BUDGET, units=units(),
-                sourceGroups=12, splitManifest=str(SPLIT), splitManifestSha256=SPLIT_SHA,
+    extra = {} if PACKET == "v1" else dict(packet=PACKET, excludedSources=list(EXCLUDED))
+    return dict(schema="ritual_coverage_pilot_v1", budget=BUDGET, units=units(), **extra,
+                sourceGroups=len(TRAIN) + len(VALIDATION), splitManifest=str(SPLIT), splitManifestSha256=SPLIT_SHA,
                 liveAncestor=LIVE_SHA, teacherTemplateSha256=TEMPLATE_SHA,
                 modelPins=MODEL_PINS, initialMechanicsCheckpointUnits=12,
                 coverage=dict(cellTargets={"TRAIN": 4, "VALIDATION": 2},
@@ -124,7 +150,8 @@ def selection_check():
     require(sha(SPLIT) == SPLIT_SHA, "original split custody differs")
     members = read(SPLIT)["members"]
     for name, expected in (("train", TRAIN), ("validation", VALIDATION)):
-        selected = tuple(seed for seed in range(52000000, 52000400) if seed in set(members[name]))[:len(expected)]
+        selected = tuple(seed for seed in range(52000000, 52000400)
+                         if seed in set(members[name]) and seed not in EXCLUDED)[:len(expected)]
         require(selected == expected, "frozen original source membership differs: " + name)
     require(not set(TRAIN) & set(VALIDATION), "source partitions overlap")
 
@@ -551,7 +578,7 @@ def aggregate(results):
                       for key, parts in cells.items()} for table, cells in tables.items()}
     return dict(classification="PILOT_INCOMPLETE_OR_INVALID" if not valid else
                 "PILOT_COVERAGE_INCONCLUSIVE" if missing else "PILOT_COVERAGE_ADEQUATE_FOR_REVIEW_ONLY",
-        sourceGroups=12, plannedUnits=144, attemptedUnits=sum(r.get("attempted", False) for r in results),
+        sourceGroups=len(TRAIN) + len(VALIDATION), plannedUnits=len(expected), attemptedUnits=sum(r.get("attempted", False) for r in results),
         validUnits=sum(r.get("captureValid", False) for r in results), coverageSourceGroups=serial,
         missingCoverage=missing, targetRoutes=dict(route_counts), targetOutcomes=dict(outcomes), exclusions=dict(exclusions),
         distinctObservations=len(dedup), duplicateObservations=duplicates, duplicateMap=dedup,
@@ -650,7 +677,9 @@ def main():
     parser.add_argument("--exe", type=Path); parser.add_argument("--source-sha")
     parser.add_argument("--build-receipt", type=Path); parser.add_argument("--review", type=Path)
     parser.add_argument("--approval", type=Path)
+    parser.add_argument("--packet", choices=("v1", "v2"), default="v1")
     args = parser.parse_args()
+    select_packet(args.packet)
     if args.command == "identity":
         print(json.dumps(dict(packetIdentity=packet_identity(), recipeSha256=digest(recipe())), indent=2)); return
     require(args.out is not None, "--out required")
