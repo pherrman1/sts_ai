@@ -34,7 +34,6 @@ namespace sts {
         void setupPotions(GameContext &gc);
 
         void applyDiscount(float factor);
-        static bool priceFix();
 
         void buyCard(GameContext &gc, int idx);
         void buyRelic(GameContext &gc, int idx);

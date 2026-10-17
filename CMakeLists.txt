@@ -114,14 +114,6 @@ add_test(NAME neow_transform_curse COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
 set_tests_properties(neow_transform_curse PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
-add_executable(shop_price_fix_test tests/shop_price_fix_test.cpp
-    $<TARGET_OBJECTS:sts_core_objects>)
-target_include_directories(shop_price_fix_test PRIVATE include json/include)
-add_test(NAME shop_price_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
-    $<TARGET_FILE:shop_price_fix_test>)
-set_tests_properties(shop_price_fix PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
-
 add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(potion_reward_swap_test PRIVATE include json/include)
