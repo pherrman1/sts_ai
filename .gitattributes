@@ -1,1 +1,4 @@
 *.sh text eol=lf
+# Append-only ledger shards: keep both sides when two branches append at the same place (see
+# docs/knowledge-base/operations/agent-context-and-workflow.md#ledger-and-adr-numbers).
+docs/experiments/ledger-*.md merge=union

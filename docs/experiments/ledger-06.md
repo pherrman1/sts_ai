@@ -20143,6 +20143,44 @@ Sapphire is offered (keys thread). Seeds 111155000–039 used (000–001 failed 
 [Report](evidence/ooc_fixed_rules_20261017/REPORT.md).
 **Knowledge impact:** `STS_POTION_REWARD_DECLINE_LEAVE` in environment-variables and the out-of-combat reward flow.
 
+## §515 — Heart leaf: TD-fitted tree leaf on §503 rollout tails, VALIDATION gate and CONFIRM (2026-10-17)
+
+**td1 GATE_FAIL (act-3 calibration); retrained td2 CONFIRM_FAIL (act-1 calibration), better BCE
+and AUC than X2-B on CONFIRM**, offline, research-only, no default change (issue #605). New
+opt-in leaf `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (requires `STS_OOC_MCTS_LEAF_VALUE=native`):
+value = sigmoid(0.799 · margin(public X2-B) + residual), the residual a 204-tree XGBoost margin
+model over the rich vector plus Act-4-correct boss distance, keys held and key reachability,
+HP fraction, Ritual Dagger damage and Searing Blow level (`heart-leaf-features-v2`). Targets:
+fitted TD on 16 live-configured rollout3 tails per root (`one_combat heartleaftail`, salt
+111159000; non-terminal ends valued by the previous round), mixed 50/50 with the real Heart
+outcome. Rows: 27,114 §503 TRAIN+VALIDATION MAP roots with native snapshots; CONFIRM and §497
+TEST unopened.
+
+On VALIDATION (320 runs, run-weighted) against X2-B with a TRAIN Platt map: BCE 0.3065 vs 0.3133
+(PASS), AUC 0.724 vs 0.699 (PASS), mean prediction vs Heart rate 0.085/0.103, 0.132/0.119 and
+**0.240/0.202 in Act 3** (|Δ| 0.038 > 0.03, FAIL; X2-B Platt 0.090; raw X2-B 0.898). Act 4 (78
+roots, not gated) 0.592 vs 0.423. TD rounds 2–3 did not improve VALIDATION BCE. Native parity
+2.8e-7; a one-seed A20 Act-1 smoke (111159001) ran cleanly. The key inputs carry ≤ 0.1% of the
+gain: **Inference:** §503 has little key-timing variation; the #611 key-flag runs are planned
+training data.
+
+Descriptive, for Philipp's question: heart1's value head (`heart1.bin` `1e92f2a6`) on the same
+roots ranks within an act better than X2-B (AUC acts 1–4: 0.60, 0.74, 0.78, 0.74 vs 0.56, 0.68,
+0.68, 0.65) but pooled only 0.53, because its level barely changes between acts.
+
+Retrain td2 (Philipp: "Retrain, then CONFIRM"; PREREG amendment 2, reviewed at `91bf3e28`): adds
+`hlCritic`, a 600-tree regression of the heart1 value head on the same features (schema v3,
+evaluated natively), and an Act-4 logit offset (−0.713) from out-of-fold TRAIN, because the
+rollout tails overrate Act 4. VALIDATION BCE 0.3038, AUC 0.735, act 3 0.233/0.202. Scored once on
+the §503 CONFIRM set (640 runs, 83 Heart kills, 12,458 MAP roots): BCE 0.3345 vs Platt X2-B
+0.3479 (paired −0.0134 [−0.0189, −0.0073]), AUC 0.750 vs 0.726, acts 2-3 within 0.023, Act 4
+0.438/0.459, but **act 1 0.093/0.130 (|Δ| 0.037 > 0.03, FAIL**; X2-B 0.040). No A/B on td2;
+CONFIRM is spent. **Inference:** the act-1 under-prediction is systematic (TRAIN out of fold 0.093
+vs 0.136). The §497 TEST stays sealed.
+[Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
+**Knowledge impact:** `operations/environment-variables.md` (new option),
+`evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
+
 ## §516 — A20 Silver budget: learned stopping matches flat 10k at 0.41x CPU; gen-6 prior adds Act-4 reaches, not Heart kills (2026-10-17)
 
 **Question (Philipp, 2026-10-17, thread "Audit performance and throughput"):** "yes set up a20 silver budget test";
@@ -20207,3 +20245,45 @@ one; not tested.
 The pre-launch reviewer used 111139400–111139411.
 **Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
 `operations/environment-variables.md`.
+
+## §518 — Silver chance-node widening per category at A20 (spire-mentor constants): all three labels NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "spire-mentor engine ideas"):** after reading tfriedel/spire-mentor (STS2,
+MIT), which uses separate progressive-widening constants for end-of-turn and other chance nodes and reports
++6.35 pp full-run win rate from that: "yes lets try"; 20:01Z: "use the gen6 prior thing with 2.5k simulations and
+the 4 arms. then use 8 workers."
+**Design:** [PREREG](evidence/silver_widening_a20_518_20261017/PREREG.md), independent pre-launch and delta review
+PASS (PR #622). Research-only armset `widen518` of fight-level `ctmsilvergen` sets the existing per-arm
+`g_nativeSilverSearchParamOverride`; no production path changes. All arms Silver at exact 2,500 simulations with
+g6_E (`ca9bd7f2…`) as root prior (weight 400) and tree prior (K = 8): `base2500` both categories C 3.7028,
+alpha 0.52389; `endwide2500` end-turn C doubled (7.4056); `othernarrow2500` other chance nodes C 2, alpha 0.5;
+`spire2500` othernarrow plus end turn C 5.79, alpha 0.44. A20, sources by plain exact-10k Silver with student C
+(`eff2f74f…`) out of combat, keys flag off, `STS_SILVER_LEARNED_STOP=0`, hallway every 3rd, R = 2 redraws paired
+across arms, §479 fight score, bootstrap over source seeds. RUN_COMMIT `90133e7e` (code `32bb3552` = main
+`14845363` incl. #613, binary `49a3e18a…`), seeds 111180100–111180355, 8 workers × 32.
+**Result: NOT_SHOWN on all three labels.** 256/256 sources, 32/32 shards rc=0, 8 tars verified from a second
+container; 3,043 valid fights (615 boss, 1,310 elite, 982 normal, 136 event; 108 in Act 4), 14 excluded for
+escapes. The 11 control-replay mismatches are all escape fights among those 14. Source 111180117 contributed no
+replayed fight. Win rate 93.49 / 93.51 / 93.33 / 93.31% (base / endwide / othernarrow / spire).
+- `endwide2500 − base2500`: score +0.20 [−1.02, +1.37], win +0.02 pp [−0.40, +0.42], HP lost −0.16 [−0.42, +0.09].
+- `othernarrow2500 − base2500`: score −0.44 [−1.55, +0.73], win −0.16 pp [−0.55, +0.24].
+- `spire2500 − base2500`: score −0.40 [−1.80, +1.03], win −0.18 pp [−0.64, +0.30].
+- Subsets (descriptive): bosses +1.37 / +1.34 / +0.42 with CIs about ±5; elites +0.24 / −1.21 / −0.94; Act 4
+  (108 fights) endwide +6.99 [−4.07, +18.19], spire −3.93 [−18.75, +10.24], spire − endwide −10.92
+  [−23.14, +0.93].
+- CPU per fight vs base: endwide 0.992 [0.976, 1.005], othernarrow 0.980 [0.965, 0.992], spire 0.976
+  [0.962, 0.987]; narrower other nodes save about 2% CPU.
+**Interpretation:** at A20 with the gen-6 prior at 2,500 simulations, splitting the widening constants per category
+does not change fight results detectably: every all-fight score CI lies within about ±1.8 points (well under one
+potion, 11) and every win CI within ±0.7 pp. This matches §369 (A0, both categories together): Silver's constants
+sit on a flat region. spire-mentor's +6.35 pp does not transfer as a fight-level effect here (**Inference**: their
+narrower end-turn setting was the baseline that gained; Silver's single setting is already wider). The labels are
+not corrected for multiplicity. The final-fight leaf was off in every arm, and event fights count in the normal
+subset (reviewer notes). Pre-registered decision: no default changes and the per-category idea is closed for this
+setting; the armset stays research-only.
+[result.json](evidence/silver_widening_a20_518_20261017/result.json). Raw:
+`/mnt/project-files/silver-widening-518/w0{1..8}.tar` (sha256 `74773603…`, `aaa442ef…`, `a9acaee9…`, `a83ece5a…`,
+`8e69db90…`, `29b77e29…`, `2035aecd…`, `772e01c7…`). Seeds used: 111180000–111180011 (smokes) and
+111180100–111180355 (run); the rest of 111180000–111189999 is unused.
+**Knowledge impact:** one sentence added to the per-context search constants paragraph in
+`evaluation/current-research.md`.

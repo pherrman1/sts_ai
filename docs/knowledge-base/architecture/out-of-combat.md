@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-17 for the A20 limit of the ADR-0044 rollback; 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -314,7 +314,18 @@ wraps the CTM stack and plays only the combats the CTM refuses with plain Silver
 at N simulations, on the same redraw, instead of aborting the search to V4. In a
 1-seed act-1 smoke (seed 111000010, A0, forced Lizard Tail, a CTM without the
 Lizard correction, 256 OOC simulations) MCTS kept 31 of 32 decisions instead of
-14 of 36, at 334 CPU-s instead of 16 (N=256). Startup also requires the effective Silver reuse cap to be
+14 of 36, at 334 CPU-s instead of 16 (N=256). Opt-in
+(`STS_OOC_MCTS_ACT4_SILVER_SIMS=M`): the same wrapper plays every Shield and
+Spear and Heart combat with plain Silver at M simulations without asking the
+CTM, because no CTM was trained on Act 4 (the deployed A20 stack predicts 0.28
+Heart death where its teacher dies 0.95, audit
+`/mnt/project-files/audit-2026-10-17/ctm-a20.md`). It combines with
+`STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS`; set alone, other refused combats still
+abort to V4. Both have the same exclusions (`STS_OOC_MCTS_COMBAT_RESOLVER`,
+`STS_OOC_MCTS_LEAF_CAPTURE`) and require `STS_OOC_MCTS=1`; `=0` means off, as unset. Per run,
+`[ooc-silver-fallback]` counts these combats as `act4_silver`. The opt-in
+`boss` leaf value still prices the Heart through the CTM expectation. CPU cost
+and playing strength are unmeasured. Startup also requires the effective Silver reuse cap to be
 32,768; the experimental 131,072 override is rejected. Real combat requires
 ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
 frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
@@ -418,7 +429,11 @@ pathb-r2 artifacts with only `ritual.*` refit on corrected-producer rows and the
 current built-in manifest (`1a13abb7…`). Rollback to the §435 pair:
 `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native`,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
-and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the
+and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. These rollbacks are exact only below A20: any
+`STS_OOC_MCTS_COMBAT_MODEL` or `STS_OOC_MCTS_BREW_FALLBACK_MODEL` override leaves the
+automatic stack, so the ascension-20 pathb-a20 stack (ADR-0033) is not loaded and
+`STS_OOC_MCTS_A20_CTM=1` then fails at startup (`a20Compatible` in
+`ooc_mcts_adapter.cpp`). Rollback to the
 #418 stack: `STS_OOC_MCTS_COMBAT_MODEL=selfplay/models/combat_transition_deepsets_pathb_r2.native`,
 `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
 and `STS_OOC_MCTS_ACTIVE_LIZARD=1`. Rollback to the pre-#418 stack:
@@ -1602,6 +1617,14 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    then often discards a held potion to take the worse reward (§514; 505 times
    in 1,408 §503 runs). `STS_POTION_REWARD_DECLINE_LEAVE=1` (research option,
    default off) leaves such a screen when nothing else is on it.
+   `STS_OOC_MCTS_POTION_KEEP_PRIOR=1` (research option, default off) instead
+   gives every reward-screen "discard potion" candidate in the tree the logit
+   of "Leave rewards" plus (keep value of the best reward potion it makes room
+   for minus keep value of the discarded potion) / 100; the gain is zero with a
+   free slot, with Sozu or without a reward potion. On a uniform node the other
+   candidates keep logit 0. It is a stopgap until the AlphaZero-style loop
+   trains a discard output (student C has none; see
+   [current-research.md](../evaluation/current-research.md)).
    The effective teacher specification includes `potion_reward_swap: true`
    for unset/`1`; `=0` omits it and restores the legacy pickup, which took
    reward potion 0 only when

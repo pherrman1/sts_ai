@@ -1,5 +1,8 @@
 {"permissions": {"allow": [
   "Bash(bash /mnt/project-files/ctm-pathb/bin/run_part.sh:*)",
   "Bash(setsid nohup bash /mnt/project-files/ctm-pathb/bin/run_part.sh:*)",
-  "Bash(bash /mnt/project-files/ctm-pathb/bin/resume_stall.sh:*)"
+  "Bash(bash /mnt/project-files/ctm-pathb/bin/resume_stall.sh:*)",
+  "Bash(bash tools/cloud/worker.sh:*)",
+  "Bash(python3 tools/cloud/verify_campaign.py:*)",
+  "Bash(python3 tools/ledger_assign.py:*)"
 ]}}

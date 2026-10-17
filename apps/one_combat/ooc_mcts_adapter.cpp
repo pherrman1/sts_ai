@@ -33,6 +33,7 @@
 #include "heart1_policy.h"
 #include "screen_leaf_snapshot.h"
 #include "rollout_student.h"
+#include "heart_leaf.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
@@ -44,6 +45,8 @@
 #include <cmath>
 #include <cstdio>
 #include <atomic>
+#include <limits>
+#include "sim/search/PotionRewardPolicy.h"
 #include <iomanip>
 #include <iostream>
 #include <set>
@@ -1389,6 +1392,34 @@ void OocGameContextModel::applyTargetPrior(const GameContext &gc, const std::vec
         ++reasons["target:scored"];
     }
 }
+// STS_OOC_MCTS_POTION_KEEP_PRIOR: discard candidates on a reward screen are scored relative to
+// "Leave rewards" by ADR-0039 keep values. Discarding only gains the best reward potion when the
+// belt is full and Sozu is absent; otherwise the gain is nothing and the discard is a pure loss.
+static bool applyPotionKeepPrior(const GameContext &gc,
+    const std::vector<OocGameContextModel::Candidate> &actions, std::vector<double> &logits) {
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    std::vector<std::size_t> discards;
+    std::optional<double> leave;
+    double bestOther = -std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < actions.size(); ++i) {
+        const auto effect = actions[i].semantic ? std::optional(actions[i].semantic->effect) : std::nullopt;
+        if (effect == sts::search::OocSemanticEffect::DISCARD_POTION) discards.push_back(i);
+        else if (effect == sts::search::OocSemanticEffect::LEAVE_REWARDS) leave = logits[i];
+        else bestOther = std::max(bestOther, logits[i]);
+    }
+    if (discards.empty()) return false;
+    const double base = leave ? *leave : std::isfinite(bestOther) ? bestOther : 0.0;
+    const auto &r = gc.info.rewardsContainer;
+    int offered = 0;
+    if (gc.potionCount >= gc.potionCapacity && !gc.hasRelic(RelicId::SOZU))
+        for (int i = 0; i < r.potionCount; ++i) offered = std::max(offered, sts::search::potionKeepRank(r.potions[i]));
+    for (const auto i : discards) {
+        const int slot = actions[i].primitive.getIdx1();
+        const int held = slot >= 0 && slot < gc.potionCapacity ? sts::search::potionKeepRank(gc.potions[slot]) : 0;
+        logits[i] = base + double(offered - std::max(held, 0)) / 100.0;
+    }
+    return true;
+}
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
     OocProfileScope priorBuild(OocProfileBucket::PriorBuild);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
@@ -1410,11 +1441,22 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     }
     bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
     std::vector<double> weights;
+    std::optional<std::vector<double>> logits;
     if (!uniform) {
-        const auto logits = policyLogits(id);
+        logits = policyLogits(id);
         uniform = cached.heart1OnlyFailed;
-        if (!uniform) weights = oocPolicyWeights(logits, options.priorTemperature);
+        if (uniform) logits.reset();
     }
+    if (options.potionKeepPrior && !options.uniformPrior) {
+        // A uniform node scores its other candidates 0, so discards sit relative to that.
+        auto keep = logits ? *logits : std::vector<double>(actions.size(), 0.0);
+        if (applyPotionKeepPrior(state(id), actions, keep)) {
+            logits = keep;
+            uniform = false;
+            if (t_decisionLog) t_decisionLog->add("potion_keep_prior", id == 0 ? "root" : "tree");
+        }
+    }
+    if (!uniform) weights = oocPolicyWeights(*logits, options.priorTemperature);
     if (uniform) weights.assign(actions.size(), 1.0);
     if (!uniform) {
         std::map<std::uint32_t, std::size_t> counts;
@@ -1740,6 +1782,10 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
     if (options.screenLeafGbm && options.screenLeafGbm->hasAnchor()) {
         OocProfileScope predict(OocProfileBucket::LeafPredict);
         return options.screenLeafGbm->anchor(richFeatureVec(gc, path));
+    }
+    if (options.heartLeaf) {
+        OocProfileScope predict(OocProfileBucket::LeafPredict);
+        return options.heartLeaf->value(gc, path);
     }
     if (options.leafWinNet) {
         OocProfileScope predict(OocProfileBucket::LeafPredict);
@@ -2390,10 +2436,19 @@ public:
 // Opt-in (STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=N): keeps the CTM for every
 // combat it supports and plays only the combats it refuses with plain Silver at
 // N simulations, instead of aborting the whole search to the V4 fallback.
-// Counts per refusal reason are reported per run as [ooc-silver-fallback].
+// Opt-in (STS_OOC_MCTS_ACT4_SILVER_SIMS=M): also plays Shield and Spear and the
+// Heart with plain Silver at M simulations, because no CTM was trained on them.
+// Either count may be 0 (that route off). Counts per reason are reported per run
+// as [ooc-silver-fallback]; Act-4 combats count as "act4_silver".
 class SilverFallbackCombatTransitionSampler final : public CombatTransitionSampler {
     std::shared_ptr<const CombatTransitionSampler> inner_;
     int simulations_;
+    int act4Simulations_;
+    bool act4(const CombatPredictorInputV1 &input) const {
+        return act4Simulations_ > 0
+            && (input.globals.encounter == static_cast<int>(sts::MonsterEncounter::SHIELD_AND_SPEAR)
+                || input.globals.encounter == static_cast<int>(sts::MonsterEncounter::THE_HEART));
+    }
     mutable std::mutex mutex_;
     mutable std::map<std::string, std::uint64_t> reasons_;
     void count(const std::string &reason) const {
@@ -2401,17 +2456,22 @@ class SilverFallbackCombatTransitionSampler final : public CombatTransitionSampl
         ++reasons_[reason.empty() ? "unspecified" : reason];
     }
 public:
-    SilverFallbackCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int simulations)
-        : inner_(std::move(inner)), simulations_(simulations) {}
+    SilverFallbackCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int simulations,
+                                          int act4Simulations = 0)
+        : inner_(std::move(inner)), simulations_(simulations), act4Simulations_(act4Simulations) {}
     std::map<std::string, std::uint64_t> takeReasons() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return std::exchange(reasons_, {});
     }
     std::unique_ptr<PreparedCombatTransition> prepare(const GameContext &gc,
             const CombatPredictorInputV1 &input) const override {
-        auto prepared = inner_->prepare(gc, input);
-        if (prepared->support().supported) return prepared;
-        count(prepared->support().reason);
+        const bool act4Route = act4(input);
+        std::unique_ptr<PreparedCombatTransition> prepared;
+        if (!act4Route) {
+            prepared = inner_->prepare(gc, input);
+            if (prepared->support().supported || simulations_ == 0) return prepared;
+        }
+        count(act4Route ? "act4_silver" : prepared->support().reason);
         class SilverPrepared final : public PreparedCombatTransition {
             GameContext gc_;
             int simulations_;
@@ -2423,10 +2483,11 @@ public:
                 return playImaginedCombatWithSilver(gc_, rng, simulations_, false);
             }
         };
-        return std::make_unique<SilverPrepared>(gc, simulations_);
+        return std::make_unique<SilverPrepared>(gc, act4Route ? act4Simulations_ : simulations_);
     }
-    CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
-        return {true, {}};
+    CombatRuntimeSupport support(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        if (simulations_ > 0 || act4(input)) return {true, {}};
+        return inner_->support(gc, input);
     }
     CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &input) const override {
         return inner_->forecastSupport(input);
@@ -2440,14 +2501,20 @@ public:
     bool modelsSmokeBombEscape() const override { return inner_->modelsSmokeBombEscape(); }
     CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &input,
                                std::mt19937_64 &rng) const override {
+        if (act4(input)) {
+            count("act4_silver");
+            return playImaginedCombatWithSilver(gc, rng, act4Simulations_, false);
+        }
         const auto support = inner_->support(gc, input);
         if (support.supported) return inner_->sample(gc, input, rng);
+        if (simulations_ == 0) return {};
         count(support.reason);
         return playImaginedCombatWithSilver(gc, rng, simulations_, false);
     }
 };
 int liveSilverResolverSims = 0;
 int liveUnsupportedSilverSims = 0;
+int liveAct4SilverSims = 0;
 
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
@@ -2500,6 +2567,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
         opts.heart1LeafPolicy = value == "heart1";
     }
     else if (key == "STS_OOC_MCTS_TARGET_PRIOR") opts.targetPrior = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_POTION_KEEP_PRIOR") opts.potionKeepPrior = choice("0", "1");
     else if (key == "STS_OOC_MCTS_LEAF_SELECTS") opts.heart1LeafSelects = choice("chain", "heart1");
     else if (key == "STS_OOC_MCTS_CPU_SECONDS") {
         const double x = number(); if (x < 0 || x > 10) invalid(); opts.cpuBudgetSeconds = x;
@@ -2524,7 +2592,7 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
     "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS",
-    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS"
+    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS", "STS_OOC_MCTS_POTION_KEEP_PRIOR"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -2735,6 +2803,7 @@ void configureLiveOocMcts() {
     liveFallbackSampler.reset();
     liveFallbackSamplerA20.reset();
     liveUnsupportedSilverSims = 0;
+    liveAct4SilverSims = 0;
     const char *enabled = std::getenv("STS_OOC_MCTS");
     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
         throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
@@ -2784,9 +2853,17 @@ void configureLiveOocMcts() {
         if (one_combat::heart1::enabled()) (void)one_combat::heart1::net();
         liveSibling = std::move(sibling);
     }
-    const char *unsupportedSilver = std::getenv("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
+    // =0 means off, as if unset.
+    const auto silverSimsEnv = [](const char *name) -> const char * {
+        const char *raw = std::getenv(name);
+        return raw && std::string(raw) == "0" ? nullptr : raw;
+    };
+    const char *unsupportedSilver = silverSimsEnv("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
     if (unsupportedSilver && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS requires STS_OOC_MCTS=1");
+    const char *act4Silver = silverSimsEnv("STS_OOC_MCTS_ACT4_SILVER_SIMS");
+    if (act4Silver && !liveEnabled)
+        throw std::runtime_error("STS_OOC_MCTS_ACT4_SILVER_SIMS requires STS_OOC_MCTS=1");
     if (!liveEnabled) return;
     decisionLogPath.clear();
     if (const char *path = std::getenv("STS_OOC_MCTS_DECISION_LOG"); path && *path) decisionLogPath = path;
@@ -2879,6 +2956,17 @@ void configureLiveOocMcts() {
         liveOptions.leafWinPath = model;
 #endif
     }
+    if (const char *model = std::getenv("STS_OOC_MCTS_LEAF_HEART_MODEL"); model && *model) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART_MODEL is unavailable in the live advisor");
+#else
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART_MODEL requires STS_OOC_MCTS_LEAF_VALUE=native and no STS_OOC_MCTS_LEAF_WIN_MODEL");
+        liveOptions.heartLeaf = std::make_shared<const HeartLeafModel>(model);
+        liveOptions.heartLeafPath = model;
+#endif
+    }
     if (const char *student = std::getenv("STS_OOC_MCTS_LEAF_STUDENT"); student && *student) {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT is unavailable in the live advisor");
@@ -2886,7 +2974,7 @@ void configureLiveOocMcts() {
         // The §494 student learned rollout values on the native leaf anchor; sibling
         // capture's repeat rollouts would be replaced by the student itself.
         const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
-        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet || liveOptions.heartLeaf)
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT requires STS_OOC_MCTS=1 and STS_OOC_MCTS_LEAF_VALUE=native");
         if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT excludes leaf and sibling capture");
@@ -3018,20 +3106,27 @@ void configureLiveOocMcts() {
             << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
             << " active_lizard_correction=1\n" << std::setprecision(6);
     }
-    if (unsupportedSilver) {
-        const std::string value = unsupportedSilver;
+    const auto silverSims = [&](const char *raw, const char *name) {
+        const std::string value = raw;
         if (value.empty() || value.size() > 6 || value.find_first_not_of("0123456789") != std::string::npos
                 || std::stoi(value) < 1)
-            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS must be in 1..999999");
+            throw std::runtime_error(std::string(name) + " must be in 1..999999");
         if (silverResolver)
-            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS excludes STS_OOC_MCTS_COMBAT_RESOLVER");
+            throw std::runtime_error(std::string(name) + " excludes STS_OOC_MCTS_COMBAT_RESOLVER");
         if (std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
-            throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS excludes STS_OOC_MCTS_LEAF_CAPTURE");
-        liveUnsupportedSilverSims = std::stoi(value);
-        liveFallbackSampler = std::make_shared<SilverFallbackCombatTransitionSampler>(liveSampler, liveUnsupportedSilverSims);
+            throw std::runtime_error(std::string(name) + " excludes STS_OOC_MCTS_LEAF_CAPTURE");
+        return std::stoi(value);
+    };
+    if (unsupportedSilver) liveUnsupportedSilverSims = silverSims(unsupportedSilver, "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
+    if (act4Silver) liveAct4SilverSims = silverSims(act4Silver, "STS_OOC_MCTS_ACT4_SILVER_SIMS");
+    if (unsupportedSilver || act4Silver) {
+        liveFallbackSampler = std::make_shared<SilverFallbackCombatTransitionSampler>(
+            liveSampler, liveUnsupportedSilverSims, liveAct4SilverSims);
         if (liveSamplerA20)
-            liveFallbackSamplerA20 = std::make_shared<SilverFallbackCombatTransitionSampler>(liveSamplerA20, liveUnsupportedSilverSims);
+            liveFallbackSamplerA20 = std::make_shared<SilverFallbackCombatTransitionSampler>(
+                liveSamplerA20, liveUnsupportedSilverSims, liveAct4SilverSims);
         std::cout << "[ooc-mcts-silver-fallback] unsupported_silver_sims=" << liveUnsupportedSilverSims
+            << " act4_silver_sims=" << liveAct4SilverSims
             << " root_prior=off redraw=seed_and_six_combat_streams\n";
     }
     if (const char *capturePath = std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")) {
@@ -3045,7 +3140,7 @@ void configureLiveOocMcts() {
             identity = native->runtime().identity();
         std::vector<std::pair<std::string, std::string>> files = {
             {"ctm", artifact}, {"brewFallbackCtm", brewFallbackArtifact},
-            {"leafWinOverride", liveOptions.leafWinPath}};
+            {"leafWinOverride", liveOptions.leafWinPath}, {"leafHeartModel", liveOptions.heartLeafPath}};
         if (const char *manifest = std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST"))
             files.emplace_back("ctmManifest", manifest);
         auto provenance = oocLeafCaptureProvenance(identity, files);
@@ -3078,6 +3173,7 @@ void configureLiveOocMcts() {
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
+        << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -3100,6 +3196,8 @@ void configureLiveOocMcts() {
         << "\",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
         << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\""
         << (liveOptions.rolloutStudent ? ",\"leafStudent\":\"" + liveOptions.rolloutStudentPath + "\"" : std::string{})
+        << (liveOptions.heartLeaf ? ",\"leafHeartModel\":\"" + liveOptions.heartLeafPath + "\",\"leafHeartModelSha256\":\""
+            + liveOptions.heartLeaf->manifestSha256() + "\"" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -3926,6 +4024,68 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (leafStabilityMode) validateStabilityRoot(result, model);
     return result;
 }
+#ifndef STS_LIVE_ADVISOR
+nlohmann::json liveRootLeafTails(const GameContext &gc, const PathHistory &path, const OocPolicyThreadState &policy,
+    std::uint64_t salt, unsigned repeats) {
+    if (!liveEnabled) throw std::runtime_error("liveRootLeafTails requires STS_OOC_MCTS=1");
+    // The end-state hook sits on the native leaf dependency; every other leaf skips it.
+    if (liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf
+            || liveOptions.directLeaf || liveOptions.leafWinNet || liveOptions.heartLeaf || liveOptions.rolloutStudent
+            || !liveOptions.leafCombats)
+        throw std::runtime_error("liveRootLeafTails requires the native rollout leaf (STS_OOC_MCTS_LEAF_VALUE=native)");
+    static const CompactTreeNet anchor = [] {
+        CompactTreeNet net;
+        if (fileSha256Hex(kHeartLeafAnchorPath) != kHeartLeafAnchorSha256
+                || !net.load(kHeartLeafAnchorPath, richIdxMap(), "HeartLeaf tail anchor") || !net.logistic)
+            throw std::runtime_error("liveRootLeafTails cannot load the pinned public X2-B");
+        return net;
+    }();
+    ImaginedScope scope;
+    restoreOocPolicyThreadState(policy);
+    auto deps = defaultOocMctsDependencies();
+    const auto nativeLeaf = deps.leafValue;
+    std::optional<nlohmann::json> end;
+    deps.leafValue = [&](const GameContext &state, const PathHistory &at) {
+        const double value = nativeLeaf(state, at);
+        auto raw = richFeatureVec(state, at);
+        const double margin = anchor.margin(raw);
+        appendHeartLeafExtras(raw, state, margin);
+        nlohmann::json idx = nlohmann::json::array(), val = nlohmann::json::array();
+        for (std::size_t i = 0; i < raw.size(); ++i) if (raw[i] != 0) { idx.push_back(i); val.push_back(raw[i]); }
+        end = nlohmann::json{{"x2b", value}, {"floor", state.floorNum}, {"act", state.act},
+            {"screen", int(state.screenState)}, {"i", std::move(idx)}, {"v", std::move(val)}};
+        return value;
+    };
+    auto options = liveOptions;
+    options.siblingCapture.reset();
+    options.leafObserver = {};
+    options.priorTracePath.clear();
+    OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options), std::move(deps));
+    if (model.terminalValue(0)) throw std::runtime_error("liveRootLeafTails root is terminal");
+    nlohmann::json rows = nlohmann::json::array();
+    for (unsigned r = 0; r < repeats; ++r) {
+        restoreOocPolicyThreadState(policy);
+        end.reset();
+        std::seed_seq seq{salt, std::uint64_t(r)};
+        std::mt19937_64 stream(seq);
+        try {
+            const auto e = model.evaluateLeafWithOutcome(0, stream);
+            nlohmann::json row = {{"value", e.value}, {"terminal", e.terminal}, {"endFloor", e.endpoint ? e.endpoint->floor : -1}};
+            if (!e.terminal) {
+                if (!end) throw std::runtime_error("non-terminal rollout end bypassed the native leaf");
+                if (std::abs(end->at("x2b").get<double>() - e.value) > 1e-12)
+                    throw std::runtime_error("rollout end value is not the native leaf value");
+                row["end"] = std::move(*end);
+            }
+            rows.push_back(std::move(row));
+        } catch (const sts::search::OocSearchUnsupported &u) {
+            rows.push_back({{"error", u.what()}});
+        }
+    }
+    restoreOocPolicyThreadState(policy);
+    return rows;
+}
+#endif
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &gc, const PathHistory &path,
     std::uint64_t runSeed, std::uint64_t decisionIndex) {
     if (!liveEnabled) throw std::runtime_error("scoreLiveOocMctsDecision requires STS_OOC_MCTS=1");
@@ -4279,7 +4439,8 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         std::uint64_t total = 0;
         for (const auto &entry : reasons) total += entry.second;
         std::cerr << "[ooc-silver-fallback] " << nlohmann::json{{"seed", seed},
-            {"silverSims", liveUnsupportedSilverSims}, {"resolvedByReason", reasons},
+            {"silverSims", liveUnsupportedSilverSims}, {"act4SilverSims", liveAct4SilverSims},
+            {"resolvedByReason", reasons},
             {"resolved", total}}.dump() << '\n';
     }
     EntropicBrewFallbackCombatTransitionSampler::Metrics brewMetrics;
@@ -5925,6 +6086,10 @@ void oocMctsAdapterSelfTest() {
         applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","heart1",parsed,opts);
         require(opts.targetPrior && opts.heart1LeafSelects,"target prior and heart1 leaf selects parsed");
         applyLiveControl("STS_OOC_MCTS_TARGET_PRIOR","0",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_POTION_KEEP_PRIOR","1",parsed,opts);
+        require(opts.potionKeepPrior,"potion keep prior parsed");
+        applyLiveControl("STS_OOC_MCTS_POTION_KEEP_PRIOR","0",parsed,opts);
+        require(!opts.potionKeepPrior,"potion keep prior rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_SELECTS","chain",parsed,opts);
         require(!opts.targetPrior && !opts.heart1LeafSelects,"target prior and leaf selects rollback parsed");
         applyLiveControl("STS_OOC_MCTS_LEAF_POLICY","v4",parsed,opts);
@@ -5955,7 +6120,7 @@ void oocMctsAdapterSelfTest() {
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","513"},{"STS_OOC_MCTS_MAX_DEPTH","0"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},{"STS_OOC_MCTS_LEAF_COMBATS","4"},
             {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_POLICY","Prior"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
-            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
+            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TARGET_PRIOR","on"},{"STS_OOC_MCTS_POTION_KEEP_PRIOR","yes"},{"STS_OOC_MCTS_LEAF_SELECTS","v4"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
             rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
     }
     const PathHistory *saved=t_curPath; t_curPath=&path;
@@ -6979,6 +7144,26 @@ void oocMctsAdapterSelfTest() {
             && fallback.takeReasons().empty() && test::oocStateFingerprint(fight)==fightBefore
             && !sts::search::g_disallowImaginedCombat,
             "Silver fallback resolves refused combats deterministically per planner RNG and counts them");
+        // STS_OOC_MCTS_ACT4_SILVER_SIMS alone: other refusals still abort; Act-4 combats skip the CTM.
+        const SilverFallbackCombatTransitionSampler act4Only(std::make_shared<AlwaysUnsupported>(),0,16);
+        require(!act4Only.support(fight,input).supported && !act4Only.prepare(fight,input)->support().supported
+            && act4Only.sample(fight,input,first).outcome==CombatRuntimeSample::Outcome::UNSUPPORTED
+            && act4Only.takeReasons().empty(), "Act-4 route leaves other refused combats to the abort path");
+        auto heart=detachedCopy(live);
+        heart.act=4; heart.floorNum=55;
+        heart.curRoom=Room::BOSS;
+        heart.enterBattle(MonsterEncounter::THE_HEART);
+        const auto heartBefore=test::oocStateFingerprint(heart);
+        const auto heartInput=captureCombatPredictorInput(heart,MonsterEncounter::THE_HEART,0.0);
+        std::mt19937_64 third(2),fourth(2);
+        const auto preparedHeart=act4Only.prepare(heart,heartInput);
+        const auto h1=preparedHeart->sample(third), h2=act4Only.sample(heart,heartInput,fourth);
+        const auto heartReasons=act4Only.takeReasons();
+        require(preparedHeart->support().supported && act4Only.support(heart,heartInput).supported
+            && h1.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED && h1.outcome==h2.outcome
+            && h1.rawPost.curHp==h2.rawPost.curHp && heartReasons.size()==1 && heartReasons.at("act4_silver")==2
+            && test::oocStateFingerprint(heart)==heartBefore && !sts::search::g_disallowImaginedCombat,
+            "Act-4 route plays the Heart with Silver and never asks the CTM");
     }
     auto sole=detachedCopy(live);
     int firstNode=-1;
@@ -7149,6 +7334,44 @@ void oocMctsAdapterSelfTest() {
         }
         require(goldOrPotion != rules && (rewardModel.state(0).potionCount == (rules ? 1 : 0)),
             "tree rules take gold and a potion with belt space before the root");
+    }
+    // STS_OOC_MCTS_POTION_KEEP_PRIOR: a full belt whose potions all outrank the reward (the rule
+    // declines) gives the uniform root discard candidates; the option ranks them by keep value,
+    // all below "Leave rewards", and leaves other candidates flat.
+    for (const bool keepPrior : {false, true}) {
+        auto rewardRoot = makeRewardRoot();
+        rewardRoot.info.rewardsContainer.addPotion(Potion::ELIXIR_POTION);
+        const Potion held[] = {Potion::BLOOD_POTION, Potion::HEART_OF_IRON, Potion::FRUIT_JUICE};
+        rewardRoot.potionCount = 0;
+        for (int slot = 0; slot < rewardRoot.potionCapacity; ++slot) {
+            rewardRoot.potions[slot] = held[slot % 3]; ++rewardRoot.potionCount;
+        }
+        PathHistory rewardPath;
+        rewardPath.update(rewardRoot);
+        OocAdapterOptions keepOptions;
+        keepOptions.potionKeepPrior = keepPrior;
+        OocGameContextModel rewardModel(rewardRoot, rewardPath, {}, keepOptions);
+        std::map<Potion, double> discard;
+        double leave = -1, other = -1;
+        bool otherFlat = true;
+        for (const auto &a : rewardModel.legalActions(0)) {
+            const auto &c = rewardModel.candidate(0, a.id);
+            if (c.semantic->effect == OocSemanticEffect::DISCARD_POTION)
+                discard[rewardRoot.potions[c.primitive.getIdx1()]] = a.prior;
+            else if (c.semantic->effect == OocSemanticEffect::LEAVE_REWARDS) leave = a.prior;
+            else { otherFlat &= other < 0 || std::abs(other - a.prior) < 1e-12; other = a.prior; }
+        }
+        require(discard.size() == 3 && leave > 0 && otherFlat, "potion keep prior fixture");
+        const double ratio = discard.at(Potion::HEART_OF_IRON) / leave;
+        if (!keepPrior)
+            require(std::abs(ratio - 1) < 1e-12 && std::abs(discard.at(Potion::BLOOD_POTION) - leave) < 1e-12,
+                "without the potion keep prior the discard root stays uniform");
+        else
+            require(std::abs(ratio - std::exp((47.0 - 666.0) / 100.0)) < 1e-9
+                && discard.at(Potion::BLOOD_POTION) < discard.at(Potion::FRUIT_JUICE)
+                && discard.at(Potion::FRUIT_JUICE) < discard.at(Potion::HEART_OF_IRON)
+                && (other < 0 || std::abs(other - leave) < 1e-12),
+                "potion keep prior ranks discards by keep value below leave");
     }
     {
         OocSemanticAction first{OocSemanticEffect::BOTTLE_CARD, OocSemanticSource::SELECTOR,
