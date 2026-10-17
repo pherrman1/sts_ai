@@ -1991,10 +1991,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
+    static int combatCardMisc(String id, int misc, int timesUpgraded, int baseDamage) {
+        if ("Searing Blow".equals(id)) return timesUpgraded;
+        if ("Rampage".equals(id)) return baseDamage - 8;
+        return misc;
+    }
+
     private static String cardJson(AbstractCard card) {
         return "{\"id\":\"" + escapeJson(card.cardID) + "\",\"uuid\":\"" +
                 escapeJson(String.valueOf(card.uuid)) + "\",\"upgraded\":" +
-                (card.upgraded ? "true" : "false") + ",\"misc\":" + card.misc +
+                (card.upgraded ? "true" : "false") + ",\"misc\":" +
+                combatCardMisc(card.cardID, card.misc, card.timesUpgraded, card.baseDamage) +
                 ",\"cost\":" + card.cost + ",\"costForTurn\":" + card.costForTurn +
                 ",\"freeToPlayOnce\":" + (card.freeToPlayOnce ? "true" : "false") +
                 ",\"retain\":" + (card.retain ? "true" : "false") + "}";

@@ -112,7 +112,12 @@ combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
 upgraded/misc/cost/retain/free-play fields, battle-lifetime stable monster
 slots, dead/half-dead/escaping state, relics, potion slots, the combat entry
 identity, and a centralized native mapping
-boundary for runtime IDs. Monster move-history bytes are emitted in Java's
+boundary for runtime IDs. Card `misc` carries native special data: Searing
+Blow uses its public `timesUpgraded` count, and Rampage uses the increase above
+its initial base damage of 8. Vanilla stores Rampage growth in `baseDamage`,
+not `misc`; temporary damage modifiers are not included in that increase.
+Other cards retain Java's `misc`, including Ritual Dagger's stored damage.
+Monster move-history bytes are emitted in Java's
 oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained

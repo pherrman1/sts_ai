@@ -23,6 +23,15 @@ public final class CombatBoundaryTest {
     }
     public static void main(String[] args) {
         verifyRetiredSlimeBoss();
+        // Vanilla Searing Blow writes its repeat-upgrade count, while Rampage
+        // grows baseDamage through ModifyDamageAction without changing misc.
+        if (STSModelInspector.combatCardMisc("Searing Blow", 0, 3, 27) != 3
+                || STSModelInspector.combatCardMisc("Searing Blow", 99, 0, 12) != 0
+                || STSModelInspector.combatCardMisc("Rampage", 0, 0, 13) != 5
+                || STSModelInspector.combatCardMisc("Rampage", 99, 1, 24) != 16
+                || STSModelInspector.combatCardMisc("RitualDagger", 27, 1, 27) != 27
+                || STSModelInspector.combatCardMisc("Strike_R", 7, 0, 99) != 7)
+            throw new AssertionError("combat card growth projection lost its native meaning");
         // Armaments under a large accelerated frame can expire before the
         // confirmed selection is retrieved. Normal play must not accept its
         // incomplete piles; an active popup and already retrieved UI residue

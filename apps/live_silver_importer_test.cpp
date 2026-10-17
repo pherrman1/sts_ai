@@ -1422,6 +1422,34 @@ int main(int argc, char **argv) {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
             fixture(MonsterEncounter::GREMLIN_NOB, "Gremlin Nob", 3, "ELITE", 0xB003u)};
+        for (const auto &[id, upgraded, misc, damage] : std::vector<std::tuple<CardId, bool, int, int>>{
+                {CardId::SEARING_BLOW, false, 0, 12}, {CardId::SEARING_BLOW, true, 1, 16},
+                {CardId::SEARING_BLOW, true, 2, 21}, {CardId::SEARING_BLOW, true, 4, 34},
+                {CardId::RAMPAGE, false, 0, 8}, {CardId::RAMPAGE, false, 5, 13},
+                {CardId::RAMPAGE, true, 16, 24}, {CardId::RITUAL_DAGGER, true, 27, 27}}) {
+            auto observation = genericObservation(fixtures[0], "combat-card-growth");
+            auto &combat = observation["silverRoot"]["combat"];
+            auto &card = combat["hand"][0];
+            card["id"] = cardStringIds[static_cast<int>(id)];
+            card["upgraded"] = upgraded; card["misc"] = misc;
+            card["cost"] = card["costForTurn"] = id == CardId::SEARING_BLOW ? 2 : 1;
+            combat.erase("strikeCount");
+            one_combat::advisor::SilverImportContext context;
+            const auto imported = one_combat::advisor::importSilverRoot(observation, context);
+            if (!imported.ok) throw std::runtime_error("combat card growth import: " + imported.reason);
+            auto battle = battleContextFromWire(imported.wire);
+            const auto physicalId = battle.cards.hand[0].uniqueId;
+            const auto hp = battle.monsters.arr[0].curHp;
+            sts::search::Action(sts::search::ActionType::CARD, 0, 0).execute(battle);
+            if (hp - battle.monsters.arr[0].curHp != damage)
+                throw std::runtime_error("combat card growth damage was not preserved");
+            if (id == CardId::RAMPAGE) {
+                const auto played = std::find_if(battle.cards.discardPile.begin(), battle.cards.discardPile.end(),
+                    [physicalId](const auto &c) { return c.uniqueId == physicalId; });
+                if (played == battle.cards.discardPile.end() || played->specialData != misc + (upgraded ? 8 : 5))
+                    throw std::runtime_error("imported Rampage lost its next growth increment");
+            }
+        }
         {
             const auto domeObservation=[&](int which,int completed) {
                 auto obs=genericObservation(fixtures[which],which==0?"dome-cultist":"dome-jaw");
