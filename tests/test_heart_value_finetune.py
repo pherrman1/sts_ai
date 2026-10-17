@@ -58,15 +58,19 @@ class StoreRoundTrip(unittest.TestCase):
 
 class Splits(unittest.TestCase):
     def test_sibling_groups_split_and_need_two_actions(self):
-        rows = [{'seed':110164000,'group':[110164000,0,1],'action':a} for a in (0,1)]
-        rows += [{'seed':110164041,'group':[110164041,0,1],'action':a} for a in (0,0)]
-        rows += [{'seed':110164042,'group':[110164042,3,1],'action':a} for a in (0,2)]
+        rows = [{'seed':110164000,'group':[110164000,0,1],'action':a,'split':'train','cohort':'494'} for a in (0,1)]
+        rows += [{'seed':110164041,'group':[110164041,0,1],'action':a,'split':'validation','cohort':'494'} for a in (0,0)]
+        rows += [{'seed':110164042,'group':[110164042,3,1],'action':a,'split':'validation','cohort':'494'} for a in (0,2)]
+        rows += [{'seed':111101000,'group':[111101000,3,1],'action':a,'split':'validation','cohort':'r2'} for a in (0,2)]
         self.assertEqual(ft.sibling_groups(rows,True),[[0,1]])
-        self.assertEqual(ft.sibling_groups(rows,False),[[4,5]])
+        self.assertEqual(ft.sibling_groups(rows,False),[[4,5],[6,7]])
+        self.assertEqual(ft.sibling_groups(rows,False,'r2'),[[6,7]])
 
     def test_no_test_reader(self):
         self.assertEqual(ft.SIBLING_VALIDATION_END,110164048)
         self.assertNotIn('test',ft.value.SPLITS)
+        with self.assertRaises(ValueError):
+            next(ft.round2_units('/nonexistent','confirm'))
 
 
 if __name__ == '__main__':

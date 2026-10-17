@@ -19,6 +19,7 @@ from collections import defaultdict
 import json
 import math
 import os
+import tarfile
 from pathlib import Path
 import sys
 import time
@@ -39,6 +40,8 @@ ARMS = {'outcome': 0.0, 'rank05': 0.5, 'rank2': 2.0}
 KL_WEIGHT, LR, WEIGHT_DECAY = 1.0, 3e-4, .01
 STEPS, EVERY, BATCH, SIBLING_LEAVES, ENCODE = 2000, 100, 512, 256, 512
 INIT = 0
+# §503 round 2, data-only branch claude/heart-outcome-round2-data@a8f6542e (never merged).
+ROUND2_INDEX = '02c59f5bc966839e7704629d0227537275e3131b7b5e6a7f0e0e7d8ae601a2df'
 
 
 def collate(network, records):
@@ -109,17 +112,70 @@ def load_siblings(root):
                     or e.get('recordSchema') != 'heart1-public-record-v2'):
                 bad.add(group)
                 continue
-            accepted.append({'seed': seed, 'group': list(group), 'action': raw['action'], 'act': raw['act'],
-                             'screen': raw['parentScreen'], 'target': float(np.mean([v['value'] for v in reps])),
-                             'x2b': float(e['x2b']), 'r0': float(raw['value']), 'record': e['record']})
+            accepted.append(sibling_row(seed, group, raw, 'train' if seed < SIBLING_TRAIN_END else 'validation', '494'))
         rows += [r for r in accepted if tuple(r['group']) not in bad]
     return rows
 
 
-def sibling_groups(rows, train):
+def sibling_row(seed, group, raw, split, cohort):
+    e, reps = raw['extra'], raw['extra']['repeats']
+    return {'seed': seed, 'group': list(group), 'action': raw['action'], 'act': raw['act'], 'split': split,
+            'cohort': cohort, 'screen': raw['parentScreen'], 'target': float(np.mean([v['value'] for v in reps])),
+            'x2b': float(e['x2b']), 'r0': float(raw['value']), 'record': e['record']}
+
+
+def round2_units(root, split):
+    """Usable §503 TRAIN/VALIDATION sources per the delivery index; SEALED-confirm archives are never opened."""
+    value.require(split in ('train', 'validation'), 'only development splits can be parsed')
+    root = Path(root)
+    value.require(sha(root/'DELIVERY-INDEX.json') == ROUND2_INDEX, 'round-2 delivery index changed')
+    index = json.loads((root/'DELIVERY-INDEX.json').read_text())
+    for name, worker in sorted(index['workers'].items()):
+        value.require(worker['status'] == 'verified', 'unverified round-2 worker')
+        path = root/'deliveries'/name/f'{split}.tar.gz'
+        value.require(sha(path) == worker['archives'][f'{split}.tar.gz'], f'round-2 archive changed: {name}')
+        want = sorted(int(s) for s, r in index['sources'].items() if r['split'] == split and r['worker'] == int(name[1:]))
+        with tarfile.open(path) as tar:
+            members = {m.name: m for m in tar.getmembers()}
+            for seed in want:
+                row = index['sources'][str(seed)]
+                value.require(row['status'] == 'usable', f'round-2 source not usable: {seed}')
+                read = lambda suffix: tar.extractfile(members[f'{split}/seed-{seed}{suffix}']).read()
+                yield seed, row['label'], read
+
+
+def round2_states(root, split):
+    for seed, label, read in round2_units(root, split):
+        lines = read('.states.jsonl').splitlines()
+        states, footer = [json.loads(l) for l in lines[1:-1]], json.loads(lines[-1])
+        value.require(footer['complete'] is True and footer['integrityPassed'] is True and footer['label'] == label
+                      and footer['states'] == len(states), f'round-2 footer: {seed}')
+        for i, state in enumerate(states):
+            value.require(state['index'] == i and state['origin'] == 'real-run-driver', 'nonactual state')
+            if state['supported']:
+                yield {'record': state['record'], 'seed': seed, 'label': label, 'act': state['act'],
+                       'screen': state['screen'], 'floor': state['floor'], 'index': i}
+
+
+def round2_siblings(root, split):
+    rows = []
+    for seed, _, read in round2_units(root, split):
+        accepted, bad = [], set()
+        for raw in map(json.loads, read('.sib.jsonl').splitlines()):
+            e, group = raw.get('extra', {}), (seed, raw['decision'], raw['parent'])
+            if (len(e.get('repeats', [])) != 64 or 'record' not in e or 'x2b' not in e or e.get('rolloutPolicy') != 'heart1'
+                    or e.get('recordSchema') != 'heart1-public-record-v2'):
+                bad.add(group)
+                continue
+            accepted.append(sibling_row(seed, group, raw, split, 'r2'))
+        rows += [r for r in accepted if tuple(r['group']) not in bad]
+    return rows
+
+
+def sibling_groups(rows, train, cohort=None):
     groups = defaultdict(list)
     for i, r in enumerate(rows):
-        if (r['seed'] < SIBLING_TRAIN_END) == train:
+        if (r['split'] == 'train') == train and (cohort is None or r['cohort'] == cohort):
             groups[tuple(r['group'])].append(i)
     return [g for g in groups.values() if len({rows[i]['action'] for i in g}) >= 2]
 
@@ -132,26 +188,32 @@ def encode_cache(args):
     started = time.monotonic()
     meta = {}
     for split in value.SPLITS:
-        n = sum(r['states'] for r in manifest if r['split'] == split)
+        sources = [lambda: ((r, '497') for r in value.read_sources(args, manifest, split))]
+        if args.round2:
+            sources.append(lambda: ((r, 'r2') for r in round2_states(args.round2, split)))
+        n = sum(1 for make in sources for _ in make())  # counting pass; records are re-read below
         meta[split], chunk, store = [], [], None
         def flush():
             nonlocal store
-            batch = collate(network, [r['record'] for r in chunk])
+            batch = collate(network, [r['record'] for r, _ in chunk])
             store = store or Store(out/split, n, batch)
             store.put(len(meta[split]), batch)
-            meta[split].extend({k: v for k, v in r.items() if k != 'record'} | {'choices': value.has_choices(r['record'])}
-                               for r in chunk)
+            meta[split].extend({k: v for k, v in r.items() if k != 'record'}
+                               | {'choices': value.has_choices(r['record']), 'cohort': c} for r, c in chunk)
             chunk.clear()
-        for row in value.read_sources(args, manifest, split):  # streamed: RAM holds one chunk
-            chunk.append(row)
-            if len(chunk) == ENCODE:
-                flush()
+        for make in sources:  # streamed: RAM holds one chunk
+            for item in make():
+                chunk.append(item)
+                if len(chunk) == ENCODE:
+                    flush()
         if chunk:
             flush()
         value.require(len(meta[split]) == n, 'state count')
         store.close()
         print('encoded', split, n, round(time.monotonic()-started, 1), flush=True)
     leaves = load_siblings(args.siblings)
+    if args.round2:
+        leaves += round2_siblings(args.round2, 'train') + round2_siblings(args.round2, 'validation')
     store = None
     for i in range(0, len(leaves), ENCODE):
         batch = collate(network, [r['record'] for r in leaves[i:i+ENCODE]])
@@ -162,6 +224,7 @@ def encode_cache(args):
     write(out/'meta.json', meta)
     write(out/'cache.json', {'schema': 'arm-c-value-finetune-cache-v1', 'custody': custody,
         'siblingManifestSha256': SIBLING_MANIFEST, 'checkpointSha256': sha(args.checkpoint),
+        'round2IndexSha256': ROUND2_INDEX if args.round2 else None,
         'metaSha256': sha(out/'meta.json'), 'counts': {k: len(v) for k, v in meta.items()},
         'seconds': time.monotonic()-started})
 
@@ -216,6 +279,11 @@ def evaluate(net, ref, stores, meta, device):
         y = np.array([r['label'] for r in meta['validation']], dtype=float)
         p = 1 / (1 + np.exp(-z))
         out['validation'] = {k: v for k, v in value.metric(y, p, np.ones(len(y)), z).items() if k != 'calibration'}
+        cohorts = np.array([r.get('cohort', '497') for r in meta['validation']])
+        for c in sorted(set(cohorts)):
+            m = cohorts == c
+            out[f'validation{c}'] = {k: v for k, v in value.metric(y[m], p[m], np.ones(m.sum()), z[m]).items()
+                                     if k != 'calibration'}
         out['policyTop1Agreement'] = float(torch.cat(agree).float().mean())
         out['policyKl'] = kl_sum / max(kl_rows, 1)
         leaves = meta['siblings']
@@ -225,10 +293,12 @@ def evaluate(net, ref, stores, meta, device):
             sv.append(forward(net, stores['siblings'], ids, device)[1].double().cpu())
         sv = torch.cat(sv).numpy()
         rows = [{**r, 'model': float(s)} for r, s in zip(leaves, sv)]
-        for name, train in (('siblingValidation', False), ('siblingTrain', True)):
-            groups = sibling_groups(rows, train)
-            out[name] = {'groups': len(groups), 'model': group_metrics(rows, groups, 'model')[0],
-                         'x2b': group_metrics(rows, groups, 'x2b')[0], 'r0': group_metrics(rows, groups, 'r0')[0]}
+        for name, train, cohort in (('siblingValidation', False, None), ('siblingTrain', True, None),
+                                    ('siblingValidation494', False, '494'), ('siblingValidationR2', False, 'r2')):
+            groups = sibling_groups(rows, train, cohort)
+            if groups:
+                out[name] = {'groups': len(groups), 'model': group_metrics(rows, groups, 'model')[0],
+                             'x2b': group_metrics(rows, groups, 'x2b')[0], 'r0': group_metrics(rows, groups, 'r0')[0]}
     net.train()
     return out
 
@@ -307,6 +377,7 @@ def main():
     p.add_argument('--checkpoint', type=Path, required=True)
     p.add_argument('--silverbot', type=Path, required=True)
     p.add_argument('--siblings', type=Path)
+    p.add_argument('--round2', type=Path, help='heart-outcome-round2 dir of the §503 data branch')
     p.add_argument('--cache', type=Path)
     p.add_argument('--arm')
     p.add_argument('--out', type=Path, required=True)
