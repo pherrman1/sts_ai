@@ -434,6 +434,28 @@ against the #417 pilot or older ledger runs) are not seed-for-seed comparable
 past act 1 for roughly 6–14% of seeds. Comparisons within one SHA are
 unaffected.
 
+## Out-of-combat audit (2026-10-17)
+
+Scope: Neow HP options, shop prices, Bonfire Spirits, Fountain of Cleansing
+eligibility, Dead Adventurer, Black Star and Torii in events, Ectoplasm, the
+burning-elite buff and Act-3 boss rewards, checked with `javap` against the
+pinned JAR.
+
+| Mechanic | Java reference | Native before the fix | Status |
+|---|---|---|---|
+| Neow 10%/20% max-HP bonus | `hp_bonus = (int)(maxHealth*0.1f)` from the constructor; `increaseMaxHp(hp_bonus)` / `increaseMaxHp(hp_bonus*2)`, which heals the same amount | added `(int)(max*0.1)` / `(int)(max*0.2)` without healing (A20: 68/82 instead of 75/82) | **Mismatch, fixed** (`STS_ENGINE_FIDELITY_FIX`) |
+| Neow 10% max-HP loss | `decreaseMaxHealth(hp_bonus)` | `(int)(0.9f*max)` (75 → 67, Java 68) | **Mismatch, fixed** |
+| Neow damage drawback | HP-loss damage of `currentHealth/10*3` | `cur = cur/10*7` (68 → 42, Java 50) | **Mismatch, fixed** |
+| Bonfire Spirits, Uncommon offering | `heal(maxHealth)` | healed 10 | **Mismatch, fixed** |
+| Dead Adventurer after three rewards | only Leave remains | Search stayed, with a forced elite fight | **Mismatch, fixed** (the event ends) |
+| Black Star | read only in `MonsterRoomElite.dropReward` | added a relic to the Dead Adventurer fight | **Mismatch, fixed** |
+| Torii | `onAttacked` needs an owner; event damage has none | reduced event damage of 5 or less to 1 | **Mismatch, fixed** |
+| Ectoplasm | `canSpawn`: `actNum <= 1` | always eligible | **Mismatch, fixed** |
+| Burning elite buff | Strength `actNum+1`; +25% max HP; Metallicize `actNum*2+2`; Regenerate `1+actNum*2`; `mapRng.random(0,3)` at combat start | Strength `act`; others equal; draw at map generation gives the same value | **Mismatch, fixed** (Strength) |
+| Shop prices at A16+ | `applyDiscount(1.1f, false)` (purge unchanged) | ×0.8 | **Mismatch**, fixed by `STS_SHOP_RULES_FIX` (#594) |
+| Fountain of Cleansing eligibility | `isCursed()` ignores Ascender's Bane, Curse of the Bell, Necronomicurse | `deck.hasCurse()`, whose curse count already skips untransformable curses | Parity |
+| Act-3 boss rewards | gold is added and then skipped with the reward screen for TheBeyond bosses | no rewards | Parity |
+
 ## Ambiguous or not yet inspected
 
 - Gremlin `escapeNext` (resolved: unreachable in vanilla). Java's gremlin

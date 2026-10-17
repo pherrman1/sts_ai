@@ -368,6 +368,9 @@ bool GameContext::relicCanSpawn(RelicId relic, bool shopRoom) const {
         case RelicId::TOXIC_EGG:
             return floorNum <= 48;
 
+        case RelicId::ECTOPLASM:
+            return !engineFidelityFix() || act <= 1;
+
         case RelicId::PRESERVED_INSECT:
             return floorNum <= 52;
 
@@ -1575,7 +1578,7 @@ bool GameContext::obtainRelic(RelicId r) {
 
 RelicId GameContext::returnRandomRelic(RelicTier tier, bool shopRoom, bool fromFront) {
     RelicId retVal = RelicId::INVALID;
-    std::vector<RelicId> *vec;
+    std::vector<RelicId> *vec = nullptr;
 
     switch(tier) {
 
@@ -1622,6 +1625,10 @@ RelicId GameContext::returnRandomRelic(RelicTier tier, bool shopRoom, bool fromF
         default:
             break;
     };
+
+    if (vec == nullptr) {
+        return retVal; // empty pool: the fallback tier's relic, as in the game
+    }
 
     if (fromFront) {
         retVal = vec->front();
@@ -2219,7 +2226,8 @@ void GameContext::damagePlayer(int amount) {
 #ifdef sts_asserts
     assert(amount > 0);
 #endif
-    if (amount <= 5 && relics.has(RelicId::TORII)) {
+    // Event damage has no owner, so the game's Torii never reduces it.
+    if (!engineFidelityFix() && amount <= 5 && relics.has(RelicId::TORII)) {
         amount = 1;
     }
     playerLoseHp(amount);
@@ -2347,6 +2355,13 @@ void GameContext::discardPotionAtIdx(int idx) {
     --potionCount;
 }
 
+bool sts::engineFidelityFix() {
+    const char *value = std::getenv("STS_ENGINE_FIDELITY_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_ENGINE_FIDELITY_FIX must be 0 or 1");
+}
+
 // STS_NEOW_TRANSFORM_CURSE_FIX (ADR-0038): unset or 1 = Neow "transform two
 // cards" adds a curse only with the CURSE drawback; 0 = the legacy curse on
 // every transform pick. Read per Neow choice, so tests can switch it.
@@ -2361,7 +2376,9 @@ void GameContext::chooseNeowOption(const Neow::Option &o) {
 
     switch (o.d) {
         case Neow::Drawback::TEN_PERCENT_HP_LOSS:
-            maxHp = static_cast<int>(0.9f * static_cast<float>(maxHp));
+            // The game loses hp_bonus = (int)(maxHealth * 0.1f) max HP.
+            maxHp = engineFidelityFix() ? maxHp - static_cast<int>(static_cast<float>(maxHp) * 0.1f)
+                                        : static_cast<int>(0.9f * static_cast<float>(maxHp));
             curHp = std::min(curHp, maxHp);
             break;
 
@@ -2370,7 +2387,8 @@ void GameContext::chooseNeowOption(const Neow::Option &o) {
             break;
 
         case Neow::Drawback::PERCENT_DAMAGE:
-            curHp = curHp / 10 * 7;
+            // The game deals currentHealth / 10 * 3 HP-loss damage.
+            curHp = engineFidelityFix() ? curHp - curHp / 10 * 3 : curHp / 10 * 7;
             break;
 
         case Neow::Drawback::LOSE_STARTER_RELIC:
@@ -2442,7 +2460,11 @@ void GameContext::chooseNeowOption(const Neow::Option &o) {
             break;
 
         case Neow::Bonus::TEN_PERCENT_HP_BONUS:
-            maxHp += static_cast<int>(static_cast<float>(maxHp) * 0.1f);
+            if (engineFidelityFix()) {
+                playerIncreaseMaxHp(static_cast<int>(static_cast<float>(maxHp) * 0.1f)); // heals too
+            } else {
+                maxHp += static_cast<int>(static_cast<float>(maxHp) * 0.1f);
+            }
             regainControlAction(*this);
             break;
 
@@ -2497,7 +2519,11 @@ void GameContext::chooseNeowOption(const Neow::Option &o) {
             break;
 
         case Neow::Bonus::TWENTY_PERCENT_HP_BONUS:
-            maxHp += static_cast<int>(static_cast<float>(maxHp) * 0.2f);
+            if (engineFidelityFix()) {
+                playerIncreaseMaxHp(2 * static_cast<int>(static_cast<float>(maxHp) * 0.1f)); // heals too
+            } else {
+                maxHp += static_cast<int>(static_cast<float>(maxHp) * 0.2f);
+            }
             regainControlAction(*this);
             break;
 
@@ -2830,8 +2856,8 @@ void GameContext::chooseEventOption(int idx) {
                         if (addRelic) {
                             reward.addRelic(combatRewardRelic);
                         }
-                        // eliteTrigger: Black Star applies to this fight.
-                        if (gc.hasRelic(RelicId::BLACK_STAR)) {
+                        // Black Star only drops from MonsterRoomElite, not event fights.
+                        if (!engineFidelityFix() && gc.hasRelic(RelicId::BLACK_STAR)) {
                             reward.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
                         }
                         reward.addCardReward(gc.createCardReward(Room::EVENT));
@@ -2854,6 +2880,9 @@ void GameContext::chooseEventOption(int idx) {
                     }
 
                     ++info.phase;
+                    if (engineFidelityFix() && info.phase >= 3) {
+                        regainControl(); // all three rewards found: only Leave remains
+                    }
                 }
 
             } else if (idx == 1) {
@@ -3920,7 +3949,7 @@ void GameContext::chooseSelectCardScreenOption(int idx) {
                     break;
 
                 case CardRarity::UNCOMMON:
-                    playerHeal(10);
+                    playerHeal(engineFidelityFix() ? maxHp : 10); // the game heals to full
                     break;
 
                 case CardRarity::RARE:
