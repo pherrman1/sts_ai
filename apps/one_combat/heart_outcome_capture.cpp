@@ -1,6 +1,7 @@
 #include "heart_outcome_capture.h"
 #include "driver_shared.h"
 #include "heart1_policy.h"
+#include <cstdlib>
 
 extern bool g_collectKeys;
 
@@ -39,7 +40,8 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture)
         {"ascension", 20}, {"objective", "heart"}, {"collectKeys", true}, {"stopAfterAct", 0},
         {"combatSimulations", 10000}, {"capture", capture},
         {"producerSha", trainingExecutableGitSha()}, {"policy", effectiveOocPolicySpecification()},
-        {"recordSchema", "heart1-public-record-v2"}, {"recordPublicParityQualified", false}});
+        {"recordSchema", "heart1-public-record-v2"}, {"recordPublicParityQualified", false},
+        {"rootTrace", std::getenv("STS_OOC_MCTS_ROOT_TRACE") != nullptr}});
     std::size_t rows = 0, supported = 0;
     std::map<std::string, std::size_t> unsupported;
     ObserverScope scope;

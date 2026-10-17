@@ -23,6 +23,9 @@ namespace sts::search {
         int act = 1;   // current act; scales the "enough block" check
         // Research: learned play-priority table (loadPlayTable); nullptr = production order.
         const int *playTable = nullptr;
+        // #544: cards played this turn after which zero-cost non-attacks lose
+        // first priority; 0 = no cap.
+        int zeroCostSkillTurnCap = 50;
 
         static const int *loadPlayTable(const std::string &path);
 
