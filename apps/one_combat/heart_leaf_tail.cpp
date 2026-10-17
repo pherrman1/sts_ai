@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 #include "heart_leaf.h"
+#include "heart1_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "screen_leaf_continuations.h"
 #include "screen_leaf_snapshot.h"
@@ -59,6 +60,11 @@ int heartLeafTailGen(std::uint64_t salt, unsigned repeats, const std::string &ou
             nlohmann::json result = {{"schema", "heart-leaf-tail-v1"}, {"featureSchema", kHeartLeafFeatureSchema},
                 {"seed", seed}, {"decisionIndex", decision}, {"act", snap.gc.act}, {"floor", snap.gc.floorNum},
                 {"x2bMargin", margin}, {"root", sparse(raw)}, {"repeats", repeats}};
+            // With STS_OOC_HEART1 loaded, the loaded net's value head on the same root.
+            if (heart1::enabled()) {
+                const auto annotation = heart1::leafAnnotation(snap.gc);
+                result["heart1Value"] = annotation.contains("value") ? annotation.at("value") : nlohmann::json(nullptr);
+            }
             if (repeats) {
                 const auto streamSalt = rootSalt(salt, seed, decision);
                 result["salt"] = streamSalt;
