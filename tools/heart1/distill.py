@@ -8,6 +8,7 @@ the V4 prior ("v4", "src_bits"); newer rows carry "kind" (node/select) and the s
 
 usage: distill.py SILVERBOT_REPO OUTDIR --data a.capture.jsonl.gz ... [--dim 64 --layers 2 --mult 2 --heads 4]
   [--trim-map] [--epochs 8] [--device cuda] [--workers 6] [--amp] [--init student.pt] [--select-repeat 1]
+  [--extra-inputs]
 Validation = held-out seeds: files whose seed (from "-<seed>.capture" in the name) has seed % --val-mod ==
 --val-mod - 1. Loss: KL(teacher softmax || student softmax) over the row's choice tokens (temperature 1).
 Reports val KL and top-1 agreement with the teacher per screen and card-select type, and the agreement of
@@ -27,6 +28,8 @@ ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val-mod", typ
 ap.add_argument("--amp", action="store_true", help="bf16 autocast forward (TF32 matmuls); loss/metrics fp32")
 ap.add_argument("--init", help="start from this student state dict (fine-tune) instead of random weights")
 ap.add_argument("--select-repeat", type=int, default=1, help="repeat card-select training rows this often")
+ap.add_argument("--extra-inputs", action="store_true",
+                help="student_inputs.ExtraInputsNN: zero-initialised relic counter, act and card misc inputs")
 a = ap.parse_args()
 sys.path.insert(0, a.repo); sys.path.insert(0, os.path.join(a.repo, "build"))
 import torch, torch.nn.functional as F
@@ -70,7 +73,7 @@ def load(paths):
                 rows.append({"record": trim(rec) if a.trim_map else rec, "logits": r["logits"],
                              "token_bits": r["token_bits"], "v4": r.get("v4"), "src_bits": r.get("src_bits"),
                              "serve": r.get("serve"), "screen": r.get("screen", rec["screen_state"]),
-                             "seed": seed_of(p)})
+                             "act": r.get("act", 0), "deck_misc": r.get("deck_misc"), "seed": seed_of(p)})
     return rows
 
 files = sorted(a.data)
@@ -89,6 +92,7 @@ def positions(rec):
 
 def collate(rows):
     b = network.collate_fn([{**r["record"], "chosen_idx": 0, "outcome": 0.0} for r in rows])
+    if a.extra_inputs: b["extra"] = student_inputs.extra_batch(rows)
     mask = torch.zeros(len(rows), WIDTH, dtype=torch.bool); tgt = torch.full((len(rows), WIDTH), -1e9)
     for i, r in enumerate(rows):
         p = positions(r["record"]); mask[i, p] = True; tgt[i, p] = torch.tensor(r["logits"], dtype=torch.float32)
@@ -104,8 +108,14 @@ def loader(rows, shuffle):
                                        num_workers=a.workers, persistent_workers=a.workers > 0, pin_memory=a.device != "cpu")
 
 H = network.ModelHP(dim=a.dim, n_layers=a.layers, mlp_dim_mult=a.mult, n_heads=a.heads, use_value_head=True)
-net = network.NN(H).to(a.device)
-if a.init: net.load_state_dict(torch.load(a.init, map_location=a.device))
+if a.extra_inputs:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import student_inputs
+net = (student_inputs.ExtraInputsNN(H) if a.extra_inputs else network.NN(H)).to(a.device)
+if a.init:
+    # A plain student loads into ExtraInputsNN with only the zero-initialised x_* inputs missing.
+    missing, unexpected = net.load_state_dict(torch.load(a.init, map_location=a.device), strict=False)
+    if unexpected or any(not k.startswith("x_") for k in missing): sys.exit(f"--init mismatch: {missing} {unexpected}")
 nparam = sum(p.numel() for p in net.parameters()); print("student params", nparam, flush=True)
 opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
 train_dl, val_dl = loader(train, True), loader(val, False)

@@ -210,7 +210,9 @@ void encodeObservation(const GameContext &gc, Record &r) {
     for (const auto &c : gc.deck.cards) {
         r.deckCards.push_back(static_cast<int>(c.id));
         r.deckUpgrades.push_back(c.getUpgraded());
+        r.deckMisc.push_back(c.misc);
     }
+    r.act = gc.act;
     for (const auto &relic : gc.relics.relics) {
         r.relics.push_back(static_cast<int>(relic.id));
         r.relicCounters.push_back(relic.data);
@@ -425,6 +427,7 @@ nlohmann::json recordToJson(const Record &r) {
     for (const auto &p : r.mapPathXs) pathXs.push_back({p[0], p[1], p[2]});
     return {{"obs.fixed_observation", r.fixedObservation},
             {"obs.deck.cards", r.deckCards}, {"obs.deck.upgrades", r.deckUpgrades},
+            {"obs.deck.misc", r.deckMisc}, {"obs.act", r.act},
             {"obs.relics.relics", r.relics}, {"obs.relics.relic_counters", r.relicCounters},
             {"obs.potions", r.potions},
             {"obs.map.xs", r.mapXs}, {"obs.map.ys", r.mapYs}, {"obs.map.roomTypes", r.mapRooms},
@@ -485,6 +488,8 @@ Record recordFromJson(const nlohmann::json &j) {
     r.fixedObservation = ints("obs.fixed_observation");
     r.deckCards = ints("obs.deck.cards");
     r.deckUpgrades = ints("obs.deck.upgrades");
+    if (j.contains("obs.deck.misc")) r.deckMisc = ints("obs.deck.misc");
+    r.act = j.value("obs.act", 0);
     r.relics = ints("obs.relics.relics");
     if (j.contains("obs.relics.relic_counters")) r.relicCounters = ints("obs.relics.relic_counters");
     r.potions = ints("obs.potions");
@@ -850,6 +855,12 @@ bool Net::load(const std::string &file, std::string *error) {
     cone_ = fixedVec(PA + "cone", 3);
     reachesBurn_ = embedding(PA + "reaches_burn.weight");
     choicePosition_ = embedding("choice_embed.position_embedding.weight");
+    extraInputs_ = tensors.count("x_act.weight") > 0;
+    if (extraInputs_) {
+        deckMisc_ = fixedVec("x_deck_misc", 1);
+        relicCounter_ = fixedVec("x_relic_counter", 1);
+        act_ = embedding("x_act.weight");
+    }
     blocks_.assign(layers, {});
     for (int i = 0; i < layers; ++i) {
         const std::string L = "layers." + std::to_string(i) + ".";
@@ -911,12 +922,32 @@ Output Net::forwardRecord(const Record &r) const {
     const auto row = [&](int i) { return x.data() + std::size_t(i) * kDim; };
     const auto position = [&](const Embedding &e, int key) { addEmbedding(e, key, row(t)); ++t; };
 
+    // student_inputs.py clamps: misc and relic counters to [-1, 999], act to [0, 4];
+    // the extra inputs are added after silverbot's token sum (position included).
+    const auto clampInput = [](int v, int lo, int hi) { return float(std::min(std::max(v, lo), hi)); };
     for (int i = 0; i < nDeck; ++i) {
         addEmbedding(card_, r.deckCards[i], row(t));
         addEmbedding(upgrade_, r.deckUpgrades[i], row(t));
-        position(obsPosition_, 0);
+        if (extraInputs_) {
+            addEmbedding(obsPosition_, 0, row(t));
+            const float misc = clampInput(i < int(r.deckMisc.size()) ? r.deckMisc[i] : 0, -1, 999);
+            addFixedVec(deckMisc_, &misc, row(t));
+            ++t;
+        } else {
+            position(obsPosition_, 0);
+        }
     }
-    for (int i = 0; i < nRelic; ++i) { addEmbedding(relic_, r.relics[i], row(t)); position(obsPosition_, 1); }
+    for (int i = 0; i < nRelic; ++i) {
+        addEmbedding(relic_, r.relics[i], row(t));
+        if (extraInputs_) {
+            addEmbedding(obsPosition_, 1, row(t));
+            const float counter = clampInput(i < int(r.relicCounters.size()) ? r.relicCounters[i] : 0, -1, 999);
+            addFixedVec(relicCounter_, &counter, row(t));
+            ++t;
+        } else {
+            position(obsPosition_, 1);
+        }
+    }
     for (int i = 0; i < nPot; ++i) { addEmbedding(potion_, r.potions[i], row(t)); position(obsPosition_, 2); }
     {
         const auto &fo = r.fixedObservation;
@@ -928,7 +959,13 @@ Output Net::forwardRecord(const Record &r) const {
         addEmbedding(keyEmerald_, fo[8], row(t));
         addEmbedding(keySapphire_, fo[9], row(t));
         addEmbedding(screen_, r.screenState, row(t));
-        position(obsPosition_, 3);
+        if (extraInputs_) {
+            addEmbedding(obsPosition_, 3, row(t));
+            addEmbedding(act_, int(clampInput(r.act, 0, 4)), row(t));
+            ++t;
+        } else {
+            position(obsPosition_, 3);
+        }
     }
     // Map tokens: the per-token additions of silverbot's order, one feature at a
     // time over all map rows so each projection runs batched.

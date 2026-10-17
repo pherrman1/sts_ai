@@ -39,6 +39,11 @@ struct FixedChoice {
 struct Record {
     std::vector<int> fixedObservation;  // 10 entries
     std::vector<int> deckCards, deckUpgrades;
+    // Student input extension (not read by heart1 itself): card misc in deck order
+    // (Ritual Dagger damage, Genetic Algorithm block) and the act; records from
+    // before it have no misc (all 0) and act 0.
+    std::vector<int> deckMisc;
+    int act = 0;
     std::vector<int> relics, relicCounters;
     std::vector<int> potions;
     std::vector<int> mapXs, mapYs, mapRooms;
@@ -100,6 +105,7 @@ public:
     int hidden() const { return hidden_; }
     int layers() const { return int(blocks_.size()); }
     bool trimMap() const { return trimMap_; }
+    bool extraInputs() const { return extraInputs_; }
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
@@ -125,6 +131,11 @@ private:
     FixedVec gold_, pathX_, cone_;
     Embedding pathRoom_, reachesBurn_;
     Embedding choicePosition_;
+    // Optional student inputs (tools/heart1/student_inputs.py): x_deck_misc on deck
+    // tokens, x_relic_counter on relic tokens, x_act on the fixed-observation token.
+    bool extraInputs_ = false;
+    FixedVec deckMisc_, relicCounter_;
+    Embedding act_;
     std::vector<Block> blocks_;
     std::vector<float> finalNorm_, valueNorm_;
     Linear choiceLogits_, valueHead_;

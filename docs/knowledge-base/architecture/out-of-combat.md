@@ -1919,6 +1919,18 @@ with the search and its chain.
   the serving weights' logits. A record already written by the process is
   skipped. The returned prior is unchanged. `tools/heart1/distill.py` trains a
   student on these rows (KL to the teacher; `--init` fine-tunes).
+- Student input extension (Philipp 2026-10-17, value-model audit blind spots):
+  records carry `obs.deck.misc` (card `misc` in deck order: Ritual Dagger
+  damage, Genetic Algorithm block) and `obs.act`; heart1 itself ignores them
+  and its relic counters. A weights file with `x_act.weight` (and
+  `x_deck_misc`, `x_relic_counter` FixedVec inputs) adds them to the deck,
+  relic and fixed-observation tokens after silverbot's sum (misc and counters
+  clamped to [-1, 999], act to [0, 4]). Training side:
+  `tools/heart1/student_inputs.py` (`distill.py --extra-inputs`), zero-initialised,
+  so student C loads unchanged; native logits with all-zero `x_*` tensors equal
+  student C's bit for bit (300 capture records). Torch-native parity of
+  nonzero `x_*` is checked with `student_inputs.py perturb/score` where torch
+  and silverbot are built.
 - Parity: `tools/heart1/heart1_reference.py score` runs silverbot's own
   `collate_fn` and `NN` on our records; `tools/heart1/heart1_parity_seeds.py
   early` replays silverbot's engine's early-game decisions (Neow to the first
