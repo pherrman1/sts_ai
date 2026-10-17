@@ -20424,10 +20424,12 @@ paired seed blocks (111130200–295 and 111130904–999), 192 fights per arm. Lo
 | worst-case facing | +2.3 [−0.7, +5.5] | +1.7 [−1.4, +4.7] | **+2.0 [−0.2, +4.3]** (35.4 vs 33.3) | 181 vs 179 | 1.12x |
 | tree reuse off | −5.7 [−9.5, −2.1] | +0.5 [−3.2, +4.2] | **−2.6 [−5.4, −0.1]** (30.7 vs 33.3) | 184 vs 179 | 0.86x |
 
-Tree reuse off on the 64 Heart states (3 copies, 10k and 30k): +0.5 pp and 0.0 pp win rate.
+The 111130904+ block ran first; the 111130200+ block is the replication. Tree reuse off on the 64 Heart states
+(3 copies, 10k and 30k, seeds 111130000–191): 90 vs 89 and 96 vs 96 wins of 192, +0.5 pp and 0.0 pp.
 
-**Interpretation:** worst-case facing makes rollouts over-block; it does not help and costs 12% CPU. Tree reuse off
-did not replicate on the second seed block; pooled it is at most ~3 HP on Shield and Spear and nothing on the Heart.
+**Interpretation:** worst-case facing does not help and costs 12% CPU. **Inference:** it makes rollouts over-block
+(not measured). Tree reuse off did not replicate on the second seed block: pooled −2.6 HP lost [−5.4, −0.1] on
+Shield and Spear, 0 pp on the Heart. Exact-match-only reuse was flat (−0.3 [−0.9, +0.2], audit report F1).
 Neither closes the −6.8 HP engine gap. **Open question:** the remaining candidates are the fair-view root and
 knowledge tracking, and other rollout-agent differences.
 
@@ -20436,6 +20438,6 @@ knowledge tracking, and other rollout-agent differences.
 Evidence: [`evidence/a20_ss_rollout_facing_20261017/`](evidence/a20_ss_rollout_facing_20261017/README.md) (per-fight
 CSVs, `facing_switch.patch`, SHA256SUMS). The `act4replay` mode used here is part of this PR.
 
-Seeds used: 111130200–295 (reused for pairing), 111130904–999.
+Seeds used: 111130200–295 and 111130000–191 (reused for pairing), 111130904–999.
 
 **Knowledge impact:** both added to rejected approaches in `research/combat-search/leaf-evaluation.md`.
