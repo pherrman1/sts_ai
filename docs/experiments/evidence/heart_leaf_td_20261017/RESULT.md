@@ -102,3 +102,32 @@ under-prediction (0.093 vs 0.136 out of fold), while VALIDATION had a low Heart 
 rejected the TRAIN act-1 offset (+0.45) in `actcal_td2`. A later candidate would need a new
 held-out set to test that offset.
 
+
+## td3: the same refit without the hidden encounter queue (feature schema v4)
+
+The rich vector still carries `nextEliteId` and `nextFight0..2`, the encounter queue a player
+cannot see, which ADR-0029 removed from the public X2-B. The §503 root rows are real-game
+snapshots, so td1/td2 trained on the real queue, while live OOC MCTS re-determinizes every child
+(`sampleNoncombatFuture`) and the leaf sees a sampled queue. Shuffling the four columns within
+act and floor on VALIDATION left td2 unchanged (BCE 0.3038 → 0.3039, AUC 0.735), so the leak
+carried about no skill. Philipp asked for the fix (2026-10-17 22:34Z, via the coordinator).
+
+Feature schema v4 is v3 with those four columns zeroed before the critic and the residual see
+them (`heart_leaf_fit.py fit --mask-hidden-queue`; `HeartLeafModel` zeroes them natively).
+`heart_leaf_td3` is the td2 recipe on the same tails and heart1 rows with that flag
+(`fit --critic h1rows.jsonl --rounds 3 --act4-offset --mask-hidden-queue`): manifest `0f55844d…`,
+residual `0a2d7d9f…` (208 trees, TD round 1), fitted with xgboost 2.1.4 (a 3.4.1 refit is not bit-identical: round 3, VALIDATION 0.3035/0.736), critic `22343b59…` (validation corr 0.936),
+Act-4 offset −0.824. Native parity 2.6e-7 on parity rows that keep the real queue values. td3's
+trees never split on the zeroed columns, so that check alone would pass with broken masking; the
+review's control (td2 trees under a v4 manifest, native vs Python on 3,000 real-queue roots) matched
+to 7e-8, against 0.22 without masking.
+
+| VALIDATION (320 runs) | BCE | AUC | Act 1 pred | Act 2 | Act 3 | Act 4 |
+|---|---:|---:|---:|---:|---:|---:|
+| X2-B, TRAIN Platt | 0.3133 | 0.699 | 0.086 | 0.129 | 0.292 | 0.344 |
+| td2 | 0.3038 | 0.735 | 0.088 | 0.124 | 0.233 | 0.418 |
+| td3 | 0.3034 | 0.731 | 0.086 | 0.126 | 0.228 | 0.415 |
+
+Actual Heart rates are 0.103, 0.119, 0.202 and 0.423. td3 clears the VALIDATION gate
+(act 3 0.026) where td2 missed by 0.001, but VALIDATION shaped both recipes and CONFIRM is spent,
+so this is no held-out test. `score_validation_td3.json`, `report_td3.json`.

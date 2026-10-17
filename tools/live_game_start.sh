@@ -14,11 +14,14 @@ Ensure the stable runtime, then start or verify ModTheSpire + MCPTheSpire.
   --refresh-runtime        build and atomically publish this worktree's advisor
   --arm-c PATH             install the frozen Arm C OOC prior (also refreshes runtime)
   --qualified-ctm          install the qualified A0 and calibrated A20 stacks
+                           (the install default; also refreshes runtime)
+  --legacy-ctm             refresh with, or run on, the legacy CTM stack
   --deploy-inspector       build and atomically deploy the Java inspector JAR
   --restart-game           safely restart the expected ModTheSpire process
   --foreground             keep a newly started ModTheSpire attached
   --allow-missing-advisor  explicit MCP-only escape hatch
-  --allow-missing-ooc      allow Silver-only debugging without an OOC model
+  --allow-missing-ooc      allow debugging without the OOC, Arm C, CTM, win or
+                           floor model (each is otherwise fatal)
   --wait SECONDS           startup wait limit (default: 45)
   -h, --help               show this help
 
@@ -38,7 +41,7 @@ check_only=0 probe=0 foreground=0 allow_missing_advisor=0 refresh_runtime=0
 deploy_inspector=0 restart_game=0 allow_missing_ooc=0 wait_seconds=45
 run_driver=0 super_fast=0
 arm_c_source=
-qualified_ctm=0
+qualified_ctm=0 legacy_ctm=0
 driver_args=()
 while (($#)); do
   case "$1" in
@@ -57,6 +60,7 @@ while (($#)); do
       arm_c_source=$2; refresh_runtime=1; shift
       ;;
     --qualified-ctm) qualified_ctm=1; refresh_runtime=1 ;;
+    --legacy-ctm) legacy_ctm=1 ;;
     --deploy-inspector) deploy_inspector=1 ;;
     --restart-game) restart_game=1 ;;
     --wait)
@@ -112,6 +116,8 @@ runtime_available=1
 runtime_args=()
 [[ -z "$arm_c_source" ]] || runtime_args+=(--arm-c-source "$arm_c_source")
 ((!qualified_ctm)) || runtime_args+=(--qualified-ctm)
+((!legacy_ctm || runtime_command != install)) || runtime_args+=(--legacy-ctm)
+((!(qualified_ctm && legacy_ctm))) || die "--qualified-ctm and --legacy-ctm are exclusive"
 if ! python3 "$runtime_tool" "$runtime_command" "${runtime_args[@]}"; then
   ((allow_missing_advisor)) || die "stable runtime $runtime_command failed"
   runtime_available=0
@@ -162,9 +168,13 @@ PY_CTM_STACK
     [[ ${STS_LIVE_CTM_A20_MODEL+x} ]] || export STS_LIVE_CTM_A20_MODEL="$runtime_root/current/models/$ctm_a20"
     [[ ${STS_LIVE_CTM_A20_FALLBACK_MODEL+x} ]] || export STS_LIVE_CTM_A20_FALLBACK_MODEL="$runtime_root/current/models/$ctm_a20_fallback"
   fi
-  if [[ -f "$runtime_root/current/models/v_win_trees.txt" ]]; then
-    export STS_LIVE_OOC_WIN_MODEL=${STS_LIVE_OOC_WIN_MODEL:-$runtime_root/current/models/v_win_trees.txt}
-  fi
+  # Public X2-B (ADR-0029); releases installed before it carry v_win_trees.txt.
+  for win_name in v_win_x2b_public_trees.txt v_win_trees.txt; do
+    if [[ -f "$runtime_root/current/models/$win_name" ]]; then
+      export STS_LIVE_OOC_WIN_MODEL=${STS_LIVE_OOC_WIN_MODEL:-$runtime_root/current/models/$win_name}
+      break
+    fi
+  done
   if [[ -f "$runtime_root/current/models/v_rich_trees.txt" ]]; then
     export STS_LIVE_OOC_FLOOR_MODEL=${STS_LIVE_OOC_FLOOR_MODEL:-$runtime_root/current/models/v_rich_trees.txt}
   fi
@@ -172,16 +182,27 @@ PY_CTM_STACK
     export STS_LIVE_OOC_MODEL=${STS_LIVE_OOC_MODEL:-$runtime_root/current/models/ooc_strategic_tok_final.native}
   fi
   [[ -x "$STS_MODEL_INSPECTOR_ADVISOR" ]] || die "stable advisor missing or not executable: $STS_MODEL_INSPECTOR_ADVISOR"
-  [[ -f "$STS_CTM_MODEL" ]] || warn "CTM model unavailable: $STS_CTM_MODEL"
+  # A missing model makes every affected decision fall back silently, so each
+  # is fatal unless --allow-missing-ooc is given for debugging.
+  missing_model() {
+    ((allow_missing_ooc)) || die "$1; use --allow-missing-ooc only for debugging"
+    warn "$1"
+  }
+  [[ -f "$STS_CTM_MODEL" ]] || missing_model "CTM model unavailable: $STS_CTM_MODEL"
   if [[ -z "${STS_LIVE_OOC_MODEL:-}" || ! -f "$STS_LIVE_OOC_MODEL" ]]; then
-    ((allow_missing_ooc)) || die "OOC model unavailable: ${STS_LIVE_OOC_MODEL:-<unset>}; use --allow-missing-ooc for Silver-only debugging"
-    warn "OOC model unavailable; live OOC policy will report MODEL_UNAVAILABLE"
+    missing_model "OOC model unavailable: ${STS_LIVE_OOC_MODEL:-<unset>}; live OOC policy would report MODEL_UNAVAILABLE"
   fi
   if [[ -z "${STS_LIVE_OOC_WIN_MODEL:-}" || ! -f "$STS_LIVE_OOC_WIN_MODEL" ]]; then
-    warn "OOC win model unavailable; live OOC MCTS will report OOC_WIN_MODEL_UNAVAILABLE"
+    missing_model "OOC win model unavailable; live OOC MCTS would report OOC_WIN_MODEL_UNAVAILABLE"
   fi
   if [[ -z "${STS_LIVE_OOC_FLOOR_MODEL:-}" || ! -f "$STS_LIVE_OOC_FLOOR_MODEL" ]]; then
-    warn "OOC floor model unavailable; live OOC MCTS will report OOC_FLOOR_MODEL_UNAVAILABLE"
+    missing_model "OOC floor model unavailable; live OOC MCTS would report OOC_FLOOR_MODEL_UNAVAILABLE"
+  fi
+  if [[ -z "${STS_LIVE_OOC_ARM_C:-}" || ! -f "$STS_LIVE_OOC_ARM_C" ]]; then
+    missing_model "Arm C (student C) weights unavailable; install them with --arm-c PATH"
+  fi
+  if [[ -z "$qualified_names" && "$use_manifest_ctm" == 1 ]] && ((!legacy_ctm)); then
+    missing_model "runtime has the legacy CTM stack; refresh it (--refresh-runtime installs the qualified stacks) or pass --legacy-ctm"
   fi
 else
   warn "advisor validation and active-runtime recording are disabled for MCP-only startup"
