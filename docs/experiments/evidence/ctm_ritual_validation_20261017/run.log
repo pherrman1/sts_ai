@@ -1,0 +1,119 @@
+{"route": "fast", "draw": 1, "rows": 142}
+{"route": "fast", "draw": 2, "rows": 142}
+{"route": "fast", "draw": 3, "rows": 142}
+{"route": "fast", "draw": 4, "rows": 142}
+{"route": "fast", "draw": 5, "rows": 142}
+{"route": "fast", "draw": 6, "rows": 142}
+{"route": "fast", "draw": 7, "rows": 142}
+{"route": "fast", "draw": 8, "rows": 142}
+{"route": "fast", "draw": 9, "rows": 142}
+{"route": "fast", "draw": 10, "rows": 142}
+{"route": "fast", "draw": 11, "rows": 142}
+{"route": "fast", "draw": 12, "rows": 142}
+{"route": "fast", "draw": 13, "rows": 142}
+{"route": "fast", "draw": 14, "rows": 142}
+{"route": "fast", "draw": 15, "rows": 142}
+{"route": "fast", "draw": 16, "rows": 142}
+{"route": "fast", "draw": 17, "rows": 142}
+{"route": "fast", "draw": 18, "rows": 142}
+{"route": "fast", "draw": 19, "rows": 142}
+{"route": "fast", "draw": 20, "rows": 142}
+{"route": "fast", "draw": 21, "rows": 142}
+{"route": "fast", "draw": 22, "rows": 142}
+{"route": "fast", "draw": 23, "rows": 142}
+{"route": "fast", "draw": 24, "rows": 142}
+{"route": "fast", "draw": 25, "rows": 142}
+{"route": "fast", "draw": 26, "rows": 142}
+{"route": "fast", "draw": 27, "rows": 142}
+{"route": "fast", "draw": 28, "rows": 142}
+{"route": "fast", "draw": 29, "rows": 142}
+{"route": "fast", "draw": 30, "rows": 142}
+{"route": "fast", "draw": 31, "rows": 142}
+{"route": "fast", "draw": 32, "rows": 142}
+/home/philippherrmann/.local/lib/python3.12/site-packages/torch/nn/modules/transformer.py:502: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. (Triggered internally at ../aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(
+{"route": "standard", "draw": 1, "rows": 1}
+{"route": "standard", "draw": 2, "rows": 1}
+{"route": "standard", "draw": 3, "rows": 1}
+{"route": "standard", "draw": 4, "rows": 1}
+{"route": "standard", "draw": 5, "rows": 1}
+{"route": "standard", "draw": 6, "rows": 1}
+{"route": "standard", "draw": 7, "rows": 1}
+{"route": "standard", "draw": 8, "rows": 1}
+{"route": "standard", "draw": 9, "rows": 1}
+{"route": "standard", "draw": 10, "rows": 1}
+{"route": "standard", "draw": 11, "rows": 1}
+{"route": "standard", "draw": 12, "rows": 1}
+{"route": "standard", "draw": 13, "rows": 1}
+{"route": "standard", "draw": 14, "rows": 1}
+{"route": "standard", "draw": 15, "rows": 1}
+{"route": "standard", "draw": 16, "rows": 1}
+{"route": "standard", "draw": 17, "rows": 1}
+{"route": "standard", "draw": 18, "rows": 1}
+{"route": "standard", "draw": 19, "rows": 1}
+{"route": "standard", "draw": 20, "rows": 1}
+{"route": "standard", "draw": 21, "rows": 1}
+{"route": "standard", "draw": 22, "rows": 1}
+{"route": "standard", "draw": 23, "rows": 1}
+{"route": "standard", "draw": 24, "rows": 1}
+{"route": "standard", "draw": 25, "rows": 1}
+{"route": "standard", "draw": 26, "rows": 1}
+{"route": "standard", "draw": 27, "rows": 1}
+{"route": "standard", "draw": 28, "rows": 1}
+{"route": "standard", "draw": 29, "rows": 1}
+{"route": "standard", "draw": 30, "rows": 1}
+{"route": "standard", "draw": 31, "rows": 1}
+{"route": "standard", "draw": 32, "rows": 1}
+{
+  "rows": 143,
+  "sources": 68,
+  "teacherNll": 0.0033221452176290895,
+  "mixtureNll": 0.003305526033288567,
+  "meanGap": -1.661918434052221e-05,
+  "zeroTeacherMassRows": 0,
+  "zeroMixtureMassRows": 0,
+  "sourceBootstrap": {
+    "mean": -1.661918434052221e-05,
+    "sourceBootstrap95": [
+      -0.00013898656525652327,
+      0.00010269314778911387
+    ],
+    "sources": 68,
+    "rows": 143,
+    "repetitions": 1000
+  },
+  "finiteGap": true,
+  "qualified": false,
+  "classification": "CURRENT_CHILD_RITUAL_VALIDATION_DIAGNOSTIC",
+  "independentHoldout": false,
+  "artifacts": {
+    "fast": [
+      "combat_transition_deepsets_pathb_r2_lizard.native",
+      "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c"
+    ],
+    "standard": [
+      "combat_transition_near_full_escape_pathb_r2.native",
+      "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf"
+    ]
+  },
+  "routeCounts": {
+    "fast": 142,
+    "standard": 1
+  },
+  "excludedRows": {},
+  "frozenRows": 143,
+  "brewGeneratedEscapeDiagnostic": null,
+  "draws": 32,
+  "seed": 20260920,
+  "testEvaluated": false,
+  "trainingPerformed": false,
+  "supportChanged": false,
+  "activeTailCorrectionEvaluated": false,
+  "rowEvidenceSha256": "2921363393a62bc3027db5fcf3d7f2292dabdb6714360d2e0296fdd6d2803e2b",
+  "wallSeconds": 4.135347330011427,
+  "peakCudaAllocated": 14107648,
+  "peakRssBytes": 1014046720,
+  "torchVersion": "2.5.1+cu121",
+  "cudaVersion": "12.1",
+  "device": "NVIDIA GeForce RTX 3060 Ti"
+}

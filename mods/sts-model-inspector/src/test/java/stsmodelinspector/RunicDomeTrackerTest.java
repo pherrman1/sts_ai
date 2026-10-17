@@ -41,6 +41,23 @@ public final class RunicDomeTrackerTest {
         if(!Boolean.FALSE.equals(snapshot.get("complete"))) throw new AssertionError("unproven Dome accepted: "+snapshot);
     }
     public static void main(String[] args) throws Exception {
+        // Source-shaped second-generation split/summon: the Java list keeps
+        // an old corpse, while the observed native slot belongs to its child.
+        Object retired=new Object(), replacement=new Object(), unboundOccupant=new Object();
+        java.util.Map<Object,Integer> retiredSlots=new java.util.IdentityHashMap<>();retiredSlots.put(retired,2);
+        Object[] current=new Object[5];current[2]=replacement;
+        if(!RunicDomeCapture.retiredDeadOccupant(retired,true,false,true,retiredSlots,current)
+                || RunicDomeCapture.retiredDeadOccupant(retired,false,false,true,retiredSlots,current)
+                || RunicDomeCapture.retiredDeadOccupant(retired,true,true,true,retiredSlots,current)
+                || RunicDomeCapture.retiredDeadOccupant(retired,true,false,false,retiredSlots,current)
+                || RunicDomeCapture.retiredDeadOccupant(unboundOccupant,true,false,true,retiredSlots,current))
+            throw new AssertionError("retired dead occupant lost exact replacement proof");
+        current[2]=retired;
+        if(RunicDomeCapture.retiredDeadOccupant(retired,true,false,true,retiredSlots,current))
+            throw new AssertionError("current native corpse was hidden");
+        current[2]=null;
+        if(RunicDomeCapture.retiredDeadOccupant(retired,true,false,true,retiredSlots,current))
+            throw new AssertionError("empty slot fabricated a replacement");
         Object monster=new Object();
         for(String id:Arrays.asList("JawWorm","Cultist")) {
             RunicDomeTracker a=new RunicDomeTracker(monster,id,1,1,1);

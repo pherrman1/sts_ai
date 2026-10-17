@@ -1,0 +1,36 @@
+{
+  "buildReceiptSha256": "99830d91d13582d3ac52af9849b274be8ca88d1cfdf2f9a11064087e18f709f2",
+  "checks": {
+    "build": "Underlying and adapted receipts consistent; configure/build rc0; raw log hashes verified; final one_combat link and changed source objects present; Release cache points to this worktree",
+    "executable": "Executable identity and SHA256 independently verified",
+    "packetUnitTests": "4 passed (0.003s), including real corpus quarantine rejection and terminal analysis failure receipt",
+    "selection": "Pinned split and historical manifest hashes verified; source 52000001 is first TRAIN member in range and absent from VALIDATION/TEST",
+    "source": "Clean tracked/untracked status; exact HEAD/tree; reviewed live SHA is ancestor",
+    "teacher": "Both historical model hashes verified; fixed legacy rollout/leaf and ordinary 10k learned-stop profile reviewed"
+  },
+  "findings": [],
+  "identity": {
+    "executable": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "executableSha256": "74b95ff524a1743772b98ad55007d758222d3675b4bee731cc9c5a19a29ba330",
+    "indexBlobListSha256": "911822b674fea9a8e3a8ac571451bde74fb9c43b78b46eac8e2bff39b6e7d5f9",
+    "reviewedLivePrSha": "8879b5314136c8f9acfe999e40c202e33fde0571",
+    "sourceSha": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793"
+  },
+  "limits": [
+    "No freeze or run performed",
+    "No TEST payload read; only source membership metadata inspected",
+    "No model inference, fit, collection, or qualification claim",
+    "Source build before/after cleanliness is retained receipt evidence; current cleanliness independently checked"
+  ],
+  "packetIdentity": {
+    "PROTOCOL.md": "18a7859b896fc21e6b98f48a7e6348cf290c0791a35cf30a0183fd071e01fa83",
+    "canary.py": "477df786bf18a72e3aceb2df25dbde82af129bf783c88f32844868bf1075456e",
+    "selection.json": "06cc10b0cc4c676942fb479a523552f54afaea992640a2b90609f21f42fd55fc",
+    "teacher-template.json": "7d3312c2afe1e14185c00e55679f41f1193ce577b4311a9cdb9b280917c6490d",
+    "test_canary.py": "73d9f079ff9eb59cf419d593fb80bfe44b9018ecc8a45f14004fe5370b178f66"
+  },
+  "scope": "Independent canary packet implementation/design and final source/build custody review; no freeze or seed execution.",
+  "sourceSha": "b94da9bc13f868f39e5814c5c1a7d66fd20ec793",
+  "underlyingBuildReceiptSha256": "36a047759d83d52c3a65ad479c275de3ce6200b1228a5b978182ec936065c8f5",
+  "verdict": "PASS"
+}

@@ -1,0 +1,75 @@
+{
+  "combat_backend": "native_silver",
+  "environment": {
+    "STS_COLLECT_KEYS": "1",
+    "STS_CTM_GEN_DEPLOYED_OOC": "0",
+    "STS_EXECUTABLE_GIT_SHA": "55837b02584dbb166ba44bc8613332701c69738d",
+    "STS_FAIR": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+    "STS_SILVER_FINAL_BOSS_BINARY": "0",
+    "STS_SILVER_FINAL_FIGHT_LEAF": "0",
+    "STS_SILVER_LEARNED_STOP": "1",
+    "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK": "0",
+    "STS_SILVER_LEARNED_STOP_BOSS_MAX": "0",
+    "STS_SILVER_NO_LOSS_POTION_CREDIT": "0",
+    "STS_SILVER_RELIC_HEAL_LEAF": "0",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_ROLLOUTS_PER_LEAF": "1",
+    "STS_SILVER_ROLLOUT_CARD_TABLE": "0",
+    "STS_SILVER_ROLLOUT_UNIFORM": "0",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_SEARCH_SINGLETON_ROOTS": "0",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_STOP_AFTER_ACT": "0"
+  },
+  "executable_sha256": "d02d4a1da1081b1dd3190f1eddacb7cc1f6b350fa02cd39ca3e93662b423da0b",
+  "git_sha": "55837b02584dbb166ba44bc8613332701c69738d",
+  "model_artifacts": [
+    {
+      "path": "models/v_rich_trees.txt",
+      "role": "ooc_floor_value",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "path": "models/v_win_trees.txt",
+      "role": "ooc_win_value",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    }
+  ],
+  "rng_regime": "project_fair",
+  "search_configuration": {
+    "adaptive": false,
+    "belief": "not_applicable_silver_private_chance_search",
+    "budget_policy": "learned_stop",
+    "chance_widening_alpha": 0.52389,
+    "chance_widening_c": 3.7028,
+    "direct_learned_leaf": false,
+    "end_turn_widening_alpha": 0.52389,
+    "end_turn_widening_c": 3.7028,
+    "exploration_parameter": 25.0,
+    "exploration_parameter_chance": 25.0,
+    "final_boss_binary": false,
+    "final_fight_leaf": false,
+    "learned_stop_model": "gbt-770201c31f7b",
+    "learned_stop_threshold": 0.0323,
+    "learned_visit_puct": false,
+    "no_loss_potion_credit": false,
+    "particles": "not_applicable_silver_private_chance_search",
+    "pruning": false,
+    "relic_heal_leaf": false,
+    "reuse_cap": 32768,
+    "reuse_cap_mode": "allocated",
+    "rollout_action_limit": 1000,
+    "rollout_policy": "legacy_greedy",
+    "rollout_uniform": 0,
+    "rollouts_per_leaf": 1,
+    "root_prior": false,
+    "sequential_halving": false,
+    "simulation_budgets": [
+      10000
+    ]
+  },
+  "teacher_id": "silver-ordinary-fair-learnedstop-ritual-coverage-55837b02584d"
+}

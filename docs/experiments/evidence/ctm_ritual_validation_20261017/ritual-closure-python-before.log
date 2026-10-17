@@ -1,0 +1,28 @@
+FF........
+======================================================================
+FAIL: test_awakened_dagger_closure_has_three_permanent_kills (tools.test_combat_transition_sparse_events.SparseEvents.test_awakened_dagger_closure_has_three_permanent_kills)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/tools/test_combat_transition_sparse_events.py", line 87, in test_awakened_dagger_closure_has_three_permanent_kills
+    self.assertNotIn((4*payout,),n.ritual_posts(pre,pi))
+AssertionError: (12,) unexpectedly found in ((0,), (3,), (6,), (9,), (12,))
+
+======================================================================
+FAIL: test_awakened_greed_and_daggers_share_three_permanent_kills (tools.test_combat_transition_sparse_events.SparseEvents.test_awakened_greed_and_daggers_share_three_permanent_kills)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/tools/test_combat_transition_sparse_events.py", line 100, in test_awakened_greed_and_daggers_share_three_permanent_kills
+    self.assertEqual(budget.joint_gold_posts(pre,pi,0,(15,)),((100,0),))
+AssertionError: Tuples differ: ((100, 0), (120, 0)) != ((100, 0),)
+
+First tuple contains 1 additional elements.
+First extra element 1:
+(120, 0)
+
+- ((100, 0), (120, 0))
++ ((100, 0),)
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.007s
+
+FAILED (failures=2)

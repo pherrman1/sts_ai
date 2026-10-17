@@ -147,6 +147,10 @@ enable flag:
 | `STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC` | — | −1.0 | `main` |
 | `STS_OOC_STRATEGIC_MARGIN_MAP` | — | −1.0 | `main` |
 | `STS_COLLECT_KEYS` | Heart objective: mandatory Emerald/Sapphire rewards, Act-3 Ruby Recall and a final-act route to the visible burning elite. Explicit `0` restores keys-off play; any value other than `0` or `1` is fatal (an empty value or `true` used to turn keys off). | `1` (on in `one_combat`) | `one_combat::main`, `heartKeyAction` |
+| `STS_KEY_SAPPHIRE` | Sapphire timing under `STS_COLLECT_KEYS`: `first` (ADR-0041, first chest), `act3` (keep earlier chest relics, take the key at the first Act-3 chest), `policy` (policy decides; Act-3 treasure row backstop). | `first` | `heartKeyRules` (`RunGoal.cpp`) |
+| `STS_KEY_RUBY` | Ruby Recall timing: `first` (ADR-0041, first Act-3 campfire), `hp` (first Act-3 campfire at HP ≥ `STS_KEY_RUBY_MIN_HP`, else the pre-boss row), `policy` (policy decides; pre-boss row backstop). | `first` | `heartKeyRules` |
+| `STS_KEY_RUBY_MIN_HP` | HP fraction for `STS_KEY_RUBY=hp`. | `0.6` | `heartKeyRules` |
+| `STS_KEY_EMERALD` | Act-3 Emerald route: `first` (ADR-0041, first legal reaching edge), `mask` (policy/MCTS chooses among edges that still reach the burning elite), `policy` (alias of `mask`). In Acts 1-2 the policy always decides whether to take the burning elite. | `first` | `heartKeyRules` |
 
 ## OOC model-driven decisions
 
@@ -174,6 +178,7 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_OOC_SIBLING_CAPTURE` (+ `_EVERY`, `_REPEATS`, `_LONG`, `_MAX_DEPTH`, `_MAX_LEAVES`) | Research capture of sibling OOC MCTS leaves for learned-leaf tests (requires `STS_OOC_MCTS=1`, excludes `STS_OOC_MCTS_LEAF_CAPTURE`). Every `_EVERY`-th searched decision (default 4) appends one JSON row per tree leaf at depth ≤ `_MAX_DEPTH` (2), at most `_MAX_LEAVES` (256) per root: parent node and action, the search's own leaf value, and from a forked child `_REPEATS` (1, at most 256) repeat leaf rollouts on fresh RNG, `_LONG` (0) `LEAF_COMBATS=5` rollouts, X2-B at the leaf and, with `STS_OOC_HEART1`, heart1's value and record. Play is unchanged (forked child only) | unset (off) | `configureLiveOocMcts`, `OocGameContextModel::siblingLeafExtras` |
+| `STS_OOC_HEART1_CAPTURE` (+ `_EVERY`, `_SELECT_EVERY`), `STS_OOC_HEART1_TEACHER` | Research distillation capture from `heart1::priorLogits` (heart1 tree prior or leaf policy): every `_EVERY`-th call (default 8) appends the node, and every `_SELECT_EVERY`-th (default 1) card select a rest/shop-removal/event/boss-relic source opens; teacher logits from `STS_OOC_HEART1_TEACHER` (default the `STS_OOC_HEART1` weights) plus the serving logits; repeated records skipped. Prior unchanged | unset (off) | `heart1::priorLogits`, `tools/heart1/distill.py` |
 | `STS_OOC_ACTION_NN` | OOC decisions via next-combat action NN | `0` (off) | `main` ~L9270 |
 | `STS_OOC_CHECKPOINT_NN` | OOC via native checkpoint-distilled NN; a non-empty path that fails to load exits nonzero | unset (off) | `main` ~L9277 |
 | `STS_OOC_MAP_ROUTE` | C_psi route search (M2) | `0` (off) | `main` ~L9345 |
@@ -187,6 +192,8 @@ enable flag:
 | `STS_SIM_ADAPT_CTM` | Qualified native CTM artifact for deterministic death/winning-HP adaptive budgeting; unsupported fights keep the caller's base budget | unset (C_psi path) | `main` ~L8825 |
 | `STS_SIM_ADAPT_MIN_FRAC` / `STS_SIM_ADAPT_MAX_FRAC` | Clamp adaptive fight budgets as fractions of the caller's base budget | `0.4` / `2.0` | `main` ~L8822 |
 | `STS_DG_TEMP` | Datagen softmax temperature | unset | `main` ~L9675 |
+| `STS_MATCH_AND_KEEP_HEART1` | Default on. With `STS_OOC_HEART1` loaded, a Match and Keep card that live OOC MCTS does not value (every valuation inside a search, and runs without OOC MCTS) is valued by one heart1 argmax take/skip step on the lone offer. `0` restores the V4/one-ply chain valuation; other values are fatal | unset (on) | `matchAndKeepHeart1`, `run_driver.cpp` |
+| `STS_MATCH_AND_KEEP_CURSE_FIX` | Default on. A curse is never a wanted Match and Keep pair. `0` values curses like any card (V4 and heart1 often took them); other values are fatal | unset (on) | `matchAndKeepCurseFix`, `run_driver.cpp` |
 | `STS_BOSS_DRAFT` | Boss-gated rollout drafting. Like `STS_ACT_FIGHT_PROBE_DRAFT`, it also decides Match and Keep valuations, playing its rollout fights on the detached lone-card offer (before 2026-10-11 those valuations aborted the run with `native_combat_in_leaf_policy`; ctest `match_and_keep_boss_draft_oracle`) | `0` (off) | `main` ~L9570 |
 | `STS_ACT_FIGHT_PROBE_DRAFT` | All-act encounter rollout draft | `0` (off) | `main` ~L9580 |
 | `STS_ACT_FIGHT_PROBE_ALL_OOC` | Acts 1-3 all-OOC checkpoint rollout. With `STS_ACT_FIGHT_PROBE_ENCOUNTER_NN=1`, every branch sends the encounter NN the same root state built with the live path. Before 2026-10-11 every branch after the first (and every OpenMP branch) sent an empty-path root (`pv*`=0), so evidence produced with that combination carries the bug (ctest `act_fight_probe_all_ooc_root_state`) | `0` (off) | `main` ~L9620 |

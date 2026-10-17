@@ -1,0 +1,11 @@
+Test project /home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-debug-ccache
+    Start 29: ritual_dagger_eligibility
+1/1 Test #29: ritual_dagger_eligibility ........   Passed    0.00 sec
+
+100% tests passed out of 1
+
+Label Time Summary:
+core     =   0.00 sec*proc (1 test)
+smoke    =   0.00 sec*proc (1 test)
+
+Total Test time (real) =   0.01 sec
