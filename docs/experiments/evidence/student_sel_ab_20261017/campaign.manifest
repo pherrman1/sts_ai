@@ -1,0 +1,8 @@
+name          student-sel-ab
+code_commit   623a8b6066e6492bc8f0be36efbeddde1ec10a4c
+binary_sha256 2b94132f345acb5e7e9632679e70b17f8da0e6f138630efff1c4864344693392
+workers       8
+share         /mnt/project-files/student-sel-ab
+parallel      4
+input studentc.bin /mnt/project-files/student-sel-ab/studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
+input student_sel.bin /mnt/project-files/student-sel-ab/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
