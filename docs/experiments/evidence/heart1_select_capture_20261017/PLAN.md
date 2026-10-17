@@ -1,6 +1,6 @@
 # heart1 card-select capture and student C re-distillation (plan, 2026-10-17)
 
-Status: proposed. The capture needs Philipp's authorization and a coordinator seed block; nothing here has run
+Status: authorized by Philipp 2026-10-17 17:28Z ("yes to input change. 64 seeds."); frozen, pending pre-launch review. Nothing here has run
 beyond the smoke below. No § number taken. Capture seeds: 111156100–111156163 (coordinator block).
 PR #597 (logits-only forward) also edits `priorLogits`; when it lands, the serving forward there becomes
 `logitsOnly=true` (bit-identical logits) and the teacher keeps the full pass (value).
