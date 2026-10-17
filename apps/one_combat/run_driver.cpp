@@ -427,7 +427,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
-            || search::nativeSilverReuseCap() != 32768)
+            || search::nativeSilverLearnedStopEnabled() || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
