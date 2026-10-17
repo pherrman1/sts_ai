@@ -1,6 +1,6 @@
 #!/bin/bash
 # §518 runner: 4 shards on 4 cores in one container, ctmsilvergen at Ascension 20 with the widen518 armset
-# (plain exact-10k Silver with four chance-widening settings, R = 2). Adapted from the #612 root-table run.sh.
+# (Silver at 2,500 sims with the gen-6 tree prior, four chance-widening settings, R = 2). Adapted from the #612 root-table run.sh.
 # usage: bash run.sh OUT_DIR TOTAL BASE [SHARDS [LIMIT]]   (smoke: 4 111180000; run: TOTAL and BASE set at freeze)
 # Launch detached so it survives the session: setsid nohup bash run.sh OUT TOTAL BASE > OUT.log 2>&1 &
 # Run from a checkout whose apps/ src/ include/ CMakeLists.txt equal code commit CODE below, after

@@ -29,14 +29,14 @@ import sys
 from collections import defaultdict
 
 R = 2
-ARMS = ["base10k", "endwide10k", "othernarrow10k", "spire10k"]
+ARMS = ["base2500", "endwide2500", "othernarrow2500", "spire2500"]
 # Pre-registered labels: (x, y, positive label, negative label); all fights, score; equal simulations.
-LABELED = [("endwide10k", "base10k", "ENDWIDE_HELPS", "ENDWIDE_HURTS"),
-           ("othernarrow10k", "base10k", "OTHERNARROW_HELPS", "OTHERNARROW_HURTS"),
-           ("spire10k", "base10k", "SPIRE_HELPS", "SPIRE_HURTS")]
-DESCRIPTIVE = [("spire10k", "othernarrow10k"), ("spire10k", "endwide10k")]
+LABELED = [("endwide2500", "base2500", "ENDWIDE_HELPS", "ENDWIDE_HURTS"),
+           ("othernarrow2500", "base2500", "OTHERNARROW_HELPS", "OTHERNARROW_HURTS"),
+           ("spire2500", "base2500", "SPIRE_HELPS", "SPIRE_HURTS")]
+DESCRIPTIVE = [("spire2500", "othernarrow2500"), ("spire2500", "endwide2500")]
 # CPU-ratio contrasts (x / y): per simulation and per fight.
-CPU_RATIOS = [(a, "base10k") for a in ("endwide10k", "othernarrow10k", "spire10k")]
+CPU_RATIOS = [(a, "base2500") for a in ("endwide2500", "othernarrow2500", "spire2500")]
 METRICS = ("score", "win", "hpLoss")
 
 
