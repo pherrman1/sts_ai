@@ -1014,8 +1014,9 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 std::set<std::uint32_t> droppedKeys;
                 for (const auto &binding : enumeration.bindings) {
                     if (!GameAction(binding.primitiveBits).isValidAction(gc)) continue;
-                    if (!options.collectKeys && (binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_KEY
-                            || binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_RUBY_KEY)) {
+                    if ((!options.collectKeys && (binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_KEY
+                            || binding.semantic.effect == sts::search::OocSemanticEffect::TAKE_RUBY_KEY))
+                            || !sts::search::heartKeyActionAllowed(gc, options.collectKeys, GameAction(binding.primitiveBits))) {
                         droppedKeys.insert(binding.primitiveBits);
                         continue;
                     }

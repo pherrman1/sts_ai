@@ -524,6 +524,18 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
+            // Opt-in key variants mask some actions; report a policy that ignored the mask.
+            std::vector<int> keyMaskAllowedX;
+            if (!search::heartKeyRules().isDefault() && gc.screenState == ScreenState::MAP_SCREEN) {
+                bool masked = false;
+                for (const auto a : search::GameAction::getAllActionsInState(gc)) {
+                    if (!a.isValidAction(gc)) continue;
+                    if (search::heartKeyActionAllowed(gc, g_collectKeys, a)) keyMaskAllowedX.push_back(a.getIdx1());
+                    else masked = true;
+                }
+                if (!masked) keyMaskAllowedX.clear();
+            }
+            const int keyMaskFloor = gc.floorNum;
             if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
                 key->execute(gc); traceBy = "heart_key";
             } else if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
@@ -541,6 +553,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
                 runFullRunOocPolicyStep(gc, agent, restV, shopV);
             else traceBy = "mcts";
+            if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
+                    && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
+                std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
+                             static_cast<unsigned long long>(seed), keyMaskFloor, traceBy, t_oocChainHandler,
+                             gc.curMapNodeX);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
                               {"handler", std::string(traceBy) == "chain" ? t_oocChainHandler : ""},
