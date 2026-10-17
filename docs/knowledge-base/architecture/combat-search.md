@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -223,6 +223,24 @@ weights. The `SilverEvalWeights` struct defaults stay 0. Before PR #540
 §473 (`12,35` vs `0,0` on the `off` stack, 500 paired seeds per cohort), is
 NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
 only 46 and 21 pairs differ at all. The default follows Philipp's decision.
+
+Native Silver never considers Smoke Bomb in the act-3 burning elite while keys
+are collected and the Emerald Key is missing (`SilverSearchContext::escapeForfeitsRun`,
+set in `NativeSilverBackend.cpp`). No later map has a burning elite, so that
+escape rules out the Heart (ADR-0041), which the reward penalty does not price.
+The live wire carries no keys or map, so the advisor path does not apply it.
+
+Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §510
+measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
+potion removed vs unchanged, next 3 fights played, then the A20 floor model,
+calibrated by a −12 HP copy). The pooled price is 9.9 HP-eq [7.9, 12.3],
+consistent with 11 (pre-registered). Fairy in a Bottle is also scored by the
+death-save term (+0.3 × max HP, 0.6 with Sacred Bark), and without Fairy potions
+price at 7.8 [6.1, 9.8]; **Inference:** the flat 11 may overprice non-Fairy
+potions (post hoc). Per-type prices differ: Fairy about 44, Attack/Blood/Skill
+potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. Apart from the
+Fairy death-save term the formula has no per-type weights; whether they would
+help play is untested.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

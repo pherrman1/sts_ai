@@ -52,6 +52,20 @@ static std::string combatFeatureRow(const BattleContext &bc) {
 // diagnostics are captured after exitBattle returns, i.e. after regainControl
 // has entered the reward screen and normal afterBattle effects have run.
 
+nlohmann::json effectiveSilverLeafSpecification() {
+    const auto leaf = search::nativeSilverLeafSettings();
+    nlohmann::json table = leaf.rolloutCardTable;
+    if (leaf.rolloutCardTable == "file") {
+        const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE");
+        table = {{"path", path ? path : ""}, {"sha256", path ? fileSha256(path) : ""}};
+    }
+    return {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
+            {"relic_heal_leaf", leaf.relicHealLeaf}, {"a20_boss_heal_fix", leaf.a20BossHealFix},
+            {"escape_penalty", {leaf.escapePenalty, leaf.eliteEscapePenalty}},
+            {"rollout_card_table", table}, {"rollout_uniform", leaf.rolloutUniform},
+            {"rollouts_per_leaf", leaf.rolloutsPerLeaf}, {"rollout_zero_cost_cap", leaf.rolloutZeroCostCap}};
+}
+
 nlohmann::json effectiveOocPolicySpecification() {
     nlohmann::json models = nlohmann::json::array();
     auto addModel = [&](const char *role, const std::string &path) {
@@ -157,6 +171,8 @@ nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["native_ooc_card_win_rank"] = true;
     if (sts::search::potionRewardSwapEnabled())
         policy["flags"]["potion_reward_swap"] = true;
+    if (sts::Shop::rulesFixEnabled())
+        policy["flags"]["shop_rules_fix"] = true;
     if (sts::engineFidelityFix())
         policy["flags"]["engine_fidelity_fix"] = true;
     if (one_combat::heart1::enabled()) {
@@ -211,9 +227,15 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     for (const auto &[field, name, fallback] : {std::tuple<const char *, const char *, bool>
              {"final_fight_leaf", "STS_SILVER_FINAL_FIGHT_LEAF", !binaryObjectiveEnabled},
              {"no_loss_potion_credit", "STS_SILVER_NO_LOSS_POTION_CREDIT", true},
-             {"relic_heal_leaf", "STS_SILVER_RELIC_HEAL_LEAF", true}})
+             {"relic_heal_leaf", "STS_SILVER_RELIC_HEAL_LEAF", true},
+             {"a20_boss_heal_fix", "STS_SILVER_A20_BOSS_HEAL_FIX", true}})
         if (s.contains(field) && s[field].get<bool>() != leafOption(name, fallback))
             throw std::runtime_error(std::string("wholecombatgen: ") + field + " differs from teacher");
+    // A teacher that records the full effective leaf block (escape penalty and rollout
+    // card table included, ADR-0036/0040) must match it exactly.
+    if (s.contains("silver_leaf") && s["silver_leaf"] != effectiveSilverLeafSpecification())
+        throw std::runtime_error("wholecombatgen: Silver leaf settings differ from teacher: teacher "
+            + s["silver_leaf"].dump() + ", effective " + effectiveSilverLeafSpecification().dump());
     // Budget policy: absent/"flat_exact" is the frozen exact-10k contract.
     // "learned_stop" (ADR-0026 production Silver) is accepted only by callers
     // that opt in; it pins the compiled stop model and threshold.
@@ -1831,6 +1853,20 @@ int learnedStopTeacherSelfTest() {
     };
     expect("accepts learned-stop teacher when allowed", loads(base, true), true);
     expect("rejects learned-stop teacher when not allowed", loads(base, false), false);
+    // Silver leaf settings (ADR-0035/0036/0040): a recorded block or field must match.
+    auto withLeaf = base;
+    withLeaf["search_configuration"]["silver_leaf"] = effectiveSilverLeafSpecification();
+    withLeaf["search_configuration"]["a20_boss_heal_fix"] = true;
+    expect("accepts matching Silver leaf settings", loads(withLeaf, true), true);
+    auto wrongEscape = withLeaf;
+    wrongEscape["search_configuration"]["silver_leaf"]["escape_penalty"] = {0.0, 0.0};
+    expect("rejects escape-penalty mismatch", loads(wrongEscape, true), false);
+    auto wrongTable = withLeaf;
+    wrongTable["search_configuration"]["silver_leaf"]["rollout_card_table"] = "hand_written";
+    expect("rejects rollout card table mismatch", loads(wrongTable, true), false);
+    auto wrongHeal = base;
+    wrongHeal["search_configuration"]["a20_boss_heal_fix"] = false;
+    expect("rejects A20 boss heal fix mismatch", loads(wrongHeal, true), false);
     auto wrongModel = base;
     wrongModel["search_configuration"]["learned_stop_model"] = "gbt-000000000000";
     expect("rejects stop-model mismatch", loads(wrongModel, true), false);
@@ -2385,7 +2421,7 @@ void vwinRefreshGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherPath", std::filesystem::absolute(teacherPath).string()},
         {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification},
+        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()},
         {"policy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"sampling", {{"schema", "outcome_blind_reservoir_per_type_v1"},
@@ -2597,7 +2633,7 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()}, {"policy", effectiveOocPolicySpecification()},
         {"sourceSeed", seedOffset}, {"ascension", asc}}
         : nlohmann::json{};
     if (target && futures > 0 && preflightReceipt.at("binding") != targetBinding)
@@ -2799,7 +2835,7 @@ void oocCounterfactualPilotGen(int nSeeds, const std::string &outPrefix,
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherPath", std::filesystem::absolute(teacherPath).string()},
         {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification},
+        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()},
         {"policy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"selection", {{"reservoir", "vwinrefreshgen outcome_blind_reservoir_per_type_v1, K=1"},
@@ -3057,7 +3093,7 @@ void cardStrengthProbe(int nSeeds, const std::string &outPrefix, long long seedO
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherPath", std::filesystem::absolute(teacherPath).string()},
         {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification},
+        {"teacherId", teacher.id}, {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()},
         {"policy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"selection", "ooccfpilotgen GEN=2 STATES=2 TYPES=CARD_REWARD,BOSS_RELIC; CARD_REWARD probed"},
@@ -4404,7 +4440,7 @@ void bossHeadroom347Gen(int nSeeds, int sims, int asc, const std::string &outPre
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()}, {"policy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"selection", {{"rule", "per_act_sha256_rank"},
                         {"domain", "boss-headroom-347-v1:{seed}:{fightIdx}"},
@@ -5045,7 +5081,7 @@ void silverParamScreen400Gen(int nSeeds, int sims, int asc, const std::string &o
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()}, {"policy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"simulationsPerDecision", sims}, {"arms", armSpec},
         {"sources", std::move(perSeed)},
@@ -5164,7 +5200,7 @@ void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPr
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()}, {"policy", effectiveOocPolicySpecification()},
         {"stopModel", search::nativeSilverStopModelId()},
         {"stopThreshold", search::nativeSilverLearnedStopThreshold()},
         {"adaptiveTopGap", search::nativeSilverAdaptiveTopGap()},
@@ -5952,7 +5988,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         RootPriorScope priorScope(arm.prior);
                         TreePriorScope treeScope(arm.treeMinVisits);
                         PriorNetScope netScope(priorNet);
-                        FinalFightLeafScope leafScope(arm.finalFightLeaf);
+                        // Control replays the source fight, which ran with the process default
+                        // final-fight leaf (ADR-0035: on); forcing it off desynchronized every
+                        // run-ending fight whose decisions the leaf changes.
+                        std::optional<FinalFightLeafScope> leafScope;
+                        if (arm.name != "control") leafScope.emplace(arm.finalFightLeaf);
                         std::optional<RolloutScope> rolloutScope;
                         if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
                         result = evaluate();
@@ -6019,7 +6059,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"teacherId", teacher.id}, {"teacherManifestSha256", fileSha256(teacherPath)},
-        {"combatTeacher", teacher.specification}, {"policy", effectiveOocPolicySpecification()},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()}, {"policy", effectiveOocPolicySpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"rootPrior", {{"path", search::nativeSilverRootPriorPath()},
                        {"sha256", fileSha256(search::nativeSilverRootPriorPath())},
@@ -6477,7 +6517,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
         {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
-        {"combatTeacher", teacher.specification},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()},
         {"forcedSetup", forcedSetup.empty() ? "none" : forcedSetup},
         {"oocPolicy", deployedOoc ? "deployed" : "pathb_chain"},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
@@ -7359,7 +7399,7 @@ void activeLizardPairTransitionGen(
         {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
         {"format", "jsonl"}, {"producerGitSha", collectorSha},
         {"producerExecutableSha256", producerExecutableSha},
-        {"baselineGitSha", baselineSha}, {"combatTeacher", teacher.specification},
+        {"baselineGitSha", baselineSha}, {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()},
         {"combatTeacherManifestSha256", fileSha256(teacherPath)},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
         {"sourceSeeds", targetSeeds},
@@ -7542,7 +7582,7 @@ void activeLizardCombatTransitionGen(
         {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
         {"format", "jsonl"}, {"producerGitSha", collectorSha},
         {"producerExecutableSha256", producerExecutableSha},
-        {"combatTeacher", teacher.specification},
+        {"combatTeacher", teacher.specification}, {"silverLeaf", effectiveSilverLeafSpecification()},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
         {"csv", {{"path", std::filesystem::absolute(outfile).string()},
                   {"sha256", fileSha256(outfile)}}},
