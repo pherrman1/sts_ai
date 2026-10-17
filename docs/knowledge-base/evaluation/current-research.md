@@ -198,8 +198,7 @@ fallbacks. The pre-registered A20 paired A/B (§504, 128 seeds, Arm C environmen
 it **WORSE** than rollout3 at equal simulations (reached Act 4 31 vs 45, −10.9 pp
 [−20.3, −1.6]) and **NOT_SHOWN** at 1536 simulations (32 vs 45), with act-1 deaths about
 doubling; see the [result](../../experiments/evidence/rollout_student_leaf_20261017/RESULT.md).
-It stays research-only; an offline sibling-ranking gain of §494's size is not enough to
-replace rollout3.
+It stays research-only: the §494 student does not replace rollout3 in this setup.
 
 ## Arm C inside A20 Heart rollouts (§493)
 

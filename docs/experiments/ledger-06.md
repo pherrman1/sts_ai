@@ -19821,7 +19821,7 @@ Primary endpoint, reached Act 4 (CSV `act` ≥ 4): S − C −10.9 pp [−20.3, 
 RNG 20261017), discordant 11 vs 25, exact McNemar p = 0.029, **WORSE**; S3 − C −10.2 pp [−19.5, 0.0], 14 vs 27,
 p = 0.060, **NOT_SHOWN**. Floors −4.48 and −3.80. No run in any arm cleared Act 3 without the keys. S3 used
 0.73x the control's MCTS CPU per decision, not the planned ~1x. **Inference:** the deficit sits mostly in act 1, and
-more simulations with the cheap leaf do not recover it; §494's small offline ranking gain over X2-B does not
-translate into play. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
+more simulations with the cheap leaf do not recover it. In play the student, distilled from rollout3 leaf means,
+is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
 [Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
 **Knowledge impact:** learned OOC leaf status in current-research.
