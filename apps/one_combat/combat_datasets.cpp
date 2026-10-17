@@ -12,6 +12,7 @@
 #include "run_driver.h"
 #include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverRolloutCardTable.h"
+#include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
 #include "sim/search/PotionRewardPolicy.h"
 
@@ -1696,7 +1697,14 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             }
         } else {
             if (!vwin || !vwin->captureRefresh) {
-                runFullRunOocPolicyStep(gc, agent, false, true);
+                // Same order as runFullRunOOC without live OOC MCTS: a pending Heart key, then
+                // STS_OOC_HEART1 (student C), then the chain for choices it does not encode.
+                // Before this, the policy specification recorded ooc_heart1 but the chain played.
+                if (!search::heartKeyAction(gc, g_collectKeys) && one_combat::heart1::enabled()
+                        && !one_combat::liveOocMctsEnabled() && one_combat::heart1::policyStep(gc)) {
+                } else {
+                    runFullRunOocPolicyStep(gc, agent, false, true);
+                }
             } else {
                 vwinRefreshRunPolicyStep(*vwin, gc, path, agent);
             }
