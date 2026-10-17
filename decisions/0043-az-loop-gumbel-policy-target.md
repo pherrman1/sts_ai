@@ -1,4 +1,4 @@
-# ADR-0042: The AlphaZero-style OOC loop trains its policy on Gumbel completed-Q targets
+# ADR-0043: The AlphaZero-style OOC loop trains its policy on Gumbel completed-Q targets
 
 Date: 2026-10-17
 Status: accepted
@@ -25,7 +25,8 @@ actions are discarded by a visit-count target.
   `completedQ` is the root action's search Q where visited and the root value
   otherwise; `σ` is a monotone scaling of per-root normalised Q.
 - The scale of `σ` is fitted offline on held-out roots before training on it,
-  because single rollout3 evaluations are noisy (§489).
+  (audit recommendation, not Philipp's stated reason: single rollout3
+  evaluations are noisy, §489).
 - Captured decision rows keep raw visits, priors and Q as well, so the target can
   be recomputed later.
 
