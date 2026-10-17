@@ -1426,6 +1426,18 @@ class OocDriverTest(unittest.TestCase):
             self.assertIn(shlex.quote(str(path)), command)
             self.assertFalse(any(tool in {"choose", "skip"} for tool, _ in client.calls))
 
+    def test_strict_modes_are_the_default_and_can_be_turned_off(self):
+        from unittest.mock import patch
+        seen = []
+        def capture(coroutine):
+            seen.append(coroutine.cr_frame.f_locals["args"])
+            coroutine.close()
+            return 0
+        with patch("tools.live_game_driver.asyncio.run", capture):
+            main([])
+            main(["--no-strict-ooc", "--no-strict-silver"])
+        self.assertEqual([(a.strict_ooc, a.strict_silver) for a in seen], [(True, True), (False, False)])
+
     def test_process_failure_returns_nonzero_and_packet(self):
         from contextlib import asynccontextmanager, redirect_stderr
         from unittest.mock import patch

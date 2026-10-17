@@ -31,7 +31,15 @@ CTM_A20_FAST_NAME = "combat_transition_deepsets_pathb_a20_lizard.native"
 CTM_A20_NAME = "combat_transition_near_full_escape_pathb_a20.native"
 CTM_QUALIFIED_KEYS = ("ctmFallback", "ctmA20Primary", "ctmA20Fallback", "ctmA20FastSha256", "ctmA20Sha256")
 OOC_NAME = "ooc_strategic_tok_final.native"
-OOC_WIN_NAME = "v_win_trees.txt"
+# The public X2-B win model, as simulator OOC MCTS (ADR-0029). Releases from
+# before the switch carry the B0 tree as v_win_trees.txt.
+OOC_WIN_NAME = "v_win_x2b_public_trees.txt"
+OOC_WIN_SOURCE = "models/candidates/v_win_x2b_public_trees.txt"
+LEGACY_OOC_WIN_NAME = "v_win_trees.txt"
+
+
+def ooc_win_name(manifest: dict[str, Any]) -> str:
+    return manifest.get("oocWinModelName", LEGACY_OOC_WIN_NAME)
 OOC_FLOOR_NAME = "v_rich_trees.txt"
 ARM_C_NAME = "arm_c_student.bin"
 ARM_C_SHA256 = "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
@@ -170,7 +178,7 @@ class RuntimeManager:
         if manifest.get("oocModelSha256"):
             checks += ((f"models/{OOC_NAME}", "oocModelSha256", False),)
         if manifest.get("oocWinModelSha256"):
-            checks += ((f"models/{OOC_WIN_NAME}", "oocWinModelSha256", False),)
+            checks += ((f"models/{ooc_win_name(manifest)}", "oocWinModelSha256", False),)
         if manifest.get("oocFloorModelSha256"):
             checks += ((f"models/{OOC_FLOOR_NAME}", "oocFloorModelSha256", False),)
         if "armCModelSha256" in manifest:
@@ -208,7 +216,7 @@ class RuntimeManager:
         if manifest.get("oocModelSha256"):
             desired["oocModel"] = str(self.current / "models" / OOC_NAME)
         if manifest.get("oocWinModelSha256"):
-            desired["oocWinModel"] = str(self.current / "models" / OOC_WIN_NAME)
+            desired["oocWinModel"] = str(self.current / "models" / ooc_win_name(manifest))
         if manifest.get("oocFloorModelSha256"):
             desired["oocFloorModel"] = str(self.current / "models" / OOC_FLOOR_NAME)
         return desired
@@ -349,7 +357,7 @@ class RuntimeManager:
         ctm = self.repo / "selfplay/models" / ctm_name
         ctm_fast = self.repo / "selfplay/models" / ctm_fast_name
         ooc = self.repo / "selfplay/models" / OOC_NAME
-        ooc_win = self.repo / "models" / OOC_WIN_NAME
+        ooc_win = self.repo / OOC_WIN_SOURCE
         ooc_floor = self.repo / "models" / OOC_FLOOR_NAME
         if not ctm.is_file():
             raise RuntimeFailure(f"tracked CTM model missing: {ctm}")
@@ -415,6 +423,7 @@ class RuntimeManager:
             if "ooc" in hashes:
                 manifest["oocModelSha256"] = hashes["ooc"]
             manifest["oocWinModelSha256"] = hashes["oocWin"]
+            manifest["oocWinModelName"] = OOC_WIN_NAME
             manifest["oocFloorModelSha256"] = hashes["oocFloor"]
             if arm_c_source is not None:
                 manifest["armCModelSha256"] = hashes["armC"]
@@ -592,7 +601,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
     result.add_argument("--advisor-source", type=Path, help=argparse.SUPPRESS)
     result.add_argument("--arm-c-source", type=Path, help="install the frozen Arm C weights for live OOC MCTS")
-    result.add_argument("--qualified-ctm", action="store_true", help="install the qualified A0 and calibrated A20 CTM stacks")
+    result.add_argument("--qualified-ctm", action="store_true",
+                        help="install the qualified A0 and calibrated A20 CTM stacks (the install default)")
+    result.add_argument("--legacy-ctm", action="store_true",
+                        help="install restores the legacy CTM unless the current release is already qualified")
     result.add_argument("--game-dir", type=Path)
     result.add_argument("--modthespire-jar", type=Path)
     result.add_argument("--inspector-jar", type=Path)
@@ -612,7 +624,11 @@ def main() -> int:
             value = manager.ensure()
             code = 0
         elif args.command == "install":
-            value = manager.install(args.advisor_source, arm_c_source=args.arm_c_source, qualified_ctm=args.qualified_ctm)
+            if args.qualified_ctm and args.legacy_ctm:
+                raise RuntimeFailure("--qualified-ctm and --legacy-ctm are exclusive")
+            # The qualified stacks are the OOC MCTS default CTMs (ADR-0033, ADR-0044).
+            value = manager.install(args.advisor_source, arm_c_source=args.arm_c_source,
+                                    qualified_ctm=not args.legacy_ctm)
             code = 0
         elif args.command == "repair-config":
             value = {"changed": manager.repair_config(), "config": str(manager.config)}

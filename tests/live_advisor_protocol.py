@@ -8,8 +8,14 @@ import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None, differential=False, ctm_env=None):
+    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None, differential=False, ctm_env=None,
+                    silver_sims="1000"):
         env = os.environ.copy()
+        # Budget assertions below were written for the old 1,000 floor; the
+        # default floor has its own test.
+        env.pop("STS_LIVE_SILVER_SIMS", None)
+        if silver_sims is not None:
+            env["STS_LIVE_SILVER_SIMS"] = silver_sims
         env.pop("STS_DIFFERENTIAL_TRACE", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
@@ -35,6 +41,16 @@ class AdvisorProtocolTest(unittest.TestCase):
             capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
+
+    def test_invalid_live_switches_fail_startup(self):
+        for key, value in (("STS_COLLECT_KEYS", "true"), ("STS_LIVE_OOC_RESEARCH_STACK", "2"),
+                           ("STS_LIVE_SILVER_SIMS", "0"), ("STS_LIVE_SILVER_SIMS", "1e4")):
+            env = {**os.environ, key: value}
+            proc = subprocess.run([sys.argv[1]], input='{"kind":"hello","protocol":"sts_model_inspector_v1"}\n',
+                                  capture_output=True, text=True, env=env, timeout=10)
+            self.assertEqual(proc.returncode, 2, (key, value))
+            self.assertEqual(proc.stdout, "")
+            self.assertIn(key, proc.stderr)
 
     def test_explicit_arm_c_missing_or_empty_fails_without_protocol_fallback(self):
         for path in ("", "/definitely/missing/studentc.bin"):
@@ -444,6 +460,32 @@ class AdvisorProtocolTest(unittest.TestCase):
             evaluator = next(e for e in rows[-1]["evaluators"] if e["id"] == "silver_player_decision_v2")
             self.assertEqual(evaluator["reason"], "silver_missing_predecessor")
             self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_default_silver_floor_is_ten_thousand_and_survives_failed_search(self):
+        initial = self.silver_observation()
+        following = copy.deepcopy(initial)
+        root = following["silverRoot"]
+        root["decisionInTurn"] = 1
+        combat = root["combat"]
+        played = combat["hand"].pop()
+        combat.update(energy=2, cardsPlayedThisTurn=1, attacksPlayedThisTurn=1,
+                      discard=[played], curCardQueueItem=dict(card=played, target=0, energyOnUse=3))
+        combat["monsters"][0]["hp"] = 44
+        def wire(observation, sequence, budget=1000):
+            return json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                               "session": "default-floor", "sequence": sequence,
+                               "observationHash": "default-floor-%d" % sequence,
+                               "observation": dict(observation, silverSearchBudget=budget)})
+        # A budget regression on the same root is refused, but the combat's
+        # session survives: the next decision-1 root is searched instead of
+        # reporting silver_missing_predecessor.
+        rows = self.run_advisor([wire(initial, 1, 20000), wire(initial, 2), wire(following, 3)],
+                                self.model, silver_sims=None)
+        silver = [next(e for e in row["evaluators"] if e["id"] == "silver_player_decision_v2") for row in rows]
+        self.assertEqual((silver[0]["status"], silver[0]["simulations"]), ("OK", 20000), silver[0])
+        self.assertEqual((silver[1]["status"], silver[1]["reason"]), ("UNSUPPORTED", "silver_budget_regression"))
+        self.assertEqual((silver[2]["status"], silver[2]["simulations"]), ("OK", 10000), silver[2])
+        self.assertIn("selectedLiveAction", silver[2])
 
     def test_silver_rankings_include_physical_live_actions(self):
         observation = self.silver_observation()
