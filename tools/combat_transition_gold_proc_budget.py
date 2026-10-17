@@ -16,7 +16,7 @@ def profiles(gold,name,ascension,mode,escaped=False):
         if not thieves:
             budget=max(0,cap-1) if escaped else cap
             for kills,gain in g._gain_sums(budget,payouts):
-                if gold+gain<=32767:result.add((gold+gain,0,kills,budget-kills+int(name=='AWAKENED_ONE' and not escaped)))
+                if gold+gain<=32767:result.add((gold+gain,0,kills,budget-kills))
             continue
         other_cap=cap-thieves
         states={(gold,(0,)*thieves,('A',)*thieves,0,0)}
@@ -60,7 +60,7 @@ def profiles(gold,name,ascension,mode,escaped=False):
 
 def dagger_minimum_procs(pre,pi,mask,deltas,consumed_potions=None,escaped=False):
     mode,features=g.mechanics(pi,pre,int(mask),consumed_potions);upgrade=bool(features[g.MECHANICAL_FIELDS.index('upgradeRoute')])
-    cap=4 if g.encounter_name(pi['globals']['encounter'])=='AWAKENED_ONE' else g.CAPS.get(g.encounter_name(pi['globals']['encounter']),1)
+    cap=g.CAPS.get(g.encounter_name(pi['globals']['encounter']),1)
     if escaped:cap=max(0,cap-1)
     daggers=[c for c in pre['deck'] if c['id']==g.b._CARD_IDS['RITUAL_DAGGER']]
     if len(deltas)!=len(daggers):raise ValueError('Dagger identity mismatch')

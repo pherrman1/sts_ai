@@ -1,0 +1,9 @@
+{
+  "classification": "RITUAL_REFIT_OWNER_OVERRIDE",
+  "owner": "Philipp",
+  "decision": "override",
+  "message": "Project thread 2026-10-17T11:56:27Z: 'override', answering the offer to accept the refit with criterion 4 (non-Writhing no-regression CI upper +0.0107 > +0.005, point estimate -0.0023) waived and recorded.",
+  "waivedCriteria": [4],
+  "evaluationSha256": "67b1a45f3363d88201c13be803338573f34ba33246c0ba144aab3e6c9e81f4e6",
+  "scope": "research candidate only; no default or production change"
+}

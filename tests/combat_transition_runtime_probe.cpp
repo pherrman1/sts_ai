@@ -62,8 +62,68 @@ bool rngContract(const CombatTransitionPersistentState &pre,
         post.combatRng[i].seed1!=pre.combatRng[i].seed1)return false;
     return true;
 }
+
+int ritualKillBudgetSelfTest(const char *artifact) {
+    CombatTransitionRuntime net(artifact);
+    CombatTransitionPersistentState pre;
+    pre.curHp=pre.maxHp=80;pre.gold=100;pre.potionCapacity=3;
+    pre.potions.fill(static_cast<int>(sts::Potion::EMPTY_POTION_SLOT));
+    CombatPredictorInputV1 input;
+    input.globals.act=3;input.globals.floor=50;input.globals.curHp=input.globals.maxHp=80;
+    input.globals.gold=100;input.globals.potionCapacity=3;
+    input.globals.encounter=static_cast<int>(sts::MonsterEncounter::AWAKENED_ONE);
+    input.globals.roomClass=static_cast<int>(sts::Room::BOSS);
+    for(int i=0;i<5;++i)input.potions.push_back({i,static_cast<int>(sts::Potion::EMPTY_POTION_SLOT)});
+    const auto setup=[&](std::initializer_list<bool> upgrades,bool armaments=false) {
+        pre.deck={{static_cast<int>(sts::CardId::HAND_OF_GREED),0,false}};
+        for(bool upgraded:upgrades)pre.deck.push_back({static_cast<int>(sts::CardId::RITUAL_DAGGER),15,upgraded});
+        if(armaments)pre.deck.push_back({static_cast<int>(sts::CardId::ARMAMENTS),0,false});
+        input.cards.clear();
+        for(const auto &card:pre.deck)input.cards.push_back({card.id,card.upgraded,card.misc,-1});
+        std::sort(input.cards.begin(),input.cards.end(),[](const auto &a,const auto &b){return a.cardId<b.cardId;});
+    };
+    const auto diagnostics=[&](const std::vector<int> &growth) {
+        return nearFullDiagnostics(net,pre,input,0,80,80,0,{},false,growth);
+    };
+    const auto check=[](bool ok,const char *message){if(!ok)throw std::runtime_error(message);};
+    const auto contains=[](const json &values,const json &target) {
+        return std::find(values.begin(),values.end(),target)!=values.end();
+    };
+    for(bool upgraded:{false,true}) {
+        setup({upgraded});const int payout=upgraded?5:3;
+        const auto candidates=diagnostics({0}).at("ritualCandidates");
+        check(contains(candidates,json::array({3*payout})),"three permanent Dagger kills missing");
+        check(!contains(candidates,json::array({4*payout})),"Awakened phase-one Dagger credit remains");
+    }
+    setup({true,true});const auto multiple=diagnostics({0,0}).at("ritualCandidates");
+    check(contains(multiple,json::array({10,5})),"three shared Dagger kills missing");
+    check(!contains(multiple,json::array({10,10})) && !contains(multiple,json::array({15,5})),
+          "four kills allocated across Dagger copies");
+    setup({false},true);const auto forge=diagnostics({0}).at("ritualCandidates");
+    check(contains(forge,json::array({15})) && !contains(forge,json::array({20})),
+          "upgrade route exceeds three permanent kills");
+    setup({true});
+    check(diagnostics({15}).at("goldCandidates")==json::array({json::array({100,0})}),
+          "Hand of Greed and three Dagger kills share a fatal hit");
+    check(diagnostics({10}).at("goldCandidates")==json::array({json::array({100,0}),json::array({120,0})}),
+          "two Dagger kills leave more than one Hand of Greed kill");
+    check(diagnostics({5}).at("goldCandidates")==json::array({json::array({100,0}),json::array({120,0}),json::array({140,0})}),
+          "one Dagger kill leaves more than two Hand of Greed kills");
+    check(diagnostics({0}).at("goldCandidates")==json::array({json::array({100,0}),json::array({120,0}),json::array({140,0}),json::array({160,0})}),
+          "three Hand of Greed kills missing");
+    bool refused=false;try{diagnostics({20});}catch(const std::runtime_error &){refused=true;}
+    check(refused,"four-kill single Dagger amount was accepted");
+    setup({true,true});
+    check(diagnostics({10,5}).at("goldCandidates")==json::array({json::array({100,0})}),
+          "shared Dagger copies leave an extra Hand of Greed kill");
+    check(diagnostics({10,10}).at("goldCandidates").empty(),"four shared Dagger kills accepted");
+    std::cout<<"Awakened permanent Ritual/Greed kill budget PASS\n";
+    return 0;
+}
 int main(int argc,char **argv) {
     try {
+        if(argc==3 && std::string(argv[1])=="--ritual-kill-budget-selftest")
+            return ritualKillBudgetSelfTest(argv[2]);
         if(argc==3 && std::string(argv[1])=="--require-standard-fallback") {
             CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(argv[2]);
             std::cout << "pinned standard fallback SHA256 PASS\n";
