@@ -135,7 +135,15 @@ void Shop::buyRelic(GameContext &gc, int idx) {
 
     if (r == RelicId::MEMBERSHIP_CARD) {
         applyDiscount(MEMBERSHIP_CARD_FACTOR);
-        removeCost = static_cast<int>(std::round(static_cast<float>(removeCost) * MEMBERSHIP_CARD_FACTOR));
+        // ShopScreen.applyDiscount(0.5, true): Smiling Mask keeps the purge cost at 50.
+        if (!rulesFixEnabled() || !gc.hasRelic(RelicId::SMILING_MASK)) {
+            removeCost = static_cast<int>(std::round(static_cast<float>(removeCost) * MEMBERSHIP_CARD_FACTOR));
+        }
+    }
+
+    // SmilingMask.onEquip in a shop sets the purge cost to 50, overriding discounts.
+    if (rulesFixEnabled() && r == RelicId::SMILING_MASK && removeCost != -1) {
+        removeCost = SMILING_MASK_PRICE;
     }
 
     if (gc.hasRelic(RelicId::THE_COURIER)) {

@@ -40,6 +40,11 @@ explicit sims argument selects flat Silver at that budget in every mode; only
 `run`, `bestbench` and `reprobench` called without a sims argument use a
 budget policy by default: learned stopping (ADR-0026, which replaced the #199
 adaptive default of ADR-0018). `STS_SILVER_ADAPTIVE=1` selects #199.
+At A20 with student C out of combat (§516, 512 paired full runs), learned
+stopping matched flat exact 10k (Heart kills 30 vs 27, reached Act 4 −0.4 pp
+[−3.4, +2.6]) at 0.41x the run CPU; adding the gen-6 MLP prior as root and
+tree prior (`STS_SILVER_TREE_PRIOR_MIN_VISITS=8`) reached Act 4 more often
+(+3.9 pp, not pre-registered) without more Heart kills.
 
 ### Removed searchers and tooling
 
