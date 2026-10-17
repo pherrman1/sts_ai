@@ -2987,7 +2987,7 @@ int testSilverEscapePenalty() {
         return 1;
     };
     // Whether Silver's first action is to drink the Smoke Bomb in slot 0.
-    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty) {
+    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty, bool forfeitsRun = false) {
         GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
         gc.curRoom = elite ? Room::ELITE : Room::MONSTER;
         gc.curHp = hp;
@@ -2998,6 +2998,7 @@ int testSilverEscapePenalty() {
         search::SilverSearchContext context;
         context.act = 1;
         context.eliteRewards = elite;
+        context.escapeForfeitsRun = forfeitsRun;
         search::SilverSearcher searcher(silverSearchRoot(bc), context);
         searcher.evalWeights.escapePenalty = elite ? 0 : penalty;
         searcher.evalWeights.eliteEscapePenalty = elite ? penalty : 0;
@@ -3017,6 +3018,9 @@ int testSilverEscapePenalty() {
     // The HP cap keeps a low-HP emergency escape preferred.
     if (!flees(10, MonsterEncounter::GREMLIN_NOB, true, 40)) return fail("low-HP elite escape suppressed");
     if (!flees(10, MonsterEncounter::JAW_WORM, false, 15)) return fail("low-HP escape suppressed");
+    // ADR-0041: escaping the act-3 burning elite without the Emerald Key rules out the Heart.
+    if (flees(10, MonsterEncounter::GREMLIN_NOB, true, 40, true)) return fail("run-forfeiting escape still taken");
+    if (flees(80, MonsterEncounter::CULTIST, false, 0, true)) return fail("run-forfeiting escape still taken at full HP");
     // The live wire path has no room: elite-trigger fights come from the encounter.
     auto wireElite = [](Room room, MonsterEncounter encounter) {
         GameContext gc(CharacterClass::IRONCLAD, 424242, 0);

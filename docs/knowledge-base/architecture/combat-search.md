@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -223,6 +223,12 @@ weights. The `SilverEvalWeights` struct defaults stay 0. Before PR #540
 §473 (`12,35` vs `0,0` on the `off` stack, 500 paired seeds per cohort), is
 NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
 only 46 and 21 pairs differ at all. The default follows Philipp's decision.
+
+Native Silver never considers Smoke Bomb in the act-3 burning elite while keys
+are collected and the Emerald Key is missing (`SilverSearchContext::escapeForfeitsRun`,
+set in `NativeSilverBackend.cpp`). No later map has a burning elite, so that
+escape rules out the Heart (ADR-0041), which the reward penalty does not price.
+The live wire carries no keys or map, so the advisor path does not apply it.
 
 Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §510
 measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
