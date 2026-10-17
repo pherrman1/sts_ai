@@ -1,0 +1,194 @@
+"""Tests for the workflow tools: tools/ledger_assign.py, tools/cloud/worker.sh, tools/cloud/verify_campaign.py.
+
+Each test builds a throwaway git repository in a temp dir; no game seeds run.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run(cmd, cwd, env=None, check=True):
+    p = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
+    if check and p.returncode != 0:
+        raise AssertionError(f"{cmd} rc={p.returncode}\n{p.stdout}\n{p.stderr}")
+    return p
+
+
+def git(cwd, *args):
+    return run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd).stdout.strip()
+
+
+class Repo:
+    def __init__(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "repo"
+        self.path.mkdir()
+        git(self.path, "init", "-q", "-b", "main")
+
+    def write(self, rel, text):
+        p = self.path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+
+    def commit(self, msg="c"):
+        git(self.path, "add", "-A")
+        git(self.path, "commit", "-q", "-m", msg)
+        return git(self.path, "rev-parse", "HEAD")
+
+
+class LedgerAssignTest(unittest.TestCase):
+    def setUp(self):
+        self.r = Repo()
+        self.r.write("EXPERIMENTS.md", "# ledger\n")
+        self.r.write("docs/experiments/ledger-01.md", "## §1 — a\n\n## §7 — b\n")
+        self.r.write("decisions/0003-old.md", "# ADR-0003\n")
+        self.base = self.r.commit("base")
+        git(self.r.path, "checkout", "-q", "-b", "pr")
+        self.r.write("docs/experiments/ledger-01.md",
+                     "## §1 — a\n\n## §7 — b\n\n## §TBD — new (see ADR-TBD)\n\n## §TBD-b — second\n")
+        self.r.write("decisions/TBD-new-rule.md", "# ADR-TBD: new rule\nEvidence §TBD and §TBD-b.\n")
+        self.r.write("docs/kb.md", "See §TBD and [ADR](../decisions/TBD-new-rule.md).\n")
+        self.reviewed = self.r.commit("pr")
+        self.tool = [sys.executable, str(ROOT / "tools" / "ledger_assign.py")]
+
+    def tearDown(self):
+        self.r.tmp.cleanup()
+
+    def test_assign_skips_reserved_and_check_passes(self):
+        out = run(self.tool + ["assign", "--base", "main", "--skip", "8"], self.r.path).stdout
+        self.assertIn("§TBD -> §9", out)
+        self.assertIn("§TBD-b -> §10", out)
+        self.assertIn("ADR-TBD -> ADR-0004", out)
+        led = (self.r.path / "docs/experiments/ledger-01.md").read_text()
+        self.assertIn("## §9 — new (see ADR-0004)", led)
+        self.assertIn("## §10 — second", led)
+        adr = (self.r.path / "decisions/0004-new-rule.md").read_text()
+        self.assertEqual(adr, "# ADR-0004: new rule\nEvidence §9 and §10.\n")
+        self.assertFalse((self.r.path / "decisions/TBD-new-rule.md").exists())
+        self.assertIn("decisions/0004-new-rule.md", (self.r.path / "docs/kb.md").read_text())
+        new = self.r.commit("assign")
+        run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path)
+
+    def test_check_rejects_other_edits(self):
+        run(self.tool + ["assign", "--base", "main"], self.r.path)
+        self.r.write("docs/kb.md", "changed text\n")
+        new = self.r.commit("assign plus edit")
+        p = run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path, check=False)
+        self.assertNotEqual(p.returncode, 0)
+
+    def test_check_accepts_clean_base_merge(self):
+        git(self.r.path, "checkout", "-q", "main")
+        self.r.write("other.txt", "main moved\n")
+        self.r.commit("main moves")
+        git(self.r.path, "checkout", "-q", "pr")
+        git(self.r.path, "merge", "-q", "--no-edit", "main")
+        run(self.tool + ["assign", "--base", "main"], self.r.path)
+        new = self.r.commit("assign")
+        run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path)
+
+    def test_assign_requires_base_merged(self):
+        git(self.r.path, "checkout", "-q", "main")
+        self.r.write("other.txt", "x\n")
+        self.r.commit("main moves")
+        git(self.r.path, "checkout", "-q", "pr")
+        p = run(self.tool + ["assign", "--base", "main"], self.r.path, check=False)
+        self.assertNotEqual(p.returncode, 0)
+
+    def test_orphan_label_rejected(self):
+        self.r.write("docs/kb.md", "See §TBD-zz.\n")
+        self.r.commit("orphan")
+        p = run(self.tool + ["assign", "--base", "main", "--dry-run"], self.r.path, check=False)
+        self.assertIn("without a ledger heading", p.stdout + p.stderr)
+
+
+class CloudWorkerTest(unittest.TestCase):
+    """End to end on a fake campaign whose 'binary' is a small shell script served from the binary cache."""
+
+    def setUp(self):
+        self.r = Repo()
+        shutil.copy(ROOT / "tools/cloud/worker.sh", self.r.path / "worker.sh")
+        (self.r.path / "tools/cloud").mkdir(parents=True)
+        shutil.move(self.r.path / "worker.sh", self.r.path / "tools/cloud/worker.sh")
+        self.tmp = Path(self.r.tmp.name)
+        self.cache = self.tmp / "cache"
+        self.share = self.tmp / "share"
+        self.home = self.tmp / "home"
+        self.home.mkdir()
+        fake = self.tmp / "fake_one_combat"
+        fake.write_text("#!/bin/sh\necho fake \"$@\"\n")
+        self.bin_sha = hashlib.sha256(fake.read_bytes()).hexdigest()
+        inp = self.tmp / "model.bin"
+        inp.write_text("weights\n")
+        inp_sha = hashlib.sha256(inp.read_bytes()).hexdigest()
+        self.r.write("README", "x\n")
+        code = self.r.commit("code")
+        c = "docs/experiments/evidence/fake"
+        self.r.write(f"{c}/campaign.manifest", "\n".join([
+            "name fake", f"code_commit {code}", f"binary_sha256 {self.bin_sha}", "workers 2",
+            f"share {self.share}", "parallel 2", f"input model.bin {inp} {inp_sha}", ""]))
+        self.r.write(f"{c}/units.txt", "# seed arm\n111 a\n111 b\n112 a\n112 b\n113 a\n")
+        self.r.write(f"{c}/run_unit.sh",
+                     'repo=$1 run=$2 out=$3; shift 3\n"$run/one_combat" "$@" > "$out/result.txt"\n'
+                     'test -f "$run/model.bin"\n')
+        self.r.commit("campaign")
+        self.c = c
+        self.env = {**os.environ, "HOME": str(self.home), "CW_BIN_CACHE": str(self.cache)}
+        self.w = ["bash", "tools/cloud/worker.sh"]
+        run(self.w + ["cache-put", str(fake), code], self.r.path, self.env)
+
+    def tearDown(self):
+        self.r.tmp.cleanup()
+
+    def test_campaign_round_trip(self):
+        p = run(self.w + ["setup", self.c, "1"], self.r.path, self.env)
+        self.assertIn("setup ok", p.stdout)
+        self.assertIn("source=cache", p.stdout)
+        self.assertIn("units=3", p.stdout)
+        p = run(self.w + ["run", self.c, "1"], self.r.path, self.env)
+        self.assertIn("WORKER_OK w01", p.stdout)
+        res = (self.home / "cw-fake-w01/out/units/112_a/result.txt").read_text()
+        self.assertEqual(res, "fake 112 a\n")
+        verify = [sys.executable, str(ROOT / "tools/cloud/verify_campaign.py"), self.c, "--json"]
+        rows = json.loads(run(verify, self.r.path, check=False).stdout)
+        self.assertEqual([r["state"] for r in rows], ["OK", "MISSING"])
+        run(self.w + ["setup", self.c, "2"], self.r.path, self.env)
+        run(self.w + ["run", self.c, "2"], self.r.path, self.env)
+        run(verify, self.r.path)
+        # A tampered tar is caught.
+        (self.share / "w02.tar").write_bytes(b"junk")
+        rows = json.loads(run(verify, self.r.path, check=False).stdout)
+        self.assertEqual(rows[1]["state"], "BAD")
+
+    def test_padded_worker_number_rejected(self):
+        p = run(self.w + ["setup", self.c, "01"], self.r.path, self.env, check=False)
+        self.assertIn("unpadded", p.stdout)
+
+    def test_wrong_cached_binary_rejected(self):
+        for f in self.cache.glob("one_combat-*"):
+            f.write_text("tampered\n")
+        p = run(self.w + ["setup", self.c, "1"], self.r.path, self.env, check=False)
+        # Cache miss on hash falls back to a build, which fails in this fake repo: never runs a wrong binary.
+        self.assertIn("STOP", p.stdout)
+        self.assertFalse((self.home / "cw-fake-w01/one_combat").exists())
+
+    def test_failed_unit_blocks_upload(self):
+        (self.r.path / self.c / "run_unit.sh").write_text("exit 7\n")
+        self.r.commit("break")
+        run(self.w + ["setup", self.c, "1"], self.r.path, self.env)
+        p = run(self.w + ["run", self.c, "1"], self.r.path, self.env, check=False)
+        self.assertEqual(p.returncode, 3)
+        self.assertFalse((self.share / "w01.tar").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

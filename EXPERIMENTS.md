@@ -27,7 +27,9 @@ chronological ledger.
 1. **Project-fair and known-RNG results are separate regimes** and must never
    be compared as one progression.
 2. **Experiment identifiers (§N)** are historical. Do not renumber them.
-   Locate a section by searching the appropriate ledger shard.
+   Locate a section by searching the appropriate ledger shard. A PR writes a
+   new entry as `§TBD` (or `§TBD-<label>`); `tools/ledger_assign.py` assigns
+   the number when the PR merges.
 3. **Missing flags, hashes, or artifacts remain unknown.** Do not reconstruct
    them from incomplete provenance.
 4. **The `fairgen` mode does not set `STS_FAIR` or `STS_SEARCHER3`**; a

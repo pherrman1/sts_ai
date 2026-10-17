@@ -69,6 +69,35 @@ passes, freeze the reviewed SHA before expensive scientific runs. Keep mutable
 run state such as "CI pending" out of the durable PR description: GitHub checks
 are authoritative, and a short SHA-tied comment may record a later transition.
 
+### Frozen runs
+
+Before freezing a run, merge every reviewed fix that touches the run's code path
+into main, then freeze on that main. After the freeze, a later main change forces
+a re-freeze only when the pre-launch reviewer finds that it changes the measured
+contrast (for example, the arms no longer replay the same states) or can crash
+the run. Otherwise the PREREG records it as a known deviation. Mass cloud runs
+use [`tools/cloud/worker.sh`](../../../tools/cloud/README.md): workers copy the
+frozen `one_combat` from the share's binary cache by sha256 instead of building
+it, and `tools/cloud/verify_campaign.py` checks all deliveries at once.
+
+### Ledger and ADR numbers
+
+New ledger entries and ADRs use placeholders (`§TBD`, `§TBD-b`, `ADR-TBD`, file
+`decisions/TBD-<slug>.md`). The session that merges the PR runs
+`python3 tools/ledger_assign.py assign` on the branch after merging main (`--skip`
+lists numbers reserved by work still in flight) and commits the result.
+`python3 tools/ledger_assign.py check <reviewed-sha> <new-sha>` confirms that the
+new head differs from the reviewed one only by a clean main merge and the
+numbering, so the review's PASS still applies without a delta review.
+
+### Review depth
+
+A PR that changes engine, search or model code gets a full independent review.
+For a run, one review thread covers the code, the PREREG and the launch. An
+evidence-only PR (ledger, RESULT, analyzer output, no build input changed) gets
+a light review in the run's existing review thread: re-run the analyzer, check
+numbers and wording, no rebuild unless a script changed.
+
 ### AGENTS.md relocation audit (Phase 1)
 
 | Previous `AGENTS.md` section | Destination | Treatment |
