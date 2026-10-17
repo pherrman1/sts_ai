@@ -101,6 +101,16 @@ namespace sts::search {
     // STS_SILVER_LEARNED_STOP_BOSS_MAX=<n> (> 10,000, with learned stopping)
     // lets a boss root that reached 10,000 unstopped continue in 10,000 steps
     // to n, until its leader is strictly locked against n.
+    // Effective Silver leaf valuation (ADR-0035, ADR-0036, ADR-0040) after the
+    // environment is applied, for data provenance.
+    struct NativeSilverLeafSettings {
+        bool finalFightLeaf, noLossPotionCredit, relicHealLeaf, a20BossHealFix;
+        double escapePenalty, eliteEscapePenalty;
+        // "g6_builtin", "hand_written", or "file" (path in STS_SILVER_ROLLOUT_CARD_TABLE).
+        std::string rolloutCardTable;
+        int rolloutUniform, rolloutsPerLeaf, rolloutZeroCostCap;
+    };
+    NativeSilverLeafSettings nativeSilverLeafSettings();
     bool nativeSilverLearnedStopEnabled();
     bool nativeSilverLearnedStopBossFallback();
     std::int64_t nativeSilverLearnedStopBossMax();
