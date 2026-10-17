@@ -1954,7 +1954,7 @@ with the search and its chain.
   the uniform prior even with heart1. `STS_OOC_MCTS_PRIOR=heart1full`
   lets heart1 score such nodes too; if heart1 cannot score one, it stays
   uniform (no V4 fallback). It is the default whenever `STS_OOC_HEART1` is set
-  and `STS_OOC_MCTS_PRIOR` is not (Philipp, 2026-10-17); `=heart1` restores the
+  and `STS_OOC_MCTS_PRIOR` is not (ADR-0042); `=heart1` restores the
   V4-gated heart1 prior and `=policy` the V4 prior. Card selects other than
   UPGRADE stay uniform under heart1full, because student C was distilled with
   no CARD_SELECT rows and picks the best card to remove. With
