@@ -23,6 +23,15 @@ public final class CombatBoundaryTest {
     }
     public static void main(String[] args) {
         verifyRetiredSlimeBoss();
+        // Armaments under a large accelerated frame can expire before the
+        // confirmed selection is retrieved. Normal play must not accept its
+        // incomplete piles; an active popup and already retrieved UI residue
+        // are separate, valid states.
+        if (!STSModelInspector.orphanedHandSelection(true, false, 1)
+                || STSModelInspector.orphanedHandSelection(false, false, 1)
+                || STSModelInspector.orphanedHandSelection(true, true, 1)
+                || STSModelInspector.orphanedHandSelection(true, false, 0))
+            throw new AssertionError("orphaned hand selection became ordinary play");
         if(STSModelInspector.publicMonsterMiscInfo(false,()->null)!=null
                 || STSModelInspector.publicMonsterMiscInfo(false,()->7)!=7
                 || STSModelInspector.publicMonsterMiscInfo(true,()->{throw new AssertionError("Dome read private monster state");})!=0)

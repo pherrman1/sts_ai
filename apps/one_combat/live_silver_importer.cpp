@@ -1049,6 +1049,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (combatIt == root.end() || !combatIt->is_object()) return unsupported("silver_combat_missing");
     const auto &combat = *combatIt;
     if (hasForbiddenRngField(combat)) return unsupported("silver_rng_field");
+    if (combat.contains("orphanedHandSelection"))
+        return unsupported("silver_orphaned_hand_selection");
     if (combat.contains("occupantBindingError")) return unsupported("silver_monster_occupant_binding");
     if (combat.contains("pendingActionQueueError")) return unsupported("silver_selection_pending_actions");
     if (combat.contains("pendingCardQueueError"))

@@ -3129,6 +3129,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
+    static boolean orphanedHandSelection(boolean playerDecision, boolean retrieved, int selectedCount) {
+        return playerDecision && !retrieved && selectedCount > 0;
+    }
+
     private static String combatJson() {
         int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         String selection = cardSelectionJson();
@@ -3160,6 +3164,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (AbstractPower power : AbstractDungeon.player.powers)
             if ("Vulnerable".equals(power.ID)) trackedPlayerVulnerableSeen = true;
         StringBuilder out = new StringBuilder("{");
+        // A timed-out selection owner can disappear while its selected cards
+        // remain outside every pile. Do not search this apparently stable but
+        // incomplete root (or later reinterpret those cards as new copies).
+        if (AbstractDungeon.handCardSelectScreen != null
+                && orphanedHandSelection(isPlayerDecisionPoint(),
+                    AbstractDungeon.handCardSelectScreen.wereCardsRetrieved,
+                    AbstractDungeon.handCardSelectScreen.selectedCards.size()))
+            out.append("\"orphanedHandSelection\":true,");
         if(RunicDomeCapture.bindingFailure()!=null)out.append("\"occupantBindingError\":\"").append(escapeJson(RunicDomeCapture.bindingFailure())).append("\",");
         out.append("\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)

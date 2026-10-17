@@ -366,9 +366,15 @@ tools/live_game_start.sh --super-fast --run -- \
 
 `--super-fast` enables an already installed `mods/SuperFastMode.jar` (mod ID
 `superfastmode`). Use `--restart-game` once if the running game lacks that mod.
-Its local configuration is under `~/.config/ModTheSpire/SuperFastMode/`; the
-debug setup uses `deltaMultiplier=4.0`, `isDeltaMultiplied=true`, and
-`isInstantLerp=true`. The external JAR is not a repository artifact. Speed
+Its local configuration is under `~/.config/ModTheSpire/SuperFastMode/`.
+The external JAR is not a repository artifact. Accelerated frame time can
+expire vanilla selection actions on the frame that opens their popup: in
+`ArmamentsAction`, `tickDuration()` may mark the action done before the selected
+card is retrieved. Confirmation then loses the card from the active piles;
+a later discard action may retrieve that stale selection in another combat.
+The installed 10x configuration reproduced this during A20 live verification.
+Use the ordinary launcher without `--super-fast` for integration qualification;
+no speed setting is inferred from a previous session's documentation. Speed
 changes remain subject to the same readiness and observation checks.
 
 `--refresh-runtime` builds only `one_combat_advisor`, copies it and
@@ -1204,6 +1210,12 @@ invalidates its cached root/budget, but retains the previously validated Silver
 graph only for the same protocol session and combat entry. The next valid
 snapshot is fully reimported and searched. A different session/combat cannot
 inherit that predecessor; native search/lowering failures still clear it.
+
+At an otherwise stable player decision, an unretrieved, nonempty hand
+selection with no current action is an abandoned transaction, not normal play.
+The producer marks `orphanedHandSelection`; native import refuses it with
+`silver_orphaned_hand_selection` before searching incomplete piles. It never
+deduplicates card UUIDs or mutates the game to repair an abandoned selection.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other

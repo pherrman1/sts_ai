@@ -3351,6 +3351,14 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("Discovery offer was silently truncated or flattened");
         }
         auto unknownSelection = nativeSelection;
+        // A timed-out hand-selection action can disappear after confirmation
+        // without retrieving its selected physical card. The remaining piles
+        // can otherwise look importable despite the missing card.
+        auto orphanedSelection = genericObservation(fixtures[0], "orphaned-hand-selection");
+        orphanedSelection["silverRoot"]["combat"]["orphanedHandSelection"] = true;
+        if (one_combat::advisor::importSilverRoot(orphanedSelection).reason
+                != "silver_orphaned_hand_selection")
+            throw std::runtime_error("abandoned hand selection was accepted as ordinary play");
         unknownSelection["silverRoot"]["combat"]["cardSelect"]["task"] = "";
         // Unknown selectors must not become normal play or be obscured by an
         // unrelated unsupported projection field at a resumed combat boundary.
