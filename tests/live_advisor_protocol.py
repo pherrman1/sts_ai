@@ -78,6 +78,35 @@ class AdvisorProtocolTest(unittest.TestCase):
             self.assertEqual(r["ctmStackScope"], "ascension20" if ascension == 20 else "base")
             for key in ("deathProbability", "winningHpHistogram"):
                 self.assertEqual(r[key], d[key], key)
+        # Actual live-loader coverage for the #369/#370 inventory and HP gaps.
+        # The trained-domain checks remain explicit at the low HP edge and
+        # A0's unqualified Writhing Mass/Ritual Dagger intersection.
+        for ascension in (0, 20):
+            baseline = dict(entry, ascension=ascension)
+            variants = [
+                ("smoke", dict(baseline, potions=["SmokeBomb"] + ["Potion Slot"] * 4), "OK"),
+                ("high_hp", dict(baseline, hp=200, maxHp=200), "OK"),
+                ("lizard", dict(baseline, relics=[dict(id="Lizard Tail", data=1)]), "OK"),
+                ("lizard_fairy", dict(baseline, relics=[dict(id="Lizard Tail", data=1)],
+                                      potions=["FairyPotion"] + ["Potion Slot"] * 4), "OK"),
+                ("lizard_brew", dict(baseline, relics=[dict(id="Lizard Tail", data=1)],
+                                     potions=["EntropicBrew"] + ["Potion Slot"] * 4), "OK"),
+                ("low_max_hp", dict(baseline, hp=23, maxHp=23), "UNSUPPORTED"),
+                ("writhing_ritual", dict(baseline, act=3, encounter="WRITHING_MASS",
+                                        deck=[dict(id="RitualDagger", upgraded=False, misc=15, bottleBinding=-1)]),
+                 "OK" if ascension == 20 else "UNSUPPORTED"),
+            ]
+            requests = [json.dumps(dict(protocol="sts_model_inspector_v1", kind="observation",
+                session="qualified-boundaries", sequence=i + 1, observationHash=name,
+                observation=dict(value, combatEntry=value, combatEntryHash=name)))
+                for i, (name, value, _) in enumerate(variants)]
+            for (name, _, expected), response in zip(variants, self.run_advisor(requests, base, ctm_env=env)):
+                evaluator = response["evaluators"][0]
+                self.assertEqual(evaluator["status"], expected, (ascension, name, response))
+                if name == "low_max_hp":
+                    self.assertEqual(evaluator["reason"], "hp_envelope")
+                if name == "writhing_ritual" and ascension == 0:
+                    self.assertEqual(evaluator["reason"], "writhing_ritual_intersection")
         for missing in ("STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
             for value in (None, ""):
                 partial = dict(env)

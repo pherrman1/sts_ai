@@ -418,6 +418,12 @@ loaded model carries `armCModel`; successful searched OOC decisions report
 Model loading, scored prior use, live action mapping, complete-run coverage,
 and gameplay quality are separate claims. This connection does not qualify
 the offline Arm C rollout-policy experiment or A20 training/live parity (#506).
+The qualified-stack loader is covered at both ascensions for Smoke Bomb,
+HP 200, active Lizard Tail, Tail + Fairy and Tail + Entropic Brew. The A20
+stack also covers Writhing Mass + Ritual Dagger. The A0 stack still refuses
+that intersection, and both trained domains refuse max HP 23 (their minimum
+is 24). Packaging does not remove these explicit CTM support boundaries or
+qualify a model outside its trained domain.
 Only validated production qualification enables Lizard correction automatically;
 integration-candidate metadata requires explicit opt-in. An explicitly empty
 or whitespace model override reaches the native loader unchanged and fails,
