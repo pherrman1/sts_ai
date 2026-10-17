@@ -89,6 +89,7 @@ namespace sts::search {
         std::int64_t chanceTranspositions = 0;
         std::int64_t rolloutPlayouts = 0;   // playouts run to combat end from tree leaves
         std::int64_t rolloutActions = 0;    // actions taken inside those playouts
+        std::int64_t rolloutActionLimitHits = 0; // nonterminal playouts stopped at the action cap
         std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
     };
 

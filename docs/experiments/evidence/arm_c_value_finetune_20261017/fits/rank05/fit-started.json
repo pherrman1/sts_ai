@@ -1,0 +1,14 @@
+{
+  "arm": "rank05",
+  "batch": 512,
+  "cacheSha256": "0285229cafc9084cb58f10f9e7421fa07bbc58f32f122e9cb2d3c477a85e03f4",
+  "init": 0,
+  "klWeight": 1.0,
+  "lr": 0.0003,
+  "rankWeight": 0.5,
+  "siblingLeaves": 256,
+  "steps": 2000,
+  "toolSha256": "56c5c2e9ed5760119a6da162b2a3b585c1ea7c3ed257b3e07ee5dc32851bd8e2",
+  "trainRate": 0.16315138339996338,
+  "weightDecay": 0.01
+}

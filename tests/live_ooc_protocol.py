@@ -23,7 +23,8 @@ class LiveOocProtocol(unittest.TestCase):
         cls.win = Path(sys.argv[5]) if len(sys.argv) > 5 else None
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "fixtures.jsonl"
-            subprocess.run(["bash", "tools/seed_guard.sh", str(cls.fixture_binary), str(cls.model), str(fixture)],
+            subprocess.run(["bash", "tools/seed_guard.sh", str(cls.fixture_binary), str(cls.model), str(fixture),
+                            str(Path(__file__).parent / "fixtures/live_act3_entry.json")],
                            check=True, capture_output=True, text=True)
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
@@ -110,6 +111,51 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([observation], policy="v4")
         self.assertEqual(response["evaluators"][0]["reason"], "POTION_REPLACEMENT_REQUIRES_MCTS")
 
+    def test_full_belt_shop_validates_discards_before_model_loading(self):
+        observation = self.fixtures["shop_full_belt_replacement"]
+        choices = observation["ooc"]["liveChoices"]
+        self.assertFalse(any(c["nativeAction"]["kind"] == "potion" for c in choices))
+        capacity = observation["ooc"]["publicState"]["potionCapacity"]
+        self.assertEqual([c["liveAction"]["potionSlot"] for c in choices
+                          if c["nativeAction"]["kind"] == "discard_potion"],
+                         list(range(1, capacity + 1)))
+        response, = self.run_rows([observation], model=False, policy="mcts")
+        self.assertNotEqual(response.get("code"), "OOC_ACTION_MAPPING", response)
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE")
+        malformed = copy.deepcopy(observation)
+        malformed["ooc"]["liveChoices"] = [c for c in choices
+                                            if c["nativeAction"]["kind"] != "discard_potion"]
+        response, = self.run_rows([malformed], model=False, policy="mcts")
+        self.assertEqual(response["code"], "OOC_ACTION_MAPPING", response)
+
+    def test_captured_act_opening_map_requires_public_first_row_proof(self):
+        observation = json.loads((Path(__file__).parent / "fixtures/live_act3_entry.json").read_text())
+        response, = self.run_rows([observation], model=False, policy="mcts")
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE", response)
+        for defect in range(7):
+            malformed = copy.deepcopy(observation)
+            state = malformed["ooc"]["mcpState"]
+            if defect == 0:
+                state["screen_state"]["first_node_chosen"] = True
+            elif defect == 1:
+                malformed["ooc"]["publicState"]["floor"] = 35
+            elif defect == 2:
+                state["can_cancel"] = True
+            elif defect == 3:
+                state["screen_state"]["next_nodes"][0]["y"] = 1
+            elif defect == 4:
+                state["screen_state"]["current_node"]["x"] = 0
+            elif defect == 5:
+                malformed["ooc"]["liveChoices"][0]["y"] = 1
+            else:
+                x = state["screen_state"]["next_nodes"][0]["x"]
+                for node in malformed["ooc"]["publicState"]["map"]["nodes"]:
+                    if node["x"] == x and node["y"] == 0:
+                        node["edges"] = []
+            response, = self.run_rows([malformed], model=False, policy="mcts")
+            self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
+                                "MODEL_UNAVAILABLE", (defect, response))
+
     def test_selector_preview_scores_confirm_or_return_to_original_grid(self):
         observation = next(row for name,row in self.fixtures.items()
                            if name.startswith("selector_preview_") and row["ooc"]["details"]["type"] == "upgrade")
@@ -178,6 +224,22 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertEqual(evaluator["status"], "UNSUPPORTED")
             self.assertEqual(evaluator["reason"], "DIFFERENTIAL_FORCED_OOC_UNREPRESENTABLE")
             self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_completed_campfire_map_return_is_not_a_policy_alternative(self):
+        observation = copy.deepcopy(self.fixtures["forced_boss_map"])
+        mcp = observation["ooc"]["mcpState"]
+        mcp.update(can_cancel=True, cancel_button="return", room_type="RestRoom", room_phase="COMPLETE")
+        for response in self.run_rows([observation], model=False, floor_model=False, policy="mcts"):
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+            self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        for field, value in (("room_phase", "INCOMPLETE"), ("room_type", "EventRoom"),
+                             ("cancel_button", "cancel")):
+            invalid = copy.deepcopy(observation)
+            invalid["ooc"]["mcpState"][field] = value
+            response, = self.run_rows([invalid], model=False, policy="mcts")
+            self.assertEqual(response["status"], "ERROR", response)
 
     def test_forge_and_writing_results_are_forced_without_models(self):
         observations = [self.fixtures["event_forge_leave"], self.fixtures["event_writing_leave"]]

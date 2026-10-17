@@ -718,6 +718,8 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator; or `bossrollout`, 1/0 for beating the next boss in a policy-chain + CTM rollout (research, ledger §391)|
 | `LEAF_COMBATS` |0|0,1,3,5 additional surrogate combats before resolved checkpoint; at A0 with the ADR-0031/0032 defaults at §433 `combo` settings, 0 loses runs vs 3 (−12.5 pp [−21.9, −3.1], about 0.37x wall time, same tree depth; §472), also with 16384 instead of 4096 simulations at about matched CPU (−10.2 pp [−18.8, −1.6]; §475)|
 | `LEAF_POLICY` |v4|`v4` (the policy chain), `uniform` among unique supported legal V4 candidates, or `prior` (research, §487: fixed tree rule steps, then the V4 policy-head argmax on every screen V4 encodes; `prior_leaf_steps` in the support trace); or `heart1` (research §493: the same fixed steps/candidate set, then loaded heart1/Arm C argmax if all candidates score, otherwise the unchanged chain; separate `heart1_leaf_steps`, `heart1_leaf_fallbacks`, `heart1_leaf_reasons`; requires `STS_OOC_HEART1`, independent of tree-prior selection)|
+| `TARGET_PRIOR` |0 (off)|`0` or `1`; `1` (research, needs a heart1 prior) splits a compound source's prior over its target cards by heart1's probability on the single-pick select the source opens, instead of equally; unscorable groups keep the equal split (`target:scored` / `target:skip_*` in `heart1_prior_reasons`). Not for student C, whose select head is untrained (see the heart1full section)|
+| `LEAF_SELECTS` |chain|`chain` or `heart1`; `heart1` (research, needs `LEAF_POLICY=heart1` and heart1full) also hands every rollout card select to heart1 instead of the chain. Same student C caveat as `TARGET_PRIOR`|
 | `CPU_SECONDS` |0 (off)|Research per-decision thread-CPU allowance, finite 0..10 seconds. Starts before model/root preparation, checks after completed simulations, keeps at least one simulation; overshoot/cleanup is measured, not a hard deadline. Requires `EARLY_STOP=0`, gap stopping off, no forked leaf capture, per-rollout decision logs, or lock/checkpoint/reuse/graph/prior diagnostics. Real combat is excluded. `STS_RUN_PROFILE` records actual CPU, completed simulations and `early_stop_budget`; support trace counts `cpu_budget_stops`. Identical per-decision allowance does not imply equal CPU/run. Unset/zero leaves legacy search unchanged.|
 | `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
 | `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root, and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
@@ -1604,6 +1606,17 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    burning elite while Emerald is missing. Earlier acts retain normal path
    decisions. The helper also runs in the fallback chain and tree-rule
    projection. Explicit `STS_COLLECT_KEYS=0` restores keys-off behavior.
+   Opt-in variants, default off (`RunGoal.h` `HeartKeyRules`):
+   `STS_KEY_SAPPHIRE=act3` forbids the key before Act 3 and takes it at the
+   first Act-3 chest (every act has a treasure row); `=policy` lets the policy
+   choose, with the Act-3 treasure row as backstop. `STS_KEY_RUBY=hp` Recalls
+   at the first Act-3 campfire with HP at least `STS_KEY_RUBY_MIN_HP` (0.6),
+   else at the pre-boss row; `=policy` forces only the pre-boss row.
+   `STS_KEY_EMERALD=mask` turns the Act-3 route rule into a mask: candidate
+   lists (`v4CandidateActions`, the MCTS semantic enumeration, heart1's
+   choice) drop edges that no longer reach the burning elite, and the rule
+   forces an edge only when one remains; `=policy` is an alias of `mask`; Acts 1-2 stay the policy's choice. Fallback-chain Recall sites and the
+   chest relic rule follow the variant (`heartRecallRequired`).
    `runGoalVictory` keeps missing-key Act-3 clears out of Heart win labels;
    explicit benchmark horizons retain their separate Act-clear semantics.
    Sites: `apps/one_combat.cpp` REWARDS chains + `restWinPolicy`,
@@ -1897,6 +1910,14 @@ with the search and its chain.
   trim_map …)`). Student C (dim 64, 2 layers, 4 heads, trim) matches
   silverbot's torch forward to 1.6e-5 on 3,000 tree-node records at about
   1.5 ms per call (heart1 about 31 ms).
+- The tree prior and the leaf policy read only the choice logits, so they call
+  `Net::forward(record, logitsOnly=true)`: the last block computes keys and
+  values for every token but queries, attention output and feed-forward only
+  for the choice tokens, and the value head is skipped. Every row is computed
+  as before, so the logits are bit-identical; `one_combat heart1logitscheck
+  <weights> <records.jsonl> [reps]` checks that and times both passes
+  (student C: about 1.55 → 0.79 ms per call). `policyStep` keeps the full
+  pass when `STS_OOC_HEART1_TRACE` records the value.
 - Policy: temperature 0, the first maximum logit in token order. Gold, and
   relics on screens without a key reward, are taken before the decision, as
   silverbot does. A single offered choice is executed directly. Screens
@@ -1960,7 +1981,17 @@ with the search and its chain.
   no CARD_SELECT rows and picks the best card to remove. With
   `STS_OOC_MCTS_LEAF_POLICY=heart1`, heart1full also runs heart1 rollout steps
   on screens V4 cannot encode (same card-select exclusion); the remaining
-  chain steps are counted as `chain:screenN` in `heart1_leaf_reasons`. A live
+  chain steps are counted as `chain:screenN` in `heart1_leaf_reasons`.
+  Two research options, both default off, lift the card-select exclusion and
+  are meant for a heart1 model or a student distilled with CARD_SELECT rows,
+  not student C (audit 2026-10-17). `STS_OOC_MCTS_TARGET_PRIOR=1` (needs a heart1
+  prior) gives each compound target (smith, shop purge, Neow/event remove or
+  transform) its source's prior times heart1's probability for that card on the
+  select the source opens, instead of an equal share; groups heart1 cannot score
+  keep the equal share (`target:scored` / `target:skip_*` in
+  `heart1_prior_reasons`). `STS_OOC_MCTS_LEAF_SELECTS=heart1` (needs
+  `LEAF_POLICY=heart1` and heart1full) also hands every rollout card select to
+  heart1. A live
   root the search returns no action for (abort, CTM refusal) goes to
   `heart1::policyStep` before the V4 chain (decision trace `heart1_fallback`).
   `STS_OOC_MCTS_PRIOR_TRACE` refuses heart1 priors. §486 (A20, 64 paired seeds, `combo`): floors NOT_SHOWN, act-3 clears

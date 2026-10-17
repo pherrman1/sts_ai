@@ -13,6 +13,7 @@
 #include "one_combat/ooc_checkpoint_policy.h"
 #include "one_combat/ooc_mcts_adapter.h"
 #include "one_combat/ooc_v4_encoding.h"
+#include "one_combat/heart1_policy.h"
 #include "sim/search/OocSemanticAction.h"
 
 namespace {
@@ -28,6 +29,36 @@ int main(int argc, char **argv) {
         using namespace one_combat;
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        {
+            // Native shop actions retain physical slots after purchases. A
+            // compacted card vector silently shifts tokens or throws at slot 6.
+            const CardId ids[] = {CardId::BASH, CardId::STRIKE_RED, CardId::DEFEND_RED,
+                CardId::ANGER, CardId::CLEAVE, CardId::IRON_WAVE, CardId::POMMEL_STRIKE};
+            for (const int ascension : {0, 20}) for (unsigned sold = 0; sold < 128; ++sold) {
+                auto shop = gc;
+                shop.ascension = ascension;
+                shop.screenState = ScreenState::SHOP_ROOM;
+                shop.curRoom = Room::SHOP;
+                shop.gold = 999;
+                shop.info.shop = Shop{};
+                std::fill(std::begin(shop.info.shop.prices), std::end(shop.info.shop.prices), -1);
+                unsigned remaining = 0;
+                for (int slot = 0; slot < 7; ++slot) if (!(sold & (1u << slot))) {
+                    ++remaining;
+                    shop.info.shop.cards[slot] = Card(ids[slot], slot % 2);
+                    shop.info.shop.cardPrice(slot) = 50;
+                }
+                heart1::Choice choice;
+                require(heart1::buildChoice(shop, choice), "Arm C partial shop was unencoded");
+                require(choice.record.offeredCards.size() == remaining, "Arm C shop dropped a legal card token");
+                for (std::size_t i = 0; i < choice.record.offeredCards.size(); ++i) {
+                    const auto slot = choice.actions[i].getIdx1();
+                    require(!(sold & (1u << slot)) && choice.record.offeredCards[i] == int(ids[slot])
+                            && choice.record.offeredUpgrades[i] == slot % 2,
+                            "Arm C shop token lost its physical native card slot");
+                }
+            }
+        }
         {
             // Source-qualified EventHelper interval table; all cells, including
             // saturation and zero-width overwritten last-cell behavior.
@@ -171,6 +202,32 @@ int main(int argc, char **argv) {
                     && next.potionCount==replacement.potionCount,"replacement potion not claimable");
             }
             require(discards==replacement.potionCapacity,"duplicate potion slots lost semantic identity");
+            auto shop=replacement;
+            shop.screenState=ScreenState::SHOP_ROOM;shop.gold=100;
+            std::fill(std::begin(shop.info.shop.prices),std::end(shop.info.shop.prices),-1);
+            shop.info.shop.potions[0]=Potion::FIRE_POTION;shop.info.shop.potionPrice(0)=45;
+            const auto shopChoices=enumerateOocSemanticActions(shop);
+            require(shopChoices.supported && shopChoices.complete,"full shop belt enumeration failed");
+            require(std::none_of(shopChoices.actions.begin(),shopChoices.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::BUY_POTION;
+            }),"shop allowed a purchase into a full belt");
+            auto discard=std::find_if(shopChoices.actions.begin(),shopChoices.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::DISCARD_POTION;
+            });
+            require(discard!=shopChoices.actions.end() && executeOocSemanticAction(shop,*discard).ok,
+                    "shop replacement discard unavailable");
+            const auto freed=enumerateOocSemanticActions(shop);
+            auto buy=std::find_if(freed.actions.begin(),freed.actions.end(),[](const auto &a) {
+                return a.effect==OocSemanticEffect::BUY_POTION;
+            });
+            require(buy!=freed.actions.end() && executeOocSemanticAction(shop,*buy).ok
+                    && shop.gold==55 && shop.potionCount==shop.potionCapacity,
+                    "shop did not obtain the replacement after freeing a slot");
+            shop.relics.add({RelicId::SOZU,0});
+            --shop.potionCount;shop.potions[0]=Potion::EMPTY_POTION_SLOT;
+            shop.gold=100;shop.info.shop.potionPrice(0)=45;
+            require(!sts::search::GameAction(sts::search::GameAction::RewardsActionType::POTION,0).isValidAction(shop),
+                    "Sozu allowed a shop potion purchase");
             replacement.relics.add({RelicId::SOZU,0});
             const auto blocked=enumerateOocSemanticActions(replacement);
             require(std::none_of(blocked.actions.begin(),blocked.actions.end(),[](const auto &a) {
@@ -335,6 +392,33 @@ int main(int argc, char **argv) {
             && forcedBefore == test::oocStateFingerprint(forcedMap),
             "live advisor returns sole map action without model sampling or mutation: "
                 + forcedDecision.reason + " candidates=" + std::to_string(forcedDecision.candidates.size()));
+        {
+            // Force a hypothetical combat from two legal map choices. Refusal
+            // sentinels identify the sampler without training, model weights,
+            // campaign traversal or a successful imagined outcome.
+            struct DispatchSampler final : CombatTransitionSampler {
+                mutable int calls=0;
+                CombatRuntimeSupport support(const GameContext &,const CombatPredictorInputV1 &) const override {
+                    ++calls;return {false,"dispatch_probe"};
+                }
+                CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+                    throw std::runtime_error("dispatch probe must not sample an unsupported combat");
+                }
+            };
+            for(int ascension:{0,1,20}) for(bool configured:{false,true}) {
+                auto route=gc;route.ascension=ascension;route.screenState=ScreenState::MAP_SCREEN;
+                route.curMapNodeX=route.curMapNodeY=-1;route.curEvent=Event::INVALID;
+                route.map=std::make_shared<Map>();
+                for(int x:{0,1}) {route.map->nodes[0][x].room=Room::MONSTER;route.map->nodes[0][x].addEdge(0);}
+                auto base=std::make_shared<DispatchSampler>(), a20=std::make_shared<DispatchSampler>();
+                LiveOocMctsPolicy dispatch(*model,base,&unusedWin,&unusedFloor,{},configured?a20:nullptr);
+                const auto result=dispatch.score(route,{},0);
+                const bool useA20=ascension==20 && configured;
+                require(!result.supported && (useA20?a20->calls:base->calls)>0
+                        && (useA20?base->calls:a20->calls)==0,
+                        "live MCTS did not dispatch the hypothetical combat to the exact ascension stack");
+            }
+        }
         auto emptyRewards = forcedMap;
         emptyRewards.screenState = ScreenState::REWARDS;
         emptyRewards.info.rewardsContainer.clear();

@@ -14,6 +14,7 @@
 #include "constants/SaveFileMappings.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
+#include "heart1_policy.h"
 
 namespace one_combat {
 namespace {
@@ -180,9 +181,11 @@ LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
 LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
                                      std::shared_ptr<const CombatTransitionSampler> sampler,
                                      const CompactTreeNet *oocWinModel,
-                                     const CompactTreeNet *oocFloorModel)
-    : model_(model), sampler_(std::move(sampler)), winModel_(oocWinModel),
-      floorModel_(oocFloorModel) {}
+                                     const CompactTreeNet *oocFloorModel,
+                                     std::shared_ptr<const heart1::Net> armC,
+                                     std::shared_ptr<const CombatTransitionSampler> samplerA20)
+    : model_(model), sampler_(std::move(sampler)), samplerA20_(std::move(samplerA20)),
+      winModel_(oocWinModel), floorModel_(oocFloorModel), armC_(std::move(armC)) {}
 
 void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) {
     rootPrimitiveBits_ = std::set<std::uint32_t>(bits.begin(), bits.end());
@@ -207,11 +210,19 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     OocAdapterOptions options;
     options.sampleNoncombat = true;
     options.checkpointLeaves = true;
+    options.heart1Prior = bool(armC_);
     // Qualified public question-room history reconstructs the native chance
     // counters; successors update those counters through normal transitions.
     options.stopAtMapCheckpoint = !mapHistoryComplete_;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
+    if (armC_) {
+        dependencies.heart1PolicyLogits = [this](const sts::GameContext &gc,
+                const std::vector<sts::search::GameAction> &actions,
+                std::map<std::string, std::uint64_t> *tally) {
+            return heart1::priorLogits(*armC_, gc, actions, tally);
+        };
+    }
     const int observedEventRooms = currentActEventVisits;
     const bool questionHistoryComplete = questionHistoryComplete_;
     const auto questionPosterior = questionChancePosterior_;
@@ -325,7 +336,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
 
     try {
-        OocGameContextModel provider(projected, path, sampler_, options, std::move(dependencies));
+        const auto sampler = projected.ascension == 20 && samplerA20_ ? samplerA20_ : sampler_;
+        OocGameContextModel provider(projected, path, sampler, options, std::move(dependencies));
         if (provider.terminalValue(0) || provider.isLeafBoundary(0)) {
             unsupportedResult.reason = "OOC_ROOT_UNSUPPORTED";
             return unsupportedResult;
@@ -356,6 +368,14 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         result.rootHp = projected.curHp;
         result.rootMaxHp = projected.maxHp;
         result.rootFloor = projected.floorNum;
+        result.searchModel = {{"ctmStackScope", projected.ascension == 20 && samplerA20_ ? "ascension20" : "base"}};
+        if (armC_) {
+            const auto &metrics = provider.continuationMetrics();
+            result.searchModel.update({{"prior", "arm_c"}, {"rolloutPolicy", "v4_chain"},
+                {"armCPriorNodes", metrics.heart1PriorNodes},
+                {"armCPriorFallbacks", metrics.heart1PriorFallbacks},
+                {"armCPriorReasons", metrics.heart1PriorReasons}});
+        }
         result.candidates.reserve(rootActions.size());
         for (const auto &root : rootActions) {
             const auto &candidate = provider.candidate(0, root.id);

@@ -19896,3 +19896,87 @@ more simulations with the cheap leaf do not recover it. In play the student, dis
 is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
 [Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
 **Knowledge impact:** learned OOC leaf status in current-research.
+
+## §509 — Arm C value head and trunk fine-tune on Heart outcomes (2026-10-17)
+
+**NOT_SHOWN** (development; no TEST, CONFIRM, seeds, native or default change). Philipp asked
+whether Arm C's value head could be trained, not only its prior head, and approved the plan.
+Student C's value head was never trained (policy-only distillation). Pre-registered
+[protocol](evidence/arm_c_value_finetune_20261017/PROTOCOL.md): train all parameters on outcome BCE
+(equal-state) + KL to the original policy + w × pairwise ranking on §494/round-2 sibling 64-rollout
+means, w ∈ {0, 0.5, 2}; checkpoint by VALIDATION visitation BCE; a candidate needs §497 VALIDATION
+BCE < 0.45341 **and** sibling concordance ≥ X2-B. Python encoding matches native `heart1score`
+(pooled ≤ 9.5e-7).
+
+| Selected checkpoint | VAL BCE | §497 VAL BCE | Sibling conc. vs X2-B (rollout3) |
+| --- | ---: | ---: | --- |
+| §497 only, w = 0 / 0.5 / 2 | 0.444 / 0.446 / 0.459 | same | 0.495 / 0.550 / 0.559 vs 0.621 (0.554), 114 §494 groups |
+| §497 + round-2, w = 0.5 | 0.418 | 0.435 | 0.580 vs 0.633 (0.591), 2,559 round-2 groups |
+| §497 + round-2, w = 2 | 0.431 | 0.457 | 0.566 vs 0.633 (0.591) |
+
+Round-2 (§503) TRAIN/VALIDATION came from `claude/heart-outcome-round2-data@a8f6542e`, index
+`02c59f5b…`; CONFIRM archives were not extracted. Outcome BCE is best near step 100–300 (about one
+pass) and then overfits (to 1.20 at step 2,000 for w = 0), while ranking keeps improving: the
+combined w = 2 fit reaches round-2 concordance 0.648 vs X2-B 0.633 at step 2,000 with BCE 0.510,
+worse than the constant 0.454. That late value was read off VALIDATION, has no bootstrap and is
+descriptive only. Policy top-1 agreement with the original stays 0.97–0.98.
+**Inference:** the source-constant outcome label is memorized quickly; the sibling signal is not.
+A ranking-selected candidate is a new hypothesis that needs its own frozen protocol and the sealed
+CONFIRM. Two combined launches failed on GPU memory before any optimizer step; kept as `failed-*`.
+[Report](evidence/arm_c_value_finetune_20261017/REPORT.md).
+**Knowledge impact:** learned OOC value-head status in current-research.
+
+## §510 — potion prices by paired continuation at A20 (2026-10-17)
+
+**Flat 11 per potion CONSISTENT (pre-registered); without Fairy about 8; per-type prices spread widely.** Philipp (2026-10-17 12:04Z, thread
+"Silver leaf evaluation") asked to measure what Silver's flat 11-HP potion term should be at A20, per
+potion type. [Pre-registration](evidence/potion_price_probe_20261017/PREREG.md), independent pre-launch
+review PASS. New research mode `potionpriceprobe` at `5dfabf90`. Each A20 source run (exact-10k Silver,
+V4 OOC policy, OOC MCTS off) samples up to 8 battle-start states that hold potions. Paired copies of each
+state share all RNG and the policy state: unchanged, one per held potion type with that potion removed,
+and HP −12. Each copy plays the next 3 fights, then the A20 floor model values it. Seeds
+111110000–111110999 on two cloud containers, 3 h each: 498 seeds ran, the unstarted rest stay unused.
+3,550 states, 5,220 potion rows, 0 invalid, 7 terminal states dropped.
+
+Primary (A20 floor model): 1 HP = 0.092 floors [0.074, 0.111]. The pooled potion price is **9.9 HP-eq
+[7.9, 12.3], CONSISTENT_WITH_11**; the §385 range of 2-8 is not excluded (lower bound 7.9). The production
+floor model gives 8.6 [6.7, 11.0]. Public X2-B after the same continuation gives 11.2 [8.7, 14.4]. The A20
+win model gives 16.6 [12.0, 23.4]. Per type (descriptive; 26 of 33 types with n ≥ 100): Fairy 44 [33, 58];
+Attack 21, Blood 18, Skill 15, Fear 14 and Power 13 (CIs above 0). Weak, Block, Speed, Swift, Essence of
+Steel and Liquid Bronze price near 0 (−6 to +1, with wide CIs).
+
+Post hoc (review): Silver already scores Fairy separately, as 11 + 0.3 × max HP through its death-save
+term. Without Fairy (4,916 rows) potions price at 7.8 HP-eq [6.1, 9.8] (production floor model 7.8
+[5.8, 10.1], X2-B 8.5 [6.3, 10.9]; A20 win model 10.1 [6.7, 15.0]).
+**Inference:** the flat 11 may overprice non-Fairy potions at A20; this split was not pre-registered.
+§385's low X2-B prices may have come from static post-fight pricing, since X2-B after play gives 8.5-11
+(§385 lives on closed PR #422). Per-type weights are untested in play. No default change. Reproducing
+needs `5dfabf90`, since #592 changed Silver rollouts on main (its `STS_SILVER_ROLLOUT_ZERO_COST_CAP=0`
+switch is still rejected by `one_combat`'s option allow-list on main).
+Seeds 111110000–111110999 and smokes 111119900–111119905 are used; the reviewer reserved 111119950–959.
+[Result](evidence/potion_price_probe_20261017/RESULT.md), [analysis.json](evidence/potion_price_probe_20261017/analysis.json).
+Raw: `/mnt/project-files/potion-price-probe/ppp-w0{0,1}.tar.gz`.
+**Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
+
+## §511 — per-type Silver potion weights vs flat 11 in whole A20 runs: NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "Silver leaf evaluation"):** "yes set that up", on testing per-type potion
+weights in Silver's leaf after §510; 16:31Z: "ooc should be studnet C. lets do 128 seeds on 4 workers".
+**Design:** [PREREG](evidence/silver_potion_weights_20261017/PREREG.md), independent pre-launch review PASS. New
+research option `STS_SILVER_POTION_WEIGHTS` (PR #610; unset = flat 11). Three arms on the §473 `off` stack with
+student C as the OOC policy, **pre-#594 shop rules** (RUN_COMMIT `56e03b29`, based on `da1ce052`; binary
+`0f4bc4a1…`): `base` flat 11; `level` 7.8 (§510 non-Fairy price), Fairy and Smoke Bomb 11; `type` §510 per-type
+prices shrunk toward 7.8 (3.5 Swift … 12.3 Attack), Fairy and Smoke Bomb 11. Whole runs, so the score is not Silver's
+own formula. A20 seeds 111152000–111152127; primary Δfloor type − base, paired bootstrap.
+**Result: NOT_SHOWN on all three contrasts.** 384/384 units rc=0, nothing dropped; 4 tars verified from a second
+container. Mean floor base 36.65, level 35.85, type 35.28; act-3 clears 36 / 30 / 35 of 128. Type − base Δfloor
+−1.37 [−3.45, +0.74]; level − base −0.80 [−2.96, +1.36]; type − level −0.57 [−2.55, +1.37]. Boss deaths 48 / 58 /
+55. Student C took 98.9% of OOC decisions in every arm, the Match and Keep rule the rest, V4 none.
+**Interpretation:** no detectable effect at ±2 floors; both point estimates negative. Descriptively, lower weights
+leave Silver about 0.1 fewer potions at act-boss battles (1.27 vs 1.15 / 1.14). **Inference:** that is the §385
+direction (cheaper potions get spent earlier) without a visible gain. Per the decision rule the option stays
+research-only, no re-tuning on these seeds, the flat 11 stays. Seeds 111152000–111152127 and smokes
+111153900–111153903, 111153948–949 are used.
+[Result](evidence/silver_potion_weights_20261017/RESULT.md), [analysis.json](evidence/silver_potion_weights_20261017/analysis.json).
+Raw: `/mnt/project-files/silver-potion-weights/w0{1..4}.tar`.
+**Knowledge impact:** potion-weight paragraph in `architecture/combat-search.md`.
