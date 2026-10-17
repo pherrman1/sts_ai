@@ -19895,3 +19895,24 @@ except when a Smoke Bomb is in the belt, where they almost never happen.
 
 **Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_v2_20261017/REPORT.md).
 **Knowledge impact:** non-Smoke Ritual coverage is now adequate for review; Smoke-belt Writhing remains uncovered.
+
+## §507 — Ritual-only CTM head refit on corrected pilot rows (2026-10-17)
+
+**Question:** does refitting only `ritual.*` on corrected §505/§506 rows fix the
+deployed heads' Dagger-growth underprediction (≈0.5% predicted vs 7–10%
+observed on Writhing) without regressing other Dagger fights?
+Frozen source `a7179dc7`; 6,445 deduplicated examples; epochs by TRAIN source CV.
+
+**Result:** `RITUAL_REFIT_NOT_QUALIFIED`, with 4 of 5 criteria passing:
+- Writhing not escaped: NLL 0.514 → 0.350, CI [−0.267, −0.063]. Predicted growth 0.6% → 6.2% vs 8.3% observed.
+- Escaped fights stay at 0.
+- Non-Writhing: point estimate 0.4429 → 0.4406, but CI upper +0.0107 > the +0.005 bound (24 sources). That is the only failure.
+
+No deployment, TEST access or capability change.
+
+**ELI5:** the new Dagger head is much better on Writhing Mass and not worse
+elsewhere on average, but the "not worse elsewhere" test didn't have enough
+games to prove it to the margin we set in advance.
+
+**Evidence:** [protocol, fit, tensors and VALIDATION scores](evidence/ctm_ritual_refit_20261017/REPORT.md).
+**Knowledge impact:** deployed Ritual heads are miscalibrated on corrected data; exposure-gap gate cannot detect it.
