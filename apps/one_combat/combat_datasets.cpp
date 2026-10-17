@@ -5626,17 +5626,26 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         }
     }
     if (armSet == "widen518") {
-        // §518: plain exact-10k Silver on the same redraws, changing only the chance-node widening
-        // constants per category (end of turn vs every other chance node). spire = the constants
-        // of tfriedel/spire-mentor's STS2 search (end turn C 5.79, alpha 0.44; draws C 2, alpha 0.5).
+        // §518: Silver at 2,500 simulations with the gen-6 MLP tree prior (STS_CTMSILVER_MLP_PRIOR, K = 8,
+        // as the §476 mlp arms) on the same redraws, changing only the chance-node widening constants per
+        // category (end of turn vs every other chance node). spire = the constants of tfriedel/spire-mentor's
+        // STS2 search (end turn C 5.79, alpha 0.44; draws C 2, alpha 0.5).
+        const char *mlpEnv = std::getenv("STS_CTMSILVER_MLP_PRIOR");
+        const std::string mlp = mlpEnv ? mlpEnv : "";
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: widen518 requires STS_CTMSILVER_MLP_PRIOR");
+        auto net = std::make_unique<search::CombatValueNet>();
+        if (!net->load(mlp) || !net->isPolicyMlp)
+            throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp model from " + mlp);
+        priorNets[mlp] = std::move(net);
+        constexpr int budget = 2500;
         const search::NativeSilverSearchParams base;
         auto endWide = base; endWide.endTurnWideningC = 2 * base.endTurnWideningC;
         auto otherNarrow = base; otherNarrow.chanceWideningC = 2.0; otherNarrow.chanceWideningAlpha = 0.5;
         auto spire = otherNarrow; spire.endTurnWideningC = 5.79; spire.endTurnWideningAlpha = 0.44;
         arms = {{"control", sims, false, false, 1}};
         for (const auto &[name, p] : std::vector<std::pair<std::string, search::NativeSilverSearchParams>>{
-                 {"base10k", base}, {"endwide10k", endWide}, {"othernarrow10k", otherNarrow}, {"spire10k", spire}}) {
-            arms.push_back({name, sims, false, true, replicates});
+                 {"base", base}, {"endwide", endWide}, {"othernarrow", otherNarrow}, {"spire", spire}}) {
+            arms.push_back({name + "2500", budget, true, true, replicates, 8, mlp});
             arms.back().params = p;
         }
     } else if (armSet == "mlpsweep" || armSet == "rollout479") {
