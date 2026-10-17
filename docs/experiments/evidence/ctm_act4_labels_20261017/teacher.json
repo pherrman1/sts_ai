@@ -1,7 +1,7 @@
 {
-  "teacher_id": "silver-ordinary-fair-learnedstop-ctm-act4-studentc-25270409",
-  "git_sha": "252704094c761beb8a30a2f3ee6766cea51ec057",
-  "executable_sha256": "e18043287fc5dcb1008996f99b68a30002027a1639674c50c9ffc111da35b439",
+  "teacher_id": "silver-ordinary-fair-learnedstop-ctm-act4-studentc-931eb53f",
+  "git_sha": "931eb53ff806d3a77b4b9c1bc9ea96ffc7473a56",
+  "executable_sha256": "507d94c2cac0b9949f8afad56be03c699a2995b4f733a2b78e3dda42bac3ef76",
   "combat_backend": "native_silver",
   "rng_regime": "project_fair",
   "search_configuration": {
@@ -36,7 +36,7 @@
     "STS_SILVER_ADAPTIVE": "0",
     "STS_SILVER_VNET_LEAF_DIRECT": "0",
     "STS_SILVER_LEARNED_STOP": "1",
-    "STS_EXECUTABLE_GIT_SHA": "252704094c761beb8a30a2f3ee6766cea51ec057",
+    "STS_EXECUTABLE_GIT_SHA": "931eb53ff806d3a77b4b9c1bc9ea96ffc7473a56",
     "STS_CTM_GEN_DEPLOYED_OOC": "1",
     "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
     "STS_OOC_STRATEGIC_REST": "1",

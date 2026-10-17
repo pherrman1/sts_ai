@@ -15,8 +15,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../../../.." && pwd)"
 SHARE=/mnt/project-files/ctm-a20/act4-labels
 RUN=$HOME/ctmact4-$TAG OUT=$HOME/ctmact4-$TAG/out
-CODE=252704094c761beb8a30a2f3ee6766cea51ec057
-EXPECT_BIN=e18043287fc5dcb1008996f99b68a30002027a1639674c50c9ffc111da35b439
+CODE=931eb53ff806d3a77b4b9c1bc9ea96ffc7473a56
+EXPECT_BIN=507d94c2cac0b9949f8afad56be03c699a2995b4f733a2b78e3dda42bac3ef76
 # Student C (heart1-distill) out of combat: the teacher sets STS_OOC_HEART1=build/studentc.bin (Philipp 17:11Z).
 STUDENT_SRC=/mnt/project-files/student-c-488/studentc.bin
 STUDENT_SHA=eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509

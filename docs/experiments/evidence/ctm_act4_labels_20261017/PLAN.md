@@ -10,10 +10,11 @@ the Act-4 fights are written. This is a separate slice for a later CTM retrain o
 separate decision. No model, default or ledger change is made here.
 
 **Frozen.**
-- Code commit: `25270409` (main `df641b4` after #597, merged into this branch, plus the generator fix that lets
+- Code commit: `931eb53f` (main `6dfde694` merged into this branch, which carries the student C shop-index fix #579
+  and the key filter #611, plus the generator fix that lets
   `STS_OOC_HEART1` play deployed-OOC screens and the default-off #609 options). The run commit is the commit that adds this folder. `worker.sh setup`
   refuses a checkout whose code paths differ from the code commit.
-- Binary: `one_combat` sha256 `e1804328…`, GCC 13 Release preset. `worker.sh setup` refuses any other binary.
+- Binary: `one_combat` sha256 `507d94c2…`, GCC 13 Release preset. `worker.sh setup` refuses any other binary.
 - Teacher: `teacher.json` here. It is the Stage-1 A20 learned-stop Silver teacher (`ctm-a20/stage1/teacher.json`)
   with the git sha and the OOC policy specification updated to the current defaults (exported by
   `one_combat vwinrefreshpolicyspec`). Out of combat, student C (`STS_OOC_HEART1=build/studentc.bin`, sha256
@@ -23,8 +24,8 @@ separate decision. No model, default or ledger change is made here.
   grants the keys.
 - Seeds: 111160000–111169999 (coordinator block). N workers split them evenly into units of 25 seeds, 4 units at a
   time per worker; production workers are W=1..N. W=0 is only the smoke: 111157000–111157003.
-- Student C smoke (111157000–003): 26 CPU-s per seed, 2 of 4 seeds reach Act 4, 4 rows, 484 student C steps and 0
-  deployed-step screens. Cost at that rate: about 72 CPU-h. Earlier V4-chain smoke: about 14 CPU-s per seed, 43% of seeds reach Act 4, 1.75 rows per such seed. That is
+- Student C smoke at the earlier code `25270409` (111157000–003): 26 CPU-s per seed, 2 of 4 seeds reach Act 4, 4 rows,
+  484 student C steps and 0 deployed-step screens. Cost at that rate: about 72 CPU-h. Earlier V4-chain smoke: about 14 CPU-s per seed, 43% of seeds reach Act 4, 1.75 rows per such seed. That is
   about 38 CPU-h and about 7,500 rows.
 
 **Outputs.**
