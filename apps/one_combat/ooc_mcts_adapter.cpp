@@ -2924,7 +2924,7 @@ void configureLiveOocMcts() {
     // STS_OOC_MCTS_PRIOR=heart1 restores the V4-gated heart1 prior, =policy the V4 prior.
     if (!std::getenv("STS_OOC_MCTS_PRIOR") && heart1::enabled())
         applyLiveControl("STS_OOC_MCTS_PRIOR", "heart1full", liveConfig, liveOptions);
-    // ADR-TBD (Philipp 2026-10-17): weights with the select-distill inputs (x_act, e.g. student_sel.bin) default
+    // ADR-0047 (Philipp 2026-10-17): weights with the select-distill inputs (x_act, e.g. student_sel.bin) default
     // to TARGET_PRIOR=1 and, under heart1full + LEAF_POLICY=heart1, LEAF_SELECTS=heart1. Student C (no x_act)
     // is unchanged; STS_OOC_MCTS_TARGET_PRIOR=0 / STS_OOC_MCTS_LEAF_SELECTS=chain restore the old behaviour.
     if (heart1::enabled() && heart1::net().extraInputs()) {
