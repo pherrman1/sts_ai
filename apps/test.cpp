@@ -3039,6 +3039,37 @@ int testSilverEscapePenalty() {
     return 0;
 }
 
+// #544: a replayable zero-cost draw (two Finesse) must not trap Silver's
+// rollout policy in a loop that never attacks. Before the fix every playout
+// here ran ~142k actions to the engine's loop guard and scored that loss
+// above a win through the per-draw bonus.
+int testSilverRolloutZeroCostLoop() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_rollout_zero_cost_loop FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 111129000, 20);
+    gc.curRoom = Room::MONSTER;
+    gc.deck = {};
+    for (int i = 0; i < 2; ++i) gc.deck.obtainRaw(Card(CardId::STRIKE_RED));
+    for (int i = 0; i < 2; ++i) gc.deck.obtainRaw(Card(CardId::DEFEND_RED));
+    for (int i = 0; i < 2; ++i) gc.deck.obtainRaw(Card(CardId::FINESSE));
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::JAW_WORM);
+    search::SilverSearchContext context;
+    context.act = 1;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    const double value = searcher.rolloutValue(silverSearchRoot(bc));
+    if (searcher.stats.rolloutPlayouts != 1) return fail("expected one playout");
+    if (searcher.stats.rolloutActions > 2000)
+        return fail("playout took " + std::to_string(searcher.stats.rolloutActions) + " actions");
+    if (value < searcher.evalWeights.winBonus) return fail("playout did not win: value " + std::to_string(value));
+    searcher.search(200);
+    if (searcher.stats.rolloutActions > 200 * 2000) return fail("search playouts still loop");
+    std::cout << "silver_rollout_zero_cost_loop PASS\n";
+    return 0;
+}
+
 // Match and Keep: one click per action, pair resolution, and a fair
 // fixed-pattern chooser that never reads unseen slots.
 int testMatchAndKeep() {
@@ -6019,6 +6050,8 @@ int main(int argc, const char* argv[]) {
         return testSimulatorCorrectnessPr9To19();
     } else if (command == "silver_escape_penalty") {
         return testSilverEscapePenalty();
+    } else if (command == "silver_rollout_zero_cost_loop") {
+        return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {
         return testMatchAndKeep();
     } else if (command == "simulator_relic_fidelity") {
