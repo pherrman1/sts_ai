@@ -230,6 +230,14 @@ set in `NativeSilverBackend.cpp`). No later map has a burning elite, so that
 escape rules out the Heart (ADR-0041), which the reward penalty does not price.
 The live wire carries no keys or map, so the advisor path does not apply it.
 
+Held potions score `potionWeight` = 11 each at a victory leaf (Fairy also adds
+its death-save HP). Research-only `STS_SILVER_POTION_WEIGHTS=NAME=w,...[,*=w]`
+(Potion enum names; unlisted types take `*`, else 11; an unknown name aborts)
+replaces that count with per-type weights in native Silver (`one_combat`);
+the live advisor ignores it. The pre-registered A20 A/B of flat 11 vs
+§510-derived weights is in
+`docs/experiments/evidence/silver_potion_weights_20261017/`.
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
