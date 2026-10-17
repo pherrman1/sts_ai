@@ -105,6 +105,21 @@ public final class CombatBoundaryTest {
         } catch(ReflectiveOperationException error){throw new AssertionError(error);}
         if (STSModelInspector.actionSelectionTask("unknown.Action", true, false, 1) != null)
             throw new AssertionError("unknown action was guessed");
+        for(int act:new int[]{2,3})for(int defect=-1;defect<8;++defect) {
+            int floor=17*(act-1)+1;
+            java.util.List<String> resolved=new java.util.ArrayList<>(java.util.Collections.nCopies(floor-1,"M"));
+            resolved.set(floor-3,"B");resolved.set(floor-2,null);
+            java.util.List<Integer> combats=java.util.Arrays.asList(floor-2);
+            if(defect==0)resolved.set(floor-3,"M");
+            if(defect==1)resolved.set(floor-2,"M");
+            if(defect==2)combats=java.util.Collections.emptyList();
+            if(defect==3)resolved.remove(resolved.size()-1);
+            if(defect==4){resolved.add("M");resolved.add("M");}
+            String previous=STSModelInspector.previousRoomAtActEntry(act,defect==5?floor+1:floor,
+                    defect==6?1:0,defect==7?null:resolved,combats);
+            if("BOSS_TREASURE".equals(previous)!=(defect==-1))
+                throw new AssertionError("act-entry previous room qualification "+act+"/"+defect);
+        }
         for (int initial : new int[]{30, 35, 40}) {
             for (int cycle = 0; cycle < 3; ++cycle) {
                 int threshold = initial + 10 * cycle;

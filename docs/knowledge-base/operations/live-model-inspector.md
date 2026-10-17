@@ -1106,6 +1106,13 @@ current node. The importer represents it as the native unchosen-map position
 boss chest, an unchosen first node, no boss/cancel/proceed action, and a complete
 set of row-zero choices with matching physical click indices. The original
 capture remains intact; ordinary row-15 transitions remain unsupported.
+The first room of a new act has only one current-act path coordinate, so it
+cannot recover CTM's previous room from a second node. Capture recovers
+`BOSS_TREASURE` only when the exact Act 2/3 first-room floor, the matching
+row-zero path coordinate, the persisted boss/chest room records, and a
+completed boss combat metric agree. Combat-entry capture retries that public
+path recovery after save loading if the initial transition latch was empty.
+Missing or contradictory records remain unqualified.
 
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have

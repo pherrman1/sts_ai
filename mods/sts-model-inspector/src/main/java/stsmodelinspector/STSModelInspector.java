@@ -1378,10 +1378,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (AbstractDungeon.pathX == null || AbstractDungeon.pathY == null
                 || AbstractDungeon.map == null
                 || AbstractDungeon.pathX.size() != AbstractDungeon.pathY.size()
-                || AbstractDungeon.pathX.size() < 2) return "";
+                || AbstractDungeon.pathX.isEmpty()) return "";
         int currentIndex = AbstractDungeon.pathX.size() - 1;
         if (AbstractDungeon.pathX.get(currentIndex) != currentX
                 || AbstractDungeon.pathY.get(currentIndex) != currentY) return "";
+        if (currentIndex == 0) return previousRoomAtActEntry(AbstractDungeon.actNum,
+                AbstractDungeon.floorNum, currentY,
+                CardCrawlGame.metricData == null ? null : CardCrawlGame.metricData.path_per_floor,
+                RelicOfferRecorder.completedCombatFloors(AbstractDungeon.actNum-1, AbstractDungeon.floorNum));
         int previousX = AbstractDungeon.pathX.get(currentIndex - 1);
         int previousY = AbstractDungeon.pathY.get(currentIndex - 1);
         if (previousY < 0 || previousY >= AbstractDungeon.map.size()) return "";
@@ -1389,6 +1393,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (row == null || previousX < 0 || previousX >= row.size()) return "";
         com.megacrit.cardcrawl.map.MapRoomNode previous = row.get(previousX);
         return previous == null || previous.room == null ? "" : roomClass(previous.room);
+    }
+
+    static String previousRoomAtActEntry(int act, int floor, int currentY,
+            List<String> resolved, List<Integer> completedCombatFloors) {
+        if (act < 2 || act > 3 || currentY != 0 || floor != 17*(act-1)+1
+                || resolved == null || completedCombatFloors == null
+                || resolved.size() < floor-1 || resolved.size() > floor) return "";
+        // A one-node current-act path has no preceding map coordinate. Its
+        // public metrics must instead prove the boss and omitted boss chest.
+        if (resolved.get(floor-2) != null
+                || !"BOSS".equals(metricRoomClass(resolved.get(floor-3)))
+                || !completedCombatFloors.contains(floor-2)) return "";
+        return "BOSS_TREASURE";
     }
 
     private static String roomClass(AbstractRoom room) {
@@ -1807,6 +1824,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private String combatEntryJson(AbstractRoom room, String encounter) {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
         String previous = lastRoomClass;
+        if (previous.isEmpty()) previous = previousRoomClassFromPath(
+                AbstractDungeon.currMapNode.x, AbstractDungeon.currMapNode.y);
         // A freshly started inspector can observe a saved run directly inside
         // the act boss before observeRoomTransition has rebuilt its in-memory
         // latch. The persisted metric path includes the boss sentinel, so use
@@ -1877,7 +1896,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             case "E": return "ELITE";
             case "M": return "MONSTER";
             case "T": return "TREASURE";
-            case "B": return "BOSS";
+            case "B": case "BOSS": return "BOSS";
             default: return "";
         }
     }
