@@ -5,11 +5,11 @@
 #        smoke: 4 111158009; rerun of a shard lost with the container: same TOTAL BASE, SHARDS "2", fresh OUT_DIR)
 # Optional 5th argument: per-shard timeout (default 12h).
 # Launch detached so it survives the session: setsid nohup bash run.sh OUT TOTAL BASE > OUT.log 2>&1 &
-# Run from a checkout whose apps/ src/ include/ CMakeLists.txt equal code commit 45a30c98, after
+# Run from a checkout whose apps/ src/ include/ CMakeLists.txt equal code commit 7b46a7f975c240a5db188f7e1839426e2efc2046, after
 # `cmake --preset linux-gcc-release && cmake --build build/linux-gcc-release --target one_combat -j4`.
 set -euo pipefail
 OUT="$1"; TOTAL="$2"; BASE="$3"; SHARDS="${4:-0 1 2 3}"; LIMIT="${5:-12h}"
-CODE=45a30c98390c79587433c346d69cd6b73913ba66
+CODE=7b46a7f975c240a5db188f7e1839426e2efc2046
 (( TOTAL % 4 == 0 )) || { echo "TOTAL must be a multiple of 4"; exit 1; }
 PER=$(( TOTAL / 4 ))
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
