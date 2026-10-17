@@ -5302,12 +5302,18 @@ struct TreePriorScope {
 struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int replicates; int treeMinVisits = 0;
                       std::string priorModel; bool finalFightLeaf = false;
                       search::SilverSearcher::RolloutConfig rollout = {}; std::string cardTable;
-                      std::string rootTableModel; };
+                      std::string rootTableModel;
+                      std::optional<search::NativeSilverSearchParams> params; };
 struct RolloutScope {
     explicit RolloutScope(const search::SilverSearcher::RolloutConfig &config) {
         search::g_nativeSilverRolloutOverride = config;
     }
     ~RolloutScope() { search::g_nativeSilverRolloutOverride.reset(); }
+};
+// widen518: this arm's Silver search constants (chance widening per category).
+struct SearchParamsScope {
+    explicit SearchParamsScope(const search::NativeSilverSearchParams &p) { search::g_nativeSilverSearchParamOverride = p; }
+    ~SearchParamsScope() { search::g_nativeSilverSearchParamOverride.reset(); }
 };
 // roottable armset: this arm's replays build a per-root rollout card table with this model.
 struct RolloutRootTableScope {
@@ -5554,11 +5560,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
     if (teacherLarge && replicates != 16)
         throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
-    // Ascension 20 is allowed only for the mlpsweep armset (§476/§479) and teacher_a20; every other armset is A0.
-    const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479" || armSet == "roottable";
+    // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable and widen518 armsets
+    // (§476/§479/§519/§518) and teacher_a20; every other armset is A0.
+    const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479" || armSet == "roottable"
+            || armSet == "widen518";
     if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
-                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479 or roottable)");
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable or widen518)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5621,15 +5629,49 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // only about one NORMAL fight in n (hash of seed and fight index).
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
             && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479"
-            && armSet != "roottable" && !teacherA20)
+            && armSet != "roottable" && armSet != "widen518" && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable or teacher_a20");
+                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable, widen518 "
+                                 "or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
     int hallwayEvery = 1;
     std::vector<int> sweepSims;
-    if (armSet == "mlpsweep" || armSet == "rollout479") {
+    if (sweepArmSet) {
+        const char *every = std::getenv("STS_CTMSILVER_HALLWAY_EVERY");
+        if (every && *every) {
+            char *end = nullptr;
+            const long n = std::strtol(every, &end, 10);
+            if (*end != '\0' || n < 1 || n > 1000)
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_HALLWAY_EVERY must be 1..1000");
+            hallwayEvery = static_cast<int>(n);
+        }
+    }
+    if (armSet == "widen518") {
+        // §518: Silver at 2,500 simulations with the gen-6 MLP tree prior (STS_CTMSILVER_MLP_PRIOR, K = 8,
+        // as the §476 mlp arms) on the same redraws, changing only the chance-node widening constants per
+        // category (end of turn vs every other chance node). spire = the constants of tfriedel/spire-mentor's
+        // STS2 search (end turn C 5.79, alpha 0.44; draws C 2, alpha 0.5).
+        const char *mlpEnv = std::getenv("STS_CTMSILVER_MLP_PRIOR");
+        const std::string mlp = mlpEnv ? mlpEnv : "";
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: widen518 requires STS_CTMSILVER_MLP_PRIOR");
+        auto net = std::make_unique<search::CombatValueNet>();
+        if (!net->load(mlp) || !net->isPolicyMlp)
+            throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp model from " + mlp);
+        priorNets[mlp] = std::move(net);
+        constexpr int budget = 2500;
+        const search::NativeSilverSearchParams base;
+        auto endWide = base; endWide.endTurnWideningC = 2 * base.endTurnWideningC;
+        auto otherNarrow = base; otherNarrow.chanceWideningC = 2.0; otherNarrow.chanceWideningAlpha = 0.5;
+        auto spire = otherNarrow; spire.endTurnWideningC = 5.79; spire.endTurnWideningAlpha = 0.44;
+        arms = {{"control", sims, false, false, 1}};
+        for (const auto &[name, p] : std::vector<std::pair<std::string, search::NativeSilverSearchParams>>{
+                 {"base", base}, {"endwide", endWide}, {"othernarrow", otherNarrow}, {"spire", spire}}) {
+            arms.push_back({name + "2500", budget, true, true, replicates, 8, mlp});
+            arms.back().params = p;
+        }
+    } else if (armSet == "mlpsweep" || armSet == "rollout479") {
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR"), prev = env("STS_CTMSILVER_MLP_PRIOR_PREV");
         if (mlp.empty()) throw std::runtime_error("ctm vs silver: " + armSet + " requires STS_CTMSILVER_MLP_PRIOR");
@@ -5643,14 +5685,6 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             sweepSims.push_back(static_cast<int>(b));
         }
         if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: " + armSet + " requires STS_CTMSILVER_SWEEP_SIMS");
-        const std::string every = env("STS_CTMSILVER_HALLWAY_EVERY");
-        if (!every.empty()) {
-            char *end = nullptr;
-            const long n = std::strtol(every.c_str(), &end, 10);
-            if (*end != '\0' || n < 1 || n > 1000)
-                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_HALLWAY_EVERY must be 1..1000");
-            hallwayEvery = static_cast<int>(n);
-        }
         for (const auto &path : {mlp, prev}) {
             if (path.empty() || priorNets.count(path)) continue;
             auto net = std::make_unique<search::CombatValueNet>();
@@ -5855,6 +5889,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                            {"priorModel", a.priorModel.empty() ? nlohmann::json(nullptr) : nlohmann::json(a.priorModel)},
                            {"priorModelSha256", a.priorModel.empty() ? nlohmann::json(nullptr)
                                                                      : nlohmann::json(fileSha256(a.priorModel))}});
+    for (std::size_t i = 0; i < arms.size(); ++i)
+        if (const auto &p = arms[i].params)
+            armSpec[i]["searchParams"] = {{"exploration", p->exploration}, {"explorationChance", p->explorationChance},
+                {"chanceWideningC", p->chanceWideningC}, {"chanceWideningAlpha", p->chanceWideningAlpha},
+                {"endTurnWideningC", p->endTurnWideningC}, {"endTurnWideningAlpha", p->endTurnWideningAlpha}};
     int completeSources = 0, validSources = 0, nStates = 0, controlMatches = 0, controlMismatches = 0;
     int ctmSupported = 0, invalidArmRows = 0, candidateSupported = 0, capturedStates = 0, hallwaySkipped = 0;
     std::map<std::string, int> unsupportedReasons;
@@ -6069,6 +6108,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
                         RolloutRootTableScope rootTableScope(arm.rootTableModel.empty() ? nullptr
                                                              : priorNets.at(arm.rootTableModel).get());
+                        std::optional<SearchParamsScope> paramsScope;
+                        if (arm.params) paramsScope.emplace(*arm.params);
                         result = evaluate();
                     }
                     if (teacherA20 && !result.valid && ctmTeacherA20ValidEscape(result.quarantineReason,
