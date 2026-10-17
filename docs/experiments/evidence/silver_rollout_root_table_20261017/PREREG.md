@@ -1,6 +1,7 @@
 # Pre-registration: Silver rollout root table vs the ADR-0040 card table (A20, fight level)
 
-Status: draft, waiting for Philipp's authorization of the run size and an independent review. Thread "Distilled
+Status: size authorized by Philipp (2026-10-17 17:04Z: "4 workers, 128 seeds on 4 cores"); launch waits for an
+independent review PASS. Thread "Distilled
 playout card picker" (Philipp, 2026-10-17 16:36Z: "run the models once for each root / turn, value all cards and
 just play the highest value cards").
 
@@ -27,8 +28,8 @@ with R = 2 combat-RNG redraws per arm. Arms: `greedy2500`, `roottable2500`, `gre
 no tree prior.
 
 - Seeds: sources **111158100–111158227** (128), smokes 111158000–111158099.
-- Size: 128 sources on one 4-core container, 4 shards. Smoke-based estimate: about 2–3 hours wall. **Needs Philipp's
-  authorization.**
+- Size: 128 sources on 4 cloud workers (`worker.sh`, `BRIEF-worker.md`), 32 sources each on 4 cores (4 shards of
+  8). Binary sha256 in `BINARY_SHA256`. Uploads to `/mnt/project-files/silver-rollout-root-table/wWW.tar`.
 
 ## Outcome, analysis, decision rule
 
