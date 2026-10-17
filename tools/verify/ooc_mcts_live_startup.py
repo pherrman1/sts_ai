@@ -76,9 +76,10 @@ def main():
         ('zero simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '0'}, False, 'must be positive'),
         ('malformed simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '-1'}, False, 'positive integer'),
         ('malformed gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_GAP_STOP_20': 'true'}, False, 'STS_OOC_MCTS_GAP_STOP_20 invalid value'),
-        ('outcome merging off by default', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True, '"mergeOutcomes":false'),
-        ('outcome merging opt-in', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_MERGE_OUTCOMES': '1'},
-            True, '"mergeOutcomes":true'),
+        # ADR-0031 (§464): outcome merging is the live default; =0 restores the old tree.
+        ('outcome merging on by default', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True, '"mergeOutcomes":true'),
+        ('outcome merging opt-out', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_MERGE_OUTCOMES': '0'},
+            True, '"mergeOutcomes":false'),
         ('malformed outcome merging', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_MERGE_OUTCOMES': 'yes'}, False,
             'STS_OOC_MCTS_MERGE_OUTCOMES invalid value'),
         ('unwritable reuse trace', {'STS_OOC_MCTS': '1',

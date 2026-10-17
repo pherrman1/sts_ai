@@ -1,0 +1,183 @@
+{
+  "arm": "rank05",
+  "schema": "arm-c-value-finetune-result-v1",
+  "seconds": 3141.64777181705,
+  "selected": {
+    "loss": 0.6783996820449829,
+    "policyKl": 0.011872381223866529,
+    "policyTop1Agreement": 0.977408230304718,
+    "rank": 0.6052170991897583,
+    "seconds": 558.6719825970358,
+    "siblingTrain": {
+      "groups": 9597,
+      "model": {
+        "concordance": 0.5684480618130967,
+        "regret": 0.028757054409179576
+      },
+      "r0": {
+        "concordance": 0.5888265510802833,
+        "regret": 0.03057740890959807
+      },
+      "x2b": {
+        "concordance": 0.6315083899887673,
+        "regret": 0.022222409874940893
+      }
+    },
+    "siblingValidation": {
+      "groups": 2673,
+      "model": {
+        "concordance": 0.5798526989871698,
+        "regret": 0.028800393115763837
+      },
+      "r0": {
+        "concordance": 0.590362911417257,
+        "regret": 0.03133208709410699
+      },
+      "x2b": {
+        "concordance": 0.6327602252607021,
+        "regret": 0.02349556866750839
+      }
+    },
+    "siblingValidation494": {
+      "groups": 114,
+      "model": {
+        "concordance": 0.5572117031476193,
+        "regret": 0.041257321887180405
+      },
+      "r0": {
+        "concordance": 0.5543653088980147,
+        "regret": 0.03365774643039842
+      },
+      "x2b": {
+        "concordance": 0.6207613503995366,
+        "regret": 0.03368598280363952
+      }
+    },
+    "siblingValidationR2": {
+      "groups": 2559,
+      "model": {
+        "concordance": 0.5804187238831586,
+        "regret": 0.028488969896478422
+      },
+      "r0": {
+        "concordance": 0.5912628514802382,
+        "regret": 0.031273945610699704
+      },
+      "x2b": {
+        "concordance": 0.6330601971322312,
+        "regret": 0.02324080831410511
+      }
+    },
+    "step": 300,
+    "validation": {
+      "auc": 0.7129839182497114,
+      "bce": 0.41828974236794786,
+      "brier": 0.1291159927427789,
+      "meanProbability": 0.17742415121391814,
+      "outcomeRate": 0.16837894697119787
+    },
+    "validation497": {
+      "auc": 0.720456462023685,
+      "bce": 0.4346922953095924,
+      "brier": 0.13514384511252225,
+      "meanProbability": 0.18228767742589017,
+      "outcomeRate": 0.18508394469525957
+    },
+    "validationr2": {
+      "auc": 0.7016135329601694,
+      "bce": 0.39942189852976917,
+      "brier": 0.12218215886968982,
+      "meanProbability": 0.17182964081076033,
+      "outcomeRate": 0.14916320113601786
+    }
+  },
+  "selectedSha256": "60f92c9f45bdc64de32dc6597f08b811d00e9ca96ca19663eda4e7bb6b1c049c",
+  "selection": "minimum VALIDATION visitation BCE over steps 100..2000",
+  "step0": {
+    "policyKl": 3.240930062411317e-13,
+    "policyTop1Agreement": 1.0,
+    "siblingTrain": {
+      "groups": 9597,
+      "model": {
+        "concordance": 0.5237890699403116,
+        "regret": 0.037748639793890454
+      },
+      "r0": {
+        "concordance": 0.5888265510802833,
+        "regret": 0.03057740890959807
+      },
+      "x2b": {
+        "concordance": 0.6315083899887673,
+        "regret": 0.022222409874940893
+      }
+    },
+    "siblingValidation": {
+      "groups": 2673,
+      "model": {
+        "concordance": 0.5125237049945739,
+        "regret": 0.04071002053311636
+      },
+      "r0": {
+        "concordance": 0.590362911417257,
+        "regret": 0.03133208709410699
+      },
+      "x2b": {
+        "concordance": 0.6327602252607021,
+        "regret": 0.02349556866750839
+      }
+    },
+    "siblingValidation494": {
+      "groups": 114,
+      "model": {
+        "concordance": 0.5402769886260532,
+        "regret": 0.04345965203679645
+      },
+      "r0": {
+        "concordance": 0.5543653088980147,
+        "regret": 0.03365774643039842
+      },
+      "x2b": {
+        "concordance": 0.6207613503995366,
+        "regret": 0.03368598280363952
+      }
+    },
+    "siblingValidationR2": {
+      "groups": 2559,
+      "model": {
+        "concordance": 0.5118298729037869,
+        "regret": 0.04064127974552435
+      },
+      "r0": {
+        "concordance": 0.5912628514802382,
+        "regret": 0.031273945610699704
+      },
+      "x2b": {
+        "concordance": 0.6330601971322312,
+        "regret": 0.02324080831410511
+      }
+    },
+    "step": 0,
+    "validation": {
+      "auc": 0.4015066323025707,
+      "bce": 0.4538041538523418,
+      "brier": 0.1401706014934343,
+      "meanProbability": 0.17486141928429189,
+      "outcomeRate": 0.16837894697119787
+    },
+    "validation497": {
+      "auc": 0.4133766924767361,
+      "bce": 0.4797149677050796,
+      "brier": 0.15103107406738428,
+      "meanProbability": 0.17483968572201586,
+      "outcomeRate": 0.18508394469525957
+    },
+    "validationr2": {
+      "auc": 0.38667783004318385,
+      "bce": 0.42399896491420114,
+      "brier": 0.12767780837378195,
+      "meanProbability": 0.17488641938400384,
+      "outcomeRate": 0.14916320113601786
+    }
+  },
+  "testRead": false
+}
