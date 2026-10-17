@@ -19877,3 +19877,21 @@ few positive examples to train or qualify on.
 
 **Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_20261017/REPORT.md).
 **Knowledge impact:** positive-label scarcity is behavioral, not a producer defect; qualification remains open.
+
+## §506 — controlled Ritual coverage pilot v2: scaled sources (2026-10-17)
+
+**Question:** with 5× disjoint sources (40 TRAIN + 20 VALIDATION, 720 units)
+and everything else as in §505, is positive Ritual growth replicated per cell?
+Frozen source `5e282b6c`, same executable, eight workers.
+
+**Result:** `PILOT_COVERAGE_INCONCLUSIVE`, driven only by the Smoke cells.
+720/720 valid in 1,306 s; 2,906 targets, 175 (6.0%) positive. All eight
+natural/Brew cells meet every threshold in TRAIN and VALIDATION; the four
+Smoke cells reach at most 1 TRAIN positive source. No fit, TEST access or
+support change.
+
+**ELI5:** with enough games, the Dagger-kill examples now show up reliably,
+except when a Smoke Bomb is in the belt, where they almost never happen.
+
+**Evidence:** [protocol, receipts, review and result](evidence/ritual_coverage_pilot_v2_20261017/REPORT.md).
+**Knowledge impact:** non-Smoke Ritual coverage is now adequate for review; Smoke-belt Writhing remains uncovered.
