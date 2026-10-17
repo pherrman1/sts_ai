@@ -23,6 +23,7 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
 #include "sim/search/SilverWireJson.h"
@@ -1025,6 +1026,15 @@ namespace sts::search {
         "turn", "act", "room", "leader_same", "leader_streak", "rho", "lock",
         "gap_share_delta", "top_share_delta", "q_gap_delta", "entropy_delta",
     };
+
+    NativeSilverLeafSettings nativeSilverLeafSettings() {
+        const auto &rollout = SilverSearcher::envRolloutConfig();
+        const char *table = !rollout.cardTable ? "hand_written"
+            : rollout.cardTable == kSilverRolloutCardTableG6 ? "g6_builtin" : "file";
+        return {g_options.finalFightLeaf, g_options.noLossPotionCredit, g_options.relicHealLeaf,
+                g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
+                table, rollout.uniform, rollout.perLeaf};
+    }
 
     bool nativeSilverLearnedStopEnabled() {
         return g_options.learnedStop;

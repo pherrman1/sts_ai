@@ -184,7 +184,7 @@ void writeTrainingProvenance(const std::string &output, const char *mode,
         p << "\n    \"" << envs[i] << "\": ";
         if (value) p << '"' << jsonEscape(value) << '"'; else p << "null";
     }
-    p << "\n  }\n}\n";
+    p << "\n  },\n  \"silver_leaf\": " << effectiveSilverLeafSpecification().dump() << "\n}\n";
 }
 
 // ---------------------------------------------------------------------------
