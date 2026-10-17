@@ -15,6 +15,7 @@
 #include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/silver_synth_keys.h"
 #include "sim/search/PotionRewardPolicy.h"
 
 #include <regex>
@@ -5326,6 +5327,111 @@ struct FinalFightLeafScope {
     explicit FinalFightLeafScope(bool on) { search::g_nativeSilverFinalFightLeafOverride = on; }
     ~FinalFightLeafScope() { search::g_nativeSilverFinalFightLeafOverride.reset(); }
 };
+// rootregret armset (per-root Silver search-parameter pilot): during the base2500 replay, every
+// probed multi-action root is searched again from a fresh tree, independent of the replay's own
+// randomness: twice at STS_CTMSILVER_ROOT_REF_SIMS (default 20,000) with the base constants as the
+// reference, and kRootRegretReps times per candidate arm (shared planner seeds per replicate, so arms
+// are paired). Every search copies the replay searcher's settings (leaf weights, gen-6 root and tree
+// prior, rollouts) and changes only the constants and the budget. One JSONL row per probed root.
+constexpr int kRootRegretReps = 4;
+struct RootRegretArm { std::string name; int budget; int reps; search::NativeSilverSearchParams params; };
+std::vector<RootRegretArm> rootRegretArms() {
+    const search::NativeSilverSearchParams base;
+    auto endWide = base; endWide.endTurnWideningC = 2 * base.endTurnWideningC;
+    auto otherNarrow = base; otherNarrow.chanceWideningC = 2.0; otherNarrow.chanceWideningAlpha = 0.5;
+    auto c12 = base; c12.exploration = c12.explorationChance = 12.5;
+    auto c50 = base; c50.exploration = c50.explorationChance = 50.0;
+    return {{"base2500", 2500, kRootRegretReps, base}, {"endwide2500", 2500, kRootRegretReps, endWide},
+            {"othernarrow2500", 2500, kRootRegretReps, otherNarrow}, {"c12_2500", 2500, kRootRegretReps, c12},
+            {"c50_2500", 2500, kRootRegretReps, c50}, {"base10000", 10000, 2, base}};
+}
+struct RootRegretProbe {
+    std::ostream *out = nullptr;
+    std::string stateId;
+    std::uint64_t sourceSeed = 0;
+    int fightIdx = 0, act = 0, floor = 0, every = 1, refSims = 20000;
+    std::string roomClass, encounter;
+    long long probed = 0, observed = 0;
+    double cpuSeconds = 0;
+
+    static nlohmann::json edgesJson(const search::SilverSearcher &s) {
+        nlohmann::json edges = nlohmann::json::array();
+        for (const auto &e : s.rootNode().edges) {
+            const bool hasQ = e.node && e.node->simulationCount > 0;
+            edges.push_back({e.action.bits, e.visitCount,
+                             hasQ ? nlohmann::json(e.node->evaluationSum / e.node->simulationCount) : nlohmann::json(nullptr)});
+        }
+        return edges;
+    }
+    void observe(const search::NativeSilverRootView &view) {
+        const auto &src = view.searcher;
+        if (view.skipped || src.rootNode().edges.size() < 2) return;
+        ++observed;
+        const std::uint64_t rootKey = ctmSilverReplicateSeed(sourceSeed, fightIdx, view.decision, 0x5007E6);
+        if (every > 1 && rootKey % static_cast<std::uint64_t>(every) != 0) return;
+        const auto t0 = vwinThreadCpuNanos();
+        const auto &state = src.rootSearchState();
+        const auto run = [&](const search::NativeSilverSearchParams &p, int budget, std::uint64_t planner) {
+            BattleContext root = state;
+            root.seed = planner;   // SilverSearcher seeds its rollouts from root.seed
+            search::seedSearchRng(root, search::nativeSilverBattleSeed(root));
+            auto s = std::make_unique<search::SilverSearcher>(root, src.searchContext());
+            s->evalWeights = src.evalWeights;
+            s->explorationParameter = p.exploration;
+            s->explorationParameterChance = p.explorationChance;
+            s->chanceWideningC = p.chanceWideningC;
+            s->chanceWideningAlpha = p.chanceWideningAlpha;
+            s->endTurnWideningC = p.endTurnWideningC;
+            s->endTurnWideningAlpha = p.endTurnWideningAlpha;
+            s->rolloutConfig = src.rolloutConfig;
+            if (src.rolloutConfig.cardTable && src.rolloutConfig.cardTable == src.rootCardTable.data()) {
+                s->rootCardTable = src.rootCardTable;
+                s->rolloutConfig.cardTable = s->rootCardTable.data();
+            }
+            if (!src.rootPrior.empty()) {
+                s->rootPrior = search::nativeSilverRootPrior(*s);
+                s->rootPriorWeight = s->rootPrior.empty() ? 0 : src.rootPriorWeight;
+            }
+            s->rootPriorBonus = src.rootPriorBonus;
+            s->nodePrior = src.nodePrior;
+            s->treePriorMinVisits = src.treePriorMinVisits;
+            if (s->prepareRootActions() != src.rootNode().edges.size())
+                throw std::runtime_error("rootregret: probe root has a different action count");
+            s->search(budget);
+            return s;
+        };
+        const search::NativeSilverSearchParams base;
+        nlohmann::json refs = nlohmann::json::array();
+        for (int r = 0; r < 2; ++r) refs.push_back(edgesJson(*run(base, refSims, silver_synth::key(rootKey, 0xEEF, r))));
+        nlohmann::json arms = nlohmann::json::object();
+        for (const auto &arm : rootRegretArms()) {
+            nlohmann::json picks = nlohmann::json::array();
+            for (int k = 0; k < arm.reps; ++k) {
+                const auto s = run(arm.params, arm.budget, silver_synth::key(rootKey, 0xA12, k));
+                const auto best = s->bestAction();
+                int idx = -1, visits = 0;
+                const auto &edges = s->rootNode().edges;
+                for (int e = 0; e < static_cast<int>(edges.size()); ++e)
+                    if (edges[e].action.bits == best.bits) { idx = e; visits = edges[e].visitCount; }
+                picks.push_back({idx, best.bits, visits});
+            }
+            arms[arm.name] = picks;
+        }
+        const double cpu = double(vwinThreadCpuNanos() - t0) / 1e9;
+        cpuSeconds += cpu;
+        *out << nlohmann::json{
+            {"stateId", stateId}, {"sourceSeed", sourceSeed}, {"fightIdx", fightIdx}, {"decision", view.decision},
+            {"act", act}, {"floor", floor}, {"roomClass", roomClass}, {"encounter", encounter},
+            {"turn", view.live.turn}, {"hp", view.live.player.curHp}, {"maxHp", view.live.player.maxHp},
+            {"block", view.live.player.block}, {"energy", view.live.player.energy},
+            {"handSize", view.live.cards.cardsInHand}, {"monstersAlive", view.live.monsters.monstersAlive},
+            {"inputState", static_cast<int>(view.live.inputState)},
+            {"nEdges", src.rootNode().edges.size()}, {"inheritedVisits", view.inheritedVisits},
+            {"replayChosen", view.chosen.bits}, {"refSims", refSims}, {"ref", refs}, {"arms", arms},
+            {"cpuSeconds", cpu}}.dump() << '\n';
+        ++probed;
+    }
+};
 // A20 uses explicit scoped settings; never inherit a preceding research arm's
 // budget, planner seed or tree prior, and restore every override on exceptions.
 struct CtmTeacherA20Scope {
@@ -5563,10 +5669,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable and widen518 armsets
     // (§476/§479/§519/§518) and teacher_a20; every other armset is A0.
     const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479" || armSet == "roottable"
-            || armSet == "widen518";
+            || armSet == "widen518" || armSet == "rootregret";
     if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
-                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable or widen518)");
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable, widen518 or rootregret)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5629,9 +5735,9 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     // only about one NORMAL fight in n (hash of seed and fight index).
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
             && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479"
-            && armSet != "roottable" && armSet != "widen518" && !teacherA20)
+            && armSet != "roottable" && armSet != "widen518" && armSet != "rootregret" && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
-                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable, widen518 "
+                                 "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable, widen518, rootregret "
                                  "or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
@@ -5648,7 +5754,35 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             hallwayEvery = static_cast<int>(n);
         }
     }
-    if (armSet == "widen518") {
+    int rootEvery = 1, rootRefSims = 20000;
+    if (armSet == "rootregret") {
+        // Per-root search-parameter pilot: the control plus one base2500 replay (gen-6 MLP tree prior, K = 8,
+        // as widen518) whose roots are probed by RootRegretProbe. STS_CTMSILVER_ROOT_EVERY = n probes about
+        // one multi-action root in n (hash of seed, fight and decision); STS_CTMSILVER_ROOT_REF_SIMS sets the
+        // reference budget.
+        const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+        const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR");
+        if (mlp.empty()) throw std::runtime_error("ctm vs silver: rootregret requires STS_CTMSILVER_MLP_PRIOR");
+        auto net = std::make_unique<search::CombatValueNet>();
+        if (!net->load(mlp) || !net->isPolicyMlp)
+            throw std::runtime_error("ctm vs silver: cannot load a combat_policy_mlp model from " + mlp);
+        priorNets[mlp] = std::move(net);
+        const auto parse = [&](const char *name, int lo, int hi, int &value) {
+            const std::string v = env(name);
+            if (v.empty()) return;
+            char *end = nullptr;
+            const long n = std::strtol(v.c_str(), &end, 10);
+            if (*end != '\0' || n < lo || n > hi)
+                throw std::runtime_error(std::string("ctm vs silver: ") + name + " must be " + std::to_string(lo)
+                                         + ".." + std::to_string(hi));
+            value = static_cast<int>(n);
+        };
+        parse("STS_CTMSILVER_ROOT_EVERY", 1, 1000, rootEvery);
+        parse("STS_CTMSILVER_ROOT_REF_SIMS", 1000, 200000, rootRefSims);
+        if (replicates != 1) throw std::runtime_error("ctm vs silver: rootregret requires REPLICATES=1");
+        arms = {{"control", sims, false, false, 1}, {"base2500", 2500, true, true, 1, 8, mlp}};
+        arms.back().params = search::NativeSilverSearchParams{};
+    } else if (armSet == "widen518") {
         // §518: Silver at 2,500 simulations with the gen-6 MLP tree prior (STS_CTMSILVER_MLP_PRIOR, K = 8,
         // as the §476 mlp arms) on the same redraws, changing only the chance-node widening constants per
         // category (end of turn vs every other chance node). spire = the constants of tfriedel/spire-mentor's
@@ -5851,6 +5985,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         throw std::runtime_error("ctm vs silver: refusing to overwrite existing progress " + progressPath);
     std::ofstream states(statesPath), armsOut(armsPath), samples(samplesPath);
     if (!states || !armsOut || !samples) throw std::runtime_error("ctm vs silver: cannot open outputs");
+    const std::string rootsPath = outPrefix + ".roots.jsonl";
+    std::ofstream rootsOut;
+    RootRegretProbe probe;
+    if (armSet == "rootregret") {
+        if (std::filesystem::exists(rootsPath))
+            throw std::runtime_error("ctm vs silver: refusing to overwrite existing output " + rootsPath);
+        rootsOut.open(rootsPath);
+        if (!rootsOut) throw std::runtime_error("ctm vs silver: cannot open " + rootsPath);
+        probe.out = &rootsOut;
+        probe.every = rootEvery;
+        probe.refSims = rootRefSims;
+    }
     std::ofstream progress;
     if (teacherA20) {
         progress.open(progressPath);
@@ -6110,6 +6256,17 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                                                              : priorNets.at(arm.rootTableModel).get());
                         std::optional<SearchParamsScope> paramsScope;
                         if (arm.params) paramsScope.emplace(*arm.params);
+                        struct ObserverScope {
+                            ~ObserverScope() { search::g_nativeSilverRootObserver = nullptr; }
+                        } observerScope;
+                        if (probe.out && arm.name == "base2500") {
+                            probe.stateId = stateId; probe.sourceSeed = entry.pre->seed;
+                            probe.fightIdx = entry.fightIdx; probe.act = entry.act; probe.floor = entry.floor;
+                            probe.roomClass = entry.roomClass; probe.encounter = entry.encounter;
+                            search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) {
+                                probe.observe(view);
+                            };
+                        }
                         result = evaluate();
                     }
                     if (teacherA20 && !result.valid && ctmTeacherA20ValidEscape(result.quarantineReason,
@@ -6166,8 +6323,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         }
         checkpoint({{"event", "source_complete"}, {"selectedStates", selected.size()}});
         states.flush(); armsOut.flush(); samples.flush();
+        if (probe.out) rootsOut.flush();
     }
     states.close(); armsOut.close(); samples.close();
+    if (probe.out) rootsOut.close();
     if (teacherA20) progress.close();
     nlohmann::json manifest = {
         {"schemaVersion", "ctm_vs_silver_forecast_v1"},
@@ -6197,6 +6356,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         {"outputs", {{"statesSha256", fileSha256(statesPath)}, {"armsSha256", fileSha256(armsPath)},
                      {"samplesSha256", fileSha256(samplesPath)}}}
     };
+    if (probe.out) {
+        nlohmann::json probeArms = nlohmann::json::array();
+        for (const auto &a : rootRegretArms())
+            probeArms.push_back({{"name", a.name}, {"budget", a.budget}, {"replicates", a.reps},
+                {"exploration", a.params.exploration}, {"explorationChance", a.params.explorationChance},
+                {"chanceWideningC", a.params.chanceWideningC}, {"chanceWideningAlpha", a.params.chanceWideningAlpha},
+                {"endTurnWideningC", a.params.endTurnWideningC}, {"endTurnWideningAlpha", a.params.endTurnWideningAlpha}});
+        manifest["rootRegret"] = {{"every", rootEvery}, {"refSims", rootRefSims}, {"refReplicates", 2},
+            {"arms", probeArms}, {"observedRoots", probe.observed}, {"probedRoots", probe.probed},
+            {"probeCpuSeconds", probe.cpuSeconds}, {"rootsSha256", fileSha256(rootsPath)},
+            {"rootRow", "ref: 2 x [[bits, visits, q]] per root edge; arms: name -> [[edgeIndex, bits, visits]] per replicate"}};
+    }
     if (teacherA20) {
         manifest["schemaVersion"] = teacherLarge ? "ctm_vs_silver_teacher_a20_large_v1" : "ctm_vs_silver_teacher_a20_v2";
         manifest["producerExecutablePath"] = std::filesystem::absolute(g_mainBinaryPath).string();
