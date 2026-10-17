@@ -303,9 +303,12 @@ replaces the CTM with `SilverCombatTransitionSampler`, which plays each imagined
 combat with native Silver (`STS_OOC_MCTS_SILVER_SIMS` per root, root prior on
 via `STS_SILVER_ROOT_PRIOR_SCOPE=override`, live combats plain) on a redraw of
 `gc.seed` and the six carried combat RNG streams; a Silver failure returns
-UNSUPPORTED and aborts that search to the V4 fallback. Until 2026-10-17 the
-resolver kept `gc.seed`, from which `BattleContext::init` re-derives four
-streams, so §411's Silver arms replayed the real hidden future. Opt-in
+UNSUPPORTED and aborts that search to the V4 fallback. The `gc.seed` redraw
+(added 2026-10-17) is a safeguard: live OOC MCTS always samples non-combat
+futures, and `sampleNoncombatFuture` already redraws `gc.seed` before every
+imagined combat, so §411's Silver arms did not see the real hidden future. The
+extra draw changes the resolver's RNG sequence, so reproducing §411 needs its
+binary. Opt-in
 (`STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=N`): `SilverFallbackCombatTransitionSampler`
 wraps the CTM stack and plays only the combats the CTM refuses with plain Silver
 at N simulations, on the same redraw, instead of aborting the search to V4. In a

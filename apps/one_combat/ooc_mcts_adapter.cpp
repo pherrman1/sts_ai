@@ -2217,9 +2217,10 @@ std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
 // or off. The hidden combat future is redrawn from the planner RNG: gc.seed,
 // from which BattleContext::init re-derives four streams (seed + floor), and
 // the six carried streams (counters kept), as redrawNativeFuture does for the
-// selective audit. Before 2026-10-17 the research resolver redrew only the
-// carried streams, so its combats replayed the real hidden future (§411's
-// Silver arms; same defect as the §408 mechanism correction). The Silver
+// selective audit. Live OOC MCTS already redraws gc.seed in
+// sampleNoncombatFuture before every combat (sampleNoncombat is always on), so
+// the seed redraw here is a safeguard for callers without it; it does change
+// the resolver's RNG draws, so reproducing §411 needs its binary. The Silver
 // planner seed comes from the same RNG. A Silver stall or failure returns
 // UNSUPPORTED.
 CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std::mt19937_64 &rng,
@@ -2847,7 +2848,7 @@ void configureLiveOocMcts() {
         std::cout << "[ooc-mcts-silver-resolver] silver_sims=" << liveSilverResolverSims
             << " root_prior=" << std::getenv("STS_SILVER_ROOT_PRIOR")
             << " root_prior_weight=" << std::getenv("STS_SILVER_ROOT_PRIOR_WEIGHT")
-            << " redraw=six_combat_streams live_root_prior=off\n";
+            << " redraw=seed_and_six_combat_streams live_root_prior=off\n";
     } else if(!brewFallbackArtifact.empty()) {
         auto hybrid = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
             artifact,brewFallbackArtifact,activeLizardEnabled);
