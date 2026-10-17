@@ -1085,7 +1085,10 @@ holes after Slime Boss splits or a summon replaces an occupant; array position
 is not a native slot. Once a dead Slime Boss has been observed replaced by
 its large children, the producer remembers that physical parent's retirement
 through subsequent splits and deaths; it cannot reappear with slot -1 after
-the large children leave the list. Missing/dead targets, duplicate slots and contradictory
+the large children leave the list. Other split/summon corpses are omitted only
+when the public birth tracker proves that a known slot belongs to another
+physical occupant. Current corpses, half-dead and unbound living objects are
+not discarded by this rule. Missing/dead targets, duplicate slots and contradictory
 slot/idx fields are rejected for both card and potion actions.
 
 In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.

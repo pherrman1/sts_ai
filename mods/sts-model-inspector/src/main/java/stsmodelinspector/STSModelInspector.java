@@ -3278,6 +3278,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if (monster == null) continue;
                 if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
                 if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
+                // SpawnMonsterAction adds the new object without removing the
+                // old corpse. Its native slot now belongs to the verified new
+                // occupant; never serialize the retired corpse at slot -1.
+                if (RunicDomeCapture.retiredDeadOccupant(monster)) continue;
                 if (!first) out.append(',');
                 first = false;
                 int slot = emittedSlots.containsKey(monster) ? emittedSlots.get(monster) : -1;
