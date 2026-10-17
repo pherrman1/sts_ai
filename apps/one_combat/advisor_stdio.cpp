@@ -1006,9 +1006,11 @@ int main() {
             if (hybrid) {
                 const std::string fallback = fallbackOverride ? fallbackOverride :
                     (std::filesystem::path(path).parent_path() /
-                        (primary->runtime().productionCandidate()
-                            ? "combat_transition_near_full_escape_pathb_r2.native"
-                            : "combat_transition_near_full_except_smoke_v2.native")).string();
+                        (!primary->runtime().productionCandidate()
+                            ? "combat_transition_near_full_except_smoke_v2.native"
+                            : primary->runtime().identity().at("candidateId") == "pathb-r2-ritual-refit"
+                            ? "combat_transition_near_full_escape_pathb_r2_ritual_refit.native"
+                            : "combat_transition_near_full_escape_pathb_r2.native")).string();
                 ctm = std::make_shared<one_combat::EntropicBrewFallbackCombatTransitionSampler>(
                     path, fallback, activeLizard);
                 ctmStack["brewFallback"] = modelIdentity(fallback);

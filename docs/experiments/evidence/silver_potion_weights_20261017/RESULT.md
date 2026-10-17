@@ -14,7 +14,9 @@ Pre-registration: [PREREG.md](PREREG.md). Analysis: [analysis.json](analysis.jso
 - Workers 1 and 2 first launched with a zero-padded W and uploaded empty 0-unit tars; their real runs overwrote them
   before verification. `worker.sh` should refuse a padded W (harness note, no effect on data).
 - OOC decision sources from the traces: student C (`heart1`) took 98.9% of OOC decisions in every arm (base 13,347,
-  level 13,078, type 12,802), the fixed Match and Keep rule the rest (140–150); V4 took none.
+  level 13,078, type 12,802); the rest (140–150 per arm, 1.1%) were Match and Keep, whose card choices come from the
+  V4 chain's one-ply card-reward policy (`run_driver.cpp`, `oocOnePlyCardRewardPolicy`; open PR #616 would move them
+  to student C).
 
 ## Result
 
@@ -34,8 +36,9 @@ All three contrasts **NOT_SHOWN** (paired seed bootstrap, 10,000 resamples):
 | level − base | −0.80 [−2.96, +1.36] | NOT_SHOWN | −4.7 pp (10 vs 16) | 0.33 | 98 |
 | type − level | −0.57 [−2.55, +1.37] | NOT_SHOWN | +3.9 pp (15 vs 10) | 0.42 | 91 |
 
-Descriptive (from the traces, not pre-registered): potions held at battle start 1.05 / 0.92 / 0.93 and at act-boss
-battles (floors 16, 33, 50) 1.27 / 1.15 / 1.14 (base / level / type); potions used per battle 0.40 / 0.41 / 0.41.
+Descriptive (from the traces, not pre-registered): potions held at battle start 1.05 / 0.92 / 0.93 and at the first
+boss battle of each act (battles starting on floors 16, 33, 50; a second act-3 boss battle is not counted)
+1.27 / 1.15 / 1.14 (base / level / type); potions used per battle 0.40 / 0.41 / 0.41.
 
 ## Interpretation
 
