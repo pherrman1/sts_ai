@@ -5984,7 +5984,11 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         RootPriorScope priorScope(arm.prior);
                         TreePriorScope treeScope(arm.treeMinVisits);
                         PriorNetScope netScope(priorNet);
-                        FinalFightLeafScope leafScope(arm.finalFightLeaf);
+                        // Control replays the source fight, which ran with the process default
+                        // final-fight leaf (ADR-0035: on); forcing it off desynchronized every
+                        // run-ending fight whose decisions the leaf changes.
+                        std::optional<FinalFightLeafScope> leafScope;
+                        if (arm.name != "control") leafScope.emplace(arm.finalFightLeaf);
                         std::optional<RolloutScope> rolloutScope;
                         if (armSet == "rollout479" && arm.name != "control") rolloutScope.emplace(arm.rollout);
                         result = evaluate();
