@@ -322,7 +322,7 @@ Heart death where its teacher dies 0.95, audit
 `/mnt/project-files/audit-2026-10-17/ctm-a20.md`). It combines with
 `STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS`; set alone, other refused combats still
 abort to V4. Both have the same exclusions (`STS_OOC_MCTS_COMBAT_RESOLVER`,
-`STS_OOC_MCTS_LEAF_CAPTURE`) and require `STS_OOC_MCTS=1`. Per run,
+`STS_OOC_MCTS_LEAF_CAPTURE`) and require `STS_OOC_MCTS=1`; `=0` means off, as unset. Per run,
 `[ooc-silver-fallback]` counts these combats as `act4_silver`. The opt-in
 `boss` leaf value still prices the Heart through the CTM expectation. CPU cost
 and playing strength are unmeasured. Startup also requires the effective Silver reuse cap to be

@@ -2756,10 +2756,15 @@ void configureLiveOocMcts() {
         if (one_combat::heart1::enabled()) (void)one_combat::heart1::net();
         liveSibling = std::move(sibling);
     }
-    const char *unsupportedSilver = std::getenv("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
+    // =0 means off, as if unset.
+    const auto silverSimsEnv = [](const char *name) -> const char * {
+        const char *raw = std::getenv(name);
+        return raw && std::string(raw) == "0" ? nullptr : raw;
+    };
+    const char *unsupportedSilver = silverSimsEnv("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS");
     if (unsupportedSilver && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS requires STS_OOC_MCTS=1");
-    const char *act4Silver = std::getenv("STS_OOC_MCTS_ACT4_SILVER_SIMS");
+    const char *act4Silver = silverSimsEnv("STS_OOC_MCTS_ACT4_SILVER_SIMS");
     if (act4Silver && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_ACT4_SILVER_SIMS requires STS_OOC_MCTS=1");
     if (!liveEnabled) return;
