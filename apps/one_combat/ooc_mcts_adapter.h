@@ -77,6 +77,12 @@ struct OocAdapterOptions {
     // instead of an equal share of its source's prior. Student C's selector head is untrained
     // (audit-2026-10-17 heart1-distill finding 1): use with heart1 or a student distilled on selects.
     bool targetPrior = false;
+    // Research option (default off, STS_OOC_MCTS_POTION_KEEP_PRIOR=1): on reward screens a "discard
+    // potion" candidate gets logit = leave + (keep value of the best reward potion it makes room for
+    // - keep value of the discarded potion) / 100 (ADR-0039 keep values, HP-equivalent per fight).
+    // Student C has no discard action (heart1 lacks one), so such nodes are otherwise uniform or
+    // put discards at heart1's lowest logit. Stopgap until AZ-loop policy targets learn discards.
+    bool potionKeepPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
     bool bossLeaf = false;
