@@ -20420,7 +20420,7 @@ test. No default change; whether to continue the Heart leaf line is Philipp's ca
 Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
 **Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
 
-## §TBD — Per-fight and per-root Silver search parameters at A20: roots differ, cheap features cannot tell which (2026-10-17)
+## §526 — Per-fight and per-root Silver search parameters at A20: roots differ, cheap features cannot tell which (2026-10-17)
 
 **Question (Philipp, 2026-10-17 21:57Z):** "investigate a learned model for parameters per fight / per root. i know
 that early combats and late combats behave very differently, so we should maybe adapt to that." He then picked the

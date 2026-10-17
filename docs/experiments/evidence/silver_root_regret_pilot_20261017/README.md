@@ -1,4 +1,4 @@
-# Per-root Silver search-parameter pilot (ledger-06 §TBD, 2026-10-17)
+# Per-root Silver search-parameter pilot (ledger-06 §526, 2026-10-17)
 
 - `run_pilot.sh OUT TOTAL BASE EVERY`: 4 shards of `ctmsilvergen` with `STS_CTMSILVER_ARMSET=rootregret` at A20 (§518 environment).
   Run: `run_pilot.sh ~/rr-smoke 4 111193550 6` and `run_pilot.sh ~/rr-pilot 48 111193554 2` at code `80530a06`.
