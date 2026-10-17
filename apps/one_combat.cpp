@@ -3026,7 +3026,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""},
-        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""},
+        {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""},
+        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3637,6 +3638,23 @@ int main(int argc, char **argv) {
                   << " -> " << out << '\n';
         strategicMargGen(nSeeds, outerSims, H, maxPerRun, out, seedOff);
 
+    } else if (mode == "potionpriceprobe") {
+        // Paired-continuation resource prices (research only):
+        // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA]
+        if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8]\n"; return 2; }
+        const int nSeeds = std::stoi(argv[2]);
+        const std::uint64_t seedStart = std::stoull(argv[3]);
+        const int sims = std::stoi(argv[4]);
+        const int asc = std::stoi(argv[5]);
+        const std::string out = argv[6];
+        const int statesPerRun = argc > 7 ? std::stoi(argv[7]) : 4;
+        const int fightsAhead = argc > 8 ? std::stoi(argv[8]) : 3;
+        const int hpDelta = argc > 9 ? std::stoi(argv[9]) : 8;
+        std::cout << "potionpriceprobe seeds " << seedStart << ".." << seedStart + nSeeds - 1
+                  << " sims=" << sims << " asc=" << asc << " statesPerRun=" << statesPerRun
+                  << " fightsAhead=" << fightsAhead << " hpDelta=" << hpDelta << " -> " << out << '\n';
+        potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta);
+
     } else if (mode == "oocfactoreval") {
         // nDecisions is explicit for tools/seed_guard.sh and checked against
         // the manifest by the offline workflow.
@@ -3885,6 +3903,8 @@ int main(int argc, char **argv) {
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
 
+    } else if (mode == "heart1logitscheck") {
+        return one_combat::heart1::logitsCheckCommand(argc, argv);
     } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits

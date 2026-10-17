@@ -60,11 +60,15 @@ nlohmann::json effectiveSilverLeafSpecification() {
         const char *path = std::getenv("STS_SILVER_ROLLOUT_CARD_TABLE");
         table = {{"path", path ? path : ""}, {"sha256", path ? fileSha256(path) : ""}};
     }
-    return {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
+    nlohmann::json spec = {{"final_fight_leaf", leaf.finalFightLeaf}, {"no_loss_potion_credit", leaf.noLossPotionCredit},
             {"relic_heal_leaf", leaf.relicHealLeaf}, {"a20_boss_heal_fix", leaf.a20BossHealFix},
             {"escape_penalty", {leaf.escapePenalty, leaf.eliteEscapePenalty}},
             {"rollout_card_table", table}, {"rollout_uniform", leaf.rolloutUniform},
             {"rollouts_per_leaf", leaf.rolloutsPerLeaf}, {"rollout_zero_cost_cap", leaf.rolloutZeroCostCap}};
+    // Research option; recorded only when on so earlier specifications stay comparable.
+    if (const char *path = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE"); path && *path)
+        spec["rollout_root_table"] = {{"path", path}, {"sha256", fileSha256(path)}};
+    return spec;
 }
 
 nlohmann::json effectiveOocPolicySpecification() {
@@ -172,6 +176,8 @@ nlohmann::json effectiveOocPolicySpecification() {
         policy["flags"]["native_ooc_card_win_rank"] = true;
     if (sts::search::potionRewardSwapEnabled())
         policy["flags"]["potion_reward_swap"] = true;
+    if (sts::Shop::rulesFixEnabled())
+        policy["flags"]["shop_rules_fix"] = true;
     if (one_combat::heart1::enabled()) {
         const char *weights = std::getenv("STS_OOC_HEART1");
         policy["flags"]["ooc_heart1"] = true;

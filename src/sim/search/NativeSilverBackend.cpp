@@ -1036,7 +1036,8 @@ namespace sts::search {
         keys.clear();
         targets.clear();
         std::bitset<kEntries> seen;
-        auto add = [&](const CardInstance &c) {
+        auto add = [&](CardInstance c, bool inHand) {
+            if (!inHand) c.costForTurn = c.cost;   // a pile copy's turn cost is stale
             const int id = static_cast<int>(c.getId());
             if (id < 0 || id >= 372) return;
             const int key = id * 2 + (c.isUpgraded() ? 1 : 0);
@@ -1049,9 +1050,9 @@ namespace sts::search {
             keys.push_back(key);
             targets.push_back(target);
         };
-        for (int i = 0; i < state.cards.cardsInHand; ++i) add(state.cards.hand[i]);
-        for (const auto &c : state.cards.drawPile) add(c);
-        for (const auto &c : state.cards.discardPile) add(c);
+        for (int i = 0; i < state.cards.cardsInHand; ++i) add(state.cards.hand[i], true);
+        for (const auto &c : state.cards.drawPile) add(c, false);
+        for (const auto &c : state.cards.discardPile) add(c, false);
         const int n = static_cast<int>(keys.size());
         if (n == 0) return;
         scores.resize(n);
