@@ -751,6 +751,8 @@ add_test(NAME ctm_support_census_check_selftest COMMAND python3 -m unittest tool
 set_tests_properties(ctm_support_census_check_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_qualify_fixtures_selftest COMMAND python3 -m unittest tools.test_ctm_qualify_fixtures)
 set_tests_properties(ctm_qualify_fixtures_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_input_encoding_selftest COMMAND python3 -m unittest tools.test_ctm_input_encoding)
+set_tests_properties(ctm_input_encoding_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_hp_domain_selftest COMMAND python3 -m unittest tools.test_ctm_hp_domain)
 set_tests_properties(ctm_hp_domain_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_escape_selftest COMMAND python3 -m unittest tools.test_ctm_escape)
@@ -957,6 +959,11 @@ add_test(NAME ctm_research_candidate_loader COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_ctm_research_candidate.py
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(ctm_research_candidate_loader PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME ctm_input_encoding COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_ctm_input_encoding.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(ctm_input_encoding PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 add_test(NAME ctm_escape_runtime COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/check_ctm_escape_runtime.py

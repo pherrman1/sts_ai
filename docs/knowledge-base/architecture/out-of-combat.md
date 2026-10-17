@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -328,6 +328,32 @@ fields; pools still sum in token order, so outputs are bit-identical (§439;
 its `hp` encoder byte for byte (`sharedHpEncoder()`, true for pathb-r2), the
 unprepared near-full sampler takes maxHP from the hp encoding, as the
 prepared path does.
+
+**CTM input encodings.** Every shipped artifact uses the original encoding
+(`ctm_input_v1`, no `inputEncoding` in the header): act and floor are
+standardized scalars, card misc is `clip(misc, -20, 20)/20`, and
+`potionKeepValue` is a global input. Three consequences: Act 4 is an
+extrapolation of the act/floor slope even after Act-4 rows are trained on; a
+Ritual Dagger (misc 15, +3/+5 per kill) looks the same from its second kill
+on; and the forecast moves whenever the potion-keep model changes. An artifact
+whose header declares `inputEncoding: "ctm_input_v2"` is encoded instead with
+act as a fifth global category (`act-1`, acts 1..4; any other act throws) beside
+the raw run floor (Act 4's floors 52..55 lie just past Act 3's 35..51; Philipp
+chose raw floor over floor-within-act, which would map the Act-4 elite onto an
+early-act floor), misc as `sign(m)*log(1+|m|)/log(101)` with
+`|m| <= 10000`, and no `potionKeepValue` input. It must also declare the v2
+`continuousFields` (8) and `globalCategoryCounts` `[4,64,10,10,4]`, and its
+tensor graph has 8 scalar statistics, `global_category.4` (4x8) and
+`global_mlp.0` / `global_proj` with 48 inputs. Any other `inputEncoding` value,
+including an explicit `ctm_input_v1`, is rejected. The predictor input record
+is unchanged, so captured rows serve both encodings. `tools/ctm_input_encoding.py`
+is the Python reference; the Phase-1 `DeepSetsModel`/`AttentionModel`, the
+surrogate `DeepSetsEncoder` and the ablation `AttentionEncoder` take
+`encoding=` (default v1, unchanged modules) and need statistics from
+`ctm_input_encoding.scalar_stats`. The retrain stage CLIs and exporters do not
+pass an encoding yet, so no v2 artifact exists. CTests `ctm_input_encoding`
+(native v2 DeepSets output against a numpy reference, encoding contract and
+rejections) and `ctm_input_encoding_selftest`.
 
 A retrained stack loads only as a research candidate. When
 `STS_CTM_RESEARCH_CANDIDATE_MANIFEST` and its `_SHA256` are set, an artifact

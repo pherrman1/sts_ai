@@ -48,11 +48,14 @@ EXPECTED_SUPPORTED_ROWS = _pins.value("combat_transition_attention_ablation.EXPE
 class AttentionEncoder:
     """The corrected PR #161 Phase-1 attention representation."""
 
-    def __init__(self, torch, scalar_mean: np.ndarray, scalar_std: np.ndarray):
+    def __init__(self, torch, scalar_mean: np.ndarray, scalar_std: np.ndarray,
+                 encoding: str = base.input_encoding.V1):
         import torch.nn as nn
 
         self.torch = torch
         self.nn = nn
+        self.encoding = encoding
+        categories = base.encoding_widths(encoding, scalar_mean)
         self.scalar_mean = torch.tensor(scalar_mean, dtype=torch.float32)
         self.scalar_inv = torch.tensor(1.0 / np.maximum(scalar_std, 1e-6), dtype=torch.float32)
 
@@ -68,12 +71,9 @@ class AttentionEncoder:
                 self.potion_id = nn.Embedding(base.POTION_COUNT, d)
                 self.type_embedding = nn.Embedding(4, d)
                 self.global_category = nn.ModuleList(
-                    nn.Embedding(base.GLOBAL_CATEGORY_COUNTS[field], 8)
-                    for field in ("characterClass", "encounter", "roomClass", "lastRoom")
+                    nn.Embedding(count, 8) for count in categories
                 )
-                self.global_proj = nn.Linear(
-                    len(base.CONTINUOUS_GLOBAL_FIELDS) + 8 * 4, d
-                )
+                self.global_proj = nn.Linear(len(scalar_mean) + 8 * len(categories), d)
                 self.card_fields = nn.Linear(3, d)
                 self.relic_fields = nn.Linear(2, d)
                 self.potion_slot = nn.Embedding(5, d)
@@ -91,6 +91,7 @@ class AttentionEncoder:
             def forward(self, g, gc, c, r, p, cmask, rmask):
                 t = self.outer.torch
                 d = 64
+                g, gc = base.input_encoding.globals_features(g, gc, self.outer.encoding)
                 gs = (g - self.scalar_mean.to(g.device)) * self.scalar_inv.to(g.device)
                 global_categories = t.cat(
                     [embedding(gc[:, index].long())
@@ -103,7 +104,9 @@ class AttentionEncoder:
                 card_fields = t.cat(
                     (
                         c[:, :, 1:2].float(),
-                        c[:, :, 2:3].float().clamp(-20, 20) / 20,
+                        base.input_encoding.misc_feature(
+                            c[:, :, 2:3].float(), self.outer.encoding
+                        ),
                         c[:, :, 3:4].float() / 3,
                     ),
                     -1,

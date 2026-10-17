@@ -45,6 +45,8 @@ class CombatTransitionRuntime {
     // Every max_hp.encoder.* tensor equals its hp.encoder.* twin byte for byte, so
     // encode("max_hp",p) and encode("hp",p) are the same computation.
     bool sharedHpEncoder_ = false;
+    // Metadata "inputEncoding" is "ctm_input_v2" (absent: v1, every shipped artifact).
+    bool inputV2_ = false;
     // Never reused, so per-thread encoder memos can key on it (see encode()).
     std::uint64_t instance_ = 0;
     nlohmann::json lizardBrewRModel_;
@@ -54,6 +56,15 @@ class CombatTransitionRuntime {
     std::vector<float> encode(const std::string &, const CombatPredictorInputV1 &) const;
 public:
     static constexpr float probabilityTolerance = 1e-4f;
+    // ctm_input_v2: act is a category (act-1, acts 1..4) instead of a scalar, floor stays raw,
+    // card misc as sign(m)*log(1+|m|)/log(101) with |m|<=kInputV2MiscBound, potionKeepValue
+    // is not an input. tools/ctm_input_encoding.py is the Python reference.
+    static constexpr const char *kInputEncodingV2 = "ctm_input_v2";
+    static constexpr int kInputV2MiscBound = 10000;
+    // The memo key a card's misc is reduced to, and the feature computed from that key.
+    static int cardMiscKey(int misc, bool inputV2);
+    static float cardMiscFeature(int key, bool inputV2);
+    bool inputV2() const { return inputV2_; }
     // Pins the pre-#418 production standard artifact (e9a18951), not the pathb-r2
     // default; only the runtime probe test uses it.
     static void requireCurrentStandardFallbackArtifact(const std::string &path);

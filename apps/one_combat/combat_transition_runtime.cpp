@@ -814,8 +814,19 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     require(metadata_.at("hpClasses")==classes,"combat runtime HP classes");
     hpMin_=classes.front();
     const int hpClassCount=static_cast<int>(classes.size());
-    require(metadata_.at("continuousFields")==nlohmann::json({"ascension","act","floor","curHp","maxHp","gold","potionCount","potionCapacity","potionKeepValue","isBurningElite"}),"combat runtime global fields");
-    require(metadata_.at("globalCategoryCounts")==nlohmann::json({4,64,10,10}),"combat runtime global vocab");
+    // Input encoding: absent is the original v1 encoding of every shipped artifact; only
+    // "ctm_input_v2" may be declared (act as a category beside raw floor, log-scaled card
+    // misc, no potionKeepValue input).
+    require(!metadata_.contains("inputEncoding") || metadata_.at("inputEncoding")==kInputEncodingV2,
+        "combat runtime input encoding");
+    inputV2_=metadata_.contains("inputEncoding");
+    require(metadata_.at("continuousFields")==(inputV2_?
+        nlohmann::json({"ascension","floor","curHp","maxHp","gold","potionCount","potionCapacity","isBurningElite"}):
+        nlohmann::json({"ascension","act","floor","curHp","maxHp","gold","potionCount","potionCapacity","potionKeepValue","isBurningElite"})),
+        "combat runtime global fields");
+    require(metadata_.at("globalCategoryCounts")==(inputV2_?nlohmann::json({4,64,10,10,4}):nlohmann::json({4,64,10,10})),
+        "combat runtime global vocab");
+    const int scalarCount=inputV2_?8:10,categoryCount=inputV2_?5:4,globalInputs=scalarCount+8*categoryCount;
     // Exact shape graph, including historical unused heads: reject missing/extra tensors.
     std::map<std::string,std::vector<int>> expected;
     auto shape=[&](std::string name,std::vector<int> dims) { expected.emplace(std::move(name),std::move(dims)); };
@@ -826,25 +837,25 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     for(std::string group:{"survival","max_hp","hp","potion_encoder"}) {
         std::string p=group+".encoder.";
         if((group=="survival" && deepSurvival) || (deepsetStack && (group=="max_hp" || group=="hp" || group=="potion_encoder"))) {
-            shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
+            shape(p+"scalar_mean",{scalarCount});shape(p+"scalar_inv",{scalarCount});
             shape(p+"card_id.weight",{kNumCardIds,48});shape(p+"relic_id.weight",{kNumRelics,48});
             shape(p+"potion_id.weight",{kNumPotions,32});shape(p+"potion_slot.weight",{5,8});
             auto categories=metadata_.at("globalCategoryCounts").get<std::vector<int>>();
-            for(int category=0;category<4;++category) shape(p+"global_category."+std::to_string(category)+".weight",{categories[category],8});
+            for(int category=0;category<categoryCount;++category) shape(p+"global_category."+std::to_string(category)+".weight",{categories[category],8});
             for(const auto &entry:std::map<std::string,int>{{"card_mlp",51},{"relic_mlp",50},{"potion_mlp",40}}) {
                 lin(p+entry.first+".0",64,entry.second);lin(p+entry.first+".2",64,64);
             }
-            lin(p+"global_mlp.0",64,42);lin(p+"trunk.0",128,256);lin(p+"trunk.2",64,128);
+            lin(p+"global_mlp.0",64,globalInputs);lin(p+"trunk.0",128,256);lin(p+"trunk.2",64,128);
             if(group=="survival") lin("survival.survival",1,64);
             else if(group=="max_hp") lin("max_hp.max_hp_delta",11,64);
             else if(group=="hp") {shape("hp.delta_embedding.weight",{11,8});lin("hp.hp.0",64,hpInputs);lin("hp.hp.2",hpClassCount,64);}
             continue;
         }
-        shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
+        shape(p+"scalar_mean",{scalarCount});shape(p+"scalar_inv",{scalarCount});
         shape(p+"card_id.weight",{kNumCardIds,64});shape(p+"relic_id.weight",{kNumRelics,64});shape(p+"potion_id.weight",{kNumPotions,64});shape(p+"type_embedding.weight",{4,64});
         auto cats=metadata_.at("globalCategoryCounts").get<std::vector<int>>();
-        for(int i=0;i<4;++i) shape(p+"global_category."+std::to_string(i)+".weight",{cats[i],8});
-        lin(p+"global_proj",64,42);lin(p+"card_fields",64,3);lin(p+"relic_fields",64,2);shape(p+"potion_slot.weight",{5,64});
+        for(int i=0;i<categoryCount;++i) shape(p+"global_category."+std::to_string(i)+".weight",{cats[i],8});
+        lin(p+"global_proj",64,globalInputs);lin(p+"card_fields",64,3);lin(p+"relic_fields",64,2);shape(p+"potion_slot.weight",{5,64});
         for(int i=0;i<2;++i) {
             auto l=p+"encoder.layers."+std::to_string(i)+".";
             shape(l+"self_attn.in_proj_weight",{192,64});shape(l+"self_attn.in_proj_bias",{192});lin(l+"self_attn.out_proj",64,64);
@@ -947,14 +958,27 @@ const Vec &memoized(TokenMemo &memo,const TokenKey &key,Compute compute) {
 }
 }
 void CombatTransitionRuntime::setEncoderMemoForTesting(bool enabled) { encoderMemoEnabled=enabled; }
+int CombatTransitionRuntime::cardMiscKey(int misc,bool inputV2) {
+    return inputV2?std::clamp(misc,-kInputV2MiscBound,kInputV2MiscBound):std::clamp(misc,-20,20);
+}
+float CombatTransitionRuntime::cardMiscFeature(int key,bool inputV2) {
+    if(!inputV2) return float(key)/20;
+    // sign(m)*log(1+|m|)/log(101): 1 at |m|=100, still distinct well beyond it.
+    const double magnitude=std::log1p(double(std::abs(key)))/std::log1p(100.0);
+    return float(key<0?-magnitude:magnitude);
+}
 Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredictorInputV1 &input) const {
     require(input.cards.size()<=128 && input.relics.size()<=64 && input.potions.size()==5,"combat input token bound");
     const auto &g=input.globals;const std::string p=group+".encoder.";
-    Vec global={float(g.ascension),float(g.act),float(g.floor),float(g.curHp),float(g.maxHp),float(g.gold),float(g.potionCount),float(g.potionCapacity),float(g.potionKeepValue),float(g.isBurningElite)};
+    Vec global;std::vector<int> cats={g.characterClass,g.encounter,g.roomClass,g.lastRoom};
+    if(inputV2_) {
+        require(g.act>=1 && g.act<=4,"combat input act outside the v2 act categories");
+        global={float(g.ascension),float(g.floor),float(g.curHp),float(g.maxHp),float(g.gold),float(g.potionCount),float(g.potionCapacity),float(g.isBurningElite)};
+        cats.push_back(g.act-1);
+    } else global={float(g.ascension),float(g.act),float(g.floor),float(g.curHp),float(g.maxHp),float(g.gold),float(g.potionCount),float(g.potionCapacity),float(g.potionKeepValue),float(g.isBurningElite)};
     const auto &mean=tensor(p+"scalar_mean").values,&inv=tensor(p+"scalar_inv").values;
-    for(int i=0;i<10;++i) global[i]=(global[i]-mean[i])*inv[i];
-    int cats[4]={g.characterClass,g.encounter,g.roomClass,g.lastRoom};
-    for(int i=0;i<4;++i) append(global,embedding(p+"global_category."+std::to_string(i),cats[i]));
+    for(size_t i=0;i<global.size();++i) global[i]=(global[i]-mean[i])*inv[i];
+    for(size_t i=0;i<cats.size();++i) append(global,embedding(p+"global_category."+std::to_string(i),cats[i]));
     if((group=="survival" && metadata_.contains("experimentalSurvival")) ||
        (metadata_.contains("experimentalDeepSets") && (group=="max_hp" || group=="hp" || group=="potion_encoder"))) {
         auto transform=[&](const std::string &name,const Vec &fields) {
@@ -963,10 +987,10 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
         Vec cardPool(64),relicPool(64),potionPool(64);
         auto &memo=encoderMemo(instance_,group);
         for(const auto &card:input.cards) {
-            const int misc=std::clamp(card.misc,-20,20);
+            const int misc=cardMiscKey(card.misc,inputV2_);
             add(cardPool,memoized(memo.card,{card.cardId,int(card.upgraded),misc,card.bottleBinding},[&] {
                 auto fields=embedding(p+"card_id",card.cardId);
-                append(fields,{float(card.upgraded),float(misc)/20,float(card.bottleBinding+1)/3});
+                append(fields,{float(card.upgraded),cardMiscFeature(misc,inputV2_),float(card.bottleBinding+1)/3});
                 return transform("card_mlp",fields);
             }));
         }
@@ -990,7 +1014,7 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
     }
     std::vector<Vec> tokens;
     auto token=linear(p+"global_proj",global);add(token,embedding(p+"type_embedding",0));tokens.push_back(token);
-    for(const auto &c:input.cards) {token=embedding(p+"card_id",c.cardId);add(token,linear(p+"card_fields",{float(c.upgraded),float(std::clamp(c.misc,-20,20))/20,float(c.bottleBinding+1)/3}));add(token,embedding(p+"type_embedding",1));tokens.push_back(token);}
+    for(const auto &c:input.cards) {token=embedding(p+"card_id",c.cardId);add(token,linear(p+"card_fields",{float(c.upgraded),cardMiscFeature(cardMiscKey(c.misc,inputV2_),inputV2_),float(c.bottleBinding+1)/3}));add(token,embedding(p+"type_embedding",1));tokens.push_back(token);}
     for(const auto &r:input.relics) {token=embedding(p+"relic_id",r.relicId);add(token,linear(p+"relic_fields",{float(r.data)/10,float(r.orderIndex)/64}));add(token,embedding(p+"type_embedding",2));tokens.push_back(token);}
     for(const auto &pot:input.potions) {token=embedding(p+"potion_id",pot.potionId);add(token,embedding(p+"potion_slot",pot.slot));add(token,embedding(p+"type_embedding",3));tokens.push_back(token);}
     auto norm=[&](Vec x,const std::string &name) {float mean=0;for(float v:x)mean+=v;mean/=64;float variance=0;for(float v:x)variance+=(v-mean)*(v-mean);variance/=64;float scale=1/std::sqrt(variance+1e-5f);const auto &w=tensor(name+".weight").values,&b=tensor(name+".bias").values;for(int i=0;i<64;++i)x[i]=(x[i]-mean)*scale*w[i]+b[i];return x;};

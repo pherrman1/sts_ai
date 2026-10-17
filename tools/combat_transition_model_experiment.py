@@ -27,6 +27,10 @@ from typing import Iterable, Iterator
 import numpy as np
 
 try:
+    from tools import ctm_input_encoding as input_encoding
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_input_encoding as input_encoding
+try:
     from tools.combat_predictor_input_contract import (
         FIELD_SCHEMA_HASH, SCHEMA_VERSION as PREDICTOR_SCHEMA, validate_predictor_input,
     )
@@ -773,11 +777,21 @@ def _slice_metrics(data: dict[str, np.ndarray], p: np.ndarray, hp: np.ndarray, m
     return result
 
 
+def encoding_widths(encoding: str, scalar_mean: np.ndarray) -> list[int]:
+    """Category sizes for an encoding; the scalar statistics must be in that encoding's space."""
+    if len(scalar_mean) != len(input_encoding.continuous_fields(encoding)):
+        raise ValueError(f"{encoding} needs {len(input_encoding.continuous_fields(encoding))} scalar statistics "
+                         "(ctm_input_encoding.scalar_stats)")
+    return input_encoding.category_counts(encoding, GLOBAL_CATEGORY_COUNTS)
+
+
 class DeepSetsModel:
-    def __init__(self, torch, max_cards: int, max_relics: int, scalar_mean: np.ndarray, scalar_std: np.ndarray):
+    def __init__(self, torch, max_cards: int, max_relics: int, scalar_mean: np.ndarray, scalar_std: np.ndarray,
+                 encoding: str = input_encoding.V1):
         import torch.nn as nn
         self.torch = torch
         self.nn = nn
+        self.encoding = encoding; categories = encoding_widths(encoding, scalar_mean)
         self.max_cards = max_cards; self.max_relics = max_relics
         self.scalar_mean = torch.tensor(scalar_mean, dtype=torch.float32)
         self.scalar_inv = torch.tensor(1 / np.maximum(scalar_std, 1e-6), dtype=torch.float32)
@@ -786,22 +800,20 @@ class DeepSetsModel:
                 super().__init__(); self.outer = outer
                 self.card_id = nn.Embedding(CARD_COUNT, 48); self.relic_id = nn.Embedding(RELIC_COUNT, 48)
                 self.potion_id = nn.Embedding(POTION_COUNT, 32); self.potion_slot = nn.Embedding(5, 8)
-                self.global_category = nn.ModuleList(
-                    nn.Embedding(GLOBAL_CATEGORY_COUNTS[field], 8)
-                    for field in CATEGORICAL_GLOBAL_FIELDS
-                )
+                self.global_category = nn.ModuleList(nn.Embedding(count, 8) for count in categories)
                 self.card_mlp = nn.Sequential(nn.Linear(48 + 3, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU())
                 self.relic_mlp = nn.Sequential(nn.Linear(48 + 2, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU())
                 self.potion_mlp = nn.Sequential(nn.Linear(32 + 8, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU())
                 self.global_mlp = nn.Sequential(
-                    nn.Linear(len(CONTINUOUS_GLOBAL_FIELDS) + 8 * len(CATEGORICAL_GLOBAL_FIELDS), 64),
+                    nn.Linear(len(scalar_mean) + 8 * len(categories), 64),
                     nn.ReLU(),
                 )
                 self.trunk = nn.Sequential(nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, 64), nn.ReLU())
                 self.win = nn.Linear(64, 1); self.hp = nn.Linear(64, 1)
             def forward(self, g, gc, c, r, p, cmask, rmask):
                 t = self.outer.torch
-                cfields = t.cat((c[:, :, 1:2].float(), c[:, :, 2:3].float().clamp(-20, 20) / 20,
+                g, gc = input_encoding.globals_features(g, gc, self.outer.encoding)
+                cfields = t.cat((c[:, :, 1:2].float(), input_encoding.misc_feature(c[:, :, 2:3].float(), self.outer.encoding),
                                  c[:, :, 3:4].float() / 3), -1)
                 cvec = self.card_mlp(t.cat((self.card_id(c[:, :, 0].long()), cfields), -1))
                 cpool = (cvec * cmask.unsqueeze(-1)).sum(1)
@@ -822,9 +834,10 @@ class DeepSetsModel:
 
 class AttentionModel:
     def __init__(self, torch, max_cards: int, max_relics: int, scalar_mean: np.ndarray,
-                 scalar_std: np.ndarray, config: dict | None = None):
+                 scalar_std: np.ndarray, config: dict | None = None, encoding: str = input_encoding.V1):
         import torch.nn as nn
         self.torch = torch; self.nn = nn; self.max_cards = max_cards; self.max_relics = max_relics
+        self.encoding = encoding; categories = encoding_widths(encoding, scalar_mean)
         self.config = {
             "width": 64, "heads": 4, "layers": 2, "feedforward": 128,
             "dropout": 0.1, "trunkWidth": 64,
@@ -839,11 +852,8 @@ class AttentionModel:
                 super().__init__(); self.outer = outer; d = int(outer.config["width"])
                 self.card_id = nn.Embedding(CARD_COUNT, d); self.relic_id = nn.Embedding(RELIC_COUNT, d)
                 self.potion_id = nn.Embedding(POTION_COUNT, d); self.type_embedding = nn.Embedding(4, d)
-                self.global_category = nn.ModuleList(
-                    nn.Embedding(GLOBAL_CATEGORY_COUNTS[field], 8)
-                    for field in CATEGORICAL_GLOBAL_FIELDS
-                )
-                self.global_proj = nn.Linear(len(CONTINUOUS_GLOBAL_FIELDS) + 8 * len(CATEGORICAL_GLOBAL_FIELDS), d)
+                self.global_category = nn.ModuleList(nn.Embedding(count, 8) for count in categories)
+                self.global_proj = nn.Linear(len(scalar_mean) + 8 * len(categories), d)
                 self.card_fields = nn.Linear(3, d); self.relic_fields = nn.Linear(2, d)
                 self.potion_slot = nn.Embedding(5, d)
                 layer = nn.TransformerEncoderLayer(
@@ -860,13 +870,14 @@ class AttentionModel:
                 self.win = nn.Linear(trunk_width, 1); self.hp = nn.Linear(trunk_width, 1)
             def forward(self, g, gc, c, r, p, cmask, rmask):
                 t = self.outer.torch
+                g, gc = input_encoding.globals_features(g, gc, self.outer.encoding)
                 gs = (g - self.outer.scalar_mean.to(g.device)) * self.outer.scalar_inv.to(g.device)
                 global_categories = t.cat(
                     [embedding(gc[:, index].long())
                      for index, embedding in enumerate(self.global_category)], -1
                 )
                 gt = self.global_proj(t.cat((gs, global_categories), -1)).unsqueeze(1) + self.type_embedding.weight[0]
-                cf = t.cat((c[:, :, 1:2].float(), c[:, :, 2:3].float().clamp(-20, 20) / 20,
+                cf = t.cat((c[:, :, 1:2].float(), input_encoding.misc_feature(c[:, :, 2:3].float(), self.outer.encoding),
                             c[:, :, 3:4].float() / 3), -1)
                 ct = self.card_id(c[:, :, 0].long()) + self.card_fields(cf) + self.type_embedding.weight[1]
                 rf = t.cat((r[:, :, 1:2].float() / 10, r[:, :, 2:3].float() / 64), -1)
