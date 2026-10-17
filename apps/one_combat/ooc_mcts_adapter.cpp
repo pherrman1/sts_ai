@@ -3760,9 +3760,12 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             }
             return output;
         };
-        auto checkpoints = json::array();
-        for (const auto &c : result.rootCheckpoints)
-            checkpoints.push_back({{"simulations", c.simulations}, {"actions", actionsJson(c.actions)}});
+        auto checkpoints = json::array();   // keys and priors are on the candidates
+        for (const auto &c : result.rootCheckpoints) {
+            auto actions = json::array();
+            for (const auto &a : c.actions) actions.push_back({{"id", a.id}, {"visits", a.visits}, {"q", a.q}});
+            checkpoints.push_back({{"simulations", c.simulations}, {"actions", actions}});
+        }
         // Root value estimate for completing unvisited actions offline (rollout3 has no value net).
         double visitedQ = 0;
         std::uint64_t rootVisits = 0, maxVisits = 0;
