@@ -35,8 +35,9 @@ Heart kills: 27 for both LP and F. **Inference:** the prior helps Acts 1-3 comba
 | L | 41,883 | 1,140 | 290 |
 | LP | 45,251 | 1,329 | 250 |
 
-Student C made about 97% of the OOC decisions. The key rule made most of the rest, and the remainder were Match and
-Keep, whose card choices come from the V4 chain (#616 moves them to student C). Nothing went through the
-heuristic chain.
+Student C made 96.6–96.7% of the OOC decisions and the key rule 2.6–2.8%. The remaining 0.5–0.7% (850
+decisions) were Match and Keep, whose card choices come from the native GBM card-reward fallback
+(`serverCardRewardPolicy`), since no V4 net is loaded; #616 moves them to student C. These 850 decisions are the
+only ones not made by student C or the key rule.
 
-Knowledge impact: experiment result; ledger entry pending a § number from the coordinator.
+Knowledge impact: ledger §516; learned-stopping paragraph in `architecture/combat-search.md`.

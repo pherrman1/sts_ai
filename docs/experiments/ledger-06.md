@@ -20138,9 +20138,9 @@ Seeds 111135100–111135611. Primary: reached Act 4, paired Newcombe 95% interva
   - L − F −0.4 pp [−3.4, +2.6], NON_INFERIOR.
   - LP − F +3.9 pp [+0.4, +7.4], McNemar p = 0.035, NON_INFERIOR. The gain is not a pre-registered hypothesis.
 - **CPU per run:** F 53.5 s, L 21.9 s (0.41x), LP 28.2 s (0.53x).
-- **OOC decisions:** student C 96.6–97.0% in every arm, the key rule 2.6–2.8%, Match and Keep 0.6–0.7%. Match
-  and Keep's card choices come from the V4 chain's one-ply card-reward policy (`run_driver.cpp`; PR #616 would move
-  them to student C).
+- **OOC decisions:** student C 96.6–96.7% in every arm, the key rule 2.6–2.8%, Match and Keep 0.5–0.7% (850
+  decisions). Match and Keep's card choices come from the native GBM card-reward fallback (`serverCardRewardPolicy`),
+  since no V4 net is loaded; #616 moves them to student C.
 **Interpretation:** at A20, learned stopping plays as well as flat 10k on both endpoints at 0.41x the CPU, which
 makes it the cheaper Silver budget for student-C self-play. The prior's extra Act-4 reaches did not convert: Heart
 kills per Act-4 run were 28% for LP against 35% for F and 40% for L. **Inference:** the prior helps Acts 1–3 combats
