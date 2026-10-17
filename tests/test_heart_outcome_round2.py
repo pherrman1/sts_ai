@@ -57,8 +57,11 @@ class Round2Tests(unittest.TestCase):
         # w08 seed 111101200: real 138, hypothetical (140 << 12) ^ bits ..., then real 149.
         rows = [root(138), root((140 << 12) ^ 50), root((146 << 12) ^ 20), root(149)]
         self.assertEqual(self.check(rows)['hypotheticalRoots'], 2)
+        # w21 seed 111102173: one card valued twice under the same base index.
+        again = [root(119), root((120 << 12) ^ 546), root((120 << 12) ^ 138), root((120 << 12) ^ 546), root(122)]
+        self.assertEqual(self.check(again)['hypotheticalRoots'], 3)
         for bad in ([root(138), root((138 << 12) ^ 2)], [root(138), root((140 << 12) ^ 2), root(139)],
-                    [root(138), root((140 << 12) ^ 2), root((140 << 12) ^ 2)]):
+                    [root(138), root(138)]):
             with self.assertRaises(ValueError):
                 self.check(bad)
 

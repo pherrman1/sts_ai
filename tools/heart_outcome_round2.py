@@ -135,9 +135,11 @@ def root_trace(path, actions_path, seed):
         index = row.get('decisionIndex')
         # Match and Keep values each offered card with a hypothetical root indexed (real index << 12) ^ card bits
         # (run_driver.cpp matchAndKeepPolicyStep); real indices stay below 1 << 12 and increase strictly.
+        # The same card can be valued again on a later pick with the same base, so hypothetical indices
+        # may repeat; the row position disambiguates them.
         hypothetical = type(index) is int and index >= HYPOTHETICAL_INDEX
         if (row.get('schema') != 'ooc-root-trace-v1' or row.get('seed') != seed
-                or type(index) is not int or index in seen
+                or type(index) is not int or (not hypothetical and index in seen)
                 or (index >> 12 if hypothetical else index) <= previous
                 or index != action['decisionIndex'] or row.get('selectedKey') != action['selectedKey']
                 or row.get('executed') != action['executed'] or row.get('selectedId') != action['selectedId']):
