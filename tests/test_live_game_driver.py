@@ -9,7 +9,8 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action, hand_selection_transaction, grid_selection_transaction,
+    _is_combat, card_reward_reveal_action, boss_completion_proceed_action,
+    hand_selection_transaction, grid_selection_transaction,
 )
 
 
@@ -1033,6 +1034,71 @@ class OocDriverTest(unittest.TestCase):
                 if command == "start_game":
                     self.assertEqual(mutations[0][1], {"character": "IRONCLAD", "ascension": 3, "seed": "123"})
                 self.assertEqual(driver.summary()["outcome"], "max_steps")
+
+    def test_strict_completed_act_three_boss_proceeds_without_policy(self):
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 33, "max_hp": 68, "floor": 50}
+        victory = {"screen_type": "GAME_OVER", "screen_state": {"victory": True},
+                   "ready_for_command": True, "current_hp": 33}
+        class CompletionClient(FakeClient):
+            async def call(self, tool, arguments=None):
+                if tool == "proceed":
+                    self.calls.append((tool, arguments or {})); self.states = [victory]
+                    return {"success": True}
+                return await super().call(tool, arguments)
+        with tempfile.TemporaryDirectory() as directory:
+            client = CompletionClient(screen, ["proceed"], game_state={"act": 3, "floor": 50, "current_hp": 33})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def no_policy(*args, **kwargs):
+                raise AssertionError("completed boss navigation asked a policy")
+            reader.read_for = no_policy
+            trace = TraceWriter(Path(directory) / "trace")
+            driver = Driver(client, reader, trace, strict_silver=True, strict_ooc=True, max_steps=2)
+            asyncio.run(driver.run())
+            self.assertEqual(driver.outcome, "victory")
+            self.assertEqual([tool for tool, _ in client.calls if tool == "proceed"], ["proceed"])
+            self.assertEqual(list(trace.recent)[0]["decision_source"], "boss_completion")
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+
+    def test_boss_completion_navigation_rejects_other_surfaces(self):
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 33, "floor": 50}
+        game = {"act": 3, "floor": 50, "current_hp": 33}
+        candidates = build_legal_actions(screen, ["proceed"], game)
+        self.assertIsNotNone(boss_completion_proceed_action(screen, game, candidates))
+        for ascension in (None, 0, 19, 20):
+            second_boss = boss_completion_proceed_action({**screen, "floor": 51},
+                    {**game, "floor": 51, "ascension_level": ascension}, candidates)
+            self.assertEqual(second_boss is not None, ascension == 20)
+        for key, value in [("screen_type", "NONE"), ("room_type", "MonsterRoom"),
+                           ("room_phase", "COMBAT"), ("ready_for_command", False),
+                           ("can_cancel", True), ("can_proceed", False), ("is_screen_up", True),
+                           ("choice_list", ["reward"]), ("choice_list", None), ("floor", 49)]:
+            with self.subTest(key=key, value=value):
+                self.assertIsNone(boss_completion_proceed_action({**screen, key: value}, game, candidates))
+        for update in ({"act": 2}, {"act": 4}, {"current_hp": 0}, {"current_hp": 34}, {"floor": 51}):
+            self.assertIsNone(boss_completion_proceed_action(screen, {**game, **update}, candidates))
+        self.assertIsNone(boss_completion_proceed_action(screen, game, candidates + candidates))
+
+    def test_differential_boss_completion_keeps_native_boundary(self):
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 33, "floor": 50}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient(screen, ["proceed"], game_state={"act": 3, "floor": 50})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def native_boundary(*args, **kwargs):
+                raise DriverError("native completion boundary")
+            reader.read_for = native_boundary
+            driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"), differential_trace=True)
+            with self.assertRaisesRegex(DriverError, "native completion boundary"):
+                asyncio.run(driver.run())
+            self.assertFalse(any(tool == "proceed" for tool, _ in client.calls))
 
     def test_actual_shop_room_alias_and_enter_once_then_leave(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1118,6 +1118,13 @@ row-zero path coordinate, the persisted boss/chest room records, and a
 completed boss combat metric agree. Combat-entry capture retries that public
 path recovery after save loading if the initial transition latch was empty.
 Missing or contradictory records remain unqualified.
+After the Act 3 boss dies, MCP can expose an empty `COMPLETE` surface rather
+than a reward screen. The strict driver advances its single Proceed button
+only for a living player at Act 3 floor 50 (or floor 51 with verified A20), with a completed MonsterRoomBoss,
+no active overlay, no choices/cancel action, and agreeing run coordinates.
+It records `boss_completion` and waits for the following boss or actual terminal screen; it does
+not declare victory from the boss-room phase alone. Differential capture
+retains the native unsupported boundary for this UI-only transition.
 
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have
