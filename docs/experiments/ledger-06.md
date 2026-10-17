@@ -19728,3 +19728,40 @@ development protocol may explicitly weight reached early states; any revised
 candidate needs genuinely fresh prospective holdout evidence. Stop before native
 integration. **Knowledge impact:** current development-weighting evidence,
 cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.
+
+## §501 — development value-head comparison on the frozen Arm C cache
+
+**REPRESENTATION_LOSS_SIGNAL; EARLY_WEIGHTING_NOT_SHOWN; MORE_SOURCES_SIGNAL
+(fragile)** (2026-10-17). Philipp authorized the run. Pre-registered protocol
+(263025f/ae39f38) on the §498 cache and §497 TRAIN/VALIDATION only: 1,080/360
+sources, 126/47 wins. No TEST, encoder forward, game seeds, native or default
+change. Fourteen fits of the §500 recipe (AdamW, 2,000 updates, inits 0/1,
+VALIDATION visitation BCE selection) at source `ae39f38` on Philipp's RTX 3060
+Ti, 79.7 s, exit 0, tests 18/18. Arm A reproduces §500's 0.453411 to 6.8e-8.
+
+| VALIDATION arm | Visitation BCE | Brier | AUROC | Δ BCE vs A, 95% |
+| --- | ---: | ---: | ---: | --- |
+| A equal-state, pooled 64 | 0.45341 | 0.14116 | 0.669 | – |
+| B act-1 states ×2 | 0.45169 | 0.14122 | 0.675 | −0.0017 [−0.0092, +0.0055] |
+| C pooled + 37 public scalars/counts | 0.42983 | 0.13425 | 0.725 | −0.0236 [−0.0414, −0.0062] |
+| D public block only | 0.44878 | 0.14011 | 0.660 | −0.0046 [−0.0255, +0.0161] |
+
+- Early bias (start/floor 8/floor 16, pp): A −1.09/−2.32/−4.18; B
+  −4.85/−2.46/−5.15 (worse everywhere); C −2.69/−2.79/+2.25.
+- Learning curve, VALIDATION BCE (two nested draws): 135 sources
+  0.491/0.492, 270 0.470/0.464, 540 0.448/0.464, 1,080 0.453. The rule fires,
+  but draw 0 at 540 beats the full fit and small-subset fits select at step
+  100, so 540 → 1,080 is unresolved.
+- Encoder audit (silverbot 84ab3ea network.py): relic counters, battle
+  encounter, memory slots and act are not inputs; the value input is a mean
+  over all tokens. **Inference:** the frozen pooled representation drops value
+  information that a plain scalar/count block restores.
+
+Intervals are descriptive, not adjusted for selection or reused VALIDATION.
+Not a search-leaf qualification; selected heads exported for the §502 sibling
+harness. §502 found their sibling concordance at 0.507–0.530 vs X2-B 0.601
+(PR #582), so the outcome-BCE gain gives no search utility. Any candidate
+needs the fresh sealed cohort.
+[Report](evidence/heart_outcome_dev_compare_20261017/REPORT.md). **Knowledge
+impact:** current outcome-head development evidence and the new cache-plus-
+public-block tool; no default change.
