@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -334,7 +334,8 @@ stopping was not retrained for it. Its online screen was negative (§399).
 `STS_SILVER_ROOT_PRIOR_SCOPE=override` (research) keeps the loaded prior off
 unless a thread override turns it on; the OOC MCTS Silver resolver
 (`STS_OOC_MCTS_COMBAT_RESOLVER=silver`) uses it so that imagined combats use the
-prior while live combats stay plain. `all` (the default) applies it everywhere.
+prior while live combats stay plain; the opt-in Silver fallback for CTM-refused
+combats (`STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS`) sets the override off. `all` (the default) applies it everywhere.
 
 A research-only tree prior extends the same model below the root (ledger
 §452): when `SilverSearcher::nodePrior` is set, a non-root decision node with
