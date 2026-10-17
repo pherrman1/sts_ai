@@ -348,6 +348,18 @@ int main(int argc,char **argv) {
                 {"sharedHpEncoder",{first.runtime().sharedHpEncoder(),second.runtime().sharedHpEncoder()}}}.dump()<<'\n';
             return 0;
         }
+        // Survival and the HP encoding per predictor input, for encoder references (tests/check_ctm_input_encoding.py).
+        if(argc==4 && std::string(argv[1])=="--encode") {
+            NativeCombatTransitionSampler sampler(argv[2]);const auto &net=sampler.runtime();
+            std::ifstream file(argv[3]);if(!file)throw std::runtime_error("fixture file");
+            std::string line;int index=0;
+            while(std::getline(file,line)) {
+                const auto p=predictor(json::parse(line).at("predictorInput"));
+                std::cout<<json{{"index",index++},{"inputV2",net.inputV2()},
+                    {"survival",net.survival(p)},{"hp",net.hpEncoding(p)}}.dump()<<'\n';
+            }
+            return index?0:1;
+        }
         if(argc==4 && std::string(argv[1])=="--escape") {
             NativeCombatTransitionSampler sampler(argv[2]);const auto &net=sampler.runtime();
             std::ifstream file(argv[3]);if(!file)throw std::runtime_error("fixture file");
