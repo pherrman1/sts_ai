@@ -6263,6 +6263,9 @@ static bool ctmGenDeployedOoc() {
     throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC must be 0 or 1 when set");
 }
 
+// Deployed-OOC screens played by heart1 (STS_OOC_HEART1) vs the ordinary deployed step.
+static std::atomic<long long> g_ctmGenHeart1Steps{0}, g_ctmGenChainSteps{0};
+
 static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
                                               const WholeCombatTeacher &teacher,
                                               ForcedCtmSetup setup = ForcedCtmSetup::NONE,
@@ -6330,7 +6333,14 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 out << row.dump() << '\n';
             }
         } else if (deployedOoc) {
-            deployedOocPolicyStep(gc, agent);
+            // As in the run driver: heart1 takes every screen it encodes, the deployed step the
+            // rest. The teacher's ooc_policy names heart1 whenever it is set, so it must also play.
+            if (one_combat::heart1::enabled() && one_combat::heart1::policyStep(gc)) {
+                ++g_ctmGenHeart1Steps;
+            } else {
+                deployedOocPolicyStep(gc, agent);
+                ++g_ctmGenChainSteps;
+            }
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -6525,7 +6535,10 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                         {"quarantinedSeeds", quarantined}, {"rows", rows}}}
     };
     if (setup == ForcedCtmSetup::ACT4_FORK) manifest["integrity"]["noAct4Seeds"] = noAct4;
-    if (deployedOoc) manifest["policy"] = effectiveOocPolicySpecification();
+    if (deployedOoc) {
+        manifest["policy"] = effectiveOocPolicySpecification();
+        manifest["oocSteps"] = {{"heart1", g_ctmGenHeart1Steps.load()}, {"deployed", g_ctmGenChainSteps.load()}};
+    }
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
@@ -6535,7 +6548,11 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                      : "combattransitiongen teacher=") << teacher.id << " completed="
               << completed << '/' << nSeeds << " quarantined=" << quarantined
               << (setup == ForcedCtmSetup::ACT4_FORK ? " no_act4=" + std::to_string(noAct4) : std::string())
-              << " rows=" << rows << " -> " << outfile << '\n';
+              << " rows=" << rows
+              << (deployedOoc ? " ooc_heart1=" + std::to_string(g_ctmGenHeart1Steps.load())
+                                    + " ooc_deployed=" + std::to_string(g_ctmGenChainSteps.load())
+                              : std::string())
+              << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, allowStaleProvenance
                                 ? "combattransitionlizardtargetcandidategen"
                                 : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen"
