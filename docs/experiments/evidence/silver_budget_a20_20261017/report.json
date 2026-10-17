@@ -1,0 +1,102 @@
+{
+  "arms": {
+    "F": {
+      "heart_kills": 27,
+      "mean_cpu_sec": 53.4572260546875,
+      "mean_floor": 32.0546875,
+      "reached_act4": 77
+    },
+    "L": {
+      "heart_kills": 30,
+      "mean_cpu_sec": 21.90475775390625,
+      "mean_floor": 30.580078125,
+      "reached_act4": 75
+    },
+    "LP": {
+      "heart_kills": 27,
+      "mean_cpu_sec": 28.23084728515625,
+      "mean_floor": 33.23828125,
+      "reached_act4": 97
+    }
+  },
+  "comparisons": {
+    "L-F heart_kill": {
+      "ci95": [
+        -0.016851116002125622,
+        0.028908212595587908
+      ],
+      "delta": 0.005859375,
+      "mcnemar_p": 0.7283324808813632,
+      "table": [
+        12,
+        18,
+        15,
+        467
+      ]
+    },
+    "L-F reached_act4": {
+      "ci95": [
+        -0.03393652197380459,
+        0.026063288479934797
+      ],
+      "delta": -0.00390625,
+      "mcnemar_p": 0.8974218269914305,
+      "table": [
+        46,
+        29,
+        31,
+        406
+      ],
+      "verdict": "NON_INFERIOR"
+    },
+    "LP-F heart_kill": {
+      "ci95": [
+        -0.02257902266305029,
+        0.02257902266305029
+      ],
+      "delta": 0.0,
+      "mcnemar_p": 1.0,
+      "table": [
+        11,
+        16,
+        16,
+        469
+      ]
+    },
+    "LP-F reached_act4": {
+      "ci95": [
+        0.004489707876826392,
+        0.07392836798442101
+      ],
+      "delta": 0.0390625,
+      "mcnemar_p": 0.03524144017874745,
+      "table": [
+        46,
+        51,
+        31,
+        384
+      ],
+      "verdict": "NON_INFERIOR"
+    }
+  },
+  "ooc_decisions_by_policy": {
+    "F": {
+      "heart1": 43775,
+      "heart_key": 1253,
+      "match_and_keep": 310
+    },
+    "L": {
+      "heart1": 41883,
+      "heart_key": 1140,
+      "match_and_keep": 290
+    },
+    "LP": {
+      "heart1": 45251,
+      "heart_key": 1329,
+      "match_and_keep": 250
+    }
+  },
+  "problems": [],
+  "seeds_seen": 512,
+  "seeds_valid": 512
+}

@@ -1,0 +1,37 @@
+{
+  "byPartitionRoute": {
+    "TRAIN/fast": 3396,
+    "TRAIN/standard": 771,
+    "VALIDATION/fast": 1815,
+    "VALIDATION/standard": 463
+  },
+  "examples": 6445,
+  "examplesSha256": "d3e9a6598534793f63d2b6e239afb8bffd8d1ee456b6927821c2fb29989f3a71",
+  "pilots": [
+    "build/ritual-coverage-pilot-20261017",
+    "build/ritual-coverage-pilot-v2-20261017"
+  ],
+  "positives": {
+    "TRAIN": 455,
+    "VALIDATION": 251
+  },
+  "prepareStats": {
+    "excluded": {
+      "active_tail_requires_composed_correction": 215,
+      "active_unqualified_lizard": 215
+    },
+    "potionUnscoreable": 24,
+    "targetOutsideClosure": 0
+  },
+  "rowStats": {
+    "duplicates": 13874,
+    "rowsRead": 20558,
+    "targetStructureRejected": 0,
+    "units": 864,
+    "withDagger": 20558
+  },
+  "writhing": {
+    "TRAIN": 2127,
+    "VALIDATION": 1139
+  }
+}

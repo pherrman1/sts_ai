@@ -13,6 +13,7 @@
 struct OocStrategicTokNet;
 
 namespace one_combat {
+namespace heart1 { class Net; }
 
 struct LiveOocCandidateScore {
     std::string semanticKey;
@@ -43,6 +44,8 @@ struct LiveOocDecision {
     // Player HP where each simulation's evaluation ended; root player state.
     std::optional<sts::search::OocHpDistribution> hpDistribution;
     int rootHp = 0, rootMaxHp = 0, rootFloor = 0;
+    // Explicit model use, including supported-domain fallbacks, per search.
+    nlohmann::json searchModel = nullptr;
 };
 
 class LiveOocPolicy {
@@ -80,7 +83,9 @@ public:
     LiveOocMctsPolicy(const OocStrategicTokNet &,
                       std::shared_ptr<const CombatTransitionSampler>,
                       const CompactTreeNet *oocWinModel,
-                      const CompactTreeNet *oocFloorModel);
+                      const CompactTreeNet *oocFloorModel,
+                      std::shared_ptr<const heart1::Net> armC = {},
+                      std::shared_ptr<const CombatTransitionSampler> samplerA20 = {});
     const char *name() const override { return "mcts_ctm"; }
     void setSearchSeed(std::uint64_t seed) override { searchSeed_ = seed; }
     void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
@@ -93,8 +98,10 @@ public:
 private:
     const OocStrategicTokNet &model_;
     std::shared_ptr<const CombatTransitionSampler> sampler_;
+    std::shared_ptr<const CombatTransitionSampler> samplerA20_;
     const CompactTreeNet *winModel_;
     const CompactTreeNet *floorModel_;
+    std::shared_ptr<const heart1::Net> armC_;
     mutable std::uint64_t searchSeed_ = 0;
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;

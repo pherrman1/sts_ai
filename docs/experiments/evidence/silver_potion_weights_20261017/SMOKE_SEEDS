@@ -1,0 +1,5 @@
+111153900-111153901: three arms each with the V4 OOC policy (pre-student-C harness), rc=0, arms diverge on 111153900.
+111153948: bad STS_SILVER_POTION_WEIGHTS name, aborts at startup (no run).
+111153949: STS_SILVER_ROLLOUT_ZERO_COST_CAP=0 accepted with the PR #606 allow-list fix (separate PR).
+111153902-111153903: three arms each with student C (log: "[heart1] loaded .../studentc.bin (dim 64 ...)"), rc=0,
+  65-131 s per run; arms diverge on 111153902 (floors 48 / 52 / 44 base / level / type).

@@ -84,7 +84,7 @@ std::vector<Profile> profiles(int gold,int encounter,int ascension,int mode,bool
     std::vector<int> payouts;if(mode&1)payouts.push_back(20);if(mode&2)payouts.push_back(25);int maximum=cap(encounter);std::vector<int> thiefCounts;
     if(encounter==int(E::EXORDIUM_THUGS))thiefCounts={0,1};else thiefCounts={encounter==int(E::TWO_THIEVES)?2:int(encounter==int(E::LOOTER))};std::set<Profile> result;
     for(int thieves:thiefCounts){
-        if(!thieves){int budget=maximum-int(escaped);for(auto p:gains(budget,payouts))if(gold+p.second<=32767)result.insert({gold+p.second,0,p.first,budget-p.first+int(encounter==int(E::AWAKENED_ONE)&&!escaped)});continue;}
+        if(!thieves){int budget=maximum-int(escaped);for(auto p:gains(budget,payouts))if(gold+p.second<=32767)result.insert({gold+p.second,0,p.first,budget-p.first});continue;}
         using State=std::tuple<int,std::array<int,2>,std::array<char,2>,int,int>;
         std::array<char,2> initial{{'A',thieves==2?'A':'E'}};std::set<State> states{{gold,{{0,0}},initial,0,0}};int otherCap=maximum-thieves;
         for(int turn=1;turn<=6;++turn){std::set<State> player;
@@ -115,13 +115,14 @@ std::vector<Profile> profiles(int gold,int encounter,int ascension,int mode,bool
     std::vector<Profile> out(result.begin(),result.end());if(cache.size()>=8192)cache.clear();cache.emplace(key,out);return out;
 }
 std::vector<std::vector<int>> daggerCandidates(const CombatTransitionPersistentState& pre,int encounter,bool upgrade,bool escaped){
-    int maximum=(encounter==int(E::AWAKENED_ONE)?4:cap(encounter))-int(escaped);std::vector<std::vector<std::pair<int,int>>> options;
+    // The first Awakened One phase is half-dead and cannot pay Ritual growth.
+    int maximum=cap(encounter)-int(escaped);std::vector<std::vector<std::pair<int,int>>> options;
     for(auto c:pre.deck)if(c.id==int(C::RITUAL_DAGGER)){std::vector<int> payouts=c.upgraded?std::vector<int>{5}:(upgrade?std::vector<int>{3,5}:std::vector<int>{3});std::vector<std::pair<int,int>> amounts;
         for(auto p:gains(maximum,payouts)){auto it=std::find_if(amounts.begin(),amounts.end(),[&](auto value){return value.first==p.second;});if(it==amounts.end())amounts.emplace_back(p.second,p.first);else it->second=std::min(it->second,p.first);}options.push_back(amounts);}
     std::vector<std::vector<int>> result;std::vector<int> selected;
     std::function<void(size_t,int)> visit=[&](size_t i,int kills){if(i==options.size()){result.push_back(selected);return;}for(auto p:options[i])if(kills+p.second<=maximum){selected.push_back(p.first);visit(i+1,kills+p.second);selected.pop_back();}};visit(0,0);return result;
 }
-int daggerMinimum(const CombatTransitionPersistentState& pre,int encounter,bool upgrade,bool escaped,const std::vector<int>& amounts){int maximum=(encounter==int(E::AWAKENED_ONE)?4:cap(encounter))-int(escaped),total=0;size_t i=0;for(auto card:pre.deck)if(card.id==int(C::RITUAL_DAGGER)){
+int daggerMinimum(const CombatTransitionPersistentState& pre,int encounter,bool upgrade,bool escaped,const std::vector<int>& amounts){int maximum=cap(encounter)-int(escaped),total=0;size_t i=0;for(auto card:pre.deck)if(card.id==int(C::RITUAL_DAGGER)){
     require(i<amounts.size(),"Dagger candidate identity");std::vector<int> payouts=card.upgraded?std::vector<int>{5}:(upgrade?std::vector<int>{3,5}:std::vector<int>{3});int best=maximum+1;for(auto p:gains(maximum,payouts))if(p.second==amounts[i])best=std::min(best,p.first);require(best<=maximum,"Dagger native increment");total+=best;++i;}require(i==amounts.size(),"Dagger candidate count");return total;}
 }
 CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const NativeComposedDomain &domain,const CombatTransitionPersistentState &pre,const CombatPredictorInputV1 &pi,std::mt19937_64 &rng,float survival,const Vec &givenMaximum,const Vec &givenZ,const Vec &givenZp,bool survivalAlreadyWon){

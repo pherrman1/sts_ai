@@ -51,7 +51,9 @@ def ritual_posts(pre, pi, mask=0, consumed_potions=None, escaped=False):
     import itertools
     from tools import combat_transition_gold as gold
     daggers=[c for c in pre['deck'] if c['id']==b._CARD_IDS['RITUAL_DAGGER']]
-    cap=4 if gold.encounter_name(pi['globals']['encounter'])=='AWAKENED_ONE' else gold.CAPS.get(gold.encounter_name(pi['globals']['encounter']),1)
+    # Awakened One's first phase is half-dead, so only its final phase and
+    # the two Cultists qualify, sharing the same three-kill cap as Hand of Greed.
+    cap=gold.CAPS.get(gold.encounter_name(pi['globals']['encounter']),1)
     if escaped:cap=max(0,cap-1)
     upgrade=bool(gold.mechanics(pi,pre,int(mask),consumed_potions)[1][gold.MECHANICAL_FIELDS.index('upgradeRoute')])
     options=[]

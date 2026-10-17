@@ -1049,6 +1049,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (combatIt == root.end() || !combatIt->is_object()) return unsupported("silver_combat_missing");
     const auto &combat = *combatIt;
     if (hasForbiddenRngField(combat)) return unsupported("silver_rng_field");
+    if (combat.contains("orphanedHandSelection"))
+        return unsupported("silver_orphaned_hand_selection");
     if (combat.contains("occupantBindingError")) return unsupported("silver_monster_occupant_binding");
     if (combat.contains("pendingActionQueueError")) return unsupported("silver_selection_pending_actions");
     if (combat.contains("pendingCardQueueError"))
@@ -2010,17 +2012,26 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
             combat = observation["silverRoot"].value("combat", nlohmann::json::object());
         }
         const auto monsters = combat.value("monsters", nlohmann::json::array());
-        if (!monsters.is_array() || silverSlot >= static_cast<int>(monsters.size())) return std::nullopt;
+        if (!monsters.is_array() || silverSlot >= 5) return std::nullopt;
+        std::array<std::optional<int>,5> targets {};
+        std::array<bool,5> seen {};
         int liveIndex = 0;
-        for (int slot = 0; slot < static_cast<int>(monsters.size()); ++slot) {
-            const auto &monster = monsters[slot];
-            if (!monster.is_object()) return std::nullopt;
-            if (!monster.contains("dead") || !monster["dead"].is_boolean()) return std::nullopt;
-            const bool dead = monster["dead"].get<bool>();
-            if (slot == silverSlot) return dead ? std::nullopt : std::optional<int>(liveIndex + 1);
-            if (!dead) ++liveIndex;
+        for (std::size_t i = 0; i < monsters.size(); ++i) {
+            const auto &monster = monsters[i];
+            if (!monster.is_object() || !monster.contains("dead") || !monster["dead"].is_boolean())
+                return std::nullopt;
+            // Java's array follows the physical live list. Native slots can
+            // have holes after a split/summon removes its original occupant.
+            // Use the same explicit slot/idx contract as the root importer.
+            for (const char *key : {"slot","idx"})
+                if (monster.contains(key) && !monster[key].is_number_integer()) return std::nullopt;
+            const int slot = monster.value("slot",monster.value("idx",static_cast<int>(i)));
+            if (slot < 0 || slot >= 5 || seen[slot] || monster.value("idx",slot)!=slot)
+                return std::nullopt;
+            seen[slot]=true;
+            if (!monster["dead"].get<bool>()) targets[slot]=++liveIndex;
         }
-        return std::nullopt;
+        return targets[silverSlot];
     };
     const auto targetFields = [&action, &targetIndex](nlohmann::json &result) -> bool {
         const auto compact = targetIndex(action.target);

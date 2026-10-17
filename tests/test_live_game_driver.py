@@ -9,7 +9,8 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action, hand_selection_transaction, grid_selection_transaction,
+    _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
+    hand_selection_transaction, grid_selection_transaction,
 )
 
 
@@ -76,6 +77,27 @@ def ooc_inspector_file(directory, screen, status="UNSUPPORTED", **fields):
 
 
 class LiveGameDriverTest(unittest.TestCase):
+    def test_transition_timeout_is_forwarded_and_preserved_for_reproduction(self):
+        from contextlib import asynccontextmanager
+        from unittest.mock import patch
+        @asynccontextmanager
+        async def connection(url):
+            yield FakeClient({"screen_type": "GAME_OVER", "screen_state": {"victory": False}}, [])
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("tools.live_game_driver.connected_mcp", connection), \
+                patch("tools.live_game_driver.Driver", wraps=Driver) as factory:
+            self.assertEqual(main(["--transition-timeout", "45", "--trace", str(Path(directory)/"trace")]), 0)
+            self.assertEqual(factory.call_args.kwargs["poll_timeout"], 45)
+            self.assertIn("--transition-timeout 45.0", factory.call_args.kwargs["reproduction_command"])
+
+    def test_transition_timeout_rejects_unbounded_or_nonpositive_budgets(self):
+        import contextlib, io
+        for value in ("0", "-1", "nan", "inf"):
+            with self.subTest(value=value), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    main(["--transition-timeout", value])
+                self.assertEqual(error.exception.code, 2)
+
     def test_inspector_reader_waits_for_delayed_matching_response(self):
         async def delayed_write(path):
             await asyncio.sleep(0.02)
@@ -164,7 +186,7 @@ class LiveGameDriverTest(unittest.TestCase):
                                 index = arguments["choice_index"]-1
                                 card = current["hand"].pop(index)
                                 current["screen_state"]["hand"] = list(current["hand"])
-                                current["screen_state"]["selected"].insert(0,card)
+                                current["screen_state"]["selected"].append(card)
                                 current["choice_list"].pop(index)
                                 if len(current["screen_state"]["selected"]) == count:
                                     current["choice_list"] = []
@@ -187,8 +209,14 @@ class LiveGameDriverTest(unittest.TestCase):
                     else:
                         asyncio.run(exercise())
                         calls=[(tool,args) for tool,args in client.calls if tool in {"choose","confirm","select_cards"}]
-                        expected=[("choose",{"choice_index": "abcde".index(uuid)+1}) for uuid in reversed(selected)]
+                        remaining=list("abcde")
+                        expected=[]
+                        for uuid in selected:
+                            index=remaining.index(uuid)
+                            expected.append(("choose",{"choice_index":index+1}))
+                            remaining.pop(index)
                         self.assertEqual(calls,expected+[("confirm",{})])
+                        self.assertEqual([card["uuid"] for card in client.states[0]["screen_state"]["selected"]],selected)
                     for bad in (["c","a"],["a","a"],["absent"]):
                         with self.assertRaises(IntegrationFailure):
                             hand_selection_transaction(dict(kind="card_select",cardUuids=bad),observation,screen)
@@ -399,6 +427,19 @@ class LiveGameDriverTest(unittest.TestCase):
         screen["choice_list"] = ["Speed Potion", "Weak Potion", "Card"]
         candidates = build_legal_actions(screen, ["choose"], game)
         self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 3})
+
+    def test_card_reveal_breaks_public_relic_potion_ordering_deadlock(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Preserved Insect", "Fairy in a Bottle", "card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [{"reward_type": "RELIC"}, {"reward_type": "POTION"}, {"reward_type": "CARD"}]},
+                "potions": [{"id": "Potion Slot"}] * 3}
+        candidates = build_legal_actions(screen, ["choose", "proceed"], game)
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments, {"choice_index": 3})
+        # Without the relic, the existing qualified forced-potion path applies.
+        without_relic = [c for c in candidates if c.mcp_arguments != {"choice_index": 1}]
+        self.assertIsNone(card_reward_reveal_action(screen, game, without_relic))
+        game.pop("potions")
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
 
     def test_multiple_card_groups_reveal_first_undeclined_physical_occurrence(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Card", "Card", "Card"],
@@ -956,6 +997,59 @@ class OocDriverTest(unittest.TestCase):
             self.assertFalse(any(tool in {"choose", "skip"} for tool, _ in client.calls))
             self.assertIsNotNone(driver.failure_path)
 
+    def test_cached_pile_stat_appearance_restarts_decision_before_clicking(self):
+        for drift in ("display", "hp", "hand", "cost", "uuid", "zero", "positive_change", "oscillating"):
+            with self.subTest(drift=drift), tempfile.TemporaryDirectory() as directory:
+                from copy import deepcopy
+                screen = combat_screen(session="s", sequence=1, observationHash="h")
+                before = {"current_hp": 80, "discard_pile": [
+                    {"id": "Anger", "uuid": "anger-copy", "cost": 0}]}
+                after = deepcopy(before)
+                after["discard_pile"][0]["damage"] = 6
+                if drift == "hp": after["current_hp"] = 79
+                if drift == "hand": after["hand"] = [{"uuid": "another-card"}]
+                if drift in {"cost", "uuid"}: after["discard_pile"][0][drift] = "changed"
+                if drift == "zero": after["discard_pile"][0]["damage"] = 0
+                if drift == "positive_change":
+                    before["discard_pile"][0]["damage"] = 6
+                    after["discard_pile"][0]["damage"] = 9
+                client = FakeClient(screen, ["play_card"], game_state=before)
+                original = client.call
+                reads = []
+                async def call(tool, arguments=None):
+                    if tool == "get_game_state":
+                        reads.append(tool)
+                        if drift == "oscillating":
+                            return deepcopy(before if len(reads) % 2 else after)
+                        return deepcopy(before if len(reads) == 1 else after)
+                    return await original(tool, arguments)
+                client.call = call
+                reader = InspectorReader(inspector_file(directory, "OK", selectedLiveAction={
+                    "kind": "card", "cardUuid": "strike-1", "targetIndex": 1}), timeout=.02)
+                original_read = reader.read_for
+                advisor_reads = []
+                async def read_for(state, previous=None):
+                    advisor_reads.append(state)
+                    self.assertFalse(any(tool == "play_card" for tool, _ in client.calls))
+                    return await original_read(state, previous)
+                reader.read_for = read_for
+                trace = TraceWriter(Path(directory) / "trace")
+                driver = Driver(client, reader, trace, strict_silver=True, max_steps=1,
+                                poll_interval=.001, poll_timeout=.05)
+                if drift == "display":
+                    asyncio.run(driver.run())
+                    self.assertEqual(len(advisor_reads), 2)
+                    self.assertEqual(sum(tool == "play_card" for tool, _ in client.calls), 1)
+                    rows = [json.loads(line) for line in trace.path.read_text().splitlines()]
+                    self.assertEqual(rows[0]["decision_source"], "combat_display_refresh")
+                    self.assertNotIn("executed_mcp_tool", rows[0])
+                    self.assertEqual(driver.counters["silver_ok"], 1)
+                else:
+                    with self.assertRaisesRegex(DriverError, "changed while awaiting"):
+                        asyncio.run(driver.run())
+                    self.assertFalse(any(tool == "play_card" for tool, _ in client.calls))
+                    self.assertEqual(len(advisor_reads), 4 if drift == "oscillating" else 1)
+
     def test_missing_ooc_snapshot_cannot_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, path = self.make(directory)
@@ -1015,6 +1109,115 @@ class OocDriverTest(unittest.TestCase):
                     self.assertEqual(mutations[0][1], {"character": "IRONCLAD", "ascension": 3, "seed": "123"})
                 self.assertEqual(driver.summary()["outcome"], "max_steps")
 
+    def test_strict_completed_act_three_boss_proceeds_without_policy(self):
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 33, "max_hp": 68, "floor": 50}
+        victory = {"screen_type": "GAME_OVER", "screen_state": {"victory": True},
+                   "ready_for_command": True, "current_hp": 33}
+        class CompletionClient(FakeClient):
+            async def call(self, tool, arguments=None):
+                if tool == "proceed":
+                    self.calls.append((tool, arguments or {})); self.states = [victory]
+                    return {"success": True}
+                return await super().call(tool, arguments)
+        with tempfile.TemporaryDirectory() as directory:
+            client = CompletionClient(screen, ["proceed"], game_state={"act": 3, "floor": 50, "current_hp": 33})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def no_policy(*args, **kwargs):
+                raise AssertionError("completed boss navigation asked a policy")
+            reader.read_for = no_policy
+            trace = TraceWriter(Path(directory) / "trace")
+            driver = Driver(client, reader, trace, strict_silver=True, strict_ooc=True, max_steps=2)
+            asyncio.run(driver.run())
+            self.assertEqual(driver.outcome, "victory")
+            self.assertEqual([tool for tool, _ in client.calls if tool == "proceed"], ["proceed"])
+            self.assertEqual(list(trace.recent)[0]["decision_source"], "boss_completion")
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+
+    def test_boss_completion_navigation_rejects_other_surfaces(self):
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 33, "floor": 50}
+        game = {"act": 3, "floor": 50, "current_hp": 33}
+        candidates = build_legal_actions(screen, ["proceed"], game)
+        self.assertIsNotNone(boss_completion_proceed_action(screen, game, candidates))
+        for ascension in (None, 0, 19, 20):
+            second_boss = boss_completion_proceed_action({**screen, "floor": 51},
+                    {**game, "floor": 51, "ascension_level": ascension}, candidates)
+            self.assertEqual(second_boss is not None, ascension == 20)
+        for key, value in [("screen_type", "NONE"), ("room_type", "MonsterRoom"),
+                           ("room_phase", "COMBAT"), ("ready_for_command", False),
+                           ("can_cancel", True), ("can_proceed", False), ("is_screen_up", True),
+                           ("choice_list", ["reward"]), ("choice_list", None), ("floor", 49)]:
+            with self.subTest(key=key, value=value):
+                self.assertIsNone(boss_completion_proceed_action({**screen, key: value}, game, candidates))
+        for update in ({"act": 2}, {"act": 4}, {"current_hp": 0}, {"current_hp": 34}, {"floor": 51}):
+            self.assertIsNone(boss_completion_proceed_action(screen, {**game, **update}, candidates))
+        self.assertIsNone(boss_completion_proceed_action(screen, game, candidates + candidates))
+
+    def test_differential_boss_completion_keeps_native_boundary(self):
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 33, "floor": 50}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient(screen, ["proceed"], game_state={"act": 3, "floor": 50})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def native_boundary(*args, **kwargs):
+                raise DriverError("native completion boundary")
+            reader.read_for = native_boundary
+            driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"), differential_trace=True)
+            with self.assertRaisesRegex(DriverError, "native completion boundary"):
+                asyncio.run(driver.run())
+            self.assertFalse(any(tool == "proceed" for tool, _ in client.calls))
+
+    def test_victory_dialogue_requires_exact_public_story_surface(self):
+        screen = {"screen_type": "EVENT", "room_type": "VictoryRoom", "room_phase": "EVENT",
+                  "ready_for_command": True, "in_game": True, "can_cancel": False, "can_proceed": False,
+                  "floor": 51, "choice_list": ["[Continue]"], "screen_state": {"event_id": "Spire Heart",
+                  "options": [{"choice_index": 0, "disabled": False}]}}
+        game = {"act": 3, "floor": 51, "ascension_level": 0}
+        candidates = build_legal_actions(screen, ["choose"], game)
+        self.assertIsNotNone(victory_dialogue_action(screen, game, candidates))
+        self.assertIsNotNone(victory_dialogue_action({**screen, "floor": 52},
+                {**game, "floor": 52, "ascension_level": 20}, candidates))
+        for key, value in [("room_type", "EventRoom"), ("can_cancel", True), ("floor", 50),
+                           ("ready_for_command", False), ("choice_list", ["Continue", "Leave"])]:
+            self.assertIsNone(victory_dialogue_action({**screen, key: value}, game, candidates))
+        for state in ({"event_id": "MindBloom", "options": screen["screen_state"]["options"]},
+                      {"event_id": "Spire Heart", "options": [{"choice_index": 1, "disabled": False}]},
+                      {"event_id": "Spire Heart", "options": [{"choice_index": 0, "disabled": True}]}):
+            self.assertIsNone(victory_dialogue_action({**screen, "screen_state": state}, game, candidates))
+
+    def test_strict_victory_story_advances_without_a_policy(self):
+        screen = {"screen_type": "EVENT", "room_type": "VictoryRoom", "room_phase": "EVENT",
+                  "ready_for_command": True, "in_game": True, "can_cancel": False, "can_proceed": False,
+                  "floor": 51, "choice_list": ["[Continue]"], "screen_state": {"event_id": "Spire Heart",
+                  "options": [{"choice_index": 0, "disabled": False}]}}
+        class StoryClient(FakeClient):
+            async def call(self, tool, arguments=None):
+                if tool == "choose":
+                    self.calls.append((tool, arguments or {}))
+                    self.states = [{"screen_type": "GAME_OVER", "screen_state": {"victory": True},
+                                    "ready_for_command": True}]
+                    return {"success": True}
+                return await super().call(tool, arguments)
+        with tempfile.TemporaryDirectory() as directory:
+            client = StoryClient(screen, ["choose"], game_state={"act": 3, "floor": 51, "ascension_level": 0})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def no_policy(*args, **kwargs):
+                raise AssertionError("victory story asked a policy")
+            reader.read_for = no_policy
+            trace = TraceWriter(Path(directory) / "trace")
+            driver = Driver(client, reader, trace, strict_ooc=True, strict_silver=True)
+            asyncio.run(driver.run())
+            self.assertEqual(driver.outcome, "victory")
+            self.assertEqual(list(trace.recent)[0]["decision_source"], "victory_dialogue")
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+
     def test_actual_shop_room_alias_and_enter_once_then_leave(self):
         with tempfile.TemporaryDirectory() as directory:
             room = {"screen_type": "SHOP_ROOM", "screen_name": "NONE", "room_type": "ShopRoom",
@@ -1053,14 +1256,15 @@ class OocDriverTest(unittest.TestCase):
                 path.write_text(json.dumps(raw))
                 return await original(state, previous)
             reader.read_for = capture
-            driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"))
+            driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"), strict_ooc=True)
             asyncio.run(driver.run())
             mutations = [(tool, arguments) for tool, arguments in client.calls if tool in {"choose", "cancel", "proceed"}]
             self.assertEqual(mutations, [("choose", {"choice_index": 1}), ("choose", {"choice_index": 1}),
                                          ("cancel", {}), ("proceed", {})])
             self.assertEqual(driver.entered_shop_rooms, {(1, 4)})
             self.assertEqual(driver.counters["ooc_v4_ok"], 2)
-            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 2)
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+            self.assertEqual(driver.counters["ooc_v4_unsupported"], 0)
 
     def test_shop_entry_is_not_recorded_on_dry_run_or_failed_call(self):
         for dry_run in (True, False):
@@ -1085,6 +1289,19 @@ class OocDriverTest(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(DriverError, "MCP action failed"):
                         asyncio.run(driver.run())
+                self.assertEqual(driver.entered_shop_rooms, set())
+
+    def test_strict_shop_navigation_rejects_ambiguous_or_nonmerchant_choices(self):
+        for choices in (["shop", "buy"], ["purchase"], []):
+            with self.subTest(choices=choices), tempfile.TemporaryDirectory() as directory:
+                screen = {"screen_type": "SHOP_ROOM", "floor": 4,
+                          "choice_list": choices, "ready_for_command": True}
+                client = FakeClient(screen, ["choose", "proceed"], game_state={"act": 1})
+                driver = Driver(client, InspectorReader(Path(directory) / "absent.json"),
+                                TraceWriter(Path(directory) / "trace"), strict_ooc=True)
+                with self.assertRaisesRegex(IntegrationFailure, "exact single shop entry"):
+                    asyncio.run(driver.run())
+                self.assertFalse(any(tool in {"choose", "proceed"} for tool, _ in client.calls))
                 self.assertEqual(driver.entered_shop_rooms, set())
 
     def test_skipped_reward_is_not_reopened_and_distinct_identical_group_survives(self):

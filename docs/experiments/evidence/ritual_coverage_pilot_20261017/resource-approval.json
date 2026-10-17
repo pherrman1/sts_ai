@@ -1,0 +1,18 @@
+{
+  "approved": true,
+  "budget": {
+    "addressSpaceBytesPerWorker": 8000000000,
+    "ascension": 0,
+    "cleanupSeconds": 5,
+    "gpu": false,
+    "packetSeconds": 5400,
+    "simulations": 10000,
+    "threadsPerWorker": 1,
+    "unitSeconds": 60,
+    "units": 144,
+    "workers": 8
+  },
+  "humanAuthorization": "Philipp in project thread 2026-10-17T09:58:54Z: 'yes lets go. maybe spawn 1 new worker thread so we can use those 4 and your 4 cores in parallle' (interpreted as 8 workers)",
+  "recipeSha256": "f4b715b3f7e0634b8cf305744fc3e8a0af6adb6acb882bb83e3cc8827e0d6b55",
+  "schema": "ritual_coverage_resource_approval_v1"
+}

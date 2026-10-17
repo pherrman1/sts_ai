@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -129,6 +129,16 @@ reproduces §498 per-source validation means to 3.9e-9, so the public-record enc
 matches natively; parity with live search states beyond public records is still open.
 `tools/outcome_head_sibling_check.py` scores further head JSON files the same way.
 
+§509 fine-tuned the whole Arm C network (trunk and its never-trained value head) on the
+outcomes, with a KL guard on the policy and a pairwise ranking loss on sibling 64-rollout
+means, on §497 and then §497 + round-2 (§503) TRAIN. **NOT_SHOWN**: checkpoints selected by
+VALIDATION BCE reach 0.418 (combined; 0.435 on §497 VALIDATION, below the frozen-trunk 0.453)
+but rank round-2 VALIDATION siblings at 0.566–0.580 vs X2-B 0.633. Outcome BCE overfits after
+about one pass while ranking keeps improving; the combined ranking-weight-2 fit reaches 0.648
+at its last step with BCE worse than the constant (descriptive, VALIDATION-selected, no
+bootstrap). Policy top-1 agreement stays 0.97–0.98. A ranking-selected candidate would need a
+new frozen protocol and the sealed round-2 CONFIRM.
+
 The original encoder ignores public battle/memory extras; counterfactual leaf
 support remains unqualified. Recovery/one-way-export
 and unverified cross-CPU byte parity limitations remain explicit. Prior §491–496
@@ -138,7 +148,8 @@ verdicts are unchanged.
 [value-head evidence](../../experiments/evidence/heart_outcome_value_20261017/REPORT.md),
 [one-shot holdout evidence](../../experiments/evidence/heart_outcome_holdout_20261017/REPORT.md),
 [weighting evidence](../../experiments/evidence/heart_outcome_weighting_20261017/REPORT.md),
-[sibling-ranking evidence](../../experiments/evidence/outcome_head_sibling_rank_20261017/REPORT.md).
+[sibling-ranking evidence](../../experiments/evidence/outcome_head_sibling_rank_20261017/REPORT.md),
+[value fine-tune evidence](../../experiments/evidence/arm_c_value_finetune_20261017/REPORT.md).
 
 ## Arm C rollout-target distillation (§494)
 
@@ -350,6 +361,48 @@ learned-stop corpus (pathb-r2, escape capability only) passed the offline A/B
 refreshed CTM does not establish a reason to turn OOC MCTS on (**Inference**).
 Philipp chose to swap the production CTM pins to pathb-r2; OOC MCTS stays off.
 [Evidence](../../experiments/evidence/ctm_live_ab_418_20261009/README.md).
+
+The A0 Writhing Mass/Ritual Dagger intersection remains unqualified in both
+selected pathb-r2 artifacts. The standard artifact's downstream tensors match
+`95e07d97c34a2b220a2ed5d570b2680b190f647c5a5cca945c52a2109e8cd0f0`,
+the checkpoint bound by the failed exposure report in §412. The fast artifact's
+downstream tensors instead match the later S19 checkpoint
+`06709aed52532085e99a47c5c7f07174a915038227232954cc16d60fa35809d4`.
+Its conditional validation gate does not establish intersection exposure
+qualification; the standard checkpoint's failure is not a measured failure
+of that different fast checkpoint. The earlier sparse Ritual head was only
+a warm start for these refits. Extending that warm start's fit cannot be
+interpreted as repairing either deployed head. Capability guards stay in
+place pending stack-specific composition and native qualification.
+[Artifact custody](../../experiments/evidence/ctm_ritual_validation_20261017/custody.json).
+A frozen 32-draw VALIDATION diagnostic (§511) scores 143 rows from 68 sources
+with near-zero exposure gap, but every observed Dagger increment is zero.
+A TRAIN/VALIDATION census has only three positive increments in 1,238 rows.
+This does not qualify growth, standard-Brew coverage or active-Tail
+composition. Deterministic fixtures subsequently reproduced lost final-kill
+Ritual growth and false half-dead growth in the producer. The fixed transfer,
+eligibility and shared native kill budget match vanilla semantics. Old rows
+lack the action history needed to repair them, and later pre-state decks also
+reflect the old growth. Corrected-source data is required before renewing
+affected Ritual growth qualification; the existing artifacts are preserved.
+[Diagnostic evidence](../../experiments/evidence/ctm_ritual_validation_20261017/REPORT.md).
+The reviewed corrected-source canary (§512) completes one reused TRAIN source
+in 16.344 s with 24 valid RAW rows and zero quarantine. It observes two +3
+increments, including Writhing 18→21. This establishes positive producer
+behavior only. Key collection was ON by the current compiled default, so it
+is not historical-teacher reproduction; future collection must freeze that
+objective explicitly. Controlled upgraded/multicopy and Brew/Smoke coverage
+and a reviewed Ritual-only fit/export adapter remain prerequisites. Neither
+the old all-zero cohort nor this one source qualifies changed weights.
+[Corrected canary evidence](../../experiments/evidence/ritual_corrected_canary_20261017/REPORT.md).
+Follow-up (2026-10-17):
+- Controlled coverage pilots §505/§506 reached coverage in every non-Smoke cell. With a Smoke Bomb held, Silver
+  escapes in about 87% of fights.
+- The Ritual-only refit (§507) cut Writhing NLL from 0.514 to 0.350. The non-Writhing margin was waived by owner
+  override.
+- A 64-seed A/B (§508) was identical on every pair, because no run held a Dagger.
+- The refit pair is now the A0 default (ADR-0044).
+[Refit evidence](../../experiments/evidence/ctm_ritual_refit_20261017/REPORT.md).
 
 **Root selection × cpuct (2026-10-09, §414).** On 128 new paired seeds with the
 pathb-r2 stack, picking the OOC MCTS root option by mean Q instead of visits
