@@ -35,6 +35,10 @@ from typing import Iterable, Iterator
 import numpy as np
 
 try:
+    from tools import ctm_input_encoding as input_encoding
+except ModuleNotFoundError:  # direct invocation from the tools directory
+    import ctm_input_encoding as input_encoding
+try:
     from tools import ctm_pins as _pins
 except ModuleNotFoundError:  # direct invocation from the tools directory
     import ctm_pins as _pins
@@ -54,6 +58,7 @@ try:
         RELIC_COUNT,
         _encode_row,
         _validate_entity_domains,
+        encoding_widths,
         persistent_change_flags,
         split_for_seed,
     )
@@ -70,6 +75,7 @@ except ModuleNotFoundError:  # direct invocation from tools/
         RELIC_COUNT,
         _encode_row,
         _validate_entity_domains,
+        encoding_widths,
         persistent_change_flags,
         split_for_seed,
     )
@@ -962,10 +968,11 @@ class DeepSetsEncoder:
     """Corrected PR #161 DeepSets representation, returning a width-64 run vector."""
 
     def __init__(self, nn, torch, scalar_mean: np.ndarray, scalar_std: np.ndarray,
-                 potion_blind: bool = False):
+                 potion_blind: bool = False, encoding: str = input_encoding.V1):
         self.torch = torch
         self.nn = nn
         self.potion_blind = potion_blind
+        self.encoding = encoding; categories = encoding_widths(encoding, scalar_mean)
         self.scalar_mean = torch.tensor(scalar_mean, dtype=torch.float32)
         self.scalar_inv = torch.tensor(1.0 / np.maximum(scalar_std, 1e-6), dtype=torch.float32)
 
@@ -980,21 +987,19 @@ class DeepSetsEncoder:
                 self.relic_id = nn.Embedding(RELIC_COUNT, 48)
                 self.potion_id = nn.Embedding(POTION_COUNT, 32)
                 self.potion_slot = nn.Embedding(5, 8)
-                self.global_category = nn.ModuleList(
-                    nn.Embedding(GLOBAL_CATEGORY_COUNTS[field], 8)
-                    for field in ("characterClass", "encounter", "roomClass", "lastRoom")
-                )
+                self.global_category = nn.ModuleList(nn.Embedding(count, 8) for count in categories)
                 self.card_mlp = nn.Sequential(nn.Linear(48 + 3, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU())
                 self.relic_mlp = nn.Sequential(nn.Linear(48 + 2, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU())
                 self.potion_mlp = nn.Sequential(nn.Linear(32 + 8, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU())
                 self.global_mlp = nn.Sequential(
-                    nn.Linear(len(CONTINUOUS_GLOBAL_FIELDS) + 8 * 4, 64), nn.ReLU()
+                    nn.Linear(len(scalar_mean) + 8 * len(categories), 64), nn.ReLU()
                 )
                 self.trunk = nn.Sequential(nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, 64), nn.ReLU())
 
             def forward(self, g, gc, c, r, p, cmask, rmask):
                 t = self.outer.torch
-                cfields = t.cat((c[:, :, 1:2].float(), c[:, :, 2:3].float().clamp(-20, 20) / 20,
+                g, gc = input_encoding.globals_features(g, gc, self.outer.encoding)
+                cfields = t.cat((c[:, :, 1:2].float(), input_encoding.misc_feature(c[:, :, 2:3].float(), self.outer.encoding),
                                  c[:, :, 3:4].float() / 3), -1)
                 cvec = self.card_mlp(t.cat((self.card_id(c[:, :, 0].long()), cfields), -1))
                 cpool = (cvec * cmask.unsqueeze(-1)).sum(1)

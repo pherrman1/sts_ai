@@ -1,0 +1,29 @@
+{
+  "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+  "command": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=10s",
+    "1200s",
+    "/usr/bin/python3",
+    "tools/heart_outcome_dev_compare.py",
+    "--parent",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v2",
+    "--import-root",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-import-20261016-v1",
+    "--checkpoint",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models/student-c-68fe88be.pt",
+    "--silverbot",
+    "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+    "--out",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-dev-compare-20261017-v1"
+  ],
+  "cwd": "/home/philippherrmann/Documents/sts/wt-dev-compare-501",
+  "endedUtc": "2026-10-16T23:56:18.885383783Z",
+  "exitCode": 0,
+  "sourceSha": "ae39f38bd80d26a18fe0ea76bd158fac72258008",
+  "startedUtc": "2026-10-16T23:54:59.224333266Z",
+  "teeLog": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-dev-compare-20261017-v1.log",
+  "unittestCommand": "CUBLAS_WORKSPACE_CONFIG=:4096:8 /usr/bin/python3 -m unittest tests/test_heart_outcome_dev_compare.py tests/test_heart_outcome_weighting.py -v",
+  "unittestResult": "Ran 18 tests, OK"
+}

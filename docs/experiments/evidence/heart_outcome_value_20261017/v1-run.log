@@ -1,0 +1,17 @@
+encoding train
+encoded train 171442 seconds 270.79
+encoding validation
+encoded validation 56704 seconds 359.96
+Traceback (most recent call last):
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed-worktrees/native-campaign-guards/tools/heart_outcome_value.py", line 380, in <module>
+    main()
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed-worktrees/native-campaign-guards/tools/heart_outcome_value.py", line 372, in main
+    freeze(args) if args.command == 'freeze' else run(args)
+                                                  ^^^^^^^^^
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed-worktrees/native-campaign-guards/tools/heart_outcome_value.py", line 321, in run
+    best,history = train_one(tx,ty,tw,vx,vy,vw,init,fit_deadline)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/Documents/sts/sts_lightspeed-worktrees/native-campaign-guards/tools/heart_outcome_value.py", line 272, in train_one
+    ids = torch.multinomial(w,BATCH,replacement=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cumsum_cuda_kernel does not have a deterministic implementation, but you set 'torch.use_deterministic_algorithms(True)'. You can turn off determinism just for this operation, or you can use the 'warn_only=True' option, if that's acceptable for your application. You can also file an issue at https://github.com/pytorch/pytorch/issues to help us prioritize adding deterministic support for this operation.

@@ -1,0 +1,329 @@
+{
+  "activationSha256": "9f66ee277e52874b8c74dcd11561027f827029b336da28f81c534e3c5a041b22",
+  "analysisPython": "3.12.3",
+  "bundleSha256": "836a34129c99bfd68e691ed802f0a403cd75e37db7effd0e1b01f51b4697f6d5",
+  "deliveryIndexSha256": "e3621c3873dc0155edd651f787802412560b632ee6cca3f32b6e4ed2be746026",
+  "limitations": [
+    "Operational recovery and one-way export deviations remain recorded; not unchanged original protocol.",
+    "No cross-CPU byte-parity proof for W11; fixed simulations alone do not establish it.",
+    "Public-record/native parity unqualified; sampled actual driver boundaries.",
+    "TEST validated only by opaque hashes and producer completion receipts; no TEST outcomes inspected."
+  ],
+  "nativeIntegration": false,
+  "planSha256": "4b49a40427dde2470044847e8e843cc349a460e183d6fa2ddbdda4c0494d14a3",
+  "producerRuntime": {
+    "numpy": "2.5.3",
+    "python": "3.13.16"
+  },
+  "producerSourceSha": "7527b5d5d07467688101212660461995665512b9",
+  "schema": "heart-outcome-import-audit-v1",
+  "sealedCustody": [
+    {
+      "parsed": false,
+      "path": "deliveries/w00/SEALED-test.tar.gz",
+      "sha256": "6a5ad6875bb25021b8521f2931fcb6770eaa4f10809d996c3b2cff54acdd3d28"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w01/SEALED-test.tar.gz",
+      "sha256": "8b07b5448b5cc5a5830b96c6c9a9c6327ef97feca8b9500880a21893bfa49cd4"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w02/SEALED-test.tar.gz",
+      "sha256": "6d79376bbe45bb0baa45f54356799a3ad071248551810ebffff28c9f14bf73bf"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w03/SEALED-test.tar.gz",
+      "sha256": "b3adbe8d9726e466306603293a4c2db6d640bdc862578059d7aa7e37523740e5"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w04/SEALED-test.tar.gz",
+      "sha256": "d283d2bb24cbc3480c166a482ea7a2efe7c6ba9bdf04c3fc3990c755591dc33a"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w05/SEALED-test.tar.gz",
+      "sha256": "3dfcb3f6f52b2d0cf503d8830f1e6f579914ef3a211983082c1e0d6d8e81065e"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w06/SEALED-test.tar.gz",
+      "sha256": "da42682eb1bd53b0c57aa5a4fe0144fdd1b899749305390d788301f05194a178"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w09/SEALED-test.tar.gz",
+      "sha256": "0a9b52802cd60debfcd313c9eb68b5954ed3e1ec9574375400fae5cc3629f4a8"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w10/SEALED-test.tar.gz",
+      "sha256": "8d0ed33e590303e7eea24e89133315319807637e51a3f1f451098106dafd6f61"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w11/SEALED-test.tar.gz",
+      "sha256": "c494c4fc57507467dc292b4eb22c940bd9ef0509b0170e9692d964023e4201ed"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w12/SEALED-test.tar.gz",
+      "sha256": "3ee2743e162d56ef6a5f8c90aab171a098731c5d508e26ee7860e26f415235ba"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w13/SEALED-test.tar.gz",
+      "sha256": "88373f7bae33393766f3b08a2522ee389e0d17c909b52d2d018357bcb7b61da9"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w14/SEALED-test.tar.gz",
+      "sha256": "974013ba4bcc97966ba005aee9e19c0c2f8a0914df0f8dbee1247e0c44937e73"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w15/SEALED-test.tar.gz",
+      "sha256": "32b6519b9c6499b5809c46a323e76f3e131b7617a83e8c0dba25246663314113"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w16/SEALED-test.tar.gz",
+      "sha256": "5afd0bce467e6f0dd7581bf7f104bb94e1779b52c7ecc5eb13050356cd171b3c"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w17/SEALED-test.tar.gz",
+      "sha256": "7e4b9419d05211a9570ea433c035df6da622eedf6f3afd484ea065b199678655"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w18/SEALED-test.tar.gz",
+      "sha256": "99347f85108b35f6d08c18222ff499391325144eee95e85623853a61e7df085c"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w19/SEALED-test.tar.gz",
+      "sha256": "701e32e12f327e4ca2a0b760c1732632cd0ce7d5b285d7118c4b8d2f34bcf216"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w20/SEALED-test.tar.gz",
+      "sha256": "21e89f3f0a7b48bc3e38bb30e072c7e204ca3afb0819624b028cce1b78ade349"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w21/SEALED-test.tar.gz",
+      "sha256": "841f7284d15012cbe022d11967cea72fb52692796fe1706755771fcd769a6fe2"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w22/SEALED-test.tar.gz",
+      "sha256": "ba40ad66bd9e02acc976661ad66dcb4e8bf0a9d874573418d0049634779c3c04"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w23/SEALED-test.tar.gz",
+      "sha256": "4304357377f0e4719c0bc3f8cbc85414b279d4d7b87dcda024f9b75595ebd9a0"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w24/SEALED-test.tar.gz",
+      "sha256": "e7f2261a0001a421145a969fed989a4b290b3ac1f03b26e1538dc782f37c6f9b"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w25/SEALED-test.tar.gz",
+      "sha256": "1a14ab891d748f1e8204544f4659a598d9d5a057faeeb573c3b8ce3e8cd7df72"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w26/SEALED-test.tar.gz",
+      "sha256": "b93403012bbb6aaf7ae34d98bfa7acb843f865cec211e14c0c8a2500e22a888e"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w28/SEALED-test.tar.gz",
+      "sha256": "cafeeb264ae2fd1ccb86dbe0d799fbeb2cf0ded354d487018b26c265e14a1a18"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w29/SEALED-test.tar.gz",
+      "sha256": "8c388eb9e0fe3db237146c54de96f9aa9dcbd16c0252c2875315cde5236d5d0d"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w30/SEALED-test.tar.gz",
+      "sha256": "f0a3e83c6bef25a21a7aa30350292965e698679c3f88d1b5135cad6c14c657b6"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w31/SEALED-test.tar.gz",
+      "sha256": "58b46d08bb76e2366a9e68227216c44e98079464f0ba118a1131041f790671f1"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w32/SEALED-test.tar.gz",
+      "sha256": "67e4acac53ad1aac82824e2d517e96e5a63ce7c62f1ca4a89a5471120a57bd98"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w33/SEALED-test.tar.gz",
+      "sha256": "961f4ec853b2242f4007caec9e9052a9b9e04b2db1e8234d52bea7b2a0b8edf0"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w35/SEALED-test.tar.gz",
+      "sha256": "9fcdea1fdd40773b173d38ae836b078553ebc86897fee5d0fa562a452ef44648"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w36/SEALED-test.tar.gz",
+      "sha256": "fc35417d97089dcf2c6dd6d6670aedb7140dd8a5bb84d5023640d8adb2bcd1b0"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w37/SEALED-test.tar.gz",
+      "sha256": "d571fa0273a0c9c473d2264149f2b3fd3de3a86478d70aadbba68da774b6022f"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w38/SEALED-test.tar.gz",
+      "sha256": "75bf505d61690b16ed173d38f223063bd3eb82bf4d075cfee57303e513018ee0"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w39/SEALED-test.tar.gz",
+      "sha256": "f391a96ea92623710da9170e4d4425b02ecca23032ff2493ccffc49e2205d54a"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w40/SEALED-test.tar.gz",
+      "sha256": "e334a0b80ba3000c87482085d672bf6cc6b03120f6309e473845e5e3ca32512c"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w41/SEALED-test.tar.gz",
+      "sha256": "afa526b663bf783c467325138caed20f9a474507759b80056006661856487886"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w42/SEALED-test.tar.gz",
+      "sha256": "6cc8160f840fffa880abaa6bceaecb8e55163c62dbdb982dd5d52227463a5115"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w43/SEALED-test.tar.gz",
+      "sha256": "ae0937551dfb30bc48527b6e48fa97a1dba7a4835847b3e2ed17bf47f553faed"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w44/SEALED-test.tar.gz",
+      "sha256": "e1123354f8384fcda7804a0c04a7fe73bc2890da8aefde7970d15b90e760623e"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r07-0/SEALED-test.tar.gz",
+      "sha256": "c4e5163a14b455eef2b18b733a2ea65f8badaff7855649eb334a5c26379fea57"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r07-1/SEALED-test.tar.gz",
+      "sha256": "a9ab70c985d7586feeab4c231ab69dcbfda29696c3bad8d9d121e51b6f5fd2f8"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r08-0/SEALED-test.tar.gz",
+      "sha256": "b1ce431b16ca71bac66a497afaf4f8b518945dafb5aef869e50042304b4e29f6"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r08-1/SEALED-test.tar.gz",
+      "sha256": "30c56683aa7ee0ee7498e1d037e74ffb103ca4bae361a2cbb02d1366d6465e62"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r27-0/SEALED-test.tar.gz",
+      "sha256": "457f1df37f1b4da4ea1835374ead81d2770d27167d66c36d79445406fe3981cf"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r27-1/SEALED-test.tar.gz",
+      "sha256": "8d5e0cfc08915c9051c0efc939494805263aa25e428eafb3af1fe1c4f89e9c0d"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r34-0/SEALED-test.tar.gz",
+      "sha256": "ae21d4362639254a7a5e50b105961067fda256e4021a5e335e7c55254635f139"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/r34-1/SEALED-test.tar.gz",
+      "sha256": "667069aec51b50b5cfe6714365739e15f958e14a6a4f9b47ca2f74cfe06b1416"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w07/SEALED-partial-out.tar.gz",
+      "sha256": "2b6f55fe356e50d6666e9691328e1810314f6fab7b7e7197e4b60b55de57edff"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w08/SEALED-partial-out.tar.gz",
+      "sha256": "94a90ed4940f4c6582a7bd67c0da4bbfe325444575eecee6cb97ba045fbc7331"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w27/SEALED-partial-out.tar.gz",
+      "sha256": "2617ac4a51bb244c3185525460d9466b9290231f55bf27098832fe1221300c03"
+    },
+    {
+      "parsed": false,
+      "path": "deliveries/w34/SEALED-partial-out.tar.gz",
+      "sha256": "55ffe8e11bcc24468550f20cae85bb91adcb18c45c137fc48483af7d6f08fc07"
+    }
+  ],
+  "selectedDeliveries": 49,
+  "splits": {
+    "train": {
+      "finalActCounts": {
+        "1": 123,
+        "2": 337,
+        "3": 252,
+        "4": 368
+      },
+      "losses": 954,
+      "sources": 1080,
+      "states": 171442,
+      "supportedStates": 171442,
+      "wins": 126
+    },
+    "validation": {
+      "finalActCounts": {
+        "1": 43,
+        "2": 120,
+        "3": 83,
+        "4": 114
+      },
+      "losses": 313,
+      "sources": 360,
+      "states": 56704,
+      "supportedStates": 56704,
+      "wins": 47
+    }
+  },
+  "supersededArchivesParsed": 0,
+  "testArchivesParsed": 0,
+  "testAssignedSources": 360,
+  "testOpeningAuthorized": false,
+  "trainingGate": {
+    "trainLosses": 20,
+    "trainWins": 20,
+    "validationLosses": 5,
+    "validationWins": 5
+  },
+  "transportCommit": "e3b649ced5a392f78e9412787a84d458cffd60a1",
+  "verdict": "TRAIN_VALIDATION_READY",
+  "verifiedTransportFiles": 378
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "heart-outcome-value-artifact-receipt-v1",
+  "sourceSha": "c7e857216cd2c450c388c265c1951e5d97cc25e8",
+  "verdict": "VALIDATION_ONLY",
+  "artifacts": {
+    "freeze.json": "b5d2e023ecb4c4ba8ff82c827c43a0aa4c5a11b5d5106d5bec79c0984d2b2a44",
+    "result.json": "eeee2c1ace7382fa5fa3c4f51b4caeb6e08ea3d04bc54553d299e7f7e22c356c",
+    "head.json": "2c478bca6692e8c69cd70c78cf7cf1758c07c3ed884a97bb64d813424019942c",
+    "run.log": "d345ebe30580756ac2709606c8e280907f9cc58dbe27269a1517a2196c7e3bd5",
+    "cache.json": "1b2ca902220bf31497e8ba28e54fa9de0b33bdb462ff3773a44cb478bf84b00c",
+    "exit.json": "ab007f47c11cac82e74402949158605a6c0c14658b375c657ccefb71e67fc31b",
+    "command.json": "ec432e422197303f1dc4bb49b19155f6a30aede782bbfb09f51e0238e0e253f2",
+    "process-identity.json": "59f1dbca961816cd92ca6825f06e78291a03f2433a468bd3bbfccde13f87c4fb",
+    "cache-started.json": "560fb82e87fd2100ac8e612281352488f1ee0253f80dd91f79175cbc08f1b962",
+    "fit-started.json": "dd463d4072aca1a586b6858a66a8b34cfebc8969544f1ae057c9770521d0f75a",
+    "pooled.pt": "a066eb69a74c16fc5e2d4e75b3c269937e269be1b82e5d2cbfb667cdbd442a25",
+    "candidate-0.pt": "1795e83298ae2750523acc4eedff36eb02516bb5eab23b010d2eef7746e85562",
+    "candidate-1.pt": "7e41f3732143cf2a2938f34181443d5ff006de714a6474f518573471e47eed9c",
+    "value-head.pt": "68c20b521b53a72896293b72442839eb5abfbb7c43222030556874b0a7593de1",
+    "result-reviewed.json": "c3cc779e11a641b2e6b0e84137ccdd71309e2c28575062f99e5e9e5b42b9b669"
+  },
+  "rawRoot": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v2",
+  "testRead": false,
+  "nativeIntegration": false,
+  "fitRuns": 2,
+  "parentFailedBeforeUpdates": true,
+  "sourceReviewSha256": "a7d6dc9a98233037cf249f7df020a01d57fd4b2c5f28a38bd514f3bde6ea6eeb",
+  "focusedPython": {
+    "passed": 41,
+    "seconds": 1.265,
+    "logSha256": "e75f6be0b46c5c6c844e8bc25de884c711772f028d1ef095e6b6434c4996efb0"
+  },
+  "independentFocusedPython": {
+    "passed": 14,
+    "seconds": 1.194,
+    "extraRecoveryNegativeCases": 6
+  },
+  "checksNotRun": [
+    "new game seeds",
+    "native inference speed",
+    "full C++ rebuild (no C++ edits)",
+    "TEST",
+    "RL"
+  ],
+  "knowledgeImpact": "current research, limitations, offline pipeline and code map; no baseline/default changes"
+}

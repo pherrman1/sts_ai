@@ -19453,3 +19453,349 @@ fitting, outcome summary, trained-value or gameplay verdict.**
   audit, then a reviewed training protocol.
 
 **Knowledge impact:** none beyond this entry; the data are not yet imported.
+
+### §497 recovered-delivery local import and seal audit
+
+**TRAIN_VALIDATION_READY; independent importer and result reviews PASS. TEST
+remains sealed. No fitting, new game seeds or native value-head integration.**
+
+- User supplied never-merge transport branch `claude/heart-outcome-data`, pinned
+  `e3b649ced5a392f78e9412787a84d458cffd60a1`, and explicitly selected original
+  `wWW` deliveries plus `rWW-H` replacements for lost 7/8/27/34. The 41 accepted
+  originals plus 8 replacement halves cover 1,800 unique planned sources. Original
+  lost-worker partials remain superseded opaque evidence, not usable examples.
+- All 379 regular files were inventoried; all 378 SHA256SUMS entries passed before
+  and after validation. The delivery index is byte-identical to main, full SHA
+  `e3621c3873dc0155edd651f787802412560b632ee6cca3f32b6e4ed2be746026`.
+  Primary local main updated to `b35c179ebedfa33935198dc784004a52f58eef8b`.
+- Importer `747f47e935c5c35c41dd5599f0905dd7a270806a` was reviewed and frozen
+  before the full label audit. A comparison bug caught before that audit was
+  fixed to respect native public-observation HP/maxHP/gold caps 200/200/1800.
+  Python importer 12/12 and collector 15/15 pass; focused CTest 2/2 passes.
+- All 1,440 TRAIN/VALIDATION trajectories pass complete healthy footer, eight-file
+  framing, seven-file receipt hashes, public schema, ordered actual-trace
+  alignment and exact source/binary/model/policy/environment bindings. Prior
+  and rollout scoring coverage is 100% for all sources, zero fallback/legacy.
+
+| Split | Complete runs | Heart kills | Other completed outcomes | Valid observations |
+| --- | ---: | ---: | ---: | ---: |
+| TRAIN |1080|126|954|171442 /171442|
+| VALIDATION |360|47|313|56704 /56704|
+
+The unchanged TRAIN 20 wins/20 losses and VALIDATION 5/5 gate passes. Outcome
+counts are complete runs, not independent state samples. Future fits need
+source-disjoint selection and source-balanced weights; no model-quality or
+performance verdict follows from the 228,146 validated observations.
+
+- Independent result review recomputed raw TRAIN/VALIDATION footer counts and
+  hash/identity bindings. Result SHA
+  `aafe46933b03b153fc3b3032f0afa3f860663b15e9d96e015f3af06688328d33`;
+  1440-source manifest SHA
+  `1d2c6b03f95ca4750eb9869627f590d11fafeb69f04c43077d927d524117f5c6`;
+  separate review SHA
+  `e07fce84e152dc4d0bf10c6c8ae833c37ff0d7ed8d49b41ac18fea71b59e01be`.
+- All 49 TEST archives and 4 superseded partials were opaque hashes only: no
+  archive-member listing, extraction, trajectory/receipt/log reading or TEST
+  label counts. Completion of 360 TEST sources is attested by worker receipts,
+  not independent parsing of their inner framing/clocks. TEST stays closed
+  pending a separately reviewed one-shot protocol.
+- The recorded recovery and one-way export are deviations, not an unchanged
+  execution of the original no-retry/roundtrip protocol. Correction to the
+  cloud-update wording above: fixed simulations and identical binary hashes
+  do not by themselves establish byte-identical behavior on W11's different
+  CPU; "only wall time differs" was unverified. No cross-CPU timing or
+  behavior-quality conclusion is drawn. The review timestamp string also does
+  not independently establish final export-approval chronology.
+
+[Import protocol/report](evidence/heart_outcome_import_20261016/REPORT.md).
+Raw data/logs/source manifest persist under the ignored local root
+`build/heart-outcome-import-20261016-v1`; the corpus transport branch is not
+merged or copied into main. Prior §491–496 verdicts remain unchanged.
+**Knowledge impact:** current corpus readiness/custody and reproducible import
+procedure are updated in maintained OOC research/pipeline knowledge.
+
+## §498 — observed Heart-outcome nonlinear head on frozen Arm C
+
+**VALIDATION_ONLY; positive development comparison with the constant. Independent
+source/design and exact-result/custody reviews PASS. TEST sealed; no native
+integration, gameplay/speed qualification, RL or default promotion.**
+
+- Reused §497's exact recovered actual-trajectory corpus: TRAIN 1,080 runs/126 Heart
+  wins/171,442 states, VALIDATION 360/47/56,704; seeds 110180000–110181439 split at
+  110181080. No new seeds, transport merge, superseded partials or old surrogate
+  labels/cache. Teacher remains A20 Heart+keys, exact 10k project-fair native
+  Silver real combats, Arm C prior+rollout, calibrated CTM, rollout3/public X2-B,
+  512 OOC sims/earlystop1. X2-B guides the fixed teacher, never supplies labels.
+- Train only a 4,225-parameter 64 → 64 ReLU → 1 BCE head; original Arm C pooled encoder
+  and policy remain fixed. TRAIN-only source-balanced normalization, source-
+  balanced sampling, AdamW .001/weight decay .001, batch 512; exactly 2 initializations
+  × 2,000 updates, evaluate every 100. Validation selected init 1/step 300 among 40
+  checkpoints; init 0 also selected step 300, BCE 0.351242. No adaptive extra fits.
+
+| Source-balanced metric | TRAIN | VALIDATION | Constant VALIDATION |
+| --- | ---: | ---: | ---: |
+| BCE |0.312713|0.350551|0.388347|
+| Brier |0.090373|0.103368|0.113704|
+| Weighted state AUROC |0.749243|0.715277|0.500000|
+
+Constant=TRAIN source win rate 126/1080. Whole-source 1,000-resample paired bootstrap
+selected minus constant: BCE −0.0377961, descriptive 95%[−0.0557265,−0.0194511];
+Brier −0.0103355,[−0.0172529,−0.00358405]. Intervals are descriptive after selection.
+Act 1 AUROC 0.577 remains weak; Act 4 weighted mean 0.3748 underpredicts 0.4347 outcome
+rate. Inverse total future trajectory length changes the conditional sampling
+population; source-balanced loss improvement does not establish calibrated
+native `V_pi(s)`/initial-state probability. Current records also do not qualify
+counterfactual CTM leaves or full native/public parity. No exact native X2-B
+baseline was reconstructed from clipped inputs.
+
+- Frozen v1 source `449573acd77300f3e8a68fb39da64a2166472ed2` completed both fresh
+  encodings in 359.96 s, then strict deterministic CUDA multinomial failed before
+  first loss/backward/optimizer update. No model score/checkpoint existed.
+  Preserve **INVALID_SOFTWARE_BEFORE_UPDATES**, all failed receipts/latches/cache.
+- Prospectively reviewed v2 source `c7e857216cd2c450c388c265c1951e5d97cc25e8` uses
+  deterministic CPU draws from the same distribution, indices moved to GPU.
+  Exact v1 cache/source/runtime/import/failure/companion hashes bind reuse in a
+  separate sibling root with fresh latches. Full validation encoding repeats.
+  Source review also fixed probability-clipped reported BCE before v1 launch;
+  all reported BCE now uses stable logits and matches selection loss.
+- V2 exits 0 in 106.899 s; fitting 5.118 s, remaining cache/parity/provenance 97.941 s.
+  Local RTX 3060 Ti/two CPU threads, strict float32 determinism/TF32off/CUBLAS4096:8,
+  external 4,200 s hard cap, 3,600 s encoding/parity and 600 s fitting caps. These are
+  offline processing times, not native inference latency or cost evidence.
+- All 79 original model tensors, validation pooled features and policy logits are
+  bitwise equal; composed versus cached probability max abs 5.96e-8. Python 41/41
+  passes; independent 14/14 plus 6 negative recovery tests pass. Independent CPU
+  cached-head recomputation reproduces metrics/normalization/selection/bootstrap;
+  encoder parity is guarded-run evidence, not independently re-encoded.
+- Rehashed 98 development archives, all 53 opaque TEST/partial objects and 7 v1
+  parent bindings. No TEST member listing/content reading or opening latch.
+  Data transport remains never-merge, original evidence unchanged.
+- Freeze `b5d2e023ecb4c4ba8ff82c827c43a0aa4c5a11b5d5106d5bec79c0984d2b2a44`;
+  result `eeee2c1ace7382fa5fa3c4f51b4caeb6e08ea3d04bc54553d299e7f7e22c356c`;
+  selected checkpoint `68c20b521b53a72896293b72442839eb5abfbb7c43222030556874b0a7593de1`.
+
+[Protocol, report and compact evidence](evidence/heart_outcome_value_20261017/REPORT.md).
+Raw v1/v2 artifacts persist under ignored `build/heart-outcome-value-20261017-v*`.
+Next: separately reviewed one-shot TEST/early-game calibration before any native
+integration. No retraining/regrading or TEST opening is authorized by this result.
+**Knowledge impact:** current research status/limitations, offline pipeline and
+code routing updated; prior §491–497 verdicts and production defaults unchanged.
+
+## §499 — one-shot Heart-outcome holdout and fixed early mean bias
+
+**HOLDOUT_SIGNAL_CALIBRATION_NOT_SHOWN.** The frozen §498 candidate passes the
+preregistered aggregate prediction comparison but fails all three marginal early
+mean-bias gates. TEST is now consumed. No fit, recalibration, gameplay, native
+integration, RL or default promotion followed the result.
+
+- Candidate remains §498 init 1/step 300, head SHA
+  `68c20b521b53a72896293b72442839eb5abfbb7c43222030556874b0a7593de1`,
+  same original Arm C pooled encoder/policy and TRAIN normalization. Baseline is
+  TRAIN126/1080. User authorized this one-shot follow-up and the fixed early
+  checks before opening; source/design and final exact-freeze reviews passed.
+- Reviewed frozen evaluator `8f79207b7a04ed0f96773608099166c854e152dd` opens exactly
+  49 accepted archives/360 sources 110181440–110181799. All source receipt/process/
+  native binary/Arm C use, actual trace, public schema/healthy full-run outcome,
+  100% support and original activation clocks pass:55,718 observations, 43 Heart
+  wins/317 losses. These are corpus outcomes under the fixed collector, not games
+  played by this value head. Four superseded partial archives remain opaque.
+- Collection configuration remains A20 Heart+keys/full-run, exact 10k project-fair
+  native Silver real combat, Arm C tree prior+rollout, calibrated CTM,
+  rollout3/public X2-B guidance, 512 OOC sims/earlystop1. No new game seeds.
+
+| Source-balanced metric | Head | TRAIN-rate constant |
+| --- | ---: | ---: |
+| BCE |0.327599|0.365854|
+| Brier |0.095877|0.105185|
+| Weighted state AUROC |0.731109|0.500000|
+
+Fixed10,000 source-cluster resamples, RNG499: BCE delta −0.038255,
+95%[−0.054678,−0.022273]; Brier delta −0.009308,[−0.015599,−0.003251].
+Both upper bounds are below 0, so the aggregate signal criterion passes. The
+prespecified visitation diagnostic also improves: BCE 0.438777 vs 0.474808,
+Brier 0.135249 vs 0.146448, AUROC 0.687712; its source-ratio bootstrap intervals are
+BCE [−0.059152,−0.013570], Brier [−0.020064,−0.002599]. No population was selected
+post hoc and no individual-state independence was assumed.
+
+| First actual reached landmark | Sources | Mean prediction | Heart outcome | Bias95% (pp) | AUC |
+| --- | ---: | ---: | ---: | --- | ---: |
+| Index0 |360|7.19%|11.94%|[−8.13,−1.47]|0.5193|
+| Act 1 floor≥8 |358|7.15%|12.01%|[−8.30,−1.61]|0.5158|
+| Act 1 floor≥16 |341|6.11%|12.61%|[−10.04,−3.07]|0.6408|
+
+Each landmark uses one observation per reached source and no future-length
+weights. Coverage/class gates pass, but none of the three pointwise bias
+intervals is entirely within ±5 pp. This fails the frozen marginal-mean-bias
+criterion; conditional calibration and early decision utility would remain
+unqualified even on a marginal PASS. Start/floor 8 BCE/Brier are worse than the
+constant. Inverse-future-length training weights may contribute (**Inference**,
+not a proven cause); frozen features and limited data are alternatives.
+
+- Exactly one durable canonical import-root opening latch, file+directory fsync,
+  precedes all TEST member parsing. Copied/symlink roots and repeat attempts
+  through different output roots are refused. All 53 archive hashes unchanged;
+  the never-merge transport remains separate. No retry, filtering, replacement,
+  candidate swap, model update, threshold change or TEST regrading.
+- Original and head tensors unchanged. Local RTX 3060 Ti/two CPU threads,
+  deterministic float32/TF32off/CUBLAS4096:8, external3,600 s TERM/10 s KILL cap.
+  Evaluation 134.870 s, wrapper exit 0 in 139.116 s. These are offline audit/encoding/
+  analytics times, not native inference or gameplay cost evidence.
+- Python 57/57 PASS in 2.016 s; independent 16/16 PASS in 1.738 s plus complete 360-source
+  synthetic evaluator/repeat-refusal fixture. Independent result/custody review
+  is recorded separately in the evidence packet. No C++/runtime code changed.
+- Freeze `70f489ef026f2f12ee5834a5ef0b2ba50109b262bba4b99608c295826d0921a1`;
+  result `8b658f7d73bde12c45dc1031c5b1fe5fcab9a45b0b65b589814ece27a659f4e3`;
+  prediction cache `8be7b7a261bb6c4a3f76a1655b8cfcc60cf5dc7e21580e2a4bcdc9ed27469fc6`;
+  manifest `8584bf879de1388c13591c3be8eab5ea53aedaf62d7104fce6b33395eccf6044`.
+
+[Protocol/report/evidence](evidence/heart_outcome_holdout_20261017/REPORT.md).
+Raw artifacts persist in ignored `build/heart-outcome-holdout-20261017-v1`; keep
+its consumed canonical opening and previous §497/498 artifacts unchanged.
+A future TRAIN/VALIDATION weighting comparison may address early bias; a changed
+candidate needs fresh prospective holdout evidence. Stop before native integration.
+**Knowledge impact:** current holdout verdict/exposed-data custody, mean-bias
+limitations, evaluator procedure and tool routing; no production-default change.
+
+## §500 — development-only source versus visitation outcome weighting
+
+**VALIDATION_WEIGHTING_NOT_SHOWN** (2026-10-17). User authorized testing the
+weighting hypothesis after §499. Reused only the independently audited TRAIN/
+VALIDATION §498 public pooled-feature cache:1,080/360 source runs,171,442/56,704
+actual states,126/47 Heart wins. No new games, encoder forwards, raw archive or
+TEST access. Existing TEST remains consumed; §499's verdict is unchanged.
+
+- Frozen reviewed source `94c0bf784568a817f298fe29aa1ebc5840863273`, baseline
+  `3c2c42098727110e42e3fc310c6a1d3372662be2`. Same original Arm C checkpoint,
+  policy/representation, §498 TRAIN normalization and4,225-parameter64→64 ReLU→1
+  head architecture. Common initial tensors/bias logit(126/1080), AdamW .001/.001,
+  minibatch512,2,000 updates × inits0/1 × two arms =8,000 updates/80 checkpoint
+  records. Only sampling/loss weighting differs: equal source then state, versus
+  equal recorded state. Deterministic CPUfloat64 sampler, CUDAfloat32/TF32off,
+  RTX3060Ti,2CPUthreads. No trunk/policy gradient or head warm start.
+- Both arms use common validation visitation BCE to select checkpoint, then
+  earlier step/init0 ties. The retrained control is source init1/step800;
+  treatment visitation init1/step600. This is not a comparison to the immutable
+  §498 selected head, which had a different validation selection population.
+
+| VALIDATION population/metric | Source-weighted fit | Visitation-weighted fit |
+| --- | ---: | ---: |
+| Visitation BCE |0.462407|0.453411|
+| Visitation Brier |0.143088|0.141157|
+| Visitation AUROC |0.665120|0.668981|
+| Source-balanced BCE |0.355095|0.353966|
+| Source-balanced Brier |0.104525|0.103939|
+
+Frozen TRAIN-rate constant's visitation BCE/Brier are0.498733/0.155509.
+Treatment-minus-control visitation BCE −0.008996, descriptive95%
+[−0.015750,−0.002421]; Brier −0.001931,[−0.003488,−0.000267]. These are10,000
+paired source-cluster ratio resamples, not individual-state independent samples;
+intervals do not account for checkpoint selection or reused validation.
+
+| VALIDATION actual landmark | Sources/wins | Source prediction | Visitation prediction | Outcome | Source bias (pp) | Visitation bias (pp) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Start/index0 |360/47|8.25%|11.97%|13.06%|−4.80|−1.09|
+| First Act1floor≥8 |358/47|9.29%|10.81%|13.13%|−3.83|−2.32|
+| First Act1floor≥16 |350/47|12.40%|9.25%|13.43%|−1.03|−4.18|
+
+Treatment bias95% intervals are[−4.66,+2.28], [−5.88,+1.13], [−7.85,−0.61]pp.
+Only start passes its pointwise interval-entirely-within±5pp marginal gate;
+all adequacy gates pass. Floor16 is worse, so the prospective requirement of
+both proper scores improving AND all three absolute point biases improving
+fails. Do not replace the exact negative verdict with an aggregate-only PASS.
+Even marginal bias PASS would not qualify conditional calibration/ranking.
+
+Both paired inits have identical initial tensor hashes; all saved normalization
+buffers match §498 exactly. Exclusive fit latch before updates; no retry/extra
+fit, recalibration or candidate swap. Same pinned cache/model/runtime hashes
+before/after. Four fits plus analytics/custody17.063s; external900s TERM/10sKILL
+wrapper exit0 in22.962s. Feature reuse avoids redundant six-minute encoding.
+These are offline processing timings, not native leaf latency or gameplay.
+
+- Python68/68PASS2.086s, including pinned actual encoder/head synthetic CPU/CUDA;
+  independent new11/11PASS0.790s. Review found and repaired a tie-order mismatch
+  before freezing/fitting. C++/gameplay checks omitted: no related runtime change.
+- Freeze `26fd05ab9f091ffed78c389fbfc927f7ee57a370d81170c5f402990669e4e0dc`;
+  result `6b3fcbd7aed6f85f0aa5e138e14f5764ea72a51f0120aee5c314b66bb0dcb4c0`;
+  selected prediction cache `f56acaefca8ecb65ef764833b2cfcc93f93d63cc2af114e65d840a0aa4fd639e`.
+
+[Protocol/report and review receipts](evidence/heart_outcome_weighting_20261017/REPORT.md).
+Raw outputs remain in ignored `build/heart-outcome-weighting-20261017-v1`.
+Equal-state weighting partly helps early bias but does not uniformly solve it.
+**Inference:** inverse future-length weighting is not a sufficient explanation
+within this fixed comparison; frozen representation/data and checkpoint selection
+remain alternatives. A new
+development protocol may explicitly weight reached early states; any revised
+candidate needs genuinely fresh prospective holdout evidence. Stop before native
+integration. **Knowledge impact:** current development-weighting evidence,
+cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.
+
+## §501 — development value-head comparison on the frozen Arm C cache
+
+**REPRESENTATION_LOSS_SIGNAL; EARLY_WEIGHTING_NOT_SHOWN; MORE_SOURCES_SIGNAL
+(fragile)** (2026-10-17). Philipp authorized the run. Pre-registered protocol
+(263025f/ae39f38) on the §498 cache and §497 TRAIN/VALIDATION only: 1,080/360
+sources, 126/47 wins. No TEST, encoder forward, game seeds, native or default
+change. Fourteen fits of the §500 recipe (AdamW, 2,000 updates, inits 0/1,
+VALIDATION visitation BCE selection) at source `ae39f38` on Philipp's RTX 3060
+Ti, 79.7 s, exit 0, tests 18/18. Arm A reproduces §500's 0.453411 to 6.8e-8.
+
+| VALIDATION arm | Visitation BCE | Brier | AUROC | Δ BCE vs A, 95% |
+| --- | ---: | ---: | ---: | --- |
+| A equal-state, pooled 64 | 0.45341 | 0.14116 | 0.669 | – |
+| B act-1 states ×2 | 0.45169 | 0.14122 | 0.675 | −0.0017 [−0.0092, +0.0055] |
+| C pooled + 37 public scalars/counts | 0.42983 | 0.13425 | 0.725 | −0.0236 [−0.0414, −0.0062] |
+| D public block only | 0.44878 | 0.14011 | 0.660 | −0.0046 [−0.0255, +0.0161] |
+
+- Early bias (start/floor 8/floor 16, pp): A −1.09/−2.32/−4.18; B
+  −4.85/−2.46/−5.15 (worse everywhere); C −2.69/−2.79/+2.25.
+- Learning curve, VALIDATION BCE (two nested draws): 135 sources
+  0.491/0.492, 270 0.470/0.464, 540 0.448/0.464, 1,080 0.453. The rule fires,
+  but draw 0 at 540 beats the full fit and small-subset fits select at step
+  100, so 540 → 1,080 is unresolved.
+- Encoder audit (silverbot 84ab3ea network.py): relic counters, battle
+  encounter, memory slots and act are not inputs; the value input is a mean
+  over all tokens. **Inference:** the frozen pooled representation drops value
+  information that a plain scalar/count block restores.
+
+Intervals are descriptive, not adjusted for selection or reused VALIDATION.
+Not a search-leaf qualification; selected heads exported for the §502 sibling
+harness. §502 found their sibling concordance at 0.507–0.530 vs X2-B 0.601
+(PR #582), so the outcome-BCE gain gives no search utility. Any candidate
+needs the fresh sealed cohort.
+[Report](evidence/heart_outcome_dev_compare_20261017/REPORT.md). **Knowledge
+impact:** current outcome-head development evidence and the new cache-plus-
+public-block tool; no default change.
+
+## §502 — §498 outcome head as a sibling-leaf ranker (2026-10-17)
+
+**HEAD_RANKS_WORSE_THAN_X2B** (offline, zero game seeds, no fits). Workstream 2 of the
+post-§500 plan: does the observed-outcome head order the sibling leaves MCTS compares?
+The frozen §498 head (`head.json` `2c478bca…`) was applied to the Arm C student's pooled
+value-head input, now exported by `one_combat heart1score`. Native parity first: on the
+8 VALIDATION sources of delivery `w00` (1,219 states) the C++ student plus head
+reproduces §498's per-source mean probability to 3.9e-9.
+
+Groups: the 48 §494 TRAIN+VALIDATION sources (110164000–047; 21,291 leaves, 777
+multi-action groups), §494 group metrics against 64-rollout means, paired source
+bootstrap (2,000, RNG 20261017). The §494 TEST and the consumed §499 TEST were not read.
+
+| 777 groups | Concordance | Regret |
+| --- | ---: | ---: |
+| §498 outcome head | 0.527 | 0.0374 |
+| X2-B | 0.601 | 0.0278 |
+| One rollout3 | 0.565 | 0.0305 |
+
+Head − X2-B concordance −0.074 [−0.097, −0.048], regret +0.0096 [+0.0057, +0.0140];
+head − one rollout3 concordance −0.038 [−0.068, −0.007]. Same sign on TRAIN and
+VALIDATION separately. Act 1 0.504 vs X2-B 0.622; card rewards 0.506 vs 0.584; the head
+leads only on map screens (0.618 vs 0.524). Targets are rollout surrogates ending in
+X2-B and favour X2-B; they are not Heart outcomes. **Inference:** the head does not
+resolve one-step sibling differences, and marginal calibration fixes would not change
+that. Not a qualified leaf; no native leaf option, gameplay or default change.
+
+The four §501 development heads (`a30643d`; start-landmark parity on 360 VALIDATION runs
+≤3.7e-9) do no better: concordance equal 0.507, early 0.520, pooled+public 0.521, public
+only 0.530, each below X2-B with the 95% upper bound ≤ −0.040. Pooled+public's VALIDATION
+BCE gain does not transfer to sibling ordering.
+[Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
+**Knowledge impact:** observed-outcome leaf status and native public-record parity.

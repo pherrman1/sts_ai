@@ -6,6 +6,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/rollout_student.h"
 #include "one_combat/heart_outcome_capture.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
@@ -3880,6 +3881,8 @@ int main(int argc, char **argv) {
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits
         return one_combat::heart1::replayCommand(argc, argv);
+    } else if (mode == "rolloutstudentscore") {  // §494 rollout student parity on captured sibling rows
+        return one_combat::rolloutStudentScoreCommand(argc, argv);
     } else if (mode == "winnettest") {    // validate C++ WinNet (OOC win trees) vs Python predictions
         // Reads a tierb-schema CSV (state block between `chosen` and `won`),
         // runs the native WinNet on the rich state of each row, and prints
@@ -3999,7 +4002,7 @@ int main(int argc, char **argv) {
                             argv[5], std::stoll(argv[6]), argv[7]);
     } else if (mode == "combattransitionforcedgen") {
         if (argc < 9) { std::cerr << "usage: one_combat combattransitionforcedgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json SETUP\n"
-                                     "  SETUP: ritual_writhing | high_maxhp | lizard_fairy | lizard_brew\n"; return 2; }
+                                     "  SETUP: ritual_writhing | high_maxhp | lizard_fairy | lizard_brew | act4_fork\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7], false, argv[8]);
     } else if (mode == "silversynthgen") {

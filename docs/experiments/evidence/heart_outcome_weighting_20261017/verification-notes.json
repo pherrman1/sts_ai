@@ -1,0 +1,6 @@
+{
+  "firstSuiteAttempt": "67 tests; one setup error due to omitted STS_OUTCOME_TRAINING_ROOT; no real fits/data readers invoked by error",
+  "omitted": "C++/gameplay/native/TEST checks: no related runtime changes; TEST is consumed",
+  "correctedSuiteBeforeTieRepair": "67/67 PASS in2.083s with full actual-encoder synthetic fixture env",
+  "finalSuite": "68/68 PASS in2.086s after tie-order regression; actual encoder/head synthetic CPU/CUDA enabled"
+}

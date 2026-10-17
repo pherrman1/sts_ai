@@ -212,7 +212,15 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
             raise ValueError(f"integrity.{name} must be non-negative")
     if requested_integrity != requested:
         raise ValueError("integrity requestedSeeds disagrees with seedSpec.count")
-    if completed_integrity + quarantined_integrity != requested:
+    # act4_fork: runs that end before the Act-3 boss write no rows and are not quarantined.
+    no_act4_integrity = 0
+    if "noAct4Seeds" in integrity:
+        if manifest.get("forcedSetup") != "act4_fork":
+            raise ValueError("integrity.noAct4Seeds is only valid for forcedSetup act4_fork")
+        no_act4_integrity = _integer(integrity["noAct4Seeds"], "integrity.noAct4Seeds")
+        if no_act4_integrity < 0:
+            raise ValueError("integrity.noAct4Seeds must be non-negative")
+    if completed_integrity + quarantined_integrity + no_act4_integrity != requested:
         raise ValueError("source seed accounting does not reconcile")
     rows = 0
     seeds = set()
@@ -350,6 +358,7 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
             "requestedSeeds": requested_integrity,
             "completedSeeds": completed_integrity,
             "quarantinedSeeds": quarantined_integrity,
+            "noAct4Seeds": no_act4_integrity,
             "outcomes": outcomes, "quarantinedRows": quarantined,
             "teacherId": teacher_id}
 

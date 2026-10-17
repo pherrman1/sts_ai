@@ -86,6 +86,7 @@ int takeFreeRewards(sts::GameContext &);
 struct Output {
     std::vector<float> logits;  // one per choice token, token order
     float value = 0;
+    std::vector<float> pooled;  // value-head input (mean of value-normed tokens)
 };
 
 class Net {

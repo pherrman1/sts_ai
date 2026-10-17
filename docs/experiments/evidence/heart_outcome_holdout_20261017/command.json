@@ -1,0 +1,25 @@
+{
+  "command": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=10s",
+    "3600s",
+    "/usr/bin/python3",
+    "tools/heart_outcome_holdout.py",
+    "run",
+    "--import-root",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-import-20261016-v1",
+    "--training-root",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v2",
+    "--checkpoint",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models/student-c-68fe88be.pt",
+    "--silverbot",
+    "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+    "--review",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-holdout-20261017-v1-verification/source-reviewed.json",
+    "--out",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-holdout-20261017-v1"
+  ],
+  "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+  "startedUtc": "2026-10-16T22:50:21.592490+00:00"
+}

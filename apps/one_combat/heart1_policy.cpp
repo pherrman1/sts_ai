@@ -902,7 +902,7 @@ Output Net::forwardRecord(const Record &r) const {
     const int nObs = nDeck + nRelic + nPot + 1 + nMap;
     const int nChoice = r.choiceCount();
     const int n = nObs + nChoice;
-    if (nChoice == 0) throw std::runtime_error("heart1: no choices to score");
+    // Choice-less records still have a value (pooled observation tokens); callers that need logits check choiceCount.
     std::vector<float> x(std::size_t(n) * kDim, 0.f);
     int t = 0;
     const auto row = [&](int i) { return x.data() + std::size_t(i) * kDim; };
@@ -1043,6 +1043,7 @@ Output Net::forwardRecord(const Record &r) const {
     }
     for (int d = 0; d < kDim; ++d) pooled[d] /= float(n);
     out.value = dot(valueHead_.w.data(), pooled.data(), kDim) + valueHead_.b[0];
+    out.pooled = std::move(pooled);
     return out;
 }
 
@@ -1278,7 +1279,7 @@ namespace {
 nlohmann::json scoreJson(const Net &model, const Record &record) {
     const Output out = model.forward(record);
     const int best = int(std::max_element(out.logits.begin(), out.logits.end()) - out.logits.begin());
-    return {{"logits", out.logits}, {"value", out.value}, {"argmax", best}};
+    return {{"logits", out.logits}, {"value", out.value}, {"pooled", out.pooled}, {"argmax", best}};
 }
 
 Net loadOrThrow(const std::string &path) {
