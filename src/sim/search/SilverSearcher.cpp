@@ -859,7 +859,7 @@ void search::SilverSearcher::enumeratePotionActions(Node &node, const BattleCont
         if (p == Potion::FAIRY_POTION) {
             continue;
         }
-        if (p == Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked()) {
+        if (p == Potion::SMOKE_BOMB && (bc.smokeBombEscapeBlocked() || context.escapeForfeitsRun)) {
             continue;
         }
         // Gambler's Brew cannot open an empty GAMBLE selection.

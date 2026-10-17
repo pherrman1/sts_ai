@@ -37,6 +37,11 @@ namespace sts::search {
         // Research-only (STS_SILVER_RELIC_HEAL_LEAF): victory HP includes the
         // post-combat relic heals (Meat on the Bone, Burning Blood, Black Blood).
         bool relicHealLeaf = false;
+        // A Smoke Bomb escape forfeits the run's goal: the act-3 burning elite
+        // with the Emerald Key still missing while keys are collected (ADR-0041).
+        // No later map has a burning elite, so escaping rules out the Heart and
+        // the search does not consider Smoke Bomb.
+        bool escapeForfeitsRun = false;
     };
 
     // Terminal evaluation weights (Silver's tuned defaults).
