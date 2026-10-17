@@ -151,6 +151,14 @@ nlohmann::json leafAnnotation(const sts::GameContext &);
 std::optional<std::vector<double>> priorLogits(const sts::GameContext &,
                                                const std::vector<sts::search::GameAction> &,
                                                std::map<std::string, std::uint64_t> *tally = nullptr);
+// STS_OOC_HEART1_CAPTURE=<out.jsonl> (distillation data, observation only):
+// every STS_OOC_HEART1_CAPTURE_EVERY-th (default 8) priorLogits call writes the
+// node ("kind":"node"), and every call writes the card select that a rest, shop
+// removal, event or boss-relic source opens ("kind":"select"). Rows carry the
+// record, STS_OOC_HEART1_TEACHER's token logits/value (default: the serving net)
+// and the serving net's logits ("serve"); repeated records are written once.
+// The returned logits are unchanged.
+
 // The mapping step of priorLogits, given the choice and its token logits:
 // skip one card reward -> silverbot's skip token (bowl token with Singing
 // Bowl); gold -> the node's best logit; a potion discard -> the node's lowest.

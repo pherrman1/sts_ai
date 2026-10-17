@@ -12,6 +12,8 @@
 #include <map>
 #include <mutex>
 #include <stdexcept>
+#include <string>
+#include <unordered_set>
 
 #include "constants/Events.h"
 #include "game/Map.h"
@@ -1251,6 +1253,128 @@ nlohmann::json leafAnnotation(const GameContext &gc) {
     return {{"value", scored.value}, {"record", recordToJson(choice.record)}};
 }
 
+namespace {
+// STS_OOC_HEART1_CAPTURE: distillation rows from prior calls (observation only).
+struct Capture {
+    std::string path;
+    std::uint64_t every = 8;
+    std::mutex mutex;
+    std::uint64_t calls = 0;
+    std::unordered_set<std::size_t> seen;
+};
+
+std::uint64_t positiveKnob(const char *key, std::uint64_t fallback) {
+    const char *p = std::getenv(key);
+    if (!p || !*p) return fallback;
+    char *end = nullptr;
+    const unsigned long long v = std::strtoull(p, &end, 10);
+    if (*end || v == 0) throw std::runtime_error(std::string(key) + " must be a positive integer");
+    return std::uint64_t(v);
+}
+
+Capture *capture() {
+    static Capture *c = [] () -> Capture * {
+        const char *p = std::getenv("STS_OOC_HEART1_CAPTURE");
+        if (!p || !*p) return nullptr;
+        auto *out = new Capture;
+        out->path = p;
+        out->every = positiveKnob("STS_OOC_HEART1_CAPTURE_EVERY", 8);
+        return out;
+    }();
+    return c;
+}
+
+// The capture labels with STS_OOC_HEART1_TEACHER when set (e.g. heart1 while a
+// student serves the prior), else with the serving net.
+const Net &teacher() {
+    static const Net *t = [] {
+        const char *p = std::getenv("STS_OOC_HEART1_TEACHER");
+        if (!p || !*p) return &net();
+        auto *model = new Net;
+        std::string error;
+        if (!model->load(p, &error)) throw std::runtime_error("STS_OOC_HEART1_TEACHER: " + error);
+        std::fprintf(stderr, "[heart1] capture teacher %s (dim %d, layers %d)\n", p, model->dim(), model->layers());
+        return static_cast<const Net *>(model);
+    }();
+    return *t;
+}
+
+// Sources whose successor can be a card select (smith, toke, shop removal,
+// event options, boss relics such as Astrolabe).
+bool maySelect(const GameContext &gc, const GA &a) {
+    switch (gc.screenState) {
+        case ScreenState::REST_ROOM: case ScreenState::EVENT_SCREEN: case ScreenState::BOSS_RELIC_REWARDS:
+            return true;
+        case ScreenState::SHOP_ROOM: return a.getRewardsActionType() == RT::CARD_REMOVE;
+        default: return false;
+    }
+}
+
+// One JSON line per new record (records already written by this process are skipped).
+void captureRow(Capture &c, nlohmann::json row, const Choice &choice, const std::vector<float> *serve) {
+    const auto record = recordToJson(choice.record);
+    const std::size_t key = std::hash<std::string>{}(record.dump());
+    {
+        std::lock_guard<std::mutex> lock(c.mutex);
+        if (!c.seen.insert(key).second) return;
+    }
+    const Output scored = teacher().forward(choice.record);
+    std::vector<std::uint32_t> tokenBits;
+    for (const auto &a : choice.actions) tokenBits.push_back(a.bits);
+    row["record"] = record;
+    row["logits"] = scored.logits;
+    row["value"] = scored.value;
+    row["token_bits"] = tokenBits;
+    if (serve) row["serve"] = *serve;
+    const std::string line = row.dump() + '\n';
+    std::lock_guard<std::mutex> lock(c.mutex);
+    // One append write per line, so forked writers do not interleave.
+    std::FILE *f = std::fopen(c.path.c_str(), "a");
+    if (!f || std::fwrite(line.data(), 1, line.size(), f) != line.size() || std::fclose(f) != 0)
+        throw std::runtime_error("STS_OOC_HEART1_CAPTURE: write failed");
+}
+
+nlohmann::json captureBase(const GameContext &gc, const char *kind) {
+    return {{"kind", kind}, {"seed", std::to_string(gc.seed)}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}};
+}
+
+// Every EVERY-th prior call writes the node; every call with a source that opens a
+// card select writes that select (the state the tree reaches only as a compound
+// candidate, so the prior is never asked there).
+void captureCall(const GameContext &gc, const Choice &choice, const std::vector<float> &serve,
+                 const std::vector<GA> &actions) {
+    Capture &c = *capture();
+    std::uint64_t call;
+    {
+        std::lock_guard<std::mutex> lock(c.mutex);
+        call = c.calls++;
+    }
+    if (call % c.every == 0) {
+        auto row = captureBase(gc, "node");
+        std::vector<std::uint32_t> bits;
+        for (const auto a : actions) bits.push_back(a.bits);
+        row["src_bits"] = bits;
+        captureRow(c, std::move(row), choice, &serve);
+    }
+    for (const auto a : actions) {
+        if (!maySelect(gc, a) || !a.isValidAction(gc)) continue;
+        GameContext next = gc;
+        if (gc.map) next.map = std::make_shared<Map>(*gc.map);
+        a.execute(next);
+        Choice select;
+        if (next.outcome != GameOutcome::UNDECIDED || next.screenState != ScreenState::CARD_SELECT
+                || !buildChoice(next, select) || select.record.choiceCount() < 2)
+            continue;
+        auto row = captureBase(next, "select");
+        row["parent_screen"] = int(gc.screenState);
+        row["parent_bits"] = a.bits;
+        const auto served = enabled() ? net().forward(select.record).logits : std::vector<float>{};
+        captureRow(c, std::move(row), select, &served);
+    }
+}
+}  // namespace
+
 std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std::vector<GA> &actions,
                                                std::map<std::string, std::uint64_t> *tally) {
     Choice choice;
@@ -1259,8 +1383,9 @@ std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std:
         if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
         return std::nullopt;
     }
-    return mapPriorLogits(choice, net().forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
-                          actions, tally);
+    const auto logits = net().forward(choice.record).logits;
+    if (capture()) captureCall(gc, choice, logits, actions);
+    return mapPriorLogits(choice, logits, gc.hasRelic(RelicId::SINGING_BOWL), actions, tally);
 }
 
 namespace {
