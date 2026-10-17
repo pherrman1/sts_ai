@@ -196,6 +196,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_trace.cpp
     apps/one_combat/semantic_pilot.cpp
     apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ritual_writhing_setup.cpp
     apps/one_combat/silver_synth_gen.cpp
     apps/one_combat/silver_synth_replay.cpp
     apps/one_combat/ctm_offline_score.cpp
@@ -377,6 +378,15 @@ target_include_directories(ritual_dagger_persistence_test PRIVATE include json/i
 add_test(NAME ritual_dagger_persistence COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:ritual_dagger_persistence_test>)
 set_tests_properties(ritual_dagger_persistence PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(ritual_writhing_setup_test apps/test_ritual_writhing_setup.cpp
+    apps/one_combat/ritual_writhing_setup.cpp apps/one_combat/combat_transition.cpp
+    apps/one_combat/combat_predictor_input.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ritual_writhing_setup_test PRIVATE include json/include apps)
+add_test(NAME ritual_writhing_setup COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ritual_writhing_setup_test>)
+set_tests_properties(ritual_writhing_setup PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 add_executable(ritual_dagger_eligibility_test apps/test_ritual_dagger_eligibility.cpp
