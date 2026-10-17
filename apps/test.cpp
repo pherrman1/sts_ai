@@ -2297,7 +2297,7 @@ int testSimulatorRelicFidelity() {
             return fail("Sling of Courage triggered outside an elite-trigger fight");
         }
 
-        // Dead Adventurer's fight gets the Black Star relic.
+        // Black Star and the Dead Adventurer fight.
         auto adventurerRelics = [](bool blackStar) {
             GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
             if (blackStar) gc.obtainRelic(RelicId::BLACK_STAR);
@@ -2312,9 +2312,18 @@ int testSimulatorRelicFidelity() {
             gc.regainControl();
             return gc.screenState == ScreenState::REWARDS ? gc.info.rewardsContainer.relicCount : -1;
         };
+        // The game reads Black Star only in MonsterRoomElite.dropReward, so the
+        // default (STS_ENGINE_FIDELITY_FIX) adds nothing; =0 keeps the legacy relic.
+        unsetenv("STS_ENGINE_FIDELITY_FIX");
         const int withoutStar = adventurerRelics(false);
-        if (withoutStar < 0 || adventurerRelics(true) != withoutStar + 1) {
-            return fail("Dead Adventurer fight did not add the Black Star relic");
+        if (withoutStar < 0 || adventurerRelics(true) != withoutStar) {
+            return fail("Dead Adventurer fight added a Black Star relic");
+        }
+        setenv("STS_ENGINE_FIDELITY_FIX", "0", 1);
+        const int legacyWithStar = adventurerRelics(true);
+        unsetenv("STS_ENGINE_FIDELITY_FIX");
+        if (legacyWithStar != adventurerRelics(false) + 1) {
+            return fail("legacy: Dead Adventurer fight did not add the Black Star relic");
         }
 
         // The Nob fight continues the same-floor streams; other fights reseed.
