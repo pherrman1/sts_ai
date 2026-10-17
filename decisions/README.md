@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0042](0042-az-loop-gumbel-policy-target.md) makes the planned AlphaZero-style OOC loop train its
+  policy on Gumbel completed-Q targets rather than raw visit shares (no default changes).
+
 - [ADR-0041](0041-a20-heart-objective.md) sets whole-run defaults to A20 Ironclad
   Heart kills, required key collection and goal-aware terminal labels.
 
