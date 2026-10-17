@@ -67,6 +67,9 @@ def summarize(per_seed, seeds):
             for name, d in pots.items():
                 pot[name].append(d)
                 pot["ALL"].append(d)
+                if name != "FAIRY_POTION":
+                    # Post hoc (§510 review): Silver also scores Fairy through its death-save term.
+                    pot["ALL_EXCEPT_FAIRY"].append(d)
     return hp, pot
 
 
@@ -144,7 +147,7 @@ def main():
               f"(boot replicates without positive HP slope: {r['bootReplicatesWithoutPositiveHpSlope']})")
         for name, p in r["potions"].items():
             eq = "nan" if p["hpEq"] is None else f"{p['hpEq']:.1f}"
-            if name != "ALL" and p["n"] < 100:
+            if not name.startswith("ALL") and p["n"] < 100:
                 continue
             print(f"  {name:24s} n={p['n']:4d} delta={p['delta']:+.4f} HP-eq={eq} CI={p['hpEqCI']}")
 

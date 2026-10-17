@@ -228,9 +228,13 @@ Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §510
 measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
 potion removed vs unchanged, next 3 fights played, then the A20 floor model,
 calibrated by a −12 HP copy). The pooled price is 9.9 HP-eq [7.9, 12.3],
-consistent with 11. Per-type prices differ: Fairy about 44, Attack/Blood/Skill
-potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. The formula has
-no per-type weights; whether they would help play is untested.
+consistent with 11 (pre-registered). Fairy in a Bottle is also scored by the
+death-save term (+0.3 × max HP, 0.6 with Sacred Bark), and without Fairy potions
+price at 7.8 [6.1, 9.8]; **Inference:** the flat 11 may overprice non-Fairy
+potions (post hoc). Per-type prices differ: Fairy about 44, Attack/Blood/Skill
+potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. Apart from the
+Fairy death-save term the formula has no per-type weights; whether they would
+help play is untested.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
