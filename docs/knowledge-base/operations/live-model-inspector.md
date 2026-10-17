@@ -1141,6 +1141,11 @@ where only one card fits in hand. The driver clicks the ordered physical UUID
 pair using stable GRID indices, checks the offered and selected UUIDs before
 the second click, and lets vanilla close the grid automatically. This differs
 from HAND selections, which remove chosen cards and require confirmation.
+An unsupported partial selection observation emits no executable advice and
+invalidates its cached root/budget, but retains the previously validated Silver
+graph only for the same protocol session and combat entry. The next valid
+snapshot is fully reimported and searched. A different session/combat cannot
+inherit that predecessor; native search/lowering failures still clear it.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other

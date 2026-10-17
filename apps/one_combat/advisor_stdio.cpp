@@ -727,8 +727,15 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         silverRootIdentity.clear();
         silverSimulations = 0;
     };
-    const auto unsupported = [&](const std::string &reason) {
-        clearSession();
+    const auto unsupported = [&](const std::string &reason, bool dropSession = true) {
+        if (dropSession) clearSession();
+        else {
+            // Partial UI selection snapshots are not decisions. Retain only
+            // the matching combat's validated graph; invalidate the root and
+            // budget so the next valid snapshot is fully imported/searched.
+            silverRootIdentity.clear();
+            silverSimulations = 0;
+        }
         evaluator["status"] = "UNSUPPORTED";
         evaluator["reason"] = reason;
         return evaluator;
@@ -773,8 +780,9 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         return evaluator;
     }
     const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
-    if (!imported.ok) return unsupported(imported.reason);
-    const auto entry = request.observation.value("combatEntryHash", std::string());
+    if (!imported.ok) return unsupported(imported.reason,
+        !session || sessionIdentity != request.session || combatEntryIdentity != entryIdentity);
+    const auto &entry = entryIdentity;
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
     if (!matchingSession && imported.playerTurn == 1 && imported.decisionInTurn == 0) {

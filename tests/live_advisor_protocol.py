@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from pathlib import Path
@@ -376,7 +377,7 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(results[3]["status"], "ERROR")
         self.assertEqual(results[3]["code"], "UNSUPPORTED")
 
-    def test_silver_rankings_include_physical_live_actions(self):
+    def silver_observation(self):
         entry = {
             "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
             "act": 1, "floor": 1, "hp": 80, "maxHp": 80, "gold": 99,
@@ -401,6 +402,51 @@ class AdvisorProtocolTest(unittest.TestCase):
         }
         observation = dict(entry, combatEntry=entry, combatEntryHash="ranked-actions-entry",
                            silverRoot=root)
+        return observation
+
+    def test_transient_import_refusal_retains_only_matching_combat_predecessor(self):
+        initial = self.silver_observation()
+        refused = copy.deepcopy(initial)
+        refused["silverRoot"]["combat"]["pendingActionQueueError"] = "intermediate_selection"
+        following = copy.deepcopy(initial)
+        root = following["silverRoot"]
+        root["decisionInTurn"] = 1
+        combat = root["combat"]
+        played = combat["hand"].pop()
+        combat.update(energy=2, cardsPlayedThisTurn=1, attacksPlayedThisTurn=1,
+                      discard=[played], curCardQueueItem=dict(card=played, target=0, energyOnUse=3))
+        combat["monsters"][0]["hp"] = 44
+        def wire(observation, sequence, session="transient"):
+            return json.dumps(dict(protocol="sts_model_inspector_v1", kind="observation", session=session,
+                                   sequence=sequence, observationHash=str(sequence), observation=observation))
+        partial = copy.deepcopy(initial)
+        partial["silverRoot"]["combat"]["cardSelect"] = dict(task="", unsupportedReason="silver_selection_live_choices")
+        for interrupted, reason in ((refused,"silver_selection_pending_actions"),
+                                    (partial,"silver_selection_live_choices")):
+            for include_entry_hash in (True, False):
+                observations = copy.deepcopy([initial, interrupted, following])
+                if not include_entry_hash:
+                    for observation in observations:
+                        observation.pop("combatEntryHash")
+                rows = self.run_advisor([wire(observation,i+1) for i, observation in enumerate(observations)], self.model)
+                silver = [next(e for e in row["evaluators"] if e["id"] == "silver_player_decision_v2") for row in rows]
+                self.assertEqual(silver[0]["status"], "OK", rows[0])
+                self.assertEqual(silver[1]["status"], "UNSUPPORTED", rows[1])
+                self.assertEqual(silver[1]["reason"], reason)
+                self.assertNotIn("selectedLiveAction", silver[1])
+                self.assertEqual(silver[2]["status"], "OK", rows[2])
+                self.assertEqual(silver[2]["additionalSimulations"], 1000)
+                self.assertIn("selectedLiveAction", silver[2])
+        other = copy.deepcopy(following)
+        other["silverRoot"]["combatInstance"] = other["combatEntryHash"] = "different-combat"
+        for last in (wire(following,3,"different-session"), wire(other,3)):
+            rows = self.run_advisor([wire(initial,1), wire(refused,2), last], self.model)
+            evaluator = next(e for e in rows[-1]["evaluators"] if e["id"] == "silver_player_decision_v2")
+            self.assertEqual(evaluator["reason"], "silver_missing_predecessor")
+            self.assertNotIn("selectedLiveAction", evaluator)
+
+    def test_silver_rankings_include_physical_live_actions(self):
+        observation = self.silver_observation()
         wires = []
         for sequence, budget in enumerate((1000, 10000, 20000), 1):
             wires.append({"protocol": "sts_model_inspector_v1", "kind": "observation",
