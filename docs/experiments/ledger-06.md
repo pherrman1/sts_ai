@@ -20308,3 +20308,61 @@ unit dropped on `rootEdgeMismatch`. The leaf-variance headroom here is ~0.35–0
 [Result](evidence/silver_blend_leaf_20261017/RESULT.md), [blend_gate.json](evidence/silver_blend_leaf_20261017/blend_gate.json).
 Models: `/mnt/project-files/silver-blend-leaf/models/`.
 **Knowledge impact:** negative result added to `research/combat-search/leaf-evaluation.md` (rejected approaches).
+
+## §524 — Card-select student (heart1 card-select distillation) vs student C in the A20 Heart stack: NOT_SHOWN (2026-10-17)
+
+**Question:** Does student C, re-distilled on heart1's card-select labels with keys-on and Act-4 states, play better
+as the OOC tree prior and rollout policy when card-select targets are scored by it? Requested by Philipp 2026-10-17
+16:10Z ("we definitely want to distill the card_select thing"). He folded the student input change in at 17:28Z, and
+he authorized the A/B at 21:45Z: "64 seeds" card, "use 8 workers for that".
+
+**Capture.** `STS_OOC_HEART1_CAPTURE` (#615, merged 360055d0), RUN_COMMIT e703d7bc, binary 5eff2ad7.
+- 64 A20 seeds 111156100–111156163 in the A20 Heart stack with student C: keys on, Act 4 included.
+- 765,286 node rows and 390,406 card-select rows, labelled by heart1.
+- 8 tars verified; data branch `claude/heart1-distill-data` 814aa76a.
+- On these rows student C agreed with heart1 on REMOVE 0.06%, TRANSFORM 0.11% and UPGRADE 18.8% of the time.
+
+**Student.** `student_sel.bin` `cf6bf7fb…`, on Philipp's 3060 Ti; data branch 5a7245aa, `results/E_d64_sel_xin/`.
+- Recipe: student C's (d64, 2 layers, mult 4, 4 heads, trimmed map) initialised from it, with the zero-initialised
+  relic-counter, act and card-misc inputs, lr 3e-4, 6 epochs, old 1.01M rows plus the new capture.
+- Torch-native parity: max diff 8.8e-6 on 390 records; perturbed inputs moved every record.
+- Offline gate `GATE.md`, written before training, scored natively on 243,103 held-out rows (seed % 8 == 7): PASS.
+  - REMOVE 97.6%, TRANSFORM 97.5%, UPGRADE 89.6%;
+  - node rows 96/94/91% in acts 1–3, vs 90/85/82% for student C;
+  - old rows 94.0% vs 93.0%.
+
+**A/B.** PREREG `evidence/student_sel_ab_20261017/PREREG.md`, frozen and reviewed before launch. Run: RUN_COMMIT
+aa9bb56f, code 623a8b60, binary `2b94132f…`, `tools/cloud/worker.sh`, 8 workers.
+- Arms: A = the capture's stack with student C. B = A + `STS_OOC_HEART1=student_sel.bin`,
+  `STS_OOC_MCTS_TARGET_PRIOR=1` and `STS_OOC_MCTS_LEAF_SELECTS=heart1`.
+- Seeds: 64 paired A20 seeds 111193400–111193463.
+- Primary: reached Act 4, exact McNemar.
+
+**Result: NOT_SHOWN.**
+- 128/128 units rc=0, 0 excluded; `verify_campaign.py` OK on all 8 workers.
+- Reached Act 4: B 22 vs A 18, +6.3 pp [−6.3, +18.8], discordant 11 vs 7, p = 0.48.
+- Descriptive:
+  - Heart kills 10 vs 7, mean floor +0.53;
+  - deaths by act: A 5/28/13/11, B 9/21/12/12;
+  - seconds per run 330 vs 297 (1.11x);
+  - MCTS CPU per OOC decision 3.06 vs 2.78 s.
+- Decision logs: B's rollouts scored all 750,765 card-select steps with the student. A's used heart1 on 500,167
+  (UPGRADE and the like), the chain on 148,442 and the shop-removal rule on 118,773.
+
+**Interpretation:** the student now copies heart1's card selects. Within 64 pairs that is not shown to change how
+often runs reach Act 4 (the CI admits about +19 to −6 pp). The Heart-kill difference (10 vs 7) is far below what 64
+pairs can resolve.
+
+**Decision (pre-registered):** no default change. `student_sel.bin` stays an opt-in weights file, and the tree's
+non-UPGRADE select exclusion (`heart1FullScreen`) stays. Lifting the exclusion only follows a result that shows the
+student helps.
+
+[report.json](evidence/student_sel_ab_20261017/report.json). Raw: `/mnt/project-files/student-sel-ab/w0{1..8}.tar`
+(sha256 in `worker_tars.txt`).
+
+Seeds used:
+- 111156000–111156004 (capture smokes), 111156100–111156163 (capture);
+- 111193400–111193463 (A/B), 111193464 (author smoke), 111193465–111193469 (pre-launch reviewer).
+
+**Knowledge impact:** `architecture/out-of-combat.md` (card-select student paragraph, `TARGET_PRIOR` /
+`LEAF_SELECTS` rows).
