@@ -1252,22 +1252,26 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 }
 void verifyGuardianProducerThresholds() {
     // Values are shaped by the verified Java fields, not copied from wire miscInfo.
-    for (int phase = 0; phase < 3; ++phase) {
+    for (int ascension : {0, 9, 19, 20}) for (int phase = 0; phase < 3; ++phase) {
+        // Keep the existing starter-card fixture and vary only Guardian's
+        // ascension rules; native curse costs are not Java card projections.
         GameContext game(CharacterClass::IRONCLAD, 0, 0);
+        game.ascension = ascension;
         game.floorNum = 16;
         BattleContext battle;
         battle.init(game, MonsterEncounter::THE_GUARDIAN);
         auto &guardian = battle.monsters.arr[0];
         const bool javaOpen = phase != 1;
-        const int javaThreshold = phase == 0 ? 30 : 40;
-        guardian.miscInfo = phase == 2 ? 40 : 30;
+        const int initialThreshold = ascension >= 19 ? 40 : ascension >= 9 ? 35 : 30;
+        const int javaThreshold = initialThreshold + (phase == 0 ? 0 : 10);
+        guardian.miscInfo = initialThreshold + (phase == 2 ? 10 : 0);
         if (phase == 0) guardian.setStatus<MonsterStatus::MODE_SHIFT>(12);
         else if (phase == 1) {
             guardian.removeStatus<MonsterStatus::MODE_SHIFT>();
             guardian.buff<MonsterStatus::SHARP_HIDE>(3);
             guardian.setMove(MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
         } else {
-            guardian.setStatus<MonsterStatus::MODE_SHIFT>(40);
+            guardian.setStatus<MonsterStatus::MODE_SHIFT>(initialThreshold + 10);
             guardian.setMove(MonsterMoveId::THE_GUARDIAN_WHIRLWIND);
         }
         CombatKnowledgeState knowledge;
@@ -1280,7 +1284,8 @@ void verifyGuardianProducerThresholds() {
         one_combat::advisor::SilverImportContext context;
         context.session = "guardian-producer";
         const auto imported = one_combat::advisor::importSilverRoot(observation, context);
-        if (!imported.ok) throw std::runtime_error("Guardian producer import: " + imported.reason);
+        if (!imported.ok) throw std::runtime_error("Guardian producer import: A"
+            + std::to_string(ascension) + " phase=" + std::to_string(phase) + ": " + imported.reason);
         expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(expected, imported.wire))
             throw std::runtime_error("Guardian producer threshold lost phase parity");
