@@ -40,7 +40,18 @@ distill the card_select thing".
   0/864 and 3/612; TRANSFORM_UPGRADE 0/894 and 1/334; UPGRADE 21% and 42%; DUPLICATE 75–90%; OBTAIN 74–75%.
   Node rows: 85–98% by screen (shop lowest).
 
-## Proposed run (needs authorization)
+## Re-freeze after the pre-launch review (merged main e432748c)
+
+- The first freeze (code 2a32b347) predated #591, #594, #597, #603 and #606. Main was merged; the env now leaves
+  `STS_OOC_MCTS_PRIOR` unset, so the run uses main's heart1full default (ADR-0042) and main's A20 shop rules.
+  The student-input commit (records carry `obs.deck.misc` and `obs.act`; weights without `x_*` tensors are
+  unchanged) is part of the frozen code.
+- Merged binary, seed 111156004 stopped after Act 1: capture on vs off identical MCTS summary and result
+  (floor 16), `prior=heart1full`, 4,814 rows (1,331 select), 219 s vs 71 s. Zero `x_*` weights give student C's
+  logits bit for bit on 300 records; `oocmctsselftest` PASS.
+- `worker.sh` rejects W with leading zeros and stops unless `units.txt` has exactly 8 lines inside `COHORTS`.
+
+## Proposed run (authorized 2026-10-17 17:28Z)
 
 - 64 A20 seeds 111156100–111156163, 8 cloud workers x 8 seeds, 4 units at a time, `_EVERY=16`,
   `_SELECT_EVERY=4`. A check on the final binary at these rates (seed 111156003, stopped after Act 1): 9,021 rows
