@@ -1,0 +1,42 @@
+Test project /home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-debug-ccache
+      Start  16: live_advisor_protocol
+ 1/13 Test  #16: live_advisor_protocol ............   Passed    4.44 sec
+      Start  27: live_silver_importer
+ 2/13 Test  #27: live_silver_importer .............   Passed    1.26 sec
+      Start  28: ritual_dagger_persistence
+ 3/13 Test  #28: ritual_dagger_persistence ........   Passed    0.01 sec
+      Start  29: ritual_dagger_eligibility
+ 4/13 Test  #29: ritual_dagger_eligibility ........   Passed    0.01 sec
+      Start  54: ironclad_card_java_parity
+ 5/13 Test  #54: ironclad_card_java_parity ........   Passed    0.00 sec
+      Start  59: ironclad_card_coverage
+ 6/13 Test  #59: ironclad_card_coverage ...........   Passed    0.00 sec
+      Start 114: awakened_one_stage2
+ 7/13 Test #114: awakened_one_stage2 ..............   Passed    0.00 sec
+      Start 115: darkling_victory
+ 8/13 Test #115: darkling_victory .................   Passed    0.00 sec
+      Start 126: card_pile
+ 9/13 Test #126: card_pile ........................   Passed    0.00 sec
+      Start 127: card_pile_engine
+10/13 Test #127: card_pile_engine .................   Passed    0.10 sec
+      Start 131: silver_rollout_limit
+11/13 Test #131: silver_rollout_limit .............***Failed    0.01 sec
+unknown test command: silver_rollout_limit
+
+      Start 142: combat_transition_oracle
+12/13 Test #142: combat_transition_oracle .........   Passed    0.00 sec
+      Start 209: ctm_ritual_kill_budget
+13/13 Test #209: ctm_ritual_kill_budget ...........   Passed    0.06 sec
+
+92% tests passed, 1 tests failed out of 13
+
+Label Time Summary:
+core           =   0.20 sec*proc (8 tests)
+integration    =   4.44 sec*proc (1 test)
+smoke          =   4.53 sec*proc (4 tests)
+
+Total Test time (real) =   5.93 sec
+
+The following tests FAILED:
+	131 - silver_rollout_limit (Failed)
+Errors while running CTest

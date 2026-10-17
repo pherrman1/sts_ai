@@ -7,6 +7,7 @@
 #include <array>
 #include <map>
 #include <random>
+#include <string>
 #include <vector>
 
 #include "combat/BattleContext.h"
@@ -37,7 +38,14 @@ namespace sts::search {
         // Research-only (STS_SILVER_RELIC_HEAL_LEAF): victory HP includes the
         // post-combat relic heals (Meat on the Bone, Burning Blood, Black Blood).
         bool relicHealLeaf = false;
+        // A Smoke Bomb escape forfeits the run's goal: the act-3 burning elite
+        // with the Emerald Key still missing while keys are collected (ADR-0041).
+        // No later map has a burning elite, so escaping rules out the Heart and
+        // the search does not consider Smoke Bomb.
+        bool escapeForfeitsRun = false;
     };
+
+    inline constexpr int kSilverPotionTypeCount = static_cast<int>(Potion::WEAK_POTION) + 1;
 
     // Terminal evaluation weights (Silver's tuned defaults).
     struct SilverEvalWeights {
@@ -59,7 +67,15 @@ namespace sts::search {
         // The applied penalty is capped at half the HP left when escaping.
         double escapePenalty = 0;
         double eliteEscapePenalty = 0;
+        // Research-only (STS_SILVER_POTION_WEIGHTS): per-type held-potion weights
+        // replace potionCount * potionWeight. Fairy's death-save term is unchanged.
+        bool potionTypeWeightsOn = false;
+        std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
     };
+    // Parses "NAME=w,...[,*=w]" (Potion enum names) into per-type weights; unlisted
+    // types get the "*" weight, else `fallback`. Throws on unknown names or bad numbers.
+    std::array<double, kSilverPotionTypeCount> parseSilverPotionWeights(const std::string &spec, double fallback);
+
     // ADR-0036 defaults (§473 values), used by native Silver and the live advisor.
     inline constexpr double kDefaultEscapePenalty = 12;
     inline constexpr double kDefaultEliteEscapePenalty = 35;
@@ -73,6 +89,7 @@ namespace sts::search {
         std::int64_t chanceTranspositions = 0;
         std::int64_t rolloutPlayouts = 0;   // playouts run to combat end from tree leaves
         std::int64_t rolloutActions = 0;    // actions taken inside those playouts
+        std::int64_t rolloutActionLimitHits = 0; // nonterminal playouts stopped at the action cap
         std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
     };
 

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <iostream>
 #include <atomic>
 #include <charconv>
@@ -23,10 +24,13 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
+
+extern bool g_collectKeys;   // ScumSearchAgent2.cpp; STS_COLLECT_KEYS
 
 namespace sts::search {
 
@@ -53,6 +57,9 @@ namespace sts::search {
             // ADR-0036: a Smoke Bomb escape forfeits the fight's rewards (§473 values); "0,0" restores escape = win.
             double escapePenalty = kDefaultEscapePenalty;
             double eliteEscapePenalty = kDefaultEliteEscapePenalty;
+            // Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
+            bool potionTypeWeightsOn = false;
+            std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -63,6 +70,7 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -441,6 +449,10 @@ namespace sts::search {
                 // The first A20 act-3 boss goes straight into the second: no act heal.
                 context.actHealFollows = !(g_options.a20BossHealFix && gc.act == 3 && gc.ascension >= 20
                     && gc.curRoom == Room::BOSS && bc.encounter != gc.secondBoss);
+                // Escaping the act-3 burning elite without the Emerald Key ends any Heart attempt.
+                context.escapeForfeitsRun = g_collectKeys && !g_options.stopAfterAct3 && gc.act == 3
+                    && gc.curRoom == Room::ELITE && !gc.hasKey(Key::EMERALD_KEY) && gc.map
+                    && gc.map->burningEliteX == gc.curMapNodeX && gc.map->burningEliteY == gc.curMapNodeY;
                 context.noLossPotionCredit = g_options.noLossPotionCredit;
                 context.relicHealLeaf = g_options.relicHealLeaf;
             }
@@ -521,6 +533,8 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
+                    searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -540,6 +554,11 @@ namespace sts::search {
                 if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
                     searcher->nodePrior = nativeSilverPolicyPrior;
                     searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
+                } else if (!searcher->rootPrior.empty() && g_options.treePriorMinVisits > 0
+                        && !g_nativeSilverRootPriorOverride) {
+                    // Whole-run §452 tree prior; research thread overrides keep their own setting.
+                    searcher->nodePrior = nativeSilverPolicyPrior;
+                    searcher->treePriorMinVisits = g_options.treePriorMinVisits;
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
@@ -809,6 +828,10 @@ namespace sts::search {
             if (end == elite || *end != '\0' || g_options.escapePenalty < 0 || g_options.eliteEscapePenalty < 0)
                 throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
         }
+        if (const char *raw = std::getenv("STS_SILVER_POTION_WEIGHTS"); raw && *raw) {
+            g_options.potionTypeWeightsOn = true;
+            g_options.potionTypeWeights = parseSilverPotionWeights(raw, SilverEvalWeights{}.potionWeight);
+        }
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;
         }
@@ -852,6 +875,15 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE must be all or override");
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
+            char *end = nullptr;
+            const long value = std::strtol(raw, &end, 10);
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value > (1L << 30))
+                throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS must be a non-negative integer");
+            g_options.treePriorMinVisits = static_cast<int>(value);
+            if (value > 0 && g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS requires STS_SILVER_ROOT_PRIOR");
         }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
@@ -991,6 +1023,10 @@ namespace sts::search {
         return g_options.rootPriorPath;
     }
 
+    int nativeSilverTreePriorMinVisits() {
+        return g_options.treePriorMinVisits;
+    }
+
     double nativeSilverRootPriorWeight() {
         return g_options.rootPriorWeight;
     }
@@ -1025,6 +1061,15 @@ namespace sts::search {
         "turn", "act", "room", "leader_same", "leader_streak", "rho", "lock",
         "gap_share_delta", "top_share_delta", "q_gap_delta", "entropy_delta",
     };
+
+    NativeSilverLeafSettings nativeSilverLeafSettings() {
+        const auto &rollout = SilverSearcher::envRolloutConfig();
+        const char *table = !rollout.cardTable ? "hand_written"
+            : rollout.cardTable == kSilverRolloutCardTableG6 ? "g6_builtin" : "file";
+        return {g_options.finalFightLeaf, g_options.noLossPotionCredit, g_options.relicHealLeaf,
+                g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
+                table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap};
+    }
 
     bool nativeSilverLearnedStopEnabled() {
         return g_options.learnedStop;

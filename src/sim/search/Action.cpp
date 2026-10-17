@@ -9,6 +9,7 @@
 #include <cstring>
 #include <functional>
 #include <set>
+#include <stdexcept>
 
 using namespace sts;
 
@@ -549,7 +550,9 @@ static MultiSelectMode multiSelectMode() {
 static bool multiSelectCanonical() {
     static const bool c = [] {
         const char *e = std::getenv("STS_MULTISELECT_CANONICAL");
-        return !e || std::atoi(e) != 0;
+        if (!e || std::strcmp(e, "1") == 0) return true;
+        if (std::strcmp(e, "0") == 0) return false;
+        throw std::runtime_error("STS_MULTISELECT_CANONICAL must be 0 or 1 when set");
     }();
     return c;
 }

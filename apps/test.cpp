@@ -305,6 +305,42 @@ namespace {
 
 }
 
+// A constructed free draw/reshuffle cycle exercises the playout boundary
+// without replaying the expensive historical self-play campaign (#544).
+int testSilverRolloutLimit() {
+    const GameContext gc(CharacterClass::IRONCLAD, 0x544u, 0);
+    BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
+    while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED)
+        bc.executeActions();
+    bc.cards.cardsInHand = 1;
+    bc.cards.hand[0] = CardInstance(CardId::FLASH_OF_STEEL); bc.cards.hand[0].uniqueId = 101;
+    CardInstance other(CardId::FLASH_OF_STEEL); other.uniqueId = 102;
+    bc.cards.drawPile.clear(); bc.cards.drawPile.addToTop(other);
+    bc.cards.discardPile.clear(); bc.cards.exhaustPile.clear();
+    bc.monsters.arr[0].buff<MS::INVINCIBLE>(1);
+    bc.monsters.arr[0].setStatus<MS::INVINCIBLE>(0);
+    search::SilverSearcher searcher(bc, {});
+    searcher.rolloutConfig = {};
+    search::SilverTreeProfile profile; searcher.profile = &profile;
+    const double value = searcher.rolloutValue(bc);
+    if (!std::isfinite(value) || searcher.stats.rolloutActions != 1000
+            || searcher.stats.rolloutActionLimitHits != 1
+            || profile.endpoints[search::SilverTreeProfile::NONTERMINAL].total[1000] != 1
+            || bc.outcome != Outcome::UNDECIDED || bc.player.cardsPlayedThisTurn != 0) {
+        std::cerr << "silver_rollout_limit FAIL actions=" << searcher.stats.rolloutActions << '\n';
+        return 1;
+    }
+    // A terminating playout still takes its lethal action and records victory.
+    bc.monsters.arr[0].removeStatus<MS::INVINCIBLE>(); bc.monsters.arr[0].curHp = 1;
+    search::SilverSearcher lethal(bc, {}); lethal.rolloutConfig = {};
+    search::SilverTreeProfile lethalProfile; lethal.profile = &lethalProfile;
+    (void)lethal.rolloutValue(bc);
+    if (lethal.stats.rolloutActions != 1 || lethal.stats.rolloutActionLimitHits != 0
+            || lethalProfile.endpoints[search::SilverTreeProfile::VICTORY].total[1] != 1) return 1;
+    std::cout << "silver_rollout_limit PASS: bounded free draw cycle; terminal path preserved\n";
+    return 0;
+}
+
 int testSilverSearcher() {
     int failures = 0;
     auto check = [&](bool ok, const char *what) {
@@ -2987,7 +3023,7 @@ int testSilverEscapePenalty() {
         return 1;
     };
     // Whether Silver's first action is to drink the Smoke Bomb in slot 0.
-    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty) {
+    auto flees = [](int hp, MonsterEncounter encounter, bool elite, double penalty, bool forfeitsRun = false) {
         GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
         gc.curRoom = elite ? Room::ELITE : Room::MONSTER;
         gc.curHp = hp;
@@ -2998,6 +3034,7 @@ int testSilverEscapePenalty() {
         search::SilverSearchContext context;
         context.act = 1;
         context.eliteRewards = elite;
+        context.escapeForfeitsRun = forfeitsRun;
         search::SilverSearcher searcher(silverSearchRoot(bc), context);
         searcher.evalWeights.escapePenalty = elite ? 0 : penalty;
         searcher.evalWeights.eliteEscapePenalty = elite ? penalty : 0;
@@ -3017,6 +3054,9 @@ int testSilverEscapePenalty() {
     // The HP cap keeps a low-HP emergency escape preferred.
     if (!flees(10, MonsterEncounter::GREMLIN_NOB, true, 40)) return fail("low-HP elite escape suppressed");
     if (!flees(10, MonsterEncounter::JAW_WORM, false, 15)) return fail("low-HP escape suppressed");
+    // ADR-0041: escaping the act-3 burning elite without the Emerald Key rules out the Heart.
+    if (flees(10, MonsterEncounter::GREMLIN_NOB, true, 40, true)) return fail("run-forfeiting escape still taken");
+    if (flees(80, MonsterEncounter::CULTIST, false, 0, true)) return fail("run-forfeiting escape still taken at full HP");
     // The live wire path has no room: elite-trigger fights come from the encounter.
     auto wireElite = [](Room room, MonsterEncounter encounter) {
         GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
@@ -3032,6 +3072,43 @@ int testSilverEscapePenalty() {
     if (wireElite(Room::MONSTER, MonsterEncounter::JAW_WORM)) return fail("wire normal fight marked elite");
     if (!wireElite(Room::EVENT, MonsterEncounter::LAGAVULIN_EVENT)) return fail("wire Dead Adventurer fight not elite");
     std::cout << "silver_escape_penalty PASS\n";
+    return 0;
+}
+
+// Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
+int testSilverPotionWeights() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_potion_weights FAIL: " << msg << '\n';
+        return 1;
+    };
+    const auto w = search::parseSilverPotionWeights("ATTACK_POTION=20,SWIFT_POTION=0.5,*=7", 11);
+    if (w[static_cast<int>(Potion::ATTACK_POTION)] != 20 || w[static_cast<int>(Potion::SWIFT_POTION)] != 0.5
+        || w[static_cast<int>(Potion::BLOCK_POTION)] != 7) return fail("parse with default");
+    if (search::parseSilverPotionWeights("FIRE_POTION=3", 11)[static_cast<int>(Potion::SMOKE_BOMB)] != 11)
+        return fail("fallback weight");
+    for (const char *bad : {"NOT_A_POTION=1", "FIRE_POTION", "FIRE_POTION=x", "FIRE_POTION=1x"}) {
+        bool threw = false;
+        try { search::parseSilverPotionWeights(bad, 11); } catch (const std::runtime_error &) { threw = true; }
+        if (!threw) return fail(std::string("accepted ") + bad);
+    }
+    GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
+    gc.curRoom = Room::MONSTER;
+    gc.potions[0] = Potion::ATTACK_POTION;
+    gc.potions[1] = Potion::SWIFT_POTION;
+    gc.potionCount = 2;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::SilverSearchContext context;
+    context.act = 1;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    BattleContext end = bc;
+    end.outcome = Outcome::PLAYER_VICTORY;
+    const double flat = searcher.scoreEndState(end);
+    searcher.evalWeights.potionTypeWeightsOn = true;
+    searcher.evalWeights.potionTypeWeights = w;
+    const double typed = searcher.scoreEndState(end);
+    if (std::abs((typed - flat) - (20.5 - 2 * 11)) > 1e-9) return fail("victory potion score not per type");
+    std::cout << "silver_potion_weights PASS\n";
     return 0;
 }
 
@@ -6046,6 +6123,8 @@ int main(int argc, const char* argv[]) {
         return testSimulatorCorrectnessPr9To19();
     } else if (command == "silver_escape_penalty") {
         return testSilverEscapePenalty();
+    } else if (command == "silver_potion_weights") {
+        return testSilverPotionWeights();
     } else if (command == "silver_rollout_zero_cost_loop") {
         return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {
@@ -6096,6 +6175,8 @@ int main(int argc, const char* argv[]) {
         return testCombatKnowledgeBoundary();
     } else if (command == "card_pile_engine") {
         return testCardPileEngine();
+    } else if (command == "silver_rollout_limit") {
+        return testSilverRolloutLimit();
     } else if (command == "silver_searcher") {
         return testSilverSearcher();
     } else if (command == "persistent_latent_damage") {

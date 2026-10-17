@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for controlled Ritual/Writhing research setups; 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -32,6 +32,25 @@ from the whole-combat CSV contract below. This is preparation/qualification for
 outcome supervision, not a trained value head or RL loop. Future fits must
 split/weight by whole source and preserve TEST custody. See the [frozen protocol](../../experiments/evidence/heart_outcome_collection_20261016/PROTOCOL.md)
 and [qualification evidence](../../experiments/evidence/heart_outcome_collection_20261016/REPORT.md).
+
+### Round-2 root trace (§503)
+
+`STS_OOC_MCTS_ROOT_TRACE=PATH` (observation only; excluded from the policy
+specification like every `_TRACE` key) writes one `ooc-root-trace-v1` row per
+live OOC MCTS root, aligned with `mcts.csv.actions.jsonl`: every root candidate
+with its `ooc:v1` key, prior, visits, visit share and Q, completed simulations,
+the selected key, the public heart1 record and a replay-only native snapshot.
+Snapshots fail, and are recorded as `snapshotError`, when the root state carries
+an untagged continuation callback (most REWARDS/MAP roots); the exact replay key
+for every root is (producer binary SHA, seed, decisionIndex), because the frozen
+run is deterministic. Match and Keep adds hypothetical card-valuation roots with
+indices `(real index << 12) ^ card bits`. These are not monotonic and can repeat,
+so they also need the row position. The validator accepts them from `fed1b9d`.
+Sources that the earlier worker check censored with returncode 65 are
+re-qualified at import (`heart_outcome_round2.py requalify`/`index`). `tools/heart_outcome_round2.py` runs the unchanged §497
+teacher with this trace, an optional §494 sibling subsample (`--sibling-every`,
+default off), TRAIN/VALIDATION development splits and a sealed CONFIRM split.
+[Plan](../../experiments/evidence/heart_outcome_round2_20261017/PLAN.md).
 
 ### Recovered outcome-corpus import
 
@@ -145,7 +164,7 @@ instead of resolving `git rev-parse HEAD` from the launcher's working
 directory. Git working-tree variables remain independently relevant to dirty
 state and other Git-derived diagnostics.
 
-`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; reserve its `.provenance.json` sidecar alongside fresh outputs in the frozen experiment manifest.
+`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; reserve its `.provenance.json` sidecar alongside fresh outputs in the frozen experiment manifest. Since 2026-10-17 every `.provenance.json` sidecar (`silver_leaf`), the Silver synthetic/AZ/focus manifests and the manifests that embed a `combatTeacher` (`silverLeaf`) record the effective Silver leaf valuation: the four ADR-0035 terms, the ADR-0036 escape penalty, the ADR-0040 rollout card table (`g6_builtin`, `hand_written` or a file path with its SHA-256), the rollout counts and the #544 zero-cost cap. Defaults are recorded, not only the variables that were set. A teacher whose `search_configuration` has a `silver_leaf` block, or an `a20_boss_heal_fix` field, must match the effective settings or the loader refuses it. Data from different Silver leaf settings can be told apart by that block, so compare it before pooling corpora.
 
 #### RAW combat-transition producer
 
@@ -267,6 +286,23 @@ a separate slice for training and qualification, not ordinary-distribution
 rows. Setups:
 - `ritual_writhing`: Ritual Dagger is added before the first fight, and every
   act 3 hallway fight becomes Writhing Mass.
+- `ritual_writhing_v2_{base,upgraded}_{single,double}_{natural,brew,smoke}`:
+  twelve research-only public-state interventions. They retain the once-run
+  Dagger prefix, then normalize each Act-3 hallway ROOT before predictor and
+  RAW pre capture: one/two physical master Daggers at damage 15/[15,30] and
+  the declared upgrade state. Surplus Daggers are removed and missing copies
+  appended without acquisition hooks; every repeated reset is explicit.
+  Natural leaves the belt unchanged. Brew/Smoke uses an existing named potion,
+  the lowest free active slot, or the last active slot when full, by direct
+  placement even under Sozu. These are controlled valid public states, not
+  normal acquisition or gameplay-frequency evidence. The helper validates
+  deck caches/bottles and preserves all fourteen RNG streams transactionally.
+  Versioned `ritualWrithingIntervention` manifest receipts bind original state,
+  normalized ROOT, predictor and RAW pre; RAW row schema remains unchanged.
+  Group all variants/fights by original source and retain exact duplicate raw
+  prefixes; analysis contributes each identical observation once. A legal
+  temporary upgrade can give a base pre-state Dagger +5. Initial named-potion
+  presence does not prove use, and Smoke escape does not imply Ritual growth.
 - `high_maxhp`: max HP is set to 150..220 at full HP, deterministic per seed.
 - `lizard_fairy` and `lizard_brew`: an unused Lizard Tail is added, and while
   it is unused the Fairy Potion or Entropic Brew is refilled before each fight
@@ -290,6 +326,14 @@ rows. Setups:
   uniform weight decay in the survival encoder, so they never got a gradient.
 Mark of the Bloom with an active Tail is already on the exact path, so it has
 no setup.
+The controlled coverage pilot uses `tools/ctm_ritual_coverage_pilot.py` and its
+[frozen protocol](../../experiments/evidence/ritual_coverage_pilot_20261017/PROTOCOL.md).
+It prepares/rechecks source/build/teacher/model/split custody, a fixed
+source-group/cell order and explicit current teacher settings; execution needs
+separate user resource approval. Its development coverage result authorizes
+neither fitting nor support promotion. Existing fit commands must not be used
+as a Ritual-only fit: some train all downstream heads and open TEST.
+
 
 In Python, `validate_teacher` (`tools/ooc_pipeline_contract.py`) treats an
 absent or `flat_exact` `budget_policy` as the exact-10k contract, which must

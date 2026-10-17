@@ -1,0 +1,104 @@
+{
+  "cohort": [
+    111152000,
+    111152127
+  ],
+  "dropped_seeds": {
+    "base": [],
+    "level": [],
+    "type": []
+  },
+  "timeouts": [],
+  "stalls": [],
+  "invalid_units": [],
+  "missing_cohort_seeds": {
+    "base": [],
+    "level": [],
+    "type": []
+  },
+  "non_cohort_seeds": [],
+  "pairs": 128,
+  "wins": {
+    "base": 36,
+    "level": 30,
+    "type": 35
+  },
+  "mean_floor": {
+    "base": 36.6484375,
+    "level": 35.8515625,
+    "type": 35.28125
+  },
+  "boss_deaths": {
+    "base": 48,
+    "level": 58,
+    "type": 55
+  },
+  "reached_floor_50": {
+    "base": 49,
+    "level": 49,
+    "type": 51
+  },
+  "sec_per_run": {
+    "base": 66.30640171875001,
+    "level": 67.90305734375,
+    "type": 64.69444968750001
+  },
+  "contrasts": {
+    "type-base": {
+      "delta_floor": -1.3671875,
+      "delta_floor_ci95": [
+        -3.4533203125,
+        0.7421875
+      ],
+      "delta_win": -0.0078125,
+      "delta_win_ci95": [
+        -0.0859375,
+        0.0703125
+      ],
+      "discordant_x_only": 12,
+      "discordant_y_only": 13,
+      "mcnemar_p": 1.0,
+      "delta_hp_end": 0.7421875,
+      "pairs_differing": 98
+    },
+    "level-base": {
+      "delta_floor": -0.796875,
+      "delta_floor_ci95": [
+        -2.9611328125,
+        1.359375
+      ],
+      "delta_win": -0.046875,
+      "delta_win_ci95": [
+        -0.125,
+        0.03125
+      ],
+      "discordant_x_only": 10,
+      "discordant_y_only": 16,
+      "mcnemar_p": 0.32693958282470703,
+      "delta_hp_end": -2.5078125,
+      "pairs_differing": 98
+    },
+    "type-level": {
+      "delta_floor": -0.5703125,
+      "delta_floor_ci95": [
+        -2.546875,
+        1.3671875
+      ],
+      "delta_win": 0.0390625,
+      "delta_win_ci95": [
+        -0.03144531249999982,
+        0.1171875
+      ],
+      "discordant_x_only": 15,
+      "discordant_y_only": 10,
+      "mcnemar_p": 0.42435622215270996,
+      "delta_hp_end": 3.25,
+      "pairs_differing": 91
+    }
+  },
+  "label": {
+    "type-base": "NOT_SHOWN",
+    "level-base": "NOT_SHOWN",
+    "type-level": "NOT_SHOWN"
+  }
+}

@@ -73,4 +73,37 @@ class SparseEvents(unittest.TestCase):
         self.assertNotIn((5,),n.ritual_posts(pre,pi))
         self.assertIn((5,),n.ritual_posts(pre,pi,consumed_potions=[b._POTION_IDS['BLESSING_OF_THE_FORGE']]))
 
+    def awakened(self, upgrades):
+        pre=self.pre();pre.update(potions=[1]*5,gold=100)
+        pre['deck']=[dict(id=b._CARD_IDS['RITUAL_DAGGER'],misc=15,upgraded=up) for up in upgrades]
+        pi=dict(cards=[dict(cardId=b._CARD_IDS['HAND_OF_GREED'],upgraded=False)],
+                globals=dict(encounter=b._ENCOUNTER_IDS['AWAKENED_ONE'],ascension=0))
+        return pre,pi
+
+    def test_awakened_dagger_closure_has_three_permanent_kills(self):
+        for upgraded,payout in ((False,3),(True,5)):
+            pre,pi=self.awakened([upgraded])
+            self.assertIn((3*payout,),n.ritual_posts(pre,pi))
+            self.assertNotIn((4*payout,),n.ritual_posts(pre,pi))
+        pre,pi=self.awakened([True,True])
+        self.assertIn((10,5),n.ritual_posts(pre,pi))
+        self.assertNotIn((10,10),n.ritual_posts(pre,pi))
+        self.assertNotIn((15,5),n.ritual_posts(pre,pi))
+        pre,pi=self.awakened([False])
+        pi['cards'].append(dict(cardId=b._CARD_IDS['ARMAMENTS'],upgraded=False))
+        self.assertIn((15,),n.ritual_posts(pre,pi))
+        self.assertNotIn((20,),n.ritual_posts(pre,pi))
+
+    def test_awakened_greed_and_daggers_share_three_permanent_kills(self):
+        from tools import combat_transition_gold_proc_budget as budget
+        pre,pi=self.awakened([True])
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(15,)),((100,0),))
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(10,)),((100,0),(120,0)))
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(5,)),((100,0),(120,0),(140,0)))
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(0,)),((100,0),(120,0),(140,0),(160,0)))
+        with self.assertRaises(ValueError):budget.joint_gold_posts(pre,pi,0,(20,))
+        pre,pi=self.awakened([True,True])
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(10,5)),((100,0),))
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(10,10)),())
+
 if __name__=='__main__':unittest.main()

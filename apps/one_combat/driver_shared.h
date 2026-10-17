@@ -232,6 +232,9 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         std::vector<CombatEvalFight> *combatCapture = nullptr);
 // Effective OOC policy identity: teacher checks and the bestbench sidecar.
 nlohmann::json effectiveOocPolicySpecification();
+// Effective Silver leaf valuation (leaf terms, escape penalty, rollout card table)
+// for data manifests; defaults are recorded, not only the environment as set.
+nlohmann::json effectiveSilverLeafSpecification();
 WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
                                                  bool allowStaleProvenance = false,
                                                  bool requireOocPolicy = false,
@@ -441,8 +444,8 @@ int teacherSchemaCompatibilitySelfTest();
 int learnedStopTeacherSelfTest();
 // The default models are the production stack; a research candidate passes its own pair.
 int ctmScoreRows(const std::string &inPath, const std::string &outPath,
-                 const std::string &fastModel = "selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
-                 const std::string &standardModel = "selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+                 const std::string &fastModel = "selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+                 const std::string &standardModel = "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
                  bool activeLizard = true);
 int ctmScoreRowsSelfTest();
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
@@ -507,6 +510,10 @@ void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, lo
 
 std::string strategicHeader();
 
+// potionpriceprobe (research): paired-continuation resource prices.
+void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
+                      const std::string &outFile, int statesPerRun, int fightsAhead,
+                      int hpDelta);
 void strategicMargGen(int nSeeds, int outerSims,
                              int H, int maxPerRun, const std::string &outFile,
                              long long seedOffset);
