@@ -23,3 +23,9 @@ recalibrated by the same TRAIN Platt fit:
 PASS on all three makes the model a candidate for a paired A20 Heart A/B against the
 public X2-B leaf, which needs Philipp's go. Any FAIL is reported as is; the model stays
 research-only either way. Act 4 is reported, not gated (few snapshot roots).
+
+Amendment 2026-10-17 ~17:20Z, before any full fit: at Philipp's request (keys thread,
+17:12Z/17:14Z) the features gained key reachability inputs (schema
+`heart-leaf-features-v2`, `d6cf4b8`, binary sha256 `e976634c…`); the v1 tail run was stopped
+at about half and is not used. No hand-made key bonus: key value comes only from the Heart
+labels. Gate unchanged.
