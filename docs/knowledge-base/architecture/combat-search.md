@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for Ritual Dagger kill eligibility and persistent transfer; 2026-10-17 for the root-prior override used by the OOC Silver fallback; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -31,6 +31,20 @@ throws when no backend is installed:
 5. `BattleContext::exitBattle` transfers the result and persistent state back
    to `GameContext`. An unresolved combat is a player loss; an enumeration gap
    must never become free progress.
+
+Ritual Dagger earns permanent damage only for a non-Minion kill that is not
+half-dead: +3 normally or +5 when upgraded. A regrowing Darkling or the
+Awakened One's first phase earns nothing; the last Darkling and the final
+Awakened phase remain eligible. The two Cultists plus the final Awakened One
+therefore provide three eligible Ritual kills.
+
+Persistent card transfer includes the in-flight queued card because a final
+kill can end combat before card cleanup returns it to a pile. Only matching
+master-deck Ritual identities transfer growth; generated cards cannot alias
+deck slots. Same-identity Double Tap/Duplication copies retain permanent
+growth. Transfer takes the greatest recorded damage so stale queue history
+cannot overwrite a newer pile or master-deck value. The RAW transition
+observer runs after this transfer and before post-combat callbacks.
 
 `STS_SILVER_SEARCH=0`, `STS_FAIR=0` and `STS_NATIVE_SILVER=0` make `one_combat`
 exit with an error, as does any `STS_SILVER_*` option the native backend does

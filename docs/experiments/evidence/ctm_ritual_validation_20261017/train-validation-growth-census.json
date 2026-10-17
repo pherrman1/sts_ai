@@ -1,0 +1,250 @@
+{
+  "sourceSha": "f2d0dbd30b3667a847d3b92332a110baded509b6",
+  "testLabelsDecoded": false,
+  "modelInference": false,
+  "training": false,
+  "recordsDecoded": 1238,
+  "groups": {
+    "TRAIN": {
+      "rows": 1095,
+      "sources": 458,
+      "positiveGrowthRows": 3,
+      "positiveGrowthIndices": [
+        505864,
+        525828,
+        526479
+      ],
+      "targetCounts": {
+        "(0,)": 1010,
+        "(0, 0)": 82,
+        "(5,)": 3
+      },
+      "preMiscRange": [
+        15,
+        46
+      ],
+      "preMiscCounts": {
+        "15": 276,
+        "27": 34,
+        "25": 30,
+        "24": 67,
+        "18": 165,
+        "21": 117,
+        "20": 109,
+        "23": 84,
+        "26": 61,
+        "30": 27,
+        "28": 53,
+        "31": 42,
+        "33": 27,
+        "45": 5,
+        "38": 11,
+        "35": 4,
+        "41": 9,
+        "46": 6,
+        "29": 1,
+        "34": 19,
+        "39": 5,
+        "42": 9,
+        "40": 4,
+        "36": 7,
+        "32": 5
+      },
+      "upgradedCounts": {
+        "True": 852,
+        "False": 325
+      },
+      "copiesCounts": {
+        "1": 1013,
+        "2": 82
+      },
+      "nativeRecomputedTargets": 1095
+    },
+    "VALIDATION": {
+      "rows": 143,
+      "sources": 68,
+      "positiveGrowthRows": 0,
+      "positiveGrowthIndices": [],
+      "targetCounts": {
+        "(0,)": 143
+      },
+      "preMiscRange": [
+        15,
+        48
+      ],
+      "preMiscCounts": {
+        "20": 10,
+        "18": 13,
+        "15": 30,
+        "24": 5,
+        "26": 11,
+        "27": 12,
+        "21": 12,
+        "31": 6,
+        "36": 5,
+        "25": 4,
+        "23": 2,
+        "39": 5,
+        "48": 3,
+        "33": 6,
+        "28": 5,
+        "42": 8,
+        "30": 6
+      },
+      "upgradedCounts": {
+        "True": 93,
+        "False": 50
+      },
+      "copiesCounts": {
+        "1": 143
+      },
+      "nativeRecomputedTargets": 143
+    }
+  },
+  "examples": [
+    {
+      "split": "TRAIN",
+      "index": 2760,
+      "preDaggers": [
+        {
+          "id": 278,
+          "misc": 15,
+          "upgraded": true
+        }
+      ],
+      "postDaggers": [
+        {
+          "id": 278,
+          "misc": 15,
+          "upgraded": true
+        }
+      ],
+      "target": [
+        0
+      ],
+      "writhingTarget": 1,
+      "preHp": 60,
+      "postHp": 60
+    },
+    {
+      "split": "TRAIN",
+      "index": 4869,
+      "preDaggers": [
+        {
+          "id": 278,
+          "misc": 27,
+          "upgraded": false
+        }
+      ],
+      "postDaggers": [
+        {
+          "id": 278,
+          "misc": 27,
+          "upgraded": false
+        }
+      ],
+      "target": [
+        0
+      ],
+      "writhingTarget": 0,
+      "preHp": 92,
+      "postHp": 69
+    },
+    {
+      "split": "TRAIN",
+      "index": 5254,
+      "preDaggers": [
+        {
+          "id": 278,
+          "misc": 15,
+          "upgraded": true
+        }
+      ],
+      "postDaggers": [
+        {
+          "id": 278,
+          "misc": 15,
+          "upgraded": true
+        }
+      ],
+      "target": [
+        0
+      ],
+      "writhingTarget": 1,
+      "preHp": 63,
+      "postHp": 78
+    },
+    {
+      "split": "VALIDATION",
+      "index": 6391,
+      "preDaggers": [
+        {
+          "id": 278,
+          "misc": 20,
+          "upgraded": true
+        }
+      ],
+      "postDaggers": [
+        {
+          "id": 278,
+          "misc": 20,
+          "upgraded": true
+        }
+      ],
+      "target": [
+        0
+      ],
+      "writhingTarget": 0,
+      "preHp": 58,
+      "postHp": 50
+    },
+    {
+      "split": "VALIDATION",
+      "index": 22456,
+      "preDaggers": [
+        {
+          "id": 278,
+          "misc": 18,
+          "upgraded": false
+        }
+      ],
+      "postDaggers": [
+        {
+          "id": 278,
+          "misc": 18,
+          "upgraded": false
+        }
+      ],
+      "target": [
+        0
+      ],
+      "writhingTarget": 1,
+      "preHp": 90,
+      "postHp": 69
+    },
+    {
+      "split": "VALIDATION",
+      "index": 28652,
+      "preDaggers": [
+        {
+          "id": 278,
+          "misc": 15,
+          "upgraded": true
+        }
+      ],
+      "postDaggers": [
+        {
+          "id": 278,
+          "misc": 15,
+          "upgraded": true
+        }
+      ],
+      "target": [
+        0
+      ],
+      "writhingTarget": 0,
+      "preHp": 81,
+      "postHp": 78
+    }
+  ]
+}

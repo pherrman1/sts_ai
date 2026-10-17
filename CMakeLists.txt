@@ -362,6 +362,23 @@ target_include_directories(live_silver_importer_test PRIVATE include json/includ
 target_link_options(live_silver_importer_test PRIVATE -Wl,--gc-sections)
 add_test(NAME live_silver_importer COMMAND $<TARGET_FILE:live_silver_importer_test>)
 
+add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
+    apps/one_combat/combat_transition.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ritual_dagger_persistence_test PRIVATE include json/include apps)
+add_test(NAME ritual_dagger_persistence COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ritual_dagger_persistence_test>)
+set_tests_properties(ritual_dagger_persistence PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(ritual_dagger_eligibility_test apps/test_ritual_dagger_eligibility.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ritual_dagger_eligibility_test PRIVATE include json/include)
+add_test(NAME ritual_dagger_eligibility COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ritual_dagger_eligibility_test>)
+set_tests_properties(ritual_dagger_eligibility PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat_feature_test PUBLIC include)
@@ -942,6 +959,11 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
 link_ctm_crypto(combat_transition_runtime_probe)
+add_test(NAME ctm_ritual_kill_budget COMMAND $<TARGET_FILE:combat_transition_runtime_probe>
+    --ritual-kill-budget-selftest
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
+set_tests_properties(ctm_ritual_kill_budget PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME combat_transition_native_contract COMMAND python3 -m unittest
     tests.test_combat_transition_native_contract -v)
 set_tests_properties(combat_transition_native_contract PROPERTIES

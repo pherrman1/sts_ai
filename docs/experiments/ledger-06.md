@@ -19799,3 +19799,38 @@ only 0.530, each below X2-B with the 95% upper bound ≤ −0.040. Pooled+public
 BCE gain does not transfer to sibling ordering.
 [Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
 **Knowledge impact:** observed-outcome leaf status and native public-record parity.
+
+
+## §503 — current A0 Writhing/Ritual VALIDATION exposure and label coverage (2026-10-17)
+
+**Question:** does the current selected A0 CTM stack reproduce the old
+Writhing/Ritual exposure failure? Reviewed source `f2d0dbd3`, actual fast
+`c6d56bbc…` / standard `b9188de0…`, preserved source-grouped VALIDATION,
+32 upstream draws, sampling seed 20260920, four threads, 300-second limit.
+No game seeds, training, TEST numerical access or support changes.
+
+**Result:** `CURRENT_CHILD_RITUAL_VALIDATION_DIAGNOSTIC`, exit 0, 4.135 seconds,
+143 rows / 68 sources, 142 fast + 1 standard. Conditional NLL 0.0033221452,
+mixture NLL 0.0033055260, gap -0.0000166192; source-bootstrap 95% interval
+[-0.0001389866, 0.0001026931], zero missing masses. Independent result review
+recomputed all scores and bootstrap exactly. Native loader parity on synthetic
+public inputs passed within 1.67e-6.
+
+**Limitation:** all 143 observed Dagger increments are zero. A label-only
+TRAIN/VALIDATION census found just three +5 increments in 1,095 TRAIN rows
+and none in 143 VALIDATION rows; saved targets match pre/post deck data.
+The fast downstream checkpoint differs from the standard checkpoint in the
+old failing report. These results neither repair nor qualify the intersection.
+No fit is justified by the zero-growth cohort alone. Deterministic regression then confirmed lost final-kill growth and false
+half-dead growth. Source repairs and RAW serialization tests now preserve
++3/+5 on eligible final kills, omit revival phases, and share the three-kill
+Awakened budget. These repairs do not qualify models trained on the old
+labels; old rows lack the history needed for reliable relabeling.
+
+**ELI5:** the model predicts “the Dagger does not grow” accurately on these
+examples, but none shows the Dagger growing. We must verify the label producer
+before training it to predict growth.
+
+**Evidence:** [protocol, result, census, custody and raw receipts](evidence/ctm_ritual_validation_20261017/REPORT.md).
+**Knowledge impact:** maintained current-research model custody and coverage;
+no production/default change.

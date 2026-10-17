@@ -1,0 +1,53 @@
+{
+  "activeTailCorrectionEvaluated": false,
+  "artifacts": {
+    "fast": [
+      "combat_transition_deepsets_pathb_r2_lizard.native",
+      "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c"
+    ],
+    "standard": [
+      "combat_transition_near_full_escape_pathb_r2.native",
+      "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf"
+    ]
+  },
+  "brewGeneratedEscapeDiagnostic": null,
+  "classification": "CURRENT_CHILD_RITUAL_VALIDATION_DIAGNOSTIC",
+  "cudaVersion": "12.1",
+  "device": "NVIDIA GeForce RTX 3060 Ti",
+  "draws": 32,
+  "excludedRows": {},
+  "finiteGap": true,
+  "frozenRows": 143,
+  "independentHoldout": false,
+  "meanGap": -1.661918434052221e-05,
+  "mixtureNll": 0.003305526033288567,
+  "peakCudaAllocated": 14107648,
+  "peakRssBytes": 1014046720,
+  "qualified": false,
+  "routeCounts": {
+    "fast": 142,
+    "standard": 1
+  },
+  "rowEvidenceSha256": "2921363393a62bc3027db5fcf3d7f2292dabdb6714360d2e0296fdd6d2803e2b",
+  "rows": 143,
+  "seed": 20260920,
+  "sourceBootstrap": {
+    "mean": -1.661918434052221e-05,
+    "repetitions": 1000,
+    "rows": 143,
+    "sourceBootstrap95": [
+      -0.00013898656525652327,
+      0.00010269314778911387
+    ],
+    "sources": 68
+  },
+  "sources": 68,
+  "supportChanged": false,
+  "teacherNll": 0.0033221452176290895,
+  "testEvaluated": false,
+  "torchVersion": "2.5.1+cu121",
+  "trainingPerformed": false,
+  "wallSeconds": 4.135347330011427,
+  "zeroMixtureMassRows": 0,
+  "zeroTeacherMassRows": 0
+}

@@ -362,6 +362,17 @@ a warm start for these refits. Extending that warm start's fit cannot be
 interpreted as repairing either deployed head. Capability guards stay in
 place pending stack-specific composition and native qualification.
 [Artifact custody](../../experiments/evidence/ctm_ritual_validation_20261017/custody.json).
+A frozen 32-draw VALIDATION diagnostic (§503) scores 143 rows from 68 sources
+with near-zero exposure gap, but every observed Dagger increment is zero.
+A TRAIN/VALIDATION census has only three positive increments in 1,238 rows.
+This does not qualify growth, standard-Brew coverage or active-Tail
+composition. Deterministic fixtures subsequently reproduced lost final-kill
+Ritual growth and false half-dead growth in the producer. The fixed transfer,
+eligibility and shared native kill budget match vanilla semantics. Old rows
+lack the action history needed to repair them, and later pre-state decks also
+reflect the old growth. Corrected-source data is required before renewing
+affected Ritual growth qualification; the existing artifacts are preserved.
+[Diagnostic evidence](../../experiments/evidence/ctm_ritual_validation_20261017/REPORT.md).
 
 **Root selection × cpuct (2026-10-09, §414).** On 128 new paired seeds with the
 pathb-r2 stack, picking the OOC MCTS root option by mean Q instead of visits
