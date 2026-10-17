@@ -300,6 +300,9 @@ def evaluate(net, ref, stores, meta, device):
                 out[name] = {'groups': len(groups), 'model': group_metrics(rows, groups, 'model')[0],
                              'x2b': group_metrics(rows, groups, 'x2b')[0], 'r0': group_metrics(rows, groups, 'r0')[0]}
     net.train()
+    # Return cached evaluation blocks: the backward pass creates its cuBLAS handle outside
+    # the caching allocator and failed (CUBLAS_STATUS_ALLOC_FAILED) after the large round-2 evaluation.
+    torch.cuda.empty_cache()
     return out
 
 
