@@ -211,7 +211,10 @@ bool isValidShopAction(const GameContext &gc, const search::GameAction a) {
             if (select > 2) {
                 return false;
             }
-            return s.potionPrice(select) != -1 && gc.gold >= s.potionPrice(select);
+            // The real shop refuses a potion with Sozu or a full belt; obtainPotion
+            // would silently drop it after the gold is spent.
+            return s.potionPrice(select) != -1 && gc.gold >= s.potionPrice(select)
+                && !gc.hasRelic(RelicId::SOZU) && gc.potionCount < gc.potionCapacity;
 
 
         case search::GameAction::RewardsActionType::RELIC:
@@ -534,9 +537,10 @@ std::vector<search::GameAction> getAllShopActions(const sts::GameContext &gc) {
         }
     }
 
+    const bool potionRoom = !gc.hasRelic(RelicId::SOZU) && gc.potionCount < gc.potionCapacity;
     for (int i = 0; i < 3; ++i) {
         auto price = s.potionPrice(i);
-        if (price != -1 && gc.gold >= price) {
+        if (potionRoom && price != -1 && gc.gold >= price) {
             actions.emplace_back(search::GameAction::RewardsActionType::POTION, i);
         }
     }
