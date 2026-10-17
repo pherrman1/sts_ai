@@ -1043,9 +1043,21 @@ attempts, and a matched pair is added to the deck. Its clicks are not searched:
 `sim/search/MatchAndKeepPolicy` for real runs and for OOC MCTS continuations.
 The pattern reads a slot's card only after that slot was flipped. Each seen
 card is valued by the active primary guide as a lone card reward
-(`oocHypotheticalCardTaken`): OOC MCTS when it is enabled, otherwise the
-ordinary V4/one-ply chain; inside a search only the chain is used, so no search
-nests inside another.
+(`oocHypotheticalCardTaken`): live OOC MCTS at a real decision when it is
+enabled; otherwise, with `STS_OOC_HEART1` loaded, one heart1 argmax step over
+the offer's take and skip (the same step a heart1 rollout takes); otherwise the
+ordinary V4/one-ply chain. Inside a search the live MCTS is never used, so no
+search nests inside another. heart1 has no Match and Keep token and
+`v4DecisionSupported` excludes the event, so tree nodes and rollouts never send
+its clicks to a prior or rollout policy; only this valuation does.
+`STS_MATCH_AND_KEEP_HEART1=0` restores the chain valuation (before 2026-10-17).
+A curse is never a wanted pair (`STS_MATCH_AND_KEEP_CURSE_FIX`, default on, `=0`
+restores the old valuation): offered as a lone card reward, a curse is outside
+what V4 and heart1 were trained on, and both took Shame, Writhe and Regret there.
+The engine follows the game's `GremlinMatchGame` card set: rare, uncommon and
+common class cards, a colorless uncommon (a second curse at A15+), a curse and
+the starter card, shuffled with `miscRng`. The fixed pattern can still match a
+curse when the second flip of an attempt has only unseen slots left.
 
 A compound may combine a source option with one target only when its complete
 candidate set is public before the source click and that click reveals no new
@@ -1902,7 +1914,8 @@ with the search and its chain.
   silverbot does. A single offered choice is executed directly. Screens
   silverbot does not encode (Match and Keep, Bonfire Spirits, any unmapped
   event) fall back to the ordinary chain, where silverbot would call its own
-  `pick_gameaction`.
+  `pick_gameaction`; the Match and Keep pattern there values its cards with
+  heart1.
 - Diagnostics: `STS_OOC_HEART1_TRACE=<jsonl>` appends each scored decision's
   record and logits. `one_combat heart1score` scores records offline;
   `one_combat heart1replay` replays one seed's action bits for the harness.

@@ -486,6 +486,10 @@ add_test(NAME match_and_keep_boss_draft_oracle
     COMMAND $<TARGET_FILE:one_combat> matchandkeep_oracle_selftest)
 set_tests_properties(match_and_keep_boss_draft_oracle PROPERTIES
     LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME match_and_keep_curse_fix
+    COMMAND $<TARGET_FILE:one_combat> matchandkeep_curse_selftest)
+set_tests_properties(match_and_keep_curse_fix PROPERTIES
+    LABELS "core;research-repro" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME act_fight_probe_all_ooc_root_state
     COMMAND $<TARGET_FILE:one_combat> actfightprobeallooc_rootstate_selftest)
 set_tests_properties(act_fight_probe_all_ooc_root_state PROPERTIES
