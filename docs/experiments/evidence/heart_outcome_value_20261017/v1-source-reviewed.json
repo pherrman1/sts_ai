@@ -1,0 +1,19 @@
+{
+  "schema": "heart-outcome-value-source-review-v1",
+  "verdict": "PASS",
+  "reviewer": "heart_review",
+  "sourceSha": "449573acd77300f3e8a68fb39da64a2166472ed2",
+  "toolSha256": "4e8901ec090887f69a29b18a4e6c7e66d6e433db241224ebecb0a5f081212d4d",
+  "protocolSha256": "854966e91aafee307d9e3dac918b36c168fab5750809ce7e7798dc1c34d95c78",
+  "testsSha256": "54e635ac0f2cf06e18d8a644fb2891358a6752e85d15642cedd8c87731e6ed08",
+  "independentTests": {
+    "passed": 12,
+    "seconds": 1.047,
+    "actualEncoderDevices": [
+      "cpu",
+      "cuda"
+    ]
+  },
+  "scope": "One fixed TRAIN/VALIDATION run only; no TEST/native/gameplay/default promotion",
+  "utc": "2026-10-16T22:18:50.020741+00:00"
+}

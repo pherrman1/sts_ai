@@ -1,0 +1,23 @@
+{
+  "schema": "heart-outcome-holdout-source-design-review-v1",
+  "verdict": "PASS",
+  "reviewer": "heart_review",
+  "sourceSha": "8f79207b7a04ed0f96773608099166c854e152dd",
+  "toolSha256": "62228f0d33a8624612c7929bfbc11c2a3148bf6b469ea4b0e29b54582332121c",
+  "testsSha256": "3267d50729c40b1271c65f3ee9565c2b708009e59fd0f06debc988384678062a",
+  "protocolSha256": "200d04e91e5f1dc5c4402a777121f66262ee824eb3596069197134f04798c058",
+  "independentTests": {
+    "passed": 16,
+    "seconds": 1.738,
+    "actualEncoderAndHeadSyntheticCuda": true,
+    "full360SourceSyntheticRunFixture": true
+  },
+  "localFocusedTests": {
+    "passed": 57,
+    "seconds": 2.016
+  },
+  "testOpeningAuthorized": true,
+  "finalFreezeReviewStillRequired": true,
+  "scope": "One fixed360source holdout, no fit/native/gameplay/RL/default promotion or retry",
+  "utc": "2026-10-16T22:48:54.884103+00:00"
+}

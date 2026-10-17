@@ -212,6 +212,9 @@ target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
+add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_import.py)
+set_tests_properties(heart_outcome_import_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_collection_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_capture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")

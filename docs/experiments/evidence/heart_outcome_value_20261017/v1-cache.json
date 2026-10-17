@@ -1,0 +1,14 @@
+{
+  "companion": {
+    "index": 0,
+    "recordSha256": "53c724da352dd43afccf8d4882f21f839fd03ccd97fe3726e43f21e4f010ef99",
+    "seed": 110180007
+  },
+  "counts": {
+    "train": 171442,
+    "validation": 56704
+  },
+  "freezeSha256": "fbe456e5fca242e6c9e0da6728813a18cffc6295098a8909372d974d16d6932e",
+  "pooledSha256": "a066eb69a74c16fc5e2d4e75b3c269937e269be1b82e5d2cbfb667cdbd442a25",
+  "seconds": 360.4371272380231
+}

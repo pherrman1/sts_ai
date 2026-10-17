@@ -1,0 +1,26 @@
+{
+  "schema": "heart-outcome-value-source-recovery-review-v1",
+  "verdict": "PASS",
+  "reviewer": "heart_review",
+  "sourceSha": "c7e857216cd2c450c388c265c1951e5d97cc25e8",
+  "toolSha256": "f53ff37e5bbb2ea0480606c7f7777391151f91d216858f91f5f1d158decc2627",
+  "protocolSha256": "3eaf00eb2ba34ceaa217c8cddeb79907761ec566681d99044f0316284143558c",
+  "testsSha256": "11a081197d32d088ba4fce4ff741e8da466100aa5be89e10c71ca3cc40858a4f",
+  "independentTests": {
+    "passed": 14,
+    "seconds": 1.194,
+    "actualEncoderDevices": [
+      "cpu",
+      "cuda"
+    ],
+    "deterministicCudaCpuSampling": true,
+    "additionalRecoveryNegativeCases": 6
+  },
+  "recoveryCacheSha256": "a066eb69a74c16fc5e2d4e75b3c269937e269be1b82e5d2cbfb667cdbd442a25",
+  "parentFreezeSha256": "fbe456e5fca242e6c9e0da6728813a18cffc6295098a8909372d974d16d6932e",
+  "parentVerdict": "INVALID_SOFTWARE_BEFORE_UPDATES",
+  "parentOptimizerUpdates": 0,
+  "parentModelScoresObserved": false,
+  "scope": "One prospective v2 repair with exact v1 cache; sibling output only; no implicit retry, TEST, native or gameplay",
+  "utc": "2026-10-16T22:28:40.655920+00:00"
+}

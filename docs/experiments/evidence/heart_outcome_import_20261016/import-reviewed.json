@@ -1,0 +1,76 @@
+{
+  "activationSha256": "9f66ee277e52874b8c74dcd11561027f827029b336da28f81c534e3c5a041b22",
+  "auditVerdict": "TRAIN_VALIDATION_READY",
+  "bundleSha256": "836a34129c99bfd68e691ed802f0a403cd75e37db7effd0e1b01f51b4697f6d5",
+  "classGate": {
+    "trainLosses": 20,
+    "trainWins": 20,
+    "validationLosses": 5,
+    "validationWins": 5
+  },
+  "deliveryIndexSha256": "e3621c3873dc0155edd651f787802412560b632ee6cca3f32b6e4ed2be746026",
+  "fitExecuted": false,
+  "limitations": [
+    "Operational recovery and one-way export deviations remain recorded; not unchanged original protocol.",
+    "No cross-CPU byte-parity proof for W11; fixed simulations alone do not establish it.",
+    "Public-record/native parity unqualified; sampled actual driver boundaries.",
+    "TEST validated only by opaque hashes and producer completion receipts; no TEST outcomes inspected.",
+    "Observed native simulator returns under the fixed behavior policy; no optimal-policy or real-game calibration claim.",
+    "Current human selection authorizes recovered deliveries; prior no-retry/export deviations are preserved.",
+    "Readiness does not select a model; a separate frozen training and evaluation protocol is required."
+  ],
+  "nativeIntegration": false,
+  "planSha256": "4b49a40427dde2470044847e8e843cc349a460e183d6fa2ddbdda4c0494d14a3",
+  "producerSourceSha": "7527b5d5d07467688101212660461995665512b9",
+  "resultSha256": "aafe46933b03b153fc3b3032f0afa3f860663b15e9d96e015f3af06688328d33",
+  "reviewedToolSha256": "462cf4ce628d096e43f2b34676673ce3d12103cfdb69bb6f7a76f7408057b8e3",
+  "reviewedToolSourceSha": "747f47e935c5c35c41dd5599f0905dd7a270806a",
+  "reviewer": "heart_review",
+  "schema": "heart-outcome-import-independent-review-v1",
+  "scope": "TRAIN/VALIDATION import readiness only; not model qualification or fitting authority",
+  "sourceManifestSha256": "1d2c6b03f95ca4750eb9869627f590d11fafeb69f04c43077d927d524117f5c6",
+  "splits": {
+    "train": {
+      "finalActCounts": {
+        "1": 123,
+        "2": 337,
+        "3": 252,
+        "4": 368
+      },
+      "losses": 954,
+      "sources": 1080,
+      "states": 171442,
+      "supportedStates": 171442,
+      "wins": 126
+    },
+    "validation": {
+      "finalActCounts": {
+        "1": 43,
+        "2": 120,
+        "3": 83,
+        "4": 114
+      },
+      "losses": 313,
+      "sources": 360,
+      "states": 56704,
+      "supportedStates": 56704,
+      "wins": 47
+    }
+  },
+  "supersededArchivesParsed": 0,
+  "testArchivesParsed": 0,
+  "testClosed": true,
+  "testOpeningAuthorized": false,
+  "totalValidatedStates": 228146,
+  "transportCommit": "e3b649ced5a392f78e9412787a84d458cffd60a1",
+  "verdict": "PASS",
+  "verified": [
+    "Fixed41 original plus8 replacement-half ownership;1800 unique assigned seeds,1440 TRAIN/VALIDATION",
+    "Independent raw TRAIN/VALIDATION receipt/trajectory hashes match every saved source-manifest entry",
+    "All1440 complete healthy footer labels and counts independently reproduce reported class and state totals",
+    "All228146 state rows have ordered real-driver origin and no provenance/label keys in public records",
+    "Frozen source/binary/model/policy/runtime and full cloud-canary/activation lineage audited separately",
+    "Every TRAIN/VALIDATION unit has100percent scored prior/rollout coverage; prior clock checks found no anomalies",
+    "All53 sealed archive hashes match; no sealed tar parser/listing/content access"
+  ]
+}
