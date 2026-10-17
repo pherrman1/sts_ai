@@ -373,7 +373,7 @@ It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 
 ```bash
-tools/live_game_start.sh --super-fast --run -- \
+tools/live_game_start.sh --run -- \
   --new-run --character IRONCLAD --ascension 0 --run-until-error
 ```
 
