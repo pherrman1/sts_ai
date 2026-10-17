@@ -54,7 +54,7 @@ detection power: about ±6 pp on reaching Act 4; Heart-kill differences under ab
 
 §504 arm C runs took 453 s (wall) on average; the Heart leaf adds a 600-tree critic and a 129-tree residual per leaf
 end. Smoke, seed 111159002 at `209c5613` (binary `20d03790…`), both arms rc 0: C died on floor 45 (act 3),
-324 s, 2.96 MCTS CPU s per OOC decision; H died on floor 33 (act 2), 216 s, 2.61 s per decision; the H log shows
+324 s, 2.89 MCTS CPU s per OOC decision; H died on floor 33 (act 2), 216 s, 2.53 s per decision; the H log shows
 the td2 manifest, critic and residual loaded; the root trace is about 0.5 MB per run. Estimate about 130 CPU-h for 1,024 runs. Execution: 8 hosted workers (Philipp's count), each
 running 64 contiguous seeds × 2 arms = 128 units, 4 at a time (`worker.sh`), about 4 h per worker. Each worker
 uploads one tar and one DONE file to `/mnt/project-files/heart-leaf-td/ab/`.
