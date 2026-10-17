@@ -189,7 +189,9 @@ def main():
     subsets = {"all": lambda st: True,
                "boss": lambda st: st["roomClass"] == "BOSS",
                "elite": lambda st: st["roomClass"] == "ELITE",
-               "normal": lambda st: st["roomClass"] not in ("BOSS", "ELITE")}
+               "normal": lambda st: st["roomClass"] not in ("BOSS", "ELITE"),
+               # Descriptive: Act-4 fights (sources where student C collected all keys by itself).
+               "act4": lambda st: st["act"] == "4"}
     for x, y in [(x, y) for x, y, _, _ in LABELED] + DESCRIPTIVE:
         for name, keep in subsets.items():
             for metric in METRICS:
@@ -213,6 +215,7 @@ def main():
             result["cpuRatios"][f"{x}/{y}/{kind}"] = {"ratio": m, "ci95": [lo, hi]}
     # Pre-registered CPU match: the primary label stands only if the point estimate of the
     # roottable2500 / greedy2650 CPU-per-fight ratio is <= 1.00; otherwise it is NOT_CPU_MATCHED.
+    result["act4Fights"] = sum(1 for st, _ in fights.values() if st["act"] == "4")
     result["cpuMatched"] = result["cpuRatios"]["roottable2500/greedy2650/perFight"]["ratio"] <= 1.00
     for x, y, pos, neg in LABELED:
         lab = label(result["contrasts"][f"{x}-{y}/all/score"], pos, neg)
@@ -220,13 +223,13 @@ def main():
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "truncatedRows", "shards",
-                                             "roomClasses", "labels", "cpuMatched", "cpuRatios", "escapes",
+                                             "roomClasses", "act4Fights", "labels", "cpuMatched", "cpuRatios", "escapes",
                                              "excludedFightsByRootReason", "invalidArmRowsByReason",
                                              "escapeReplicatesAllFights")}))
     for a, v in result["arms"].items():
         print(a, {k: round(x, 3) for k, x in v.items()})
     for k, v in result["contrasts"].items():
-        if "/all/" in k or "/boss/" in k:
+        if "/all/" in k or "/boss/" in k or "/act4/" in k:
             print(f"{k}: {v['mean']:+.3f} [{v['ci95'][0]:+.3f}, {v['ci95'][1]:+.3f}] n={v['fights']}")
 
 
