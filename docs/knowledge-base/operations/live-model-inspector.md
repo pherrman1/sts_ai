@@ -359,8 +359,11 @@ this is a timeout, not a delay. Gameplay readiness/post-action transitions use
 `--transition-timeout` (8 seconds by default). Slow rendering or ordinary
 campfire animations can require a larger explicit budget; a timeout never
 authorizes repeating the previous action. The chosen budget is preserved in
-failure reproduction commands. Advisor waiting remains separately configured
-by `--inspector-timeout`.
+failure reproduction commands. Vanilla `CardCrawlGame.render()` returns before
+updating the game when `getRawDeltaTime()` exceeds 0.1 seconds. Repeated slow
+software-rendered frames can therefore advance an animation much more slowly
+than wall time; extending the wait does not change the animation or reapply its
+effect. Advisor waiting remains separately configured by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 
