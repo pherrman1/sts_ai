@@ -42,6 +42,7 @@ class ScreenLeafNet;
 class ScreenLeafGbm;
 class RolloutStudent;
 struct CompactTreeNet;
+class HeartLeafModel;
 // Borrowed inputs/results for a synchronous diagnostic. References must not be
 // retained after the observer returns; hidden state/RNG are replay metadata.
 struct OocLeafObservation {
@@ -96,6 +97,10 @@ struct OocAdapterOptions {
     // place of the process v_win (STS_OOC_MCTS_LEAF_WIN_MODEL).
     std::shared_ptr<const CompactTreeNet> leafWinNet;
     std::string leafWinPath;
+    // Research option (default unset, issue #605): Heart-objective leaf, a residual
+    // on the pinned public X2-B (STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>).
+    std::shared_ptr<const HeartLeafModel> heartLeaf;
+    std::string heartLeafPath;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
@@ -347,6 +352,13 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr,
     nlohmann::json *rootActions = nullptr);
+// Research (issue #605 Heart leaf targets): `repeats` leaf evaluations of the
+// snapshot root under the live configuration, each from a fresh stream seeded
+// by (salt, r). `atEnd` receives every rollout endpoint that the leaf model
+// would score (non-terminal ends); the returned list has one row per repeat:
+// {"terminal", "value"} and, for non-terminal ends, the end's heart features.
+nlohmann::json liveRootLeafTails(const GameContext &, const PathHistory &, const OocPolicyThreadState &,
+    std::uint64_t salt, unsigned repeats);
 // Research (§425 gold scoring): one decision with the live OOC MCTS
 // configuration on a copied state; returns the root summary as JSON.
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &,

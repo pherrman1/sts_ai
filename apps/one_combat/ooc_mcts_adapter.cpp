@@ -33,6 +33,7 @@
 #include "heart1_policy.h"
 #include "screen_leaf_snapshot.h"
 #include "rollout_student.h"
+#include "heart_leaf.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "ooc_policy.h"
@@ -1741,6 +1742,10 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
         OocProfileScope predict(OocProfileBucket::LeafPredict);
         return options.screenLeafGbm->anchor(richFeatureVec(gc, path));
     }
+    if (options.heartLeaf) {
+        OocProfileScope predict(OocProfileBucket::LeafPredict);
+        return options.heartLeaf->value(gc, path);
+    }
     if (options.leafWinNet) {
         OocProfileScope predict(OocProfileBucket::LeafPredict);
         const double value = options.leafWinNet->predict(richFeatureVec(gc, path));
@@ -2879,6 +2884,17 @@ void configureLiveOocMcts() {
         liveOptions.leafWinPath = model;
 #endif
     }
+    if (const char *model = std::getenv("STS_OOC_MCTS_LEAF_HEART_MODEL"); model && *model) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART_MODEL is unavailable in the live advisor");
+#else
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART_MODEL requires STS_OOC_MCTS_LEAF_VALUE=native and no STS_OOC_MCTS_LEAF_WIN_MODEL");
+        liveOptions.heartLeaf = std::make_shared<const HeartLeafModel>(model);
+        liveOptions.heartLeafPath = model;
+#endif
+    }
     if (const char *student = std::getenv("STS_OOC_MCTS_LEAF_STUDENT"); student && *student) {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT is unavailable in the live advisor");
@@ -2886,7 +2902,7 @@ void configureLiveOocMcts() {
         // The §494 student learned rollout values on the native leaf anchor; sibling
         // capture's repeat rollouts would be replaced by the student itself.
         const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
-        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet)
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet || liveOptions.heartLeaf)
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT requires STS_OOC_MCTS=1 and STS_OOC_MCTS_LEAF_VALUE=native");
         if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT excludes leaf and sibling capture");
@@ -3045,7 +3061,7 @@ void configureLiveOocMcts() {
             identity = native->runtime().identity();
         std::vector<std::pair<std::string, std::string>> files = {
             {"ctm", artifact}, {"brewFallbackCtm", brewFallbackArtifact},
-            {"leafWinOverride", liveOptions.leafWinPath}};
+            {"leafWinOverride", liveOptions.leafWinPath}, {"leafHeartModel", liveOptions.heartLeafPath}};
         if (const char *manifest = std::getenv("STS_CTM_RESEARCH_CANDIDATE_MANIFEST"))
             files.emplace_back("ctmManifest", manifest);
         auto provenance = oocLeafCaptureProvenance(identity, files);
@@ -3078,6 +3094,7 @@ void configureLiveOocMcts() {
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
+        << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -3100,6 +3117,8 @@ void configureLiveOocMcts() {
         << "\",\"activeLizardCorrection\":" << (activeLizardEnabled?"true":"false")
         << ",\"priorTrace\":\"" << liveOptions.priorTracePath << "\""
         << (liveOptions.rolloutStudent ? ",\"leafStudent\":\"" + liveOptions.rolloutStudentPath + "\"" : std::string{})
+        << (liveOptions.heartLeaf ? ",\"leafHeartModel\":\"" + liveOptions.heartLeafPath + "\",\"leafHeartModelSha256\":\""
+            + liveOptions.heartLeaf->manifestSha256() + "\"" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -3926,6 +3945,68 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (leafStabilityMode) validateStabilityRoot(result, model);
     return result;
 }
+#ifndef STS_LIVE_ADVISOR
+nlohmann::json liveRootLeafTails(const GameContext &gc, const PathHistory &path, const OocPolicyThreadState &policy,
+    std::uint64_t salt, unsigned repeats) {
+    if (!liveEnabled) throw std::runtime_error("liveRootLeafTails requires STS_OOC_MCTS=1");
+    // The end-state hook sits on the native leaf dependency; every other leaf skips it.
+    if (liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf
+            || liveOptions.directLeaf || liveOptions.leafWinNet || liveOptions.heartLeaf || liveOptions.rolloutStudent
+            || !liveOptions.leafCombats)
+        throw std::runtime_error("liveRootLeafTails requires the native rollout leaf (STS_OOC_MCTS_LEAF_VALUE=native)");
+    static const CompactTreeNet anchor = [] {
+        CompactTreeNet net;
+        if (fileSha256Hex(kHeartLeafAnchorPath) != kHeartLeafAnchorSha256
+                || !net.load(kHeartLeafAnchorPath, richIdxMap(), "HeartLeaf tail anchor") || !net.logistic)
+            throw std::runtime_error("liveRootLeafTails cannot load the pinned public X2-B");
+        return net;
+    }();
+    ImaginedScope scope;
+    restoreOocPolicyThreadState(policy);
+    auto deps = defaultOocMctsDependencies();
+    const auto nativeLeaf = deps.leafValue;
+    std::optional<nlohmann::json> end;
+    deps.leafValue = [&](const GameContext &state, const PathHistory &at) {
+        const double value = nativeLeaf(state, at);
+        auto raw = richFeatureVec(state, at);
+        const double margin = anchor.margin(raw);
+        appendHeartLeafExtras(raw, state, margin);
+        nlohmann::json idx = nlohmann::json::array(), val = nlohmann::json::array();
+        for (std::size_t i = 0; i < raw.size(); ++i) if (raw[i] != 0) { idx.push_back(i); val.push_back(raw[i]); }
+        end = nlohmann::json{{"x2b", value}, {"floor", state.floorNum}, {"act", state.act},
+            {"screen", int(state.screenState)}, {"i", std::move(idx)}, {"v", std::move(val)}};
+        return value;
+    };
+    auto options = liveOptions;
+    options.siblingCapture.reset();
+    options.leafObserver = {};
+    options.priorTracePath.clear();
+    OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options), std::move(deps));
+    if (model.terminalValue(0)) throw std::runtime_error("liveRootLeafTails root is terminal");
+    nlohmann::json rows = nlohmann::json::array();
+    for (unsigned r = 0; r < repeats; ++r) {
+        restoreOocPolicyThreadState(policy);
+        end.reset();
+        std::seed_seq seq{salt, std::uint64_t(r)};
+        std::mt19937_64 stream(seq);
+        try {
+            const auto e = model.evaluateLeafWithOutcome(0, stream);
+            nlohmann::json row = {{"value", e.value}, {"terminal", e.terminal}, {"endFloor", e.endpoint ? e.endpoint->floor : -1}};
+            if (!e.terminal) {
+                if (!end) throw std::runtime_error("non-terminal rollout end bypassed the native leaf");
+                if (std::abs(end->at("x2b").get<double>() - e.value) > 1e-12)
+                    throw std::runtime_error("rollout end value is not the native leaf value");
+                row["end"] = std::move(*end);
+            }
+            rows.push_back(std::move(row));
+        } catch (const sts::search::OocSearchUnsupported &u) {
+            rows.push_back({{"error", u.what()}});
+        }
+    }
+    restoreOocPolicyThreadState(policy);
+    return rows;
+}
+#endif
 nlohmann::json scoreLiveOocMctsDecision(const GameContext &gc, const PathHistory &path,
     std::uint64_t runSeed, std::uint64_t decisionIndex) {
     if (!liveEnabled) throw std::runtime_error("scoreLiveOocMctsDecision requires STS_OOC_MCTS=1");
