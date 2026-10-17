@@ -1,0 +1,2 @@
+off [(('no_cards', 'uniform', 'other'), 1), (('with_cards', 'uniform', 'discard'), 1), (('with_cards', 'uniform', 'other'), 2)]
+on [(('with_cards', 'uniform', 'discard'), 1), (('with_cards', 'uniform', 'other'), 3)]
