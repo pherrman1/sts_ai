@@ -4109,6 +4109,11 @@ int main(int argc, char **argv) {
                                       "  ENCOUNTER: MonsterEncounter enum name, e.g. COLLECTOR (a boss is forced as its act's boss)\n"; return 2; }
         silverAzFocusGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]),
                          argv[7], std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]), std::stoi(argv[11]));
+    } else if (mode == "silverazact4gen") {
+        if (argc < 10) { std::cerr << "usage: one_combat silverazact4gen N_STATES STATES.jsonl SIMS OUT_PREFIX SEED_OFFSET REPLICATES TREE_MIN_VISITS ROOT_BONUS\n"
+                                      "  STATES: Act-4 combat_transition_row_v2 JSONL; prior: STS_SILVER_ROOT_PRIOR; ROOT_BONUS: 0 | 1\n"; return 2; }
+        silverAzAct4Gen(std::stoi(argv[2]), argv[3], std::stoi(argv[4]), argv[5], std::stoll(argv[6]),
+                        std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9]));
     } else if (mode == "silverfocusevalgen") {
         if (argc < 13) { std::cerr << "usage: one_combat silverfocusevalgen N_SEEDS ASC OUT_PREFIX SEED_OFFSET ENCOUNTER REPLICATES OTHER_SIMS ARM_SIMS TREE_MIN_VISITS PRIOR_A PRIOR_B\n"; return 2; }
         silverFocusEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],

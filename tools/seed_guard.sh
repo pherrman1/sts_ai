@@ -22,6 +22,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["silversynthgen"]=2
   ["silverazgen"]=2
   ["silverazfocusgen"]=2
+  ["silverazact4gen"]=2
   ["silverfocusevalgen"]=2
   ["vwinrefreshbranchselftest"]=2
   ["vwinrefreshfatalcountselftest"]=2

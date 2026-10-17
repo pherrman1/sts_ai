@@ -332,6 +332,10 @@ void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
 // fight per run at SIMS, other fights unrecorded at OTHER_SIMS; a boss is forced.
 void silverAzFocusGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
                       const std::string &encounter, int replicates, int otherSims, int treeMinVisits, int rootBonus);
+// Self-play on recorded A20 Act-4 fight starts (silverazact4gen): REPLICATES recorded copies
+// of each of the first N_STATES usable combat_transition_row_v2 rows at SIMS.
+void silverAzAct4Gen(int nStates, const std::string &statesPath, int sims, const std::string &outPrefix,
+                     long long seedOffset, int replicates, int treeMinVisits, int rootBonus);
 // Paired online check of two MLP tree priors on one encounter (silverfocusevalgen, §469).
 void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                         const std::string &encounter, int replicates, int otherSims, int armSims, int treeMinVisits,
