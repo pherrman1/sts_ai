@@ -1045,7 +1045,13 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                     const std::size_t qualifiedCount = std::count_if(primitives.begin(), primitives.end(),
                         [&](auto action) { return id != 0 || !options.rootPrimitiveBits
                             || options.rootPrimitiveBits->count(action.bits); });
-                    value.sourcePriorCovered = qualified.size() == qualifiedCount && qualified == sources;
+                    // heart1::mapPriorLogits prices a potion discard (lowest logit), but V4's
+                    // candidate list never contains one, so a full belt made the node uniform.
+                    auto compared = sources;
+                    if (options.heart1Prior)
+                        for (auto it = compared.begin(); it != compared.end();)
+                            it = GameAction(*it).isPotionDiscard() && !qualified.count(*it) ? compared.erase(it) : std::next(it);
+                    value.sourcePriorCovered = qualified.size() == qualifiedCount && qualified == compared;
                 }
             }
         }
@@ -4896,6 +4902,29 @@ void oocMctsAdapterSelfTest() {
         bool threw=false;
         try { OocGameContextModel bad(duplicates,path,{},heart1Options,noHeart1); } catch(const std::runtime_error &) { threw=true; }
         require(threw,"heart1 prior without STS_OOC_HEART1 is fatal");
+        // A full belt adds discard primitives that V4's candidate list lacks; heart1 prices them,
+        // so the node must still take heart1's prior instead of going uniform.
+        auto belt=detachedCopy(gc); belt.screenState=ScreenState::REWARDS;
+        belt.info.rewardsContainer.clear();
+        belt.potionCapacity=2; belt.potionCount=0;
+        for(auto &p:belt.potions) p=Potion::EMPTY_POTION_SLOT;
+        belt.obtainPotion(Potion::FIRE_POTION); belt.obtainPotion(Potion::BLOCK_POTION);
+        belt.info.rewardsContainer.addPotion(Potion::STRENGTH_POTION);
+        CardReward beltCards; beltCards.push_back(Card(CardId::ANGER)); beltCards.push_back(Card(CardId::BASH));
+        belt.info.rewardsContainer.addCardReward(beltCards);
+        auto beltDeps=deps;
+        bool sawDiscard=false;
+        beltDeps.heart1PolicyLogits=[&](const GameContext &, const std::vector<GameAction> &actions,
+                std::map<std::string,std::uint64_t> *) -> std::optional<std::vector<double>> {
+            std::vector<double> logits;
+            for(auto a:actions) { sawDiscard=sawDiscard || a.isPotionDiscard(); logits.push_back(a.isPotionDiscard() ? -5.0 : double(logits.size())); }
+            return logits;
+        };
+        OocGameContextModel beltModel(belt,path,{},heart1Options,beltDeps);
+        double lo=1.0, hi=0.0;
+        for(const auto action:beltModel.legalActions(0)) { lo=std::min(lo,action.prior); hi=std::max(hi,action.prior); }
+        require(sawDiscard && beltModel.continuationMetrics().heart1PriorNodes==1 && hi-lo>1e-6,
+            "heart1 prior scores a full-belt node with potion discards");
         one_combat::heart1::priorMappingSelfTest();
     }
     {
