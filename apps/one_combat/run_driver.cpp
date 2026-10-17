@@ -538,9 +538,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
-            } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
-                runFullRunOocPolicyStep(gc, agent, restV, shopV);
-            else traceBy = "mcts";
+            } else if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) {
+                traceBy = "mcts";
+            } else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) {
+                traceBy = "heart1_fallback";
+            } else runFullRunOocPolicyStep(gc, agent, restV, shopV);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
                               {"handler", std::string(traceBy) == "chain" ? t_oocChainHandler : ""},
