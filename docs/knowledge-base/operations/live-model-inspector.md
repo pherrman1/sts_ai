@@ -1056,6 +1056,12 @@ stopping. The default resumes an advertised save; `--new-run` refuses to
 replace a save or live run. Without a save, an explicit new-run/character
 request is required. Ascension and seed are passed through to MCP.
 
+At the last campfire's completed map (`y=14`), the single boss entrance
+qualifies as a mechanical action even when MCP advertises `Return`. This
+requires `room_type=RestRoom`, `room_phase=COMPLETE` and the exact `return`
+button; an unfinished campfire remains unqualified. Return only dismisses
+that completed room's map overlay and is not a strategic alternative.
+
 The MCP `SHOP_ROOM` merchant entrance is a mechanical inventory reveal. The
 driver requires exactly one visible `shop` entry, one matching MCP action, and
 an exact act/floor identity. It enters once, lets the OOC provider evaluate the

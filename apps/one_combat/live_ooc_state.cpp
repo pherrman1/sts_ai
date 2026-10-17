@@ -837,7 +837,11 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         const auto transition=d.contains("mechanicalTransition")?string(d,"mechanicalTransition"):std::string();
         if(transition=="boss_map" || transition=="selector_confirm" || transition=="boss_chest_reveal") {
             const auto &mcp=o.at("mcpState");
-            require(boolean(mcp,"ready_for_command") && !boolean(mcp,"can_cancel"),
+            const bool completedMapReturn = transition=="boss_map" && boolean(mcp,"can_cancel")
+                    && mcp.value("cancel_button",std::string())=="return"
+                    && mcp.value("room_type",std::string())=="RestRoom"
+                    && mcp.value("room_phase",std::string())=="COMPLETE";
+            require(boolean(mcp,"ready_for_command") && (!boolean(mcp,"can_cancel") || completedMapReturn),
                     "forced transition is not the sole available continuation");
             const J choices=mcp.contains("choice_list")?array(mcp,"choice_list",1):J::array();
             if(transition=="boss_map") {

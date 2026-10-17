@@ -213,6 +213,17 @@ public final class LiveOocCaptureTest {
             ok = boss ? LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0)
                     : LiveOocCapture.captureSelectorConfirmation(captured,choices,labels,true,false);
             if (ok || !choices.isEmpty()) throw new AssertionError("cancelable screen was forced");
+            if (boss) {
+                mcp.put("cancel_button","return");mcp.put("room_type","RestRoom");mcp.put("room_phase","COMPLETE");
+                if (!LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0) || choices.size()!=1)
+                    throw new AssertionError("completed campfire map Return blocked forced boss entrance");
+                choices.clear();mcp.put("room_phase","INCOMPLETE");
+                if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0))
+                    throw new AssertionError("unfinished campfire map bypassed its decision");
+                mcp.put("room_phase","COMPLETE");mcp.put("cancel_button","cancel");
+                if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,14,0))
+                    throw new AssertionError("unknown cancel button qualified as map Return");
+            }
             mcp.put("can_cancel",false);
             if (boss) {
                 if (LiveOocCapture.captureForcedBossMap(captured,choices,labels,1,13,0)

@@ -983,10 +983,21 @@ final class LiveOocCapture {
 
     static boolean captureForcedBossMap(Map<String,Object> out, List<Map<String,Object>> choices,
             List<?> labels, int act, int y, int nodeCount) {
-        // bossNodeAvailable alone only checks the map row. A dismissable map
-        // may have been opened before finishing the last campfire action.
+        // MCP also advertises Return on the completed last campfire's map.
+        // It only dismisses the overlay. Do not qualify an unfinished
+        // campfire where opening the map could bypass a remaining decision.
+        Map<String,Object> state = map(out.get("mcpState"));
+        boolean completedReturn = "MAP".equals(state.get("screen_type"))
+                && Boolean.TRUE.equals(state.get("ready_for_command"))
+                && Boolean.FALSE.equals(state.get("can_proceed"))
+                && Boolean.TRUE.equals(state.get("can_cancel"))
+                && "return".equals(state.get("cancel_button"))
+                && "RestRoom".equals(state.get("room_type"))
+                && "COMPLETE".equals(state.get("room_phase"))
+                && state.get("choice_list") instanceof List
+                && list(state.get("choice_list")).size() == 1;
         if (act < 1 || act > 3 || y != 14 || nodeCount != 0 || labels.size() != 1
-                || !soleMcpContinuation(out, "MAP", false, 1)) return false;
+                || !(soleMcpContinuation(out, "MAP", false, 1) || completedReturn)) return false;
         out.put("details", object("mechanicalTransition", "boss_map",
                 "bossNodeAvailable", true, "nodeChoices", 0));
         add(choices, labels, 0, "option", 0, 0);

@@ -179,6 +179,22 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertEqual(evaluator["reason"], "DIFFERENTIAL_FORCED_OOC_UNREPRESENTABLE")
             self.assertNotIn("selectedLiveAction", evaluator)
 
+    def test_completed_campfire_map_return_is_not_a_policy_alternative(self):
+        observation = copy.deepcopy(self.fixtures["forced_boss_map"])
+        mcp = observation["ooc"]["mcpState"]
+        mcp.update(can_cancel=True, cancel_button="return", room_type="RestRoom", room_phase="COMPLETE")
+        for response in self.run_rows([observation], model=False, floor_model=False, policy="mcts"):
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+            self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        for field, value in (("room_phase", "INCOMPLETE"), ("room_type", "EventRoom"),
+                             ("cancel_button", "cancel")):
+            invalid = copy.deepcopy(observation)
+            invalid["ooc"]["mcpState"][field] = value
+            response, = self.run_rows([invalid], model=False, policy="mcts")
+            self.assertEqual(response["status"], "ERROR", response)
+
     def test_forge_and_writing_results_are_forced_without_models(self):
         observations = [self.fixtures["event_forge_leave"], self.fixtures["event_writing_leave"]]
         for policy in ("v4", "mcts"):
