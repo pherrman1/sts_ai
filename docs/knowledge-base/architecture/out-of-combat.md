@@ -1943,9 +1943,7 @@ with the search and its chain.
   (`CARD` idx2 5) takes silverbot's skip token (the bowl token with Singing
   Bowl), gold takes the node's best logit (silverbot always takes gold), and a
   potion discard on a full belt (rewards or shop) takes the node's lowest logit
-  (silverbot's engine offers no discard); V4's candidate list has no discards, so
-  the coverage check ignores them under the heart1 prior (before this fix a full
-  belt left those nodes uniform). Where heart1 has no encoding for the
+  (silverbot's engine offers no discard). Where heart1 has no encoding for the
   screen or another source has no token (Match and Keep, Bonfire Spirits,
   unmapped events), the node keeps V4; the support trace counts
   `heart1_prior_nodes`, `heart1_prior_fallbacks` and `heart1_prior_reasons`
