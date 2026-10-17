@@ -124,7 +124,8 @@ HeartLeafModel::HeartLeafModel(const std::string &manifestPath) : path_(manifest
     std::ifstream in(manifestPath);
     if (!in) throw std::runtime_error("heart leaf: cannot open manifest " + manifestPath);
     const auto manifest = nlohmann::json::parse(in);
-    hasCritic_ = manifest.at("featureSchema") == kHeartLeafCriticFeatureSchema;
+    maskHiddenQueue_ = manifest.at("featureSchema") == kHeartLeafPublicFeatureSchema;
+    hasCritic_ = maskHiddenQueue_ || manifest.at("featureSchema") == kHeartLeafCriticFeatureSchema;
     if (manifest.at("schema") != "heart-leaf-v1" || (!hasCritic_ && manifest.at("featureSchema") != kHeartLeafFeatureSchema))
         throw std::runtime_error("heart leaf: unknown manifest or feature schema");
     if (manifest.at("anchorSha256") != kHeartLeafAnchorSha256 || fileSha256Hex(kHeartLeafAnchorPath) != kHeartLeafAnchorSha256)
@@ -159,8 +160,24 @@ double HeartLeafModel::value(const sts::GameContext &gc, const PathHistory &path
     return valueFromFeatures(raw);
 }
 
-double HeartLeafModel::valueFromFeatures(const std::vector<float> &raw) const {
-    if (raw.size() != heartLeafIdxMap().size()) throw std::runtime_error("heart leaf: feature width");
+const std::vector<std::string> &heartLeafHiddenQueueNames() {
+    static const std::vector<std::string> names{"nextEliteId", "nextFight0", "nextFight1", "nextFight2"};
+    return names;
+}
+
+double HeartLeafModel::valueFromFeatures(const std::vector<float> &input) const {
+    if (input.size() != heartLeafIdxMap().size()) throw std::runtime_error("heart leaf: feature width");
+    static const std::vector<int> hiddenColumns = [] {
+        std::vector<int> columns;
+        for (const auto &name : heartLeafHiddenQueueNames()) columns.push_back(heartLeafIdxMap().at(name));
+        return columns;
+    }();
+    std::vector<float> masked;
+    if (maskHiddenQueue_) {
+        masked = input;
+        for (int column : hiddenColumns) masked[column] = 0.0f;
+    }
+    const auto &raw = maskHiddenQueue_ ? masked : input;
     static const int anchorColumn = heartLeafIdxMap().at("x2bMargin");
     const double anchor = raw[anchorColumn];
     double residual;
