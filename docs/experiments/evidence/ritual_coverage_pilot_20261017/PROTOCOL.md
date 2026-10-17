@@ -106,11 +106,12 @@ reproduction or a paired gameplay comparison.
 The user approval request will cover:
 
 - Exactly 144 planned source/cell units, no replacements, retries or extension.
-- **At most two native workers/CPU cores**, one thread each; pin affinity and
+- **At most eight native workers/CPU cores** (raised from two by Philipp on
+  2026-10-17 to cut wall time; per-unit budgets unchanged), one thread each; pin affinity and
   OMP/OpenBLAS/MKL limits, no GPU.
 - **60 seconds collection per unit**, at most five seconds cleanup for that
   unit's own process group; **90 minutes whole-packet wall time**.
-- **8,000,000,000 bytes virtual address space per worker**, at most two workers.
+- **8,000,000,000 bytes virtual address space per worker**, at most eight workers.
 - Every native invocation goes through `tools/seed_guard.sh`; one global
   execution latch and exclusive per-unit outputs prevent accidental reruns.
 

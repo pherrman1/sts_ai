@@ -3,7 +3,7 @@
 
 `plan` prepares reviewable templates. Freeze/run additionally require an exact
 independent packet review and recorded human resource approval. Analysis is
-serial; the single-threaded scheduler owns at most two native process groups.
+serial; the single-threaded scheduler owns at most BUDGET["workers"] native process groups.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ VALIDATION = (52000007, 52000011, 52000015, 52000019)
 CELLS = tuple("ritual_writhing_v2_" + "_".join((upgrade, copies, potion))
               for upgrade in ("base", "upgraded") for copies in ("single", "double")
               for potion in ("natural", "brew", "smoke"))
-BUDGET = dict(workers=2, threadsPerWorker=1, unitSeconds=60, cleanupSeconds=5,
+BUDGET = dict(workers=8, threadsPerWorker=1, unitSeconds=60, cleanupSeconds=5,
               packetSeconds=5400, addressSpaceBytesPerWorker=8_000_000_000, gpu=False,
               simulations=10000, ascension=0, units=144)
 MODEL_PINS = {
@@ -200,7 +200,7 @@ def freeze(args):
     teacher.update(git_sha=identity["sourceSha"], executable_sha256=identity["executableSha256"],
                    teacher_id="silver-ordinary-fair-learnedstop-ritual-coverage-" + identity["sourceSha"][:12])
     teacher["environment"]["STS_EXECUTABLE_GIT_SHA"] = identity["sourceSha"]
-    cpus = sorted(os.sched_getaffinity(0))[:2]
+    cpus = sorted(os.sched_getaffinity(0))[:BUDGET["workers"]]
     require(bool(cpus), "no available CPU affinity")
     args.out.mkdir(parents=True, exist_ok=False)
     for name, value in (("teacher.json", teacher), ("review.json", review),
@@ -238,7 +238,7 @@ def verify_freeze(out):
     expected_env = child_environment(expected_teacher)
     require(frozen["environment"] == expected_env, "effective child environment changed")
     require(frozen["commands"] == [command_for(out, frozen, unit) for unit in units()], "launch commands changed")
-    require(0 < len(frozen["affinityCpus"]) <= 2
+    require(0 < len(frozen["affinityCpus"]) <= BUDGET["workers"]
             and len(set(frozen["affinityCpus"])) == len(frozen["affinityCpus"])
             and set(frozen["affinityCpus"]) <= os.sched_getaffinity(0), "CPU affinity changed")
     return frozen
