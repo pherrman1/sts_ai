@@ -1869,6 +1869,9 @@ int learnedStopTeacherSelfTest() {
     auto wrongTable = withLeaf;
     wrongTable["search_configuration"]["silver_leaf"]["rollout_card_table"] = "hand_written";
     expect("rejects rollout card table mismatch", loads(wrongTable, true), false);
+    auto wrongCap = withLeaf;
+    wrongCap["search_configuration"]["silver_leaf"]["rollout_action_cap"] = 0;
+    expect("rejects rollout action cap mismatch", loads(wrongCap, true), false);
     auto wrongHeal = base;
     wrongHeal["search_configuration"]["a20_boss_heal_fix"] = false;
     expect("rejects A20 boss heal fix mismatch", loads(wrongHeal, true), false);
