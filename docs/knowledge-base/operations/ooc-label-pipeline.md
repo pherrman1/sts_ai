@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -99,6 +99,16 @@ A changed head needs new prospective holdout evidence. §498's source-balanced
 fitting does not itself establish calibrated early/initial-state probabilities.
 Native integration remains a separate user decision after reporting the verdict.
 
+
+### Development value-head comparison (§501)
+
+`tools/heart_outcome_dev_compare.py` reuses the §500 cache custody, sampler,
+selection and diagnostics. It adds a 37-value public block
+(`public_block(record, act)`), read in cache order from the audited TRAIN/
+VALIDATION archives only, and appended after the 64 pooled features before
+normalisation. It fits fixed arms plus a nested source learning curve into a
+fresh output root and needs a clean checkout. No TEST reader, encoder forward or
+resume.
 
 ### Development weighting comparison
 

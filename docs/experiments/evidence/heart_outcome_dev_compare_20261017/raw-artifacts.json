@@ -1,0 +1,31 @@
+{
+  "logSha256": {
+    "heart-outcome-dev-compare-20261017-v1.log": "1227049974fdb22e7025e953e31f4549943dcd4d73a4b7efda40099294c07a74"
+  },
+  "rawBinaryArtifactsPublished": false,
+  "root": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-dev-compare-20261017-v1",
+  "sha256": {
+    "curve-135-0-0.pt": "0665dc4fe34e7c6708c06060f0ff8d946cd0eaf9062bdd5779bb770c7cc3b77f",
+    "curve-135-0-1.pt": "f9fa4078e11fd3752e12f54dfbe2d64d2585cd2a4f2c4787fbe06c3781c385a9",
+    "curve-135-1-0.pt": "d13aa010b95894aa2214623f9497482d2f564b2fbaf2810c72491310098425d7",
+    "curve-135-1-1.pt": "7cc2ce96f36702c68b3c1c1d382902149d6257ffecc6b8574fc5cb16a4a18c05",
+    "curve-270-0-0.pt": "7740c079a11cfdfbb96fb7981337df4676bbd63693e00fb0135fb95301cf6062",
+    "curve-270-0-1.pt": "11e5c060471c6dc8bd0792659b79eceb5b75fb00c0b1f62b70b934a7c21796b4",
+    "curve-270-1-0.pt": "ca605a48e81c9a5066f67332126efa811bcd6b947648afdfaa61d222cd5f2663",
+    "curve-270-1-1.pt": "1c064624e493e538057597f03834db0a9da8da6799578c4d1bdaef6dd7688a31",
+    "curve-540-0-0.pt": "e0e35a196be1db2503271a955af6f80cb201f691e41fd39fb3cffe071d4ce00e",
+    "curve-540-0-1.pt": "4ca12569b0929dcc33cb21cfa694a02fa3d7beb065f41c84bb06621ca5726ca3",
+    "curve-540-1-0.pt": "c792275adaa58486d2b09ff51d890e233c415f4cea34bef5945571802cc94df4",
+    "curve-540-1-1.pt": "1209a143fc8d119f38f25ec1425ae267eb66bb5b240b25bfe466608e75b06305",
+    "early-0.pt": "f6e6fcfe476980f9e59307d3c544e3333dd2cd3069ed459facac4adeb2bcddb6",
+    "early-1.pt": "bee143316f0ba31f37c8b794eada558933ef9d70b0da1a3c513a42e6b1cc22b7",
+    "equal-0.pt": "521c7ad7a41b03ba15aeb50b2bcb6f4f4ed839aa20e2b1700af2f78064410510",
+    "equal-1.pt": "aceea221c0e3d9dd1a7bdc4024c2671f3f6aed8d9fc33e39d6cfd1f835ade3ec",
+    "pooled_plus_public-0.pt": "1549402deb665feaf57795ef3333532dc2c674bd7085fa9952b098ee65b81b55",
+    "pooled_plus_public-1.pt": "6e1257a53c29bc7869694645ee80eb697839e2a0618c496d3f07397edcf87349",
+    "predictions.pt": "9a1595a67740c502cb3fbdac6dbbe6bdcaea329f4824e174cd19f7973caebfe4",
+    "public_only-0.pt": "b79ce23d9de663319cc44b3ebbad4b410a762ae030780daa3799e5a9f93b6da0",
+    "public_only-1.pt": "490dd7dc1a72041ffae244497549470f8717c905d1228b2b336700c06dea9f9d"
+  },
+  "testAccess": false
+}

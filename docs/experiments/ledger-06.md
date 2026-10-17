@@ -19728,3 +19728,74 @@ development protocol may explicitly weight reached early states; any revised
 candidate needs genuinely fresh prospective holdout evidence. Stop before native
 integration. **Knowledge impact:** current development-weighting evidence,
 cache-only fitting procedure and exposed-TEST boundary; no native/RL/default change.
+
+## §501 — development value-head comparison on the frozen Arm C cache
+
+**REPRESENTATION_LOSS_SIGNAL; EARLY_WEIGHTING_NOT_SHOWN; MORE_SOURCES_SIGNAL
+(fragile)** (2026-10-17). Philipp authorized the run. Pre-registered protocol
+(263025f/ae39f38) on the §498 cache and §497 TRAIN/VALIDATION only: 1,080/360
+sources, 126/47 wins. No TEST, encoder forward, game seeds, native or default
+change. Fourteen fits of the §500 recipe (AdamW, 2,000 updates, inits 0/1,
+VALIDATION visitation BCE selection) at source `ae39f38` on Philipp's RTX 3060
+Ti, 79.7 s, exit 0, tests 18/18. Arm A reproduces §500's 0.453411 to 6.8e-8.
+
+| VALIDATION arm | Visitation BCE | Brier | AUROC | Δ BCE vs A, 95% |
+| --- | ---: | ---: | ---: | --- |
+| A equal-state, pooled 64 | 0.45341 | 0.14116 | 0.669 | – |
+| B act-1 states ×2 | 0.45169 | 0.14122 | 0.675 | −0.0017 [−0.0092, +0.0055] |
+| C pooled + 37 public scalars/counts | 0.42983 | 0.13425 | 0.725 | −0.0236 [−0.0414, −0.0062] |
+| D public block only | 0.44878 | 0.14011 | 0.660 | −0.0046 [−0.0255, +0.0161] |
+
+- Early bias (start/floor 8/floor 16, pp): A −1.09/−2.32/−4.18; B
+  −4.85/−2.46/−5.15 (worse everywhere); C −2.69/−2.79/+2.25.
+- Learning curve, VALIDATION BCE (two nested draws): 135 sources
+  0.491/0.492, 270 0.470/0.464, 540 0.448/0.464, 1,080 0.453. The rule fires,
+  but draw 0 at 540 beats the full fit and small-subset fits select at step
+  100, so 540 → 1,080 is unresolved.
+- Encoder audit (silverbot 84ab3ea network.py): relic counters, battle
+  encounter, memory slots and act are not inputs; the value input is a mean
+  over all tokens. **Inference:** the frozen pooled representation drops value
+  information that a plain scalar/count block restores.
+
+Intervals are descriptive, not adjusted for selection or reused VALIDATION.
+Not a search-leaf qualification; selected heads exported for the §502 sibling
+harness. §502 found their sibling concordance at 0.507–0.530 vs X2-B 0.601
+(PR #582), so the outcome-BCE gain gives no search utility. Any candidate
+needs the fresh sealed cohort.
+[Report](evidence/heart_outcome_dev_compare_20261017/REPORT.md). **Knowledge
+impact:** current outcome-head development evidence and the new cache-plus-
+public-block tool; no default change.
+
+## §502 — §498 outcome head as a sibling-leaf ranker (2026-10-17)
+
+**HEAD_RANKS_WORSE_THAN_X2B** (offline, zero game seeds, no fits). Workstream 2 of the
+post-§500 plan: does the observed-outcome head order the sibling leaves MCTS compares?
+The frozen §498 head (`head.json` `2c478bca…`) was applied to the Arm C student's pooled
+value-head input, now exported by `one_combat heart1score`. Native parity first: on the
+8 VALIDATION sources of delivery `w00` (1,219 states) the C++ student plus head
+reproduces §498's per-source mean probability to 3.9e-9.
+
+Groups: the 48 §494 TRAIN+VALIDATION sources (110164000–047; 21,291 leaves, 777
+multi-action groups), §494 group metrics against 64-rollout means, paired source
+bootstrap (2,000, RNG 20261017). The §494 TEST and the consumed §499 TEST were not read.
+
+| 777 groups | Concordance | Regret |
+| --- | ---: | ---: |
+| §498 outcome head | 0.527 | 0.0374 |
+| X2-B | 0.601 | 0.0278 |
+| One rollout3 | 0.565 | 0.0305 |
+
+Head − X2-B concordance −0.074 [−0.097, −0.048], regret +0.0096 [+0.0057, +0.0140];
+head − one rollout3 concordance −0.038 [−0.068, −0.007]. Same sign on TRAIN and
+VALIDATION separately. Act 1 0.504 vs X2-B 0.622; card rewards 0.506 vs 0.584; the head
+leads only on map screens (0.618 vs 0.524). Targets are rollout surrogates ending in
+X2-B and favour X2-B; they are not Heart outcomes. **Inference:** the head does not
+resolve one-step sibling differences, and marginal calibration fixes would not change
+that. Not a qualified leaf; no native leaf option, gameplay or default change.
+
+The four §501 development heads (`a30643d`; start-landmark parity on 360 VALIDATION runs
+≤3.7e-9) do no better: concordance equal 0.507, early 0.520, pooled+public 0.521, public
+only 0.530, each below X2-B with the 95% upper bound ≤ −0.040. Pooled+public's VALIDATION
+BCE gain does not transfer to sibling ordering.
+[Evidence](evidence/outcome_head_sibling_rank_20261017/REPORT.md).
+**Knowledge impact:** observed-outcome leaf status and native public-record parity.
