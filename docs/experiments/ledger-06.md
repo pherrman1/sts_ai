@@ -19864,8 +19864,9 @@ Collection record (2026-10-17):
   VALIDATION 33/320 (10.3%). CONFIRM outcomes stay inside the
   `SEALED-confirm.tar.gz` archives.
 - TRAIN/VALIDATION cost: mean 770 s, p90 1,267 s, max 2,754 s per source, all
-  inside the 3,600 s cap. Root trace: 107,275 roots, 76,761 searched, native
-  snapshots 24.3%. Sibling subsample: 330,386 rows across 1,408 sources.
+  inside the 3,600 s cap. Root trace, all 1,408 TRAIN/VALIDATION sources
+  re-validated: 118,184 roots, 84,624 searched, 507 Match and Keep hypothetical
+  roots, native snapshots 24.1%. Sibling subsample: 330,386 rows across 1,408 sources.
 
 **Knowledge impact:** root-trace capture contract added to the maintained OOC
 label pipeline page.
