@@ -29,7 +29,14 @@ def load(paths):
                     invalid += 1
                     continue
                 states[(int(row["seed"]), int(row["battleIdx"]))][row["variant"]] = row
-    return states, invalid
+    # The source-run observer also fires once on the run's final state. Such a
+    # state is terminal (dead, or stopped after the act cap): its base copy runs
+    # no fight. Drop it.
+    terminal = [k for k, v in states.items()
+                if "base" in v and (v["base"]["silverSimulations"] == "0" or v["base"]["curHp"] == "0")]
+    for k in terminal:
+        del states[k]
+    return states, invalid, len(terminal)
 
 
 def deltas(states, column):
@@ -80,11 +87,14 @@ def analyze(per_seed):
     hp_mean = mean(hp)
     rng = random.Random(20261017)
     boot_hp, boot_delta, boot_eq = [], defaultdict(list), defaultdict(list)
+    dropped = 0
     for _ in range(BOOT):
         sample = [rng.choice(seeds) for _ in seeds]
         bhp, bpot = summarize(per_seed, sample)
         m = mean(bhp)
         boot_hp.append(m)
+        if not (m and m > 0):
+            dropped += 1
         for name, xs in bpot.items():
             d = mean(xs)
             boot_delta[name].append(d)
@@ -99,26 +109,43 @@ def analyze(per_seed):
             "hpEq": d / hp_mean if hp_mean and hp_mean > 0 else None,
             "hpEqCI": ci(boot_eq[name]),
         }
+    hp_ci = ci(boot_hp)
+    pooled = potions.get("ALL", {})
+    lo, hi = (pooled.get("hpEqCI") or [None, None])
+    if hp_ci[0] is None or hp_ci[0] <= 0:
+        label = "UNCALIBRATED"
+    elif lo is not None and lo > 11:
+        label = "FORMULA_UNDERPRICES"
+    elif hi is not None and hi < 11:
+        label = "FORMULA_OVERPRICES"
+    else:
+        label = "CONSISTENT_WITH_11"
     return {"seeds": len(seeds), "states": sum(len(v) for v in per_seed.values()),
-            "hpSlope": {"n": len(hp), "perHp": hp_mean, "CI": ci(boot_hp)},
+            "hpSlope": {"n": len(hp), "perHp": hp_mean, "CI": hp_ci},
+            "bootReplicatesWithoutPositiveHpSlope": dropped,
+            "label": label,
+            "pooledExcludes8": None if lo is None else bool(lo > 8),
             "potions": potions}
 
 
 def main():
     if len(sys.argv) < 3:
         sys.exit(__doc__)
-    states, invalid = load(sys.argv[2:])
-    result = {"invalidRows": invalid}
+    states, invalid, terminal = load(sys.argv[2:])
+    result = {"invalidRows": invalid, "terminalStatesDropped": terminal}
     for column in VALUE_COLUMNS:
         result[column] = analyze(deltas(states, column))
     with open(sys.argv[1], "w") as f:
         json.dump(result, f, indent=1)
     for column in VALUE_COLUMNS:
         r = result[column]
-        print(f"== {column}: seeds {r['seeds']} states {r['states']} value per HP "
-              f"{r['hpSlope']['perHp']:.5f} CI {r['hpSlope']['CI']}")
+        print(f"== {column}: {r['label']} seeds {r['seeds']} states {r['states']} value per HP "
+              f"{r['hpSlope']['perHp']:.5f} CI {r['hpSlope']['CI']} "
+              f"(boot replicates without positive HP slope: {r['bootReplicatesWithoutPositiveHpSlope']})")
         for name, p in r["potions"].items():
             eq = "nan" if p["hpEq"] is None else f"{p['hpEq']:.1f}"
+            if name != "ALL" and p["n"] < 100:
+                continue
             print(f"  {name:24s} n={p['n']:4d} delta={p['delta']:+.4f} HP-eq={eq} CI={p['hpEqCI']}")
 
 
