@@ -1897,6 +1897,14 @@ with the search and its chain.
   trim_map …)`). Student C (dim 64, 2 layers, 4 heads, trim) matches
   silverbot's torch forward to 1.6e-5 on 3,000 tree-node records at about
   1.5 ms per call (heart1 about 31 ms).
+- The tree prior and the leaf policy read only the choice logits, so they call
+  `Net::forward(record, logitsOnly=true)`: the last block computes keys and
+  values for every token but queries, attention output and feed-forward only
+  for the choice tokens, and the value head is skipped. Every row is computed
+  as before, so the logits are bit-identical; `one_combat heart1logitscheck
+  <weights> <records.jsonl> [reps]` checks that and times both passes
+  (student C: about 1.55 → 0.79 ms per call). `policyStep` keeps the full
+  pass when `STS_OOC_HEART1_TRACE` records the value.
 - Policy: temperature 0, the first maximum logit in token order. Gold, and
   relics on screens without a key reward, are taken before the decision, as
   silverbot does. A single offered choice is executed directly. Screens
