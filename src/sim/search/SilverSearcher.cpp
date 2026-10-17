@@ -433,9 +433,15 @@ void search::SilverSearcher::step() {
     while (true) {
         // The transposition graph can cycle (e.g. Entropic Brew re-rolling itself);
         // on-path checks below roll out instead, and this bound is a backstop.
+        // Past it, value the path by a rollout from here instead of aborting the
+        // whole fight (a long in-turn card loop reached it, see #544).
         if (++depth > 5000) {
+            ++stats.descentBoundRollouts;
             if (profile) ++profile->descentAborts;
-            throw std::runtime_error("SilverSearcher::step descent exceeded depth bound");
+            const Node *decision = cur->isRandomNode ? cur->parent : cur;   // chance nodes have no state
+            BattleContext &rollout = (rolloutScratch = *decision->state);
+            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+            return;
         }
 
         if (cur->isRandomNode) {
