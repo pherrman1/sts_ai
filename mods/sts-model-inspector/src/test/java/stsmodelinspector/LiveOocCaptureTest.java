@@ -486,6 +486,21 @@ public final class LiveOocCaptureTest {
             throw new AssertionError("complete combat-class ledger lost fixed-event distinction");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 9)))
             throw new AssertionError("wrong combat metric floor qualified the ledger");
+        LiveOocCapture.CombatClassHistory summoner = new LiveOocCapture.CombatClassHistory();
+        Object summonerGroup = new Object();
+        summoner.observe(player, 12345, 2, 28, true, true, summonerGroup,
+                "ELITE_QUEUE", "GREMLIN_LEADER");
+        // SpawnMonsterAction retains dead objects in the same MonsterGroup.
+        // Its later composition no longer identifies the original queue draw.
+        summoner.observe(player, 12345, 2, 28, true, true, summonerGroup,
+                "ELITE_QUEUE", "");
+        if (!summoner.completeFor(java.util.Arrays.asList(28))
+                || !"GREMLIN_LEADER".equals(summoner.snapshot().get(0).get("encounter")))
+            throw new AssertionError("summons invalidated the captured queue encounter");
+        summoner.observe(player, 12345, 2, 28, true, true, new Object(),
+                "ELITE_QUEUE", "BOOK_OF_STABBING");
+        if (summoner.complete())
+            throw new AssertionError("replacement group bypassed encounter validation");
         combats.observe(new Object(), 12345, 1, 9, false, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
             throw new AssertionError("new observer reconstructed an unbound same-seed ledger");

@@ -114,6 +114,13 @@ final class LiveOocCapture {
             if (!Arrays.asList("NORMAL_QUEUE", "ELITE_QUEUE", "FIXED_EVENT", "BOSS").contains(kind)) {
                 complete = false; return;
             }
+            // The queue draw belongs to the initial group. Summons and splits
+            // mutate its contents (including retained corpses), so later
+            // composition cannot re-identify or invalidate that same fight.
+            // A reconstructed/replacement group still follows validation below.
+            if (group == lastGroup && !entries.isEmpty()
+                    && Integer.valueOf(floor).equals(entries.get(entries.size()-1).get("floor"))
+                    && kind.equals(entries.get(entries.size()-1).get("kind"))) return;
             if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
                     && (encounter == null || encounter.isEmpty())) { complete = false; return; }
             boolean existingQualifiedFight = complete && !entries.isEmpty()

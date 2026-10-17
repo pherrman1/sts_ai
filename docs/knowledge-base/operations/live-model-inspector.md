@@ -1085,6 +1085,12 @@ the game. Runic Dome skips that private-state reader entirely. Vanilla's
 `GremlinWarrior` and `GremlinTsundere` IDs have explicit zero native misc
 state, verified against the installed JAR constants.
 
+Combat-class history retains the initial encounter identity while the same
+monster group remains active. Summons and splits can leave a composition
+that no longer identifies its queue draw; they do not invalidate that captured
+history. A replacement or reconstructed group must still match the recorded
+encounter, and missing initial history remains unsupported.
+
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have
 holes after Slime Boss splits or a summon replaces an occupant; array position
