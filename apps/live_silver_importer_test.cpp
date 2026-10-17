@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <set>
@@ -1286,9 +1287,52 @@ void verifyGuardianProducerThresholds() {
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
     verifyGuardianProducerThresholds();
     try {
+        {
+            const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Slime Boss fixture: "+path);
+            json observation; input >> observation;
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Slime Boss split import: "+imported.reason);
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Slime Boss split search: "+decision.failureReason);
+            for(const auto &action:decision.legalActions) {
+                const auto live=one_combat::advisor::selectedLiveAction(action,context,observation);
+                if(live.is_null() || (action.target>=0 && live.value("targetIndex",-1)!=(action.target==0?1:2)))
+                    throw std::runtime_error("captured Slime Boss sparse target lowering failed");
+            }
+            auto targeted=decision.action;
+            targeted.type=silver_bridge::SemanticActionType::CARD;
+            targeted.card.uniqueId=imported.wire.hand.back().uniqueId;
+            targeted.target=2;
+            for(bool potion:{false,true}) {
+                targeted.type=potion?silver_bridge::SemanticActionType::POTION:silver_bridge::SemanticActionType::CARD;
+                targeted.potionSlot=0;targeted.discardPotion=false;
+                auto reordered=observation;
+                auto &monsters=reordered["silverRoot"]["combat"]["monsters"];
+                std::swap(monsters[0],monsters[1]);
+                if(one_combat::advisor::selectedLiveAction(targeted,context,reordered).value("targetIndex",-1)!=1)
+                    throw std::runtime_error("sparse reordered target did not follow MCP list order");
+                monsters[0]["dead"]=true;
+                if(!one_combat::advisor::selectedLiveAction(targeted,context,reordered).is_null())
+                    throw std::runtime_error("dead sparse target was lowered");
+                for(int target:{1,4}) {
+                    targeted.target=target;
+                    if(!one_combat::advisor::selectedLiveAction(targeted,context,observation).is_null())
+                        throw std::runtime_error("missing sparse target was lowered");
+                }
+                targeted.target=2;
+                monsters[0]["dead"]=false;monsters[1]["slot"]=2;monsters[1]["idx"]=2;
+                if(!one_combat::advisor::selectedLiveAction(targeted,context,reordered).is_null())
+                    throw std::runtime_error("duplicate sparse slot was lowered");
+            }
+            std::cout << "captured Slime Boss split search and target lowering passed\n";
+        }
         {
             GameContext game(CharacterClass::IRONCLAD, 0x71517u, 0);
             game.act = 1;

@@ -518,11 +518,10 @@ invocation details from
   fields such as `uniqueId` and retain state.
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
-- At a mid-card selection the advisor's root lacks monster reactions to the
-  card's pre-selection effects, apart from the Guardian's deferred Mode Shift
-  (see Live advisor). Copies queued by a spent
-  Double Tap, Duplication or Necronomicon are present only when the producer
-  sends `pendingCardQueue`, which the mod does not emit yet (issue #328).
+- Mid-card selections require an explicitly qualified public continuation.
+  Java captures verified pending card/action queues, including vanilla Double
+  Tap, Duplication and Necronomicon copies. Unknown owners, callbacks or queued
+  effects remain unsupported; see the [live continuation contract](../operations/live-model-inspector.md).
 - The Guardian's `miscInfo` is its native shift threshold, separate from the
   remaining Mode Shift power. The Java producer reads `dmgThreshold`,
   `dmgThresholdIncrease` and `isOpen`: Java increments on entering Defensive

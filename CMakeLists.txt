@@ -359,7 +359,9 @@ add_executable(live_silver_importer_test apps/live_silver_importer_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_silver_importer_test PRIVATE include json/include apps)
 target_link_options(live_silver_importer_test PRIVATE -Wl,--gc-sections)
-add_test(NAME live_silver_importer COMMAND $<TARGET_FILE:live_silver_importer_test>)
+add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:live_silver_importer_test>
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_slime_boss_split.json)
 
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)

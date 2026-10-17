@@ -1073,6 +1073,12 @@ unsupported boundary because the native replay schema does not represent this
 inventory reveal. Arm C shop tokens preserve the native physical slot after
 any purchase; removing sold slots before indexing changes card identities.
 
+Combat targets are lowered from the captured explicit native `slot`/`idx` to
+MCP's compact living-monster list in its displayed order. The slots can have
+holes after Slime Boss splits or a summon replaces an occupant; array position
+is not a native slot. Missing/dead targets, duplicate slots and contradictory
+slot/idx fields are rejected for both card and potion actions.
+
 In-combat `CARD_REWARD`, `GRID` and `HAND_SELECT` modals use Silver.
 Non-skippable Discovery/Colorless Potion offers support exactly three distinct,
 unmodified cards and one or two zero-cost copies. The chosen option lowers to
