@@ -272,7 +272,8 @@ static bool takeRewardRelicRuleStep(GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
     if (gc.screenState != ScreenState::REWARDS) return false;
     const auto &r = gc.info.rewardsContainer;
-    // STS_KEY_SAPPHIRE=policy: taking the paired relic would remove the key offer.
+    // Under a non-default key flag that leaves Sapphire as a choice (STS_KEY_SAPPHIRE=policy),
+    // taking the paired relic would remove the key offer.
     if (r.sapphireKey && !search::heartKeyRules().isDefault() && g_collectKeys && gc.keysEnabled
             && search::heartKeyActionAllowed(gc, g_collectKeys, search::GameAction(RT::KEY, 0)))
         return false;
@@ -313,6 +314,18 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     tag("unknown");
     if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
         tag("heart_key"); key->execute(gc); return;
+    }
+    // STS_KEY_EMERALD=mask: the map handlers below enumerate unmasked edges, so
+    // the chain takes the first edge that still reaches the burning elite.
+    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isDefault()) {
+        std::optional<search::GameAction> allowed;
+        bool masked = false;
+        for (const auto a : search::GameAction::getAllActionsInState(gc)) {
+            if (!a.isValidAction(gc)) continue;
+            if (!search::heartKeyActionAllowed(gc, g_collectKeys, a)) masked = true;
+            else if (!allowed) allowed = a;
+        }
+        if (masked && allowed) { tag("heart_key_mask"); allowed->execute(gc); return; }
     }
     if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::MATCH_AND_KEEP) {
         tag("match_and_keep");

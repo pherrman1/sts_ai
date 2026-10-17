@@ -76,6 +76,9 @@ int main() {
         require(!heartKeyActionAllowed(gc, true, GameAction(0)) && heartKeyActionAllowed(gc, true, GameAction(1)),
             "mask forbids the edge that misses the burning elite");
         require(heartKeyActionAllowed(gc, false, GameAction(0)), "keys off: no mask");
+        rules.emerald = HeartKeyRules::Emerald::POLICY;
+        require(!heartKeyAction(gc, true) && heartKeyActionAllowed(gc, true, GameAction(0)),
+            "policy: pathing decides, no forced or masked edge");
         rules.emerald = HeartKeyRules::Emerald::FIRST;
         require(heartKeyActionAllowed(gc, true, GameAction(0)), "no mask by default");
 

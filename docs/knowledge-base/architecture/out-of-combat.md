@@ -1613,7 +1613,7 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    `STS_KEY_EMERALD=mask` turns the Act-3 route rule into a mask: candidate
    lists (`v4CandidateActions`, the MCTS semantic enumeration, heart1's
    choice) drop edges that no longer reach the burning elite, and the rule
-   forces an edge only when one remains. Fallback-chain Recall sites and the
+   forces an edge only when one remains; `=policy` drops the route rule and mask entirely. Fallback-chain Recall sites and the
    chest relic rule follow the variant (`heartRecallRequired`).
    `runGoalVictory` keeps missing-key Act-3 clears out of Heart win labels;
    explicit benchmark horizons retain their separate Act-clear semantics.
