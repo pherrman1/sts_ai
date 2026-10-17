@@ -20,7 +20,7 @@ struct HeartKeyRules {
     enum class Sapphire { FIRST, ACT3, POLICY } sapphire = Sapphire::FIRST;
     enum class Ruby { FIRST, HP, POLICY } ruby = Ruby::FIRST;
     double rubyMinHp = 0.6;
-    enum class Emerald { FIRST, MASK, POLICY } emerald = Emerald::FIRST;
+    enum class Emerald { FIRST, MASK } emerald = Emerald::FIRST;
     bool isDefault() const {
         return sapphire == Sapphire::FIRST && ruby == Ruby::FIRST && emerald == Emerald::FIRST;
     }
@@ -33,8 +33,8 @@ HeartKeyRules &heartKeyRules();
 // the policy until the Act-3 treasure row. hp Recalls at the first Act-3
 // campfire at or above the HP fraction, else at the pre-boss row; policy
 // forces only the pre-boss row. mask forces an Act-3 edge only when a single
-// edge still reaches the burning elite. Emerald policy forces no route at all:
-// pathing decides, and a missed burning elite loses the Heart.
+// edge still reaches the burning elite. Acts 1-2 are always the policy's
+// choice; Emerald policy is an alias of mask (the Act-3 backstop stays).
 std::optional<GameAction> heartKeyAction(const GameContext &gc, bool collectKeys);
 // Fallback-chain Recall condition: the historical "Act 3+ without Ruby" rule,
 // narrowed to heartKeyAction's choice under an opt-in Ruby variant.

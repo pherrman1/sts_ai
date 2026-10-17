@@ -29,7 +29,7 @@ HeartKeyRules rulesFromEnv() {
         if (end == v.c_str() || *end || !(rules.rubyMinHp >= 0 && rules.rubyMinHp <= 1)) bad("STS_KEY_RUBY_MIN_HP", v);
     }
     if (const auto v = value("STS_KEY_EMERALD"); v == "mask") rules.emerald = HeartKeyRules::Emerald::MASK;
-    else if (v == "policy") rules.emerald = HeartKeyRules::Emerald::POLICY;
+    else if (v == "policy") rules.emerald = HeartKeyRules::Emerald::MASK;  // backstop kept
     else if (!v.empty() && v != "first") bad("STS_KEY_EMERALD", v);
     return rules;
 }
@@ -109,7 +109,6 @@ std::optional<GameAction> heartKeyAction(const GameContext &gc, bool collectKeys
         else if (rules.ruby == HeartKeyRules::Ruby::POLICY) take = lastFire;
         if (take) return GameAction(2);
     }
-    if (rules.emerald == HeartKeyRules::Emerald::POLICY) return std::nullopt;
     const auto next = emeraldRouteNext(gc);
     if (!next) return std::nullopt;
     std::optional<GameAction> first;
