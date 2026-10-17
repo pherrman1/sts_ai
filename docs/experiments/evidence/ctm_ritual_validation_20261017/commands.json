@@ -1,0 +1,22 @@
+{
+  "sourceSha": "f2d0dbd30b3667a847d3b92332a110baded509b6",
+  "commands": [
+    {
+      "command": "python3 tools/ctm_ritual_validation.py freeze --out build/ctm-ritual-validation-20261017-current --review build/ctm-ritual-validation-review.json",
+      "exitCode": 0
+    },
+    {
+      "command": "bash tools/seed_guard.sh timeout --signal=TERM 330s python3 tools/ctm_ritual_validation.py run --out build/ctm-ritual-validation-20261017-current --review build/ctm-ritual-validation-review.json",
+      "exitCode": 0
+    }
+  ],
+  "independentResultReview": {
+    "summaryRecomputedExactly": true,
+    "bootstrapRecomputedExactly": true,
+    "all143TargetsComparedToPrePostDeckMisc": true,
+    "findings": []
+  },
+  "preservedRowEvidence": "build/ctm-ritual-validation-20261017-current/row-evidence.npz",
+  "testEvaluated": false,
+  "trainingPerformed": false
+}

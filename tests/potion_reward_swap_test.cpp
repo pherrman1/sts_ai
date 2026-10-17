@@ -59,6 +59,27 @@ int main() {
         held = pickUp(rewardFixture({Potion::FIRE_POTION}, {Potion::SPEED_POTION, Potion::FAIRY_POTION}));
         require(held[0] == Potion::FIRE_POTION && held[1] == Potion::SPEED_POTION, "legacy: free slot takes index 0");
 
+        unsetenv("STS_POTION_REWARD_SWAP");
+        // Decline detection (STS_POTION_REWARD_DECLINE_LEAVE): full slots and a reward
+        // that outranks nothing held is declined; a better reward or a free slot is not.
+        require(potionRewardDeclined(rewardFixture({Potion::FAIRY_POTION, Potion::BLOOD_POTION}, {Potion::BLOCK_POTION})),
+                "full slots with a worse reward must be declined");
+        require(!potionRewardDeclined(rewardFixture({Potion::FAIRY_POTION, Potion::BLOCK_POTION}, {Potion::BLOOD_POTION})),
+                "a better reward is swapped, not declined");
+        require(!potionRewardDeclined(rewardFixture({Potion::FIRE_POTION}, {Potion::SPEED_POTION})),
+                "a free slot takes the reward");
+        require(!potionRewardDeclined(rewardFixture({Potion::FAIRY_POTION, Potion::BLOOD_POTION}, {})),
+                "no reward potion, nothing to decline");
+        unsetenv("STS_POTION_REWARD_DECLINE_LEAVE");
+        require(!potionRewardDeclineLeaveEnabled(), "decline-leave defaults off");
+        setenv("STS_POTION_REWARD_DECLINE_LEAVE", "1", 1);
+        require(potionRewardDeclineLeaveEnabled(), "decline-leave =1 turns it on");
+        setenv("STS_POTION_REWARD_DECLINE_LEAVE", "2", 1);
+        bool rejected = false;
+        try { potionRewardDeclineLeaveEnabled(); } catch (const std::runtime_error &) { rejected = true; }
+        require(rejected, "decline-leave rejects other values");
+        unsetenv("STS_POTION_REWARD_DECLINE_LEAVE");
+
         std::cout << "potion_reward_swap: OK\n";
         return 0;
     } catch (const std::exception &e) {

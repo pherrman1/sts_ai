@@ -1,3 +1,4 @@
+#include "sim/search/RunGoal.h"
 #include "ooc_native_fallback.h"
 
 #include <algorithm>
@@ -512,7 +513,7 @@ int nativeWinUpgradePick(const sts::GameContext &gc, const PathHistory &path,
 bool nativeWinRestStep(sts::GameContext &gc, const PathHistory &path,
                        const CompactTreeNet &win, bool collectKeys) {
     requireModels(win);
-    if (collectKeys && gc.act >= 3 && !gc.hasKey(sts::Key::RUBY_KEY)) {
+    if (sts::search::heartRecallRequired(gc, collectKeys)) {
         sts::search::GameAction(2, 0).execute(gc);
         return true;
     }

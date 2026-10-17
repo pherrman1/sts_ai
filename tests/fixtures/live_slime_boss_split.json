@@ -1,0 +1,417 @@
+{
+  "boundary": "combat",
+  "silverRoot": {
+    "schemaVersion": 4,
+    "playerTurn": 4,
+    "decisionInTurn": 0,
+    "character": "IRONCLAD",
+    "ascension": 0,
+    "act": 1,
+    "floor": 16,
+    "hp": 48,
+    "maxHp": 72,
+    "gold": 285,
+    "potionCapacity": 3,
+    "roomClass": "BOSS",
+    "burningElite": false,
+    "combatInstance": "d7e55ae7c52d0c998ce198a80eab484d3b446caf0f76cd10acef26eb64e6359c",
+    "encounter": "SLIME_BOSS",
+    "combat": {
+      "turn": 4,
+      "energy": 3,
+      "energyPerTurn": 3,
+      "block": 0,
+      "cardsPlayedThisTurn": 0,
+      "attacksPlayedThisTurn": 0,
+      "skillsPlayedThisTurn": 0,
+      "cardsDiscardedThisTurn": 0,
+      "damageTrackingExact": true,
+      "lastTargetedMonster": 1,
+      "lastAttackUnblockedDamage": 0,
+      "timesDamagedThisCombat": 0,
+      "playerVulnerableSeen": false,
+      "cardDrawPerTurn": 5,
+      "playedThisTurn": [],
+      "playerPowers": [
+        {
+          "id": "Strength",
+          "amount": 4
+        }
+      ],
+      "cardSelect": false,
+      "resolving": false,
+      "runicDome": false,
+      "frozenEye": false,
+      "extraRollMoveOnTurn": 0,
+      "skipMonsterTurnBits": 0,
+      "monsterCount": 3,
+      "monstersAlive": 2,
+      "hand": [
+        {
+          "id": "Defend_R",
+          "uuid": "00969828-3f70-4277-a089-a29d6c1af165",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "HAND"
+        },
+        {
+          "id": "Defend_R",
+          "uuid": "088013b6-7976-48cb-953b-ddc4ed6fa3ad",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "HAND"
+        },
+        {
+          "id": "Defend_R",
+          "uuid": "43f67a90-24dd-46d2-9cf4-8017024e2147",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "HAND"
+        },
+        {
+          "id": "Slimed",
+          "uuid": "1470bd3e-cc88-4dee-93b7-d7537f3f4b81",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "HAND"
+        },
+        {
+          "id": "Strike_R",
+          "uuid": "5dbb7370-1327-46b6-94e7-db143e841f6b",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "HAND"
+        }
+      ],
+      "draw": [
+        {
+          "id": "Anger",
+          "uuid": "1073f10b-f23c-476f-9a59-0c571e33d964",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 0,
+          "costForTurn": 0,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Anger",
+          "uuid": "674a46a7-d5c0-40e5-8672-709d99d910ae",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 0,
+          "costForTurn": 0,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Bash",
+          "uuid": "ea593f8b-a360-47de-bf62-5c82b009c747",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 2,
+          "costForTurn": 2,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Defend_R",
+          "uuid": "0a3dafe4-044c-4f71-ba26-9f9cf5ac1199",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Flame Barrier",
+          "uuid": "87a6e639-50bb-4198-85f9-97621b778f40",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 2,
+          "costForTurn": 2,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Havoc",
+          "uuid": "1a19fc7a-3e32-4b6f-9bd9-a4194c341a22",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 0,
+          "costForTurn": 0,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Intimidate",
+          "uuid": "d54448f4-e207-4b17-9413-80fa83cbb0c4",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 0,
+          "costForTurn": 0,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Slimed",
+          "uuid": "59a4939e-cc22-468e-9cf7-f4a2403e64ae",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Slimed",
+          "uuid": "a0ad3a49-974b-4013-8236-a4b482073e5e",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Spot Weakness",
+          "uuid": "61bb3c8f-789f-4638-a6c2-96f84fe60960",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Spot Weakness",
+          "uuid": "c0229552-b1bf-48c0-9e4e-76c582592496",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Strike_R",
+          "uuid": "8608f3d2-a771-4259-8d50-0ef55a32c927",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Strike_R",
+          "uuid": "97c2eb01-c1e7-4421-aaf6-9d09c3c0c4fc",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Strike_R",
+          "uuid": "bdc1d686-f248-4a75-af65-a51840109c91",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        },
+        {
+          "id": "Warcry",
+          "uuid": "395f3b7a-40f7-4874-91af-e41c6fd61f3a",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 0,
+          "costForTurn": 0,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "DRAW"
+        }
+      ],
+      "discard": [],
+      "exhaust": [
+        {
+          "id": "Dark Shackles",
+          "uuid": "104cb77e-190d-4466-9a97-d92883419383",
+          "upgraded": true,
+          "misc": 0,
+          "cost": 0,
+          "costForTurn": 0,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "EXHAUST"
+        },
+        {
+          "id": "Strike_R",
+          "uuid": "0aae3444-202b-455c-80c6-d73e6b5fef6d",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false,
+          "location": "EXHAUST"
+        }
+      ],
+      "limbo": [],
+      "stasis": [],
+      "monsters": [
+        {
+          "id": "SpikeSlime_L",
+          "slot": 0,
+          "idx": 0,
+          "occupantGeneration": 2,
+          "hp": 42,
+          "maxHp": 42,
+          "block": 0,
+          "dead": false,
+          "escaping": false,
+          "halfDead": false,
+          "escapeNext": false,
+          "nextMove": 4,
+          "moveHistory": [
+            4
+          ],
+          "powers": [],
+          "miscInfo": 0,
+          "intent": "DEBUFF",
+          "intentDamage": -1
+        },
+        {
+          "id": "AcidSlime_L",
+          "slot": 2,
+          "idx": 2,
+          "occupantGeneration": 1,
+          "hp": 42,
+          "maxHp": 42,
+          "block": 0,
+          "dead": false,
+          "escaping": false,
+          "halfDead": false,
+          "escapeNext": false,
+          "nextMove": 2,
+          "moveHistory": [
+            2
+          ],
+          "powers": [],
+          "miscInfo": 0,
+          "intent": "ATTACK",
+          "intentDamage": 16
+        }
+      ],
+      "curCardQueueItem": {
+        "card": {
+          "id": "Strike_R",
+          "uuid": "0aae3444-202b-455c-80c6-d73e6b5fef6d",
+          "upgraded": false,
+          "misc": 0,
+          "cost": 1,
+          "costForTurn": 1,
+          "freeToPlayOnce": false,
+          "retain": false
+        },
+        "target": 0,
+        "energyOnUse": 1,
+        "isEndTurn": false,
+        "triggerOnUse": true,
+        "ignoreEnergyTotal": false,
+        "freeToPlay": false,
+        "randomTarget": false,
+        "autoplay": true,
+        "regretCardCount": 0,
+        "purgeOnUse": false,
+        "exhaustOnUse": true
+      },
+      "lastCard": null,
+      "relics": [
+        {
+          "id": "Burning Blood",
+          "counter": -1,
+          "usedUp": false
+        },
+        {
+          "id": "Toxic Egg 2",
+          "counter": -1,
+          "usedUp": false
+        },
+        {
+          "id": "PreservedInsect",
+          "counter": -1,
+          "usedUp": false
+        },
+        {
+          "id": "Bag of Marbles",
+          "counter": -1,
+          "usedUp": false
+        },
+        {
+          "id": "War Paint",
+          "counter": -1,
+          "usedUp": false
+        },
+        {
+          "id": "Blue Candle",
+          "counter": -1,
+          "usedUp": false
+        }
+      ],
+      "potions": [
+        {
+          "slot": 0,
+          "id": "Potion Slot"
+        },
+        {
+          "slot": 1,
+          "id": "FairyPotion"
+        },
+        {
+          "slot": 2,
+          "id": "ElixirPotion"
+        }
+      ]
+    }
+  },
+  "character": "IRONCLAD"
+}

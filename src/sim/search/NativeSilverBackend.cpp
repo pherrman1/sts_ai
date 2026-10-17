@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <iostream>
 #include <atomic>
 #include <charconv>
@@ -56,6 +57,9 @@ namespace sts::search {
             // ADR-0036: a Smoke Bomb escape forfeits the fight's rewards (§473 values); "0,0" restores escape = win.
             double escapePenalty = kDefaultEscapePenalty;
             double eliteEscapePenalty = kDefaultEliteEscapePenalty;
+            // Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
+            bool potionTypeWeightsOn = false;
+            std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -66,6 +70,7 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -528,6 +533,8 @@ namespace sts::search {
                     searcher = std::make_unique<SilverSearcher>(root, context);
                     searcher->evalWeights.escapePenalty = g_options.escapePenalty;
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
+                    searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -547,6 +554,11 @@ namespace sts::search {
                 if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
                     searcher->nodePrior = nativeSilverPolicyPrior;
                     searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
+                } else if (!searcher->rootPrior.empty() && g_options.treePriorMinVisits > 0
+                        && !g_nativeSilverRootPriorOverride) {
+                    // Whole-run §452 tree prior; research thread overrides keep their own setting.
+                    searcher->nodePrior = nativeSilverPolicyPrior;
+                    searcher->treePriorMinVisits = g_options.treePriorMinVisits;
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
@@ -816,6 +828,10 @@ namespace sts::search {
             if (end == elite || *end != '\0' || g_options.escapePenalty < 0 || g_options.eliteEscapePenalty < 0)
                 throw std::runtime_error("STS_SILVER_ESCAPE_PENALTY must be <normal>,<elite>");
         }
+        if (const char *raw = std::getenv("STS_SILVER_POTION_WEIGHTS"); raw && *raw) {
+            g_options.potionTypeWeightsOn = true;
+            g_options.potionTypeWeights = parseSilverPotionWeights(raw, SilverEvalWeights{}.potionWeight);
+        }
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;
         }
@@ -859,6 +875,15 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE must be all or override");
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
+            char *end = nullptr;
+            const long value = std::strtol(raw, &end, 10);
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value > (1L << 30))
+                throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS must be a non-negative integer");
+            g_options.treePriorMinVisits = static_cast<int>(value);
+            if (value > 0 && g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_TREE_PRIOR_MIN_VISITS requires STS_SILVER_ROOT_PRIOR");
         }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
@@ -996,6 +1021,10 @@ namespace sts::search {
 
     const std::string &nativeSilverRootPriorPath() {
         return g_options.rootPriorPath;
+    }
+
+    int nativeSilverTreePriorMinVisits() {
+        return g_options.treePriorMinVisits;
     }
 
     double nativeSilverRootPriorWeight() {

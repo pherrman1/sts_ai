@@ -1,0 +1,18 @@
+{
+  "approved": true,
+  "budget": {
+    "addressSpaceBytesPerWorker": 8000000000,
+    "ascension": 0,
+    "cleanupSeconds": 5,
+    "gpu": false,
+    "packetSeconds": 5400,
+    "simulations": 10000,
+    "threadsPerWorker": 1,
+    "unitSeconds": 60,
+    "units": 720,
+    "workers": 8
+  },
+  "humanAuthorization": "Philipp in project thread 2026-10-17T10:56:26Z: 'lets scale sources' (after offered ~5x sources on 8 cores; 8-worker budget approved 09:58:54Z)",
+  "recipeSha256": "8939d754d0970b4fbe236da6a6b58e52e417a166e2cffd6000ea2b75fa69ab9d",
+  "schema": "ritual_coverage_resource_approval_v1"
+}

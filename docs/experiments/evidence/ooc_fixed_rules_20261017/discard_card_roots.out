@@ -1,0 +1,2 @@
+discard+card screens selected: [('card', 255), ('discard', 241), ('leave', 171), ('skipcard', 86), ('effect=13', 5)]
+uniform card screens w/o discard, effect sets: [(('effect=12', 'effect=14', 'effect=5'), 1217), (('effect=13', 'effect=14', 'effect=5'), 58), (('effect=10', 'effect=12', 'effect=14', 'effect=5'), 7), (('effect=10', 'effect=13', 'effect=14', 'effect=5'), 1)]

@@ -1,0 +1,19 @@
+{
+  "unexercisedCells": [],
+  "units": [
+    "000-52000010-ritual_writhing_v2_base_single_natural",
+    "001-52000010-ritual_writhing_v2_base_single_brew",
+    "002-52000010-ritual_writhing_v2_base_single_smoke",
+    "003-52000010-ritual_writhing_v2_base_double_natural",
+    "004-52000010-ritual_writhing_v2_base_double_brew",
+    "005-52000010-ritual_writhing_v2_base_double_smoke",
+    "006-52000010-ritual_writhing_v2_upgraded_single_natural",
+    "007-52000010-ritual_writhing_v2_upgraded_single_brew",
+    "008-52000010-ritual_writhing_v2_upgraded_single_smoke",
+    "009-52000010-ritual_writhing_v2_upgraded_double_natural",
+    "010-52000010-ritual_writhing_v2_upgraded_double_brew",
+    "011-52000010-ritual_writhing_v2_upgraded_double_smoke"
+  ],
+  "valid": true,
+  "validNoTargetOrGrowth": "retained_continue"
+}

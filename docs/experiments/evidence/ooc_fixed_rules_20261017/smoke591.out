@@ -1,0 +1,2 @@
+old [(('cards-only', 'prior'), 432), (('cards-only', 'uniform'), 15), (('discard', 'uniform'), 11), (('relic', 'prior'), 10), (('relic', 'uniform'), 12)] discard-screen picks [('leave rewards', 3), ('card', 3), ('discard', 3), ('take relic: bottled ', 1), ('skip card reward', 1)]
+full [(('cards-only', 'prior'), 462), (('discard', 'prior'), 9), (('discard', 'uniform'), 10), (('relic', 'prior'), 29)] discard-screen picks [('card', 7), ('discard', 6), ('leave rewards', 5), ('skip card reward', 1)]

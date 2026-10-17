@@ -1,0 +1,70 @@
+{
+  "automaticExtension": false,
+  "captureCounts": {
+    "1": 24
+  },
+  "captureValid": true,
+  "classification": "CORRECTED_PRODUCER_CANARY_GROWTH_OBSERVED",
+  "contract": {
+    "completedSeeds": 1,
+    "noAct4Seeds": 0,
+    "outcomes": {
+      "0": 0,
+      "1": 24,
+      "2": 0
+    },
+    "quarantinedRows": 0,
+    "quarantinedSeeds": 0,
+    "requestedSeeds": 1,
+    "rows": 24,
+    "sourceSeeds": 1,
+    "teacherId": "silver-ordinary-fair-learnedstop-ritual-corrected-b94da9bc13f8"
+  },
+  "count": 1,
+  "growthExamples": [
+    {
+      "changes": [
+        {
+          "delta": 3,
+          "index": 10,
+          "misc": 15,
+          "upgraded": false
+        }
+      ],
+      "combatOutcome": 1,
+      "encounter": 28,
+      "fightIdx": 12
+    },
+    {
+      "changes": [
+        {
+          "delta": 3,
+          "index": 10,
+          "misc": 18,
+          "upgraded": false
+        }
+      ],
+      "combatOutcome": 1,
+      "encounter": 49,
+      "fightIdx": 18
+    }
+  ],
+  "intersectionGrowthCoverage": "OBSERVED",
+  "intersectionRows": 3,
+  "manifestSha256": "ed0da129d18748c29de3f45ff3aece3028165c7048331d31e9a051bcb55a51ac",
+  "outcomes": {
+    "1": 24
+  },
+  "positiveGrowthRows": 2,
+  "positiveIntersectionGrowthRows": 1,
+  "qualification": false,
+  "rawSha256": "fd4727e0072757b067ad13fcab128d091af7da9d18c60a1a11a8e46777300d6a",
+  "returnCode": 0,
+  "rows": 24,
+  "rowsPerSecond": 1.4684175939549162,
+  "seed": 52000001,
+  "testAccess": false,
+  "timedOut": false,
+  "training": false,
+  "wallSeconds": 16.34412451798562
+}

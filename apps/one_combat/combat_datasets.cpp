@@ -5,6 +5,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
+#include "one_combat/ritual_writhing_setup.h"
 #include "one_combat/combat_transition_runtime.h"
 #include "ooc_strategic_tok_net.h"
 #include "screen_leaf_s0.h"
@@ -6184,11 +6185,12 @@ static nlohmann::json combatTransitionRowJson(
 // #418 targeted CTM support collections. Each setup forces a rare state the
 // ordinary corpus barely reaches; the manifest names the setup so its rows are
 // qualified as their own slice, never mixed into the ordinary distribution.
-enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW, ACT4_FORK };
+enum class ForcedCtmSetup { NONE, RITUAL_WRITHING, CONTROLLED_RITUAL_WRITHING, HIGH_MAXHP, LIZARD_FAIRY, LIZARD_BREW, ACT4_FORK };
 
 static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
     if (name.empty()) return ForcedCtmSetup::NONE;
     if (name == "ritual_writhing") return ForcedCtmSetup::RITUAL_WRITHING;
+    if (one_combat::parseRitualWrithingSetup(name)) return ForcedCtmSetup::CONTROLLED_RITUAL_WRITHING;
     if (name == "high_maxhp") return ForcedCtmSetup::HIGH_MAXHP;
     if (name == "lizard_fairy") return ForcedCtmSetup::LIZARD_FAIRY;
     if (name == "lizard_brew") return ForcedCtmSetup::LIZARD_BREW;
@@ -6200,6 +6202,7 @@ static ForcedCtmSetup parseForcedCtmSetup(const std::string &name) {
 static void applyForcedCtmSetupOnce(ForcedCtmSetup setup, GameContext &gc, std::uint64_t seed) {
     switch (setup) {
         case ForcedCtmSetup::RITUAL_WRITHING:
+        case ForcedCtmSetup::CONTROLLED_RITUAL_WRITHING:
             gc.deck.obtain(gc, CardId::RITUAL_DAGGER);
             break;
         case ForcedCtmSetup::HIGH_MAXHP: {
@@ -6269,7 +6272,11 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                                               const WholeCombatTeacher &teacher,
                                               ForcedCtmSetup setup = ForcedCtmSetup::NONE,
                                               bool deployedOoc = false,
-                                              bool *reachedAct4 = nullptr) {
+                                              bool *reachedAct4 = nullptr,
+                                              const std::optional<one_combat::RitualWrithingSetup> &controlled = std::nullopt,
+                                              nlohmann::json *interventions = nullptr,
+                                              nlohmann::json *annotations = nullptr,
+                                              nlohmann::json *failures = nullptr) {
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -6279,10 +6286,18 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
     t_curPath = &path;
     std::ostringstream out;
     int fightIdx = 0;
+    bool interventionStarted = false;
     // act4_fork writes only the forked Act-4 fights; earlier fights are played, not recorded.
     bool recording = setup != ForcedCtmSetup::ACT4_FORK;
     using RT = search::GameAction::RewardsActionType;
+    int currentFight = 0;
+    std::string stage = "source_start";
+    nlohmann::json currentAttempt = nlohmann::json::object();
+    const auto runLoop = [&] {
     while (gc.outcome == GameOutcome::UNDECIDED) {
+        currentFight = fightIdx;
+        stage = "screen_step";
+        currentAttempt = nlohmann::json::object();
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
             if (!recording && gc.act == 3 && gc.curRoom == Room::BOSS) {
@@ -6291,10 +6306,27 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 if (reachedAct4) *reachedAct4 = true;
                 continue;
             }
+            stage = "battle_setup";
+            std::optional<nlohmann::json> intervention;
             if (setup != ForcedCtmSetup::NONE && setup != ForcedCtmSetup::ACT4_FORK) {
                 if (fightIdx == 0) applyForcedCtmSetupOnce(setup, gc, seed);
-                applyForcedCtmSetupPerFight(setup, gc);
+                if (controlled && gc.act == 3 && gc.curRoom == Room::MONSTER) {
+                    stage = "normalization";
+                    currentAttempt = {{"before", one_combat::combatTransitionStateJson(
+                        one_combat::captureCombatTransitionState(gc))},
+                        {"originalEncounter", static_cast<int>(gc.info.encounter)}};
+                    const auto originalPredictor = one_combat::combatPredictorInputJson(
+                        one_combat::captureCombatPredictorInput(gc, gc.info.encounter, potionKeepValue(gc)));
+                    currentAttempt["originalPredictorInput"] = originalPredictor;
+                    intervention = one_combat::applyRitualWrithingSetup(gc, *controlled);
+                    currentAttempt["normalizedAttempt"] = *intervention;
+                    (*intervention)["originalPredictorInput"] = originalPredictor;
+                    interventionStarted = true;
+                    (*intervention)["sourceSeed"] = seed;
+                    (*intervention)["fightIdx"] = fightIdx;
+                } else applyForcedCtmSetupPerFight(setup, gc);
             }
+            stage = "predictor_capture";
             const GameContext pre = gc;
             const int battleAct = gc.act;
             const int battleFloor = gc.floorNum;
@@ -6304,6 +6336,13 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 one_combat::captureCombatPredictorInput(
                     pre, static_cast<MonsterEncounter>(battleEncounter),
                     potionKeepValue(gc)));
+            if (intervention) {
+                stage = "normalized_root_assertion";
+                (*intervention)["predictorInput"] = predictorInput;
+                if (intervention->at("after") != one_combat::combatTransitionStateJson(
+                        one_combat::captureCombatTransitionState(pre)))
+                    throw std::runtime_error("controlled Ritual ROOT differs from RAW pre");
+            }
             std::optional<one_combat::CombatTransitionRecord> record;
             int rawCaptureCount = 0;
             bool decided = false;
@@ -6316,6 +6355,7 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                         if (rawCaptureCount == 1)
                             record = one_combat::captureCombatTransition(pre, ended, raw);
                     });
+                stage = "combat_and_raw_exit";
                 agent.playoutBattle(gc, bc);
                 decided = bc.outcome != Outcome::UNDECIDED;
                 runValid = trainingRunValid(decided);
@@ -6324,11 +6364,23 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                 // including for loss and unresolved outcomes.
                 bc.exitBattle(gc);
             }
+            stage = "raw_pre_assertion_and_serialization";
             if (recording) {
                 nlohmann::json row = combatTransitionRowJson(
                     seed, fightIdx++, battleAct, battleFloor, battleRoom,
                     battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
                     predictorInput);
+                if (controlled) {
+                    if (annotations) annotations->push_back({{"sourceSeed", seed}, {"fightIdx", currentFight},
+                        {"sourceGroup", seed}, {"commonPrefixCandidate", !interventionStarted},
+                        {"targetIntervention", intervention.has_value()}});
+                    if (intervention) {
+                        if (record && one_combat::combatTransitionStateJson(record->pre) != intervention->at("after"))
+                            throw std::runtime_error("controlled Ritual capture used pre-intervention ROOT");
+                        (*intervention)["rawPreMatchesNormalizedRoot"] = record.has_value();
+                        if (interventions) interventions->push_back(std::move(*intervention));
+                    }
+                }
                 out << row.dump() << '\n';
             }
         } else if (deployedOoc) {
@@ -6348,6 +6400,11 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             agent.stepOutOfCombatPolicy(gc);
         }
     }
+    };
+    if (controlled) {
+        if (!failures) throw std::runtime_error("controlled source requires failure receipt storage");
+        one_combat::guardRitualWrithingSource(gc, seed, currentFight, stage, currentAttempt, *failures, runLoop);
+    } else runLoop();
     t_curPath = nullptr;
     return out.str();
 }
@@ -6474,6 +6531,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                                 bool allowStaleProvenance,
                                 const std::string &forcedSetup) {
     const ForcedCtmSetup setup = parseForcedCtmSetup(forcedSetup);
+    const auto controlled = one_combat::parseRitualWrithingSetup(forcedSetup);
     if (setup != ForcedCtmSetup::NONE && allowStaleProvenance)
         throw std::runtime_error("combattransitionforcedgen: forced setups need a current teacher");
     trainingCampaignStart();
@@ -6493,18 +6551,25 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
     int completed = 0;
+    nlohmann::json interventionRows = nlohmann::json::array();
+    nlohmann::json rowAnnotations = nlohmann::json::array(), sourceFailures = nlohmann::json::array();
     int noAct4 = 0;  // act4_fork: runs that ended before the Act-3 boss (not a quarantine)
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
         bool reachedAct4 = false;
+        nlohmann::json sourceInterventions = nlohmann::json::array();
+        nlohmann::json sourceAnnotations = nlohmann::json::array(), failures = nlohmann::json::array();
         const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher, setup,
-                                                                 deployedOoc, &reachedAct4);
+                                                                 deployedOoc, &reachedAct4, controlled, &sourceInterventions, &sourceAnnotations, &failures);
         #pragma omp critical(combat_transition_write)
         {
             f << generated;
             f.flush();
+            for (auto &receipt : sourceInterventions) interventionRows.push_back(std::move(receipt));
+            for (auto &annotation : sourceAnnotations) rowAnnotations.push_back(std::move(annotation));
+            for (const auto &failure : failures) sourceFailures.push_back(failure);
             rows += std::count(generated.begin(), generated.end(), '\n');
-            if (!generated.empty()) ++completed;
+            if (!generated.empty() && failures.empty()) ++completed;
             else if (setup == ForcedCtmSetup::ACT4_FORK && !reachedAct4) ++noAct4;
         }
     }
@@ -6526,11 +6591,21 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
         {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
                         {"quarantinedSeeds", quarantined}, {"rows", rows}}}
     };
+    if (controlled) {
+        manifest["ritualWrithingIntervention"] = one_combat::ritualWrithingDescriptor(*controlled);
+        manifest["ritualWrithingIntervention"]["targets"] = std::move(interventionRows);
+        manifest["ritualWrithingIntervention"]["rowAnnotations"] = std::move(rowAnnotations);
+        manifest["ritualWrithingIntervention"]["sourceFailures"] = sourceFailures;
+        manifest["ritualWrithingIntervention"]["terminalInvalid"] = !sourceFailures.empty();
+        manifest["ritualWrithingIntervention"]["deduplication"] =
+            "retain_all_raw; preparation_groups_exact_predictor_plus_transition_including_outcome_across_cells_by_sourceSeed";
+    }
     if (setup == ForcedCtmSetup::ACT4_FORK) manifest["integrity"]["noAct4Seeds"] = noAct4;
     if (deployedOoc) manifest["policy"] = effectiveOocPolicySpecification();
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
+    mf.close();
     std::cout << (allowStaleProvenance
                      ? "combattransitionlizardtargetcandidategen teacher="
                      : setup != ForcedCtmSetup::NONE ? "combattransitionforcedgen teacher="
@@ -6544,6 +6619,10 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                                 : "combattransitiongen", nSeeds, completed,
                             quarantined, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);
+    // All partial rows, failure receipts, provenance and manifest are durable
+    // before a nonzero terminal error leaves the driver (outside OpenMP).
+    if (!sourceFailures.empty())
+        throw std::runtime_error("controlled Ritual producer source failed; partial evidence retained");
 }
 
 

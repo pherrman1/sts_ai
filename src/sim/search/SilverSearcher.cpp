@@ -736,7 +736,12 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
 
 double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bool uniformPolicy) {
     int rolloutDepth = 0;
-    while (bc.outcome == Outcome::UNDECIDED) {
+    // Bound the entire playout, independently of card-play counters, turn
+    // resets and the selected rollout policy. A free draw/reshuffle cycle must
+    // not monopolize an advisor request (#544). Preserve an unresolved endpoint
+    // for the existing heuristic instead of inventing a victory or a death.
+    constexpr int kMaxRolloutActions = 1000;
+    while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < kMaxRolloutActions) {
         Action action;
         if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
                 || bc.inputState == InputState::CARD_SELECT)) {
@@ -755,6 +760,8 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
         action.execute(bc);
         ++rolloutDepth;
     }
+    if (bc.outcome == Outcome::UNDECIDED && rolloutDepth == kMaxRolloutActions)
+        ++stats.rolloutActionLimitHits;
     ++stats.rolloutPlayouts;
     stats.rolloutActions += rolloutDepth;
     recordEndpoint(bc, treeDepth, rolloutDepth);
@@ -891,6 +898,39 @@ void search::SilverSearcher::enumeratePotionActions(Node &node, const BattleCont
     }
 }
 
+std::array<double, search::kSilverPotionTypeCount> search::parseSilverPotionWeights(const std::string &spec, double fallback) {
+    std::array<double, kSilverPotionTypeCount> weights{};
+    std::array<bool, kSilverPotionTypeCount> set{};
+    double defaultWeight = fallback;
+    std::size_t pos = 0;
+    while (pos <= spec.size()) {
+        const std::size_t comma = std::min(spec.find(',', pos), spec.size());
+        const std::string item = spec.substr(pos, comma - pos);
+        pos = comma + 1;
+        if (item.empty()) continue;
+        const std::size_t eq = item.find('=');
+        if (eq == std::string::npos) throw std::runtime_error("STS_SILVER_POTION_WEIGHTS: expected NAME=weight, got " + item);
+        const std::string name = item.substr(0, eq);
+        const std::string number = item.substr(eq + 1);
+        char *end = nullptr;
+        const double w = std::strtod(number.c_str(), &end);
+        if (number.empty() || *end != '\0' || !std::isfinite(w))
+            throw std::runtime_error("STS_SILVER_POTION_WEIGHTS: bad weight in " + item);
+        if (name == "*") { defaultWeight = w; continue; }
+        int id = -1;
+        for (int i = static_cast<int>(Potion::AMBROSIA); i < kSilverPotionTypeCount; ++i) {
+            if (name == potionEnumNames[i]) { id = i; break; }
+        }
+        if (id < 0) throw std::runtime_error("STS_SILVER_POTION_WEIGHTS: unknown potion " + name);
+        weights[id] = w;
+        set[id] = true;
+    }
+    for (int i = 0; i < kSilverPotionTypeCount; ++i) {
+        if (!set[i]) weights[i] = defaultWeight;
+    }
+    return weights;
+}
+
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     if (context.finalBossBinary && context.act == 3 && context.actBossRoom && bc.ascension == 0) {
         // The run ends here. Neither a loss nor an unresolved rollout earns
@@ -911,7 +951,14 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             + bc.cardsDrawn * evalWeights.drawWeight
             + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
     }
-    const double potionScore = bc.potionCount * evalWeights.potionWeight;
+    double potionScore = bc.potionCount * evalWeights.potionWeight;
+    if (evalWeights.potionTypeWeightsOn) {
+        potionScore = 0;
+        for (int i = 0; i < bc.potionCapacity; ++i) {
+            if (bc.potions[i] != Potion::EMPTY_POTION_SLOT)
+                potionScore += evalWeights.potionTypeWeights[static_cast<int>(bc.potions[i])];
+        }
+    }
     // Held "cheat death" effects count at the HP they would restore.
     double deathSaveValue = 0.0;
     if (!bc.player.hasRelic<RelicId::MARK_OF_THE_BLOOM>()) {

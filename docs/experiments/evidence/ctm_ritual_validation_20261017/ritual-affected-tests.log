@@ -1,0 +1,29 @@
+Test project /home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-debug-ccache
+      Start  27: live_silver_importer
+ 1/10 Test  #27: live_silver_importer .............   Passed    1.04 sec
+      Start  28: ritual_dagger_persistence
+ 2/10 Test  #28: ritual_dagger_persistence ........   Passed    0.01 sec
+      Start  29: ritual_dagger_eligibility
+ 3/10 Test  #29: ritual_dagger_eligibility ........   Passed    0.01 sec
+      Start  54: ironclad_card_java_parity
+ 4/10 Test  #54: ironclad_card_java_parity ........   Passed    0.00 sec
+      Start  59: ironclad_card_coverage
+ 5/10 Test  #59: ironclad_card_coverage ...........   Passed    0.00 sec
+      Start 114: awakened_one_stage2
+ 6/10 Test #114: awakened_one_stage2 ..............   Passed    0.00 sec
+      Start 115: darkling_victory
+ 7/10 Test #115: darkling_victory .................   Passed    0.00 sec
+      Start 126: card_pile
+ 8/10 Test #126: card_pile ........................   Passed    0.00 sec
+      Start 127: card_pile_engine
+ 9/10 Test #127: card_pile_engine .................   Passed    0.10 sec
+      Start 141: combat_transition_oracle
+10/10 Test #141: combat_transition_oracle .........   Passed    0.00 sec
+
+100% tests passed out of 10
+
+Label Time Summary:
+core     =   0.12 sec*proc (7 tests)
+smoke    =   0.01 sec*proc (2 tests)
+
+Total Test time (real) =   1.17 sec
