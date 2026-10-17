@@ -1,0 +1,14 @@
+{
+  "activationSha256": "545699a55980d0984be2ae62ca303cad5eb95385ec5b8a66e1a5cff1c1f25ffb",
+  "affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "bootId": "f3f917ef-a5c4-47d1-b2f8-2d3baee24647",
+  "cpuMax": "max 100000",
+  "half": null,
+  "planSha256": "dc730f4575c2cfa2cdfdc107eabc6c751497eda9a99c27034a6aebfb72b9ff47",
+  "worker": 21
+}

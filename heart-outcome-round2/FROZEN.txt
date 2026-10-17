@@ -1,0 +1,10 @@
+Heart-outcome collection round 2 (§503), A+S on 32 workers (Philipp 2026-10-17 08:23Z: "Do A+S on 32 workers")
+producer source d8fd2a105a8d2a481b7639e26c683f75e382e3d4; RUN_COMMIT 3a0269266382764054d0416105c51bf16700e02a (branch claude/project-thread-72g9pa)
+one_combat 0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52; studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
+plan.json dc730f4575c2cfa2cdfdc107eabc6c751497eda9a99c27034a6aebfb72b9ff47; bundle.json 5810761da0ac09d5ba8a476655e5cd225906a0a86a72f100a65d090c3d40b59c (unchanged)
+cloud canary.json 95930a8cf88d8834daf93439ea2b6c08833d4bb5340fe31bb8ad05702f590f59 (111100002 OFF/ON, 111100003 ON, siblings every 8, PASS)
+32 workers W=0..31 x 64 sources (TRAIN 34 / VALIDATION 10 / CONFIRM 20 each) = 2048; seeds 111101000..111103047; 4 processes per worker; 3600 s/source; one 6 h deadline
+BRIEF-worker.md 5cf06dab296965f5ee86c6f67b247ef42661bddb9b22da8ecf980246a50eda93
+delta review PASS: canary-reviewed.json e7700092deb3352ab6f835221007635ae5a19de4f15ae7cb68120db8ed019957, export-check.json 30dcd684876338ff8b7772d7fad33a2759bce388efe8414884c7d5e69d203a00
+activation.json 545699a55980d0984be2ae62ca303cad5eb95385ec5b8a66e1a5cff1c1f25ffb; COHORT-STARTED.json 7d0f9e8ebb9403b52bdada8d73e215ba11ead8d9e02c2a497ad3b1de08a2d5cf
+activated 2026-10-17T08:59:00Z, global deadline 2026-10-17T14:59:00Z (never reset)

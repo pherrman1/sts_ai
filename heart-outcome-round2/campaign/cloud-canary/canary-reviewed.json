@@ -1,0 +1,12 @@
+{
+ "briefSha256": "5cf06dab296965f5ee86c6f67b247ef42661bddb9b22da8ecf980246a50eda93",
+ "bundleSha256": "5810761da0ac09d5ba8a476655e5cd225906a0a86a72f100a65d090c3d40b59c",
+ "canarySha256": "95930a8cf88d8834daf93439ea2b6c08833d4bb5340fe31bb8ad05702f590f59",
+ "exportCheckSha256": "30dcd684876338ff8b7772d7fad33a2759bce388efe8414884c7d5e69d203a00",
+ "notes": "32-worker refreeze delta review: prepare from clean d8fd2a1 clone reproduced plan dc730f45 and bundle 5810761d; 2048 seeds 111101000..111103047 each once, 34/10/20 per worker for W=0..31; all 28 canary files match canary.json; off/on trace+actions byte-identical; on/second trace, actions, roots, states identical to the reviewed 45-worker canary, sib files differ only in CPU-seconds fields",
+ "planSha256": "dc730f4575c2cfa2cdfdc107eabc6c751497eda9a99c27034a6aebfb72b9ff47",
+ "reviewerBootId": "78b2df1e-2416-4179-965e-6772c4ff22ef",
+ "runCommit": "3a0269266382764054d0416105c51bf16700e02a",
+ "sourceSha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+ "verdict": "PASS"
+}

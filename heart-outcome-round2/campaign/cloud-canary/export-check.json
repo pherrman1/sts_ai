@@ -1,0 +1,9 @@
+{
+ "blob": "/mnt/project-files/heart-outcome-collection/export-check/export-blob.bin",
+ "bytes": 301989888,
+ "checkedUtc": "2026-10-17T09:05Z",
+ "readSha256": "2796e9c915ab380a63e53c30a4d7d11784f9a77e93d3a91c60ab05763c1e97f4",
+ "readerBootId": "78b2df1e-2416-4179-965e-6772c4ff22ef",
+ "writerBootId": "ed1903ad-5f85-463f-b488-5aa7106009d2",
+ "writtenSha256": "2796e9c915ab380a63e53c30a4d7d11784f9a77e93d3a91c60ab05763c1e97f4"
+}
