@@ -19,12 +19,17 @@ ledger shards; maintained technical understanding remains in
 ## Lifecycle
 
 Use the deterministic `0001-<slug>.md` filename scheme and the standard ADR
-sections. If a decision changes, add a new ADR that states what it supersedes
+sections. A PR adds a new ADR as `TBD-<slug>.md` with `ADR-TBD` references; the
+number is assigned at merge by `tools/ledger_assign.py` (see
+[agent workflow](../docs/knowledge-base/operations/agent-context-and-workflow.md#ledger-and-adr-numbers)). If a decision changes, add a new ADR that states what it supersedes
 and links the historical record; do not rewrite the old ADR or chronological
 entry. Mark the earlier ADR `superseded` only when current evidence establishes
 the replacement.
 
 ## Current architecture ADRs
+
+- [ADR-0043](0043-az-loop-gumbel-policy-target.md) makes the planned AlphaZero-style OOC loop train its
+  policy on Gumbel completed-Q targets rather than raw visit shares (no default changes).
 
 - [ADR-0042](0042-heart1full-prior-default.md) makes heart1full the live OOC MCTS tree prior when
   `STS_OOC_HEART1` is set (`STS_OOC_MCTS_PRIOR=heart1` or `=policy` restores the old prior).

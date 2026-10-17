@@ -143,6 +143,11 @@ namespace sts {
 
 
     class GameContext;
+
+    // STS_ENGINE_FIDELITY_FIX: unset or 1 = out-of-combat and burning-elite
+    // rules follow the game (2026-10-17 engine A20 fidelity audit); 0 = the
+    // legacy simulator rules. Other values are fatal. Read per call.
+    bool engineFidelityFix();
     typedef std::function<void(GameContext&)> GameContextAction;
 
     class BattleContext;
@@ -343,7 +348,7 @@ namespace sts {
         Room getEventRoomOutcomeHelper(bool lastRoomWasShop);
 
         // actions
-        void damagePlayer(int amount);
+        void damagePlayer(int amount, bool playerOwned = false);
         void playerLoseHp(int amount);
         void playerOnDie();
         void playerHeal(int amount);

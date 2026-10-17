@@ -24,6 +24,14 @@ namespace sts::search {
     // (the next call then takes the reward).
     std::optional<GameAction> potionRewardAction(const GameContext &gc);
 
+    // STS_POTION_REWARD_DECLINE_LEAVE (research option, default off). Unset or
+    // 0: off. 1: on. Other values are fatal.
+    bool potionRewardDeclineLeaveEnabled();
+
+    // True on a reward screen whose potions the pickup above declines: slots
+    // are full and no reward potion outranks the worst held one (no Sozu).
+    bool potionRewardDeclined(const GameContext &gc);
+
 }
 
 #endif

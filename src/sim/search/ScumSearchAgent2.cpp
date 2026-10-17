@@ -228,7 +228,7 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
         }
 
         case ScreenState::REST_ROOM: {
-            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (heartRecallRequired(gc, g_collectKeys)) {
                 takeAction(gc, 2);   // recall: take the ruby key (act 3+)
             } else if (gc.curHp > 50 && gc.deck.getUpgradeableCount() > 0 && !gc.hasRelic(RelicId::FUSION_HAMMER)) {
                 takeAction(gc, 1);

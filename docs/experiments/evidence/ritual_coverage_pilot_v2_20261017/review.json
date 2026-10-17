@@ -1,0 +1,12 @@
+{
+  "independent": true,
+  "packetIdentity": {
+    "docs/experiments/evidence/ritual_coverage_pilot_v2_20261017/PROTOCOL.md": "9fdf492bf7e703c85ebd26ab30457e2a36abdc5ef3e310d7891e8be9aa6a4330",
+    "tests/test_ctm_ritual_coverage_pilot.py": "4393b6818aae8b7883e6c961a549d286fabf62660a2903758933115dd87e038c",
+    "tools/ctm_ritual_coverage_pilot.py": "f4363b0b330c80e6828a04ece20dfa3abbbe0fe8ec7b8602298c98e0a034ac0e"
+  },
+  "recipeSha256": "8939d754d0970b4fbe236da6a6b58e52e417a166e2cffd6000ea2b75fa69ab9d",
+  "reviewer": "independent read-only Claude subagent a4f59f088fc45df92",
+  "sourceSha": "5e282b6c3e063b9346d0af9d7e8ab1e83bdc4eee",
+  "verdict": "PASS"
+}

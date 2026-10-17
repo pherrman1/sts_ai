@@ -2,9 +2,11 @@
 #include <algorithm>
 #include "game/Map.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/RunGoal.h"
 using namespace sts;
 using sts::search::GameAction;
 using namespace one_combat;
+extern bool g_collectKeys;
 static constexpr int TOK_NRAW = 36;
 
 TokState buildTokStatePure(const GameContext &gc, const PathHistory &path) {
@@ -107,7 +109,8 @@ bool v4DecisionSupported(const GameContext &gc) {
 std::vector<GameAction> v4CandidateActions(const GameContext &gc) {
     auto actions = GameAction::getAllActionsInState(gc);
     actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const auto &action) {
-        return !sts::search::isSupportedAutonomousOocAction(gc, action);
+        return !sts::search::isSupportedAutonomousOocAction(gc, action)
+            || !sts::search::heartKeyActionAllowed(gc, g_collectKeys, action);
     }), actions.end());
     if (gc.screenState == ScreenState::REWARDS
         && gc.info.rewardsContainer.cardRewardCount > 0 && !actions.empty()) {
