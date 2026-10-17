@@ -1,6 +1,7 @@
 #include "heart1_policy.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -890,12 +891,12 @@ static Record trimmedMap(const Record &in) {
     return r;
 }
 
-Output Net::forward(const Record &record) const {
-    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record));
-    return forwardRecord(record);
+Output Net::forward(const Record &record, bool logitsOnly) const {
+    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record), logitsOnly);
+    return forwardRecord(record, logitsOnly);
 }
 
-Output Net::forwardRecord(const Record &r) const {
+Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
     const int kDim = dim_, kHeads = heads_, kHeadDim = dim_ / heads_, kHidden = hidden_;
     const DagFeatures dag = mapDagFeatures(r);
     const int nDeck = int(r.deckCards.size()), nRelic = int(r.relics.size()), nPot = int(r.potions.size());
@@ -998,11 +999,15 @@ Output Net::forwardRecord(const Record &r) const {
     std::vector<float> xn(std::size_t(n) * kDim), qkv(std::size_t(n) * 3 * kDim), att(std::size_t(n) * kDim);
     std::vector<float> h1(std::size_t(n) * kHidden), h2(std::size_t(n) * kHidden), scores(n);
     const float scale = 1.0f / std::sqrt(float(kHeadDim));
-    for (const auto &b : blocks_) {
+    for (std::size_t bi = 0; bi < blocks_.size(); ++bi) {
+        const auto &b = blocks_[bi];
+        // Every row is computed independently after the keys and values, so the
+        // last block can skip the rows no logit reads.
+        const int q0 = logitsOnly && bi + 1 == blocks_.size() ? nObs : 0, nq = n - q0;
         for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm1, xn.data() + std::size_t(i) * kDim);
         linear(b.inProj, xn.data(), n, qkv.data());
         for (int hd = 0; hd < kHeads; ++hd) {
-            for (int i = 0; i < n; ++i) {
+            for (int i = q0; i < n; ++i) {
                 const float *q = qkv.data() + std::size_t(i) * 3 * kDim + hd * kHeadDim;
                 float mx = -std::numeric_limits<float>::infinity();
                 for (int j = 0; j < n; ++j) {
@@ -1021,20 +1026,29 @@ Output Net::forwardRecord(const Record &r) const {
                 }
             }
         }
-        linear(b.outProj, att.data(), n, x.data(), /*accumulate=*/true);
-        for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm2, xn.data() + std::size_t(i) * kDim);
-        linear(b.w1, xn.data(), n, h1.data());
-        linear(b.v, xn.data(), n, h2.data());
-        for (std::size_t i = 0; i < h1.size(); ++i) {
+        const std::size_t o0 = std::size_t(q0) * kDim, h0 = std::size_t(q0) * kHidden;
+        linear(b.outProj, att.data() + o0, nq, x.data() + o0, /*accumulate=*/true);
+        for (int i = q0; i < n; ++i) rmsNorm(row(i), b.norm2, xn.data() + std::size_t(i) * kDim);
+        linear(b.w1, xn.data() + o0, nq, h1.data() + h0);
+        linear(b.v, xn.data() + o0, nq, h2.data() + h0);
+        for (std::size_t i = h0; i < h1.size(); ++i) {
             const float a = h1[i];
             h1[i] = a / (1.0f + std::exp(-a)) * h2[i];
         }
-        linear(b.w2, h1.data(), n, x.data(), /*accumulate=*/true);
+        linear(b.w2, h1.data() + h0, nq, x.data() + o0, /*accumulate=*/true);
     }
-    for (int i = 0; i < n; ++i) rmsNorm(row(i), finalNorm_, xn.data() + std::size_t(i) * kDim);
 
     Output out;
     out.logits.resize(nChoice);
+    if (logitsOnly) {
+        for (int c = 0; c < nChoice; ++c) {
+            float *xc = xn.data() + std::size_t(nObs + c) * kDim;
+            rmsNorm(row(nObs + c), finalNorm_, xc);
+            out.logits[c] = dot(choiceLogits_.w.data(), xc, kDim) + choiceLogits_.b[0];
+        }
+        return out;
+    }
+    for (int i = 0; i < n; ++i) rmsNorm(row(i), finalNorm_, xn.data() + std::size_t(i) * kDim);
     for (int c = 0; c < nChoice; ++c)
         out.logits[c] = dot(choiceLogits_.w.data(), xn.data() + std::size_t(nObs + c) * kDim, kDim) + choiceLogits_.b[0];
     std::vector<float> pooled(kDim, 0.f), vn(kDim);
@@ -1086,12 +1100,14 @@ bool policyStep(GameContext &gc) {
     if (nChoice == 0) return freeTaken > 0;
     int chosen = 0;
     Output scored;
+    const char *trace = std::getenv("STS_OOC_HEART1_TRACE");
+    const bool tracing = trace && *trace;
     if (nChoice > 1) {
-        scored = model.forward(choice.record);
+        scored = model.forward(choice.record, /*logitsOnly=*/!tracing);
         // Temperature 0: np.argmax, first maximum in token order.
         chosen = int(std::max_element(scored.logits.begin(), scored.logits.end()) - scored.logits.begin());
     }
-    if (const char *trace = std::getenv("STS_OOC_HEART1_TRACE"); trace && *trace && nChoice > 1) {
+    if (tracing && nChoice > 1) {
         nlohmann::json line = {{"seed", std::to_string(gc.seed)}, {"act", gc.act}, {"floor", gc.floorNum},
                                {"record", recordToJson(choice.record)}, {"logits", scored.logits},
                                {"value", scored.value}, {"chosen", chosen},
@@ -1259,7 +1275,7 @@ std::optional<std::vector<double>> priorLogits(const GameContext &gc, const std:
         if (tally) ++(*tally)["fallback:screen" + std::to_string(static_cast<int>(gc.screenState)) + ":unencoded"];
         return std::nullopt;
     }
-    return mapPriorLogits(choice, net().forward(choice.record).logits, gc.hasRelic(RelicId::SINGING_BOWL),
+    return mapPriorLogits(choice, net().forward(choice.record, /*logitsOnly=*/true).logits, gc.hasRelic(RelicId::SINGING_BOWL),
                           actions, tally);
 }
 
@@ -1297,6 +1313,49 @@ int scoreCommand(int argc, char **argv) {
     }
     std::printf("heart1score records=%d -> %s\n", n, argv[4]);
     return 0;
+}
+
+int logitsCheckCommand(int argc, char **argv) {
+    if (argc != 4 && argc != 5) {
+        std::fprintf(stderr, "usage: one_combat heart1logitscheck <weights.bin> <records.jsonl> [reps]\n");
+        return 2;
+    }
+    const Net model = loadOrThrow(argv[2]);
+    const int reps = argc == 5 ? std::max(1, std::stoi(argv[4])) : 1;
+    std::ifstream in(argv[3]);
+    if (!in) throw std::runtime_error("heart1logitscheck: cannot open records");
+    std::vector<Record> records;
+    std::string line;
+    while (std::getline(in, line))
+        if (!line.empty()) {
+            const auto j = nlohmann::json::parse(line);
+            records.push_back(recordFromJson(j.contains("record") ? j.at("record") : j));
+        }
+    // Bitwise: the logits-only pass must reproduce every full-pass logit.
+    int mismatches = 0, logits = 0;
+    for (const auto &r : records) {
+        const auto full = model.forward(r).logits, fast = model.forward(r, /*logitsOnly=*/true).logits;
+        logits += int(full.size());
+        if (full.size() != fast.size() || std::memcmp(full.data(), fast.data(), full.size() * sizeof(float)) != 0)
+            ++mismatches;
+    }
+    const auto time = [&](bool logitsOnly) {
+        const auto start = std::chrono::steady_clock::now();
+        float sink = 0;
+        for (int k = 0; k < reps; ++k)
+            for (const auto &r : records) {
+                const auto out = model.forward(r, logitsOnly);
+                if (!out.logits.empty()) sink += out.logits[0];
+            }
+        const double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+        return std::make_pair(s, sink);
+    };
+    const auto full = time(false), fast = time(true);
+    const double calls = double(records.size()) * reps;
+    std::printf("heart1logitscheck records=%zu logits=%d mismatched_records=%d full_us=%.1f logits_only_us=%.1f speedup=%.3f (%g)\n",
+                records.size(), logits, mismatches, 1e6 * full.first / calls, 1e6 * fast.first / calls,
+                full.first / fast.first, double(full.second + fast.second));
+    return mismatches == 0 ? 0 : 1;
 }
 
 int replayCommand(int argc, char **argv) {
