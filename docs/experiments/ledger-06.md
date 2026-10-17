@@ -19896,3 +19896,32 @@ more simulations with the cheap leaf do not recover it. In play the student, dis
 is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays research-only.
 [Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
 **Knowledge impact:** learned OOC leaf status in current-research.
+
+## §509 — Arm C value head and trunk fine-tune on Heart outcomes (2026-10-17)
+
+**NOT_SHOWN** (development; no TEST, CONFIRM, seeds, native or default change). Philipp asked
+whether Arm C's value head could be trained, not only its prior head, and approved the plan.
+Student C's value head was never trained (policy-only distillation). Pre-registered
+[protocol](evidence/arm_c_value_finetune_20261017/PROTOCOL.md): train all parameters on outcome BCE
+(equal-state) + KL to the original policy + w × pairwise ranking on §494/round-2 sibling 64-rollout
+means, w ∈ {0, 0.5, 2}; checkpoint by VALIDATION visitation BCE; a candidate needs §497 VALIDATION
+BCE < 0.45341 **and** sibling concordance ≥ X2-B. Python encoding matches native `heart1score`
+(pooled ≤ 9.5e-7).
+
+| Selected checkpoint | VAL BCE | §497 VAL BCE | Sibling conc. vs X2-B (rollout3) |
+| --- | ---: | ---: | --- |
+| §497 only, w = 0 / 0.5 / 2 | 0.444 / 0.446 / 0.459 | same | 0.495 / 0.550 / 0.559 vs 0.621 (0.554), 114 §494 groups |
+| §497 + round-2, w = 0.5 | 0.418 | 0.435 | 0.580 vs 0.633 (0.591), 2,559 round-2 groups |
+| §497 + round-2, w = 2 | 0.431 | 0.457 | 0.566 vs 0.633 (0.591) |
+
+Round-2 (§503) TRAIN/VALIDATION came from `claude/heart-outcome-round2-data@a8f6542e`, index
+`02c59f5b…`; CONFIRM archives were not extracted. Outcome BCE is best near step 100–300 (about one
+pass) and then overfits (to 1.20 at step 2,000 for w = 0), while ranking keeps improving: the
+combined w = 2 fit reaches round-2 concordance 0.648 vs X2-B 0.633 at step 2,000 with BCE 0.510,
+worse than the constant 0.454. That late value was read off VALIDATION, has no bootstrap and is
+descriptive only. Policy top-1 agreement with the original stays 0.97–0.98.
+**Inference:** the source-constant outcome label is memorized quickly; the sibling signal is not.
+A ranking-selected candidate is a new hypothesis that needs its own frozen protocol and the sealed
+CONFIRM. Two combined launches failed on GPU memory before any optimizer step; kept as `failed-*`.
+[Report](evidence/arm_c_value_finetune_20261017/REPORT.md).
+**Knowledge impact:** learned OOC value-head status in current-research.
