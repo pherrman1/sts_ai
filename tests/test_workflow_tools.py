@@ -77,7 +77,62 @@ class LedgerAssignTest(unittest.TestCase):
         self.assertFalse((self.r.path / "decisions/TBD-new-rule.md").exists())
         self.assertIn("decisions/0004-new-rule.md", (self.r.path / "docs/kb.md").read_text())
         new = self.r.commit("assign")
-        run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path)
+        run(self.tool + ["check", self.reviewed, new, "--base", "main", "--skip", "8"], self.r.path)
+        # Without the same skip list, the check recomputes §8 and rejects the commit.
+        p = run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path, check=False)
+        self.assertNotEqual(p.returncode, 0)
+
+    def test_check_rejects_colliding_numbers(self):
+        for path, old, new in [("docs/experiments/ledger-01.md", "§TBD — new (see ADR-TBD)", "§5 — new (see ADR-0001)"),
+                               ("docs/experiments/ledger-01.md", "§TBD-b", "§100"),
+                               ("decisions/TBD-new-rule.md", "ADR-TBD", "ADR-0001"),
+                               ("decisions/TBD-new-rule.md", "§TBD and §TBD-b", "§5 and §100"),
+                               ("docs/kb.md", "§TBD", "§5")]:
+            f = self.r.path / path
+            f.write_text(f.read_text().replace(old, new))
+        git(self.r.path, "mv", "decisions/TBD-new-rule.md", "decisions/0001-new-rule.md")
+        kb = self.r.path / "docs/kb.md"
+        kb.write_text(kb.read_text().replace("TBD-new-rule.md", "0001-new-rule.md"))
+        new = self.r.commit("hand numbering")
+        p = run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path, check=False)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("not numbering-only", p.stdout)
+
+    def test_check_requires_current_base(self):
+        run(self.tool + ["assign", "--base", "main"], self.r.path)
+        new = self.r.commit("assign")
+        git(self.r.path, "checkout", "-q", "main")
+        self.r.write("docs/experiments/ledger-01.md", "## §1 — a\n\n## §7 — b\n\n## §8 — main took it\n")
+        self.r.commit("main moves")
+        git(self.r.path, "checkout", "-q", "pr")
+        p = run(self.tool + ["check", self.reviewed, new, "--base", "main"], self.r.path, check=False)
+        self.assertNotEqual(p.returncode, 0)
+
+    def test_duplicate_unlabelled_headings_rejected(self):
+        f = self.r.path / "docs/experiments/ledger-01.md"
+        f.write_text(f.read_text() + "\n## §TBD — third\n")
+        self.r.commit("dup")
+        p = run(self.tool + ["assign", "--base", "main", "--dry-run"], self.r.path, check=False)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("two ledger headings", p.stdout + p.stderr)
+
+    def test_reserved_ranges_branch_numbers_and_code_spans(self):
+        f = self.r.path / "docs/experiments/ledger-01.md"
+        f.write_text(f.read_text() + "\n## §20 — hand-numbered on the branch\n")
+        self.r.write("docs/howto.md", "Write `§TBD` and `ADR-TBD`.\n```\n## §TBD — example\n```\n")
+        self.r.write("tools/x.py", '"""Mentions §TBD and ADR-TBD."""\n')
+        self.r.commit("more")
+        out = run(self.tool + ["assign", "--base", "main", "--skip", "21-22", "--skip-adr", "4,5"], self.r.path).stdout
+        self.assertIn("§TBD -> §23", out)
+        self.assertIn("§TBD-b -> §24", out)
+        self.assertIn("ADR-TBD -> ADR-0006", out)
+        self.assertEqual((self.r.path / "docs/howto.md").read_text(),
+                         "Write `§TBD` and `ADR-TBD`.\n```\n## §TBD — example\n```\n")
+        self.assertIn("§TBD", (self.r.path / "tools/x.py").read_text())
+
+    def test_assign_runs_from_a_subdirectory(self):
+        out = run(self.tool + ["assign", "--base", "main", "--dry-run"], self.r.path / "docs").stdout
+        self.assertIn("§TBD -> §8", out)
 
     def test_check_rejects_other_edits(self):
         run(self.tool + ["assign", "--base", "main"], self.r.path)
@@ -168,6 +223,65 @@ class CloudWorkerTest(unittest.TestCase):
         (self.share / "w02.tar").write_bytes(b"junk")
         rows = json.loads(run(verify, self.r.path, check=False).stdout)
         self.assertEqual(rows[1]["state"], "BAD")
+
+    def test_setup_refuses_a_different_freeze(self):
+        run(self.w + ["setup", self.c, "1"], self.r.path, self.env)
+        f = self.r.path / self.c / "run_unit.sh"
+        f.write_text(f.read_text() + "# v2\n")
+        self.r.commit("v2")
+        p = run(self.w + ["setup", self.c, "1"], self.r.path, self.env, check=False)
+        self.assertIn("different freeze", p.stdout)
+        p = run(self.w + ["run", self.c, "1"], self.r.path, self.env, check=False)
+        self.assertIn("no longer matches", p.stdout)
+
+    def test_campaign_must_be_committed_inside_repo(self):
+        outside = self.tmp / "elsewhere"
+        shutil.copytree(self.r.path / self.c, outside)
+        p = run(self.w + ["setup", str(outside), "1"], self.r.path, self.env, check=False)
+        self.assertIn("inside the repository", p.stdout)
+        shutil.copytree(self.r.path / self.c, self.r.path / "docs/experiments/evidence/untracked")
+        p = run(self.w + ["setup", "docs/experiments/evidence/untracked", "1"], self.r.path, self.env, check=False)
+        self.assertIn("not tracked", p.stdout)
+        f = self.r.path / self.c / "run_unit.sh"
+        f.write_text(f.read_text() + "# edited\n")
+        p = run(self.w + ["setup", self.c, "1"], self.r.path, self.env, check=False)
+        self.assertIn("STOP", p.stdout)
+
+    def test_retry_starts_from_an_empty_unit_dir(self):
+        # Appends like one_combat's CSVs; unit "112 a" fails the first time after writing a row.
+        (self.r.path / self.c / "run_unit.sh").write_text(
+            'repo=$1 run=$2 out=$3; shift 3\necho "row $*" >> "$out/rows.csv"\n'
+            'if [ "$*" = "112 a" ] && [ ! -e "$run/second" ]; then touch "$run/second"; exit 1; fi\n')
+        self.r.commit("appending unit")
+        run(self.w + ["setup", self.c, "1"], self.r.path, self.env)
+        p = run(self.w + ["run", self.c, "1"], self.r.path, self.env, check=False)
+        self.assertEqual(p.returncode, 3)
+        run(self.w + ["run", self.c, "1"], self.r.path, self.env)
+        self.assertEqual((self.home / "cw-fake-w01/out/units/112_a/rows.csv").read_text(), "row 112 a\n")
+
+    def test_verify_checks_frozen_and_stray_units(self):
+        for w in ("1", "2"):
+            run(self.w + ["setup", self.c, w], self.r.path, self.env)
+            run(self.w + ["run", self.c, w], self.r.path, self.env)
+        verify = [sys.executable, str(ROOT / "tools/cloud/verify_campaign.py"), self.c, "--json"]
+        run(verify, self.r.path)
+        # A stray unit dir and a .failed marker in a re-packed tar (with a matching DONE.json) are caught.
+        rd = self.home / "cw-fake-w01"
+        (rd / "out/units/999_z").mkdir()
+        (rd / "out/units/111_a.failed").write_text("rc=1\n")
+        run(["tar", "-C", str(rd), "-cf", str(self.share / "w01.tar"), "out", "FROZEN.txt", "SETUP.txt"], self.r.path)
+        meta = json.loads((self.share / "w01.DONE.json").read_text())
+        meta["tar_sha256"] = hashlib.sha256((self.share / "w01.tar").read_bytes()).hexdigest()
+        (self.share / "w01.DONE.json").write_text(json.dumps(meta))
+        rows = json.loads(run(verify, self.r.path, check=False).stdout)
+        self.assertEqual(rows[0]["state"], "BAD")
+        self.assertIn("unexpected unit", rows[0]["detail"])
+        # The lead's campaign files differing from the ones the workers froze is caught.
+        f = self.r.path / self.c / "units.txt"
+        f.write_text(f.read_text() + "# note\n")
+        rows = json.loads(run(verify, self.r.path, check=False).stdout)
+        self.assertEqual(rows[1]["state"], "BAD")
+        self.assertIn("hashes differ", rows[1]["detail"])
 
     def test_padded_worker_number_rejected(self):
         p = run(self.w + ["setup", self.c, "01"], self.r.path, self.env, check=False)

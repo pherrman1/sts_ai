@@ -71,8 +71,9 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 
 ### Frozen runs
 
-Before freezing a run, merge every reviewed fix that touches the run's code path
-into main, then freeze on that main. After the freeze, a later main change forces
+Before freezing a run, the coordinator lists the reviewed but unmerged PRs that
+touch the run's code path and asks Philipp once to merge them first (merges
+stay his call); then the author freezes on that main. After the freeze, a later main change forces
 a re-freeze only when the pre-launch reviewer finds that it changes the measured
 contrast (for example, the arms no longer replay the same states) or can crash
 the run. Otherwise the PREREG records it as a known deviation. Mass cloud runs
@@ -86,9 +87,12 @@ New ledger entries and ADRs use placeholders (`§TBD`, `§TBD-b`, `ADR-TBD`, fil
 `decisions/TBD-<slug>.md`). The session that merges the PR runs
 `python3 tools/ledger_assign.py assign` on the branch after merging main (`--skip`
 lists numbers reserved by work still in flight) and commits the result.
-`python3 tools/ledger_assign.py check <reviewed-sha> <new-sha>` confirms that the
-new head differs from the reviewed one only by a clean main merge and the
-numbering, so the review's PASS still applies without a delta review.
+`python3 tools/ledger_assign.py check <reviewed-sha> <new-sha>` (with the same
+`--skip`/`--skip-adr`) recomputes the numbering against current main and confirms
+that the new head differs from the reviewed one only by a clean main merge and
+exactly that numbering. After a PASS, that merge-plus-numbering commit is the only
+push allowed without a delta review. Placeholders inside `code spans`, fenced
+blocks and non-Markdown files are never rewritten.
 
 ### Review depth
 
