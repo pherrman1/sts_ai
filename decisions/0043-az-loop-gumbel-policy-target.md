@@ -40,6 +40,11 @@ searched real root. Whether search improves on the prior at all is measured
 separately (search vs prior alone at A20 Heart); this ADR fixes the target form,
 not that the loop will improve play. No current default changes.
 
+## Follow-ups
+
+- Potion discard needs its own policy output in the loop (student C has none); recorded 2026-10-17 in
+  [current-research.md](../docs/knowledge-base/evaluation/current-research.md) ("AlphaZero-style OOC loop: open requirements").
+
 ## Evidence
 
 `/mnt/project-files/audit-2026-10-17/az-loop-plan.md` (F5-F7),

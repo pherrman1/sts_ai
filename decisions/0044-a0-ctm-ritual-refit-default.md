@@ -34,6 +34,11 @@ On 2026-10-17 at 16:43Z, Philipp wrote: "ship it anyway".
   - `STS_OOC_MCTS_BREW_FALLBACK_MODEL=selfplay/models/combat_transition_near_full_escape_pathb_r2.native`
   - `STS_OOC_MCTS_ACTIVE_LIZARD=1`
   - Live: `STS_CTM_MODEL` and `STS_CTM_BREW_FALLBACK_MODEL`.
+  - Caveat (post-merge review, 2026-10-17): this rollback is exact only below A20. Setting
+    `STS_OOC_MCTS_COMBAT_MODEL` or `STS_OOC_MCTS_BREW_FALLBACK_MODEL` leaves the automatic stack, so the
+    pathb-a20 CTM that ADR-0033 loads for ascension-20 decisions is dropped, and adding
+    `STS_OOC_MCTS_A20_CTM=1` fails at startup (`ooc_mcts_adapter.cpp`, `a20Compatible`). An A20 run with these
+    variables uses the old A0 pair for A20 decisions too.
 
 ## Consequences
 
