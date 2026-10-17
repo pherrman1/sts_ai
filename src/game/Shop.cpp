@@ -3,11 +3,24 @@
 //
 
 #include <cmath>
+#include <cstdlib>
+#include <stdexcept>
+#include <string>
 #include "game/Shop.h"
 #include "game/GameContext.h"
 #include "game/Game.h"
 
 using namespace sts;
+
+// STS_SHOP_PRICE_FIX: unset or 1 = A16+ raises shop prices by 10% as in the
+// game, and Courier restocks are priced from the new item; 0 = the legacy
+// 20% A16 discount and restock prices. Read per call, so tests can switch it.
+bool Shop::priceFix() {
+    const char *value = std::getenv("STS_SHOP_PRICE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SHOP_PRICE_FIX must be 0 or 1");
+}
 
 void Shop::setup(GameContext &gc) {
     setupCards(gc);
@@ -15,7 +28,7 @@ void Shop::setup(GameContext &gc) {
     setupPotions(gc);
 
     if (gc.ascension >= 16) {
-        applyDiscount(0.80f);
+        applyDiscount(priceFix() ? 1.10f : 0.80f);
     }
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         applyDiscount(0.80f);
@@ -127,7 +140,10 @@ void Shop::buyRelic(GameContext &gc, int idx) {
 
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         relics[idx] = gc.returnRandomRelic(rollRelicTier(gc.merchantRng), true, false);
-        getNewPrice(gc, getRelicBasePrice(relics[idx]));
+        const int newPrice = getNewPrice(gc, getRelicBasePrice(relics[idx]));
+        if (priceFix()) {
+            relicPrice(idx) = newPrice;
+        }
     } else {
         relicPrice(idx) = -1;
     }
@@ -198,13 +214,23 @@ int Shop::getNewCardPrice(GameContext &gc, CardRarity rarity, bool colorless) {
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         price *= 0.8f;
     }
-    if (gc.hasRelic(RelicId::THE_COURIER)) {
+    if (gc.hasRelic(priceFix() ? RelicId::MEMBERSHIP_CARD : RelicId::THE_COURIER)) {
         price *= 0.5f;
     }
     return static_cast<int>(price);
 }
 
 int Shop::getNewPrice(GameContext &gc, int basePrice) {
+    if (priceFix()) {
+        int price = static_cast<int>(std::round(static_cast<float>(basePrice) * gc.merchantRng.random(0.95f, 1.05f)));
+        if (gc.hasRelic(RelicId::THE_COURIER)) {
+            price = static_cast<int>(std::round(static_cast<float>(price) * COURIER_FACTOR));
+        }
+        if (gc.hasRelic(RelicId::MEMBERSHIP_CARD)) {
+            price = static_cast<int>(std::round(static_cast<float>(price) * MEMBERSHIP_CARD_FACTOR));
+        }
+        return price;
+    }
     basePrice = static_cast<int>(std::round(gc.merchantRng.random(0.95f, 1.05f)));
     if (gc.hasRelic(RelicId::THE_COURIER)) {
         std::round(basePrice * COURIER_FACTOR);
