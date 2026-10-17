@@ -22,7 +22,7 @@ If a permission check blocks any command in this brief (checkout, setup, the lau
 it (no other command, path or copy of the script): reply in your thread with the blocked command and the message, and
 wait for an answer there.
 
-## 2. Run (roughly 1–2 h: 4 shards of 8 seeds each, in parallel)
+## 2. Run (roughly 1–3 h: 4 shards of 8 seeds each, in parallel)
 
 ```sh
 cd /home/user/sts_ai; setsid nohup bash $E/worker.sh run W > $HOME/xrt-wWW.run.log 2>&1 < /dev/null &
