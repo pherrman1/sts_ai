@@ -8,13 +8,13 @@ the V4 prior ("v4", "src_bits"); newer rows carry "kind" (node/select) and the s
 
 usage: distill.py SILVERBOT_REPO OUTDIR --data a.capture.jsonl.gz ... [--dim 64 --layers 2 --mult 2 --heads 4]
   [--trim-map] [--epochs 8] [--device cuda] [--workers 6] [--amp] [--init student.pt] [--select-repeat 1]
-  [--extra-inputs]
+  [--extra-inputs] [--compact]
 Validation = held-out seeds: files whose seed (from "-<seed>.capture" in the name) has seed % --val-mod ==
 --val-mod - 1. Loss: KL(teacher softmax || student softmax) over the row's choice tokens (temperature 1).
 Reports val KL and top-1 agreement with the teacher per screen and card-select type, and the agreement of
 V4 / the serving net where rows carry them. SILVERBOT_REPO is daniel-ziegler/sts_lightspeed built at 84ab3ea
 (silverbot.network imports its compiled module). The student exports with export_heart1_weights.py."""
-import argparse, collections, gzip, json, os, random, re, sys, time
+import argparse, collections, gzip, json, os, random, re, sys, time, zlib
 ap = argparse.ArgumentParser()
 ap.add_argument("repo"); ap.add_argument("out"); ap.add_argument("--data", nargs="+", required=True)
 ap.add_argument("--dim", type=int, default=128); ap.add_argument("--layers", type=int, default=2)
@@ -28,6 +28,7 @@ ap.add_argument("--seed", type=int, default=0); ap.add_argument("--val-mod", typ
 ap.add_argument("--amp", action="store_true", help="bf16 autocast forward (TF32 matmuls); loss/metrics fp32")
 ap.add_argument("--init", help="start from this student state dict (fine-tune) instead of random weights")
 ap.add_argument("--select-repeat", type=int, default=1, help="repeat card-select training rows this often")
+ap.add_argument("--compact", action="store_true", help="keep training rows compressed in RAM (large captures)")
 ap.add_argument("--extra-inputs", action="store_true",
                 help="student_inputs.ExtraInputsNN: zero-initialised relic counter, act and card misc inputs")
 a = ap.parse_args()
@@ -61,7 +62,8 @@ def group_of(r):
     if s == 4: return "card_select:" + SELECTS[r["record"]["select_screen_type"]].lower()
     return SCREENS.get(s, str(s))
 
-def load(paths):
+def load(paths, compact=False):
+    """compact: keep each training row as its zlib-compressed JSON (unpacked in collate), so 3M+ rows fit in RAM."""
     rows = []
     for p in paths:
         op = gzip.open if p.endswith(".gz") else open
@@ -70,18 +72,25 @@ def load(paths):
                 r = json.loads(line)
                 if "record" not in r or len(r["logits"]) < 2: continue
                 rec = r["record"]
-                rows.append({"record": trim(rec) if a.trim_map else rec, "logits": r["logits"],
-                             "token_bits": r["token_bits"], "v4": r.get("v4"), "src_bits": r.get("src_bits"),
-                             "serve": r.get("serve"), "screen": r.get("screen", rec["screen_state"]),
-                             "act": r.get("act", 0), "deck_misc": r.get("deck_misc"), "seed": seed_of(p)})
+                row = {"record": trim(rec) if a.trim_map else rec, "logits": r["logits"],
+                       "token_bits": r["token_bits"], "v4": r.get("v4"), "src_bits": r.get("src_bits"),
+                       "serve": r.get("serve"), "screen": r.get("screen", rec["screen_state"]),
+                       "act": r.get("act", 0), "deck_misc": r.get("deck_misc"), "seed": seed_of(p)}
+                if compact:
+                    row = (row["screen"], zlib.compress(json.dumps(
+                        {k: row[k] for k in ("record", "logits", "act", "deck_misc")}).encode(), 1))
+                rows.append(row)
     return rows
+
+def screen_of(r): return r[0] if isinstance(r, tuple) else r["screen"]
+def unpack(r): return json.loads(zlib.decompress(r[1])) if isinstance(r, tuple) else r
 
 files = sorted(a.data)
 val_files = [f for f in files if seed_of(f) % a.val_mod == a.val_mod - 1]
 train_files = [f for f in files if f not in val_files]
-train, val = load(train_files), load(val_files)
+train, val = load(train_files, compact=a.compact), load(val_files)
 if a.max_train: random.shuffle(train); train = train[:a.max_train]
-if a.select_repeat > 1: train += [r for r in train if r["screen"] == 4] * (a.select_repeat - 1)
+if a.select_repeat > 1: train += [r for r in train if screen_of(r) == 4] * (a.select_repeat - 1)
 print(f"train {len(train)} rows / {len(train_files)} files, val {len(val)} rows / {len(val_files)} files", flush=True)
 
 def positions(rec):
@@ -91,6 +100,7 @@ def positions(rec):
     return pos
 
 def collate(rows):
+    rows = [unpack(r) for r in rows]
     b = network.collate_fn([{**r["record"], "chosen_idx": 0, "outcome": 0.0} for r in rows])
     if a.extra_inputs: b["extra"] = student_inputs.extra_batch(rows)
     mask = torch.zeros(len(rows), WIDTH, dtype=torch.bool); tgt = torch.full((len(rows), WIDTH), -1e9)
