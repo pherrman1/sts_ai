@@ -313,7 +313,10 @@ at each budget in `STS_CTMSILVER_SWEEP_SIMS`; per-thread override
 equal simulations the root table scores +2.7 [+0.6, +4.8] better, but it costs
 5.1% more CPU per simulation (longer playouts plus the build), and against
 greedy at 6% more simulations it is +1.9 [−0.1, +3.9] at 1.007x CPU per fight:
-not CPU-matched and not shown, so it stays off.
+not CPU-matched and not shown, so it stays off. §521 repeats it at 10k: +1.8
+[−0.4, +4.0] against greedy at 10,700 at 1.008x CPU per fight (NOT_CPU_MATCHED,
+NOT_SHOWN), +1.8 [−0.2, +3.9] at equal simulations; 7% more greedy simulations
+buy nothing at 10k (−0.02).
 From the 50th card played in a turn, the greedy playout no longer gives
 zero-cost non-attacks first priority, so a replayable zero-cost draw (two
 Finesse, Deep Breath) cannot loop to the 1000-card per-turn cap every turn

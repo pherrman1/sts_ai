@@ -20287,3 +20287,34 @@ setting; the armset stays research-only.
 111180100–111180355 (run); the rest of 111180000–111189999 is unused.
 **Knowledge impact:** one sentence added to the per-context search constants paragraph in
 `evaluation/current-research.md`.
+
+## §521 — Silver rollout root table at 10k simulations: NOT_CPU_MATCHED, score NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z, thread "Distilled Silver playout picker"):** "can you compare on 10k
+simulations?" after §519; 20:03Z "8 workers"; 20:13Z "merge 612 and go".
+**Design:** [PREREG](evidence/silver_rollout_root_table_10k_20261017/PREREG.md), independent pre-launch review PASS
+(PR #626). §519 unchanged except `STS_CTMSILVER_SWEEP_SIMS=10000,10700`: arms `greedy`/`roottable` at 10,000 and
+10,700 simulations, R = 2, gen-6 E table model and tree prior, student C source runs, keys flag off. RUN_COMMIT
+`72066f46` (code `42e54fac`, binary `bb117ec2…`), A20 seeds 111190500–111190627, 8 cloud workers. Primary
+`roottable10000 − greedy10700` score, label valid only if the per-fight CPU ratio point estimate is ≤ 1.00.
+**Result: NOT_CPU_MATCHED; the score contrast is NOT_SHOWN as well.** 128/128 seeds, 32/32 shards rc=0, 8 tars
+verified from a second container; 1,403 valid fights (7 excluded for escapes, 6 control-replay mismatches; 25 in Act
+4). Primary `roottable10000 − greedy10700`: score +1.79 [−0.40, +3.99], win +0.5 pp [−0.2, +1.1], HP lost −0.45
+[−0.98, +0.08]; CPU per fight 1.008 [0.991, 1.025]. The root table costs 5.8% more CPU per simulation (1.058 [1.044,
+1.072]; playouts 16.9 vs 15.5 actions) and takes 2.0% more search decisions per fight (25.1 vs 24.6), so at equal
+simulations it costs 1.079x per fight against 1.070x for greedy10700. Descriptive, not pre-registered:
+`roottable10000 − greedy10000` +1.77 [−0.24, +3.87]; `roottable10700 − greedy10700` +2.11 [−0.05, +4.35];
+`greedy10700 − greedy10000` −0.02 [−1.69, +1.73]. Win rates 92.6 / 93.1 / 92.6 / 93.2% (greedy10000 / roottable10000
+/ greedy10700 / roottable10700). Bosses (262) primary +5.9 [−2.9, +14.5]; Act 4 (25) −2.7 [−38.4, +24.8].
+**Interpretation:** the root table's point estimate is about the same at 10k as at 2.5k (§519: +2.69 at equal
+simulations), but at 10k it is not significant at equal simulations either. Unlike §519, 7% more simulations buy
+nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not have used.
+**Inference:** at the production budget, a cheaper root table (or the same one at no simulation cost) could be a
+small free gain; across §519 and §521 the equal-simulation contrast is positive in all four budget pairs, but each CI
+touches zero except §519's. Pre-registered decision: stop; the option stays research-only and off.
+[result.json](evidence/silver_rollout_root_table_10k_20261017/result.json). Raw:
+`/mnt/project-files/silver-rollout-root-table-10k/w0{1..8}.tar` (sha256 `8c4bb455…`, `47c5c9fb…`, `4f656e30…`,
+`0e6c3ce7…`, `91834bb7…`, `4ad02fcd…`, `470b53da…`, `8be914d1…`). Seeds 111190500–111190627 used; reviewer smokes
+from 111190700–111190799.
+**Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
+`operations/environment-variables.md`.
