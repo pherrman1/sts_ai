@@ -700,6 +700,8 @@ add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine
 add_test(NAME violence_large_draw_pile COMMAND $<TARGET_FILE:unit-test> violence_large_draw_pile)
 add_test(NAME stasis_large_pile COMMAND $<TARGET_FILE:unit-test> stasis_large_pile)
 add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
+add_test(NAME silver_rollout_limit COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:unit-test> silver_rollout_limit)
 add_test(NAME silver_wire_state COMMAND $<TARGET_FILE:unit-test> silver_wire_state)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.

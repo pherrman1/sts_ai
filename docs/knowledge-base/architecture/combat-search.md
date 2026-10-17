@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-17 for the per-playout action cap (#544); 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -133,6 +133,16 @@ flags; piles, hand and player block are excluded). At the cap, in a
 search and the count resets. The guard only reads the live state, so a combat
 that never reaches the cap plays exactly as without it; the skipped root is
 not passed to root observers or traces.
+
+Every Silver playout inside search also stops after 1,000 actions, including
+card selections and uniform-policy actions. This bound is independent of the
+live decision guard and the rollout agent's per-turn card-play counter. A
+capped playout keeps its unresolved state and uses the existing heuristic
+value; it does not fabricate a terminal outcome. `SilverSearchStats` records
+`rolloutActionLimitHits`, and endpoint profiling records the capped state as
+`nonterminal`. Shorter playouts retain their action/RNG behavior. This bounds
+free draw/reshuffle loops at the playout decision boundary (#544); it does not
+bound work inside a single simulator action.
 
 Under Runic Dome the root uses the tracker's public pre-roll monster state and
 sets `BattleContext::intentsHidden`: monster rolls (and Looter/Mugger's
