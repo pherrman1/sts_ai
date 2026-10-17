@@ -1268,7 +1268,7 @@ void verifyGuardianProducerThresholds() {
         if (phase == 0) guardian.setStatus<MonsterStatus::MODE_SHIFT>(12);
         else if (phase == 1) {
             guardian.removeStatus<MonsterStatus::MODE_SHIFT>();
-            guardian.buff<MonsterStatus::SHARP_HIDE>(3);
+            guardian.buff<MonsterStatus::SHARP_HIDE>(ascension >= 19 ? 4 : 3);
             guardian.setMove(MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
         } else {
             guardian.setStatus<MonsterStatus::MODE_SHIFT>(initialThreshold + 10);
@@ -1295,6 +1295,43 @@ void verifyGuardianProducerThresholds() {
 int main(int argc, char **argv) {
     verifyGuardianProducerThresholds();
     try {
+        {
+            const std::string path = argc > 2 ? argv[2] : "tests/fixtures/live_guardian_a20_phases.json";
+            std::ifstream input(path);
+            if (!input) throw std::runtime_error("cannot read captured Guardian phases: " + path);
+            json fixture; input >> fixture;
+            if (fixture.at("schema") != "live_guardian_a20_phases_v1" || fixture.at("phases").size() != 3)
+                throw std::runtime_error("captured Guardian phase fixture schema");
+            int previousSequence = -1;
+            for (const auto &phase : fixture.at("phases")) {
+                auto observation = phase.at("observation");
+                const auto &source = phase.at("source");
+                for (const auto *key : {"session", "sequence", "observationHash"})
+                    observation[key] = source.at(key);
+                if (source.at("sequence").get<int>() <= previousSequence)
+                    throw std::runtime_error("captured Guardian phase order");
+                previousSequence = source.at("sequence").get<int>();
+                one_combat::advisor::SilverImportContext context;
+                const auto imported = one_combat::advisor::importSilverRoot(observation, context);
+                if (!imported.ok) throw std::runtime_error("captured Guardian import: " + imported.reason);
+                const auto &expected = phase.at("expected");
+                const auto battle = battleContextFromWire(imported.wire);
+                const auto &guardian = battle.monsters.arr[0];
+                if (imported.wire.ascension != 20 || battle.turn + 1 != expected.at("turn")
+                    || guardian.id != MonsterId::THE_GUARDIAN || guardian.curHp != expected.at("guardianHp")
+                    || guardian.curHp != phase.at("mcpGuardian").at("current_hp")
+                    || guardian.miscInfo != expected.at("miscInfo")
+                    || guardian.getStatus<MonsterStatus::MODE_SHIFT>() != expected.at("modeShift")
+                    || guardian.getStatus<MonsterStatus::SHARP_HIDE>() != expected.at("sharpHide"))
+                    throw std::runtime_error("captured Guardian threshold/power parity");
+                SilverSearchSession session;
+                const auto decision = session.decide(imported.wire, 1);
+                if (!decision.accepted || one_combat::advisor::selectedLiveAction(
+                        decision.action, context, observation).is_null())
+                    throw std::runtime_error("captured Guardian search/lowering refused");
+            }
+            std::cout << "captured A20 Guardian offense/defense/return search parity passed\n";
+        }
         {
             const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";
             std::ifstream input(path);

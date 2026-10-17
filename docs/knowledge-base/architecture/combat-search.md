@@ -527,7 +527,10 @@ invocation details from
   `dmgThresholdIncrease` and `isOpen`: Java increments on entering Defensive
   Mode, while native increments on Twin Slam, so the defensive projection
   subtracts the increment (10). This also works without an earlier observation
-  of the fight. Missing fields or a non-vanilla increment remain unsupported.
+  of the fight. Native phase parity covers A0/A9/A19/A20 thresholds. Captured
+  A20 offense-after-damage, defense and return-to-offense roots are replayed by
+  `live_silver_importer_test`; live MCP and accepted Silver roots agreed on the
+  threshold sequence 40, 40, 50. Missing fields or a non-vanilla increment remain unsupported.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 
