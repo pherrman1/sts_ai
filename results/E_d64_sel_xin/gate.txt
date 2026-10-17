@@ -1,0 +1,22 @@
+# Offline gate (data-select-20261017/GATE.md, written before training) for student_sel.bin cf6bf7fb
+Native one_combat heart1score (binary 5eff2ad7) on 243,103 held-out rows (seed % 8 == 7), top-1 vs heart1's argmax.
+
+group                         n        student C   student_sel
+old capture (all)             126,045  92.99%      94.03%
+new node act 1                30,129   90.12%      95.86%
+new node act 2                33,475   85.27%      93.84%
+new node act 3                7,710    81.95%      91.45%
+new node act 4 (not gated)    121      67.77%      86.78%
+new select REMOVE             19,782   0.06%       97.60%
+new select TRANSFORM          1,823    0.11%       97.48%
+new select TRANSFORM_UPGRADE  1,124    0.00%       99.82%
+new select UPGRADE            21,846   18.80%      89.63%
+new select DUPLICATE          272      46.69%      86.03%
+new select OBTAIN             776      78.48%      90.08%
+new (all)                     117,058  57.20%      94.12%
+
+G1 old >= 92.0%: PASS (94.03%)
+G2 REMOVE/TRANSFORM/TRANSFORM_UPGRADE/UPGRADE above student C: PASS
+G3 acts 1-3 within 1 pp of student C: PASS (all higher)
+GATE: PASS
+Note: held-out seeds come from the same runs' distribution (student-C trees, A20, keys on); offline agreement, not play strength.
