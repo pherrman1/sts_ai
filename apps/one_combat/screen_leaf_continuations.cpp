@@ -125,7 +125,8 @@ GameContextAction build(const Json &d, unsigned depth) {
                 reward.addRelic(static_cast<RelicId>(uncommon));
             } else if (kind == "dead_adventurer_rewards") {
                 if (addRelic) reward.addRelic(static_cast<RelicId>(relic));
-                if (gc.hasRelic(RelicId::BLACK_STAR))
+                // Mirrors GameContext: Black Star adds no relic here unless STS_ENGINE_FIDELITY_FIX=0.
+                if (!sts::engineFidelityFix() && gc.hasRelic(RelicId::BLACK_STAR))
                     reward.addRelic(gc.returnNonCampfireRelic(returnRandomRelicTierElite(gc.relicRng)));
             } else if (kind == "masked_bandits_rewards") {
                 // Current-main semantics intentionally differ from old producer:
