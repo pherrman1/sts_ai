@@ -3692,13 +3692,14 @@ int main(int argc, char **argv) {
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
     } else if (mode == "heartoutcomegen") {
+        const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"
-                || (std::string(argv[5]) != "on" && std::string(argv[5]) != "off"))
-            throw std::runtime_error("usage: one_combat heartoutcomegen 1 SEED OUT.jsonl on|off");
+                || (capture != "on" && capture != "off" && capture != "policy"))
+            throw std::runtime_error("usage: one_combat heartoutcomegen 1 SEED OUT.jsonl on|off|policy");
         const std::string seed(argv[3]);
         if (seed.empty() || seed.find_first_not_of("0123456789") != std::string::npos)
             throw std::runtime_error("heart outcome seed must be a nonnegative integer");
-        return one_combat::heartOutcomeGen(std::stoull(seed), argv[4], std::string(argv[5]) == "on");
+        return one_combat::heartOutcomeGen(std::stoull(seed), argv[4], capture != "off", capture == "policy");
     } else if (mode == "oocselectivesilverspec") {
         try { std::cout << one_combat::oocSelectiveSilverAuditSpec().dump() << '\n'; return 0; }
         catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }

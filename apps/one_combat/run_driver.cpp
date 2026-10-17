@@ -208,6 +208,7 @@ void runFloorProfileSelfTest() {
 thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
+thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
 
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
 
@@ -538,9 +539,12 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                     one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
                 traceBy = "match_and_keep";
-            } else if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
-                runFullRunOocPolicyStep(gc, agent, restV, shopV);
-            else traceBy = "mcts";
+            } else {
+                if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
+                if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) traceBy = "mcts";
+                else runFullRunOocPolicyStep(gc, agent, restV, shopV);
+            }
+            if (t_realOocDecisionObserver) t_realOocDecisionObserver(index, traceBy);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "ooc"}, {"idx", index}, {"by", traceBy},
                               {"handler", std::string(traceBy) == "chain" ? t_oocChainHandler : ""},
