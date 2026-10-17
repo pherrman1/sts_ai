@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build act4-states.jsonl for silverazact4gen from extracted Act-4 CTM label worker tars.
 
-usage: make_states.py OUT.jsonl DIR [DIR ...]   (DIR: an extracted worker tar; act4-*.jsonl[.gz] found recursively)
+usage: make_states.py OUT.jsonl DIR [DIR ...]   (DIR: an extracted worker tar; act4-*.jsonl[.gz] found recursively, aborted-* dirs skipped)
 
 Keeps the rows silverazact4gen would use (runValid, one capture, no quarantine, act 4, A20, Shield + Spear (56) or
 Heart (57)) from the frozen label run's source seeds 111160000-111169999 only (no smoke or superseded rows), fails on a duplicate (sourceSeed, fightIdx), sorts by (sourceSeed, fightIdx) and prints counts.
@@ -37,6 +37,8 @@ def main(argv):
         files = sorted(glob.glob(os.path.join(d, "**", "act4-*.jsonl"), recursive=True)
                        + glob.glob(os.path.join(d, "**", "act4-*.jsonl.gz"), recursive=True))
         for path in files:
+            if "aborted" in os.path.relpath(path, d):
+                continue   # a worker's aborted partial unit (kept next to its rerun)
             for r in rows(path):
                 if not usable(r):
                     skipped += 1
