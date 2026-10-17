@@ -224,6 +224,14 @@ weights. The `SilverEvalWeights` struct defaults stay 0. Before PR #540
 NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
 only 46 and 21 pairs differ at all. The default follows Philipp's decision.
 
+Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §509
+measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
+potion removed vs unchanged, next 3 fights played, then the A20 floor model,
+calibrated by a −12 HP copy). The pooled price is 9.9 HP-eq [7.9, 12.3],
+consistent with 11. Per-type prices differ: Fairy about 44, Attack/Blood/Skill
+potions 15–21, Block/Weak/Swift/Speed/Essence of Steel near 0. The formula has
+no per-type weights; whether they would help play is untested.
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
