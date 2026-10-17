@@ -408,6 +408,19 @@ public final class LiveOocCaptureTest {
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 persistedPath, false, "", 2, java.util.Arrays.asList(16, 18)).get(14)))
             throw new AssertionError("incomplete prior map history was promoted to a boss");
+        java.util.List<String> vanillaBossPath = new java.util.ArrayList<>();
+        for(int act=1;act<=2;++act) {
+            for(int room=0;room<15;++room)vanillaBossPath.add("M");
+            vanillaBossPath.add("BOSS");
+        }
+        java.util.List<String> actThree = LiveOocCapture.canonicalPathHistory(
+                vanillaBossPath,true,"",3,java.util.Arrays.asList(16,33));
+        if(!"BOSS".equals(actThree.get(15)) || !"BOSS".equals(actThree.get(31)))
+            throw new AssertionError("vanilla BOSS path marker lost on Act 3 entry");
+        if(!"BOSS".equals(LiveOocCapture.canonicalPathHistory(
+                vanillaBossPath.subList(0,16),true,"REST",1,
+                java.util.Collections.<Integer>emptyList()).get(15)))
+            throw new AssertionError("public boss room was replaced with its preceding campfire");
         Map<String,Object> openedChest = new HashMap<>();
         java.util.List<Map<String,Object>> openedChoices = new java.util.ArrayList<>();
         LiveOocCapture.captureOpenedTreasure(openedChest, openedChoices, true);

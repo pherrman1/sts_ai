@@ -1094,6 +1094,12 @@ monster group remains active. Summons and splits can leave a composition
 that no longer identifies its queue draw; they do not invalidate that captured
 history. A replacement or reconstructed group must still match the recorded
 encounter, and missing initial history remains unsupported.
+Vanilla's persisted `path_taken` uses `BOSS` as well as the visible map's `B`;
+both identify a public boss room. In particular, the opening map of the next
+act can retain row 15 while having no parent in that new map. Its explicit
+boss marker must remain a boss, rather than being replaced by an inferred
+preceding room or an empty transition placeholder. Unknown markers retain
+their existing qualification checks.
 
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have

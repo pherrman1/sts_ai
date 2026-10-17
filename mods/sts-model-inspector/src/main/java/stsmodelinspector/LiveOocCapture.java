@@ -1371,7 +1371,7 @@ final class LiveOocCapture {
         if (s == null || "N".equals(s)) return "NONE";
         switch (s) { case "$": return "SHOP"; case "R": return "REST"; case "?": return "EVENT";
             case "E": return "ELITE"; case "M": return "MONSTER"; case "T": return "TREASURE";
-            case "B": return "BOSS"; default: return "INVALID"; }
+            case "B": case "BOSS": return "BOSS"; default: return "INVALID"; }
     }
     static List<String> canonicalPathHistory(List<String> raw, boolean bossTransitionSentinel,
             String inferredBossPrecedingRoom, int act, List<Integer> combatFloors) {
