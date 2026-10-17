@@ -1079,6 +1079,12 @@ unsupported boundary because the native replay schema does not represent this
 inventory reveal. Arm C shop tokens preserve the native physical slot after
 any purchase; removing sold slots before indexing changes card identities.
 
+Visible monster state remains nullable when a field cannot be qualified; it
+is omitted for the importer to refuse instead of being unboxed and crashing
+the game. Runic Dome skips that private-state reader entirely. Vanilla's
+`GremlinWarrior` and `GremlinTsundere` IDs have explicit zero native misc
+state, verified against the installed JAR constants.
+
 Combat targets are lowered from the captured explicit native `slot`/`idx` to
 MCP's compact living-monster list in its displayed order. The slots can have
 holes after Slime Boss splits or a summon replaces an occupant; array position

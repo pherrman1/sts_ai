@@ -23,6 +23,20 @@ public final class CombatBoundaryTest {
     }
     public static void main(String[] args) {
         verifyRetiredSlimeBoss();
+        if(STSModelInspector.publicMonsterMiscInfo(false,()->null)!=null
+                || STSModelInspector.publicMonsterMiscInfo(false,()->7)!=7
+                || STSModelInspector.publicMonsterMiscInfo(true,()->{throw new AssertionError("Dome read private monster state");})!=0)
+            throw new AssertionError("nullable monster state projection changed");
+        try {
+            javassist.ClassPool pool=new javassist.ClassPool(true);
+            for(String name:new String[]{"GremlinWarrior","GremlinTsundere"}) {
+                Object id=pool.get("com.megacrit.cardcrawl.monsters.exordium."+name).getDeclaredField("ID").getConstantValue();
+                if(!name.equals(id) || !Integer.valueOf(0).equals(STSModelInspector.statelessMonsterMiscInfo((String)id)))
+                    throw new AssertionError("vanilla gremlin zero-state ID was omitted: "+id);
+            }
+        } catch(javassist.NotFoundException error){throw new AssertionError(error);}
+        if(STSModelInspector.statelessMonsterMiscInfo("UnknownMonster")!=null)
+            throw new AssertionError("unknown monster state was guessed");
         // Later-turn Warcry has a stale monsterAttacksQueued=true even with
         // no enemy/pre-turn work. Only the actual player end-turn lifecycle
         // flags can prohibit an otherwise qualified player selection.

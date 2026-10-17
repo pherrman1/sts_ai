@@ -2323,6 +2323,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if ("Looter".equals(id) || "Mugger".equals(id))
             return readIntField(monster, "stolenGold");
+        return statelessMonsterMiscInfo(id);
+    }
+
+    static Integer publicMonsterMiscInfo(boolean runicDome, java.util.function.Supplier<Integer> visible) {
+        return runicDome ? Integer.valueOf(0) : visible.get();
+    }
+
+    static Integer statelessMonsterMiscInfo(String id) {
         // Explicit zero is safe only for monsters whose native move logic does
         // not consult miscInfo. Unknown/reflectively inaccessible state is
         // omitted and therefore rejected by the importer.
@@ -2338,6 +2346,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || "Exploder".equals(id) || "FungiBeast".equals(id)
                 || "GiantHead".equals(id) || "JawWorm".equals(id)
                 || "GremlinFat".equals(id) || "GremlinLeader".equals(id)
+                || "GremlinWarrior".equals(id) || "GremlinTsundere".equals(id)
                 || "GremlinNob".equals(id)
                 || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
                 || "SpikeSlime_S".equals(id) || "Lagavulin".equals(id)
@@ -2541,7 +2550,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if ("ARMAMENTS".equals(task) || "EXHUME".equals(task) || "DUAL_WIELD".equals(task)) {
             Object action = AbstractDungeon.actionManager.currentAction;
             boolean armaments = "ARMAMENTS".equals(task), dualWield = "DUAL_WIELD".equals(task);
-            Integer copies = dualWield ? readIntField(action,"dupeAmount") : 0;
+            Integer copies = dualWield ? readIntField(action,"dupeAmount") : Integer.valueOf(0);
             Object held = readObjectField(action, armaments ? "cannotUpgrade" : dualWield ? "cannotDuplicate" : "exhumes");
             if (!(held instanceof List) || (dualWield ? copies == null || copies < 1 || copies > 2
                     : !Boolean.FALSE.equals(readBooleanField(action, armaments ? "upgraded" : "upgrade"))))
@@ -3325,7 +3334,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 // A post-roll private counter can disclose a hidden intent.
                 // Dome counters are reconstructed from the separately captured
                 // public history; never export the live post-roll counter.
-                Integer miscInfo = runicDome ? 0 : monsterMiscInfo(monster);
+                Integer miscInfo = publicMonsterMiscInfo(runicDome, () -> monsterMiscInfo(monster));
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
                 Integer uniquePower0 = runicDome ? null : monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
