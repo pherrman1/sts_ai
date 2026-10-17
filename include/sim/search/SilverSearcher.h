@@ -214,6 +214,9 @@ namespace sts::search {
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();
+        // Research (STS_SILVER_ROLLOUT_ROOT_TABLE): storage of the per-root card-play table
+        // that rolloutConfig.cardTable points at while that option is on.
+        std::vector<int> rootCardTable;
         SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
         // Research-only root prior bonus (off by default): a visited root edge i
         // scores rootPriorWeight * rootPrior[i] / (visits_i + 1) on top of UCB.

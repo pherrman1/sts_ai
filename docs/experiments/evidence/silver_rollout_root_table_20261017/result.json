@@ -1,0 +1,766 @@
+{
+  "states": 1432,
+  "validFights": 1426,
+  "excluded": {
+    "invalid_arm_row": 6
+  },
+  "truncatedRows": {},
+  "shards": [
+    {
+      "prefix": "shard0",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 107,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 75
+    },
+    {
+      "prefix": "shard1",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 73,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 57
+    },
+    {
+      "prefix": "shard2",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 84,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 60
+    },
+    {
+      "prefix": "shard3",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 60,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 54
+    },
+    {
+      "prefix": "shard0",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 114,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 73
+    },
+    {
+      "prefix": "shard1",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 95,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 46
+    },
+    {
+      "prefix": "shard2",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 95,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 67
+    },
+    {
+      "prefix": "shard3",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 71,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 35
+    },
+    {
+      "prefix": "shard0",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 102,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 57
+    },
+    {
+      "prefix": "shard1",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 80,
+      "controlReplayMismatches": 2,
+      "invalidArmRows": 18,
+      "hallwaySkipped": 50
+    },
+    {
+      "prefix": "shard2",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 108,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 69
+    },
+    {
+      "prefix": "shard3",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 66,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 6,
+      "hallwaySkipped": 47
+    },
+    {
+      "prefix": "shard0",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 78,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 72
+    },
+    {
+      "prefix": "shard1",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 83,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 54
+    },
+    {
+      "prefix": "shard2",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 119,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 17,
+      "hallwaySkipped": 74
+    },
+    {
+      "prefix": "shard3",
+      "manifest": true,
+      "requestedSeeds": 8,
+      "finishedSeeds": 8,
+      "states": 97,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 69
+    }
+  ],
+  "seedsWithStates": 128,
+  "roomClasses": {
+    "NORMAL": 474,
+    "ELITE": 631,
+    "BOSS": 269,
+    "OTHER": 52
+  },
+  "sourceSeeds": 128,
+  "meanCpuSecondsPerFight": {
+    "control": 3.7401797123896645,
+    "greedy2500": 0.8482989837587291,
+    "roottable2500": 0.9042312519182961,
+    "greedy2650": 0.8983820250715782,
+    "roottable2650": 0.9654185697482542
+  },
+  "cpuMsPerDecision": {
+    "control": 151.35324690259134,
+    "greedy2500": 34.095292946447366,
+    "roottable2500": 35.83046204870153,
+    "greedy2650": 36.262453417777714,
+    "roottable2650": 38.14735977372001
+  },
+  "escapes": {
+    "greedy2500": 0,
+    "roottable2500": 0,
+    "greedy2650": 0,
+    "roottable2650": 0
+  },
+  "excludedFightsByRootReason": {
+    "escape": 6
+  },
+  "invalidArmRowsByReason": {
+    "escape": 33,
+    "control_state_invalid": 8
+  },
+  "escapeReplicatesAllFights": {
+    "greedy2500": 8,
+    "roottable2500": 7,
+    "greedy2650": 8,
+    "roottable2650": 7
+  },
+  "arms": {
+    "greedy2500": {
+      "score": 284.26288569424963,
+      "win": 0.9197054698457223,
+      "hpLoss": 13.953366058906031,
+      "cpuSecondsPerFight": 1.7007739826563815,
+      "cpuMicrosecondsPerSimulation": 13.639861083561104,
+      "meanRolloutLength": 15.76894519830838,
+      "playoutsPerSimulation": 0.8789076542376695
+    },
+    "roottable2500": {
+      "score": 286.9571353436185,
+      "win": 0.9281206171107994,
+      "hpLoss": 13.584852734922862,
+      "cpuSecondsPerFight": 1.8130874596619915,
+      "cpuMicrosecondsPerSimulation": 14.33600530907276,
+      "meanRolloutLength": 17.004396604812456,
+      "playoutsPerSimulation": 0.8810812182037455
+    },
+    "greedy2650": {
+      "score": 285.0907258064516,
+      "win": 0.9225105189340813,
+      "hpLoss": 13.692847124824684,
+      "cpuSecondsPerFight": 1.8006340466465638,
+      "cpuMicrosecondsPerSimulation": 13.685276721838687,
+      "meanRolloutLength": 15.858779049533007,
+      "playoutsPerSimulation": 0.8768039544773546
+    },
+    "roottable2650": {
+      "score": 286.01279803646565,
+      "win": 0.9246143057503506,
+      "hpLoss": 13.624824684431978,
+      "cpuSecondsPerFight": 1.9358074294417953,
+      "cpuMicrosecondsPerSimulation": 14.400026887993558,
+      "meanRolloutLength": 16.97369643318795,
+      "playoutsPerSimulation": 0.8801453064150004
+    }
+  },
+  "contrasts": {
+    "roottable2500-greedy2650/all/score": {
+      "mean": 1.8664095371669005,
+      "ci95": [
+        -0.1471042471042471,
+        3.9389473684210525
+      ],
+      "fights": 1426
+    },
+    "roottable2500-greedy2650/all/win": {
+      "mean": 0.005610098176718092,
+      "ci95": [
+        -0.0010783608914450035,
+        0.012341062079281975
+      ],
+      "fights": 1426
+    },
+    "roottable2500-greedy2650/all/hpLoss": {
+      "mean": -0.10799438990182328,
+      "ci95": [
+        -0.4996551724137931,
+        0.27482014388489207
+      ],
+      "fights": 1426
+    },
+    "roottable2500-greedy2650/boss/score": {
+      "mean": 5.403345724907063,
+      "ci95": [
+        -2.0,
+        12.950729927007298
+      ],
+      "fights": 269
+    },
+    "roottable2500-greedy2650/boss/win": {
+      "mean": 0.01486988847583643,
+      "ci95": [
+        -0.010830324909747292,
+        0.04065040650406504
+      ],
+      "fights": 269
+    },
+    "roottable2500-greedy2650/boss/hpLoss": {
+      "mean": -0.27137546468401486,
+      "ci95": [
+        -1.5971223021582734,
+        1.1064638783269962
+      ],
+      "fights": 269
+    },
+    "roottable2500-greedy2650/elite/score": {
+      "mean": 0.6275752773375595,
+      "ci95": [
+        -2.211752136752137,
+        3.635385196374622
+      ],
+      "fights": 631
+    },
+    "roottable2500-greedy2650/elite/win": {
+      "mean": 0.003169572107765452,
+      "ci95": [
+        -0.00608695652173913,
+        0.012987012987012988
+      ],
+      "fights": 631
+    },
+    "roottable2500-greedy2650/elite/hpLoss": {
+      "mean": 0.08240887480190175,
+      "ci95": [
+        -0.5234604105571847,
+        0.7065217391304348
+      ],
+      "fights": 631
+    },
+    "roottable2500-greedy2650/normal/score": {
+      "mean": 1.543726235741445,
+      "ci95": [
+        -0.10010060362173039,
+        3.465486725663717
+      ],
+      "fights": 526
+    },
+    "roottable2500-greedy2650/normal/win": {
+      "mean": 0.0038022813688212928,
+      "ci95": [
+        -0.0018450184501845018,
+        0.01006036217303823
+      ],
+      "fights": 526
+    },
+    "roottable2500-greedy2650/normal/hpLoss": {
+      "mean": -0.25285171102661597,
+      "ci95": [
+        -0.6663306451612904,
+        0.15827338129496402
+      ],
+      "fights": 526
+    },
+    "roottable2500-greedy2650/act4/score": {
+      "mean": 10.194767441860465,
+      "ci95": [
+        -7.697222222222222,
+        28.060897435897434
+      ],
+      "fights": 43
+    },
+    "roottable2500-greedy2650/act4/win": {
+      "mean": 0.046511627906976744,
+      "ci95": [
+        -0.023255813953488372,
+        0.11627906976744186
+      ],
+      "fights": 43
+    },
+    "roottable2500-greedy2650/act4/hpLoss": {
+      "mean": -0.5581395348837209,
+      "ci95": [
+        -4.5978260869565215,
+        3.441860465116279
+      ],
+      "fights": 43
+    },
+    "roottable2500-greedy2500/all/score": {
+      "mean": 2.694249649368864,
+      "ci95": [
+        0.6129603399433428,
+        4.802091402013943
+      ],
+      "fights": 1426
+    },
+    "roottable2500-greedy2500/all/win": {
+      "mean": 0.008415147265077139,
+      "ci95": [
+        0.001483679525222552,
+        0.015592515592515593
+      ],
+      "fights": 1426
+    },
+    "roottable2500-greedy2500/all/hpLoss": {
+      "mean": -0.3685133239831697,
+      "ci95": [
+        -0.7555875991348233,
+        0.025182481751824817
+      ],
+      "fights": 1426
+    },
+    "roottable2500-greedy2500/boss/score": {
+      "mean": 7.465613382899628,
+      "ci95": [
+        -1.2494769874476988,
+        16.30992509363296
+      ],
+      "fights": 269
+    },
+    "roottable2500-greedy2500/boss/win": {
+      "mean": 0.022304832713754646,
+      "ci95": [
+        -0.008960573476702509,
+        0.053784860557768925
+      ],
+      "fights": 269
+    },
+    "roottable2500-greedy2500/boss/hpLoss": {
+      "mean": -0.9516728624535316,
+      "ci95": [
+        -2.229241877256318,
+        0.37884615384615383
+      ],
+      "fights": 269
+    },
+    "roottable2500-greedy2500/elite/score": {
+      "mean": 2.312797147385103,
+      "ci95": [
+        -0.11431784107946028,
+        4.838888888888889
+      ],
+      "fights": 631
+    },
+    "roottable2500-greedy2500/elite/win": {
+      "mean": 0.008716323296354992,
+      "ci95": [
+        0.0,
+        0.017450682852807285
+      ],
+      "fights": 631
+    },
+    "roottable2500-greedy2500/elite/hpLoss": {
+      "mean": -0.33518225039619653,
+      "ci95": [
+        -0.943217665615142,
+        0.2948517940717629
+      ],
+      "fights": 631
+    },
+    "roottable2500-greedy2500/normal/score": {
+      "mean": 0.7117395437262357,
+      "ci95": [
+        -0.8387237762237763,
+        2.522415611814346
+      ],
+      "fights": 526
+    },
+    "roottable2500-greedy2500/normal/win": {
+      "mean": 0.0009505703422053232,
+      "ci95": [
+        -0.004488330341113106,
+        0.006809338521400778
+      ],
+      "fights": 526
+    },
+    "roottable2500-greedy2500/normal/hpLoss": {
+      "mean": -0.11026615969581749,
+      "ci95": [
+        -0.4916839916839917,
+        0.2554027504911591
+      ],
+      "fights": 526
+    },
+    "roottable2500-greedy2500/act4/score": {
+      "mean": 12.956395348837209,
+      "ci95": [
+        -2.4505813953488373,
+        28.130555555555556
+      ],
+      "fights": 43
+    },
+    "roottable2500-greedy2500/act4/win": {
+      "mean": 0.05813953488372093,
+      "ci95": [
+        -0.010869565217391304,
+        0.12195121951219512
+      ],
+      "fights": 43
+    },
+    "roottable2500-greedy2500/act4/hpLoss": {
+      "mean": -1.302325581395349,
+      "ci95": [
+        -5.048780487804878,
+        2.6704545454545454
+      ],
+      "fights": 43
+    },
+    "roottable2650-greedy2650/all/score": {
+      "mean": 0.9220722300140253,
+      "ci95": [
+        -0.997039230199852,
+        2.9421123899796884
+      ],
+      "fights": 1426
+    },
+    "roottable2650-greedy2650/all/win": {
+      "mean": 0.0021037868162692847,
+      "ci95": [
+        -0.004445964432284542,
+        0.00888585099111415
+      ],
+      "fights": 1426
+    },
+    "roottable2650-greedy2650/all/hpLoss": {
+      "mean": -0.06802244039270687,
+      "ci95": [
+        -0.4799426934097421,
+        0.3425863236289777
+      ],
+      "fights": 1426
+    },
+    "roottable2650-greedy2650/boss/score": {
+      "mean": 4.094330855018588,
+      "ci95": [
+        -3.388392857142857,
+        11.501530612244897
+      ],
+      "fights": 269
+    },
+    "roottable2650-greedy2650/boss/win": {
+      "mean": 0.011152416356877323,
+      "ci95": [
+        -0.01556420233463035,
+        0.03758169934640523
+      ],
+      "fights": 269
+    },
+    "roottable2650-greedy2650/boss/hpLoss": {
+      "mean": -0.3271375464684015,
+      "ci95": [
+        -1.579225352112676,
+        0.9942084942084942
+      ],
+      "fights": 269
+    },
+    "roottable2650-greedy2650/elite/score": {
+      "mean": -0.4976228209191759,
+      "ci95": [
+        -3.2637037037037038,
+        2.3545115894039736
+      ],
+      "fights": 631
+    },
+    "roottable2650-greedy2650/elite/win": {
+      "mean": -0.001584786053882726,
+      "ci95": [
+        -0.010703363914373088,
+        0.008012820512820512
+      ],
+      "fights": 631
+    },
+    "roottable2650-greedy2650/elite/hpLoss": {
+      "mean": 0.15213946117274169,
+      "ci95": [
+        -0.4317032040472175,
+        0.75
+      ],
+      "fights": 631
+    },
+    "roottable2650-greedy2650/normal/score": {
+      "mean": 1.002851711026616,
+      "ci95": [
+        -0.7366255144032922,
+        2.9316479400749063
+      ],
+      "fights": 526
+    },
+    "roottable2650-greedy2650/normal/win": {
+      "mean": 0.0019011406844106464,
+      "ci95": [
+        -0.004409171075837742,
+        0.008522727272727272
+      ],
+      "fights": 526
+    },
+    "roottable2650-greedy2650/normal/hpLoss": {
+      "mean": -0.19961977186311788,
+      "ci95": [
+        -0.624031007751938,
+        0.21443514644351463
+      ],
+      "fights": 526
+    },
+    "roottable2650-greedy2650/act4/score": {
+      "mean": 8.758720930232558,
+      "ci95": [
+        -14.148809523809524,
+        31.34011627906977
+      ],
+      "fights": 43
+    },
+    "roottable2650-greedy2650/act4/win": {
+      "mean": 0.03488372093023256,
+      "ci95": [
+        -0.056818181818181816,
+        0.11904761904761904
+      ],
+      "fights": 43
+    },
+    "roottable2650-greedy2650/act4/hpLoss": {
+      "mean": -0.43023255813953487,
+      "ci95": [
+        -4.420454545454546,
+        3.4634146341463414
+      ],
+      "fights": 43
+    },
+    "greedy2650-greedy2500/all/score": {
+      "mean": 0.8278401122019635,
+      "ci95": [
+        -0.845142089093702,
+        2.4924838940586973
+      ],
+      "fights": 1426
+    },
+    "greedy2650-greedy2500/all/win": {
+      "mean": 0.002805049088359046,
+      "ci95": [
+        -0.0031163434903047093,
+        0.008645533141210375
+      ],
+      "fights": 1426
+    },
+    "greedy2650-greedy2500/all/hpLoss": {
+      "mean": -0.2605189340813464,
+      "ci95": [
+        -0.5047169811320755,
+        -0.010182584269662922
+      ],
+      "fights": 1426
+    },
+    "greedy2650-greedy2500/boss/score": {
+      "mean": 2.062267657992565,
+      "ci95": [
+        -4.972933070866142,
+        9.291511194029852
+      ],
+      "fights": 269
+    },
+    "greedy2650-greedy2500/boss/win": {
+      "mean": 0.007434944237918215,
+      "ci95": [
+        -0.017482517482517484,
+        0.032818532818532815
+      ],
+      "fights": 269
+    },
+    "greedy2650-greedy2500/boss/hpLoss": {
+      "mean": -0.6802973977695167,
+      "ci95": [
+        -1.7130584192439862,
+        0.3333333333333333
+      ],
+      "fights": 269
+    },
+    "greedy2650-greedy2500/elite/score": {
+      "mean": 1.6852218700475436,
+      "ci95": [
+        -0.583063209076175,
+        3.891616314199396
+      ],
+      "fights": 631
+    },
+    "greedy2650-greedy2500/elite/win": {
+      "mean": 0.005546751188589541,
+      "ci95": [
+        -0.0022692889561270802,
+        0.013223140495867768
+      ],
+      "fights": 631
+    },
+    "greedy2650-greedy2500/elite/hpLoss": {
+      "mean": -0.41759112519809827,
+      "ci95": [
+        -0.8471786833855799,
+        -0.0015174506828528073
+      ],
+      "fights": 631
+    },
+    "greedy2650-greedy2500/normal/score": {
+      "mean": -0.8319866920152091,
+      "ci95": [
+        -1.7897267206477734,
+        -0.07350187265917603
+      ],
+      "fights": 526
+    },
+    "greedy2650-greedy2500/normal/win": {
+      "mean": -0.0028517110266159697,
+      "ci95": [
+        -0.006437768240343348,
+        0.0
+      ],
+      "fights": 526
+    },
+    "greedy2650-greedy2500/normal/hpLoss": {
+      "mean": 0.14258555133079848,
+      "ci95": [
+        -0.07264150943396226,
+        0.3731808731808732
+      ],
+      "fights": 526
+    },
+    "greedy2650-greedy2500/act4/score": {
+      "mean": 2.761627906976744,
+      "ci95": [
+        -9.852272727272727,
+        15.229166666666666
+      ],
+      "fights": 43
+    },
+    "greedy2650-greedy2500/act4/win": {
+      "mean": 0.011627906976744186,
+      "ci95": [
+        -0.03571428571428571,
+        0.06097560975609756
+      ],
+      "fights": 43
+    },
+    "greedy2650-greedy2500/act4/hpLoss": {
+      "mean": -0.7441860465116279,
+      "ci95": [
+        -2.6547619047619047,
+        1.2840909090909092
+      ],
+      "fights": 43
+    }
+  },
+  "cpuRatios": {
+    "roottable2500/greedy2500/perSimulation": {
+      "ratio": 1.0510374864704932,
+      "ci95": [
+        1.038705813668711,
+        1.0636667602262289
+      ]
+    },
+    "roottable2500/greedy2500/perFight": {
+      "ratio": 1.0660366857389194,
+      "ci95": [
+        1.0466938859796135,
+        1.0864185637770865
+      ]
+    },
+    "roottable2500/greedy2650/perSimulation": {
+      "ratio": 1.0475495381248416,
+      "ci95": [
+        1.0346391296385664,
+        1.0608070533049807
+      ]
+    },
+    "roottable2500/greedy2650/perFight": {
+      "ratio": 1.006916126593641,
+      "ci95": [
+        0.9873476267955188,
+        1.0274377790195657
+      ]
+    }
+  },
+  "labels": {
+    "roottable2500-greedy2650": "NOT_CPU_MATCHED (score label NOT_SHOWN)"
+  },
+  "act4Fights": 43,
+  "cpuMatched": false
+}

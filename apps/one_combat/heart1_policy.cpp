@@ -1222,6 +1222,39 @@ std::optional<std::vector<double>> mapPriorLogits(const Choice &choice, const st
     return out;
 }
 
+std::vector<TokenMapping> mapChoiceTokens(const Choice &choice, bool singingBowl, const std::vector<GA> &actions) {
+    const Record &r = choice.record;
+    const std::size_t fixedStart = r.offeredCards.size() + r.offeredRelics.size() + r.offeredPotions.size();
+    const auto fixedToken = [&](int fa) {
+        for (std::size_t k = 0; k < r.fixedActions.size(); ++k)
+            if (r.fixedActions[k].action == fa) return int(fixedStart + k);
+        return -1;
+    };
+    const bool rewards = r.screenState == static_cast<int>(ScreenState::REWARDS);
+    const bool shop = r.screenState == static_cast<int>(ScreenState::SHOP_ROOM);
+    std::vector<TokenMapping> out(actions.size());
+    for (std::size_t a = 0; a < actions.size(); ++a) {
+        const auto action = actions[a];
+        auto &m = out[a];
+        for (std::size_t i = 0; i < choice.actions.size(); ++i)
+            if (choice.actions[i].bits == action.bits) m.tokens.push_back(int(i));
+        if (!m.tokens.empty()) { m.kind = "token"; continue; }
+        // Same order and rules as mapPriorLogits.
+        if (rewards && action.getRewardsActionType() == GA::RewardsActionType::CARD && action.getIdx2() == 5) {
+            const int t = fixedToken(singingBowl ? FA_SINGING_BOWL : FA_SKIP);
+            if (t >= 0) { m.tokens = {t}; m.kind = singingBowl ? "bowl" : "skip_card"; }
+            else m.kind = "none";
+        } else if (rewards && action.getRewardsActionType() == GA::RewardsActionType::GOLD) {
+            m.kind = "gold";
+        } else if ((rewards || shop) && action.isPotionDiscard()) {
+            m.kind = "discard_potion";
+        } else {
+            m.kind = "none";
+        }
+    }
+    return out;
+}
+
 void priorMappingSelfTest() {
     const auto require = [](bool ok, const char *what) {
         if (!ok) throw std::runtime_error(std::string("heart1 prior mapping selftest: ") + what);
@@ -1289,6 +1322,23 @@ void priorMappingSelfTest() {
         &tally);
     require(got && *got == std::vector<double>{0.5, 2.0, -1.0, 2.0, -1.0, -1.0},
             "skip card -> skip token, gold -> best, discard -> lowest");
+    {
+        // mapChoiceTokens must name exactly the logits mapPriorLogits used.
+        const std::vector<GA> primitives{GA(RT::CARD, 0, 0), GA(RT::CARD, 0, 1), GA(RT::CARD, 0, 5),
+            GA(RT::GOLD, 0), GA(0xc0000001u), GA(RT::SKIP)};
+        const auto tokens = mapChoiceTokens(c, false, primitives);
+        const std::vector<std::string> kinds{"token", "token", "skip_card", "gold", "discard_potion", "token"};
+        require(tokens.size() == primitives.size(), "token mapping size");
+        for (std::size_t i = 0; i < tokens.size(); ++i) {
+            require(tokens[i].kind == kinds[i], "token mapping kind");
+            double v = tokens[i].kind == "gold" ? 2.0 : tokens[i].kind == "discard_potion" ? -1.0
+                : -std::numeric_limits<double>::infinity();
+            for (const int t : tokens[i].tokens) v = std::max(v, double(logits.at(t)));
+            require(v == (*got)[i], "token mapping agrees with mapPriorLogits");
+        }
+        require(mapChoiceTokens(c, true, {GA(RT::CARD, 0, 5)})[0].kind == "none"
+                && mapChoiceTokens(c, false, {GA(RT::RELIC, 0)})[0].kind == "none", "unmapped token kinds");
+    }
     require(tally["scored:REWARDS"] == 1 && tally["mapped:REWARDS:skip_card"] == 1
             && tally["mapped:REWARDS:gold"] == 1 && tally["mapped:REWARDS:discard_potion"] == 1, "tally of mappings");
     require(!mapPriorLogits(c, logits, true, {GA(RT::CARD, 0, 5)}, &tally)

@@ -1,0 +1,15 @@
+x2b_platt (1, 2, 3, 4) 6165 bce 0.3133 auc 0.699 mean 0.131 z 0.103
+x2b_platt (1,) 3033 bce 0.3346 auc 0.556 mean 0.086 z 0.103
+x2b_platt (2,) 1909 bce 0.3494 auc 0.675 mean 0.129 z 0.119
+x2b_platt (3,) 1145 bce 0.5061 auc 0.679 mean 0.292 z 0.202
+x2b_platt (4,) 78 bce 0.6804 auc 0.646 mean 0.344 z 0.423
+heart1_platt (1, 2, 3, 4) 6165 bce 0.3363 auc 0.531 mean 0.136 z 0.103
+heart1_platt (1,) 3033 bce 0.3382 auc 0.601 mean 0.147 z 0.103
+heart1_platt (2,) 1909 bce 0.3554 auc 0.736 mean 0.129 z 0.119
+heart1_platt (3,) 1145 bce 0.5131 auc 0.778 mean 0.113 z 0.202
+heart1_platt (4,) 78 bce 0.9698 auc 0.741 mean 0.112 z 0.423
+joint (1, 2, 3, 4) 6165 bce 0.3125 auc 0.708 mean 0.131 z 0.103
+joint (1,) 3033 bce 0.3314 auc 0.586 mean 0.105 z 0.103
+joint (2,) 1909 bce 0.3488 auc 0.724 mean 0.126 z 0.119
+joint (3,) 1145 bce 0.4766 auc 0.740 mean 0.243 z 0.202
+joint (4,) 78 bce 0.7392 auc 0.698 mean 0.286 z 0.423

@@ -147,6 +147,15 @@ namespace sts::search {
     // Research-only (§479 rollout arms): when set, replaces the env rollout options
     // (SilverSearcher::envRolloutConfig) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
+    // Research-only rollout root table (STS_SILVER_ROLLOUT_ROOT_TABLE=<combat_policy_mlp model>;
+    // default off). At every searched root the model scores each distinct card in hand, draw and
+    // discard pile as a play at the root state, and the greedy rollouts of that search use those
+    // scores as their card-play table (cards not in those piles keep their ADR-0040 entry, shifted
+    // to the same scale). Writes the 744-entry table (lower plays first) into `table`.
+    void nativeSilverRolloutRootTable(const BattleContext &state, const CombatValueNet &net, std::vector<int> &table);
+    // When set, the current thread's searches build that table with this model instead of
+    // the STS_SILVER_ROLLOUT_ROOT_TABLE one (which may be unset). Unset elsewhere.
+    extern thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride;
     double nativeSilverLearnedStopThreshold();
     std::int64_t nativeSilverLearnedStops();
 
