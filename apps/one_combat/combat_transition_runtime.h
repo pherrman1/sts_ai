@@ -56,11 +56,10 @@ class CombatTransitionRuntime {
     std::vector<float> encode(const std::string &, const CombatPredictorInputV1 &) const;
 public:
     static constexpr float probabilityTolerance = 1e-4f;
-    // ctm_input_v2: act is a category (act-1, acts 1..4), floor enters as floor-17*(act-1),
+    // ctm_input_v2: act is a category (act-1, acts 1..4) instead of a scalar, floor stays raw,
     // card misc as sign(m)*log(1+|m|)/log(101) with |m|<=kInputV2MiscBound, potionKeepValue
     // is not an input. tools/ctm_input_encoding.py is the Python reference.
     static constexpr const char *kInputEncodingV2 = "ctm_input_v2";
-    static constexpr int kInputV2FloorsPerAct = 17;
     static constexpr int kInputV2MiscBound = 10000;
     // The memo key a card's misc is reduced to, and the feature computed from that key.
     static int cardMiscKey(int misc, bool inputV2);

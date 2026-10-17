@@ -5,8 +5,8 @@ shipped CTM. ``ctm_input_v2`` (``CombatTransitionRuntime::kInputEncodingV2``) ch
 inputs and nothing else:
 
 * act is a category (``act - 1`` for acts 1..4) instead of a scalar, so an Act-4 row trains its
-  own embedding instead of extrapolating a slope fitted on acts 1..3;
-* floor enters as the floor within the act, ``floor - 17 * (act - 1)``;
+  own embedding instead of extrapolating a slope fitted on acts 1..3; floor stays the raw run
+  floor (Act 4's 52..55 lies just past Act 3's 35..51);
 * card misc is ``sign(m) * log(1 + |m|) / log(101)`` with ``|m| <= 10000`` instead of
   ``clip(m, -20, 20) / 20``, so a Ritual Dagger keeps counting after two kills;
 * ``potionKeepValue`` (the output of another model) is not an input.
@@ -30,15 +30,13 @@ RAW_CONTINUOUS_FIELDS = (
 )
 RAW_CATEGORICAL_FIELDS = ("characterClass", "encounter", "roomClass", "lastRoom")
 V2_CONTINUOUS_FIELDS = (
-    "ascension", "floorInAct", "curHp", "maxHp", "gold", "potionCount", "potionCapacity",
+    "ascension", "floor", "curHp", "maxHp", "gold", "potionCount", "potionCapacity",
     "isBurningElite",
 )
-FLOORS_PER_ACT = 17
 ACT_CATEGORIES = 4
 MISC_BOUND = 10000
-_V2_FROM_RAW = [RAW_CONTINUOUS_FIELDS.index(name) for name in V2_CONTINUOUS_FIELDS if name != "floorInAct"]
+_V2_FROM_RAW = [RAW_CONTINUOUS_FIELDS.index(name) for name in V2_CONTINUOUS_FIELDS]
 _ACT = RAW_CONTINUOUS_FIELDS.index("act")
-_FLOOR = RAW_CONTINUOUS_FIELDS.index("floor")
 _LOG_101 = math.log1p(100.0)
 
 
@@ -80,17 +78,13 @@ def globals_features(raw, raw_categories, encoding: str):
         import torch
         if bool(((act < 1) | (act > ACT_CATEGORIES) | (act != act.round())).any()):
             raise ValueError("ctm_input_v2 needs integer acts in 1..4")
-        floor_in_act = raw[..., _FLOOR] - FLOORS_PER_ACT * (act - 1)
-        columns = [raw[..., i] for i in _V2_FROM_RAW]
-        continuous = torch.stack(columns[:1] + [floor_in_act] + columns[1:], -1)
+        continuous = raw[..., _V2_FROM_RAW]
         categories = torch.cat((raw_categories, (act - 1).to(raw_categories.dtype).unsqueeze(-1)), -1)
         return continuous, categories
     raw = np.asarray(raw); raw_categories = np.asarray(raw_categories)
     if np.any((act < 1) | (act > ACT_CATEGORIES) | (act != np.round(act))):
         raise ValueError("ctm_input_v2 needs integer acts in 1..4")
-    floor_in_act = raw[..., _FLOOR] - FLOORS_PER_ACT * (act - 1)
-    columns = [raw[..., i] for i in _V2_FROM_RAW]
-    continuous = np.stack(columns[:1] + [floor_in_act] + columns[1:], -1).astype(raw.dtype)
+    continuous = raw[..., _V2_FROM_RAW]
     categories = np.concatenate(
         (raw_categories, (act - 1).astype(raw_categories.dtype)[..., None]), -1)
     return continuous, categories

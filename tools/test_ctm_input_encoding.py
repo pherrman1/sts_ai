@@ -34,21 +34,21 @@ class TestCtmInputEncoding(unittest.TestCase):
                          {"continuousFields": list(base.CONTINUOUS_GLOBAL_FIELDS), "globalCategoryCounts": [4, 64, 10, 10]})
 
     def test_v2_globals(self):
-        raw = np.stack([_raw(1, 3), _raw(4, 54, keep=9.0), _raw(3, 37)])
+        raw = np.stack([_raw(1, 3), _raw(4, 54, keep=9.0), _raw(3, 54)])
         cats = np.asarray([[0, 4, 4, 9]] * 3)
         g, c = enc.globals_features(raw, cats, enc.V2)
         self.assertEqual(g.shape, (3, len(enc.V2_CONTINUOUS_FIELDS)))
-        floor = enc.V2_CONTINUOUS_FIELDS.index("floorInAct")
-        np.testing.assert_array_equal(g[:, floor], [3, 3, 3])
+        floor = enc.V2_CONTINUOUS_FIELDS.index("floor")
+        np.testing.assert_array_equal(g[:, floor], [3, 54, 54])
         np.testing.assert_array_equal(c[:, -1], [0, 3, 2])
-        # potionKeepValue is gone: rows 1 and 2 differ only by act and floor.
-        np.testing.assert_array_equal(np.delete(g[1], floor), np.delete(g[2], floor))
+        # Act and potionKeepValue are gone from the scalars: rows 1 and 2 differ only in category.
+        np.testing.assert_array_equal(g[1], g[2])
         with self.assertRaises(ValueError):
             enc.globals_features(np.stack([_raw(5, 60)]), cats[:1], enc.V2)
         self.assertEqual(enc.runtime_metadata(enc.V2, base.GLOBAL_CATEGORY_COUNTS)["globalCategoryCounts"],
                          [4, 64, 10, 10, 4])
         mean, std = enc.scalar_stats(raw, enc.V2)
-        self.assertEqual(mean.shape, (8,)); self.assertAlmostEqual(float(std[floor]), 0.0)
+        self.assertEqual(mean.shape, (8,)); self.assertAlmostEqual(float(mean[floor]), 37.0, places=5)
 
     def test_v2_misc_keeps_counting(self):
         values = enc.misc_feature([0, 15, 20, 25, 30, 100, -7, 20000], enc.V2)

@@ -337,8 +337,10 @@ extrapolation of the act/floor slope even after Act-4 rows are trained on; a
 Ritual Dagger (misc 15, +3/+5 per kill) looks the same from its second kill
 on; and the forecast moves whenever the potion-keep model changes. An artifact
 whose header declares `inputEncoding: "ctm_input_v2"` is encoded instead with
-act as a fifth global category (`act-1`, acts 1..4; any other act throws), floor
-as `floor - 17*(act-1)`, misc as `sign(m)*log(1+|m|)/log(101)` with
+act as a fifth global category (`act-1`, acts 1..4; any other act throws) beside
+the raw run floor (Act 4's floors 52..55 lie just past Act 3's 35..51; Philipp
+chose raw floor over floor-within-act, which would map the Act-4 elite onto an
+early-act floor), misc as `sign(m)*log(1+|m|)/log(101)` with
 `|m| <= 10000`, and no `potionKeepValue` input. It must also declare the v2
 `continuousFields` (8) and `globalCategoryCounts` `[4,64,10,10,4]`, and its
 tensor graph has 8 scalar statistics, `global_category.4` (4x8) and

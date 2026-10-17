@@ -61,19 +61,17 @@ def write(path, version, header, weights):
 
 def to_v2(header, weights, rng):
     """Reshape every encoder's global tensors to ctm_input_v2: kept scalars keep their columns,
-    floorInAct takes the floor column, act gets a fresh 4x8 embedding with its own 8 columns."""
+    act gets a fresh 4x8 embedding with its own 8 columns."""
     header = copy.deepcopy(header); weights = dict(weights)
     header.update(enc.runtime_metadata(enc.V2, base.GLOBAL_CATEGORY_COUNTS))
     raw = list(enc.RAW_CONTINUOUS_FIELDS)
-    keep = [raw.index('floor' if name == 'floorInAct' else name) for name in enc.V2_CONTINUOUS_FIELDS]
+    keep = [raw.index(name) for name in enc.V2_CONTINUOUS_FIELDS]
     for group in GROUPS:
         p = f'{group}.encoder.'
         if p + 'scalar_mean' not in weights:
             continue
         weights[p + 'scalar_mean'] = weights[p + 'scalar_mean'][keep].copy()
-        weights[p + 'scalar_mean'][1] = 8.0  # floor within the act, not the run
         weights[p + 'scalar_inv'] = weights[p + 'scalar_inv'][keep].copy()
-        weights[p + 'scalar_inv'][1] = 0.2
         weights[p + 'global_category.4.weight'] = rng.normal(0, 1, (enc.ACT_CATEGORIES, 8)).astype(np.float32)
         name = p + ('global_mlp.0.weight' if p + 'global_mlp.0.weight' in weights else 'global_proj.weight')
         old = weights[name]
@@ -218,7 +216,7 @@ def main():
         # Behavioural contract on both encoders (DeepSets fast, Attention standard).
         state = states[1]
         keep = copy.deepcopy(state); keep['globals']['potionKeepValue'] = 9.5
-        act3 = copy.deepcopy(state); act3['globals'].update(act=3, floor=54 - 17)
+        act3 = copy.deepcopy(state); act3['globals'].update(act=3)
         dagger = copy.deepcopy(state); dagger['cards'][0]['misc'] = 35
         far = copy.deepcopy(state); far['cards'][0]['misc'] = 40
         for name, artifact in (('deepsets', fast_path), ('attention', std_path)):
@@ -226,7 +224,7 @@ def main():
             if a['hp'] != b['hp'] or a['survival'] != b['survival']:
                 raise RuntimeError(f'{name}: v2 output depends on potionKeepValue')
             if a['hp'] == c['hp']:
-                raise RuntimeError(f'{name}: v2 does not separate act 4 from act 3 at the same floor in act')
+                raise RuntimeError(f'{name}: v2 does not separate act 4 from act 3 at the same floor')
             if d['hp'] == e['hp']:
                 raise RuntimeError(f'{name}: v2 card misc saturates (35 vs 40)')
             print(f'v2_{name}_contract PASS')

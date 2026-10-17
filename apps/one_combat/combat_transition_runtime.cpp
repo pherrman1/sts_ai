@@ -815,13 +815,13 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     hpMin_=classes.front();
     const int hpClassCount=static_cast<int>(classes.size());
     // Input encoding: absent is the original v1 encoding of every shipped artifact; only
-    // "ctm_input_v2" may be declared (act as a category, floor within the act, log-scaled
-    // card misc, no potionKeepValue input).
+    // "ctm_input_v2" may be declared (act as a category beside raw floor, log-scaled card
+    // misc, no potionKeepValue input).
     require(!metadata_.contains("inputEncoding") || metadata_.at("inputEncoding")==kInputEncodingV2,
         "combat runtime input encoding");
     inputV2_=metadata_.contains("inputEncoding");
     require(metadata_.at("continuousFields")==(inputV2_?
-        nlohmann::json({"ascension","floorInAct","curHp","maxHp","gold","potionCount","potionCapacity","isBurningElite"}):
+        nlohmann::json({"ascension","floor","curHp","maxHp","gold","potionCount","potionCapacity","isBurningElite"}):
         nlohmann::json({"ascension","act","floor","curHp","maxHp","gold","potionCount","potionCapacity","potionKeepValue","isBurningElite"})),
         "combat runtime global fields");
     require(metadata_.at("globalCategoryCounts")==(inputV2_?nlohmann::json({4,64,10,10,4}):nlohmann::json({4,64,10,10})),
@@ -973,7 +973,7 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
     Vec global;std::vector<int> cats={g.characterClass,g.encounter,g.roomClass,g.lastRoom};
     if(inputV2_) {
         require(g.act>=1 && g.act<=4,"combat input act outside the v2 act categories");
-        global={float(g.ascension),float(g.floor-kInputV2FloorsPerAct*(g.act-1)),float(g.curHp),float(g.maxHp),float(g.gold),float(g.potionCount),float(g.potionCapacity),float(g.isBurningElite)};
+        global={float(g.ascension),float(g.floor),float(g.curHp),float(g.maxHp),float(g.gold),float(g.potionCount),float(g.potionCapacity),float(g.isBurningElite)};
         cats.push_back(g.act-1);
     } else global={float(g.ascension),float(g.act),float(g.floor),float(g.curHp),float(g.maxHp),float(g.gold),float(g.potionCount),float(g.potionCapacity),float(g.potionKeepValue),float(g.isBurningElite)};
     const auto &mean=tensor(p+"scalar_mean").values,&inv=tensor(p+"scalar_inv").values;
