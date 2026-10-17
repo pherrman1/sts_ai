@@ -224,7 +224,7 @@ weights. The `SilverEvalWeights` struct defaults stay 0. Before PR #540
 NOT_SHOWN at A0 (414 vs 414 wins) and at A20 (floor +0.024 [−0.168, +0.234]);
 only 46 and 21 pairs differ at all. The default follows Philipp's decision.
 
-Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §509
+Held potions score `potionWeight` = 11 each at a victory leaf. Ledger-06 §510
 measured potion prices at A20 by paired continuation (`potionpriceprobe`: one
 potion removed vs unchanged, next 3 fights played, then the A20 floor model,
 calibrated by a −12 HP copy). The pooled price is 9.9 HP-eq [7.9, 12.3],

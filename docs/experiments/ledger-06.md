@@ -19826,7 +19826,7 @@ is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays
 [Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
 **Knowledge impact:** learned OOC leaf status in current-research.
 
-## §509 — potion prices by paired continuation at A20 (2026-10-17)
+## §510 — potion prices by paired continuation at A20 (2026-10-17)
 
 **Flat 11 per potion CONSISTENT; per-type prices spread widely.** Philipp (2026-10-17 12:04Z, thread
 "Silver leaf evaluation") asked to measure what Silver's flat 11-HP potion term should be at A20, per

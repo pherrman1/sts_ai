@@ -1,4 +1,4 @@
-# Potion prices by paired continuation at A20: result (§509, 2026-10-17)
+# Potion prices by paired continuation at A20: result (§510, 2026-10-17)
 
 Pre-registration: [PREREG.md](PREREG.md). Analysis: [analysis.json](analysis.json)
 (`tools/analyze_potion_price_probe.py` at `9282628a`, which added the review's terminal-state filter,
