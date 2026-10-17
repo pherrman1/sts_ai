@@ -1,0 +1,4 @@
+off roots [(('no_cards', 'uniform', 'discard'), 4), (('no_cards', 'uniform', 'other'), 3), (('with_cards', 'prior', 'other'), 6)] discards_below_leave {True: 6, False: 7}
+on roots [(('no_cards', 'prior', 'other'), 4), (('no_cards', 'uniform', 'discard'), 1), (('with_cards', 'prior', 'other'), 5)] discards_below_leave {True: 7, False: 3}
+off wins 2 reached_act4 3 runs 12
+on wins 1 reached_act4 3 runs 12

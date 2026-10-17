@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -40,6 +40,22 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 §349 rollout scratch piles — is closed: its tools were removed and its results
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
+
+## AlphaZero-style OOC loop: open requirements
+
+Recorded 2026-10-17 at Philipp's request ("write down that this is something we'll need to fix in
+the alpha zero loop"). The loop and its target form are fixed by
+[ADR-0043](../../../decisions/0043-az-loop-gumbel-policy-target.md).
+
+- **Potion discard has no policy output.** heart1 has no discard action, so neither has student C
+  (`mapPriorLogits` puts reward/shop discards at heart1's lowest logit; heart1full nodes whose
+  heart1 scoring fails stay uniform). The policy-target capture (`heartoutcomegen ... policy`,
+  #601) records discard candidates with `heart1Map: "discard_potion"` and no heart1 token. The
+  loop's network needs a discard output trained from those rows; rows where search chose or
+  scored a discard must be kept, not dropped as unmappable. Until then,
+  `STS_OOC_MCTS_POTION_KEEP_PRIOR=1` (research option, default off) is a hand-set stopgap prior
+  from ADR-0039 keep values; see
+  [out-of-combat.md](../architecture/out-of-combat.md) (potion pickup).
 
 ## Observed Heart-outcome supervision (§497)
 
@@ -196,6 +212,22 @@ manifest/result identity. Retry recovery refuses unknown ownership and live
 producer groups; workers require the reviewed CPU/canary pair before dispatch.
 See [campaign guard operations](../operations/ooc-label-pipeline.md#arm-c-native-campaign-guards).
 No further experiment or native integration is authorized by these guard repairs.
+
+## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
+
+`STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (default off, issue #605) values rollout3 leaf ends
+with a residual on the public X2-B margin, trained by fitted TD on rollout3 tails from §503 MAP
+root snapshots and anchored on real Heart outcomes; it sees Act 4 boss distance, keys and key
+reachability, Ritual Dagger damage and Searing Blow level. Key value comes only from the Heart
+labels (no hand-set bonus, Philipp 2026-10-17). `models/candidates/heart_leaf_td1` beats Platt
+X2-B on §503 VALIDATION BCE (0.3065 vs 0.3133) and AUC (0.724 vs 0.699) but over-predicts Act 3
+(0.240 vs 0.202) and fails the pre-registered gate. heart1's value head ranks states within an
+act better than both but has almost no level change between acts. The retrained
+`heart_leaf_td2` adds a tree distillation of that critic as an input and an Act-4 offset. On the
+§503 CONFIRM set (640 runs) it beats Platt X2-B on BCE (0.3345 vs 0.3479) and AUC (0.750 vs
+0.726) and calibrates acts 2-4, but under-predicts Act 1 (0.093 vs 0.130) and fails the gate;
+no gameplay A/B has run and CONFIRM is spent.
+See the [result](../../experiments/evidence/heart_leaf_td_20261017/RESULT.md).
 
 ## §494 student as a native OOC MCTS leaf (opt-in) — loses to rollout3 at A20 (§504)
 
