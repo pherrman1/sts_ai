@@ -116,9 +116,11 @@ Feature schema v4 is v3 with those four columns zeroed before the critic and the
 them (`heart_leaf_fit.py fit --mask-hidden-queue`; `HeartLeafModel` zeroes them natively).
 `heart_leaf_td3` is the td2 recipe on the same tails and heart1 rows with that flag
 (`fit --critic h1rows.jsonl --rounds 3 --act4-offset --mask-hidden-queue`): manifest `0f55844d…`,
-residual `0a2d7d9f…` (208 trees, TD round 1), critic `22343b59…` (validation corr 0.936),
-Act-4 offset −0.824. Native parity 2.6e-7 on parity rows that keep the real queue values, so
-the native masking is covered.
+residual `0a2d7d9f…` (208 trees, TD round 1), fitted with xgboost 2.1.4 (a 3.4.1 refit is not bit-identical: round 3, VALIDATION 0.3035/0.736), critic `22343b59…` (validation corr 0.936),
+Act-4 offset −0.824. Native parity 2.6e-7 on parity rows that keep the real queue values. td3's
+trees never split on the zeroed columns, so that check alone would pass with broken masking; the
+review's control (td2 trees under a v4 manifest, native vs Python on 3,000 real-queue roots) matched
+to 7e-8, against 0.22 without masking.
 
 | VALIDATION (320 runs) | BCE | AUC | Act 1 pred | Act 2 | Act 3 | Act 4 |
 |---|---:|---:|---:|---:|---:|---:|

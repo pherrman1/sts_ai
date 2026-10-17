@@ -20400,3 +20400,22 @@ Seeds used:
 
 **Knowledge impact:** `architecture/out-of-combat.md` (card-select student paragraph, `TARGET_PRIOR` /
 `LEAF_SELECTS` rows).
+
+## §522 — Heart leaf td2 vs the X2-B leaf in A20 OOC MCTS: NOT_SHOWN, more Act-1 deaths (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z):** "yes lets try a parid a20 a/b" of the §515 td2 Heart leaf, after its
+CONFIRM_FAIL; card "512 pairs" on 8 workers. **Design:** [PLAN](evidence/heart_leaf_ab_20261017/PLAN.md),
+pre-launch review PASS. A20 Heart stack with student C OOC (`STS_OOC_HEART1` heart1full prior),
+`STS_SILVER_LEARNED_STOP=0`; arm H adds `STS_OOC_MCTS_LEAF_HEART_MODEL=heart_leaf_td2`, arm C keeps the X2-B leaf.
+RUN_COMMIT 82d85b0e, binary `20d03790…`, seeds 111191000–111191511, 1,024 units rc 0, no exclusions.
+- **Reached Act 4 (primary):** H 124, C 137, −2.5 pp [−6.4, +1.4], McNemar p = 0.24, **NOT_SHOWN**.
+- **Heart kills:** 42 vs 46, −0.8 pp [−3.5, +2.1].
+- **Act-1 deaths:** 114 vs 69 (discordant 61 vs 16, p < 0.0001), mostly at the act-1 boss; act-3 deaths 93 vs 118
+  (post hoc). Mean final floor −3.1. Same MCTS CPU per decision.
+**Interpretation:** the td2 leaf does not help in play and loses Act-1 runs. **Inference:** its Act-1
+under-prediction (§515) flattens leaf differences there. td2 also read the hidden encounter queue in training
+(shuffle test on VALIDATION: no effect); `heart_leaf_td3` (schema v4, #642) removes it but has no held-out or play
+test. No default change; whether to continue the Heart leaf line is Philipp's call.
+[Result](evidence/heart_leaf_ab_20261017/RESULT.md), [report.json](evidence/heart_leaf_ab_20261017/report.json).
+Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
+**Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
