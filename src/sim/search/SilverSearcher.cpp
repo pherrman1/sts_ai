@@ -903,6 +903,8 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
         // energy and draw shaping but no credit for unspent potions.
         if (bc.outcome == Outcome::PLAYER_VICTORY)
             return evalWeights.winBonus + rootState->player.maxHp;
+        if (context.finalFightWinOnly)
+            return 0.0;
         const bool spikers = bc.encounter == MonsterEncounter::THREE_SHAPES
             || bc.encounter == MonsterEncounter::FOUR_SHAPES;
         return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight

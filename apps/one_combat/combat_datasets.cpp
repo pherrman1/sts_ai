@@ -6504,6 +6504,118 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                             rows, seedOffset, sims, asc);
 }
 
+// Heart win-only leaf A/B (research). Each seed plays an A20 run with the
+// deployed OOC step and the default Silver; at the first Act-3 boss the run is
+// sent into Act 4 as act4_fork does. At the Heart the fight is replayed
+// `reps` times under the default final-fight leaf ("base") and with
+// STS_SILVER_HEART_WIN_ONLY ("winonly"). Replicate k redraws the combat future
+// and the planner seed identically in both arms. Runs that end before the
+// Heart write no rows.
+struct HeartWinOnlyScope {
+    explicit HeartWinOnlyScope(bool on) { search::g_nativeSilverHeartWinOnlyOverride = on; }
+    ~HeartWinOnlyScope() { search::g_nativeSilverHeartWinOnlyOverride.reset(); }
+};
+
+static std::string runHeartWinOnlySeed(std::uint64_t seed, int sims, int asc, int reps, bool *reachedAct4,
+                                       bool *reachedHeart) {
+    trainingRunStart();
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    PathHistory path;
+    t_curPath = &path;
+    std::ostringstream out;
+    bool forced = false;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            if (!forced && gc.act == 3 && gc.curRoom == Room::BOSS) {
+                enterForcedAct4(gc);
+                forced = true;
+                *reachedAct4 = true;
+                continue;
+            }
+            if (gc.act == 4 && gc.info.encounter == MonsterEncounter::THE_HEART) {
+                *reachedHeart = true;
+                VwinBossEntry entry;
+                entry.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(gc));
+                entry.path = path;
+                entry.agent = agent;
+                entry.policy = one_combat::captureOocPolicyThreadState();
+                for (int k = 0; k < reps; ++k) {
+                    const auto redrawSeed = ctmSilverReplicateSeed(seed, 0, k, 0x4EA27);
+                    const auto plannerSeed = ctmSilverReplicateSeed(seed, 0, k, 0x4EA28);
+                    for (const bool winOnly : {false, true}) {
+                        VwinBossEntry replay;
+                        replay.pre = std::make_unique<GameContext>(detachedCounterfactualCopy(*entry.pre));
+                        ctmTeacherA20RedrawCombatFuture(*replay.pre, redrawSeed);
+                        replay.path = entry.path;
+                        replay.agent = entry.agent;
+                        replay.policy = entry.policy;
+                        VwinArmResult r;
+                        {
+                            PlannerSeedScope plannerScope(plannerSeed);
+                            HeartWinOnlyScope winOnlyScope(winOnly);
+                            r = vwinRunBossArm(replay, sims);
+                        }
+                        out << seed << ',' << k << ',' << (winOnly ? "winonly" : "base") << ',' << redrawSeed
+                            << ',' << gc.floorNum << ',' << gc.curHp << ',' << gc.maxHp << ','
+                            << gc.deck.size() << ',' << gc.potionCount << ',' << r.won << ','
+                            << r.terminalHp << ',' << r.decisions << ',' << r.simulations << ','
+                            << r.cpuSeconds << ',' << (r.valid ? 1 : 0) << ',' << r.quarantineReason << '\n';
+                    }
+                }
+                break;
+            }
+            BattleContext bc;
+            agent.playoutBattle(gc, bc);
+            bc.exitBattle(gc);
+        } else {
+            deployedOocPolicyStep(gc, agent);
+        }
+    }
+    t_curPath = nullptr;
+    return out.str();
+}
+
+void heartWinOnlyAb(int nSeeds, int sims, int asc, const std::string &outfile, long long seedOffset, int reps) {
+    if (asc != 20) throw std::runtime_error("heartwinonlyab: A20 only (the redraw kernel is the A20 one)");
+    if (reps < 1 || reps > 64) throw std::runtime_error("heartwinonlyab: REPS must be 1..64");
+    if (!g_collectKeys) throw std::runtime_error("heartwinonlyab: requires keys (STS_COLLECT_KEYS unset or 1)");
+    if (const char *v = std::getenv("STS_SILVER_HEART_WIN_ONLY"); v && *v)
+        throw std::runtime_error("heartwinonlyab: leave STS_SILVER_HEART_WIN_ONLY unset; the arms set it");
+    trainingCampaignStart();
+    std::ofstream f(outfile);
+    if (!f) throw std::runtime_error("heartwinonlyab: cannot open output");
+    f << "seed,k,arm,redrawSeed,floor,hp,maxHp,deck,potions,won,terminalHp,decisions,simulations,cpuSeconds,valid,reason\n";
+    int act4 = 0, hearts = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        bool reachedAct4 = false, reached = false;
+        const std::string rows = runHeartWinOnlySeed(seedOffset + s, sims, asc, reps, &reachedAct4, &reached);
+        #pragma omp critical(heart_win_only_write)
+        {
+            f << rows;
+            f.flush();
+            if (reachedAct4) ++act4;
+            if (reached) ++hearts;
+        }
+    }
+    f.close();
+    nlohmann::json manifest = {
+        {"mode", "heartwinonlyab"}, {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}}, {"sims", sims}, {"asc", asc},
+        {"reps", reps}, {"act4Starts", act4}, {"heartStarts", hearts},
+        {"csv", {{"path", std::filesystem::absolute(outfile).string()}, {"sha256", fileSha256(outfile)}}},
+        {"policy", effectiveOocPolicySpecification()},
+        {"trainingHealthFailures", g_trainingHealthFailures.load()}};
+    std::ofstream mf(outfile + ".manifest.json");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "heartwinonlyab seeds=" << nSeeds << " act4_starts=" << act4 << " heart_starts=" << hearts << " -> " << outfile << '\n';
+}
+
 
 
 // Active Lizard Tail shadow and paired counterfactual collection modes.

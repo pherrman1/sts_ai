@@ -360,6 +360,7 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &teacherPath,
                                 bool allowStaleProvenance = false,
                                 const std::string &forcedSetup = "");
+void heartWinOnlyAb(int nSeeds, int sims, int asc, const std::string &outfile, long long seedOffset, int reps);
 
 void activeLizardCombatTransitionGen(int nSeeds, int sims, int asc,
                                      const std::string &outfile, long long seedOffset,

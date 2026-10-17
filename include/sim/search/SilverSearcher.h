@@ -28,6 +28,10 @@ namespace sts::search {
         // when a victory ends the run: no HP, potion, gold, max-HP, speed or
         // cheat-death utility after the fight, and a loss keeps no potion credit.
         bool finalFightLeaf = false;
+        // Research-only (STS_SILVER_HEART_WIN_ONLY), with finalFightLeaf at the
+        // Heart: a loss or unresolved rollout scores 0, so only the win
+        // probability counts.
+        bool finalFightWinOnly = false;
         // False when no act-transition heal follows the act-boss room: the
         // first of the two A20 act-3 bosses goes straight into the second.
         bool actHealFollows = true;

@@ -47,6 +47,7 @@ namespace sts::search {
             bool finalBossBinary = false;
             // ADR-0035: the situational leaf terms are on by default; =0 restores the legacy leaf.
             bool finalFightLeaf = true;      // STS_SILVER_FINAL_FIGHT_LEAF (off when FINAL_BOSS_BINARY=1 and unset)
+            bool heartWinOnly = false;       // STS_SILVER_HEART_WIN_ONLY (research-only, needs the final-fight leaf)
             bool noLossPotionCredit = true;  // STS_SILVER_NO_LOSS_POTION_CREDIT
             bool relicHealLeaf = true;       // STS_SILVER_RELIC_HEAL_LEAF
             bool a20BossHealFix = true;      // STS_SILVER_A20_BOSS_HEAL_FIX (0 restores the old credit)
@@ -440,6 +441,8 @@ namespace sts::search {
                     || (gc.act == 4 && bc.encounter == MonsterEncounter::THE_HEART);
                 const bool leafOn = g_nativeSilverFinalFightLeafOverride.value_or(g_options.finalFightLeaf);
                 context.finalFightLeaf = leafOn && runEnding;
+                context.finalFightWinOnly = context.finalFightLeaf && gc.act == 4
+                    && g_nativeSilverHeartWinOnlyOverride.value_or(g_options.heartWinOnly);
                 // The first A20 act-3 boss goes straight into the second: no act heal.
                 context.actHealFollows = !(g_options.a20BossHealFix && gc.act == 3 && gc.ascension >= 20
                     && gc.curRoom == Room::BOSS && bc.encounter != gc.secondBoss);
@@ -877,6 +880,7 @@ namespace sts::search {
             g_options.finalFightLeaf = value == "1";
         }
         for (const auto &[name, flag] : {std::pair<const char *, bool *>{"STS_SILVER_NO_LOSS_POTION_CREDIT", &g_options.noLossPotionCredit},
+                                          {"STS_SILVER_HEART_WIN_ONLY", &g_options.heartWinOnly},
                                           {"STS_SILVER_RELIC_HEAL_LEAF", &g_options.relicHealLeaf},
                                           {"STS_SILVER_A20_BOSS_HEAL_FIX", &g_options.a20BossHealFix}}) {
             if (const char *raw = std::getenv(name)) {
@@ -1060,6 +1064,7 @@ namespace sts::search {
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    thread_local std::optional<bool> g_nativeSilverHeartWinOnlyOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;

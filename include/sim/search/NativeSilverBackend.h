@@ -133,6 +133,9 @@ namespace sts::search {
     // STS_SILVER_FINAL_FIGHT_LEAF for the current thread's combats (it still
     // applies only to fights whose victory ends the run). Unset elsewhere.
     extern thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    // Research-only (Heart win-only replay): when set, replaces
+    // STS_SILVER_HEART_WIN_ONLY for the current thread's combats. Unset elsewhere.
+    extern thread_local std::optional<bool> g_nativeSilverHeartWinOnlyOverride;
     // Research-only (§479 rollout arms): when set, replaces the env rollout options
     // (SilverSearcher::envRolloutConfig) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;

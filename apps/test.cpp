@@ -402,6 +402,12 @@ int testSilverSearcher() {
         check(value(ended, original) - value(ended, finalFight) == 3 * 11.0 / 2,
               "final-fight leaf loss differs from default only by the potion credit");
         check(lowWin > value(ended, finalFight), "final-fight leaf victory dominates a loss");
+        // Research opt-in STS_SILVER_HEART_WIN_ONLY: a loss scores 0, a victory is unchanged.
+        auto winOnly = finalFight; winOnly.finalFightWinOnly = true;
+        check(value(ended, finalFight) > 0, "final-fight leaf loss keeps shaping credit");
+        check(value(ended, winOnly) == 0.0, "win-only leaf scores a loss 0");
+        auto won = ended; won.outcome = Outcome::PLAYER_VICTORY; won.player.curHp = 1;
+        check(value(won, winOnly) == lowWin, "win-only leaf keeps the final-fight victory score");
     }
 
     // Research opt-ins STS_SILVER_RELIC_HEAL_LEAF / STS_SILVER_NO_LOSS_POTION_CREDIT
