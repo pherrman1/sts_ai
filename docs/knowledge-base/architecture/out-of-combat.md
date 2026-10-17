@@ -1579,7 +1579,7 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    Under the OOC MCTS tree rules a declined reward potion still reaches the
    search root. Once only "leave" and "discard a held potion" remain, that
    root's prior is uniform, also under heart1full (PR #591), and search
-   then often discards a held potion to take the worse reward (§511; 505 times
+   then often discards a held potion to take the worse reward (§514; 505 times
    in 1,408 §503 runs). `STS_POTION_REWARD_DECLINE_LEAVE=1` (research option,
    default off) leaves such a screen when nothing else is on it.
    The effective teacher specification includes `potion_reward_swap: true`

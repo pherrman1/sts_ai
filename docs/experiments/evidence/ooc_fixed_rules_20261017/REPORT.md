@@ -1,4 +1,4 @@
-# Fixed OOC rules before and inside the search (§511, 2026-10-17)
+# Fixed OOC rules before and inside the search (§514, 2026-10-17)
 
 Question (Philipp, 2026-10-17 16:10Z): should the fixed rules that run before the OOC search be rethought now
 that the stack takes keys? The key rules (`heartKeyAction`, ADR-0041) belong to the separate keys thread; this

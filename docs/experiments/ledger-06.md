@@ -19826,7 +19826,7 @@ is a worse OOC MCTS leaf than rollout3 itself. `STS_OOC_MCTS_LEAF_STUDENT` stays
 [Result](evidence/rollout_student_leaf_20261017/RESULT.md), [report.json](evidence/rollout_student_leaf_20261017/report.json).
 **Knowledge impact:** learned OOC leaf status in current-research.
 
-## §511 — Fixed OOC rules before and inside the search, with keys on (2026-10-17)
+## §514 — Fixed OOC rules before and inside the search, with keys on (2026-10-17)
 
 **KEEP_RULES; opt-in potion leave, default off.** Offline count on the 1,408 open §503 A20 runs (TRAIN + VALIDATION,
 student C prior `STS_OOC_MCTS_PRIOR=heart1`, keys on; SEALED-confirm not opened). Firings: chest 3,380, reward relic
