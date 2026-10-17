@@ -19920,3 +19920,21 @@ games to prove it to the margin we set in advance.
 It is packaged as research candidate `pathb-r2-ritual-refit` with `writhingRitual`.
 The native runtime supports and samples all 518 checked Writhing+Dagger
 VALIDATION states, where the deployed pair supports none. It is not the default stack.
+
+## §508 — Ritual-refit CTM vs deployed CTM in A0 OOC MCTS, 64 paired seeds (2026-10-17)
+
+**Result:** uninformative. All 64 pairs are identical: 58/64 act-3 clears in both arms, mean floor 49.55 in both,
+128/128 rc=0. The refit candidate loaded in every `ritual` unit. No run held a Ritual Dagger, so its head was
+never queried, and no OOC MCTS support abort occurred in either arm. Setup:
+- Seeds 111000800–863.
+- Arm C prior, §488 stack at A0.
+- The arms differed only in the CTM pair.
+- Run commit `607d683b`, independent pre-launch review PASS.
+
+No default change.
+
+**ELI5:** the bot never picked up a Ritual Dagger in these 64 games, so the new Dagger model never got a chance to
+matter.
+
+**Evidence:** [prereg, arms, results and report](evidence/ritual_refit_ab_20261017/REPORT.md).
+**Knowledge impact:** Ritual Dagger acquisition is rare at A0; random-seed A/Bs cannot measure Ritual-head changes.
