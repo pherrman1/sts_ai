@@ -188,10 +188,10 @@ void Deck::obtain(GameContext &gc, Card card, int count) {
     }
 }
 
+// Bookkeeping matches Deck::obtain without acquisition effects: each card is
+// counted once, and only transformable curses count as curses (hasCurse).
 void Deck::obtainRaw(Card card) {
     cards.push_back(card);
-    ++transformableCount;
-    ++cardTypeCounts[static_cast<int>(card.getType())];
 
     switch (card.getType()) {
         case CardType::ATTACK:
