@@ -1106,6 +1106,11 @@ current node. The importer represents it as the native unchosen-map position
 boss chest, an unchosen first node, no boss/cancel/proceed action, and a complete
 set of row-zero choices with matching physical click indices. The original
 capture remains intact; ordinary row-15 transitions remain unsupported.
+That same public proof retains `BOSS_TREASURE` as the planning root's current
+room, for either `(-1, 15)` or the ordinary `(-1, -1)` unchosen coordinate.
+The first imagined combat therefore receives the same boss-chest predecessor
+as the real first room, instead of inheriting the hypothetical constructor's
+`INVALID` placeholder.
 The first room of a new act has only one current-act path coordinate, so it
 cannot recover CTM's previous room from a second node. Capture recovers
 `BOSS_TREASURE` only when the exact Act 2/3 first-room floor, the matching

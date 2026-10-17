@@ -23,7 +23,8 @@ class LiveOocProtocol(unittest.TestCase):
         cls.win = Path(sys.argv[5]) if len(sys.argv) > 5 else None
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "fixtures.jsonl"
-            subprocess.run(["bash", "tools/seed_guard.sh", str(cls.fixture_binary), str(cls.model), str(fixture)],
+            subprocess.run(["bash", "tools/seed_guard.sh", str(cls.fixture_binary), str(cls.model), str(fixture),
+                            str(Path(__file__).parent / "fixtures/live_act3_entry.json")],
                            check=True, capture_output=True, text=True)
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 

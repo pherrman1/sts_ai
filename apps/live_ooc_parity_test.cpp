@@ -224,9 +224,30 @@ static void sameTokens(const TokState &a,const TokState &b){
     for(int i=0;i<a.nPt;++i)for(int j=0;j<2;++j)check(a.pt[i][j]==b.pt[i][j],"potion tokens");
 }
 int main(int argc,char **argv){try{
-    check(argc==2||argc==3,"model path [fixture output] required");
+    check(argc>=2&&argc<=4,"model path [fixture output] [captured act-entry fixture] required");
     auto model=std::make_unique<OocStrategicTokNet>();check(model->load(argv[1]),"model load");
-    std::ofstream output;if(argc==3)output.open(argv[2]);
+    std::ofstream output;if(argc>=3)output.open(argv[2]);
+    if(argc==4) {
+        std::ifstream input(argv[3]);check(bool(input),"captured act-entry fixture missing");
+        J captured;input>>captured;
+        for(int y:{15,-1}) {
+            auto observation=captured;
+            observation["ooc"]["publicState"]["map"]["y"]=y;
+            observation["ooc"]["mcpState"]["screen_state"]["current_node"]["y"]=y;
+            advisor::LiveOocStateV1 imported;
+            const auto result=advisor::importLiveOocStateV1(observation,imported);
+            check(result.ok,"captured act-entry import: "+result.message);
+            check(imported.mctsRoot.state.curMapNodeY==-1
+                    && imported.mctsRoot.state.curRoom==Room::BOSS_TREASURE,
+                    "new act planning root lost the public boss chest");
+            auto next=imported.mctsRoot.state;next.skipBattles=false;
+            int first=0;while(first<7 && next.mapMoveCost(first)<0)++first;
+            check(first<7,"captured act entry has no first room");
+            next.transitionToMapNode(first);
+            check(next.lastRoom==Room::BOSS_TREASURE,
+                    "imagined first combat lost its boss-chest predecessor");
+        }
+    }
     // One fixed native initialization; no game rollout and no model mutation.
     GameContext base(CharacterClass::IRONCLAD,126700,0);
     base.boss=MonsterEncounter::HEXAGHOST;base.floorNum=7;base.gold=777;base.curHp=51;

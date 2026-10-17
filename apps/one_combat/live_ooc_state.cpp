@@ -371,6 +371,8 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.info = source.projected.info;
     root.noteForYourselfCard = source.projected.noteForYourselfCard;
     root.map = source.projected.map ? std::make_shared<sts::Map>(*source.projected.map) : root.map;
+    if (source.projected.curRoom != sts::Room::INVALID)
+        root.curRoom = source.projected.curRoom;
 
     if (root.curMapNodeY >= 0 && root.curMapNodeY < 15
             && root.curMapNodeX >= 0 && root.curMapNodeX < 7 && root.map)
@@ -830,7 +832,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         // act's unchosen map. Normalize only the complete public first-row
         // boundary; row 15 during an ordinary boss transition stays refused.
         if (g.screenState==ScreenState::MAP_SCREEN && g.act>=2 && g.act<=3
-                && g.floorNum==17*(g.act-1) && g.curMapNodeX==-1 && g.curMapNodeY==15
+                && g.floorNum==17*(g.act-1) && g.curMapNodeX==-1
+                && (g.curMapNodeY==-1 || g.curMapNodeY==15)
                 && o.contains("mcpState") && o.at("mcpState").is_object()) {
             const auto &mcp=o.at("mcpState");
             if (mcp.value("screen_type",std::string())=="MAP"
@@ -843,7 +846,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 if (!ui.value("first_node_chosen",true) && !ui.value("boss_available",true)
                         && ui.contains("current_node") && ui.at("current_node").is_object()
                         && ui.at("current_node").value("x",0)==-1
-                        && ui.at("current_node").value("y",-1)==15
+                        && ui.at("current_node").value("y",-2)==g.curMapNodeY
                         && ui.contains("next_nodes") && ui.at("next_nodes").is_array()
                         && o.contains("liveChoices") && o.at("liveChoices").is_array()) {
                     const auto &nodes=ui.at("next_nodes"), &choices=o.at("liveChoices");
@@ -860,7 +863,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     }
                     for (int x=0;firstRow && x<7;++x)
                         firstRow=(g.map->getNode(x,0).edgeCount>0)==(columns.count(x)>0);
-                    if (firstRow) g.curMapNodeY=-1;
+                    if (firstRow) {
+                        g.curMapNodeY=-1;
+                        g.curRoom=Room::BOSS_TREASURE;
+                    }
                 }
             }
         }
