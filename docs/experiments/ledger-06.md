@@ -20791,6 +20791,49 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
+## §535 — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
+
+Performance only; no gameplay, model, RNG or default change. Philipp 2026-10-18 14:07Z ("can you continue
+profiling and improving speed?") after §533 merged.
+
+- **Profile** (new main 16a397bd, gdb sampling on A20 winrate-check units, seeds 111195792–111195794, 617 samples
+  at the interim read): OOC MCTS 94%, real combat 6%. The student_sel forward is still about 74% of a run: the
+  projection kernel 36%, attention 23%, the vector exp 8%.
+- **Repeats:** a counting build on A20 seed 111195795 (Act 1) saw 498,145 forwards, all logits-only, with
+  432,529 distinct inputs. So 13% repeat an earlier input, and 40,930 of those repeat the input just before.
+- **Change** (`apps/one_combat/heart1_policy.cpp`):
+  - `Net::forward` has a per-thread direct-mapped memo with 4,096 slots, keyed by a per-load net id, the pass and
+    the whole record; record equality decides a hit. It caught 53,822 of the 65,616 repeats on seed 111195795.
+  - With AVX-512F/DQ, the projection kernel puts two tokens in each 512-bit register. Explicitly rounded multiply
+    and add keep it FMA-free and bit-identical.
+  - Softmax divisions are vectorized.
+  - `oocmctsselftest` gains a check that compares the kernels against the reference loop.
+- **Parity:** `heart1score` is byte-identical to main on these record sets:
+  - student_sel `bench` (4,383 records) and `bench2` (2,395), plus `bench2` under `STS_OOC_HEART1_SCALAR=1`;
+  - heart1 and student C on 300 records each.
+- **Gate:** paired Act-1 units (main 16a397bd vs the candidate) with the §533 gate scripts, seeds 111195796–111195799.
+  Play is identical on all four. Run CPU:
+
+  | seed | main s | candidate s | ratio |
+  |---|---|---|---|
+  | 111195796 | 337.1 | 297.2 | 1.13x |
+  | 111195797 | 240.1 | 197.8 | 1.21x |
+  | 111195798 | 221.6 | 196.9 | 1.13x |
+  | 111195799 | 329.6 | 287.7 | 1.15x |
+
+  The total goes from 1,128 to 980 s (1.15x). OOC MCTS CPU goes from 1,046 to 901 s.
+- **Distill capture mode** (two nets of different width; `STS_OOC_HEART1_TEACHER` set to heart1, 128 simulations,
+  Act 1, seed 111195800): the capture file (5,063 rows) and play are byte-identical to main.
+- **Decision:** adopt; it is exact. **Inference:** the remaining forward cost is mostly arithmetic that the exact
+  reduction order fixes. Further large gains need play-changing options (fewer rollout combats or rollout forwards,
+  a smaller rollout net), which need their own A/B.
+
+Raw data: `/mnt/project-files/heart1-forward-speedup-2/raw.tar.gz` (sha256 `223ab38d…`; gate, capture and count units, gdb samples, scripts, binary hashes main `697b345b…`, candidate `85c1b30e…`).
+
+Seeds used: 111195792–111195800.
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`, cost sentence in
+`evaluation/current-research.md`.
 ## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model
@@ -20855,3 +20898,38 @@ unused.
 Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
 **Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
 
+## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
+
+**Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?
+Asked by Philipp 2026-10-18 14:29Z ("lets go with the canary run").
+**Setup:** one A20 Ironclad run on Philipp's PC, seed 111194451, installed runtime `64f6ef277966-3f57d0b45c36`
+(inspector JAR `78eb4d03`), game with `STS_DIFFERENTIAL_DEBUG_RNG=1`, driver `--parity-trace` (4 segments joined by
+`--continue-run`), `combat_parity_probe` built at main `05da2c07`. The instructions named seed 111194453; the PC
+session ran 111194451 instead (its report and trace). 111194451 is also the fixed seed of
+`dead_target_debuff_fix_test`, which drives no gameplay, so the overlap is harmless.
+**Result:** 135 combat steps compared over 9 Act 1 encounters (Hexaghost 36, Gremlin Gang 18, Cultist 15, Gremlin Nob
+14, Small Slimes 12, Exordium Wildlife 11, Jaw Worm 10, Three Louse 10, Red Slaver 9): 126 MATCH, 9 MISMATCH, 3
+`TRACE_ENDED`; no unresolved recorded action and no held-selection skips. The 9 mismatches:
+- 3 steps: a monster killed by an attack keeps its powers natively (Strength, Vulnerable, Weak, Angry/Spore Cloud
+  payload). Java clears them in `updateDeathAnimation`, after `die()`; not a gameplay difference.
+- 1 step: Clothesline killed a Curl Up louse; native curled anyway (block 12 vs 0). Java requires
+  `damageAmount < currentHealth`.
+- 1 step: a Discovery pick (Colorless Potion, The Bomb) advanced `cardRandomRng` 184 vs 3. Cause unknown.
+- 1 step: The Bomb with cost 0 for the turn kept `costForTurn` 0 in the discard pile natively; Java shows 2.
+- 1 step: Perfected Strike count 5 (game) vs 4 (native) after Havoc+ exhausted a Strike. Cause unknown.
+- 1 step: Havoc+ in Gremlin Gang, `lastTargetedMonster` 2 vs 1; likely the random target.
+- 1 step: Hexaghost Inferno is recorded twice in Java's move history; `nextMove` matches.
+
+The run stopped at floor 16 (Act 1 boss card reward): the live advisor segfaulted in `ScumSearchAgent2::stepRandom`
+on an empty action list inside an OOC rollout. It reproduces offline from the saved input, on the previous runtime
+`64b38c88` too. The driver also stopped 3 times on display-only stat changes of cards in the discard and exhaust piles,
+which its tolerance check misses; no action was taken on those.
+**Interpretation:** the probe now ignores a dead monster's powers, and `STS_CURL_UP_LETHAL_FIX` (default on, `=0`
+restores) makes native Curl Up match Java. The louse dies either way, but its block and status bits are part of
+Silver's node identity, so search and play can change in louse fights. The Discovery RNG gap is the one open difference that can change later combat
+(Havoc and random targets draw from `cardRandomRng`). Coverage is Act 1 only. Raw traces (469 MB) stay on the PC
+under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds used: 111194451 (canary), 111194453 (fixed seed
+of `curl_up_lethal_test`, no gameplay; not used by the canary).
+**Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
+`behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
+(`STS_CURL_UP_LETHAL_FIX`).

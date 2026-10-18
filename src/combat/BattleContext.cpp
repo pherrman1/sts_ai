@@ -24,6 +24,13 @@ namespace sts {
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_DEAD_TARGET_DEBUFF_FIX must be 0 or 1");
     }
+
+    bool curlUpLethalFix() {
+        const char *value = std::getenv("STS_CURL_UP_LETHAL_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
+    }
 }
 
 
