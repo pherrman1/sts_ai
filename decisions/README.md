@@ -28,7 +28,7 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-ctm-act4-survival-default.md) makes the A20 CTM stack (`pathb-a20`) price Shield and Spear and
+- [ADR-0048](0048-ctm-act4-survival-default.md) makes the A20 CTM stack (`pathb-a20`) price Shield and Spear and
   the Heart with the §527 Act-4 survival model by default (`STS_CTM_ACT4_SURVIVAL_MODEL=0` restores the CTM head).
 
 - [ADR-0047](0047-select-student-defaults.md) turns on `STS_OOC_MCTS_TARGET_PRIOR=1` and

@@ -1,4 +1,4 @@
-# ADR-TBD: the A20 CTM stack prices Shield and Spear and the Heart with the Act-4 survival model
+# ADR-0048: the A20 CTM stack prices Shield and Spear and the Heart with the Act-4 survival model
 
 Date: 2026-10-18
 Status: accepted

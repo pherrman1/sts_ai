@@ -61,7 +61,7 @@ std::string sha256Text(const std::string &text) {
 }
 // §527 Act-4 survival model (tools/ctm_act4_survival.py, which mirrors these features; keep them in lockstep).
 constexpr int kAct4Cards=400,kAct4Relics=200,kAct4Potions=50;
-// ADR-TBD: the Act-4 survival model the pathb-a20 stack uses when STS_CTM_ACT4_SURVIVAL_MODEL is unset.
+// ADR-0048: the Act-4 survival model the pathb-a20 stack uses when STS_CTM_ACT4_SURVIVAL_MODEL is unset.
 constexpr char kDefaultAct4SurvivalModel[]="models/candidates/ctm_act4_survival_trees.txt";
 const char *const kAct4Scalars[]={"heart","cur_hp","max_hp","hp_frac","gold","potion_capacity","potion_count",
     "deck_size","upgraded"};
@@ -1231,7 +1231,7 @@ double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin)
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {
     // §527: the Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4); other
-    // heads are unchanged. Default on for the pathb-a20 stack (ADR-TBD).
+    // heads are unchanged. Default on for the pathb-a20 stack (ADR-0048).
     if(act4Survival_ && (p.globals.encounter==int(sts::MonsterEncounter::THE_HEART) ||
        p.globals.encounter==int(sts::MonsterEncounter::SHIELD_AND_SPEAR)))
         return float(1-act4Survival_->predict(act4SurvivalFeatures(p)));
