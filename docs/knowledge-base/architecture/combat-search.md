@@ -299,7 +299,8 @@ at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040). §523 (A20, 176 fights): averaging 1, 2, 4 or 8 uniform random playouts per leaf
 loses 31–35 fight score to greedy at every k (0.85x–4.70x CPU per fight); more random playouts barely help.
 Default since ADR-0046 (`STS_SILVER_ROLLOUT_ROOT_TABLE`: unset = bundled
-`models/combat_policy_mlp_g6_E.txt`, `0` = the fixed ADR-0040 table, or another
+`models/combat_policy_mlp_g7f_E.txt` since ADR-0049 (before: `models/combat_policy_mlp_g6_E.txt`, still bundled;
+setting that path restores it), `0` = the fixed ADR-0040 table, or another
 `combat_policy_mlp` model): that fixed table is replaced by one built once per searched root
 (`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
 upgrade) in hand, draw and discard pile as a play at the root state, aimed
@@ -322,7 +323,7 @@ buy nothing at 10k (−0.02). Philipp made it the default anyway (ADR-0046); the
 `roottable` armset requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`. The live advisor
 does the same in every `NativeSilverAdvisorSession::decide` (extends keep that
 root's table): `one_combat_advisor` loads the model once at start, unset =
-`models/combat_policy_mlp_g6_E.txt` beside the executable (the installed release,
+`models/combat_policy_mlp_g7f_E.txt` beside the executable (the installed release,
 which `tools/live_game_runtime.py` pins as `rolloutRootTableSha256`), else under the
 working directory; `0` restores the ADR-0040 table, a model that does not load
 exits 2, and each Silver evaluator reports `rolloutRootTable` (model fingerprint or `off`).

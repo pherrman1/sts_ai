@@ -12,7 +12,7 @@ from tools.live_game_runtime import (CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS,
     CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME,
     CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_WIN_SOURCE, LEGACY_OOC_WIN_NAME,
     OOC_FLOOR_NAME, ARM_C_NAME, ACT4_SURVIVAL_NAME,
-    ROLLOUT_ROOT_TABLE_NAME, RuntimeFailure, RuntimeManager, sha256)
+    ROLLOUT_ROOT_TABLE_NAME, LEGACY_ROLLOUT_ROOT_TABLE_NAME, RuntimeFailure, RuntimeManager, sha256)
 
 
 class LiveGameRuntimeTest(unittest.TestCase):
@@ -298,6 +298,15 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual(self.manager.validate_release(), manifest)
         self.assertEqual(self.manager.desired_config(manifest)["oocWinModel"],
                          str(self.manager.current / "models" / LEGACY_OOC_WIN_NAME))
+
+    def test_pre_gen7f_release_keeps_its_legacy_root_table_name(self):
+        manifest = self.install()
+        self.assertEqual(manifest["rolloutRootTableName"], ROLLOUT_ROOT_TABLE_NAME)
+        release = self.manager.current.resolve()
+        (release / f"models/{ROLLOUT_ROOT_TABLE_NAME}").rename(release / f"models/{LEGACY_ROLLOUT_ROOT_TABLE_NAME}")
+        del manifest["rolloutRootTableName"]
+        (release / "manifest.json").write_text(json.dumps(manifest))
+        self.assertEqual(self.manager.validate_release(), manifest)
 
     def test_missing_source_floor_model_fails_clearly(self):
         (self.repo / f"models/{OOC_FLOOR_NAME}").unlink()
