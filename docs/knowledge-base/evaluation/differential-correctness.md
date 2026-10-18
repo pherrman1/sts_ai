@@ -162,7 +162,7 @@ reasons) and has a positive control: Defend with a hand-written correct
 successor gives MATCH, and one wrong field gives exactly that mismatch. It
 does not prove parity.
 
-The first canary (§TBD; 2026-10-18, one A20 run on the PC, 69 steps, 3 encounters)
+The first canary (§531; 2026-10-18, one A20 run on the PC, 69 steps, 3 encounters)
 compared 34 combat steps: 26 matched, 8 mismatched, 2 were skipped. Seven
 mismatches were the export leftovers above. One was an engine difference:
 when Uppercut kills its target, the game applies no Weak or Vulnerable to the
