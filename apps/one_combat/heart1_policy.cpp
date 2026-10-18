@@ -632,14 +632,69 @@ __attribute__((target("avx"))) void linearAvx(const Net::Linear &l, const float 
     }
 }
 
+// linearAvx with two tokens per 512-bit register (low half token t, high half
+// token t + 1), bit for bit: every lane keeps its token's and output's partial
+// sum, with separate multiply and add. The explicitly rounded intrinsics (round
+// to nearest, as the default) keep the compiler from fusing them into FMAs,
+// which AVX-512 would allow. Tiles of 6 tokens x 4 outputs; leftover tokens go
+// to linearAvx.
+__attribute__((target("avx512f,avx512dq"))) void linearAvx512(const Net::Linear &l, const float *x, int n, float *y,
+                                                               bool accumulate) {
+    constexpr int PP = 3, OO = 4, rounding = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
+    const int in = l.in;
+    const float *w = l.w.data();
+    const int fullT = n / (2 * PP) * (2 * PP), fullO = l.out / OO * OO;
+    for (int t = 0; t < fullT; t += 2 * PP) {
+        for (int o = 0; o < fullO; o += OO) {
+            __m512 acc[OO][PP];
+            for (auto &row : acc) for (auto &a : row) a = _mm512_setzero_ps();
+            for (int i = 0; i < in; i += 8) {
+                __m512 v[PP];
+                for (int q = 0; q < PP; ++q)
+                    v[q] = _mm512_insertf32x8(_mm512_castps256_ps512(_mm256_loadu_ps(x + std::size_t(t + 2 * q) * in + i)),
+                                              _mm256_loadu_ps(x + std::size_t(t + 2 * q + 1) * in + i), 1);
+                for (int p = 0; p < OO; ++p) {
+                    const __m512 r = _mm512_broadcast_f32x8(_mm256_loadu_ps(w + std::size_t(o + p) * in + i));
+                    for (int q = 0; q < PP; ++q)
+                        acc[p][q] = _mm512_add_round_ps(acc[p][q], _mm512_mul_round_ps(r, v[q], rounding), rounding);
+                }
+            }
+            const __m128 bias = l.b.empty() ? _mm_setzero_ps() : _mm_loadu_ps(l.b.data() + o);
+            for (int q = 0; q < PP; ++q)
+                for (int half = 0; half < 2; ++half) {
+                    __m256 part[OO];
+                    for (int p = 0; p < OO; ++p)
+                        part[p] = half ? _mm512_extractf32x8_ps(acc[p][q], 1) : _mm512_castps512_ps256(acc[p][q]);
+                    float *out = y + std::size_t(t + 2 * q + half) * l.out + o;
+                    __m128 r = _mm_add_ps(reduce4(part[0], part[1], part[2], part[3]), bias);
+                    if (accumulate) r = _mm_add_ps(_mm_loadu_ps(out), r);
+                    _mm_storeu_ps(out, r);
+                }
+        }
+        for (int o = fullO; o < l.out; ++o)
+            for (int q = 0; q < 2 * PP; ++q) {
+                float v = dot(w + std::size_t(o) * in, x + std::size_t(t + q) * in, in) + (l.b.empty() ? 0.f : l.b[o]);
+                float &out = y[std::size_t(t + q) * l.out + o];
+                out = accumulate ? out + v : v;
+            }
+    }
+    if (fullT < n) linearAvx(l, x + std::size_t(fullT) * in, n - fullT, y + std::size_t(fullT) * l.out, accumulate);
+}
+
 // STS_OOC_HEART1_SCALAR=1 forces the reference loop (for the bit-equality check).
 bool useAvx() {
     static const bool avx = __builtin_cpu_supports("avx") && !std::getenv("STS_OOC_HEART1_SCALAR");
     return avx;
 }
 
+bool useAvx512() {
+    static const bool avx512 = useAvx() && __builtin_cpu_supports("avx512f") && __builtin_cpu_supports("avx512dq");
+    return avx512;
+}
+
 void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumulate = false) {
-    if (l.in % 8 == 0 && useAvx()) linearAvx(l, x, n, y, accumulate);
+    if (l.in % 8 == 0 && useAvx512()) linearAvx512(l, x, n, y, accumulate);
+    else if (l.in % 8 == 0 && useAvx()) linearAvx(l, x, n, y, accumulate);
     else linearScalar(l, x, n, y, accumulate);
 }
 
@@ -765,10 +820,14 @@ __attribute__((target("avx"))) void attendHeadAvx(const float *qkv, int n, int q
         for (int t = 0; t < n; ++t) scores[t] -= mx;
         expInPlace(scores, n);
         for (int t = 0; t < n; ++t) sum += scores[t];
+        // The same divisions, eight at a time.
+        int t = 0;
+        for (; t + 8 <= n; t += 8) _mm256_storeu_ps(scores + t, _mm256_div_ps(_mm256_loadu_ps(scores + t), _mm256_set1_ps(sum)));
+        for (; t < n; ++t) scores[t] = scores[t] / sum;
         __m256 o[4];
         for (int c = 0; c < chunks; ++c) o[c] = _mm256_setzero_ps();
         for (int t = 0; t < n; ++t) {
-            const __m256 p = _mm256_set1_ps(scores[t] / sum);
+            const __m256 p = _mm256_set1_ps(scores[t]);
             const float *v = qkv + std::size_t(t) * stride + 2 * dim + off;
             for (int c = 0; c < chunks; ++c) o[c] = _mm256_add_ps(o[c], _mm256_mul_ps(p, _mm256_loadu_ps(v + 8 * c)));
         }
@@ -978,6 +1037,7 @@ DagFeatures mapDagFeatures(const Record &r) {
 }  // namespace
 
 bool Net::load(const std::string &file, std::string *error) {
+    forwardId_ = 0;
     const auto fail = [&](const std::string &why) {
         if (error) *error = why;
         return false;
@@ -1137,6 +1197,7 @@ bool Net::load(const std::string &file, std::string *error) {
         || screen_.rows != static_cast<int>(ScreenState::BATTLE) + 1)
         return fail("enum sizes differ from this engine");
     path_ = file;
+    forwardId_ = newMemoId();
     return true;
 }
 
@@ -1155,9 +1216,46 @@ static Record trimmedMap(const Record &in) {
     return r;
 }
 
-Output Net::forward(const Record &record, bool logitsOnly) const {
-    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record), logitsOnly);
-    return forwardRecord(record, logitsOnly);
+namespace {
+// FNV-1a over every Record field (equality decides a hit; this only picks the slot).
+std::uint64_t recordHash(const Record &r) {
+    std::uint64_t h = 0xcbf29ce484222325ull;
+    const auto mix = [&h](std::int64_t v) { h = (h ^ std::uint64_t(v)) * 0x100000001b3ull; };
+    const auto ints = [&mix](const std::vector<int> &v) { mix(std::int64_t(v.size())); for (int x : v) mix(x); };
+    ints(r.fixedObservation); ints(r.deckCards); ints(r.deckUpgrades); ints(r.deckMisc); mix(r.act);
+    ints(r.relics); ints(r.relicCounters); ints(r.potions); ints(r.mapXs); ints(r.mapYs); ints(r.mapRooms);
+    mix(std::int64_t(r.mapPathXs.size()));
+    for (const auto &a : r.mapPathXs) for (int x : a) mix(x);
+    mix(r.burningEliteX); mix(r.burningEliteY); mix(r.mapX); mix(r.mapY);
+    ints(r.offeredCards); ints(r.offeredUpgrades); ints(r.offeredRelics); ints(r.offeredPotions);
+    mix(std::int64_t(r.fixedActions.size()));
+    for (const auto &f : r.fixedActions) { mix(f.action); mix(f.gold); mix(f.card); mix(f.relic); mix(f.info); }
+    ints(r.paths); mix(r.screenState); mix(r.selectScreenType);
+    return h;
+}
+
+// Recent outputs per thread, direct-mapped by record hash. A slot holds the
+// whole record, so a hit is an equal input to the same net and pass.
+struct ForwardMemo {
+    struct Slot { std::uint64_t net = 0; bool logitsOnly = false; std::uint64_t hash = 0; Record record; Output out; };
+    static constexpr std::size_t kSlots = 4096;
+    std::vector<Slot> slots = std::vector<Slot>(kSlots);
+};
+thread_local ForwardMemo forwardMemo;
+}  // namespace
+
+Output Net::forward(const Record &record, bool logitsOnly, bool memo) const {
+    const auto run = [&] {
+        return trimMap_ && record.mapY >= 0 ? forwardRecord(trimmedMap(record), logitsOnly)
+                                            : forwardRecord(record, logitsOnly);
+    };
+    if (!memo || !forwardId_) return run();
+    const std::uint64_t h = recordHash(record);
+    auto &slot = forwardMemo.slots[h % ForwardMemo::kSlots];
+    if (slot.net == forwardId_ && slot.logitsOnly == logitsOnly && slot.hash == h && slot.record == record) return slot.out;
+    Output out = run();
+    slot.net = forwardId_; slot.logitsOnly = logitsOnly; slot.hash = h; slot.record = record; slot.out = out;
+    return out;
 }
 
 Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
@@ -1568,6 +1666,32 @@ void fixedVecMemoSelfTest() {
     fixedVecMemo = FixedVecMemo{};
 }
 
+void linearSelfTest() {
+    // Every projection kernel this CPU uses against the reference loop, bitwise,
+    // over token counts that hit the full tiles and each leftover path.
+    Net::Linear l;
+    l.out = 68;
+    l.in = 64;
+    std::uint32_t state = 7;
+    const auto next = [&state] { state = state * 1664525u + 1013904223u; return float(state >> 8) / float(1 << 24) - 0.5f; };
+    l.w.resize(std::size_t(l.out) * l.in);
+    for (float &w : l.w) w = next();
+    l.b.resize(l.out);
+    for (float &b : l.b) b = next();
+    for (int n : {1, 2, 3, 5, 6, 7, 12, 13, 17})
+        for (bool accumulate : {false, true}) {
+            std::vector<float> x(std::size_t(n) * l.in);
+            for (float &v : x) v = next() * 8;
+            std::vector<float> want(std::size_t(n) * l.out), got;
+            for (float &v : want) v = next();
+            got = want;
+            linearScalar(l, x.data(), n, want.data(), accumulate);
+            linear(l, x.data(), n, got.data(), accumulate);
+            if (std::memcmp(got.data(), want.data(), sizeof(float) * got.size()) != 0)
+                throw std::runtime_error("heart1 linear selftest: vector projection differs from the reference loop");
+        }
+}
+
 void priorMappingSelfTest() {
     const auto require = [](bool ok, const char *what) {
         if (!ok) throw std::runtime_error(std::string("heart1 prior mapping selftest: ") + what);
@@ -1894,7 +2018,7 @@ int logitsCheckCommand(int argc, char **argv) {
         float sink = 0;
         for (int k = 0; k < reps; ++k)
             for (const auto &r : records) {
-                const auto out = model.forward(r, logitsOnly);
+                const auto out = model.forward(r, logitsOnly, /*memo=*/false);
                 if (!out.logits.empty()) sink += out.logits[0];
             }
         const double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
