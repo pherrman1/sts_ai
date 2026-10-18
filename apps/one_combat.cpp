@@ -4133,6 +4133,9 @@ int main(int argc, char **argv) {
         silverFocusEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],
                            std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]),
                            argv[11], argv[12]);
+    } else if (mode == "act4replay") {
+        if (argc < 8) { std::cerr << "usage: one_combat act4replay N_STATES STATES.jsonl OUT_PREFIX SEED_OFFSET SIMS[,SIMS..] REPLICATES\n"; return 2; }
+        act4Replay(std::stoi(argv[2]), argv[3], argv[4], std::stoll(argv[5]), argv[6], std::stoi(argv[7]));
     } else if (mode == "silversynthfeatures") {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);
@@ -4481,6 +4484,9 @@ int main(int argc, char **argv) {
         return ctmLizardFeatures(argv[2], argv[3], argv[4], argv[5]);
     } else if (mode == "ctmscoreselftest") {
         return ctmScoreRowsSelfTest();
+    } else if (mode == "ctmact4survivaltest") {
+        if (argc != 3) { std::cerr << "usage: one_combat ctmact4survivaltest FIXTURE.jsonl\n"; return 2; }
+        return ctmAct4SurvivalSelfTest(argv[2]);
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

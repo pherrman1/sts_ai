@@ -184,6 +184,15 @@ LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
     return scoreLiveOocV4(projected, path, model_, rewardPityHistoryComplete_);
 }
 
+bool liveOocEnvChoice(const char *key, const char *off, const char *on, bool fallback) {
+    const char *raw = std::getenv(key);
+    if (!raw) return fallback;
+    const std::string value(raw);
+    if (value == on) return true;
+    if (value == off) return false;
+    throw std::invalid_argument(std::string(key) + " must be " + off + " or " + on);
+}
+
 bool liveOocResearchStack() {
     const char *raw = std::getenv("STS_LIVE_OOC_RESEARCH_STACK");
     if (!raw) return true;
@@ -237,6 +246,12 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         options.treeRules = true;
         options.greedyRolloutShop = true;
         options.heart1Coverage = options.heart1LeafPolicy = bool(armC_);
+        // ADR-0047: card-select student weights (x_act input, student_sel.bin) also score compound
+        // targets in the tree and card selects in rollouts. STS_OOC_MCTS_TARGET_PRIOR=0 /
+        // STS_OOC_MCTS_LEAF_SELECTS=chain turn them off, =1 / =heart1 force them on.
+        const bool selectStudent = armC_ && armC_->extraInputs();
+        options.targetPrior = liveOocEnvChoice("STS_OOC_MCTS_TARGET_PRIOR", "0", "1", selectStudent) && armC_;
+        options.heart1LeafSelects = liveOocEnvChoice("STS_OOC_MCTS_LEAF_SELECTS", "chain", "heart1", selectStudent) && armC_;
     }
     // Qualified public question-room history reconstructs the native chance
     // counters; successors update those counters through normal transitions.
@@ -419,6 +434,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             const auto &metrics = provider.continuationMetrics();
             result.searchModel.update({{"prior", options.heart1Coverage ? "arm_c_full" : "arm_c"},
                 {"rolloutPolicy", options.heart1LeafPolicy ? "arm_c" : "v4_chain"},
+                {"targetPrior", options.targetPrior}, {"rolloutSelects", options.heart1LeafSelects ? "arm_c" : "chain"},
                 {"armCPriorNodes", metrics.heart1PriorNodes},
                 {"armCPriorFallbacks", metrics.heart1PriorFallbacks},
                 {"armCPriorReasons", metrics.heart1PriorReasons},

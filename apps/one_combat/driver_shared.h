@@ -333,6 +333,8 @@ void silverAzGen(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
 void silverAzFocusGen(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
                       const std::string &encounter, int replicates, int otherSims, int treeMinVisits, int rootBonus);
 // Paired online check of two MLP tree priors on one encounter (silverfocusevalgen, §469).
+void act4Replay(int nStates, const std::string &statesPath, const std::string &outPrefix, long long seedOffset,
+                const std::string &simsList, int replicates);
 void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                         const std::string &encounter, int replicates, int otherSims, int armSims, int treeMinVisits,
                         const std::string &priorA, const std::string &priorB);
@@ -448,6 +450,7 @@ int ctmScoreRows(const std::string &inPath, const std::string &outPath,
                  const std::string &standardModel = "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
                  bool activeLizard = true);
 int ctmScoreRowsSelfTest();
+int ctmAct4SurvivalSelfTest(const std::string &fixturePath);
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
 int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
                       const std::string &standardModel, const std::string &outPath);
