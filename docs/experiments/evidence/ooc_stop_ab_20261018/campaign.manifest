@@ -1,6 +1,6 @@
 name          ooc-stop-ab
 code_commit   bdb8338b7f25e7283fbad789ff5928cfd1a2ad35
-binary_sha256 unset
+binary_sha256 2fce1f7688591bfc8e13ff49de2aa16ba22f4fefb5e25c5c4b6a28c498180bf5
 workers       8
 share         /mnt/project-files/ooc-stop-ab
 parallel      4
