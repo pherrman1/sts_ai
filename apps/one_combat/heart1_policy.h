@@ -111,10 +111,12 @@ public:
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
-    struct FixedVec { int features = 0; std::vector<float> invFreq; Linear proj; };
+    // memoId: nonzero process-unique key of these weights for the projection memo.
+    struct FixedVec { int features = 0; std::vector<float> invFreq; Linear proj; std::uint64_t memoId = 0; };
     struct Block {
         std::vector<float> norm1, norm2;
         Linear inProj, outProj, w1, w2, v;
+        Linear inProjKV;  // inProj's key and value rows (derived at load)
     };
 
 private:
