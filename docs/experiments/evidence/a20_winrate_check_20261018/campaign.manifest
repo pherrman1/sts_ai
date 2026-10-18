@@ -1,7 +1,7 @@
 name          a20-winrate-check
 code_commit   64b38c88422684b382e3829cdef602062a6de893
 binary_sha256 9daffbd423147a6acaa712e18c51e6b1fcf67d5b0f603956651fb2371b8755d5
-workers       16
+workers       32
 share         /mnt/project-files/a20-winrate-check
 parallel      4
 input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

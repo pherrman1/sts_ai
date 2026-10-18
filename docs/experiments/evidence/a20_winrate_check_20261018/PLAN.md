@@ -32,8 +32,8 @@ environment, with two budget/prior changes Philipp asked for:
 
 ## Run
 
-512 seeds 111194580–111195091, one `bestbench 10000 1 20 SEED` unit per seed through `tools/seed_guard.sh`, 16
-workers x 4 units at a time (unit line i goes to worker i mod 16 + 1), 24 h timeout per unit (rc 124).
+512 seeds 111194580–111195091, one `bestbench 10000 1 20 SEED` unit per seed through `tools/seed_guard.sh`, 32
+workers (Philipp 01:32Z: "Maybe do 32 workers instead of 16") x 4 units at a time (unit line i goes to worker i mod 32 + 1), 24 h timeout per unit (rc 124).
 
 ## Report
 
