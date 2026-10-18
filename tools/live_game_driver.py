@@ -537,6 +537,14 @@ def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalActio
     if not isinstance(selected_live_action, Mapping):
         raise IntegrationFailure("Silver response has no structured selectedLiveAction")
     matches = [candidate for candidate in candidates if _semantic_match(selected_live_action, candidate)]
+    if (len(matches) > 1 and selected_live_action.get("kind") == "potion"
+            and not {"targetIndex", "target_index"} & set(selected_live_action)
+            and len({(m.mcp_tool, m.semantic.get("potion_slot"), m.semantic.get("discard")) for m in matches}) == 1
+            and all("target_index" in m.semantic for m in matches)):
+        # Silver gives a target for every potion that needs one. MCP offers
+        # some untargeted potions (Explosive Potion) once per monster; the
+        # game ignores that target, so any one of them is the same action.
+        matches = matches[:1]
     if len(matches) != 1:
         raise IntegrationFailure(f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_live_action!r}")
     return matches[0]
@@ -1164,6 +1172,7 @@ class Driver:
                  new_run: bool = False, continue_run: bool = False, character: str | None = None,
                  ascension: int | None = None, seed: str | None = None,
                  differential_trace: bool = False, capture_hidden_rng: bool = False,
+                 parity_trace: bool = False,
                  poll_timeout: float = 8.0, poll_interval: float = 0.1,
                  startup_timeout: float = 45.0,
                  reproduction_command: str | None = None):
@@ -1173,7 +1182,10 @@ class Driver:
         self.new_run, self.continue_run, self.character = new_run, continue_run, character
         self.ascension, self.seed = ascension, seed
         self.differential_trace = differential_trace
-        self.capture_hidden_rng = capture_hidden_rng
+        # The parity probe replays each combat step from the raw observation
+        # plus hidden RNG; it records without changing any decision.
+        self.parity_trace = parity_trace
+        self.capture_hidden_rng = capture_hidden_rng or parity_trace
         self.poll_timeout, self.poll_interval = poll_timeout, poll_interval
         self.startup_timeout = startup_timeout
         self.reproduction_command = reproduction_command or "uv run --extra live-driver python tools/live_game_driver.py --continue-run --run-until-error"
@@ -1499,6 +1511,9 @@ class Driver:
                         "advisor_latency_micros": snapshot.response.get("latencyMicros")})
             if self.differential_trace:
                 row["runtime_provenance"] = snapshot.raw.get("runtime")
+            if self.parity_trace:
+                row["live_observation"] = snapshot.raw.get("observation")
+                row["runtime_provenance"] = snapshot.raw.get("runtime")
             evaluator = snapshot.silver_evaluator() if combat else snapshot.ooc_evaluator(self.ooc_policy)
             row["ooc_policy"] = None if combat else evaluator.get("policy")
             if not combat:
@@ -1507,7 +1522,12 @@ class Driver:
                     if plan.get("status") == "APPLIED" else "policy")
             prefix = "silver" if combat else "ooc_v4"
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
-            row.update({"silver_evaluator" if combat else "ooc_evaluator": evaluator,
+            stored = evaluator
+            if self.parity_trace and combat:
+                # The Silver search tree is ~85 MB per combat row and the
+                # parity probe never reads it.
+                stored = {key: value for key, value in evaluator.items() if key != "tree"}
+            row.update({"silver_evaluator" if combat else "ooc_evaluator": stored,
                         f"{prefix}_status": status, "selectedLiveAction": evaluator.get("selectedLiveAction")})
             if self.differential_trace and status == "OK":
                 row["live_observation"] = snapshot.raw.get("observation")
@@ -1643,6 +1663,10 @@ class Driver:
                                           if self.differential_trace else
                                           _compact({"screen": post, "game_state": post_game_state})),
                     "post_action_identity": transition_identity(post, post_game_state),
+                    **({"post_screen_kind": {"combat": _is_combat(post), "terminal": _is_terminal(post),
+                                             "outcome": _terminal_outcome(post) if _is_terminal(post) else None,
+                                             "screen_type": post.get("screen_type", post.get("screenType"))}}
+                       if self.parity_trace else {}),
                     "driver_step_micros": (time.monotonic() - started) * 1e6})
         if (self.differential_trace and row.get("decision_source") != "run_control"
                 and _is_terminal(post)):
@@ -1751,6 +1775,8 @@ def _reproduction_command(args: argparse.Namespace) -> str:
                "--ooc-policy", args.ooc_policy]
     for option in ("strict_silver", "strict_ooc"):
         command.append(("--" if getattr(args, option) else "--no-") + option.replace("_", "-"))
+    if args.parity_trace:
+        command.append("--parity-trace")
     if args.dry_run:
         command.append("--dry-run")
     if args.max_steps is not None:
@@ -1779,6 +1805,7 @@ async def async_main(args: argparse.Namespace) -> int:
                             character=args.character, ascension=args.ascension, seed=args.seed,
                             differential_trace=args.differential_trace,
                             capture_hidden_rng=args.capture_hidden_rng,
+                            parity_trace=args.parity_trace,
                             startup_timeout=args.startup_timeout,
                             poll_timeout=args.transition_timeout,
                             reproduction_command=reproduction)
@@ -1809,6 +1836,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="write the versioned Java/native differential JSONL schema")
     parser.add_argument("--capture-hidden-rng", action="store_true",
                         help="debug-only RNG tuples; never included in public observations")
+    parser.add_argument("--parity-trace", action="store_true",
+                        help="record raw combat observations and hidden RNG for tools/combat_parity.py")
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--run-until-error", action="store_true", help="continue until terminal outcome or integration error")
     parser.add_argument("--dry-run", action="store_true")

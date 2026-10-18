@@ -4470,6 +4470,13 @@ int main(int argc, char **argv) {
         const std::string lizard = argc == 7 ? argv[6] : "1";
         if (lizard != "0" && lizard != "1") { std::cerr << "ctmscorerows LIZARD must be 0 or 1\n"; return 2; }
         return ctmScoreRows(argv[2], argv[3], argv[4], argv[5], lizard == "1");
+    } else if (mode == "ctmopeninghands") {
+        if (argc != 5) {
+            std::cerr << "usage: one_combat ctmopeninghands ROWS.jsonl OUT.jsonl RESAMPLES\n";
+            return 2;
+        }
+        try { return ctmOpeningHands(argv[2], argv[3], std::stoi(argv[4])); }
+        catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
     } else if (mode == "ctmescapefeatures") {
         if (argc != 5) {
             std::cerr << "usage: one_combat ctmescapefeatures ROWS.jsonl MODEL.native OUT_PREFIX\n";

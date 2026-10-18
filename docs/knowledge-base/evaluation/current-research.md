@@ -213,6 +213,17 @@ producer groups; workers require the reviewed CPU/canary pair before dispatch.
 See [campaign guard operations](../operations/ooc-label-pipeline.md#arm-c-native-campaign-guards).
 No further experiment or native integration is authorized by these guard repairs.
 
+## A20 Shield and Spear search gap vs heart1's engine (§528, §530) — closed
+
+**Closed (2026-10-18, Philipp).** On the 32 recorded A20 Shield-and-Spear entry states our Silver search lost about 7 HP
+more per fight than heart1's engine at the §528 commit. Ruled out: monster code, evaluation, budget, rollout table,
+tree reuse, two rollouts per leaf, three facing changes in the rollout, and draw-pile sampling (same information-set
+code and chance constants as heart1; the fair root view audited correct). On current main the gap is −3.5 HP
+[−8.0, +0.8], not shown; a full-information root loses 2.9 HP less (−2.9 [−5.6, +0.0]). Reopen only with a new
+mechanism. What remains is the entry state (deck, lower max HP) from OOC play, which accounts for about half of the
+Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
+`/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
+
 ## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
 
 `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (default off, issue #605) values rollout3 leaf ends
@@ -483,6 +494,14 @@ See [ledger §382](../../experiments/ledger-06.md) and the
 Merging publicly identical particles (upper bound 26.6%) would be a separate,
 semantics-changing proposal; it is an open question.
 [Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
+
+## OOC MCTS prior guidance at A20 (§532) — max-Q root pick WORSE, temperature 3 screen-pass
+
+With the student_sel prior the search spends a median 97.8% of root visits on the prior's top move, and the executed
+move is the prior argmax in ~90% of roots. In an Act-1 A20 screen (64 paired seeds), `STS_OOC_MCTS_ROOT_SELECTION=q`
+lost 20 HP and 25 more Act-1 runs, and q with prior temperature 3 still lost 9 HP, so the leaf's Q ranks options worse
+than the prior. `STS_OOC_MCTS_TEMPERATURE=3` (visit pick) was +3.1 HP [−2.1, +8.3] with ~13% more OOC CPU: a screen
+pass, not shown; defaults unchanged. Next step: a full-run confirmation of temperature 3, on Philipp's word.
 
 ## OOC MCTS equivalent-outcome merging (#384) — opt-in, inconclusive
 
@@ -834,6 +853,16 @@ OOC MCTS a Silver combat resolver (64 sims + prior per imagined combat, research
 `STS_OOC_MCTS_COMBAT_RESOLVER=silver`) was not detectably better at matched simulations (+3.1 pp, 10x the
 MCTS CPU) and pointed worse at matched CPU (−8.6 pp [−17.2, 0.0]) on 128 pairs; no MCTS arm beat MCTS off
 ([§411](../../experiments/ledger-06.md)). The CTM stays; its value is speed.
+
+**Opening hand and first-search screens (ledger §529, #460, 2026-10-18).** On the Stage-4 A20 corpus an
+XGBoost outcome model gains nothing measurable from the realized opening hand (death log loss +0.00015
+[−0.00025, +0.00057], HP-lost MSE −0.25 [−0.62, +0.15] of 129), and averaging over sampled hands is slightly worse,
+so an opening-hand latent is not worth a CTM schema change for OOC MCTS (the OOC tree would not get wider either: its
+chance-node width depends only on visits). The endpoint distribution of the first 10k Silver search of a fight is a
+biased forecast on 1,048 A20 fights compared with the calibrated A20 CTM: death Brier 0.063 vs 0.026 and about
+12 HP too pessimistic on wins, although Silver sees the hand. On the CTM's post-heal scale its spread matches the
+CTM's once the bias is removed (RMSE 12.07 vs 11.97; log score −0.13 [−0.25, −0.01]), so a bias-corrected Silver
+label is not ruled out (Inference), at ~400x the CPU.
 
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 

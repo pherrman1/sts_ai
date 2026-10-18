@@ -20550,3 +20550,217 @@ Evidence: [scripts and output](evidence/silver_root_regret_pilot_20261017/). Raw
 111193602–111193649 of this thread's block unused.
 **Knowledge impact:** one paragraph in `evaluation/current-research.md` (Silver root allocation section) and the
 `STS_CTMSILVER_ARMSET=rootregret` row in `operations/environment-variables.md`.
+
+## §523 — Several uniform random playouts per Silver leaf vs greedy at A20: random playouts lose at every k (2026-10-18)
+
+**Question (Philipp, 2026-10-17 22:10Z/22:11Z, thread "Distilled Silver playout picker"):** "multiple random
+rollouts, did we ever try that?" then "can you try it on a small pilot with increasing random playouts per leaf?".
+§479 had tested one uniform playout per leaf (−22.80 fight score) and 2 or 4 greedy playouts, not several random ones.
+**Design:** [PREREG](evidence/silver_uniform_playouts_pilot_20261017/PREREG.md), descriptive pilot, no labels, no
+decision rule. `ctmsilvergen` armset `uniformpl` (code e762e846, run as 6e4998e2 before the main merge; binary
+`8aecc181…`) with the §519/§521 harness (student C source runs, gen-6 E root prior, keys flag off, hallway every 3rd,
+R = 2, `STS_SILVER_ROLLOUT_ROOT_TABLE=0` so greedy uses the ADR-0040 table). Arms at 2,500 simulations:
+`greedy2500` and `uniform<k>x2500`, k = 1, 2, 4, 8 random playouts averaged per leaf. 16 sources
+(111193700–111193715) in-thread on 4 cores, all shards rc = 0; 176 valid paired fights (1 excluded, escape).
+**Result (paired, 95% seed bootstrap):**
+
+| arm | fight score | win | HP lost | CPU/fight vs greedy |
+|---|---|---|---|---|
+| greedy2500 | 286.2 | 95.2% | 11.4 | 1 |
+| uniform1x2500 | −34.6 [−45.9, −22.8] | −9.1 pp | +7.9 | 0.85x |
+| uniform2x2500 | −33.6 [−41.6, −23.7] | −9.1 pp | +7.3 | 1.47x |
+| uniform4x2500 | −33.1 [−43.8, −22.4] | −9.7 pp | +6.1 | 2.54x |
+| uniform8x2500 | −31.0 [−39.6, −21.2] | −8.5 pp | +6.3 | 4.70x |
+
+`uniform8 − uniform1`: +3.6 [−1.6, +8.2] score, −1.6 [−2.8, −0.3] HP lost. Bosses (33): every k loses 63–79 score and
+21–26 pp win rate. CPU per simulation grows almost linearly with k (1.03x, 1.80x, 3.16x, 5.82x); random playouts are
+shorter than greedy ones (13.1–13.7 vs 16.9 actions). Smoke (111193790–111193793, 63 fights, same binary): about −58
+at every k.
+**Interpretation:** averaging random playouts reduces leaf noise only slightly (HP lost improves by about 1.6 from
+1 to 8), while the bias of a random playout is unchanged, so the gap to greedy stays near 31–35 at up to 4.7x CPU per
+fight. **Inference:** the greedy playout's value comes from its play policy, not from lower variance; more playouts of
+a weak policy are no substitute. No follow-up proposed.
+[result.json](evidence/silver_uniform_playouts_pilot_20261017/result.json) (sha256 `6d0cff67…`). Raw:
+`/mnt/project-files/silver-uniform-playouts-pilot/upl-run.tar.gz` (run and smoke, sha256 `16b187ef…`). Seeds used:
+111193700–111193715, 111193790–111193793 and 111193716 (post-merge build smoke of the armset on main at 300
+simulations, rc = 0); the rest of 111193700–111193799 unused.
+**Knowledge impact:** one sentence added to the rollout paragraph in `architecture/combat-search.md` and the
+`STS_CTMSILVER_ARMSET=uniformpl` row in `operations/environment-variables.md`.
+
+## §529 — Opening hand and first-Silver-search screens for the CTM: hand NOT_SHOWN, Silver endpoints biased (2026-10-18)
+
+**Question (Philipp, 2026-10-18 01:24Z/01:31Z, thread "CTM opening hand", issue #460):** would an opening-hand-aware
+CTM widen the OOC tree, and does the hand help? Also: can the endpoint distribution of a 10k Silver search at the
+start of a fight replace the CTM's HP distribution? **Width:** no; a combat chance node holds `ceil(K·N^α)`
+particles (`OocMctsPlanner.cpp:160`) whatever the CTM's outcome space, and the hand is not in the post-combat state.
+**Design:** [PREREG](evidence/ctm_opening_hand_20261018/PREREG.md), written before results; code 3c73f1a4, binary
+`6eae03c1…` (`ctmopeninghands`, `STS_CTM_ROW_OPENING_HAND`, `STS_CTM_ROW_FIRST_SEARCH`; both fields default off, a
+smoke seed gave byte-identical rows with them off and on minus the new fields).
+*Screen A (offline, no seeds):* the §443 Stage-4 A20 corpus (80 `main-*` units, 75,871 victory/death rows,
+3,995 seeds); opening hands rebuilt from run seed, floor and pre state, plus 16 fair resampled hands. The rebuild
+matched the hand recorded with the field on all 1,061 rows (smoke + screen B); both are `BattleContext::init` on the
+pre state, so this checks the row round trip, while the live combat draws through the same `init`
+(`NativeSilverBackend.cpp:447`, code reading). 4,115 of 76,316 Stage-4 hands (5.4%) are empty: a pending Toolbox
+choice before the draw. XGBoost, 5-fold CV
+grouped by seed, A = pre-combat features, B = A + hand card counts.
+*Screen B:* `combattransitiongen` A20 on 111195113–111195160 (48 seeds, 1,052 fights, 4 cores, ~0.5–0.8 h wall per
+12-seed unit); Silver flat exact 10k, g6_E root prior w400 + tree prior K=8, root table on; out of combat the
+deployed step with `STS_OOC_HEART1=student_sel` (cf6bf7fb…), keys off. CTM = calibrated `pathb-a20` stack via
+`ctmscorerows`. Pre-registered: Silver scored on battle-end HP (before heals), CTM on RAW post HP (after heals).
+Added in review: Silver endpoints mapped through the engine's heal rule (Meat on the Bone, Burning/Black Blood,
+capped; reproduces the realized post HP on 1,010/1,010 wins) and scored on the CTM's scale
+([rescore_matched_scale.py](evidence/ctm_opening_hand_20261018/rescore_matched_scale.py)).
+**Result A (B − A, 95% seed bootstrap):**
+
+| target | A | conditional (realized hand) | marginal (16 sampled hands) |
+|---|---|---|---|
+| death log loss | 0.09269 | +0.00015 [−0.00025, +0.00057] | +0.00016 [−0.00022, +0.00054] |
+| HP-lost MSE on wins (var 278) | 128.9 | −0.25 [−0.62, +0.15] | +0.39 [+0.04, +0.76] |
+
+**Result B (1,048 states, 37 deaths):**
+
+| forecaster | death Brier | win HP-lost bias | win HP-lost RMSE | win HP log score (own scale) |
+|---|---|---|---|---|
+| CTM | 0.026 | +2.3 | 12.2 | −3.08 |
+| Silver root (all 10k sims) | 0.063 | +12.2 | 17.7 | −3.51 |
+| Silver best edge | 0.061 | +11.9 | 17.4 | −3.47 |
+
+Pre-registered deltas, Silver root − CTM: Brier +0.036 [+0.022, +0.050]; own-scale HP log score −0.43
+[−0.59, −0.26], which is mostly a scale artifact: the heal cap folds 18% of wins into one point mass at max HP that
+the CTM predicts as one bin. Matched scale (1,010 wins): win HP bias −2.3 (CTM) vs −11.7 (Silver root), RMSE 12.2
+vs 16.8, RMSE after removing the mean bias 11.97 vs 12.07, log score −3.082 vs −3.212, delta −0.13 [−0.25, −0.01].
+**Interpretation:** A is `NOT_SHOWN` by the pre-registered rule: even the realized hand adds no measurable signal to
+death or HP lost, and the sampled-hand mixture is slightly worse, so an opening-hand latent is not worth a CTM schema
+change for OOC use. B: the first search's endpoints carry about as much information about win HP as the CTM (same
+spread once the bias is removed), but they are about 12 HP too pessimistic (greedy playouts and exploration) and
+overstate death (Brier 0.063 vs 0.026), although Silver sees the hand. **Inference:** a bias-corrected Silver
+soft label is not ruled out by this screen, but it costs ~400x the CTM's CPU (§408) and needs its own bias and death
+calibration. No follow-up proposed. Raw: `/mnt/project-files/ctm-opening-hand/run-3c73f1a4.tar.gz` (sha256 `2228160b…`),
+`stage4-hands16.jsonl.gz` (`51cec25d…`); [screen A](evidence/ctm_opening_hand_20261018/screenA-opening-hand.json)
+(`ef06180d…`), [screen B](evidence/ctm_opening_hand_20261018/screenB-first-search.json) (`65af25f3…`). Seeds used:
+111195112 (smoke, run twice for the off/on check), 111195113–111195160; 111195161–111195171 unused.
+**Knowledge impact:** the two `STS_CTM_ROW_*` rows in `operations/environment-variables.md` and one paragraph in
+`evaluation/current-research.md` (§408 CTM vs Silver section).
+
+## §531 — First exact combat parity canary against the real game: 26/34 steps match, one engine difference (2026-10-18)
+
+**Question:** does the native engine produce the game's next combat state for the same state, action and RNG?
+**Setup:** one A20 run on Philipp's PC with the live mod built with `STS_DIFFERENTIAL_DEBUG_RNG=1` (draw order
+plus 12 RNG streams), driver `--parity-trace` at #651 head `6babedd6`, seed 111194450. The driver stopped at step 69
+(floor 5, see below). `tools/combat_parity.py run` with `combat_parity_probe` from the same commit.
+**Result:** 34 combat steps compared: 26 MATCH, 8 MISMATCH. Skipped: 2 `HELD_SELECTION_CARDS`, 1 `TRACE_ENDED`.
+Coverage: 3 encounters (Two Louse, Small Slimes, Cultist), 1 relic (Burning Blood). The three combat ends match in
+outcome; game − native end HP = 6, Burning Blood's post-combat heal. Seven mismatches were native export
+leftovers, not behavior:
+- No Draw is stored as 1 natively and −1 in Java (2 steps).
+- The engine clears removed powers by their flag only, so the `statusMap` amount stays (2 steps).
+- Curl Up leaves `uniquePower0` behind (2 steps).
+- `cardSelect` is exported outside `CARD_SELECT` (1 step).
+
+One was an engine difference: when Uppercut kills its target, the game puts no Weak or Vulnerable on the dead
+monster and the engine did.
+**Interpretation:** #656 makes the probe drop inactive payloads on both sides, and adds `STS_DEAD_TARGET_DEBUFF_FIX`
+(default on). **Inference:** the debuff fix changes play only where a dead monster's powers carry over. The canary
+also surfaced two driver issues, fixed in #656: Explosive Potion is listed once per monster by MCP, which stopped
+the run, and the Silver search tree made rows ~85 MB. Coverage is far too small for any claim about overall parity.
+Raw traces (4.8 GB) stay on the PC under `~/Documents/sts/artifacts/parity-canary-20261018/`. Seeds used: 111194450
+(canary), 111194451–111194452 (fixed unit-test seeds, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md` (canary paragraph).
+## §530 — Shield and Spear search gap vs heart1's engine: rollout targeting NOT_SHOWN, information worth ~3 HP, line closed (2026-10-18)
+
+**Question:** Where do the extra HP our A20 search loses on Shield and Spear, compared with heart1's engine on the
+same 32 entry states, come from (−6.8 HP in the A20 loss audit; §528 ruled out the facing block check and tree
+reuse)? Asked by Philipp 2026-10-17 23:57Z ("so we could have a smarter rollout maybe? ... maybe we are not allowed to
+turn around anymore?") and 2026-10-18 00:20Z / 00:57Z ("yes compare heart1 and our sample of draw pile").
+
+**Setup.** As in §528: `one_combat act4replay`, 32 states × 3 copies, 10k exact sims, paired seed blocks 111130904–999
+(first) and 111130200–295 (replication), 192 fights per arm; local switches only, nothing committed.
+- Rollout targeting under Surrounded (attacks normally go to the lowest-HP monster): mode 1 keeps attacking the
+  faced monster; mode 2 attacks the monster with the larger frontal intent.
+- Full-information root: the search root is the live state (true draw order and rolled intents) instead of the fair
+  public view. An upper bound for anything a fair search can gain from information.
+- Root-view audit: counted the root draw-pile observation on 1,000 decisions (32 fights, seeds 111130200–231).
+
+**Result** (HP lost incl. full HP on death, paired per state, bootstrap 95% CI; positive = worse):
+
+| arm vs default (31.6 HP lost) | seeds 111130904+ | seeds 111130200+ | pooled, 192 fights | wins | CPU |
+|---|---|---|---|---|---|
+| targeting 1, keep facing | +3.6 [−0.1, +7.5] | +2.0 [−2.1, +6.2] | **+2.8 [+0.3, +5.6]** | 178 vs 182 | 0.99x |
+| targeting 2, face bigger intent | +1.0 [−3.4, +4.9] | +0.4 [−4.3, +5.4] | **+0.7 [−2.5, +3.8]** | 181 vs 182 | 1.04x |
+| full-information root | −1.8 [−5.9, +2.8] | −4.0 [−8.4, +0.5] | **−2.9 [−5.6, +0.0]** | 186 vs 182 | 0.99x* |
+
+- \*The full-information arm ran on a later binary (40d71721); its CPU ratio is against a default rerun on that
+  binary, which reproduced the default outcomes on all 192 fights (0.96x against the `t0` CPU times).
+- Default at this code loses 31.6 HP vs 33.3 at the §528 commit (same seeds). **Inference:** the rollout root table
+  (ADR-0046) and action cap merged in between explain the difference; not separately tested.
+- heart1's engine (9 copies per state, §528 audit runs) minus ours, per state: now −3.5 [−8.0, +0.8]; minus our
+  full-information root −0.6 [−5.1, +3.7].
+- Code comparison: our search `CardPile` information-set mode is a port of heart1's (sorted unknown region, uniform
+  sampling at draw time, tracked known top and bottom). Chance outcomes are reseeded as `Random(base + N)` in both,
+  and the widening and exploration constants heart1's `SearchAgent` sets equal ours (C 3.70, α 0.52, exploration 25).
+- Root-view audit: 0 of 1,000 observations invalid; 16 had a known top card; the rest of the pile was unknown, as in
+  heart1's pile.
+
+**Interpretation:** neither targeting rule helps; keep-facing is worse. No difference in draw-pile handling was
+found, and our fair root is built correctly. On current main the gap to heart1 is no longer shown. **Inference:** the
+remainder is mostly noise plus the value of hidden information, which no fair search can recover.
+
+**Decision:** Philipp closed the Shield-and-Spear search line (2026-10-18 09:44Z: "Okay close the search line"). No
+switch or default change. What remains is the entry state (deck, lower max HP) from OOC play, which accounts
+for about half of the Shield and Spear excess and the max-HP deficit (A20 loss audit F1).
+
+Evidence: [`evidence/a20_ss_search_gap_close_20261018/`](evidence/a20_ss_search_gap_close_20261018/README.md)
+(per-fight CSVs, the three local patches, SHA256SUMS).
+
+Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
+
+**Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
+approaches in `research/combat-search/leaf-evaluation.md`.
+
+## §532 — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
+
+**Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the
+top pick, and would a looser prior or picking the root move by mean Q instead of visits play better? Cheapest test:
+Act 1 only.
+
+**Diagnostic** (no new runs; decision logs of 224 A20 winrate-check seeds, 12,802 non-trivial roots): median top
+prior 0.9925 (above 0.99 in 52% of roots); the top child gets a median 97.8% of visits; the early-stop visit lock ends
+100% of searches (~2,050 of 4,096 sims); executed move = prior argmax 90.5%; non-selected children get a median 2
+visits (46% exactly 1). So yes: search spends almost everything on the prior's pick.
+
+**Design** ([PREREG](evidence/ooc_prior_guidance_20261018/PREREG.md), frozen before variant data; Philipp 12:01Z
+"do 16 workers"): A20 winrate-check stack at code 658d43ee, Act 1 only (`STS_STOP_AFTER_ACT=1`), 64 paired seeds,
+4 arms: C (default), T3 (`STS_OOC_MCTS_TEMPERATURE=3`), Q (`ROOT_SELECTION=q`, 2,048 sims ≈ C's actual sims, lock
+off), T3Q (both). Primary: post-Act-1-boss HP, death = 0, paired vs C, seed bootstrap 95% CI. Rule: WORSE if CI upper
+< 0; SCREEN_PASS if mean ≥ +3 HP and deaths ≤ C; else NOT_SHOWN.
+
+**Validity:** `verify_campaign.py` OK for all 16 workers (256 units, run 3d0d5120, binary 3315a7c1…).
+
+**Result:**
+
+| arm | Act-1 clears | score | Δ vs C [95% CI] | verdict | pick = prior argmax | sims/root | OOC CPU/run |
+|---|---|---|---|---|---|---|---|
+| C | 57/64 | 34.1 | — | — | 92.1% | 2,327 | 508 s |
+| T3 | 60/64 | 37.2 | +3.1 [−2.1, +8.3] | SCREEN_PASS | 86.5% | 2,618 | 576 s |
+| Q | 32/64 | 13.8 | −20.3 [−25.7, −14.7] | WORSE | 40.1% | 2,048 | 401 s |
+| T3Q | 45/64 | 25.1 | −9.0 [−14.9, −3.0] | WORSE | 46.2% | 2,048 | 419 s |
+
+- T3 vs C clears: 4 seeds only T3 cleared, 1 only C; on the 56 seeds both cleared T3 has +2.2 HP.
+- Q's off-prior picks (843) had a median 11 visits (39% ≤ 5). T3Q's (779) had a median 195 visits and still lost.
+
+**Interpretation:** picking by mean Q is clearly harmful, and not only because of low-visit noise: with T3Q the
+off-prior picks were well sampled and still lost 9 HP and 12 more Act-1 runs. **Inference:** the rollout3 + X2-B
+leaf ranks OOC options worse than the student_sel prior, so letting Q override the prior hurts; the prior's
+dominance is mostly protecting the search from its leaf (consistent with §441, §392). A softer prior with visit
+selection (T3) passes the screen rule at the margin, with a CI that includes 0 and ~13% more OOC CPU. Act-1 HP
+ignores deck quality, and with `STOP_AFTER_ACT=1` the search values the Act-1 boss clear as a win.
+
+**Decision:** no default change. `ROOT_SELECTION=q` is rejected for this stack. T3 earns a confirmation that
+reaches later acts, on Philipp's word.
+
+Evidence: [`evidence/ooc_prior_guidance_20261018/`](evidence/ooc_prior_guidance_20261018/README.md) (PREREG,
+campaign files, analyzer, diagnostic script, result, tar hashes; raw tars on the project share).
+
+Seeds used: 111195272 (smoke), 111195280–111195343.
+
+**Knowledge impact:** result line added to `evaluation/current-research.md`.

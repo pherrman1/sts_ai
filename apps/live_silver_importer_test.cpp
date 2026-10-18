@@ -1296,6 +1296,25 @@ int main(int argc, char **argv) {
     verifyGuardianProducerThresholds();
     try {
         {
+            // Overlay labels name the card a selection picks.
+            using namespace silver_bridge;
+            BattleStateWire state;
+            SemanticAction select;
+            select.type = SemanticActionType::SINGLE_CARD_SELECT;
+            select.source = CardSource::HAND;
+            select.card.id = static_cast<std::int16_t>(sts::CardId::STRIKE_RED);
+            select.card.upgraded = true;
+            SemanticAction multi;
+            multi.type = SemanticActionType::MULTI_CARD_SELECT;
+            multi.selectedCards = {select.card, select.card};
+            multi.selectedCards[1].id = static_cast<std::int16_t>(sts::CardId::BASH);
+            multi.selectedCards[1].upgraded = false;
+            const auto single = one_combat::advisor::silverActionLabel(select, state);
+            const auto many = one_combat::advisor::silverActionLabel(multi, state);
+            if (single != "Select Strike+" || many != "Select Strike+, Bash")
+                throw std::runtime_error("card-select labels: " + single + " / " + many);
+        }
+        {
             const std::string path = argc > 2 ? argv[2] : "tests/fixtures/live_guardian_a20_phases.json";
             std::ifstream input(path);
             if (!input) throw std::runtime_error("cannot read captured Guardian phases: " + path);

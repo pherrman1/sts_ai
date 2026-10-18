@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-18 for powers on dead targets; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -335,6 +335,34 @@ including HP loss. Native applies the same cap in `Player::damage`, in
 `Player::loseHp`, and in `Monster::calculateDamageToPlayer` (min 1).
 `Player::loseHp` is never called with 0, because `hpWasLost` asserts
 `amount > 0`.
+
+### Powers on dead targets (mismatch, fixed)
+
+Read with `javap -c -p` from the pinned JAR (2026-10-18):
+
+- `ApplyPowerAction.update` begins with
+  `if (target == null || target.isDeadOrEscaped()) { isDone = true; return; }`.
+  It runs on every tick, for buffs and debuffs alike.
+- After the `onApplyPower` hooks and the Champion Belt trigger it checks a
+  monster target again, and only then applies Ginger, Turnip and Artifact.
+- `shouldCancelAction` is never called by this action, so a dying source does
+  not cancel it.
+- `AbstractCreature.isDeadOrEscaped` is
+  `isDying || halfDead || (monster && isEscaping)`; native
+  `Monster::isDeadOrEscaped` is the same set.
+- The constructor makes the action a no-op when
+  `areMonstersBasicallyDead()`.
+
+Native applied debuffs and buffs to dead monsters; the combat parity canary
+saw it when Uppercut killed its target. `STS_DEAD_TARGET_DEBUFF_FIX` (default
+on) returns early in `BattleContext::debuffEnemy` (before Artifact, Sadistic
+Nature and Champion Belt) and in `ActData_BuffEnemy`. Not mirrored natively
+yet (**Unverified** whether native already matches):
+
+- powers on the player while the player is dying;
+- the constructor's `areMonstersBasicallyDead` cancel.
+
+Test: `dead_target_debuff_fix`.
 
 ## Ironclad relics
 

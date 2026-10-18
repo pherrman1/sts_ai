@@ -359,6 +359,12 @@ int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);
 
 int combatTransitionFixture(const std::string &outfile,
                                    const std::string &manifestPath);
+// One combat_transition_row_v2 JSONL row (combattransitiongen, ctmscorerows).
+nlohmann::json combatTransitionRowJson(
+    std::uint64_t sourceSeed, int fightIdx, int act, int floor, Room room,
+    int encounter, const std::string &teacherId, bool runValid, bool outcomeDecided,
+    int rawCaptureCount, const std::optional<one_combat::CombatTransitionRecord> &record,
+    const nlohmann::json &predictorInput);
 
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
@@ -450,6 +456,9 @@ int ctmScoreRows(const std::string &inPath, const std::string &outPath,
                  const std::string &standardModel = "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
                  bool activeLizard = true);
 int ctmScoreRowsSelfTest();
+// #460: opening hand after BattleContext::init (cards, draw pile size, input state).
+nlohmann::json ctmOpeningHandJson(const GameContext &gc);
+int ctmOpeningHands(const std::string &inPath, const std::string &outPath, int resamples);
 int ctmAct4SurvivalSelfTest(const std::string &fixturePath);
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
 int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,

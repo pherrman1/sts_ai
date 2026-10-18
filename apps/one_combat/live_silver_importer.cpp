@@ -1985,9 +1985,28 @@ std::string silverActionLabel(const silver_bridge::SemanticAction &action,
             label += " -> Monster " + std::to_string(action.target + 1);
         return label;
     }
+    const auto cardName = [](const silver_bridge::CardWire &card) {
+        if (card.id <= 0) return std::string("Card");
+        return std::string(sts::getCardName(static_cast<sts::CardId>(card.id))) + (card.upgraded ? "+" : "");
+    };
+    if (action.type == silver_bridge::SemanticActionType::SINGLE_CARD_SELECT) {
+        // The overlay must say which card the selection picks (Armaments,
+        // Headbutt, Exhume, Dual Wield, Attack Potion ...), not only that one is due.
+        if (action.skipCardSelect) return "Select: skip";
+        if (action.source == silver_bridge::CardSource::CARD_SELECT_OPTION)
+            return "Select " + (action.optionCardId > 0
+                ? std::string(sts::getCardName(static_cast<sts::CardId>(action.optionCardId))) : std::string("option"));
+        return "Select " + cardName(action.card);
+    }
+    if (action.type == silver_bridge::SemanticActionType::MULTI_CARD_SELECT) {
+        if (action.selectedCards.empty()) return "Select: none";
+        std::string label = "Select ";
+        for (std::size_t i = 0; i < action.selectedCards.size(); ++i)
+            label += (i ? ", " : "") + cardName(action.selectedCards[i]);
+        return label;
+    }
     if (action.type != silver_bridge::SemanticActionType::CARD) return "Card selection";
-    const std::string name = action.card.id > 0
-        ? sts::getCardName(static_cast<sts::CardId>(action.card.id)) : "Card";
+    const std::string name = cardName(action.card);
     if (action.target >= 0 && action.target < state.monsterCount) {
         const auto id = state.monsters[action.target].id;
         return name + " -> Monster " + std::to_string(action.target + 1);
