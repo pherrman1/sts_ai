@@ -1,4 +1,4 @@
-# Act-4 survival model for the A20 CTM (§TBD)
+# Act-4 survival model for the A20 CTM (§527)
 
 - `PREREG.md`: the gate, written before the fit (commit `0bfa83b2`).
 - `fit.json`: grid on VALIDATION and the selected cell; `gate.json`: TEST criteria and reported numbers.

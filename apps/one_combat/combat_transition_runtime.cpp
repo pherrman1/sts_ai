@@ -58,7 +58,7 @@ std::string sha256Text(const std::string &text) {
     for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
     return result.str();
 }
-// §TBD Act-4 survival model (tools/ctm_act4_survival.py, which mirrors these features; keep them in lockstep).
+// §527 Act-4 survival model (tools/ctm_act4_survival.py, which mirrors these features; keep them in lockstep).
 constexpr int kAct4Cards=400,kAct4Relics=200,kAct4Potions=50;
 const char *const kAct4Scalars[]={"heart","cur_hp","max_hp","hp_frac","gold","potion_capacity","potion_count",
     "deck_size","upgraded"};
@@ -1201,7 +1201,7 @@ double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin)
     return reserveProbability(lizardBrewRModel_,pReserveWin);
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {
-    // §TBD: the opt-in Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4);
+    // §527: the opt-in Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4);
     // other heads are unchanged.
     if(p.globals.encounter==int(sts::MonsterEncounter::THE_HEART) ||
        p.globals.encounter==int(sts::MonsterEncounter::SHIELD_AND_SPEAR))

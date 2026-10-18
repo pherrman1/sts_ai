@@ -20460,7 +20460,7 @@ test. No default change; whether to continue the Heart leaf line is Philipp's ca
 Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
 **Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
 
-## §TBD — Act-4 survival model for the A20 CTM (5,467 Act-4 labels), offline gate: FAIL (Heart passes, Shield and Spear not shown) (2026-10-18)
+## §527 — Act-4 survival model for the A20 CTM (5,467 Act-4 labels), offline gate: FAIL (Heart passes, Shield and Spear not shown) (2026-10-18)
 
 **Question (Philipp, 2026-10-17 23:49Z, card "Retrain"):** the deployed A20 CTM never saw an Act-4 row (audit
 `/mnt/project-files/audit-2026-10-17/ctm-a20.md` finding 1). Does a model fit on the 2026-10-17 Act-4 label
@@ -20489,6 +20489,7 @@ at the TRAIN median): candidate 0.559 mean death vs 0.536 in 192 replays at 10k,
 CTest `ctm_act4_survival_parity`. No default change; an A20 A/B is proposed separately.
 [fit.json](evidence/ctm_act4_survival_20261018/fit.json), [gate.json](evidence/ctm_act4_survival_20261018/gate.json).
 **Knowledge impact:** `architecture/out-of-combat.md` and `operations/environment-variables.md` (the opt-in switch).
+
 ## §526 — Per-fight and per-root Silver search parameters at A20: no per-fight or per-root preference shown (2026-10-17)
 
 **Question (Philipp, 2026-10-17 21:57Z):** "investigate a learned model for parameters per fight / per root. i know

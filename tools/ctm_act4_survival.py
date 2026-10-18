@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Act-4 survival model for the CTM (§TBD): death in SHIELD_AND_SPEAR / THE_HEART from the CTM predictor input.
+"""Act-4 survival model for the CTM (§527): death in SHIELD_AND_SPEAR / THE_HEART from the CTM predictor input.
 
   fit    ROWS.jsonl BASE.csv OUT_DIR   grid on VALIDATION, candidate on TRAIN, writes model.ubj + fit.json
   gate   ROWS.jsonl BASE.csv OUT_DIR   opens TEST once for the fitted candidate, writes gate.json

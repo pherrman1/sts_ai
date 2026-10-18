@@ -325,7 +325,7 @@ abort to V4. Both have the same exclusions (`STS_OOC_MCTS_COMBAT_RESOLVER`,
 `STS_OOC_MCTS_LEAF_CAPTURE`) and require `STS_OOC_MCTS=1`; `=0` means off, as unset. Per run,
 `[ooc-silver-fallback]` counts these combats as `act4_silver`. The opt-in
 `boss` leaf value still prices the Heart through the CTM expectation. CPU cost
-and playing strength are unmeasured. Opt-in (`STS_CTM_ACT4_SURVIVAL_MODEL=TREES`, §TBD):
+and playing strength are unmeasured. Opt-in (`STS_CTM_ACT4_SURVIVAL_MODEL=TREES`, §527):
 every CTM runtime takes the survival probability of Shield and Spear and the
 Heart from an XGBoost model fit on 5,467 A20 Act-4 label rows
 (`models/candidates/ctm_act4_survival_trees.txt`, features from the predictor
