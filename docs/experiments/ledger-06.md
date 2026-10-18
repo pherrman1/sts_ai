@@ -20870,6 +20870,34 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
+## §537 — concave-HP Silver victory leaf, paired 3-fight continuations at A20: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18, thread "end-state formula"):** 14:06Z "change the evaluation at the final state, so
+tweak the formula"; 14:16Z "Yes, but use 16 workers for that. Also think about whether HP is the only thing we want
+to change". A re-analysis of §510's paired continuations found HP strongly concave (an HP at < 30% of max worth ~4x
+the mean floor-model slope, at ≥ 90% ~0.5x), while Silver's victory leaf is linear in HP.
+**Design:** [PREREG](evidence/silver_concave_hp_leaf_20261018/PREREG.md), light pre-launch review PASS. New research
+option `STS_SILVER_CONCAVE_HP_LEAF=k` (PR #665; unset = linear): `h → (M/k)e^{0.75k}(1 − e^{−kh/M})` and potion term
+× `sqrt(u'(h))`. `potionpriceprobe … all` on A20 source runs (student_sel OOC argmax, exact-10k Silver with the g6_E
+prior, keys off, acts 1–3): every sampled battle-start state is continued 3 fights by base, `leaf:concave=2.7`
+(primary), `leaf:concave=1.35` and price copies (HP −12, gold −50, max HP −5, potions), common random numbers,
+valued by the A20 floor model. Seeds 111197436–111197675 on 16 workers, RUN_COMMIT `4ca37a4e` (code `633aa69a`,
+binary `48e17951…`).
+**Result: NOT_SHOWN.** 240/240 units rc=0, 16 tars verified, 2,651 states. Leaf − base, floors: k = 2.7 **+0.057
+[−0.141, +0.263]**; k = 1.35 +0.127 [−0.106, +0.367]. A20 win model −0.003 / +0.003, survival of the 3 fights
++0.8 / +1.2 pp, all CIs include 0. Descriptive: largest point gain at start HP ≥ 90% (k = 2.7 +0.23 [−0.01, +0.49]),
+none at < 45%. Descriptive prices under the student policy: non-Fairy potion 5.0 HP-eq [1.8, 8.1], max HP 1.08 HP
+per point [0.53, 1.66], gold 0.011 HP per gold [−0.064, 0.070], against the formula's 11 / 2 / 0.25.
+**Interpretation:** a concave HP term does not change the next three fights' outcome by more than about +0.26 floor (k = 2.7) or +0.37 floor (k = 1.35), the CI upper bounds.
+**Inference:** Silver's decisions are rarely close enough in HP risk for the curvature to matter. The price CIs exclude
+the formula's potion, max-HP and gold weights, but §513 already found lower potion weights NOT_SHOWN in whole runs,
+and the prices were not a pre-registered decision. Per the decision rule the option stays research-only, unset.
+Seeds 111197436–111197675, smokes 111197676–677 and reviewer 111197680–682 are used; 111197678–679, 111197683–691
+unused.
+[README](evidence/silver_concave_hp_leaf_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
+**Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
+
 ## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
 
 **Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?
