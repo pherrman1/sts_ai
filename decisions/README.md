@@ -31,6 +31,8 @@ the replacement.
 - [ADR-TBD](TBD-a20-learned-stop-default.md) makes A20 `run`/`bestbench`/`reprobench` use learned Silver stopping
   even with a sims argument, and makes the A20-trained stop model `gbt-0cac7cc64364` the default
   (`STS_SILVER_LEARNED_STOP=0` restores flat Silver, `STS_SILVER_LEARNED_STOP_MODEL=gbt-770201c31f7b` the old model).
+- [ADR-0050](0050-silver-prior-playout-boss-elite.md) makes real boss and elite Silver fights use prior-argmax
+  playouts when a root prior is set (`STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy playouts).
 - [ADR-0049](0049-silver-gen7f-root-table.md) makes gen-7f E (gen 7 retrained on active power features) the bundled
   default Silver rollout root table model and the A20 Silver prior; `models/combat_policy_mlp_g6_E.txt` restores ADR-0046.
 - [ADR-0048](0048-ctm-act4-survival-default.md) makes the A20 CTM stack (`pathb-a20`) price Shield and Spear and
