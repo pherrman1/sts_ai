@@ -21120,3 +21120,30 @@ does not compare the two at equal CPU. The stack (student_sel, g7f) wins far
 more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are not comparable across the two runs.
 The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
 **Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).
+
+## §TBD — Learned-stop retrain on A20 stop traces: old model transfers; retrained saves 1.9 pp more simulations offline (2026-10-18)
+
+**Question (Philipp, 2026-10-18 19:17Z, gen-7 thread):** "should we maybe also retrain the learned stopping? its been
+a few silver iterations since we did that … after that, we will make it default maybe"; 20:17Z "go 8 workers".
+Does the stop model `gbt-770201c31f7b` (ADR-0026; fitted on 160 A0 runs with the V4 OOC stack and an older Silver)
+still fit the current A20 stack, and does refitting it help?
+**Design:** [PLAN](evidence/silver_stoptrace_a20_20261018/PLAN.md), light pre-launch review PASS. Collection: the
+§538 F10 configuration (A20 full runs, flat exact 10k, student_sel `policyStep`, g7f_E as rollout root table and as
+root/tree prior) plus `STS_SILVER_STOP_TRACE`. RUN_COMMIT `7c69b94a` (code main `46479de3`, binary `25017204…`), seeds
+111198966–111199477 (smoke 111199486). Offline (`offline_compare.py`): first 384 seeds train, last 128 held out.
+The retrained model uses the ADR-0026 recipe unchanged. Its threshold is chosen out-of-fold on the training seeds to
+match the old model's disagreement there. Both policies are simulated on the held-out seeds; seed-cluster bootstrap.
+Pre-registered rule: RETRAIN_BETTER if new − old saving > 0 with the interval excluding 0 and the disagreement upper
+bound ≤ +0.25 pp.
+**Result.** 512/512 units rc=0; 8 tars verified (`worker_tars.txt`); 226,187 multi-action root decisions.
+- **Old model, held out:** saving 56.2% of flat-10k simulations, disagreement with the 10k leader 0.71%. On the
+  training seeds its disagreement is 0.68%, against 0.72% in its own A0 fit (§372).
+- **Retrained (threshold 0.0323), held out:** saving 58.1%, disagreement 0.68%.
+- **New − old:** saving +1.9 pp [+1.7, +2.0]; disagreement −0.03 pp [−0.09, +0.02]. **RETRAIN_BETTER.** Per searched
+  decision the new model uses 4.3% fewer simulations than the old one (41.9% vs 43.8% of 10k).
+
+**Interpretation:** the old model transfers to the current A20 stack with no loss of accuracy. The refit is better
+by a small, clear margin. **Inference:** a model swap would cut the learned-stop combat CPU by about 4% at equal
+accuracy. That is too small for a full-run play test to detect, so a swap could only be checked for non-harm. The
+retrained model (`model.json` from the same recipe on all 512 seeds) is not compiled in; no code changed.
+**Knowledge impact:** none beyond this entry; no default or code change.
