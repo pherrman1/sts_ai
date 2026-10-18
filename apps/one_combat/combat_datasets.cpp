@@ -74,7 +74,7 @@ nlohmann::json effectiveSilverLeafSpecification() {
     // Recorded only when on (ADR-0046 default), so =0 specifications match earlier ones.
     if (!leaf.rolloutRootTable.empty())
         spec["rollout_root_table"] = {{"path", leaf.rolloutRootTable}, {"sha256", fileSha256(leaf.rolloutRootTable)}};
-    // Recorded only when on (ADR-TBD default with a root prior), so earlier specifications match.
+    // Recorded only when on (ADR-0050 default with a root prior), so earlier specifications match.
     if (leaf.priorPlayoutBossElite) spec["prior_playout_rooms"] = "boss,elite";
     return spec;
 }
