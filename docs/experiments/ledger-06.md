@@ -20716,3 +20716,51 @@ Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
 
 **Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
 approaches in `research/combat-search/leaf-evaluation.md`.
+
+## §TBD — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
+
+**Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the
+top pick, and would a looser prior or picking the root move by mean Q instead of visits play better? Cheapest test:
+Act 1 only.
+
+**Diagnostic** (no new runs; decision logs of 224 A20 winrate-check seeds, 12,802 non-trivial roots): median top
+prior 0.9925 (above 0.99 in 52% of roots); the top child gets a median 97.8% of visits; the early-stop visit lock ends
+100% of searches (~2,050 of 4,096 sims); executed move = prior argmax 90.5%; non-selected children get a median 2
+visits (46% exactly 1). So yes: search spends almost everything on the prior's pick.
+
+**Design** ([PREREG](evidence/ooc_prior_guidance_20261018/PREREG.md), frozen before variant data; Philipp 12:01Z
+"do 16 workers"): A20 winrate-check stack at code 658d43ee, Act 1 only (`STS_STOP_AFTER_ACT=1`), 64 paired seeds,
+4 arms: C (default), T3 (`STS_OOC_MCTS_TEMPERATURE=3`), Q (`ROOT_SELECTION=q`, 2,048 sims ≈ C's actual sims, lock
+off), T3Q (both). Primary: post-Act-1-boss HP, death = 0, paired vs C, seed bootstrap 95% CI. Rule: WORSE if CI upper
+< 0; SCREEN_PASS if mean ≥ +3 HP and deaths ≤ C; else NOT_SHOWN.
+
+**Validity:** `verify_campaign.py` OK for all 16 workers (256 units, run 3d0d5120, binary 3315a7c1…).
+
+**Result:**
+
+| arm | Act-1 clears | score | Δ vs C [95% CI] | verdict | pick = prior argmax | sims/root | OOC CPU/run |
+|---|---|---|---|---|---|---|---|
+| C | 57/64 | 34.1 | — | — | 92.1% | 2,327 | 508 s |
+| T3 | 60/64 | 37.2 | +3.1 [−2.1, +8.3] | SCREEN_PASS | 86.5% | 2,618 | 576 s |
+| Q | 32/64 | 13.8 | −20.3 [−25.7, −14.7] | WORSE | 40.1% | 2,048 | 401 s |
+| T3Q | 45/64 | 25.1 | −9.0 [−14.9, −3.0] | WORSE | 46.2% | 2,048 | 419 s |
+
+- T3 vs C clears: 4 seeds only T3 cleared, 1 only C; on the 56 seeds both cleared T3 has +2.2 HP.
+- Q's off-prior picks (843) had a median 11 visits (39% ≤ 5). T3Q's (779) had a median 195 visits and still lost.
+
+**Interpretation:** picking by mean Q is clearly harmful, and not only because of low-visit noise: with T3Q the
+off-prior picks were well sampled and still lost 9 HP and 12 more Act-1 runs. **Inference:** the rollout3 + X2-B
+leaf ranks OOC options worse than the student_sel prior, so letting Q override the prior hurts; the prior's
+dominance is mostly protecting the search from its leaf (consistent with §441, §392). A softer prior with visit
+selection (T3) passes the screen rule at the margin, with a CI that includes 0 and ~13% more OOC CPU. Act-1 HP
+ignores deck quality, and with `STOP_AFTER_ACT=1` the search values the Act-1 boss clear as a win.
+
+**Decision:** no default change. `ROOT_SELECTION=q` is rejected for this stack. T3 earns a confirmation that
+reaches later acts, on Philipp's word.
+
+Evidence: [`evidence/ooc_prior_guidance_20261018/`](evidence/ooc_prior_guidance_20261018/README.md) (PREREG,
+campaign files, analyzer, diagnostic script, result, tar hashes; raw tars on the project share).
+
+Seeds used: 111195272 (smoke), 111195280–111195343.
+
+**Knowledge impact:** result line added to `evaluation/current-research.md`.
