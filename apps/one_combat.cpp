@@ -3991,6 +3991,8 @@ int main(int argc, char **argv) {
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
 
+    } else if (mode == "ooclearnedstoptest") {  // learned OOC stop: features + model parity with the exporter
+        return one_combat::oocLearnedStopTestCommand(argc, argv);
     } else if (mode == "heart1logitscheck") {
         return one_combat::heart1::logitsCheckCommand(argc, argv);
     } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records

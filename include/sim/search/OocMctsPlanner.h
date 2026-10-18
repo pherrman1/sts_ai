@@ -60,6 +60,12 @@ public:
     // (the provider re-samples everything the key omits). Empty never merges.
     virtual std::optional<std::uint64_t> outcomeEquivalenceKey(OocStateId) const { return std::nullopt; }
 };
+struct OocRootActionStats {
+    OocActionId id;
+    double prior;
+    std::uint64_t visits;
+    double q;
+};
 struct OocMctsConfig {
     double cPuct = 1.5;
     double wideningK = 2.0;
@@ -85,6 +91,11 @@ struct OocMctsConfig {
     // times the completed simulations. Off when the fraction is 0.
     std::vector<std::uint64_t> gapStopSimulations;
     double gapStopFraction = 0;
+    // Opt-in learned stop (STS_OOC_MCTS_LEARNED_STOP): after each listed
+    // simulation count, stop when learnedStop returns true for the root action
+    // statistics (in root action order). Off when learnedStop is empty.
+    std::vector<std::uint64_t> learnedStopSimulations;
+    std::function<bool(std::uint64_t, const std::vector<OocRootActionStats> &)> learnedStop;
     // Optional research budget checked after each completed simulation. The
     // host includes model/root preparation in its deadline. Empty is unchanged.
     std::function<bool()> budgetExhausted;
@@ -141,6 +152,7 @@ struct OocMctsMetrics {
     std::uint64_t earlyStopLockedRoot = 0;
     std::uint64_t earlyStopVisitGap20 = 0;
     std::uint64_t earlyStopGapLadder = 0;
+    std::uint64_t earlyStopLearned = 0;
     std::uint64_t earlyStopBudget = 0;
     std::uint64_t savedSimulations = 0;
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
@@ -175,12 +187,6 @@ struct OocHpDistribution {
         ++floors[endpoint->floor];
         maxHp = std::max(maxHp, endpoint->maxHp);
     }
-};
-struct OocRootActionStats {
-    OocActionId id;
-    double prior;
-    std::uint64_t visits;
-    double q;
 };
 struct OocRootCheckpointStats {
     std::uint64_t simulations;
