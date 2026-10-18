@@ -1,0 +1,11 @@
+w01 OK      128 units, run ef8090260f5a, tar 770758842645, 2026-10-18T04:44:53Z
+w02 OK      128 units, run ef8090260f5a, tar f9fd6ed574bf, 2026-10-18T04:51:13Z
+w03 OK      128 units, run ef8090260f5a, tar b47510bb0391, 2026-10-18T13:27:15Z
+w04 OK      128 units, run ef8090260f5a, tar af1882d7f287, 2026-10-18T12:48:32Z
+w05 OK      128 units, run ef8090260f5a, tar f7d187d6669f, 2026-10-18T12:37:05Z
+w06 OK      128 units, run ef8090260f5a, tar afd35a00e69e, 2026-10-18T13:13:45Z
+w07 OK      128 units, run ef8090260f5a, tar 7abc694129e7, 2026-10-18T12:39:32Z
+w08 OK      128 units, run ef8090260f5a, tar e3b83e92428f, 2026-10-18T03:40:15Z
+OK: 1 2 3 4 5 6 7 8
+MISSING: -
+BAD: -
