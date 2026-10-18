@@ -111,6 +111,8 @@ namespace sts::search {
         int rolloutUniform, rolloutsPerLeaf, rolloutZeroCostCap, rolloutActionCap;
         // Rollout root table model path; empty when STS_SILVER_ROLLOUT_ROOT_TABLE=0.
         std::string rolloutRootTable;
+        // ADR-TBD boss/elite prior playouts are on (option on and the root prior applies to all fights).
+        bool priorPlayoutBossElite;
     };
     NativeSilverLeafSettings nativeSilverLeafSettings();
     bool nativeSilverLearnedStopEnabled();
