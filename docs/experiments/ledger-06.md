@@ -20870,7 +20870,7 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
-## §TBD — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
+## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
 
 **Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?
 Asked by Philipp 2026-10-18 14:29Z ("lets go with the canary run").

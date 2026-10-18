@@ -184,7 +184,7 @@ ended Flame Barrier kept its old value for the root prior and root table nets.
 `STS_ACTIVE_POWER_FEATURES` (default on, `=0` restores) reads 0 for a power
 whose flag is off.
 
-The second canary (§TBD; 2026-10-18, a full A20 run on the PC that reached
+The second canary (§536; 2026-10-18, a full A20 run on the PC that reached
 floor 16 in Act 1, 9 encounters) compared 135 combat steps: 126 matched and 9
 did not. The probe now also ignores a dead monster's powers, because Java
 clears them only in `updateDeathAnimation`. `STS_CURL_UP_LETHAL_FIX` (default
