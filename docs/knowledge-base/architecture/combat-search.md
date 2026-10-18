@@ -273,8 +273,12 @@ Research-only `STS_SILVER_CONCAVE_HP_LEAF=k` (native Silver; per-copy
 override `g_nativeSilverConcaveHpLeafOverride` for `potionpriceprobe`
 `leaf:concave=K` variants) replaces `h` by a concave `u(h)` with slope 1 at 75%
 HP and scales the potion term by `sqrt(u'(h))`; the loss branch and the
-final-fight leaf are unchanged. Test: §TBD (pre-registration
-`docs/experiments/evidence/silver_concave_hp_leaf_20261018/PREREG.md`).
+final-fight leaf are unchanged. Ledger-06 §TBD (A20, 2,651 paired 3-fight
+continuations) did not show an effect: k = 2.7 +0.057 [−0.141, +0.263] floors,
+k = 1.35 +0.127 [−0.106, +0.367]. The linear HP term stays. Under the
+student_sel policy the same run priced non-Fairy potions at 5.0 HP-eq [1.8,
+8.1], max HP at 1.08 HP per point [0.53, 1.66] and gold at 0.011 HP per gold
+[−0.064, 0.070] (descriptive; the formula uses 11 / 2 / 0.25).
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
