@@ -184,6 +184,9 @@ namespace sts::search {
     };
     extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;
+    // Research-only (ctmsilvergen rootdist): when set, every search records its
+    // simulation endpoints here (SilverSearcher::outcomes). Default off.
+    extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;
 
     struct CombatKnowledgeState;
 
