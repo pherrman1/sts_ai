@@ -471,9 +471,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private String displaySilverLabel(String label) {
         Map<Integer, Integer> indices = new HashMap<>();
         if (AbstractDungeon.getMonsters() != null) {
+            // The same slot map the observation exports. monsterSlots alone is
+            // empty once the Runic Dome tracker binds the slots (every combat),
+            // which made every target read "Unknown target".
+            IdentityHashMap<AbstractMonster, Integer> emitted = emittedMonsterSlots(liveEncounter);
             List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
             for (int i = 0; i < monsters.size(); ++i) {
-                Integer slot = monsterSlots.get(monsters.get(i));
+                Integer slot = emitted.get(monsters.get(i));
                 if (slot != null) indices.put(slot, i + 1);
             }
         }
