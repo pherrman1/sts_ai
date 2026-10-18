@@ -1,4 +1,4 @@
-# ADR-TBD: The default Silver rollout root table and A20 Silver prior are gen-7f E
+# ADR-0049: The default Silver rollout root table and A20 Silver prior are gen-7f E
 
 Date: 2026-10-18
 Status: accepted

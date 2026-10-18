@@ -299,7 +299,7 @@ at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040). §523 (A20, 176 fights): averaging 1, 2, 4 or 8 uniform random playouts per leaf
 loses 31–35 fight score to greedy at every k (0.85x–4.70x CPU per fight); more random playouts barely help.
 Default since ADR-0046 (`STS_SILVER_ROLLOUT_ROOT_TABLE`: unset = bundled
-`models/combat_policy_mlp_g7f_E.txt` since ADR-TBD (before: `models/combat_policy_mlp_g6_E.txt`, still bundled;
+`models/combat_policy_mlp_g7f_E.txt` since ADR-0049 (before: `models/combat_policy_mlp_g6_E.txt`, still bundled;
 setting that path restores it), `0` = the fixed ADR-0040 table, or another
 `combat_policy_mlp` model): that fixed table is replaced by one built once per searched root
 (`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
