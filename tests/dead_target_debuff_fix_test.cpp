@@ -1,6 +1,6 @@
-// STS_DEAD_TARGET_DEBUFF_FIX (default on): a debuff on a dead or escaped
-// monster does nothing, as in the game; =0 restores the legacy engine, which
-// applied it.
+// STS_DEAD_TARGET_DEBUFF_FIX (default on): a debuff or buff on a dead or
+// escaped monster does nothing, as in the game; =0 restores the legacy engine,
+// which applied it.
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 
@@ -32,6 +32,10 @@ static void check(bool fixed) {
     bc.debuffEnemy<MS::VULNERABLE>(0, 1);
     require(m.weak == (fixed ? 0 : 1), "Weak on a dead target");
     require(m.vulnerable == (fixed ? 1 : 2), "Vulnerable on a dead target");
+
+    const int strength = m.strength;
+    Actions::BuffEnemy<MS::STRENGTH>(0, 3)(bc);
+    require(m.strength == strength + (fixed ? 0 : 3), "Strength on a dead target");
 }
 
 int main() {

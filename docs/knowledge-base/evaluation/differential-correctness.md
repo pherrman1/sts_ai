@@ -167,10 +167,11 @@ compared 34 combat steps: 26 matched, 8 mismatched, 2 were skipped. Seven
 mismatches were the export leftovers above. One was an engine difference:
 when Uppercut kills its target, the game applies no Weak or Vulnerable to the
 dead monster, while the engine did. `STS_DEAD_TARGET_DEBUFF_FIX` (default on,
-`=0` restores) now makes a debuff on a dead, half-dead or escaped monster do
-nothing. **Inference:** this matters only where a dead monster's powers
-survive, such as a Darkling or Awakened One coming back; the exact Java guard
-(`ApplyPowerAction`) has not been read from the bytecode yet. The canary
+`=0` restores) now makes a debuff or buff on a dead, half-dead or escaped
+monster do nothing, matching the guard read from the bytecode (see the
+[Java reference audit](../behavior/java-reference-audit.md#powers-on-dead-targets-mismatch-fixed)).
+**Inference:** this matters only where a dead monster's powers survive, such
+as a Darkling or Awakened One coming back. The canary
 stopped on a driver mapping bug: MCP lists the untargeted Explosive Potion
 once per monster. The driver now takes the first of those identical
 candidates when Silver gives no target. Parity traces also drop the Silver
