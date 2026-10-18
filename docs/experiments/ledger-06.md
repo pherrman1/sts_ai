@@ -20286,6 +20286,21 @@ does not hold here. [report.json](evidence/silver_gen7_ab25_20261018/report.json
 `/mnt/project-files/silver-az-mlp/gen7-ab25/w01..w08.tar` (sha256 `c72940ff…`, `46b3be61…`, `75f76376…`, `ae24eb78…`, `a257a94d…`, `126c98c3…`, `ae5d607d…`, `b8e9c808…`).
 Seeds used: 111170100–111170119 and 111175700–111175701 (smokes), 111170200–111175666 (self-play), 111176000–111177093
 (40k A/B), 111177100–111178193 (2.5k A/B).
+**Retrain on active power features, then the switch check** (Philipp 13:41Z "can you still make gen 7 the prior?", card
+"Retrain, then swap" 13:44Z, "go 8 workers" 14:53Z): the gen-7 window re-featurized with main e032c04b and
+`STS_ACTIVE_POWER_FEATURES=1` (`pack-g7f.npz` `bdaf4f68`; 2,808 roots the current engine enumerates differently dropped;
+12% of state rows change, and `=0` reproduces the old features exactly) and retrained with gen 7's recipe on
+Philipp's GPU (data branch `0168b72d`). Sanity gate PASS: fold-4 CE orig 1.1731 vs g7_E 1.1750, Act-4 1.4073 vs 1.4082.
+`combat_policy_mlp_g7f_E.txt` `c45dcc0a…`, native parity 1.9e-6.
+[PREREG](evidence/silver_g7f_rt_20261018/PREREG.md): the same 1,094 states, 2.5k, 8 copies, with one model per arm as
+prior and rollout root table (A g6_E, B g7f_E), on code 8c03d1df (main 05da2c07 + generator). RUN_COMMIT `d127bdee`,
+8 workers, 88/88 units verified; every unit log shows its arm's root table. **Result: NOT_SHOWN, not HARM.** 8,752
+pairs, 0 unpaired, 0 invalid. Win 61.53% (g6_E) vs 62.07% (g7f_E): dWin +0.5 pp [−0.1, +1.2]. S&S 86.2 vs 86.4%
+(+0.1 [−0.6, +0.8]); Heart 33.0 vs 34.1% (+1.0 [−0.05, +2.1]). End HP +0.09 [−0.27, +0.46]. Discordant: 439
+g7f-only, 392 g6-only. The pre-registered switch rule (switch unless HARM) holds, so a separate PR makes g7f_E the
+default root table. [report.json](evidence/silver_g7f_rt_20261018/report.json); raw
+`/mnt/project-files/silver-az-mlp/g7f-rt/w01..w08.tar` (sha256 `153a3ab7…`, `94ba10bb…`, `e607e55b…`, `a4d5fce1…`,
+`94415a94…`, `2a5984d4…`, `47404003…`, `1823f1f1…`). Seeds 111178195 (smoke) and 111178200–111179293.
 **Knowledge impact:** result line added to the `silverazact4gen` paragraph in `architecture/combat-search.md`.
 ## §518 — Silver chance-node widening per category at A20 (spire-mentor constants): all three labels NOT_SHOWN (2026-10-17)
 
