@@ -495,7 +495,7 @@ Merging publicly identical particles (upper bound 26.6%) would be a separate,
 semantics-changing proposal; it is an open question.
 [Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
 
-## OOC MCTS prior guidance at A20 (§TBD) — max-Q root pick WORSE, temperature 3 screen-pass
+## OOC MCTS prior guidance at A20 (§532) — max-Q root pick WORSE, temperature 3 screen-pass
 
 With the student_sel prior the search spends a median 97.8% of root visits on the prior's top move, and the executed
 move is the prior argmax in ~90% of roots. In an Act-1 A20 screen (64 paired seeds), `STS_OOC_MCTS_ROOT_SELECTION=q`

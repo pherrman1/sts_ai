@@ -20717,7 +20717,7 @@ Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
 **Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
 approaches in `research/combat-search/leaf-evaluation.md`.
 
-## §TBD — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
+## §532 — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
 
 **Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the
 top pick, and would a looser prior or picking the root move by mean Q instead of visits play better? Cheapest test:
