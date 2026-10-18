@@ -20587,7 +20587,7 @@ simulations, rc = 0); the rest of 111193700–111193799 unused.
 **Knowledge impact:** one sentence added to the rollout paragraph in `architecture/combat-search.md` and the
 `STS_CTMSILVER_ARMSET=uniformpl` row in `operations/environment-variables.md`.
 
-## §TBD — Opening hand and first-Silver-search screens for the CTM: hand NOT_SHOWN, Silver endpoints biased (2026-10-18)
+## §529 — Opening hand and first-Silver-search screens for the CTM: hand NOT_SHOWN, Silver endpoints biased (2026-10-18)
 
 **Question (Philipp, 2026-10-18 01:24Z/01:31Z, thread "CTM opening hand", issue #460):** would an opening-hand-aware
 CTM widen the OOC tree, and does the hand help? Also: can the endpoint distribution of a 10k Silver search at the

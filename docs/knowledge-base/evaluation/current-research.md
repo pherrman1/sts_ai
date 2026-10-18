@@ -835,7 +835,7 @@ OOC MCTS a Silver combat resolver (64 sims + prior per imagined combat, research
 MCTS CPU) and pointed worse at matched CPU (−8.6 pp [−17.2, 0.0]) on 128 pairs; no MCTS arm beat MCTS off
 ([§411](../../experiments/ledger-06.md)). The CTM stays; its value is speed.
 
-**Opening hand and first-search screens (ledger §TBD, #460, 2026-10-18).** On the Stage-4 A20 corpus an
+**Opening hand and first-search screens (ledger §529, #460, 2026-10-18).** On the Stage-4 A20 corpus an
 XGBoost outcome model gains nothing measurable from the realized opening hand (death log loss +0.00015
 [−0.00025, +0.00057], HP-lost MSE −0.25 [−0.62, +0.15] of 129), and averaging over sampled hands is slightly worse,
 so an opening-hand latent is not worth a CTM schema change for OOC MCTS (the OOC tree would not get wider either: its
