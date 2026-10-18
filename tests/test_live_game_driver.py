@@ -328,6 +328,18 @@ class LiveGameDriverTest(unittest.TestCase):
         with self.assertRaises(IntegrationFailure):
             map_silver_action({"kind": "card", "cardUuid": "wrong", "targetIndex": 1}, actions)
 
+    def test_untargeted_potion_listed_per_monster_maps_once(self):
+        # MCP lists Explosive Potion once per monster although it has no target.
+        screen = {"screen_type": "NONE", "room_phase": "COMBAT", "potions": [
+            {"id": "Fire Potion", "can_use": True, "requires_target": True},
+            {"id": "Explosive Potion", "can_use": True, "requires_target": True}],
+            "monsters": [{"id": "FuzzyLouseNormal", "current_hp": 10}, {"id": "FuzzyLouseDefensive", "current_hp": 12}]}
+        actions = build_legal_actions(screen, ["use_potion"])
+        chosen = map_silver_action({"kind": "potion", "potionSlot": 2, "discard": False}, actions)
+        self.assertEqual(chosen.mcp_arguments, {"potion_slot": 2, "target_index": 1})
+        self.assertEqual(map_silver_action({"kind": "potion", "potionSlot": 1, "discard": False, "targetIndex": 2},
+                                           actions).mcp_arguments, {"potion_slot": 1, "target_index": 2})
+
     def test_selected_live_action_ambiguous_and_label_only_fail(self):
         candidates = [LegalAction("a0", "same", "play_card", {}, {"kind": "card", "card_uuid": "x"}),
                       LegalAction("a1", "same", "play_card", {}, {"kind": "card", "card_uuid": "x"})]
@@ -390,7 +402,7 @@ class LiveGameDriverTest(unittest.TestCase):
             screen = {**json.load(stream)["screen"], "room_type": "MonsterRoom"}
         with tempfile.TemporaryDirectory() as directory:
             client = FakeClient(screen, ["choose", "confirm"])
-            path = inspector_file(directory, reason="silver_unmapped_selection_task")
+            path = inspector_file(directory, reason="silver_unmapped_selection_task", tree={"nodes": [1, 2]})
             raw = json.loads(path.read_text())
             raw["observation"]["combat"] = {"hand": screen["hand"], "cardSelect": {"task": "", "canPickZero": True}}
             raw["debugRng"] = {"schema": "sts_java_rng_v1", "available": True, "streams": {}, "drawPileUuids": []}
@@ -402,6 +414,8 @@ class LiveGameDriverTest(unittest.TestCase):
             self.assertEqual(row["live_observation"], raw["observation"])
             self.assertEqual(row["preRng"], raw["debugRng"])
             self.assertEqual(set(row["post_screen_kind"]), {"combat", "terminal", "outcome", "screen_type"})
+            self.assertNotIn("tree", row["silver_evaluator"])
+            self.assertEqual(row["silver_evaluator"]["reason"], "silver_unmapped_selection_task")
 
     def test_policy_is_deterministic(self):
         screen = {"screen_type": "CARD_REWARD", "choice_list": ["Bash"], "ready_for_command": True}

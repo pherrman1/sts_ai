@@ -55,6 +55,13 @@ namespace sts {
 
     extern thread_local BattleContext *g_debug_bc;
 
+    // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff on a dead, half-dead
+    // or escaped monster does nothing, as in the game (combat parity canary
+    // 2026-10-18: Uppercut killing its target leaves it without Weak or
+    // Vulnerable); 0 = the legacy engine applies it. Other values are fatal.
+    // Read only when the target is already dead.
+    bool deadTargetDebuffFix();
+
     struct BattleContext {
 
         // begin for debugging purposes
@@ -291,6 +298,9 @@ namespace sts {
     void BattleContext::debuffEnemy(int idx, int amount, bool isSourceMonster) {
         // todo poison and snake skull
         Monster &e = monsters.arr[idx];
+        if (e.isDeadOrEscaped() && deadTargetDebuffFix()) {
+            return;
+        }
 
         if (e.hasStatus<MS::ARTIFACT>()) {
             e.decrementStatus<MS::ARTIFACT>();
