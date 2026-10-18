@@ -84,6 +84,8 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &, const PathHistory &,
 // shops, widening 4/0.75, depth 32, early stop). 0 restores the bare pre-fix
 // search. Any other value is fatal.
 bool liveOocResearchStack();
+// Env override `key` (`off` or `on`, anything else throws); unset returns `fallback`.
+bool liveOocEnvChoice(const char *key, const char *off, const char *on, bool fallback);
 
 class LiveOocMctsPolicy final : public LiveOocPolicy {
 public:

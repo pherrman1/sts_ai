@@ -15,6 +15,8 @@
 #include "combat_transition_runtime.h"
 #include "live_silver_importer.h"
 #include "native_silver_advisor.h"
+#include "sim/search/CombatValueNet.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
@@ -835,7 +837,9 @@ json silverEvaluator(const one_combat::advisor::Request &request,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
                      one_combat::advisor::SilverImportContext &importContext,
                      std::string &silverRootIdentity,
-                     std::int64_t &silverSimulations) {
+                     std::int64_t &silverSimulations,
+                     const sts::search::CombatValueNet *rolloutRootTable,
+                     const std::string &rolloutRootTableIdentity) {
     const auto entryIdentity = request.observation.value(
         "combatEntryHash", request.observation.value("silverRoot", json::object())
             .value("combatInstance", std::string()));
@@ -845,7 +849,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     json evaluator = {{"id", "silver_player_decision_v2"},
                       {"scope", "combat_player_decision"}, {"engine", "native_silver"},
                       {"simulations", liveSilverSimulations()}, {"adaptiveEnabled", false},
-                      {"exactVisitLockEnabled", false}, {"rhoRacingEnabled", false}};
+                      {"exactVisitLockEnabled", false}, {"rhoRacingEnabled", false},
+                      {"rolloutRootTable", rolloutRootTableIdentity}};
     const auto clearSession = [&] {
         session.reset();
         sessionIdentity.clear();
@@ -916,7 +921,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
     if (!matchingSession && imported.playerTurn == 1 && imported.decisionInTurn == 0) {
-        session = std::make_unique<one_combat::advisor::NativeSilverAdvisorSession>();
+        session = std::make_unique<one_combat::advisor::NativeSilverAdvisorSession>(rolloutRootTable);
         sessionIdentity = request.session;
         combatEntryIdentity = entry;
         silverRootIdentity.clear();
@@ -1105,6 +1110,31 @@ int main() {
     if (const char *path = std::getenv("STS_SILVER_ROOT_PRIOR_MODEL"); path && *path)
         throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL is no longer supported: "
                                     "the advisor runs native Silver search without a root prior");
+    // ADR-0046 rollout root table, as in the simulated Silver path: unset uses the bundled
+    // gen-6 E model next to this executable (the installed release's models/), else under
+    // the working directory; 0 restores the ADR-0040 table; a path selects another model.
+    std::unique_ptr<sts::search::CombatValueNet> rolloutRootTable;
+    std::string rolloutRootTableIdentity = "off";
+    {
+        const char *raw = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE");
+        std::string path = raw && *raw ? raw : "";
+        if (path.empty()) {
+            std::error_code error;
+            const auto beside = std::filesystem::read_symlink("/proc/self/exe", error).parent_path()
+                / sts::search::kDefaultRolloutRootTableModel;
+            path = !error && std::filesystem::is_regular_file(beside, error)
+                ? beside.string() : sts::search::kDefaultRolloutRootTableModel;
+        }
+        if (path != "0") {
+            rolloutRootTable = std::make_unique<sts::search::CombatValueNet>();
+            if (!rolloutRootTable->load(path) || !rolloutRootTable->isPolicyMlp) {
+                std::cerr << "STS_SILVER_ROLLOUT_ROOT_TABLE: cannot load a combat_policy_mlp model from "
+                          << path << " (=0 restores the ADR-0040 table)\n";
+                return 2;
+            }
+            rolloutRootTableIdentity = modelIdentity(path);
+        }
+    }
     std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> silverSession;
     std::string silverSessionIdentity;
     std::string silverCombatEntryIdentity;
@@ -1210,7 +1240,9 @@ int main() {
                                                             silverCombatEntryIdentity,
                                                             silverImportContext,
                                                             silverRootIdentity,
-                                                            silverSimulations);
+                                                            silverSimulations,
+                                                            rolloutRootTable.get(),
+                                                            rolloutRootTableIdentity);
                         if (silver.value("mode", std::string()) == "native_pass_through") {
                             response = {{"protocol", one_combat::advisor::kProtocol},
                                 {"protocolVersion", one_combat::advisor::kProtocolVersion},

@@ -37,6 +37,8 @@ class LiveOocProtocol(unittest.TestCase):
         env["STS_LIVE_OOC_RESEARCH_STACK"] = "1" if research_stack else "0"
         env.pop("STS_COLLECT_KEYS", None)
         env.pop("STS_LIVE_OOC_ARM_C", None)
+        env.pop("STS_OOC_MCTS_TARGET_PRIOR", None)
+        env.pop("STS_OOC_MCTS_LEAF_SELECTS", None)
         env.update(extra_env or {})
         env.pop("STS_LIVE_OOC_WING_BOOTS", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
@@ -993,6 +995,21 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual((evaluator["model"]["prior"], evaluator["model"]["rolloutPolicy"]),
                          ("arm_c_full", "arm_c"))
         self.assertGreater(evaluator["model"]["armCLeafSteps"], 0, evaluator["model"])
+        # Student C has no x_act input, so ADR-0047's card-select options stay off.
+        self.assertEqual((evaluator["model"]["targetPrior"], evaluator["model"]["rolloutSelects"]), (False, "chain"))
+
+    @unittest.skipUnless(os.environ.get("STS_TEST_LIVE_ARM_C_SEL"), "set STS_TEST_LIVE_ARM_C_SEL to student_sel.bin")
+    def test_research_stack_card_select_student_defaults_and_rollback(self):
+        observation = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
+        observation["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])
+        base = {"STS_LIVE_OOC_ARM_C": os.environ["STS_TEST_LIVE_ARM_C_SEL"]}
+        for extra, expected in (({}, (True, "arm_c")),
+                                ({"STS_OOC_MCTS_TARGET_PRIOR": "0", "STS_OOC_MCTS_LEAF_SELECTS": "chain"}, (False, "chain"))):
+            response, = self.run_rows([observation], policy="mcts", research_stack=True, extra_env={**base, **extra},
+                                      timeout=DEEP_SEARCH_TIMEOUT, label=f"card-select student {extra}")
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertEqual((evaluator["model"]["targetPrior"], evaluator["model"]["rolloutSelects"]), expected)
 
 
 if __name__ == "__main__":

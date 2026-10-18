@@ -8,6 +8,8 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSearcher.h"
 
+namespace sts::search { struct CombatValueNet; }
+
 namespace one_combat::advisor {
 
 struct NativeSilverRootSummary {
@@ -43,7 +45,10 @@ struct NativeSilverDecision {
 // retained graph when the previous search reached it.
 class NativeSilverAdvisorSession {
 public:
-    NativeSilverAdvisorSession();
+    // With `rolloutRootTable` (a combat_policy_mlp model owned by the caller),
+    // every decide() builds the ADR-0046 per-root rollout card table at its
+    // root; without it the rollouts keep the ADR-0040 table.
+    explicit NativeSilverAdvisorSession(const sts::search::CombatValueNet *rolloutRootTable = nullptr);
     ~NativeSilverAdvisorSession();
 
     // Search `simulations` from the state in `wire`.
@@ -56,6 +61,7 @@ public:
 
 private:
     std::unique_ptr<sts::search::SilverSearcher> searcher_;
+    const sts::search::CombatValueNet *rolloutRootTable_ = nullptr;
     sts::search::SilverSearchContext context_;
     std::int64_t lastInheritedVisits_ = 0;
     bool lastExactReroot_ = false;
