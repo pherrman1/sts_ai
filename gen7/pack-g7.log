@@ -1,0 +1,9 @@
+featurize: tools/silver_az_mlp.py featurize one_combat(09a611b1) a4feat g7a4=<16 verified tars, gen7a4-out-w01..w16>
+featurized 219 units in 116s
+pack: tools/silver_az_mlp.py pack a4feat pack-a4.npz g7a4=<corpus>
+{"roots": 371487, "edges": 2357610, "missingValue": 0, "droppedNoFight": {}, "roots_by_source": {"g7a4": 371487}}
+merge: gen7/merge_g7.py pack-g6.npz(7efd43f0) pack-a4.npz <corpus> pack-g7.npz
+{"roots": 2902800, "edges": 17658577, "roots_by_source": {"orig": 165134, "x5": 789227, "g3": 375888, "g4": 400128, "g5": 393757, "g6": 407179, "g7a4": 371487}, "g7a4_fold_roots": {"0": 73075, "1": 71582, "2": 72247, "3": 79781, "4": 74802}, "g7a4_source_runs": 2913}
+pack-g7.npz sha256 92a0b83cdfe42c6d8da9f598c3562a710632f46e4611a05be4b2b6b0d0da4e48
+Data() load check: st_ptr/e_ptr consistent; g7a4 fold-4 roots 74,802, NaN values 0, mean value 0.682
+feature parity: gen-6 w01 re-featurized with 09a611b1 -> 48,955/48,955 roots byte-identical to pack-g6 (g6 source)
