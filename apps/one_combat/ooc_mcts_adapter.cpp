@@ -2511,6 +2511,8 @@ public:
     }
 };
 int liveSilverResolverSims = 0;
+// Combat transition model files the live search loaded (liveOocMctsCtmArtifacts).
+nlohmann::json liveCtmArtifacts = nlohmann::json::array();
 int liveUnsupportedSilverSims = 0;
 int liveAct4SilverSims = 0;
 
@@ -2765,6 +2767,9 @@ bool liveOocMctsHeart1Fallback(const GameContext &gc) {
 }
 bool liveOocMctsUsesHeart1() { return liveEnabled && liveOptions.heart1Prior; }
 bool liveOocSiblingCaptureEnabled() { return liveEnabled && liveSibling.has_value(); }
+nlohmann::json liveOocMctsCtmArtifacts() {
+    return liveEnabled ? liveCtmArtifacts : nlohmann::json::array();
+}
 nlohmann::json liveOocMctsSpecification() {
     if (!liveEnabled) return nullptr;
     // Every control the search reads, as set: STS_OOC_MCTS*, the combat
@@ -2802,6 +2807,7 @@ void configureLiveOocMcts() {
     liveFallbackSamplerA20.reset();
     liveUnsupportedSilverSims = 0;
     liveAct4SilverSims = 0;
+    liveCtmArtifacts = nlohmann::json::array();
     const char *enabled = std::getenv("STS_OOC_MCTS");
     if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
         throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
@@ -3112,6 +3118,17 @@ void configureLiveOocMcts() {
         std::cout << std::setprecision(17) << "[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20"
             << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
             << " active_lizard_correction=1\n" << std::setprecision(6);
+    }
+    const auto addCtmArtifact = [](const char *role, const std::string &path) {
+        liveCtmArtifacts.push_back({{"role", role}, {"path", path}, {"sha256", fileSha256(path)}});
+    };
+    if (!silverResolver) {
+        addCtmArtifact("ctm", artifact);
+        if (!brewFallbackArtifact.empty()) addCtmArtifact("ctm_brew_fallback", brewFallbackArtifact);
+    }
+    if (liveSamplerA20) {
+        addCtmArtifact("ctm_a20", "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native");
+        addCtmArtifact("ctm_a20_brew_fallback", "selfplay/models/combat_transition_near_full_escape_pathb_a20.native");
     }
     const auto silverSims = [&](const char *raw, const char *name) {
         const std::string value = raw;

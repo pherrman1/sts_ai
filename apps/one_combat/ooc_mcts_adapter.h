@@ -350,6 +350,9 @@ bool liveOocMctsUsesHeart1();
 bool liveOocSiblingCaptureEnabled();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();
+// Combat transition model files the live search loaded: role, path, sha256
+// (empty when OOC MCTS is off or combats resolve with Silver).
+nlohmann::json liveOocMctsCtmArtifacts();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Search snapshots die before the selected ID is resolved/executed on live gc.
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,

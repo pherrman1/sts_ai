@@ -25,8 +25,35 @@ public:
 };
 
 struct ObserverScope {
-    ~ObserverScope() { t_realRunContextObserver = {}; t_realOocDecisionObserver = {}; takeOocPolicyTarget(); }
+    ~ObserverScope() {
+        t_realRunContextObserver = {}; t_realOocDecisionObserver = {}; t_realCombatObserver = {};
+        takeOocPolicyTarget();
+    }
 };
+
+// STS_HEART_OUTCOME_CTM_ROWS=1: one combat_transition_row_v2 row per real
+// combat in OUT.ctm.jsonl; unset or 0: none.
+bool ctmRowsRequested() {
+    const char *value = std::getenv("STS_HEART_OUTCOME_CTM_ROWS");
+    if (!value || !*value || std::string(value) == "0") return false;
+    if (std::string(value) == "1") return true;
+    throw std::runtime_error("STS_HEART_OUTCOME_CTM_ROWS must be 0 or 1");
+}
+
+constexpr const char *kCtmRowsTeacherId = "heartoutcomegen-real-combat";
+
+// Combat models and Silver settings the run used, beside the policy identity
+// (whose ooc_mcts.artifact_sha256 hashes only files named in the environment).
+nlohmann::json runProvenance() {
+    nlohmann::json rootPrior = nullptr;
+    if (const auto &path = sts::search::nativeSilverRootPriorPath(); !path.empty())
+        rootPrior = {{"path", path}, {"sha256", fileSha256(path)},
+                     {"weight", sts::search::nativeSilverRootPriorWeight()}};
+    const auto leaf = effectiveSilverLeafSpecification();
+    return {{"ctmArtifacts", liveOocMctsCtmArtifacts()},
+            {"rolloutRootTable", leaf.contains("rollout_root_table") ? leaf["rollout_root_table"] : nlohmann::json(nullptr)},
+            {"silverLeaf", leaf}, {"silverRootPrior", rootPrior}};
+}
 }
 
 int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture, bool policyTargets) {
@@ -37,20 +64,29 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
     if (policyTargets && !capture) throw std::runtime_error("heart policy targets require state capture");
     if (t_realRunContextObserver || t_realOocDecisionObserver || t_oocContinuation || t_oocHypotheticalStep)
         throw std::runtime_error("heart outcome observer requires an unowned real driver context");
+    const bool ctmRows = ctmRowsRequested();
     Writer writer(output);
+    std::optional<Writer> ctmWriter;
+    if (ctmRows) ctmWriter.emplace(output + ".ctm.jsonl");
     nlohmann::json header = {{"schema", "heart-trajectory-v1"}, {"type", "header"}, {"seed", seed},
         {"ascension", 20}, {"objective", "heart"}, {"collectKeys", true}, {"stopAfterAct", 0},
         {"combatSimulations", 10000}, {"capture", capture},
         {"producerSha", trainingExecutableGitSha()}, {"policy", effectiveOocPolicySpecification()},
         {"recordSchema", "heart1-public-record-v2"}, {"recordPublicParityQualified", false},
-        {"rootTrace", std::getenv("STS_OOC_MCTS_ROOT_TRACE") != nullptr}};
+        {"rootTrace", std::getenv("STS_OOC_MCTS_ROOT_TRACE") != nullptr}, {"provenance", runProvenance()}};
+    if (ctmRows)
+        header["ctmRows"] = {{"path", std::filesystem::path(output + ".ctm.jsonl").filename().string()},
+            {"rowSchemaVersion", COMBAT_TRANSITION_ROW_SCHEMA}, {"schemaVersion", CombatTransitionRecord::SCHEMA},
+            {"predictorInputSchemaVersion", CombatPredictorInputV1::SCHEMA},
+            {"predictorInputFieldSchemaHash", combatPredictorInputFieldSchemaHash()},
+            {"teacherId", kCtmRowsTeacherId}};
     // Only policy mode adds keys, so on/off files keep their exact bytes.
     if (policyTargets) {
         header["policyTargets"] = true;
         header["decisionSchema"] = "ooc-policy-target-v1";
     }
     writer.write(header);
-    std::size_t rows = 0, supported = 0, decisions = 0, searched = 0;
+    std::size_t rows = 0, supported = 0, decisions = 0, searched = 0, combats = 0;
     std::map<std::string, std::size_t> unsupported;
     ObserverScope scope;
     if (capture) {
@@ -86,6 +122,19 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
             writer.write(row);
         };
     }
+    if (ctmRows) {
+        // The same row combattransitiongen writes, from the driver's real fight.
+        t_realCombatObserver = [&](const sts::GameContext &pre, const sts::BattleContext &bc,
+                                   int rawCaptureCount, const std::optional<CombatTransitionRecord> &record) {
+            if (combats >= 256) throw std::runtime_error("heart outcome 256-combat safety cap");
+            const bool decided = bc.outcome != sts::Outcome::UNDECIDED;
+            const auto predictorInput = combatPredictorInputJson(
+                captureCombatPredictorInput(pre, pre.info.encounter, potionKeepValue(pre)));
+            ctmWriter->write(combatTransitionRowJson(seed, static_cast<int>(combats++), pre.act, pre.floorNum,
+                pre.curRoom, static_cast<int>(pre.info.encounter), kCtmRowsTeacherId,
+                trainingRunValid(decided), decided, rawCaptureCount, record, predictorInput));
+        };
+    }
     // Health failures invalidate the whole trajectory, never become losses.
     trainingRunStart();
     const auto result = runFullRunOOC(seed, 10000, 20, deployedRestV(), true);
@@ -99,6 +148,7 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
         footer["decisions"] = decisions;
         footer["searchedDecisions"] = searched;
     }
+    if (ctmRows) footer["ctmRows"] = combats;
     writer.write(footer);
     return 0;
 }

@@ -359,6 +359,12 @@ int vwinRefreshBranchParitySelfTest(std::uint64_t seed, int sims, int asc);
 
 int combatTransitionFixture(const std::string &outfile,
                                    const std::string &manifestPath);
+// One combat_transition_row_v2 JSONL row (combattransitiongen, ctmscorerows).
+nlohmann::json combatTransitionRowJson(
+    std::uint64_t sourceSeed, int fightIdx, int act, int floor, Room room,
+    int encounter, const std::string &teacherId, bool runValid, bool outcomeDecided,
+    int rawCaptureCount, const std::optional<one_combat::CombatTransitionRecord> &record,
+    const nlohmann::json &predictorInput);
 
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
