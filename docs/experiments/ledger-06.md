@@ -20898,6 +20898,45 @@ unused.
 Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
 **Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
 
+## §TBD — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): all WORSE or NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 17:38Z, thread "end-state formula"):** "can you try all these things? adjusting the
+weights, maybe a per potion value, withthe fitted and milder curve? maybe in combination all those small things
+actually do something? and maybe we should measure winrate and floors reached, testing should be on only student
+prior without ooc mcts, so it doesnt take forever. on a20." 18:16Z: "16 workers" (512 seeds per arm, size card).
+**Design:** [PREREG](evidence/silver_leaf_combo_20261018/PREREG.md), pre-launch review PASS. New research options
+`STS_SILVER_GOLD_WEIGHT`, `STS_SILVER_MAXHP_WEIGHT` (PR #673). Seven arms on every seed: `base`; `W` (gold 0.01,
+max HP 1.1, potions 5.0 with Fairy/Smoke Bomb 11: the §537 prices); `WT` (as W with per-type potion weights 0.5–10.7
+derived from the §537 probe); `K27` / `K135` (concave HP k = 2.7 / 1.35); `WTK27`, `WTK135` (WT plus each curve). A20
+full runs with keys, `STS_OOC_HEART1=student_sel.bin`, `STS_OOC_MCTS=0`, exact-10k Silver on main `b807c5b4`
+defaults. Seeds 111198434–111198945, 16 workers, RUN_COMMIT `3c6f2cef` (code `c52d9ccf`, binary `b9d43a55…`).
+**Result.** 3,584/3,584 units rc=0, 16 tars verified, 512 pairs, no seed dropped. Each arm − base, 95% CI
+[Bonferroni 99.17% CI], label at 99.17%:
+
+| arm | mean floor | wins / 512 | Δfloor | Δwin (pp) | label floor / win |
+|---|---|---|---|---|---|
+| base | 38.88 | 96 (18.8%) | | | |
+| W | 37.24 | 66 | −1.63 [−2.83, −0.47] [−3.28, −0.09] | −5.9 [−9.0, −2.5] [−10.4, −1.6] | WORSE / WORSE |
+| WT | 37.34 | 83 | −1.54 [−2.76, −0.37] [−3.21, +0.07] | −2.5 [−5.9, +0.8] [−7.0, +2.0] | NOT_SHOWN / NOT_SHOWN |
+| K27 | 33.65 | 53 | −5.23 [−6.54, −3.95] [−7.03, −3.51] | −8.4 [−11.7, −5.1] [−12.9, −3.9] | WORSE / WORSE |
+| K135 | 36.78 | 76 | −2.10 [−3.35, −0.86] [−3.80, −0.41] | −3.9 [−7.4, −0.4] [−8.6, +1.0] | WORSE / NOT_SHOWN |
+| WTK27 | 32.56 | 50 | −6.32 [−7.69, −4.95] [−8.21, −4.50] | −9.0 [−12.3, −5.7] [−13.7, −4.5] | WORSE / WORSE |
+| WTK135 | 36.46 | 65 | −2.41 [−3.72, −1.11] [−4.15, −0.71] | −6.1 [−9.4, −2.7] [−10.5, −1.6] | WORSE / WORSE |
+
+Descriptive: act-1 deaths 85 (base) vs 92 / 92 / 132 / 101 / 153 / 102; act-3 clears 183 vs 156 / 157 / 117 / 157 /
+97 / 147; seconds per run 78.9 vs 70.6 / 70.2 / 59.5 / 68.5 / 55.6 / 66.1 (shorter runs = earlier deaths).
+**Interpretation:** every variant plays worse whole A20 runs than Silver's tuned formula; none is close to a gain.
+The concave HP term costs the most (k = 2.7: −5.2 floors, −8.4 pp wins, half again as many act-1 deaths), although
+the §537 3-fight probe showed no effect. The measured lower potion/max-HP/gold weights also cost about 1.5 floors,
+in line with §513. **Inference:** the probe's 3-fight window and floor-model valuation miss what these changes do
+over a whole run; the descriptive §537 prices are not usable as leaf weights. **Open question:** why the concave
+term raises act-1 deaths (it also lifts every win's score by roughly +135 at 75% HP, shifting the win/loss balance
+Silver's other weights were tuned for). Per the decision rule all options stay research-only, unset; the weights are
+not re-tuned on these seeds. Seeds 111198434–111198947 used (smokes 946–947), 111198950–111198965 the reviewer block; 111198948–949 unused.
+[README](evidence/silver_leaf_combo_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Raw: `/mnt/project-files/silver-leaf-eval/combo-ab/w01..w16.tar`.
+**Knowledge impact:** victory-leaf paragraph in `architecture/combat-search.md`.
+
 ## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
 
 **Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?

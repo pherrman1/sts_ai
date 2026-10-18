@@ -12,3 +12,9 @@ Pre-registration: [PREREG.md](PREREG.md). Analysis: `tools/analyze_silver_leaf_c
   every merged default up to #665), `one_combat` sha256 `b9d43a55…2593`. Smoke 111198947 on that binary (arms
   `base`, `WTK135`): rc=0, 114 / 112 s, both reach floor 56 (base dies to the Heart, WTK135 wins), the g7f_E
   root table and the arm's research-leaf line in the logs.
+
+## Result (ledger-06 §TBD)
+
+3,584/3,584 units rc=0, 16/16 tars verified ([verify.txt](verify.txt), [tars.sha256](tars.sha256)), 512 pairs.
+Every arm is worse than base (18.8% wins, 38.88 mean floor); see [result.json](result.json) and the ledger table.
+Largest losses: `K27` −5.23 floors / −8.4 pp wins, `WTK27` −6.32 / −9.0. Seeds 111198948–111198949 unused; 111198950–111198965 reviewer block.
