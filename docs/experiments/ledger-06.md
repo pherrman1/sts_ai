@@ -20791,7 +20791,7 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
-## §TBD — Silver playouts that follow the gen-6 prior instead of the greedy list, at equal simulations (A20, leaf headroom pilot): score INCONCLUSIVE, HP lost −1.5 (2026-10-18)
+## §540 — Silver playouts that follow the gen-6 prior instead of the greedy list, at equal simulations (A20, leaf headroom pilot): score INCONCLUSIVE, HP lost −1.5 (2026-10-18)
 
 **Question (Philipp, 2026-10-18 14:06Z, thread "Better fast leaf evaluation": "good idea, lets do that"):** before
 building a fast learned Silver leaf, is there headroom for a *better* leaf? §479/§523 put the leaf's value in its
@@ -20905,9 +20905,9 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
-## §TBD-b — Prior-argmax Silver playouts vs production greedy Silver 10k at A20 (8 workers): score NOT_SHOWN, HP lost −0.7 at 10k (2026-10-18)
+## §541 — Prior-argmax Silver playouts vs production greedy Silver 10k at A20 (8 workers): score NOT_SHOWN, HP lost −0.7 at 10k (2026-10-18)
 
-**Question (Philipp, 2026-10-18 15:01Z/15:03Z, thread "Better fast leaf evaluation"):** after the §TBD pilot, he noted
+**Question (Philipp, 2026-10-18 15:01Z/15:03Z, thread "Better fast leaf evaluation"):** after the §540 pilot, he noted
 that 7.6x CPU per simulation is affordable in real fights (2-3% of A20 run CPU) and authorized "8 workers. Make sure
 that act4 fights go through ctm. Fallbacks should not use the prior rollout". Do prior playouts beat production
 Silver at similar CPU?

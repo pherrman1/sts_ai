@@ -1,6 +1,6 @@
 # Prior-argmax playouts vs production greedy Silver: 8-worker A/B (2026-10-18)
 
-Pre-registration: [PREREG.md](PREREG.md). Ledger: §TBD-b ("prior-argmax playouts vs production greedy Silver").
+Pre-registration: [PREREG.md](PREREG.md). Ledger: §541 ("prior-argmax playouts vs production greedy Silver").
 
 - 8 workers, run commit 7843e73c, code fecde345, binary sha256 cd50de5a…; launched 15:32Z after a pre-launch review
   PASS (`/mnt/project-files/reviews/pr666-prelaunch-review.md`). `verify_campaign.py`: OK 1-8, MISSING -, BAD -;

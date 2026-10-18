@@ -2,7 +2,7 @@
 
 Status: authorized by Philipp (2026-10-18 15:03Z, thread "Better fast leaf evaluation": "Yes but do 8 workers.
 Make sure that act4 fights go through ctm. Fallbacks should not use the prior rollout"), answering the proposal to
-compare prior playouts with production Silver at about matched CPU. Written before any result. Ledger §TBD (with
+compare prior playouts with production Silver at about matched CPU. Written before any result. Ledger §540 (with
 the pilot entry). Seeds: 111197708–111197771 (64 sources) from the block 111197692–111197791.
 
 ## Background

@@ -2,7 +2,7 @@
 
 Status: small in-thread pilot requested by Philipp (2026-10-18 14:06Z, thread "Better fast leaf evaluation":
 "good idea, lets do that", answering the proposal to measure leaf headroom first). Written before any pilot
-result. Ledger §TBD. Seeds assigned by the coordinator: 111197692–111197791 (pilot sources 111197692–111197707, smoke 111197780–111197783).
+result. Ledger §540. Seeds assigned by the coordinator: 111197692–111197791 (pilot sources 111197692–111197707, smoke 111197780–111197783).
 
 ## Question
 
