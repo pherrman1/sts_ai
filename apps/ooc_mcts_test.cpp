@@ -347,6 +347,33 @@ void tests() {
         && !gapObserved.metrics.earlyStopVisitGap20
         && !gapObserved.metrics.savedSimulations,
         "full-budget observation disables the 20% gap candidate");
+    auto ladderConfig = config;
+    ladderConfig.cPuct = 0;
+    ladderConfig.gapStopSimulations = {256, 512};
+    ladderConfig.gapStopFraction = 0.2;
+    auto ladderModel = deterministic();
+    const auto ladderStopped = OocMctsPlanner(ladderConfig).search(ladderModel, 0, 2048);
+    require(ladderStopped.metrics.earlyStopGapLadder && !ladderStopped.metrics.earlyStopVisitGap20
+        && (ladderStopped.metrics.simulations == 256 || ladderStopped.metrics.simulations == 512)
+        && ladderStopped.metrics.savedSimulations == 2048 - ladderStopped.metrics.simulations
+        && ladderStopped.selectedAction == gapStopped.selectedAction,
+        "gap ladder stops at a listed checkpoint using the visit leader");
+    auto ladderOffConfig = ladderConfig;
+    ladderOffConfig.gapStopFraction = 0;
+    auto ladderOffModel = deterministic(), ladderBaseModel = deterministic();
+    auto ladderBaseConfig = config;
+    ladderBaseConfig.cPuct = 0;
+    const auto ladderOff = OocMctsPlanner(ladderOffConfig).search(ladderOffModel, 0, 2048);
+    const auto ladderBase = OocMctsPlanner(ladderBaseConfig).search(ladderBaseModel, 0, 2048);
+    require(!ladderOff.metrics.earlyStopGapLadder && ladderOff.metrics.simulations == ladderBase.metrics.simulations
+        && ladderOff.selectedAction == ladderBase.selectedAction,
+        "a zero gap fraction leaves the search unchanged");
+    auto ladderObservedConfig = ladderConfig;
+    ladderObservedConfig.observeRootLock = true;
+    auto ladderObservedModel = deterministic();
+    const auto ladderObserved = OocMctsPlanner(ladderObservedConfig).search(ladderObservedModel, 0, 2048);
+    require(ladderObserved.metrics.simulations == 2048 && !ladderObserved.metrics.earlyStopGapLadder,
+        "full-budget observation disables the gap ladder");
     for (const auto &thresholds : std::vector<std::vector<std::uint64_t>>{{0},{2,1},{2,2}}) {
         auto invalidCheckpointConfig=config; invalidCheckpointConfig.rootCheckpointSimulations=thresholds;
         rejects([&] { OocMctsPlanner invalid(invalidCheckpointConfig); });

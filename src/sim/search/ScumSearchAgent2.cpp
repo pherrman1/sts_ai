@@ -163,6 +163,10 @@ void search::ScumSearchAgent2::stepRandom(GameContext &gc) {
     std::vector<search::GameAction> possibleActions(search::GameAction::getAllActionsInState(gc));
     filterOptionalRecallActions(gc, possibleActions);
     filterFullHpRestActions(gc, possibleActions);
+    if (possibleActions.empty()) {
+        throw std::runtime_error("stepRandom: no legal action on screen "
+            + std::to_string(static_cast<int>(gc.screenState)));
+    }
     std::uniform_int_distribution<int> distr(0, static_cast<int>(possibleActions.size())-1);
     const int randomChoice = distr(rng);
     auto a = possibleActions[randomChoice];

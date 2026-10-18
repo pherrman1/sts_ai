@@ -20791,6 +20791,41 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
+## §540 — Silver playouts that follow the gen-6 prior instead of the greedy list, at equal simulations (A20, leaf headroom pilot): score INCONCLUSIVE, HP lost −1.5 (2026-10-18)
+
+**Question (Philipp, 2026-10-18 14:06Z, thread "Better fast leaf evaluation": "good idea, lets do that"):** before
+building a fast learned Silver leaf, is there headroom for a *better* leaf? §479/§523 put the leaf's value in its
+playout policy, and 2.5k vs 10k simulations differ by only −0.68 [−3.13, +1.87] fight score (§479), so speed alone
+buys little. Upper-bound probe: every playout card play follows the gen-6 E prior argmax (not deployable).
+**Design:** [PREREG](evidence/silver_prior_playout_pilot_20261018/PREREG.md), written before results. New research
+playout mode `RolloutConfig::prior`, reachable only through the `ctmsilvergen` armset below (setting the env var
+`STS_SILVER_ROLLOUT_PRIOR` is refused at startup with rc 2; with the mode on, each playout `PLAYER_NORMAL` step plays the root-prior model's
+argmax over card plays and END_TURN, no potions; card selects stay greedy) and `ctmsilvergen` armset `priorpl`
+(code 6eaa0034, binary `ec990413…`). §523 harness (student C source runs, gen-6 E root prior w400, hallway every 3rd,
+R = 2) with the ADR-0046 root table on. Arms at 2,500 simulations, both with root prior and tree prior K = 8:
+`greedy2500` (production playouts) and `priorpl2500`. 16 sources (111197692–111197707) in-thread on 4 cores, all
+shards rc = 0; 162 valid paired fights (3 excluded, escapes). Smoke 111197780–111197783 (32 fights, rc = 0).
+**Result (paired, 95% seed bootstrap):**
+
+| subset | fights | Δ score | Δ win | Δ HP lost |
+|---|---|---|---|---|
+| all | 162 | +3.81 [−2.43, +10.29] | +0.9 pp [−1.3, +3.2] | −1.45 [−2.51, −0.31] |
+| elite | 67 | +12.09 [+0.16, +25.81] | +4.5 pp [0, +8.2] | −2.90 [−5.17, −0.73] |
+| boss | 27 | +0.89 [−1.84, +3.03] | 0 | −2.52 [−4.80, −0.10] |
+| normal and other | 68 | −3.19 [−11.23, +0.64] | −1.5 pp | +0.40 [−0.11, +0.90] |
+
+CPU per simulation 7.62x [6.95, 8.07] (107 vs 14.1 µs); playouts 15.0 vs 16.0 actions.
+**Label (pre-registered): `INCONCLUSIVE`** (mean +3.81 below the +5 bar, CI includes 0 and +5).
+**Interpretation:** a better-playing playout lowers HP lost by about 1.5 per fight, concentrated in elites and bosses,
+where it is significant on HP. **Inference:** that is more than the about 0.7 a 4x larger greedy budget gave in §479
+(different harness), so leaf quality has some headroom, but at this resolution it is modest and the score gain is not
+shown. The prior forward costs 7.6x per simulation, so any use needs a distilled fast version. No default change;
+The prior-playout mode stays research-only, reachable only via `STS_CTMSILVER_ARMSET=priorpl`.
+[result.json](evidence/silver_prior_playout_pilot_20261018/result.json) (sha256 `b6e1e649…`). Raw:
+`/mnt/project-files/silver-prior-playout-pilot/ppl-run.tar.gz` (run and smoke, sha256 `a748c6bc…`). Seeds used:
+111197692–111197707, 111197780–111197783; the rest of 111197692–111197791 unused.
+**Knowledge impact:** rejected/open line in `research/combat-search/leaf-evaluation.md`; env-var rows for
+`STS_SILVER_ROLLOUT_PRIOR` and `STS_CTMSILVER_ARMSET=priorpl`.
 ## §535 — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
 
 Performance only; no gameplay, model, RNG or default change. Philipp 2026-10-18 14:07Z ("can you continue
@@ -20870,6 +20905,82 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
+## §541 — Prior-argmax Silver playouts vs production greedy Silver 10k at A20 (8 workers): score NOT_SHOWN, HP lost −0.7 at 10k (2026-10-18)
+
+**Question (Philipp, 2026-10-18 15:01Z/15:03Z, thread "Better fast leaf evaluation"):** after the §540 pilot, he noted
+that 7.6x CPU per simulation is affordable in real fights (2-3% of A20 run CPU) and authorized "8 workers. Make sure
+that act4 fights go through ctm. Fallbacks should not use the prior rollout". Do prior playouts beat production
+Silver at similar CPU?
+**Design:** [PREREG](evidence/silver_prior_playout_ab_20261018/PREREG.md), written before results. Same harness as the
+pilot, armset `priorpl` with `STS_CTMSILVER_SWEEP_SIMS=10000`, `STS_CTMSILVER_PRIOR_SIMS=2500,10000`; arms
+`greedy10000` (production), `priorpl2500`, `priorpl10000`, all with root prior and tree prior K = 8, R = 2. Imagined
+fights: none (no OOC MCTS in the source runs); the armset refuses the imagined-fight Silver options and
+`playImaginedCombatWithSilver` forces greedy playouts. Real Act-4 fights (sources whose student C collected the keys)
+are played by every arm, prior playouts included. Run commit 7843e73c, code fecde345, binary `cd50de5a…`, 64
+sources 111197708–111197771 on 8 workers ([README](evidence/silver_prior_playout_ab_20261018/README.md)); 768 valid
+paired fights (2 excluded, escapes): 148 boss, 344 elite, 276 normal/other, 17 Act 4.
+**Result (paired vs `greedy10000`, 95% seed bootstrap):**
+
+| arm | Δ score | Δ win | Δ HP lost | CPU per fight | labels (score / HP) |
+|---|---|---|---|---|---|
+| priorpl2500 | +1.98 [−0.66, +4.69] | +0.5 pp [−0.3, +1.4] | −0.39 [−0.90, +0.10] | 1.90x | NOT_SHOWN / NOT_SHOWN |
+| priorpl10000 | +3.28 [−0.58, +7.16] | +1.0 pp [−0.1, +2.2] | −0.70 [−1.19, −0.22] | 7.29x | NOT_SHOWN / BETTER |
+
+Descriptive subsets: bosses priorpl2500 +9.77 [+0.95, +18.64] score, +3.0 pp win; priorpl10000 +12.55 [−0.87, +26.57],
++4.4 pp. Elites priorpl2500 +0.11, priorpl10000 +2.89 (HP −0.74 [−1.43, −0.03]). Act 4 (17 fights) priorpl2500 +1.7,
+priorpl10000 −12.2, both CIs about ±25. priorpl10000 − priorpl2500: +1.30 [−1.49, +4.15].
+**Interpretation:** prior playouts are at most a small gain over production. At 1.9x CPU per real fight the 2.5k arm is
+not shown better overall; its point estimates (+2 score, −0.4 HP) are about a third of the equal-sims pilot effect,
+because the 10k greedy control is stronger than greedy 2.5k. The only label-level gain, priorpl10000 HP lost −0.7, costs
+7.3x per fight (about +15-20% A20 run time, **Inference** from the A20 profile). **Inference:** the boss subset carries
+most of the score gain; a boss-only use would be a separate pre-registered test. No default change.
+[result.json](evidence/silver_prior_playout_ab_20261018/result.json) (sha256 `6eb4c430…`). Raw:
+`/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
+111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
+**Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.
+## §539 — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
+
+Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for
+searches, similar to sivler combat?"
+
+- **Profile:**
+  - A20 winrate check, 352 finished seeds: runs that reach Act 4 are 108 of 352 but use 76% of OOC MCTS CPU,
+    3.2 h per run. Runs that die in Act 3 average 0.63 h.
+  - Seed 111195794, which reached the Heart: the 4 Act-4 decisions took 4,650 of 8,304 s.
+  - gdb samples over seeds 111195792–794: imagined Silver fights inside rollouts 65%, student forward 27%.
+  - Report: `/mnt/project-files/speed-proposals/REPORT.md`.
+- **Offline rule search** (same-action proxy, not winrate):
+  - Data: 628 multi-action roots (Acts 1–4) from 16 A20 runs whose effective `STS_OOC_MCTS_SIMS` is 4096, with
+    STS_RUN_PROFILE root checkpoints at 128/256/512/1024. Seeds: 111195252–255, 257–260, 792–794, 796–799 and 803.
+  - Stopping at checkpoint c returns the visit leader at c on the same search path, so whether the action would have
+    differed is known exactly for that root. What a changed action does later in the run is not measured.
+  - The CPU column is an estimate: each root's thread CPU scaled linearly by the simulations it would keep.
+  - Today every multi-action root ends at the exact visit lock, at about 2,050 simulations.
+  - Results:
+
+    | rule | same action | estimated OOC CPU |
+    |---|---|---|
+    | `1024:0.7` | 99.2% (5 differ) | 0.69x |
+    | `512,1024:0.8` | 98.7% | 0.56x |
+    | `512,1024:0.7` | 98.4% | 0.53x |
+
+  - Act 3–4 roots alone (99): `1024:0.7` keeps 100% at 0.72x.
+  - The differing picks have final-root Q about 0.06 below the final pick, on average.
+  - Measured on seed 111195803 (below): OOC CPU 219 → 164 s with `1024:0.7`.
+  - Reproduce: `python3 /mnt/project-files/speed-proposals/gapstop_analyze.py
+    /mnt/project-files/speed-proposals/gapstop-data` (the 16 run profiles with their env files).
+- **Change:** opt-in `STS_OOC_MCTS_GAP_STOP=C1,C2,...:G`, default off. After completing simulation Ci, the search
+  stops once the root's top-two visit gap is at least G·Ci, with visit selection only. It is off on full-budget and
+  observed-lock roots and excludes `CPU_SECONDS`. It adds `early_stop_gap_ladder` to run-profile rows. Unit tests
+  are in `ooc-mcts-test` (PASS, 242 checks).
+- **Check** (seed 111195803, Act 1, A20 stack; the #670 reviewer had already used this seed):
+  - Flag off: play byte-identical to the #670 binary.
+  - `1024:0.7`: 14 of 36 roots stopped by the gap rule, the same 36 actions, OOC CPU 219 → 164 s, run CPU 230 → 175 s.
+- **Decision:** none; the flag stays off. Promotion needs a paired A/B.
+
+Seeds used: 111195803.
+
+**Knowledge impact:** `GAP_STOP` row in the `architecture/out-of-combat.md` option table.
 ## §537 — concave-HP Silver victory leaf, paired 3-fight continuations at A20: NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18, thread "end-state formula"):** 14:06Z "change the evaluation at the final state, so
@@ -20972,3 +21083,40 @@ of `curl_up_lethal_test`, no gameplay; not used by the canary).
 **Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
 `behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
 (`STS_CURL_UP_LETHAL_FIX`).
+
+## §538 — A20 learned stopping with the gen-7f table and prior: non-inferior to flat 10k at 0.49x CPU; flat 2.5k not shown non-inferior (2026-10-18)
+
+**Question (Philipp, 2026-10-18, gen-7 thread):** 13:46Z "can you start experimenting with combining learned stopping
+and the new rollout? i.e. make sure that this a strong enough combat model with 2.5k sims"; 17:39Z "do the learned
+stopping test plan" (8 workers). Does learned stopping (ADR-0026) still match flat exact 10k Silver on the current
+stack (gen-7f root table, ADR-0049, plus g7f_E root/tree prior), and how much does flat 2.5k give up?
+**Design:** [PREREG](evidence/silver_learnstop_g7f_20261018/PREREG.md), light pre-launch review PASS. The §516
+harness on main `f15b345b`: plain A20 full runs, student_sel `policyStep` out of combat (no OOC MCTS, no V4 net),
+`STS_ACTIVE_POWER_FEATURES=1`, g7f_E as rollout root table and as root prior (weight 400) and tree prior (K=8). Arms
+`F10` flat exact 10k, `F25` flat exact 2.5k, `L` learned stopping (checkpoints to 10k). RUN_COMMIT `afde9cb2`, binary
+`636258d7…`, seeds 111197822–111198333 (smoke 111195812–111195813). Primary: reached Act 4, L − F10, paired Newcombe
+95% interval, non-inferior if the lower bound > −5 pp; F25 − F10 secondary with the same rule.
+**Result.** 1,536/1,536 units rc=0, all 512 seeds valid; 8 tars checked by `verify_campaign.py` from the lead
+container (`worker_tars.txt`, `report.json`).
+
+| Arm | Heart kills | Reached Act 4 | Kills / Act 4 | Mean floor | CPU per run |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| F10 flat 10k | 70 (13.7%) | 156 (30.5%) | 45% | 37.5 | 76.4 s |
+| F25 flat 2.5k | 60 (11.7%) | 147 (28.7%) | 41% | 36.7 | 16.9 s (0.22x) |
+| L learned stop | 79 (15.4%) | 173 (33.8%) | 46% | 38.6 | 37.7 s (0.49x) |
+
+- **Primary, L − F10 reached Act 4:** +3.3 pp [−0.6, +7.3], **NON_INFERIOR**; McNemar p = 0.12.
+- **Secondary, F25 − F10 reached Act 4:** −1.8 pp [−5.6, +2.1], **NOT_SHOWN** (lower bound below −5 pp); p = 0.43.
+- **Heart kills:** L − F10 +1.8 pp [−1.5, +5.1], p = 0.35; F25 − F10 −2.0 [−5.1, +1.1], p = 0.26.
+- **L − F25 (descriptive):** reached Act 4 +5.1 pp [+0.8, +9.3], p = 0.026; Heart kills +3.7 [+0.5, +7.0],
+  p = 0.032. Not a pre-registered test.
+- **OOC decisions:** student_sel 95.9–96.2%, key rule 3.0–3.2%, Match and Keep 0.8–1.0% per arm; nothing else.
+
+**Interpretation:** learned stopping again plays at least as well as flat 10k, now with the gen-7f table and prior,
+at half the CPU (§516: 0.41x). Flat 2.5k is 4.5x cheaper than flat 10k, but this run cannot rule out a loss of more
+than 5 pp, and it trails learned stopping on both endpoints. **Inference:** learned stopping
+keeps flat-10k strength at half its CPU; flat 2.5k is cheaper still (learned stopping used 2.2x its CPU), so this run
+does not compare the two at equal CPU. The stack (student_sel, g7f) wins far
+more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are not comparable across the two runs.
+The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
+**Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).
