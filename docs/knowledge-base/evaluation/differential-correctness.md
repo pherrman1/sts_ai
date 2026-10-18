@@ -199,8 +199,15 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
 - Hexaghost records Inferno twice in Java's move history. **Inference:** no
   behavior reads it.
 
-The run ended on a live advisor crash, not a parity issue: an OOC rollout
-from the Act 1 boss card reward reached a screen with no enumerated actions.
+The run ended on a live advisor crash, not a parity issue. The live importer
+sent every reward exit to the map, but after an act 1 or 2 boss the player
+sits on map row 15, which has no node to pick. An OOC rollout from the boss
+card reward then reached a map screen with no legal action, and
+`ScumSearchAgent2::stepRandom` read past the empty list. Leaving those
+rewards now opens the boss chest, as native `afterBattle` does, and
+`stepRandom` throws instead of reading out of bounds
+(`tests/fixtures/live_act1_boss_card_reward.json`, checked by
+`live_ooc_parity`).
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
