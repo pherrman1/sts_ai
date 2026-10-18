@@ -6,11 +6,13 @@ one row per (root decision, checkpoint) with the feature vector of
 include/sim/search/NativeSilverStopModel.h and the checkpoint leader. The
 label of a row is "leader differs from the 10k leader of the same decision".
 
-  silver_learned_stop.py placeholder --cpp OUT
+  silver_learned_stop.py placeholder --cpp OUT --suffix A20
       write the untrained model (runtime refuses to use it)
   silver_learned_stop.py train TRACE... --train-seeds LO:HI --out-dir DIR
       fit on decisions whose run seed is in [LO, HI], write model.json,
-      NativeSilverStopModel.cpp and offline.json
+      NativeSilverStopModel<suffix>.cpp (--suffix, default A20) and offline.json
+  silver_learned_stop.py export MODEL.json[.gz] --cpp OUT --suffix A20
+      regenerate the C++ table of a fitted model (suffix: A0 or A20)
   silver_learned_stop.py selftest
 
 Requires scikit-learn for `train` only.
@@ -51,11 +53,11 @@ namespace {
 FOOTER = """
 }
 
-bool nativeSilverStopModelTrained() { return kTrained; }
-const char *nativeSilverStopModelId() { return kModelId; }
-double nativeSilverStopModelDefaultThreshold() { return kDefaultThreshold; }
+bool nativeSilverStopModel@Trained() { return kTrained; }
+const char *nativeSilverStopModel@Id() { return kModelId; }
+double nativeSilverStopModel@DefaultThreshold() { return kDefaultThreshold; }
 
-double nativeSilverStopModelRisk(const NativeSilverStopFeatures &x) {
+double nativeSilverStopModel@Risk(const NativeSilverStopFeatures &x) {
     if (!kTrained) return 1.0;
     double raw = kBaseline;
     for (int t = 0; t < kTreeCount; ++t) {
@@ -72,7 +74,9 @@ double nativeSilverStopModelRisk(const NativeSilverStopFeatures &x) {
 """
 
 
-def write_cpp(path, model):
+def write_cpp(path, model, suffix=""):
+    """suffix names the generated functions (nativeSilverStopModel<suffix>Risk ...); the compiled
+    models are A0 and A20 behind the selector in NativeSilverStopModel.cpp (STS_SILVER_LEARNED_STOP_MODEL)."""
     nodes, roots = [], []
     for tree in model["trees"]:
         roots.append(len(nodes))
@@ -95,7 +99,7 @@ def write_cpp(path, model):
         out.append(f"    {{{'true' if n['leaf'] else 'false'}, {n['feature']}, {float(n['threshold'])!r}, "
                    f"{n['left']}, {n['right']}, {float(n['value'])!r}}},\n")
     out.append("};\n")
-    out.append(FOOTER)
+    out.append(FOOTER.replace("@", suffix))
     Path(path).write_text("".join(out))
 
 
@@ -226,7 +230,7 @@ def train(args):
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "model.json").write_text(json.dumps(model))
-    write_cpp(out / "NativeSilverStopModel.cpp", model)
+    write_cpp(out / f"NativeSilverStopModel{args.suffix}.cpp", model, args.suffix)
     report = {"model_id": model["id"], "train_seeds": [lo, hi], "train_rows": len(X)}
     for name, subset in (("train", train_set), ("other", [d for d in decisions if not lo <= d["seed"] <= hi])):
         report[name] = {"rule_199": summarize(subset, *policy_199(subset))}
@@ -261,15 +265,24 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     ph = sub.add_parser("placeholder")
     ph.add_argument("--cpp", required=True)
+    ph.add_argument("--suffix", required=True)
     tr = sub.add_parser("train")
     tr.add_argument("trace", nargs="+")
     tr.add_argument("--train-seeds", required=True)
     tr.add_argument("--threshold", type=float, default=0.01)
     tr.add_argument("--out-dir", required=True)
+    tr.add_argument("--suffix", default="A20")
+    ex = sub.add_parser("export")
+    ex.add_argument("model")
+    ex.add_argument("--cpp", required=True)
+    ex.add_argument("--suffix", required=True)
     sub.add_parser("selftest")
     args = p.parse_args()
     if args.cmd == "placeholder":
-        write_cpp(args.cpp, placeholder())
+        write_cpp(args.cpp, placeholder(), args.suffix)
+    elif args.cmd == "export":
+        with open_text(args.model) as f:
+            write_cpp(args.cpp, json.load(f), args.suffix)
     elif args.cmd == "train":
         train(args)
     else:
