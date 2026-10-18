@@ -1,0 +1,17 @@
+packed orig: roots so far 164897
+packed x5: roots so far 953304
+packed g3: roots so far 1328751
+packed g4: roots so far 1728474
+packed g5: roots so far 2121802
+packed g6: roots so far 2528505
+{"roots": 2528505, "edges": 15122323, "missingValue": 1000, "droppedNoFight": {}, "roots_by_source": {"orig": 164897, "x5": 788407, "g3": 375447, "g4": 399723, "g5": 393328, "g6": 406703}}
+--- act4
+packed g7a4: roots so far 371487
+{"roots": 371487, "edges": 2357610, "missingValue": 0, "droppedNoFight": {}, "roots_by_source": {"g7a4": 371487}}
+--- merge (gen7/merge_g7.py pack-w.npz pack-a4.npz <a4 corpus> pack-g7f.npz)
+{"roots": 2899992, "edges": 17479933, "g7a4_source_runs": 2913, "g7a4_fold_roots": {"0": 73075, "1": 71582, "2": 72247, "3": 79781, "4": 74802}}
+--- sha256
+cd1bca5bc1e9642b944bf3594da139a23f843e4f12471ef68de3c089d7b1c9c0  pack-w.npz
+7dd215437f089b8e58fb7ce7a9fdc913fc35bb1b01eb460cbcfb778522367543  pack-a4.npz
+bdaf4f681fa98bc2b44ba74b6326e0774a40ecd11c88ed26d6643061ddfc0cb9  pack-g7f.npz
+3315a7c1751929916f8bf1103d0cbed68fdbdf2e225369a9ed3d0442bd6d37dc  one_combat

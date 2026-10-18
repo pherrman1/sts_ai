@@ -18,3 +18,9 @@ Reassemble: `cat pack-g7.npz.gz.part* | gunzip > pack-g7.npz` and check `sha256s
 Gen-6 README (history): the gen-6 pack, `arch_dev.py` = net-arch thread's arch.py (share sha 3e736bba) +
 `--device`, env `STS_TOOLS`, `ARCH_RUNS`; CPU smoke gives byte-identical results to the original.
 `silver_az_mlp.py` = tools/ after #535 (3e28818).
+
+## Gen 7f (2026-10-18): active power features
+`pack-g7f.npz` (sha bdaf4f68) = the same window re-featurized with main e032c04b and `STS_ACTIVE_POWER_FEATURES=1`
+(2,899,992 roots; 2,808 roots the current engine enumerates differently are dropped). Reassemble:
+`cat pack-g7f.npz.gz.part* | gunzip > pack-g7f.npz`. Steps and checks: `gen7f/PLAN-train.md`. The legacy-feature
+`pack-g7.npz` parts were removed from the tip; they are in commit 1d69e625.
