@@ -569,6 +569,7 @@ namespace sts::search {
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
                 searcher->leafSamples = g_nativeSilverLeafSamples;
+                searcher->outcomes = g_nativeSilverOutcomeCapture;
                 searcher->rootPrior = nativeSilverRootPrior(*searcher);
                 searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
                 searcher->rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
@@ -1194,6 +1195,7 @@ namespace sts::search {
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
+    thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture = nullptr;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),

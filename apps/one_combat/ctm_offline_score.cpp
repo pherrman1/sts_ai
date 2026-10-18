@@ -52,6 +52,92 @@ CombatPredictorInputV1 predictorInputFromJson(const J &j) {
 
 } // namespace
 
+// #460 opening hand: the hand after BattleContext::init(gc), i.e. the first
+// draw with innate and Bottled cards and the battle-start relics applied.
+// Reads gc only; the battle is a scratch copy.
+nlohmann::json ctmOpeningHandJson(const sts::GameContext &gc) {
+    sts::BattleContext bc;
+    bc.init(gc);
+    J hand = J::array();
+    for (int i = 0; i < bc.cards.cardsInHand; ++i)
+        hand.push_back({{"id", static_cast<int>(bc.cards.hand[i].getId())},
+                        {"upgraded", bc.cards.hand[i].isUpgraded()}});
+    return {{"cards", std::move(hand)}, {"drawPile", bc.cards.drawPile.size()},
+            {"inputState", static_cast<int>(bc.inputState)}};
+}
+
+namespace {
+
+// A GameContext that enters the recorded fight: the run seed and floor (which
+// seed every combat stream except misc and potion), room, encounter and the
+// recorded pre-combat persistent state.
+sts::GameContext openingHandContext(const J &row, std::uint64_t seed) {
+    const auto &g = row.at("predictorInput").at("globals");
+    sts::GameContext gc(static_cast<sts::CharacterClass>(g.at("characterClass").get<int>()), seed,
+                        g.at("ascension").get<int>());
+    gc.act = row.at("act").get<int>();
+    gc.floorNum = row.at("floor").get<int>();
+    gc.curRoom = static_cast<sts::Room>(g.at("roomClass").get<int>());
+    gc.info.encounter = static_cast<sts::MonsterEncounter>(row.at("encounter").get<int>());
+    gc.curMapNodeX = -1;   // never the burning elite: monster buffs do not touch the hand
+    gc.curMapNodeY = -1;
+    one_combat::applyCombatTransitionState(
+        gc, one_combat::combatTransitionStateFromJson(row.at("transition").at("pre")));
+    return gc;
+}
+
+std::uint64_t splitmix(std::uint64_t x) {
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    return x ^ (x >> 31);
+}
+
+} // namespace
+
+// #460 offline: the realized opening hand of every recorded row, plus RESAMPLES
+// hands of the same fight under fresh run seeds (a fair shuffle of the same
+// deck). Rows without a transition are skipped. Runs no seeds.
+int ctmOpeningHands(const std::string &inPath, const std::string &outPath, int resamples) {
+    need(resamples >= 0 && resamples <= 256, "RESAMPLES must be 0..256");
+    std::ifstream in(inPath);
+    need(bool(in), "cannot open " + inPath);
+    std::ofstream out(outPath);
+    need(bool(out), "cannot open " + outPath);
+    std::string line;
+    int rows = 0, written = 0, checked = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const J row = J::parse(line);
+        need(row.at("rowSchemaVersion") == "combat_transition_row_v2", "row schema");
+        ++rows;
+        if (row.at("transition").is_null()) continue;
+        const auto seed = row.at("sourceSeed").get<std::uint64_t>();
+        const auto fightIdx = row.at("fightIdx").get<int>();
+        J o = {{"sourceSeed", seed}, {"fightIdx", fightIdx},
+               {"openingHand", ctmOpeningHandJson(openingHandContext(row, seed))}};
+        // Rows recorded with STS_CTM_ROW_OPENING_HAND=1 carry the live hand: they must agree.
+        if (row.contains("openingHand")) {
+            need(row.at("openingHand") == o.at("openingHand"),
+                 "reconstructed opening hand differs from the recorded one: seed " + std::to_string(seed)
+                 + " fight " + std::to_string(fightIdx));
+            ++checked;
+        }
+        J alt = J::array();
+        for (int r = 0; r < resamples; ++r) {
+            const auto altSeed = splitmix(seed ^ splitmix((std::uint64_t(fightIdx) << 16) + std::uint64_t(r) + 1));
+            alt.push_back(ctmOpeningHandJson(openingHandContext(row, altSeed)).at("cards"));
+        }
+        o["resampledHands"] = std::move(alt);
+        out << o.dump() << '\n';
+        ++written;
+    }
+    need(bool(out), "write failed");
+    std::cerr << "ctmopeninghands rows=" << rows << " written=" << written << " checkedAgainstRecorded=" << checked
+              << " -> " << outPath << "\n";
+    return 0;
+}
+
 // Writes one CSV line per row. Rows without a transition (quarantined capture)
 // are kept with scored=0 so the analysis can count them.
 int ctmScoreRows(const std::string &inPath, const std::string &outPath,

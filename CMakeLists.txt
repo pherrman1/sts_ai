@@ -122,6 +122,14 @@ add_test(NAME engine_fidelity_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(engine_fidelity_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(dead_target_debuff_fix_test tests/dead_target_debuff_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_target_debuff_fix_test PRIVATE include json/include)
+add_test(NAME dead_target_debuff_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_target_debuff_fix_test>)
+set_tests_properties(dead_target_debuff_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(potion_reward_swap_test PRIVATE include json/include)

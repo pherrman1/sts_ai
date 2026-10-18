@@ -6,7 +6,9 @@
 #include "game/GameContext.h"
 #include "game/Game.h"
 
+#include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 using namespace sts;
 
@@ -15,6 +17,13 @@ thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_on
 
 namespace sts {
     thread_local BattleContext *g_debug_bc;
+
+    bool deadTargetDebuffFix() {
+        const char *value = std::getenv("STS_DEAD_TARGET_DEBUFF_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_TARGET_DEBUFF_FIX must be 0 or 1");
+    }
 }
 
 

@@ -835,6 +835,16 @@ OOC MCTS a Silver combat resolver (64 sims + prior per imagined combat, research
 MCTS CPU) and pointed worse at matched CPU (−8.6 pp [−17.2, 0.0]) on 128 pairs; no MCTS arm beat MCTS off
 ([§411](../../experiments/ledger-06.md)). The CTM stays; its value is speed.
 
+**Opening hand and first-search screens (ledger §529, #460, 2026-10-18).** On the Stage-4 A20 corpus an
+XGBoost outcome model gains nothing measurable from the realized opening hand (death log loss +0.00015
+[−0.00025, +0.00057], HP-lost MSE −0.25 [−0.62, +0.15] of 129), and averaging over sampled hands is slightly worse,
+so an opening-hand latent is not worth a CTM schema change for OOC MCTS (the OOC tree would not get wider either: its
+chance-node width depends only on visits). The endpoint distribution of the first 10k Silver search of a fight is a
+biased forecast on 1,048 A20 fights compared with the calibrated A20 CTM: death Brier 0.063 vs 0.026 and about
+12 HP too pessimistic on wins, although Silver sees the hand. On the CTM's post-heal scale its spread matches the
+CTM's once the bias is removed (RMSE 12.07 vs 11.97; log score −0.13 [−0.25, −0.01]), so a bias-corrected Silver
+label is not ruled out (Inference), at ~400x the CPU.
+
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 
 The independent 512-pair gameplay confirmation is **`OOC_HYBRID_QUALITY_CONFIRMED`**.
