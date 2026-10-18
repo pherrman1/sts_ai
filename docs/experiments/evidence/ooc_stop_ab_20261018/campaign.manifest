@@ -1,0 +1,7 @@
+name          ooc-stop-ab
+code_commit   bdb8338b7f25e7283fbad789ff5928cfd1a2ad35
+binary_sha256 unset
+workers       8
+share         /mnt/project-files/ooc-stop-ab
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
