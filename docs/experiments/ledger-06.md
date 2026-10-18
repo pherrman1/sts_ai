@@ -20663,8 +20663,10 @@ turn around anymore?") and 2026-10-18 00:20Z / 00:57Z ("yes compare heart1 and o
 |---|---|---|---|---|---|
 | targeting 1, keep facing | +3.6 [−0.1, +7.5] | +2.0 [−2.1, +6.2] | **+2.8 [+0.3, +5.6]** | 178 vs 182 | 0.99x |
 | targeting 2, face bigger intent | +1.0 [−3.4, +4.9] | +0.4 [−4.3, +5.4] | **+0.7 [−2.5, +3.8]** | 181 vs 182 | 1.04x |
-| full-information root | −1.8 [−5.9, +2.8] | −4.0 [−8.4, +0.5] | **−2.9 [−5.6, +0.0]** | 186 vs 182 | 0.99x |
+| full-information root | −1.8 [−5.9, +2.8] | −4.0 [−8.4, +0.5] | **−2.9 [−5.6, +0.0]** | 186 vs 182 | 0.99x* |
 
+- \*The full-information arm ran on a later binary (40d71721); its CPU ratio is against a default rerun on that
+  binary, which reproduced the default outcomes on all 192 fights (0.96x against the `t0` CPU times).
 - Default at this code loses 31.6 HP vs 33.3 at the §528 commit (same seeds). **Inference:** the rollout root table
   (ADR-0046) and action cap merged in between explain the difference; not separately tested.
 - heart1's engine (9 copies per state, §528 audit runs) minus ours, per state: now −3.5 [−8.0, +0.8]; minus our
@@ -20680,7 +20682,8 @@ found, and our fair root is built correctly. On current main the gap to heart1 i
 remainder is mostly noise plus the value of hidden information, which no fair search can recover.
 
 **Decision:** Philipp closed the Shield-and-Spear search line (2026-10-18 09:44Z: "Okay close the search line"). No
-switch or default change. The Act-4 gap is pursued upstream (Heart-entry HP 66 vs 83, lower max HP).
+switch or default change. What remains is the entry state (deck, lower max HP) from OOC play, which accounts
+for about half of the Shield and Spear excess and the max-HP deficit (A20 loss audit F1).
 
 Evidence: [`evidence/a20_ss_search_gap_close_20261018/`](evidence/a20_ss_search_gap_close_20261018/README.md)
 (per-fight CSVs, the three local patches, SHA256SUMS).

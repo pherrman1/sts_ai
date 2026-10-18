@@ -219,8 +219,9 @@ No further experiment or native integration is authorized by these guard repairs
 more per fight than heart1's engine at the §528 commit. Ruled out: monster code, evaluation, budget, rollout table,
 tree reuse, two rollouts per leaf, three facing changes in the rollout, and draw-pile sampling (same information-set
 code and chance constants as heart1; the fair root view audited correct). On current main the gap is −3.5 HP
-[−8.0, +0.8], not shown; a full-information root gains −2.9 [−5.6, +0.0]. Reopen only with a new mechanism. The
-Act-4 gap is upstream: Heart-entry HP 66 vs 83 and lower max HP (A20 loss audit,
+[−8.0, +0.8], not shown; a full-information root loses 2.9 HP less (−2.9 [−5.6, +0.0]). Reopen only with a new
+mechanism. What remains is the entry state (deck, lower max HP) from OOC play, which accounts for about half of the
+Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
 `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
 
 ## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
