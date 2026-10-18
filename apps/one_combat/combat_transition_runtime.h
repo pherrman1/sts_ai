@@ -11,6 +11,7 @@
 #include "combat_predictor_input.h"
 
 namespace one_combat {
+struct CompactTreeNet;
 struct ActiveLizardPrediction {
     bool supported = false;
     std::string reason = "disabled";
@@ -42,6 +43,9 @@ class CombatTransitionRuntime {
     bool lizardFairy_ = false;
     // Manifest bossSurvivalLogitShift (§470): added to the death logit of boss encounters.
     float bossDeathLogitShift_ = 0;
+    // Act-4 survival model for SHIELD_AND_SPEAR and THE_HEART (§527; STS_CTM_ACT4_SURVIVAL_MODEL), or null.
+    const CompactTreeNet *act4Survival_ = nullptr;
+    std::string act4SurvivalPath_;
     // Every max_hp.encoder.* tensor equals its hp.encoder.* twin byte for byte, so
     // encode("max_hp",p) and encode("hp",p) are the same computation.
     bool sharedHpEncoder_ = false;
@@ -73,6 +77,8 @@ public:
     // Identity pins: the pre-#418 production stack, the promoted production candidate
     // (pathb-r2, built in), or a research candidate's (STS_CTM_RESEARCH_CANDIDATE_MANIFEST).
     const nlohmann::json &identity() const { return identity_; }
+    // Path of the Act-4 survival model this runtime uses ("" when off).
+    const std::string &act4SurvivalModelPath() const { return act4SurvivalPath_; }
     bool researchCandidate() const { return !identity_.at("candidateId").is_null() && !productionCandidate_; }
     // The artifact is the built-in production candidate, pinned without a research manifest.
     bool productionCandidate() const { return productionCandidate_; }

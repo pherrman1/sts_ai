@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0048](0048-ctm-act4-survival-default.md) makes the A20 CTM stack (`pathb-a20`) price Shield and Spear and
+  the Heart with the §527 Act-4 survival model by default (`STS_CTM_ACT4_SURVIVAL_MODEL=0` restores the CTM head).
+
 - [ADR-0047](0047-select-student-defaults.md) turns on `STS_OOC_MCTS_TARGET_PRIOR=1` and
   `STS_OOC_MCTS_LEAF_SELECTS=heart1` by default when the heart1 weights are a card-select student (`x_act`
   input, `student_sel.bin`), and makes that student the standard A20 OOC weights (`=0` / `=chain` restore).
