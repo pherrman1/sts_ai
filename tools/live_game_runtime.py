@@ -41,8 +41,14 @@ LEGACY_OOC_WIN_NAME = "v_win_trees.txt"
 def ooc_win_name(manifest: dict[str, Any]) -> str:
     return manifest.get("oocWinModelName", LEGACY_OOC_WIN_NAME)
 OOC_FLOOR_NAME = "v_rich_trees.txt"
-# ADR-0046 rollout root table model; the advisor loads it from models/ beside itself.
+# ADR-0046 rollout root table model; the advisor loads it from models/ beside itself. Releases from
+# before ADR-TBD carry gen-6 E under its own name (their advisor looks for that name).
 ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g7f_E.txt"
+LEGACY_ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g6_E.txt"
+
+
+def rollout_root_table_name(manifest: dict[str, Any]) -> str:
+    return manifest.get("rolloutRootTableName", LEGACY_ROLLOUT_ROOT_TABLE_NAME)
 # ADR-0048 Act-4 survival model of the A20 CTM stack; the advisor loads it from models/candidates/ beside itself.
 ACT4_SURVIVAL_NAME = "candidates/ctm_act4_survival_trees.txt"
 ARM_C_NAME = "arm_c_student.bin"
@@ -193,7 +199,7 @@ class RuntimeManager:
         if manifest.get("oocFloorModelSha256"):
             checks += ((f"models/{OOC_FLOOR_NAME}", "oocFloorModelSha256", False),)
         if manifest.get("rolloutRootTableSha256"):
-            checks += ((f"models/{ROLLOUT_ROOT_TABLE_NAME}", "rolloutRootTableSha256", False),)
+            checks += ((f"models/{rollout_root_table_name(manifest)}", "rolloutRootTableSha256", False),)
         if manifest.get("ctmAct4SurvivalSha256"):
             checks += ((f"models/{ACT4_SURVIVAL_NAME}", "ctmAct4SurvivalSha256", False),)
         if "armCModelSha256" in manifest:
@@ -454,6 +460,7 @@ class RuntimeManager:
             manifest["oocWinModelName"] = OOC_WIN_NAME
             manifest["oocFloorModelSha256"] = hashes["oocFloor"]
             manifest["rolloutRootTableSha256"] = hashes["rolloutRootTable"]
+            manifest["rolloutRootTableName"] = ROLLOUT_ROOT_TABLE_NAME
             if arm_c_source is not None:
                 manifest["armCModelSha256"] = hashes["armC"]
             if qualified_ctm:

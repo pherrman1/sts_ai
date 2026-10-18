@@ -1111,7 +1111,7 @@ int main() {
         throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL is no longer supported: "
                                     "the advisor runs native Silver search without a root prior");
     // ADR-0046 rollout root table, as in the simulated Silver path: unset uses the bundled
-    // gen-6 E model next to this executable (the installed release's models/), else under
+    // gen-7f E model (ADR-TBD) next to this executable (the installed release's models/), else under
     // the working directory; 0 restores the ADR-0040 table; a path selects another model.
     std::unique_ptr<sts::search::CombatValueNet> rolloutRootTable;
     std::string rolloutRootTableIdentity = "off";

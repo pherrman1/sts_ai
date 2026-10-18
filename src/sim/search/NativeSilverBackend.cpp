@@ -905,8 +905,8 @@ namespace sts::search {
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
         }
-        // ADR-0046: the per-root rollout card table is on by default with the bundled gen-6 E
-        // prior; STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
+        // ADR-0046: the per-root rollout card table is on by default with the bundled gen-7f E
+        // prior (ADR-TBD); STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
         // selects another combat_policy_mlp model. The model loads at the first search
         // (rolloutRootTableNet), so commands without Silver need not find it.
         {

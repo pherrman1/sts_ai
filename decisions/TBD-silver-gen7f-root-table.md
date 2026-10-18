@@ -13,7 +13,8 @@ Act-4 states it was NOT_SHOWN at 40k (dWin −0.3 pp [−1.6, +1.0]) and at 2.5k
 
 On 2026-10-18 at 13:41Z Philipp asked "can you still make gen 7 the prior?". On the follow-up card (13:44Z) he chose
 "Retrain, then swap": retrain on the active power features, which his 11:44Z rule requires of g7_E and later combat
-nets; run a short root-table check; then switch unless it shows harm.
+nets; run a short root-table check; then a PR makes it the default, and the g6_E path restores the old table. The
+check's PREREG added that a HARM result blocks the switch.
 
 - Retrain: g7f_E is the same window re-featurized with `STS_ACTIVE_POWER_FEATURES=1` and trained with gen 7's recipe.
   Data branch `claude/silver-gen7-act4-data` 0168b72d, `gen7f/`. Sanity gate PASS: fold-4 CE orig 1.1731 vs g7_E
@@ -29,8 +30,9 @@ nets; run a short root-table check; then switch unless it shows harm.
 - `STS_SILVER_ROLLOUT_ROOT_TABLE=models/combat_policy_mlp_g6_E.txt` restores the ADR-0046 table, and
   `STS_SILVER_ROLLOUT_ROOT_TABLE=0` restores the ADR-0040 table. Both are unchanged.
 - `models/combat_policy_mlp_g6_E.txt` stays bundled for that restore and for the research harnesses that pin it.
-- `tools/live_game_runtime.py` copies g7f_E into each release and pins it as `rolloutRootTableSha256`. A reinstall of the
-  live runtime still waits for Philipp's word.
+- `tools/live_game_runtime.py` copies g7f_E into each release and pins it as `rolloutRootTableSha256` and
+  `rolloutRootTableName`. A release without that name is from before this ADR and keeps its g6_E file valid, so an
+  installed runtime is not rebuilt; a reinstall of the live runtime still waits for Philipp's word.
 - A20 run configurations that set a Silver root or tree prior (`STS_SILVER_ROOT_PRIOR`) use g7f_E from now on. The
   setting stays env-only and has no code default.
 
