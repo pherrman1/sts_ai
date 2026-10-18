@@ -566,6 +566,8 @@ add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> sil
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
 add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_potion_weights)
 set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
+add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_concave_hp_leaf)
+set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)

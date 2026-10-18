@@ -61,6 +61,7 @@ namespace sts::search {
             // Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
             bool potionTypeWeightsOn = false;
             std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
+            double concaveHpK = 0;           // STS_SILVER_CONCAVE_HP_LEAF (research; 0 = off)
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -557,6 +558,7 @@ namespace sts::search {
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
                     searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
                     searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
+                    searcher->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -860,6 +862,13 @@ namespace sts::search {
         if (const char *raw = std::getenv("STS_SILVER_POTION_WEIGHTS"); raw && *raw) {
             g_options.potionTypeWeightsOn = true;
             g_options.potionTypeWeights = parseSilverPotionWeights(raw, SilverEvalWeights{}.potionWeight);
+        }
+        if (const char *raw = std::getenv("STS_SILVER_CONCAVE_HP_LEAF"); raw && *raw) {
+            char *end = nullptr;
+            g_options.concaveHpK = std::strtod(raw, &end);
+            if (end == raw || *end != '\0' || !std::isfinite(g_options.concaveHpK) || g_options.concaveHpK < 0
+                    || g_options.concaveHpK > 20)
+                throw std::runtime_error("STS_SILVER_CONCAVE_HP_LEAF must be a number in [0, 20] (0 = off)");
         }
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;
@@ -1191,6 +1200,7 @@ namespace sts::search {
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride = nullptr;
     thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    thread_local std::optional<double> g_nativeSilverConcaveHpLeafOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;

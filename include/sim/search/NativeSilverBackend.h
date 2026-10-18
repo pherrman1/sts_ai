@@ -146,6 +146,10 @@ namespace sts::search {
     // STS_SILVER_FINAL_FIGHT_LEAF for the current thread's combats (it still
     // applies only to fights whose victory ends the run). Unset elsewhere.
     extern thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    // Research-only (potionpriceprobe leaf arms): when set, replaces
+    // STS_SILVER_CONCAVE_HP_LEAF (SilverEvalWeights::concaveHpK; 0 = off) for the
+    // current thread's searches. Unset elsewhere.
+    extern thread_local std::optional<double> g_nativeSilverConcaveHpLeafOverride;
     // Research-only (§479 rollout arms): when set, replaces the env rollout options
     // (SilverSearcher::envRolloutConfig) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
