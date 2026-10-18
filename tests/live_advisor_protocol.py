@@ -42,7 +42,9 @@ class AdvisorProtocolTest(unittest.TestCase):
         proc = subprocess.run(
             [executable or sys.argv[1]], input="\n".join(rows) + "\n", text=True,
             capture_output=True, check=True, env=env, cwd=cwd)
-        self.assertEqual(proc.stderr, "")
+        # The A20 stack's default Act-4 survival model (ADR-TBD) logs its load line; nothing else may.
+        self.assertEqual([line for line in proc.stderr.splitlines()
+                          if not line.startswith("[ctm-act4-survival")], [])
         return [json.loads(line) for line in proc.stdout.splitlines()]
 
     def test_invalid_live_switches_fail_startup(self):
@@ -75,6 +77,8 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(response["ctmStatus"], "OK", response)
         self.assertTrue(response["ctmStack"]["activeLizard"])
         self.assertIn("bossSurvivalLogitShift", response["ctmStack"]["ascension20"])
+        # ADR-TBD: the A20 stack loads the bundled Act-4 survival model by default.
+        self.assertRegex(response["ctmStack"]["ascension20"]["act4Survival"], r"^fnv1a64:[0-9a-f]{16}$")
         entry = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                  "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
                  "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",
