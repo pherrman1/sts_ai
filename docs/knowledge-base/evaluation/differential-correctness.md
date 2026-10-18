@@ -187,10 +187,10 @@ whose flag is off.
 The second canary (§TBD; 2026-10-18, a full A20 run on the PC that reached
 floor 16 in Act 1, 9 encounters) compared 135 combat steps: 126 matched and 9
 did not. The probe now also ignores a dead monster's powers, because Java
-clears them only in `updateDeathAnimation`. Native no longer triggers Curl Up
-on a lethal hit. Still open:
+clears them only in `updateDeathAnimation`. `STS_CURL_UP_LETHAL_FIX` (default
+on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
 
-- A Discovery pick advances `cardRandomRng` by about 181 in Java and 0
+- A Discovery pick leaves `cardRandomRng` at counter 184 in Java and 3
   natively.
 - A card whose cost was set to 0 for the turn keeps `costForTurn` 0 in the
   discard pile natively; Java resets it.

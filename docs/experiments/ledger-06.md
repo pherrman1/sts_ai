@@ -20833,8 +20833,9 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 Asked by Philipp 2026-10-18 14:29Z ("lets go with the canary run").
 **Setup:** one A20 Ironclad run on Philipp's PC, seed 111194451, installed runtime `64f6ef277966-3f57d0b45c36`
 (inspector JAR `78eb4d03`), game with `STS_DIFFERENTIAL_DEBUG_RNG=1`, driver `--parity-trace` (4 segments joined by
-`--continue-run`), `combat_parity_probe` built at main `05da2c07`. Seed 111194451 is also the fixed seed of
-`dead_target_debuff_fix_test`, which drives no gameplay.
+`--continue-run`), `combat_parity_probe` built at main `05da2c07`. The instructions named seed 111194453; the PC
+session ran 111194451 instead (its report and trace). 111194451 is also the fixed seed of
+`dead_target_debuff_fix_test`, which drives no gameplay, so the overlap is harmless.
 **Result:** 135 combat steps compared over 9 Act 1 encounters (Hexaghost 36, Gremlin Gang 18, Cultist 15, Gremlin Nob
 14, Small Slimes 12, Exordium Wildlife 11, Jaw Worm 10, Three Louse 10, Red Slaver 9): 126 MATCH, 9 MISMATCH, 3
 `TRACE_ENDED`; no unresolved recorded action and no held-selection skips. The 9 mismatches:
@@ -20852,10 +20853,12 @@ The run stopped at floor 16 (Act 1 boss card reward): the live advisor segfaulte
 on an empty action list inside an OOC rollout. It reproduces offline from the saved input, on the previous runtime
 `64b38c88` too. The driver also stopped 3 times on display-only stat changes of cards in the discard and exhaust piles,
 which its tolerance check misses; no action was taken on those.
-**Interpretation:** the probe now ignores a dead monster's powers, and native Curl Up matches Java (cannot change
-play: the louse dies either way). The Discovery RNG gap is the one open difference that can change later combat
+**Interpretation:** the probe now ignores a dead monster's powers, and `STS_CURL_UP_LETHAL_FIX` (default on, `=0`
+restores) makes native Curl Up match Java. The louse dies either way, but its block and status bits are part of
+Silver's node identity, so search and play can change in louse fights. The Discovery RNG gap is the one open difference that can change later combat
 (Havoc and random targets draw from `cardRandomRng`). Coverage is Act 1 only. Raw traces (469 MB) stay on the PC
 under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds used: 111194451 (canary), 111194453 (fixed seed
-of `curl_up_lethal_test`, no gameplay).
+of `curl_up_lethal_test`, no gameplay; not used by the canary).
 **Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
-`behavior/java-reference-audit.md` (Curl Up, dead monster powers).
+`behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
+(`STS_CURL_UP_LETHAL_FIX`).

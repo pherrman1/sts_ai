@@ -371,8 +371,10 @@ instead of the engine clearing them.
 
 `CurlUpPower.onAttacked` curls only when `damageAmount < owner.currentHealth`
 (second parity canary, 2026-10-18). Native curled on a killing hit too, which
-queued block on the dead louse. Native now checks the same condition. It
-cannot change play: the louse is dead either way.
+queued block on the dead louse. `STS_CURL_UP_LETHAL_FIX` (default on, `=0`
+restores) makes native check the same condition. The louse is dead either
+way, but the dead monster's block and status bits are part of Silver's node
+identity (hash and state equality), so search can change.
 
 Test: `dead_target_debuff_fix`.
 

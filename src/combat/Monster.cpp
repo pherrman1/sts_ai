@@ -394,8 +394,8 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
 
     } else if (hasStatus<MS::CURL_UP>()) {
         // Java CurlUpPower.onAttacked requires damageAmount < currentHealth:
-        // a lethal hit does not curl.
-        if (damage < curHp) {
+        // a lethal hit does not curl (STS_CURL_UP_LETHAL_FIX=0 restores).
+        if (damage < curHp || !curlUpLethalFix()) {
             bc.addToBot(Actions::MonsterGainBlock(this->idx, getStatus<MS::CURL_UP>()) );
             setHasStatus<MS::CURL_UP>(false);
         }
