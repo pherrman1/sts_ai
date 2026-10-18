@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <set>
+#include <string>
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 
@@ -106,6 +109,30 @@ int main(int argc, char **argv) {
                 require(state.mapMoveCost(2)==0 && state.mapMoveCost(5)==(charges?1:-1)
                         && state.mapMoveCost(4)==-1 && state.mapMoveCost(7)==-1,
                         "Wing Boots reachability/cost mismatch");
+                // #638: the heart1 record's Wing Boots counter is 0 unless
+                // STS_OOC_HEART1_WING_BOOTS_COUNTER=1, then the charges.
+                for(const char *flag:{static_cast<const char*>(nullptr),"0","1"}) {
+                    if(flag)setenv("STS_OOC_HEART1_WING_BOOTS_COUNTER",flag,1);
+                    else unsetenv("STS_OOC_HEART1_WING_BOOTS_COUNTER");
+                    heart1::Choice choice;
+                    require(heart1::buildChoice(state,choice),"Wing Boots map choice was unencoded");
+                    const auto &rec=choice.record;
+                    const auto at=std::find(rec.relics.begin(),rec.relics.end(),int(RelicId::WING_BOOTS));
+                    require(at!=rec.relics.end(),"Wing Boots missing from heart1 record");
+                    const int counter=rec.relicCounters[at-rec.relics.begin()];
+                    const bool on=flag && std::string(flag)=="1";
+                    require(counter==(on?charges:0),"heart1 Wing Boots counter mismatch");
+                    for(std::size_t i=0;i<rec.relics.size();++i)
+                        if(rec.relics[i]!=int(RelicId::WING_BOOTS))
+                            require(rec.relicCounters[i]==state.relics.relics[i].data,"flag changed another relic counter");
+                }
+                setenv("STS_OOC_HEART1_WING_BOOTS_COUNTER","2",1);
+                {
+                    heart1::Choice choice;bool rejected=false;
+                    try{heart1::buildChoice(state,choice);}catch(const std::runtime_error&){rejected=true;}
+                    require(rejected,"invalid STS_OOC_HEART1_WING_BOOTS_COUNTER accepted");
+                }
+                unsetenv("STS_OOC_HEART1_WING_BOOTS_COUNTER");
                 auto ordinary=state;GameAction(2).execute(ordinary);
                 require(ordinary.wingBootsCharges==charges,"ordinary edge spent charge");
                 if(charges) {

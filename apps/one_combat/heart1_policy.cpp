@@ -208,6 +208,18 @@ int bossEncoding(MonsterEncounter boss) {
     }
 }
 
+// STS_OOC_HEART1_WING_BOOTS_COUNTER (#638): 1 = the Wing Boots relic counter
+// carries gc.wingBootsCharges (0-3), so x_relic_counter weights trained on it
+// can tell charged from spent boots. Unset or 0 = the frozen encoding, where
+// the counter is relic.data, always 0 for Wing Boots (initRelicsFromSave).
+// Other values are fatal. Read only when Wing Boots is owned.
+bool wingBootsCounter() {
+    const char *value = std::getenv("STS_OOC_HEART1_WING_BOOTS_COUNTER");
+    if (!value || !*value || std::string(value) == "0") return false;
+    if (std::string(value) == "1") return true;
+    throw std::runtime_error("STS_OOC_HEART1_WING_BOOTS_COUNTER must be 0 or 1");
+}
+
 // getNNRepresentation (bindings-util.cpp).
 void encodeObservation(const GameContext &gc, Record &r) {
     r.fixedObservation = {std::min(gc.curHp, 200), std::min(gc.maxHp, 200), std::min(gc.gold, 1800),
@@ -221,7 +233,8 @@ void encodeObservation(const GameContext &gc, Record &r) {
     r.act = gc.act;
     for (const auto &relic : gc.relics.relics) {
         r.relics.push_back(static_cast<int>(relic.id));
-        r.relicCounters.push_back(relic.data);
+        r.relicCounters.push_back(relic.id == RelicId::WING_BOOTS && wingBootsCounter()
+                                  ? gc.wingBootsCharges : relic.data);
     }
     for (int i = 0; i < gc.potionCapacity; ++i) r.potions.push_back(static_cast<int>(gc.potions[i]));
 
