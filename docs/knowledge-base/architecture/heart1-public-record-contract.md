@@ -52,7 +52,7 @@ reconstructible from public history; **P** private (must not appear).
 | `cards_offered.*` | reward card groups, shop cards, `toSelectCards` | O | screen capture | open (step 3) |
 | `relics_offered` | reward relics, shop relics, `info.bossRelics` | O | screen capture | open (step 3) |
 | `potions_offered` | reward potions, shop potions | O | screen capture | open (step 3) |
-| `fixed_actions` (+`gold/card/relic/info`) | event option mapping, Neow bonus/drawback, rest options, skip/remove/key/chest | O | event/screen capture | open (step 3); event payloads are option-text values (Face Trader HP, We Meet Again gold/card, N'loth relics, Golden Idol/Winding Halls HP) |
+| `fixed_actions` (+`gold/card/relic/info`) | event option mapping, Neow bonus/drawback, rest options, skip/remove/key/chest | O | event/screen capture | open (step 3); event payloads are option-text values (Face Trader HP, We Meet Again gold/card, N'loth relics, Golden Idol/Winding Halls HP, Falling card, World of Goop gold loss, Neow drawback) |
 | `paths_offered` | legal map moves (`mapMoveCost`, includes Wing Boots jumps) | O | map + Wing Boots `liveCounter` | open: depends on Wing Boots charges, which the record itself does not encode (#638) |
 | `screen_state`, `select_screen_type` | `screenState`, `info.selectScreenType` | O | screen capture | open (step 3) |
 | `leaf.publicBattleEncounter` | `info.encounter` at the battle-start boundary | O | `publicEnemy` / room | qualified for the encounter just entered; never a queue entry |
@@ -80,8 +80,11 @@ nonpositive values, and Java's default counter is -1: the real captures
 Meat on the Bone, Singing Bowl and others, and `live_ooc_state.cpp` imports it
 unchanged. So live student_sel sees -1 where every training record saw 0.
 The comment "nonpositive counters have the same V4 token encoding as native
-zero" holds for V4, not for this numeric input. **Unverified:** the size of
-the effect on live priors. The fix (map nonpositive non-persistent counters to
+zero" holds for V4, not for this numeric input. Measured in the #685 review
+on 4,782 simulator records with at least two choices (counterless relics set
+to -1, scored with `heart1score` and student_sel): the prior argmax changes in
+26 records (0.54%), mean total variation 0.0045, p99 0.056, max 0.157; value
+head mean |Δ| 0.0004. Real live states were not measured. The fix (map nonpositive non-persistent counters to
 0 at import, matching the simulator) changes live play and belongs to step 3
 with a flag.
 
