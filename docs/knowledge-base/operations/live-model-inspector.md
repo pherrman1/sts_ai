@@ -717,8 +717,9 @@ read-only screen and choice converters. The observation contains:
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
-  `seenRelics` list is accepted only when its producer marks the history
-  complete. The Java observer accumulates visible shop, reward and boss offers
+  `seenRelics` list fully qualifies relic pools only when its producer marks
+  the history complete; an incomplete list still excludes the offers it names
+  under the relic offer prior below. The Java observer accumulates visible shop, reward and boss offers
   from a fresh Neow boundary. `RelicOfferRecorder` captures those offers before
   shop/reward input and persists the ledger with the BaseMod run-save field
   `stsmodelinspector:relicOffersV1`. Restoration validates schema version,
@@ -824,9 +825,19 @@ Validated historical boss `picked`/`not_picked` metrics contribute known
 exclusions without marking that global history complete. Legacy normal/elite
 encounter history can be recovered only from canonical encounter identities
 joined to validated resolved public path floors. An uninterrupted
-fresh-run observer accumulates them from each public screen; random-relic
-branches and direct MAP search fail closed with
-`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
+fresh-run observer accumulates them from each public screen. When that
+ledger is incomplete (a save from before the recorder, a mid-run install, or
+an unopened shop), the importer keeps the remaining pool superset as a public
+prior (`STS_LIVE_RELIC_OFFER_PRIOR`, default 1, issue #637). Native pools are
+one uniform shuffle consumed regardless of identity, so given the known
+exclusions the unknown future draws are a uniform sample without replacement
+from that superset, which is what the per-particle pool reshuffle in OOC MCTS
+samples. **Inference:** it is exact up to native redraws of relics that cannot
+spawn and real pool exhaustion changing the tier fallback. Random-relic branches and downstream MAP search are then supported,
+the evaluator reports `seenRelicOfferPrior=true`, and differential tracing
+rejects such roots (`DIFFERENTIAL_SEEN_RELIC_PRIOR_UNREPRESENTABLE`).
+`STS_LIVE_RELIC_OFFER_PRIOR=0` restores the fail-closed
+`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED`. The
 resolved `?`-room outcomes are recovered from vanilla's persisted
 `path_per_floor`, checked against `path_taken`, with the current public room
 allowed to complete the current floor. Continuing a save made after a boss
