@@ -63,6 +63,14 @@ namespace sts {
     // values are fatal. Read only when the target is already dead.
     bool deadTargetDebuffFix();
 
+    // STS_CURL_UP_LETHAL_FIX: unset/1 (default) = Curl Up does not trigger on
+    // a lethal hit, as in CurlUpPower.onAttacked (damageAmount <
+    // currentHealth; combat parity canary 2 2026-10-18). The dead louse's
+    // block and status bits are part of Silver's node identity, so this can
+    // change search. 0 = the legacy engine curls anyway. Other values are
+    // fatal. Read only on a lethal hit.
+    bool curlUpLethalFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

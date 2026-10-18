@@ -32,6 +32,7 @@ struct FixedChoice {
     int card = 0;     // CardId::INVALID
     int relic = 180;  // RelicId::INVALID
     int info = 0;     // EventFixedInfo::NONE
+    bool operator==(const FixedChoice &) const = default;
 };
 
 // Mirror of flatten_dict(Choice.as_dict()) in silverbot: the raw record that
@@ -57,6 +58,8 @@ struct Record {
     std::vector<int> paths;
     int screenState = 0;
     int selectScreenType = 0;
+
+    bool operator==(const Record &) const = default;
 
     int choiceCount() const {
         return int(offeredCards.size() + offeredRelics.size() + offeredPotions.size()
@@ -100,7 +103,9 @@ public:
     // Map rows below the current floor are dropped first for a trim_map network.
     // logitsOnly: skip what only the value head needs (the last block's
     // observation rows); the logits are bit-identical, value/pooled stay empty.
-    Output forward(const Record &, bool logitsOnly = false) const;
+    // memo: reuse this thread's output for an equal record from a recent call
+    // (the forward is deterministic, so the output is the same); off for timing.
+    Output forward(const Record &, bool logitsOnly = false, bool memo = true) const;
     const std::string &path() const { return path_; }
     int dim() const { return dim_; }
     int heads() const { return heads_; }
@@ -111,16 +116,19 @@ public:
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
-    struct FixedVec { int features = 0; std::vector<float> invFreq; Linear proj; };
+    // memoId: nonzero process-unique key of these weights for the projection memo.
+    struct FixedVec { int features = 0; std::vector<float> invFreq; Linear proj; std::uint64_t memoId = 0; };
     struct Block {
         std::vector<float> norm1, norm2;
         Linear inProj, outProj, w1, w2, v;
+        Linear inProjKV;  // inProj's key and value rows (derived at load)
     };
 
 private:
     Output forwardRecord(const Record &, bool logitsOnly) const;
 
     std::string path_;
+    std::uint64_t forwardId_ = 0;  // nonzero process-unique key of a load, for the output memo
     int dim_ = 0, heads_ = 0, hidden_ = 0;
     bool trimMap_ = false;
     Embedding card_, upgrade_, relic_, potion_;
@@ -197,6 +205,11 @@ std::vector<TokenMapping> mapChoiceTokens(const Choice &, bool singingBowl,
                                           const std::vector<sts::search::GameAction> &);
 // Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
 void priorMappingSelfTest();
+// Throws std::runtime_error when the FixedVec projection memo differs from the plain
+// projection with two nets of different width on one thread (oocmctsselftest).
+void fixedVecMemoSelfTest();
+// Throws std::runtime_error when a vector projection kernel differs from the reference loop.
+void linearSelfTest();
 
 // Diagnostics for the parity harness (tools/heart1/); neither uses a seed range.
 // heart1score <weights> <records.jsonl> <out.jsonl>: native logits for records.

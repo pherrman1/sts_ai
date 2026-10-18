@@ -20717,6 +20717,32 @@ Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
 **Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
 approaches in `research/combat-search/leaf-evaluation.md`.
 
+## §533 — Exact speedup of the native student forward: 2.0x per call, OOC MCTS CPU 1.67–1.77x, play identical (2026-10-18)
+
+**Question:** Philipp (2026-10-18 11:52Z) asked to make the student forward faster after an A20 profile of the
+winrate-check stack (4 seeds, 111195252–255, gdb stack samples plus `STS_OOC_CPU_PROFILE`/`STS_RUN_PROFILE`): OOC
+MCTS was 97–98% of CPU, real Silver combat 2–3%; student_sel forwards inside rollout3 leaves (about 11 per leaf at
+0.95 ms) were 66–83% of CPU, imagined Act-4 Silver fights 43% of Act-3 CPU, CTM sampling 3–5%.
+**Change:** bit-identical fast paths in `heart1_policy.cpp`: AVX attention with `dot()`'s reduction order, four-output
+reductions in the projection kernel, a per-thread FixedVec projection memo keyed by weights and input bits,
+key/value-only observation rows in the last logits-only block, reused buffers, and a four-lane copy of glibc's
+`__expf_fma` fast path for softmax and SiLU, enabled only when a start-up self-test matches `std::exp` bit for bit.
+`STS_OOC_HEART1_SCALAR=1` keeps every reference loop.
+**Result:** student_sel logits-only pass 887–933 → 450 µs per call on 4,383 captured A20 rollout records (full pass
+1.8x); `heart1score` byte-identical to main on 6,778 student_sel records, 300 heart1 and 300 student C records, and
+in scalar mode. Paired A20 `bestbench` units with the winrate-check env (main `658d43ee` vs the candidate), seed
+111195257 full run and 111195258–260 Act 1: 4/4 byte-identical play; OOC MCTS CPU 1,350 → 763, 373 → 211,
+343 → 205, 488 → 285 s (1.67–1.77x).
+**Decision:** adopt (exact, no behavior change). **Inference:** Act 3 gains less, since imagined Act-4 Silver fights
+do not use the student. Acts 3–4 records were not in the parity set.
+
+Evidence: [`evidence/heart1_forward_speedup_20261018/`](evidence/heart1_forward_speedup_20261018/README.md); raw
+`/mnt/project-files/heart1-forward-speedup/raw.tar.gz`; profile `/mnt/project-files/a20-profile/REPORT.md`.
+
+Seeds used: 111195252–111195260 (profile 252–255, capture 256, gate 257–260).
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`; cost sentence in
+`evaluation/current-research.md`.
 ## §532 — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
 
 **Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the
@@ -20766,3 +20792,360 @@ campaign files, analyzer, diagnostic script, result, tar hashes; raw tars on the
 Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
+
+## §540 — Silver playouts that follow the gen-6 prior instead of the greedy list, at equal simulations (A20, leaf headroom pilot): score INCONCLUSIVE, HP lost −1.5 (2026-10-18)
+
+**Question (Philipp, 2026-10-18 14:06Z, thread "Better fast leaf evaluation": "good idea, lets do that"):** before
+building a fast learned Silver leaf, is there headroom for a *better* leaf? §479/§523 put the leaf's value in its
+playout policy, and 2.5k vs 10k simulations differ by only −0.68 [−3.13, +1.87] fight score (§479), so speed alone
+buys little. Upper-bound probe: every playout card play follows the gen-6 E prior argmax (not deployable).
+**Design:** [PREREG](evidence/silver_prior_playout_pilot_20261018/PREREG.md), written before results. New research
+playout mode `RolloutConfig::prior`, reachable only through the `ctmsilvergen` armset below (setting the env var
+`STS_SILVER_ROLLOUT_PRIOR` is refused at startup with rc 2; with the mode on, each playout `PLAYER_NORMAL` step plays the root-prior model's
+argmax over card plays and END_TURN, no potions; card selects stay greedy) and `ctmsilvergen` armset `priorpl`
+(code 6eaa0034, binary `ec990413…`). §523 harness (student C source runs, gen-6 E root prior w400, hallway every 3rd,
+R = 2) with the ADR-0046 root table on. Arms at 2,500 simulations, both with root prior and tree prior K = 8:
+`greedy2500` (production playouts) and `priorpl2500`. 16 sources (111197692–111197707) in-thread on 4 cores, all
+shards rc = 0; 162 valid paired fights (3 excluded, escapes). Smoke 111197780–111197783 (32 fights, rc = 0).
+**Result (paired, 95% seed bootstrap):**
+
+| subset | fights | Δ score | Δ win | Δ HP lost |
+|---|---|---|---|---|
+| all | 162 | +3.81 [−2.43, +10.29] | +0.9 pp [−1.3, +3.2] | −1.45 [−2.51, −0.31] |
+| elite | 67 | +12.09 [+0.16, +25.81] | +4.5 pp [0, +8.2] | −2.90 [−5.17, −0.73] |
+| boss | 27 | +0.89 [−1.84, +3.03] | 0 | −2.52 [−4.80, −0.10] |
+| normal and other | 68 | −3.19 [−11.23, +0.64] | −1.5 pp | +0.40 [−0.11, +0.90] |
+
+CPU per simulation 7.62x [6.95, 8.07] (107 vs 14.1 µs); playouts 15.0 vs 16.0 actions.
+**Label (pre-registered): `INCONCLUSIVE`** (mean +3.81 below the +5 bar, CI includes 0 and +5).
+**Interpretation:** a better-playing playout lowers HP lost by about 1.5 per fight, concentrated in elites and bosses,
+where it is significant on HP. **Inference:** that is more than the about 0.7 a 4x larger greedy budget gave in §479
+(different harness), so leaf quality has some headroom, but at this resolution it is modest and the score gain is not
+shown. The prior forward costs 7.6x per simulation, so any use needs a distilled fast version. No default change;
+The prior-playout mode stays research-only, reachable only via `STS_CTMSILVER_ARMSET=priorpl`.
+[result.json](evidence/silver_prior_playout_pilot_20261018/result.json) (sha256 `b6e1e649…`). Raw:
+`/mnt/project-files/silver-prior-playout-pilot/ppl-run.tar.gz` (run and smoke, sha256 `a748c6bc…`). Seeds used:
+111197692–111197707, 111197780–111197783; the rest of 111197692–111197791 unused.
+**Knowledge impact:** rejected/open line in `research/combat-search/leaf-evaluation.md`; env-var rows for
+`STS_SILVER_ROLLOUT_PRIOR` and `STS_CTMSILVER_ARMSET=priorpl`.
+## §535 — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
+
+Performance only; no gameplay, model, RNG or default change. Philipp 2026-10-18 14:07Z ("can you continue
+profiling and improving speed?") after §533 merged.
+
+- **Profile** (new main 16a397bd, gdb sampling on A20 winrate-check units, seeds 111195792–111195794, 617 samples
+  at the interim read): OOC MCTS 94%, real combat 6%. The student_sel forward is still about 74% of a run: the
+  projection kernel 36%, attention 23%, the vector exp 8%.
+- **Repeats:** a counting build on A20 seed 111195795 (Act 1) saw 498,145 forwards, all logits-only, with
+  432,529 distinct inputs. So 13% repeat an earlier input, and 40,930 of those repeat the input just before.
+- **Change** (`apps/one_combat/heart1_policy.cpp`):
+  - `Net::forward` has a per-thread direct-mapped memo with 4,096 slots, keyed by a per-load net id, the pass and
+    the whole record; record equality decides a hit. It caught 53,822 of the 65,616 repeats on seed 111195795.
+  - With AVX-512F/DQ, the projection kernel puts two tokens in each 512-bit register. Explicitly rounded multiply
+    and add keep it FMA-free and bit-identical.
+  - Softmax divisions are vectorized.
+  - `oocmctsselftest` gains a check that compares the kernels against the reference loop.
+- **Parity:** `heart1score` is byte-identical to main on these record sets:
+  - student_sel `bench` (4,383 records) and `bench2` (2,395), plus `bench2` under `STS_OOC_HEART1_SCALAR=1`;
+  - heart1 and student C on 300 records each.
+- **Gate:** paired Act-1 units (main 16a397bd vs the candidate) with the §533 gate scripts, seeds 111195796–111195799.
+  Play is identical on all four. Run CPU:
+
+  | seed | main s | candidate s | ratio |
+  |---|---|---|---|
+  | 111195796 | 337.1 | 297.2 | 1.13x |
+  | 111195797 | 240.1 | 197.8 | 1.21x |
+  | 111195798 | 221.6 | 196.9 | 1.13x |
+  | 111195799 | 329.6 | 287.7 | 1.15x |
+
+  The total goes from 1,128 to 980 s (1.15x). OOC MCTS CPU goes from 1,046 to 901 s.
+- **Distill capture mode** (two nets of different width; `STS_OOC_HEART1_TEACHER` set to heart1, 128 simulations,
+  Act 1, seed 111195800): the capture file (5,063 rows) and play are byte-identical to main.
+- **Decision:** adopt; it is exact. **Inference:** the remaining forward cost is mostly arithmetic that the exact
+  reduction order fixes. Further large gains need play-changing options (fewer rollout combats or rollout forwards,
+  a smaller rollout net), which need their own A/B.
+
+Raw data: `/mnt/project-files/heart1-forward-speedup-2/raw.tar.gz` (sha256 `223ab38d…`; gate, capture and count units, gdb samples, scripts, binary hashes main `697b345b…`, candidate `85c1b30e…`).
+
+Seeds used: 111195792–111195800.
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`, cost sentence in
+`evaluation/current-research.md`.
+## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model
+(`STS_CTM_ACT4_SURVIVAL_MODEL`, trees `05279b3c…`) win more A20 Hearts than the CTM survival head when OOC MCTS prices
+Shield and Spear and the Heart?
+**Design:** [PREREG](evidence/ctm_act4_ab_20261018/PREREG.md), frozen before launch.
+- Arm A is the standard A20 stack: student_sel prior (`cf6bf7fb…`), `TARGET_PRIOR=1`, `LEAF_SELECTS=heart1`, 512
+  simulations, rollout3 leaf, keys, calibrated A20 CTM. Arm B is A plus the model.
+- 512 paired seeds 111140200–111140711, `bestbench` full runs on 8 cloud workers.
+- RUN_COMMIT `ef809026` (code main `95c1ef1f`, binary `2b2817bc…`). The first freeze `c6916b99` had a malformed
+  manifest line and ran no unit.
+- Primary: Heart kills, with an exact McNemar test and a seed bootstrap.
+
+**Result:**
+
+| | A | B |
+|---|---|---|
+| Heart kills / 512 | 82 | 75 |
+| Reached Act 4 | 178 | 173 |
+| Act-4 conversion | 0.461 | 0.434 |
+| Act-3 deaths | 98 | 103 |
+| Act-4 deaths | 96 | 98 |
+
+- Δ Heart kills −1.4 pp [−2.7, 0.0]. Discordant pairs 3 vs 10, McNemar p = 0.092. **NOT_SHOWN.**
+- Act-1 and Act-2 deaths are identical (78, 158). 451 of 512 seeds had the same outcome.
+- No exclusions. The model loaded in 229 B runs and in no A run. CPU was equal (2.75 vs 2.71 s per OOC decision).
+
+**Inference:** pricing the Heart near the teacher's death rate does not help this stack's play and may hurt it. A
+likely mechanism, not tested: a higher Act-4 death estimate shifts late-Act-3 and Act-4 decisions toward choices that
+the rollout3 leaf rates as safer.
+**Decision:** no default change; the model stays opt-in (pre-registered). Evidence:
+[README](evidence/ctm_act4_ab_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
+**Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
+(result section).
+
+## §541 — Prior-argmax Silver playouts vs production greedy Silver 10k at A20 (8 workers): score NOT_SHOWN, HP lost −0.7 at 10k (2026-10-18)
+
+**Question (Philipp, 2026-10-18 15:01Z/15:03Z, thread "Better fast leaf evaluation"):** after the §540 pilot, he noted
+that 7.6x CPU per simulation is affordable in real fights (2-3% of A20 run CPU) and authorized "8 workers. Make sure
+that act4 fights go through ctm. Fallbacks should not use the prior rollout". Do prior playouts beat production
+Silver at similar CPU?
+**Design:** [PREREG](evidence/silver_prior_playout_ab_20261018/PREREG.md), written before results. Same harness as the
+pilot, armset `priorpl` with `STS_CTMSILVER_SWEEP_SIMS=10000`, `STS_CTMSILVER_PRIOR_SIMS=2500,10000`; arms
+`greedy10000` (production), `priorpl2500`, `priorpl10000`, all with root prior and tree prior K = 8, R = 2. Imagined
+fights: none (no OOC MCTS in the source runs); the armset refuses the imagined-fight Silver options and
+`playImaginedCombatWithSilver` forces greedy playouts. Real Act-4 fights (sources whose student C collected the keys)
+are played by every arm, prior playouts included. Run commit 7843e73c, code fecde345, binary `cd50de5a…`, 64
+sources 111197708–111197771 on 8 workers ([README](evidence/silver_prior_playout_ab_20261018/README.md)); 768 valid
+paired fights (2 excluded, escapes): 148 boss, 344 elite, 276 normal/other, 17 Act 4.
+**Result (paired vs `greedy10000`, 95% seed bootstrap):**
+
+| arm | Δ score | Δ win | Δ HP lost | CPU per fight | labels (score / HP) |
+|---|---|---|---|---|---|
+| priorpl2500 | +1.98 [−0.66, +4.69] | +0.5 pp [−0.3, +1.4] | −0.39 [−0.90, +0.10] | 1.90x | NOT_SHOWN / NOT_SHOWN |
+| priorpl10000 | +3.28 [−0.58, +7.16] | +1.0 pp [−0.1, +2.2] | −0.70 [−1.19, −0.22] | 7.29x | NOT_SHOWN / BETTER |
+
+Descriptive subsets: bosses priorpl2500 +9.77 [+0.95, +18.64] score, +3.0 pp win; priorpl10000 +12.55 [−0.87, +26.57],
++4.4 pp. Elites priorpl2500 +0.11, priorpl10000 +2.89 (HP −0.74 [−1.43, −0.03]). Act 4 (17 fights) priorpl2500 +1.7,
+priorpl10000 −12.2, both CIs about ±25. priorpl10000 − priorpl2500: +1.30 [−1.49, +4.15].
+**Interpretation:** prior playouts are at most a small gain over production. At 1.9x CPU per real fight the 2.5k arm is
+not shown better overall; its point estimates (+2 score, −0.4 HP) are about a third of the equal-sims pilot effect,
+because the 10k greedy control is stronger than greedy 2.5k. The only label-level gain, priorpl10000 HP lost −0.7, costs
+7.3x per fight (about +15-20% A20 run time, **Inference** from the A20 profile). **Inference:** the boss subset carries
+most of the score gain; a boss-only use would be a separate pre-registered test. No default change.
+[result.json](evidence/silver_prior_playout_ab_20261018/result.json) (sha256 `6eb4c430…`). Raw:
+`/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
+111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
+**Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.
+## §539 — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
+
+Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for
+searches, similar to sivler combat?"
+
+- **Profile:**
+  - A20 winrate check, 352 finished seeds: runs that reach Act 4 are 108 of 352 but use 76% of OOC MCTS CPU,
+    3.2 h per run. Runs that die in Act 3 average 0.63 h.
+  - Seed 111195794, which reached the Heart: the 4 Act-4 decisions took 4,650 of 8,304 s.
+  - gdb samples over seeds 111195792–794: imagined Silver fights inside rollouts 65%, student forward 27%.
+  - Report: `/mnt/project-files/speed-proposals/REPORT.md`.
+- **Offline rule search** (same-action proxy, not winrate):
+  - Data: 628 multi-action roots (Acts 1–4) from 16 A20 runs whose effective `STS_OOC_MCTS_SIMS` is 4096, with
+    STS_RUN_PROFILE root checkpoints at 128/256/512/1024. Seeds: 111195252–255, 257–260, 792–794, 796–799 and 803.
+  - Stopping at checkpoint c returns the visit leader at c on the same search path, so whether the action would have
+    differed is known exactly for that root. What a changed action does later in the run is not measured.
+  - The CPU column is an estimate: each root's thread CPU scaled linearly by the simulations it would keep.
+  - Today every multi-action root ends at the exact visit lock, at about 2,050 simulations.
+  - Results:
+
+    | rule | same action | estimated OOC CPU |
+    |---|---|---|
+    | `1024:0.7` | 99.2% (5 differ) | 0.69x |
+    | `512,1024:0.8` | 98.7% | 0.56x |
+    | `512,1024:0.7` | 98.4% | 0.53x |
+
+  - Act 3–4 roots alone (99): `1024:0.7` keeps 100% at 0.72x.
+  - The differing picks have final-root Q about 0.06 below the final pick, on average.
+  - Measured on seed 111195803 (below): OOC CPU 219 → 164 s with `1024:0.7`.
+  - Reproduce: `python3 /mnt/project-files/speed-proposals/gapstop_analyze.py
+    /mnt/project-files/speed-proposals/gapstop-data` (the 16 run profiles with their env files).
+- **Change:** opt-in `STS_OOC_MCTS_GAP_STOP=C1,C2,...:G`, default off. After completing simulation Ci, the search
+  stops once the root's top-two visit gap is at least G·Ci, with visit selection only. It is off on full-budget and
+  observed-lock roots and excludes `CPU_SECONDS`. It adds `early_stop_gap_ladder` to run-profile rows. Unit tests
+  are in `ooc-mcts-test` (PASS, 242 checks).
+- **Check** (seed 111195803, Act 1, A20 stack; the #670 reviewer had already used this seed):
+  - Flag off: play byte-identical to the #670 binary.
+  - `1024:0.7`: 14 of 36 roots stopped by the gap rule, the same 36 actions, OOC CPU 219 → 164 s, run CPU 230 → 175 s.
+- **Decision:** none; the flag stays off. Promotion needs a paired A/B.
+
+Seeds used: 111195803.
+
+**Knowledge impact:** `GAP_STOP` row in the `architecture/out-of-combat.md` option table.
+## §537 — concave-HP Silver victory leaf, paired 3-fight continuations at A20: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18, thread "end-state formula"):** 14:06Z "change the evaluation at the final state, so
+tweak the formula"; 14:16Z "Yes, but use 16 workers for that. Also think about whether HP is the only thing we want
+to change". A re-analysis of §510's paired continuations found HP strongly concave (an HP at < 30% of max worth ~4x
+the mean floor-model slope, at ≥ 90% ~0.5x), while Silver's victory leaf is linear in HP.
+**Design:** [PREREG](evidence/silver_concave_hp_leaf_20261018/PREREG.md), light pre-launch review PASS. New research
+option `STS_SILVER_CONCAVE_HP_LEAF=k` (PR #665; unset = linear): `h → (M/k)e^{0.75k}(1 − e^{−kh/M})` and potion term
+× `sqrt(u'(h))`. `potionpriceprobe … all` on A20 source runs (student_sel OOC argmax, exact-10k Silver with the g6_E
+prior, keys off, acts 1–3): every sampled battle-start state is continued 3 fights by base, `leaf:concave=2.7`
+(primary), `leaf:concave=1.35` and price copies (HP −12, gold −50, max HP −5, potions), common random numbers,
+valued by the A20 floor model. Seeds 111197436–111197675 on 16 workers, RUN_COMMIT `4ca37a4e` (code `633aa69a`,
+binary `48e17951…`).
+**Result: NOT_SHOWN.** 240/240 units rc=0, 16 tars verified, 2,651 states. Leaf − base, floors: k = 2.7 **+0.057
+[−0.141, +0.263]**; k = 1.35 +0.127 [−0.106, +0.367]. A20 win model −0.003 / +0.003, survival of the 3 fights
++0.8 / +1.2 pp, all CIs include 0. Descriptive: largest point gain at start HP ≥ 90% (k = 2.7 +0.23 [−0.01, +0.49]),
+none at < 45%. Descriptive prices under the student policy: non-Fairy potion 5.0 HP-eq [1.8, 8.1], max HP 1.08 HP
+per point [0.53, 1.66], gold 0.011 HP per gold [−0.064, 0.070], against the formula's 11 / 2 / 0.25.
+**Interpretation:** a concave HP term does not change the next three fights' outcome by more than about +0.26 floor (k = 2.7) or +0.37 floor (k = 1.35), the CI upper bounds.
+**Inference:** Silver's decisions are rarely close enough in HP risk for the curvature to matter. The price CIs exclude
+the formula's potion, max-HP and gold weights, but §513 already found lower potion weights NOT_SHOWN in whole runs,
+and the prices were not a pre-registered decision. Per the decision rule the option stays research-only, unset.
+Seeds 111197436–111197675, smokes 111197676–677 and reviewer 111197680–682 are used; 111197678–679, 111197683–691
+unused.
+[README](evidence/silver_concave_hp_leaf_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
+**Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
+
+## §542 — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): five of six WORSE, per-type NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 17:38Z, thread "end-state formula"):** "can you try all these things? adjusting the
+weights, maybe a per potion value, withthe fitted and milder curve? maybe in combination all those small things
+actually do something? and maybe we should measure winrate and floors reached, testing should be on only student
+prior without ooc mcts, so it doesnt take forever. on a20." 18:16Z: "16 workers" (512 seeds per arm, size card).
+**Design:** [PREREG](evidence/silver_leaf_combo_20261018/PREREG.md), pre-launch review PASS. New research options
+`STS_SILVER_GOLD_WEIGHT`, `STS_SILVER_MAXHP_WEIGHT` (PR #673). Seven arms on every seed: `base`; `W` (gold 0.01,
+max HP 1.1, potions 5.0 with Fairy/Smoke Bomb 11: the §537 prices); `WT` (as W with per-type potion weights 0.5–10.7
+derived from the §537 probe); `K27` / `K135` (concave HP k = 2.7 / 1.35); `WTK27`, `WTK135` (WT plus each curve). A20
+full runs with keys, `STS_OOC_HEART1=student_sel.bin`, `STS_OOC_MCTS=0`, exact-10k Silver on main `b807c5b4`
+defaults. Seeds 111198434–111198945, 16 workers, RUN_COMMIT `3c6f2cef` (code `c52d9ccf`, binary `b9d43a55…`).
+**Result.** 3,584/3,584 units rc=0, 16 tars verified, 512 pairs, no seed dropped. Each arm − base, 95% CI
+[Bonferroni 99.17% CI], label at 99.17%:
+
+| arm | mean floor | wins / 512 | Δfloor | Δwin (pp) | label floor / win |
+|---|---|---|---|---|---|
+| base | 38.88 | 96 (18.8%) | | | |
+| W | 37.24 | 66 | −1.63 [−2.83, −0.47] [−3.28, −0.09] | −5.9 [−9.0, −2.5] [−10.4, −1.6] | WORSE / WORSE |
+| WT | 37.34 | 83 | −1.54 [−2.76, −0.37] [−3.21, +0.07] | −2.5 [−5.9, +0.8] [−7.0, +2.0] | NOT_SHOWN / NOT_SHOWN |
+| K27 | 33.65 | 53 | −5.23 [−6.54, −3.95] [−7.03, −3.51] | −8.4 [−11.7, −5.1] [−12.9, −3.9] | WORSE / WORSE |
+| K135 | 36.78 | 76 | −2.10 [−3.35, −0.86] [−3.80, −0.41] | −3.9 [−7.4, −0.4] [−8.6, +1.0] | WORSE / NOT_SHOWN |
+| WTK27 | 32.56 | 50 | −6.32 [−7.69, −4.95] [−8.21, −4.50] | −9.0 [−12.3, −5.7] [−13.7, −4.5] | WORSE / WORSE |
+| WTK135 | 36.46 | 65 | −2.41 [−3.72, −1.11] [−4.15, −0.71] | −6.1 [−9.4, −2.7] [−10.5, −1.6] | WORSE / WORSE |
+
+Descriptive: act-1 deaths 85 (base) vs 92 / 92 / 132 / 101 / 153 / 102; act-3 clears 183 vs 156 / 157 / 117 / 157 /
+97 / 147; seconds per run 78.9 vs 70.6 / 70.2 / 59.5 / 68.5 / 55.6 / 66.1 (shorter runs = earlier deaths).
+**Interpretation:** five of six variants play measurably worse whole A20 runs than Silver's tuned formula (WORSE on floors at the Bonferroni level); the per-type arm `WT` is NOT_SHOWN on both metrics (floor 99.17% CI [−3.21, +0.07], 95% CI below 0), and `K135` is NOT_SHOWN on wins. None is close to a gain.
+The concave HP term costs the most (k = 2.7: −5.2 floors, −8.4 pp wins, half again as many act-1 deaths), although
+the §537 3-fight probe showed no effect. The measured lower potion/max-HP/gold weights also cost about 1.5 floors,
+in line with §513. **Inference:** the probe's 3-fight window and floor-model valuation miss what these changes do
+over a whole run; the descriptive §537 prices are not usable as leaf weights. **Open question:** why the concave
+term raises act-1 deaths (it also lifts every win's score, by roughly +135 at 75% HP for a max HP of ~80 and in proportion to max HP otherwise, shifting the win/loss balance
+Silver's other weights were tuned for). Per the decision rule all options stay research-only, unset; the weights are
+not re-tuned on these seeds. Seeds 111198434–111198947 used (smokes 946–947), 111198950–111198965 the reviewer block; 111198948–949 unused.
+[README](evidence/silver_leaf_combo_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Raw: `/mnt/project-files/silver-leaf-eval/combo-ab/w01..w16.tar`.
+**Knowledge impact:** victory-leaf paragraph in `architecture/combat-search.md`.
+
+## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
+
+**Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?
+Asked by Philipp 2026-10-18 14:29Z ("lets go with the canary run").
+**Setup:** one A20 Ironclad run on Philipp's PC, seed 111194451, installed runtime `64f6ef277966-3f57d0b45c36`
+(inspector JAR `78eb4d03`), game with `STS_DIFFERENTIAL_DEBUG_RNG=1`, driver `--parity-trace` (4 segments joined by
+`--continue-run`), `combat_parity_probe` built at main `05da2c07`. The instructions named seed 111194453; the PC
+session ran 111194451 instead (its report and trace). 111194451 is also the fixed seed of
+`dead_target_debuff_fix_test`, which drives no gameplay, so the overlap is harmless.
+**Result:** 135 combat steps compared over 9 Act 1 encounters (Hexaghost 36, Gremlin Gang 18, Cultist 15, Gremlin Nob
+14, Small Slimes 12, Exordium Wildlife 11, Jaw Worm 10, Three Louse 10, Red Slaver 9): 126 MATCH, 9 MISMATCH, 3
+`TRACE_ENDED`; no unresolved recorded action and no held-selection skips. The 9 mismatches:
+- 3 steps: a monster killed by an attack keeps its powers natively (Strength, Vulnerable, Weak, Angry/Spore Cloud
+  payload). Java clears them in `updateDeathAnimation`, after `die()`; not a gameplay difference.
+- 1 step: Clothesline killed a Curl Up louse; native curled anyway (block 12 vs 0). Java requires
+  `damageAmount < currentHealth`.
+- 1 step: a Discovery pick (Colorless Potion, The Bomb) advanced `cardRandomRng` 184 vs 3. Cause unknown.
+- 1 step: The Bomb with cost 0 for the turn kept `costForTurn` 0 in the discard pile natively; Java shows 2.
+- 1 step: Perfected Strike count 5 (game) vs 4 (native) after Havoc+ exhausted a Strike. Cause unknown.
+- 1 step: Havoc+ in Gremlin Gang, `lastTargetedMonster` 2 vs 1; likely the random target.
+- 1 step: Hexaghost Inferno is recorded twice in Java's move history; `nextMove` matches.
+
+The run stopped at floor 16 (Act 1 boss card reward): the live advisor segfaulted in `ScumSearchAgent2::stepRandom`
+on an empty action list inside an OOC rollout. It reproduces offline from the saved input, on the previous runtime
+`64b38c88` too. The driver also stopped 3 times on display-only stat changes of cards in the discard and exhaust piles,
+which its tolerance check misses; no action was taken on those.
+**Interpretation:** the probe now ignores a dead monster's powers, and `STS_CURL_UP_LETHAL_FIX` (default on, `=0`
+restores) makes native Curl Up match Java. The louse dies either way, but its block and status bits are part of
+Silver's node identity, so search and play can change in louse fights. The Discovery RNG gap is the one open difference that can change later combat
+(Havoc and random targets draw from `cardRandomRng`). Coverage is Act 1 only. Raw traces (469 MB) stay on the PC
+under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds used: 111194451 (canary), 111194453 (fixed seed
+of `curl_up_lethal_test`, no gameplay; not used by the canary).
+**Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
+`behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
+(`STS_CURL_UP_LETHAL_FIX`).
+
+## §538 — A20 learned stopping with the gen-7f table and prior: non-inferior to flat 10k at 0.49x CPU; flat 2.5k not shown non-inferior (2026-10-18)
+
+**Question (Philipp, 2026-10-18, gen-7 thread):** 13:46Z "can you start experimenting with combining learned stopping
+and the new rollout? i.e. make sure that this a strong enough combat model with 2.5k sims"; 17:39Z "do the learned
+stopping test plan" (8 workers). Does learned stopping (ADR-0026) still match flat exact 10k Silver on the current
+stack (gen-7f root table, ADR-0049, plus g7f_E root/tree prior), and how much does flat 2.5k give up?
+**Design:** [PREREG](evidence/silver_learnstop_g7f_20261018/PREREG.md), light pre-launch review PASS. The §516
+harness on main `f15b345b`: plain A20 full runs, student_sel `policyStep` out of combat (no OOC MCTS, no V4 net),
+`STS_ACTIVE_POWER_FEATURES=1`, g7f_E as rollout root table and as root prior (weight 400) and tree prior (K=8). Arms
+`F10` flat exact 10k, `F25` flat exact 2.5k, `L` learned stopping (checkpoints to 10k). RUN_COMMIT `afde9cb2`, binary
+`636258d7…`, seeds 111197822–111198333 (smoke 111195812–111195813). Primary: reached Act 4, L − F10, paired Newcombe
+95% interval, non-inferior if the lower bound > −5 pp; F25 − F10 secondary with the same rule.
+**Result.** 1,536/1,536 units rc=0, all 512 seeds valid; 8 tars checked by `verify_campaign.py` from the lead
+container (`worker_tars.txt`, `report.json`).
+
+| Arm | Heart kills | Reached Act 4 | Kills / Act 4 | Mean floor | CPU per run |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| F10 flat 10k | 70 (13.7%) | 156 (30.5%) | 45% | 37.5 | 76.4 s |
+| F25 flat 2.5k | 60 (11.7%) | 147 (28.7%) | 41% | 36.7 | 16.9 s (0.22x) |
+| L learned stop | 79 (15.4%) | 173 (33.8%) | 46% | 38.6 | 37.7 s (0.49x) |
+
+- **Primary, L − F10 reached Act 4:** +3.3 pp [−0.6, +7.3], **NON_INFERIOR**; McNemar p = 0.12.
+- **Secondary, F25 − F10 reached Act 4:** −1.8 pp [−5.6, +2.1], **NOT_SHOWN** (lower bound below −5 pp); p = 0.43.
+- **Heart kills:** L − F10 +1.8 pp [−1.5, +5.1], p = 0.35; F25 − F10 −2.0 [−5.1, +1.1], p = 0.26.
+- **L − F25 (descriptive):** reached Act 4 +5.1 pp [+0.8, +9.3], p = 0.026; Heart kills +3.7 [+0.5, +7.0],
+  p = 0.032. Not a pre-registered test.
+- **OOC decisions:** student_sel 95.9–96.2%, key rule 3.0–3.2%, Match and Keep 0.8–1.0% per arm; nothing else.
+
+**Interpretation:** learned stopping again plays at least as well as flat 10k, now with the gen-7f table and prior,
+at half the CPU (§516: 0.41x). Flat 2.5k is 4.5x cheaper than flat 10k, but this run cannot rule out a loss of more
+than 5 pp, and it trails learned stopping on both endpoints. **Inference:** learned stopping
+keeps flat-10k strength at half its CPU; flat 2.5k is cheaper still (learned stopping used 2.2x its CPU), so this run
+does not compare the two at equal CPU. The stack (student_sel, g7f) wins far
+more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are not comparable across the two runs.
+The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
+**Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).
+
+## §543 — Learned-stop retrain on A20 stop traces: old model transfers; retrained saves 1.9 pp more simulations offline (2026-10-18)
+
+**Question (Philipp, 2026-10-18 19:17Z, gen-7 thread):** "should we maybe also retrain the learned stopping? its been
+a few silver iterations since we did that … after that, we will make it default maybe"; 20:17Z "go 8 workers".
+Does the stop model `gbt-770201c31f7b` (ADR-0026; fitted on 160 A0 runs with the V4 OOC stack and an older Silver)
+still fit the current A20 stack, and does refitting it help?
+**Design:** [PLAN](evidence/silver_stoptrace_a20_20261018/PLAN.md), light pre-launch review PASS. Collection: the
+§538 F10 configuration (A20 full runs, flat exact 10k, student_sel `policyStep`, g7f_E as rollout root table and as
+root/tree prior) plus `STS_SILVER_STOP_TRACE`. RUN_COMMIT `7c69b94a` (code main `46479de3`, binary `25017204…`), seeds
+111198966–111199477 (smoke 111199486). Offline (`offline_compare.py`): first 384 seeds train, last 128 held out.
+The retrained model uses the ADR-0026 recipe unchanged. Its threshold is chosen out-of-fold on the training seeds to
+match the old model's disagreement there. Both policies are simulated on the held-out seeds; seed-cluster bootstrap.
+Pre-registered rule: RETRAIN_BETTER if new − old saving > 0 with the interval excluding 0 and the disagreement upper
+bound ≤ +0.25 pp.
+**Result.** 512/512 units rc=0; 8 tars verified (`worker_tars.txt`); 226,187 multi-action root decisions.
+- **Old model, held out:** saving 56.2% of flat-10k simulations, disagreement with the 10k leader 0.71%. On the
+  training seeds its disagreement is 0.68%, against 0.72% in its own A0 fit (§372).
+- **Retrained (threshold 0.0323), held out:** saving 58.1%, disagreement 0.68%.
+- **New − old:** saving +1.9 pp [+1.7, +2.0]; disagreement −0.03 pp [−0.09, +0.02]. **RETRAIN_BETTER.** Per searched
+  decision the new model uses 4.3% fewer simulations than the old one (41.9% vs 43.8% of 10k).
+
+**Interpretation:** the old model transfers to the current A20 stack with no loss of accuracy. The refit is better
+by a small, clear margin. **Inference:** a model swap would cut the learned-stop combat CPU by about 4% at equal
+accuracy. That is too small for a full-run play test to detect, so a swap could only be checked for non-harm. No
+retrained model is compiled in; no code changed.
+**Knowledge impact:** none beyond this entry; no default or code change.

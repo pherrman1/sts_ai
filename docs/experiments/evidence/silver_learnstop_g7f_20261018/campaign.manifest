@@ -1,0 +1,7 @@
+name          silver-learnstop-g7f
+code_commit   f15b345bf0bc4fe526bd77cd11bc8c4095818f74
+binary_sha256 636258d79b20ec04e4dde31317ebbd8b4d8045b3a65fe350fce27b74158375b7
+workers       8
+share         /mnt/project-files/silver-learnstop-g7f
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

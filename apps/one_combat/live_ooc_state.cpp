@@ -618,24 +618,27 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     // These callbacks are only the public-screen continuation boundary. Any
     // callback that depends on an unrevealed prior room remains unsupported by
     // the importer rather than borrowing live Java state.
-    root.regainControlAction = [](sts::GameContext &gc) {
-        gc.screenState = sts::ScreenState::MAP_SCREEN;
+    // Leaving the rewards of an act 1 or 2 boss (map row 15) opens the boss
+    // chest, as native afterBattle does; there is no map node to pick from.
+    // A plain MAP_SCREEN there has no legal action (canary 2, 2026-10-18).
+    const auto leaveRewards = [](sts::GameContext &gc) {
         gc.regainControlAction = nullptr;
+        if (gc.curMapNodeY == 15 && (gc.act == 1 || gc.act == 2)) gc.enterBossTreasureRoom();
+        else gc.screenState = sts::ScreenState::MAP_SCREEN;
     };
+    root.regainControlAction = leaveRewards;
     if(source.ooc.at("details").value("parentPotionRewards",false)
             || source.ooc.at("details").value("parentKnownRewards",false)
             || source.ooc.at("details").contains("parentUnrevealedCardRewards")) {
         // UI Skip closes only the visible card page; sibling potions remain.
         // CARD(group,5) still means Singing Bowl when owned. The distinct
         // global SKIP primitive is scoped here to the public card-page close.
-        root.regainControlAction=[](sts::GameContext &gc) {
+        root.regainControlAction=[leaveRewards](sts::GameContext &gc) {
             const bool cardPage=gc.info.rewardsContainer.cardRewardCount>0;
             if(cardPage)gc.info.rewardsContainer.removeCardReward(0);
             gc.screenState=cardPage?sts::ScreenState::REWARDS:sts::ScreenState::MAP_SCREEN;
-            if(cardPage) gc.regainControlAction=[](sts::GameContext &parent) {
-                parent.screenState=sts::ScreenState::MAP_SCREEN;parent.regainControlAction=nullptr;
-            };
-            else gc.regainControlAction=nullptr;
+            if(cardPage) gc.regainControlAction=leaveRewards;
+            else leaveRewards(gc);
         };
     }
     if(root.screenState==sts::ScreenState::CARD_SELECT && source.ooc.at("details").contains("afterSelect"))

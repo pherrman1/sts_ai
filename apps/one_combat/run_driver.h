@@ -84,6 +84,9 @@ long long deployedOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent
 // themselves run counterfactual continuations stand down, and E2C capture
 // skips the branch's reward screens.
 extern thread_local bool t_oocContinuation;
+// Research-only (potionpriceprobe ooc=heart1): finishOocCounterfactual lets the
+// STS_OOC_HEART1 student take each out-of-combat step it encodes before the deployed chain.
+extern thread_local bool t_counterfactualHeart1;
 
 // Match and Keep: one fixed-pattern click (sim/search/MatchAndKeepPolicy.h).
 // Cards are valued by the active guide as a lone card reward: OOC MCTS when

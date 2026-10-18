@@ -130,6 +130,14 @@ add_test(NAME dead_target_debuff_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed
 set_tests_properties(dead_target_debuff_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(curl_up_lethal_test tests/curl_up_lethal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(curl_up_lethal_test PRIVATE include json/include)
+add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:curl_up_lethal_test>)
+set_tests_properties(curl_up_lethal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(active_power_features_test tests/active_power_features_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(active_power_features_test PRIVATE include json/include)
@@ -391,7 +399,8 @@ add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
     $<TARGET_FILE:live_ooc_parity_test>
     ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native
     ${CMAKE_CURRENT_BINARY_DIR}/live_ooc_parity_fixtures.jsonl
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act1_boss_card_reward.json)
 set_tests_properties(live_ooc_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_ooc_protocol.py
@@ -558,6 +567,8 @@ add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> sil
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
 add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_potion_weights)
 set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
+add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_concave_hp_leaf)
+set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
@@ -718,6 +729,12 @@ add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
 set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
+add_test(NAME silver_gold_weight_rejects_negative
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sgw-invalid.csv")
+set_tests_properties(silver_gold_weight_rejects_negative PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_GOLD_WEIGHT=-1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_GOLD_WEIGHT must be a number in \\[0, 100\\]")
 # strategicgen2 aborts if a Tier-B label branch leaves t_curPath cleared before
 # the main-trajectory policy step (the branch evaluator resets it on return).
 add_test(NAME strategicgen2_policy_keeps_path
@@ -792,6 +809,20 @@ add_test(NAME ctm_act4_survival_parity COMMAND $<TARGET_FILE:one_combat> ctmact4
 set_tests_properties(ctm_act4_survival_parity PROPERTIES
     LABELS "core;research-repro"
     ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# ADR-TBD: unset, the pathb-a20 stack uses the bundled model; =0 restores the CTM head, so parity must fail.
+add_test(NAME ctm_act4_survival_default COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_default PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT_MODIFICATION "STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_act4_survival_off COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_off PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=0"
+    WILL_FAIL TRUE
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)

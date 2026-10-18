@@ -71,6 +71,11 @@ namespace sts::search {
         // replace potionCount * potionWeight. Fairy's death-save term is unchanged.
         bool potionTypeWeightsOn = false;
         std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
+        // Research-only (STS_SILVER_CONCAVE_HP_LEAF=k; 0 = off): on a victory that
+        // does not end the run, HP h counts as u(h) = (M/k)·e^{0.75k}·(1 − e^{−k·h/M})
+        // with M the root max HP (slope 1 at 75% HP), and the held-potion term is
+        // scaled by sqrt(u'(h)).
+        double concaveHpK = 0;
     };
     // Parses "NAME=w,...[,*=w]" (Potion enum names) into per-type weights; unlisted
     // types get the "*" weight, else `fallback`. Throws on unknown names or bad numbers.
@@ -91,6 +96,7 @@ namespace sts::search {
         std::int64_t rolloutActions = 0;    // actions taken inside those playouts
         std::int64_t rolloutActionLimitHits = 0; // nonterminal playouts stopped at the action cap
         std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
+        std::int64_t rolloutPriorPicks = 0;      // playout card plays chosen by rolloutPrior (research)
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -211,6 +217,10 @@ namespace sts::search {
             // #544: every playout stops after this many actions
             // (STS_SILVER_ROLLOUT_ACTION_CAP; 0 = uncapped, the pre-#579 behavior).
             int actionCap = 1000;
+            // Research (STS_SILVER_ROLLOUT_PRIOR=1, leaf headroom pilot): every playout
+            // PLAYER_NORMAL step plays the rolloutPrior argmax over card plays and END_TURN
+            // (no potions); card selects stay greedy. Needs rolloutPrior.
+            bool prior = false;
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();
@@ -238,6 +248,8 @@ namespace sts::search {
         // prior order instead of enumeration order.
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePrior;
         int treePriorMinVisits = 1;
+        // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
+        std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -337,6 +349,8 @@ namespace sts::search {
         // Research (STS_SILVER_ROLLOUT_UNIFORM=1): a uniformly random legal action,
         // including potions and END_TURN, instead of SilverRolloutAgent's greedy pick.
         Action chooseUniformRolloutAction(BattleContext &bc);
+        // Research (RolloutConfig::prior): the rolloutPrior argmax over card plays and END_TURN.
+        Action choosePriorRolloutAction(BattleContext &bc);
         void recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);

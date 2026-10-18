@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-18 for the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -829,7 +829,14 @@ branches and direct MAP search fail closed with
 `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
 resolved `?`-room outcomes are recovered from vanilla's persisted
 `path_per_floor`, checked against `path_taken`, with the current public room
-allowed to complete the current floor. Missing, contradictory or shifted
+allowed to complete the current floor. Continuing a save made after a boss
+fight leaves `path_taken` with a second adjacent `BOSS` while `path_per_floor`
+keeps one `B`: `nextRoomTransition(SaveFile)` calls `onPlayerEntry()` again
+for a post-combat room that is not a rolled event, and
+`MonsterRoomBoss.onPlayerEntry()` appends `BOSS` (pinned JAR bytecode; seen
+in parity canary 2, seed 111194451). That one marker is skipped at the boss
+floor or the following boss chest, and any further extra entry still fails
+closed. Missing, contradictory or shifted
 history fails closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`.
 Native import replays the observed outcomes using native float increments and
 resets; qualified root particles preserve these exact room probabilities.
@@ -1089,9 +1096,13 @@ Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
 When a full belt blocks a visible potion reward or affordable shop potion,
 MCTS enumerates each held-slot discard using public potion identity and duplicate
-occurrence. Sozu prevents these replacement actions. The driver requires the
-advertised `discard_potion` command and slot permission; discarding never takes
-a monster target. The next observation scores the actual refill separately.
+occurrence. Sozu prevents these replacement actions. MCPTheSpire 1.0.4-dev never lists
+`discard_potion` in `get_available_commands`, but outside the `COMBAT` room
+phase its executor accepts `potion discard N` whenever a potion is held
+(bytecode of `MCPToolHandler`/`CommandExecutor`). The driver therefore offers
+`discard_potion` on combat-reward and shop screens when MCP reports a
+non-`COMBAT` `room_phase`, and only for slots with `can_discard`; other
+screens keep their exact advertised surface; discarding never takes a monster target. The next observation scores the actual refill separately.
 Shop mapping validation includes the semantic discard actions before model
 loading. Both native and captured shop purchases require a free potion slot
 and no Sozu; MCP can advertise a purchase that would not obtain a potion.

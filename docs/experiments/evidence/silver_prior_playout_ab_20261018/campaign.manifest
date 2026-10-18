@@ -1,0 +1,7 @@
+name          silver-prior-playout-ab
+code_commit   fecde345ced39978fc9165ee49f30d2eda7cf637
+binary_sha256 cd50de5a6e8f2b43850db9a30a6a028341ccf12d73349593879504c0f9ae5fc1
+workers       8
+share         /mnt/project-files/silver-prior-playout-ab
+parallel      4
+input studentc.bin /mnt/project-files/rollout-student-494/studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509

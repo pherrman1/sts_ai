@@ -146,11 +146,15 @@ namespace sts::search {
     // STS_SILVER_FINAL_FIGHT_LEAF for the current thread's combats (it still
     // applies only to fights whose victory ends the run). Unset elsewhere.
     extern thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    // Research-only (potionpriceprobe leaf arms): when set, replaces
+    // STS_SILVER_CONCAVE_HP_LEAF (SilverEvalWeights::concaveHpK; 0 = off) for the
+    // current thread's searches. Unset elsewhere.
+    extern thread_local std::optional<double> g_nativeSilverConcaveHpLeafOverride;
     // Research-only (§479 rollout arms): when set, replaces the env rollout options
     // (SilverSearcher::envRolloutConfig) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
-    // Bundled default model of the rollout root table (ADR-0046), relative to the repository root.
-    inline constexpr const char *kDefaultRolloutRootTableModel = "models/combat_policy_mlp_g6_E.txt";
+    // Bundled default model of the rollout root table (ADR-0046; gen-7f E since ADR-TBD), relative to the repository root.
+    inline constexpr const char *kDefaultRolloutRootTableModel = "models/combat_policy_mlp_g7f_E.txt";
     // Rollout root table (STS_SILVER_ROLLOUT_ROOT_TABLE: unset = kDefaultRolloutRootTableModel,
     // 0 = off, else a combat_policy_mlp model; ADR-0046). At every searched root the model scores each distinct card in hand, draw and
     // discard pile as a play at the root state, and the greedy rollouts of that search use those

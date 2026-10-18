@@ -89,6 +89,26 @@ def _tool_names(commands: Any) -> list[str]:
     return names
 
 
+POTION_REFILL_SCREENS = frozenset({"COMBAT_REWARD", "SHOP", "SHOP_SCREEN"})
+
+
+def _effective_tool_names(commands: Any, game_state: Mapping[str, Any] | None,
+                          screen: Mapping[str, Any] | None) -> list[str]:
+    """MCP never advertises discard_potion, but out of combat its executor
+    accepts "potion discard N" whenever a held potion exists (MCPTheSpire
+    1.0.4-dev). Add it on reward and shop screens only, so a full belt can
+    make room for a potion there; per-slot can_discard still gates each
+    candidate, and other screens keep their exact advertised surface."""
+    names = _tool_names(commands)
+    phase = _mapping(commands).get("room_phase")
+    potions = _list(normalize_game_state(game_state).get("potions"))
+    if ("discard_potion" not in names and isinstance(phase, str) and phase != "COMBAT"
+            and _mapping(screen).get("screen_type") in POTION_REFILL_SCREENS
+            and any(_mapping(p).get("can_discard", _mapping(p).get("canDiscard")) is True for p in potions)):
+        names.append("discard_potion")
+    return names
+
+
 def _unwrap_mcp_result(result: Any) -> Any:
     if isinstance(result, Mapping):
         if result.get("isError") or result.get("is_error"):
@@ -317,7 +337,7 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
     """Materialize concrete MCP calls from the advertised surface."""
     screen = dict(screen)
     game_state = normalize_game_state(game_state or {})
-    names = _tool_names(commands) if isinstance(commands, Mapping) else list(commands)
+    names = _effective_tool_names(commands, game_state, screen) if isinstance(commands, Mapping) else list(commands)
     hand = _list(screen.get("hand", game_state.get("hand")))
     monsters = _list(screen.get("monsters", game_state.get("monsters")))
     targets = [index + 1 for index, monster in enumerate(monsters) if _is_live_target(monster)]
@@ -1631,7 +1651,7 @@ class Driver:
                 await asyncio.sleep(self.poll_interval)
                 return await self.step(step, _display_refreshes + 1)
             raise DriverError("MCP state changed while awaiting the advisor; no action executed")
-        if action.mcp_tool not in {"select_cards_transaction", "select_grid_transaction"} and action.mcp_tool not in _tool_names(current_commands):
+        if action.mcp_tool not in {"select_cards_transaction", "select_grid_transaction"} and action.mcp_tool not in _effective_tool_names(current_commands, current_game, current_screen):
             raise DriverError("selected MCP command is no longer advertised; no action executed")
         call_started = time.monotonic()
         row.update({"executed_mcp_tool": action.mcp_tool,
