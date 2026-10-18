@@ -21150,7 +21150,7 @@ accuracy. That is too small for a full-run play test to detect, so a swap could 
 retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
 
-## §TBD — Second combat parity canary continued into Act 2: 260/290 steps match, Blood Potion heal fixed (2026-10-18)
+## §544 — Second combat parity canary continued into Act 2: 260/290 steps match, Blood Potion heal fixed (2026-10-18)
 
 **Question:** past the floor-16 crash of §536, does the engine still reproduce the game's combat steps in Act 2?
 Philipp asked to continue the canary 2026-10-18 18:15Z ("can you continue here?") and chose the fixes for the
