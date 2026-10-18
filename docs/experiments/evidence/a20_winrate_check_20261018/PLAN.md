@@ -21,6 +21,11 @@ environment, with two budget/prior changes Philipp asked for:
 - Combat: native Silver, flat exact 10,000 simulations per root (`bestbench 10000`, exact root budgets, learned stop
   off), **gen-6 MLP g6_E (`ca9bd7f2…`) as root prior (weight 400) and tree prior K=8** (the §516 LP prior settings;
   §516 ran them with learned stopping, this run with flat 10k).
+- Imagined combats inside OOC MCTS: the A20 CTM, except that every imagined Shield and Spear and Heart fight
+  (`STS_OOC_MCTS_ACT4_SILVER_SIMS=100`) and every combat the CTM refuses (`STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=100`,
+  instead of aborting the search to the V4 fallback) is played by plain native Silver at 100 simulations per root.
+  Philipp, 01:15Z: "Can we do silver combat fallback for act 4? I think the ctm doesn't work for them". 100 is the
+  thread's pick for CPU (CTM was never trained on Act 4; CPU cost and strength of these options were unmeasured).
 - Not used (opt-in, not adopted): #642 Heart leaf td3, #652 Act-4 CTM, potion keep prior, V4/heuristic.
 - Keys collected, full runs to the Heart, fair (no RNG knowledge), A20.
 
