@@ -62,6 +62,9 @@ namespace sts::search {
             bool potionTypeWeightsOn = false;
             std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
             double concaveHpK = 0;           // STS_SILVER_CONCAVE_HP_LEAF (research; 0 = off)
+            // Research-only victory-leaf resource weights (STS_SILVER_GOLD_WEIGHT, STS_SILVER_MAXHP_WEIGHT).
+            double goldWeight = SilverEvalWeights{}.goldWeight;
+            double maxHpWeight = SilverEvalWeights{}.maxHpWeight;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -562,6 +565,8 @@ namespace sts::search {
                     searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
                     searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
                     searcher->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
+                    searcher->evalWeights.goldWeight = g_options.goldWeight;
+                    searcher->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -886,6 +891,20 @@ namespace sts::search {
                     || g_options.concaveHpK > 20)
                 throw std::runtime_error("STS_SILVER_CONCAVE_HP_LEAF must be a number in [0, 20] (0 = off)");
         }
+        for (const auto &[name, target] : {std::pair<const char *, double *>{"STS_SILVER_GOLD_WEIGHT", &g_options.goldWeight},
+                                            {"STS_SILVER_MAXHP_WEIGHT", &g_options.maxHpWeight}}) {
+            if (const char *raw = std::getenv(name); raw && *raw) {
+                char *end = nullptr;
+                *target = std::strtod(raw, &end);
+                if (end == raw || *end != '\0' || !std::isfinite(*target) || *target < 0 || *target > 100)
+                    throw std::runtime_error(std::string(name) + " must be a number in [0, 100]");
+            }
+        }
+        if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
+                || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn)
+            std::cerr << "[silver] research leaf: gold=" << g_options.goldWeight << " maxhp=" << g_options.maxHpWeight
+                      << " concave=" << g_options.concaveHpK << " potionWeights=" << (g_options.potionTypeWeightsOn ? "on" : "off")
+                      << "\n";
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;
         }
