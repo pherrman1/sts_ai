@@ -3169,7 +3169,7 @@ int main(int argc, char **argv) {
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
             if (a20WholeRun && argc > 2)
                 std::cout << "[A20 default: Silver learned stopping, sims argument " << argv[2]
-                          << " not used as budget; STS_SILVER_LEARNED_STOP=0 restores flat Silver]\n";
+                          << " not used as budget; STS_SILVER_LEARNED_STOP=0 restores flat Silver]" << std::endl;
         } else if (learnedRequested || ((!wholeRunDefault || (a20WholeRun && argc > 2)) && !adaptiveConfigured)) {
             // At A20 with a sims argument, STS_SILVER_LEARNED_STOP=0 is flat Silver at it, as before ADR-TBD.
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
