@@ -240,6 +240,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/differential_replay_native.cpp
@@ -263,6 +264,7 @@ link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
+add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
 add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
@@ -270,6 +272,8 @@ add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
 set_tests_properties(heart_outcome_import_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_collection_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_capture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+set_tests_properties(heart1_public_record_invariance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.

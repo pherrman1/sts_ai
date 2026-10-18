@@ -22,6 +22,8 @@ For architecture:
 2. [Combat search](architecture/combat-search.md)
 3. [Out-of-combat policy](architecture/out-of-combat.md)
 4. [Training and inference](architecture/training-and-inference.md)
+5. [heart1/student_sel public record contract](architecture/heart1-public-record-contract.md) —
+   field inventory and training-to-live parity status (#506).
 
 For research status:
 
