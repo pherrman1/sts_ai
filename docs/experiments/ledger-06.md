@@ -20791,7 +20791,7 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
-## §TBD — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
+## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model
 (`STS_CTM_ACT4_SURVIVAL_MODEL`, trees `05279b3c…`) win more A20 Hearts than the CTM survival head when OOC MCTS prices

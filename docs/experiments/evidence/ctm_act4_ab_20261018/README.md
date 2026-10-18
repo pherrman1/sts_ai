@@ -1,6 +1,6 @@
 # Act-4 CTM survival model A/B in the A20 stack (2026-10-18): NOT_SHOWN
 
-Ledger §TBD. [PREREG.md](PREREG.md) was frozen before launch. The run started at RUN_COMMIT `ef809026` (code main
+Ledger §534. [PREREG.md](PREREG.md) was frozen before launch. The run started at RUN_COMMIT `ef809026` (code main
 `95c1ef1f`, binary `2b2817bc…`). The first freeze, `c6916b99`, had a malformed `binary_sha256` manifest line, and every
 worker refused at setup, so no unit ran at it.
 
