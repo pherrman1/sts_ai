@@ -20642,7 +20642,7 @@ calibration. No follow-up proposed. Raw: `/mnt/project-files/ctm-opening-hand/ru
 **Knowledge impact:** the two `STS_CTM_ROW_*` rows in `operations/environment-variables.md` and one paragraph in
 `evaluation/current-research.md` (§408 CTM vs Silver section).
 
-## §TBD — First exact combat parity canary against the real game: 26/34 steps match, one engine difference (2026-10-18)
+## §531 — First exact combat parity canary against the real game: 26/34 steps match, one engine difference (2026-10-18)
 
 **Question:** does the native engine produce the game's next combat state for the same state, action and RNG?
 **Setup:** one A20 run on Philipp's PC with the live mod built with `STS_DIFFERENTIAL_DEBUG_RNG=1` (draw order
