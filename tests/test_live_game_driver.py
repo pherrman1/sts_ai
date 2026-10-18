@@ -384,6 +384,25 @@ class LiveGameDriverTest(unittest.TestCase):
                 self.assertEqual(row["inspector_boundary"], "combat")
                 self.assertEqual(row["fallback_reason"], "silver_unsupported:silver_unmapped_selection_task")
 
+    def test_parity_trace_records_observation_rng_and_post_screen(self):
+        fixture = Path(__file__).parent / "fixtures/live_combat_boundaries/fresh-a0.jsonl.failure.json.gz"
+        with gzip.open(fixture, "rt") as stream:
+            screen = {**json.load(stream)["screen"], "room_type": "MonsterRoom"}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient(screen, ["choose", "confirm"])
+            path = inspector_file(directory, reason="silver_unmapped_selection_task")
+            raw = json.loads(path.read_text())
+            raw["observation"]["combat"] = {"hand": screen["hand"], "cardSelect": {"task": "", "canPickZero": True}}
+            raw["debugRng"] = {"schema": "sts_java_rng_v1", "available": True, "streams": {}, "drawPileUuids": []}
+            path.write_text(json.dumps(raw))
+            trace = Path(directory) / "trace"
+            driver = Driver(client, InspectorReader(path), TraceWriter(trace), max_steps=1, parity_trace=True)
+            asyncio.run(driver.run())
+            row = json.loads(trace.read_text().splitlines()[0])
+            self.assertEqual(row["live_observation"], raw["observation"])
+            self.assertEqual(row["preRng"], raw["debugRng"])
+            self.assertEqual(set(row["post_screen_kind"]), {"combat", "terminal", "outcome", "screen_type"})
+
     def test_policy_is_deterministic(self):
         screen = {"screen_type": "CARD_REWARD", "choice_list": ["Bash"], "ready_for_command": True}
         actions = build_legal_actions(screen, ["proceed", "choose"])

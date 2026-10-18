@@ -275,6 +275,18 @@ target_include_directories(screen_leaf_continuations_test PRIVATE include json/i
 add_test(NAME screen_leaf_continuations
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh $<TARGET_FILE:screen_leaf_continuations_test>)
 
+# Offline exact one-step combat parity against recorded live game steps.
+add_executable(combat_parity_probe apps/combat_parity_probe.cpp
+    apps/one_combat/combat_parity.cpp
+    apps/one_combat/live_silver_importer.cpp
+    apps/one_combat/live_silver_mapping.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_parity_probe PRIVATE include json/include apps)
+target_link_options(combat_parity_probe PRIVATE -Wl,--gc-sections)
+add_test(NAME combat_parity COMMAND python3 -m unittest tests.test_combat_parity)
+set_tests_properties(combat_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    ENVIRONMENT "COMBAT_PARITY_PROBE=$<TARGET_FILE:combat_parity_probe>" LABELS "core;smoke")
+
 # Read-only newline-delimited JSON endpoint for the private live-model
 # inspector.  Keep it separate from the simulator driver until a proven
 # Java-game importer can construct the native observation contracts.
