@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -27,6 +29,13 @@ from typing import Any, Iterable, Iterator, Mapping
 # Observer bookkeeping that differs by construction between a native
 # successor and a fresh import; never simulator semantics.
 IGNORED_KEYS = frozenset({"isolatedSearchSeed", "observedGeneration", "nextUniqueCardId", "uniqueId"})
+# Native bookkeeping the Java exporter never sends: the importer fills a
+# default on the game side while the engine evolves it on the native side, so
+# these can never agree. They are reported separately, not used in verdicts.
+UNOBSERVABLE_FIELDS = frozenset({"loopCount", "cardsDrawn", "energyWasted", "monsterTurnIdx", "curCardQueueItem"})
+# Java RNG streams with no native combat counterpart. Native cannot consume
+# them, so any change during a combat step is itself a mismatch.
+NON_COMBAT_STREAMS = ("cardRng", "eventRng", "merchantRng", "monsterRng", "relicRng", "treasureRng")
 # Ordered card collections: a difference that is only order is reported
 # under its own label, because order can matter (draws, shuffles).
 ORDERED_PILES = ("hand",)
@@ -79,9 +88,13 @@ def extract_steps(rows: Iterable[Mapping[str, Any]]) -> tuple[list[dict[str, Any
         if row.get("decision_source") != "silver" or not isinstance(action, str):
             skipped["NO_SEMANTIC_ACTION"] += 1
             continue
+        if not isinstance(row.get("post_screen_kind"), Mapping):
+            # Not a --parity-trace row: without it a combat end is unknowable.
+            skipped["NO_POST_SCREEN_KIND"] += 1
+            continue
         step = {"step": row.get("step"), "session": row.get("inspector_session") or "parity",
                 "pre": row["live_observation"], "preRng": row.get("preRng"), "action": action,
-                "actionLabel": evaluator.get("selectedLabel")}
+                "liveAction": row.get("selectedLiveAction"), "actionLabel": evaluator.get("selectedLabel")}
         nxt = None
         for later in rows[index + 1:]:
             if _skippable(later):
@@ -145,7 +158,6 @@ def diff(game: Any, native: Any, path: str = "", out: list[dict[str, Any]] | Non
 
 def field_group(path: str) -> str:
     """Collapse indices so mismatches aggregate by field."""
-    import re
     return re.sub(r"\[\d+\]", "[]", path)
 
 
@@ -171,11 +183,21 @@ def compare(step: Mapping[str, Any], result: Mapping[str, Any]) -> dict[str, Any
         out.update(verdict="MISMATCH", diffs=[{"path": "outcome", "game": "UNDECIDED",
                                                "native": OUTCOME_NAMES.get(result.get("nativeOutcome"))}])
         return out
-    diffs = diff(normalize(result.get("game")), normalize(result.get("native")))
-    rng = diff(result.get("gameRng"), result.get("nativeRng"), "rng")
-    out["verdict"] = "MATCH" if not diffs and not rng else "MISMATCH"
-    if diffs or rng:
-        out["diffs"] = diffs + rng
+    all_diffs = diff(normalize(result.get("game")), normalize(result.get("native")))
+    hidden = [d for d in all_diffs if re.split(r"[.\[(]", d["path"], maxsplit=1)[0] in UNOBSERVABLE_FIELDS]
+    diffs = [d for d in all_diffs if d not in hidden]
+    diffs += diff(result.get("gameRng"), result.get("nativeRng"), "rng")
+    pre_streams = (step.get("preRng") or {}).get("streams", {})
+    post_streams = (step.get("postRng") or {}).get("streams", {})
+    for name in NON_COMBAT_STREAMS:
+        if pre_streams.get(name) != post_streams.get(name):
+            diffs.append({"path": f"rng.{name}(not simulated in combat)",
+                          "game": post_streams.get(name), "native": pre_streams.get(name)})
+    out["verdict"] = "MATCH" if not diffs else "MISMATCH"
+    if diffs:
+        out["diffs"] = diffs
+    if hidden:
+        out["unobservable"] = hidden
     return out
 
 
@@ -222,14 +244,19 @@ def summarize(verdicts: list[Mapping[str, Any]], extract_skips: Mapping[str, int
     skip_counts = Counter(v.get("category") for v in verdicts if v["verdict"] == "SKIPPED")
     skip_counts.update(extract_skips)
     fields: Counter[str] = Counter()
+    unobservable: Counter[str] = Counter()
     first: dict[str, Any] = {}
     for v in verdicts:
+        for d in v.get("unobservable", []):
+            unobservable[field_group(d["path"])] += 1
         for d in v.get("diffs", []):
             key = field_group(d["path"])
             fields[key] += 1
             first.setdefault(key, {"step": v["step"], "action": v["action"], "encounter": v["encounter"], **d})
     return {"schema": "combat_parity_summary_v1", "verdicts": dict(verdict_counts),
             "skipped": dict(skip_counts), "mismatchedFields": dict(fields.most_common()),
+            "unobservableFields": dict(unobservable.most_common()),
+            "engineFlags": {k: v for k, v in sorted(os.environ.items()) if k.startswith("STS_")},
             "firstExample": first}
 
 
@@ -242,6 +269,8 @@ def write_report(out_dir: Path, summary: Mapping[str, Any], cover: Mapping[str, 
     for key, count in summary["mismatchedFields"].items():
         ex = summary["firstExample"][key]
         lines.append(f"| `{key}` | {count} | {ex['step']}, {ex['action']} |")
+    lines += ["", "## Unobservable native-only fields (not in verdicts)", ""]
+    lines += [f"- `{k}`: {v}" for k, v in summary["unobservableFields"].items()] or ["- none"]
     lines += ["", "## Coverage (steps compared / mismatched)", ""]
     for kind, items in sorted(cover.items()):
         lines += [f"### {kind}", ""]

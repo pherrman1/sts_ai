@@ -1,5 +1,6 @@
 #include "combat_parity.h"
 
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -89,6 +90,10 @@ silver_bridge::BattleStateWire exactWire(const J &observation, const J &rng,
         throw Skip("EXACT_STATE_UNAVAILABLE", "no hidden RNG or draw order");
     auto wire = imported.wire;
     const auto &combat = combatOf(observation);
+    const auto select = combat.find("cardSelect");
+    if (select != combat.end() && select->is_object() && select->contains("heldCards")
+            && !select->at("heldCards").empty())
+        throw Skip("HELD_SELECTION_CARDS", "Exhume/Armaments/Dual Wield cards held outside the piles");
     auto draw = orderedPile(wire.drawPile, rng.at("drawPileUuids").get<std::vector<std::string>>(),
                             context, "draw");
     draw.fullOrderObserved = true;
@@ -145,6 +150,66 @@ J project(const BattleContext &bc, const search::SilverSearchContext &context) {
     return search::wireFromSearchState(bc, context);
 }
 
+// The fingerprint embeds importer card ids, which depend on which rows were
+// imported before. The probe imports fewer rows than the advisor did, so
+// compare without them and pick the copy by the Java UUID the driver clicked.
+std::string withoutUniqueIds(const std::string &fingerprint) {
+    std::string out;
+    std::size_t pos = 0;
+    while (pos <= fingerprint.size()) {
+        const auto end = std::min(fingerprint.find('/', pos), fingerprint.size());
+        std::string segment = fingerprint.substr(pos, end - pos);
+        const bool cards = segment.rfind("c=", 0) == 0 || segment.rfind("sel=", 0) == 0;
+        if (cards) {
+            std::string rewritten = segment.substr(0, segment.find('=') + 1);
+            std::size_t c = rewritten.size();
+            while (c < segment.size()) {
+                const auto cardEnd = std::min(segment.find('+', c), segment.size());
+                std::string card = segment.substr(c, cardEnd - c);
+                const auto first = card.find('_'), second = card.find('_', first + 1);
+                if (first != std::string::npos && second != std::string::npos)
+                    card = card.substr(0, first + 1) + "*" + card.substr(second);
+                rewritten += card;
+                if (cardEnd < segment.size()) rewritten += '+';
+                c = cardEnd + 1;
+            }
+            segment = rewritten;
+        }
+        if (!out.empty() || pos > 0) out += '/';
+        out += segment;
+        pos = end + 1;
+    }
+    return out;
+}
+
+std::vector<std::int16_t> liveCardIds(const J &liveAction, const advisor::SilverImportContext &context) {
+    std::vector<std::string> uuids;
+    if (liveAction.is_object()) {
+        if (liveAction.contains("cardUuid") && liveAction.at("cardUuid").is_string())
+            uuids.push_back(liveAction.at("cardUuid").get<std::string>());
+        if (liveAction.contains("cardUuids") && liveAction.at("cardUuids").is_array())
+            for (const auto &u : liveAction.at("cardUuids")) if (u.is_string()) uuids.push_back(u.get<std::string>());
+    }
+    std::vector<std::int16_t> ids;
+    for (const auto &uuid : uuids) {
+        const auto it = context.cardIds.find(uuid);
+        if (it == context.cardIds.end()) return {};
+        ids.push_back(it->second);
+    }
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+std::vector<std::int16_t> actionCardIds(const silver_bridge::SemanticAction &action) {
+    std::vector<std::int16_t> ids;
+    if (action.type == silver_bridge::SemanticActionType::CARD) ids.push_back(action.card.uniqueId);
+    for (const auto &card : action.selectedCards) ids.push_back(card.uniqueId);
+    if (action.type == silver_bridge::SemanticActionType::SINGLE_CARD_SELECT && ids.empty())
+        ids.push_back(action.card.uniqueId);
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
 std::string entryOf(const J &observation) {
     return observation.value("combatEntryHash", observation.value("silverRoot", J::object())
         .value("combatInstance", std::string()));
@@ -160,7 +225,9 @@ J probeStep(const J &row, advisor::SilverImportContext &context) {
     setCombatRng(bc, row.at("preRng"));
 
     const auto fingerprint = row.value("action", std::string());
-    std::optional<silver_bridge::SemanticAction> selected;
+    const auto wanted = withoutUniqueIds(fingerprint);
+    const auto liveIds = liveCardIds(row.value("liveAction", J()), context);
+    std::vector<silver_bridge::SemanticAction> exact, sameKind, byUuid;
     J legal = J::array();
     {
         BattleContext root = bc;
@@ -168,13 +235,21 @@ J probeStep(const J &row, advisor::SilverImportContext &context) {
         searcher.prepareRootActions();
         for (const auto &edge : searcher.rootNode().edges) {
             const auto semantic = search::semanticFromSearchAction(root, edge.action);
-            legal.push_back(search::semanticFingerprint(semantic));
-            if (search::semanticFingerprint(semantic) != fingerprint) continue;
-            if (selected) throw Skip("RECORDED_ACTION_AMBIGUOUS", fingerprint);
-            selected = semantic;
+            const auto text = search::semanticFingerprint(semantic);
+            legal.push_back(text);
+            if (text == fingerprint) exact.push_back(semantic);
+            if (withoutUniqueIds(text) != wanted) continue;
+            sameKind.push_back(semantic);
+            if (!liveIds.empty() && actionCardIds(semantic) == liveIds) byUuid.push_back(semantic);
         }
     }
-    if (!selected) throw Skip("RECORDED_ACTION_NOT_FOUND", fingerprint, legal);
+    // The Silver root keeps one edge per group of equivalent copies, so the
+    // clicked copy may appear under another copy's uniqueId; that edge is
+    // the same action. Prefer the clicked UUID, then the exact fingerprint.
+    const auto &chosen = !byUuid.empty() ? byUuid : !exact.empty() ? exact : sameKind;
+    if (chosen.empty()) throw Skip("RECORDED_ACTION_NOT_FOUND", fingerprint, legal);
+    if (chosen.size() > 1) throw Skip("RECORDED_ACTION_AMBIGUOUS", fingerprint, legal);
+    const std::optional<silver_bridge::SemanticAction> selected = chosen.front();
     const auto resolved = search::resolveSilverSemanticAction(bc, *selected);
     if (!resolved.ok) throw Skip("RECORDED_ACTION_NOT_FOUND", resolved.error);
     search::ScumSearchAgent2 agent;

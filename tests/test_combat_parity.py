@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import combat_parity  # noqa: E402
 
 FIXTURE = ROOT / "tests" / "fixtures" / "live_slime_boss_split.json"
+DEFEND = "sa/t=1/s=1/c=104_17_0_1_1_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
 END_TURN = "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
 STREAMS = ("aiRng", "cardRandomRng", "cardRng", "eventRng", "merchantRng", "miscRng",
            "monsterHpRng", "monsterRng", "potionRng", "relicRng", "shuffleRng", "treasureRng")
@@ -65,6 +66,13 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(steps, [])
         self.assertEqual(skipped["GAP_IN_TRACE"], 1)
         self.assertEqual(skipped["NO_SEMANTIC_ACTION"], 1)
+
+    def test_requires_parity_screen_kind(self):
+        row = silver_row(0, observation())
+        del row["post_screen_kind"]
+        steps, skipped = combat_parity.extract_steps([row])
+        self.assertEqual(steps, [])
+        self.assertEqual(skipped["NO_POST_SCREEN_KIND"], 1)
 
     def test_combat_end_and_death(self):
         obs = observation()
@@ -151,6 +159,51 @@ class ProbeTest(unittest.TestCase):
             self.assertEqual(summary["verdicts"], {"MISMATCH": 2})
             self.assertIn("encounter", summary["coverage"])
             self.assertIn("Mismatched fields", (out / "REPORT.md").read_text())
+
+    def defend_step(self, mutate=None, post_rng=None):
+        """Defend on the fixture with a hand-written correct game successor."""
+        obs = observation()
+        r = rng(obs)
+        post = copy.deepcopy(obs)
+        combat = post["silverRoot"]["combat"]
+        card = combat["hand"].pop(next(i for i, c in enumerate(combat["hand"]) if c["id"] == "Defend_R"))
+        combat["discard"].append({**card, "location": "DISCARD"})
+        combat["block"] += 5
+        combat["energy"] -= 1
+        combat["cardsPlayedThisTurn"] += 1
+        combat["skillsPlayedThisTurn"] += 1
+        if mutate:
+            mutate(combat)
+        return {"step": 0, "session": "s", "pre": obs, "preRng": r, "action": DEFEND,
+                "postBoundary": "combat", "post": post, "postRng": post_rng or r}
+
+    def test_positive_control_matches(self):
+        step = self.defend_step()
+        verdict = combat_parity.compare(step, self.probe([step])[0])
+        self.assertEqual(verdict["verdict"], "MATCH", verdict.get("diffs"))
+        # Native-only bookkeeping is reported, not judged.
+        self.assertIn("loopCount", [d["path"] for d in verdict["unobservable"]])
+
+    def test_one_wrong_field_is_the_only_mismatch(self):
+        step = self.defend_step(mutate=lambda c: c.update(block=c["block"] + 1))
+        verdict = combat_parity.compare(step, self.probe([step])[0])
+        self.assertEqual([d["path"] for d in verdict["diffs"]], ["player.block"])
+
+    def test_non_combat_stream_use_is_a_mismatch(self):
+        obs = observation()
+        post_rng = copy.deepcopy(rng(obs))
+        post_rng["streams"]["cardRng"]["counter"] += 1
+        step = self.defend_step(post_rng=post_rng)
+        verdict = combat_parity.compare(step, self.probe([step])[0])
+        self.assertEqual([d["path"] for d in verdict["diffs"]], ["rng.cardRng(not simulated in combat)"])
+
+    def test_action_found_despite_other_importer_ids(self):
+        # The advisor imported more rows than the probe, so its ids differ.
+        step = {**self.defend_step(), "action": DEFEND.replace("c=104_17_", "c=104_40_")}
+        self.assertEqual(self.probe([step])[0]["status"], "COMPARED")
+        uuid = next(c["uuid"] for c in step["pre"]["silverRoot"]["combat"]["hand"] if c["id"] == "Defend_R")
+        step["liveAction"] = {"kind": "card", "cardUuid": uuid}
+        self.assertEqual(self.probe([step])[0]["status"], "COMPARED")
 
     def test_skip_reasons(self):
         obs = observation()
