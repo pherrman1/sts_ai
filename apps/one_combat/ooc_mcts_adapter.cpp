@@ -2578,6 +2578,30 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_TREE_RULES") opts.treeRules = choice("0", "1");
     else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
     else if (key == "STS_OOC_MCTS_GAP_STOP_20") config.stopAt512VisitGap20 = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_GAP_STOP") {
+        // "0" (off) or "C1,C2,...:G": checkpoints in simulations and the gap fraction G in (0, 1].
+        config.gapStopSimulations.clear(); config.gapStopFraction = 0;
+        if (value != "0") {
+            const auto colon = value.find(':');
+            if (colon == std::string::npos || colon == 0 || colon + 1 == value.size()) invalid();
+            std::size_t pos = 0;
+            const std::string list = value.substr(0, colon), gap = value.substr(colon + 1);
+            while (pos <= list.size()) {
+                const auto comma = std::min(list.find(',', pos), list.size());
+                const std::string item = list.substr(pos, comma - pos);
+                if (item.empty() || item.find_first_not_of("0123456789") != std::string::npos || item.size() > 9) invalid();
+                const std::uint64_t c = std::stoull(item);
+                if (!c || (!config.gapStopSimulations.empty() && c <= config.gapStopSimulations.back())) invalid();
+                config.gapStopSimulations.push_back(c);
+                pos = comma + 1;
+            }
+            std::size_t end = 0;
+            double g = 0;
+            try { g = std::stod(gap, &end); } catch (...) { invalid(); }
+            if (end != gap.size() || !std::isfinite(g) || g <= 0 || g > 1) invalid();
+            config.gapStopFraction = g;
+        }
+    }
     else if (key == "STS_OOC_MCTS_MERGE_OUTCOMES") config.mergeEquivalentOutcomes = choice("0", "1");
     else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
     else if (key == "STS_OOC_MCTS_TEMPERATURE") { const double x = number(); if (x <= 0) invalid(); opts.priorTemperature = x; }
@@ -2588,8 +2612,14 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3 && x != 5) invalid(); opts.leafCombats = x; }
     else invalid();
 }
+std::string gapStopText(const sts::search::OocMctsConfig &config) {
+    std::ostringstream out;
+    for (std::size_t i = 0; i < config.gapStopSimulations.size(); ++i) out << (i ? "," : "") << config.gapStopSimulations[i];
+    out << ':' << config.gapStopFraction;
+    return out.str();
+}
 const char *const liveControlKeys[] = {
-    "STS_OOC_MCTS_EARLY_STOP", "STS_OOC_MCTS_GAP_STOP_20", "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
+    "STS_OOC_MCTS_EARLY_STOP", "STS_OOC_MCTS_GAP_STOP_20", "STS_OOC_MCTS_GAP_STOP", "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
@@ -2938,7 +2968,7 @@ void configureLiveOocMcts() {
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
     if (liveOptions.cpuBudgetSeconds > 0 && (liveConfig.allowUnqualifiedRootStop
-            || liveConfig.stopAt512VisitGap20 || liveConfig.observeRootLock
+            || liveConfig.stopAt512VisitGap20 || liveConfig.gapStopFraction > 0 || liveConfig.observeRootLock
             || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") || std::getenv("STS_OOC_SIBLING_CAPTURE")
             || std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE") || std::getenv("STS_OOC_MCTS_CHECKPOINT_TRACE")
             || std::getenv("STS_OOC_MCTS_REUSE_TRACE") || std::getenv("STS_OOC_MCTS_GRAPH_FILE")
@@ -3021,6 +3051,9 @@ void configureLiveOocMcts() {
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
+    if (liveConfig.gapStopFraction > 0
+        && (liveConfig.selectByMeanQ || liveConfig.gapStopSimulations.back() >= liveSimulations))
+        throw std::runtime_error("STS_OOC_MCTS_GAP_STOP requires visit selection and checkpoints below the simulations");
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
     liveConfig.observeRootLock = !liveRootLockTrace.empty();
     // Observation only (heart outcome round 2): one row per live root with
@@ -3214,6 +3247,7 @@ void configureLiveOocMcts() {
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
+        << (liveConfig.gapStopFraction > 0 ? " gap_stop=" + gapStopText(liveConfig) : std::string{})
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
@@ -3233,6 +3267,7 @@ void configureLiveOocMcts() {
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
+        << (liveConfig.gapStopFraction > 0 ? ",\"gapStop\":\"" + gapStopText(liveConfig) + "\"" : std::string{})
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << "\",\"leafWinModel\":" << (liveOptions.leafWinNet ? "\"" + liveOptions.leafWinPath + "\"" : std::string("null"))
@@ -3852,7 +3887,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // A full-budget root drops the early stops, as the root-lock observer does,
     // but keeps the singleton shortcut: a sole action has no policy target.
     fullBudget = fullBudget && !sole;
-    if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; }
+    if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
     if (!runProfilePath().empty()) {
         config.profileSearch = true;
         // Preserve the singleton shortcut and every existing stopping rule.
@@ -4318,6 +4353,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             {"ctm_samples", samples}, {"leaf_evaluations", m.leafEvaluations},
             {"max_depth", m.maxDepthReached}, {"depth_sum", m.depthSum},
             {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20},
+            {"early_stop_gap_ladder", m.earlyStopGapLadder},
             {"cpu_budget_seconds", liveOptions.cpuBudgetSeconds}, {"early_stop_budget", m.earlyStopBudget}};
     }
     if (!liveCheckpointTrace.empty()) {
@@ -4393,6 +4429,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     m.trivialRootBypasses += result.metrics.trivialRootBypasses;
     m.earlyStopLockedRoot += result.metrics.earlyStopLockedRoot;
     m.earlyStopVisitGap20 += result.metrics.earlyStopVisitGap20;
+    m.earlyStopGapLadder += result.metrics.earlyStopGapLadder;
     m.earlyStopBudget += result.metrics.earlyStopBudget;
     m.savedSimulations += result.metrics.savedSimulations;
     m.simulations += result.metrics.simulations;
