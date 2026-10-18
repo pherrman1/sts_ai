@@ -81,6 +81,10 @@ consulted the row also has:
   (`token|skip_card|bowl|gold|discard_potion|none`, the rules of
   `heart1::mapPriorLogits`); and `checkpoints` (`id`, `visits`, `q` after
   128/256/512/... completed simulations, recorded inside the live search).
+- With `STS_OOC_MCTS_FULL_BUDGET_FRACTION` set (playout-cap randomization),
+  `root.fullBudget`: `true` when this root was sampled to run the full budget
+  with no early stop (the clean policy targets), `false` otherwise (singletons
+  are always `false`). The key is absent when the option is unset.
 
 Checkpoints only read root statistics; the singleton bypass and every early
 stop are kept, so capture does not change play. A same-seed `off`/`on`/`policy`
@@ -88,7 +92,10 @@ canary must give byte-identical `STS_OOC_DECISION_TRACE` and
 `STS_OOC_MCTS_TRACE` action files, and `policy` minus its decision rows and
 the added header/footer keys must equal `on`. Match and Keep's hypothetical
 card searches are never recorded. This is capture only: no target fitting,
-training or playout-cap randomization.
+training. Playout-cap randomization (`STS_OOC_MCTS_FULL_BUDGET_FRACTION`, off by
+default) runs its sampled roots past the strict visit lock: the selected action
+is the same unless a later simulation aborts the search (then the V4 fallback
+acts), and the root visits/Q become full-budget policy targets.
 `STS_OOC_MCTS_ROOT_TRACE` (§503, above) already writes per-root candidates
 with prior/visits/Q, the public record and a snapshot to a separate file; policy
 mode adds checkpoints, heart1 token indices, stop/abort/fallback flags and root
