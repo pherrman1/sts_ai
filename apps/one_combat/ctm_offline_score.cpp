@@ -320,10 +320,10 @@ int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
     return 0;
 }
 
-// §527: native parity of the opt-in Act-4 survival model (STS_CTM_ACT4_SURVIVAL_MODEL) with the Python fit.
-// Each fixture line holds an Act-4 predictorInput and the Python death probability (tools/ctm_act4_survival.py).
+// §527: native parity of the Act-4 survival model (STS_CTM_ACT4_SURVIVAL_MODEL, default on for pathb-a20) with the
+// Python fit. Each fixture line holds an Act-4 predictorInput and the Python death probability
+// (tools/ctm_act4_survival.py).
 int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
-    need(std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL") != nullptr, "ctmact4survivaltest needs STS_CTM_ACT4_SURVIVAL_MODEL");
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
         "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
         "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", false);
