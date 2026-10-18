@@ -199,6 +199,9 @@ std::vector<TokenMapping> mapChoiceTokens(const Choice &, bool singingBowl,
                                           const std::vector<sts::search::GameAction> &);
 // Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
 void priorMappingSelfTest();
+// Throws std::runtime_error when the FixedVec projection memo differs from the plain
+// projection with two nets of different width on one thread (oocmctsselftest).
+void fixedVecMemoSelfTest();
 
 // Diagnostics for the parity harness (tools/heart1/); neither uses a seed range.
 // heart1score <weights> <records.jsonl> <out.jsonl>: native logits for records.

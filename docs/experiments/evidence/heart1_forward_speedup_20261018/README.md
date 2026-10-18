@@ -33,7 +33,7 @@ Each path keeps the reference arithmetic per output element; `STS_OOC_HEART1_SCA
 - FixedVec memo: per-thread projected rows (bias included) by weights id and input bits, for inputs with at most
   four features (map position, path xs, relative position, DAG aggregates, path x, cone, deck misc, relic counter,
   gold). A row's projection does not depend on the other rows of its call, so adding the stored row is the same
-  addition. `fixed_obs` (five features) is computed as before. The memo holds up to 16,384 rows and is then cleared.
+  addition. `fixed_obs` (five features) is computed as before. The memo is shared by every net on the thread (rows of different widths, indexed by float offset), holds up to 2^20 floats (16,384 rows of width 64) and is then cleared.
 - Last block of the logits-only pass: observation rows compute only keys and values (a copy of the in-projection's
   key/value rows), as their queries are never read.
 - Reused per-thread buffers instead of fresh zeroed vectors per call.

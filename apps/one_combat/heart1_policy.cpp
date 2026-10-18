@@ -794,7 +794,9 @@ void addEmbedding(const Net::Embedding &e, int idx, float *out) {
 // Projected FixedVec rows (sinusoidal features, projection, bias) by weights
 // and input bits. A row's projection does not depend on the other rows of its
 // call, so adding the remembered row is the same addition linear() makes.
-// Per thread; dropped whole when full.
+// Per thread and shared by every loaded net, whose row widths can differ (a
+// width-64 student serving next to a width-256 teacher), so the index stores
+// each row's float offset. Dropped whole when full.
 struct FixedVecMemo {
     struct Key {
         std::uint64_t id;
@@ -808,11 +810,16 @@ struct FixedVecMemo {
             return std::size_t(h ^ (h >> 29));
         }
     };
-    static constexpr std::size_t kMaxRows = 1 << 14;
-    std::unordered_map<Key, std::size_t, Hash> index;
+    static constexpr std::size_t kMaxFloats = std::size_t(1) << 20;
+    std::unordered_map<Key, std::size_t, Hash> index;  // offset into rows
     std::vector<float> rows;
 };
 thread_local FixedVecMemo fixedVecMemo;
+
+std::uint64_t newMemoId() {
+    static std::atomic<std::uint64_t> next{1};
+    return next++;
+}
 
 void sinusoids(const Net::FixedVec &f, const float *x, float *s) {
     const int half = int(f.invFreq.size()), dim = 2 * half;
@@ -829,15 +836,15 @@ void sinusoids(const Net::FixedVec &f, const float *x, float *s) {
 void addFixedVecRowsMemo(const Net::FixedVec &f, const float *x, int n, float *out) {
     auto &m = fixedVecMemo;
     const int dim = f.proj.out, sdim = 2 * int(f.invFreq.size());
-    if (m.index.size() + std::size_t(n) > FixedVecMemo::kMaxRows) { m.index.clear(); m.rows.clear(); }
-    std::vector<std::size_t> slot(n);
+    if (m.rows.size() + std::size_t(n) * dim > FixedVecMemo::kMaxFloats) { m.index.clear(); m.rows.clear(); }
+    std::vector<std::size_t> offset(n);
     std::vector<int> missRows;
     for (int r = 0; r < n; ++r) {
         FixedVecMemo::Key key{f.memoId, {0, 0, 0, 0}};
         std::memcpy(key.bits.data(), x + std::size_t(r) * f.features, sizeof(float) * f.features);
-        const auto [it, inserted] = m.index.emplace(key, m.rows.size() / dim);
+        const auto [it, inserted] = m.index.emplace(key, m.rows.size());
         if (inserted) { m.rows.resize(m.rows.size() + dim); missRows.push_back(r); }
-        slot[r] = it->second;
+        offset[r] = it->second;
     }
     if (!missRows.empty()) {
         const std::size_t width = std::size_t(f.features) * sdim;
@@ -846,10 +853,10 @@ void addFixedVecRowsMemo(const Net::FixedVec &f, const float *x, int n, float *o
             sinusoids(f, x + std::size_t(missRows[i]) * f.features, s.data() + i * width);
         linear(f.proj, s.data(), int(missRows.size()), proj.data());
         for (std::size_t i = 0; i < missRows.size(); ++i)
-            std::copy_n(proj.data() + i * dim, dim, m.rows.data() + slot[missRows[i]] * dim);
+            std::copy_n(proj.data() + i * dim, dim, m.rows.data() + offset[missRows[i]]);
     }
     for (int r = 0; r < n; ++r) {
-        const float *v = m.rows.data() + slot[r] * dim;
+        const float *v = m.rows.data() + offset[r];
         float *o = out + std::size_t(r) * dim;
         for (int d = 0; d < dim; ++d) o[d] = o[d] + v[d];
     }
@@ -1055,8 +1062,7 @@ bool Net::load(const std::string &file, std::string *error) {
         f.features = features;
         f.invFreq = take(prefix + ".num_embed.inv_freq", {dim / 2});
         f.proj = lin(prefix + ".proj", dim, features * dim, true);
-        static std::atomic<std::uint64_t> nextMemoId{1};
-        f.memoId = nextMemoId++;
+        f.memoId = newMemoId();
         return f;
     };
     const std::string O = "obs_embed.component_embeddings.";
@@ -1523,6 +1529,43 @@ std::vector<TokenMapping> mapChoiceTokens(const Choice &choice, bool singingBowl
         }
     }
     return out;
+}
+
+void fixedVecMemoSelfTest() {
+    if (!useAvx()) return;  // the memo is off without AVX
+    // Two nets of different row width on one thread, calls interleaved with
+    // repeated inputs: every memo row equals the unmemoized projection bitwise.
+    const auto make = [](int out, unsigned seed) {
+        Net::FixedVec f;
+        f.features = 2;
+        f.invFreq = {1.0f, 0.37f, 0.11f, 0.029f};
+        f.proj.out = out;
+        f.proj.in = f.features * 2 * int(f.invFreq.size());
+        std::uint32_t state = seed;
+        const auto next = [&state] { state = state * 1664525u + 1013904223u; return float(state >> 8) / float(1 << 24) - 0.5f; };
+        f.proj.w.resize(std::size_t(f.proj.out) * f.proj.in);
+        for (float &w : f.proj.w) w = next();
+        f.proj.b.resize(f.proj.out);
+        for (float &b : f.proj.b) b = next();
+        f.memoId = newMemoId();
+        return f;
+    };
+    const Net::FixedVec narrow = make(64, 1), wide = make(256, 2);
+    fixedVecMemo = FixedVecMemo{};
+    for (int call = 0; call < 40; ++call) {
+        const Net::FixedVec &f = call % 3 == 1 ? wide : narrow;
+        const int n = 1 + call % 5;
+        std::vector<float> x(std::size_t(n) * f.features);
+        for (std::size_t i = 0; i < x.size(); ++i) x[i] = float((call * 7 + int(i) * 3) % 11);
+        std::vector<float> got(std::size_t(n) * f.proj.out, 0.25f), want = got;
+        addFixedVecRows(f, x.data(), n, got.data());
+        Net::FixedVec plain = f;
+        plain.memoId = 0;
+        addFixedVecRows(plain, x.data(), n, want.data());
+        if (std::memcmp(got.data(), want.data(), sizeof(float) * got.size()) != 0)
+            throw std::runtime_error("heart1 FixedVec memo selftest: mixed-width rows differ from the plain projection");
+    }
+    fixedVecMemo = FixedVecMemo{};
 }
 
 void priorMappingSelfTest() {
