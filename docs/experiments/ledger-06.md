@@ -20898,7 +20898,7 @@ unused.
 Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
 **Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
 
-## §TBD — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): all WORSE or NOT_SHOWN (2026-10-18)
+## §TBD — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): five of six WORSE, per-type NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18 17:38Z, thread "end-state formula"):** "can you try all these things? adjusting the
 weights, maybe a per potion value, withthe fitted and milder curve? maybe in combination all those small things
@@ -20925,12 +20925,12 @@ defaults. Seeds 111198434–111198945, 16 workers, RUN_COMMIT `3c6f2cef` (code `
 
 Descriptive: act-1 deaths 85 (base) vs 92 / 92 / 132 / 101 / 153 / 102; act-3 clears 183 vs 156 / 157 / 117 / 157 /
 97 / 147; seconds per run 78.9 vs 70.6 / 70.2 / 59.5 / 68.5 / 55.6 / 66.1 (shorter runs = earlier deaths).
-**Interpretation:** every variant plays worse whole A20 runs than Silver's tuned formula; none is close to a gain.
+**Interpretation:** five of six variants play measurably worse whole A20 runs than Silver's tuned formula (WORSE on floors at the Bonferroni level); the per-type arm `WT` is NOT_SHOWN on both metrics (floor 99.17% CI [−3.21, +0.07], 95% CI below 0), and `K135` is NOT_SHOWN on wins. None is close to a gain.
 The concave HP term costs the most (k = 2.7: −5.2 floors, −8.4 pp wins, half again as many act-1 deaths), although
 the §537 3-fight probe showed no effect. The measured lower potion/max-HP/gold weights also cost about 1.5 floors,
 in line with §513. **Inference:** the probe's 3-fight window and floor-model valuation miss what these changes do
 over a whole run; the descriptive §537 prices are not usable as leaf weights. **Open question:** why the concave
-term raises act-1 deaths (it also lifts every win's score by roughly +135 at 75% HP, shifting the win/loss balance
+term raises act-1 deaths (it also lifts every win's score, by roughly +135 at 75% HP for a max HP of ~80 and in proportion to max HP otherwise, shifting the win/loss balance
 Silver's other weights were tuned for). Per the decision rule all options stay research-only, unset; the weights are
 not re-tuned on these seeds. Seeds 111198434–111198947 used (smokes 946–947), 111198950–111198965 the reviewer block; 111198948–949 unused.
 [README](evidence/silver_leaf_combo_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.

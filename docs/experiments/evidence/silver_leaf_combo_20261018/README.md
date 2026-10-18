@@ -1,6 +1,7 @@
 # Silver victory-leaf combination A/B (whole A20 runs, student_sel, OOC MCTS off)
 
-Pre-registration: [PREREG.md](PREREG.md). Analysis: `tools/analyze_silver_leaf_combo.py analyze <this dir> <tars...>`.
+Pre-registration: [PREREG.md](PREREG.md). Analysis: extract each worker tar into its own directory, then
+`tools/analyze_silver_leaf_combo.py analyze <this dir> <extracted dirs...>` (it reads unit files, not tars).
 
 - Arms: `base`, `W`, `WT`, `K27`, `K135`, `WTK27`, `WTK135` ([run_unit.sh](run_unit.sh)); per-type potion weights
   [WEIGHTS_TYPE](WEIGHTS_TYPE) from [derive_weights.py](derive_weights.py) on the PR #665 probe tars.
@@ -16,5 +17,5 @@ Pre-registration: [PREREG.md](PREREG.md). Analysis: `tools/analyze_silver_leaf_c
 ## Result (ledger-06 §TBD)
 
 3,584/3,584 units rc=0, 16/16 tars verified ([verify.txt](verify.txt), [tars.sha256](tars.sha256)), 512 pairs.
-Every arm is worse than base (18.8% wins, 38.88 mean floor); see [result.json](result.json) and the ledger table.
+Five of six arms are WORSE than base (18.8% wins, 38.88 mean floor) on floors; per-type `WT` is NOT_SHOWN; see [result.json](result.json) and the ledger table.
 Largest losses: `K27` −5.23 floors / −8.4 pp wins, `WTK27` −6.32 / −9.0. Seeds 111198948–111198949 unused; 111198950–111198965 reviewer block.
