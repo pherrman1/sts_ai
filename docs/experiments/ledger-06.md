@@ -21176,8 +21176,9 @@ does not support. On the way, two `--continue-run` restarts stopped on display-o
 the advisor" (no action taken).
 **Interpretation:** `STS_BLOOD_POTION_HEAL_FIX` (default on, `=0` restores) makes the in-combat Blood Potion heal
 20% of max HP, 40% with Sacred Bark. This is play-changing for every sim that drinks one: the legacy engine doubled
-its heal without Sacred Bark, so Blood Potion values priced under it (for example the §510 potion price) are biased
-upward. **Unverified:** the size of that bias. The `aiRng`, `miscBits` and draw-order differences need triage before
+its heal without Sacred Bark, so values fitted under it stay biased upward until refit: the Blood Potion rank in
+`potionKeepRank` (ADR-0039), the §510 potion price and the §537/§542 descriptive prices. **Unverified:** the size of
+that bias. Results recorded before this fix are comparable only with `STS_BLOOD_POTION_HEAL_FIX=0`. The `aiRng`, `miscBits` and draw-order differences need triage before
 changing anything. Raw traces stay on the PC under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds: 111194451
 (canary); 111194453 (fixed seed of `blood_potion_heal_test`, no gameplay).
 **Knowledge impact:** `evaluation/differential-correctness.md` (canary continuation paragraph),
