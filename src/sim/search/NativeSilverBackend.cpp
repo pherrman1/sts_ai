@@ -587,6 +587,13 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                searcher->rolloutPrior = nullptr;
+                if (searcher->rolloutConfig.prior) {
+                    // Research: prior playouts score with the root-prior model (or the arm's override).
+                    if (g_options.rootPriorPath.empty() && !g_nativeSilverPriorNetOverride)
+                        throw std::runtime_error("STS_SILVER_ROLLOUT_PRIOR requires STS_SILVER_ROOT_PRIOR");
+                    searcher->rolloutPrior = nativeSilverPolicyPrior;
+                }
                 if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
                         ? g_nativeSilverRolloutRootTableOverride
                         : g_options.rolloutRootTablePath.empty() ? nullptr : &rolloutRootTableNet()) {
