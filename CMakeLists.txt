@@ -130,6 +130,14 @@ add_test(NAME dead_target_debuff_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed
 set_tests_properties(dead_target_debuff_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(curl_up_lethal_test tests/curl_up_lethal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(curl_up_lethal_test PRIVATE include json/include)
+add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:curl_up_lethal_test>)
+set_tests_properties(curl_up_lethal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(active_power_features_test tests/active_power_features_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(active_power_features_test PRIVATE include json/include)
@@ -391,7 +399,8 @@ add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
     $<TARGET_FILE:live_ooc_parity_test>
     ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native
     ${CMAKE_CURRENT_BINARY_DIR}/live_ooc_parity_fixtures.jsonl
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act1_boss_card_reward.json)
 set_tests_properties(live_ooc_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_ooc_protocol.py
@@ -558,6 +567,8 @@ add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> sil
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
 add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_potion_weights)
 set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
+add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_concave_hp_leaf)
+set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)

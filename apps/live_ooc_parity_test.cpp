@@ -224,7 +224,7 @@ static void sameTokens(const TokState &a,const TokState &b){
     for(int i=0;i<a.nPt;++i)for(int j=0;j<2;++j)check(a.pt[i][j]==b.pt[i][j],"potion tokens");
 }
 int main(int argc,char **argv){try{
-    check(argc>=2&&argc<=4,"model path [fixture output] [captured act-entry fixture] required");
+    check(argc>=2&&argc<=5,"model path [fixture output] [captured act-entry fixture] [captured boss card reward] required");
     auto model=std::make_unique<OocStrategicTokNet>();check(model->load(argv[1]),"model load");
     std::ofstream output;if(argc>=3)output.open(argv[2]);
     if(argc==4) {
@@ -246,6 +246,26 @@ int main(int argc,char **argv){try{
             next.transitionToMapNode(first);
             check(next.lastRoom==Room::BOSS_TREASURE,
                     "imagined first combat lost its boss-chest predecessor");
+        }
+    }
+    if(argc==5) {
+        // Act 1 boss card reward (map row 15): leaving the rewards must open the
+        // boss chest. A plain map screen there had no legal action and crashed
+        // the live advisor's rollouts (parity canary 2, 2026-10-18).
+        std::ifstream input(argv[4]);check(bool(input),"captured boss card reward fixture missing");
+        J captured;input>>captured;
+        advisor::LiveOocStateV1 imported;
+        const auto result=advisor::importLiveOocStateV1(captured,imported);
+        check(result.ok,"captured boss card reward import: "+result.message);
+        for(const bool take:{true,false}) {
+            auto next=imported.mctsRoot.state;
+            check(next.screenState==ScreenState::REWARDS && next.curMapNodeY==15,"boss card reward root");
+            if(take) search::GameAction(search::GameAction::RewardsActionType::CARD,0,0).execute(next);
+            if(next.screenState==ScreenState::REWARDS)
+                search::GameAction(search::GameAction::RewardsActionType::SKIP).execute(next);
+            check(next.screenState==ScreenState::BOSS_RELIC_REWARDS && next.curRoom==Room::BOSS_TREASURE,
+                    "leaving act 1 boss rewards must open the boss chest");
+            check(!search::GameAction::getAllActionsInState(next).empty(),"boss chest has no legal action");
         }
     }
     // One fixed native initialization; no game rollout and no model mutation.

@@ -184,6 +184,31 @@ ended Flame Barrier kept its old value for the root prior and root table nets.
 `STS_ACTIVE_POWER_FEATURES` (default on, `=0` restores) reads 0 for a power
 whose flag is off.
 
+The second canary (§536; 2026-10-18, a full A20 run on the PC that reached
+floor 16 in Act 1, 9 encounters) compared 135 combat steps: 126 matched and 9
+did not. The probe now also ignores a dead monster's powers, because Java
+clears them only in `updateDeathAnimation`. `STS_CURL_UP_LETHAL_FIX` (default
+on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
+
+- A Discovery pick leaves `cardRandomRng` at counter 184 in Java and 3
+  natively.
+- A card whose cost was set to 0 for the turn keeps `costForTurn` 0 in the
+  discard pile natively; Java resets it.
+- Perfected Strike counts one Strike fewer after Havoc exhausts a Strike.
+- Havoc's random target differs (`lastTargetedMonster`).
+- Hexaghost records Inferno twice in Java's move history. **Inference:** no
+  behavior reads it.
+
+The run ended on a live advisor crash, not a parity issue. The live importer
+sent every reward exit to the map, but after an act 1 or 2 boss the player
+sits on map row 15, which has no node to pick. An OOC rollout from the boss
+card reward then reached a map screen with no legal action, and
+`ScumSearchAgent2::stepRandom` read past the empty list. Leaving those
+rewards now opens the boss chest, as native `afterBattle` does, and
+`stepRandom` throws instead of reading out of bounds
+(`tests/fixtures/live_act1_boss_card_reward.json`, checked by
+`live_ooc_parity`).
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 

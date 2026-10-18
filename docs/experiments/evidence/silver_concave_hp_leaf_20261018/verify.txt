@@ -1,0 +1,19 @@
+w01 OK      15 units, run 4ca37a4e5d0e, tar 1d4c85ab40e6, 2026-10-18T16:16:11Z
+w02 OK      15 units, run 4ca37a4e5d0e, tar de5b450cde30, 2026-10-18T16:21:59Z
+w03 OK      15 units, run 4ca37a4e5d0e, tar 84a5df5d78cf, 2026-10-18T16:16:35Z
+w04 OK      15 units, run 4ca37a4e5d0e, tar 0a46bb3c9ec4, 2026-10-18T16:22:28Z
+w05 OK      15 units, run 4ca37a4e5d0e, tar 8e30989bfe59, 2026-10-18T16:30:11Z
+w06 OK      15 units, run 4ca37a4e5d0e, tar 79c84671d4f8, 2026-10-18T16:35:14Z
+w07 OK      15 units, run 4ca37a4e5d0e, tar db9cdb3bc9ee, 2026-10-18T16:12:52Z
+w08 OK      15 units, run 4ca37a4e5d0e, tar cfa76c217521, 2026-10-18T16:29:11Z
+w09 OK      15 units, run 4ca37a4e5d0e, tar f81b42d3d593, 2026-10-18T16:20:39Z
+w10 OK      15 units, run 4ca37a4e5d0e, tar 2a3bb1bef1bd, 2026-10-18T16:09:23Z
+w11 OK      15 units, run 4ca37a4e5d0e, tar c44e956d7382, 2026-10-18T16:27:03Z
+w12 OK      15 units, run 4ca37a4e5d0e, tar 996dad9c4c1c, 2026-10-18T16:29:59Z
+w13 OK      15 units, run 4ca37a4e5d0e, tar f06721a839ae, 2026-10-18T16:11:52Z
+w14 OK      15 units, run 4ca37a4e5d0e, tar c22cacba1d7b, 2026-10-18T16:15:20Z
+w15 OK      15 units, run 4ca37a4e5d0e, tar d724da062af1, 2026-10-18T16:17:12Z
+w16 OK      15 units, run 4ca37a4e5d0e, tar 06b39ea3911c, 2026-10-18T16:33:24Z
+OK: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+MISSING: -
+BAD: -

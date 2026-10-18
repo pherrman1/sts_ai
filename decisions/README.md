@@ -28,6 +28,8 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0049](0049-silver-gen7f-root-table.md) makes gen-7f E (gen 7 retrained on active power features) the bundled
+  default Silver rollout root table model and the A20 Silver prior; `models/combat_policy_mlp_g6_E.txt` restores ADR-0046.
 - [ADR-0048](0048-ctm-act4-survival-default.md) makes the A20 CTM stack (`pathb-a20`) price Shield and Spear and
   the Heart with the §527 Act-4 survival model by default (`STS_CTM_ACT4_SURVIVAL_MODEL=0` restores the CTM head).
 

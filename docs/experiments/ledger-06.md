@@ -20913,3 +20913,103 @@ searches, similar to sivler combat?"
 Seeds used: 111195803.
 
 **Knowledge impact:** `GAP_STOP` row in the `architecture/out-of-combat.md` option table.
+## §537 — concave-HP Silver victory leaf, paired 3-fight continuations at A20: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18, thread "end-state formula"):** 14:06Z "change the evaluation at the final state, so
+tweak the formula"; 14:16Z "Yes, but use 16 workers for that. Also think about whether HP is the only thing we want
+to change". A re-analysis of §510's paired continuations found HP strongly concave (an HP at < 30% of max worth ~4x
+the mean floor-model slope, at ≥ 90% ~0.5x), while Silver's victory leaf is linear in HP.
+**Design:** [PREREG](evidence/silver_concave_hp_leaf_20261018/PREREG.md), light pre-launch review PASS. New research
+option `STS_SILVER_CONCAVE_HP_LEAF=k` (PR #665; unset = linear): `h → (M/k)e^{0.75k}(1 − e^{−kh/M})` and potion term
+× `sqrt(u'(h))`. `potionpriceprobe … all` on A20 source runs (student_sel OOC argmax, exact-10k Silver with the g6_E
+prior, keys off, acts 1–3): every sampled battle-start state is continued 3 fights by base, `leaf:concave=2.7`
+(primary), `leaf:concave=1.35` and price copies (HP −12, gold −50, max HP −5, potions), common random numbers,
+valued by the A20 floor model. Seeds 111197436–111197675 on 16 workers, RUN_COMMIT `4ca37a4e` (code `633aa69a`,
+binary `48e17951…`).
+**Result: NOT_SHOWN.** 240/240 units rc=0, 16 tars verified, 2,651 states. Leaf − base, floors: k = 2.7 **+0.057
+[−0.141, +0.263]**; k = 1.35 +0.127 [−0.106, +0.367]. A20 win model −0.003 / +0.003, survival of the 3 fights
++0.8 / +1.2 pp, all CIs include 0. Descriptive: largest point gain at start HP ≥ 90% (k = 2.7 +0.23 [−0.01, +0.49]),
+none at < 45%. Descriptive prices under the student policy: non-Fairy potion 5.0 HP-eq [1.8, 8.1], max HP 1.08 HP
+per point [0.53, 1.66], gold 0.011 HP per gold [−0.064, 0.070], against the formula's 11 / 2 / 0.25.
+**Interpretation:** a concave HP term does not change the next three fights' outcome by more than about +0.26 floor (k = 2.7) or +0.37 floor (k = 1.35), the CI upper bounds.
+**Inference:** Silver's decisions are rarely close enough in HP risk for the curvature to matter. The price CIs exclude
+the formula's potion, max-HP and gold weights, but §513 already found lower potion weights NOT_SHOWN in whole runs,
+and the prices were not a pre-registered decision. Per the decision rule the option stays research-only, unset.
+Seeds 111197436–111197675, smokes 111197676–677 and reviewer 111197680–682 are used; 111197678–679, 111197683–691
+unused.
+[README](evidence/silver_concave_hp_leaf_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
+**Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
+
+## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
+
+**Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?
+Asked by Philipp 2026-10-18 14:29Z ("lets go with the canary run").
+**Setup:** one A20 Ironclad run on Philipp's PC, seed 111194451, installed runtime `64f6ef277966-3f57d0b45c36`
+(inspector JAR `78eb4d03`), game with `STS_DIFFERENTIAL_DEBUG_RNG=1`, driver `--parity-trace` (4 segments joined by
+`--continue-run`), `combat_parity_probe` built at main `05da2c07`. The instructions named seed 111194453; the PC
+session ran 111194451 instead (its report and trace). 111194451 is also the fixed seed of
+`dead_target_debuff_fix_test`, which drives no gameplay, so the overlap is harmless.
+**Result:** 135 combat steps compared over 9 Act 1 encounters (Hexaghost 36, Gremlin Gang 18, Cultist 15, Gremlin Nob
+14, Small Slimes 12, Exordium Wildlife 11, Jaw Worm 10, Three Louse 10, Red Slaver 9): 126 MATCH, 9 MISMATCH, 3
+`TRACE_ENDED`; no unresolved recorded action and no held-selection skips. The 9 mismatches:
+- 3 steps: a monster killed by an attack keeps its powers natively (Strength, Vulnerable, Weak, Angry/Spore Cloud
+  payload). Java clears them in `updateDeathAnimation`, after `die()`; not a gameplay difference.
+- 1 step: Clothesline killed a Curl Up louse; native curled anyway (block 12 vs 0). Java requires
+  `damageAmount < currentHealth`.
+- 1 step: a Discovery pick (Colorless Potion, The Bomb) advanced `cardRandomRng` 184 vs 3. Cause unknown.
+- 1 step: The Bomb with cost 0 for the turn kept `costForTurn` 0 in the discard pile natively; Java shows 2.
+- 1 step: Perfected Strike count 5 (game) vs 4 (native) after Havoc+ exhausted a Strike. Cause unknown.
+- 1 step: Havoc+ in Gremlin Gang, `lastTargetedMonster` 2 vs 1; likely the random target.
+- 1 step: Hexaghost Inferno is recorded twice in Java's move history; `nextMove` matches.
+
+The run stopped at floor 16 (Act 1 boss card reward): the live advisor segfaulted in `ScumSearchAgent2::stepRandom`
+on an empty action list inside an OOC rollout. It reproduces offline from the saved input, on the previous runtime
+`64b38c88` too. The driver also stopped 3 times on display-only stat changes of cards in the discard and exhaust piles,
+which its tolerance check misses; no action was taken on those.
+**Interpretation:** the probe now ignores a dead monster's powers, and `STS_CURL_UP_LETHAL_FIX` (default on, `=0`
+restores) makes native Curl Up match Java. The louse dies either way, but its block and status bits are part of
+Silver's node identity, so search and play can change in louse fights. The Discovery RNG gap is the one open difference that can change later combat
+(Havoc and random targets draw from `cardRandomRng`). Coverage is Act 1 only. Raw traces (469 MB) stay on the PC
+under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds used: 111194451 (canary), 111194453 (fixed seed
+of `curl_up_lethal_test`, no gameplay; not used by the canary).
+**Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
+`behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
+(`STS_CURL_UP_LETHAL_FIX`).
+
+## §538 — A20 learned stopping with the gen-7f table and prior: non-inferior to flat 10k at 0.49x CPU; flat 2.5k not shown non-inferior (2026-10-18)
+
+**Question (Philipp, 2026-10-18, gen-7 thread):** 13:46Z "can you start experimenting with combining learned stopping
+and the new rollout? i.e. make sure that this a strong enough combat model with 2.5k sims"; 17:39Z "do the learned
+stopping test plan" (8 workers). Does learned stopping (ADR-0026) still match flat exact 10k Silver on the current
+stack (gen-7f root table, ADR-0049, plus g7f_E root/tree prior), and how much does flat 2.5k give up?
+**Design:** [PREREG](evidence/silver_learnstop_g7f_20261018/PREREG.md), light pre-launch review PASS. The §516
+harness on main `f15b345b`: plain A20 full runs, student_sel `policyStep` out of combat (no OOC MCTS, no V4 net),
+`STS_ACTIVE_POWER_FEATURES=1`, g7f_E as rollout root table and as root prior (weight 400) and tree prior (K=8). Arms
+`F10` flat exact 10k, `F25` flat exact 2.5k, `L` learned stopping (checkpoints to 10k). RUN_COMMIT `afde9cb2`, binary
+`636258d7…`, seeds 111197822–111198333 (smoke 111195812–111195813). Primary: reached Act 4, L − F10, paired Newcombe
+95% interval, non-inferior if the lower bound > −5 pp; F25 − F10 secondary with the same rule.
+**Result.** 1,536/1,536 units rc=0, all 512 seeds valid; 8 tars checked by `verify_campaign.py` from the lead
+container (`worker_tars.txt`, `report.json`).
+
+| Arm | Heart kills | Reached Act 4 | Kills / Act 4 | Mean floor | CPU per run |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| F10 flat 10k | 70 (13.7%) | 156 (30.5%) | 45% | 37.5 | 76.4 s |
+| F25 flat 2.5k | 60 (11.7%) | 147 (28.7%) | 41% | 36.7 | 16.9 s (0.22x) |
+| L learned stop | 79 (15.4%) | 173 (33.8%) | 46% | 38.6 | 37.7 s (0.49x) |
+
+- **Primary, L − F10 reached Act 4:** +3.3 pp [−0.6, +7.3], **NON_INFERIOR**; McNemar p = 0.12.
+- **Secondary, F25 − F10 reached Act 4:** −1.8 pp [−5.6, +2.1], **NOT_SHOWN** (lower bound below −5 pp); p = 0.43.
+- **Heart kills:** L − F10 +1.8 pp [−1.5, +5.1], p = 0.35; F25 − F10 −2.0 [−5.1, +1.1], p = 0.26.
+- **L − F25 (descriptive):** reached Act 4 +5.1 pp [+0.8, +9.3], p = 0.026; Heart kills +3.7 [+0.5, +7.0],
+  p = 0.032. Not a pre-registered test.
+- **OOC decisions:** student_sel 95.9–96.2%, key rule 3.0–3.2%, Match and Keep 0.8–1.0% per arm; nothing else.
+
+**Interpretation:** learned stopping again plays at least as well as flat 10k, now with the gen-7f table and prior,
+at half the CPU (§516: 0.41x). Flat 2.5k is 4.5x cheaper than flat 10k, but this run cannot rule out a loss of more
+than 5 pp, and it trails learned stopping on both endpoints. **Inference:** learned stopping
+keeps flat-10k strength at half its CPU; flat 2.5k is cheaper still (learned stopping used 2.2x its CPU), so this run
+does not compare the two at equal CPU. The stack (student_sel, g7f) wins far
+more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are not comparable across the two runs.
+The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
+**Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).

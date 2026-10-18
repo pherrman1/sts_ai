@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -45,6 +45,11 @@ stopping matched flat exact 10k (Heart kills 30 vs 27, reached Act 4 −0.4 pp
 [−3.4, +2.6]) at 0.41x the run CPU; adding the gen-6 MLP prior as root and
 tree prior (`STS_SILVER_TREE_PRIOR_MIN_VISITS=8`) reached Act 4 more often
 (+3.9 pp, not pre-registered) without more Heart kills.
+With student_sel, the gen-7f root table and g7f_E as root and tree prior
+(§538, 512 paired A20 runs), learned stopping was again non-inferior to flat
+exact 10k (reached Act 4 +3.3 pp [−0.6, +7.3], Heart kills 79 vs 70) at 0.49x
+the run CPU; flat 2.5k (0.22x CPU) was not shown non-inferior (−1.8 pp
+[−5.6, +2.1], Heart kills 60).
 
 ### Removed searchers and tooling
 
@@ -265,6 +270,21 @@ it. Ledger-06 §513 (A20, student C OOC, 128 paired seeds) did not show an effec
 the §510-derived per-type weights or a flat 7.8 vs flat 11: floors −1.37
 [−3.45, +0.74] and −0.80 [−2.96, +1.36]. The flat 11 stays.
 
+HP in the victory leaf is linear. In the §510 paired continuations one HP at
+< 30% of max HP was worth ~4x the mean HP slope (A20 floor model) and one HP at
+≥ 90% ~0.5x; the formula's implied death price (~110 HP) was below the measured
+~200 (re-analysis, `/mnt/project-files/silver-leaf-eval/END-STATE-FORMULA.md`).
+Research-only `STS_SILVER_CONCAVE_HP_LEAF=k` (native Silver; per-copy
+override `g_nativeSilverConcaveHpLeafOverride` for `potionpriceprobe`
+`leaf:concave=K` variants) replaces `h` by a concave `u(h)` with slope 1 at 75%
+HP and scales the potion term by `sqrt(u'(h))`; the loss branch and the
+final-fight leaf are unchanged. Ledger-06 §537 (A20, 2,651 paired 3-fight
+continuations) did not show an effect: k = 2.7 +0.057 [−0.141, +0.263] floors,
+k = 1.35 +0.127 [−0.106, +0.367]. The linear HP term stays. Under the
+student_sel policy the same run priced non-Fairy potions at 5.0 HP-eq [1.8,
+8.1], max HP at 1.08 HP per point [0.53, 1.66] and gold at 0.011 HP per gold
+[−0.064, 0.070] (descriptive; the formula uses 11 / 2 / 0.25).
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
@@ -299,7 +319,8 @@ at matched rollouts per decision are not shown better, so the greedy single
 playout stays; Philipp then made the table the default (ADR-0040). §523 (A20, 176 fights): averaging 1, 2, 4 or 8 uniform random playouts per leaf
 loses 31–35 fight score to greedy at every k (0.85x–4.70x CPU per fight); more random playouts barely help.
 Default since ADR-0046 (`STS_SILVER_ROLLOUT_ROOT_TABLE`: unset = bundled
-`models/combat_policy_mlp_g6_E.txt`, `0` = the fixed ADR-0040 table, or another
+`models/combat_policy_mlp_g7f_E.txt` since ADR-0049 (before: `models/combat_policy_mlp_g6_E.txt`, still bundled;
+setting that path restores it), `0` = the fixed ADR-0040 table, or another
 `combat_policy_mlp` model): that fixed table is replaced by one built once per searched root
 (`nativeSilverRolloutRootTable`). The model scores every distinct card (id and
 upgrade) in hand, draw and discard pile as a play at the root state, aimed
@@ -322,7 +343,7 @@ buy nothing at 10k (−0.02). Philipp made it the default anyway (ADR-0046); the
 `roottable` armset requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`. The live advisor
 does the same in every `NativeSilverAdvisorSession::decide` (extends keep that
 root's table): `one_combat_advisor` loads the model once at start, unset =
-`models/combat_policy_mlp_g6_E.txt` beside the executable (the installed release,
+`models/combat_policy_mlp_g7f_E.txt` beside the executable (the installed release,
 which `tools/live_game_runtime.py` pins as `rolloutRootTableSha256`), else under the
 working directory; `0` restores the ADR-0040 table, a model that does not load
 exits 2, and each Silver evaluator reports `rolloutRootTable` (model fingerprint or `off`).

@@ -382,6 +382,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
 }
 
 thread_local bool t_oocContinuation = false;
+thread_local bool t_counterfactualHeart1 = false;
 
 bool deployedRestV() {
     const char *d = std::getenv("STS_REST_V");
