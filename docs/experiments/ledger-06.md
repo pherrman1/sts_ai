@@ -20314,7 +20314,7 @@ simulations), but at 10k it is not significant at equal simulations either. Unli
 nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not measurably have used.
 **Inference:** at the production budget, a cheaper root table (or the same one at no simulation cost) could be a
 small free gain; across §519 and §521 the equal-simulation contrast is positive in all four budget pairs, but each CI
-touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off.
+touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off (superseded: ADR-0046).
 [result.json](evidence/silver_rollout_root_table_10k_20261017/result.json). Raw:
 `/mnt/project-files/silver-rollout-root-table-10k/w0{1..8}.tar` (sha256 `8c4bb455…`, `47c5c9fb…`, `4f656e30…`,
 `0e6c3ce7…`, `91834bb7…`, `4ad02fcd…`, `470b53da…`, `8be914d1…`). Seeds 111190500–111190627 used; reviewer smokes
