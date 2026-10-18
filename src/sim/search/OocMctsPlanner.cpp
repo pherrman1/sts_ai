@@ -62,6 +62,16 @@ struct Search {
         return leader > challenger && leader - challenger > remaining;
     }
 
+    bool rootVisitGapAtLeast(const DecisionNode &node, double fraction, std::uint64_t simulations) const {
+        if (node.actions.size() < 2) return false;
+        std::uint64_t leader = 0, challenger = 0;
+        for (const auto &action : node.actions) {
+            if (action.visits > leader) { challenger = leader; leader = action.visits; }
+            else challenger = std::max(challenger, action.visits);
+        }
+        return double(leader - challenger) >= fraction * double(simulations);
+    }
+
     bool rootVisitGapAtLeast20(const DecisionNode &node) const {
         if (node.actions.size() < 2) return false;
         std::uint64_t leader = 0, challenger = 0;
@@ -278,6 +288,14 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                 && !config.selectByMeanQ && search.metrics.simulations == 512
                 && search.rootVisitGapAtLeast20(node)) {
                 search.metrics.earlyStopVisitGap20 = true;
+                search.metrics.savedSimulations = remaining;
+                break;
+            }
+            if (remaining && config.gapStopFraction > 0 && !config.observeRootLock && !config.selectByMeanQ
+                && std::find(config.gapStopSimulations.begin(), config.gapStopSimulations.end(),
+                       search.metrics.simulations) != config.gapStopSimulations.end()
+                && search.rootVisitGapAtLeast(node, config.gapStopFraction, search.metrics.simulations)) {
+                search.metrics.earlyStopGapLadder = true;
                 search.metrics.savedSimulations = remaining;
                 break;
             }

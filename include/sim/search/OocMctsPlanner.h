@@ -80,6 +80,11 @@ struct OocMctsConfig {
     // Explicit online candidate: after simulation 512, stop at a >=20% root
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
+    // Opt-in gap ladder (STS_OOC_MCTS_GAP_STOP): after each listed simulation
+    // count, stop once the root top-two visit gap is at least gapStopFraction
+    // times the completed simulations. Off when the fraction is 0.
+    std::vector<std::uint64_t> gapStopSimulations;
+    double gapStopFraction = 0;
     // Optional research budget checked after each completed simulation. The
     // host includes model/root preparation in its deadline. Empty is unchanged.
     std::function<bool()> budgetExhausted;
@@ -135,6 +140,7 @@ struct OocMctsMetrics {
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;
     std::uint64_t earlyStopVisitGap20 = 0;
+    std::uint64_t earlyStopGapLadder = 0;
     std::uint64_t earlyStopBudget = 0;
     std::uint64_t savedSimulations = 0;
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;

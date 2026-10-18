@@ -1,0 +1,1240 @@
+{
+ "boundary": "ooc",
+ "fixture": "live_act1_boss_card_reward",
+ "provenance": {
+  "source": "live advisor segfault input, parity canary 2 (ledger \u00a7536), A20 seed 111194451, floor 16 after Hexaghost",
+  "session": "210eefc0ea50d",
+  "sequence": 269,
+  "captureObservationHash": "f34ee89bd81a7ee1238bb99ef2a1d29971c772c02423b7d62fae2f156cbd4689",
+  "originalFileSha256": "9e04ef85389e5f324c47063eb930edfadcc467174a53734791d2e52e7761944d",
+  "note": "only the ooc payload of the observation is kept"
+ },
+ "ooc": {
+  "schemaVersion": 1,
+  "screen": "card_reward",
+  "mcpState": {
+   "cancel_button": "skip",
+   "ready_for_command": true,
+   "in_game": true,
+   "choice_list": [
+    "[Barricade] Cost: 3 POWER",
+    "[Juggernaut] Cost: 2 POWER",
+    "[Brutality] Cost: 0 POWER",
+    "bowl"
+   ],
+   "screen_type": "CARD_REWARD",
+   "screen_state": {
+    "cards": [
+     {
+      "is_playable": false,
+      "cost": 3,
+      "name": "Barricade",
+      "id": "Barricade",
+      "type": "POWER",
+      "uuid": "d402631a-d728-44ea-ae29-ec3a82683142"
+     },
+     {
+      "is_playable": false,
+      "cost": 2,
+      "name": "Juggernaut",
+      "id": "Juggernaut",
+      "type": "POWER",
+      "uuid": "1f1c2485-1532-417f-8aa3-bfac977ebc80",
+      "magic_number": 5
+     },
+     {
+      "is_playable": false,
+      "cost": 0,
+      "name": "Brutality",
+      "id": "Brutality",
+      "type": "POWER",
+      "uuid": "aa5cebc3-3997-4cc2-8076-2616fb9c0673"
+     }
+    ],
+    "bowl_available": true,
+    "skip_available": true
+   },
+   "can_cancel": true,
+   "max_hp": 77,
+   "gold": 162,
+   "screen_name": "CARD_REWARD",
+   "room_phase": "COMPLETE",
+   "can_proceed": false,
+   "is_screen_up": true,
+   "current_hp": 28,
+   "floor": 16,
+   "room_type": "MonsterRoomBoss"
+  },
+  "publicState": {
+   "character": "IRONCLAD",
+   "ascension": 20,
+   "act": 1,
+   "floor": 16,
+   "hp": 28,
+   "maxHp": 77,
+   "gold": 162,
+   "blueKey": false,
+   "greenKey": false,
+   "redKey": false,
+   "keysEnabled": false,
+   "potionCapacity": 2,
+   "boss": "Hexaghost",
+   "deck": [
+    {
+     "id": "AscendersBane",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "79d2292d-ffbf-4725-9bf4-c18584345b21"
+    },
+    {
+     "id": "Strike_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "cfe8dd07-2e0f-4ad3-80e6-a5369a9a516a"
+    },
+    {
+     "id": "Strike_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "49bc3ff7-0352-475a-acad-3248d9d23e2c"
+    },
+    {
+     "id": "Strike_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "4bc23bd0-a7f6-4002-9665-020e4d455546"
+    },
+    {
+     "id": "Strike_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "dc7742b6-8358-44c0-8c7a-9e67ec69cd55"
+    },
+    {
+     "id": "Strike_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "290c335a-bf87-4c45-8b2e-dd61ce88cdf0"
+    },
+    {
+     "id": "Defend_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "b83f259e-9525-4eea-832b-66682991080a"
+    },
+    {
+     "id": "Defend_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "5144ed79-994c-4ea9-ba2a-d74f8b9310b0"
+    },
+    {
+     "id": "Defend_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "e11d6316-56f3-4a3f-bb31-900d4d34b802"
+    },
+    {
+     "id": "Defend_R",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "592ffaf7-68a7-4b97-9761-1b08834ebf50"
+    },
+    {
+     "id": "Bash",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "90cac880-6e3f-4fe8-bac9-4468b157e165"
+    },
+    {
+     "id": "Blood for Blood",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "bbb966a6-7347-4fc1-885c-856584b36d16"
+    },
+    {
+     "id": "Ghostly Armor",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "998cc5fa-8cda-49c1-973d-27ff50cb0855"
+    },
+    {
+     "id": "Havoc",
+     "upgraded": true,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "0dede3b3-09b3-418c-a37f-0985221ae647"
+    },
+    {
+     "id": "Clothesline",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "140da536-8616-4814-81de-042f08d60e4c"
+    },
+    {
+     "id": "Shrug It Off",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "ce97a37e-0ef3-425e-8ebe-ae8720575f3e"
+    },
+    {
+     "id": "Reckless Charge",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "e0c8c99a-81b8-4d33-891b-8fd9ba153dbe"
+    },
+    {
+     "id": "Anger",
+     "upgraded": false,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "c3c52ffc-19dc-4abd-a60f-9363ef90cef5"
+    },
+    {
+     "id": "Uppercut",
+     "upgraded": true,
+     "misc": 0,
+     "bottleBinding": -1,
+     "uuid": "291f9919-d0ca-4546-8289-dfe621a2cf57"
+    }
+   ],
+   "relics": [
+    {
+     "id": "Burning Blood",
+     "data": -1,
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "id": "Lizard Tail",
+     "data": 1,
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "id": "Meat on the Bone",
+     "data": -1,
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "id": "Singing Bowl",
+     "data": -1,
+     "liveCounter": -1,
+     "usedUp": false
+    }
+   ],
+   "potions": [
+    "FairyPotion",
+    "FairyPotion",
+    "Potion Slot",
+    "Potion Slot",
+    "Potion Slot"
+   ],
+   "map": {
+    "x": -1,
+    "y": 15,
+    "burningEliteX": -1,
+    "burningEliteY": -1,
+    "nodes": [
+     {
+      "x": 0,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": [
+       0
+      ]
+     },
+     {
+      "x": 1,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": [
+       1
+      ]
+     },
+     {
+      "x": 3,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 4,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 5,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 6,
+      "y": 0,
+      "room": "MONSTER",
+      "edges": []
+     },
+     {
+      "x": 0,
+      "y": 1,
+      "room": "MONSTER",
+      "edges": [
+       0
+      ]
+     },
+     {
+      "x": 1,
+      "y": 1,
+      "room": "EVENT",
+      "edges": [
+       0
+      ]
+     },
+     {
+      "x": 2,
+      "y": 1,
+      "room": "EVENT",
+      "edges": [
+       1
+      ]
+     },
+     {
+      "x": 3,
+      "y": 1,
+      "room": "MONSTER",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 4,
+      "y": 1,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 1,
+      "room": "MONSTER",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 6,
+      "y": 1,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 0,
+      "y": 2,
+      "room": "MONSTER",
+      "edges": [
+       0,
+       1
+      ]
+     },
+     {
+      "x": 1,
+      "y": 2,
+      "room": "EVENT",
+      "edges": [
+       1
+      ]
+     },
+     {
+      "x": 2,
+      "y": 2,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 3,
+      "y": 2,
+      "room": "EVENT",
+      "edges": [
+       4
+      ]
+     },
+     {
+      "x": 4,
+      "y": 2,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 2,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 6,
+      "y": 2,
+      "room": "MONSTER",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 0,
+      "y": 3,
+      "room": "EVENT",
+      "edges": [
+       0
+      ]
+     },
+     {
+      "x": 1,
+      "y": 3,
+      "room": "MONSTER",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 2,
+      "y": 3,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 3,
+      "y": 3,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 4,
+      "y": 3,
+      "room": "MONSTER",
+      "edges": [
+       4
+      ]
+     },
+     {
+      "x": 5,
+      "y": 3,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 6,
+      "y": 3,
+      "room": "EVENT",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 0,
+      "y": 4,
+      "room": "EVENT",
+      "edges": [
+       0
+      ]
+     },
+     {
+      "x": 1,
+      "y": 4,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 4,
+      "room": "SHOP",
+      "edges": [
+       1,
+       2
+      ]
+     },
+     {
+      "x": 3,
+      "y": 4,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 4,
+      "y": 4,
+      "room": "MONSTER",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 5,
+      "y": 4,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 6,
+      "y": 4,
+      "room": "EVENT",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 0,
+      "y": 5,
+      "room": "ELITE",
+      "edges": [
+       1
+      ]
+     },
+     {
+      "x": 1,
+      "y": 5,
+      "room": "REST",
+      "edges": [
+       1
+      ]
+     },
+     {
+      "x": 2,
+      "y": 5,
+      "room": "ELITE",
+      "edges": [
+       2,
+       3
+      ]
+     },
+     {
+      "x": 3,
+      "y": 5,
+      "room": "REST",
+      "edges": [
+       4
+      ]
+     },
+     {
+      "x": 4,
+      "y": 5,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 5,
+      "room": "ELITE",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 6,
+      "y": 5,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 0,
+      "y": 6,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 6,
+      "room": "SHOP",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 2,
+      "y": 6,
+      "room": "EVENT",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 3,
+      "y": 6,
+      "room": "SHOP",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 4,
+      "y": 6,
+      "room": "ELITE",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 5,
+      "y": 6,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 6,
+      "y": 6,
+      "room": "MONSTER",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 0,
+      "y": 7,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 7,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 7,
+      "room": "ELITE",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 3,
+      "y": 7,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 4,
+      "y": 7,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 7,
+      "room": "MONSTER",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 6,
+      "y": 7,
+      "room": "EVENT",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 0,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": [
+       1,
+       2,
+       3
+      ]
+     },
+     {
+      "x": 3,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": []
+     },
+     {
+      "x": 4,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": [
+       5,
+       6
+      ]
+     },
+     {
+      "x": 6,
+      "y": 8,
+      "room": "TREASURE",
+      "edges": []
+     },
+     {
+      "x": 0,
+      "y": 9,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 9,
+      "room": "MONSTER",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 2,
+      "y": 9,
+      "room": "REST",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 3,
+      "y": 9,
+      "room": "EVENT",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 4,
+      "y": 9,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 9,
+      "room": "MONSTER",
+      "edges": [
+       4
+      ]
+     },
+     {
+      "x": 6,
+      "y": 9,
+      "room": "REST",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 0,
+      "y": 10,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 10,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 10,
+      "room": "MONSTER",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 3,
+      "y": 10,
+      "room": "MONSTER",
+      "edges": [
+       3,
+       4
+      ]
+     },
+     {
+      "x": 4,
+      "y": 10,
+      "room": "MONSTER",
+      "edges": [
+       4
+      ]
+     },
+     {
+      "x": 5,
+      "y": 10,
+      "room": "MONSTER",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 6,
+      "y": 10,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 0,
+      "y": 11,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 11,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 11,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 3,
+      "y": 11,
+      "room": "MONSTER",
+      "edges": [
+       2,
+       3
+      ]
+     },
+     {
+      "x": 4,
+      "y": 11,
+      "room": "REST",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 5,
+      "y": 11,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 6,
+      "y": 11,
+      "room": "ELITE",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 0,
+      "y": 12,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 12,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 12,
+      "room": "MONSTER",
+      "edges": [
+       1,
+       2
+      ]
+     },
+     {
+      "x": 3,
+      "y": 12,
+      "room": "ELITE",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 4,
+      "y": 12,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 12,
+      "room": "MONSTER",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 6,
+      "y": 12,
+      "room": "EVENT",
+      "edges": [
+       6
+      ]
+     },
+     {
+      "x": 0,
+      "y": 13,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 13,
+      "room": "MONSTER",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 2,
+      "y": 13,
+      "room": "MONSTER",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 3,
+      "y": 13,
+      "room": "MONSTER",
+      "edges": [
+       2
+      ]
+     },
+     {
+      "x": 4,
+      "y": 13,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 13,
+      "room": "NONE",
+      "edges": []
+     },
+     {
+      "x": 6,
+      "y": 13,
+      "room": "MONSTER",
+      "edges": [
+       5
+      ]
+     },
+     {
+      "x": 0,
+      "y": 14,
+      "room": "REST",
+      "edges": []
+     },
+     {
+      "x": 1,
+      "y": 14,
+      "room": "REST",
+      "edges": []
+     },
+     {
+      "x": 2,
+      "y": 14,
+      "room": "REST",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 3,
+      "y": 14,
+      "room": "REST",
+      "edges": []
+     },
+     {
+      "x": 4,
+      "y": 14,
+      "room": "REST",
+      "edges": []
+     },
+     {
+      "x": 5,
+      "y": 14,
+      "room": "REST",
+      "edges": [
+       3
+      ]
+     },
+     {
+      "x": 6,
+      "y": 14,
+      "room": "REST",
+      "edges": []
+     }
+    ]
+   },
+   "combatFloors": [
+    1,
+    2,
+    3,
+    4,
+    8,
+    11,
+    13,
+    14,
+    16
+   ],
+   "combatHistory": [
+    {
+     "floor": 1,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "JAW_WORM"
+    },
+    {
+     "floor": 2,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "CULTIST"
+    },
+    {
+     "floor": 3,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "SMALL_SLIMES"
+    },
+    {
+     "floor": 4,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "RED_SLAVER"
+    },
+    {
+     "floor": 8,
+     "kind": "ELITE_QUEUE",
+     "encounter": "GREMLIN_NOB"
+    },
+    {
+     "floor": 11,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "GREMLIN_GANG"
+    },
+    {
+     "floor": 13,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "THREE_LOUSE"
+    },
+    {
+     "floor": 14,
+     "kind": "NORMAL_QUEUE",
+     "encounter": "EXORDIUM_WILDLIFE"
+    },
+    {
+     "floor": 16,
+     "kind": "BOSS",
+     "encounter": "HEXAGHOST"
+    }
+   ],
+   "combatHistoryComplete": true,
+   "pathVisits": [
+    2,
+    4,
+    0,
+    1,
+    7,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pathHistory": [
+    "MONSTER",
+    "MONSTER",
+    "MONSTER",
+    "MONSTER",
+    "SHOP",
+    "REST",
+    "SHOP",
+    "ELITE",
+    "TREASURE",
+    "REST",
+    "MONSTER",
+    "REST",
+    "MONSTER",
+    "MONSTER",
+    "REST",
+    "BOSS"
+   ],
+   "pathComplete": true,
+   "currentActPathVisits": [
+    2,
+    4,
+    0,
+    1,
+    7,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "questionRoomRules": "vanilla_ordinary_v1",
+   "questionOutcomes": [],
+   "questionHistoryComplete": true,
+   "acquiredRelics": [
+    "Meat on the Bone",
+    "Singing Bowl",
+    "Burning Blood",
+    "Lizard Tail"
+   ],
+   "knownRelicOffers": [],
+   "seenRelics": [
+    "White Beast Statue",
+    "Juzu Bracelet",
+    "Brimstone",
+    "Potion Belt",
+    "Oddly Smooth Stone",
+    "PrismaticShard",
+    "Meat on the Bone",
+    "Singing Bowl"
+   ],
+   "seenRelicsComplete": true,
+   "priorEvents": [],
+   "shopRemoveCount": 0
+  },
+  "liveChoices": [
+   {
+    "choiceIndex": 1,
+    "mcpLabel": "[Barricade] Cost: 3 POWER",
+    "nativeAction": {
+     "kind": "card",
+     "index": 0,
+     "group": 0
+    },
+    "liveAction": {
+     "kind": "choose",
+     "choiceIndex": 1
+    }
+   },
+   {
+    "choiceIndex": 2,
+    "mcpLabel": "[Juggernaut] Cost: 2 POWER",
+    "nativeAction": {
+     "kind": "card",
+     "index": 1,
+     "group": 0
+    },
+    "liveAction": {
+     "kind": "choose",
+     "choiceIndex": 2
+    }
+   },
+   {
+    "choiceIndex": 3,
+    "mcpLabel": "[Brutality] Cost: 0 POWER",
+    "nativeAction": {
+     "kind": "card",
+     "index": 2,
+     "group": 0
+    },
+    "liveAction": {
+     "kind": "choose",
+     "choiceIndex": 3
+    }
+   },
+   {
+    "choiceIndex": 4,
+    "mcpLabel": "bowl",
+    "nativeAction": {
+     "kind": "card",
+     "index": 5,
+     "group": 0
+    },
+    "liveAction": {
+     "kind": "choose",
+     "choiceIndex": 4
+    }
+   },
+   {
+    "nativeAction": {
+     "kind": "skip",
+     "index": 0,
+     "group": 0
+    },
+    "liveAction": {
+     "kind": "skip"
+    }
+   }
+  ],
+  "rewardIdentity": "reward-25",
+  "details": {
+   "cardRewards": [
+    [
+     {
+      "id": "Barricade",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1,
+      "uuid": "d402631a-d728-44ea-ae29-ec3a82683142"
+     },
+     {
+      "id": "Juggernaut",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1,
+      "uuid": "1f1c2485-1532-417f-8aa3-bfac977ebc80"
+     },
+     {
+      "id": "Brutality",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1,
+      "uuid": "aa5cebc3-3997-4cc2-8076-2616fb9c0673"
+     }
+    ]
+   ],
+   "gold": [],
+   "relics": [],
+   "potions": [],
+   "emeraldKey": false,
+   "sapphireKey": false
+  },
+  "unsupportedReason": ""
+ }
+}
