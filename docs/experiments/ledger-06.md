@@ -21121,7 +21121,7 @@ more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are n
 The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
 **Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).
 
-## §TBD — Learned-stop retrain on A20 stop traces: old model transfers; retrained saves 1.9 pp more simulations offline (2026-10-18)
+## §543 — Learned-stop retrain on A20 stop traces: old model transfers; retrained saves 1.9 pp more simulations offline (2026-10-18)
 
 **Question (Philipp, 2026-10-18 19:17Z, gen-7 thread):** "should we maybe also retrain the learned stopping? its been
 a few silver iterations since we did that … after that, we will make it default maybe"; 20:17Z "go 8 workers".
