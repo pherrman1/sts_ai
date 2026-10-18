@@ -25,6 +25,10 @@ If any differs, the control is not reusable and this plan is withdrawn.
 **Primary:** wins (Heart kills) T3 vs control on the 256 paired seeds, paired difference with McNemar exact test and
 a seed bootstrap 95% CI. **Secondary:** Act-4 reached (= Act-3 boss cleared), floor reached, OOC CPU per run (the binaries
 differ: CPU is descriptive only).
+**Failed T3 units (added 22:3xZ, before any T3 data, after pre-launch review):** a T3 unit whose `.done` rc is not 0
+(crash, abort, 24 h timeout rc 124) or that has no CSV row counts as a T3 loss (won = 0) in the primary; their number
+and seeds are reported, with a sensitivity analysis that drops those seeds from both arms. A worker that never
+uploads is relaunched; its seeds are not dropped silently.
 **Rule:** CONFIRMED if the win difference CI lower bound > 0; WORSE if the CI upper bound < 0; else NOT_SHOWN.
 No default change without Philipp's word in any case.
 **Known limits:** T3 runs ~13% more OOC sims per root (the lock fires later; §532); not CPU-matched.

@@ -7,15 +7,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SEEDS = [int(l.split()[1]) for l in open(os.path.join(HERE, 'units.txt')) if l.strip() and not l.startswith('#')]
 
 
-def runs(root, prefix):
+def runs(root, prefix, failed=None):
     out = {}
     for done in glob.glob(os.path.join(root, '**', f'{prefix}-a20-*.done'), recursive=True):
         m = re.search(r'rc=(\d+)', open(done).read())
         base = done[:-5]
-        if not m or m.group(1) != '0' or not os.path.exists(base + '.csv'):
-            continue
-        rows = list(csv.DictReader(open(base + '.csv')))
-        if not rows:
+        rows = list(csv.DictReader(open(base + '.csv'))) if os.path.exists(base + '.csv') else []
+        if not m or m.group(1) != '0' or not rows:
+            if failed is not None:
+                failed.add(int(re.search(r'-a20-(\d+)$', base).group(1)))
             continue
         r = rows[0]
         cpu = None
@@ -36,8 +36,20 @@ def mcnemar_p(b, c):
 
 
 def main():
-    t3, ctl = runs(sys.argv[1], 'T3'), runs(sys.argv[2], 'S')
-    both = [s for s in SEEDS if s in t3 and s in ctl]
+    failed = set()
+    t3, ctl = runs(sys.argv[1], 'T3', failed), runs(sys.argv[2], 'S')
+    # PREREG: a failed T3 unit (rc != 0 or no CSV row) counts as a T3 loss.
+    for s in failed:
+        if s not in t3:
+            t3[s] = dict(won=0, act=0, floor=0, cpu=None)
+    print(f'failed T3 units counted as losses: {len(failed)} {sorted(failed)}')
+    report([s for s in SEEDS if s in t3 and s in ctl], t3, ctl)
+    if failed:
+        print('sensitivity: failed seeds dropped from both arms')
+        report([s for s in SEEDS if s in t3 and s in ctl and s not in failed], t3, ctl)
+
+
+def report(both, t3, ctl):
     print(f'paired seeds {len(both)} of {len(SEEDS)} (T3 present {sum(s in t3 for s in SEEDS)}, control {sum(s in ctl for s in SEEDS)})')
     for name, d in (('control', ctl), ('T3', t3)):
         rs = [d[s] for s in both]
