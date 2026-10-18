@@ -471,9 +471,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private String displaySilverLabel(String label) {
         Map<Integer, Integer> indices = new HashMap<>();
         if (AbstractDungeon.getMonsters() != null) {
+            // The same slot map the observation exports. monsterSlots alone is
+            // empty once the Runic Dome tracker binds the slots (every combat),
+            // which made every target read "Unknown target".
+            IdentityHashMap<AbstractMonster, Integer> emitted = emittedMonsterSlots(liveEncounter);
             List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
             for (int i = 0; i < monsters.size(); ++i) {
-                Integer slot = monsterSlots.get(monsters.get(i));
+                Integer slot = emitted.get(monsters.get(i));
                 if (slot != null) indices.put(slot, i + 1);
             }
         }
@@ -965,6 +969,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         30.0f * scale, rank, fields, "", scale);
                 continue;
             }
+            if (action.startsWith("Select ")) {
+                // Hand selections (Armaments, True Grit+, Dual Wield ...) keep
+                // their choices in the hand: badge every picked card. Grid
+                // selections show only in the summary line.
+                for (String picked : action.substring("Select ".length()).split(", ")) {
+                    int pickedIndex = findHandCard(hand, used, picked);
+                    if (pickedIndex < 0) continue;
+                    used[pickedIndex] = true;
+                    AbstractCard card = hand.get(pickedIndex);
+                    renderSilverBadge(sb, card.current_x - badgeWidth / 2.0f, badgeBottom, badgeWidth,
+                            badgeHeight, rank, fields, "select", scale);
+                }
+                continue;
+            }
             int handIndex = findHandCard(hand, used, action);
             if (handIndex < 0) continue;
             used[handIndex] = true;
@@ -1011,10 +1029,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String name = action;
         int arrow = name.indexOf(" -> ");
         if (arrow >= 0) name = name.substring(0, arrow);
+        // Upgraded labels end in "+"; Searing Blow's in-game name is "+N".
+        String base = name.endsWith("+") ? name.substring(0, name.length() - 1) : name;
         for (int i = 0; i < hand.size(); ++i) {
             if (used[i]) continue;
             AbstractCard card = hand.get(i);
             if (name.equalsIgnoreCase(card.name) || name.equalsIgnoreCase(card.cardID)
+                    || (card.upgraded && base.equalsIgnoreCase(card.cardID))
                     || card.cardID.toLowerCase(Locale.ROOT).contains(name.toLowerCase(Locale.ROOT)))
                 return i;
         }

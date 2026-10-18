@@ -55,11 +55,12 @@ namespace sts {
 
     extern thread_local BattleContext *g_debug_bc;
 
-    // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff on a dead, half-dead
-    // or escaped monster does nothing, as in the game (combat parity canary
-    // 2026-10-18: Uppercut killing its target leaves it without Weak or
-    // Vulnerable); 0 = the legacy engine applies it. Other values are fatal.
-    // Read only when the target is already dead.
+    // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff or buff on a dead,
+    // half-dead or escaped monster does nothing, as in the game
+    // (ApplyPowerAction.update returns first when target.isDeadOrEscaped();
+    // combat parity canary 2026-10-18: Uppercut killing its target leaves it
+    // without Weak or Vulnerable); 0 = the legacy engine applies it. Other
+    // values are fatal. Read only when the target is already dead.
     bool deadTargetDebuffFix();
 
     struct BattleContext {

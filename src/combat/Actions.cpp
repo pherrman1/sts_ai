@@ -486,9 +486,13 @@ void ActData_RemoveStatus::operator()(BattleContext &bc) const {
 }
 
 void ActData_BuffEnemy::operator()(BattleContext &bc) const {
-    // todo check if alive?
     const int amount = this->amount;
     auto &monster = bc.monsters.arr[idx];
+    // ApplyPowerAction.update cancels any power on a dead, half-dead or
+    // escaped target, buffs included.
+    if (monster.isDeadOrEscaped() && deadTargetDebuffFix()) {
+        return;
+    }
     withMonsterStatus(s, [&](auto status) { monster.buff<decltype(status)::value>(amount); });
 }
 

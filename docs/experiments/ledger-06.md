@@ -20642,6 +20642,30 @@ calibration. No follow-up proposed. Raw: `/mnt/project-files/ctm-opening-hand/ru
 **Knowledge impact:** the two `STS_CTM_ROW_*` rows in `operations/environment-variables.md` and one paragraph in
 `evaluation/current-research.md` (§408 CTM vs Silver section).
 
+## §TBD — First exact combat parity canary against the real game: 26/34 steps match, one engine difference (2026-10-18)
+
+**Question:** does the native engine produce the game's next combat state for the same state, action and RNG?
+**Setup:** one A20 run on Philipp's PC with the live mod built with `STS_DIFFERENTIAL_DEBUG_RNG=1` (draw order
+plus 12 RNG streams), driver `--parity-trace` at #651 head `6babedd6`, seed 111194450. The driver stopped at step 69
+(floor 5, see below). `tools/combat_parity.py run` with `combat_parity_probe` from the same commit.
+**Result:** 34 combat steps compared: 26 MATCH, 8 MISMATCH. Skipped: 2 `HELD_SELECTION_CARDS`, 1 `TRACE_ENDED`.
+Coverage: 3 encounters (Two Louse, Small Slimes, Cultist), 1 relic (Burning Blood). The three combat ends match in
+outcome; game − native end HP = 6, Burning Blood's post-combat heal. Seven mismatches were native export
+leftovers, not behavior:
+- No Draw is stored as 1 natively and −1 in Java (2 steps).
+- The engine clears removed powers by their flag only, so the `statusMap` amount stays (2 steps).
+- Curl Up leaves `uniquePower0` behind (2 steps).
+- `cardSelect` is exported outside `CARD_SELECT` (1 step).
+
+One was an engine difference: when Uppercut kills its target, the game puts no Weak or Vulnerable on the dead
+monster and the engine did.
+**Interpretation:** #656 makes the probe drop inactive payloads on both sides, and adds `STS_DEAD_TARGET_DEBUFF_FIX`
+(default on). **Inference:** the debuff fix changes play only where a dead monster's powers carry over. The canary
+also surfaced two driver issues, fixed in #656: Explosive Potion is listed once per monster by MCP, which stopped
+the run, and the Silver search tree made rows ~85 MB. Coverage is far too small for any claim about overall parity.
+Raw traces (4.8 GB) stay on the PC under `~/Documents/sts/artifacts/parity-canary-20261018/`. Seeds used: 111194450
+(canary), 111194451–111194452 (fixed unit-test seeds, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md` (canary paragraph).
 ## §530 — Shield and Spear search gap vs heart1's engine: rollout targeting NOT_SHOWN, information worth ~3 HP, line closed (2026-10-18)
 
 **Question:** Where do the extra HP our A20 search loses on Shield and Spear, compared with heart1's engine on the

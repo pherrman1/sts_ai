@@ -162,19 +162,27 @@ reasons) and has a positive control: Defend with a hand-written correct
 successor gives MATCH, and one wrong field gives exactly that mismatch. It
 does not prove parity.
 
-The first canary (2026-10-18, one A20 run on the PC, 69 steps, 3 encounters)
+The first canary (§TBD; 2026-10-18, one A20 run on the PC, 69 steps, 3 encounters)
 compared 34 combat steps: 26 matched, 8 mismatched, 2 were skipped. Seven
 mismatches were the export leftovers above. One was an engine difference:
 when Uppercut kills its target, the game applies no Weak or Vulnerable to the
 dead monster, while the engine did. `STS_DEAD_TARGET_DEBUFF_FIX` (default on,
-`=0` restores) now makes a debuff on a dead, half-dead or escaped monster do
-nothing. **Inference:** this matters only where a dead monster's powers
-survive, such as a Darkling or Awakened One coming back; the exact Java guard
-(`ApplyPowerAction`) has not been read from the bytecode yet. The canary
+`=0` restores) now makes a debuff or buff on a dead, half-dead or escaped
+monster do nothing, matching the guard read from the bytecode (see the
+[Java reference audit](../behavior/java-reference-audit.md#powers-on-dead-targets-mismatch-fixed)).
+**Inference:** this matters only where a dead monster's powers survive, such
+as a Darkling or Awakened One coming back. The canary
 stopped on a driver mapping bug: MCP lists the untargeted Explosive Potion
 once per monster. The driver now takes the first of those identical
 candidates when Silver gives no target. Parity traces also drop the Silver
 search tree (about 85 MB per combat row).
+
+The flag-only clearing behind those leftovers is harmless for game rules,
+because re-applying a power overwrites the old amount. It did reach the combat
+net features: `powerVal` read the leftover amount, so a spent Vigor or an
+ended Flame Barrier kept its old value for the root prior and root table nets.
+`STS_ACTIVE_POWER_FEATURES` (default on, `=0` restores) reads 0 for a power
+whose flag is off.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
