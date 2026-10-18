@@ -840,8 +840,10 @@ XGBoost outcome model gains nothing measurable from the realized opening hand (d
 [−0.00025, +0.00057], HP-lost MSE −0.25 [−0.62, +0.15] of 129), and averaging over sampled hands is slightly worse,
 so an opening-hand latent is not worth a CTM schema change for OOC MCTS (the OOC tree would not get wider either: its
 chance-node width depends only on visits). The endpoint distribution of the first 10k Silver search of a fight is a
-worse forecast than the calibrated A20 CTM on 1,048 A20 fights (death Brier 0.063 vs 0.026; about 12 HP more
-pessimistic on wins; HP log score −0.43 [−0.59, −0.26]) even though Silver sees the hand.
+biased forecast on 1,048 A20 fights compared with the calibrated A20 CTM: death Brier 0.063 vs 0.026 and about
+12 HP too pessimistic on wins, although Silver sees the hand. On the CTM's post-heal scale its spread matches the
+CTM's once the bias is removed (RMSE 12.07 vs 11.97; log score −0.13 [−0.25, −0.01]), so a bias-corrected Silver
+label is not ruled out (Inference), at ~400x the CPU.
 
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 

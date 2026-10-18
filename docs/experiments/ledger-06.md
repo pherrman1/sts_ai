@@ -20587,7 +20587,7 @@ simulations, rc = 0); the rest of 111193700–111193799 unused.
 **Knowledge impact:** one sentence added to the rollout paragraph in `architecture/combat-search.md` and the
 `STS_CTMSILVER_ARMSET=uniformpl` row in `operations/environment-variables.md`.
 
-## §TBD — Opening hand and first-Silver-search screens for the CTM: neither beats today's CTM (2026-10-18)
+## §TBD — Opening hand and first-Silver-search screens for the CTM: hand NOT_SHOWN, Silver endpoints biased (2026-10-18)
 
 **Question (Philipp, 2026-10-18 01:24Z/01:31Z, thread "CTM opening hand", issue #460):** would an opening-hand-aware
 CTM widen the OOC tree, and does the hand help? Also: can the endpoint distribution of a 10k Silver search at the
@@ -20598,12 +20598,18 @@ particles (`OocMctsPlanner.cpp:160`) whatever the CTM's outcome space, and the h
 smoke seed gave byte-identical rows with them off and on minus the new fields).
 *Screen A (offline, no seeds):* the §443 Stage-4 A20 corpus (80 `main-*` units, 75,871 victory/death rows,
 3,995 seeds); opening hands rebuilt from run seed, floor and pre state, plus 16 fair resampled hands. The rebuild
-matched the live-recorded hand on all 1,061 rows recorded with the field (smoke + screen B). XGBoost, 5-fold CV
+matched the hand recorded with the field on all 1,061 rows (smoke + screen B); both are `BattleContext::init` on the
+pre state, so this checks the row round trip, while the live combat draws through the same `init`
+(`NativeSilverBackend.cpp:447`, code reading). 4,115 of 76,316 Stage-4 hands (5.4%) are empty: a pending Toolbox
+choice before the draw. XGBoost, 5-fold CV
 grouped by seed, A = pre-combat features, B = A + hand card counts.
 *Screen B:* `combattransitiongen` A20 on 111195113–111195160 (48 seeds, 1,052 fights, 4 cores, ~0.5–0.8 h wall per
 12-seed unit); Silver flat exact 10k, g6_E root prior w400 + tree prior K=8, root table on; out of combat the
 deployed step with `STS_OOC_HEART1=student_sel` (cf6bf7fb…), keys off. CTM = calibrated `pathb-a20` stack via
-`ctmscorerows`. Silver scored on battle-end HP (before heals), CTM on RAW post HP.
+`ctmscorerows`. Pre-registered: Silver scored on battle-end HP (before heals), CTM on RAW post HP (after heals).
+Added in review: Silver endpoints mapped through the engine's heal rule (Meat on the Bone, Burning/Black Blood,
+capped; reproduces the realized post HP on 1,010/1,010 wins) and scored on the CTM's scale
+([rescore_matched_scale.py](evidence/ctm_opening_hand_20261018/rescore_matched_scale.py)).
 **Result A (B − A, 95% seed bootstrap):**
 
 | target | A | conditional (realized hand) | marginal (16 sampled hands) |
@@ -20613,20 +20619,23 @@ deployed step with `STS_OOC_HEART1=student_sel` (cf6bf7fb…), keys off. CTM = c
 
 **Result B (1,048 states, 37 deaths):**
 
-| forecaster | death Brier | win HP-lost bias | win HP-lost RMSE | win HP log score |
+| forecaster | death Brier | win HP-lost bias | win HP-lost RMSE | win HP log score (own scale) |
 |---|---|---|---|---|
 | CTM | 0.026 | +2.3 | 12.2 | −3.08 |
 | Silver root (all 10k sims) | 0.063 | +12.2 | 17.7 | −3.51 |
 | Silver best edge | 0.061 | +11.9 | 17.4 | −3.47 |
 
-Silver − CTM: Brier +0.036 [+0.022, +0.050], HP log score −0.43 [−0.59, −0.26] (root); best edge similar. Silver
-mean HP correlates 0.85 with the realized HP; with its bias removed its RMSE is still 12.8.
+Pre-registered deltas, Silver root − CTM: Brier +0.036 [+0.022, +0.050]; own-scale HP log score −0.43
+[−0.59, −0.26], which is mostly a scale artifact: the heal cap folds 18% of wins into one point mass at max HP that
+the CTM predicts as one bin. Matched scale (1,010 wins): win HP bias −2.3 (CTM) vs −11.7 (Silver root), RMSE 12.2
+vs 16.8, RMSE after removing the mean bias 11.97 vs 12.07, log score −3.082 vs −3.212, delta −0.13 [−0.25, −0.01].
 **Interpretation:** A is `NOT_SHOWN` by the pre-registered rule: even the realized hand adds no measurable signal to
 death or HP lost, and the sampled-hand mixture is slightly worse, so an opening-hand latent is not worth a CTM schema
-change for OOC use. B: the first search's endpoints are a pessimistic forecast (greedy playouts and exploration lose
-about 12 more HP than the real fight) and are worse than the CTM on every score although Silver sees the hand.
-**Inference:** they are not a better soft label than realized outcomes without a bias model. No follow-up proposed;
-#460 can be closed. Raw: `/mnt/project-files/ctm-opening-hand/run-3c73f1a4.tar.gz` (sha256 `2228160b…`),
+change for OOC use. B: the first search's endpoints carry about as much information about win HP as the CTM (same
+spread once the bias is removed), but they are about 12 HP too pessimistic (greedy playouts and exploration) and
+overstate death (Brier 0.063 vs 0.026), although Silver sees the hand. **Inference:** a bias-corrected Silver
+soft label is not ruled out by this screen, but it costs ~400x the CTM's CPU (§408) and needs its own bias and death
+calibration. No follow-up proposed. Raw: `/mnt/project-files/ctm-opening-hand/run-3c73f1a4.tar.gz` (sha256 `2228160b…`),
 `stage4-hands16.jsonl.gz` (`51cec25d…`); [screen A](evidence/ctm_opening_hand_20261018/screenA-opening-hand.json)
 (`ef06180d…`), [screen B](evidence/ctm_opening_hand_20261018/screenB-first-search.json) (`65af25f3…`). Seeds used:
 111195112 (smoke, run twice for the off/on check), 111195113–111195160; 111195161–111195171 unused.
