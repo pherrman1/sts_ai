@@ -24,7 +24,8 @@ LEAF_SELECTS=heart1, rollout3 + public X2-B, Silver flat exact 10k with g6_E, A2
 | Q | 2048 | 1 | q | max mean Q pick; q disables the lock, 2048 ~ C's actual ~2,050 sims |
 | T3Q | 2048 | 3 | q | both |
 
-**Seeds:** 111195280-111195343 (64), every arm on every seed (paired). 256 units, 16 workers x 16, 4 parallel.
+**Seeds:** 111195280-111195343 (64), every arm on every seed (paired). 256 units ordered by arm (64 C, 64 T3, 64 Q, 64 T3Q), so each of the 16 workers runs the same 4 seeds in all
+4 arms (CPU comparisons stay within a container; a lost worker removes 4 seeds from every arm), 4 parallel.
 Smoke: 111195272 (C, in the author's container).
 
 **Primary:** Act-1 score = HP after the Act-1 boss if cleared, else 0 (csv `won`, `hpEnd`). Paired mean difference
@@ -33,3 +34,6 @@ vs C, seed bootstrap 95% CI (10,000 resamples, seed 0).
 **Rule per arm vs C:** WORSE if CI upper < 0; SCREEN_PASS if mean >= +3 HP and Act-1 deaths <= C's; else NOT_SHOWN.
 SCREEN_PASS only earns a confirmation run that reaches later acts (Philipp's word); no default change from this screen.
 **Known limits:** Act-1 HP ignores deck quality that pays off later; T3 runs more sims than C (lock fires later).
+With STOP_AFTER_ACT=1 the OOC search scores clearing the Act-1 boss as a win worth 1, so near the end of Act 1 every
+arm optimizes boss survival, not post-boss HP; the primary still uses post-boss HP (same distortion in every arm),
+and Act-1 clears are reported alongside.
