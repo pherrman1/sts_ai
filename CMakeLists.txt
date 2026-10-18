@@ -388,6 +388,7 @@ add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
+    apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ctm_importer_test PRIVATE include json/include)
 link_ctm_crypto(live_ctm_importer_test)
@@ -758,6 +759,12 @@ add_test(NAME ctm_offline_score_rows COMMAND $<TARGET_FILE:one_combat> ctmscores
 set_tests_properties(ctm_offline_score_rows PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_act4_survival_parity COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_parity PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
@@ -1021,6 +1028,7 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
+    apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
 link_ctm_crypto(combat_transition_runtime_probe)
