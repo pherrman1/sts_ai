@@ -1,0 +1,39 @@
+{
+ "decisions": 226187,
+ "seeds_train": 384,
+ "seeds_heldout": 128,
+ "old": {
+  "id": "gbt-770201c31f7b",
+  "threshold": 0.0323,
+  "train_disagreement": 0.00680320443362879,
+  "heldout_saving_disagreement": [
+   0.5624262601228707,
+   0.007103462719910639
+  ]
+ },
+ "new": {
+  "threshold": 0.032271,
+  "oof_train": [
+   0.032271,
+   0.5784605159540769,
+   0.006625575075048404
+  ],
+  "heldout_saving_disagreement": [
+   0.5812159662105557,
+   0.006754398212789723
+  ]
+ },
+ "new_minus_old": {
+  "saving": 0.018789706087685043,
+  "saving_ci95": [
+   0.01732246793875073,
+   0.020309355628168983
+  ],
+  "disagreement": -0.00034906450712091606,
+  "disagreement_ci95": [
+   -0.0009244071976917976,
+   0.00019680035475688125
+  ]
+ },
+ "verdict": "RETRAIN_BETTER"
+}

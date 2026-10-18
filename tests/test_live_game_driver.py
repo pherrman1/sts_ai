@@ -24,11 +24,13 @@ def combat_screen(**extra):
 
 
 class FakeClient:
-    def __init__(self, states, commands, game_state=None):
+    def __init__(self, states, commands, game_state=None, room_phase=None, unadvertised=()):
         self.states = list(states) if isinstance(states, list) else [states]
         self.commands = commands
         self.game_state = game_state
-        self.tool_names = {"get_screen_state", "get_available_commands", *commands}
+        self.room_phase = room_phase
+        self.unadvertised = tuple(unadvertised)
+        self.tool_names = {"get_screen_state", "get_available_commands", *commands, *self.unadvertised}
         if game_state is not None:
             self.tool_names.add("get_game_state")
         self.calls = []
@@ -38,10 +40,13 @@ class FakeClient:
         if tool == "get_screen_state":
             return self.states.pop(0) if len(self.states) > 1 else self.states[0]
         if tool == "get_available_commands":
-            return {"ready_for_command": True, "available_tools": [{"tool": name} for name in self.commands]}
+            commands = {"ready_for_command": True, "available_tools": [{"tool": name} for name in self.commands]}
+            if self.room_phase is not None:
+                commands["room_phase"] = self.room_phase
+            return commands
         if tool == "get_game_state":
             return self.game_state
-        if tool in self.commands:
+        if tool in self.commands or tool in self.unadvertised:
             if len(self.states) == 1:
                 self.states[0] = {**self.states[0], "step": self.states[0].get("step", 0) + 1}
             return {"success": True}
@@ -504,6 +509,58 @@ class LiveGameDriverTest(unittest.TestCase):
             asyncio.run(driver.run())
             self.assertIn(("discard_potion", {"potion_slot": 1}), client.calls)
             self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
+
+    def test_out_of_combat_discard_is_executable_though_unadvertised(self):
+        # MCPTheSpire never lists discard_potion, yet executes it out of combat.
+        game = {"potions": [{"id": "FairyPotion", "can_discard": True}, {"id": "Potion Slot"}]}
+        commands = {"available_tools": [{"tool": "choose"}, {"tool": "proceed"}], "room_phase": "COMPLETE"}
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Blood Potion"], "ready_for_command": True}
+        self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, commands, game)
+                          if a.mcp_tool == "discard_potion"], [{"potion_slot": 1}])
+        self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(
+            screen, {**commands, "room_phase": "COMBAT"}, game)])
+        self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(
+            screen, {key: value for key, value in commands.items() if key != "room_phase"}, game)])
+        shop = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
+        self.assertIn("discard_potion", [a.mcp_tool for a in build_legal_actions(shop, commands, game)])
+        game["potions"][0]["can_discard"] = False
+        self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(screen, commands, game)])
+
+    def test_unadvertised_discard_leaves_single_action_navigators_alone(self):
+        fairy = [{"id": "FairyPotion", "can_discard": True}]
+        boss = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                "current_hp": 33, "floor": 50}
+        game = {"act": 3, "floor": 50, "current_hp": 33, "potions": fairy}
+        candidates = build_legal_actions(boss, {"available_tools": [{"tool": "proceed"}],
+                                                "room_phase": "COMPLETE"}, game)
+        self.assertIsNotNone(boss_completion_proceed_action(boss, game, candidates))
+        story = {"screen_type": "EVENT", "room_type": "VictoryRoom", "room_phase": "EVENT",
+                 "ready_for_command": True, "in_game": True, "can_cancel": False, "can_proceed": False,
+                 "floor": 51, "choice_list": ["[Continue]"], "screen_state": {"event_id": "Spire Heart",
+                 "options": [{"choice_index": 0, "disabled": False}]}}
+        game = {"act": 3, "floor": 51, "ascension_level": 0, "potions": fairy}
+        candidates = build_legal_actions(story, {"available_tools": [{"tool": "choose"}],
+                                                 "room_phase": "EVENT"}, game)
+        self.assertIsNotNone(victory_dialogue_action(story, game, candidates))
+
+    def test_strict_full_belt_reward_discards_without_advertised_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Blood Potion"], "ready_for_command": True}
+            game = {"screen_state": {"rewards": [{"reward_type": "POTION"}]},
+                    "potions": [{"id": "FairyPotion", "can_discard": True}] * 2}
+            client = FakeClient(screen, ["choose", "proceed"], game_state=game, room_phase="COMPLETE",
+                                unadvertised=["discard_potion"])
+            path = ooc_inspector_file(directory, screen, "OK", selectedLiveAction={"kind": "discard_potion", "potionSlot": 1})
+            raw = json.loads(path.read_text())
+            raw["observation"]["ooc"]["screen"] = "combat_reward"
+            raw["observation"]["ooc"]["rewardOccurrences"] = [{"index": 0, "type": "POTION", "identity": "p1"}]
+            path.write_text(json.dumps(raw))
+            driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                            TraceWriter(Path(directory) / "trace"), max_steps=1, strict_ooc=True)
+            asyncio.run(driver.run())
+            self.assertIn(("discard_potion", {"potion_slot": 1}), client.calls)
 
     def test_shop_leaves(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
