@@ -265,6 +265,17 @@ it. Ledger-06 §513 (A20, student C OOC, 128 paired seeds) did not show an effec
 the §510-derived per-type weights or a flat 7.8 vs flat 11: floors −1.37
 [−3.45, +0.74] and −0.80 [−2.96, +1.36]. The flat 11 stays.
 
+HP in the victory leaf is linear. In the §510 paired continuations one HP at
+< 30% of max HP was worth ~4x the mean HP slope (A20 floor model) and one HP at
+≥ 90% ~0.5x; the formula's implied death price (~110 HP) was below the measured
+~200 (re-analysis, `/mnt/project-files/silver-leaf-eval/END-STATE-FORMULA.md`).
+Research-only `STS_SILVER_CONCAVE_HP_LEAF=k` (native Silver; per-copy
+override `g_nativeSilverConcaveHpLeafOverride` for `potionpriceprobe`
+`leaf:concave=K` variants) replaces `h` by a concave `u(h)` with slope 1 at 75%
+HP and scales the potion term by `sqrt(u'(h))`; the loss branch and the
+final-fight leaf are unchanged. Test: §TBD (pre-registration
+`docs/experiments/evidence/silver_concave_hp_leaf_20261018/PREREG.md`).
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
