@@ -5349,6 +5349,7 @@ void oocMctsAdapterSelfTest() {
         require(threw,"heart1 prior without STS_OOC_HEART1 is fatal");
         one_combat::heart1::priorMappingSelfTest();
         one_combat::heart1::fixedVecMemoSelfTest();
+        one_combat::heart1::linearSelfTest();
         {
             // STS_OOC_MCTS_PRIOR=heart1full: a full-belt shop adds discard sources V4 lacks,
             // so plain heart1 stays uniform there; heart1full scores it with heart1.

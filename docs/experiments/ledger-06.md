@@ -20791,6 +20791,49 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
+## §535 — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
+
+Performance only; no gameplay, model, RNG or default change. Philipp 2026-10-18 14:07Z ("can you continue
+profiling and improving speed?") after §533 merged.
+
+- **Profile** (new main 16a397bd, gdb sampling on A20 winrate-check units, seeds 111195792–111195794, 617 samples
+  at the interim read): OOC MCTS 94%, real combat 6%. The student_sel forward is still about 74% of a run: the
+  projection kernel 36%, attention 23%, the vector exp 8%.
+- **Repeats:** a counting build on A20 seed 111195795 (Act 1) saw 498,145 forwards, all logits-only, with
+  432,529 distinct inputs. So 13% repeat an earlier input, and 40,930 of those repeat the input just before.
+- **Change** (`apps/one_combat/heart1_policy.cpp`):
+  - `Net::forward` has a per-thread direct-mapped memo with 4,096 slots, keyed by a per-load net id, the pass and
+    the whole record; record equality decides a hit. It caught 53,822 of the 65,616 repeats on seed 111195795.
+  - With AVX-512F/DQ, the projection kernel puts two tokens in each 512-bit register. Explicitly rounded multiply
+    and add keep it FMA-free and bit-identical.
+  - Softmax divisions are vectorized.
+  - `oocmctsselftest` gains a check that compares the kernels against the reference loop.
+- **Parity:** `heart1score` is byte-identical to main on these record sets:
+  - student_sel `bench` (4,383 records) and `bench2` (2,395), plus `bench2` under `STS_OOC_HEART1_SCALAR=1`;
+  - heart1 and student C on 300 records each.
+- **Gate:** paired Act-1 units (main 16a397bd vs the candidate) with the §533 gate scripts, seeds 111195796–111195799.
+  Play is identical on all four. Run CPU:
+
+  | seed | main s | candidate s | ratio |
+  |---|---|---|---|
+  | 111195796 | 337.1 | 297.2 | 1.13x |
+  | 111195797 | 240.1 | 197.8 | 1.21x |
+  | 111195798 | 221.6 | 196.9 | 1.13x |
+  | 111195799 | 329.6 | 287.7 | 1.15x |
+
+  The total goes from 1,128 to 980 s (1.15x). OOC MCTS CPU goes from 1,046 to 901 s.
+- **Distill capture mode** (two nets of different width; `STS_OOC_HEART1_TEACHER` set to heart1, 128 simulations,
+  Act 1, seed 111195800): the capture file (5,063 rows) and play are byte-identical to main.
+- **Decision:** adopt; it is exact. **Inference:** the remaining forward cost is mostly arithmetic that the exact
+  reduction order fixes. Further large gains need play-changing options (fewer rollout combats or rollout forwards,
+  a smaller rollout net), which need their own A/B.
+
+Raw data: `/mnt/project-files/heart1-forward-speedup-2/raw.tar.gz` (sha256 `223ab38d…`; gate, capture and count units, gdb samples, scripts, binary hashes main `697b345b…`, candidate `85c1b30e…`).
+
+Seeds used: 111195792–111195800.
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`, cost sentence in
+`evaluation/current-research.md`.
 ## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model

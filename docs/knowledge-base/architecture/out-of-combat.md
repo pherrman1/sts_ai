@@ -2062,6 +2062,14 @@ with the search and its chain.
   plus boundaries) finds it bitwise equal to the process's `std::exp`, so other
   CPUs or libm versions keep the scalar calls. student_sel logits-only pass on
   4,383 A20 rollout records: about 910 → 450 µs per call (2.0x).
+- Further exact paths (§535): on CPUs with AVX-512F/DQ the projection kernel
+  holds two tokens per 512-bit register (explicitly rounded multiply and add,
+  so no FMA), and softmax weights are divided eight at a time;
+  `oocmctsselftest` checks every projection kernel against the reference loop.
+  `Net::forward` keeps a per-thread direct-mapped memo (4,096 slots) of recent
+  outputs keyed by a per-load net id, the pass and the whole record (equality
+  decides a hit); about 13% of A20 rollout forwards repeat a recent input.
+  Together about 1.15x less CPU per A20 Act-1 unit with identical play.
 - OOC MCTS tree prior (research, default off): `STS_OOC_MCTS_PRIOR=heart1` with
   `STS_OOC_HEART1` set. At each node V4 would score (the unchanged
   `sourcePriorCovered` rule), heart1's logit replaces V4's for every source
