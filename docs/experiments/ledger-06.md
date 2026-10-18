@@ -20934,7 +20934,7 @@ of `curl_up_lethal_test`, no gameplay; not used by the canary).
 `behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
 (`STS_CURL_UP_LETHAL_FIX`).
 
-## §TBD — A20 learned stopping with the gen-7f table and prior: non-inferior to flat 10k at 0.49x CPU; flat 2.5k not shown non-inferior (2026-10-18)
+## §538 — A20 learned stopping with the gen-7f table and prior: non-inferior to flat 10k at 0.49x CPU; flat 2.5k not shown non-inferior (2026-10-18)
 
 **Question (Philipp, 2026-10-18, gen-7 thread):** 13:46Z "can you start experimenting with combining learned stopping
 and the new rollout? i.e. make sure that this a strong enough combat model with 2.5k sims"; 17:39Z "do the learned
