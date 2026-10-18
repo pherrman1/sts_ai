@@ -729,6 +729,12 @@ add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
 set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
+add_test(NAME silver_gold_weight_rejects_negative
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sgw-invalid.csv")
+set_tests_properties(silver_gold_weight_rejects_negative PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_GOLD_WEIGHT=-1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_GOLD_WEIGHT must be a number in \\[0, 100\\]")
 # strategicgen2 aborts if a Tier-B label branch leaves t_curPath cleared before
 # the main-trajectory policy step (the branch evaluator resets it on return).
 add_test(NAME strategicgen2_policy_keeps_path
