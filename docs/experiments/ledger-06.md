@@ -20401,6 +20401,46 @@ Seeds used:
 **Knowledge impact:** `architecture/out-of-combat.md` (card-select student paragraph, `TARGET_PRIOR` /
 `LEAF_SELECTS` rows).
 
+## §528 — Shield and Spear: rollout block check with worst-case facing, and tree reuse off: both NOT_SHOWN (2026-10-17)
+
+**Question:** Our A20 Act-4 runs lose more HP on Shield and Spear than heart1's engine does on the same entry states
+(paired −6.8 HP [−11.2, −2.5] in the A20 loss audit, `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`
+F1). Does either of two search mechanics account for it?
+1. Under Surrounded, damage is ×1.5 from the monster the player does not face, but the Silver rollout's block check
+   (`SilverRolloutAgent::getIncomingDamage`) uses the current facing only. heart1's `SimpleAgent` has the same blind
+   spot. Philipp asked to fix it anyway (2026-10-17 23:21Z: "sollten wir das nicht trotzdem fixen?").
+2. Our tree reuse between decisions (heart1 reuses only exact matches).
+
+**Setup.** `one_combat act4replay` on the 32 recorded Shield-and-Spear entry states, 3 copies, 10k exact sims, two
+paired seed blocks (111130200–295 and 111130904–999), 192 fights per arm. Local switches only, nothing committed:
+- Facing: `STS_SILVER_ROLLOUT_SURROUNDED_FACING=1` (patch in evidence) makes the block check use the worst facing over
+  alive monsters while Surrounded. Switch off reproduces the default 96/96.
+- Reuse off: a local hack that disables tree reuse.
+
+**Result** (HP lost incl. full HP on death, paired per state, bootstrap 95% CI; positive = worse):
+
+| arm vs default | seeds 111130904+ | seeds 111130200+ | pooled, 192 fights | wins | CPU |
+|---|---|---|---|---|---|
+| worst-case facing | +2.3 [−0.7, +5.5] | +1.7 [−1.4, +4.7] | **+2.0 [−0.2, +4.3]** (35.4 vs 33.3) | 181 vs 179 | 1.12x |
+| tree reuse off | −5.7 [−9.5, −2.1] | +0.5 [−3.2, +4.2] | **−2.6 [−5.4, −0.1]** (30.7 vs 33.3) | 184 vs 179 | 0.86x |
+
+The 111130904+ block ran first; the 111130200+ block is the replication. Tree reuse off on the 64 Heart states
+(3 copies, 10k and 30k, seeds 111130000–191): 90 vs 89 and 96 vs 96 wins of 192, +0.5 pp and 0.0 pp.
+
+**Interpretation:** worst-case facing does not help and costs 12% CPU. **Inference:** it makes rollouts over-block
+(not measured). Tree reuse off did not replicate on the second seed block: pooled −2.6 HP lost [−5.4, −0.1] on
+Shield and Spear, 0 pp on the Heart. Exact-match-only reuse was flat (−0.3 [−0.9, +0.2], audit report F1).
+Neither closes the −6.8 HP engine gap. **Open question:** the remaining candidates are the fair-view root and
+knowledge tracking, and other rollout-agent differences.
+
+**Decision:** no switch, no default change, no PR for the patch.
+
+Evidence: [`evidence/a20_ss_rollout_facing_20261017/`](evidence/a20_ss_rollout_facing_20261017/README.md) (per-fight
+CSVs, `facing_switch.patch`, SHA256SUMS). The `act4replay` mode used here is part of this PR.
+
+Seeds used: 111130200–295 and 111130000–191 (reused for pairing), 111130904–999.
+
+**Knowledge impact:** both added to rejected approaches in `research/combat-search/leaf-evaluation.md`.
 ## §522 — Heart leaf td2 vs the X2-B leaf in A20 OOC MCTS: NOT_SHOWN, more Act-1 deaths (2026-10-17)
 
 **Question (Philipp, 2026-10-17 19:59Z):** "yes lets try a parid a20 a/b" of the §515 td2 Heart leaf, after its
