@@ -20960,12 +20960,13 @@ container (`worker_tars.txt`, `report.json`).
 - **Heart kills:** L − F10 +1.8 pp [−1.5, +5.1], p = 0.35; F25 − F10 −2.0 [−5.1, +1.1], p = 0.26.
 - **L − F25 (descriptive):** reached Act 4 +5.1 pp [+0.8, +9.3], p = 0.026; Heart kills +3.7 [+0.5, +7.0],
   p = 0.032. Not a pre-registered test.
-- **OOC decisions:** student_sel 96.3–96.4%, key rule 3.1–3.2%, Match and Keep 0.8–0.9% per arm; nothing else.
+- **OOC decisions:** student_sel 95.9–96.2%, key rule 3.0–3.2%, Match and Keep 0.8–1.0% per arm; nothing else.
 
 **Interpretation:** learned stopping again plays at least as well as flat 10k, now with the gen-7f table and prior,
 at half the CPU (§516: 0.41x). Flat 2.5k is 4.5x cheaper than flat 10k, but this run cannot rule out a loss of more
-than 5 pp, and it trails learned stopping on both endpoints. **Inference:** at a fixed budget per decision,
-learned stopping is the better way to spend Silver CPU than a flat 2.5k cut. The stack (student_sel, g7f) wins far
+than 5 pp, and it trails learned stopping on both endpoints. **Inference:** learned stopping
+keeps flat-10k strength at half its CPU; flat 2.5k is cheaper still (learned stopping used 2.2x its CPU), so this run
+does not compare the two at equal CPU. The stack (student_sel, g7f) wins far
 more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are not comparable across the two runs.
 The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
 **Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).
