@@ -1,0 +1,7 @@
+C    n=64 cleared 57/64 score 34.08 maxHp 76.6 oocCPU/run 508s sims/root 2327 pick=argmaxPrior 0.921
+T3   n=64 cleared 60/64 score 37.20 maxHp 76.9 oocCPU/run 576s sims/root 2618 pick=argmaxPrior 0.865
+Q    n=64 cleared 32/64 score 13.75 maxHp 76.6 oocCPU/run 401s sims/root 2048 pick=argmaxPrior 0.401
+T3Q  n=64 cleared 45/64 score 25.08 maxHp 76.4 oocCPU/run 419s sims/root 2048 pick=argmaxPrior 0.462
+T3 - C: n=64 +3.12 HP [-2.09, +8.34] Act-1 deaths 4 vs 7 -> SCREEN_PASS
+Q - C: n=64 -20.33 HP [-25.67, -14.70] Act-1 deaths 32 vs 7 -> WORSE
+T3Q - C: n=64 -9.00 HP [-14.91, -2.98] Act-1 deaths 19 vs 7 -> WORSE

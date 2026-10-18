@@ -1,0 +1,7 @@
+name          ooc-prior-guidance
+code_commit   658d43ee77a361311eb9698aa75791fa7a84ac46
+binary_sha256 3315a7c1751929916f8bf1103d0cbed68fdbdf2e225369a9ed3d0442bd6d37dc
+workers       16
+share         /mnt/project-files/ooc-prior-guidance
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
