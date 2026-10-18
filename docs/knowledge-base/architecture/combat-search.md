@@ -505,7 +505,8 @@ streams from (seed, r), since the battle draws its other streams from `gc.seed +
 carry the source seed and fight in `perturbation`.
 Gen-7 prior g7_E (gen-6 window + 371k Act-4 roots from this mode; data branch
 `claude/silver-gen7-act4-data`) passes the offline gate (Act-4 fold-4 CE 1.408 vs g6_E 1.498, orig flat) but
-does not win more held-out Act-4 fights at 40k (§TBD: dWin −0.3 pp [−1.6, +1.0]); g6_E stays the prior.
+does not win more held-out Act-4 fights at 40k (§TBD: dWin −0.3 pp [−1.6, +1.0]) or at 2.5k (dWin −0.0 pp
+[−0.6, +0.6]); g6_E stays the prior.
 `one_combat silverfocusevalgen N ASC OUT_PREFIX SEED ENCOUNTER REPLICATES OTHER_SIMS
 ARM_SIMS TREE_MIN_VISITS PRIOR_A PRIOR_B` is the paired online check for such a prior: it reaches the
 encounter the same way (root bonus on), then plays `REPLICATES` copies of the fight per arm at

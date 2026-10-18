@@ -20269,10 +20269,18 @@ Act-4 1.4082 vs 1.4984 (top-1 43.6% vs 39.2%); other sources flat or slightly be
 (−0.6 [−2.8, +1.6]). End HP −0.04 [−0.66, +0.58]. Only 189 of 2,188 pairs are discordant (91 g7-only wins, 98
 g6-only). Sanity: the gen-7 self-play on the same states won 63.6% with g6_E.
 **Interpretation:** at 40k sims the prior barely changes outcomes on these fights (8.6% discordant pairs); a 9% lower
-Act-4 cross-entropy does not translate into Act-4 wins. **Inference:** prior quality matters more at low budgets; not
-tested here. g6_E stays the Silver prior; g7_E stays on the data branch.
+Act-4 cross-entropy does not translate into Act-4 wins. **Inference (not supported at 2.5k for this pair, below):** prior quality matters more at low budgets. g6_E stays the Silver prior; g7_E stays on the data branch.
 [report.json](evidence/silver_gen7_ab_20261018/report.json). Raw: `/mnt/project-files/silver-az-mlp/gen7-act4/w01..w16.tar`
 (self-play; ignore the stray `wWW.tar`, a copy of w02) and `/mnt/project-files/silver-az-mlp/gen7-ab/w01..w08.tar`
 (sha256 `4f3f5fb8…`, `3138cf03…`, `e2bc096b…`, `65740fe9…`, `4543b29d…`, `a72582c3…`, `ca89b841…`, `3da20c82…`).
-Seeds used: 111170100–111170119 and 111175700 (smokes), 111170200–111175666 (self-play), 111176000–111177093 (A/B).
+**Low-budget A/B ([PREREG](evidence/silver_gen7_ab25_20261018/PREREG.md), Philipp "8 workers on 2.5k sims." 12:38Z):**
+same 1,094 states and decision rule, 2.5k sims, 8 copies, paired seeds 111177100+i. RUN_COMMIT `8c4030d3`, 8 workers,
+88/88 units, `verify_campaign.py` OK 1–8. **Result: NOT_SHOWN.** 8,752 pairs, 0 unpaired, 0 invalid. Win 61.45% (g6_E)
+vs 61.44% (g7_E): dWin −0.0 pp [−0.6, +0.6]. S&S 86.7 vs 86.7% (−0.1 [−0.8, +0.7]); Heart 32.3 vs 32.3% (+0.0 [−0.9,
++1.0]). End HP +0.03 [−0.26, +0.33]. 723 of 8,752 pairs discordant (361 g7-only, 362 g6-only). Going from 40k to 2.5k
+costs only ~1.8 pp of wins on these fights, and the better prior gains nothing at either budget, so for g6_E vs g7_E the Inference above
+does not hold here. [report.json](evidence/silver_gen7_ab25_20261018/report.json); raw
+`/mnt/project-files/silver-az-mlp/gen7-ab25/w01..w08.tar` (sha256 `c72940ff…`, `46b3be61…`, `75f76376…`, `ae24eb78…`, `a257a94d…`, `126c98c3…`, `ae5d607d…`, `b8e9c808…`).
+Seeds used: 111170100–111170119 and 111175700–111175701 (smokes), 111170200–111175666 (self-play), 111176000–111177093
+(40k A/B), 111177100–111178193 (2.5k A/B).
 **Knowledge impact:** result line added to the `silverazact4gen` paragraph in `architecture/combat-search.md`.
