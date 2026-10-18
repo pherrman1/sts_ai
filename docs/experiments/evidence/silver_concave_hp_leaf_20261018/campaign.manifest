@@ -1,6 +1,6 @@
 name          concave-hp-leaf
 code_commit   633aa69ad4787003753275113379fb30d12ab13b
-binary_sha256 TBD
+binary_sha256 48e179513b1f111f19a5540351a6894624c226e02ea86d9537c3ee285d38a784
 workers       16
 share         /mnt/project-files/silver-leaf-eval/endstate-ab
 parallel      4
