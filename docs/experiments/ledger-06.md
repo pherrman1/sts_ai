@@ -20752,13 +20752,15 @@ Act 1 only.
 **Diagnostic** (no new runs; decision logs of 224 A20 winrate-check seeds, 12,802 non-trivial roots): median top
 prior 0.9925 (above 0.99 in 52% of roots); the top child gets a median 97.8% of visits; the early-stop visit lock ends
 100% of searches (~2,050 of 4,096 sims); executed move = prior argmax 90.5%; non-selected children get a median 2
-visits (46% exactly 1). So yes: search spends almost everything on the prior's pick.
+visits (exactly 1 visit: 46% in Act 1, 44% across all acts). So yes: search spends almost everything on the
+prior's pick.
 
 **Design** ([PREREG](evidence/ooc_prior_guidance_20261018/PREREG.md), frozen before variant data; Philipp 12:01Z
 "do 16 workers"): A20 winrate-check stack at code 658d43ee, Act 1 only (`STS_STOP_AFTER_ACT=1`), 64 paired seeds,
-4 arms: C (default), T3 (`STS_OOC_MCTS_TEMPERATURE=3`), Q (`ROOT_SELECTION=q`, 2,048 sims ≈ C's actual sims, lock
-off), T3Q (both). Primary: post-Act-1-boss HP, death = 0, paired vs C, seed bootstrap 95% CI. Rule: WORSE if CI upper
-< 0; SCREEN_PASS if mean ≥ +3 HP and deaths ≤ C; else NOT_SHOWN.
+4 arms: C (default), T3 (`STS_OOC_MCTS_TEMPERATURE=3`), Q (`ROOT_SELECTION=q`, 2,048 sims, lock off), T3Q (both).
+C averaged 2,327 sims per Act-1 decision, so Q ran ~12% fewer sims and ~21% less OOC CPU than C. Primary:
+post-Act-1-boss HP, death = 0, paired vs C, seed bootstrap 95% CI. Rule: WORSE if CI upper < 0; SCREEN_PASS if
+mean ≥ +3 HP and deaths ≤ C; else NOT_SHOWN.
 
 **Validity:** `verify_campaign.py` OK for all 16 workers (256 units, run 3d0d5120, binary 3315a7c1…).
 

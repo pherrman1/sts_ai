@@ -3088,7 +3088,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
-        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""},
+        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3792,6 +3792,10 @@ int main(int argc, char **argv) {
 
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
+    } else if (mode == "heart1recordselftest") {
+        one_combat::heart1::publicRecordInvarianceSelfTest();
+        std::cout << "heart1 public record invariance selftest: ok\n";
+        return 0;
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"
