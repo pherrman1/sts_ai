@@ -1,6 +1,6 @@
 name          leaf-combo-ab
-code_commit   TBD
-binary_sha256 TBD
+code_commit   c52d9ccf81f3f64d7a1ec1439d7788df0e3c8ce1
+binary_sha256 b9d43a550b5f87a7ee43eee1a086304a32b95f24c58c2dd2f91ed9000cc12593
 workers       16
 share         /mnt/project-files/silver-leaf-eval/combo-ab
 parallel      4
