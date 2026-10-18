@@ -28,7 +28,7 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-silver-prior-playout-boss-elite.md) makes real boss and elite Silver fights use prior-argmax
+- [ADR-0050](0050-silver-prior-playout-boss-elite.md) makes real boss and elite Silver fights use prior-argmax
   playouts when a root prior is set (`STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy playouts).
 - [ADR-0049](0049-silver-gen7f-root-table.md) makes gen-7f E (gen 7 retrained on active power features) the bundled
   default Silver rollout root table model and the A20 Silver prior; `models/combat_policy_mlp_g6_E.txt` restores ADR-0046.
