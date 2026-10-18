@@ -279,6 +279,9 @@ k = 1.35 +0.127 [−0.106, +0.367]. The linear HP term stays. Under the
 student_sel policy the same run priced non-Fairy potions at 5.0 HP-eq [1.8,
 8.1], max HP at 1.08 HP per point [0.53, 1.66] and gold at 0.011 HP per gold
 [−0.064, 0.070] (descriptive; the formula uses 11 / 2 / 0.25).
+Research-only `STS_SILVER_GOLD_WEIGHT` and `STS_SILVER_MAXHP_WEIGHT` (native Silver;
+unset = 0.25 and 2) replace those two weights; when any victory-leaf research
+option is set, `one_combat` logs one `[silver] research leaf: …` line at startup.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

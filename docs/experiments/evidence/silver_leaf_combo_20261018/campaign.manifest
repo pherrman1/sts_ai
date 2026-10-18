@@ -1,0 +1,7 @@
+name          leaf-combo-ab
+code_commit   TBD
+binary_sha256 TBD
+workers       16
+share         /mnt/project-files/silver-leaf-eval/combo-ab
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
