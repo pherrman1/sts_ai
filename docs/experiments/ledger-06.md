@@ -20791,7 +20791,7 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
-## §TBD — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
+## §535 — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
 
 Performance only; no gameplay, model, RNG or default change. Philipp 2026-10-18 14:07Z ("can you continue
 profiling and improving speed?") after §533 merged.

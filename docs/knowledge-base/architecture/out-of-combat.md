@@ -2062,7 +2062,7 @@ with the search and its chain.
   plus boundaries) finds it bitwise equal to the process's `std::exp`, so other
   CPUs or libm versions keep the scalar calls. student_sel logits-only pass on
   4,383 A20 rollout records: about 910 → 450 µs per call (2.0x).
-- Further exact paths (§TBD): on CPUs with AVX-512F/DQ the projection kernel
+- Further exact paths (§535): on CPUs with AVX-512F/DQ the projection kernel
   holds two tokens per 512-bit register (explicitly rounded multiply and add,
   so no FMA), and softmax weights are divided eight at a time;
   `oocmctsselftest` checks every projection kernel against the reference loop.
