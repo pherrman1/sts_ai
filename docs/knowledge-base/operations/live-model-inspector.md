@@ -831,8 +831,10 @@ resolved `?`-room outcomes are recovered from vanilla's persisted
 `path_per_floor`, checked against `path_taken`, with the current public room
 allowed to complete the current floor. Continuing a save made after a boss
 fight leaves `path_taken` with a second adjacent `BOSS` while `path_per_floor`
-keeps one `B` (observed in parity canary 2, seed 111194451, after the floor-16
-post-Hexaghost save was continued); that one marker is skipped at the boss
+keeps one `B`: `nextRoomTransition(SaveFile)` calls `onPlayerEntry()` again
+for a post-combat room that is not a rolled event, and
+`MonsterRoomBoss.onPlayerEntry()` appends `BOSS` (pinned JAR bytecode; seen
+in parity canary 2, seed 111194451). That one marker is skipped at the boss
 floor or the following boss chest, and any further extra entry still fails
 closed. Missing, contradictory or shifted
 history fails closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`.

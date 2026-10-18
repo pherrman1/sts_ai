@@ -51,8 +51,8 @@ final class QuestionRoomHistory {
         return result;
     }
 
-    // Continuing a save made after a boss fight appends "BOSS" to path_taken
-    // again (path_per_floor keeps one "B"), so a second adjacent "BOSS" before
+    // Continuing a post-combat boss save reruns MonsterRoomBoss.onPlayerEntry,
+    // which appends "BOSS" to path_taken again (path_per_floor keeps one "B"), so a second adjacent "BOSS" before
     // the boss chest is that reload marker, not a room.
     private static boolean reloadedBossMarker(List<String> original, int source) {
         return source > 0 && source < original.size()
