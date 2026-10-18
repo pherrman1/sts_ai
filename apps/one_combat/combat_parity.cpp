@@ -145,9 +145,36 @@ J gameCombatRng(const J &rng) {
     return out;
 }
 
+// Engine leftovers with no meaning once their flag is off. The native engine
+// clears a status by its bit only, so the old payload stays and is exported,
+// while a fresh import of the game state starts from zero.
+void dropInactivePayloads(silver_bridge::BattleStateWire &w) {
+    auto &p = w.player;
+    const auto active = [&p](int status) {
+        return status < 64 ? (p.statusBits0 >> status) & 1ULL : (p.statusBits1 >> (status - 64)) & 1U;
+    };
+    std::erase_if(p.statusMap, [&](const auto &entry) { return !active(entry.first); });
+    for (auto &entry : p.statusMap) {
+        // Native stores No Draw as 1, Java as -1; only its presence is read.
+        if (entry.first == static_cast<int>(PlayerStatus::NO_DRAW)) entry.second = 0;
+    }
+    // Statuses from ANGRY to TIME_WARP keep their amount in uniquePower0.
+    // Hexaghost uses it as its orb counter with no status.
+    const auto uniqueMask = ((1ULL << (static_cast<int>(MonsterStatus::TIME_WARP) + 1)) - 1)
+            ^ ((1ULL << static_cast<int>(MonsterStatus::ANGRY)) - 1);
+    for (auto &m : w.monsters) {
+        if (m.id != static_cast<int>(MonsterId::HEXAGHOST) && !(m.statusBits & uniqueMask)) m.uniquePower0 = 0;
+    }
+    // The finished selection's task stays in cardSelectInfo after the input
+    // state moves on.
+    if (w.inputState != static_cast<int>(InputState::CARD_SELECT)) w.cardSelect = {};
+}
+
 // One projection for both sides, so importer conventions cancel out.
 J project(const BattleContext &bc, const search::SilverSearchContext &context) {
-    return search::wireFromSearchState(bc, context);
+    auto wire = search::wireFromSearchState(bc, context);
+    dropInactivePayloads(wire);
+    return wire;
 }
 
 // The fingerprint embeds importer card ids, which depend on which rows were

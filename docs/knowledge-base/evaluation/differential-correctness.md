@@ -124,7 +124,13 @@ the game's own state, so one difference does not end the comparison.
   the importer fills a default on the game side while the engine evolves it.
   These are `loopCount`, `cardsDrawn`, `energyWasted`, `monsterTurnIdx` and
   `curCardQueueItem`, listed in `UNOBSERVABLE_FIELDS` and reported in their
-  own section, never in verdicts.
+  own section, never in verdicts. Before projecting, both sides drop payloads
+  whose flag is off, because the engine clears some states by their bit only
+  and a fresh import starts from zero: `statusMap` entries of inactive player
+  statuses, `uniquePower0` of a monster with no status from `ANGRY` to
+  `TIME_WARP` (Hexaghost keeps its orb counter), and `cardSelect` outside
+  `CARD_SELECT`. No Draw's amount is set to 0 (native stores 1, Java -1;
+  only its presence is read).
 - Action identity: the recorded fingerprint embeds importer card ids, which
   depend on which rows were imported. The probe matches without those ids
   and picks the copy by the Java UUID the driver clicked.
@@ -154,7 +160,21 @@ observation fixture with synthetic RNG and draw order. It proves the
 plumbing (draws follow the given order, RNG comes from the game, skip
 reasons) and has a positive control: Defend with a hand-written correct
 successor gives MATCH, and one wrong field gives exactly that mismatch. It
-does not prove parity. No Java capture has been compared yet.
+does not prove parity.
+
+The first canary (2026-10-18, one A20 run on the PC, 69 steps, 3 encounters)
+compared 34 combat steps: 26 matched, 8 mismatched, 2 were skipped. Seven
+mismatches were the export leftovers above. One was an engine difference:
+when Uppercut kills its target, the game applies no Weak or Vulnerable to the
+dead monster, while the engine did. `STS_DEAD_TARGET_DEBUFF_FIX` (default on,
+`=0` restores) now makes a debuff on a dead, half-dead or escaped monster do
+nothing. **Inference:** this matters only where a dead monster's powers
+survive, such as a Darkling or Awakened One coming back; the exact Java guard
+(`ApplyPowerAction`) has not been read from the bytecode yet. The canary
+stopped on a driver mapping bug: MCP lists the untargeted Explosive Potion
+once per monster. The driver now takes the first of those identical
+candidates when Silver gives no target. Parity traces also drop the Silver
+search tree (about 85 MB per combat row).
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).

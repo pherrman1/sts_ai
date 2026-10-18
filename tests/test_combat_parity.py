@@ -205,6 +205,17 @@ class ProbeTest(unittest.TestCase):
         step["liveAction"] = {"kind": "card", "cardUuid": uuid}
         self.assertEqual(self.probe([step])[0]["status"], "COMPARED")
 
+    def test_removed_status_leaves_no_payload(self):
+        # Native clears No Draw at end of turn by its bit only; the projection
+        # must not export the stale amount a fresh import would not have.
+        obs = observation()
+        obs["silverRoot"]["combat"]["playerPowers"].append({"id": "No Draw", "amount": -1})
+        r = rng(obs)
+        result = self.probe([self.step(obs, r, postBoundary="ooc")])[0]
+        player = result["native"]["player"]
+        self.assertEqual(player["statusMap"], [[status, amount] for status, amount in player["statusMap"] if status != 16])
+        self.assertEqual(result["native"]["cardSelect"]["task"], 0)
+
     def test_skip_reasons(self):
         obs = observation()
         no_rng = self.probe([self.step(obs, None, postBoundary="ooc")])[0]

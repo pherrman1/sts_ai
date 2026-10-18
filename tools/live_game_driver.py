@@ -537,6 +537,14 @@ def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalActio
     if not isinstance(selected_live_action, Mapping):
         raise IntegrationFailure("Silver response has no structured selectedLiveAction")
     matches = [candidate for candidate in candidates if _semantic_match(selected_live_action, candidate)]
+    if (len(matches) > 1 and selected_live_action.get("kind") == "potion"
+            and not {"targetIndex", "target_index"} & set(selected_live_action)
+            and len({(m.mcp_tool, m.semantic.get("potion_slot"), m.semantic.get("discard")) for m in matches}) == 1
+            and all("target_index" in m.semantic for m in matches)):
+        # Silver gives a target for every potion that needs one. MCP offers
+        # some untargeted potions (Explosive Potion) once per monster; the
+        # game ignores that target, so any one of them is the same action.
+        matches = matches[:1]
     if len(matches) != 1:
         raise IntegrationFailure(f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_live_action!r}")
     return matches[0]
@@ -1514,7 +1522,12 @@ class Driver:
                     if plan.get("status") == "APPLIED" else "policy")
             prefix = "silver" if combat else "ooc_v4"
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
-            row.update({"silver_evaluator" if combat else "ooc_evaluator": evaluator,
+            stored = evaluator
+            if self.parity_trace and combat:
+                # The Silver search tree is ~85 MB per combat row and the
+                # parity probe never reads it.
+                stored = {key: value for key, value in evaluator.items() if key != "tree"}
+            row.update({"silver_evaluator" if combat else "ooc_evaluator": stored,
                         f"{prefix}_status": status, "selectedLiveAction": evaluator.get("selectedLiveAction")})
             if self.differential_trace and status == "OK":
                 row["live_observation"] = snapshot.raw.get("observation")
