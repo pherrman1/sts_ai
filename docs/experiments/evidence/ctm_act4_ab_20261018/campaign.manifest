@@ -1,0 +1,8 @@
+name          ctm-act4-ab
+code_commit   95c1ef1f76e8c79fc04f58ac97553846b5f752d2
+binary_sha256 PENDING
+workers       8
+share         /mnt/project-files/ctm-act4-ab
+parallel      4
+input student_sel.bin /mnt/project-files/ctm-act4-ab/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input ctm_act4_survival_trees.txt /mnt/project-files/ctm-act4-ab/ctm_act4_survival_trees.txt 05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e
