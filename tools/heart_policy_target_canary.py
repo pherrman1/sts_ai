@@ -46,6 +46,18 @@ def main(root):
         if (visits != root_row['rootVisits'] or root_row['maxVisits'] != max(c['visits'] for c in root_row['candidates'])
                 or (d['executed'] and d['selectedKey'] not in {c['key'] for c in root_row['candidates']})):
             failures.append('inconsistent root at decision %d' % d['decisionIndex'])
+    # STS_OOC_MCTS_FULL_BUDGET_FRACTION: every root carries the flag or none does,
+    # and a flagged root completed its budget without an early stop.
+    roots = [d['root'] for d in searched if d.get('root')]
+    flagged = [r for r in roots if 'fullBudget' in r]
+    if flagged and len(flagged) != len(roots):
+        failures.append('fullBudget missing on some roots')
+    full = [r for r in flagged if r['fullBudget']]
+    for r in full:
+        if r['singleton'] or (not r['aborted'] and (
+                r['completedSimulations'] != r['requestedSimulations'] or r['earlyStopLock'] or r['earlyStopGap20'])):
+            failures.append('full-budget root stopped early or is a singleton')
+            break
     mcts_owned = sum(1 for line in (root / 'policy.mcts.csv.actions.jsonl').read_text().splitlines()
                      if json.loads(line).get('executed'))
     summary = {'verdict': 'FAIL' if failures else 'PASS', 'failures': failures,
@@ -56,6 +68,8 @@ def main(root):
                'singletons': sum(1 for d in searched if d['root']['singleton']),
                'earlyStopLocks': sum(1 for d in searched if d['root']['earlyStopLock']),
                'aborted': sum(1 for d in searched if d['root']['aborted']),
+               'fullBudget': len(full) if flagged else None,
+               'fullBudgetEligible': sum(1 for r in flagged if not r['singleton']) if flagged else None,
                'heart1Encoded': sum(1 for d in searched if d.get('heart1Record') is not None),
                'outcome': {k: footer.get(k) for k in ('heartKilled', 'finalAct', 'finalFloor', 'finalHp')}}
     if summary['executedBySearch'] != mcts_owned:
