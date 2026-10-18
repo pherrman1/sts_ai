@@ -1,6 +1,6 @@
 name          silver-g7f-rt
 code_commit   8c03d1df004681b6188937dc2b6c93bcbb6468d7
-binary_sha256 TBD
+binary_sha256 23c6659262df19fe2d1b011011fe007f36d67a4f8c4a4ee88c2d00dbf04ad8c6
 workers       8
 share         /mnt/project-files/silver-az-mlp/g7f-rt
 parallel      4
