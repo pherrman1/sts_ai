@@ -20550,3 +20550,39 @@ Evidence: [scripts and output](evidence/silver_root_regret_pilot_20261017/). Raw
 111193602–111193649 of this thread's block unused.
 **Knowledge impact:** one paragraph in `evaluation/current-research.md` (Silver root allocation section) and the
 `STS_CTMSILVER_ARMSET=rootregret` row in `operations/environment-variables.md`.
+
+## §523 — Several uniform random playouts per Silver leaf vs greedy at A20: random playouts lose at every k (2026-10-18)
+
+**Question (Philipp, 2026-10-17 22:10Z/22:11Z, thread "Distilled Silver playout picker"):** "multiple random
+rollouts, did we ever try that?" then "can you try it on a small pilot with increasing random playouts per leaf?".
+§479 had tested one uniform playout per leaf (−22.80 fight score) and 2 or 4 greedy playouts, not several random ones.
+**Design:** [PREREG](evidence/silver_uniform_playouts_pilot_20261017/PREREG.md), descriptive pilot, no labels, no
+decision rule. `ctmsilvergen` armset `uniformpl` (code e762e846, run as 6e4998e2 before the main merge; binary
+`8aecc181…`) with the §519/§521 harness (student C source runs, gen-6 E root prior, keys flag off, hallway every 3rd,
+R = 2, `STS_SILVER_ROLLOUT_ROOT_TABLE=0` so greedy uses the ADR-0040 table). Arms at 2,500 simulations:
+`greedy2500` and `uniform<k>x2500`, k = 1, 2, 4, 8 random playouts averaged per leaf. 16 sources
+(111193700–111193715) in-thread on 4 cores, all shards rc = 0; 176 valid paired fights (1 excluded, escape).
+**Result (paired, 95% seed bootstrap):**
+
+| arm | fight score | win | HP lost | CPU/fight vs greedy |
+|---|---|---|---|---|
+| greedy2500 | 286.2 | 95.2% | 11.4 | 1 |
+| uniform1x2500 | −34.6 [−45.9, −22.8] | −9.1 pp | +7.9 | 0.85x |
+| uniform2x2500 | −33.6 [−41.6, −23.7] | −9.1 pp | +7.3 | 1.47x |
+| uniform4x2500 | −33.1 [−43.8, −22.4] | −9.7 pp | +6.1 | 2.54x |
+| uniform8x2500 | −31.0 [−39.6, −21.2] | −8.5 pp | +6.3 | 4.70x |
+
+`uniform8 − uniform1`: +3.6 [−1.6, +8.2] score, −1.6 [−2.8, −0.3] HP lost. Bosses (33): every k loses 63–79 score and
+21–26 pp win rate. CPU per simulation grows almost linearly with k (1.03x, 1.80x, 3.16x, 5.82x); random playouts are
+shorter than greedy ones (13.1–13.7 vs 16.9 actions). Smoke (111193790–111193793, 63 fights, same binary): about −58
+at every k.
+**Interpretation:** averaging random playouts reduces leaf noise only slightly (HP lost improves by about 1.6 from
+1 to 8), while the bias of a random playout is unchanged, so the gap to greedy stays near 31–35 at up to 4.7x CPU per
+fight. **Inference:** the greedy playout's value comes from its play policy, not from lower variance; more playouts of
+a weak policy are no substitute. No follow-up proposed.
+[result.json](evidence/silver_uniform_playouts_pilot_20261017/result.json) (sha256 `6d0cff67…`). Raw:
+`/mnt/project-files/silver-uniform-playouts-pilot/upl-run.tar.gz` (run and smoke, sha256 `16b187ef…`). Seeds used:
+111193700–111193715, 111193790–111193793 and 111193716 (post-merge build smoke of the armset on main at 300
+simulations, rc = 0); the rest of 111193700–111193799 unused.
+**Knowledge impact:** one sentence added to the rollout paragraph in `architecture/combat-search.md` and the
+`STS_CTMSILVER_ARMSET=uniformpl` row in `operations/environment-variables.md`.
