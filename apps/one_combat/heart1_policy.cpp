@@ -30,6 +30,20 @@ using RT = sts::search::GameAction::RewardsActionType;
 extern bool g_collectKeys;
 
 namespace one_combat::heart1 {
+
+// STS_OOC_HEART1_WING_BOOTS_COUNTER (#638): 1 = the Wing Boots relic counter
+// carries gc.wingBootsCharges (0-3), so x_relic_counter weights trained on it
+// can tell charged from spent boots. Unset or 0 = the frozen encoding, where
+// the counter is relic.data, always 0 for Wing Boots (initRelicsFromSave).
+// Other values are fatal. Read only when Wing Boots is owned, and by the
+// capture/run provenance writers.
+bool wingBootsCounter() {
+    const char *value = std::getenv("STS_OOC_HEART1_WING_BOOTS_COUNTER");
+    if (!value || !*value || std::string(value) == "0") return false;
+    if (std::string(value) == "1") return true;
+    throw std::runtime_error("STS_OOC_HEART1_WING_BOOTS_COUNTER must be 0 or 1");
+}
+
 namespace {
 
 // silverbot/network.py FixedAction (IntEnum values).
@@ -206,18 +220,6 @@ int bossEncoding(MonsterEncounter boss) {
         case MonsterEncounter::THE_HEART: return 9;
         default: throw std::runtime_error("heart1: boss outside the encoding");
     }
-}
-
-// STS_OOC_HEART1_WING_BOOTS_COUNTER (#638): 1 = the Wing Boots relic counter
-// carries gc.wingBootsCharges (0-3), so x_relic_counter weights trained on it
-// can tell charged from spent boots. Unset or 0 = the frozen encoding, where
-// the counter is relic.data, always 0 for Wing Boots (initRelicsFromSave).
-// Other values are fatal. Read only when Wing Boots is owned.
-bool wingBootsCounter() {
-    const char *value = std::getenv("STS_OOC_HEART1_WING_BOOTS_COUNTER");
-    if (!value || !*value || std::string(value) == "0") return false;
-    if (std::string(value) == "1") return true;
-    throw std::runtime_error("STS_OOC_HEART1_WING_BOOTS_COUNTER must be 0 or 1");
 }
 
 // getNNRepresentation (bindings-util.cpp).
@@ -1892,13 +1894,18 @@ void captureRow(Capture &c, nlohmann::json row, const Choice &choice, const std:
         throw std::runtime_error("STS_OOC_HEART1_CAPTURE: write failed");
 }
 
+}  // namespace
+
 nlohmann::json captureBase(const GameContext &gc, const char *kind) {
     // deck_misc follows obs.deck.cards (Ritual Dagger damage, Genetic Algorithm block), which heart1 does not see.
     std::vector<int> misc;
     for (const auto &c : gc.deck.cards) misc.push_back(c.misc);
     return {{"kind", kind}, {"act", gc.act}, {"floor", gc.floorNum},
-            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}, {"deck_misc", misc}};
+            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}, {"deck_misc", misc},
+            {"wing_boots_counter", wingBootsCounter() ? 1 : 0}};
 }
+
+namespace {
 
 // Every EVERY-th prior call writes the node; every SELECT_EVERY-th card select that a
 // source opens is written too (the state the tree reaches only as a compound

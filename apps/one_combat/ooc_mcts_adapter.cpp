@@ -1857,6 +1857,7 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
                 out["record"] = std::move(publicRecord);
                 out["recordSchema"] = "heart1-public-record-v2";
                 out["recordPublicParityQualified"] = false;
+                out["wingBootsCounter"] = one_combat::heart1::wingBootsCounter() ? 1 : 0;
             } else out["recordError"] = reason.empty() ? "terminal_or_battle" : reason;
         } catch (const std::exception &e) { out["recordError"] = e.what(); }
         if (capture.annotate) {
@@ -4292,7 +4293,10 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         catch (const std::exception &error) { rootRow["snapshot"] = nullptr; rootRow["snapshotError"] = error.what(); }
         nlohmann::json record;
         std::string reason;
-        if (heart1::buildPublicLeafRecord(gc, record, &reason)) rootRow["record"] = std::move(record);
+        if (heart1::buildPublicLeafRecord(gc, record, &reason)) {
+            rootRow["record"] = std::move(record);
+            rootRow["wingBootsCounter"] = heart1::wingBootsCounter() ? 1 : 0;
+        }
         else rootRow["recordError"] = reason.empty() ? "unencoded_screen" : reason;
     }
     nlohmann::json rootActions = nlohmann::json::array();

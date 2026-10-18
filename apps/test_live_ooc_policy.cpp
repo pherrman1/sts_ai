@@ -122,6 +122,9 @@ int main(int argc, char **argv) {
                     const int counter=rec.relicCounters[at-rec.relics.begin()];
                     const bool on=flag && std::string(flag)=="1";
                     require(counter==(on?charges:0),"heart1 Wing Boots counter mismatch");
+                    require(heart1::wingBootsCounter()==on
+                            && heart1::captureBase(state,"node").at("wing_boots_counter")==(on?1:0),
+                            "capture row does not record STS_OOC_HEART1_WING_BOOTS_COUNTER");
                     for(std::size_t i=0;i<rec.relics.size();++i)
                         if(rec.relics[i]!=int(RelicId::WING_BOOTS))
                             require(rec.relicCounters[i]==state.relics.relics[i].data,"flag changed another relic counter");
