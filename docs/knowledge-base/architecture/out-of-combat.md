@@ -755,6 +755,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
 | `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root (rules in `apps/one_combat/ooc_tree_rules.cpp`, shared with the live advisor, which plays root rules as forced clicks), and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
 | `MERGE_OUTCOMES` |1 (ADR-0031)|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
+| `GAP_STOP` |0 (off)|Research, §TBD: `C1,C2,...:G` (increasing checkpoints below `SIMS`, G in (0,1]); after completing simulation Ci the root stops once its top-two visit gap is at least G·Ci, keeping the visit leader. Visit selection only; off on full-budget (`FULL_BUDGET_FRACTION`) and observed-lock roots; excludes `CPU_SECONDS`. Offline on 606 A20 roots, `1024:0.7` kept 99.2% of actions at 0.69x OOC CPU|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
 for unsupported/nonunique selectors; all transitions keep the same combat

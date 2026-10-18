@@ -20869,3 +20869,44 @@ the rollout3 leaf rates as safer.
 Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
+
+## §TBD — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline 99.2% same action at 0.69x OOC CPU on A20 roots (2026-10-18)
+
+Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for
+searches, similar to sivler combat?"
+
+- **Profile:**
+  - A20 winrate check, 352 finished seeds: runs that reach Act 4 are 108 of 352 but use 76% of OOC MCTS CPU,
+    3.2 h per run. Runs that die in Act 3 average 0.63 h.
+  - Seed 111195794, which reached the Heart: the 4 Act-4 decisions took 4,650 of 8,304 s.
+  - gdb samples over seeds 111195792–794: imagined Silver fights inside rollouts 65%, student forward 27%.
+  - Report: `/mnt/project-files/speed-proposals/REPORT.md`.
+- **Offline rule search:**
+  - Data: 606 multi-action roots from 17 A20 runs on the 4096-simulation stack (STS_RUN_PROFILE root checkpoints at
+    128/256/512/1024; seeds 111195252–260 and 111195792–799).
+  - Stopping at checkpoint c returns the visit leader at c on the same search path, so whether the action would have
+    differed is known exactly for that root.
+  - Today every multi-action root ends at the exact visit lock, at about 2,050 simulations.
+  - Results:
+
+    | rule | same action | OOC CPU |
+    |---|---|---|
+    | `1024:0.7` | 99.2% | 0.69x |
+    | `512,1024:0.8` | 98.8% | 0.56x |
+    | `512,1024:0.7` | 98.5% | 0.53x |
+
+  - Act 3–4 roots alone (99): `1024:0.7` keeps 100% at 0.72x.
+  - The differing picks have final-root Q 0.05–0.10 below the final pick.
+  - Script: `/mnt/project-files/speed-proposals/gapstop_analyze.py`.
+- **Change:** opt-in `STS_OOC_MCTS_GAP_STOP=C1,C2,...:G`, default off. After completing simulation Ci, the search
+  stops once the root's top-two visit gap is at least G·Ci, with visit selection only. It is off on full-budget and
+  observed-lock roots and excludes `CPU_SECONDS`. It adds `early_stop_gap_ladder` to run-profile rows. Unit tests
+  are in `ooc-mcts-test` (PASS, 242 checks).
+- **Check** (seed 111195803, Act 1, A20 stack; the #670 reviewer had already used this seed):
+  - Flag off: play byte-identical to the #670 binary.
+  - `1024:0.7`: 14 of 36 roots stopped by the gap rule, the same 36 actions, OOC CPU 219 → 164 s, run CPU 230 → 175 s.
+- **Decision:** none; the flag stays off. Promotion needs a paired A/B.
+
+Seeds used: 111195803.
+
+**Knowledge impact:** `GAP_STOP` row in the `architecture/out-of-combat.md` option table.
