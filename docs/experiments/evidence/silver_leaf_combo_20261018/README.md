@@ -14,7 +14,7 @@ Pre-registration: [PREREG.md](PREREG.md). Analysis: extract each worker tar into
   `base`, `WTK135`): rc=0, 114 / 112 s, both reach floor 56 (base dies to the Heart, WTK135 wins), the g7f_E
   root table and the arm's research-leaf line in the logs.
 
-## Result (ledger-06 §TBD)
+## Result (ledger-06 §542)
 
 3,584/3,584 units rc=0, 16/16 tars verified ([verify.txt](verify.txt), [tars.sha256](tars.sha256)), 512 pairs.
 Five of six arms are WORSE than base (18.8% wins, 38.88 mean floor) on floors; per-type `WT` is NOT_SHOWN; see [result.json](result.json) and the ledger table.

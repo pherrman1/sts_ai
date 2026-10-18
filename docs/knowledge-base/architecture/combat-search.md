@@ -287,7 +287,7 @@ student_sel policy the same run priced non-Fairy potions at 5.0 HP-eq [1.8,
 Research-only `STS_SILVER_GOLD_WEIGHT` and `STS_SILVER_MAXHP_WEIGHT` (native Silver;
 unset = 0.25 and 2) replace those two weights; when any victory-leaf research
 option is set, `one_combat` logs one `[silver] research leaf: …` line at startup.
-Ledger-06 §TBD (whole A20 runs, student_sel without OOC MCTS, 512 paired seeds)
+Ledger-06 §542 (whole A20 runs, student_sel without OOC MCTS, 512 paired seeds)
 found five of six variants WORSE than the default formula on floors and none
 better: the measured weights (potion 5, max HP 1.1, gold 0.01) −1.63 floors and
 −5.9 pp wins, concave HP k = 2.7 −5.23 floors and −8.4 pp, k = 1.35 −2.10 floors

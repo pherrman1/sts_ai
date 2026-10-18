@@ -21009,7 +21009,7 @@ unused.
 Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
 **Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
 
-## §TBD — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): five of six WORSE, per-type NOT_SHOWN (2026-10-18)
+## §542 — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): five of six WORSE, per-type NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18 17:38Z, thread "end-state formula"):** "can you try all these things? adjusting the
 weights, maybe a per potion value, withthe fitted and milder curve? maybe in combination all those small things

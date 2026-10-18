@@ -1,6 +1,6 @@
 # Pre-registration: Silver victory-leaf reweighting and concave HP, paired whole A20 runs (2026-10-18)
 
-Status: written before any cohort seed ran. Ledger entry §TBD (the next free number at merge).
+Status: written before any cohort seed ran. Ledger entry §542 (the next free number at merge).
 
 Authorization:
 - Philipp, 2026-10-18 17:38Z, thread "end-state formula", after the concave-HP probe (PR #665, NOT_SHOWN) and its
@@ -15,7 +15,7 @@ Authorization:
 ## Question
 
 Silver's victory leaf (`SilverSearcher::evaluateEndState`) scores a won, non-final fight as
-`53 + h + 11·potions − 0.4·turns + 0.25·Δgold + 2·ΔmaxHP + …`. The concave-HP probe (§TBD of PR #665; 2,651 paired
+`53 + h + 11·potions − 0.4·turns + 0.25·Δgold + 2·ΔmaxHP + …`. The concave-HP probe (§542 of PR #665; 2,651 paired
 A20 3-fight continuations under the student_sel policy, A20 floor model) did not show an effect of a concave HP term
 alone, and priced the other resources well below the formula: non-Fairy potions 5.0 HP-eq [1.8, 8.1] (formula 11),
 max HP 1.08 HP per point [0.53, 1.66] (formula 2), gold 0.011 HP per gold [−0.064, 0.070] (formula 0.25). §513
