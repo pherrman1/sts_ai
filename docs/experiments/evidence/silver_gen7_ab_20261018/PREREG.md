@@ -9,7 +9,7 @@ Does the gen-7 tree prior g7_E (`combat_policy_mlp_g7_E.txt`, sha 2bb2c98d, data
 
 ## Design
 - States: the 1,094 lines of the gen-7 states file (c095368c) whose source run has `sourceSeed % 5 == 4`, the
-  test fold that gen-7 training never used (586 Shield & Spear, 508 Heart, 438 source runs). `make_fold4.py`
+  test fold that gen-7 training never used (586 Shield & Spear, 508 Heart, from 586 source runs). `make_fold4.py`
   writes them in file order; sha 549bd8f5.
 - Both arms: the gen-7 self-play generator and config unchanged (`silverazact4gen`, code 0646798b, binary
   09a611b1): 40k sims, flat exact root budgets, reuse cap 32k, tree prior K=8 weight 400, root bonus off,
