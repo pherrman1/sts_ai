@@ -213,7 +213,7 @@ producer groups; workers require the reviewed CPU/canary pair before dispatch.
 See [campaign guard operations](../operations/ooc-label-pipeline.md#arm-c-native-campaign-guards).
 No further experiment or native integration is authorized by these guard repairs.
 
-## A20 Shield and Spear search gap vs heart1's engine (§528, §TBD) — closed
+## A20 Shield and Spear search gap vs heart1's engine (§528, §530) — closed
 
 **Closed (2026-10-18, Philipp).** On the 32 recorded A20 Shield-and-Spear entry states our Silver search lost about 7 HP
 more per fight than heart1's engine at the §528 commit. Ruled out: monster code, evaluation, budget, rollout table,

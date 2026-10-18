@@ -20642,7 +20642,7 @@ calibration. No follow-up proposed. Raw: `/mnt/project-files/ctm-opening-hand/ru
 **Knowledge impact:** the two `STS_CTM_ROW_*` rows in `operations/environment-variables.md` and one paragraph in
 `evaluation/current-research.md` (§408 CTM vs Silver section).
 
-## §TBD — Shield and Spear search gap vs heart1's engine: rollout targeting NOT_SHOWN, information worth ~3 HP, line closed (2026-10-18)
+## §530 — Shield and Spear search gap vs heart1's engine: rollout targeting NOT_SHOWN, information worth ~3 HP, line closed (2026-10-18)
 
 **Question:** Where do the extra HP our A20 search loses on Shield and Spear, compared with heart1's engine on the
 same 32 entry states, come from (−6.8 HP in the A20 loss audit; §528 ruled out the facing block check and tree
