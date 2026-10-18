@@ -595,9 +595,11 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
-                // ADR-TBD: boss and elite rooms play prior playouts. A rollout override (research
-                // arms, imagined OOC fights) keeps its own setting.
-                if (!g_nativeSilverRolloutOverride && g_options.priorPlayoutBossElite
+                // ADR-TBD: boss and elite rooms of whole-run fights play prior playouts. A rollout,
+                // root-prior or prior-net override (research arms, source runs, imagined OOC fights)
+                // keeps its own setting, as the whole-run tree prior above does.
+                if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
+                        && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
                         && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
                         && (gc.curRoom == Room::BOSS || gc.curRoom == Room::ELITE))
                     searcher->rolloutConfig.prior = true;
