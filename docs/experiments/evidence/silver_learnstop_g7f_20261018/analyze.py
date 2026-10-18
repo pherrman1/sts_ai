@@ -28,6 +28,8 @@ def load(roots):
     runs, problems, ooc = {}, [], {arm: {} for arm in ARMS}
     for root in roots:
         for done in sorted(glob.glob(os.path.join(root, "**", "*.done"), recursive=True)):
+            if not re.fullmatch(r"(F10|F25|L)-\d+\.done", os.path.basename(done)):
+                continue  # tools/cloud/worker.sh's own empty units/ARM_SEED.done markers
             m = re.search(r"tag=(F10|F25|L)-(\d+) rc=(-?\d+)", open(done).read())
             if not m:
                 problems.append(f"bad done line {done}")
