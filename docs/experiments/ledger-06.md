@@ -20870,7 +20870,7 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
-## §TBD — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline 99.2% same action at 0.69x OOC CPU on A20 roots (2026-10-18)
+## §TBD — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
 
 Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for
 searches, similar to sivler combat?"
@@ -20881,23 +20881,26 @@ searches, similar to sivler combat?"
   - Seed 111195794, which reached the Heart: the 4 Act-4 decisions took 4,650 of 8,304 s.
   - gdb samples over seeds 111195792–794: imagined Silver fights inside rollouts 65%, student forward 27%.
   - Report: `/mnt/project-files/speed-proposals/REPORT.md`.
-- **Offline rule search:**
-  - Data: 606 multi-action roots from 17 A20 runs on the 4096-simulation stack (STS_RUN_PROFILE root checkpoints at
-    128/256/512/1024; seeds 111195252–260 and 111195792–799).
+- **Offline rule search** (same-action proxy, not winrate):
+  - Data: 628 multi-action roots (Acts 1–4) from 16 A20 runs whose effective `STS_OOC_MCTS_SIMS` is 4096, with
+    STS_RUN_PROFILE root checkpoints at 128/256/512/1024. Seeds: 111195252–255, 257–260, 792–794, 796–799 and 803.
   - Stopping at checkpoint c returns the visit leader at c on the same search path, so whether the action would have
-    differed is known exactly for that root.
+    differed is known exactly for that root. What a changed action does later in the run is not measured.
+  - The CPU column is an estimate: each root's thread CPU scaled linearly by the simulations it would keep.
   - Today every multi-action root ends at the exact visit lock, at about 2,050 simulations.
   - Results:
 
-    | rule | same action | OOC CPU |
+    | rule | same action | estimated OOC CPU |
     |---|---|---|
-    | `1024:0.7` | 99.2% | 0.69x |
-    | `512,1024:0.8` | 98.8% | 0.56x |
-    | `512,1024:0.7` | 98.5% | 0.53x |
+    | `1024:0.7` | 99.2% (5 differ) | 0.69x |
+    | `512,1024:0.8` | 98.7% | 0.56x |
+    | `512,1024:0.7` | 98.4% | 0.53x |
 
   - Act 3–4 roots alone (99): `1024:0.7` keeps 100% at 0.72x.
-  - The differing picks have final-root Q 0.05–0.10 below the final pick.
-  - Script: `/mnt/project-files/speed-proposals/gapstop_analyze.py`.
+  - The differing picks have final-root Q about 0.06 below the final pick, on average.
+  - Measured on seed 111195803 (below): OOC CPU 219 → 164 s with `1024:0.7`.
+  - Reproduce: `python3 /mnt/project-files/speed-proposals/gapstop_analyze.py
+    /mnt/project-files/speed-proposals/gapstop-data` (the 16 run profiles with their env files).
 - **Change:** opt-in `STS_OOC_MCTS_GAP_STOP=C1,C2,...:G`, default off. After completing simulation Ci, the search
   stops once the root's top-two visit gap is at least G·Ci, with visit selection only. It is off on full-budget and
   observed-lock roots and excludes `CPU_SECONDS`. It adds `early_stop_gap_ladder` to run-profile rows. Unit tests

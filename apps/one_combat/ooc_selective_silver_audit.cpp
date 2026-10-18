@@ -147,7 +147,7 @@ int runSelectiveSilverAudit(std::uint64_t seed, const std::string &planPath, con
         check(hybrid && hybrid->fastRuntime().identity() == plan.at("ctmLoadedIdentity"), "wrong loaded CTM identity");
         check(options.leafCombats == 3 && options.checkpointLeaves && options.sampleNoncombat
             && !options.bossRollout && !options.screenLeaf && !options.stopAtMapCheckpoint, "wrong teacher options");
-        config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false;
+        config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0;
         config.observeRootLock = false; config.captureTree = false; config.rootCheckpointSimulations.clear();
         options.leafObserver = {}; options.priorTracePath.clear();
         const char *prior = std::getenv("STS_SILVER_ROOT_PRIOR");
