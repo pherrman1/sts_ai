@@ -1,0 +1,5 @@
+duplicated names in decks Counter({'Strike': 208, 'Defend': 165}) gold median 42.0
+states 64 replays/state {3}
+candidate mean death 0.559; replay death (10k, 3 copies) 0.536; source-run death 0.531
+corr(pred, replay death) 0.7120269918867768
+replay-row BCE cand 0.4911219460045686 AUC 0.8450965419439294 const BCE 0.6904863996641725

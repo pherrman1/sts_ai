@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -230,6 +231,36 @@ int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
     }
     need(bool(out), "write failed");
     std::cerr << "ctmlizardfeatures activeLizardRows=" << rows << " supported=" << written << " -> " << outPath << "\n";
+    return 0;
+}
+
+// §527: native parity of the opt-in Act-4 survival model (STS_CTM_ACT4_SURVIVAL_MODEL) with the Python fit.
+// Each fixture line holds an Act-4 predictorInput and the Python death probability (tools/ctm_act4_survival.py).
+int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
+    need(std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL") != nullptr, "ctmact4survivaltest needs STS_CTM_ACT4_SURVIVAL_MODEL");
+    const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
+        "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+        "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", false);
+    std::ifstream in(fixturePath);
+    need(bool(in), "cannot open " + fixturePath);
+    std::string line;
+    int n = 0;
+    double worst = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const J row = J::parse(line);
+        const auto input = predictorInputFromJson(row.at("predictorInput"));
+        need(input.globals.encounter == static_cast<int>(sts::MonsterEncounter::THE_HEART) ||
+             input.globals.encounter == static_cast<int>(sts::MonsterEncounter::SHIELD_AND_SPEAR),
+             "fixture row is not an Act-4 fight");
+        worst = std::max(worst, std::abs(1.0 - sampler.fastRuntime().survival(input) - row.at("pDeath").get<double>()));
+        ++n;
+    }
+    if (n == 0 || !(worst < 1e-5)) {
+        std::cerr << "ctmact4survivaltest FAIL rows=" << n << " max_abs_diff=" << worst << '\n';
+        return 1;
+    }
+    std::cout << "ctmact4survivaltest PASS rows=" << n << " max_abs_diff=" << worst << '\n';
     return 0;
 }
 

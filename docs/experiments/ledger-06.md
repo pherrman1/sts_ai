@@ -20460,6 +20460,36 @@ test. No default change; whether to continue the Heart leaf line is Philipp's ca
 Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
 **Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
 
+## §527 — Act-4 survival model for the A20 CTM (5,467 Act-4 labels), offline gate: FAIL (Heart passes, Shield and Spear not shown) (2026-10-18)
+
+**Question (Philipp, 2026-10-17 23:49Z, card "Retrain"):** the deployed A20 CTM never saw an Act-4 row (audit
+`/mnt/project-files/audit-2026-10-17/ctm-a20.md` finding 1). Does a model fit on the 2026-10-17 Act-4 label
+collection price Shield and Spear and the Heart better?
+**Design:** [PREREG](evidence/ctm_act4_survival_20261018/PREREG.md) (commit `0bfa83b2`, before any fit). Corpus: the
+eight label tars (`act4_fork`, A20, learned-stop Silver 10k teacher, student C OOC, RUN_COMMIT `bcf14d34`), 5,467 rows
+(sha `c095368c…`; 2,913 S&S, death 12.3%; 2,554 Heart, death 68.2%), CTM seed-hash split TRAIN 4,370 / VALIDATION
+537 / TEST 560. Candidate: XGBoost 3.4.1 logistic on death from the predictor input (HP, gold, belt, deck size,
+upgrades, card-id counts, relic and potion ids), one model for both fights, grid depth {2,3,4} × min_child_weight
+{5,20} on VALIDATION. Selected depth 4, min_child_weight 20, 1,184 trees (`tools/ctm_act4_survival.py`). Incumbent:
+the calibrated `pathb-a20` stack (`ctmscorerows`, active Lizard). No gameplay seeds.
+**Result (TEST, opened once; seed-cluster bootstrap, 2,000):**
+
+| | n | observed death | candidate | incumbent | ΔBCE [95% CI] | AUC cand / inc, Δ lower CI |
+|---|---|---|---|---|---|---|
+| Heart | 262 | 0.683 | 0.697 | 0.171 | −1.267 [−1.491, −1.040] (0.381 vs 1.648) | 0.895 / 0.798, +0.050 |
+| Shield and Spear | 298 | 0.121 | 0.116 | 0.090 | −0.020 [−0.066, +0.023] | 0.812 / 0.788, −0.045 |
+
+**Verdict: FAIL** (criteria 1 and 3 fail on Shield and Spear; all three pass on the Heart). Reported: on the Heart the
+candidate beats an HP-only logistic (BCE 0.381 vs 0.541) and is calibrated in every HP bucket (≥ 90% HP: observed 0.41,
+candidate 0.42, incumbent 0.03). Descriptive natural-entrant check on the 64 F1 act4replay Heart states (gold imputed
+at the TRAIN median): candidate 0.559 mean death vs 0.536 in 192 replays at 10k, AUC 0.845
+([natural_heart64.txt](evidence/ctm_act4_survival_20261018/natural_heart64.txt)).
+**Decision:** Philipp chose (card, 2026-10-18 00:08Z) to ship the model opt-in for both fights despite the FAIL:
+`STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt` (sha `05279b3c…`). Native parity:
+CTest `ctm_act4_survival_parity`. No default change; an A20 A/B is proposed separately.
+[fit.json](evidence/ctm_act4_survival_20261018/fit.json), [gate.json](evidence/ctm_act4_survival_20261018/gate.json).
+**Knowledge impact:** `architecture/out-of-combat.md` and `operations/environment-variables.md` (the opt-in switch).
+
 ## §526 — Per-fight and per-root Silver search parameters at A20: no per-fight or per-root preference shown (2026-10-17)
 
 **Question (Philipp, 2026-10-17 21:57Z):** "investigate a learned model for parameters per fight / per root. i know
@@ -20520,3 +20550,39 @@ Evidence: [scripts and output](evidence/silver_root_regret_pilot_20261017/). Raw
 111193602–111193649 of this thread's block unused.
 **Knowledge impact:** one paragraph in `evaluation/current-research.md` (Silver root allocation section) and the
 `STS_CTMSILVER_ARMSET=rootregret` row in `operations/environment-variables.md`.
+
+## §523 — Several uniform random playouts per Silver leaf vs greedy at A20: random playouts lose at every k (2026-10-18)
+
+**Question (Philipp, 2026-10-17 22:10Z/22:11Z, thread "Distilled Silver playout picker"):** "multiple random
+rollouts, did we ever try that?" then "can you try it on a small pilot with increasing random playouts per leaf?".
+§479 had tested one uniform playout per leaf (−22.80 fight score) and 2 or 4 greedy playouts, not several random ones.
+**Design:** [PREREG](evidence/silver_uniform_playouts_pilot_20261017/PREREG.md), descriptive pilot, no labels, no
+decision rule. `ctmsilvergen` armset `uniformpl` (code e762e846, run as 6e4998e2 before the main merge; binary
+`8aecc181…`) with the §519/§521 harness (student C source runs, gen-6 E root prior, keys flag off, hallway every 3rd,
+R = 2, `STS_SILVER_ROLLOUT_ROOT_TABLE=0` so greedy uses the ADR-0040 table). Arms at 2,500 simulations:
+`greedy2500` and `uniform<k>x2500`, k = 1, 2, 4, 8 random playouts averaged per leaf. 16 sources
+(111193700–111193715) in-thread on 4 cores, all shards rc = 0; 176 valid paired fights (1 excluded, escape).
+**Result (paired, 95% seed bootstrap):**
+
+| arm | fight score | win | HP lost | CPU/fight vs greedy |
+|---|---|---|---|---|
+| greedy2500 | 286.2 | 95.2% | 11.4 | 1 |
+| uniform1x2500 | −34.6 [−45.9, −22.8] | −9.1 pp | +7.9 | 0.85x |
+| uniform2x2500 | −33.6 [−41.6, −23.7] | −9.1 pp | +7.3 | 1.47x |
+| uniform4x2500 | −33.1 [−43.8, −22.4] | −9.7 pp | +6.1 | 2.54x |
+| uniform8x2500 | −31.0 [−39.6, −21.2] | −8.5 pp | +6.3 | 4.70x |
+
+`uniform8 − uniform1`: +3.6 [−1.6, +8.2] score, −1.6 [−2.8, −0.3] HP lost. Bosses (33): every k loses 63–79 score and
+21–26 pp win rate. CPU per simulation grows almost linearly with k (1.03x, 1.80x, 3.16x, 5.82x); random playouts are
+shorter than greedy ones (13.1–13.7 vs 16.9 actions). Smoke (111193790–111193793, 63 fights, same binary): about −58
+at every k.
+**Interpretation:** averaging random playouts reduces leaf noise only slightly (HP lost improves by about 1.6 from
+1 to 8), while the bias of a random playout is unchanged, so the gap to greedy stays near 31–35 at up to 4.7x CPU per
+fight. **Inference:** the greedy playout's value comes from its play policy, not from lower variance; more playouts of
+a weak policy are no substitute. No follow-up proposed.
+[result.json](evidence/silver_uniform_playouts_pilot_20261017/result.json) (sha256 `6d0cff67…`). Raw:
+`/mnt/project-files/silver-uniform-playouts-pilot/upl-run.tar.gz` (run and smoke, sha256 `16b187ef…`). Seeds used:
+111193700–111193715, 111193790–111193793 and 111193716 (post-merge build smoke of the armset on main at 300
+simulations, rc = 0); the rest of 111193700–111193799 unused.
+**Knowledge impact:** one sentence added to the rollout paragraph in `architecture/combat-search.md` and the
+`STS_CTMSILVER_ARMSET=uniformpl` row in `operations/environment-variables.md`.

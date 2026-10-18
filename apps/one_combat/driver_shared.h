@@ -456,6 +456,7 @@ int ctmScoreRows(const std::string &inPath, const std::string &outPath,
                  const std::string &standardModel = "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
                  bool activeLizard = true);
 int ctmScoreRowsSelfTest();
+int ctmAct4SurvivalSelfTest(const std::string &fixturePath);
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
 int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
                       const std::string &standardModel, const std::string &outPath);
