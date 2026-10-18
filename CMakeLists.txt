@@ -130,6 +130,14 @@ add_test(NAME dead_target_debuff_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed
 set_tests_properties(dead_target_debuff_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(active_power_features_test tests/active_power_features_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(active_power_features_test PRIVATE include json/include)
+add_test(NAME active_power_features COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:active_power_features_test>)
+set_tests_properties(active_power_features PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(potion_reward_swap_test PRIVATE include json/include)

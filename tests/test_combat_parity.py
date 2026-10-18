@@ -206,8 +206,9 @@ class ProbeTest(unittest.TestCase):
         self.assertEqual(self.probe([step])[0]["status"], "COMPARED")
 
     def test_removed_status_leaves_no_payload(self):
-        # Native clears No Draw at end of turn by its bit only; the projection
-        # must not export the stale amount a fresh import would not have.
+        # Native clears No Draw at end of turn by its bit only, so the entry
+        # stays in statusMap (active_power_features_test checks that). The
+        # projection must not export what a fresh import would not have.
         obs = observation()
         obs["silverRoot"]["combat"]["playerPowers"].append({"id": "No Draw", "amount": -1})
         r = rng(obs)
