@@ -521,8 +521,29 @@ class LiveGameDriverTest(unittest.TestCase):
             screen, {**commands, "room_phase": "COMBAT"}, game)])
         self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(
             screen, {key: value for key, value in commands.items() if key != "room_phase"}, game)])
+        shop = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
+        self.assertIn("discard_potion", [a.mcp_tool for a in build_legal_actions(shop, commands, game)])
         game["potions"][0]["can_discard"] = False
         self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(screen, commands, game)])
+
+    def test_unadvertised_discard_leaves_single_action_navigators_alone(self):
+        fairy = [{"id": "FairyPotion", "can_discard": True}]
+        boss = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                "current_hp": 33, "floor": 50}
+        game = {"act": 3, "floor": 50, "current_hp": 33, "potions": fairy}
+        candidates = build_legal_actions(boss, {"available_tools": [{"tool": "proceed"}],
+                                                "room_phase": "COMPLETE"}, game)
+        self.assertIsNotNone(boss_completion_proceed_action(boss, game, candidates))
+        story = {"screen_type": "EVENT", "room_type": "VictoryRoom", "room_phase": "EVENT",
+                 "ready_for_command": True, "in_game": True, "can_cancel": False, "can_proceed": False,
+                 "floor": 51, "choice_list": ["[Continue]"], "screen_state": {"event_id": "Spire Heart",
+                 "options": [{"choice_index": 0, "disabled": False}]}}
+        game = {"act": 3, "floor": 51, "ascension_level": 0, "potions": fairy}
+        candidates = build_legal_actions(story, {"available_tools": [{"tool": "choose"}],
+                                                 "room_phase": "EVENT"}, game)
+        self.assertIsNotNone(victory_dialogue_action(story, game, candidates))
 
     def test_strict_full_belt_reward_discards_without_advertised_command(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1100,8 +1100,9 @@ occurrence. Sozu prevents these replacement actions. MCPTheSpire 1.0.4-dev never
 `discard_potion` in `get_available_commands`, but outside the `COMBAT` room
 phase its executor accepts `potion discard N` whenever a potion is held
 (bytecode of `MCPToolHandler`/`CommandExecutor`). The driver therefore offers
-`discard_potion` when MCP reports a non-`COMBAT` `room_phase`, and only for
-slots with `can_discard`; discarding never takes a monster target. The next observation scores the actual refill separately.
+`discard_potion` on combat-reward and shop screens when MCP reports a
+non-`COMBAT` `room_phase`, and only for slots with `can_discard`; other
+screens keep their exact advertised surface; discarding never takes a monster target. The next observation scores the actual refill separately.
 Shop mapping validation includes the semantic discard actions before model
 loading. Both native and captured shop purchases require a free potion slot
 and no Sozu; MCP can advertise a purchase that would not obtain a potion.
