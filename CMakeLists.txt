@@ -793,6 +793,20 @@ set_tests_properties(ctm_act4_survival_parity PROPERTIES
     LABELS "core;research-repro"
     ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# ADR-TBD: unset, the pathb-a20 stack uses the bundled model; =0 restores the CTM head, so parity must fail.
+add_test(NAME ctm_act4_survival_default COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_default PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT_MODIFICATION "STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_act4_survival_off COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_off PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=0"
+    WILL_FAIL TRUE
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation

@@ -43,6 +43,8 @@ def ooc_win_name(manifest: dict[str, Any]) -> str:
 OOC_FLOOR_NAME = "v_rich_trees.txt"
 # ADR-0046 rollout root table model; the advisor loads it from models/ beside itself.
 ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g6_E.txt"
+# ADR-0048 Act-4 survival model of the A20 CTM stack; the advisor loads it from models/candidates/ beside itself.
+ACT4_SURVIVAL_NAME = "candidates/ctm_act4_survival_trees.txt"
 ARM_C_NAME = "arm_c_student.bin"
 # ADR-0047: the card-select student student_sel.bin is the standard; student C stays accepted so
 # existing installs keep working until they are reinstalled with --arm-c-source student_sel.bin.
@@ -192,6 +194,8 @@ class RuntimeManager:
             checks += ((f"models/{OOC_FLOOR_NAME}", "oocFloorModelSha256", False),)
         if manifest.get("rolloutRootTableSha256"):
             checks += ((f"models/{ROLLOUT_ROOT_TABLE_NAME}", "rolloutRootTableSha256", False),)
+        if manifest.get("ctmAct4SurvivalSha256"):
+            checks += ((f"models/{ACT4_SURVIVAL_NAME}", "ctmAct4SurvivalSha256", False),)
         if "armCModelSha256" in manifest:
             if not arm_c_frozen(manifest["armCModelSha256"]):
                 raise RuntimeFailure("runtime Arm C SHA-256 is not the frozen student")
@@ -314,6 +318,7 @@ class RuntimeManager:
                 and manifest.get("oocWinModelSha256") == hashes.get("oocWin")
                 and manifest.get("oocFloorModelSha256") == hashes.get("oocFloor")
                 and manifest.get("rolloutRootTableSha256") == hashes.get("rolloutRootTable")
+                and manifest.get("ctmAct4SurvivalSha256") == hashes.get("ctmAct4Survival")
                 and manifest.get("armCModelSha256") == hashes.get("armC")
                 and manifest.get("ctmStackVersion") == hashes.get("ctmStackVersion", 1)
                 and manifest.get("ctmA20Sha256") == hashes.get("ctmA20")
@@ -390,6 +395,10 @@ class RuntimeManager:
                 if not source.is_file():
                     raise RuntimeFailure(f"tracked A20 CTM model missing: {source}")
                 hashes[key] = sha256(source)
+            act4_survival = self.repo / "models" / ACT4_SURVIVAL_NAME
+            if not act4_survival.is_file():
+                raise RuntimeFailure(f"tracked Act-4 survival model missing: {act4_survival}")
+            hashes["ctmAct4Survival"] = sha256(act4_survival)
         if ooc.is_file():
             hashes["ooc"] = sha256(ooc)
         hashes["oocWin"] = sha256(ooc_win)
@@ -418,6 +427,8 @@ class RuntimeManager:
             if qualified_ctm:
                 for name in (CTM_A20_NAME, CTM_A20_FAST_NAME):
                     shutil.copy2(self.repo / "selfplay/models" / name, staging / "models" / name)
+                (staging / "models" / ACT4_SURVIVAL_NAME).parent.mkdir()
+                shutil.copy2(self.repo / "models" / ACT4_SURVIVAL_NAME, staging / "models" / ACT4_SURVIVAL_NAME)
             if ooc.is_file():
                 shutil.copy2(ooc, staging / "models" / OOC_NAME)
             shutil.copy2(ooc_win, staging / "models" / OOC_WIN_NAME)
@@ -448,7 +459,7 @@ class RuntimeManager:
             if qualified_ctm:
                 manifest.update(ctmFallback=ctm_name, ctmA20Primary=CTM_A20_FAST_NAME,
                     ctmA20Fallback=CTM_A20_NAME, ctmA20Sha256=hashes["ctmA20"],
-                    ctmA20FastSha256=hashes["ctmA20Fast"])
+                    ctmA20FastSha256=hashes["ctmA20Fast"], ctmAct4SurvivalSha256=hashes["ctmAct4Survival"])
             atomic_json(staging / "manifest.json", manifest)
             self.validate_release(staging)
             os.replace(staging, final)
