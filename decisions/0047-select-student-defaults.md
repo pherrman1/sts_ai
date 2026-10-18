@@ -41,7 +41,10 @@ use this in the alpha zero loop".
 
 - An A20 run is unchanged if it keeps `STS_OOC_HEART1=studentc.bin`. Switching to `student_sel.bin` also switches
   on both options.
-- The live advisor uses the same rule. It changes only when its installed weights carry `x_act`.
+- The live advisor's research stack (`LiveOocMctsPolicy`) applies the same rule, with the same two variables as
+  overrides, and `tools/live_game_runtime.py` makes `student_sel.bin` its standard Arm C weights (student C is still
+  accepted). An installed advisor changes only when it is reinstalled with `student_sel.bin`. (Correction
+  2026-10-18: the first version of this ADR said the advisor already followed the rule; it did not.)
 - **Unverified:** a playing-strength gain (§524 NOT_SHOWN).
 - **Inference:** keying on `x_act` assumes that only select-distilled students carry that input. The select
   fine-tune is currently the only exporter of that input.
