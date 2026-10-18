@@ -2741,11 +2741,10 @@ gen-6 prior at 2,500 simulations, 3,043 paired fights: end-turn wider, other
 nodes narrower, and spire-mentor's constants) is NOT_SHOWN on all three
 contrasts, with score CIs within ±1.8; the shared defaults stay.
 Per root (ledger-06 §526, A20, 5,954 probed roots on 52 smoke seeds, regret of the 2,500-simulation pick
-against a 2 × 20k reference): roots do differ for exploration 50 and narrower other chance nodes (arm − base
-regret covaries across independent replicates), and choosing per root with replicate knowledge would cut regret
-by 0.066 [0.022, 0.114], about half of what 4x simulations buy (0.118). LightGBM on cheap root features
-(act, room, turn, HP, actions, energy, hand, monsters, base visit share) recovers none of it, so no per-root
-parameter controller is built.
+against two independent 20k references): no constant setting differs from base on average, per-root heterogeneity
+is not shown once selection and scoring use different references (oracle per-root choice 0.032 [−0.014, +0.079],
+against 0.124 for 4x simulations), and LightGBM on cheap root features (act, room, turn, HP, actions, energy, hand,
+monsters, base visit share) recovers nothing, so no per-root parameter controller is built.
 
 The complete frozen internal-node finite FPU screen is **`INTERNAL_FPU_INCONCLUSIVE`**.
 At the preregistered root metric, 1k CONTROL agreed with 10k CONTROL in 45/64

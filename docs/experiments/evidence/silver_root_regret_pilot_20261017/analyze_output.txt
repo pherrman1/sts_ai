@@ -22,7 +22,7 @@ base2500 regret corr reps{0,1} vs {2,3}: 0.562
 regret reduction vs base 0.0660 CI [0.0221 0.1136]
 
 == LightGBM on root features, 5 folds grouped by seed, out-of-fold arm choice (reduction vs base)
-reduction -0.0113 CI [-0.0616  0.0373] choices [ 722  872 1418 1696 1246]
+reduction -0.0056 CI [-0.0647  0.0556] choices [ 588  901 1711 1649 1105]
 
 == by act x room: mean arm - base2500 regret
 act 1 room 0 n  446 base1000 -0.0418 c12_2500 -0.0014 c50_2500 +0.1685 endwide2 +0.0076 othernar -0.0086
