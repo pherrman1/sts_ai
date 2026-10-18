@@ -2328,6 +2328,8 @@ namespace one_combat {
 namespace {
 bool liveEnabled = false;
 std::uint64_t liveSimulations = 512;
+// Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
+double liveFullBudgetFraction = 0;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
@@ -2796,6 +2798,12 @@ void resampleCounterfactualFuture(GameContext &gc, std::mt19937_64 &rng) {
 std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
     return splitMix64(seed ^ splitMix64(index));
 }
+// A salted hash of the search seed: deterministic per (run seed, decision) and
+// drawn from no game or search RNG stream.
+bool oocMctsFullBudgetRoot(std::uint64_t seed, std::uint64_t index, double fraction) {
+    const auto bits = splitMix64(oocMctsSearchSeed(seed, index) ^ 0x46554c4c42554447ULL) >> 11;
+    return double(bits) * 0x1p-53 < fraction;
+}
 void configureLiveOocMcts() {
     liveSamplerA20.reset();
     liveFallbackSampler.reset();
@@ -2819,12 +2827,15 @@ void configureLiveOocMcts() {
     liveCheckpointTrace.clear();
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
+    liveFullBudgetFraction = 0;
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     liveLeafCapture.reset();
     pendingLeafCapturePath.clear();
     pendingLeafCaptureProvenance = nullptr;
     if (std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_LEAF_CAPTURE requires STS_OOC_MCTS=1");
+    if (std::getenv("STS_OOC_MCTS_FULL_BUDGET_FRACTION") && !liveEnabled)
+        throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION requires STS_OOC_MCTS=1");
     liveSibling.reset();
     if (const char *path = std::getenv("STS_OOC_SIBLING_CAPTURE")) {
         if (!liveEnabled || !*path) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE requires STS_OOC_MCTS=1 and a path");
@@ -2893,6 +2904,16 @@ void configureLiveOocMcts() {
         liveSimulations = std::stoull(value);
         if (!liveSimulations) throw std::runtime_error("STS_OOC_MCTS_SIMS must be positive");
     }
+    // Playout-cap randomization (az-loop plan F6): this fraction of real searched
+    // roots runs the whole budget without early stops; policy rows flag them.
+    if (const char *fraction = std::getenv("STS_OOC_MCTS_FULL_BUDGET_FRACTION")) {
+        const std::string value(fraction);
+        char *end = nullptr;
+        const double x = value.empty() ? 0 : std::strtod(value.c_str(), &end);
+        if (value.empty() || end != value.c_str() + value.size() || !(x > 0 && x <= 1))
+            throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION must be in (0, 1]");
+        liveFullBudgetFraction = x;
+    }
     liveConfig = {}; liveOptions = {true};
     liveOptions.sampleNoncombat = true;
     liveOptions.collectKeys = g_collectKeys;
@@ -2918,6 +2939,8 @@ void configureLiveOocMcts() {
             || std::getenv("STS_OOC_MCTS_DECISION_LOG")
             || std::getenv("STS_OOC_MCTS_PRIOR_TRACE")))
         throw std::runtime_error("STS_OOC_MCTS_CPU_SECONDS requires EARLY_STOP=0, no gap/lock or leaf/prior capture");
+    if (liveOptions.cpuBudgetSeconds > 0 && liveFullBudgetFraction > 0)
+        throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION excludes STS_OOC_MCTS_CPU_SECONDS");
     if (liveOptions.heart1LeafPolicy && !heart1::enabled())
         throw std::runtime_error("STS_OOC_MCTS_LEAF_POLICY=heart1 requires STS_OOC_HEART1");
     // Philipp 2026-10-17: with heart1 weights loaded, heart1full is the default tree prior.
@@ -3182,6 +3205,7 @@ void configureLiveOocMcts() {
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
+        << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -3729,7 +3753,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected,
-    nlohmann::json *rootActions) {
+    nlohmann::json *rootActions, bool fullBudget) {
     nlohmann::json *const policyRoot = std::exchange(t_policyTargetRoot, nullptr);
     const double cpuStart = liveOptions.cpuBudgetSeconds > 0 ? threadCpuSeconds() : 0;
     ImaginedScope scope;
@@ -3808,6 +3832,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (reuseObserved) config.treeNodeCap = 100000;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
     const auto sole = model.soleLegalAction(0);
+    // A full-budget root drops the early stops, as the root-lock observer does,
+    // but keeps the singleton shortcut: a sole action has no policy target.
+    fullBudget = fullBudget && !sole;
+    if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; }
     if (!runProfilePath().empty()) {
         config.profileSearch = true;
         // Preserve the singleton shortcut and every existing stopping rule.
@@ -3992,6 +4020,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             {"selectionRule", config.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
             {"selectedId", result.selectedAction ? json(*result.selectedAction) : json(nullptr)},
             {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
+        // Only with the option on, so rows without it keep their exact bytes.
+        if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
     }
     if (rootActions) {
         *rootActions = nlohmann::json::array();
@@ -4210,7 +4240,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto result = [&] {
         try {
             return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSamplerFor(gc),
-                samples, &continuation, &selected, rootRow.is_null() ? nullptr : &rootActions);
+                samples, &continuation, &selected, rootRow.is_null() ? nullptr : &rootActions,
+                liveFullBudgetFraction > 0 && oocMctsFullBudgetRoot(seed, index, liveFullBudgetFraction));
         } catch (const std::exception &error) {
             if (leafStabilityMode) failStability(error.what());
             if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", error.what())};
@@ -7492,6 +7523,27 @@ void oocMctsAdapterSelfTest() {
     }
     require(oocMctsSearchSeed(42,7)==oocMctsSearchSeed(42,7)
         && oocMctsSearchSeed(42,7)!=oocMctsSearchSeed(42,8), "stable indexed search RNG");
+    std::uint64_t fullBudgetHits=0;
+    bool fullBudgetNested=true;
+    for (std::uint64_t i=0;i<20000;++i) {
+        const bool quarter=oocMctsFullBudgetRoot(42,i,.25);
+        fullBudgetHits+=quarter;
+        fullBudgetNested=fullBudgetNested && (!quarter || oocMctsFullBudgetRoot(42,i,.5))
+            && oocMctsFullBudgetRoot(42,i,1.0) && quarter==oocMctsFullBudgetRoot(42,i,.25);
+    }
+    require(fullBudgetHits>4700 && fullBudgetHits<5300 && fullBudgetNested,
+        "full-budget roots: stable, nested, about the requested fraction");
+    std::uint64_t stopSamples=0, fullSamples=0;
+    const auto savedRootStop=liveConfig.allowUnqualifiedRootStop;
+    liveConfig.allowUnqualifiedRootStop=true;   // the live default
+    const auto stopped=selectOocMctsAction(live,livePath,42,7,512,lethal,stopSamples);
+    const auto full=selectOocMctsAction(live,livePath,42,7,512,lethal,fullSamples,nullptr,nullptr,nullptr,true);
+    liveConfig.allowUnqualifiedRootStop=savedRootStop;
+    require(stopped.metrics.earlyStopLockedRoot && stopped.metrics.simulations<512
+        && !full.aborted && full.metrics.simulations==512 && !full.metrics.earlyStopLockedRoot
+        && full.selectedAction==stopped.selectedAction
+        && test::oocStateFingerprint(live)==before,
+        "full-budget root disables the early stop the default search takes");
     auto liveExpected=detachedCopy(live);
     const auto liveCandidates=v4CandidateActions(liveExpected);
     const auto selected=std::find_if(liveCandidates.begin(),liveCandidates.end(),

@@ -6601,6 +6601,64 @@ static bool ctmGenDeployedOoc() {
     throw std::runtime_error("STS_CTM_GEN_DEPLOYED_OOC must be 0 or 1 when set");
 }
 
+// #460: STS_CTM_ROW_OPENING_HAND=1 adds the fight's opening hand to every
+// combattransitiongen row (ctmOpeningHandJson on the pre-combat context). Unset
+// or 0, rows are unchanged.
+static bool ctmRowOpeningHandEnabled() {
+    const char *v = std::getenv("STS_CTM_ROW_OPENING_HAND");
+    if (!v || std::string(v) == "0") return false;
+    if (std::string(v) == "1") return true;
+    throw std::runtime_error("STS_CTM_ROW_OPENING_HAND must be 0 or 1 when set");
+}
+
+// #460 follow-up: STS_CTM_ROW_FIRST_SEARCH=1 adds the simulation endpoints of the
+// fight's first Silver search (SilverOutcomeCapture: root = every simulation,
+// best = the chosen root edge; HP before post-combat heals) to every row. Unset
+// or 0, rows and play are unchanged; set, play is unchanged (capture only counts).
+static bool ctmRowFirstSearchEnabled() {
+    const char *v = std::getenv("STS_CTM_ROW_FIRST_SEARCH");
+    if (!v || std::string(v) == "0") return false;
+    if (std::string(v) == "1") return true;
+    throw std::runtime_error("STS_CTM_ROW_FIRST_SEARCH must be 0 or 1 when set");
+}
+
+static nlohmann::json silverOutcomeLayerJson(const search::SilverOutcomeCapture::Layer &l) {
+    return {{"count", l.count}, {"deaths", l.deaths}, {"unresolved", l.unresolved}, {"hpCounts", l.hpCounts}};
+}
+
+// Arms the capture for one real fight and keeps the first search's endpoints.
+struct FirstSearchCaptureScope {
+    search::SilverOutcomeCapture outcomes;
+    nlohmann::json first = nullptr;
+    std::function<void(const search::NativeSilverRootView &)> previousObserver;
+    search::SilverOutcomeCapture *previousCapture = nullptr;
+    FirstSearchCaptureScope()
+        : previousObserver(search::g_nativeSilverRootObserver),
+          previousCapture(search::g_nativeSilverOutcomeCapture) {
+        search::g_nativeSilverOutcomeCapture = &outcomes;
+        search::g_nativeSilverRootObserver = [this](const search::NativeSilverRootView &view) {
+            if (view.decision == 1 && first.is_null()) {
+                const auto &edges = view.searcher.rootNode().edges;
+                int best = 0;   // SilverSearcher::bestAction: most visits, lowest index on ties
+                for (int e = 1; e < static_cast<int>(edges.size()); ++e)
+                    if (edges[e].visitCount > edges[best].visitCount) best = e;
+                first = {{"simulations", view.simulations}, {"inheritedVisits", view.inheritedVisits},
+                         {"skipped", view.skipped}, {"rootEdges", edges.size()}, {"bestEdge", best},
+                         {"bestEdgeVisits", edges.empty() ? 0 : edges[best].visitCount},
+                         {"root", silverOutcomeLayerJson(outcomes.root)},
+                         {"best", static_cast<std::size_t>(best) < outcomes.edges.size()
+                             ? silverOutcomeLayerJson(outcomes.edges[best])
+                             : silverOutcomeLayerJson(search::SilverOutcomeCapture::Layer{})}};
+            }
+            outcomes.reset();
+        };
+    }
+    ~FirstSearchCaptureScope() {
+        search::g_nativeSilverOutcomeCapture = previousCapture;
+        search::g_nativeSilverRootObserver = previousObserver;
+    }
+};
+
 // Deployed-OOC screens played by heart1 (STS_OOC_HEART1) vs the ordinary deployed step.
 static std::atomic<long long> g_ctmGenHeart1Steps{0}, g_ctmGenChainSteps{0};
 
@@ -6684,6 +6742,8 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             bool decided = false;
             bool runValid = false;
             BattleContext bc;
+            std::optional<FirstSearchCaptureScope> firstSearch;
+            if (recording && ctmRowFirstSearchEnabled()) firstSearch.emplace();
             {
                 one_combat::CombatTransitionRawObserverScope scope(
                     [&](const BattleContext &ended, GameContext &raw) {
@@ -6706,6 +6766,13 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
                     seed, fightIdx++, battleAct, battleFloor, battleRoom,
                     battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
                     predictorInput);
+                if (ctmRowOpeningHandEnabled()) row["openingHand"] = ctmOpeningHandJson(pre);
+                if (firstSearch) {
+                    row["firstSearch"] = firstSearch->first;
+                    // The realized fight on the capture's scale: battle end, before post-combat heals.
+                    row["battleEnd"] = {{"outcome", static_cast<int>(bc.outcome)}, {"hp", bc.player.curHp},
+                                        {"maxHp", bc.player.maxHp}, {"turn", bc.turn}};
+                }
                 if (controlled) {
                     if (annotations) annotations->push_back({{"sourceSeed", seed}, {"fightIdx", currentFight},
                         {"sourceGroup", seed}, {"commonPrefixCandidate", !interventionStarted},
