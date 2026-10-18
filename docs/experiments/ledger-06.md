@@ -20860,3 +20860,37 @@ the rollout3 leaf rates as safer.
 Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
+
+## §TBD-b — Prior-argmax Silver playouts vs production greedy Silver 10k at A20 (8 workers): score NOT_SHOWN, HP lost −0.7 at 10k (2026-10-18)
+
+**Question (Philipp, 2026-10-18 15:01Z/15:03Z, thread "Better fast leaf evaluation"):** after the §TBD pilot, he noted
+that 7.6x CPU per simulation is affordable in real fights (2-3% of A20 run CPU) and authorized "8 workers. Make sure
+that act4 fights go through ctm. Fallbacks should not use the prior rollout". Do prior playouts beat production
+Silver at similar CPU?
+**Design:** [PREREG](evidence/silver_prior_playout_ab_20261018/PREREG.md), written before results. Same harness as the
+pilot, armset `priorpl` with `STS_CTMSILVER_SWEEP_SIMS=10000`, `STS_CTMSILVER_PRIOR_SIMS=2500,10000`; arms
+`greedy10000` (production), `priorpl2500`, `priorpl10000`, all with root prior and tree prior K = 8, R = 2. Imagined
+fights: none (no OOC MCTS in the source runs); the armset refuses the imagined-fight Silver options and
+`playImaginedCombatWithSilver` forces greedy playouts. Real Act-4 fights (sources whose student C collected the keys)
+are played by every arm, prior playouts included. Run commit 7843e73c, code fecde345, binary `cd50de5a…`, 64
+sources 111197708–111197771 on 8 workers ([README](evidence/silver_prior_playout_ab_20261018/README.md)); 768 valid
+paired fights (2 excluded, escapes): 148 boss, 344 elite, 276 normal/other, 17 Act 4.
+**Result (paired vs `greedy10000`, 95% seed bootstrap):**
+
+| arm | Δ score | Δ win | Δ HP lost | CPU per fight | labels (score / HP) |
+|---|---|---|---|---|---|
+| priorpl2500 | +1.98 [−0.66, +4.69] | +0.5 pp [−0.3, +1.4] | −0.39 [−0.90, +0.10] | 1.90x | NOT_SHOWN / NOT_SHOWN |
+| priorpl10000 | +3.28 [−0.58, +7.16] | +1.0 pp [−0.1, +2.2] | −0.70 [−1.19, −0.22] | 7.29x | NOT_SHOWN / BETTER |
+
+Descriptive subsets: bosses priorpl2500 +9.77 [+0.95, +18.64] score, +3.0 pp win; priorpl10000 +12.55 [−0.87, +26.57],
++4.4 pp. Elites priorpl2500 +0.11, priorpl10000 +2.89 (HP −0.74 [−1.43, −0.03]). Act 4 (17 fights) priorpl2500 +1.7,
+priorpl10000 −12.2, both CIs about ±25. priorpl10000 − priorpl2500: +1.30 [−1.49, +4.15].
+**Interpretation:** prior playouts are at most a small gain over production. At 1.9x CPU per real fight the 2.5k arm is
+not shown better overall; its point estimates (+2 score, −0.4 HP) are about a third of the equal-sims pilot effect,
+because the 10k greedy control is stronger than greedy 2.5k. The only label-level gain, priorpl10000 HP lost −0.7, costs
+7.3x per fight (about +15-20% A20 run time, **Inference** from the A20 profile). **Inference:** the boss subset carries
+most of the score gain; a boss-only use would be a separate pre-registered test. No default change.
+[result.json](evidence/silver_prior_playout_ab_20261018/result.json) (sha256 `6eb4c430…`). Raw:
+`/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
+111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
+**Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.

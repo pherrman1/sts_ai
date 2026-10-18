@@ -63,6 +63,9 @@ simulations end (§142).
   instead of the greedy list lowers HP lost by 1.45 [0.31, 2.51] per A20 fight (elites and bosses), fight score
   +3.8 [−2.4, +10.3] INCONCLUSIVE, at 7.6x CPU per simulation. A better playout has some headroom; a deployable
   version would have to be distilled into something about as cheap as the greedy playout.
+- **Prior playouts vs production greedy 10k (§TBD-b, 768 A20 fights, 8 workers):** priorpl2500 +2.0 [−0.7, +4.7]
+  score, HP −0.4 NOT_SHOWN at 1.9x CPU per fight; priorpl10000 +3.3 [−0.6, +7.2] score, HP lost −0.70 [−1.19, −0.22]
+  at 7.3x. Bosses carry most of the point estimate (+9.8 / +12.5). At most a small gain; no default change.
 
 ## Relationships
 
