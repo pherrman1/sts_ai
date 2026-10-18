@@ -1,0 +1,7 @@
+name          concave-hp-leaf
+code_commit   633aa69a8a0c0f5b6b5fc4b2a5bfeb4fba94a1fb
+binary_sha256 TBD
+workers       16
+share         /mnt/project-files/silver-leaf-eval/endstate-ab
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
