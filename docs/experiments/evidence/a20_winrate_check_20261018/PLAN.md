@@ -22,18 +22,18 @@ environment, with two budget/prior changes Philipp asked for:
   off), **gen-6 MLP g6_E (`ca9bd7f2…`) as root prior (weight 400) and tree prior K=8** (the §516 LP prior settings;
   §516 ran them with learned stopping, this run with flat 10k).
 - Imagined combats inside OOC MCTS: the A20 CTM, except that every imagined Shield and Spear and Heart fight
-  (`STS_OOC_MCTS_ACT4_SILVER_SIMS=2500`) and every combat the CTM refuses (`STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=2500`,
-  instead of aborting the search to the V4 fallback) is played by plain native Silver at 2,500 simulations per root.
+  (`STS_OOC_MCTS_ACT4_SILVER_SIMS=500`) and every combat the CTM refuses (`STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=500`,
+  instead of aborting the search to the V4 fallback) is played by plain native Silver at 500 simulations per root.
   Philipp, 01:15Z: "Can we do silver combat fallback for act 4? I think the ctm doesn't work for them". 01:26Z: "Do
-  2.5k sims and not 100. Also do rollout 3". CPU cost of these options is unmeasured (estimate ~2.5 s per imagined
-  Act-4 fight), hence the 48 h unit timeout.
+  2.5k sims and not 100. Also do rollout 3". 01:27Z, after the thread estimated ~2.5 s per imagined Act-4
+  fight at 2.5k: "500 sims, 24h timeout". CPU cost of these options is otherwise unmeasured.
 - Not used (opt-in, not adopted): #642 Heart leaf td3, #652 Act-4 CTM, potion keep prior, V4/heuristic.
 - Keys collected, full runs to the Heart, fair (no RNG knowledge), A20.
 
 ## Run
 
 512 seeds 111194580–111195091, one `bestbench 10000 1 20 SEED` unit per seed through `tools/seed_guard.sh`, 16
-workers x 4 units at a time (unit line i goes to worker i mod 16 + 1), 48 h timeout per unit (rc 124).
+workers x 4 units at a time (unit line i goes to worker i mod 16 + 1), 24 h timeout per unit (rc 124).
 
 ## Report
 
