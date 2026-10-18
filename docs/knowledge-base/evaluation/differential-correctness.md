@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-18 against its unit tests.
 
 ## Purpose
 
@@ -102,6 +102,41 @@ records seed 0 / A0 stopping at the initial Neow Talk page with
 unsupported result. There is one captured boundary and zero compared supported
 decisions. This is evidence for precise failure reporting, not Java/native
 parity or a complete-run pass. The adjacent receipt records executable hashes.
+
+## Exact one-step combat parity probe
+
+The whole-run replay above stops at its first difference and has compared no
+real decision yet. The combat parity probe instead restarts every step from
+the game's own state, so one difference does not end the comparison.
+
+- Recording: run the game with `STS_DIFFERENTIAL_DEBUG_RNG=1` and the driver
+  with `--parity-trace`. Each advisor row then keeps the raw observation, all
+  12 RNG streams and, in the same `debugRng` envelope, `drawPileUuids`: the
+  true draw-pile order, bottom to top. The public observation still sorts the
+  draw pile, and decisions are unchanged.
+- Replay: `combat_parity_probe` imports each Silver combat decision with the
+  live importer and reorders the draw, discard and exhaust piles into the true
+  order. It then seeds the six combat RNG streams from the game, applies the
+  recorded action with `ScumSearchAgent2::takeAction`, and projects the result
+  with `wireFromSearchState`. The next recorded observation is imported the
+  same way and projected the same way, so importer conventions cancel.
+- Comparison: `tools/combat_parity.py run TRACE --probe BIN --out-dir OUT`
+  diffs every field (ignoring only `uniqueId`, `isolatedSearchSeed`,
+  `observedGeneration` and `nextUniqueCardId`) plus the six RNG counters and
+  seeds. It writes `verdicts.jsonl`, `summary.json` and `REPORT.md` with
+  mismatched fields, skip reasons and coverage per action, encounter, relic,
+  potion, power and card. A step whose next state is out of combat compares
+  only the outcome; the HP difference is informational, because post-combat
+  heals apply first in Java.
+- A mismatch is an engine, importer or exporter defect, or a representation
+  gap; triage each one with the Java reference audit before changing the
+  simulator. Runic Dome steps, steps without RNG or draw order, fallback
+  actions and actions the native root cannot resolve are skipped by reason.
+
+`tests/test_combat_parity.py` (ctest `combat_parity`) uses a real
+observation fixture with synthetic RNG and draw order. It proves the
+plumbing (draws follow the given order, RNG comes from the game, skip
+reasons), not parity. No Java capture has been compared yet.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
