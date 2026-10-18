@@ -1,0 +1,18 @@
+diff --git a/src/sim/search/NativeSilverBackend.cpp b/src/sim/search/NativeSilverBackend.cpp
+index 18f785c9..68ce6ead 100644
+--- a/src/sim/search/NativeSilverBackend.cpp
++++ b/src/sim/search/NativeSilverBackend.cpp
+@@ -740,6 +740,13 @@ namespace sts::search {
+             }
+         }
+         const auto view = makeSilverDrawPileObservation(live, knowledge);
++        if (std::getenv("AUDIT_PILE_STATS")) {
++            static std::atomic<long> n{0}, invalid{0}, kt{0}, kb{0}, full{0}, ktCards{0}, unk{0};
++            ++n; if (!view.valid) ++invalid; if (!view.knownTop.empty()) ++kt; if (!view.knownBottom.empty()) ++kb;
++            if (view.fullOrderObserved) ++full; ktCards += (long)view.knownTop.size(); unk += (long)view.unknown.size();
++            if (n % 100 == 0) std::cerr << "PILESTATS n=" << n << " invalid=" << invalid << " knownTop=" << kt
++                << " knownBottom=" << kb << " full=" << full << " ktCards=" << ktCards << " unknownCards=" << unk << '\n';
++        }
+         if (!view.fullOrderObserved) {
+             root.cards.drawPile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
+         }

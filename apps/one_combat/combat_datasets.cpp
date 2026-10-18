@@ -6481,7 +6481,7 @@ void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile,long l
     std::cout<<"wholecombatgen teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"wholecombatgen",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
 }
 
-static nlohmann::json combatTransitionRowJson(
+nlohmann::json combatTransitionRowJson(
     std::uint64_t sourceSeed, int fightIdx, int act, int floor, Room room,
     int encounter, const std::string &teacherId, bool runValid,
     bool outcomeDecided,

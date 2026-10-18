@@ -20666,3 +20666,53 @@ the run, and the Silver search tree made rows ~85 MB. Coverage is far too small 
 Raw traces (4.8 GB) stay on the PC under `~/Documents/sts/artifacts/parity-canary-20261018/`. Seeds used: 111194450
 (canary), 111194451–111194452 (fixed unit-test seeds, no gameplay).
 **Knowledge impact:** `evaluation/differential-correctness.md` (canary paragraph).
+## §530 — Shield and Spear search gap vs heart1's engine: rollout targeting NOT_SHOWN, information worth ~3 HP, line closed (2026-10-18)
+
+**Question:** Where do the extra HP our A20 search loses on Shield and Spear, compared with heart1's engine on the
+same 32 entry states, come from (−6.8 HP in the A20 loss audit; §528 ruled out the facing block check and tree
+reuse)? Asked by Philipp 2026-10-17 23:57Z ("so we could have a smarter rollout maybe? ... maybe we are not allowed to
+turn around anymore?") and 2026-10-18 00:20Z / 00:57Z ("yes compare heart1 and our sample of draw pile").
+
+**Setup.** As in §528: `one_combat act4replay`, 32 states × 3 copies, 10k exact sims, paired seed blocks 111130904–999
+(first) and 111130200–295 (replication), 192 fights per arm; local switches only, nothing committed.
+- Rollout targeting under Surrounded (attacks normally go to the lowest-HP monster): mode 1 keeps attacking the
+  faced monster; mode 2 attacks the monster with the larger frontal intent.
+- Full-information root: the search root is the live state (true draw order and rolled intents) instead of the fair
+  public view. An upper bound for anything a fair search can gain from information.
+- Root-view audit: counted the root draw-pile observation on 1,000 decisions (32 fights, seeds 111130200–231).
+
+**Result** (HP lost incl. full HP on death, paired per state, bootstrap 95% CI; positive = worse):
+
+| arm vs default (31.6 HP lost) | seeds 111130904+ | seeds 111130200+ | pooled, 192 fights | wins | CPU |
+|---|---|---|---|---|---|
+| targeting 1, keep facing | +3.6 [−0.1, +7.5] | +2.0 [−2.1, +6.2] | **+2.8 [+0.3, +5.6]** | 178 vs 182 | 0.99x |
+| targeting 2, face bigger intent | +1.0 [−3.4, +4.9] | +0.4 [−4.3, +5.4] | **+0.7 [−2.5, +3.8]** | 181 vs 182 | 1.04x |
+| full-information root | −1.8 [−5.9, +2.8] | −4.0 [−8.4, +0.5] | **−2.9 [−5.6, +0.0]** | 186 vs 182 | 0.99x* |
+
+- \*The full-information arm ran on a later binary (40d71721); its CPU ratio is against a default rerun on that
+  binary, which reproduced the default outcomes on all 192 fights (0.96x against the `t0` CPU times).
+- Default at this code loses 31.6 HP vs 33.3 at the §528 commit (same seeds). **Inference:** the rollout root table
+  (ADR-0046) and action cap merged in between explain the difference; not separately tested.
+- heart1's engine (9 copies per state, §528 audit runs) minus ours, per state: now −3.5 [−8.0, +0.8]; minus our
+  full-information root −0.6 [−5.1, +3.7].
+- Code comparison: our search `CardPile` information-set mode is a port of heart1's (sorted unknown region, uniform
+  sampling at draw time, tracked known top and bottom). Chance outcomes are reseeded as `Random(base + N)` in both,
+  and the widening and exploration constants heart1's `SearchAgent` sets equal ours (C 3.70, α 0.52, exploration 25).
+- Root-view audit: 0 of 1,000 observations invalid; 16 had a known top card; the rest of the pile was unknown, as in
+  heart1's pile.
+
+**Interpretation:** neither targeting rule helps; keep-facing is worse. No difference in draw-pile handling was
+found, and our fair root is built correctly. On current main the gap to heart1 is no longer shown. **Inference:** the
+remainder is mostly noise plus the value of hidden information, which no fair search can recover.
+
+**Decision:** Philipp closed the Shield-and-Spear search line (2026-10-18 09:44Z: "Okay close the search line"). No
+switch or default change. What remains is the entry state (deck, lower max HP) from OOC play, which accounts
+for about half of the Shield and Spear excess and the max-HP deficit (A20 loss audit F1).
+
+Evidence: [`evidence/a20_ss_search_gap_close_20261018/`](evidence/a20_ss_search_gap_close_20261018/README.md)
+(per-fight CSVs, the three local patches, SHA256SUMS).
+
+Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
+
+**Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
+approaches in `research/combat-search/leaf-evaluation.md`.
