@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-18 for the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-18 for the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -829,7 +829,12 @@ branches and direct MAP search fail closed with
 `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
 resolved `?`-room outcomes are recovered from vanilla's persisted
 `path_per_floor`, checked against `path_taken`, with the current public room
-allowed to complete the current floor. Missing, contradictory or shifted
+allowed to complete the current floor. Continuing a save made after a boss
+fight leaves `path_taken` with a second adjacent `BOSS` while `path_per_floor`
+keeps one `B` (observed in parity canary 2, seed 111194451, after the floor-16
+post-Hexaghost save was continued); that one marker is skipped at the boss
+floor or the following boss chest, and any further extra entry still fails
+closed. Missing, contradictory or shifted
 history fails closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`.
 Native import replays the observed outcomes using native float increments and
 resets; qualified root particles preserve these exact room probabilities.

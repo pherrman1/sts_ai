@@ -30,7 +30,10 @@ final class QuestionRoomHistory {
             if (visitedFloor == floor && !outcome.equals(currentOutcome)) return result;
             // Vanilla records the boss chest as null in path_per_floor and
             // omits it from path_taken. Never drop arbitrary missing entries.
-            if ("NONE".equals(outcome) && visitedFloor % 17 == 0) continue;
+            if ("NONE".equals(outcome) && visitedFloor % 17 == 0) {
+                if (reloadedBossMarker(original, source)) ++source;
+                continue;
+            }
             if (source >= original.size()) return result;
             String room = symbol(original.get(source++));
             if ("EVENT".equals(room)) {
@@ -42,8 +45,19 @@ final class QuestionRoomHistory {
                 if (visitedFloor > start) result.outcomes.add(entry);
             } else if ("INVALID".equals(room) || "NONE".equals(room) || !room.equals(outcome)) return result;
         }
+        // At the boss floor itself the duplicate is the last path entry.
+        if (floor % 17 == 16 && source == original.size() - 1 && reloadedBossMarker(original, source)) ++source;
         result.complete = source == original.size();
         return result;
+    }
+
+    // Continuing a save made after a boss fight appends "BOSS" to path_taken
+    // again (path_per_floor keeps one "B"), so a second adjacent "BOSS" before
+    // the boss chest is that reload marker, not a room.
+    private static boolean reloadedBossMarker(List<String> original, int source) {
+        return source > 0 && source < original.size()
+                && "BOSS".equals(symbol(original.get(source)))
+                && "BOSS".equals(symbol(original.get(source - 1)));
     }
 
     static String roomOutcome(String roomClass) {
