@@ -1,0 +1,9 @@
+name          silver-g7-ab
+code_commit   0646798bc142f5eb9ae0b5d2e7c8cad8e61eeff1
+binary_sha256 09a611b12c65a0351149d9bbd0a0cb43d406e06f9e81b92af38362287f292bd4
+workers       8
+share         /mnt/project-files/silver-az-mlp/gen7-ab
+parallel      4
+input states.jsonl /mnt/project-files/silver-az-mlp/gen7-ab/states.jsonl 549bd8f5ccff326b758a0bc81327e84f2fe9de985a58ff451dae9d47179d8f94
+input g6_E.txt /mnt/project-files/silver-az-mlp/gen7-ab/g6_E.txt ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228
+input g7_E.txt /mnt/project-files/silver-az-mlp/gen7-ab/g7_E.txt 2bb2c98d85759b5e4d433ae8482cc07b758e98fb6c242e413d5eed380cc4e7b5

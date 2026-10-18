@@ -506,6 +506,19 @@ detached copies at `SIMS` (copy 0 unperturbed, the rest perturbed as in
 `silversynthgen`; fight id = fight + 1000 × copy), and the run then ends. A boss
 encounter is forced as its act's boss by overwriting `gc.boss` (no game RNG is
 drawn). The manifest adds a `focus` block.
+`one_combat silverazact4gen N_STATES STATES.jsonl SIMS OUT_PREFIX SEED REPLICATES
+TREE_MIN_VISITS ROOT_BONUS` records the same rows on A20 Act-4 fights, which A0 full-run
+self-play never reaches. It reads `combat_transition_row_v2` rows of the Act-4 CTM label
+collection (student C out of combat), takes the first `N_STATES` valid single-capture Shield +
+Spear or Heart rows, restores each entry state (`transition.pre`, with relic counters and card
+misc) on a fresh A20 Act-4 GameContext with all three keys, and records `REPLICATES` copies at
+`SIMS`. State i has seed `SEED + i`; copy r (fight r, variant `act4`) gets game seed and misc/potion
+streams from (seed, r), since the battle draws its other streams from `gc.seed + floor`. Fight rows
+carry the source seed and fight in `perturbation`.
+Gen-7 prior g7_E (gen-6 window + 371k Act-4 roots from this mode; data branch
+`claude/silver-gen7-act4-data`) passes the offline gate (Act-4 fold-4 CE 1.408 vs g6_E 1.498, orig flat) but
+does not win more held-out Act-4 fights at 40k (§TBD: dWin −0.3 pp [−1.6, +1.0]) or at 2.5k (dWin −0.0 pp
+[−0.6, +0.6]); g6_E stays the prior.
 `one_combat silverfocusevalgen N ASC OUT_PREFIX SEED ENCOUNTER REPLICATES OTHER_SIMS
 ARM_SIMS TREE_MIN_VISITS PRIOR_A PRIOR_B` is the paired online check for such a prior: it reaches the
 encounter the same way (root bonus on), then plays `REPLICATES` copies of the fight per arm at

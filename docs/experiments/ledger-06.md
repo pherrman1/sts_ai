@@ -20249,6 +20249,59 @@ The pre-launch reviewer used 111139400–111139411.
 **Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
 `operations/environment-variables.md`.
 
+## §TBD — Silver prior gen 7 (Act-4 self-play roots): offline gate PASS, held-out Act-4 A/B NOT_SHOWN (2026-10-18)
+**Question:** does adding A20 Act-4 self-play to the Silver tree-prior training data (gen 6 never saw Act 4) make
+the prior better on Act-4 fights? Philipp: "lets do the next prior generation" (2026-10-17).
+**Data:** new mode `silverazact4gen` (PR #621) restores the 5,467 usable Act-4 CTM label states (2,913 S&S + 2,554
+Heart, student C OOC, states sha `c095368c`) and records 2 copies each at 40k sims with g6_E (`ca9bd7f2…`) as tree
+prior K=8 w400, root bonus off. RUN_COMMIT `f29515bf` (code `0646798b`, binary `09a611b1…`), seeds 111170200–111175666,
+16 workers, 219/219 units rc=0, every tar verified (sha vs DONE, binary, rows/states/producer shas, prior, sims, seed
+ranges). 10,934 fights, 371,487 multi-action roots.
+**Training:** gen-6 window + g7a4 (`pack-g7.npz` `92a0b83c`, 2,902,800 roots; Act-4 folds by source run), gen-6 E
+recipe (512/256 teacher, then 128/64 distilled + encounter/monster embeddings, cosine) on Philipp's RTX 3060 Ti.
+Featurizer = run binary; re-featurizing gen-6 w01 reproduces its 48,955 pack roots byte for byte. Data branch
+`claude/silver-gen7-act4-data` (never merge) at `1d69e625`: checkpoints, logs, `gen7/gate.json`, native export
+`combat_policy_mlp_g7_E.txt` `2bb2c98d…` (parity 2.4e-6; g6_E re-export byte-identical to `ca9bd7f2`).
+**Offline gate (fixed in PLAN.md before data): PASS.** Fold-4 CE orig 1.17500 vs g6_E 1.17486 (limit +0.005);
+Act-4 1.4082 vs 1.4984 (top-1 43.6% vs 39.2%); other sources flat or slightly better.
+**Online A/B ([PREREG](evidence/silver_gen7_ab_20261018/PREREG.md), review PASS):** the 1,094 held-out fold-4 states
+(586 S&S, 508 Heart, 586 source runs), same generator config, arm A g6_E vs arm B g7_E, paired seeds 111176000+i,
+2 copies. RUN_COMMIT `e88f695d`, 8 workers, 88/88 units, `verify_campaign.py` OK 1–8.
+**Result: NOT_SHOWN.** 2,188 pairs, 0 unpaired, 0 invalid. Win 63.2% (g6_E) vs 62.9% (g7_E): dWin −0.3 pp
+[−1.6, +1.0] (cluster bootstrap over source runs). S&S 87.7 vs 87.6% (−0.1 [−1.5, +1.3]); Heart 34.9 vs 34.4%
+(−0.6 [−2.8, +1.6]). End HP −0.04 [−0.66, +0.58]. Only 189 of 2,188 pairs are discordant (91 g7-only wins, 98
+g6-only). Sanity: the gen-7 self-play on the same states won 63.6% with g6_E.
+**Interpretation:** at 40k sims the prior barely changes outcomes on these fights (8.6% discordant pairs); a 9% lower
+Act-4 cross-entropy does not translate into Act-4 wins. **Inference (not supported at 2.5k for this pair, below):** prior quality matters more at low budgets. g6_E stays the Silver prior; g7_E stays on the data branch.
+[report.json](evidence/silver_gen7_ab_20261018/report.json). Raw: `/mnt/project-files/silver-az-mlp/gen7-act4/w01..w16.tar`
+(self-play; ignore the stray `wWW.tar`, a copy of w02) and `/mnt/project-files/silver-az-mlp/gen7-ab/w01..w08.tar`
+(sha256 `4f3f5fb8…`, `3138cf03…`, `e2bc096b…`, `65740fe9…`, `4543b29d…`, `a72582c3…`, `ca89b841…`, `3da20c82…`).
+**Low-budget A/B ([PREREG](evidence/silver_gen7_ab25_20261018/PREREG.md), Philipp "8 workers on 2.5k sims." 12:38Z):**
+same 1,094 states and decision rule, 2.5k sims, 8 copies, paired seeds 111177100+i. RUN_COMMIT `8c4030d3`, 8 workers,
+88/88 units, `verify_campaign.py` OK 1–8. **Result: NOT_SHOWN.** 8,752 pairs, 0 unpaired, 0 invalid. Win 61.45% (g6_E)
+vs 61.44% (g7_E): dWin −0.0 pp [−0.6, +0.6]. S&S 86.7 vs 86.7% (−0.1 [−0.8, +0.7]); Heart 32.3 vs 32.3% (+0.0 [−0.9,
++1.0]). End HP +0.03 [−0.26, +0.33]. 723 of 8,752 pairs discordant (361 g7-only, 362 g6-only). Going from 40k to 2.5k
+costs only ~1.8 pp of wins on these fights, and the better prior gains nothing at either budget, so for g6_E vs g7_E the Inference above
+does not hold here. [report.json](evidence/silver_gen7_ab25_20261018/report.json); raw
+`/mnt/project-files/silver-az-mlp/gen7-ab25/w01..w08.tar` (sha256 `c72940ff…`, `46b3be61…`, `75f76376…`, `ae24eb78…`, `a257a94d…`, `126c98c3…`, `ae5d607d…`, `b8e9c808…`).
+Seeds used: 111170100–111170119 and 111175700–111175701 (smokes), 111170200–111175666 (self-play), 111176000–111177093
+(40k A/B), 111177100–111178193 (2.5k A/B).
+**Retrain on active power features, then the switch check** (Philipp 13:41Z "can you still make gen 7 the prior?", card
+"Retrain, then swap" 13:44Z, "go 8 workers" 14:53Z): the gen-7 window re-featurized with main e032c04b and
+`STS_ACTIVE_POWER_FEATURES=1` (`pack-g7f.npz` `bdaf4f68`; 2,808 roots the current engine enumerates differently dropped;
+12% of state rows change, and `=0` reproduces the old features exactly) and retrained with gen 7's recipe on
+Philipp's GPU (data branch `0168b72d`). Sanity gate PASS: fold-4 CE orig 1.1731 vs g7_E 1.1750, Act-4 1.4073 vs 1.4082.
+`combat_policy_mlp_g7f_E.txt` `c45dcc0a…`, native parity 1.9e-6.
+[PREREG](evidence/silver_g7f_rt_20261018/PREREG.md): the same 1,094 states, 2.5k, 8 copies, with one model per arm as
+prior and rollout root table (A g6_E, B g7f_E), on code 8c03d1df (main 05da2c07 + generator). RUN_COMMIT `d127bdee`,
+8 workers, 88/88 units verified; every unit log shows its arm's root table. **Result: NOT_SHOWN, not HARM.** 8,752
+pairs, 0 unpaired, 0 invalid. Win 61.53% (g6_E) vs 62.07% (g7f_E): dWin +0.5 pp [−0.1, +1.2]. S&S 86.2 vs 86.4%
+(+0.1 [−0.6, +0.8]); Heart 33.0 vs 34.1% (+1.0 [−0.05, +2.1]). End HP +0.09 [−0.27, +0.46]. Discordant: 439
+g7f-only, 392 g6-only. The pre-registered switch rule (switch unless HARM) holds, so a separate PR makes g7f_E the
+default root table. [report.json](evidence/silver_g7f_rt_20261018/report.json); raw
+`/mnt/project-files/silver-az-mlp/g7f-rt/w01..w08.tar` (sha256 `153a3ab7…`, `94ba10bb…`, `e607e55b…`, `a4d5fce1…`,
+`94415a94…`, `2a5984d4…`, `47404003…`, `1823f1f1…`). Seeds 111178195 (smoke) and 111178200–111179293.
+**Knowledge impact:** result line added to the `silverazact4gen` paragraph in `architecture/combat-search.md`.
 ## §518 — Silver chance-node widening per category at A20 (spire-mentor constants): all three labels NOT_SHOWN (2026-10-17)
 
 **Question (Philipp, 2026-10-17, thread "spire-mentor engine ideas"):** after reading tfriedel/spire-mentor (STS2,

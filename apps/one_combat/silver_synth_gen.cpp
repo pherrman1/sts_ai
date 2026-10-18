@@ -25,6 +25,7 @@
 // replicate. A boss ENCOUNTER is forced as its act's boss (gc.boss is
 // overwritten when the act starts; no game RNG is drawn).
 
+#include "one_combat/combat_transition.h"
 #include "one_combat/driver_shared.h"
 #include "one_combat/silver_synth_keys.h"
 
@@ -481,6 +482,35 @@ void silverSynthGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
 
 namespace {
 
+// The frozen flat exact-budget Silver of the §397 corpus with an MLP prior (silverazgen and
+// silverazact4gen); returns the STS_ environment for the manifest.
+nlohmann::json azCheckEnvironment(const std::string &mode) {
+    const std::map<std::string, std::string> required = {
+        {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+        {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+        {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"}};
+    nlohmann::json environment = nlohmann::json::object();
+    for (const auto &[name, value] : required) {
+        const char *actual = std::getenv(name.c_str());
+        if (!actual || value != actual) throw std::runtime_error(mode + ": requires " + name + "=" + value);
+    }
+    for (char **env = environ; env && *env; ++env) {
+        const std::string entry(*env);
+        const auto eq = entry.find('=');
+        if (entry.rfind("STS_", 0) == 0 && eq != std::string::npos) environment[entry.substr(0, eq)] = entry.substr(eq + 1);
+    }
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
+        throw std::runtime_error(mode + ": requires flat exact-budget native Silver");
+    if (search::nativeSilverReuseCap() != 32768)
+        throw std::runtime_error(mode + ": reuse cap differs from the frozen 32k");
+    const std::string priorPath = search::nativeSilverRootPriorPath();
+    search::CombatValueNet prior;
+    if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
+        throw std::runtime_error(mode + ": STS_SILVER_ROOT_PRIOR must be a combat_policy_mlp model");
+    return environment;
+}
+
 void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, long long seedOffset,
                  const std::string &variant, int treeMinVisits, int rootBonus, const std::optional<AzFocus> &focus) {
     if (variant != "natural" && variant != "perturbed" && !focus)
@@ -490,30 +520,10 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (treeMinVisits < 1 || (rootBonus != 0 && rootBonus != 1))
         throw std::runtime_error("silverazgen: TREE_MIN_VISITS must be >= 1 and ROOT_BONUS 0 or 1");
     trainingCampaignStart();
-    // The frozen flat exact-budget Silver of the §397 corpus, at SIMS, with the prior.
-    const std::map<std::string, std::string> required = {
-        {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
-        {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
-        {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"}};
-    nlohmann::json environment = nlohmann::json::object();
-    for (const auto &[name, value] : required) {
-        const char *actual = std::getenv(name.c_str());
-        if (!actual || value != actual) throw std::runtime_error("silverazgen: requires " + name + "=" + value);
-    }
-    for (char **env = environ; env && *env; ++env) {
-        const std::string entry(*env);
-        const auto eq = entry.find('=');
-        if (entry.rfind("STS_", 0) == 0 && eq != std::string::npos) environment[entry.substr(0, eq)] = entry.substr(eq + 1);
-    }
-    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
-            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
-        throw std::runtime_error("silverazgen: requires flat exact-budget native Silver");
-    if (search::nativeSilverReuseCap() != 32768)
-        throw std::runtime_error("silverazgen: reuse cap differs from the frozen 32k");
+    const nlohmann::json environment = azCheckEnvironment("silverazgen");
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
-    if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
-        throw std::runtime_error("silverazgen: STS_SILVER_ROOT_PRIOR must be a combat_policy_mlp_v1 model");
+    prior.load(priorPath);
     const std::string rowsPath = outPrefix + ".jsonl";
     const std::string manifestPath = outPrefix + ".manifest.json";
     for (const auto &path : {rowsPath, manifestPath})
@@ -797,6 +807,178 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
     mf << manifest.dump(2) << '\n';
     std::cout << "silverfocusevalgen encounter=" << encounter << " completed=" << completed << '/' << nSeeds
               << " reached=" << reachedCount << " -> " << rowsPath << '\n';
+}
+
+// silverazact4gen (gen-7 Silver prior data, 2026-10-17): silverazgen self-play on recorded A20 Act-4
+// fight starts, which full-run silverazgen at A0 never reaches. STATES is combat_transition_row_v2
+// JSONL from the Act-4 CTM label collection (student C out of combat); the first N_STATES rows with
+// runValid, one capture, no quarantine and a Shield + Spear or Heart encounter are used. Each entry
+// state (transition.pre: HP, deck with misc, relics with counters, potions, bottles) is restored on a
+// fresh A20 GameContext moved to Act 4 with all three keys, as act4replay does from trace names.
+// REPLICATES copies of the fight are recorded at SIMS with the STS_SILVER_ROOT_PRIOR MLP as tree
+// prior (silverazgen rows, variant "act4"); state i has seed SEED_OFFSET + i and copy r is fight r,
+// whose combat randomness is drawn from (seed, r). Fight rows carry the source seed and fight.
+namespace {
+
+GameContext act4AzContext(const nlohmann::json &row, std::uint64_t seed, MonsterEncounter enc) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 20);
+    gc.transitionToAct(4);
+    one_combat::applyCombatTransitionState(
+        gc, one_combat::combatTransitionStateFromJson(row.at("transition").at("pre")));
+    for (const auto k : {Key::RUBY_KEY, Key::EMERALD_KEY, Key::SAPPHIRE_KEY}) gc.obtainKey(k);
+    const bool heart = enc == MonsterEncounter::THE_HEART;
+    const auto &globals = row.at("predictorInput").at("globals");
+    if (row.value("roomClass", "") != (heart ? "BOSS" : "ELITE"))
+        throw std::runtime_error("silverazact4gen: room does not match the encounter");
+    gc.curMapNodeX = 3;
+    gc.curMapNodeY = heart ? 3 : 2;
+    gc.floorNum = globals.at("floor").get<int>();
+    gc.curRoom = heart ? Room::BOSS : Room::ELITE;
+    gc.enterBattle(enc);
+    return gc;
+}
+
+}  // namespace
+
+void silverAzAct4Gen(int nStates, const std::string &statesPath, int sims, const std::string &outPrefix,
+                     long long seedOffset, int replicates, int treeMinVisits, int rootBonus) {
+    if (nStates < 1 || seedOffset < 0 || sims < 1 || replicates < 1)
+        throw std::runtime_error("silverazact4gen: requires positive state count, budget, replicates and offset");
+    if (treeMinVisits < 1 || (rootBonus != 0 && rootBonus != 1))
+        throw std::runtime_error("silverazact4gen: TREE_MIN_VISITS must be >= 1 and ROOT_BONUS 0 or 1");
+    trainingCampaignStart();
+    const nlohmann::json environment = azCheckEnvironment("silverazact4gen");
+    const std::string priorPath = search::nativeSilverRootPriorPath();
+    search::CombatValueNet prior;
+    prior.load(priorPath);
+    std::vector<nlohmann::json> states;
+    long long skipped = 0;
+    {
+        std::ifstream in(statesPath);
+        if (!in) throw std::runtime_error("silverazact4gen: cannot read " + statesPath);
+        for (std::string line; std::getline(in, line) && static_cast<int>(states.size()) < nStates;) {
+            if (line.empty()) continue;
+            auto row = nlohmann::json::parse(line);
+            const int enc = row.value("encounter", 0);
+            const bool usable = row.value("runValid", false) && row.value("captureStatus", "") == "exactly_one"
+                && row.value("quarantineReason", "x").empty() && row.value("act", 0) == 4
+                && row.at("predictorInput").at("globals").value("ascension", -1) == 20
+                && (enc == static_cast<int>(MonsterEncounter::SHIELD_AND_SPEAR)
+                    || enc == static_cast<int>(MonsterEncounter::THE_HEART));
+            if (usable) states.push_back(std::move(row));
+            else ++skipped;
+        }
+    }
+    if (static_cast<int>(states.size()) != nStates) throw std::runtime_error("silverazact4gen: too few usable states");
+    const std::string rowsPath = outPrefix + ".jsonl";
+    const std::string manifestPath = outPrefix + ".manifest.json";
+    for (const auto &path : {rowsPath, manifestPath})
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("silverazact4gen: refusing to overwrite " + path);
+    std::ofstream rows(rowsPath);
+    if (!rows) throw std::runtime_error("silverazact4gen: cannot open " + rowsPath);
+    const std::string priorSha = fileSha256(priorPath);
+    const std::string teacherId = "silver-az-act4-" + std::to_string(sims) + "-k" + std::to_string(treeMinVisits)
+        + "-rb" + std::to_string(rootBonus) + "-" + priorSha.substr(0, 8);
+    long long roots = 0, fights = 0, invalidFights = 0, errors = 0;
+    nlohmann::json jobs = nlohmann::json::array();
+    const int nJobs = nStates * replicates;
+    #pragma omp parallel for schedule(dynamic)
+    for (int j = 0; j < nJobs; ++j) {
+        const int si = j / replicates, r = j % replicates;
+        const auto &s = states[si];
+        const auto seed = static_cast<std::uint64_t>(seedOffset + si);
+        const auto enc = static_cast<MonsterEncounter>(s.at("encounter").get<int>());
+        std::ostringstream out;
+        FightRecorder recorder;
+        recorder.seed = seed;
+        recorder.variant = "act4";
+        recorder.fightIdx = r;
+        recorder.sims = sims;
+        recorder.lean = true;
+        recorder.out = &out;
+        struct HookScope {
+            ~HookScope() {
+                search::g_nativeSilverRootObserver = nullptr;
+                search::g_nativeSilverRootPriorOverride.reset();
+                search::g_nativeSilverTreePriorOverride.reset();
+                search::g_nativeSilverRootPriorBonusOff = false;
+            }
+        } hooks;
+        search::g_nativeSilverRootPriorOverride = true;
+        search::g_nativeSilverTreePriorOverride = treeMinVisits;
+        search::g_nativeSilverRootPriorBonusOff = rootBonus == 0;
+        bool valid = false;
+        std::string error;
+        try {
+            trainingRunStart();
+            // The battle draws its ai/hp/shuffle/card-random streams from gc.seed + floor and keeps
+            // the misc and potion streams, so each copy gets its own game seed and redrawn streams.
+            GameContext gc = act4AzContext(s, key(seed, r, 0xBA77), enc);
+            redrawCombatFuture(gc, key(seed, r, 0xAC74));
+            const int preHp = gc.curHp, preMaxHp = gc.maxHp;
+            search::ScumSearchAgent2 agent;
+            agent.simulationCountBase = sims;
+            agent.rng = std::default_random_engine(key(seed, r, 1));
+            BattleContext bc;
+            search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) { recorder.observe(view); };
+            agent.playoutBattle(gc, bc);
+            search::g_nativeSilverRootObserver = nullptr;
+            valid = trainingRunValid(bc.outcome != Outcome::UNDECIDED);
+            out << nlohmann::json{
+                {"kind", "fight"}, {"seed", seed}, {"variant", recorder.variant}, {"fight", r},
+                {"teacherId", teacherId}, {"act", gc.act}, {"floor", gc.floorNum},
+                {"room", roomStrings[static_cast<int>(gc.curRoom)]},
+                {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
+                {"preHp", preHp}, {"preMaxHp", preMaxHp},
+                {"perturbation", {{"sourceSeed", s.at("sourceSeed")}, {"sourceFight", s.at("fightIdx")},
+                                  {"replicate", r}}},
+                {"valid", valid}, {"won", bc.outcome == Outcome::PLAYER_VICTORY},
+                {"endHp", bc.player.curHp}, {"turns", bc.turn}, {"roots", recorder.roots}}.dump() << '\n';
+        } catch (const std::exception &e) {
+            error = e.what();
+        }
+        #pragma omp critical(silver_az_act4_write)
+        {
+            if (error.empty()) {
+                rows << out.str();
+                rows.flush();
+                roots += recorder.roots;
+                ++fights;
+                if (!valid) ++invalidFights;
+            } else {
+                ++errors;
+            }
+            jobs.push_back({{"seed", seed}, {"replicate", r}, {"sourceSeed", s.at("sourceSeed")},
+                            {"sourceFight", s.at("fightIdx")}, {"encounter", s.at("encounter")},
+                            {"error", error}, {"valid", valid}, {"roots", recorder.roots}});
+        }
+    }
+    rows.close();
+    const nlohmann::json manifest = {
+        {"schemaVersion", "silver_az_v1"}, {"variant", "act4"}, {"teacherId", teacherId},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"silverLeaf", effectiveSilverLeafSpecification()},
+        {"prior", {{"path", priorPath}, {"sha256", priorSha}, {"model", prior.description()},
+                   {"weight", search::nativeSilverRootPriorWeight()}, {"treeMinVisits", treeMinVisits},
+                   {"rootBonus", rootBonus == 1}}},
+        {"environment", environment},
+        {"states", {{"path", std::filesystem::absolute(statesPath).string()}, {"sha256", fileSha256(statesPath)},
+                    {"used", nStates}, {"skippedBefore", skipped}}},
+        {"seedSpec", {{"start", seedOffset}, {"count", nStates}, {"replicates", replicates}, {"ascension", 20}}},
+        {"simulationsPerDecision", sims},
+        {"integrity", {{"jobs", nJobs}, {"errors", errors}, {"fights", fights},
+                       {"invalidFights", invalidFights}, {"roots", roots}}},
+        {"jobs", jobs},
+        {"rows", {{"path", std::filesystem::absolute(rowsPath).string()}, {"sha256", fileSha256(rowsPath)}}}};
+    std::ofstream mf(manifestPath);
+    if (!mf) throw std::runtime_error("silverazact4gen: cannot write manifest");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "silverazact4gen teacher=" << teacherId << " states=" << nStates << " jobs=" << nJobs
+              << " errors=" << errors << " fights=" << fights << " roots=" << roots << " -> " << rowsPath << '\n';
+    writeTrainingProvenance(rowsPath, "silverazact4gen", nJobs, static_cast<int>(fights), static_cast<int>(errors),
+                            g_trainingHealthFailures.load(), roots, seedOffset, sims, 20);
 }
 
 // act4replay (A20 loss audit F1, 2026-10-17): fight-level replay of recorded Act-4 entry states

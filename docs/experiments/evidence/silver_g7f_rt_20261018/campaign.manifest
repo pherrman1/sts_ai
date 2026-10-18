@@ -1,0 +1,9 @@
+name          silver-g7f-rt
+code_commit   8c03d1df004681b6188937dc2b6c93bcbb6468d7
+binary_sha256 23c6659262df19fe2d1b011011fe007f36d67a4f8c4a4ee88c2d00dbf04ad8c6
+workers       8
+share         /mnt/project-files/silver-az-mlp/g7f-rt
+parallel      4
+input states.jsonl /mnt/project-files/silver-az-mlp/g7f-rt/states.jsonl 549bd8f5ccff326b758a0bc81327e84f2fe9de985a58ff451dae9d47179d8f94
+input g6_E.txt /mnt/project-files/silver-az-mlp/g7f-rt/g6_E.txt ca9bd7f25cd2fb5c3e82609c35077e1c55d40c3f9c3d27da8e87236997b33228
+input g7f_E.txt /mnt/project-files/silver-az-mlp/g7f-rt/g7f_E.txt c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934
