@@ -41,6 +41,8 @@ LEGACY_OOC_WIN_NAME = "v_win_trees.txt"
 def ooc_win_name(manifest: dict[str, Any]) -> str:
     return manifest.get("oocWinModelName", LEGACY_OOC_WIN_NAME)
 OOC_FLOOR_NAME = "v_rich_trees.txt"
+# ADR-0046 rollout root table model; the advisor loads it from models/ beside itself.
+ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g6_E.txt"
 ARM_C_NAME = "arm_c_student.bin"
 # ADR-0047: the card-select student student_sel.bin is the standard; student C stays accepted so
 # existing installs keep working until they are reinstalled with --arm-c-source student_sel.bin.
@@ -188,6 +190,8 @@ class RuntimeManager:
             checks += ((f"models/{ooc_win_name(manifest)}", "oocWinModelSha256", False),)
         if manifest.get("oocFloorModelSha256"):
             checks += ((f"models/{OOC_FLOOR_NAME}", "oocFloorModelSha256", False),)
+        if manifest.get("rolloutRootTableSha256"):
+            checks += ((f"models/{ROLLOUT_ROOT_TABLE_NAME}", "rolloutRootTableSha256", False),)
         if "armCModelSha256" in manifest:
             if not arm_c_frozen(manifest["armCModelSha256"]):
                 raise RuntimeFailure("runtime Arm C SHA-256 is not the frozen student")
@@ -309,6 +313,7 @@ class RuntimeManager:
                 and manifest.get("oocModelSha256") == hashes.get("ooc")
                 and manifest.get("oocWinModelSha256") == hashes.get("oocWin")
                 and manifest.get("oocFloorModelSha256") == hashes.get("oocFloor")
+                and manifest.get("rolloutRootTableSha256") == hashes.get("rolloutRootTable")
                 and manifest.get("armCModelSha256") == hashes.get("armC")
                 and manifest.get("ctmStackVersion") == hashes.get("ctmStackVersion", 1)
                 and manifest.get("ctmA20Sha256") == hashes.get("ctmA20")
@@ -366,6 +371,7 @@ class RuntimeManager:
         ooc = self.repo / "selfplay/models" / OOC_NAME
         ooc_win = self.repo / OOC_WIN_SOURCE
         ooc_floor = self.repo / "models" / OOC_FLOOR_NAME
+        rollout_root_table = self.repo / "models" / ROLLOUT_ROOT_TABLE_NAME
         if not ctm.is_file():
             raise RuntimeFailure(f"tracked CTM model missing: {ctm}")
         if not ctm_fast.is_file():
@@ -374,6 +380,8 @@ class RuntimeManager:
             raise RuntimeFailure(f"tracked OOC win model missing: {ooc_win}")
         if not ooc_floor.is_file():
             raise RuntimeFailure(f"tracked OOC floor model missing: {ooc_floor}")
+        if not rollout_root_table.is_file():
+            raise RuntimeFailure(f"tracked rollout root table model missing: {rollout_root_table}")
         hashes = {"advisor": sha256(advisor_source), "ctm": sha256(ctm), "ctmFast": sha256(ctm_fast)}
         hashes["ctmStackVersion"] = 2 if qualified_ctm else 1
         if qualified_ctm:
@@ -386,6 +394,7 @@ class RuntimeManager:
             hashes["ooc"] = sha256(ooc)
         hashes["oocWin"] = sha256(ooc_win)
         hashes["oocFloor"] = sha256(ooc_floor)
+        hashes["rolloutRootTable"] = sha256(rollout_root_table)
         if arm_c_source is not None:
             hashes["armC"] = sha256(arm_c_source)
         cached = self.find_cached(head, hashes)
@@ -413,6 +422,7 @@ class RuntimeManager:
                 shutil.copy2(ooc, staging / "models" / OOC_NAME)
             shutil.copy2(ooc_win, staging / "models" / OOC_WIN_NAME)
             shutil.copy2(ooc_floor, staging / "models" / OOC_FLOOR_NAME)
+            shutil.copy2(rollout_root_table, staging / "models" / ROLLOUT_ROOT_TABLE_NAME)
             if arm_c_source is not None:
                 shutil.copy2(arm_c_source, staging / "models" / ARM_C_NAME)
             manifest: dict[str, Any] = {
@@ -432,6 +442,7 @@ class RuntimeManager:
             manifest["oocWinModelSha256"] = hashes["oocWin"]
             manifest["oocWinModelName"] = OOC_WIN_NAME
             manifest["oocFloorModelSha256"] = hashes["oocFloor"]
+            manifest["rolloutRootTableSha256"] = hashes["rolloutRootTable"]
             if arm_c_source is not None:
                 manifest["armCModelSha256"] = hashes["armC"]
             if qualified_ctm:
