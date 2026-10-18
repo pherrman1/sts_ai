@@ -21144,6 +21144,6 @@ bound ≤ +0.25 pp.
 
 **Interpretation:** the old model transfers to the current A20 stack with no loss of accuracy. The refit is better
 by a small, clear margin. **Inference:** a model swap would cut the learned-stop combat CPU by about 4% at equal
-accuracy. That is too small for a full-run play test to detect, so a swap could only be checked for non-harm. The
-retrained model (`model.json` from the same recipe on all 512 seeds) is not compiled in; no code changed.
+accuracy. That is too small for a full-run play test to detect, so a swap could only be checked for non-harm. No
+retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
