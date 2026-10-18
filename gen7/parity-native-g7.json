@@ -1,0 +1,26 @@
+{
+ "g7_E": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 24028,
+  "max_abs_diff_vs_torch": 2.3863891600583997e-06,
+  "mean_abs_diff": 1.8689024360239756e-07,
+  "edges_with_incoming_dmg_gt127": 23,
+  "max_abs_diff_on_those": 1.9041015626442004e-06,
+  "native_us_per_root_min3": 5.55178425,
+  "pass_3e-6": true
+ },
+ "g6_E": {
+  "header": "combat_policy_mlp_v2",
+  "edges": 24028,
+  "max_abs_diff_vs_torch": 1.910314331166063e-06,
+  "mean_abs_diff": 1.811898651077755e-07,
+  "edges_with_incoming_dmg_gt127": 23,
+  "max_abs_diff_on_those": 1.4313537599619508e-06,
+  "native_us_per_root_min3": 5.86406575,
+  "pass_3e-6": true
+ },
+ "roots": {
+  "source": "pack-g7.npz fold 4 (r_seed%5==4), 4000 roots, default_rng(123) (prep_roots.py, pack path changed)",
+  "encounter_gt127_edges": 0
+ }
+}
