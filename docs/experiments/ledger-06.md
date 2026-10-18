@@ -20401,7 +20401,7 @@ Seeds used:
 **Knowledge impact:** `architecture/out-of-combat.md` (card-select student paragraph, `TARGET_PRIOR` /
 `LEAF_SELECTS` rows).
 
-## §TBD — Shield and Spear: rollout block check with worst-case facing, and tree reuse off: both NOT_SHOWN (2026-10-17)
+## §528 — Shield and Spear: rollout block check with worst-case facing, and tree reuse off: both NOT_SHOWN (2026-10-17)
 
 **Question:** Our A20 Act-4 runs lose more HP on Shield and Spear than heart1's engine does on the same entry states
 (paired −6.8 HP [−11.2, −2.5] in the A20 loss audit, `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`
