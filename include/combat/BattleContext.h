@@ -71,6 +71,13 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
+    // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
+    // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max
+    // HP). 0 = the legacy engine, which had the two swapped. Other values are
+    // fatal. Read only when a Blood Potion is drunk in combat.
+    bool bloodPotionHealFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

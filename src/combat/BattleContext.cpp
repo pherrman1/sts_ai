@@ -31,6 +31,13 @@ namespace sts {
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
+
+    bool bloodPotionHealFix() {
+        const char *value = std::getenv("STS_BLOOD_POTION_HEAL_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_BLOOD_POTION_HEAL_FIX must be 0 or 1");
+    }
 }
 
 
@@ -2380,7 +2387,10 @@ void BattleContext::drinkPotion(int idx, int target) {
 
 
         case Potion::BLOOD_POTION: {
-            int healAmt = static_cast<int>((static_cast<float>(player.maxHp * (hasBark ? 20 : 40)) / 100.0f));
+            // BloodPotion potency is 20% of max HP, 40% with Sacred Bark; the
+            // legacy engine had the two swapped (STS_BLOOD_POTION_HEAL_FIX=0).
+            const bool doubled = bloodPotionHealFix() ? hasBark : !hasBark;
+            int healAmt = static_cast<int>((static_cast<float>(player.maxHp * (doubled ? 40 : 20)) / 100.0f));
             addToBot(Actions::HealPlayer(healAmt));
             break;
         }

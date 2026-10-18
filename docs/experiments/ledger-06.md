@@ -21149,3 +21149,39 @@ by a small, clear margin. **Inference:** a model swap would cut the learned-stop
 accuracy. That is too small for a full-run play test to detect, so a swap could only be checked for non-harm. No
 retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
+
+## §544 — Second combat parity canary continued into Act 2: 260/290 steps match, Blood Potion heal fixed (2026-10-18)
+
+**Question:** past the floor-16 crash of §536, does the engine still reproduce the game's combat steps in Act 2?
+Philipp asked to continue the canary 2026-10-18 18:15Z ("can you continue here?") and chose the fixes for the
+three blockers that stopped it (#672 advisor crash, #676 `?`-room history after a save reload, #677 potion discard).
+**Setup:** same run as §536 (seed 111194451, A20) on Philipp's PC, continued from its saves:
+- trace5–6 on a temporary #672 release (`8339d112ba01-1d6785c80b1d`);
+- trace7 on `c890da5bc920-c3ec686835ff` (#676);
+- trace8–10 with the driver at main `3a91ac4a` (#677).
+Game with `STS_DIFFERENTIAL_DEBUG_RNG=1`; `combat_parity_probe` at `8339d112` (traces 5–6) and `c890da5b` (8–10).
+**Result:** the run reached floor 29 in Act 2 (HP 2). Totals across all canary-2 segments are 260 MATCH, 30 MISMATCH,
+7 `TRACE_ENDED`. The new segments added 134 MATCH and 21 MISMATCH over Three Byrds, Centurion and Healer, Sentry and
+Sphere, Three Cultists, Two Thieves, and Shelled Parasite and Fungi Beast. The new mismatches:
+- 1 step: a Blood Potion (no Sacred Bark, 79 max HP) healed 15 in Java and 31 natively. The combat engine had
+  the Sacred Bark condition reversed; the out-of-combat path was right.
+- 1 step: Blood for Blood killing a Mugger advanced `aiRng` once more in Java. Cause unknown.
+- 3 end turns in Two Thieves: native `miscBits` 1, Java 0. **Inference:** native thief bookkeeping.
+- 1 end turn: two ethereal cards are exhausted in reverse hand order natively.
+- 2 Discovery picks: `cardRandomRng` 185 vs 4 and 185 vs 3 (as in §536). 1 Discovery copy: `costForTurn` in the
+  discard pile (as in §536). 2 Havoc+ steps: Perfected Strike count, and 1 `lastTargetedMonster` (as in §536).
+- 9 end turns after a Discovery: the drawn hand differs in one upgrade flag and native draws one more `shuffleRng`.
+  **Inference:** the probe's true draw order is incomplete once a combat-generated card is in the piles.
+
+The run stopped on a Headbutt selection with pending actions (`silver_selection_pending_actions`), which Silver
+does not support. On the way, two `--continue-run` restarts stopped on display-only "state changed while awaiting
+the advisor" (no action taken).
+**Interpretation:** `STS_BLOOD_POTION_HEAL_FIX` (default on, `=0` restores) makes the in-combat Blood Potion heal
+20% of max HP, 40% with Sacred Bark. This is play-changing for every sim that drinks one: the legacy engine doubled
+its heal without Sacred Bark, so values fitted under it stay biased upward until refit: the Blood Potion rank in
+`potionKeepRank` (ADR-0039), the §510 potion price and the §537/§542 descriptive prices. **Unverified:** the size of
+that bias. Results recorded before this fix are comparable only with `STS_BLOOD_POTION_HEAL_FIX=0`. The `aiRng`, `miscBits` and draw-order differences need triage before
+changing anything. Raw traces stay on the PC under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds: 111194451
+(canary); 111194453 (fixed seed of `blood_potion_heal_test`, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md` (canary continuation paragraph),
+`operations/environment-variables.md` (`STS_BLOOD_POTION_HEAL_FIX`).
