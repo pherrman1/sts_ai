@@ -679,7 +679,8 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         && !source.ooc.at("details").contains("parentUnrevealedCardRewards");
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
-    // relic branches still require complete public offer history.
+    // relic branches require complete public offer history or the uniform
+    // relic offer prior (STS_LIVE_RELIC_OFFER_PRIOR).
     if (!combatHistoryComplete) {
         result.supported = false;
         result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";
