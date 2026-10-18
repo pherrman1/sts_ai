@@ -73,7 +73,7 @@ struct OocAdapterOptions {
     // sources V4 cannot encode (discards, non-upgrade selectors, ...) is still scored by heart1;
     // only a node heart1 cannot score keeps the uniform prior.
     bool heart1Coverage = false;
-    // Research option (default off, STS_OOC_MCTS_TARGET_PRIOR=1, needs the heart1 prior): a compound
+    // Option (STS_OOC_MCTS_TARGET_PRIOR=1, needs the heart1 prior; live default on for x_act weights, ADR-0047): a compound
     // upgrade/remove/transform target gets p(source) * p_heart1(card | the selector the source opens)
     // instead of an equal share of its source's prior. Student C's selector head is untrained
     // (audit-2026-10-17 heart1-distill finding 1): use with heart1 or a student distilled on selects.
@@ -115,7 +115,7 @@ struct OocAdapterOptions {
     // Same supported candidates/rules as prior, but heart1 scores every candidate
     // or the unchanged continuation chain handles the step. Requires a loaded net.
     bool heart1LeafPolicy = false;
-    // Research option (default off, STS_OOC_MCTS_LEAF_SELECTS=heart1, needs LEAF_POLICY=heart1 and
+    // Option (STS_OOC_MCTS_LEAF_SELECTS=heart1, live default on for x_act weights, ADR-0047; needs LEAF_POLICY=heart1 and
     // heart1full): rollouts also hand every card select (remove, transform, ...) to heart1 instead of
     // the chain. Same caveat as targetPrior for student C.
     bool heart1LeafSelects = false;

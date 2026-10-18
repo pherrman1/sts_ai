@@ -28,6 +28,10 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0047](0047-select-student-defaults.md) turns on `STS_OOC_MCTS_TARGET_PRIOR=1` and
+  `STS_OOC_MCTS_LEAF_SELECTS=heart1` by default when the heart1 weights are a card-select student (`x_act`
+  input, `student_sel.bin`), and makes that student the standard A20 OOC weights (`=0` / `=chain` restore).
+
 - [ADR-0046](0046-silver-rollout-root-table-default.md) makes Silver's greedy leaf rollouts use a card table
   built per searched root by the gen-6 E prior (`STS_SILVER_ROLLOUT_ROOT_TABLE=0` restores the ADR-0040 table).
 
