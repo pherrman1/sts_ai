@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -60,6 +61,8 @@ std::string sha256Text(const std::string &text) {
 }
 // §527 Act-4 survival model (tools/ctm_act4_survival.py, which mirrors these features; keep them in lockstep).
 constexpr int kAct4Cards=400,kAct4Relics=200,kAct4Potions=50;
+// ADR-TBD: the Act-4 survival model the pathb-a20 stack uses when STS_CTM_ACT4_SURVIVAL_MODEL is unset.
+constexpr char kDefaultAct4SurvivalModel[]="models/candidates/ctm_act4_survival_trees.txt";
 const char *const kAct4Scalars[]={"heart","cur_hp","max_hp","hp_frac","gold","potion_capacity","potion_count",
     "deck_size","upgraded"};
 constexpr int kAct4ScalarCount=int(sizeof(kAct4Scalars)/sizeof(kAct4Scalars[0]));
@@ -88,25 +91,47 @@ std::vector<float> act4SurvivalFeatures(const CombatPredictorInputV1 &p) {
     }
     return x;
 }
-// STS_CTM_ACT4_SURVIVAL_MODEL (unset: off): a CompactTreeNet of death in the fight. Loaded once per process.
-const CompactTreeNet *act4SurvivalModel() {
-    static const std::unique_ptr<CompactTreeNet> model=[]() -> std::unique_ptr<CompactTreeNet> {
-        const char *path=std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
-        if(!path) return nullptr;
-        require(*path!=0,"STS_CTM_ACT4_SURVIVAL_MODEL is empty");
-        std::unordered_map<std::string,int> index;
-        for(int i=0;i<kAct4ScalarCount;++i) index[kAct4Scalars[i]]=i;
-        for(int i=0;i<kAct4Cards;++i) index["card_"+std::to_string(i)]=kAct4ScalarCount+i;
-        for(int i=0;i<kAct4Relics;++i) index["relic_"+std::to_string(i)]=kAct4ScalarCount+kAct4Cards+i;
-        for(int i=0;i<kAct4Potions;++i) index["potion_"+std::to_string(i)]=kAct4ScalarCount+kAct4Cards+kAct4Relics+i;
-        auto net=std::make_unique<CompactTreeNet>();
-        require(net->load(path,index,"ctm-act4-survival") && net->logistic,
-            "STS_CTM_ACT4_SURVIVAL_MODEL is not a logistic CompactTreeNet over the Act-4 survival features");
-        std::cerr << "[ctm-act4-survival] model=" << path << " sha256=" << sha256File(path)
-                  << " scope=SHIELD_AND_SPEAR,THE_HEART\n";
-        return net;
+// STS_CTM_ACT4_SURVIVAL_MODEL: a CompactTreeNet of death in the fight, loaded once per process. A path applies to
+// every runtime; unset applies kDefaultAct4SurvivalModel to the pathb-a20 stack only; 0 turns it off.
+struct Act4SurvivalModel { std::unique_ptr<CompactTreeNet> net; std::string path; };
+Act4SurvivalModel loadAct4SurvivalModel(const std::string &path) {
+    std::unordered_map<std::string,int> index;
+    for(int i=0;i<kAct4ScalarCount;++i) index[kAct4Scalars[i]]=i;
+    for(int i=0;i<kAct4Cards;++i) index["card_"+std::to_string(i)]=kAct4ScalarCount+i;
+    for(int i=0;i<kAct4Relics;++i) index["relic_"+std::to_string(i)]=kAct4ScalarCount+kAct4Cards+i;
+    for(int i=0;i<kAct4Potions;++i) index["potion_"+std::to_string(i)]=kAct4ScalarCount+kAct4Cards+kAct4Relics+i;
+    auto net=std::make_unique<CompactTreeNet>();
+    // CompactTreeNet reports loads on stdout; the live advisor's stdout is a strict JSONL protocol, so the banner is
+    // dropped here and the [ctm-act4-survival] line below goes to stderr.
+    std::ostringstream banner;
+    auto *const stdoutBuffer=std::cout.rdbuf(banner.rdbuf());
+    bool loaded=false;
+    try { loaded=net->load(path,index,"ctm-act4-survival"); } catch(...) { std::cout.rdbuf(stdoutBuffer); throw; }
+    std::cout.rdbuf(stdoutBuffer);
+    if(!loaded || !net->logistic)
+        throw std::runtime_error("STS_CTM_ACT4_SURVIVAL_MODEL: "+path+" is not a logistic CompactTreeNet over the "
+            "Act-4 survival features (=0 turns the Act-4 survival model off)");
+    std::cerr << "[ctm-act4-survival] model=" << path << " sha256=" << sha256File(path)
+              << " scope=SHIELD_AND_SPEAR,THE_HEART\n";
+    return {std::move(net),path};
+}
+const Act4SurvivalModel *act4SurvivalModel(bool a20Stack) {
+    const char *raw=std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
+    if(raw) {
+        require(*raw!=0,"STS_CTM_ACT4_SURVIVAL_MODEL is empty");
+        if(std::string(raw)=="0") return nullptr;
+        static const auto model=loadAct4SurvivalModel(raw);
+        return &model;
+    }
+    if(!a20Stack) return nullptr;
+    // The bundled model next to this executable (an installed release's models/), else under the working directory.
+    static const auto model=[] {
+        std::error_code error;
+        const auto beside=std::filesystem::read_symlink("/proc/self/exe",error).parent_path()/kDefaultAct4SurvivalModel;
+        return loadAct4SurvivalModel(!error && std::filesystem::is_regular_file(beside,error)
+            ? beside.string() : std::string(kDefaultAct4SurvivalModel));
     }();
-    return model.get();
+    return &model;
 }
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
     return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
@@ -805,6 +830,10 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     } else identity_=productionIdentity();
     if(identity_.contains("bossSurvivalLogitShift"))
         bossDeathLogitShift_=identity_.at("bossSurvivalLogitShift").get<float>();
+    if(const auto *act4=act4SurvivalModel(identity_.at("candidateId")=="pathb-a20")) {
+        act4Survival_=act4->net.get();
+        act4SurvivalPath_=act4->path;
+    }
     const auto &capabilities=identity_.at("capabilities").at(deepsetStack?"fast":"standard");
     require(metadata_.value("capabilities",nlohmann::json::object())==capabilities,
         "combat runtime capabilities are not listed in its manifest");
@@ -1201,12 +1230,11 @@ double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin)
     return reserveProbability(lizardBrewRModel_,pReserveWin);
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {
-    // §527: the opt-in Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4);
-    // other heads are unchanged.
-    if(p.globals.encounter==int(sts::MonsterEncounter::THE_HEART) ||
-       p.globals.encounter==int(sts::MonsterEncounter::SHIELD_AND_SPEAR))
-        if(const auto *act4=act4SurvivalModel())
-            return float(1-act4->predict(act4SurvivalFeatures(p)));
+    // §527: the Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4); other
+    // heads are unchanged. Default on for the pathb-a20 stack (ADR-TBD).
+    if(act4Survival_ && (p.globals.encounter==int(sts::MonsterEncounter::THE_HEART) ||
+       p.globals.encounter==int(sts::MonsterEncounter::SHIELD_AND_SPEAR)))
+        return float(1-act4Survival_->predict(act4SurvivalFeatures(p)));
     float logit=linear("survival.survival",encode("survival",p))[0];
     require(std::isfinite(logit),"nonfinite survival");
     // §470: boss calibration from the manifest, as a shift on the death logit (absent: no change).
