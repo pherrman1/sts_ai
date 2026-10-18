@@ -54,7 +54,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"pathHistory",J::array()},{"combatFloors",J::array()},
         {"combatHistory",J::array()},{"combatHistoryComplete",true},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
-        {"rewardPityHistoryComplete",true},
+        {"rewardPityHistoryComplete",true},{"potionChance",g.potionChance},{"cardRarityFactor",g.cardRarityFactor},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
     for(const auto pot:g.potions)p["potions"].push_back(J(pot));
     for(int i=0;i<g.deck.size();++i){auto c=cardWire(g.deck.cards[i]);int bottle=-1;
@@ -884,6 +884,17 @@ int main(int argc,char **argv){try{
             advisor::LiveOocStateV1 belief;
             check(advisor::importLiveOocStateV1(unknown,belief).ok && belief.hiddenEventRewardPity,
                     "Library unknown pity must reach public-belief policy");
+            check(!belief.mctsRoot.supported || (belief.mctsRoot.state.potionChance!=source.potionChance
+                    || belief.mctsRoot.state.cardRarityFactor!=source.cardRarityFactor),
+                    "unknown pity must not import the exact counters");
+            for(int defect=0;defect<4;++defect) {
+                auto bad=wire;auto &pub=bad["ooc"]["publicState"];
+                if(defect==0)pub.erase("potionChance");
+                if(defect==1)pub.erase("cardRarityFactor");
+                if(defect==2)pub["potionChance"]=15;
+                if(defect==3)pub["cardRarityFactor"]=6;
+                check(!advisor::importLiveOocStateV1(bad,belief).ok,"malformed exact reward pity accepted");
+            }
             for(int defect=0;defect<3;++defect) {
                 auto bad=wire;
                 if(defect==0)bad["ooc"]["details"].erase("hpAmount0");
@@ -990,8 +1001,10 @@ int main(int argc,char **argv){try{
                 visibleRelicRemoved(source.info.rewardsContainer.relics[i]);
         if (source.screenState==ScreenState::BOSS_RELIC_REWARDS)
             for(RelicId relic:source.info.bossRelics)visibleRelicRemoved(relic);
-        auto publicSource=source;publicSource.potionChance=30;publicSource.cardRarityFactor=-18;
-        sameTokens(buildTokStatePure(publicSource,path),buildTokStatePure(live.projected,live.path));
+        check(live.projected.potionChance==source.potionChance && live.projected.cardRarityFactor==source.cardRarityFactor
+                && (!live.mctsRoot.supported || (live.mctsRoot.state.potionChance==source.potionChance
+                    && live.mctsRoot.state.cardRarityFactor==source.cardRarityFactor)),name+" exact reward pity counters");
+        sameTokens(buildTokStatePure(source,path),buildTokStatePure(live.projected,live.path));
         check(source.deck.cardTypeCounts==live.projected.deck.cardTypeCounts,name+" deck type counts");
         check(source.deck.transformableCount==live.projected.deck.transformableCount,name+" transformable count");
         check(source.deck.upgradeableCount==live.projected.deck.upgradeableCount,name+" upgradeable count");
@@ -1021,7 +1034,7 @@ int main(int argc,char **argv){try{
                     representativeBits.push_back(binding.primitiveBits);
             advisor::validateLiveOocActionSet(live,representativeBits,true);
         }
-        auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
+        auto qa=scoreLiveOocV4(source,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
         const bool v4Unsupported = name.rfind("unsupported_",0)==0
             || name=="rewards_without_cards" || (source.screenState==ScreenState::CARD_SELECT

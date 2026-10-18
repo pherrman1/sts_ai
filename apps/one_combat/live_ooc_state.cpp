@@ -345,8 +345,12 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.lastRoom = source.projected.lastRoom;
     root.curEvent = source.projected.curEvent;
     root.boss = source.projected.boss;
-    // Keep the constructor's public prior for hidden reward/event counters.
-    // Live Java's private blizzard counters are deliberately not imported.
+    // Exact reward pity counters replace the constructor's values; without an
+    // exact history the root keeps them and MCTS resamples them (#636).
+    if (source.rewardPityHistoryComplete) {
+        root.potionChance = source.projected.potionChance;
+        root.cardRarityFactor = source.projected.cardRarityFactor;
+    }
     root.shopRemoveCount = source.projected.shopRemoveCount;
     root.curMapNodeX = source.projected.curMapNodeX;
     root.curMapNodeY = source.projected.curMapNodeY;
@@ -715,6 +719,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         const auto &p = o.at("publicState");
         next.rewardPityHistoryComplete = p.contains("rewardPityHistoryComplete")
             ? boolean(p, "rewardPityHistoryComplete") : false;
+        // STS_LIVE_OOC_EXACT_PITY=0 restores the old public-belief prior even
+        // when the producer exports the exact counters (#636).
+        if (const char *flag = std::getenv("STS_LIVE_OOC_EXACT_PITY"); flag && std::string(flag) == "0")
+            next.rewardPityHistoryComplete = false;
         require(string(p,"character") == "IRONCLAD", "only Ironclad is representable");
         g.cc = CharacterClass::IRONCLAD;
         g.seed = 0; // Never used. No live RNG or hidden queue is imported.
@@ -722,12 +730,17 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.floorNum=integer(p,"floor",0,1000); g.curHp=integer(p,"hp",0,32767);
         g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
         g.gold=integer(p,"gold",0,1000000);
-        // Hidden native blizzard counters are intentionally absent. These
-        // compatibility fields are populated only for exact synthetic
-        // fixtures; real captures mark rewardPityHistoryComplete=false, so
-        // direct V4 fails closed and MCTS does not consume these values.
+        // Reward pity counters (vanilla blizzardPotionMod and
+        // cardBlizzRandomizer). They are consumed only with an exact history;
+        // otherwise these placeholders stay unused: direct V4 fails closed and
+        // MCTS samples the counters from the public-belief prior.
         g.potionChance=30;
         g.cardRarityFactor=-18;
+        if (next.rewardPityHistoryComplete) {
+            g.potionChance=integer(p,"potionChance",-1000,1000);
+            require(g.potionChance%10==0,"potionChance must be a multiple of 10");
+            g.cardRarityFactor=integer(p,"cardRarityFactor",-40,5);
+        }
         g.shopRemoveCount=integer(p,"shopRemoveCount",0,100);
         g.blueKey=boolean(p,"blueKey"); g.greenKey=boolean(p,"greenKey");
         g.keysEnabled=boolean(p,"keysEnabled"); g.redKey=boolean(p,"redKey");

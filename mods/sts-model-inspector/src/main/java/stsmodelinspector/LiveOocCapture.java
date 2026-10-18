@@ -566,6 +566,13 @@ final class LiveOocCapture {
         p.put("seenRelicsComplete", false);
         p.put("priorEvents", priorEvents);
         p.put("shopRemoveCount", shopRemovals);
+        // Vanilla's reward pity counters (native potionChance and
+        // cardRarityFactor; saved as potion_chance and
+        // card_random_seed_randomizer). Both follow from reward screens the
+        // player has already seen, so exporting them equals perfect memory.
+        p.put("potionChance", AbstractRoom.blizzardPotionMod);
+        p.put("cardRarityFactor", AbstractDungeon.cardBlizzRandomizer);
+        p.put("rewardPityHistoryComplete", true);
     }
 
     static String canonicalEventId(String liveId) {
