@@ -20870,7 +20870,7 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
-## §TBD — concave-HP Silver victory leaf, paired 3-fight continuations at A20: NOT_SHOWN (2026-10-18)
+## §537 — concave-HP Silver victory leaf, paired 3-fight continuations at A20: NOT_SHOWN (2026-10-18)
 
 **Question (Philipp, 2026-10-18, thread "end-state formula"):** 14:06Z "change the evaluation at the final state, so
 tweak the formula"; 14:16Z "Yes, but use 16 workers for that. Also think about whether HP is the only thing we want
@@ -20888,7 +20888,7 @@ binary `48e17951…`).
 +0.8 / +1.2 pp, all CIs include 0. Descriptive: largest point gain at start HP ≥ 90% (k = 2.7 +0.23 [−0.01, +0.49]),
 none at < 45%. Descriptive prices under the student policy: non-Fairy potion 5.0 HP-eq [1.8, 8.1], max HP 1.08 HP
 per point [0.53, 1.66], gold 0.011 HP per gold [−0.064, 0.070], against the formula's 11 / 2 / 0.25.
-**Interpretation:** a concave HP term does not change the next three fights' outcome by more than about ±0.25 floor.
+**Interpretation:** a concave HP term does not change the next three fights' outcome by more than about +0.26 floor (k = 2.7) or +0.37 floor (k = 1.35), the CI upper bounds.
 **Inference:** Silver's decisions are rarely close enough in HP risk for the curvature to matter. The price CIs exclude
 the formula's potion, max-HP and gold weights, but §513 already found lower potion weights NOT_SHOWN in whole runs,
 and the prices were not a pre-registered decision. Per the decision rule the option stays research-only, unset.

@@ -4,7 +4,7 @@ Pre-registration: [PREREG.md](PREREG.md). Campaign for `tools/cloud/worker.sh`: 
 [units.txt](units.txt) (240 seeds, 16 workers), [run_unit.sh](run_unit.sh); worker brief [BRIEF-worker.md](BRIEF-worker.md).
 Analysis: `python3 tools/analyze_concave_hp_leaf.py docs/experiments/evidence/silver_concave_hp_leaf_20261018 OUT.json <extracted tars>`.
 
-## Result: NOT_SHOWN (ledger §TBD)
+## Result: NOT_SHOWN (ledger §537)
 
 All 240 units rc=0; `verify.txt` shows all 16 tars OK (`tools/cloud/verify_campaign.py`), hashes in `tars.sha256`,
 raw tars on the share at `/mnt/project-files/silver-leaf-eval/endstate-ab/`. 2,651 states (130 terminal source
