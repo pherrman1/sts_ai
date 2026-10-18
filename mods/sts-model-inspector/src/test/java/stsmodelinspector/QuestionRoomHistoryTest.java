@@ -45,6 +45,21 @@ public final class QuestionRoomHistoryTest {
                 && history.outcomes.get(0).get("floor").equals(19)
                 && history.outcomes.get(0).get("outcome").equals("SHOP"),
                 "boss chest placeholder must not shift act-two question floors");
+        // Canary 2 (seed 111194451): the floor-16 post-boss save was continued,
+        // leaving "BOSS","BOSS" in path_taken but one "B" in path_per_floor.
+        List<String> reloadPath = new ArrayList<>(laterPath.subList(0,16)), reloadResolved = new ArrayList<>(laterResolved.subList(0,16));
+        reloadPath.add("BOSS");
+        require(QuestionRoomHistory.capture(reloadPath,reloadResolved,1,16,"BOSS").complete,
+                "reloaded boss marker at the boss floor");
+        reloadPath.add("M"); reloadPath.add("?");
+        reloadResolved.add(null); reloadResolved.add("M");
+        history = QuestionRoomHistory.capture(reloadPath,reloadResolved,2,19,"EVENT");
+        require(history.complete && history.outcomes.size()==1
+                && history.outcomes.get(0).get("floor").equals(19),
+                "reloaded boss marker must not block act-two question history");
+        reloadPath.add(16,"BOSS");
+        require(!QuestionRoomHistory.capture(reloadPath,reloadResolved,2,19,"EVENT").complete,
+                "only one reloaded boss marker is skipped");
         require(QuestionRoomHistory.capture(new ArrayList<String>(),new ArrayList<String>(),1,0,"").complete,
                 "fresh run has complete empty history");
         require(!QuestionRoomHistory.capture(null,resolved,1,5,"EVENT").complete,
