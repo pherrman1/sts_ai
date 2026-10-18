@@ -2048,7 +2048,7 @@ with the search and its chain.
   (`STS_OOC_HEART1_SCALAR=1` forces it). Map and path feature projections are
   batched over rows with the same per-element addition order. About 2.1x faster
   than the first port (`heart1score` on the adapter's 104 early records x10).
-- Exact fast paths (§TBD), all off under `STS_OOC_HEART1_SCALAR=1` and each
+- Exact fast paths (§533), all off under `STS_OOC_HEART1_SCALAR=1` and each
   bit-identical to the reference loop: attention scores, softmax weights and
   value sums in AVX with `dot()`'s partial sums and reduction order (eight keys
   reduced at once); four-output reductions in the projection kernel; a

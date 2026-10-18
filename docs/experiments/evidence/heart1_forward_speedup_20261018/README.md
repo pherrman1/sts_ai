@@ -1,4 +1,4 @@
-# Exact speedup of the native heart1/student forward (ledger §TBD)
+# Exact speedup of the native heart1/student forward (ledger §533)
 
 Performance only: no gameplay, model, RNG or default change. Philipp 2026-10-18 11:52Z ("definitely work on the
 student forward thing and make it faster") after the A20 stack profile (thread "Profile the A20 winrate stack",

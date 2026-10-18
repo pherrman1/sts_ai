@@ -639,7 +639,7 @@ packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). T
 the V4 network in the rollout gates (about 21%); cached deck tokens and transposed dense layers cut it about
 2.8x, bitwise identically, 1.29–1.41x per run (§450). On the A20 winrate-check stack (student_sel as rollout
 policy) student forwards inside rollout3 leaves were about 70% of a run and real Silver combat 2–3%; exact kernels
-halve the forward and cut OOC MCTS CPU 1.67–1.77x per unit with identical play (§TBD).
+halve the forward and cut OOC MCTS CPU 1.67–1.77x per unit with identical play (§533).
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
