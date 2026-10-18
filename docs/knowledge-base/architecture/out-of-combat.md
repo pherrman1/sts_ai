@@ -2048,6 +2048,19 @@ with the search and its chain.
   (`STS_OOC_HEART1_SCALAR=1` forces it). Map and path feature projections are
   batched over rows with the same per-element addition order. About 2.1x faster
   than the first port (`heart1score` on the adapter's 104 early records x10).
+- Exact fast paths (§533), all off under `STS_OOC_HEART1_SCALAR=1` and each
+  bit-identical to the reference loop: attention scores, softmax weights and
+  value sums in AVX with `dot()`'s partial sums and reduction order (eight keys
+  reduced at once); four-output reductions in the projection kernel; a
+  per-thread memo of FixedVec projections (bias included) for inputs with at
+  most four features, keyed by weights and input bits (`fixed_obs` is not
+  memoized); the last block's observation rows compute only keys and values;
+  reused per-thread buffers; and softmax and SiLU exps through a four-lane copy
+  of glibc's `__expf_fma` fast path (its special-case inputs go to `std::exp`).
+  The vector exp is used only after a start-up self-test (1.05M bit patterns
+  plus boundaries) finds it bitwise equal to the process's `std::exp`, so other
+  CPUs or libm versions keep the scalar calls. student_sel logits-only pass on
+  4,383 A20 rollout records: about 910 → 450 µs per call (2.0x).
 - OOC MCTS tree prior (research, default off): `STS_OOC_MCTS_PRIOR=heart1` with
   `STS_OOC_HEART1` set. At each node V4 would score (the unchanged
   `sourcePriorCovered` rule), heart1's logit replaces V4's for every source

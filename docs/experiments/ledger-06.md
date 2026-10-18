@@ -20717,6 +20717,32 @@ Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
 **Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
 approaches in `research/combat-search/leaf-evaluation.md`.
 
+## §533 — Exact speedup of the native student forward: 2.0x per call, OOC MCTS CPU 1.67–1.77x, play identical (2026-10-18)
+
+**Question:** Philipp (2026-10-18 11:52Z) asked to make the student forward faster after an A20 profile of the
+winrate-check stack (4 seeds, 111195252–255, gdb stack samples plus `STS_OOC_CPU_PROFILE`/`STS_RUN_PROFILE`): OOC
+MCTS was 97–98% of CPU, real Silver combat 2–3%; student_sel forwards inside rollout3 leaves (about 11 per leaf at
+0.95 ms) were 66–83% of CPU, imagined Act-4 Silver fights 43% of Act-3 CPU, CTM sampling 3–5%.
+**Change:** bit-identical fast paths in `heart1_policy.cpp`: AVX attention with `dot()`'s reduction order, four-output
+reductions in the projection kernel, a per-thread FixedVec projection memo keyed by weights and input bits,
+key/value-only observation rows in the last logits-only block, reused buffers, and a four-lane copy of glibc's
+`__expf_fma` fast path for softmax and SiLU, enabled only when a start-up self-test matches `std::exp` bit for bit.
+`STS_OOC_HEART1_SCALAR=1` keeps every reference loop.
+**Result:** student_sel logits-only pass 887–933 → 450 µs per call on 4,383 captured A20 rollout records (full pass
+1.8x); `heart1score` byte-identical to main on 6,778 student_sel records, 300 heart1 and 300 student C records, and
+in scalar mode. Paired A20 `bestbench` units with the winrate-check env (main `658d43ee` vs the candidate), seed
+111195257 full run and 111195258–260 Act 1: 4/4 byte-identical play; OOC MCTS CPU 1,350 → 763, 373 → 211,
+343 → 205, 488 → 285 s (1.67–1.77x).
+**Decision:** adopt (exact, no behavior change). **Inference:** Act 3 gains less, since imagined Act-4 Silver fights
+do not use the student. Acts 3–4 records were not in the parity set.
+
+Evidence: [`evidence/heart1_forward_speedup_20261018/`](evidence/heart1_forward_speedup_20261018/README.md); raw
+`/mnt/project-files/heart1-forward-speedup/raw.tar.gz`; profile `/mnt/project-files/a20-profile/REPORT.md`.
+
+Seeds used: 111195252–111195260 (profile 252–255, capture 256, gate 257–260).
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`; cost sentence in
+`evaluation/current-research.md`.
 ## §532 — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
 
 **Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the

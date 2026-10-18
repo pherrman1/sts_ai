@@ -637,7 +637,9 @@ the CTM at about 10%. With the V4 rollout policy the floor-model calls of the na
 were about 20% of rollout3 CPU after §437 (8% with a uniform rollout policy, which rarely reaches the planner); a
 packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). The largest remaining rollout3 cost is
 the V4 network in the rollout gates (about 21%); cached deck tokens and transposed dense layers cut it about
-2.8x, bitwise identically, 1.29–1.41x per run (§450).
+2.8x, bitwise identically, 1.29–1.41x per run (§450). On the A20 winrate-check stack (student_sel as rollout
+policy) student forwards inside rollout3 leaves were about 70% of a run and real Silver combat 2–3%; exact kernels
+halve the forward and cut OOC MCTS CPU 1.67–1.77x per unit with identical play (§533).
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
