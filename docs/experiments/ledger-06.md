@@ -20826,3 +20826,36 @@ the rollout3 leaf rates as safer.
 Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
+
+## §TBD — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
+
+**Question:** after #656/#659, how many combat steps of a whole live run does the native engine reproduce exactly?
+Asked by Philipp 2026-10-18 14:29Z ("lets go with the canary run").
+**Setup:** one A20 Ironclad run on Philipp's PC, seed 111194451, installed runtime `64f6ef277966-3f57d0b45c36`
+(inspector JAR `78eb4d03`), game with `STS_DIFFERENTIAL_DEBUG_RNG=1`, driver `--parity-trace` (4 segments joined by
+`--continue-run`), `combat_parity_probe` built at main `05da2c07`. Seed 111194451 is also the fixed seed of
+`dead_target_debuff_fix_test`, which drives no gameplay.
+**Result:** 135 combat steps compared over 9 Act 1 encounters (Hexaghost 36, Gremlin Gang 18, Cultist 15, Gremlin Nob
+14, Small Slimes 12, Exordium Wildlife 11, Jaw Worm 10, Three Louse 10, Red Slaver 9): 126 MATCH, 9 MISMATCH, 3
+`TRACE_ENDED`; no unresolved recorded action and no held-selection skips. The 9 mismatches:
+- 3 steps: a monster killed by an attack keeps its powers natively (Strength, Vulnerable, Weak, Angry/Spore Cloud
+  payload). Java clears them in `updateDeathAnimation`, after `die()`; not a gameplay difference.
+- 1 step: Clothesline killed a Curl Up louse; native curled anyway (block 12 vs 0). Java requires
+  `damageAmount < currentHealth`.
+- 1 step: a Discovery pick (Colorless Potion, The Bomb) advanced `cardRandomRng` 184 vs 3. Cause unknown.
+- 1 step: The Bomb with cost 0 for the turn kept `costForTurn` 0 in the discard pile natively; Java shows 2.
+- 1 step: Perfected Strike count 5 (game) vs 4 (native) after Havoc+ exhausted a Strike. Cause unknown.
+- 1 step: Havoc+ in Gremlin Gang, `lastTargetedMonster` 2 vs 1; likely the random target.
+- 1 step: Hexaghost Inferno is recorded twice in Java's move history; `nextMove` matches.
+
+The run stopped at floor 16 (Act 1 boss card reward): the live advisor segfaulted in `ScumSearchAgent2::stepRandom`
+on an empty action list inside an OOC rollout. It reproduces offline from the saved input, on the previous runtime
+`64b38c88` too. The driver also stopped 3 times on display-only stat changes of cards in the discard and exhaust piles,
+which its tolerance check misses; no action was taken on those.
+**Interpretation:** the probe now ignores a dead monster's powers, and native Curl Up matches Java (cannot change
+play: the louse dies either way). The Discovery RNG gap is the one open difference that can change later combat
+(Havoc and random targets draw from `cardRandomRng`). Coverage is Act 1 only. Raw traces (469 MB) stay on the PC
+under `~/Documents/sts/artifacts/parity-canary2-20261018/`. Seeds used: 111194451 (canary), 111194453 (fixed seed
+of `curl_up_lethal_test`, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
+`behavior/java-reference-audit.md` (Curl Up, dead monster powers).

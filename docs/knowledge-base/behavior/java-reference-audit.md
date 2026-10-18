@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-18 for powers on dead targets; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -361,6 +361,18 @@ yet (**Unverified** whether native already matches):
 
 - powers on the player while the player is dying;
 - the constructor's `areMonstersBasicallyDead` cancel.
+
+A dead monster's powers stay in the native state; Java clears them in
+`updateDeathAnimation`, after `die()` (javap on the PC, 2026-10-18).
+**Inference:** no game rule reads them, so the parity probe ignores them
+instead of the engine clearing them.
+
+### Curl Up on a lethal hit (mismatch, fixed)
+
+`CurlUpPower.onAttacked` curls only when `damageAmount < owner.currentHealth`
+(second parity canary, 2026-10-18). Native curled on a killing hit too, which
+queued block on the dead louse. Native now checks the same condition. It
+cannot change play: the louse is dead either way.
 
 Test: `dead_target_debuff_fix`.
 
