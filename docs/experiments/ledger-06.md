@@ -20717,6 +20717,32 @@ Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
 **Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
 approaches in `research/combat-search/leaf-evaluation.md`.
 
+## §533 — Exact speedup of the native student forward: 2.0x per call, OOC MCTS CPU 1.67–1.77x, play identical (2026-10-18)
+
+**Question:** Philipp (2026-10-18 11:52Z) asked to make the student forward faster after an A20 profile of the
+winrate-check stack (4 seeds, 111195252–255, gdb stack samples plus `STS_OOC_CPU_PROFILE`/`STS_RUN_PROFILE`): OOC
+MCTS was 97–98% of CPU, real Silver combat 2–3%; student_sel forwards inside rollout3 leaves (about 11 per leaf at
+0.95 ms) were 66–83% of CPU, imagined Act-4 Silver fights 43% of Act-3 CPU, CTM sampling 3–5%.
+**Change:** bit-identical fast paths in `heart1_policy.cpp`: AVX attention with `dot()`'s reduction order, four-output
+reductions in the projection kernel, a per-thread FixedVec projection memo keyed by weights and input bits,
+key/value-only observation rows in the last logits-only block, reused buffers, and a four-lane copy of glibc's
+`__expf_fma` fast path for softmax and SiLU, enabled only when a start-up self-test matches `std::exp` bit for bit.
+`STS_OOC_HEART1_SCALAR=1` keeps every reference loop.
+**Result:** student_sel logits-only pass 887–933 → 450 µs per call on 4,383 captured A20 rollout records (full pass
+1.8x); `heart1score` byte-identical to main on 6,778 student_sel records, 300 heart1 and 300 student C records, and
+in scalar mode. Paired A20 `bestbench` units with the winrate-check env (main `658d43ee` vs the candidate), seed
+111195257 full run and 111195258–260 Act 1: 4/4 byte-identical play; OOC MCTS CPU 1,350 → 763, 373 → 211,
+343 → 205, 488 → 285 s (1.67–1.77x).
+**Decision:** adopt (exact, no behavior change). **Inference:** Act 3 gains less, since imagined Act-4 Silver fights
+do not use the student. Acts 3–4 records were not in the parity set.
+
+Evidence: [`evidence/heart1_forward_speedup_20261018/`](evidence/heart1_forward_speedup_20261018/README.md); raw
+`/mnt/project-files/heart1-forward-speedup/raw.tar.gz`; profile `/mnt/project-files/a20-profile/REPORT.md`.
+
+Seeds used: 111195252–111195260 (profile 252–255, capture 256, gate 257–260).
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`; cost sentence in
+`evaluation/current-research.md`.
 ## §532 — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
 
 **Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the
@@ -20799,3 +20825,38 @@ shown. The prior forward costs 7.6x per simulation, so any use needs a distilled
 111197692–111197707, 111197780–111197783; the rest of 111197692–111197791 unused.
 **Knowledge impact:** rejected/open line in `research/combat-search/leaf-evaluation.md`; env-var rows for
 `STS_SILVER_ROLLOUT_PRIOR` and `STS_CTMSILVER_ARMSET=priorpl`.
+## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model
+(`STS_CTM_ACT4_SURVIVAL_MODEL`, trees `05279b3c…`) win more A20 Hearts than the CTM survival head when OOC MCTS prices
+Shield and Spear and the Heart?
+**Design:** [PREREG](evidence/ctm_act4_ab_20261018/PREREG.md), frozen before launch.
+- Arm A is the standard A20 stack: student_sel prior (`cf6bf7fb…`), `TARGET_PRIOR=1`, `LEAF_SELECTS=heart1`, 512
+  simulations, rollout3 leaf, keys, calibrated A20 CTM. Arm B is A plus the model.
+- 512 paired seeds 111140200–111140711, `bestbench` full runs on 8 cloud workers.
+- RUN_COMMIT `ef809026` (code main `95c1ef1f`, binary `2b2817bc…`). The first freeze `c6916b99` had a malformed
+  manifest line and ran no unit.
+- Primary: Heart kills, with an exact McNemar test and a seed bootstrap.
+
+**Result:**
+
+| | A | B |
+|---|---|---|
+| Heart kills / 512 | 82 | 75 |
+| Reached Act 4 | 178 | 173 |
+| Act-4 conversion | 0.461 | 0.434 |
+| Act-3 deaths | 98 | 103 |
+| Act-4 deaths | 96 | 98 |
+
+- Δ Heart kills −1.4 pp [−2.7, 0.0]. Discordant pairs 3 vs 10, McNemar p = 0.092. **NOT_SHOWN.**
+- Act-1 and Act-2 deaths are identical (78, 158). 451 of 512 seeds had the same outcome.
+- No exclusions. The model loaded in 229 B runs and in no A run. CPU was equal (2.75 vs 2.71 s per OOC decision).
+
+**Inference:** pricing the Heart near the teacher's death rate does not help this stack's play and may hurt it. A
+likely mechanism, not tested: a higher Act-4 death estimate shifts late-Act-3 and Act-4 decisions toward choices that
+the rollout3 leaf rates as safer.
+**Decision:** no default change; the model stays opt-in (pre-registered). Evidence:
+[README](evidence/ctm_act4_ab_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
+**Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
+(result section).
