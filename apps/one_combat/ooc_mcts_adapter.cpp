@@ -2383,11 +2383,13 @@ CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std:
         std::optional<std::uint64_t> planner = S::g_nativeSilverPlannerSeedOverride;
         std::optional<bool> prior = S::g_nativeSilverRootPriorOverride;
         std::optional<S::NativeSilverBudgetOverride> budget = S::g_nativeSilverBudgetOverride;
+        std::optional<S::SilverSearcher::RolloutConfig> rollout = S::g_nativeSilverRolloutOverride;
         std::function<void(const sts::BattleContext &, GameContext &)> raw = std::move(sts::g_onBattleExitRaw);
         std::function<void(const sts::BattleContext &)> decision = std::move(S::g_onCombatDecision);
         ~Scope() {
             S::g_disallowImaginedCombat = disallow; S::g_nativeSilverPlannerSeedOverride = planner;
             S::g_nativeSilverRootPriorOverride = prior; S::g_nativeSilverBudgetOverride = budget;
+            S::g_nativeSilverRolloutOverride = rollout;
             sts::g_onBattleExitRaw = std::move(raw); S::g_onCombatDecision = std::move(decision);
         }
     } scope;
@@ -2395,6 +2397,11 @@ CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std:
     S::g_nativeSilverPlannerSeedOverride = plannerSeed;
     S::g_nativeSilverRootPriorOverride = rootPrior;
     S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
+    // Imagined fights keep greedy playouts: STS_SILVER_ROLLOUT_PRIOR is for real fights only.
+    S::SilverSearcher::RolloutConfig rollout = S::g_nativeSilverRolloutOverride
+        ? *S::g_nativeSilverRolloutOverride : S::SilverSearcher::envRolloutConfig();
+    rollout.prior = false;
+    S::g_nativeSilverRolloutOverride = rollout;
     std::optional<CombatTransitionPersistentState> rawPost;
     sts::g_onBattleExitRaw = [&](const sts::BattleContext &, GameContext &g) {
         if (!rawPost) rawPost = captureCombatTransitionState(g);

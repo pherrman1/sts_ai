@@ -20791,6 +20791,41 @@ Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
 
+## §540 — Silver playouts that follow the gen-6 prior instead of the greedy list, at equal simulations (A20, leaf headroom pilot): score INCONCLUSIVE, HP lost −1.5 (2026-10-18)
+
+**Question (Philipp, 2026-10-18 14:06Z, thread "Better fast leaf evaluation": "good idea, lets do that"):** before
+building a fast learned Silver leaf, is there headroom for a *better* leaf? §479/§523 put the leaf's value in its
+playout policy, and 2.5k vs 10k simulations differ by only −0.68 [−3.13, +1.87] fight score (§479), so speed alone
+buys little. Upper-bound probe: every playout card play follows the gen-6 E prior argmax (not deployable).
+**Design:** [PREREG](evidence/silver_prior_playout_pilot_20261018/PREREG.md), written before results. New research
+playout mode `RolloutConfig::prior`, reachable only through the `ctmsilvergen` armset below (setting the env var
+`STS_SILVER_ROLLOUT_PRIOR` is refused at startup with rc 2; with the mode on, each playout `PLAYER_NORMAL` step plays the root-prior model's
+argmax over card plays and END_TURN, no potions; card selects stay greedy) and `ctmsilvergen` armset `priorpl`
+(code 6eaa0034, binary `ec990413…`). §523 harness (student C source runs, gen-6 E root prior w400, hallway every 3rd,
+R = 2) with the ADR-0046 root table on. Arms at 2,500 simulations, both with root prior and tree prior K = 8:
+`greedy2500` (production playouts) and `priorpl2500`. 16 sources (111197692–111197707) in-thread on 4 cores, all
+shards rc = 0; 162 valid paired fights (3 excluded, escapes). Smoke 111197780–111197783 (32 fights, rc = 0).
+**Result (paired, 95% seed bootstrap):**
+
+| subset | fights | Δ score | Δ win | Δ HP lost |
+|---|---|---|---|---|
+| all | 162 | +3.81 [−2.43, +10.29] | +0.9 pp [−1.3, +3.2] | −1.45 [−2.51, −0.31] |
+| elite | 67 | +12.09 [+0.16, +25.81] | +4.5 pp [0, +8.2] | −2.90 [−5.17, −0.73] |
+| boss | 27 | +0.89 [−1.84, +3.03] | 0 | −2.52 [−4.80, −0.10] |
+| normal and other | 68 | −3.19 [−11.23, +0.64] | −1.5 pp | +0.40 [−0.11, +0.90] |
+
+CPU per simulation 7.62x [6.95, 8.07] (107 vs 14.1 µs); playouts 15.0 vs 16.0 actions.
+**Label (pre-registered): `INCONCLUSIVE`** (mean +3.81 below the +5 bar, CI includes 0 and +5).
+**Interpretation:** a better-playing playout lowers HP lost by about 1.5 per fight, concentrated in elites and bosses,
+where it is significant on HP. **Inference:** that is more than the about 0.7 a 4x larger greedy budget gave in §479
+(different harness), so leaf quality has some headroom, but at this resolution it is modest and the score gain is not
+shown. The prior forward costs 7.6x per simulation, so any use needs a distilled fast version. No default change;
+The prior-playout mode stays research-only, reachable only via `STS_CTMSILVER_ARMSET=priorpl`.
+[result.json](evidence/silver_prior_playout_pilot_20261018/result.json) (sha256 `b6e1e649…`). Raw:
+`/mnt/project-files/silver-prior-playout-pilot/ppl-run.tar.gz` (run and smoke, sha256 `a748c6bc…`). Seeds used:
+111197692–111197707, 111197780–111197783; the rest of 111197692–111197791 unused.
+**Knowledge impact:** rejected/open line in `research/combat-search/leaf-evaluation.md`; env-var rows for
+`STS_SILVER_ROLLOUT_PRIOR` and `STS_CTMSILVER_ARMSET=priorpl`.
 ## §535 — Exact student forward speedup, round 2: output memo and AVX-512 projections, 1.15x run CPU, play identical (2026-10-18)
 
 Performance only; no gameplay, model, RNG or default change. Philipp 2026-10-18 14:07Z ("can you continue
@@ -20870,6 +20905,39 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
+## §541 — Prior-argmax Silver playouts vs production greedy Silver 10k at A20 (8 workers): score NOT_SHOWN, HP lost −0.7 at 10k (2026-10-18)
+
+**Question (Philipp, 2026-10-18 15:01Z/15:03Z, thread "Better fast leaf evaluation"):** after the §540 pilot, he noted
+that 7.6x CPU per simulation is affordable in real fights (2-3% of A20 run CPU) and authorized "8 workers. Make sure
+that act4 fights go through ctm. Fallbacks should not use the prior rollout". Do prior playouts beat production
+Silver at similar CPU?
+**Design:** [PREREG](evidence/silver_prior_playout_ab_20261018/PREREG.md), written before results. Same harness as the
+pilot, armset `priorpl` with `STS_CTMSILVER_SWEEP_SIMS=10000`, `STS_CTMSILVER_PRIOR_SIMS=2500,10000`; arms
+`greedy10000` (production), `priorpl2500`, `priorpl10000`, all with root prior and tree prior K = 8, R = 2. Imagined
+fights: none (no OOC MCTS in the source runs); the armset refuses the imagined-fight Silver options and
+`playImaginedCombatWithSilver` forces greedy playouts. Real Act-4 fights (sources whose student C collected the keys)
+are played by every arm, prior playouts included. Run commit 7843e73c, code fecde345, binary `cd50de5a…`, 64
+sources 111197708–111197771 on 8 workers ([README](evidence/silver_prior_playout_ab_20261018/README.md)); 768 valid
+paired fights (2 excluded, escapes): 148 boss, 344 elite, 276 normal/other, 17 Act 4.
+**Result (paired vs `greedy10000`, 95% seed bootstrap):**
+
+| arm | Δ score | Δ win | Δ HP lost | CPU per fight | labels (score / HP) |
+|---|---|---|---|---|---|
+| priorpl2500 | +1.98 [−0.66, +4.69] | +0.5 pp [−0.3, +1.4] | −0.39 [−0.90, +0.10] | 1.90x | NOT_SHOWN / NOT_SHOWN |
+| priorpl10000 | +3.28 [−0.58, +7.16] | +1.0 pp [−0.1, +2.2] | −0.70 [−1.19, −0.22] | 7.29x | NOT_SHOWN / BETTER |
+
+Descriptive subsets: bosses priorpl2500 +9.77 [+0.95, +18.64] score, +3.0 pp win; priorpl10000 +12.55 [−0.87, +26.57],
++4.4 pp. Elites priorpl2500 +0.11, priorpl10000 +2.89 (HP −0.74 [−1.43, −0.03]). Act 4 (17 fights) priorpl2500 +1.7,
+priorpl10000 −12.2, both CIs about ±25. priorpl10000 − priorpl2500: +1.30 [−1.49, +4.15].
+**Interpretation:** prior playouts are at most a small gain over production. At 1.9x CPU per real fight the 2.5k arm is
+not shown better overall; its point estimates (+2 score, −0.4 HP) are about a third of the equal-sims pilot effect,
+because the 10k greedy control is stronger than greedy 2.5k. The only label-level gain, priorpl10000 HP lost −0.7, costs
+7.3x per fight (about +15-20% A20 run time, **Inference** from the A20 profile). **Inference:** the boss subset carries
+most of the score gain; a boss-only use would be a separate pre-registered test. No default change.
+[result.json](evidence/silver_prior_playout_ab_20261018/result.json) (sha256 `6eb4c430…`). Raw:
+`/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
+111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
+**Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.
 ## §539 — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
 
 Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for
@@ -20940,6 +21008,45 @@ unused.
 [README](evidence/silver_concave_hp_leaf_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
 Raw: `/mnt/project-files/silver-leaf-eval/endstate-ab/w01..w16.tar`.
 **Knowledge impact:** concave-HP paragraph in `architecture/combat-search.md`.
+
+## §542 — Silver victory-leaf reweighting and concave HP in whole A20 runs (student_sel, OOC MCTS off): five of six WORSE, per-type NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 17:38Z, thread "end-state formula"):** "can you try all these things? adjusting the
+weights, maybe a per potion value, withthe fitted and milder curve? maybe in combination all those small things
+actually do something? and maybe we should measure winrate and floors reached, testing should be on only student
+prior without ooc mcts, so it doesnt take forever. on a20." 18:16Z: "16 workers" (512 seeds per arm, size card).
+**Design:** [PREREG](evidence/silver_leaf_combo_20261018/PREREG.md), pre-launch review PASS. New research options
+`STS_SILVER_GOLD_WEIGHT`, `STS_SILVER_MAXHP_WEIGHT` (PR #673). Seven arms on every seed: `base`; `W` (gold 0.01,
+max HP 1.1, potions 5.0 with Fairy/Smoke Bomb 11: the §537 prices); `WT` (as W with per-type potion weights 0.5–10.7
+derived from the §537 probe); `K27` / `K135` (concave HP k = 2.7 / 1.35); `WTK27`, `WTK135` (WT plus each curve). A20
+full runs with keys, `STS_OOC_HEART1=student_sel.bin`, `STS_OOC_MCTS=0`, exact-10k Silver on main `b807c5b4`
+defaults. Seeds 111198434–111198945, 16 workers, RUN_COMMIT `3c6f2cef` (code `c52d9ccf`, binary `b9d43a55…`).
+**Result.** 3,584/3,584 units rc=0, 16 tars verified, 512 pairs, no seed dropped. Each arm − base, 95% CI
+[Bonferroni 99.17% CI], label at 99.17%:
+
+| arm | mean floor | wins / 512 | Δfloor | Δwin (pp) | label floor / win |
+|---|---|---|---|---|---|
+| base | 38.88 | 96 (18.8%) | | | |
+| W | 37.24 | 66 | −1.63 [−2.83, −0.47] [−3.28, −0.09] | −5.9 [−9.0, −2.5] [−10.4, −1.6] | WORSE / WORSE |
+| WT | 37.34 | 83 | −1.54 [−2.76, −0.37] [−3.21, +0.07] | −2.5 [−5.9, +0.8] [−7.0, +2.0] | NOT_SHOWN / NOT_SHOWN |
+| K27 | 33.65 | 53 | −5.23 [−6.54, −3.95] [−7.03, −3.51] | −8.4 [−11.7, −5.1] [−12.9, −3.9] | WORSE / WORSE |
+| K135 | 36.78 | 76 | −2.10 [−3.35, −0.86] [−3.80, −0.41] | −3.9 [−7.4, −0.4] [−8.6, +1.0] | WORSE / NOT_SHOWN |
+| WTK27 | 32.56 | 50 | −6.32 [−7.69, −4.95] [−8.21, −4.50] | −9.0 [−12.3, −5.7] [−13.7, −4.5] | WORSE / WORSE |
+| WTK135 | 36.46 | 65 | −2.41 [−3.72, −1.11] [−4.15, −0.71] | −6.1 [−9.4, −2.7] [−10.5, −1.6] | WORSE / WORSE |
+
+Descriptive: act-1 deaths 85 (base) vs 92 / 92 / 132 / 101 / 153 / 102; act-3 clears 183 vs 156 / 157 / 117 / 157 /
+97 / 147; seconds per run 78.9 vs 70.6 / 70.2 / 59.5 / 68.5 / 55.6 / 66.1 (shorter runs = earlier deaths).
+**Interpretation:** five of six variants play measurably worse whole A20 runs than Silver's tuned formula (WORSE on floors at the Bonferroni level); the per-type arm `WT` is NOT_SHOWN on both metrics (floor 99.17% CI [−3.21, +0.07], 95% CI below 0), and `K135` is NOT_SHOWN on wins. None is close to a gain.
+The concave HP term costs the most (k = 2.7: −5.2 floors, −8.4 pp wins, half again as many act-1 deaths), although
+the §537 3-fight probe showed no effect. The measured lower potion/max-HP/gold weights also cost about 1.5 floors,
+in line with §513. **Inference:** the probe's 3-fight window and floor-model valuation miss what these changes do
+over a whole run; the descriptive §537 prices are not usable as leaf weights. **Open question:** why the concave
+term raises act-1 deaths (it also lifts every win's score, by roughly +135 at 75% HP for a max HP of ~80 and in proportion to max HP otherwise, shifting the win/loss balance
+Silver's other weights were tuned for). Per the decision rule all options stay research-only, unset; the weights are
+not re-tuned on these seeds. Seeds 111198434–111198947 used (smokes 946–947), 111198950–111198965 the reviewer block; 111198948–949 unused.
+[README](evidence/silver_leaf_combo_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Raw: `/mnt/project-files/silver-leaf-eval/combo-ab/w01..w16.tar`.
+**Knowledge impact:** victory-leaf paragraph in `architecture/combat-search.md`.
 
 ## §536 — Second combat parity canary: full Act 1 against the real game, 126/135 steps match, Curl Up fixed, live advisor crash found (2026-10-18)
 
