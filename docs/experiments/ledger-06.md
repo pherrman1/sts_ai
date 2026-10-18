@@ -20790,3 +20790,39 @@ campaign files, analyzer, diagnostic script, result, tar hashes; raw tars on the
 Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
+
+## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model
+(`STS_CTM_ACT4_SURVIVAL_MODEL`, trees `05279b3c…`) win more A20 Hearts than the CTM survival head when OOC MCTS prices
+Shield and Spear and the Heart?
+**Design:** [PREREG](evidence/ctm_act4_ab_20261018/PREREG.md), frozen before launch.
+- Arm A is the standard A20 stack: student_sel prior (`cf6bf7fb…`), `TARGET_PRIOR=1`, `LEAF_SELECTS=heart1`, 512
+  simulations, rollout3 leaf, keys, calibrated A20 CTM. Arm B is A plus the model.
+- 512 paired seeds 111140200–111140711, `bestbench` full runs on 8 cloud workers.
+- RUN_COMMIT `ef809026` (code main `95c1ef1f`, binary `2b2817bc…`). The first freeze `c6916b99` had a malformed
+  manifest line and ran no unit.
+- Primary: Heart kills, with an exact McNemar test and a seed bootstrap.
+
+**Result:**
+
+| | A | B |
+|---|---|---|
+| Heart kills / 512 | 82 | 75 |
+| Reached Act 4 | 178 | 173 |
+| Act-4 conversion | 0.461 | 0.434 |
+| Act-3 deaths | 98 | 103 |
+| Act-4 deaths | 96 | 98 |
+
+- Δ Heart kills −1.4 pp [−2.7, 0.0]. Discordant pairs 3 vs 10, McNemar p = 0.092. **NOT_SHOWN.**
+- Act-1 and Act-2 deaths are identical (78, 158). 451 of 512 seeds had the same outcome.
+- No exclusions. The model loaded in 229 B runs and in no A run. CPU was equal (2.75 vs 2.71 s per OOC decision).
+
+**Inference:** pricing the Heart near the teacher's death rate does not help this stack's play and may hurt it. A
+likely mechanism, not tested: a higher Act-4 death estimate shifts late-Act-3 and Act-4 decisions toward choices that
+the rollout3 leaf rates as safer.
+**Decision:** no default change; the model stays opt-in (pre-registered). Evidence:
+[README](evidence/ctm_act4_ab_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
+**Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
+(result section).

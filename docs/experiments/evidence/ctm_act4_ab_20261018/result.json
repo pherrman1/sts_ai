@@ -1,0 +1,47 @@
+{
+ "comparison": {
+  "treatment": "B",
+  "control": "A",
+  "pairs": 512,
+  "excluded": [],
+  "heart_kills": {
+   "B": 75,
+   "A": 82
+  },
+  "discordant_treatment_only": 3,
+  "discordant_control_only": 10,
+  "mcnemar_p": 0.09228515625,
+  "delta_kill": -0.013671875,
+  "delta_kill_ci95": [
+   -0.02734375,
+   0.0
+  ],
+  "label": "NOT_SHOWN",
+  "clears": {
+   "B": 173,
+   "A": 178
+  },
+  "act4_conversion": {
+   "B": 0.43352601156069365,
+   "A": 0.4606741573033708
+  },
+  "delta_floor_mean": -0.056640625
+ },
+ "arms": {
+  "A": {
+   "units": 512,
+   "act4_model_loaded": 0,
+   "act1_deaths": 78,
+   "mcts_cpu_sec_per_decision": 2.714887115103193,
+   "sec_per_run": 299.2984408203125
+  },
+  "B": {
+   "units": 512,
+   "act4_model_loaded": 229,
+   "act1_deaths": 78,
+   "mcts_cpu_sec_per_decision": 2.7522180364862243,
+   "sec_per_run": 300.2123197265625
+  }
+ },
+ "nonzero_rc": []
+}
