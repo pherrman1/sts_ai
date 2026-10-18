@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-18 against its unit tests.
 
 ## Purpose
 
@@ -102,6 +102,59 @@ records seed 0 / A0 stopping at the initial Neow Talk page with
 unsupported result. There is one captured boundary and zero compared supported
 decisions. This is evidence for precise failure reporting, not Java/native
 parity or a complete-run pass. The adjacent receipt records executable hashes.
+
+## Exact one-step combat parity probe
+
+The whole-run replay above stops at its first difference and has compared no
+real decision yet. The combat parity probe instead restarts every step from
+the game's own state, so one difference does not end the comparison.
+
+- Recording: run the game with `STS_DIFFERENTIAL_DEBUG_RNG=1` and the driver
+  with `--parity-trace`. Each advisor row then keeps the raw observation, all
+  12 RNG streams and, in the same `debugRng` envelope, `drawPileUuids`: the
+  true draw-pile order, bottom to top. The public observation still sorts the
+  draw pile, and decisions are unchanged.
+- Replay: `combat_parity_probe` imports each Silver combat decision with the
+  live importer and reorders the draw, discard and exhaust piles into the true
+  order. It then seeds the six combat RNG streams from the game, applies the
+  recorded action with `ScumSearchAgent2::takeAction`, and projects the result
+  with `wireFromSearchState`. The next recorded observation is imported and
+  projected the same way. Fields that round-trip through the importer on both
+  sides are comparable. Native bookkeeping that Java never exports is not:
+  the importer fills a default on the game side while the engine evolves it.
+  These are `loopCount`, `cardsDrawn`, `energyWasted`, `monsterTurnIdx` and
+  `curCardQueueItem`, listed in `UNOBSERVABLE_FIELDS` and reported in their
+  own section, never in verdicts.
+- Action identity: the recorded fingerprint embeds importer card ids, which
+  depend on which rows were imported. The probe matches without those ids
+  and picks the copy by the Java UUID the driver clicked.
+- Comparison: `tools/combat_parity.py run TRACE --probe BIN --out-dir OUT`
+  diffs every other field (ignoring only `uniqueId`, `isolatedSearchSeed`,
+  `observedGeneration` and `nextUniqueCardId`) plus the six RNG counters and
+  seeds. A change in any of the six Java streams with no native combat
+  counterpart (`cardRng`, `eventRng`, `merchantRng`, `monsterRng`,
+  `relicRng`, `treasureRng`) during a combat step is a mismatch. It writes `verdicts.jsonl`, `summary.json` and `REPORT.md` with
+  mismatched fields, skip reasons and coverage per action, encounter, relic,
+  potion, power and card. A step whose next state is out of combat compares
+  only the outcome; the HP difference is informational, because post-combat
+  heals apply first in Java.
+- A mismatch is an engine, importer or exporter defect, or a representation
+  gap; triage each one with the Java reference audit before changing the
+  simulator. Runic Dome steps, steps without RNG or draw order, selections
+  holding cards outside the piles (Exhume, Armaments, Dual Wield), fallback
+  actions, rows without `post_screen_kind`, and actions the native root
+  cannot resolve are skipped by reason.
+- Known limit: at a mid-card selection, `battleContextFromWire` replays the
+  interrupted card before the game RNG is applied, so that replay uses the
+  isolated search seed. Its effects already happened in Java and are in the
+  imported state; only RNG drawn by the replay itself is not the game's.
+
+`tests/test_combat_parity.py` (ctest `combat_parity`) uses a real
+observation fixture with synthetic RNG and draw order. It proves the
+plumbing (draws follow the given order, RNG comes from the game, skip
+reasons) and has a positive control: Defend with a hand-written correct
+successor gives MATCH, and one wrong field gives exactly that mismatch. It
+does not prove parity. No Java capture has been compared yet.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).

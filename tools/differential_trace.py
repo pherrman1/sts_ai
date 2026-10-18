@@ -111,6 +111,9 @@ def compare_states(java: Any, native: Any, *, java_rng: Any = None, native_rng: 
     """Return a structured result; never guesses through a mismatch."""
     diffs = field_diffs(java, native, include_debug_rng=False)
     if not diffs and java_rng is not None and native_rng is not None:
+        # drawPileUuids is pile order for the parity probe, not an RNG stream.
+        if isinstance(java_rng, Mapping):
+            java_rng = {k: v for k, v in java_rng.items() if k != "drawPileUuids"}
         rng_diffs = field_diffs({RNG_KEY: java_rng}, {RNG_KEY: native_rng})
         if rng_diffs and state_before_equal:
             return {"category": "RNG_CONSUMPTION_DIVERGENCE", "diffs": [d.json() for d in rng_diffs],

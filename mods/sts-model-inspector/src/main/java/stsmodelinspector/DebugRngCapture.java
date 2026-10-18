@@ -7,7 +7,11 @@ import com.megacrit.cardcrawl.random.Random;
 import com.evacipated.cardcrawl.modthespire.Loader;
 import com.evacipated.cardcrawl.modthespire.ModInfo;
 
+import com.megacrit.cardcrawl.cards.AbstractCard;
+
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Read-only, opt-in hidden RNG diagnostics for differential testing only. */
@@ -55,6 +59,14 @@ final class DebugRngCapture {
             envelope.put("schema", "sts_java_rng_v1");
             envelope.put("available", true);
             envelope.put("streams", streams);
+            // The public observation sorts the draw pile. The parity probe
+            // needs its true order, bottom to top (next draw last).
+            if (AbstractDungeon.player != null && AbstractDungeon.player.drawPile != null) {
+                List<String> draw = new ArrayList<>();
+                for (AbstractCard card : AbstractDungeon.player.drawPile.group)
+                    draw.add(String.valueOf(card.uuid));
+                envelope.put("drawPileUuids", draw);
+            }
             return JSON.toJson(envelope);
         } catch (Throwable error) {
             Map<String, Object> envelope = new LinkedHashMap<>();
