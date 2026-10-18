@@ -32,7 +32,7 @@ for r in rows:
     srt = np.sort(v)[::-1] / v.sum()
     feats.append([r['act'], r['floor'], ['NORMAL', 'ELITE', 'BOSS', 'OTHER'].index(r['roomClass']) if r['roomClass'] in ('NORMAL', 'ELITE', 'BOSS', 'OTHER') else 4,
                   r['turn'], r['hp'] / max(1, r['maxHp']), r['nEdges'], r['energy'], r['handSize'], r['monstersAlive'],
-                  srt[0] - (srt[1] if len(srt) > 1 else 0), r['inheritedVisits']])
+                  r['inheritedVisits']])   # decision-time features only (no reference statistics)
     seeds.append(r['sourceSeed'])
 R = {a: np.array(R[a], dtype=float) for a in ARMS}; F = np.array(feats); seeds = np.array(seeds)
 print('reference top-visit agreement between the two reference searches: %.3f' % np.mean(refagree))

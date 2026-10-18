@@ -4,7 +4,7 @@ import os
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analyze_roots.py')).read().split("print('\\n== mean regret")[0])
 share=np.array([r['arms']['base2500'][0][2]/2500 for r in rows])
 ref1=np.array([max(e[1] for e in r['ref'][0])/sum(e[1] for e in r['ref'][0]) for r in rows])
-F2=np.column_stack([F[:,[0,1,2,3,4,5,6,7,8,10]],share])
+F2=np.column_stack([F,share])
 cands=['c12_2500','c50_2500','endwide2500','othernarrow2500']
 Y={a:(R[a][:,1:4].mean(1)-R['base2500'][:,1:4].mean(1)) for a in cands}
 us=np.unique(seeds);rng=np.random.default_rng(0);fold={s:i%5 for i,s in enumerate(rng.permutation(us))};fo=np.array([fold[s] for s in seeds])
