@@ -20798,7 +20798,8 @@ building a fast learned Silver leaf, is there headroom for a *better* leaf? §47
 playout policy, and 2.5k vs 10k simulations differ by only −0.68 [−3.13, +1.87] fight score (§479), so speed alone
 buys little. Upper-bound probe: every playout card play follows the gen-6 E prior argmax (not deployable).
 **Design:** [PREREG](evidence/silver_prior_playout_pilot_20261018/PREREG.md), written before results. New research
-option `STS_SILVER_ROLLOUT_PRIOR=1` (default off: each playout `PLAYER_NORMAL` step plays the root-prior model's
+playout mode `RolloutConfig::prior`, reachable only through the `ctmsilvergen` armset below (setting the env var
+`STS_SILVER_ROLLOUT_PRIOR` is refused at startup with rc 2; with the mode on, each playout `PLAYER_NORMAL` step plays the root-prior model's
 argmax over card plays and END_TURN, no potions; card selects stay greedy) and `ctmsilvergen` armset `priorpl`
 (code 6eaa0034, binary `ec990413…`). §523 harness (student C source runs, gen-6 E root prior w400, hallway every 3rd,
 R = 2) with the ADR-0046 root table on. Arms at 2,500 simulations, both with root prior and tree prior K = 8:
@@ -20819,7 +20820,7 @@ CPU per simulation 7.62x [6.95, 8.07] (107 vs 14.1 µs); playouts 15.0 vs 16.0 a
 where it is significant on HP. **Inference:** that is more than the about 0.7 a 4x larger greedy budget gave in §479
 (different harness), so leaf quality has some headroom, but at this resolution it is modest and the score gain is not
 shown. The prior forward costs 7.6x per simulation, so any use needs a distilled fast version. No default change;
-`STS_SILVER_ROLLOUT_PRIOR` stays research-only and off.
+The prior-playout mode stays research-only, reachable only via `STS_CTMSILVER_ARMSET=priorpl`.
 [result.json](evidence/silver_prior_playout_pilot_20261018/result.json) (sha256 `b6e1e649…`). Raw:
 `/mnt/project-files/silver-prior-playout-pilot/ppl-run.tar.gz` (run and smoke, sha256 `a748c6bc…`). Seeds used:
 111197692–111197707, 111197780–111197783; the rest of 111197692–111197791 unused.
