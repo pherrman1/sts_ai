@@ -5942,25 +5942,39 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             }
         }
     } else if (armSet == "priorpl") {
-        // Leaf headroom pilot: greedy<b> (production rollouts, ADR-0046 root table) vs priorpl<b>, whose playouts
-        // play the STS_SILVER_ROOT_PRIOR argmax at every card play (STS_SILVER_ROLLOUT_PRIOR), at every budget in
-        // STS_CTMSILVER_SWEEP_SIMS. Both arms use the root prior and the tree prior (K = 8); only the playout differs.
+        // Leaf headroom pilot: greedy<b> (production rollouts, ADR-0046 root table) for every budget in
+        // STS_CTMSILVER_SWEEP_SIMS vs priorpl<b>, whose playouts play the STS_SILVER_ROOT_PRIOR argmax at every card
+        // play (STS_SILVER_ROLLOUT_PRIOR), for every budget in STS_CTMSILVER_PRIOR_SIMS (default: the sweep budgets).
+        // Both arms use the root prior and the tree prior (K = 8); only the playout differs. Imagined-fight Silver
+        // fallbacks must be off: every imagined fight goes through the CTM.
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const auto &envRollout = search::SilverSearcher::envRolloutConfig();
         if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != search::kSilverRolloutCardTableG6
                 || envRollout.prior || env("STS_SILVER_ROLLOUT_ROOT_TABLE") == "0")
             throw std::runtime_error("ctm vs silver: priorpl requires the production rollouts "
                                      "(STS_SILVER_ROLLOUT_* unset, root table on)");
-        std::stringstream list(env("STS_CTMSILVER_SWEEP_SIMS"));
-        for (std::string item; std::getline(list, item, ',');) {
-            char *end = nullptr;
-            const long b = std::strtol(item.c_str(), &end, 10);
-            if (item.empty() || *end != '\0' || b < 1 || b > 100000
-                    || std::find(sweepSims.begin(), sweepSims.end(), static_cast<int>(b)) != sweepSims.end())
-                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_SWEEP_SIMS must list distinct budgets 1..100000");
-            sweepSims.push_back(static_cast<int>(b));
-        }
+        for (const char *name : {"STS_OOC_MCTS_ACT4_SILVER_SIMS", "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS",
+                                 "STS_OOC_MCTS_COMBAT_RESOLVER"})
+            if (const std::string v = env(name); !v.empty() && v != "0")
+                throw std::runtime_error(std::string("ctm vs silver: priorpl requires ") + name + " unset or 0");
+        const auto budgets = [&](const char *name) {
+            std::vector<int> out;
+            std::stringstream list(env(name));
+            for (std::string item; std::getline(list, item, ',');) {
+                char *end = nullptr;
+                const long b = std::strtol(item.c_str(), &end, 10);
+                if (item.empty() || *end != '\0' || b < 1 || b > 100000
+                        || std::find(out.begin(), out.end(), static_cast<int>(b)) != out.end())
+                    throw std::runtime_error(std::string("ctm vs silver: ") + name
+                                             + " must list distinct budgets 1..100000");
+                out.push_back(static_cast<int>(b));
+            }
+            return out;
+        };
+        sweepSims = budgets("STS_CTMSILVER_SWEEP_SIMS");
         if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: priorpl requires STS_CTMSILVER_SWEEP_SIMS");
+        std::vector<int> priorSims = budgets("STS_CTMSILVER_PRIOR_SIMS");
+        if (priorSims.empty()) priorSims = sweepSims;
         if (const std::string every = env("STS_CTMSILVER_HALLWAY_EVERY"); !every.empty()) {
             char *end = nullptr;
             const long n = std::strtol(every.c_str(), &end, 10);
@@ -5972,6 +5986,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         for (const int b : sweepSims) {
             arms.push_back({"greedy" + std::to_string(b), b, true, true, replicates, 8});
             arms.back().rollout = envRollout;
+        }
+        for (const int b : priorSims) {
             arms.push_back({"priorpl" + std::to_string(b), b, true, true, replicates, 8});
             arms.back().rollout = envRollout;
             arms.back().rollout.prior = true;
