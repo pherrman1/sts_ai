@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -1234,8 +1235,14 @@ int main(int argc,char **argv){try{
         p["seenRelicsComplete"]=false;
         p["knownRelicOffers"]=J::array({J(RelicId::RUNIC_DOME),J(RelicId::BLACK_STAR)});
         advisor::LiveOocStateV1 recovered;
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR","0",1);
         check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
                 && !recovered.mctsRoot.mapHistoryComplete,"boss subset promoted missing global offers");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
+                && recovered.mctsRoot.seenRelicOfferPrior
+                && recovered.mctsRoot.mapHistoryComplete==recovered.mctsRoot.questionHistoryComplete,
+                "relic offer prior did not qualify downstream map search");
         for(auto relic:{RelicId::RUNIC_DOME,RelicId::BLACK_STAR})
             check(std::find(recovered.mctsRoot.state.bossRelicPool.begin(),
                     recovered.mctsRoot.state.bossRelicPool.end(),relic)
@@ -1244,9 +1251,13 @@ int main(int argc,char **argv){try{
         wire=project(source,path,"known_boss_offers_keep_map_guard");
         wire["ooc"]["publicState"]["seenRelicsComplete"]=false;
         wire["ooc"]["publicState"]["knownRelicOffers"]=J::array({J(RelicId::RUNIC_DOME),J(RelicId::BLACK_STAR)});
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR","0",1);
         check(advisor::importLiveOocStateV1(wire,recovered).ok && !recovered.mctsRoot.supported
                 && recovered.mctsRoot.reason=="PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
                 "known boss subset bypassed missing shop stock gate");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
+                && recovered.mctsRoot.seenRelicOfferPrior,"relic offer prior did not support MAP root");
     }
     {
         auto source = base;
@@ -1353,8 +1364,13 @@ int main(int argc,char **argv){try{
             auto &p=wire["ooc"]["publicState"];
             p["questionHistoryComplete"]=question;p["questionOutcomes"]=J::array();p["seenRelicsComplete"]=seen;
             advisor::LiveOocStateV1 live;
+            setenv("STS_LIVE_RELIC_OFFER_PRIOR","0",1);
             check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.supported
                     && live.mctsRoot.mapHistoryComplete==(question&&seen),"downstream map requires both histories");
+            unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+            check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.supported
+                    && live.mctsRoot.mapHistoryComplete==question && live.mctsRoot.seenRelicOfferPrior==!seen,
+                    "relic offer prior changed the question-history requirement");
             p["relics"].push_back({{"id",J(RelicId::WING_BOOTS)},{"data",0},{"liveCounter",2}});
             check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.state.wingBootsCharges==2,
                     "transition root lost public Wing Boots charges");
@@ -1373,10 +1389,23 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "incomplete_seen_relic_map_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR", "0", 1);
         const auto result = advisor::importLiveOocStateV1(wire, live);
         check(result.ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
-            "MAP search must fail closed without prior offered-relic history");
+            "STS_LIVE_RELIC_OFFER_PRIOR=0 MAP search must fail closed without prior offered-relic history");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        // A partial observer ledger still excludes the offers it did see.
+        const auto seenOffer = live.mctsRoot.state.commonRelicPool.at(0);
+        wire["ooc"]["publicState"]["seenRelics"] = J::array({J(seenOffer)});
+        const auto prior = advisor::importLiveOocStateV1(wire, live);
+        const auto &pool = live.mctsRoot.state.commonRelicPool;
+        check(prior.ok && live.mctsRoot.supported && live.mctsRoot.seenRelicOfferPrior
+                && std::find(pool.begin(), pool.end(), seenOffer) == pool.end(),
+            "relic offer prior must search MAP and exclude partially seen offers");
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR", "2", 1);
+        check(!advisor::importLiveOocStateV1(wire, live).ok, "invalid STS_LIVE_RELIC_OFFER_PRIOR accepted");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
     }
     {
         auto source = base;
@@ -1385,10 +1414,14 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "incomplete_seen_relic_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR", "0", 1);
         const auto result = advisor::importLiveOocStateV1(wire, live);
         check(result.ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
-            "random relic event must fail closed without seen relic history");
+            "STS_LIVE_RELIC_OFFER_PRIOR=0 random relic event must fail closed without seen relic history");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        check(advisor::importLiveOocStateV1(wire, live).ok && live.mctsRoot.supported
+                && live.mctsRoot.seenRelicOfferPrior, "relic offer prior must support random relic event");
     }
     {
         auto source=base;source.act=2;source.floorNum=23;source.screenState=ScreenState::REWARDS;
