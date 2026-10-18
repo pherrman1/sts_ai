@@ -20870,7 +20870,7 @@ Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
 **Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
 (result section).
 
-## §TBD — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
+## §539 — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
 
 Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for
 searches, similar to sivler combat?"
