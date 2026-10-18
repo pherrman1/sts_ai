@@ -328,6 +328,18 @@ class LiveGameDriverTest(unittest.TestCase):
         with self.assertRaises(IntegrationFailure):
             map_silver_action({"kind": "card", "cardUuid": "wrong", "targetIndex": 1}, actions)
 
+    def test_untargeted_potion_listed_per_monster_maps_once(self):
+        # MCP lists Explosive Potion once per monster although it has no target.
+        screen = {"screen_type": "NONE", "room_phase": "COMBAT", "potions": [
+            {"id": "Fire Potion", "can_use": True, "requires_target": True},
+            {"id": "Explosive Potion", "can_use": True, "requires_target": True}],
+            "monsters": [{"id": "FuzzyLouseNormal", "current_hp": 10}, {"id": "FuzzyLouseDefensive", "current_hp": 12}]}
+        actions = build_legal_actions(screen, ["use_potion"])
+        chosen = map_silver_action({"kind": "potion", "potionSlot": 2, "discard": False}, actions)
+        self.assertEqual(chosen.mcp_arguments, {"potion_slot": 2, "target_index": 1})
+        self.assertEqual(map_silver_action({"kind": "potion", "potionSlot": 1, "discard": False, "targetIndex": 2},
+                                           actions).mcp_arguments, {"potion_slot": 1, "target_index": 2})
+
     def test_selected_live_action_ambiguous_and_label_only_fail(self):
         candidates = [LegalAction("a0", "same", "play_card", {}, {"kind": "card", "card_uuid": "x"}),
                       LegalAction("a1", "same", "play_card", {}, {"kind": "card", "card_uuid": "x"})]
@@ -383,6 +395,27 @@ class LiveGameDriverTest(unittest.TestCase):
                 row = json.loads(trace.read_text().splitlines()[0])
                 self.assertEqual(row["inspector_boundary"], "combat")
                 self.assertEqual(row["fallback_reason"], "silver_unsupported:silver_unmapped_selection_task")
+
+    def test_parity_trace_records_observation_rng_and_post_screen(self):
+        fixture = Path(__file__).parent / "fixtures/live_combat_boundaries/fresh-a0.jsonl.failure.json.gz"
+        with gzip.open(fixture, "rt") as stream:
+            screen = {**json.load(stream)["screen"], "room_type": "MonsterRoom"}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient(screen, ["choose", "confirm"])
+            path = inspector_file(directory, reason="silver_unmapped_selection_task", tree={"nodes": [1, 2]})
+            raw = json.loads(path.read_text())
+            raw["observation"]["combat"] = {"hand": screen["hand"], "cardSelect": {"task": "", "canPickZero": True}}
+            raw["debugRng"] = {"schema": "sts_java_rng_v1", "available": True, "streams": {}, "drawPileUuids": []}
+            path.write_text(json.dumps(raw))
+            trace = Path(directory) / "trace"
+            driver = Driver(client, InspectorReader(path), TraceWriter(trace), max_steps=1, parity_trace=True)
+            asyncio.run(driver.run())
+            row = json.loads(trace.read_text().splitlines()[0])
+            self.assertEqual(row["live_observation"], raw["observation"])
+            self.assertEqual(row["preRng"], raw["debugRng"])
+            self.assertEqual(set(row["post_screen_kind"]), {"combat", "terminal", "outcome", "screen_type"})
+            self.assertNotIn("tree", row["silver_evaluator"])
+            self.assertEqual(row["silver_evaluator"]["reason"], "silver_unmapped_selection_task")
 
     def test_policy_is_deterministic(self):
         screen = {"screen_type": "CARD_REWARD", "choice_list": ["Bash"], "ready_for_command": True}
@@ -1425,6 +1458,18 @@ class OocDriverTest(unittest.TestCase):
             self.assertNotIn("--new-run", tokens)
             self.assertIn(shlex.quote(str(path)), command)
             self.assertFalse(any(tool in {"choose", "skip"} for tool, _ in client.calls))
+
+    def test_strict_modes_are_the_default_and_can_be_turned_off(self):
+        from unittest.mock import patch
+        seen = []
+        def capture(coroutine):
+            seen.append(coroutine.cr_frame.f_locals["args"])
+            coroutine.close()
+            return 0
+        with patch("tools.live_game_driver.asyncio.run", capture):
+            main([])
+            main(["--no-strict-ooc", "--no-strict-silver"])
+        self.assertEqual([(a.strict_ooc, a.strict_silver) for a in seen], [(True, True), (False, False)])
 
     def test_process_failure_returns_nonzero_and_packet(self):
         from contextlib import asynccontextmanager, redirect_stderr

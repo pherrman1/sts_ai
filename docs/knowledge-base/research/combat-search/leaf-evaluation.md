@@ -1,6 +1,6 @@
 # Leaf evaluation in combat search
 
-Last verified: 2026-08-11.
+Last verified: 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
 
 ## Purpose / research question
 
@@ -52,6 +52,10 @@ simulations end (§142).
 - **One-turn bootstrap rollout (A4)** — falsified at gates (§133)
 - **Policy-filtered rollouts (A3)** — pending
 - **Prior-guided rollouts** — significantly negative (−7.0pp, §124c)
+- **Native Silver: learned leaf replacing or mixed with one rollout** — replacement fails (§180 GBM VNet −12.8 floors; §397 Gate A); a blend `(1−α)·R1 + α·V` on the §397 corpus does not beat one rollout, regret −0.017 [−0.436, +0.377], FAIL; its point estimate sits at a second rollout but "at least as good as R2" is not shown (§525)
+- **Native Silver rollout block check against the worst facing under Surrounded** — +2.0 HP lost [−0.2, +4.3] on 192 paired A20 Shield-and-Spear fights, 1.12× CPU; over-blocking is an inference (§528, Shield and Spear rollout facing)
+- **Native Silver tree reuse off** — −2.6 HP lost [−5.4, −0.1] pooled on the same fights but did not replicate on the second seed block (+0.5), Heart 0 pp; not adopted (§528, same entry)
+- **Native Silver rollout attack targeting under Surrounded** — keep the faced monster +2.8 HP lost [+0.3, +5.6], face the bigger intent +0.7 [−2.5, +3.8] on 192 paired A20 Shield-and-Spear fights (§530, Shield and Spear search gap)
 
 ## Relationships
 

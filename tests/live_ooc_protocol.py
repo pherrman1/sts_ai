@@ -29,8 +29,17 @@ class LiveOocProtocol(unittest.TestCase):
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
     def run_rows(self, observations, model=True, policy=None, floor_model=True,
-                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None, differential=False):
+                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None, differential=False,
+                 research_stack=False, extra_env=None):
         env = os.environ.copy()
+        # Most cases pin the bare search they were written for; the research
+        # stack (the advisor default) runs rollout3 and has its own cases.
+        env["STS_LIVE_OOC_RESEARCH_STACK"] = "1" if research_stack else "0"
+        env.pop("STS_COLLECT_KEYS", None)
+        env.pop("STS_LIVE_OOC_ARM_C", None)
+        env.pop("STS_OOC_MCTS_TARGET_PRIOR", None)
+        env.pop("STS_OOC_MCTS_LEAF_SELECTS", None)
+        env.update(extra_env or {})
         env.pop("STS_LIVE_OOC_WING_BOOTS", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
@@ -917,6 +926,90 @@ class LiveOocProtocol(unittest.TestCase):
             response, = self.run_rows([observation], model=model, policy="v4")
             self.assertEqual(response["status"], "ERROR")
             self.assertNotIn("evaluators", response)
+
+    def keyed_rewards(self):
+        observation = copy.deepcopy(self.fixtures["mixed_combat_rewards_key"])
+        observation["ooc"]["publicState"]["keysEnabled"] = True
+        kinds = {choice["nativeAction"]["kind"]: choice["liveAction"]
+                 for choice in observation["ooc"]["liveChoices"]}
+        self.assertTrue({"key", "relic", "gold"} <= set(kinds), kinds)
+        return observation, kinds
+
+    def test_heart_key_rule_precedes_relic_gold_and_search(self):
+        observation, kinds = self.keyed_rewards()
+        for stack in (False, True):
+            # No model is configured: the key click needs no search.
+            response, = self.run_rows([observation], model=False, policy="mcts", research_stack=stack)
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertEqual(evaluator["mode"], "fixed_rule")
+            self.assertTrue(evaluator["selectedSemanticKey"].startswith("ooc-live:v1:heart_key:"))
+            self.assertEqual(evaluator["selectedLiveAction"], kinds["key"])
+        # STS_COLLECT_KEYS=0 restores keys-off play: the bare stack takes the
+        # gold first, the research stack's relic rule the relic.
+        off = {"STS_COLLECT_KEYS": "0"}
+        bare, = self.run_rows([observation], model=False, policy="mcts", extra_env=off)
+        self.assertEqual(bare["evaluators"][0]["selectedSemanticKey"], "ooc-live:v1:take-gold", bare)
+        rules, = self.run_rows([observation], model=False, policy="mcts", research_stack=True, extra_env=off)
+        evaluator, = rules["evaluators"]
+        self.assertEqual(evaluator["mode"], "fixed_rule", rules)
+        self.assertTrue(evaluator["selectedSemanticKey"].startswith("ooc-live:v1:tree_rule:"))
+        self.assertEqual(evaluator["selectedLiveAction"], kinds["relic"])
+
+    def test_research_stack_opens_treasure_by_rule(self):
+        observation = copy.deepcopy(self.fixtures["treasure_open_leave"])
+        response, = self.run_rows([observation], model=False, policy="mcts", research_stack=True)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["mode"], "fixed_rule")
+        opened = next(c["liveAction"] for c in observation["ooc"]["liveChoices"]
+                      if c["nativeAction"] == dict(kind="option", index=0, group=0)
+                      or (c["nativeAction"]["kind"] == "option" and c["nativeAction"]["index"] == 0))
+        self.assertEqual(evaluator["selectedLiveAction"], opened)
+
+    def test_research_stack_search_reports_its_configuration(self):
+        response, = self.run_rows([self.fixtures["card_reward_duplicate_take_skip"]], policy="mcts",
+                                  research_stack=True, timeout=DEEP_SEARCH_TIMEOUT, label="research stack")
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        model = evaluator["model"]
+        self.assertEqual((model["searchStack"], model["collectKeys"], model["leafCombats"], model["treeRules"]),
+                         ("a20_research", True, 3, True))
+        self.assertEqual((model["wideningK"], model["wideningAlpha"], model["maxDepth"]), (4, 0.75, 32))
+        bare, = self.run_rows([self.fixtures["card_reward_duplicate_take_skip"]], policy="mcts")
+        self.assertEqual((bare["evaluators"][0]["model"]["searchStack"],
+                          bare["evaluators"][0]["model"]["leafCombats"]), ("legacy", 0))
+
+    @unittest.skipUnless(os.environ.get("STS_TEST_LIVE_ARM_C"), "set STS_TEST_LIVE_ARM_C to the frozen student C")
+    def test_research_stack_uses_student_prior_and_leaf_policy(self):
+        arm_c = {"STS_LIVE_OOC_ARM_C": os.environ["STS_TEST_LIVE_ARM_C"]}
+        # Qualified history lets leaves continue past the map checkpoint,
+        # where the student's leaf policy plays the rollout.
+        observation = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
+        observation["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])
+        response, = self.run_rows([observation], policy="mcts",
+                                  research_stack=True, extra_env=arm_c, timeout=DEEP_SEARCH_TIMEOUT,
+                                  label="research stack with Arm C")
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual((evaluator["model"]["prior"], evaluator["model"]["rolloutPolicy"]),
+                         ("arm_c_full", "arm_c"))
+        self.assertGreater(evaluator["model"]["armCLeafSteps"], 0, evaluator["model"])
+        # Student C has no x_act input, so ADR-0047's card-select options stay off.
+        self.assertEqual((evaluator["model"]["targetPrior"], evaluator["model"]["rolloutSelects"]), (False, "chain"))
+
+    @unittest.skipUnless(os.environ.get("STS_TEST_LIVE_ARM_C_SEL"), "set STS_TEST_LIVE_ARM_C_SEL to student_sel.bin")
+    def test_research_stack_card_select_student_defaults_and_rollback(self):
+        observation = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
+        observation["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])
+        base = {"STS_LIVE_OOC_ARM_C": os.environ["STS_TEST_LIVE_ARM_C_SEL"]}
+        for extra, expected in (({}, (True, "arm_c")),
+                                ({"STS_OOC_MCTS_TARGET_PRIOR": "0", "STS_OOC_MCTS_LEAF_SELECTS": "chain"}, (False, "chain"))):
+            response, = self.run_rows([observation], policy="mcts", research_stack=True, extra_env={**base, **extra},
+                                      timeout=DEEP_SEARCH_TIMEOUT, label=f"card-select student {extra}")
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertEqual((evaluator["model"]["targetPrior"], evaluator["model"]["rolloutSelects"]), expected)
 
 
 if __name__ == "__main__":

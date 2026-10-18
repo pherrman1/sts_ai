@@ -4,6 +4,8 @@
 #include "live_ooc_state.h"
 #include "live_ooc_policy.h"
 #include "heart1_policy.h"
+#include "run_driver.h"
+#include "sim/search/RunGoal.h"
 #include "differential_state.h"
 #include "ooc_v4_encoding.h"
 #include "../ooc_strategic_tok_net.h"
@@ -13,6 +15,8 @@
 #include "combat_transition_runtime.h"
 #include "live_silver_importer.h"
 #include "native_silver_advisor.h"
+#include "sim/search/CombatValueNet.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
@@ -29,6 +33,8 @@
 #include <vector>
 
 using nlohmann::json;
+
+extern bool g_collectKeys;   // ScumSearchAgent2.cpp; set from STS_COLLECT_KEYS in main
 
 namespace {
 // Content fingerprint is diagnostic identity, not an artifact trust decision.
@@ -181,9 +187,47 @@ std::size_t oocTreeNodeCap() {
     return static_cast<std::size_t>(std::min<unsigned long long>(parsed, 100000));
 }
 
+// One forced live click with no search; the caller re-observes afterwards.
+json forcedOocResponse(const one_combat::advisor::Request &request, json evaluator,
+                       const std::chrono::steady_clock::time_point started, const std::string &mode,
+                       const std::string &valueSemantics, const std::string &key, const std::string &label,
+                       const json &payload, const json &liveAction) {
+    evaluator["status"] = "OK";
+    evaluator["mode"] = mode;
+    evaluator["valueSemantics"] = valueSemantics;
+    evaluator["selectedSemanticKey"] = key;
+    evaluator["selectedLabel"] = label;
+    evaluator["selectedLiveAction"] = liveAction;
+    evaluator["candidateSummaries"] = json::array({json{
+        {"semanticKey", key}, {"semanticPayload", payload}, {"label", label}, {"q", 0.0},
+        {"visits", 1}, {"visitShare", 1.0}, {"prior", 1.0}, {"liveAction", liveAction}}});
+    evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - started).count();
+    return {{"protocol", one_combat::advisor::kProtocol},
+            {"protocolVersion", one_combat::advisor::kProtocolVersion},
+            {"kind", "analysis"}, {"status", "OK"}, {"session", request.session},
+            {"sequence", request.sequence}, {"observationHash", request.observationHash},
+            {"evaluators", json::array({evaluator})}};
+}
+
+// The live root's fixed rules, in the run driver's order: the Heart key rule
+// (ADR-0041) always, and with the research stack the remaining tree rules
+// (ADR-0031). The simulator applies them to the real game before searching;
+// live they become one click each.
+std::optional<sts::search::GameAction> liveOocRootRule(const one_combat::advisor::LiveOocStateV1 &state,
+                                                       bool treeRules, std::string &rule) {
+    if (const auto key = sts::search::heartKeyAction(state.projected, g_collectKeys)) {
+        rule = "heart_key";
+        return key;
+    }
+    if (!treeRules) return std::nullopt;
+    rule = "tree_rule";
+    return oocTreeRuleAction(state.projected);
+}
+
 json oocResponse(const one_combat::advisor::Request &request,
                  one_combat::LiveOocPolicy &policy, const std::string &identity,
-                 PendingCompoundPlan &pending) {
+                 PendingCompoundPlan &pending, const one_combat::heart1::Net *armC) {
     using namespace one_combat;
     const auto started = std::chrono::steady_clock::now();
     json evaluator = {{"id", "live_ooc_decision_v1"}, {"scope", "ooc_decision"},
@@ -415,6 +459,42 @@ json oocResponse(const one_combat::advisor::Request &request,
                 {"sequence",request.sequence},{"observationHash",request.observationHash},
                 {"evaluators",json::array({evaluator})}};
         }
+        const bool researchStack = std::string(policy.name()) == "mcts_ctm" && liveOocResearchStack();
+        {
+            std::string rule;
+            const auto bits = advisor::liveOocPrimitiveBits(state);
+            // A sole live choice needs no rule; the search shortcut passes it through.
+            const auto action = bits.size() > 1 ? liveOocRootRule(state, researchStack, rule) : std::nullopt;
+            if (action) {
+                if (std::count(bits.begin(), bits.end(), action->bits) == 1) {
+                    pending = PendingCompoundPlan{};
+                    const std::string key = "ooc-live:v1:" + rule + ":" + std::to_string(action->bits);
+                    return forcedOocResponse(request, evaluator, started, "fixed_rule", "fixed_rule_no_search",
+                        key, rule == "heart_key" ? "take Heart key step" : "fixed OOC rule",
+                        json{{"type", rule}, {"primitiveBits", action->bits}},
+                        advisor::lowerLiveOocAction(state, action->bits));
+                }
+                // A required key click that the live screen does not offer
+                // must stop the run rather than let search skip the key. An
+                // opened card group is the exception: its parent rewards are
+                // projected but not clickable; the rule fires on the reward
+                // screen the card choice returns to.
+                const auto &details = state.ooc.at("details");
+                const bool openedCardGroup = state.ooc.value("screen", std::string()) == "card_reward"
+                    && (details.contains("parentKnownRewards") || details.contains("parentPotionRewards")
+                        || details.contains("parentUnrevealedCardRewards"));
+                if (rule == "heart_key" && !openedCardGroup) {
+                    evaluator["reason"] = "HEART_KEY_RULE_UNLOWERABLE";
+                    evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - started).count();
+                    return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+                            {"kind", "analysis"}, {"status", evaluator.at("status")},
+                            {"session", request.session}, {"sequence", request.sequence},
+                            {"observationHash", request.observationHash},
+                            {"evaluators", json::array({evaluator})}};
+                }
+            }
+        }
         if (const auto forcedGoldAction = advisor::forcedRewardGoldLiveAction(state)) {
             const auto &liveAction = *forcedGoldAction;
             evaluator["status"] = "OK";
@@ -527,6 +607,31 @@ json oocResponse(const one_combat::advisor::Request &request,
                     && decision.reason.rfind("OOC_MCTS_", 0) != 0)
                 return advisor::errorResponse(request, "OOC_POLICY_FAILURE", decision.reason);
             evaluator["reason"] = decision.reason;
+            // As the simulator's heart1full fallback (run driver, ADR-0042):
+            // a root search cannot handle plays student C's argmax instead of
+            // a deterministic first choice. Non-UPGRADE card selects stay
+            // excluded as in heart1FullScreen (ooc_mcts_adapter.cpp).
+            const auto &root = state.projected;
+            if (armC && researchStack && (root.screenState != sts::ScreenState::CARD_SELECT
+                    || root.info.selectScreenType == sts::CardSelectScreenType::UPGRADE)) {
+                std::vector<sts::search::GameAction> actions;
+                for (const auto bits : advisor::liveOocPrimitiveBits(state))
+                    if (std::none_of(actions.begin(), actions.end(), [&](auto a) { return a.bits == bits; }))
+                        actions.emplace_back(bits);
+                const auto logits = actions.size() > 1
+                    ? heart1::priorLogits(*armC, root, actions, nullptr) : std::nullopt;
+                if (logits && logits->size() == actions.size()
+                        && std::all_of(logits->begin(), logits->end(), [](double x) { return std::isfinite(x); })) {
+                    const auto best = actions[std::max_element(logits->begin(), logits->end()) - logits->begin()];
+                    pending = PendingCompoundPlan{};
+                    auto fallback = evaluator;
+                    fallback["fallbackFrom"] = decision.reason;
+                    return forcedOocResponse(request, fallback, started, "heart1_fallback", "student_policy_argmax",
+                        "ooc-live:v1:heart1-fallback:" + std::to_string(best.bits), "student C fallback",
+                        json{{"type", "heart1_fallback"}, {"primitiveBits", best.bits}},
+                        advisor::lowerLiveOocAction(state, best.bits));
+                }
+            }
         } else {
             try {
                 const auto distributionJson = [](const sts::search::OocValueDistribution &d) {
@@ -713,12 +818,28 @@ json finalHpLayerJson(const sts::search::SilverOutcomeCapture::Layer &layer,
             {"unresolved", layer.unresolved}, {"hpCounts", counts}};
 }
 
+// STS_LIVE_SILVER_SIMS (default 10000): minimum Silver simulations per live
+// combat root, as the flat exact 10k of the A20 research stack (§504, §522)
+// that OOC MCTS and the CTM labels assume. 1000 restores the old live floor.
+// The inspector's "Silver +10k" requests raise it further.
+std::int64_t liveSilverSimulations() {
+    const char *raw = std::getenv("STS_LIVE_SILVER_SIMS");
+    if (!raw) return 10000;
+    const std::string value(raw);
+    if (value.empty() || value.size() > 7 || value.find_first_not_of("0123456789") != std::string::npos
+            || std::stoll(value) < 1)
+        throw std::invalid_argument("STS_LIVE_SILVER_SIMS must be an integer in 1..9999999");
+    return std::stoll(value);
+}
+
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
                      one_combat::advisor::SilverImportContext &importContext,
                      std::string &silverRootIdentity,
-                     std::int64_t &silverSimulations) {
+                     std::int64_t &silverSimulations,
+                     const sts::search::CombatValueNet *rolloutRootTable,
+                     const std::string &rolloutRootTableIdentity) {
     const auto entryIdentity = request.observation.value(
         "combatEntryHash", request.observation.value("silverRoot", json::object())
             .value("combatInstance", std::string()));
@@ -727,8 +848,9 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     importContext.reset(request.session, entryIdentity);
     json evaluator = {{"id", "silver_player_decision_v2"},
                       {"scope", "combat_player_decision"}, {"engine", "native_silver"},
-                      {"simulations", 1000}, {"adaptiveEnabled", false},
-                      {"exactVisitLockEnabled", false}, {"rhoRacingEnabled", false}};
+                      {"simulations", liveSilverSimulations()}, {"adaptiveEnabled", false},
+                      {"exactVisitLockEnabled", false}, {"rhoRacingEnabled", false},
+                      {"rolloutRootTable", rolloutRootTableIdentity}};
     const auto clearSession = [&] {
         session.reset();
         sessionIdentity.clear();
@@ -736,6 +858,10 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         silverRootIdentity.clear();
         silverSimulations = 0;
     };
+    // A failed search or lowering keeps the combat's session (dropSession =
+    // false): dropping it made every later root of the combat report
+    // silver_missing_predecessor. The import context, which carries the
+    // combat's public card identities, is independent of the session.
     const auto unsupported = [&](const std::string &reason, bool dropSession = true) {
         if (dropSession) clearSession();
         else {
@@ -774,7 +900,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
             || !selection.contains("canCancel") || selection.at("canCancel") != false
             || !selection.contains("selectedUuid") || !selection.at("selectedUuid").is_string()
             || selection.at("selectedUuid").get<std::string>().empty())
-            return unsupported("silver_unqualified_selection_confirmation");
+            return unsupported("silver_unqualified_selection_confirmation", false);
         if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
             return unsupported("DIFFERENTIAL_COMBAT_CONFIRMATION_UNREPRESENTABLE");
         // Java has moved the selected card into a temporary UI group. Only
@@ -795,7 +921,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
     if (!matchingSession && imported.playerTurn == 1 && imported.decisionInTurn == 0) {
-        session = std::make_unique<one_combat::advisor::NativeSilverAdvisorSession>();
+        session = std::make_unique<one_combat::advisor::NativeSilverAdvisorSession>(rolloutRootTable);
         sessionIdentity = request.session;
         combatEntryIdentity = entry;
         silverRootIdentity.clear();
@@ -805,14 +931,14 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     }
     if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
         evaluator["differentialState"] = one_combat::differential::canonicalCombatState(imported.wire);
-    const auto requestedSimulations = std::max<std::int64_t>(1000,
+    const auto requestedSimulations = std::max<std::int64_t>(liveSilverSimulations(),
         request.observation.value("silverSearchBudget", static_cast<std::int64_t>(1000)));
     const auto rootIdentity = request.observation.value("silverRoot", json::object()).dump();
     if (silverRootIdentity != rootIdentity) {
         silverRootIdentity = rootIdentity;
         silverSimulations = 0;
     }
-    if (silverSimulations > requestedSimulations) return unsupported("silver_budget_regression");
+    if (silverSimulations > requestedSimulations) return unsupported("silver_budget_regression", false);
     const auto additionalSimulations = requestedSimulations - silverSimulations;
     const auto started = std::chrono::steady_clock::now();
     const auto decision = silverSimulations == 0
@@ -820,7 +946,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         : session->extend(additionalSimulations);
     evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now() - started).count();
-    if (!decision.accepted) return unsupported(decision.failureReason);
+    if (!decision.accepted) return unsupported(decision.failureReason, false);
     silverSimulations += decision.simulations;
     evaluator["status"] = "OK";
     evaluator["simulations"] = silverSimulations;
@@ -836,7 +962,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         evaluator.erase("selectedAction");
         evaluator.erase("selectedLabel");
         evaluator.erase("selectedLiveAction");
-        return unsupported("silver_live_action_lowering");
+        return unsupported("silver_live_action_lowering", false);
     }
     evaluator["legalActions"] = json::array();
     for (const auto &action : decision.legalActions)
@@ -904,6 +1030,21 @@ json silverEvaluator(const one_combat::advisor::Request &request,
 
 int main() {
     one_combat::advisor::LatestObservation latest;
+    // As one_combat (ADR-0041): collect the Heart keys unless STS_COLLECT_KEYS=0.
+    if (const char *raw = std::getenv("STS_COLLECT_KEYS")) {
+        if (std::string(raw) != "0" && std::string(raw) != "1") {
+            std::cerr << "STS_COLLECT_KEYS must be 0 or 1\n";
+            return 2;
+        }
+        g_collectKeys = std::string(raw) == "1";
+    } else g_collectKeys = true;
+    try {
+        (void)one_combat::liveOocResearchStack();
+        (void)liveSilverSimulations();
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n';
+        return 2;
+    }
     std::shared_ptr<one_combat::heart1::Net> armC;
     json armCIdentity = nullptr;
     if (const char *path = std::getenv("STS_LIVE_OOC_ARM_C")) {
@@ -969,6 +1110,31 @@ int main() {
     if (const char *path = std::getenv("STS_SILVER_ROOT_PRIOR_MODEL"); path && *path)
         throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL is no longer supported: "
                                     "the advisor runs native Silver search without a root prior");
+    // ADR-0046 rollout root table, as in the simulated Silver path: unset uses the bundled
+    // gen-6 E model next to this executable (the installed release's models/), else under
+    // the working directory; 0 restores the ADR-0040 table; a path selects another model.
+    std::unique_ptr<sts::search::CombatValueNet> rolloutRootTable;
+    std::string rolloutRootTableIdentity = "off";
+    {
+        const char *raw = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE");
+        std::string path = raw && *raw ? raw : "";
+        if (path.empty()) {
+            std::error_code error;
+            const auto beside = std::filesystem::read_symlink("/proc/self/exe", error).parent_path()
+                / sts::search::kDefaultRolloutRootTableModel;
+            path = !error && std::filesystem::is_regular_file(beside, error)
+                ? beside.string() : sts::search::kDefaultRolloutRootTableModel;
+        }
+        if (path != "0") {
+            rolloutRootTable = std::make_unique<sts::search::CombatValueNet>();
+            if (!rolloutRootTable->load(path) || !rolloutRootTable->isPolicyMlp) {
+                std::cerr << "STS_SILVER_ROLLOUT_ROOT_TABLE: cannot load a combat_policy_mlp model from "
+                          << path << " (=0 restores the ADR-0040 table)\n";
+                return 2;
+            }
+            rolloutRootTableIdentity = modelIdentity(path);
+        }
+    }
     std::unique_ptr<one_combat::advisor::NativeSilverAdvisorSession> silverSession;
     std::string silverSessionIdentity;
     std::string silverCombatEntryIdentity;
@@ -1074,7 +1240,9 @@ int main() {
                                                             silverCombatEntryIdentity,
                                                             silverImportContext,
                                                             silverRootIdentity,
-                                                            silverSimulations);
+                                                            silverSimulations,
+                                                            rolloutRootTable.get(),
+                                                            rolloutRootTableIdentity);
                         if (silver.value("mode", std::string()) == "native_pass_through") {
                             response = {{"protocol", one_combat::advisor::kProtocol},
                                 {"protocolVersion", one_combat::advisor::kProtocolVersion},
@@ -1143,7 +1311,7 @@ int main() {
                         response = oocResponse(request, *oocPolicy, oocIdentity + ":ctm=" + ctmIdentity
                                                 + ":win=" + oocWinIdentity + ":floor=" + oocFloorIdentity
                                                 + ":wingBoots=public_exact",
-                                                pendingCompound);
+                                                pendingCompound, armC.get());
                     } else {
                         one_combat::advisor::PublicOocState imported;
                         const auto importedResult =

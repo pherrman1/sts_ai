@@ -1,6 +1,9 @@
 #include "combat_transition_runtime.h"
 #include "combat_transition_near_full.h"
+#include "compact_tree.h"
 #include "run_features.h"
+#include "constants/Cards.h"
+#include "constants/MonsterEncounters.h"
 #include "constants/Potions.h"
 #include "constants/Relics.h"
 #include <algorithm>
@@ -10,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <iomanip>
 #include <limits>
 #include <memory>
@@ -53,6 +57,56 @@ std::string sha256Text(const std::string &text) {
     result << std::hex << std::setfill('0');
     for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
     return result.str();
+}
+// §527 Act-4 survival model (tools/ctm_act4_survival.py, which mirrors these features; keep them in lockstep).
+constexpr int kAct4Cards=400,kAct4Relics=200,kAct4Potions=50;
+const char *const kAct4Scalars[]={"heart","cur_hp","max_hp","hp_frac","gold","potion_capacity","potion_count",
+    "deck_size","upgraded"};
+constexpr int kAct4ScalarCount=int(sizeof(kAct4Scalars)/sizeof(kAct4Scalars[0]));
+static_assert(int(sts::CardId::ZAP)<kAct4Cards && int(sts::RelicId::INVALID)<kAct4Relics &&
+    int(sts::Potion::WEAK_POTION)<kAct4Potions,"Act-4 survival feature bounds");
+std::vector<float> act4SurvivalFeatures(const CombatPredictorInputV1 &p) {
+    std::vector<float> x(kAct4ScalarCount+kAct4Cards+kAct4Relics+kAct4Potions,0.f);
+    const auto &g=p.globals;
+    int upgraded=0;
+    for(const auto &c:p.cards) upgraded+=c.upgraded;
+    const float scalars[]={float(g.encounter==int(sts::MonsterEncounter::THE_HEART)),float(g.curHp),float(g.maxHp),
+        float(g.curHp)/float(g.maxHp),float(g.gold),float(g.potionCapacity),float(g.potionCount),
+        float(p.cards.size()),float(upgraded)};
+    std::copy(std::begin(scalars),std::end(scalars),x.begin());
+    for(const auto &c:p.cards) {
+        require(c.cardId>=0 && c.cardId<kAct4Cards,"Act-4 survival card id");x[kAct4ScalarCount+c.cardId]+=1;
+    }
+    for(const auto &r:p.relics) {
+        require(r.relicId>=0 && r.relicId<kAct4Relics,"Act-4 survival relic id");
+        x[kAct4ScalarCount+kAct4Cards+r.relicId]=1;
+    }
+    for(const auto &q:p.potions) {
+        require(q.potionId>=0 && q.potionId<kAct4Potions,"Act-4 survival potion id");
+        if(q.slot<g.potionCapacity && q.potionId>int(sts::Potion::EMPTY_POTION_SLOT))
+            x[kAct4ScalarCount+kAct4Cards+kAct4Relics+q.potionId]+=1;
+    }
+    return x;
+}
+// STS_CTM_ACT4_SURVIVAL_MODEL (unset: off): a CompactTreeNet of death in the fight. Loaded once per process.
+const CompactTreeNet *act4SurvivalModel() {
+    static const std::unique_ptr<CompactTreeNet> model=[]() -> std::unique_ptr<CompactTreeNet> {
+        const char *path=std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
+        if(!path) return nullptr;
+        require(*path!=0,"STS_CTM_ACT4_SURVIVAL_MODEL is empty");
+        std::unordered_map<std::string,int> index;
+        for(int i=0;i<kAct4ScalarCount;++i) index[kAct4Scalars[i]]=i;
+        for(int i=0;i<kAct4Cards;++i) index["card_"+std::to_string(i)]=kAct4ScalarCount+i;
+        for(int i=0;i<kAct4Relics;++i) index["relic_"+std::to_string(i)]=kAct4ScalarCount+kAct4Cards+i;
+        for(int i=0;i<kAct4Potions;++i) index["potion_"+std::to_string(i)]=kAct4ScalarCount+kAct4Cards+kAct4Relics+i;
+        auto net=std::make_unique<CompactTreeNet>();
+        require(net->load(path,index,"ctm-act4-survival") && net->logistic,
+            "STS_CTM_ACT4_SURVIVAL_MODEL is not a logistic CompactTreeNet over the Act-4 survival features");
+        std::cerr << "[ctm-act4-survival] model=" << path << " sha256=" << sha256File(path)
+                  << " scope=SHIELD_AND_SPEAR,THE_HEART\n";
+        return net;
+    }();
+    return model.get();
 }
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
     return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
@@ -1147,6 +1201,12 @@ double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin)
     return reserveProbability(lizardBrewRModel_,pReserveWin);
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {
+    // §527: the opt-in Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4);
+    // other heads are unchanged.
+    if(p.globals.encounter==int(sts::MonsterEncounter::THE_HEART) ||
+       p.globals.encounter==int(sts::MonsterEncounter::SHIELD_AND_SPEAR))
+        if(const auto *act4=act4SurvivalModel())
+            return float(1-act4->predict(act4SurvivalFeatures(p)));
     float logit=linear("survival.survival",encode("survival",p))[0];
     require(std::isfinite(logit),"nonfinite survival");
     // §470: boss calibration from the manifest, as a shift on the death logit (absent: no change).

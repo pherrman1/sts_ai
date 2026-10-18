@@ -20177,6 +20177,9 @@ the §503 CONFIRM set (640 runs, 83 Heart kills, 12,458 MAP roots): BCE 0.3345 v
 0.438/0.459, but **act 1 0.093/0.130 (|Δ| 0.037 > 0.03, FAIL**; X2-B 0.040). No A/B on td2;
 CONFIRM is spent. **Inference:** the act-1 under-prediction is systematic (TRAIN out of fold 0.093
 vs 0.136). The §497 TEST stays sealed.
+td3 (Philipp, 22:34Z: fix the hidden-queue leak): td2's recipe with feature schema v4, which zeroes the
+ADR-0029 hidden queue columns (`nextEliteId`, `nextFight0..2`) the §503 real-game roots carried. VALIDATION BCE
+0.3034, AUC 0.731, act 3 0.228/0.202, about td2's numbers (no held-out test left).
 [Evidence](evidence/heart_leaf_td_20261017/RESULT.md).
 **Knowledge impact:** `operations/environment-variables.md` (new option),
 `evaluation/current-research.md` (Heart leaf status), `CODE_MAP.md`.
@@ -20284,3 +20287,580 @@ does not hold here. [report.json](evidence/silver_gen7_ab25_20261018/report.json
 Seeds used: 111170100–111170119 and 111175700–111175701 (smokes), 111170200–111175666 (self-play), 111176000–111177093
 (40k A/B), 111177100–111178193 (2.5k A/B).
 **Knowledge impact:** result line added to the `silverazact4gen` paragraph in `architecture/combat-search.md`.
+## §518 — Silver chance-node widening per category at A20 (spire-mentor constants): all three labels NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "spire-mentor engine ideas"):** after reading tfriedel/spire-mentor (STS2,
+MIT), which uses separate progressive-widening constants for end-of-turn and other chance nodes and reports
++6.35 pp full-run win rate from that: "yes lets try"; 20:01Z: "use the gen6 prior thing with 2.5k simulations and
+the 4 arms. then use 8 workers."
+**Design:** [PREREG](evidence/silver_widening_a20_518_20261017/PREREG.md), independent pre-launch and delta review
+PASS (PR #622). Research-only armset `widen518` of fight-level `ctmsilvergen` sets the existing per-arm
+`g_nativeSilverSearchParamOverride`; no production path changes. All arms Silver at exact 2,500 simulations with
+g6_E (`ca9bd7f2…`) as root prior (weight 400) and tree prior (K = 8): `base2500` both categories C 3.7028,
+alpha 0.52389; `endwide2500` end-turn C doubled (7.4056); `othernarrow2500` other chance nodes C 2, alpha 0.5;
+`spire2500` othernarrow plus end turn C 5.79, alpha 0.44. A20, sources by plain exact-10k Silver with student C
+(`eff2f74f…`) out of combat, keys flag off, `STS_SILVER_LEARNED_STOP=0`, hallway every 3rd, R = 2 redraws paired
+across arms, §479 fight score, bootstrap over source seeds. RUN_COMMIT `90133e7e` (code `32bb3552` = main
+`14845363` incl. #613, binary `49a3e18a…`), seeds 111180100–111180355, 8 workers × 32.
+**Result: NOT_SHOWN on all three labels.** 256/256 sources, 32/32 shards rc=0, 8 tars verified from a second
+container; 3,043 valid fights (615 boss, 1,310 elite, 982 normal, 136 event; 108 in Act 4), 14 excluded for
+escapes. The 11 control-replay mismatches are all escape fights among those 14. Source 111180117 contributed no
+replayed fight. Win rate 93.49 / 93.51 / 93.33 / 93.31% (base / endwide / othernarrow / spire).
+- `endwide2500 − base2500`: score +0.20 [−1.02, +1.37], win +0.02 pp [−0.40, +0.42], HP lost −0.16 [−0.42, +0.09].
+- `othernarrow2500 − base2500`: score −0.44 [−1.55, +0.73], win −0.16 pp [−0.55, +0.24].
+- `spire2500 − base2500`: score −0.40 [−1.80, +1.03], win −0.18 pp [−0.64, +0.30].
+- Subsets (descriptive): bosses +1.37 / +1.34 / +0.42 with CIs about ±5; elites +0.24 / −1.21 / −0.94; Act 4
+  (108 fights) endwide +6.99 [−4.07, +18.19], spire −3.93 [−18.75, +10.24], spire − endwide −10.92
+  [−23.14, +0.93].
+- CPU per fight vs base: endwide 0.992 [0.976, 1.005], othernarrow 0.980 [0.965, 0.992], spire 0.976
+  [0.962, 0.987]; narrower other nodes save about 2% CPU.
+**Interpretation:** at A20 with the gen-6 prior at 2,500 simulations, splitting the widening constants per category
+does not change fight results detectably: every all-fight score CI lies within about ±1.8 points (well under one
+potion, 11) and every win CI within ±0.7 pp. This matches §369 (A0, both categories together): Silver's constants
+sit on a flat region. spire-mentor's +6.35 pp does not transfer as a fight-level effect here (**Inference**: their
+narrower end-turn setting was the baseline that gained; Silver's single setting is already wider). The labels are
+not corrected for multiplicity. The final-fight leaf was off in every arm, and event fights count in the normal
+subset (reviewer notes). Pre-registered decision: no default changes and the per-category idea is closed for this
+setting; the armset stays research-only.
+[result.json](evidence/silver_widening_a20_518_20261017/result.json). Raw:
+`/mnt/project-files/silver-widening-518/w0{1..8}.tar` (sha256 `74773603…`, `aaa442ef…`, `a9acaee9…`, `a83ece5a…`,
+`8e69db90…`, `29b77e29…`, `2035aecd…`, `772e01c7…`). Seeds used: 111180000–111180011 (smokes) and
+111180100–111180355 (run); the rest of 111180000–111189999 is unused.
+**Knowledge impact:** one sentence added to the per-context search constants paragraph in
+`evaluation/current-research.md`.
+
+## §521 — Silver rollout root table at 10k simulations: NOT_CPU_MATCHED, score NOT_SHOWN (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z, thread "Distilled Silver playout picker"):** "can you compare on 10k
+simulations?" after §519; 20:03Z "8 workers"; 20:13Z "merge 612 and go".
+**Design:** [PREREG](evidence/silver_rollout_root_table_10k_20261017/PREREG.md), independent pre-launch review PASS
+(PR #626). §519 unchanged except `STS_CTMSILVER_SWEEP_SIMS=10000,10700`: arms `greedy`/`roottable` at 10,000 and
+10,700 simulations, R = 2, gen-6 E table model and tree prior, student C source runs, keys flag off. RUN_COMMIT
+`72066f46` (code `42e54fac`, binary `bb117ec2…`), A20 seeds 111190500–111190627, 8 cloud workers. Primary
+`roottable10000 − greedy10700` score, label valid only if the per-fight CPU ratio point estimate is ≤ 1.00.
+**Result: NOT_CPU_MATCHED; the score contrast is NOT_SHOWN as well.** 128/128 seeds, 32/32 shards rc=0, 8 tars
+verified from a second container; 1,403 valid fights (7 excluded for escapes, 6 control-replay mismatches; 25 in Act
+4). Primary `roottable10000 − greedy10700`: score +1.79 [−0.40, +3.99], win +0.5 pp [−0.2, +1.1], HP lost −0.45
+[−0.98, +0.08]; CPU per fight 1.008 [0.991, 1.025]. The root table costs 5.8% more CPU per simulation (1.058 [1.044,
+1.072]; playouts 16.9 vs 15.5 actions) and takes 2.0% more search decisions per fight (25.1 vs 24.6), so at equal
+simulations it costs 1.079x per fight against 1.070x for greedy10700. Descriptive, not pre-registered:
+`roottable10000 − greedy10000` +1.77 [−0.24, +3.87]; `roottable10700 − greedy10700` +2.11 [−0.05, +4.35];
+`greedy10700 − greedy10000` −0.02 [−1.69, +1.73]. Win rates 92.6 / 93.1 / 92.6 / 93.2% (greedy10000 / roottable10000
+/ greedy10700 / roottable10700). Bosses (262) primary +5.9 [−2.9, +14.5]; Act 4 (25) −2.7 [−38.4, +24.8].
+**Interpretation:** the root table's point estimate is about the same at 10k as at 2.5k (§519: +2.69 at equal
+simulations), but at 10k it is not significant at equal simulations either. Unlike §519, 7% more simulations buy
+nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not measurably have used.
+**Inference:** at the production budget, a cheaper root table (or the same one at no simulation cost) could be a
+small free gain; across §519 and §521 the equal-simulation contrast is positive in all four budget pairs, but each CI
+touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off (superseded: ADR-0046).
+[result.json](evidence/silver_rollout_root_table_10k_20261017/result.json). Raw:
+`/mnt/project-files/silver-rollout-root-table-10k/w0{1..8}.tar` (sha256 `8c4bb455…`, `47c5c9fb…`, `4f656e30…`,
+`0e6c3ce7…`, `91834bb7…`, `4ad02fcd…`, `470b53da…`, `8be914d1…`). Seeds 111190500–111190627 used; reviewer smokes
+from 111190700–111190799.
+**Knowledge impact:** result added to the option's paragraph in `architecture/combat-search.md` and its row in
+`operations/environment-variables.md`.
+## §525 — Blended Silver leaf (one rollout mixed with a learned value) on the §397 corpus, offline: FAIL (2026-10-17)
+
+**Question (Philipp, 2026-10-17, thread "StS AI community scan", V1):** "okay versuche mal v1 zu machen". §397 Gate A
+tested a learned leaf V replacing one SimpleAgent rollout (R1); AlphaGo-style mixing `B = (1−α)·R1 + α·V` on the
+same probe child was never tested in native Silver. Outside evidence: evangambit/sts2 `rl/FINDINGS.md` (StS2) found a
+value head ties a rollout only from ~60 simulations and never beats it.
+**Design:** [PREREG](evidence/silver_blend_leaf_20261017/PREREG.md), written before any blend score. Frozen §397
+corpus, features re-extracted with `silversynthfeatures` on main `623a8b60`, `vcont-natpert` (primary) and
+`vroll-natpert` retrained with the unchanged §397 recipe, α from {0.1..0.9} on natural validation fold 3, §397 groups,
+regret and concordance on natural test fold 4. No gameplay seeds.
+**Result: FAIL.** α = 0.8 (vcont) and 0.7 (vroll). On 2,006 natural test groups (43 seeds): R1 regret 3.989,
+primary blend 3.972, −0.017 [−0.436, +0.377] vs R1 (concordance 0.6887 vs 0.6730); vroll blend −0.037
+[−0.397, +0.327]. Both blends' point estimates sit at a second rollout (B − R2 +0.038 and +0.019), but "at least as good as R2" is
+not shown (upper bounds +0.483 and +0.374 above the pre-registered +0.1; `blendAtLeastR2` false). Deviation from
+§397: the re-extraction gives R1 3.989 (§397 4.017), R4 − R1 −0.352 [−0.735, +0.040] (§397 −0.47 [−0.78, −0.14])
+and 145,000 vcont rows (§397 146,984); **Inference:** probe rollouts redrawn on current main and 1–7 roots per
+unit dropped on `rootEdgeMismatch`. The leaf-variance headroom here is ~0.35–0.5 regret. Retrained V alone matches
+§397 within 0.3 (vcont − R1 +0.19). V1 closed; no native implementation.
+[Result](evidence/silver_blend_leaf_20261017/RESULT.md), [blend_gate.json](evidence/silver_blend_leaf_20261017/blend_gate.json).
+Models: `/mnt/project-files/silver-blend-leaf/models/`.
+**Knowledge impact:** negative result added to `research/combat-search/leaf-evaluation.md` (rejected approaches).
+
+## §524 — Card-select student (heart1 card-select distillation) vs student C in the A20 Heart stack: NOT_SHOWN (2026-10-17)
+
+**Question:** Does student C, re-distilled on heart1's card-select labels with keys-on and Act-4 states, play better
+as the OOC tree prior and rollout policy when card-select targets are scored by it? Requested by Philipp 2026-10-17
+16:10Z ("we definitely want to distill the card_select thing"). He folded the student input change in at 17:28Z, and
+he authorized the A/B at 21:45Z: "64 seeds" card, "use 8 workers for that".
+
+**Capture.** `STS_OOC_HEART1_CAPTURE` (#615, merged 360055d0), RUN_COMMIT e703d7bc, binary 5eff2ad7.
+- 64 A20 seeds 111156100–111156163 in the A20 Heart stack with student C: keys on, Act 4 included.
+- 765,286 node rows and 390,406 card-select rows, labelled by heart1.
+- 8 tars verified; data branch `claude/heart1-distill-data` 814aa76a.
+- On these rows student C agreed with heart1 on REMOVE 0.06%, TRANSFORM 0.11% and UPGRADE 18.8% of the time.
+
+**Student.** `student_sel.bin` `cf6bf7fb…`, on Philipp's 3060 Ti; data branch 5a7245aa, `results/E_d64_sel_xin/`.
+- Recipe: student C's (d64, 2 layers, mult 4, 4 heads, trimmed map) initialised from it, with the zero-initialised
+  relic-counter, act and card-misc inputs, lr 3e-4, 6 epochs, old 1.01M rows plus the new capture.
+- Torch-native parity: max diff 8.8e-6 on 390 records; perturbed inputs moved every record.
+- Offline gate `GATE.md`, written before training, scored natively on 243,103 held-out rows (seed % 8 == 7): PASS.
+  - REMOVE 97.6%, TRANSFORM 97.5%, UPGRADE 89.6%;
+  - node rows 96/94/91% in acts 1–3, vs 90/85/82% for student C;
+  - old rows 94.0% vs 93.0%.
+
+**A/B.** PREREG `evidence/student_sel_ab_20261017/PREREG.md`, frozen and reviewed before launch. Run: RUN_COMMIT
+aa9bb56f, code 623a8b60, binary `2b94132f…`, `tools/cloud/worker.sh`, 8 workers.
+- Arms: A = the capture's stack with student C. B = A + `STS_OOC_HEART1=student_sel.bin`,
+  `STS_OOC_MCTS_TARGET_PRIOR=1` and `STS_OOC_MCTS_LEAF_SELECTS=heart1`.
+- Seeds: 64 paired A20 seeds 111193400–111193463.
+- Primary: reached Act 4, exact McNemar.
+
+**Result: NOT_SHOWN.**
+- 128/128 units rc=0, 0 excluded; `verify_campaign.py` OK on all 8 workers.
+- Reached Act 4: B 22 vs A 18, +6.3 pp [−6.3, +18.8], discordant 11 vs 7, p = 0.48.
+- Descriptive:
+  - Heart kills 10 vs 7, mean floor +0.53;
+  - deaths by act: A 5/28/13/11, B 9/21/12/12;
+  - seconds per run 330 vs 297 (1.11x);
+  - MCTS CPU per OOC decision 3.06 vs 2.78 s.
+- Decision logs: B's rollouts scored all 750,765 card-select steps with the student. A's used heart1 on 500,167
+  (UPGRADE and the like), the chain on 148,442 and the shop-removal rule on 118,773.
+
+**Interpretation:** the student now copies heart1's card selects. Within 64 pairs that is not shown to change how
+often runs reach Act 4 (the CI admits about +19 to −6 pp). The Heart-kill difference (10 vs 7) is far below what 64
+pairs can resolve.
+
+**Decision (pre-registered):** no default change. `student_sel.bin` stays an opt-in weights file, and the tree's
+non-UPGRADE select exclusion (`heart1FullScreen`) stays. Lifting the exclusion only follows a result that shows the
+student helps.
+
+[report.json](evidence/student_sel_ab_20261017/report.json). Raw: `/mnt/project-files/student-sel-ab/w0{1..8}.tar`
+(sha256 in `worker_tars.txt`).
+
+Seeds used:
+- 111156000–111156004 (capture smokes), 111156100–111156163 (capture);
+- 111193400–111193463 (A/B), 111193464 (author smoke), 111193465–111193469 (pre-launch reviewer).
+
+**Knowledge impact:** `architecture/out-of-combat.md` (card-select student paragraph, `TARGET_PRIOR` /
+`LEAF_SELECTS` rows).
+
+## §528 — Shield and Spear: rollout block check with worst-case facing, and tree reuse off: both NOT_SHOWN (2026-10-17)
+
+**Question:** Our A20 Act-4 runs lose more HP on Shield and Spear than heart1's engine does on the same entry states
+(paired −6.8 HP [−11.2, −2.5] in the A20 loss audit, `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`
+F1). Does either of two search mechanics account for it?
+1. Under Surrounded, damage is ×1.5 from the monster the player does not face, but the Silver rollout's block check
+   (`SilverRolloutAgent::getIncomingDamage`) uses the current facing only. heart1's `SimpleAgent` has the same blind
+   spot. Philipp asked to fix it anyway (2026-10-17 23:21Z: "sollten wir das nicht trotzdem fixen?").
+2. Our tree reuse between decisions (heart1 reuses only exact matches).
+
+**Setup.** `one_combat act4replay` on the 32 recorded Shield-and-Spear entry states, 3 copies, 10k exact sims, two
+paired seed blocks (111130200–295 and 111130904–999), 192 fights per arm. Local switches only, nothing committed:
+- Facing: `STS_SILVER_ROLLOUT_SURROUNDED_FACING=1` (patch in evidence) makes the block check use the worst facing over
+  alive monsters while Surrounded. Switch off reproduces the default 96/96.
+- Reuse off: a local hack that disables tree reuse.
+
+**Result** (HP lost incl. full HP on death, paired per state, bootstrap 95% CI; positive = worse):
+
+| arm vs default | seeds 111130904+ | seeds 111130200+ | pooled, 192 fights | wins | CPU |
+|---|---|---|---|---|---|
+| worst-case facing | +2.3 [−0.7, +5.5] | +1.7 [−1.4, +4.7] | **+2.0 [−0.2, +4.3]** (35.4 vs 33.3) | 181 vs 179 | 1.12x |
+| tree reuse off | −5.7 [−9.5, −2.1] | +0.5 [−3.2, +4.2] | **−2.6 [−5.4, −0.1]** (30.7 vs 33.3) | 184 vs 179 | 0.86x |
+
+The 111130904+ block ran first; the 111130200+ block is the replication. Tree reuse off on the 64 Heart states
+(3 copies, 10k and 30k, seeds 111130000–191): 90 vs 89 and 96 vs 96 wins of 192, +0.5 pp and 0.0 pp.
+
+**Interpretation:** worst-case facing does not help and costs 12% CPU. **Inference:** it makes rollouts over-block
+(not measured). Tree reuse off did not replicate on the second seed block: pooled −2.6 HP lost [−5.4, −0.1] on
+Shield and Spear, 0 pp on the Heart. Exact-match-only reuse was flat (−0.3 [−0.9, +0.2], audit report F1).
+Neither closes the −6.8 HP engine gap. **Open question:** the remaining candidates are the fair-view root and
+knowledge tracking, and other rollout-agent differences.
+
+**Decision:** no switch, no default change, no PR for the patch.
+
+Evidence: [`evidence/a20_ss_rollout_facing_20261017/`](evidence/a20_ss_rollout_facing_20261017/README.md) (per-fight
+CSVs, `facing_switch.patch`, SHA256SUMS). The `act4replay` mode used here is part of this PR.
+
+Seeds used: 111130200–295 and 111130000–191 (reused for pairing), 111130904–999.
+
+**Knowledge impact:** both added to rejected approaches in `research/combat-search/leaf-evaluation.md`.
+## §522 — Heart leaf td2 vs the X2-B leaf in A20 OOC MCTS: NOT_SHOWN, more Act-1 deaths (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z):** "yes lets try a parid a20 a/b" of the §515 td2 Heart leaf, after its
+CONFIRM_FAIL; card "512 pairs" on 8 workers. **Design:** [PLAN](evidence/heart_leaf_ab_20261017/PLAN.md),
+pre-launch review PASS. A20 Heart stack with student C OOC (`STS_OOC_HEART1` heart1full prior),
+`STS_SILVER_LEARNED_STOP=0`; arm H adds `STS_OOC_MCTS_LEAF_HEART_MODEL=heart_leaf_td2`, arm C keeps the X2-B leaf.
+RUN_COMMIT 82d85b0e, binary `20d03790…`, seeds 111191000–111191511, 1,024 units rc 0, no exclusions.
+- **Reached Act 4 (primary):** H 124, C 137, −2.5 pp [−6.4, +1.4], McNemar p = 0.24, **NOT_SHOWN**.
+- **Heart kills:** 42 vs 46, −0.8 pp [−3.5, +2.1].
+- **Act-1 deaths:** 114 vs 69 (discordant 61 vs 16, p < 0.0001), mostly at the act-1 boss; act-3 deaths 93 vs 118
+  (post hoc). Mean final floor −3.1. Same MCTS CPU per decision.
+**Interpretation:** the td2 leaf does not help in play and loses Act-1 runs. **Inference:** its Act-1
+under-prediction (§515) flattens leaf differences there. td2 also read the hidden encounter queue in training
+(shuffle test on VALIDATION: no effect); `heart_leaf_td3` (schema v4, #642) removes it but has no held-out or play
+test. No default change; whether to continue the Heart leaf line is Philipp's call.
+[Result](evidence/heart_leaf_ab_20261017/RESULT.md), [report.json](evidence/heart_leaf_ab_20261017/report.json).
+Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
+**Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
+
+## §527 — Act-4 survival model for the A20 CTM (5,467 Act-4 labels), offline gate: FAIL (Heart passes, Shield and Spear not shown) (2026-10-18)
+
+**Question (Philipp, 2026-10-17 23:49Z, card "Retrain"):** the deployed A20 CTM never saw an Act-4 row (audit
+`/mnt/project-files/audit-2026-10-17/ctm-a20.md` finding 1). Does a model fit on the 2026-10-17 Act-4 label
+collection price Shield and Spear and the Heart better?
+**Design:** [PREREG](evidence/ctm_act4_survival_20261018/PREREG.md) (commit `0bfa83b2`, before any fit). Corpus: the
+eight label tars (`act4_fork`, A20, learned-stop Silver 10k teacher, student C OOC, RUN_COMMIT `bcf14d34`), 5,467 rows
+(sha `c095368c…`; 2,913 S&S, death 12.3%; 2,554 Heart, death 68.2%), CTM seed-hash split TRAIN 4,370 / VALIDATION
+537 / TEST 560. Candidate: XGBoost 3.4.1 logistic on death from the predictor input (HP, gold, belt, deck size,
+upgrades, card-id counts, relic and potion ids), one model for both fights, grid depth {2,3,4} × min_child_weight
+{5,20} on VALIDATION. Selected depth 4, min_child_weight 20, 1,184 trees (`tools/ctm_act4_survival.py`). Incumbent:
+the calibrated `pathb-a20` stack (`ctmscorerows`, active Lizard). No gameplay seeds.
+**Result (TEST, opened once; seed-cluster bootstrap, 2,000):**
+
+| | n | observed death | candidate | incumbent | ΔBCE [95% CI] | AUC cand / inc, Δ lower CI |
+|---|---|---|---|---|---|---|
+| Heart | 262 | 0.683 | 0.697 | 0.171 | −1.267 [−1.491, −1.040] (0.381 vs 1.648) | 0.895 / 0.798, +0.050 |
+| Shield and Spear | 298 | 0.121 | 0.116 | 0.090 | −0.020 [−0.066, +0.023] | 0.812 / 0.788, −0.045 |
+
+**Verdict: FAIL** (criteria 1 and 3 fail on Shield and Spear; all three pass on the Heart). Reported: on the Heart the
+candidate beats an HP-only logistic (BCE 0.381 vs 0.541) and is calibrated in every HP bucket (≥ 90% HP: observed 0.41,
+candidate 0.42, incumbent 0.03). Descriptive natural-entrant check on the 64 F1 act4replay Heart states (gold imputed
+at the TRAIN median): candidate 0.559 mean death vs 0.536 in 192 replays at 10k, AUC 0.845
+([natural_heart64.txt](evidence/ctm_act4_survival_20261018/natural_heart64.txt)).
+**Decision:** Philipp chose (card, 2026-10-18 00:08Z) to ship the model opt-in for both fights despite the FAIL:
+`STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt` (sha `05279b3c…`). Native parity:
+CTest `ctm_act4_survival_parity`. No default change; an A20 A/B is proposed separately.
+[fit.json](evidence/ctm_act4_survival_20261018/fit.json), [gate.json](evidence/ctm_act4_survival_20261018/gate.json).
+**Knowledge impact:** `architecture/out-of-combat.md` and `operations/environment-variables.md` (the opt-in switch).
+
+## §526 — Per-fight and per-root Silver search parameters at A20: no per-fight or per-root preference shown (2026-10-17)
+
+**Question (Philipp, 2026-10-17 21:57Z):** "investigate a learned model for parameters per fight / per root. i know
+that early combats and late combats behave very differently, so we should maybe adapt to that." He then picked the
+root-level pilot (decision card, 22:03Z). Exploratory, not pre-registered; smoke seeds only, no default change.
+**Part 1, per fight (offline, §518 data):** 3,043 paired A20 fights, 4 widening arms at 2,500 simulations, R = 2.
+The arm − base score difference does not repeat across the two redraws of a fight (corr −0.06 / −0.01 / +0.11;
+replicate score SD about 48 against mean effects below 1). Picking the best arm per fight on one redraw and scoring
+on the other: −0.20 [−1.32, +0.86] vs base. LightGBM on fight features (act, floor, room, encounter, HP, potions,
+CTM forecast, control-replay stats), 5 folds grouped by seed: +0.48 [−0.59, +1.63]; act × room table −0.02
+[−1.20, +1.20]. No act CI excludes 0. Fight outcomes at R = 2 cannot carry a per-fight parameter model.
+Scripts and output: [part1](evidence/silver_root_regret_pilot_20261017/part1/).
+**Part 2, per root (design):** research-only armset `rootregret` of `ctmsilvergen` (environment as §518: A20,
+sources by plain exact-10k Silver with student C `eff2f74f…`, keys off, `STS_SILVER_LEARNED_STOP=0`, hallway every
+3rd). One `base2500` replay per fight with the gen-6 prior (g6_E `ca9bd7f2…`, weight 400, K = 8). Every second
+multi-action root of that replay (hash) is searched again from fresh trees: twice at 20k with the default constants
+(reference), 4 times each at 2,500 for base, end-turn C doubled (`endwide`), other chance nodes C 2 / alpha 0.5
+(`othernarrow`), exploration 12.5 (`c12`) and 50 (`c50`), and twice at 10k with the base constants. Planner seeds
+are shared per replicate across arms. Regret of a pick = Q(best) − Q(pick) under the visit-weighted Q of both
+references, best = most reference visits (Silver evaluation units; median Q range over a root's edges 11.4).
+Probes leave the replay bit-identical (seed 111193552 with and without probes: same arm rows).
+Code `80530a06` (main `ff0143e8` + the armset), binary `2bd4b325…`.
+**Run:** seeds 111193550–111193553 (smoke, every 6th root) and 111193554–111193601 (every 2nd root), 4 shards
+each, all rc = 0. 5,954 probed of 12,652 observed multi-action roots, 52 sources; 5 fights had escape control
+mismatches (their roots are kept). Probe CPU 3.0 h; shard wall times sum to about 4.8 h on one 4-CPU container.
+**Result (bootstrap over source seeds; corrected by the post-merge review, see below):**
+- The metric resolves search quality: base10000 − base2500 regret −0.124 [−0.174, −0.069] (average of the two
+  single-reference regrets; pooled reference −0.118 [−0.163, −0.076]). The two reference searches agree on their top
+  action at only 75.6% of roots, so reference noise is large.
+- Arm − base2500 regret, all roots, average of the single-reference regrets: c12 +0.027 [−0.022, +0.075], c50 −0.020
+  [−0.080, +0.050], endwide −0.027 [−0.058, +0.003], othernarrow +0.040 [−0.004, +0.086]; no arm differs from base.
+  (Against the pooled reference c12 is +0.079 [+0.028, +0.130]: the c12 sign depends on the reference definition.)
+- **Per-root heterogeneity is not shown.** Scoring replicates {0,1} against one reference and {2,3} against the other
+  (and swapped), the covariance of arm − base across halves is c50 0.63 [−0.99, 2.58], othernarrow 0.18
+  [−0.39, 0.86], c12 0.28 [−0.82, 1.37], endwide 0.14 [−0.24, 0.56]. Picking per root on one half and scoring on the
+  other with the other reference cuts regret by 0.032 [−0.014, +0.079] vs base. With both halves scored against the
+  same reference these were c50 1.81 [0.29, 3.80], othernarrow 1.20 [0.18, 2.39] and an oracle 0.066 [0.022, 0.114]
+  (0.061 [0.027, 0.098] with one single reference): reference noise shared by both halves inflates them, so they are
+  upper bounds only. Splitting the references costs power per half, so this is "not shown", not "absent".
+- LightGBM on decision-time root features (act, floor, room, turn, HP fraction, actions, energy, hand size, monsters
+  alive, inherited visits), 5 folds grouped by seed: −0.006 [−0.065, +0.056]; adding the base search's visit share of
+  its pick: −0.003 [−0.055, +0.051]; prediction-target correlations within ±0.03.
+- Descriptive, act × room means against the pooled reference: c50 lower at act-1 and act-2 bosses (−0.42, −0.40) and
+  act-3 elites (−0.28), higher at act-1 normals and elites; not corrected for multiplicity.
+**Interpretation:** neither fight outcomes nor root-level regret show that early and late fights, or individual
+roots, want different constants. With independent references even the instance-level oracle gain is
+indistinguishable from 0, and a selector on cheap features captures nothing. **Inference:** a controller would need
+features from a first search (Q gaps, chance-node statistics) and would have to beat spending that budget on more
+simulations; nothing here suggests it would. Both references use the base constants, which may favor base-like picks
+(**Unverified** size). Regret is not fight score (silverbot reported that parameters tuned on saved states did not
+hold in whole runs). No default change; the armset stays research-only.
+**Post-merge review (#648, FAIL fixed in a follow-up PR):** the first version of this entry scored both halves against
+one shared reference and reported "roots differ" (c50, othernarrow) and a 0.066 oracle gain; the reviewer showed that
+this shared reference noise between selection and scoring, and that splitting the references removes it
+(`split_ref.py`). The first selector also had one reference-derived feature (the 20k top-two visit margin), now dropped.
+Evidence: [scripts and output](evidence/silver_root_regret_pilot_20261017/). Raw:
+`/mnt/project-files/learned-search-params/rr-root-regret.tar` (sha256 `45aecaac…`). Seeds used: 111193550–111193601;
+111193602–111193649 of this thread's block unused.
+**Knowledge impact:** one paragraph in `evaluation/current-research.md` (Silver root allocation section) and the
+`STS_CTMSILVER_ARMSET=rootregret` row in `operations/environment-variables.md`.
+
+## §523 — Several uniform random playouts per Silver leaf vs greedy at A20: random playouts lose at every k (2026-10-18)
+
+**Question (Philipp, 2026-10-17 22:10Z/22:11Z, thread "Distilled Silver playout picker"):** "multiple random
+rollouts, did we ever try that?" then "can you try it on a small pilot with increasing random playouts per leaf?".
+§479 had tested one uniform playout per leaf (−22.80 fight score) and 2 or 4 greedy playouts, not several random ones.
+**Design:** [PREREG](evidence/silver_uniform_playouts_pilot_20261017/PREREG.md), descriptive pilot, no labels, no
+decision rule. `ctmsilvergen` armset `uniformpl` (code e762e846, run as 6e4998e2 before the main merge; binary
+`8aecc181…`) with the §519/§521 harness (student C source runs, gen-6 E root prior, keys flag off, hallway every 3rd,
+R = 2, `STS_SILVER_ROLLOUT_ROOT_TABLE=0` so greedy uses the ADR-0040 table). Arms at 2,500 simulations:
+`greedy2500` and `uniform<k>x2500`, k = 1, 2, 4, 8 random playouts averaged per leaf. 16 sources
+(111193700–111193715) in-thread on 4 cores, all shards rc = 0; 176 valid paired fights (1 excluded, escape).
+**Result (paired, 95% seed bootstrap):**
+
+| arm | fight score | win | HP lost | CPU/fight vs greedy |
+|---|---|---|---|---|
+| greedy2500 | 286.2 | 95.2% | 11.4 | 1 |
+| uniform1x2500 | −34.6 [−45.9, −22.8] | −9.1 pp | +7.9 | 0.85x |
+| uniform2x2500 | −33.6 [−41.6, −23.7] | −9.1 pp | +7.3 | 1.47x |
+| uniform4x2500 | −33.1 [−43.8, −22.4] | −9.7 pp | +6.1 | 2.54x |
+| uniform8x2500 | −31.0 [−39.6, −21.2] | −8.5 pp | +6.3 | 4.70x |
+
+`uniform8 − uniform1`: +3.6 [−1.6, +8.2] score, −1.6 [−2.8, −0.3] HP lost. Bosses (33): every k loses 63–79 score and
+21–26 pp win rate. CPU per simulation grows almost linearly with k (1.03x, 1.80x, 3.16x, 5.82x); random playouts are
+shorter than greedy ones (13.1–13.7 vs 16.9 actions). Smoke (111193790–111193793, 63 fights, same binary): about −58
+at every k.
+**Interpretation:** averaging random playouts reduces leaf noise only slightly (HP lost improves by about 1.6 from
+1 to 8), while the bias of a random playout is unchanged, so the gap to greedy stays near 31–35 at up to 4.7x CPU per
+fight. **Inference:** the greedy playout's value comes from its play policy, not from lower variance; more playouts of
+a weak policy are no substitute. No follow-up proposed.
+[result.json](evidence/silver_uniform_playouts_pilot_20261017/result.json) (sha256 `6d0cff67…`). Raw:
+`/mnt/project-files/silver-uniform-playouts-pilot/upl-run.tar.gz` (run and smoke, sha256 `16b187ef…`). Seeds used:
+111193700–111193715, 111193790–111193793 and 111193716 (post-merge build smoke of the armset on main at 300
+simulations, rc = 0); the rest of 111193700–111193799 unused.
+**Knowledge impact:** one sentence added to the rollout paragraph in `architecture/combat-search.md` and the
+`STS_CTMSILVER_ARMSET=uniformpl` row in `operations/environment-variables.md`.
+
+## §529 — Opening hand and first-Silver-search screens for the CTM: hand NOT_SHOWN, Silver endpoints biased (2026-10-18)
+
+**Question (Philipp, 2026-10-18 01:24Z/01:31Z, thread "CTM opening hand", issue #460):** would an opening-hand-aware
+CTM widen the OOC tree, and does the hand help? Also: can the endpoint distribution of a 10k Silver search at the
+start of a fight replace the CTM's HP distribution? **Width:** no; a combat chance node holds `ceil(K·N^α)`
+particles (`OocMctsPlanner.cpp:160`) whatever the CTM's outcome space, and the hand is not in the post-combat state.
+**Design:** [PREREG](evidence/ctm_opening_hand_20261018/PREREG.md), written before results; code 3c73f1a4, binary
+`6eae03c1…` (`ctmopeninghands`, `STS_CTM_ROW_OPENING_HAND`, `STS_CTM_ROW_FIRST_SEARCH`; both fields default off, a
+smoke seed gave byte-identical rows with them off and on minus the new fields).
+*Screen A (offline, no seeds):* the §443 Stage-4 A20 corpus (80 `main-*` units, 75,871 victory/death rows,
+3,995 seeds); opening hands rebuilt from run seed, floor and pre state, plus 16 fair resampled hands. The rebuild
+matched the hand recorded with the field on all 1,061 rows (smoke + screen B); both are `BattleContext::init` on the
+pre state, so this checks the row round trip, while the live combat draws through the same `init`
+(`NativeSilverBackend.cpp:447`, code reading). 4,115 of 76,316 Stage-4 hands (5.4%) are empty: a pending Toolbox
+choice before the draw. XGBoost, 5-fold CV
+grouped by seed, A = pre-combat features, B = A + hand card counts.
+*Screen B:* `combattransitiongen` A20 on 111195113–111195160 (48 seeds, 1,052 fights, 4 cores, ~0.5–0.8 h wall per
+12-seed unit); Silver flat exact 10k, g6_E root prior w400 + tree prior K=8, root table on; out of combat the
+deployed step with `STS_OOC_HEART1=student_sel` (cf6bf7fb…), keys off. CTM = calibrated `pathb-a20` stack via
+`ctmscorerows`. Pre-registered: Silver scored on battle-end HP (before heals), CTM on RAW post HP (after heals).
+Added in review: Silver endpoints mapped through the engine's heal rule (Meat on the Bone, Burning/Black Blood,
+capped; reproduces the realized post HP on 1,010/1,010 wins) and scored on the CTM's scale
+([rescore_matched_scale.py](evidence/ctm_opening_hand_20261018/rescore_matched_scale.py)).
+**Result A (B − A, 95% seed bootstrap):**
+
+| target | A | conditional (realized hand) | marginal (16 sampled hands) |
+|---|---|---|---|
+| death log loss | 0.09269 | +0.00015 [−0.00025, +0.00057] | +0.00016 [−0.00022, +0.00054] |
+| HP-lost MSE on wins (var 278) | 128.9 | −0.25 [−0.62, +0.15] | +0.39 [+0.04, +0.76] |
+
+**Result B (1,048 states, 37 deaths):**
+
+| forecaster | death Brier | win HP-lost bias | win HP-lost RMSE | win HP log score (own scale) |
+|---|---|---|---|---|
+| CTM | 0.026 | +2.3 | 12.2 | −3.08 |
+| Silver root (all 10k sims) | 0.063 | +12.2 | 17.7 | −3.51 |
+| Silver best edge | 0.061 | +11.9 | 17.4 | −3.47 |
+
+Pre-registered deltas, Silver root − CTM: Brier +0.036 [+0.022, +0.050]; own-scale HP log score −0.43
+[−0.59, −0.26], which is mostly a scale artifact: the heal cap folds 18% of wins into one point mass at max HP that
+the CTM predicts as one bin. Matched scale (1,010 wins): win HP bias −2.3 (CTM) vs −11.7 (Silver root), RMSE 12.2
+vs 16.8, RMSE after removing the mean bias 11.97 vs 12.07, log score −3.082 vs −3.212, delta −0.13 [−0.25, −0.01].
+**Interpretation:** A is `NOT_SHOWN` by the pre-registered rule: even the realized hand adds no measurable signal to
+death or HP lost, and the sampled-hand mixture is slightly worse, so an opening-hand latent is not worth a CTM schema
+change for OOC use. B: the first search's endpoints carry about as much information about win HP as the CTM (same
+spread once the bias is removed), but they are about 12 HP too pessimistic (greedy playouts and exploration) and
+overstate death (Brier 0.063 vs 0.026), although Silver sees the hand. **Inference:** a bias-corrected Silver
+soft label is not ruled out by this screen, but it costs ~400x the CTM's CPU (§408) and needs its own bias and death
+calibration. No follow-up proposed. Raw: `/mnt/project-files/ctm-opening-hand/run-3c73f1a4.tar.gz` (sha256 `2228160b…`),
+`stage4-hands16.jsonl.gz` (`51cec25d…`); [screen A](evidence/ctm_opening_hand_20261018/screenA-opening-hand.json)
+(`ef06180d…`), [screen B](evidence/ctm_opening_hand_20261018/screenB-first-search.json) (`65af25f3…`). Seeds used:
+111195112 (smoke, run twice for the off/on check), 111195113–111195160; 111195161–111195171 unused.
+**Knowledge impact:** the two `STS_CTM_ROW_*` rows in `operations/environment-variables.md` and one paragraph in
+`evaluation/current-research.md` (§408 CTM vs Silver section).
+
+## §531 — First exact combat parity canary against the real game: 26/34 steps match, one engine difference (2026-10-18)
+
+**Question:** does the native engine produce the game's next combat state for the same state, action and RNG?
+**Setup:** one A20 run on Philipp's PC with the live mod built with `STS_DIFFERENTIAL_DEBUG_RNG=1` (draw order
+plus 12 RNG streams), driver `--parity-trace` at #651 head `6babedd6`, seed 111194450. The driver stopped at step 69
+(floor 5, see below). `tools/combat_parity.py run` with `combat_parity_probe` from the same commit.
+**Result:** 34 combat steps compared: 26 MATCH, 8 MISMATCH. Skipped: 2 `HELD_SELECTION_CARDS`, 1 `TRACE_ENDED`.
+Coverage: 3 encounters (Two Louse, Small Slimes, Cultist), 1 relic (Burning Blood). The three combat ends match in
+outcome; game − native end HP = 6, Burning Blood's post-combat heal. Seven mismatches were native export
+leftovers, not behavior:
+- No Draw is stored as 1 natively and −1 in Java (2 steps).
+- The engine clears removed powers by their flag only, so the `statusMap` amount stays (2 steps).
+- Curl Up leaves `uniquePower0` behind (2 steps).
+- `cardSelect` is exported outside `CARD_SELECT` (1 step).
+
+One was an engine difference: when Uppercut kills its target, the game puts no Weak or Vulnerable on the dead
+monster and the engine did.
+**Interpretation:** #656 makes the probe drop inactive payloads on both sides, and adds `STS_DEAD_TARGET_DEBUFF_FIX`
+(default on). **Inference:** the debuff fix changes play only where a dead monster's powers carry over. The canary
+also surfaced two driver issues, fixed in #656: Explosive Potion is listed once per monster by MCP, which stopped
+the run, and the Silver search tree made rows ~85 MB. Coverage is far too small for any claim about overall parity.
+Raw traces (4.8 GB) stay on the PC under `~/Documents/sts/artifacts/parity-canary-20261018/`. Seeds used: 111194450
+(canary), 111194451–111194452 (fixed unit-test seeds, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md` (canary paragraph).
+## §530 — Shield and Spear search gap vs heart1's engine: rollout targeting NOT_SHOWN, information worth ~3 HP, line closed (2026-10-18)
+
+**Question:** Where do the extra HP our A20 search loses on Shield and Spear, compared with heart1's engine on the
+same 32 entry states, come from (−6.8 HP in the A20 loss audit; §528 ruled out the facing block check and tree
+reuse)? Asked by Philipp 2026-10-17 23:57Z ("so we could have a smarter rollout maybe? ... maybe we are not allowed to
+turn around anymore?") and 2026-10-18 00:20Z / 00:57Z ("yes compare heart1 and our sample of draw pile").
+
+**Setup.** As in §528: `one_combat act4replay`, 32 states × 3 copies, 10k exact sims, paired seed blocks 111130904–999
+(first) and 111130200–295 (replication), 192 fights per arm; local switches only, nothing committed.
+- Rollout targeting under Surrounded (attacks normally go to the lowest-HP monster): mode 1 keeps attacking the
+  faced monster; mode 2 attacks the monster with the larger frontal intent.
+- Full-information root: the search root is the live state (true draw order and rolled intents) instead of the fair
+  public view. An upper bound for anything a fair search can gain from information.
+- Root-view audit: counted the root draw-pile observation on 1,000 decisions (32 fights, seeds 111130200–231).
+
+**Result** (HP lost incl. full HP on death, paired per state, bootstrap 95% CI; positive = worse):
+
+| arm vs default (31.6 HP lost) | seeds 111130904+ | seeds 111130200+ | pooled, 192 fights | wins | CPU |
+|---|---|---|---|---|---|
+| targeting 1, keep facing | +3.6 [−0.1, +7.5] | +2.0 [−2.1, +6.2] | **+2.8 [+0.3, +5.6]** | 178 vs 182 | 0.99x |
+| targeting 2, face bigger intent | +1.0 [−3.4, +4.9] | +0.4 [−4.3, +5.4] | **+0.7 [−2.5, +3.8]** | 181 vs 182 | 1.04x |
+| full-information root | −1.8 [−5.9, +2.8] | −4.0 [−8.4, +0.5] | **−2.9 [−5.6, +0.0]** | 186 vs 182 | 0.99x* |
+
+- \*The full-information arm ran on a later binary (40d71721); its CPU ratio is against a default rerun on that
+  binary, which reproduced the default outcomes on all 192 fights (0.96x against the `t0` CPU times).
+- Default at this code loses 31.6 HP vs 33.3 at the §528 commit (same seeds). **Inference:** the rollout root table
+  (ADR-0046) and action cap merged in between explain the difference; not separately tested.
+- heart1's engine (9 copies per state, §528 audit runs) minus ours, per state: now −3.5 [−8.0, +0.8]; minus our
+  full-information root −0.6 [−5.1, +3.7].
+- Code comparison: our search `CardPile` information-set mode is a port of heart1's (sorted unknown region, uniform
+  sampling at draw time, tracked known top and bottom). Chance outcomes are reseeded as `Random(base + N)` in both,
+  and the widening and exploration constants heart1's `SearchAgent` sets equal ours (C 3.70, α 0.52, exploration 25).
+- Root-view audit: 0 of 1,000 observations invalid; 16 had a known top card; the rest of the pile was unknown, as in
+  heart1's pile.
+
+**Interpretation:** neither targeting rule helps; keep-facing is worse. No difference in draw-pile handling was
+found, and our fair root is built correctly. On current main the gap to heart1 is no longer shown. **Inference:** the
+remainder is mostly noise plus the value of hidden information, which no fair search can recover.
+
+**Decision:** Philipp closed the Shield-and-Spear search line (2026-10-18 09:44Z: "Okay close the search line"). No
+switch or default change. What remains is the entry state (deck, lower max HP) from OOC play, which accounts
+for about half of the Shield and Spear excess and the max-HP deficit (A20 loss audit F1).
+
+Evidence: [`evidence/a20_ss_search_gap_close_20261018/`](evidence/a20_ss_search_gap_close_20261018/README.md)
+(per-fight CSVs, the three local patches, SHA256SUMS).
+
+Seeds used: 111130904–999 and 111130200–295 (reused for pairing with §528).
+
+**Knowledge impact:** closed line added to `evaluation/current-research.md`; targeting rule added to rejected
+approaches in `research/combat-search/leaf-evaluation.md`.
+
+## §533 — Exact speedup of the native student forward: 2.0x per call, OOC MCTS CPU 1.67–1.77x, play identical (2026-10-18)
+
+**Question:** Philipp (2026-10-18 11:52Z) asked to make the student forward faster after an A20 profile of the
+winrate-check stack (4 seeds, 111195252–255, gdb stack samples plus `STS_OOC_CPU_PROFILE`/`STS_RUN_PROFILE`): OOC
+MCTS was 97–98% of CPU, real Silver combat 2–3%; student_sel forwards inside rollout3 leaves (about 11 per leaf at
+0.95 ms) were 66–83% of CPU, imagined Act-4 Silver fights 43% of Act-3 CPU, CTM sampling 3–5%.
+**Change:** bit-identical fast paths in `heart1_policy.cpp`: AVX attention with `dot()`'s reduction order, four-output
+reductions in the projection kernel, a per-thread FixedVec projection memo keyed by weights and input bits,
+key/value-only observation rows in the last logits-only block, reused buffers, and a four-lane copy of glibc's
+`__expf_fma` fast path for softmax and SiLU, enabled only when a start-up self-test matches `std::exp` bit for bit.
+`STS_OOC_HEART1_SCALAR=1` keeps every reference loop.
+**Result:** student_sel logits-only pass 887–933 → 450 µs per call on 4,383 captured A20 rollout records (full pass
+1.8x); `heart1score` byte-identical to main on 6,778 student_sel records, 300 heart1 and 300 student C records, and
+in scalar mode. Paired A20 `bestbench` units with the winrate-check env (main `658d43ee` vs the candidate), seed
+111195257 full run and 111195258–260 Act 1: 4/4 byte-identical play; OOC MCTS CPU 1,350 → 763, 373 → 211,
+343 → 205, 488 → 285 s (1.67–1.77x).
+**Decision:** adopt (exact, no behavior change). **Inference:** Act 3 gains less, since imagined Act-4 Silver fights
+do not use the student. Acts 3–4 records were not in the parity set.
+
+Evidence: [`evidence/heart1_forward_speedup_20261018/`](evidence/heart1_forward_speedup_20261018/README.md); raw
+`/mnt/project-files/heart1-forward-speedup/raw.tar.gz`; profile `/mnt/project-files/a20-profile/REPORT.md`.
+
+Seeds used: 111195252–111195260 (profile 252–255, capture 256, gate 257–260).
+
+**Knowledge impact:** fast-path paragraph in `architecture/out-of-combat.md`; cost sentence in
+`evaluation/current-research.md`.
+## §532 — OOC MCTS prior guidance: search follows the prior; max-Q root pick WORSE, prior temperature 3 screen-pass (2026-10-18)
+
+**Question (Philipp, 11:46Z):** does the student_sel prior over-guide A20 OOC MCTS so that search only explores the
+top pick, and would a looser prior or picking the root move by mean Q instead of visits play better? Cheapest test:
+Act 1 only.
+
+**Diagnostic** (no new runs; decision logs of 224 A20 winrate-check seeds, 12,802 non-trivial roots): median top
+prior 0.9925 (above 0.99 in 52% of roots); the top child gets a median 97.8% of visits; the early-stop visit lock ends
+100% of searches (~2,050 of 4,096 sims); executed move = prior argmax 90.5%; non-selected children get a median 2
+visits (46% exactly 1). So yes: search spends almost everything on the prior's pick.
+
+**Design** ([PREREG](evidence/ooc_prior_guidance_20261018/PREREG.md), frozen before variant data; Philipp 12:01Z
+"do 16 workers"): A20 winrate-check stack at code 658d43ee, Act 1 only (`STS_STOP_AFTER_ACT=1`), 64 paired seeds,
+4 arms: C (default), T3 (`STS_OOC_MCTS_TEMPERATURE=3`), Q (`ROOT_SELECTION=q`, 2,048 sims ≈ C's actual sims, lock
+off), T3Q (both). Primary: post-Act-1-boss HP, death = 0, paired vs C, seed bootstrap 95% CI. Rule: WORSE if CI upper
+< 0; SCREEN_PASS if mean ≥ +3 HP and deaths ≤ C; else NOT_SHOWN.
+
+**Validity:** `verify_campaign.py` OK for all 16 workers (256 units, run 3d0d5120, binary 3315a7c1…).
+
+**Result:**
+
+| arm | Act-1 clears | score | Δ vs C [95% CI] | verdict | pick = prior argmax | sims/root | OOC CPU/run |
+|---|---|---|---|---|---|---|---|
+| C | 57/64 | 34.1 | — | — | 92.1% | 2,327 | 508 s |
+| T3 | 60/64 | 37.2 | +3.1 [−2.1, +8.3] | SCREEN_PASS | 86.5% | 2,618 | 576 s |
+| Q | 32/64 | 13.8 | −20.3 [−25.7, −14.7] | WORSE | 40.1% | 2,048 | 401 s |
+| T3Q | 45/64 | 25.1 | −9.0 [−14.9, −3.0] | WORSE | 46.2% | 2,048 | 419 s |
+
+- T3 vs C clears: 4 seeds only T3 cleared, 1 only C; on the 56 seeds both cleared T3 has +2.2 HP.
+- Q's off-prior picks (843) had a median 11 visits (39% ≤ 5). T3Q's (779) had a median 195 visits and still lost.
+
+**Interpretation:** picking by mean Q is clearly harmful, and not only because of low-visit noise: with T3Q the
+off-prior picks were well sampled and still lost 9 HP and 12 more Act-1 runs. **Inference:** the rollout3 + X2-B
+leaf ranks OOC options worse than the student_sel prior, so letting Q override the prior hurts; the prior's
+dominance is mostly protecting the search from its leaf (consistent with §441, §392). A softer prior with visit
+selection (T3) passes the screen rule at the margin, with a CI that includes 0 and ~13% more OOC CPU. Act-1 HP
+ignores deck quality, and with `STOP_AFTER_ACT=1` the search values the Act-1 boss clear as a win.
+
+**Decision:** no default change. `ROOT_SELECTION=q` is rejected for this stack. T3 earns a confirmation that
+reaches later acts, on Philipp's word.
+
+Evidence: [`evidence/ooc_prior_guidance_20261018/`](evidence/ooc_prior_guidance_20261018/README.md) (PREREG,
+campaign files, analyzer, diagnostic script, result, tar hashes; raw tars on the project share).
+
+Seeds used: 111195272 (smoke), 111195280–111195343.
+
+**Knowledge impact:** result line added to `evaluation/current-research.md`.
+
+## §534 — Act-4 CTM survival model (§527) in the A20 student_sel stack: NOT_SHOWN (2026-10-18)
+
+**Question (Philipp, 2026-10-18 01:21Z, "Merge 652, do 8 workers"):** does the opt-in Act-4 survival model
+(`STS_CTM_ACT4_SURVIVAL_MODEL`, trees `05279b3c…`) win more A20 Hearts than the CTM survival head when OOC MCTS prices
+Shield and Spear and the Heart?
+**Design:** [PREREG](evidence/ctm_act4_ab_20261018/PREREG.md), frozen before launch.
+- Arm A is the standard A20 stack: student_sel prior (`cf6bf7fb…`), `TARGET_PRIOR=1`, `LEAF_SELECTS=heart1`, 512
+  simulations, rollout3 leaf, keys, calibrated A20 CTM. Arm B is A plus the model.
+- 512 paired seeds 111140200–111140711, `bestbench` full runs on 8 cloud workers.
+- RUN_COMMIT `ef809026` (code main `95c1ef1f`, binary `2b2817bc…`). The first freeze `c6916b99` had a malformed
+  manifest line and ran no unit.
+- Primary: Heart kills, with an exact McNemar test and a seed bootstrap.
+
+**Result:**
+
+| | A | B |
+|---|---|---|
+| Heart kills / 512 | 82 | 75 |
+| Reached Act 4 | 178 | 173 |
+| Act-4 conversion | 0.461 | 0.434 |
+| Act-3 deaths | 98 | 103 |
+| Act-4 deaths | 96 | 98 |
+
+- Δ Heart kills −1.4 pp [−2.7, 0.0]. Discordant pairs 3 vs 10, McNemar p = 0.092. **NOT_SHOWN.**
+- Act-1 and Act-2 deaths are identical (78, 158). 451 of 512 seeds had the same outcome.
+- No exclusions. The model loaded in 229 B runs and in no A run. CPU was equal (2.75 vs 2.71 s per OOC decision).
+
+**Inference:** pricing the Heart near the teacher's death rate does not help this stack's play and may hurt it. A
+likely mechanism, not tested: a higher Act-4 death estimate shifts late-Act-3 and Act-4 decisions toward choices that
+the rollout3 leaf rates as safer.
+**Decision:** no default change; the model stays opt-in (pre-registered). Evidence:
+[README](evidence/ctm_act4_ab_20261018/README.md), `result.json`, `verify.txt`, `tars.sha256`.
+Seeds used: 111194390–111194392 (smoke), 111140200–111140711.
+**Knowledge impact:** `architecture/out-of-combat.md` (the opt-in paragraph) and `evaluation/current-research.md`
+(result section).

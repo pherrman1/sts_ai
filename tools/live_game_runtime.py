@@ -31,10 +31,27 @@ CTM_A20_FAST_NAME = "combat_transition_deepsets_pathb_a20_lizard.native"
 CTM_A20_NAME = "combat_transition_near_full_escape_pathb_a20.native"
 CTM_QUALIFIED_KEYS = ("ctmFallback", "ctmA20Primary", "ctmA20Fallback", "ctmA20FastSha256", "ctmA20Sha256")
 OOC_NAME = "ooc_strategic_tok_final.native"
-OOC_WIN_NAME = "v_win_trees.txt"
+# The public X2-B win model, as simulator OOC MCTS (ADR-0029). Releases from
+# before the switch carry the B0 tree as v_win_trees.txt.
+OOC_WIN_NAME = "v_win_x2b_public_trees.txt"
+OOC_WIN_SOURCE = "models/candidates/v_win_x2b_public_trees.txt"
+LEGACY_OOC_WIN_NAME = "v_win_trees.txt"
+
+
+def ooc_win_name(manifest: dict[str, Any]) -> str:
+    return manifest.get("oocWinModelName", LEGACY_OOC_WIN_NAME)
 OOC_FLOOR_NAME = "v_rich_trees.txt"
+# ADR-0046 rollout root table model; the advisor loads it from models/ beside itself.
+ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g6_E.txt"
 ARM_C_NAME = "arm_c_student.bin"
-ARM_C_SHA256 = "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
+# ADR-0047: the card-select student student_sel.bin is the standard; student C stays accepted so
+# existing installs keep working until they are reinstalled with --arm-c-source student_sel.bin.
+ARM_C_SHA256 = "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7"
+ARM_C_LEGACY_SHA256 = "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
+
+
+def arm_c_frozen(digest: str) -> bool:
+    return digest in (ARM_C_SHA256, ARM_C_LEGACY_SHA256)
 MANAGED_KEYS = ("advisor", "ctmModel", "oocModel", "oocWinModel", "oocFloorModel")
 
 
@@ -170,11 +187,13 @@ class RuntimeManager:
         if manifest.get("oocModelSha256"):
             checks += ((f"models/{OOC_NAME}", "oocModelSha256", False),)
         if manifest.get("oocWinModelSha256"):
-            checks += ((f"models/{OOC_WIN_NAME}", "oocWinModelSha256", False),)
+            checks += ((f"models/{ooc_win_name(manifest)}", "oocWinModelSha256", False),)
         if manifest.get("oocFloorModelSha256"):
             checks += ((f"models/{OOC_FLOOR_NAME}", "oocFloorModelSha256", False),)
+        if manifest.get("rolloutRootTableSha256"):
+            checks += ((f"models/{ROLLOUT_ROOT_TABLE_NAME}", "rolloutRootTableSha256", False),)
         if "armCModelSha256" in manifest:
-            if manifest["armCModelSha256"] != ARM_C_SHA256:
+            if not arm_c_frozen(manifest["armCModelSha256"]):
                 raise RuntimeFailure("runtime Arm C SHA-256 is not the frozen student")
             checks += ((f"models/{ARM_C_NAME}", "armCModelSha256", False),)
         for relative, key, executable in checks:
@@ -208,7 +227,7 @@ class RuntimeManager:
         if manifest.get("oocModelSha256"):
             desired["oocModel"] = str(self.current / "models" / OOC_NAME)
         if manifest.get("oocWinModelSha256"):
-            desired["oocWinModel"] = str(self.current / "models" / OOC_WIN_NAME)
+            desired["oocWinModel"] = str(self.current / "models" / ooc_win_name(manifest))
         if manifest.get("oocFloorModelSha256"):
             desired["oocFloorModel"] = str(self.current / "models" / OOC_FLOOR_NAME)
         return desired
@@ -294,6 +313,7 @@ class RuntimeManager:
                 and manifest.get("oocModelSha256") == hashes.get("ooc")
                 and manifest.get("oocWinModelSha256") == hashes.get("oocWin")
                 and manifest.get("oocFloorModelSha256") == hashes.get("oocFloor")
+                and manifest.get("rolloutRootTableSha256") == hashes.get("rolloutRootTable")
                 and manifest.get("armCModelSha256") == hashes.get("armC")
                 and manifest.get("ctmStackVersion") == hashes.get("ctmStackVersion", 1)
                 and manifest.get("ctmA20Sha256") == hashes.get("ctmA20")
@@ -328,7 +348,7 @@ class RuntimeManager:
         if arm_c_source is None and self.current.exists():
             previous = self.load_manifest()
             if "armCModelSha256" in previous:
-                if previous["armCModelSha256"] != ARM_C_SHA256:
+                if not arm_c_frozen(previous["armCModelSha256"]):
                     raise RuntimeFailure("runtime Arm C SHA-256 is not the frozen student")
                 arm_c_source = self.current.resolve() / "models" / ARM_C_NAME
         if self.current.exists():
@@ -339,7 +359,7 @@ class RuntimeManager:
                              or any(key in previous for key in CTM_QUALIFIED_KEYS))
         if arm_c_source is not None:
             arm_c_source = arm_c_source.expanduser().resolve()
-            if not arm_c_source.is_file() or sha256(arm_c_source) != ARM_C_SHA256:
+            if not arm_c_source.is_file() or not arm_c_frozen(sha256(arm_c_source)):
                 raise RuntimeFailure("Arm C SHA-256 does not match the frozen student")
         advisor_source = (advisor_source or self.build_advisor()).resolve()
         if not advisor_source.is_file() or not os.access(advisor_source, os.X_OK):
@@ -349,8 +369,9 @@ class RuntimeManager:
         ctm = self.repo / "selfplay/models" / ctm_name
         ctm_fast = self.repo / "selfplay/models" / ctm_fast_name
         ooc = self.repo / "selfplay/models" / OOC_NAME
-        ooc_win = self.repo / "models" / OOC_WIN_NAME
+        ooc_win = self.repo / OOC_WIN_SOURCE
         ooc_floor = self.repo / "models" / OOC_FLOOR_NAME
+        rollout_root_table = self.repo / "models" / ROLLOUT_ROOT_TABLE_NAME
         if not ctm.is_file():
             raise RuntimeFailure(f"tracked CTM model missing: {ctm}")
         if not ctm_fast.is_file():
@@ -359,6 +380,8 @@ class RuntimeManager:
             raise RuntimeFailure(f"tracked OOC win model missing: {ooc_win}")
         if not ooc_floor.is_file():
             raise RuntimeFailure(f"tracked OOC floor model missing: {ooc_floor}")
+        if not rollout_root_table.is_file():
+            raise RuntimeFailure(f"tracked rollout root table model missing: {rollout_root_table}")
         hashes = {"advisor": sha256(advisor_source), "ctm": sha256(ctm), "ctmFast": sha256(ctm_fast)}
         hashes["ctmStackVersion"] = 2 if qualified_ctm else 1
         if qualified_ctm:
@@ -371,6 +394,7 @@ class RuntimeManager:
             hashes["ooc"] = sha256(ooc)
         hashes["oocWin"] = sha256(ooc_win)
         hashes["oocFloor"] = sha256(ooc_floor)
+        hashes["rolloutRootTable"] = sha256(rollout_root_table)
         if arm_c_source is not None:
             hashes["armC"] = sha256(arm_c_source)
         cached = self.find_cached(head, hashes)
@@ -398,6 +422,7 @@ class RuntimeManager:
                 shutil.copy2(ooc, staging / "models" / OOC_NAME)
             shutil.copy2(ooc_win, staging / "models" / OOC_WIN_NAME)
             shutil.copy2(ooc_floor, staging / "models" / OOC_FLOOR_NAME)
+            shutil.copy2(rollout_root_table, staging / "models" / ROLLOUT_ROOT_TABLE_NAME)
             if arm_c_source is not None:
                 shutil.copy2(arm_c_source, staging / "models" / ARM_C_NAME)
             manifest: dict[str, Any] = {
@@ -415,7 +440,9 @@ class RuntimeManager:
             if "ooc" in hashes:
                 manifest["oocModelSha256"] = hashes["ooc"]
             manifest["oocWinModelSha256"] = hashes["oocWin"]
+            manifest["oocWinModelName"] = OOC_WIN_NAME
             manifest["oocFloorModelSha256"] = hashes["oocFloor"]
+            manifest["rolloutRootTableSha256"] = hashes["rolloutRootTable"]
             if arm_c_source is not None:
                 manifest["armCModelSha256"] = hashes["armC"]
             if qualified_ctm:
@@ -591,8 +618,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--active-runtime", type=Path, default=default_active_path())
     result.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
     result.add_argument("--advisor-source", type=Path, help=argparse.SUPPRESS)
-    result.add_argument("--arm-c-source", type=Path, help="install the frozen Arm C weights for live OOC MCTS")
-    result.add_argument("--qualified-ctm", action="store_true", help="install the qualified A0 and calibrated A20 CTM stacks")
+    result.add_argument("--arm-c-source", type=Path, help="install frozen Arm C weights for live OOC MCTS (student_sel.bin, ADR-0047; student C still accepted)")
+    result.add_argument("--qualified-ctm", action="store_true",
+                        help="install the qualified A0 and calibrated A20 CTM stacks (the install default)")
+    result.add_argument("--legacy-ctm", action="store_true",
+                        help="install restores the legacy CTM unless the current release is already qualified")
     result.add_argument("--game-dir", type=Path)
     result.add_argument("--modthespire-jar", type=Path)
     result.add_argument("--inspector-jar", type=Path)
@@ -612,7 +642,11 @@ def main() -> int:
             value = manager.ensure()
             code = 0
         elif args.command == "install":
-            value = manager.install(args.advisor_source, arm_c_source=args.arm_c_source, qualified_ctm=args.qualified_ctm)
+            if args.qualified_ctm and args.legacy_ctm:
+                raise RuntimeFailure("--qualified-ctm and --legacy-ctm are exclusive")
+            # The qualified stacks are the OOC MCTS default CTMs (ADR-0033, ADR-0044).
+            value = manager.install(args.advisor_source, arm_c_source=args.arm_c_source,
+                                    qualified_ctm=not args.legacy_ctm)
             code = 0
         elif args.command == "repair-config":
             value = {"changed": manager.repair_config(), "config": str(manager.config)}

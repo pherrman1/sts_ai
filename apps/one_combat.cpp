@@ -3120,7 +3120,8 @@ static bool envSwitch(const char *name, bool fallback) {
     if (!value) return fallback;
     if (std::strcmp(value, "1") == 0) return true;
     if (std::strcmp(value, "0") == 0) return false;
-    throw std::runtime_error(std::string(name) + " must be 0 or 1 when set");
+    std::cerr << "error: " << name << " must be 0 or 1 when set\n";
+    std::exit(2);
 }
 
 int main(int argc, char **argv) {
@@ -3167,6 +3168,9 @@ int main(int argc, char **argv) {
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 
+    // Action.cpp reads this switch lazily, mid-run; check it here so a bad
+    // value stops the run at startup instead of failing inside a search.
+    envSwitch("STS_MULTISELECT_CANONICAL", true);
     g_collectKeys = envSwitch("STS_COLLECT_KEYS", true);  // Whole-run objective: collect keys and defeat the Heart.
     std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
 
@@ -4134,6 +4138,9 @@ int main(int argc, char **argv) {
         silverFocusEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],
                            std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]),
                            argv[11], argv[12]);
+    } else if (mode == "act4replay") {
+        if (argc < 8) { std::cerr << "usage: one_combat act4replay N_STATES STATES.jsonl OUT_PREFIX SEED_OFFSET SIMS[,SIMS..] REPLICATES\n"; return 2; }
+        act4Replay(std::stoi(argv[2]), argv[3], argv[4], std::stoll(argv[5]), argv[6], std::stoi(argv[7]));
     } else if (mode == "silversynthfeatures") {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);
@@ -4468,6 +4475,13 @@ int main(int argc, char **argv) {
         const std::string lizard = argc == 7 ? argv[6] : "1";
         if (lizard != "0" && lizard != "1") { std::cerr << "ctmscorerows LIZARD must be 0 or 1\n"; return 2; }
         return ctmScoreRows(argv[2], argv[3], argv[4], argv[5], lizard == "1");
+    } else if (mode == "ctmopeninghands") {
+        if (argc != 5) {
+            std::cerr << "usage: one_combat ctmopeninghands ROWS.jsonl OUT.jsonl RESAMPLES\n";
+            return 2;
+        }
+        try { return ctmOpeningHands(argv[2], argv[3], std::stoi(argv[4])); }
+        catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 1; }
     } else if (mode == "ctmescapefeatures") {
         if (argc != 5) {
             std::cerr << "usage: one_combat ctmescapefeatures ROWS.jsonl MODEL.native OUT_PREFIX\n";
@@ -4482,6 +4496,9 @@ int main(int argc, char **argv) {
         return ctmLizardFeatures(argv[2], argv[3], argv[4], argv[5]);
     } else if (mode == "ctmscoreselftest") {
         return ctmScoreRowsSelfTest();
+    } else if (mode == "ctmact4survivaltest") {
+        if (argc != 3) { std::cerr << "usage: one_combat ctmact4survivaltest FIXTURE.jsonl\n"; return 2; }
+        return ctmAct4SurvivalSelfTest(argv[2]);
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

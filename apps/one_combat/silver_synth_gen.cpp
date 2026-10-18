@@ -980,3 +980,145 @@ void silverAzAct4Gen(int nStates, const std::string &statesPath, int sims, const
     writeTrainingProvenance(rowsPath, "silverazact4gen", nJobs, static_cast<int>(fights), static_cast<int>(errors),
                             g_trainingHealthFailures.load(), roots, seedOffset, sims, 20);
 }
+
+// act4replay (A20 loss audit F1, 2026-10-17): fight-level replay of recorded Act-4 entry states
+// (Shield + Spear, the Heart) under several flat exact Silver budgets. Each JSONL line gives the
+// encounter, HP, max HP, deck (trace names, "+" = upgraded once), relics, potions and potion
+// capacity of one recorded fight start. The state is rebuilt on a fresh A20 GameContext moved to
+// Act 4 (relic counters and card misc reset: an approximation shared by all arms). Copy r of every
+// arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
+// differ only in the budget. One CSV row per (state, replicate, arm).
+namespace {
+
+GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, MonsterEncounter enc) {
+    static const auto cardIds = [] {
+        std::map<std::string, CardId> m;
+        for (int i = 1; i < static_cast<int>(std::size(cardNames)); ++i) m.emplace(cardNames[i], static_cast<CardId>(i));
+        return m;
+    }();
+    GameContext gc(CharacterClass::IRONCLAD, seed, 20);
+    gc.transitionToAct(4);
+    gc.deck = Deck{};
+    for (const auto &entry : s.at("deck")) {
+        std::string name = entry.get<std::string>();
+        const bool up = !name.empty() && name.back() == '+';
+        if (up) name.pop_back();
+        const auto it = cardIds.find(name);
+        if (it == cardIds.end()) throw std::runtime_error("act4replay: unknown card " + name);
+        Card c(it->second);
+        if (up) c.upgrade();
+        gc.deck.obtainRaw(c);
+    }
+    gc.relics.relics.clear();
+    for (const auto &entry : s.at("relics")) {
+        const auto name = entry.get<std::string>();
+        int id = -1;
+        for (int i = 0; i < static_cast<int>(std::size(relicEnumNames)) - 1; ++i)
+            if (name == relicEnumNames[i]) id = i;
+        if (id < 0) throw std::runtime_error("act4replay: unknown relic " + name);
+        gc.relics.add({static_cast<RelicId>(id), 0});
+    }
+    gc.potionCapacity = s.at("potionCapacity").get<int>();
+    for (int i = 0; i < static_cast<int>(gc.potions.size()); ++i) gc.potions[i] = Potion::EMPTY_POTION_SLOT;
+    gc.potionCount = 0;
+    for (const auto &entry : s.at("potions")) {
+        const auto name = entry.get<std::string>();
+        int id = -1;
+        for (int i = 2; i < static_cast<int>(std::size(potionEnumNames)); ++i)
+            if (name == potionEnumNames[i]) id = i;
+        if (id < 0) throw std::runtime_error("act4replay: unknown potion " + name);
+        gc.potions[gc.potionCount++] = static_cast<Potion>(id);
+    }
+    for (const auto k : {Key::RUBY_KEY, Key::EMERALD_KEY, Key::SAPPHIRE_KEY}) gc.obtainKey(k);
+    gc.maxHp = s.at("maxHp").get<int>();
+    gc.curHp = s.at("hp").get<int>();
+    const bool heart = enc == MonsterEncounter::THE_HEART;
+    gc.curMapNodeX = 3;
+    gc.curMapNodeY = heart ? 3 : 2;
+    gc.floorNum = heart ? 56 : 55;
+    gc.curRoom = heart ? Room::BOSS : Room::ELITE;
+    gc.enterBattle(enc);
+    return gc;
+}
+
+}  // namespace
+
+void act4Replay(int nStates, const std::string &statesPath, const std::string &outPrefix, long long seedOffset,
+                const std::string &simsList, int replicates) {
+    if (nStates < 1 || seedOffset < 0 || replicates < 1) throw std::runtime_error("act4replay: counts must be positive");
+    std::vector<int> sims;
+    {
+        std::stringstream ss(simsList);
+        for (std::string tok; std::getline(ss, tok, ',');) sims.push_back(std::stoi(tok));
+    }
+    if (sims.empty()) throw std::runtime_error("act4replay: empty budget list");
+    const std::map<std::string, std::string> required = {
+        {"STS_FAIR", "1"}, {"STS_SILVER_SEARCH", "1"}, {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"},
+        {"STS_SILVER_REUSE_CAP_MODE", "allocated"}, {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+        {"STS_SILVER_LEARNED_STOP", "0"}};
+    for (const auto &[name, value] : required) {
+        const char *actual = std::getenv(name.c_str());
+        if (!actual || value != actual) throw std::runtime_error("act4replay: requires " + name + "=" + value);
+    }
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
+        throw std::runtime_error("act4replay: requires flat exact-budget native Silver");
+    std::vector<nlohmann::json> states;
+    {
+        std::ifstream in(statesPath);
+        for (std::string line; std::getline(in, line) && static_cast<int>(states.size()) < nStates;)
+            if (!line.empty()) states.push_back(nlohmann::json::parse(line));
+    }
+    if (static_cast<int>(states.size()) != nStates) throw std::runtime_error("act4replay: too few states");
+    const std::string rowsPath = outPrefix + ".csv";
+    if (std::filesystem::exists(rowsPath)) throw std::runtime_error("act4replay: refusing to overwrite " + rowsPath);
+    std::ofstream rows(rowsPath);
+    rows << "state,id,encounter,replicate,sims,battleSeed,preHp,preMaxHp,prePotions,valid,won,curHp,potionCount,turns,"
+            "cpuSeconds\n";
+    const int jobs = nStates * replicates;
+    #pragma omp parallel for schedule(dynamic)
+    for (int j = 0; j < jobs; ++j) {
+        const int si = j / replicates, r = j % replicates;
+        const auto &s = states[si];
+        std::ostringstream out;
+        try {
+            MonsterEncounter enc = MonsterEncounter::INVALID;
+            const auto encName = s.at("enc").get<std::string>();
+            for (int i = 1; i < static_cast<int>(std::size(monsterEncounterEnumNames)); ++i)
+                if (encName == monsterEncounterEnumNames[i]) enc = static_cast<MonsterEncounter>(i);
+            if (enc != MonsterEncounter::THE_HEART && enc != MonsterEncounter::SHIELD_AND_SPEAR)
+                throw std::runtime_error("act4replay: unsupported encounter " + encName);
+            const auto battleSeed = static_cast<std::uint64_t>(seedOffset) + static_cast<std::uint64_t>(j);
+            for (const int budget : sims) {
+                trainingRunStart();
+                GameContext copy = act4ReplayContext(s, battleSeed, enc);
+                search::g_nativeSilverPlannerSeedOverride = key(battleSeed, si, 0xA47, r);
+                search::ScumSearchAgent2 agent;
+                agent.simulationCountBase = budget;
+                agent.rng = std::default_random_engine(key(battleSeed, si, 3, r));
+                BattleContext bc;
+                const int preHp = copy.curHp, preMaxHp = copy.maxHp, prePotions = copy.potionCount;
+                const auto t0 = threadCpuNanos();
+                agent.playoutBattle(copy, bc);
+                const double cpu = static_cast<double>(threadCpuNanos() - t0) / 1e9;
+                search::g_nativeSilverPlannerSeedOverride.reset();
+                const bool decided = bc.outcome != Outcome::UNDECIDED;
+                const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+                const bool valid = trainingRunValid(decided);
+                out << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
+                    << battleSeed << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ',' << (valid ? 1 : 0)
+                    << ',' << (won ? 1 : 0) << ',' << (won ? bc.player.curHp : 0) << ',' << bc.potionCount << ','
+                    << bc.turn << ',' << std::setprecision(6) << cpu << '\n';
+            }
+        } catch (const std::exception &e) {
+            search::g_nativeSilverPlannerSeedOverride.reset();
+            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0 # " << e.what() << '\n';
+        }
+        #pragma omp critical(act4_replay_write)
+        {
+            rows << out.str();
+            rows.flush();
+        }
+    }
+    std::cout << "act4replay states=" << nStates << " replicates=" << replicates << " -> " << rowsPath << '\n';
+}

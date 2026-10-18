@@ -122,6 +122,22 @@ add_test(NAME engine_fidelity_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(engine_fidelity_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(dead_target_debuff_fix_test tests/dead_target_debuff_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_target_debuff_fix_test PRIVATE include json/include)
+add_test(NAME dead_target_debuff_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_target_debuff_fix_test>)
+set_tests_properties(dead_target_debuff_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(active_power_features_test tests/active_power_features_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(active_power_features_test PRIVATE include json/include)
+add_test(NAME active_power_features COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:active_power_features_test>)
+set_tests_properties(active_power_features PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(potion_reward_swap_test PRIVATE include json/include)
@@ -213,6 +229,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/heart1_policy.cpp
     apps/one_combat/rollout_student.cpp
@@ -274,6 +291,18 @@ target_include_directories(screen_leaf_continuations_test PRIVATE include json/i
 add_test(NAME screen_leaf_continuations
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh $<TARGET_FILE:screen_leaf_continuations_test>)
 
+# Offline exact one-step combat parity against recorded live game steps.
+add_executable(combat_parity_probe apps/combat_parity_probe.cpp
+    apps/one_combat/combat_parity.cpp
+    apps/one_combat/live_silver_importer.cpp
+    apps/one_combat/live_silver_mapping.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_parity_probe PRIVATE include json/include apps)
+target_link_options(combat_parity_probe PRIVATE -Wl,--gc-sections)
+add_test(NAME combat_parity COMMAND python3 -m unittest tests.test_combat_parity)
+set_tests_properties(combat_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    ENVIRONMENT "COMBAT_PARITY_PROBE=$<TARGET_FILE:combat_parity_probe>" LABELS "core;smoke")
+
 # Read-only newline-delimited JSON endpoint for the private live-model
 # inspector.  Keep it separate from the simulator driver until a proven
 # Java-game importer can construct the native observation contracts.
@@ -293,6 +322,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/compact_tree.cpp
@@ -330,7 +360,7 @@ add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
     apps/one_combat/heart1_policy.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
-    apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/compact_tree.cpp apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp apps/one_combat/combat_transition_near_full.cpp
@@ -348,7 +378,7 @@ add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
     apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp
-    apps/one_combat/ooc_mcts_adapter.cpp apps/one_combat/compact_tree.cpp
+    apps/one_combat/ooc_mcts_adapter.cpp apps/one_combat/ooc_tree_rules.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
     apps/one_combat/combat_transition_near_full.cpp apps/one_combat/combat_transition_runtime.cpp
@@ -386,6 +416,7 @@ add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
+    apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ctm_importer_test PRIVATE include json/include)
 link_ctm_crypto(live_ctm_importer_test)
@@ -756,6 +787,12 @@ add_test(NAME ctm_offline_score_rows COMMAND $<TARGET_FILE:one_combat> ctmscores
 set_tests_properties(ctm_offline_score_rows PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_act4_survival_parity COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_parity PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
@@ -1019,6 +1056,7 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
+    apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
 link_ctm_crypto(combat_transition_runtime_probe)

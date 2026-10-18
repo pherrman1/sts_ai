@@ -1,0 +1,11 @@
+roots 5954 seeds 52
+reference top-visit agreement between the two reference searches: 0.756
+median Q range over root edges 11.366
+with base-search visit share: reduction -0.0033 CI [-0.0551  0.0513] choices [ 506 1460 1700 1155 1133]
+c12_2500 corr(pred,actual) 0.025
+c50_2500 corr(pred,actual) -0.007
+endwide2500 corr(pred,actual) 0.001
+othernarrow2500 corr(pred,actual) -0.009
+share 0.0-0.5 n 2291 c12_25 -0.022 c50_25 +0.057 endwid -0.008 othern -0.037
+share 0.5-0.8 n 1738 c12_25 +0.132 c50_25 -0.075 endwid -0.014 othern +0.048
+share 0.8-1.0 n 1925 c12_25 +0.146 c50_25 -0.066 endwid -0.009 othern +0.077
