@@ -1,15 +1,15 @@
 #!/bin/bash
 # Prior-playout headroom pilot runner: 4 shards on 4 cores in one container, ctmsilvergen at Ascension 20 with the
 # priorpl armset (greedy vs gen-6 E prior-argmax playouts at 2500 simulations, R = 2). Copy of the §523 run.sh.
-# usage: bash run.sh OUT_DIR TOTAL BASE [SHARDS]   (run: TOTAL and BASE set at freeze, BASE set by the coordinator;
-#        smoke: 4 SMOKE_BASE; rerun of a shard lost with the container: same TOTAL BASE, SHARDS "2", fresh OUT_DIR)
+# usage: bash run.sh OUT_DIR TOTAL BASE [SHARDS]   (run: TOTAL and BASE set at freeze, BASE = 111197692;
+#        smoke: 4 111197780; rerun of a shard lost with the container: same TOTAL BASE, SHARDS "2", fresh OUT_DIR)
 # Optional 5th argument: per-shard timeout (default 12h).
 # Launch detached so it survives the session: setsid nohup bash run.sh OUT TOTAL BASE > OUT.log 2>&1 &
 # Run from a checkout whose apps/ src/ include/ CMakeLists.txt equal code commit 6e4998e27acbf05083cba1a2967b1662a365ea3d, after
 # `cmake --preset linux-gcc-release && cmake --build build/linux-gcc-release --target one_combat -j4`.
 set -euo pipefail
 OUT="$1"; TOTAL="$2"; BASE="$3"; SHARDS="${4:-0 1 2 3}"; LIMIT="${5:-12h}"
-CODE=CODE_PLACEHOLDER
+CODE=6eaa003489639a90afb1ad3243789e79d9b058a1
 (( TOTAL % 4 == 0 )) || { echo "TOTAL must be a multiple of 4"; exit 1; }
 PER=$(( TOTAL / 4 ))
 REPO="$(git rev-parse --show-toplevel)"; cd "$REPO"
