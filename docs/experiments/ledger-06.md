@@ -20933,3 +20933,40 @@ of `curl_up_lethal_test`, no gameplay; not used by the canary).
 **Knowledge impact:** `evaluation/differential-correctness.md` (second canary paragraph),
 `behavior/java-reference-audit.md` (Curl Up, dead monster powers), `operations/environment-variables.md`
 (`STS_CURL_UP_LETHAL_FIX`).
+
+## §538 — A20 learned stopping with the gen-7f table and prior: non-inferior to flat 10k at 0.49x CPU; flat 2.5k not shown non-inferior (2026-10-18)
+
+**Question (Philipp, 2026-10-18, gen-7 thread):** 13:46Z "can you start experimenting with combining learned stopping
+and the new rollout? i.e. make sure that this a strong enough combat model with 2.5k sims"; 17:39Z "do the learned
+stopping test plan" (8 workers). Does learned stopping (ADR-0026) still match flat exact 10k Silver on the current
+stack (gen-7f root table, ADR-0049, plus g7f_E root/tree prior), and how much does flat 2.5k give up?
+**Design:** [PREREG](evidence/silver_learnstop_g7f_20261018/PREREG.md), light pre-launch review PASS. The §516
+harness on main `f15b345b`: plain A20 full runs, student_sel `policyStep` out of combat (no OOC MCTS, no V4 net),
+`STS_ACTIVE_POWER_FEATURES=1`, g7f_E as rollout root table and as root prior (weight 400) and tree prior (K=8). Arms
+`F10` flat exact 10k, `F25` flat exact 2.5k, `L` learned stopping (checkpoints to 10k). RUN_COMMIT `afde9cb2`, binary
+`636258d7…`, seeds 111197822–111198333 (smoke 111195812–111195813). Primary: reached Act 4, L − F10, paired Newcombe
+95% interval, non-inferior if the lower bound > −5 pp; F25 − F10 secondary with the same rule.
+**Result.** 1,536/1,536 units rc=0, all 512 seeds valid; 8 tars checked by `verify_campaign.py` from the lead
+container (`worker_tars.txt`, `report.json`).
+
+| Arm | Heart kills | Reached Act 4 | Kills / Act 4 | Mean floor | CPU per run |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| F10 flat 10k | 70 (13.7%) | 156 (30.5%) | 45% | 37.5 | 76.4 s |
+| F25 flat 2.5k | 60 (11.7%) | 147 (28.7%) | 41% | 36.7 | 16.9 s (0.22x) |
+| L learned stop | 79 (15.4%) | 173 (33.8%) | 46% | 38.6 | 37.7 s (0.49x) |
+
+- **Primary, L − F10 reached Act 4:** +3.3 pp [−0.6, +7.3], **NON_INFERIOR**; McNemar p = 0.12.
+- **Secondary, F25 − F10 reached Act 4:** −1.8 pp [−5.6, +2.1], **NOT_SHOWN** (lower bound below −5 pp); p = 0.43.
+- **Heart kills:** L − F10 +1.8 pp [−1.5, +5.1], p = 0.35; F25 − F10 −2.0 [−5.1, +1.1], p = 0.26.
+- **L − F25 (descriptive):** reached Act 4 +5.1 pp [+0.8, +9.3], p = 0.026; Heart kills +3.7 [+0.5, +7.0],
+  p = 0.032. Not a pre-registered test.
+- **OOC decisions:** student_sel 95.9–96.2%, key rule 3.0–3.2%, Match and Keep 0.8–1.0% per arm; nothing else.
+
+**Interpretation:** learned stopping again plays at least as well as flat 10k, now with the gen-7f table and prior,
+at half the CPU (§516: 0.41x). Flat 2.5k is 4.5x cheaper than flat 10k, but this run cannot rule out a loss of more
+than 5 pp, and it trails learned stopping on both endpoints. **Inference:** learned stopping
+keeps flat-10k strength at half its CPU; flat 2.5k is cheaper still (learned stopping used 2.2x its CPU), so this run
+does not compare the two at equal CPU. The stack (student_sel, g7f) wins far
+more than in §516 (13.7% vs 5.3% flat 10k Heart kills), so absolute rates are not comparable across the two runs.
+The analyzer skipped `tools/cloud` worker markers only after the run (a problems-list fix; results unchanged).
+**Knowledge impact:** `architecture/combat-search.md` (learned-stopping paragraph).
