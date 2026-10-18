@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-18 for the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -457,12 +457,16 @@ legacy single-model launches and explicit empty-value failures.
 The frozen distilled Arm C model can be installed explicitly:
 
 ```bash
-tools/live_game_start.sh --arm-c /absolute/path/to/studentc.bin \
+tools/live_game_start.sh --arm-c /absolute/path/to/student_sel.bin \
   --qualified-ctm --restart-game --probe
 ```
 
-The installer requires SHA-256
-`eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509`,
+The installer accepts the standard card-select student `student_sel.bin`
+(ADR-0047, SHA-256
+`cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7`, data branch
+`claude/heart1-distill-data` 5a7245aa `results/E_d64_sel_xin/`) or the legacy
+student C (`eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509`;
+an existing student C install keeps it until reinstalled). It
 copies the weights into the stable runtime as `models/arm_c_student.bin`, and
 pins them in `armCModelSha256`. Refreshes preserve this explicit selection;
 repair cannot replace it with a cached legacy runtime. The launcher exports
@@ -474,7 +478,13 @@ unless `--allow-missing-ooc` is given.
 Arm C supplies the tree prior through the same native heart1 candidate mapping
 as simulator OOC MCTS. With the research stack it is the heart1full prior and
 the rollout leaf policy as well (see above); with `STS_LIVE_OOC_RESEARCH_STACK=0`
-it is the tree prior only. Unencoded Arm C nodes retain the existing live prior
+it is the tree prior only. With research-stack weights that carry the `x_act`
+input (`student_sel.bin`), compound smith/remove/transform targets also get the
+student's target prior and rollout card selects go to the student (ADR-0047;
+`STS_OOC_MCTS_TARGET_PRIOR=0` / `STS_OOC_MCTS_LEAF_SELECTS=chain` in the advisor
+environment turn them off); responses report `targetPrior` and `rolloutSelects`.
+Root card-select screens other than UPGRADE stay excluded from the student
+fallback, as in the tree. Unencoded Arm C nodes retain the existing live prior
 (equal logits when reward-pity history is incomplete). Every response with a
 loaded model carries `armCModel`; successful searched OOC decisions report
 `prior=arm_c`, `armCPriorNodes`, `armCPriorFallbacks` and per-reason counts.
