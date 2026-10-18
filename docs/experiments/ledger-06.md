@@ -20460,6 +20460,36 @@ test. No default change; whether to continue the Heart leaf line is Philipp's ca
 Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
 **Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
 
+## §527 — Act-4 survival model for the A20 CTM (5,467 Act-4 labels), offline gate: FAIL (Heart passes, Shield and Spear not shown) (2026-10-18)
+
+**Question (Philipp, 2026-10-17 23:49Z, card "Retrain"):** the deployed A20 CTM never saw an Act-4 row (audit
+`/mnt/project-files/audit-2026-10-17/ctm-a20.md` finding 1). Does a model fit on the 2026-10-17 Act-4 label
+collection price Shield and Spear and the Heart better?
+**Design:** [PREREG](evidence/ctm_act4_survival_20261018/PREREG.md) (commit `0bfa83b2`, before any fit). Corpus: the
+eight label tars (`act4_fork`, A20, learned-stop Silver 10k teacher, student C OOC, RUN_COMMIT `bcf14d34`), 5,467 rows
+(sha `c095368c…`; 2,913 S&S, death 12.3%; 2,554 Heart, death 68.2%), CTM seed-hash split TRAIN 4,370 / VALIDATION
+537 / TEST 560. Candidate: XGBoost 3.4.1 logistic on death from the predictor input (HP, gold, belt, deck size,
+upgrades, card-id counts, relic and potion ids), one model for both fights, grid depth {2,3,4} × min_child_weight
+{5,20} on VALIDATION. Selected depth 4, min_child_weight 20, 1,184 trees (`tools/ctm_act4_survival.py`). Incumbent:
+the calibrated `pathb-a20` stack (`ctmscorerows`, active Lizard). No gameplay seeds.
+**Result (TEST, opened once; seed-cluster bootstrap, 2,000):**
+
+| | n | observed death | candidate | incumbent | ΔBCE [95% CI] | AUC cand / inc, Δ lower CI |
+|---|---|---|---|---|---|---|
+| Heart | 262 | 0.683 | 0.697 | 0.171 | −1.267 [−1.491, −1.040] (0.381 vs 1.648) | 0.895 / 0.798, +0.050 |
+| Shield and Spear | 298 | 0.121 | 0.116 | 0.090 | −0.020 [−0.066, +0.023] | 0.812 / 0.788, −0.045 |
+
+**Verdict: FAIL** (criteria 1 and 3 fail on Shield and Spear; all three pass on the Heart). Reported: on the Heart the
+candidate beats an HP-only logistic (BCE 0.381 vs 0.541) and is calibrated in every HP bucket (≥ 90% HP: observed 0.41,
+candidate 0.42, incumbent 0.03). Descriptive natural-entrant check on the 64 F1 act4replay Heart states (gold imputed
+at the TRAIN median): candidate 0.559 mean death vs 0.536 in 192 replays at 10k, AUC 0.845
+([natural_heart64.txt](evidence/ctm_act4_survival_20261018/natural_heart64.txt)).
+**Decision:** Philipp chose (card, 2026-10-18 00:08Z) to ship the model opt-in for both fights despite the FAIL:
+`STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt` (sha `05279b3c…`). Native parity:
+CTest `ctm_act4_survival_parity`. No default change; an A20 A/B is proposed separately.
+[fit.json](evidence/ctm_act4_survival_20261018/fit.json), [gate.json](evidence/ctm_act4_survival_20261018/gate.json).
+**Knowledge impact:** `architecture/out-of-combat.md` and `operations/environment-variables.md` (the opt-in switch).
+
 ## §526 — Per-fight and per-root Silver search parameters at A20: no per-fight or per-root preference shown (2026-10-17)
 
 **Question (Philipp, 2026-10-17 21:57Z):** "investigate a learned model for parameters per fight / per root. i know
