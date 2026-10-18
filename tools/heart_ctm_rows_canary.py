@@ -39,9 +39,9 @@ def main(root):
             or 'silverLeaf' not in provenance
             or provenance.get('rolloutRootTable') != provenance['silverLeaf'].get('rollout_root_table')):
         failures.append('header provenance incomplete')
-    if not spec or spec.get('path') != 'ctm.jsonl.ctm.jsonl' or spec.get('rowSchemaVersion') != 'combat_transition_row_v2':
+    if not spec or spec.get('path') != 'ctm.ctm.jsonl' or spec.get('rowSchemaVersion') != 'combat_transition_row_v2':
         failures.append('ctmRows header spec missing')
-    rows = [json.loads(line) for line in (root / 'ctm.jsonl.ctm.jsonl').read_text().splitlines()]
+    rows = [json.loads(line) for line in (root / 'ctm.ctm.jsonl').read_text().splitlines()]
     battles = [json.loads(line) for line in (root / 'ctm.trace.jsonl').read_text().splitlines()]
     battles = [b for b in battles if b.get('kind') == 'battle']
     if count != len(rows) or len(rows) != len(battles) or not rows:

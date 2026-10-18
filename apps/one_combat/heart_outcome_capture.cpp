@@ -32,7 +32,7 @@ struct ObserverScope {
 };
 
 // STS_HEART_OUTCOME_CTM_ROWS=1: one combat_transition_row_v2 row per real
-// combat in OUT.ctm.jsonl; unset or 0: none.
+// combat in OUT.ctm.jsonl (ctmRowsPath); unset or 0: none.
 bool ctmRowsRequested() {
     const char *value = std::getenv("STS_HEART_OUTCOME_CTM_ROWS");
     if (!value || !*value || std::string(value) == "0") return false;
@@ -41,6 +41,14 @@ bool ctmRowsRequested() {
 }
 
 constexpr const char *kCtmRowsTeacherId = "heartoutcomegen-real-combat";
+
+// OUT.jsonl -> OUT.ctm.jsonl; any other name gets .ctm.jsonl appended.
+std::string ctmRowsPath(const std::string &output) {
+    const std::string suffix = ".jsonl";
+    if (output.size() > suffix.size() && output.compare(output.size() - suffix.size(), suffix.size(), suffix) == 0)
+        return output.substr(0, output.size() - suffix.size()) + ".ctm.jsonl";
+    return output + ".ctm.jsonl";
+}
 
 // Combat models and Silver settings the run used, beside the policy identity
 // (whose ooc_mcts.artifact_sha256 hashes only files named in the environment).
@@ -62,12 +70,14 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
     if (!liveOocMctsEnabled() || !liveOocMctsUsesHeart1() || !heart1::enabled())
         throw std::runtime_error("heart outcomes require OOC MCTS and loaded Arm C tree prior");
     if (policyTargets && !capture) throw std::runtime_error("heart policy targets require state capture");
-    if (t_realRunContextObserver || t_realOocDecisionObserver || t_oocContinuation || t_oocHypotheticalStep)
+    if (t_realRunContextObserver || t_realOocDecisionObserver || t_realCombatObserver || t_oocContinuation
+            || t_oocHypotheticalStep)
         throw std::runtime_error("heart outcome observer requires an unowned real driver context");
     const bool ctmRows = ctmRowsRequested();
+    const std::string ctmPath = ctmRowsPath(output);
     Writer writer(output);
     std::optional<Writer> ctmWriter;
-    if (ctmRows) ctmWriter.emplace(output + ".ctm.jsonl");
+    if (ctmRows) ctmWriter.emplace(ctmPath);
     nlohmann::json header = {{"schema", "heart-trajectory-v1"}, {"type", "header"}, {"seed", seed},
         {"ascension", 20}, {"objective", "heart"}, {"collectKeys", true}, {"stopAfterAct", 0},
         {"combatSimulations", 10000}, {"capture", capture},
@@ -75,12 +85,12 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
         {"recordSchema", "heart1-public-record-v2"}, {"recordPublicParityQualified", false},
         {"rootTrace", std::getenv("STS_OOC_MCTS_ROOT_TRACE") != nullptr}, {"provenance", runProvenance()}};
     if (ctmRows)
-        header["ctmRows"] = {{"path", std::filesystem::path(output + ".ctm.jsonl").filename().string()},
+        header["ctmRows"] = {{"path", std::filesystem::path(ctmPath).filename().string()},
             {"rowSchemaVersion", COMBAT_TRANSITION_ROW_SCHEMA}, {"schemaVersion", CombatTransitionRecord::SCHEMA},
             {"predictorInputSchemaVersion", CombatPredictorInputV1::SCHEMA},
             {"predictorInputFieldSchemaHash", combatPredictorInputFieldSchemaHash()},
             {"teacherId", kCtmRowsTeacherId}};
-    // Only policy mode adds keys, so on/off files keep their exact bytes.
+    // Only policy mode adds these two keys.
     if (policyTargets) {
         header["policyTargets"] = true;
         header["decisionSchema"] = "ooc-policy-target-v1";
