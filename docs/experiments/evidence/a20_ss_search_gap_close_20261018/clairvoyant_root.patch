@@ -1,0 +1,20 @@
+diff --git a/src/sim/search/NativeSilverBackend.cpp b/src/sim/search/NativeSilverBackend.cpp
+index 18f785c9..555301d9 100644
+--- a/src/sim/search/NativeSilverBackend.cpp
++++ b/src/sim/search/NativeSilverBackend.cpp
+@@ -731,6 +731,15 @@ namespace sts::search {
+     std::string nativeSilverSearchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge,
+                            BattleContext &root) {
+         root = live;
++        if (std::getenv("AUDIT_CLAIRVOYANT_ROOT")) {  // local audit hack: search sees the live state
++            if (const auto &planner = g_nativeSilverPlannerSeedOverride) {
++                root.seed = *planner;
++                seedSearchRng(root, nativeSilverBattleSeed(root));
++            } else {
++                seedSearchRng(root, nativeSilverBattleSeed(live));
++            }
++            return {};
++        }
+         root.intentsHidden=knowledge.hiddenMonsterIntents;
+         if(!knowledge.hiddenMonsterIntents) {
+             // Visible constructor damage is an exact public scalar. Its raw
