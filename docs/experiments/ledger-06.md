@@ -20764,3 +20764,38 @@ campaign files, analyzer, diagnostic script, result, tar hashes; raw tars on the
 Seeds used: 111195272 (smoke), 111195280–111195343.
 
 **Knowledge impact:** result line added to `evaluation/current-research.md`.
+
+## §TBD — Silver playouts that follow the gen-6 prior instead of the greedy list, at equal simulations (A20, leaf headroom pilot): score INCONCLUSIVE, HP lost −1.5 (2026-10-18)
+
+**Question (Philipp, 2026-10-18 14:06Z, thread "Better fast leaf evaluation": "good idea, lets do that"):** before
+building a fast learned Silver leaf, is there headroom for a *better* leaf? §479/§523 put the leaf's value in its
+playout policy, and 2.5k vs 10k simulations differ by only −0.68 [−3.13, +1.87] fight score (§479), so speed alone
+buys little. Upper-bound probe: every playout card play follows the gen-6 E prior argmax (not deployable).
+**Design:** [PREREG](evidence/silver_prior_playout_pilot_20261018/PREREG.md), written before results. New research
+option `STS_SILVER_ROLLOUT_PRIOR=1` (default off: each playout `PLAYER_NORMAL` step plays the root-prior model's
+argmax over card plays and END_TURN, no potions; card selects stay greedy) and `ctmsilvergen` armset `priorpl`
+(code 6eaa0034, binary `ec990413…`). §523 harness (student C source runs, gen-6 E root prior w400, hallway every 3rd,
+R = 2) with the ADR-0046 root table on. Arms at 2,500 simulations, both with root prior and tree prior K = 8:
+`greedy2500` (production playouts) and `priorpl2500`. 16 sources (111197692–111197707) in-thread on 4 cores, all
+shards rc = 0; 162 valid paired fights (3 excluded, escapes). Smoke 111197780–111197783 (32 fights, rc = 0).
+**Result (paired, 95% seed bootstrap):**
+
+| subset | fights | Δ score | Δ win | Δ HP lost |
+|---|---|---|---|---|
+| all | 162 | +3.81 [−2.43, +10.29] | +0.9 pp [−1.3, +3.2] | −1.45 [−2.51, −0.31] |
+| elite | 67 | +12.09 [+0.16, +25.81] | +4.5 pp [0, +8.2] | −2.90 [−5.17, −0.73] |
+| boss | 27 | +0.89 [−1.84, +3.03] | 0 | −2.52 [−4.80, −0.10] |
+| normal and other | 68 | −3.19 [−11.23, +0.64] | −1.5 pp | +0.40 [−0.11, +0.90] |
+
+CPU per simulation 7.62x [6.95, 8.07] (107 vs 14.1 µs); playouts 15.0 vs 16.0 actions.
+**Label (pre-registered): `INCONCLUSIVE`** (mean +3.81 below the +5 bar, CI includes 0 and +5).
+**Interpretation:** a better-playing playout lowers HP lost by about 1.5 per fight, concentrated in elites and bosses,
+where it is significant on HP. **Inference:** that is more than the about 0.7 a 4x larger greedy budget gave in §479
+(different harness), so leaf quality has some headroom, but at this resolution it is modest and the score gain is not
+shown. The prior forward costs 7.6x per simulation, so any use needs a distilled fast version. No default change;
+`STS_SILVER_ROLLOUT_PRIOR` stays research-only and off.
+[result.json](evidence/silver_prior_playout_pilot_20261018/result.json) (sha256 `b6e1e649…`). Raw:
+`/mnt/project-files/silver-prior-playout-pilot/ppl-run.tar.gz` (run and smoke, sha256 `a748c6bc…`). Seeds used:
+111197692–111197707, 111197780–111197783; the rest of 111197692–111197791 unused.
+**Knowledge impact:** rejected/open line in `research/combat-search/leaf-evaluation.md`; env-var rows for
+`STS_SILVER_ROLLOUT_PRIOR` and `STS_CTMSILVER_ARMSET=priorpl`.

@@ -1,0 +1,220 @@
+{
+  "states": 33,
+  "validFights": 32,
+  "excluded": {
+    "invalid_arm_row": 1
+  },
+  "truncatedRows": {},
+  "shards": [
+    {
+      "prefix": "shard0",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 3,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 4
+    },
+    {
+      "prefix": "shard1",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 11,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "shard2",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 5,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "shard3",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 7,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    }
+  ],
+  "seedsWithStates": 4,
+  "roomClasses": {
+    "NORMAL": 8,
+    "ELITE": 14,
+    "BOSS": 6,
+    "OTHER": 4
+  },
+  "sourceSeeds": 4,
+  "meanCpuSecondsPerFight": {
+    "control": 2.459525696515151,
+    "greedy2500": 0.5129722513787879,
+    "priorpl2500": 4.050738658666667
+  },
+  "cpuMsPerDecision": {
+    "control": 122.60475526435043,
+    "greedy2500": 27.957199497109826,
+    "priorpl2500": 214.9105719228296
+  },
+  "escapes": {
+    "greedy2500": 0,
+    "priorpl2500": 0
+  },
+  "excludedFightsByRootReason": {
+    "escape": 1
+  },
+  "invalidArmRowsByReason": {
+    "escape": 5
+  },
+  "escapeReplicatesAllFights": {
+    "greedy2500": 2,
+    "priorpl2500": 2
+  },
+  "arms": {
+    "greedy2500": {
+      "score": 281.9375,
+      "win": 0.90625,
+      "hpLoss": 12.40625,
+      "cpuSecondsPerFight": 1.05484044534375,
+      "cpuMicrosecondsPerSimulation": 11.223572485785537,
+      "meanRolloutLength": 13.73269151693646,
+      "playoutsPerSimulation": 0.8361210307564422
+    },
+    "priorpl2500": {
+      "score": 283.65625,
+      "win": 0.90625,
+      "hpLoss": 11.203125,
+      "cpuSecondsPerFight": 8.32354259684375,
+      "cpuMicrosecondsPerSimulation": 86.19849938478964,
+      "meanRolloutLength": 12.930779757560984,
+      "playoutsPerSimulation": 0.8390459546925566
+    }
+  },
+  "contrasts": {
+    "priorpl2500-greedy2500/all/score": {
+      "mean": 1.71875,
+      "ci95": [
+        -0.03571428571428571,
+        3.0833333333333335
+      ],
+      "fights": 32
+    },
+    "priorpl2500-greedy2500/all/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 32
+    },
+    "priorpl2500-greedy2500/all/hpLoss": {
+      "mean": -1.203125,
+      "ci95": [
+        -2.7291666666666665,
+        0.42857142857142855
+      ],
+      "fights": 32
+    },
+    "priorpl2500-greedy2500/boss/score": {
+      "mean": 1.3333333333333333,
+      "ci95": [
+        0.5,
+        2.25
+      ],
+      "fights": 6
+    },
+    "priorpl2500-greedy2500/boss/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 6
+    },
+    "priorpl2500-greedy2500/boss/hpLoss": {
+      "mean": 0.5,
+      "ci95": [
+        -1.25,
+        2.25
+      ],
+      "fights": 6
+    },
+    "priorpl2500-greedy2500/elite/score": {
+      "mean": 2.4285714285714284,
+      "ci95": [
+        -0.21428571428571427,
+        6.233333333333333
+      ],
+      "fights": 14
+    },
+    "priorpl2500-greedy2500/elite/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 14
+    },
+    "priorpl2500-greedy2500/elite/hpLoss": {
+      "mean": -2.0357142857142856,
+      "ci95": [
+        -5.107142857142857,
+        0.21428571428571427
+      ],
+      "fights": 14
+    },
+    "priorpl2500-greedy2500/normal/score": {
+      "mean": 1.0833333333333333,
+      "ci95": [
+        0.0,
+        4.166666666666667
+      ],
+      "fights": 12
+    },
+    "priorpl2500-greedy2500/normal/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 12
+    },
+    "priorpl2500-greedy2500/normal/hpLoss": {
+      "mean": -1.0833333333333333,
+      "ci95": [
+        -4.166666666666667,
+        0.0
+      ],
+      "fights": 12
+    }
+  },
+  "cpuRatios": {
+    "priorpl2500/greedy2500/perSimulation": {
+      "ratio": 7.680130323384873,
+      "ci95": [
+        6.7564845895476235,
+        8.322734272965787
+      ]
+    },
+    "priorpl2500/greedy2500/perFight": {
+      "ratio": 7.890807215048797,
+      "ci95": [
+        7.266621848825548,
+        8.38573586617826
+      ]
+    }
+  },
+  "labels": {
+    "headroom": "NO_HEADROOM"
+  },
+  "act4Fights": 0
+}
