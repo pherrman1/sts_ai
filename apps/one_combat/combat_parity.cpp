@@ -164,6 +164,15 @@ void dropInactivePayloads(silver_bridge::BattleStateWire &w) {
             ^ ((1ULL << static_cast<int>(MonsterStatus::ANGRY)) - 1);
     for (auto &m : w.monsters) {
         if (m.id != static_cast<int>(MonsterId::HEXAGHOST) && !(m.statusBits & uniqueMask)) m.uniquePower0 = 0;
+        // Java clears a dead monster's powers in updateDeathAnimation, after
+        // die(); native keeps them. A half-dead monster is still in play.
+        if (m.curHp <= 0 && !m.halfDead) {
+            m.statusBits = 0;
+            m.smallPowers = {};
+            m.strength = m.vulnerable = m.weak = 0;
+            m.uniquePower0 = 0;
+            m.uniquePower1 = 0;
+        }
     }
     // The finished selection's task stays in cardSelectInfo after the input
     // state moves on.

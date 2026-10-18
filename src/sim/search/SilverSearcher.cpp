@@ -998,7 +998,15 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     }
 
     if (bc.outcome == Outcome::PLAYER_VICTORY) {
-        double score = evalWeights.winBonus + postBattleHealedHp(bc, context) + potionScore
+        double hpScore = postBattleHealedHp(bc, context);
+        if (evalWeights.concaveHpK > 0) {
+            const double k = evalWeights.concaveHpK;
+            const double m = std::max(1, rootState->player.maxHp);
+            const double frac = hpScore / m;
+            hpScore = m / k * std::exp(0.75 * k) * (1 - std::exp(-k * frac));
+            potionScore *= std::exp(-0.5 * k * (frac - 0.75));
+        }
+        double score = evalWeights.winBonus + hpScore + potionScore
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);

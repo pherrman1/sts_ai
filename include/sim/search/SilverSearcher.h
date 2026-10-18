@@ -71,6 +71,11 @@ namespace sts::search {
         // replace potionCount * potionWeight. Fairy's death-save term is unchanged.
         bool potionTypeWeightsOn = false;
         std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
+        // Research-only (STS_SILVER_CONCAVE_HP_LEAF=k; 0 = off): on a victory that
+        // does not end the run, HP h counts as u(h) = (M/k)·e^{0.75k}·(1 − e^{−k·h/M})
+        // with M the root max HP (slope 1 at 75% HP), and the held-potion term is
+        // scaled by sqrt(u'(h)).
+        double concaveHpK = 0;
     };
     // Parses "NAME=w,...[,*=w]" (Potion enum names) into per-type weights; unlisted
     // types get the "*" weight, else `fallback`. Throws on unknown names or bad numbers.

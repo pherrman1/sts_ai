@@ -42,7 +42,9 @@ class AdvisorProtocolTest(unittest.TestCase):
         proc = subprocess.run(
             [executable or sys.argv[1]], input="\n".join(rows) + "\n", text=True,
             capture_output=True, check=True, env=env, cwd=cwd)
-        self.assertEqual(proc.stderr, "")
+        # The A20 stack's default Act-4 survival model (ADR-TBD) logs its load line; nothing else may.
+        self.assertEqual([line for line in proc.stderr.splitlines()
+                          if not line.startswith("[ctm-act4-survival")], [])
         return [json.loads(line) for line in proc.stdout.splitlines()]
 
     def test_invalid_live_switches_fail_startup(self):
@@ -75,6 +77,8 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(response["ctmStatus"], "OK", response)
         self.assertTrue(response["ctmStack"]["activeLizard"])
         self.assertIn("bossSurvivalLogitShift", response["ctmStack"]["ascension20"])
+        # ADR-TBD: the A20 stack loads the bundled Act-4 survival model by default.
+        self.assertRegex(response["ctmStack"]["ascension20"]["act4Survival"], r"^fnv1a64:[0-9a-f]{16}$")
         entry = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                  "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
                  "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",
@@ -465,12 +469,12 @@ class AdvisorProtocolTest(unittest.TestCase):
             self.assertNotIn("selectedLiveAction", evaluator)
 
     def test_silver_rollout_root_table_default_and_opt_out(self):
-        # ADR-0046: on by default with the bundled gen-6 E model, found beside the
+        # ADR-0046: on by default with the bundled model (gen-7f E, ADR-TBD), found beside the
         # executable (installed release layout) whatever the working directory.
         wire = json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
                            "session": "root-table", "sequence": 1, "observationHash": "root-table-1",
                            "observation": self.silver_observation()})
-        bundled = Path("models/combat_policy_mlp_g6_E.txt").resolve()
+        bundled = Path("models/combat_policy_mlp_g7f_E.txt").resolve()
         with tempfile.TemporaryDirectory() as directory:
             release = Path(directory)
             (release / "models").mkdir()

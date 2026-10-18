@@ -525,7 +525,7 @@ std::string strategicHeader();
 // potionpriceprobe (research): paired-continuation resource prices.
 void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
                       const std::string &outFile, int statesPerRun, int fightsAhead,
-                      int hpDelta);
+                      int hpDelta, bool allStates = false, const std::string &extra = "");
 void strategicMargGen(int nSeeds, int outerSims,
                              int H, int maxPerRun, const std::string &outFile,
                              long long seedOffset);
