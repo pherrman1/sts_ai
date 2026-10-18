@@ -42,7 +42,7 @@ def ooc_win_name(manifest: dict[str, Any]) -> str:
     return manifest.get("oocWinModelName", LEGACY_OOC_WIN_NAME)
 OOC_FLOOR_NAME = "v_rich_trees.txt"
 # ADR-0046 rollout root table model; the advisor loads it from models/ beside itself.
-ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g6_E.txt"
+ROLLOUT_ROOT_TABLE_NAME = "combat_policy_mlp_g7f_E.txt"
 # ADR-0048 Act-4 survival model of the A20 CTM stack; the advisor loads it from models/candidates/ beside itself.
 ACT4_SURVIVAL_NAME = "candidates/ctm_act4_survival_trees.txt"
 ARM_C_NAME = "arm_c_student.bin"

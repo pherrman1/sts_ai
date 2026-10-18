@@ -469,12 +469,12 @@ class AdvisorProtocolTest(unittest.TestCase):
             self.assertNotIn("selectedLiveAction", evaluator)
 
     def test_silver_rollout_root_table_default_and_opt_out(self):
-        # ADR-0046: on by default with the bundled gen-6 E model, found beside the
+        # ADR-0046: on by default with the bundled model (gen-7f E, ADR-TBD), found beside the
         # executable (installed release layout) whatever the working directory.
         wire = json.dumps({"protocol": "sts_model_inspector_v1", "kind": "observation",
                            "session": "root-table", "sequence": 1, "observationHash": "root-table-1",
                            "observation": self.silver_observation()})
-        bundled = Path("models/combat_policy_mlp_g6_E.txt").resolve()
+        bundled = Path("models/combat_policy_mlp_g7f_E.txt").resolve()
         with tempfile.TemporaryDirectory() as directory:
             release = Path(directory)
             (release / "models").mkdir()
