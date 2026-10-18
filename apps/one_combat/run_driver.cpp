@@ -283,68 +283,8 @@ bool matchAndKeepPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent, bo
     return true;
 }
 
-// Opening a treasure chest is free unless Cursed Key turns it into a curse,
-// so every OOC policy opens it without Cursed Key (#347: live OOC MCTS left
-// every chest closed). With Cursed Key the ordinary decision runs.
-static bool openTreasureChestRuleStep(GameContext &gc) {
-    if (gc.screenState != ScreenState::TREASURE_ROOM || gc.relics.has(RelicId::CURSED_KEY)) return false;
-    search::GameAction(0).execute(gc);
-    return true;
-}
-
-// Every offered reward relic (elites, event elites, chests) is taken first,
-// except Philipp's listed exceptions (2026-10-07), which go to the ordinary
-// decision. Live OOC MCTS left most chest relics because its leaf value prices
-// them near zero (#347, ledger §390). The Heart key rule runs first to preserve Sapphire pairing.
-static bool reviewedRewardRelic(RelicId id) {
-    switch (id) {
-        case RelicId::BOTTLED_FLAME: case RelicId::BOTTLED_LIGHTNING: case RelicId::BOTTLED_TORNADO:
-        case RelicId::DEAD_BRANCH: case RelicId::TUNGSTEN_ROD: case RelicId::UNCEASING_TOP:
-        case RelicId::JUZU_BRACELET: return true;
-        default: return false;
-    }
-}
-static bool takeRewardRelicRuleStep(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    if (gc.screenState != ScreenState::REWARDS) return false;
-    const auto &r = gc.info.rewardsContainer;
-    // Under a non-default key flag that leaves Sapphire as a choice (STS_KEY_SAPPHIRE=policy),
-    // taking the paired relic would remove the key offer.
-    if (r.sapphireKey && !search::heartKeyRules().isDefault() && g_collectKeys && gc.keysEnabled
-            && search::heartKeyActionAllowed(gc, g_collectKeys, search::GameAction(RT::KEY, 0)))
-        return false;
-    for (int i = 0; i < r.relicCount; ++i) {
-        if (reviewedRewardRelic(r.relics[i]) || !search::GameAction(RT::RELIC, i).isValidAction(gc)) continue;
-        search::GameAction(RT::RELIC, i).execute(gc);
-        return true;
-    }
-    return false;
-}
-
 thread_local const char *t_oocChainHandler = "";
 const char *lastOocChainHandler() { return t_oocChainHandler; }
-
-bool oocTreeRuleStep(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    if (const auto key = search::heartKeyAction(gc, g_collectKeys)) { key->execute(gc); return true; }
-    if (openTreasureChestRuleStep(gc) || takeRewardRelicRuleStep(gc)) return true;
-    if (gc.screenState != ScreenState::REWARDS) return false;
-    auto &r = gc.info.rewardsContainer;
-    if (r.goldRewardCount > 0) { search::GameAction(RT::GOLD, 0).execute(gc); return true; }
-    if (!gc.hasRelic(RelicId::SOZU)) {
-        if (const auto potion = search::potionRewardAction(gc)) { potion->execute(gc); return true; }
-    }
-    // Nothing left (keys only count when STS_COLLECT_KEYS is on): leaving is the only sensible action.
-    // STS_POTION_REWARD_DECLINE_LEAVE=1: a potion the pickup declined counts as nothing left, so
-    // search cannot swap a held potion for it by discarding (a uniform-prior root, fixed-rules audit).
-    const bool potionsLeft = r.potionCount > 0
-        && !(search::potionRewardDeclineLeaveEnabled() && search::potionRewardDeclined(gc));
-    if (r.cardRewardCount == 0 && r.relicCount == 0 && !potionsLeft
-        && !(g_collectKeys && (r.emeraldKey || r.sapphireKey))) {
-        search::GameAction(RT::SKIP).execute(gc); return true;
-    }
-    return false;
-}
 
 void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                              bool restV, bool shopV) {
@@ -374,7 +314,8 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
                                gc.seed, 0, nullptr);
         return;
     }
-    if ((openTreasureChestRuleStep(gc) && tag("chest_rule")) || (takeRewardRelicRuleStep(gc) && tag("relic_rule"))) return;
+    if (const auto chest = treasureChestRuleAction(gc)) { tag("chest_rule"); chest->execute(gc); return; }
+    if (const auto relic = rewardRelicRuleAction(gc)) { tag("relic_rule"); relic->execute(gc); return; }
     if (!t_oocHypotheticalStep && !t_oocContinuation && t_curPath
         && one_combat::oocGbmRankerPolicy(gc, *t_curPath) && tag("gbm_ranker")) return;
     const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
@@ -598,10 +539,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             } else if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
                     && one_combat::heart1::policyStep(gc)) {
                 traceBy = "heart1";
-            } else if (openTreasureChestRuleStep(gc)) {
-                traceBy = "chest_rule";
-            } else if (takeRewardRelicRuleStep(gc)) {
-                traceBy = "relic_rule";
+            } else if (const auto chest = treasureChestRuleAction(gc)) {
+                chest->execute(gc); traceBy = "chest_rule";
+            } else if (const auto relic = rewardRelicRuleAction(gc)) {
+                relic->execute(gc); traceBy = "relic_rule";
             } else if (one_combat::liveOocMctsTreeRules() && oocTreeRuleStep(gc)) {
                 traceBy = "tree_rule";
             } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,

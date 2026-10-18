@@ -1749,9 +1749,10 @@ def _reproduction_command(args: argparse.Namespace) -> str:
                "--startup-timeout", str(args.startup_timeout),
                "--transition-timeout", str(args.transition_timeout),
                "--ooc-policy", args.ooc_policy]
-    for option in ("strict_silver", "strict_ooc", "dry_run"):
-        if getattr(args, option):
-            command.append("--" + option.replace("_", "-"))
+    for option in ("strict_silver", "strict_ooc"):
+        command.append(("--" if getattr(args, option) else "--no-") + option.replace("_", "-"))
+    if args.dry_run:
+        command.append("--dry-run")
     if args.max_steps is not None:
         command.extend(["--max-steps", str(args.max_steps)])
     return shlex.join(command)
@@ -1811,8 +1812,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--run-until-error", action="store_true", help="continue until terminal outcome or integration error")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--strict-silver", action="store_true")
-    parser.add_argument("--strict-ooc", action="store_true")
+    # Strict by default: an unsupported advisor answer stops the run instead of
+    # playing the deterministic first-choice fallback (live-bridge audit, finding 4).
+    # --no-strict-silver / --no-strict-ooc restore the fallback.
+    parser.add_argument("--strict-silver", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--strict-ooc", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--ooc-policy", choices=("mcts", "mcts_ctm", "v4", "v4_q"), default="mcts")
     run = parser.add_mutually_exclusive_group()
     run.add_argument("--new-run", action="store_true")

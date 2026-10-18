@@ -1,0 +1,18 @@
+roots 5954
+base10000        diff (per-ref avg) -0.1244 CI [-0.174  -0.0691]
+base2500         diff (per-ref avg) +0.0000 CI [0. 0.]
+c12_2500         diff (per-ref avg) +0.0270 CI [-0.0217  0.0751]
+c50_2500         diff (per-ref avg) -0.0196 CI [-0.0798  0.0504]
+endwide2500      diff (per-ref avg) -0.0266 CI [-0.0576  0.0025]
+othernarrow2500  diff (per-ref avg) +0.0403 CI [-0.0035  0.0855]
+== covariance, half1 scored on ref0, half2 on ref1 (and swapped, averaged)
+c12_2500         split-ref cov 0.277 CI [-0.8214  1.3687]
+c12_2500         same-ref0 cov 0.372
+c50_2500         split-ref cov 0.626 CI [-0.9884  2.5765]
+c50_2500         same-ref0 cov 2.560
+endwide2500      split-ref cov 0.142 CI [-0.2373  0.5621]
+endwide2500      same-ref0 cov 0.582
+othernarrow2500  split-ref cov 0.182 CI [-0.3895  0.856 ]
+othernarrow2500  same-ref0 cov 0.143
+xfit oracle, select with ref j, score with other ref: 0.0315 CI [-0.0135  0.0794]
+xfit oracle, same single ref: 0.0606 CI [0.0271 0.0983]

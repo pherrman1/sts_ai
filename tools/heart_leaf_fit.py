@@ -334,7 +334,7 @@ def fit(args):
                                   "heart-leaf-features-v3" if critic_info else "heart-leaf-features-v2"),
                 "residual": os.path.basename(trees), "residualSha256": sha256(trees),
                 "anchorSha256": ANCHOR_SHA, "anchorSlope": b, "act4Offset": act4_offset,
-                "training": {"tails": [os.path.basename(t) for t in args.tails], "tailSha256": [sha256(t) for t in args.tails],
+                "training": {"xgboostVersion": xgb.__version__, "tails": [os.path.basename(t) for t in args.tails], "tailSha256": [sha256(t) for t in args.tails],
                              "anchorWeight": args.anchor, "rounds": args.rounds, "selectedRound": k_best,
                              "trees": n_trees, "params": params, "platt": [a, b]}}
     if critic_info:

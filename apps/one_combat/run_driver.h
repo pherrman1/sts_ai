@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 
 #include "game/GameContext.h"
 #include "sim/search/ScumSearchAgent2.h"
@@ -54,6 +55,12 @@ void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &
 // live root (chest without Cursed Key, unreviewed reward relic, gold, potion
 // with belt space, leave an empty reward screen). False when none applies.
 bool oocTreeRuleStep(sts::GameContext &);
+// The action oocTreeRuleStep would execute, without executing it (the live
+// advisor lowers it to the game). Defined with the rules in ooc_tree_rules.cpp.
+std::optional<sts::search::GameAction> oocTreeRuleAction(const sts::GameContext &);
+// The chest and reward-relic rules alone; every OOC policy applies them.
+std::optional<sts::search::GameAction> treasureChestRuleAction(const sts::GameContext &);
+std::optional<sts::search::GameAction> rewardRelicRuleAction(const sts::GameContext &);
 // Diagnostic: name of the chain layer that handled the latest step on this thread.
 const char *lastOocChainHandler();
 

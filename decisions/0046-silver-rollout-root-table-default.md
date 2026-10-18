@@ -20,7 +20,8 @@ Results with gen-6 E (`ca9bd7f2…`) at A20, fight level:
 - Cost: 5–6% more CPU per simulation, mostly from longer playouts, plus 1–2% more search decisions per fight.
 
 On 2026-10-17 at 22:10Z, Philipp wrote in thread "Distilled Silver playout picker": "i actually want it on, i think
-the direction is definitely goo denough even though its technically not proven".
+the direction is definitely goo denough even though its technically not proven". At 22:48Z he wrote about the live
+advisor: "live advisor should me switched to yes as well".
 
 ## Decision
 
@@ -33,14 +34,18 @@ the direction is definitely goo denough even though its technically not proven".
   `combat_policy_mlp` model.
 - The `ctmsilvergen` armset `roottable` now requires `STS_SILVER_ROLLOUT_ROOT_TABLE=0`, so its `greedy` arms, source
   run and control keep the ADR-0040 table as in §519 and §521.
+- The live advisor (`one_combat_advisor`, `NativeSilverAdvisorSession`) builds the same table at every decision's
+  root. It loads the model once at start: unset = `models/combat_policy_mlp_g6_E.txt` beside the executable, else
+  under the working directory; `0` restores the ADR-0040 table; a model that does not load exits with status 2.
+  `tools/live_game_runtime.py` copies the model into each release and pins it as `rolloutRootTableSha256`.
 - Effective Silver leaf specifications record `rollout_root_table` (path and sha256) whenever it is on, so teacher
   files written with `=0` match earlier ones.
 
 ## Consequences
 
 - Every Silver search run through the native Silver backend (`runNativeSilverCombat`: benchmarks, whole runs,
-  data generation) plays differently and costs about 5–6% more CPU per simulation. The live advisor's
-  `NativeSilverAdvisorSession` builds its own `SilverSearcher` and keeps the ADR-0040 table.
+  data generation) and every live advisor Silver decision plays differently and costs about 5–6% more CPU per
+  simulation.
 - The playing-strength effect is not established. Both pre-registered tests were `NOT_CPU_MATCHED` and `NOT_SHOWN`;
   the equal-simulation contrast was positive in all four budget pairs.
 - Comparisons with runs from before this ADR need `STS_SILVER_ROLLOUT_ROOT_TABLE=0`.

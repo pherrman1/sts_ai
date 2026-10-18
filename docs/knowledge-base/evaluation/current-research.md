@@ -226,7 +226,8 @@ act better than both but has almost no level change between acts. The retrained
 `heart_leaf_td2` adds a tree distillation of that critic as an input and an Act-4 offset. On the
 §503 CONFIRM set (640 runs) it beats Platt X2-B on BCE (0.3345 vs 0.3479) and AUC (0.750 vs
 0.726) and calibrates acts 2-4, but under-predicts Act 1 (0.093 vs 0.130) and fails the gate;
-CONFIRM is spent. Philipp asked for a paired A20 A/B of td2 against the X2-B leaf anyway (§522).
+CONFIRM is spent. Philipp asked for a paired A20 A/B of td2 against the X2-B leaf anyway; §522 (512 pairs) is NOT_SHOWN
+(reached Act 4 124 vs 137, Heart kills 42 vs 46) with more Act-1 deaths (114 vs 69).
 td1/td2 also read the hidden encounter queue (`nextEliteId`, `nextFight0..2`), real in the §503
 roots but sampled in play; `heart_leaf_td3` (feature schema v4) zeroes those columns and matches
 td2 on VALIDATION (BCE 0.3034, AUC 0.731).
@@ -2739,6 +2740,11 @@ Splitting the widening constants by chance-node category (ledger-06 §518, A20,
 gen-6 prior at 2,500 simulations, 3,043 paired fights: end-turn wider, other
 nodes narrower, and spire-mentor's constants) is NOT_SHOWN on all three
 contrasts, with score CIs within ±1.8; the shared defaults stay.
+Per root (ledger-06 §526, A20, 5,954 probed roots on 52 smoke seeds, regret of the 2,500-simulation pick
+against two independent 20k references): no constant setting differs from base on average, per-root heterogeneity
+is not shown once selection and scoring use different references (oracle per-root choice 0.032 [−0.014, +0.079],
+against 0.124 for 4x simulations), and LightGBM on cheap root features (act, room, turn, HP, actions, energy, hand,
+monsters, base visit share) recovers nothing, so no per-root parameter controller is built.
 
 The complete frozen internal-node finite FPU screen is **`INTERNAL_FPU_INCONCLUSIVE`**.
 At the preregistered root metric, 1k CONTROL agreed with 10k CONTROL in 45/64

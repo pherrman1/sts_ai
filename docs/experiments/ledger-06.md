@@ -20314,7 +20314,7 @@ simulations), but at 10k it is not significant at equal simulations either. Unli
 nothing at 10k (−0.02), so the CPU-match rule penalises a cost that extra simulations would not measurably have used.
 **Inference:** at the production budget, a cheaper root table (or the same one at no simulation cost) could be a
 small free gain; across §519 and §521 the equal-simulation contrast is positive in all four budget pairs, but each CI
-touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off.
+touches zero except §519's 2,500 pair. Pre-registered decision: stop; the option stays research-only and off (superseded: ADR-0046).
 [result.json](evidence/silver_rollout_root_table_10k_20261017/result.json). Raw:
 `/mnt/project-files/silver-rollout-root-table-10k/w0{1..8}.tar` (sha256 `8c4bb455…`, `47c5c9fb…`, `4f656e30…`,
 `0e6c3ce7…`, `91834bb7…`, `4ad02fcd…`, `470b53da…`, `8be914d1…`). Seeds 111190500–111190627 used; reviewer smokes
@@ -20441,3 +20441,82 @@ CSVs, `facing_switch.patch`, SHA256SUMS). The `act4replay` mode used here is par
 Seeds used: 111130200–295 and 111130000–191 (reused for pairing), 111130904–999.
 
 **Knowledge impact:** both added to rejected approaches in `research/combat-search/leaf-evaluation.md`.
+## §522 — Heart leaf td2 vs the X2-B leaf in A20 OOC MCTS: NOT_SHOWN, more Act-1 deaths (2026-10-17)
+
+**Question (Philipp, 2026-10-17 19:59Z):** "yes lets try a parid a20 a/b" of the §515 td2 Heart leaf, after its
+CONFIRM_FAIL; card "512 pairs" on 8 workers. **Design:** [PLAN](evidence/heart_leaf_ab_20261017/PLAN.md),
+pre-launch review PASS. A20 Heart stack with student C OOC (`STS_OOC_HEART1` heart1full prior),
+`STS_SILVER_LEARNED_STOP=0`; arm H adds `STS_OOC_MCTS_LEAF_HEART_MODEL=heart_leaf_td2`, arm C keeps the X2-B leaf.
+RUN_COMMIT 82d85b0e, binary `20d03790…`, seeds 111191000–111191511, 1,024 units rc 0, no exclusions.
+- **Reached Act 4 (primary):** H 124, C 137, −2.5 pp [−6.4, +1.4], McNemar p = 0.24, **NOT_SHOWN**.
+- **Heart kills:** 42 vs 46, −0.8 pp [−3.5, +2.1].
+- **Act-1 deaths:** 114 vs 69 (discordant 61 vs 16, p < 0.0001), mostly at the act-1 boss; act-3 deaths 93 vs 118
+  (post hoc). Mean final floor −3.1. Same MCTS CPU per decision.
+**Interpretation:** the td2 leaf does not help in play and loses Act-1 runs. **Inference:** its Act-1
+under-prediction (§515) flattens leaf differences there. td2 also read the hidden encounter queue in training
+(shuffle test on VALIDATION: no effect); `heart_leaf_td3` (schema v4, #642) removes it but has no held-out or play
+test. No default change; whether to continue the Heart leaf line is Philipp's call.
+[Result](evidence/heart_leaf_ab_20261017/RESULT.md), [report.json](evidence/heart_leaf_ab_20261017/report.json).
+Raw: `/mnt/project-files/heart-leaf-td/ab/`. Reviewer seeds 111193000–111193099.
+**Knowledge impact:** `evaluation/current-research.md` (Heart leaf status).
+
+## §526 — Per-fight and per-root Silver search parameters at A20: no per-fight or per-root preference shown (2026-10-17)
+
+**Question (Philipp, 2026-10-17 21:57Z):** "investigate a learned model for parameters per fight / per root. i know
+that early combats and late combats behave very differently, so we should maybe adapt to that." He then picked the
+root-level pilot (decision card, 22:03Z). Exploratory, not pre-registered; smoke seeds only, no default change.
+**Part 1, per fight (offline, §518 data):** 3,043 paired A20 fights, 4 widening arms at 2,500 simulations, R = 2.
+The arm − base score difference does not repeat across the two redraws of a fight (corr −0.06 / −0.01 / +0.11;
+replicate score SD about 48 against mean effects below 1). Picking the best arm per fight on one redraw and scoring
+on the other: −0.20 [−1.32, +0.86] vs base. LightGBM on fight features (act, floor, room, encounter, HP, potions,
+CTM forecast, control-replay stats), 5 folds grouped by seed: +0.48 [−0.59, +1.63]; act × room table −0.02
+[−1.20, +1.20]. No act CI excludes 0. Fight outcomes at R = 2 cannot carry a per-fight parameter model.
+Scripts and output: [part1](evidence/silver_root_regret_pilot_20261017/part1/).
+**Part 2, per root (design):** research-only armset `rootregret` of `ctmsilvergen` (environment as §518: A20,
+sources by plain exact-10k Silver with student C `eff2f74f…`, keys off, `STS_SILVER_LEARNED_STOP=0`, hallway every
+3rd). One `base2500` replay per fight with the gen-6 prior (g6_E `ca9bd7f2…`, weight 400, K = 8). Every second
+multi-action root of that replay (hash) is searched again from fresh trees: twice at 20k with the default constants
+(reference), 4 times each at 2,500 for base, end-turn C doubled (`endwide`), other chance nodes C 2 / alpha 0.5
+(`othernarrow`), exploration 12.5 (`c12`) and 50 (`c50`), and twice at 10k with the base constants. Planner seeds
+are shared per replicate across arms. Regret of a pick = Q(best) − Q(pick) under the visit-weighted Q of both
+references, best = most reference visits (Silver evaluation units; median Q range over a root's edges 11.4).
+Probes leave the replay bit-identical (seed 111193552 with and without probes: same arm rows).
+Code `80530a06` (main `ff0143e8` + the armset), binary `2bd4b325…`.
+**Run:** seeds 111193550–111193553 (smoke, every 6th root) and 111193554–111193601 (every 2nd root), 4 shards
+each, all rc = 0. 5,954 probed of 12,652 observed multi-action roots, 52 sources; 5 fights had escape control
+mismatches (their roots are kept). Probe CPU 3.0 h; shard wall times sum to about 4.8 h on one 4-CPU container.
+**Result (bootstrap over source seeds; corrected by the post-merge review, see below):**
+- The metric resolves search quality: base10000 − base2500 regret −0.124 [−0.174, −0.069] (average of the two
+  single-reference regrets; pooled reference −0.118 [−0.163, −0.076]). The two reference searches agree on their top
+  action at only 75.6% of roots, so reference noise is large.
+- Arm − base2500 regret, all roots, average of the single-reference regrets: c12 +0.027 [−0.022, +0.075], c50 −0.020
+  [−0.080, +0.050], endwide −0.027 [−0.058, +0.003], othernarrow +0.040 [−0.004, +0.086]; no arm differs from base.
+  (Against the pooled reference c12 is +0.079 [+0.028, +0.130]: the c12 sign depends on the reference definition.)
+- **Per-root heterogeneity is not shown.** Scoring replicates {0,1} against one reference and {2,3} against the other
+  (and swapped), the covariance of arm − base across halves is c50 0.63 [−0.99, 2.58], othernarrow 0.18
+  [−0.39, 0.86], c12 0.28 [−0.82, 1.37], endwide 0.14 [−0.24, 0.56]. Picking per root on one half and scoring on the
+  other with the other reference cuts regret by 0.032 [−0.014, +0.079] vs base. With both halves scored against the
+  same reference these were c50 1.81 [0.29, 3.80], othernarrow 1.20 [0.18, 2.39] and an oracle 0.066 [0.022, 0.114]
+  (0.061 [0.027, 0.098] with one single reference): reference noise shared by both halves inflates them, so they are
+  upper bounds only. Splitting the references costs power per half, so this is "not shown", not "absent".
+- LightGBM on decision-time root features (act, floor, room, turn, HP fraction, actions, energy, hand size, monsters
+  alive, inherited visits), 5 folds grouped by seed: −0.006 [−0.065, +0.056]; adding the base search's visit share of
+  its pick: −0.003 [−0.055, +0.051]; prediction-target correlations within ±0.03.
+- Descriptive, act × room means against the pooled reference: c50 lower at act-1 and act-2 bosses (−0.42, −0.40) and
+  act-3 elites (−0.28), higher at act-1 normals and elites; not corrected for multiplicity.
+**Interpretation:** neither fight outcomes nor root-level regret show that early and late fights, or individual
+roots, want different constants. With independent references even the instance-level oracle gain is
+indistinguishable from 0, and a selector on cheap features captures nothing. **Inference:** a controller would need
+features from a first search (Q gaps, chance-node statistics) and would have to beat spending that budget on more
+simulations; nothing here suggests it would. Both references use the base constants, which may favor base-like picks
+(**Unverified** size). Regret is not fight score (silverbot reported that parameters tuned on saved states did not
+hold in whole runs). No default change; the armset stays research-only.
+**Post-merge review (#648, FAIL fixed in a follow-up PR):** the first version of this entry scored both halves against
+one shared reference and reported "roots differ" (c50, othernarrow) and a 0.066 oracle gain; the reviewer showed that
+this shared reference noise between selection and scoring, and that splitting the references removes it
+(`split_ref.py`). The first selector also had one reference-derived feature (the 20k top-two visit margin), now dropped.
+Evidence: [scripts and output](evidence/silver_root_regret_pilot_20261017/). Raw:
+`/mnt/project-files/learned-search-params/rr-root-regret.tar` (sha256 `45aecaac…`). Seeds used: 111193550–111193601;
+111193602–111193649 of this thread's block unused.
+**Knowledge impact:** one paragraph in `evaluation/current-research.md` (Silver root allocation section) and the
+`STS_CTMSILVER_ARMSET=rootregret` row in `operations/environment-variables.md`.
