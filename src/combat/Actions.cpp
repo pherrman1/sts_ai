@@ -1272,7 +1272,11 @@ void ActData_TimeEaterPlayCardQueueItem::operator()(BattleContext &bc) const {
     }
 
 void ActData_UpgradeAllCardsInHand::operator()(BattleContext &bc) const {
+        const bool onlyUpgradeable = handUpgradeAllFix();
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+            if (onlyUpgradeable && !bc.cards.hand[i].canUpgrade()) {
+                continue;
+            }
             bc.cards.hand[i].upgrade();
         }
     }

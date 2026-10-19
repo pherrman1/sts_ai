@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-18 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
 
 ## Purpose
 
@@ -137,7 +137,9 @@ the game's own state, so one difference does not end the comparison.
 - Comparison: `tools/combat_parity.py run TRACE --probe BIN --out-dir OUT`
   diffs every other field (ignoring only `uniqueId`, `isolatedSearchSeed`,
   `observedGeneration` and `nextUniqueCardId`) plus the six RNG counters and
-  seeds. A change in any of the six Java streams with no native combat
+  seeds. The exhaust pile is compared as a multiset, because Java exhausts
+  end-of-turn ethereal cards in an unseeded shuffled order
+  ([Java reference audit](../behavior/java-reference-audit.md#ethereal-exhaust-order-at-end-of-turn-parity-not-reproducible)). A change in any of the six Java streams with no native combat
   counterpart (`cardRng`, `eventRng`, `merchantRng`, `monsterRng`,
   `relicRng`, `treasureRng`) during a combat step is a mismatch. It writes `verdicts.jsonl`, `summary.json` and `REPORT.md` with
   mismatched fields, skip reasons and coverage per action, encounter, relic,
@@ -234,6 +236,15 @@ The same night, on seed 111194455, player Thorns killed a Byrd partway
 through its Peck; the game skipped its remaining pecks and native landed them
 (46 vs 44 HP). `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) cancels a
 dead or half-dead monster's queued hits, as Java's `DamageAction` does.
+
+The same night showed Blessing of the Forge upgrading Ascender's Bane natively
+but not in the game (seed 111194457). The engine's upgrade-all-in-hand action
+(Blessing of the Forge, Armaments+) upgraded every card, while Apotheosis,
+Warped Tongs and the Armaments choice already skipped cards that cannot be
+upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
+there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
+skips statuses here for the same reason it skips curses (its `canUpgrade`
+rule); only the curse case was observed live.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
