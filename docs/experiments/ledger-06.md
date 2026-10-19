@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Killing the Gremlin Leader did not end imported fights (2026-10-19)
+## §557 — Killing the Gremlin Leader did not end imported fights (2026-10-19)
 
 **Question:** why did the parity probe return `UNDECIDED` where the game returned victory after the Gremlin Leader died
 (overnight list problem 12, seed 111194457 segment 9 step 47: Pommel Strike+ kills the Leader, Gremlin Wizard alive)?
