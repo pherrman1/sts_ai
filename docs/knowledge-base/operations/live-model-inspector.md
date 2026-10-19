@@ -232,6 +232,7 @@ rebirth, so surviving Cultists do not delay victory after its final death.
 Java Lagavulin has no sleep power; outside Runic Dome the importer sets native
 `ASLEEP` exactly when its public intent is IDLE (move byte 5), which it rolls
 only while asleep (waking sets OPEN 4 or ATTACK 3).
+`STS_IMPORTER_LAGAVULIN_SLEEP_FIX=0` restores the legacy import without `ASLEEP`.
 Combat capture includes
 `energyPerTurn` from Java `energyMaster`; the importer adds Berserk's power
 amount to this base/relic energy for native future turns. IntangiblePlayer

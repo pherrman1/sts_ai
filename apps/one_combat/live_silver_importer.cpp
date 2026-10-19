@@ -369,6 +369,16 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_LAGAVULIN_SLEEP_FIX: unset/1 (default) = outside Runic Dome a
+// Lagavulin whose public intent is IDLE (5) is imported ASLEEP; 0 = legacy
+// import without ASLEEP (native then treats it as awake and stunned).
+bool lagavulinSleepFix() {
+    const char *value = std::getenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_LAGAVULIN_SLEEP_FIX must be 0 or 1");
+}
+
 template <typename T>
 bool parseEnumId(const json &item, const char *name, T &out) {
     if (!item.contains(name) || !item.at(name).is_string()) return false;
@@ -1525,7 +1535,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         // Java Lagavulin has no sleep power: its sleep is the private isOut
         // flag, public only as the IDLE intent (5) that it rolls exactly
         // while asleep. Waking sets OPEN (4, stun) or ATTACK (3).
-        if (*id == sts::MonsterId::LAGAVULIN && item.contains("nextMove") && nextMove == 5)
+        if (*id == sts::MonsterId::LAGAVULIN && item.contains("nextMove") && nextMove == 5
+                && lagavulinSleepFix())
             m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::ASLEEP);
         }
         if (item.contains("powers")) {

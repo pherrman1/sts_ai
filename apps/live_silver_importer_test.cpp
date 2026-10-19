@@ -661,6 +661,26 @@ void verifyDynamicTransitionCorpus() {
             || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
             throw std::runtime_error("Lagavulin root did not start asleep with Metallicize 8");
         assertDynamicParity("LAGAVULIN_ASLEEP", live, knowledge, game);
+        {
+            // STS_IMPORTER_LAGAVULIN_SLEEP_FIX=0 restores the legacy import
+            // without ASLEEP; every other field is unchanged.
+            auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), live.seed);
+            normalizeDynamicObservationIdentity(wire);
+            const auto rendered = javaLikeDynamicObservation(wire, "MONSTER", "LAGAVULIN_ASLEEP_FLAG");
+            const auto asleepBit = 1ULL << static_cast<int>(MonsterStatus::ASLEEP);
+            for (const char *flag : {"1", "0"}) {
+                setenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX", flag, 1);
+                const auto imported = one_combat::advisor::importSilverRoot(rendered);
+                if (!imported.ok) throw std::runtime_error("Lagavulin flag import failed: " + imported.reason);
+                auto expected = wire;
+                if (std::string(flag) == "0") expected.monsters[0].statusBits &= ~asleepBit;
+                expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+                if (!convertedStatesEqualForSearch(expected, imported.wire)
+                        || ((imported.wire.monsters[0].statusBits & asleepBit) != 0) != (std::string(flag) == "1"))
+                    throw std::runtime_error(std::string("Lagavulin sleep flag parity failed, flag=") + flag);
+            }
+            unsetenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX");
+        }
         resolveMonsterTransition(live, 0);
         if (!laga.hasStatus<MonsterStatus::ASLEEP>() || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
             throw std::runtime_error("Lagavulin idle turn did not keep it asleep");
