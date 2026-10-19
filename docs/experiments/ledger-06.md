@@ -21226,6 +21226,8 @@ history) can change play, and which only differ in how the state is written?
 ignores the pick count where native does not read it and the move before last for Hexaghost, Taskmaster and Fat Gremlin.
 Not covered here: Lagavulin sleep and slime split histories (problems 3 and 4) and End Turn card-select tasks after
 Mayhem (problem 13).
+**Open question** (review of the fix, pre-existing): a regrowing Darkling's Corpse Explosion is cleared before
+`Monster::die` checks it, while Java runs the powers' `onDeath` before `powers.clear()`.
 Seeds: none driven (unit tests use the fixed seed 111197786, no gameplay).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `behavior/java-reference-audit.md`,
 `operations/environment-variables.md`.
