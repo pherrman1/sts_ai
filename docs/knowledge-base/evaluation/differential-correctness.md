@@ -231,6 +231,19 @@ parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
 
+Four smaller monster-side differences from the same overnight list and the
+canary 2 carry-overs are fixed behind default-on flags (`=0` restores):
+`STS_SLIME_SPLIT_RNG_FIX` (native drew two extra `aiRng` rolls on a large
+slime split), `STS_MUGGER_DEATH_RNG_FIX` (the game draws `aiRng` for the
+Mugger's death sound), `STS_DEAD_MONSTER_BLOCK_FIX` (Curl Up block queued
+before a later hit killed the louse) and `STS_IMPORTER_THIEF_GOLD_FIX` (the
+importer never set the native stolen-gold bit, so the probe reported
+`miscBits` 0 vs 1 in Two Thieves). After a split the game reports
+`lastTargetedMonster` 1 when the targeted slime is gone (the inspector's
+default for a target it no longer emits); native keeps 0. Only the Shield
+and Spear fight reads that field, so it is left as a known
+representation-only difference.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 
