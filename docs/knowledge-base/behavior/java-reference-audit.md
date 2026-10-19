@@ -378,6 +378,31 @@ identity (hash and state equality), so search can change.
 
 Test: `dead_target_debuff_fix`.
 
+### Multi-hit from a dead attacker (mismatch, fixed)
+
+Read with `javap -c -p` from the pinned JAR (2026-10-19):
+
+- `DamageAction.update` checks on every tick, before anything else, whether
+  `shouldCancelAction()` holds and the damage type is not `THORNS`; if so the
+  action ends with no damage. On its first tick it also ends when the
+  damage owner `isDying` or `halfDead` (again unless `THORNS`).
+- `shouldCancelAction()` is `target == null || source.isDying ||
+  target.isDeadOrEscaped()`; `source` is the `DamageInfo` owner.
+- `AbstractMonster.die` sets `isDying` at its start, and `damage` calls it in
+  the same tick that takes the monster to 0 HP. Darkling and stage-1
+  Awakened One become `halfDead` only and do not touch the action queue.
+- Byrd's Peck queues one `DamageAction` per hit.
+
+So when player Thorns (or Flame Barrier, Bronze Scales) kills a monster
+partway through a multi-hit, its remaining hits do nothing. Native landed them
+(overnight live play, seed 111194455: 2 extra Byrd pecks).
+`STS_DYING_ATTACKER_FIX` (default on, `=0` restores) returns early in
+`ActData_AttackPlayer` when the attacker is dead or half-dead. Monster
+`THORNS`-type damage (`DamagePlayer`: Spiker Thorns, Sharp Hide, Exploder) is
+not cancelled, as in Java.
+
+Test: `dying_attacker`.
+
 ## Ironclad relics
 
 ### Pools

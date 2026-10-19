@@ -32,6 +32,13 @@ namespace sts {
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
 
+    bool dyingAttackerFix() {
+        const char *value = std::getenv("STS_DYING_ATTACKER_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DYING_ATTACKER_FIX must be 0 or 1");
+    }
+
     bool bloodPotionHealFix() {
         const char *value = std::getenv("STS_BLOOD_POTION_HEAL_FIX");
         if (!value || !*value || std::string(value) == "1") return true;

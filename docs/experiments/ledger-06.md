@@ -21205,3 +21205,23 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — Overnight live play: a monster's multi-hit kept hitting after Thorns killed it (2026-10-19)
+
+**Question:** why did native lose 2 more HP than the game on seed 111194455 (overnight list problem 9)?
+**Setup:** overnight live trace `seed-111194455/trace3.jsonl` (on Philipp's PC), A20 floor 18 Three Byrds, step 31
+End Turn: player 67 HP, block 10, Thorns 3; Byrd 1 at 10 HP Pecks 1x6, Byrd 2 at 17 HP Pecks 2x6, Byrd 0 Swoops 15.
+Java read with `javap -c -p` from the pinned `desktop-1.0.jar` (cfad868a).
+**Result:** game 67 -> 46 HP and 11 hits taken; native 67 -> 44 and 13. Byrd 1 dies to the Thorns of its 4th peck;
+the game skips pecks 5 and 6, native lands them (5 + 4 + 12 = 21 vs 5 + 6 + 12 = 23 damage). In Java,
+`DamageAction.update` cancels a non-`THORNS` hit on every tick when `shouldCancelAction()` holds
+(`source.isDying`), and on its first tick when the owner `isDying` or `halfDead`. `AbstractMonster.die` sets `isDying`
+synchronously inside the killing `damage` call. A Darkling or stage-1 Awakened One at 0 HP is `halfDead` only, so its
+queued hits are skipped too. Byrd's Peck is N separate `DamageAction`s.
+**Interpretation:** `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) makes `ActData_AttackPlayer` do nothing when
+its attacker is dead or half-dead. Play-changing whenever player Thorns, Flame Barrier or a Bronze Scales hit kills a
+monster mid multi-hit; no RNG draw changes. Monster `THORNS`-type damage (Spiker Thorns, Sharp Hide, Exploder) is
+unchanged, as in Java. Unit test `dying_attacker` (seed 111200101 fixed, no gameplay) reproduces 5 vs 1 HP for a
+Peck and 2 vs 1 for a half-dead Darkling's Chomp.
+**Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
+`operations/environment-variables.md` (`STS_DYING_ATTACKER_FIX`).

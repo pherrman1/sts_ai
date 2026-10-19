@@ -71,6 +71,15 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_DYING_ATTACKER_FIX: unset/1 (default) = a queued monster attack
+    // hit does nothing once its attacker is dead or half-dead, as in the game
+    // (DamageAction.update cancels a non-THORNS hit when its owner isDying or
+    // halfDead; overnight live parity 2026-10-19: Thorns killed a Byrd
+    // mid-Peck and the game skipped its last two hits, HP 46 vs native 44).
+    // 0 = the legacy engine lands every hit. Other values are fatal. Read
+    // only when the attacker is dead or half-dead.
+    bool dyingAttackerFix();
+
     // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
     // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
     // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max
