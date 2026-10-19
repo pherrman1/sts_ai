@@ -5,10 +5,12 @@
 // =0 restores the legacy engine, which kept the turn cost until end of turn.
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
+#include "sim/search/CombatKnowledge.h"
 
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 #include <string>
 
 using namespace sts;
@@ -19,6 +21,15 @@ static void require(bool value, const std::string &message) {
 
 // Fixed seed from the Discovery fix thread's block; no gameplay is driven.
 static constexpr std::uint64_t SEED = 111200161;
+
+// Records the card each draw-pile placement reports to Silver's knowledge
+// tracker, which must carry the cost the pile now holds.
+struct PlacedCards final : search::CombatKnowledgeObserver {
+    std::vector<CardInstance> cards;
+    void observeCombatKnowledgeEvent(const search::CombatKnowledgeEvent &event) override {
+        if (event.hasCard) cards.push_back(event.card);
+    }
+};
 
 static CardInstance freeCard() {
     CardInstance c(CardId::POWER_THROUGH);
@@ -39,11 +50,23 @@ static void check(bool fixed) {
     bc.cards.moveToExhaustPile(freeCard());
     require(bc.cards.exhaustPile.back().costForTurn == expected, "exhausted card");
 
+    PlacedCards placed;
+    search::g_combatKnowledgeObserver = &placed;
     bc.cards.moveToDrawPileTop(freeCard());
-    require(bc.cards.drawPile.back().costForTurn == expected, "card put on top of the draw pile");
-
     bc.cards.moveToDrawPileBottom(freeCard());
-    require(bc.cards.drawPile[0].costForTurn == expected, "card put on the bottom of the draw pile");
+    bc.cards.shuffleIntoDrawPile(bc.cardRandomRng, freeCard());
+    search::g_combatKnowledgeObserver = nullptr;
+    require(placed.cards.size() == 3, "each placement must report its card");
+    for (const auto &c : placed.cards)
+        require(c.costForTurn == expected, "the knowledge tracker must see the pile's turn cost");
+    int moved = 0;
+    for (int i = 0; i < bc.cards.drawPile.size(); ++i) {
+        const auto &c = bc.cards.drawPile[i];
+        if (c.getId() != CardId::POWER_THROUGH) continue;
+        ++moved;
+        require(c.costForTurn == expected, "card put on the draw pile");
+    }
+    require(moved == 3, "the three placed cards must be in the draw pile");
 
     // A Discovery copy created straight into the discard pile keeps cost 0,
     // until the discard pile is shuffled into the draw pile.

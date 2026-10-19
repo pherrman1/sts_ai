@@ -212,8 +212,9 @@ void CardManager::moveToDrawPileTop(const CardInstance &c) {
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.addToTop(landed(c));
-    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_TOP_PLACED, c);
+    const auto placed = landed(c);
+    drawPile.addToTop(placed);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_TOP_PLACED, placed);
 }
 
 void CardManager::moveToDrawPileBottom(const CardInstance &c) {
@@ -225,8 +226,9 @@ void CardManager::moveToDrawPileBottom(const CardInstance &c) {
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.addToBottom(landed(c));
-    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, c);
+    const auto placed = landed(c);
+    drawPile.addToBottom(placed);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, placed);
 }
 
 void CardManager::shuffleIntoDrawPile(Random &cardRandomRng, const CardInstance &c) {
@@ -238,8 +240,9 @@ void CardManager::shuffleIntoDrawPile(Random &cardRandomRng, const CardInstance 
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.shuffleIn(cardRandomRng, landed(c));
-    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
+    const auto placed = landed(c);
+    drawPile.shuffleIn(cardRandomRng, placed);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, placed);
 }
 
 void CardManager::moveToDiscardPile(const CardInstance &c) {
