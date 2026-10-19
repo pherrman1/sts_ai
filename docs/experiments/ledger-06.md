@@ -20940,6 +20940,124 @@ most of the score gain; a boss-only use would be a separate pre-registered test.
 `/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
 111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
 **Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.
+## §564 — OOC MCTS stop rules, paired A20 A/B on the CTM-Act-4 stack: learned stop and gap ladder both NON_INFERIOR on reaching Act 4; OOC MCTS CPU 0.53x (learned) and 0.69x (gap ladder) of the exact visit lock (2026-10-19)
+
+Authorization: Philipp 2026-10-18 18:15Z, card "All three" 21:45Z, "8 workers" 22:09Z. Pre-registration, unit
+script and analyzer: `docs/experiments/evidence/ooc_stop_ab_20261018/` (`PREREG.md`, `run_unit.sh`, `analyze.py`).
+
+- **Freeze:** RUN_COMMIT `d6c6b864`, code `c798572c` (main `c58e0db3` + the learned stop), binary sha256
+  `871b4c1d…`, student_sel sha256 `cf6bf7fb…`, learned model sha256 `aa928b83…` at TAU 0.99, brief sha256
+  `d96607bd…`. Independent pre-launch review PASS 01:28Z 2026-10-19.
+- **Arms** (same binary, paired seeds): N = exact visit lock only; G = N + `STS_OOC_MCTS_GAP_STOP=1024:0.7`;
+  L = N + `STS_OOC_MCTS_LEARNED_STOP=models/candidates/ooc_learned_stop_trees.txt:0.99`. Imagined Act-4 fights on
+  the A20 CTM with the ADR-0048 survival model; CTM-refused fights on Silver 500.
+- **Real combats ran on flat exact 10k Silver** (g7f_E root and tree prior, #675 prior playouts): this run is
+  pre-ADR-0051 and did not use the learned Silver stop that is now the A20 default.
+- **Run:** 512 seeds 111199495–111200006, 1,536 units on 8 cloud workers. Every tar verified with
+  `verify_campaign.py`: all 1,536 units rc 0, 512 of 512 seeds valid, none dropped. Tar sha256 prefixes w01–w08:
+  `e106dc5c`, `e5a92938`, `465de16b`, `fd8aabe0`, `d97ee51d`, `24e4c653`, `2b89d9b7`, `410c3ed6`.
+- **Result** (`result.json`, `mcts_cpu.json`):
+
+  | arm | reached Act 4 | Heart kills | mean floor | process CPU s/run | OOC MCTS CPU s/run |
+  |---|---|---|---|---|---|
+  | N | 213 (41.6%) | 106 (20.7%) | 43.61 | 1,484 | 1,015 |
+  | G | 216 (42.2%) | 110 (21.5%) | 43.32 | 1,194 | 704 |
+  | L | 207 (40.4%) | 103 (20.1%) | 43.33 | 1,019 | 540 |
+
+  | comparison | reached Act 4, paired Δ [95% CI] | verdict | Heart kills Δ [95% CI], McNemar p | CPU ratio: process (`sec`) / OOC MCTS (`mctsCpuSec`) |
+  |---|---|---|---|---|
+  | L − N | −1.2 pp [−3.5, +1.1] | NON_INFERIOR | −0.6 pp [−2.5, +1.3], p 0.68 | 0.69x / 0.53x |
+  | G − N | +0.6 pp [−2.0, +3.1] | NON_INFERIOR | +0.8 pp [−1.5, +3.1], p 0.61 | 0.80x / 0.69x |
+  | L − G (descriptive) | −1.8 pp [−4.4, +0.9] | — | −1.4 pp [−3.7, +0.9], p 0.31 | 0.85x / 0.77x |
+
+  Non-inferiority margin −5 pp on the lower bound (pre-registered). The offline CPU estimates (§565 learned-stop
+  entry: 0.50x and 0.66x) held up: measured OOC MCTS CPU 0.53x and 0.69x. The rest of process CPU is mostly the
+  real-combat Silver search, which the stop rules do not touch, so the process ratio is smaller.
+- **Reading:** both rules save CPU without a detectable loss in reaching Act 4 or killing the Heart. Neither
+  difference is significant, and L − G favours G by 1.8 pp on Act 4 with a wide interval, so the run does not rank
+  the two rules on strength. **Inference:** the learned stop is the cheaper of two non-inferior rules.
+- **Limits:** the learned model was trained at root temperature 1 with student_sel root priors on 4096-sim roots
+  and refuses other temperatures; a change of root temperature, prior network or budget needs new checkpoint data
+  and a retrained model (Philipp 22:09Z). With the learned Silver stop (ADR-0051) real combats get cheaper, so the
+  OOC share of process CPU, and the process ratio, rise.
+- **After the run:** main's unsupported-edge pruning (#686, default on) postdates RUN_COMMIT, so the A/B ran
+  without it. Merging main, the learned stop now shows the model only unpruned root actions, as the gap ladder
+  does; on roots with no pruned action, which were all roots in this run, play is unchanged.
+- **Decision:** Philipp 2026-10-19 21:58Z "Make gap stop the default and merge": ADR-0053 makes `1024:0.7` the OOC
+  MCTS default (`STS_OOC_MCTS_GAP_STOP=0` restores no stop). The learned stop stays opt-in.
+
+Seeds used: 111199495–111200006 (campaign); smoke 111200007, 111200009.
+
+**Knowledge impact:** ADR-0053 (gap-stop default); `GAP_STOP` and `LEARNED_STOP` rows in `architecture/out-of-combat.md`.
+## §565 — Learned OOC MCTS stop (`STS_OOC_MCTS_LEARNED_STOP`) on the CTM-Act-4 A20 stack: offline same-action proxy 99.5% at an estimated 0.50x OOC CPU (gap ladder 0.66x), not a winrate result (2026-10-18)
+
+Philipp asked on 2026-10-18 at 18:15Z: "act 4 fights can just be done by the ctm now. so turn that on, then test
+adpative stop or a model which predicts whether we wont need more simulations". On the card at 21:45Z he chose to
+A/B all three rules (no stop, gap ladder, learned stop); at 22:09Z: "8 workers. make sure we rethink this approach
+when we chang ethe root emperature".
+
+- **Stack:** Putting Act 4 on the CTM needs no code change. Imagined Shield and Spear and Heart fights went to Silver 500
+  only because the campaign scripts set `STS_OOC_MCTS_ACT4_SILVER_SIMS=500`. Without it, they use the A20 CTM with the
+  ADR-0048 survival model. `UNSUPPORTED_SILVER_SIMS=500` stays for CTM-refused fights. Otherwise the stack is that of
+  §539: 4096 sims, student_sel, rollout3, exact visit lock, Silver exact 10k with the g6_E root prior.
+- **Checkpoint data:**
+  - 36 profiled A20 runs on seeds 111198334–369 with binary `ebb958c3…` (main `b807c5b4` + §539).
+  - All runs ended rc=0, with 3 Heart kills and a mean floor of 42.6.
+  - OOC CPU is about 0.26 h per run. The Silver-500 stack used about 1.3 h per run (§539 profile).
+  - 2,210 multi-action roots. Data: `/mnt/project-files/speed-proposals/ctm-data`. The 628 roots of §539 are also used
+    (`gapstop-data`).
+- **Model:**
+  - `tools/ooc_learned_stop.py`.
+  - Label: at a checkpoint c in {128, …, 2048} below the completed simulations, whether the visit leader is the action
+    the full search chose.
+  - 14 features from the root statistics:
+    - visit gap and visit shares;
+    - priors of the leader and the runner-up, and whether the leader is the prior argmax;
+    - Q gaps over visited actions;
+    - number of actions, act, floor and screen.
+  - XGBoost 3.4.1, 300 trees, depth 3, η 0.05, fixed parameters with no tuning. Fit on 14,190 rows from 52 seeds.
+  - Export `models/candidates/ooc_learned_stop_trees.txt`, sha256 `aa928b83…`.
+  - Data sha256 `b934372e…`.
+- **Offline rule comparison:**
+  - Leave-seeds-out, 4 folds by seed. Same-action proxy, not winrate. CPU is an estimate: each root's thread CPU
+    scaled linearly by the simulations kept.
+  - CTM-Act-4 roots (2,210):
+
+    | rule | same action | estimated OOC CPU |
+    |---|---|---|
+    | `GAP_STOP=1024:0.7` | 99.46% (12 differ) | 0.66x |
+    | `GAP_STOP=512,1024:0.8` | 98.96% (23 differ) | 0.53x |
+    | learned TAU 0.995 | 99.77% (5 differ) | 0.60x |
+    | learned TAU 0.99 | 99.55% (10 differ) | 0.50x |
+    | learned TAU 0.98 | 99.23% (17 differ) | 0.41x |
+
+  - On the 628 Silver-Act-4 roots, TAU 0.99 gives 99.36% at 0.52x and `1024:0.7` gives 99.2% at 0.69x.
+  - Reproduce: `python3 tools/ooc_learned_stop.py cv OUT /mnt/project-files/speed-proposals/gapstop-data
+    /mnt/project-files/speed-proposals/ctm-data`.
+- **Change:**
+  - Opt-in `STS_OOC_MCTS_LEARNED_STOP=PATH:TAU`, default off.
+  - The planner calls a host callback at the listed checkpoints. The search stops when the callback returns true and
+    keeps the visit leader.
+  - Requires visit selection, more than 2048 simulations, no `CPU_SECONDS` and `STS_OOC_MCTS_TEMPERATURE=1`. The model
+    was trained at temperature 1 only, so a root-temperature change needs a retrained model.
+  - Off on full-budget, singleton and observed-lock roots.
+  - Run-profile rows gain `early_stop_learned`.
+  - Tests:
+    - `ooc_learned_stop_parity`: features and predictions match the exporter on 256 fixture rows, max error 4e-7.
+    - `ooc-mcts-test` PASS, 245 checks.
+- **Check** (A20, CTM-Act-4 stack):
+  - Seed 111198370, flag off: play files byte-identical to main `c890da5b`. Run profiles are identical apart from the
+    new key.
+  - Seed 111198370, TAU 0.99: 35 of 70 roots stopped by the model, every action the same, OOC CPU 804 → 516 s.
+  - Seed 111198371, TAU 0.99: first different action at decision 71 of 104. Both runs died on floor 56. OOC CPU
+    945 → 543 s.
+  - Seed 111198372: temperature-guard check.
+- **Decision:** none; the flag stays off. Paired three-arm A20 A/B on 8 workers (Philipp 21:45Z, 22:09Z), with
+  PREREG to follow.
+
+Seeds used: 111198334–111198372.
+
+**Knowledge impact:** `LEARNED_STOP` row in the `architecture/out-of-combat.md` option table.
 ## §539 — OOC MCTS gap-ladder stopping (`STS_OOC_MCTS_GAP_STOP`): offline same-action proxy 99.2% at an estimated 0.69x OOC CPU on A20 roots, not a winrate result (2026-10-18)
 
 Philipp asked on 2026-10-18 at 17:36Z: "continue profiling and propose changes. maybe adaptive stopping for

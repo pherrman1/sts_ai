@@ -1,0 +1,26 @@
+{
+ "note": "means over all 512 seeds per arm from each unit .mcts.csv (OOC MCTS thread CPU); descriptive",
+ "arms": {
+  "N": {
+   "units": 512,
+   "mean_mctsCpuSec": 1014.6857559376475,
+   "mean_simulations": 150533.017578125,
+   "mean_oocDecisions": 89.4453125
+  },
+  "G": {
+   "units": 512,
+   "mean_mctsCpuSec": 703.9714693150038,
+   "mean_simulations": 99305.6953125,
+   "mean_oocDecisions": 89.005859375
+  },
+  "L": {
+   "units": 512,
+   "mean_mctsCpuSec": 540.4345650299804,
+   "mean_simulations": 75962.453125,
+   "mean_oocDecisions": 89.037109375
+  }
+ },
+ "L/N mcts_cpu_ratio": 0.5326127442585191,
+ "G/N mcts_cpu_ratio": 0.6937827452445906,
+ "L/G mcts_cpu_ratio": 0.7676938463938713
+}

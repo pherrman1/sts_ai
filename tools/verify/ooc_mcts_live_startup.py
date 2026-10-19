@@ -117,6 +117,24 @@ def main():
         cases.append(('ON accepts 20% gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '2048',
             'STS_OOC_MCTS_GAP_STOP_20': '1', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
             True, '"gapStop20":true'))
+        # ADR-0053: the 1024:0.7 gap ladder is the default above 1024 sims; =0 and a learned stop leave it off.
+        model = str(Path(args.artifact).resolve())
+        for name, extra, present in (('gap stop on by default', {}, True),
+                                     ('gap stop opt-out', {'STS_OOC_MCTS_GAP_STOP': '0'}, False),
+                                     ('learned stop drops the gap default', {'STS_OOC_MCTS_LEARNED_STOP':
+                                         str(root / 'models/candidates/ooc_learned_stop_trees.txt') + ':0.99'}, False)):
+            result = subprocess.run(command, env=env | {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '4096',
+                'STS_OOC_MCTS_COMBAT_MODEL': model} | extra, cwd=root, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+            if result.returncode or ('"gapStop":"1024:0.7"' in result.stdout) != present:
+                raise AssertionError(f'{name}: rc={result.returncode}\n{result.stdout}')
+            print(f'PASS {name}')
+        result = subprocess.run(command, env=env | {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '1024',
+            'STS_OOC_MCTS_COMBAT_MODEL': model}, cwd=root, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+        if result.returncode or '"gapStop"' in result.stdout:
+            raise AssertionError(f'gap default off at 1024 sims: rc={result.returncode}\n{result.stdout}')
+        print('PASS gap default off at 1024 sims')
         cases.append(('20% gap stop requires 2048', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '512',
             'STS_OOC_MCTS_GAP_STOP_20': '1', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
             False, 'STS_OOC_MCTS_GAP_STOP_20 requires 2048'))
