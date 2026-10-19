@@ -1191,9 +1191,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 const auto &hint=choices.at(0).at("liveAction");
                 require(string(hint,"kind")=="choose" && integer(hint,"choiceIndex",1,1)==1,
                         "mechanical event live choice mismatch");
+                // The Spin click latches buttonPressed; Java spins once the
+                // bounce-in (bounceTimer 2 s -> 0) ends, so any timer value qualifies.
                 if(g.curEvent==Event::WHEEL_OF_CHANGE && phase=="SPIN_READY")
                     require(boolean(d,"startSpin") && !boolean(d,"buttonPressed")
-                            && d.at("bounceTimer").is_number() && d.at("bounceTimer").get<double>()==0,
+                            && d.at("bounceTimer").is_number() && d.at("bounceTimer").get<double>()>=0
+                            && d.at("bounceTimer").get<double>()<=2,
                             "Wheel spin readiness mismatch");
                 next.mechanicalEventTransition=true;
             } else if(g.curEvent==Event::OMINOUS_FORGE || g.curEvent==Event::ANCIENT_WRITING) {

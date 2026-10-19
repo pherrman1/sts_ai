@@ -343,6 +343,18 @@ class LiveOocProtocol(unittest.TestCase):
         invalid["ooc"]["details"]["buttonPressed"] = True
         response, = self.run_rows([invalid], model=False)
         self.assertEqual(response["status"], "ERROR", response)
+        # Overnight 2026-10-19: the capture after [Play] lands in the bounce-in.
+        bouncing = copy.deepcopy(observations[-1])
+        bouncing["ooc"]["details"]["bounceTimer"] = 1.85
+        response, = self.run_rows([bouncing], model=False)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        for timer in (-0.5, 2.5):
+            invalid = copy.deepcopy(observations[-1])
+            invalid["ooc"]["details"]["bounceTimer"] = timer
+            response, = self.run_rows([invalid], model=False)
+            self.assertEqual(response["status"], "ERROR", response)
 
     def test_boss_chest_reveal_preserves_skip_without_hidden_offers(self):
         observation = copy.deepcopy(self.fixtures["neow"])

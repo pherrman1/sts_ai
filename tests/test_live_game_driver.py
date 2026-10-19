@@ -10,7 +10,7 @@ from tools.live_game_driver import (
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
-    hand_selection_transaction, grid_selection_transaction,
+    hand_selection_transaction, grid_selection_transaction, _is_wheel_spin,
 )
 
 
@@ -714,6 +714,29 @@ class LiveGameDriverTest(unittest.TestCase):
             driver = Driver(client, InspectorReader(Path(directory) / "missing"), TraceWriter(Path(directory) / "trace"), dry_run=True, poll_timeout=.01, poll_interval=.001)
             with self.assertRaises(DriverError):
                 asyncio.run(driver.step(0))
+
+    def test_wheel_spin_waits_for_the_animation(self):
+        # Overnight 2026-10-19: MCP's Wheel screen is unchanged for ~9 s after Spin.
+        spin = {"screen_type": "EVENT", "choice_list": ["spin"], "ready_for_command": True,
+                "screen_state": {"event_id": "Wheel of Change", "options": [{"label": "spin"}]}}
+        action = LegalAction("a0", "Choose 1: spin", "choose", {"choice_index": 1},
+                             {"choice": "spin", "choice_index": 1, "kind": "choice"})
+        self.assertTrue(_is_wheel_spin(spin, action))
+        self.assertFalse(_is_wheel_spin({**spin, "screen_state": {"event_id": "Transmorgrifier"}}, action))
+        self.assertFalse(_is_wheel_spin(spin, LegalAction("a0", "Play", "choose", {"choice_index": 1},
+                                                          {"choice": "[Play]", "kind": "choice"})))
+        complete = {**spin, "choice_list": ["[Leave]"]}
+        with tempfile.TemporaryDirectory() as directory:
+            for extra, advances in ((0.0, False), (1.0, True)):
+                client = FakeClient([spin] * 60 + [complete], ["choose"])
+                driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                                TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.002)
+                if advances:
+                    post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
+                    self.assertEqual(post["choice_list"], ["[Leave]"])
+                else:
+                    with self.assertRaises(DriverError):
+                        asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
 
     def test_dry_run_never_mutates(self):
         with tempfile.TemporaryDirectory() as directory:

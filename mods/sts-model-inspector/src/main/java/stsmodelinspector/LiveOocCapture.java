@@ -583,6 +583,21 @@ final class LiveOocCapture {
         return liveId;
     }
 
+    /**
+     * Wheel of Change after [Play]: the screen stays INTRO, MCP offers only
+     * "spin", and its click latches buttonPressed. update() starts the spin
+     * once the 2 s bounce-in (bounceTimer counting down to 0) ends, so a click
+     * during the bounce is the same action as one after it. The driver acts
+     * within ~0.15 s of [Play], i.e. during the bounce (overnight 2026-10-19).
+     */
+    static boolean wheelSpinReady(boolean noActiveButtons, int labelCount, String phase,
+            Object startSpin, Object buttonPressed, Object bounceTimer) {
+        return noActiveButtons && labelCount==1
+                && "INTRO".equals(phase) && Boolean.TRUE.equals(startSpin)
+                && Boolean.FALSE.equals(buttonPressed)
+                && bounceTimer instanceof Float && (Float)bounceTimer >= 0f && (Float)bounceTimer <= 2f;
+    }
+
     static boolean simpleInitialEventSupported(String simple) {
         return Arrays.asList("BigFish", "GoldShrine",
                 "LivingWall", "Sssserpent", "Mushrooms", "TheLibrary",
@@ -1158,10 +1173,10 @@ final class LiveOocCapture {
             options.add(object("index", index, "disabled", false));
             add(cs, labels, i, "option", index, 0);
         }
-        if ("GremlinWheelGame".equals(simple) && active.isEmpty() && labels.size()==1
-                && "INTRO".equals(phase) && Boolean.TRUE.equals(field(event,"startSpin"))
-                && Boolean.FALSE.equals(field(event,"buttonPressed"))
-                && Float.valueOf(0f).equals(field(event,"bounceTimer"))) {
+        boolean wheel="GremlinWheelGame".equals(simple);
+        Object wheelBounce=wheel?field(event,"bounceTimer"):null;
+        if (wheel && wheelSpinReady(active.isEmpty(), labels.size(), String.valueOf(phase),
+                field(event,"startSpin"), field(event,"buttonPressed"), wheelBounce)) {
             // MCP's special Spin click sets buttonPressed; no dialog button
             // exists, and the already rolled result remains private.
             phase="SPIN_READY";
@@ -1174,7 +1189,7 @@ final class LiveOocCapture {
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
                 "potionIdx", -1, "gold", -1, "cardIdx", -1));
         if("SPIN_READY".equals(phase))map(out.get("details")).putAll(object(
-                "startSpin",true,"buttonPressed",false,"bounceTimer",0));
+                "startSpin",true,"buttonPressed",false,"bounceTimer",wheelBounce));
         // Only initial phases with native one-to-one option indices qualify.
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
         if (!simpleInitialEventSupported(simple) || !initial)
