@@ -21242,7 +21242,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §562 — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
+## §563 — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
 
 **Question:** which of the overnight representation-only mismatches (§545 list, problems 8 and 15, Hexaghost move
 history) can change play, and which only differ in how the state is written?
@@ -21536,6 +21536,31 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
+## §562 — Runic Dome: every first-turn live Dome root was refused (roll clock and omitted nulls) (2026-10-19)
+
+**Question:** why did live seed 111194466 (release 1e2cad47) stop in the first fight after Runic Dome
+(TWO_THIEVES, Act 2 floor 18, turn 1, Looter 48 HP and Mugger 53 HP, occupant generation 1) with
+`silver_runic_dome_occupant_schema`, also after a game restart (overnight list problem 26)? Seed 111194467 then
+stopped the same way at THREE_BYRDS (floor 18, turn 1, first fight after Runic Dome).
+**Setup:** the failure observations relayed byte-exact from Philipp's PC (`engine-parity/overnight-20261019/` on the
+share; now `tests/fixtures/live_runic_dome_two_thieves_turn1.json` and `live_runic_dome_three_byrds_turn1.json`), code reading of `importBoundedRunicDome` and the
+mod's `RunicDomeCapture`/`RunicDomeTracker`; `live_silver_importer_test` (no gameplay seeds).
+**Result:** both occupants are initial, unexecuted, with one pending roll and `rollGlobalTurn` 1 (epoch 4 and, after the
+restart, epoch 1). The tracker stamps rolls with `GameActionManager.turn`, which already reads 1 at the combat-start
+roll, while the importer's global clock puts that roll at native turn 0 and requires `rollGlobalTurn <= turn` (0 at
+player turn 1). With that check relaxed, the real roots then failed `silver_runic_dome_known_next_schema`: the
+snapshot is written with a default `Gson`, which omits the null `knownNextMove` and `knownRollPredecessor` members the
+importer requires. So every Dome fight was refused at its first decision; the existing tests used `rollGlobalTurn` 0
+and explicit nulls. (`firstHp` 48 on the Mugger row is the first monster's HP, as specified.)
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_WIRE_FIX` (default on, `=0` restores) imports the first roll of
+an initial occupant that has not executed (Writhing Mass: the front pending roll) at global turn 0 and a missing
+nullable member as null. The pending roll's
+`monsterTurnNumber` is 1 in both clocks (`max(1, rollGlobalTurn)`; native `getMonsterTurnNumber()` at `turn` 0), so
+the imported state is unchanged; only the refusal goes. The test imports the seed's rows (turn 1, and 9 as a
+hypothetical stale counter) exactly like turn 0, and rolls after a first execution keep the strict clock. Both
+captured roots are refused with `=0` and import and search (1,000 simulations) with the fix.
+**Open question:** later turns of a live Dome fight are not yet exercised live.
+Seeds: none new (live seeds 111194466 and 111194467 as captured; unit test only).
 ## §561 — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
 
 **Question:** why were all 39 `player.relicBits0` parity mismatches in live seed 111194465 bit 8 (Centennial Puzzle),
