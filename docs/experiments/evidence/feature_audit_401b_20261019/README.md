@@ -1,6 +1,6 @@
 # #401 Stage 1 for the deployed learned models (student_sel, g7f_E, A20 CTM)
 
-Ledger: [`ledger-06.md` §TBD](../../ledger-06.md). Analysis only: no gameplay seeds, no `one_combat` runs.
+Ledger: [`ledger-06.md` §546](../../ledger-06.md). Analysis only: no gameplay seeds, no `one_combat` runs.
 Run 2026-10-18/19 in a cloud container (PyTorch 2.14.1 CPU, fp32, one torch thread per audit).
 
 | model | artifact (sha256) | held-out split | report |

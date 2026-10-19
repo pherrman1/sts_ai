@@ -3063,7 +3063,7 @@ NLL; refit noise about ±0.05–0.15 MSE). Adding the 12 forward-map columns, th
 tested, cuts A20 floor MSE by 2.15 [1.80, 2.51] (win borderline). These are offline error changes on
 the generator's own runs, not win-rate changes; the A0 refit on the #334 fragment resolves nothing.
 No model or contract changed; the forward map is the recommended addition for the next A20 retrain.
-#401 Stage 1 for the deployed learned models (ledger-06 §TBD, permutation on each model's own held-out split):
+#401 Stage 1 for the deployed learned models (ledger-06 §546, permutation on each model's own held-out split):
 student_sel reads mainly the offered cards and `select_screen_type`; its `--extra-inputs` (relic counters, act,
 deck misc) and the map node tokens contribute about nothing, and its value head is untrained (output about −0.03;
 no search path reads it, only diagnostic annotations show it; it is to be trained in the AlphaZero loop). g7f_E reads the candidate card,

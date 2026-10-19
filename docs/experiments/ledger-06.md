@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — #401 Stage 1 for the deployed learned models: student_sel reads offered cards and screen type, g7f_E candidate card and monsters, the A20 CTM act and room type; student_sel's value head is untrained (2026-10-19)
+## §546 — #401 Stage 1 for the deployed learned models: student_sel reads offered cards and screen type, g7f_E candidate card and monsters, the A20 CTM act and room type; student_sel's value head is untrained (2026-10-19)
 
 **Question:** issue #401 Stage 1 (§438 covered only the tree value models): which semantic input groups do the
 deployed student_sel OOC policy, the g7f_E Silver root prior and the A20 CTM read on held-out data, and which
