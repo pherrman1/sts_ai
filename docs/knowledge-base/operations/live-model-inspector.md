@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-18 for the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -717,8 +717,9 @@ read-only screen and choice converters. The observation contains:
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
-  `seenRelics` list is accepted only when its producer marks the history
-  complete. The Java observer accumulates visible shop, reward and boss offers
+  `seenRelics` list fully qualifies relic pools only when its producer marks
+  the history complete; an incomplete list still excludes the offers it names
+  under the relic offer prior below. The Java observer accumulates visible shop, reward and boss offers
   from a fresh Neow boundary. `RelicOfferRecorder` captures those offers before
   shop/reward input and persists the ledger with the BaseMod run-save field
   `stsmodelinspector:relicOffersV1`. Restoration validates schema version,
@@ -824,9 +825,19 @@ Validated historical boss `picked`/`not_picked` metrics contribute known
 exclusions without marking that global history complete. Legacy normal/elite
 encounter history can be recovered only from canonical encounter identities
 joined to validated resolved public path floors. An uninterrupted
-fresh-run observer accumulates them from each public screen; random-relic
-branches and direct MAP search fail closed with
-`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
+fresh-run observer accumulates them from each public screen. When that
+ledger is incomplete (a save from before the recorder, a mid-run install, or
+an unopened shop), the importer keeps the remaining pool superset as a public
+prior (`STS_LIVE_RELIC_OFFER_PRIOR`, default 1, issue #637). Native pools are
+one uniform shuffle consumed regardless of identity, so given the known
+exclusions the unknown future draws are a uniform sample without replacement
+from that superset, which is what the per-particle pool reshuffle in OOC MCTS
+samples. **Inference:** it is exact up to native redraws of relics that cannot
+spawn and real pool exhaustion changing the tier fallback. Random-relic branches and downstream MAP search are then supported,
+the evaluator reports `seenRelicOfferPrior=true`, and differential tracing
+rejects such roots (`DIFFERENTIAL_SEEN_RELIC_PRIOR_UNREPRESENTABLE`).
+`STS_LIVE_RELIC_OFFER_PRIOR=0` restores the fail-closed
+`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED`. The
 resolved `?`-room outcomes are recovered from vanilla's persisted
 `path_per_floor`, checked against `path_taken`, with the current public room
 allowed to complete the current floor. Continuing a save made after a boss
@@ -1096,9 +1107,13 @@ Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
 When a full belt blocks a visible potion reward or affordable shop potion,
 MCTS enumerates each held-slot discard using public potion identity and duplicate
-occurrence. Sozu prevents these replacement actions. The driver requires the
-advertised `discard_potion` command and slot permission; discarding never takes
-a monster target. The next observation scores the actual refill separately.
+occurrence. Sozu prevents these replacement actions. MCPTheSpire 1.0.4-dev never lists
+`discard_potion` in `get_available_commands`, but outside the `COMBAT` room
+phase its executor accepts `potion discard N` whenever a potion is held
+(bytecode of `MCPToolHandler`/`CommandExecutor`). The driver therefore offers
+`discard_potion` on combat-reward and shop screens when MCP reports a
+non-`COMBAT` `room_phase`, and only for slots with `can_discard`; other
+screens keep their exact advertised surface; discarding never takes a monster target. The next observation scores the actual refill separately.
 Shop mapping validation includes the semantic discard actions before model
 loading. Both native and captured shop purchases require a free potion slot
 and no Sozu; MCP can advertise a purchase that would not obtain a potion.
