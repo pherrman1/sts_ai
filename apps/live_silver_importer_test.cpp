@@ -1928,6 +1928,17 @@ int main(int argc, char **argv) {
                 bc.monsters.arr[0].materializePendingMove(bc);
                 if(javaMoveByte("TheGuardian",bc.monsters.arr[0].moveHistory[0])!=target || (phase && bc.aiRng!=rng))
                     throw std::runtime_error("Guardian phase consumed RNG or changed move");
+                if(phase==0) {
+                    // An exhausted Mode Shift without its queued shift
+                    // (GUARDIAN_DEFENSIVE_SHIFT) is refused at a normal decision.
+                    for(const int amount:{0,-3}) {
+                        auto unqueued=obs;
+                        unqueued["silverRoot"]["combat"]["monsters"][0]["powers"].back()["amount"]=amount;
+                        const auto refused=one_combat::advisor::importSilverRoot(unqueued);
+                        if(refused.ok || refused.reason!="silver_unmapped_monster_power")
+                            throw std::runtime_error("unqueued exhausted Mode Shift accepted: "+refused.reason);
+                    }
+                }
                 if(phase==4) {
                     c["monsters"][0]["powers"].push_back({{"id","Mode Shift"},{"amount",1}});
                     if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("Guardian contradictory forced defense accepted");
