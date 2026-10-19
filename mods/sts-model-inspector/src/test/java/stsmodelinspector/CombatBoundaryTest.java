@@ -21,8 +21,19 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","AcidSlime_L",boss,true,true,retired))
             throw new AssertionError("unqualified parent was hidden");
     }
+    private static void verifyChosenAndByrds() {
+        // Overnight seed 111194461 floor 31: Byrd + Chosen had no encounter id.
+        java.util.Map<String,Integer> counts=new java.util.HashMap<>();
+        counts.put("Byrd",1);counts.put("Chosen",1);
+        if(!"CHOSEN_AND_BYRDS".equals(STSModelInspector.multiEncounterName(counts,false)))
+            throw new AssertionError("one Byrd + Chosen is CHOSEN_AND_BYRDS");
+        counts.put("Byrd",2);
+        if(!STSModelInspector.multiEncounterName(counts,false).isEmpty())
+            throw new AssertionError("two Byrds + Chosen is not a native encounter");
+    }
     public static void main(String[] args) {
         verifyRetiredSlimeBoss();
+        verifyChosenAndByrds();
         // Vanilla Searing Blow writes its repeat-upgrade count, while Rampage
         // grows baseDamage through ModifyDamageAction without changing misc.
         if (STSModelInspector.combatCardMisc("Searing Blow", 0, 3, 27) != 3
