@@ -409,7 +409,12 @@ failure reproduction commands. Vanilla `CardCrawlGame.render()` returns before
 updating the game when `getRawDeltaTime()` exceeds 0.1 seconds. Repeated slow
 software-rendered frames can therefore advance an animation much more slowly
 than wall time; extending the wait does not change the animation or reapply its
-effect. Advisor waiting remains separately configured by `--inspector-timeout`.
+effect. The Wheel of Change Spin click adds 10 seconds to that wait: MCP's
+screen is unchanged while Java finishes the bounce-in, spins and bounces out
+(about 9 seconds) before the result dialog appears. The inspector qualifies the
+Spin page (`SPIN_READY`) during the bounce-in as well, because MCP's click only
+latches `buttonPressed` and Java starts the spin when the bounce ends.
+Advisor waiting remains separately configured by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 
