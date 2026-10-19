@@ -21206,6 +21206,27 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
+## §556 — Perfected Strike count: the live importer counted exhausted Strikes (2026-10-19)
+
+**Question:** why does native Perfected Strike count one Strike more than the game (overnight problem 10), and why
+does the probe report `strikeCount` game 5 / native 4 after Havoc exhausts a Strike (canary 2, §536/§544)?
+**Setup:** evidence from §545 (seed 111194455 Act 2 CHOSEN segment 4 step 1: 53 -> 29 in the game, 53 -> 26 natively,
+Vulnerable 3) and canary 2 summaries parity3/parity8 (Havoc+ steps). Java checked read-only with `javap -c -p` on the
+pinned `desktop-1.0.jar` (sha256 cfad868a...1673) on Philipp's PC; no game was driven.
+**Result:** `PerfectedStrike.countCards` iterates `hand`, `drawPile` and `discardPile` only (not exhaust, not limbo).
+`importSilverRoot` recounted `strikeCount` over draw, discard, exhaust, hand, limbo and Stasis, while native combat
+decrements it on exhaust and Stasis. Every earlier exhausted Strike (Havoc, Fiend Fire) therefore added one in the
+imported pre-state (problem 10), and the probe's recounted post-state showed one more than native after an exhaust
+(the canary entries). Second Java difference in the same path: `PlayTopCardAction` removes the card from the draw pile,
+puts it in limbo and `UnlimboAction` removes it before `NewQueueCardAction` runs, so a Havoc- or Mayhem-autoplayed
+Perfected Strike does not count itself; natively it did. From hand, `AbstractPlayer.useCard` calls
+`calculateCardDamage` before `hand.removeCard`, so it counts itself in both.
+**Interpretation:** `STS_STRIKE_COUNT_FIX` (default on, `=0` restores) skips exhaust and Stasis in the importer recount
+and drops the autoplayed card from its own count. Checked by `tests/strike_count_test.cpp` and a
+`live_silver_importer_test` case (exhausted Strike: legacy count one higher, Perfected Strike 2 more damage). Havoc's
+`lastTargetedMonster` difference is not part of this: Java's `PlayTopCardAction` writes no last-target field.
+**Unverified:** effect on win rate (expected tiny; Perfected Strike decks only). No seeds were driven (unit-test seed
+111200141).
 ## §554 — Discovery parity: frame-dependent cardRandomRng and pile turn-cost reset (2026-10-19)
 
 **Question:** why do Discovery picks leave `cardRandomRng` at counter 185-194 in Java and 3-4 natively, and why does
@@ -21416,7 +21437,7 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
-## §556 — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
+## §557 — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
 
 **Question:** why were all 39 `player.relicBits0` parity mismatches in live seed 111194465 bit 8 (Centennial Puzzle),
 mostly at End Turn (trace4 segment 3 steps 10, 17, 40, 47; problem 24 in `engine-parity/overnight-20261019/ISSUES.md`
