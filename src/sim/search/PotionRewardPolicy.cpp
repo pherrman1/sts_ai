@@ -27,7 +27,7 @@ int search::potionKeepRank(Potion p) {
     // SilverEvalWeights::winBonus (53). Mean of the two ascensions.
     switch (p) {
         // Blood Potion was fitted while the combat engine healed 40% of max HP
-        // (STS_BLOOD_POTION_HEAL_FIX). Refit (§TBD): paired one-fight copies
+        // (STS_BLOOD_POTION_HEAL_FIX). Refit (§552): paired one-fight copies
         // with one Blood Potion added, heal fix on vs off, A20: -3.82 HP-eq;
         // the A0 value is shifted by -3.82 x 0.721 (A0/A20 old excess heal per
         // held fight). STS_POTION_KEEP_BLOOD_REFIT=0 restores 1163.
