@@ -117,6 +117,14 @@ namespace sts {
     // fatal. Read only when a Blood Potion is drunk in combat.
     bool bloodPotionHealFix();
 
+    // STS_HALF_DEAD_POWER_RESET_FIX: unset/1 (default) = a Darkling going
+    // half-dead loses its power amounts as well as its status bits, as in
+    // Darkling.damage (powers.clear(); overnight parity 2026-10-19: Vulnerable
+    // and Weak left on killed Darklings). Without it a debuff on the revived
+    // Darkling adds to the stale amount. 0 = the legacy engine. Other values
+    // are fatal. Read only when a Darkling goes half-dead.
+    bool halfDeadPowerResetFix();
+
     // STS_STRIKE_COUNT_FIX: unset/1 (default) = Perfected Strike counts Strikes
     // in hand, draw and discard only, as Java PerfectedStrike.countCards: a
     // Havoc/Mayhem-autoplayed Perfected Strike does not count itself, and the

@@ -74,6 +74,13 @@ namespace sts {
         throw std::runtime_error("STS_BLOOD_POTION_HEAL_FIX must be 0 or 1");
     }
 
+    bool halfDeadPowerResetFix() {
+        const char *value = std::getenv("STS_HALF_DEAD_POWER_RESET_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_HALF_DEAD_POWER_RESET_FIX must be 0 or 1");
+    }
+
     bool strikeCountFix() {
         const char *value = std::getenv("STS_STRIKE_COUNT_FIX");
         if (!value || !*value || std::string(value) == "1") return true;

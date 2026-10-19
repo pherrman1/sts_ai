@@ -2,6 +2,8 @@
 
 #include <iosfwd>
 
+#include "sim/search/SilverBridge.h"
+
 namespace one_combat::parity {
 
 // Exact one-step combat parity against the real game. Each input JSONL row
@@ -14,5 +16,10 @@ namespace one_combat::parity {
 // Every step restarts from the game's own state. Test-only: nothing here
 // reaches the live advisor or any experiment.
 int runCombatParityProbe(std::istream &input, std::ostream &output);
+
+// Applied to both projected successors before they are compared: clears
+// native leftovers and representation-only differences that no decision
+// reads, so they do not count as mismatches.
+void dropInactivePayloads(silver_bridge::BattleStateWire &w);
 
 }
