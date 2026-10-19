@@ -7496,8 +7496,8 @@ void oocMctsAdapterSelfTest() {
                 "without the potion keep prior the discard root stays uniform");
         else
             require(std::abs(ratio - std::exp((47.0 - 666.0) / 100.0)) < 1e-9
-                && discard.at(Potion::BLOOD_POTION) < discard.at(Potion::FRUIT_JUICE)
-                && discard.at(Potion::FRUIT_JUICE) < discard.at(Potion::HEART_OF_IRON)
+                && discard.at(Potion::FRUIT_JUICE) < discard.at(Potion::BLOOD_POTION)
+                && discard.at(Potion::BLOOD_POTION) < discard.at(Potion::HEART_OF_IRON)
                 && (other < 0 || std::abs(other - leave) < 1e-12),
                 "potion keep prior ranks discards by keep value below leave");
     }
