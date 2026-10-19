@@ -247,6 +247,10 @@ became Wrist Blade (+4 on 0-cost attacks). This affected the live advisor and th
 parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
+The same night, on seed 111194455, player Thorns killed a Byrd partway
+through its Peck; the game skipped its remaining pecks and native landed them
+(46 vs 44 HP). `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) cancels a
+dead or half-dead monster's queued hits, as Java's `DamageAction` does.
 
 The same overnight runs (problem 10) showed Perfected Strike hitting harder
 natively (53 -> 26 HP vs 29 in the game: one more Strike counted). Java
