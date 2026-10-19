@@ -3151,7 +3151,7 @@ int main(int argc, char **argv) {
     // Budgeted Silver policies ignore the caller's budget. Whole-run modes
     // called without a sims argument use one by default: learned stopping
     // (ADR-0026, replacing the #199 adaptive default of ADR-0018). At A20 the
-    // whole-run modes use it with a sims argument too (ADR-TBD); the argument
+    // whole-run modes use it with a sims argument too (ADR-0051); the argument
     // then no longer sets the budget, and STS_SILVER_LEARNED_STOP=0 restores
     // flat Silver at it. Every other call searches the flat caller budget
     // unless a policy is configured.
@@ -3172,7 +3172,7 @@ int main(int argc, char **argv) {
                 std::cout << "[A20 default: Silver learned stopping, sims argument " << argv[2]
                           << " not used as budget; STS_SILVER_LEARNED_STOP=0 restores flat Silver]" << std::endl;
         } else if (learnedRequested || ((!wholeRunDefault || (a20WholeRun && argc > 2)) && !adaptiveConfigured)) {
-            // At A20 with a sims argument, STS_SILVER_LEARNED_STOP=0 is flat Silver at it, as before ADR-TBD.
+            // At A20 with a sims argument, STS_SILVER_LEARNED_STOP=0 is flat Silver at it, as before ADR-0051.
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
         }
     }

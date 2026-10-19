@@ -46,7 +46,7 @@ namespace sts::search {
     inline constexpr std::array<std::int64_t, 7> kNativeSilverStopCheckpoints {250, 500, 1000, 2000, 4000, 8000, 10000};
 
     // The selected stop model (NativeSilverStopModel.cpp). STS_SILVER_LEARNED_STOP_MODEL
-    // names it by id; unset selects the A20 model (ADR-TBD), and the A0 model's id
+    // names it by id; unset selects the A20 model (ADR-0051), and the A0 model's id
     // (gbt-770201c31f7b, ADR-0026) restores it. Any other value throws.
     bool nativeSilverStopModelTrained();
     const char *nativeSilverStopModelId();

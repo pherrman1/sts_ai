@@ -259,7 +259,7 @@ are intentionally not overwritten by `applyCombatTransitionState`.
 consumers) also accepts a learned-stop teacher (#418): `search_configuration`
 sets `"budget_policy": "learned_stop"` with `learned_stop_model` and
 `learned_stop_threshold` equal to the selected stop model
-(`gbt-770201c31f7b`, `0.0323` for the existing teachers; since ADR-TBD that model
+(`gbt-770201c31f7b`, `0.0323` for the existing teachers; since ADR-0051 that model
 needs `STS_SILVER_LEARNED_STOP_MODEL=gbt-770201c31f7b`). The frozen environment then requires
 `STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`, and the
 process must run plain learned stopping (no adaptive, searched one-action

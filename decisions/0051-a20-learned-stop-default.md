@@ -1,4 +1,4 @@
-# ADR-TBD: A20 whole runs default to learned Silver stopping with the retrained A20 stop model
+# ADR-0051: A20 whole runs default to learned Silver stopping with the retrained A20 stop model
 
 Date: 2026-10-18
 Status: accepted

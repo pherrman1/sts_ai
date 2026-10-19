@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-18 for the A20 learned-stop default and stop model (ADR-TBD); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -40,7 +40,7 @@ explicit sims argument selects flat Silver at that budget, except in A20
 `run`, `bestbench` and `reprobench`. Those three modes use a budget policy by
 default when called without a sims argument, and at A20 also with one:
 learned stopping (ADR-0026, which replaced the #199 adaptive default of
-ADR-0018; extended to A20 with a sims argument by ADR-TBD).
+ADR-0018; extended to A20 with a sims argument by ADR-0051).
 `STS_SILVER_ADAPTIVE=1` selects #199, and at A20 with a sims argument
 `STS_SILVER_LEARNED_STOP=0` restores flat Silver. The stop model is
 `gbt-0cac7cc64364`, retrained on 384 A20 stop-trace runs (§543: 58.1% vs

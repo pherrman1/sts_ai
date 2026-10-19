@@ -738,7 +738,7 @@ add_test(NAME silver_learned_stop_rejects_small_boss_max
 set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
-# ADR-TBD: STS_SILVER_LEARNED_STOP_MODEL selects a compiled stop model by id; A20
+# ADR-0051: STS_SILVER_LEARNED_STOP_MODEL selects a compiled stop model by id; A20
 # whole-run modes default to learned stopping even with a sims argument.
 add_test(NAME silver_learned_stop_rejects_unknown_model
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
