@@ -644,7 +644,11 @@ void ActData_HealPlayer::operator()(BattleContext &bc) const {
     }
 
 void ActData_MonsterGainBlock::operator()(BattleContext &bc) const {
-        bc.monsters.arr[idx].block += amount;
+        auto &m = bc.monsters.arr[idx];
+        // GainBlockAction.update skips a dying or dead target; a half-dead
+        // monster is neither (STS_DEAD_MONSTER_BLOCK_FIX=0 restores).
+        if (m.isDying() && !m.isHalfDead() && deadMonsterBlockFix()) return;
+        m.block += amount;
     }
 
 void ActData_SetMonsterMove::operator()(BattleContext &bc) const {

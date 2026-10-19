@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-19 for the driver's Smoke Bomb escape wait and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-19 for the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -1146,12 +1146,19 @@ check accepts the other copies' clicks as the same choice (`validateLiveOocActio
 When a full belt blocks a visible potion reward or affordable shop potion,
 MCTS enumerates each held-slot discard using public potion identity and duplicate
 occurrence. Sozu prevents these replacement actions. MCPTheSpire 1.0.4-dev never lists
-`discard_potion` in `get_available_commands`, but outside the `COMBAT` room
-phase its executor accepts `potion discard N` whenever a potion is held
+`discard_potion` in `get_available_commands`, but its executor accepts
+`potion discard N` whenever a potion is held, with no room-phase check
 (bytecode of `MCPToolHandler`/`CommandExecutor`). The driver therefore offers
 `discard_potion` on combat-reward and shop screens when MCP reports a
-non-`COMBAT` `room_phase`, and only for slots with `can_discard`; other
+non-`COMBAT` `room_phase`, and in `COMBAT` wherever MCP advertises
+`use_potion` (no screen up), always only for slots with `can_discard`; other
 screens keep their exact advertised surface; discarding never takes a monster target. The next observation scores the actual refill separately.
+The combat case serves Silver's only discard edge, a discard that frees a
+slot for a held Entropic Brew (`SilverSearcher.cpp`
+`potionDiscardEnablesEntropicBrew`); `STS_LIVE_COMBAT_POTION_DISCARD=0`
+restores the advertised-only combat surface, where such a choice stops the
+driver with a mapping failure. The deterministic fallback policy never
+discards in combat.
 Shop mapping validation includes the semantic discard actions before model
 loading. Both native and captured shop purchases require a free potion slot
 and no Sozu; MCP can advertise a purchase that would not obtain a potion.

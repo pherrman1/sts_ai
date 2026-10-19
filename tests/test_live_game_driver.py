@@ -527,6 +527,29 @@ class LiveGameDriverTest(unittest.TestCase):
         game["potions"][0]["can_discard"] = False
         self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(screen, commands, game)])
 
+    def test_in_combat_discard_before_entropic_brew_maps(self):
+        # Seed 111194466 floor 11: Silver chose "Discard Swift Potion" ahead
+        # of Entropic Brew; MCP executes the discard but never lists it.
+        import os
+        from unittest import mock
+        game = {"potions": [{"id": "Swift Potion", "can_use": True, "can_discard": True},
+                            {"id": "EntropicBrew", "can_use": True, "can_discard": True}]}
+        screen = combat_screen()
+        commands = {"available_tools": [{"tool": "play_card"}, {"tool": "use_potion"}, {"tool": "end_turn"}],
+                    "room_phase": "COMBAT"}
+        selected = {"discard": True, "kind": "potion", "potionSlot": 1}
+        actions = build_legal_actions(screen, commands, game)
+        chosen = map_silver_action(selected, actions)
+        self.assertEqual((chosen.mcp_tool, chosen.mcp_arguments), ("discard_potion", {"potion_slot": 1}))
+        self.assertEqual(map_silver_action({**selected, "discard": False}, actions).mcp_tool, "use_potion")
+        self.assertNotEqual(choose_deterministic_action(screen, actions).mcp_tool, "discard_potion")
+        # Without an advertised use_potion (e.g. a screen up) the surface stays exact.
+        self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(
+            screen, {**commands, "available_tools": [{"tool": "end_turn"}]}, game)])
+        with mock.patch.dict(os.environ, {"STS_LIVE_COMBAT_POTION_DISCARD": "0"}):
+            with self.assertRaises(IntegrationFailure):
+                map_silver_action(selected, build_legal_actions(screen, commands, game))
+
     def test_unadvertised_discard_leaves_single_action_navigators_alone(self):
         fairy = [{"id": "FairyPotion", "can_discard": True}]
         boss = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
