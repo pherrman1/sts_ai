@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §550 — Discovery parity: frame-dependent cardRandomRng and pile turn-cost reset (2026-10-19)
+## §554 — Discovery parity: frame-dependent cardRandomRng and pile turn-cost reset (2026-10-19)
 
 **Question:** why do Discovery picks leave `cardRandomRng` at counter 185-194 in Java and 3-4 natively, and why does
 the played Discovery copy show `costForTurn` 1 in Java's discard pile and 0 natively (§536, §544, §545 list)?
