@@ -61,6 +61,10 @@ namespace sts::search {
             // Research-only per-type potion weights (STS_SILVER_POTION_WEIGHTS).
             bool potionTypeWeightsOn = false;
             std::array<double, kSilverPotionTypeCount> potionTypeWeights{};
+            double concaveHpK = 0;           // STS_SILVER_CONCAVE_HP_LEAF (research; 0 = off)
+            // Research-only victory-leaf resource weights (STS_SILVER_GOLD_WEIGHT, STS_SILVER_MAXHP_WEIGHT).
+            double goldWeight = SilverEvalWeights{}.goldWeight;
+            double maxHpWeight = SilverEvalWeights{}.maxHpWeight;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -74,6 +78,9 @@ namespace sts::search {
             // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
             std::string rolloutRootTablePath;
             int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
+            // ADR-0050: real boss and elite fights use prior-argmax playouts (RolloutConfig::prior)
+            // when the root prior is on (STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE; =0 restores greedy).
+            bool priorPlayoutBossElite = true;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -557,6 +564,9 @@ namespace sts::search {
                     searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
                     searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
                     searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
+                    searcher->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
+                    searcher->evalWeights.goldWeight = g_options.goldWeight;
+                    searcher->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         searcher->explorationParameter = params->exploration;
                         searcher->explorationParameterChance = params->explorationChance;
@@ -569,6 +579,7 @@ namespace sts::search {
                 if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
 
                 searcher->leafSamples = g_nativeSilverLeafSamples;
+                searcher->outcomes = g_nativeSilverOutcomeCapture;
                 searcher->rootPrior = nativeSilverRootPrior(*searcher);
                 searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
                 searcher->rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
@@ -584,6 +595,21 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                // ADR-0050: boss and elite rooms of whole-run fights play prior playouts. A rollout,
+                // root-prior or prior-net override (research arms, source runs, imagined OOC fights)
+                // keeps its own setting, as the whole-run tree prior above does.
+                if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
+                        && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
+                        && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
+                        && (gc.curRoom == Room::BOSS || gc.curRoom == Room::ELITE))
+                    searcher->rolloutConfig.prior = true;
+                searcher->rolloutPrior = nullptr;
+                if (searcher->rolloutConfig.prior) {
+                    // Research: prior playouts score with the root-prior model (or the arm's override).
+                    if (g_options.rootPriorPath.empty() && !g_nativeSilverPriorNetOverride)
+                        throw std::runtime_error("STS_SILVER_ROLLOUT_PRIOR requires STS_SILVER_ROOT_PRIOR");
+                    searcher->rolloutPrior = nativeSilverPolicyPrior;
+                }
                 if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
                         ? g_nativeSilverRolloutRootTableOverride
                         : g_options.rolloutRootTablePath.empty() ? nullptr : &rolloutRootTableNet()) {
@@ -860,6 +886,27 @@ namespace sts::search {
             g_options.potionTypeWeightsOn = true;
             g_options.potionTypeWeights = parseSilverPotionWeights(raw, SilverEvalWeights{}.potionWeight);
         }
+        if (const char *raw = std::getenv("STS_SILVER_CONCAVE_HP_LEAF"); raw && *raw) {
+            char *end = nullptr;
+            g_options.concaveHpK = std::strtod(raw, &end);
+            if (end == raw || *end != '\0' || !std::isfinite(g_options.concaveHpK) || g_options.concaveHpK < 0
+                    || g_options.concaveHpK > 20)
+                throw std::runtime_error("STS_SILVER_CONCAVE_HP_LEAF must be a number in [0, 20] (0 = off)");
+        }
+        for (const auto &[name, target] : {std::pair<const char *, double *>{"STS_SILVER_GOLD_WEIGHT", &g_options.goldWeight},
+                                            {"STS_SILVER_MAXHP_WEIGHT", &g_options.maxHpWeight}}) {
+            if (const char *raw = std::getenv(name); raw && *raw) {
+                char *end = nullptr;
+                *target = std::strtod(raw, &end);
+                if (end == raw || *end != '\0' || !std::isfinite(*target) || *target < 0 || *target > 100)
+                    throw std::runtime_error(std::string(name) + " must be a number in [0, 100]");
+            }
+        }
+        if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
+                || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn)
+            std::cerr << "[silver] research leaf: gold=" << g_options.goldWeight << " maxhp=" << g_options.maxHpWeight
+                      << " concave=" << g_options.concaveHpK << " potionWeights=" << (g_options.potionTypeWeightsOn ? "on" : "off")
+                      << "\n";
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
             g_options.learnedStop = std::atoi(raw) != 0;
         }
@@ -904,14 +951,20 @@ namespace sts::search {
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
         }
-        // ADR-0046: the per-root rollout card table is on by default with the bundled gen-6 E
-        // prior; STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
+        // ADR-0046: the per-root rollout card table is on by default with the bundled gen-7f E
+        // prior (ADR-TBD); STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
         // selects another combat_policy_mlp model. The model loads at the first search
         // (rolloutRootTableNet), so commands without Silver need not find it.
         {
             const char *raw = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE");
             const std::string path = raw && *raw ? raw : kDefaultRolloutRootTableModel;
             g_options.rolloutRootTablePath = path == "0" ? "" : path;
+        }
+        if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE"); raw && *raw) {
+            const std::string value = raw;
+            if (value != "0" && value != "1")
+                throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE must be 0 or 1");
+            g_options.priorPlayoutBossElite = value == "1";
         }
         if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
             char *end = nullptr;
@@ -1158,7 +1211,8 @@ namespace sts::search {
         return {g_options.finalFightLeaf, g_options.noLossPotionCredit, g_options.relicHealLeaf,
                 g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
                 table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap, rollout.actionCap,
-                g_options.rolloutRootTablePath};
+                g_options.rolloutRootTablePath,
+                g_options.priorPlayoutBossElite && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly};
     }
 
     bool nativeSilverLearnedStopEnabled() {
@@ -1190,10 +1244,12 @@ namespace sts::search {
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride = nullptr;
     thread_local std::optional<bool> g_nativeSilverFinalFightLeafOverride;
+    thread_local std::optional<double> g_nativeSilverConcaveHpLeafOverride;
     thread_local std::optional<NativeSilverSearchParams> g_nativeSilverSearchParamOverride;
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
+    thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture = nullptr;
 
     NativeSilverTotals nativeSilverTotals() {
         return {g_combats.load(), g_decisions.load(), g_simulations.load(), g_reroots.load(), g_freshRoots.load(),

@@ -1,0 +1,1114 @@
+{
+  "states": 770,
+  "validFights": 768,
+  "excluded": {
+    "invalid_arm_row": 2
+  },
+  "truncatedRows": {},
+  "shards": [
+    {
+      "prefix": "out/units/S_111197708/S-111197708",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/units/S_111197716/S-111197716",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 22,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197724/S-111197724",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 9,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197732/S-111197732",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 13,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 10
+    },
+    {
+      "prefix": "out/units/S_111197740/S-111197740",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "out/units/S_111197748/S-111197748",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 14,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/units/S_111197756/S-111197756",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    },
+    {
+      "prefix": "out/units/S_111197764/S-111197764",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 13,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197709/S-111197709",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 15
+    },
+    {
+      "prefix": "out/units/S_111197717/S-111197717",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 13,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197725/S-111197725",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 6,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 3
+    },
+    {
+      "prefix": "out/units/S_111197733/S-111197733",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 4,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 2
+    },
+    {
+      "prefix": "out/units/S_111197741/S-111197741",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 5
+    },
+    {
+      "prefix": "out/units/S_111197749/S-111197749",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197757/S-111197757",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 2,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 3
+    },
+    {
+      "prefix": "out/units/S_111197765/S-111197765",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "out/units/S_111197710/S-111197710",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 7,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 10
+    },
+    {
+      "prefix": "out/units/S_111197718/S-111197718",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 10,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "out/units/S_111197726/S-111197726",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 23,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 12
+    },
+    {
+      "prefix": "out/units/S_111197734/S-111197734",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197742/S-111197742",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197750/S-111197750",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/units/S_111197758/S-111197758",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 14,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "out/units/S_111197766/S-111197766",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/units/S_111197711/S-111197711",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 4,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 4
+    },
+    {
+      "prefix": "out/units/S_111197719/S-111197719",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 9,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197727/S-111197727",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 17,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 10
+    },
+    {
+      "prefix": "out/units/S_111197735/S-111197735",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 20,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 12
+    },
+    {
+      "prefix": "out/units/S_111197743/S-111197743",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 4,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 2
+    },
+    {
+      "prefix": "out/units/S_111197751/S-111197751",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 7,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197759/S-111197759",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/units/S_111197767/S-111197767",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 11,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197712/S-111197712",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 10,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 4
+    },
+    {
+      "prefix": "out/units/S_111197720/S-111197720",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 10,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/units/S_111197728/S-111197728",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 5,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197736/S-111197736",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 9,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 5
+    },
+    {
+      "prefix": "out/units/S_111197744/S-111197744",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197752/S-111197752",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 3,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/units/S_111197760/S-111197760",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 22,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 10
+    },
+    {
+      "prefix": "out/units/S_111197768/S-111197768",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 3,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 2
+    },
+    {
+      "prefix": "out/units/S_111197713/S-111197713",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 20,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/units/S_111197721/S-111197721",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 20,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 12
+    },
+    {
+      "prefix": "out/units/S_111197729/S-111197729",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 7,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 7,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197737/S-111197737",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 14,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 5
+    },
+    {
+      "prefix": "out/units/S_111197745/S-111197745",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 14,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 11
+    },
+    {
+      "prefix": "out/units/S_111197753/S-111197753",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 17,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 15
+    },
+    {
+      "prefix": "out/units/S_111197761/S-111197761",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 9,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197769/S-111197769",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 17,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 15
+    },
+    {
+      "prefix": "out/units/S_111197714/S-111197714",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 17,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/units/S_111197722/S-111197722",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 10
+    },
+    {
+      "prefix": "out/units/S_111197730/S-111197730",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 12,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/units/S_111197738/S-111197738",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 16
+    },
+    {
+      "prefix": "out/units/S_111197746/S-111197746",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 19,
+      "controlReplayMismatches": 1,
+      "invalidArmRows": 7,
+      "hallwaySkipped": 8
+    },
+    {
+      "prefix": "out/units/S_111197754/S-111197754",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 18,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 16
+    },
+    {
+      "prefix": "out/units/S_111197762/S-111197762",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 6,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 4
+    },
+    {
+      "prefix": "out/units/S_111197770/S-111197770",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 3,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 2
+    },
+    {
+      "prefix": "out/units/S_111197715/S-111197715",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 6
+    },
+    {
+      "prefix": "out/units/S_111197723/S-111197723",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 12
+    },
+    {
+      "prefix": "out/units/S_111197731/S-111197731",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 6,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 1
+    },
+    {
+      "prefix": "out/units/S_111197739/S-111197739",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 6,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 7
+    },
+    {
+      "prefix": "out/units/S_111197747/S-111197747",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 8,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 3
+    },
+    {
+      "prefix": "out/units/S_111197755/S-111197755",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 17,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 16
+    },
+    {
+      "prefix": "out/units/S_111197763/S-111197763",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 17,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 14
+    },
+    {
+      "prefix": "out/units/S_111197771/S-111197771",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 19,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 13
+    }
+  ],
+  "seedsWithStates": 64,
+  "roomClasses": {
+    "NORMAL": 256,
+    "ELITE": 344,
+    "OTHER": 20,
+    "BOSS": 148
+  },
+  "sourceSeeds": 64,
+  "meanCpuSecondsPerFight": {
+    "control": 4.381416639990909,
+    "greedy10000": 4.4511996630993504,
+    "priorpl2500": 8.479515281724026,
+    "priorpl10000": 32.46648885812857
+  },
+  "cpuMsPerDecision": {
+    "control": 171.20988646500888,
+    "greedy10000": 177.01349208968367,
+    "priorpl2500": 333.3704407305149,
+    "priorpl10000": 1291.347508691513
+  },
+  "escapes": {
+    "greedy10000": 0,
+    "priorpl2500": 0,
+    "priorpl10000": 0
+  },
+  "excludedFightsByRootReason": {
+    "escape": 2
+  },
+  "invalidArmRowsByReason": {
+    "escape": 14
+  },
+  "escapeReplicatesAllFights": {
+    "greedy10000": 4,
+    "priorpl2500": 4,
+    "priorpl10000": 4
+  },
+  "arms": {
+    "greedy10000": {
+      "score": 302.3170572916667,
+      "win": 0.927734375,
+      "hpLoss": 13.154296875,
+      "cpuSecondsPerFight": 8.92549989585026,
+      "cpuMicrosecondsPerSimulation": 17.70301366187082,
+      "meanRolloutLength": 18.271496541036797,
+      "playoutsPerSimulation": 0.8451275664368172
+    },
+    "priorpl2500": {
+      "score": 304.2923177083333,
+      "win": 0.9329427083333334,
+      "hpLoss": 12.764322916666666,
+      "cpuSecondsPerFight": 17.00295255128516,
+      "cpuMicrosecondsPerSimulation": 133.35989541590627,
+      "meanRolloutLength": 17.215480430778324,
+      "playoutsPerSimulation": 0.8837541297520872
+    },
+    "priorpl10000": {
+      "score": 305.5929361979167,
+      "win": 0.9375,
+      "hpLoss": 12.45703125,
+      "cpuSecondsPerFight": 65.10163403576954,
+      "cpuMicrosecondsPerSimulation": 129.14722048734566,
+      "meanRolloutLength": 17.082929653808684,
+      "playoutsPerSimulation": 0.8489959239551583
+    }
+  },
+  "contrasts": {
+    "priorpl2500-greedy10000/all/score": {
+      "mean": 1.9752604166666667,
+      "ci95": [
+        -0.6635841836734694,
+        4.687415654520918
+      ],
+      "fights": 768
+    },
+    "priorpl2500-greedy10000/all/win": {
+      "mean": 0.005208333333333333,
+      "ci95": [
+        -0.003434065934065934,
+        0.014227642276422764
+      ],
+      "fights": 768
+    },
+    "priorpl2500-greedy10000/all/hpLoss": {
+      "mean": -0.3899739583333333,
+      "ci95": [
+        -0.8953786906290115,
+        0.10089399744572158
+      ],
+      "fights": 768
+    },
+    "priorpl2500-greedy10000/boss/score": {
+      "mean": 9.76858108108108,
+      "ci95": [
+        0.9483333333333334,
+        18.643485915492956
+      ],
+      "fights": 148
+    },
+    "priorpl2500-greedy10000/boss/win": {
+      "mean": 0.030405405405405407,
+      "ci95": [
+        0.0,
+        0.06291390728476821
+      ],
+      "fights": 148
+    },
+    "priorpl2500-greedy10000/boss/hpLoss": {
+      "mean": -0.9898648648648649,
+      "ci95": [
+        -2.771812080536913,
+        0.8525179856115108
+      ],
+      "fights": 148
+    },
+    "priorpl2500-greedy10000/elite/score": {
+      "mean": 0.10574127906976744,
+      "ci95": [
+        -3.475975975975976,
+        3.8970149253731345
+      ],
+      "fights": 344
+    },
+    "priorpl2500-greedy10000/elite/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.011146496815286623,
+        0.011363636363636364
+      ],
+      "fights": 344
+    },
+    "priorpl2500-greedy10000/elite/hpLoss": {
+      "mean": -0.10901162790697674,
+      "ci95": [
+        -0.7569060773480663,
+        0.5637931034482758
+      ],
+      "fights": 344
+    },
+    "priorpl2500-greedy10000/normal/score": {
+      "mean": 0.12635869565217392,
+      "ci95": [
+        -1.832347972972973,
+        1.4090909090909092
+      ],
+      "fights": 276
+    },
+    "priorpl2500-greedy10000/normal/win": {
+      "mean": -0.0018115942028985507,
+      "ci95": [
+        -0.005639097744360902,
+        0.0
+      ],
+      "fights": 276
+    },
+    "priorpl2500-greedy10000/normal/hpLoss": {
+      "mean": -0.41847826086956524,
+      "ci95": [
+        -0.8321917808219178,
+        -0.018218623481781375
+      ],
+      "fights": 276
+    },
+    "priorpl2500-greedy10000/act4/score": {
+      "mean": 1.7426470588235294,
+      "ci95": [
+        -26.046875,
+        24.40625
+      ],
+      "fights": 17
+    },
+    "priorpl2500-greedy10000/act4/win": {
+      "mean": 0.0,
+      "ci95": [
+        -0.09375,
+        0.08333333333333333
+      ],
+      "fights": 17
+    },
+    "priorpl2500-greedy10000/act4/hpLoss": {
+      "mean": -3.264705882352941,
+      "ci95": [
+        -7.138888888888889,
+        0.13333333333333333
+      ],
+      "fights": 17
+    },
+    "priorpl10000-greedy10000/all/score": {
+      "mean": 3.27587890625,
+      "ci95": [
+        -0.5745884773662552,
+        7.163161465400272
+      ],
+      "fights": 768
+    },
+    "priorpl10000-greedy10000/all/win": {
+      "mean": 0.009765625,
+      "ci95": [
+        -0.001447178002894356,
+        0.021617852161785217
+      ],
+      "fights": 768
+    },
+    "priorpl10000-greedy10000/all/hpLoss": {
+      "mean": -0.697265625,
+      "ci95": [
+        -1.1887816646562124,
+        -0.21883468834688347
+      ],
+      "fights": 768
+    },
+    "priorpl10000-greedy10000/boss/score": {
+      "mean": 12.544763513513514,
+      "ci95": [
+        -0.8733660130718954,
+        26.573190789473685
+      ],
+      "fights": 148
+    },
+    "priorpl10000-greedy10000/boss/win": {
+      "mean": 0.04391891891891892,
+      "ci95": [
+        0.0,
+        0.08783783783783784
+      ],
+      "fights": 148
+    },
+    "priorpl10000-greedy10000/boss/hpLoss": {
+      "mean": -0.9054054054054054,
+      "ci95": [
+        -2.745398773006135,
+        0.842948717948718
+      ],
+      "fights": 148
+    },
+    "priorpl10000-greedy10000/elite/score": {
+      "mean": 2.893531976744186,
+      "ci95": [
+        -1.8603988603988604,
+        7.466588050314465
+      ],
+      "fights": 344
+    },
+    "priorpl10000-greedy10000/elite/win": {
+      "mean": 0.007267441860465116,
+      "ci95": [
+        -0.007352941176470588,
+        0.021739130434782608
+      ],
+      "fights": 344
+    },
+    "priorpl10000-greedy10000/elite/hpLoss": {
+      "mean": -0.7441860465116279,
+      "ci95": [
+        -1.4344729344729346,
+        -0.030612244897959183
+      ],
+      "fights": 344
+    },
+    "priorpl10000-greedy10000/normal/score": {
+      "mean": -1.2178442028985508,
+      "ci95": [
+        -6.3086832061068705,
+        1.5736301369863013
+      ],
+      "fights": 276
+    },
+    "priorpl10000-greedy10000/normal/win": {
+      "mean": -0.005434782608695652,
+      "ci95": [
+        -0.016917293233082706,
+        0.0
+      ],
+      "fights": 276
+    },
+    "priorpl10000-greedy10000/normal/hpLoss": {
+      "mean": -0.5271739130434783,
+      "ci95": [
+        -0.9906015037593985,
+        -0.05912162162162162
+      ],
+      "fights": 276
+    },
+    "priorpl10000-greedy10000/act4/score": {
+      "mean": -12.161764705882353,
+      "ci95": [
+        -39.10294117647059,
+        4.923076923076923
+      ],
+      "fights": 17
+    },
+    "priorpl10000-greedy10000/act4/win": {
+      "mean": -0.029411764705882353,
+      "ci95": [
+        -0.08823529411764706,
+        0.0
+      ],
+      "fights": 17
+    },
+    "priorpl10000-greedy10000/act4/hpLoss": {
+      "mean": 0.6176470588235294,
+      "ci95": [
+        -5.766666666666667,
+        7.472222222222222
+      ],
+      "fights": 17
+    },
+    "priorpl10000-priorpl2500/all/score": {
+      "mean": 1.3006184895833333,
+      "ci95": [
+        -1.4889511873350922,
+        4.144536652835408
+      ],
+      "fights": 768
+    },
+    "priorpl10000-priorpl2500/all/win": {
+      "mean": 0.004557291666666667,
+      "ci95": [
+        -0.004705882352941176,
+        0.014336917562724014
+      ],
+      "fights": 768
+    },
+    "priorpl10000-priorpl2500/all/hpLoss": {
+      "mean": -0.3072916666666667,
+      "ci95": [
+        -0.7522522522522522,
+        0.08704188481675393
+      ],
+      "fights": 768
+    },
+    "priorpl10000-priorpl2500/boss/score": {
+      "mean": 2.7761824324324325,
+      "ci95": [
+        -7.924831081081081,
+        14.6312893081761
+      ],
+      "fights": 148
+    },
+    "priorpl10000-priorpl2500/boss/win": {
+      "mean": 0.013513513513513514,
+      "ci95": [
+        -0.023809523809523808,
+        0.05357142857142857
+      ],
+      "fights": 148
+    },
+    "priorpl10000-priorpl2500/boss/hpLoss": {
+      "mean": 0.08445945945945946,
+      "ci95": [
+        -1.652027027027027,
+        1.7287581699346406
+      ],
+      "fights": 148
+    },
+    "priorpl10000-priorpl2500/elite/score": {
+      "mean": 2.7877906976744184,
+      "ci95": [
+        -0.7588461538461538,
+        6.403282122905028
+      ],
+      "fights": 344
+    },
+    "priorpl10000-priorpl2500/elite/win": {
+      "mean": 0.007267441860465116,
+      "ci95": [
+        -0.004545454545454545,
+        0.019943019943019943
+      ],
+      "fights": 344
+    },
+    "priorpl10000-priorpl2500/elite/hpLoss": {
+      "mean": -0.6351744186046512,
+      "ci95": [
+        -1.1793478260869565,
+        -0.10533333333333333
+      ],
+      "fights": 344
+    },
+    "priorpl10000-priorpl2500/normal/score": {
+      "mean": -1.3442028985507246,
+      "ci95": [
+        -4.616541353383458,
+        0.48727272727272725
+      ],
+      "fights": 276
+    },
+    "priorpl10000-priorpl2500/normal/win": {
+      "mean": -0.0036231884057971015,
+      "ci95": [
+        -0.011278195488721804,
+        0.0
+      ],
+      "fights": 276
+    },
+    "priorpl10000-priorpl2500/normal/hpLoss": {
+      "mean": -0.10869565217391304,
+      "ci95": [
+        -0.4580152671755725,
+        0.17315175097276264
+      ],
+      "fights": 276
+    },
+    "priorpl10000-priorpl2500/act4/score": {
+      "mean": -13.904411764705882,
+      "ci95": [
+        -46.76973684210526,
+        21.34375
+      ],
+      "fights": 17
+    },
+    "priorpl10000-priorpl2500/act4/win": {
+      "mean": -0.029411764705882353,
+      "ci95": [
+        -0.11764705882352941,
+        0.06666666666666667
+      ],
+      "fights": 17
+    },
+    "priorpl10000-priorpl2500/act4/hpLoss": {
+      "mean": 3.8823529411764706,
+      "ci95": [
+        -3.411764705882353,
+        12.266666666666667
+      ],
+      "fights": 17
+    }
+  },
+  "cpuRatios": {
+    "priorpl2500/greedy10000/perSimulation": {
+      "ratio": 7.533174744317124,
+      "ci95": [
+        7.091751185671434,
+        7.9631749168700745
+      ]
+    },
+    "priorpl2500/greedy10000/perFight": {
+      "ratio": 1.9049860231571292,
+      "ci95": [
+        1.7913454503835118,
+        2.013480646682665
+      ]
+    },
+    "priorpl10000/greedy10000/perSimulation": {
+      "ratio": 7.295211027572447,
+      "ci95": [
+        6.914279022364785,
+        7.619712453358166
+      ]
+    },
+    "priorpl10000/greedy10000/perFight": {
+      "ratio": 7.293892196003195,
+      "ci95": [
+        6.923488264374675,
+        7.593245386822282
+      ]
+    }
+  },
+  "labels": {
+    "priorpl2500/score": "NOT_SHOWN",
+    "priorpl2500/hpLoss": "NOT_SHOWN",
+    "priorpl10000/score": "NOT_SHOWN",
+    "priorpl10000/hpLoss": "BETTER"
+  },
+  "act4Fights": 17
+}

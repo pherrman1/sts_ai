@@ -305,6 +305,11 @@ void Monster::addBlock(int amount) {
 }
 
 void Monster::die(BattleContext &bc) {
+    // Mugger.die starts with playDeathSfx, which draws aiRng.random(2)
+    // (STS_MUGGER_DEATH_RNG_FIX=0 restores the legacy engine, which drew nothing).
+    if (id == MonsterId::MUGGER && muggerDeathRngFix()) {
+        bc.aiRng.random(2);
+    }
     --bc.monsters.monstersAlive;
 
     if (id == MonsterId::AWAKENED_ONE && !miscInfo) { // is awakened one stage 1 // todo change to status
@@ -393,8 +398,12 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
         }
 
     } else if (hasStatus<MS::CURL_UP>()) {
-        bc.addToBot(Actions::MonsterGainBlock(this->idx, getStatus<MS::CURL_UP>()) );
-        setHasStatus<MS::CURL_UP>(false);
+        // Java CurlUpPower.onAttacked requires damageAmount < currentHealth:
+        // a lethal hit does not curl (STS_CURL_UP_LETHAL_FIX=0 restores).
+        if (damage < curHp || !curlUpLethalFix()) {
+            bc.addToBot(Actions::MonsterGainBlock(this->idx, getStatus<MS::CURL_UP>()) );
+            setHasStatus<MS::CURL_UP>(false);
+        }
 
     } else if (hasStatus<MS::FLIGHT>() && damage > 0) {
         auto flight = getStatus<MS::FLIGHT>();
@@ -549,6 +558,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (atOrBelowHalf) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::ACID_SLIME_L_SPLIT;
+                if (slimeSplitRngFix()) moveHistory[1] = MMID::ACID_SLIME_L_SPLIT; // setMove, then the queued SetMoveAction
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
@@ -558,6 +568,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (atOrBelowHalf) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SLIME_BOSS_SPLIT;
+                if (slimeSplitRngFix()) moveHistory[1] = MMID::SLIME_BOSS_SPLIT; // setMove, then the queued SetMoveAction
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
@@ -567,6 +578,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (atOrBelowHalf) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SPIKE_SLIME_L_SPLIT;
+                if (slimeSplitRngFix()) moveHistory[1] = MMID::SPIKE_SLIME_L_SPLIT; // setMove, then the queued SetMoveAction
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
@@ -609,6 +621,17 @@ void Monster::resetAllStatusEffects() {
     statusBits = 0;
     setStatus<MS::STRENGTH>(0);
     block = 0;
+    // Java Darkling.damage clears its powers when it goes half-dead. Clearing
+    // only the bits left the amounts behind, and a later debuff on the revived
+    // Darkling added to them (STS_HALF_DEAD_POWER_RESET_FIX=0 restores).
+    if (halfDeadPowerResetFix()) {
+        artifact = blockReturn = choked = corpseExplosion = lockOn = 0;
+        mark = 0;
+        metallicize = platedArmor = poison = regen = shackled = 0;
+        vulnerable = weak = 0;
+        uniquePower0 = 0;
+        uniquePower1 = 0;
+    }
 }
 
 // this is calculated at the player when the damage occurs in game, consider testing whether there are any scenarios when it can't be done before

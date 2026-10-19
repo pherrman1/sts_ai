@@ -137,7 +137,8 @@ namespace sts {
     X(IncreasePlayerOrbSlots, int,count) \
     X(BurnIncreaseAction) \
     X(SetMonsterMove, int,monsterIdx, MMID,move) \
-    X(HexaghostBurnIncrease)
+    X(HexaghostBurnIncrease) \
+    X(MayhemPlayTopCard)
 
 #define STS_ACT_NARG(...) STS_ACT_NARG_(__VA_ARGS__, STS_ACT_RSEQ())
 #define STS_ACT_NARG_(...) STS_ACT_ARG_N(__VA_ARGS__)
@@ -253,6 +254,7 @@ namespace sts {
         static Action ShuffleTempCardIntoDrawPile(CardId id, int count=1);
 
         static Action PlayTopCard(int monsterTargetIdx, bool exhausts);
+        static Action MayhemPlayTopCard(); // MayhemPower's start-of-turn wrapper
         static Action MakeTempCardInHand(CardId card, bool upgraded= false, int amount = 1);
         static Action MakeTempCardInHand(CardInstance c, int amount = 1);
         static Action MakeTempCardInDrawPile(const CardInstance &c, int amount, bool shuffleInto);

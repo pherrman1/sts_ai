@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -213,6 +213,17 @@ producer groups; workers require the reviewed CPU/canary pair before dispatch.
 See [campaign guard operations](../operations/ooc-label-pipeline.md#arm-c-native-campaign-guards).
 No further experiment or native integration is authorized by these guard repairs.
 
+## A20 Shield and Spear search gap vs heart1's engine (§528, §530) — closed
+
+**Closed (2026-10-18, Philipp).** On the 32 recorded A20 Shield-and-Spear entry states our Silver search lost about 7 HP
+more per fight than heart1's engine at the §528 commit. Ruled out: monster code, evaluation, budget, rollout table,
+tree reuse, two rollouts per leaf, three facing changes in the rollout, and draw-pile sampling (same information-set
+code and chance constants as heart1; the fair root view audited correct). On current main the gap is −3.5 HP
+[−8.0, +0.8], not shown; a full-information root loses 2.9 HP less (−2.9 [−5.6, +0.0]). Reopen only with a new
+mechanism. What remains is the entry state (deck, lower max HP) from OOC play, which accounts for about half of the
+Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
+`/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
+
 ## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
 
 `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (default off, issue #605) values rollout3 leaf ends
@@ -232,6 +243,14 @@ td1/td2 also read the hidden encounter queue (`nextEliteId`, `nextFight0..2`), r
 roots but sampled in play; `heart_leaf_td3` (feature schema v4) zeroes those columns and matches
 td2 on VALIDATION (BCE 0.3034, AUC 0.731).
 See the [result](../../experiments/evidence/heart_leaf_td_20261017/RESULT.md).
+
+## Act-4 CTM survival model (A20 default, ADR-0048) — §527 offline FAIL, §534 A20 A/B NOT_SHOWN
+
+`models/candidates/ctm_act4_survival_trees.txt` replaces the CTM survival probability of
+Shield and Spear and the Heart. Offline it fixes the Heart (TEST death 0.70 predicted vs 0.68 observed, CTM 0.17) but
+not Shield and Spear (§527). In the A20 student_sel stack at 512 simulations (512 paired seeds) it won 75 Hearts
+against 82 for the control, NOT_SHOWN (McNemar p = 0.09, 3 vs 10 discordant). Both arms played identically through
+Act 2. Philipp made it the A20 default afterwards (ADR-0048; `STS_CTM_ACT4_SURVIVAL_MODEL=0` restores).
 
 ## §494 student as a native OOC MCTS leaf (opt-in) — loses to rollout3 at A20 (§504)
 
@@ -484,6 +503,15 @@ Merging publicly identical particles (upper bound 26.6%) would be a separate,
 semantics-changing proposal; it is an open question.
 [Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
 
+## OOC MCTS prior guidance at A20 (§532, §557) — max-Q root pick WORSE, temperature 3 not shown in full runs
+
+With the student_sel prior the search spends a median 97.8% of root visits on the prior's top move, and the executed
+move is the prior argmax in ~90% of roots. In an Act-1 A20 screen (64 paired seeds), `STS_OOC_MCTS_ROOT_SELECTION=q`
+lost 20 HP and 25 more Act-1 runs, and q with prior temperature 3 still lost 9 HP, so the leaf's Q ranks options worse
+than the prior. `STS_OOC_MCTS_TEMPERATURE=3` (visit pick) was +3.1 HP [−2.1, +8.3] with ~13% more OOC CPU: a screen
+pass. The full-run A20 confirmation (§557, 256 paired seeds) gave 37 vs 42 wins, −2.0 pp [−6.6, +2.7]:
+NOT_SHOWN. Defaults unchanged (temperature 1, visit pick).
+
 ## OOC MCTS equivalent-outcome merging (#384) — opt-in, inconclusive
 
 **Measured (2026-09-28, §367).** Pooling search-equivalent sampled particles
@@ -618,7 +646,9 @@ the CTM at about 10%. With the V4 rollout policy the floor-model calls of the na
 were about 20% of rollout3 CPU after §437 (8% with a uniform rollout policy, which rarely reaches the planner); a
 packed tree layout halves them, bit-identically, 1.13–1.19x per run (§442). The largest remaining rollout3 cost is
 the V4 network in the rollout gates (about 21%); cached deck tokens and transposed dense layers cut it about
-2.8x, bitwise identically, 1.29–1.41x per run (§450).
+2.8x, bitwise identically, 1.29–1.41x per run (§450). On the A20 winrate-check stack (student_sel as rollout
+policy) student forwards inside rollout3 leaves were about 70% of a run and real Silver combat 2–3%; exact kernels
+halve the forward and cut OOC MCTS CPU 1.67–1.77x per unit with identical play (§533); an output memo and AVX-512 projections take another 1.15x of run CPU (§535).
 
 ## OOC MCTS on the A20 gold decisions (§425) — not shown better than the heuristic
 
@@ -834,6 +864,16 @@ OOC MCTS a Silver combat resolver (64 sims + prior per imagined combat, research
 `STS_OOC_MCTS_COMBAT_RESOLVER=silver`) was not detectably better at matched simulations (+3.1 pp, 10x the
 MCTS CPU) and pointed worse at matched CPU (−8.6 pp [−17.2, 0.0]) on 128 pairs; no MCTS arm beat MCTS off
 ([§411](../../experiments/ledger-06.md)). The CTM stays; its value is speed.
+
+**Opening hand and first-search screens (ledger §529, #460, 2026-10-18).** On the Stage-4 A20 corpus an
+XGBoost outcome model gains nothing measurable from the realized opening hand (death log loss +0.00015
+[−0.00025, +0.00057], HP-lost MSE −0.25 [−0.62, +0.15] of 129), and averaging over sampled hands is slightly worse,
+so an opening-hand latent is not worth a CTM schema change for OOC MCTS (the OOC tree would not get wider either: its
+chance-node width depends only on visits). The endpoint distribution of the first 10k Silver search of a fight is a
+biased forecast on 1,048 A20 fights compared with the calibrated A20 CTM: death Brier 0.063 vs 0.026 and about
+12 HP too pessimistic on wins, although Silver sees the hand. On the CTM's post-heal scale its spread matches the
+CTM's once the bias is removed (RMSE 12.07 vs 11.97; log score −0.13 [−0.25, −0.01]), so a bias-corrected Silver
+label is not ruled out (Inference), at ~400x the CPU.
 
 ## Merged DeepSets CTM Brew-fallback quality confirmation
 
@@ -3024,6 +3064,14 @@ NLL; refit noise about ±0.05–0.15 MSE). Adding the 12 forward-map columns, th
 tested, cuts A20 floor MSE by 2.15 [1.80, 2.51] (win borderline). These are offline error changes on
 the generator's own runs, not win-rate changes; the A0 refit on the #334 fragment resolves nothing.
 No model or contract changed; the forward map is the recommended addition for the next A20 retrain.
+#401 Stage 1 for the deployed learned models (ledger-06 §546, permutation on each model's own held-out split):
+student_sel reads mainly the offered cards and `select_screen_type`; its `--extra-inputs` (relic counters, act,
+deck misc) and the map node tokens contribute about nothing, and its value head is untrained (output about −0.03;
+no search path reads it, only diagnostic annotations show it; it is to be trained in the AlphaZero loop). g7f_E reads the candidate card,
+monster slots (intent, HP, id) and candidate action/targeting; gold, maxHp and pile counts are dead, and
+most groups are about 1.5–3x weaker on Act-4 roots, where its CE is worst. The A20 fast CTM child prices survival mostly by act
+and room type, then deck, HP, relics and encounter id; gold and several token side fields are ≈ 0. Descriptive
+only; removal candidates need refit ablations.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from

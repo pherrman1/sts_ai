@@ -70,6 +70,16 @@ public final class LiveOocCaptureTest {
         if (!"Match and Keep".equals(LiveOocCapture.canonicalEventId("Match and Keep!"))
                 || !"Sensory Stone".equals(LiveOocCapture.canonicalEventId("SensoryStone")))
             throw new AssertionError("Match canonical ID");
+        // Overnight 2026-10-19: the capture after [Play] lands in the 2 s bounce.
+        if(!LiveOocCapture.wheelSpinReady(true,1,"INTRO",true,false,1.85f)
+                || !LiveOocCapture.wheelSpinReady(true,1,"INTRO",true,false,0f))
+            throw new AssertionError("Wheel spin window rejected");
+        if(LiveOocCapture.wheelSpinReady(true,1,"INTRO",true,true,0f)
+                || LiveOocCapture.wheelSpinReady(true,1,"INTRO",false,false,1f)
+                || LiveOocCapture.wheelSpinReady(false,1,"INTRO",true,false,0f)
+                || LiveOocCapture.wheelSpinReady(true,1,"COMPLETE",true,false,0f)
+                || LiveOocCapture.wheelSpinReady(true,1,"INTRO",true,false,-1f))
+            throw new AssertionError("Wheel spin qualification too wide");
         for(int defect=-1;defect<5;++defect) {
             Map<String,Object> state=obj("screen_type","CHEST","ready_for_command",defect!=0,
                     "can_cancel",defect==1,"can_proceed",defect!=2,"choice_list",java.util.Arrays.asList("open"));

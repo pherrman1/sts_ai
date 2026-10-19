@@ -342,6 +342,9 @@ int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
+// Root choice key of the search: with tree rules, copies of one card are one
+// choice for bottle, duplicate and bonfire selectors.
+std::string oocMctsChoiceKey(sts::search::OocSemanticAction action, const GameContext &gc, bool treeRules);
 // heart1full (STS_OOC_MCTS_PRIOR): heart1 decides a root the search returns no action for.
 bool liveOocMctsHeart1Fallback(const GameContext &gc);
 // True when the live search takes its tree prior from heart1.
@@ -350,14 +353,19 @@ bool liveOocMctsUsesHeart1();
 bool liveOocSiblingCaptureEnabled();
 // Policy identity of the live OOC MCTS configuration; null when it is off.
 nlohmann::json liveOocMctsSpecification();
+// Combat transition model files the live search loaded: role, path, sha256
+// (empty when OOC MCTS is off or combats resolve with Silver).
+nlohmann::json liveOocMctsCtmArtifacts();
 std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
+// Playout-cap randomization: whether this real root runs its full budget.
+bool oocMctsFullBudgetRoot(std::uint64_t runSeed, std::uint64_t decisionIndex, double fraction);
 // Search snapshots die before the selected ID is resolved/executed on live gc.
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,
     std::uint64_t runSeed, std::uint64_t decisionIndex, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr,
-    nlohmann::json *rootActions = nullptr);
+    nlohmann::json *rootActions = nullptr, bool fullBudget = false);
 // Research (issue #605 Heart leaf targets): `repeats` leaf evaluations of the
 // snapshot root under the live configuration, each from a fresh stream seeded
 // by (salt, r). `atEnd` receives every rollout endpoint that the leaf model

@@ -83,6 +83,7 @@ struct BenchConfigSidecar {
     std::string oocGbmRanker;               // STS_OOC_GBM_RANKER ("" when off)
     std::string oocGbmRankerSha256;
     bool oocMcts = false;                   // STS_OOC_MCTS=1
+    int heart1WingBootsCounter = 0;         // STS_OOC_HEART1_WING_BOOTS_COUNTER (#638)
     int stopAfterAct = 0;                   // STS_STOP_AFTER_ACT (0: full run)
     std::string forceRelic;                 // STS_FORCE_RELIC ("" when unforced)
     std::string oocPolicy;                  // serialized JSON object; "" writes null
@@ -197,6 +198,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"oocGbmRanker\":\"" << detail::jsonEscape(c.oocGbmRanker) << '\"';
     o << ",\"oocGbmRankerSha256\":\"" << detail::jsonEscape(c.oocGbmRankerSha256) << '\"';
     o << ",\"oocMcts\":" << (c.oocMcts ? "true" : "false");
+    o << ",\"heart1WingBootsCounter\":" << c.heart1WingBootsCounter;
     o << ",\"stopAfterAct\":" << c.stopAfterAct;
     o << ",\"forceRelic\":\"" << detail::jsonEscape(c.forceRelic) << '\"';
     o << ",\"oocPolicy\":" << (c.oocPolicy.empty() ? "null" : c.oocPolicy);

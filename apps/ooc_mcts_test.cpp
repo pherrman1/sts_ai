@@ -347,6 +347,33 @@ void tests() {
         && !gapObserved.metrics.earlyStopVisitGap20
         && !gapObserved.metrics.savedSimulations,
         "full-budget observation disables the 20% gap candidate");
+    auto ladderConfig = config;
+    ladderConfig.cPuct = 0;
+    ladderConfig.gapStopSimulations = {256, 512};
+    ladderConfig.gapStopFraction = 0.2;
+    auto ladderModel = deterministic();
+    const auto ladderStopped = OocMctsPlanner(ladderConfig).search(ladderModel, 0, 2048);
+    require(ladderStopped.metrics.earlyStopGapLadder && !ladderStopped.metrics.earlyStopVisitGap20
+        && (ladderStopped.metrics.simulations == 256 || ladderStopped.metrics.simulations == 512)
+        && ladderStopped.metrics.savedSimulations == 2048 - ladderStopped.metrics.simulations
+        && ladderStopped.selectedAction == gapStopped.selectedAction,
+        "gap ladder stops at a listed checkpoint using the visit leader");
+    auto ladderOffConfig = ladderConfig;
+    ladderOffConfig.gapStopFraction = 0;
+    auto ladderOffModel = deterministic(), ladderBaseModel = deterministic();
+    auto ladderBaseConfig = config;
+    ladderBaseConfig.cPuct = 0;
+    const auto ladderOff = OocMctsPlanner(ladderOffConfig).search(ladderOffModel, 0, 2048);
+    const auto ladderBase = OocMctsPlanner(ladderBaseConfig).search(ladderBaseModel, 0, 2048);
+    require(!ladderOff.metrics.earlyStopGapLadder && ladderOff.metrics.simulations == ladderBase.metrics.simulations
+        && ladderOff.selectedAction == ladderBase.selectedAction,
+        "a zero gap fraction leaves the search unchanged");
+    auto ladderObservedConfig = ladderConfig;
+    ladderObservedConfig.observeRootLock = true;
+    auto ladderObservedModel = deterministic();
+    const auto ladderObserved = OocMctsPlanner(ladderObservedConfig).search(ladderObservedModel, 0, 2048);
+    require(ladderObserved.metrics.simulations == 2048 && !ladderObserved.metrics.earlyStopGapLadder,
+        "full-budget observation disables the gap ladder");
     for (const auto &thresholds : std::vector<std::vector<std::uint64_t>>{{0},{2,1},{2,2}}) {
         auto invalidCheckpointConfig=config; invalidCheckpointConfig.rootCheckpointSimulations=thresholds;
         rejects([&] { OocMctsPlanner invalid(invalidCheckpointConfig); });
@@ -457,6 +484,68 @@ void tests() {
         && !discarded.rootValues && discarded.actionValues.empty()
         && discarded.metrics.simulations==1 && discarded.metrics.simulationAttempts==2,
         "one unsupported transition discards entire root, including previous supported Q");
+    {   // Issue #633: pruneUnsupported discards the failed simulation and prunes its edge.
+        auto prune = distributionConfig; prune.pruneUnsupported = true;
+        auto model = deterministic();
+        model.transition = unsupported.transition;
+        const auto r = OocMctsPlanner(prune).search(model, 0, 128);
+        require(!r.aborted && r.selectedAction == 1 && r.rootActions.size() == 2
+            && !r.rootActions[0].pruned && r.rootActions[1].pruned && r.rootActions[1].visits == 0
+            && r.metrics.simulations == 127 && r.metrics.simulationAttempts == 128
+            && r.metrics.unsupportedSimulations == 1 && r.metrics.prunedActions == 1
+            && r.metrics.prunedReasons.at("toy unsupported") == 1
+            && r.rootValues && r.rootValues->count == 127 && r.actionValues.count(2) == 0,
+            "pruned root action keeps the supported search and its Q");
+        auto none = deterministic();
+        none.transition = [](auto, auto, auto &) -> OocStateId { throw OocSearchUnsupported("all refused"); };
+        const auto dead = OocMctsPlanner(prune).search(none, 0, 16);
+        require(dead.aborted && dead.abortReason == "all refused" && !dead.selectedAction
+            && dead.metrics.prunedActions == 2 && dead.metrics.simulations == 0,
+            "search aborts only when every root action is pruned");
+        // Root 1 -> 10 {3: refused, 4: terminal .25}; root 2 -> terminal .75.
+        Toy deep;
+        deep.terminals = {{2, .75}, {4, .25}};
+        deep.actions = {{0, {{1, 1}, {2, 1}}}, {10, {{3, 1}, {4, 1}}}};
+        deep.transition = [](OocStateId s, OocActionId a, auto &) -> OocStateId {
+            if (a == 3) throw OocSearchUnsupported("deep refused");
+            return s == 0 && a == 1 ? 10 : a;
+        };
+        const auto inner = OocMctsPlanner(prune).search(deep, 0, 64);
+        std::uint64_t rootVisits = 0;
+        for (const auto &action : inner.rootActions) rootVisits += action.visits;
+        // Each sampled particle of state 10 is its own node, so each prunes its own edge 3.
+        require(!inner.aborted && inner.metrics.prunedActions >= 1
+            && inner.metrics.prunedActions == inner.metrics.unsupportedSimulations
+            && !inner.rootActions[0].pruned && !inner.rootActions[1].pruned && inner.rootActions[0].visits > 0
+            && rootVisits == inner.metrics.simulations
+            && inner.metrics.simulations + inner.metrics.unsupportedSimulations == 64,
+            "a refused deep edge prunes only that edge and rolls back the failed visit");
+        deep.actions[10] = {{3, 1}};
+        const auto propagated = OocMctsPlanner(prune).search(deep, 0, 64);
+        require(!propagated.aborted && propagated.selectedAction == 2 && propagated.rootActions[0].pruned
+            && propagated.metrics.prunedActions == 2 && propagated.metrics.unsupportedSimulations == 1,
+            "a node with every action pruned prunes its parent edge");
+        struct RefusedLeaf : Toy {
+            double evaluateLeaf(OocStateId s, std::mt19937_64 &) override {
+                if (s == 1) throw OocSearchUnsupported("leaf refused");
+                return .5;
+            }
+            bool isLeafBoundary(OocStateId s) const override { return s != 0; }
+        } leaf;
+        leaf.actions = {{0, {{1, 1}, {2, 1}}}};
+        leaf.transition = [](auto, auto a, auto &) { return a; };
+        const auto leafPruned = OocMctsPlanner(prune).search(leaf, 0, 32);
+        require(!leafPruned.aborted && leafPruned.selectedAction == 2 && leafPruned.rootActions[0].pruned
+            && leafPruned.metrics.prunedReasons.at("leaf refused") == 1 && leafPruned.metrics.simulations == 31,
+            "a refused leaf evaluation prunes the edge to that leaf");
+        auto lockPrune = prune; lockPrune.captureValueDistribution = false; lockPrune.allowUnqualifiedRootStop = true;
+        RefusedLeaf locked;
+        locked.actions = leaf.actions; locked.transition = leaf.transition;
+        const auto lockedResult = OocMctsPlanner(lockPrune).search(locked, 0, 32);
+        require(!lockedResult.aborted && lockedResult.selectedAction == 2
+            && lockedResult.metrics.earlyStopLockedRoot && lockedResult.metrics.simulations == 1,
+            "a single live root action after pruning locks the root");
+    }
     auto t = deterministic();
     auto d = planner.search(t, 0, 10000);
     require(d.selectedAction == 2 && d.rootActions[0].q == .25 && d.rootActions[1].q == .75, "deterministic choice");

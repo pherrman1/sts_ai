@@ -1,6 +1,8 @@
 #include "heart1_policy.h"
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -14,6 +16,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "constants/Events.h"
@@ -27,6 +30,20 @@ using RT = sts::search::GameAction::RewardsActionType;
 extern bool g_collectKeys;
 
 namespace one_combat::heart1 {
+
+// STS_OOC_HEART1_WING_BOOTS_COUNTER (#638): 1 = the Wing Boots relic counter
+// carries gc.wingBootsCharges (0-3), so x_relic_counter weights trained on it
+// can tell charged from spent boots. Unset or 0 = the frozen encoding, where
+// the counter is relic.data, always 0 for Wing Boots (initRelicsFromSave).
+// Other values are fatal. Read only when Wing Boots is owned, and by the
+// capture/run provenance writers.
+bool wingBootsCounter() {
+    const char *value = std::getenv("STS_OOC_HEART1_WING_BOOTS_COUNTER");
+    if (!value || !*value || std::string(value) == "0") return false;
+    if (std::string(value) == "1") return true;
+    throw std::runtime_error("STS_OOC_HEART1_WING_BOOTS_COUNTER must be 0 or 1");
+}
+
 namespace {
 
 // silverbot/network.py FixedAction (IntEnum values).
@@ -218,7 +235,8 @@ void encodeObservation(const GameContext &gc, Record &r) {
     r.act = gc.act;
     for (const auto &relic : gc.relics.relics) {
         r.relics.push_back(static_cast<int>(relic.id));
-        r.relicCounters.push_back(relic.data);
+        r.relicCounters.push_back(relic.id == RelicId::WING_BOOTS && wingBootsCounter()
+                                  ? gc.wingBootsCharges : relic.data);
     }
     for (int i = 0; i < gc.potionCapacity; ++i) r.potions.push_back(static_cast<int>(gc.potions[i]));
 
@@ -563,6 +581,13 @@ __attribute__((target("avx"), always_inline)) inline float reduce8(__m256 v) {
     return _mm_cvtss_f32(_mm_add_ss(quads, _mm_shuffle_ps(quads, quads, 1)));
 }
 
+// reduce8 of four vectors at once: lane k of the result is reduce8(vk), with the
+// same pair, quad and final additions.
+__attribute__((target("avx"), always_inline)) inline __m128 reduce4(__m256 a, __m256 b, __m256 c, __m256 d) {
+    const __m256 quads = _mm256_hadd_ps(_mm256_hadd_ps(a, b), _mm256_hadd_ps(c, d));
+    return _mm_add_ps(_mm256_castps256_ps128(quads), _mm256_extractf128_ps(quads, 1));
+}
+
 __attribute__((target("avx"))) void linearAvx(const Net::Linear &l, const float *x, int n, float *y, bool accumulate) {
     constexpr int TT = 3, OO = 4;
     const int in = l.in;
@@ -588,14 +613,87 @@ __attribute__((target("avx"))) void linearAvx(const Net::Linear &l, const float 
                     for (int q = 0; q < TT; ++q) acc[p][q] = _mm256_add_ps(acc[p][q], _mm256_mul_ps(r, v[q]));
                 }
             }
-            for (int p = 0; p < OO; ++p)
-                for (int q = 0; q < TT; ++q) store(t + q, o + p, reduce8(acc[p][q]));
+            // reduce4 gives store()'s four sums at once; the bias and accumulate
+            // additions are the same per-element operations.
+            const __m128 bias = l.b.empty() ? _mm_setzero_ps() : _mm_loadu_ps(l.b.data() + o);
+            for (int q = 0; q < TT; ++q) {
+                float *out = y + std::size_t(t + q) * l.out + o;
+                __m128 v = _mm_add_ps(reduce4(acc[0][q], acc[1][q], acc[2][q], acc[3][q]), bias);
+                if (accumulate) v = _mm_add_ps(_mm_loadu_ps(out), v);
+                _mm_storeu_ps(out, v);
+            }
         }
         for (int o = fullO; o < l.out; ++o)
             for (int q = 0; q < TT; ++q) single(t + q, o);
     }
-    for (int t = fullT; t < n; ++t)
-        for (int o = 0; o < l.out; ++o) single(t, o);
+    // Leftover tokens one at a time, four outputs per tile.
+    for (int t = fullT; t < n; ++t) {
+        const float *xt = x + std::size_t(t) * in;
+        for (int o = 0; o < fullO; o += OO) {
+            __m256 acc[OO];
+            for (auto &a : acc) a = _mm256_setzero_ps();
+            for (int i = 0; i < in; i += 8) {
+                const __m256 v = _mm256_loadu_ps(xt + i);
+                for (int p = 0; p < OO; ++p)
+                    acc[p] = _mm256_add_ps(acc[p], _mm256_mul_ps(_mm256_loadu_ps(w + std::size_t(o + p) * in + i), v));
+            }
+            const __m128 bias = l.b.empty() ? _mm_setzero_ps() : _mm_loadu_ps(l.b.data() + o);
+            float *out = y + std::size_t(t) * l.out + o;
+            __m128 r = _mm_add_ps(reduce4(acc[0], acc[1], acc[2], acc[3]), bias);
+            if (accumulate) r = _mm_add_ps(_mm_loadu_ps(out), r);
+            _mm_storeu_ps(out, r);
+        }
+        for (int o = fullO; o < l.out; ++o) single(t, o);
+    }
+}
+
+// linearAvx with two tokens per 512-bit register (low half token t, high half
+// token t + 1), bit for bit: every lane keeps its token's and output's partial
+// sum, with separate multiply and add. The explicitly rounded intrinsics (round
+// to nearest, as the default) keep the compiler from fusing them into FMAs,
+// which AVX-512 would allow. Tiles of 6 tokens x 4 outputs; leftover tokens go
+// to linearAvx.
+__attribute__((target("avx512f,avx512dq"))) void linearAvx512(const Net::Linear &l, const float *x, int n, float *y,
+                                                               bool accumulate) {
+    constexpr int PP = 3, OO = 4, rounding = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
+    const int in = l.in;
+    const float *w = l.w.data();
+    const int fullT = n / (2 * PP) * (2 * PP), fullO = l.out / OO * OO;
+    for (int t = 0; t < fullT; t += 2 * PP) {
+        for (int o = 0; o < fullO; o += OO) {
+            __m512 acc[OO][PP];
+            for (auto &row : acc) for (auto &a : row) a = _mm512_setzero_ps();
+            for (int i = 0; i < in; i += 8) {
+                __m512 v[PP];
+                for (int q = 0; q < PP; ++q)
+                    v[q] = _mm512_insertf32x8(_mm512_castps256_ps512(_mm256_loadu_ps(x + std::size_t(t + 2 * q) * in + i)),
+                                              _mm256_loadu_ps(x + std::size_t(t + 2 * q + 1) * in + i), 1);
+                for (int p = 0; p < OO; ++p) {
+                    const __m512 r = _mm512_broadcast_f32x8(_mm256_loadu_ps(w + std::size_t(o + p) * in + i));
+                    for (int q = 0; q < PP; ++q)
+                        acc[p][q] = _mm512_add_round_ps(acc[p][q], _mm512_mul_round_ps(r, v[q], rounding), rounding);
+                }
+            }
+            const __m128 bias = l.b.empty() ? _mm_setzero_ps() : _mm_loadu_ps(l.b.data() + o);
+            for (int q = 0; q < PP; ++q)
+                for (int half = 0; half < 2; ++half) {
+                    __m256 part[OO];
+                    for (int p = 0; p < OO; ++p)
+                        part[p] = half ? _mm512_extractf32x8_ps(acc[p][q], 1) : _mm512_castps512_ps256(acc[p][q]);
+                    float *out = y + std::size_t(t + 2 * q + half) * l.out + o;
+                    __m128 r = _mm_add_ps(reduce4(part[0], part[1], part[2], part[3]), bias);
+                    if (accumulate) r = _mm_add_ps(_mm_loadu_ps(out), r);
+                    _mm_storeu_ps(out, r);
+                }
+        }
+        for (int o = fullO; o < l.out; ++o)
+            for (int q = 0; q < 2 * PP; ++q) {
+                float v = dot(w + std::size_t(o) * in, x + std::size_t(t + q) * in, in) + (l.b.empty() ? 0.f : l.b[o]);
+                float &out = y[std::size_t(t + q) * l.out + o];
+                out = accumulate ? out + v : v;
+            }
+    }
+    if (fullT < n) linearAvx(l, x + std::size_t(fullT) * in, n - fullT, y + std::size_t(fullT) * l.out, accumulate);
 }
 
 // STS_OOC_HEART1_SCALAR=1 forces the reference loop (for the bit-equality check).
@@ -604,9 +702,153 @@ bool useAvx() {
     return avx;
 }
 
+bool useAvx512() {
+    static const bool avx512 = useAvx() && __builtin_cpu_supports("avx512f") && __builtin_cpu_supports("avx512dq");
+    return avx512;
+}
+
 void linear(const Net::Linear &l, const float *x, int n, float *y, bool accumulate = false) {
-    if (l.in % 8 == 0 && useAvx()) linearAvx(l, x, n, y, accumulate);
+    if (l.in % 8 == 0 && useAvx512()) linearAvx512(l, x, n, y, accumulate);
+    else if (l.in % 8 == 0 && useAvx()) linearAvx(l, x, n, y, accumulate);
     else linearScalar(l, x, n, y, accumulate);
+}
+
+// std::exp(float) for an array, four lanes at a time. The lanes repeat glibc's
+// __expf_fma fast path (sysdeps/ieee754/flt-32/e_expf.c, EXP2F_TABLE_BITS 5,
+// the same constants, table and fused operations); its special-case inputs
+// (|x| >= ~88, inf, nan) go to std::exp. Used only after a start-up self-test
+// finds it bitwise equal to this process's std::exp, so a libm or CPU with a
+// different expf keeps the scalar calls.
+namespace expf4 {
+constexpr std::uint64_t kTable[32] = {
+    0x3ff0000000000000, 0x3fefd9b0d3158574, 0x3fefb5586cf9890f, 0x3fef9301d0125b51, 0x3fef72b83c7d517b,
+    0x3fef54873168b9aa, 0x3fef387a6e756238, 0x3fef1e9df51fdee1, 0x3fef06fe0a31b715, 0x3feef1a7373aa9cb,
+    0x3feedea64c123422, 0x3feece086061892d, 0x3feebfdad5362a27, 0x3feeb42b569d4f82, 0x3feeab07dd485429,
+    0x3feea47eb03a5585, 0x3feea09e667f3bcd, 0x3fee9f75e8ec5f74, 0x3feea11473eb0187, 0x3feea589994cce13,
+    0x3feeace5422aa0db, 0x3feeb737b0cdc5e5, 0x3feec49182a3f090, 0x3feed503b23e255d, 0x3feee89f995ad3ad,
+    0x3feeff76f2fb5e47, 0x3fef199bdd85529c, 0x3fef3720dcef9069, 0x3fef5818dcfba487, 0x3fef7c97337b9b5f,
+    0x3fefa4afa2a490da, 0x3fefd0765b6e4540};
+constexpr std::uint64_t kShift = 0x4338000000000000, kInvLn2N = 0x40471547652b82fe, kC0 = 0x3ebc6af84b912394,
+                        kC1 = 0x3f2ebfce50fac4f3, kC2 = 0x3f962e42ff0c52d6;
+
+__attribute__((target("avx2,fma"))) void apply(float *v, int n) {
+    const auto bcast = [](std::uint64_t bits) { double d; std::memcpy(&d, &bits, 8); return d; };
+    const __m256d shift = _mm256_set1_pd(bcast(kShift)), invLn2N = _mm256_set1_pd(bcast(kInvLn2N));
+    const __m256d c0 = _mm256_set1_pd(bcast(kC0)), c1 = _mm256_set1_pd(bcast(kC1)), c2 = _mm256_set1_pd(bcast(kC2));
+    const __m256d one = _mm256_set1_pd(1.0);
+    const __m256i mask = _mm256_set1_epi64x(31);
+    const __m128i abstopLimit = _mm_set1_epi32(0x42a), abstopMask = _mm_set1_epi32(0x7ff);
+    int i = 0;
+    for (; i + 4 <= n; i += 4) {
+        const __m128 x = _mm_loadu_ps(v + i);
+        const __m128i abstop = _mm_and_si128(_mm_srli_epi32(_mm_castps_si128(x), 20), abstopMask);
+        const int special = _mm_movemask_ps(_mm_castsi128_ps(_mm_cmpgt_epi32(abstop, abstopLimit)));
+        const __m256d xd = _mm256_cvtps_pd(x);
+        __m256d kd = _mm256_fmadd_pd(invLn2N, xd, shift);
+        const __m256i ki = _mm256_castpd_si256(kd);
+        kd = _mm256_sub_pd(kd, shift);
+        const __m256d r = _mm256_fmsub_pd(invLn2N, xd, kd);
+        const __m256i t = _mm256_add_epi64(
+            _mm256_i64gather_epi64(reinterpret_cast<const long long *>(kTable), _mm256_and_si256(ki, mask), 8),
+            _mm256_slli_epi64(ki, 47));
+        const __m256d z = _mm256_fmadd_pd(r, c0, c1);
+        const __m256d r2 = _mm256_mul_pd(r, r);
+        __m256d y = _mm256_fmadd_pd(r, c2, one);
+        y = _mm256_fmadd_pd(z, r2, y);
+        y = _mm256_mul_pd(y, _mm256_castsi256_pd(t));
+        float out[4];
+        _mm_storeu_ps(out, _mm256_cvtpd_ps(y));
+        for (int k = 0; k < 4; ++k) v[i + k] = (special >> k) & 1 ? std::exp(v[i + k]) : out[k];
+    }
+    for (; i < n; ++i) v[i] = std::exp(v[i]);
+}
+
+// Every 4093rd bit pattern (1.05M floats, all signs and exponents) plus the
+// special-case boundaries.
+bool selfTest() {
+    std::vector<float> in, got;
+    for (std::uint64_t b = 0; b <= 0xffffffffull; b += 4093) {
+        float f;
+        const std::uint32_t u = std::uint32_t(b);
+        std::memcpy(&f, &u, 4);
+        in.push_back(f);
+    }
+    for (std::uint32_t u : {0x42b17217u, 0x42b17218u, 0xc2cff1b4u, 0xc2cff1b5u, 0xc2ce8ecfu, 0xc2ce8ed0u,
+                            0x42a00000u, 0x42afffffu, 0xc2afffffu, 0x80000000u, 0x0u, 0x7f800000u, 0xff800000u}) {
+        float f;
+        std::memcpy(&f, &u, 4);
+        in.push_back(f);
+    }
+    got = in;
+    apply(got.data(), int(got.size()));
+    for (std::size_t k = 0; k < in.size(); ++k) {
+        const float want = std::exp(in[k]);
+        if (std::memcmp(&want, &got[k], 4) != 0 && !(std::isnan(want) && std::isnan(got[k]))) return false;
+    }
+    return true;
+}
+
+bool usable() {
+    static const bool ok = useAvx() && __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma") && selfTest();
+    return ok;
+}
+}  // namespace expf4
+
+// v[k] = std::exp(v[k]).
+void expInPlace(float *v, int n) {
+    if (expf4::usable()) return expf4::apply(v, n);
+    for (int k = 0; k < n; ++k) v[k] = std::exp(v[k]);
+}
+
+// dot()'s eight partial sums of q (in registers) and k.
+__attribute__((target("avx"), always_inline)) inline __m256 scorePartial(const __m256 *q, const float *k, int chunks) {
+    __m256 s = _mm256_setzero_ps();
+    for (int c = 0; c < chunks; ++c) s = _mm256_add_ps(s, _mm256_mul_ps(q[c], _mm256_loadu_ps(k + 8 * c)));
+    return s;
+}
+
+// One attention head for queries [q0, n), bit for bit the scalar loop in
+// forwardRecord: each score keeps dot()'s partial sums and reduction (eight
+// keys reduced at once), max/exp/sum stay sequential, and each output
+// dimension sums p * v over the keys in key order. Needs headDim % 8 == 0, <= 32.
+__attribute__((target("avx"))) void attendHeadAvx(const float *qkv, int n, int q0, int dim, int off, int headDim,
+                                                  float scale, float *scores, float *att) {
+    const std::size_t stride = std::size_t(3) * dim;
+    const int chunks = headDim / 8;
+    for (int i = q0; i < n; ++i) {
+        const float *q = qkv + std::size_t(i) * stride + off;
+        __m256 qc[4];
+        for (int c = 0; c < chunks; ++c) qc[c] = _mm256_loadu_ps(q + 8 * c);
+        const float *keys = qkv + dim + off;
+#define PARTIAL(j) scorePartial(qc, keys + std::size_t(j) * stride, chunks)
+        int j = 0;
+        for (; j + 8 <= n; j += 8) {
+            const __m128 lo = reduce4(PARTIAL(j), PARTIAL(j + 1), PARTIAL(j + 2), PARTIAL(j + 3));
+            const __m128 hi = reduce4(PARTIAL(j + 4), PARTIAL(j + 5), PARTIAL(j + 6), PARTIAL(j + 7));
+            _mm256_storeu_ps(scores + j, _mm256_mul_ps(_mm256_set_m128(hi, lo), _mm256_set1_ps(scale)));
+        }
+        for (; j < n; ++j) scores[j] = reduce8(PARTIAL(j)) * scale;
+#undef PARTIAL
+        float mx = -std::numeric_limits<float>::infinity();
+        for (int t = 0; t < n; ++t) mx = std::max(mx, scores[t]);
+        float sum = 0;
+        for (int t = 0; t < n; ++t) scores[t] -= mx;
+        expInPlace(scores, n);
+        for (int t = 0; t < n; ++t) sum += scores[t];
+        // The same divisions, eight at a time.
+        int t = 0;
+        for (; t + 8 <= n; t += 8) _mm256_storeu_ps(scores + t, _mm256_div_ps(_mm256_loadu_ps(scores + t), _mm256_set1_ps(sum)));
+        for (; t < n; ++t) scores[t] = scores[t] / sum;
+        __m256 o[4];
+        for (int c = 0; c < chunks; ++c) o[c] = _mm256_setzero_ps();
+        for (int t = 0; t < n; ++t) {
+            const __m256 p = _mm256_set1_ps(scores[t]);
+            const float *v = qkv + std::size_t(t) * stride + 2 * dim + off;
+            for (int c = 0; c < chunks; ++c) o[c] = _mm256_add_ps(o[c], _mm256_mul_ps(p, _mm256_loadu_ps(v + 8 * c)));
+        }
+        float *out = att + std::size_t(i) * dim + off;
+        for (int c = 0; c < chunks; ++c) _mm256_storeu_ps(out + 8 * c, o[c]);
+    }
 }
 
 void rmsNorm(const float *x, const std::vector<float> &w, float *y) {
@@ -623,8 +865,80 @@ void addEmbedding(const Net::Embedding &e, int idx, float *out) {
     for (int i = 0; i < e.dim; ++i) out[i] += row[i];
 }
 
+// Projected FixedVec rows (sinusoidal features, projection, bias) by weights
+// and input bits. A row's projection does not depend on the other rows of its
+// call, so adding the remembered row is the same addition linear() makes.
+// Per thread and shared by every loaded net, whose row widths can differ (a
+// width-64 student serving next to a width-256 teacher), so the index stores
+// each row's float offset. Dropped whole when full.
+struct FixedVecMemo {
+    struct Key {
+        std::uint64_t id;
+        std::array<std::uint32_t, 4> bits;
+        bool operator==(const Key &o) const { return id == o.id && bits == o.bits; }
+    };
+    struct Hash {
+        std::size_t operator()(const Key &k) const {
+            std::uint64_t h = k.id * 0x9E3779B97F4A7C15ull;
+            for (auto b : k.bits) h = (h ^ b) * 0x100000001B3ull;
+            return std::size_t(h ^ (h >> 29));
+        }
+    };
+    static constexpr std::size_t kMaxFloats = std::size_t(1) << 20;
+    std::unordered_map<Key, std::size_t, Hash> index;  // offset into rows
+    std::vector<float> rows;
+};
+thread_local FixedVecMemo fixedVecMemo;
+
+std::uint64_t newMemoId() {
+    static std::atomic<std::uint64_t> next{1};
+    return next++;
+}
+
+void sinusoids(const Net::FixedVec &f, const float *x, float *s) {
+    const int half = int(f.invFreq.size()), dim = 2 * half;
+    for (int k = 0; k < f.features; ++k)
+        for (int j = 0; j < half; ++j) {
+            const float a = x[k] * f.invFreq[j];
+            s[std::size_t(k) * dim + j] = std::sin(a);
+            s[std::size_t(k) * dim + half + j] = std::cos(a);
+        }
+}
+
+// addFixedVecRows through the memo (weights with at most four features; off
+// under STS_OOC_HEART1_SCALAR=1).
+void addFixedVecRowsMemo(const Net::FixedVec &f, const float *x, int n, float *out) {
+    auto &m = fixedVecMemo;
+    const int dim = f.proj.out, sdim = 2 * int(f.invFreq.size());
+    if (m.rows.size() + std::size_t(n) * dim > FixedVecMemo::kMaxFloats) { m.index.clear(); m.rows.clear(); }
+    std::vector<std::size_t> offset(n);
+    std::vector<int> missRows;
+    for (int r = 0; r < n; ++r) {
+        FixedVecMemo::Key key{f.memoId, {0, 0, 0, 0}};
+        std::memcpy(key.bits.data(), x + std::size_t(r) * f.features, sizeof(float) * f.features);
+        const auto [it, inserted] = m.index.emplace(key, m.rows.size());
+        if (inserted) { m.rows.resize(m.rows.size() + dim); missRows.push_back(r); }
+        offset[r] = it->second;
+    }
+    if (!missRows.empty()) {
+        const std::size_t width = std::size_t(f.features) * sdim;
+        std::vector<float> s(width * missRows.size()), proj(std::size_t(dim) * missRows.size());
+        for (std::size_t i = 0; i < missRows.size(); ++i)
+            sinusoids(f, x + std::size_t(missRows[i]) * f.features, s.data() + i * width);
+        linear(f.proj, s.data(), int(missRows.size()), proj.data());
+        for (std::size_t i = 0; i < missRows.size(); ++i)
+            std::copy_n(proj.data() + i * dim, dim, m.rows.data() + offset[missRows[i]]);
+    }
+    for (int r = 0; r < n; ++r) {
+        const float *v = m.rows.data() + offset[r];
+        float *o = out + std::size_t(r) * dim;
+        for (int d = 0; d < dim; ++d) o[d] = o[d] + v[d];
+    }
+}
+
 // FixedVecEmbedding: sinusoidal features then a projection.
 void addFixedVec(const Net::FixedVec &f, const float *x, float *out) {
+    if (f.memoId && f.features <= 4 && useAvx()) return addFixedVecRowsMemo(f, x, 1, out);
     const int half = int(f.invFreq.size()), dim = 2 * half;
     std::vector<float> s(std::size_t(f.features) * dim);
     for (int k = 0; k < f.features; ++k)
@@ -640,6 +954,7 @@ void addFixedVec(const Net::FixedVec &f, const float *x, float *out) {
 // every row gets the same additions in the same order.
 void addFixedVecRows(const Net::FixedVec &f, const float *x, int n, float *out) {
     if (n == 0) return;
+    if (f.memoId && f.features <= 4 && useAvx()) return addFixedVecRowsMemo(f, x, n, out);
     const int half = int(f.invFreq.size()), dim = 2 * half;
     const std::size_t width = std::size_t(f.features) * dim;
     std::vector<float> s(width * n);
@@ -737,6 +1052,7 @@ DagFeatures mapDagFeatures(const Record &r) {
 }  // namespace
 
 bool Net::load(const std::string &file, std::string *error) {
+    forwardId_ = 0;
     const auto fail = [&](const std::string &why) {
         if (error) *error = why;
         return false;
@@ -821,6 +1137,7 @@ bool Net::load(const std::string &file, std::string *error) {
         f.features = features;
         f.invFreq = take(prefix + ".num_embed.inv_freq", {dim / 2});
         f.proj = lin(prefix + ".proj", dim, features * dim, true);
+        f.memoId = newMemoId();
         return f;
     };
     const std::string O = "obs_embed.component_embeddings.";
@@ -885,11 +1202,17 @@ bool Net::load(const std::string &file, std::string *error) {
     choiceLogits_ = lin("choice_logits", 1, dim, true);
     valueHead_ = lin("value_head", 1, dim, true);
     if (!missing.empty()) return fail("missing or misshaped tensors:" + missing);
+    for (auto &b : blocks_) {
+        b.inProjKV.out = 2 * dim; b.inProjKV.in = dim;
+        b.inProjKV.w.assign(b.inProj.w.begin() + std::ptrdiff_t(dim) * dim, b.inProj.w.end());
+        b.inProjKV.b.assign(b.inProj.b.begin() + dim, b.inProj.b.end());
+    }
     constexpr int kCardCount = int(sizeof(cardStringIds) / sizeof(cardStringIds[0]));
     if (card_.rows != kCardCount || relic_.rows != kRelicInvalid + 1
         || screen_.rows != static_cast<int>(ScreenState::BATTLE) + 1)
         return fail("enum sizes differ from this engine");
     path_ = file;
+    forwardId_ = newMemoId();
     return true;
 }
 
@@ -908,9 +1231,46 @@ static Record trimmedMap(const Record &in) {
     return r;
 }
 
-Output Net::forward(const Record &record, bool logitsOnly) const {
-    if (trimMap_ && record.mapY >= 0) return forwardRecord(trimmedMap(record), logitsOnly);
-    return forwardRecord(record, logitsOnly);
+namespace {
+// FNV-1a over every Record field (equality decides a hit; this only picks the slot).
+std::uint64_t recordHash(const Record &r) {
+    std::uint64_t h = 0xcbf29ce484222325ull;
+    const auto mix = [&h](std::int64_t v) { h = (h ^ std::uint64_t(v)) * 0x100000001b3ull; };
+    const auto ints = [&mix](const std::vector<int> &v) { mix(std::int64_t(v.size())); for (int x : v) mix(x); };
+    ints(r.fixedObservation); ints(r.deckCards); ints(r.deckUpgrades); ints(r.deckMisc); mix(r.act);
+    ints(r.relics); ints(r.relicCounters); ints(r.potions); ints(r.mapXs); ints(r.mapYs); ints(r.mapRooms);
+    mix(std::int64_t(r.mapPathXs.size()));
+    for (const auto &a : r.mapPathXs) for (int x : a) mix(x);
+    mix(r.burningEliteX); mix(r.burningEliteY); mix(r.mapX); mix(r.mapY);
+    ints(r.offeredCards); ints(r.offeredUpgrades); ints(r.offeredRelics); ints(r.offeredPotions);
+    mix(std::int64_t(r.fixedActions.size()));
+    for (const auto &f : r.fixedActions) { mix(f.action); mix(f.gold); mix(f.card); mix(f.relic); mix(f.info); }
+    ints(r.paths); mix(r.screenState); mix(r.selectScreenType);
+    return h;
+}
+
+// Recent outputs per thread, direct-mapped by record hash. A slot holds the
+// whole record, so a hit is an equal input to the same net and pass.
+struct ForwardMemo {
+    struct Slot { std::uint64_t net = 0; bool logitsOnly = false; std::uint64_t hash = 0; Record record; Output out; };
+    static constexpr std::size_t kSlots = 4096;
+    std::vector<Slot> slots = std::vector<Slot>(kSlots);
+};
+thread_local ForwardMemo forwardMemo;
+}  // namespace
+
+Output Net::forward(const Record &record, bool logitsOnly, bool memo) const {
+    const auto run = [&] {
+        return trimMap_ && record.mapY >= 0 ? forwardRecord(trimmedMap(record), logitsOnly)
+                                            : forwardRecord(record, logitsOnly);
+    };
+    if (!memo || !forwardId_) return run();
+    const std::uint64_t h = recordHash(record);
+    auto &slot = forwardMemo.slots[h % ForwardMemo::kSlots];
+    if (slot.net == forwardId_ && slot.logitsOnly == logitsOnly && slot.hash == h && slot.record == record) return slot.out;
+    Output out = run();
+    slot.net = forwardId_; slot.logitsOnly = logitsOnly; slot.hash = h; slot.record = record; slot.out = out;
+    return out;
 }
 
 Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
@@ -922,7 +1282,11 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
     const int nChoice = r.choiceCount();
     const int n = nObs + nChoice;
     // Choice-less records still have a value (pooled observation tokens); callers that need logits check choiceCount.
-    std::vector<float> x(std::size_t(n) * kDim, 0.f);
+    // Per-thread scratch, reused across calls: x starts zeroed, every other
+    // buffer is written before it is read.
+    thread_local struct { std::vector<float> x, xn, qkv, kv, att, h1, h2, scores, silu; } scratch;
+    auto &x = scratch.x;
+    x.assign(std::size_t(n) * kDim, 0.f);
     int t = 0;
     const auto row = [&](int i) { return x.data() + std::size_t(i) * kDim; };
     const auto position = [&](const Embedding &e, int key) { addEmbedding(e, key, row(t)); ++t; };
@@ -1039,17 +1403,33 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
 
     // Padding tokens are key-masked in silverbot, so attending over the valid
     // tokens alone gives the same outputs at every valid position.
-    std::vector<float> xn(std::size_t(n) * kDim), qkv(std::size_t(n) * 3 * kDim), att(std::size_t(n) * kDim);
-    std::vector<float> h1(std::size_t(n) * kHidden), h2(std::size_t(n) * kHidden), scores(n);
+    auto &xn = scratch.xn, &qkv = scratch.qkv, &att = scratch.att, &h1 = scratch.h1, &h2 = scratch.h2,
+         &scores = scratch.scores, &kv = scratch.kv, &silu = scratch.silu;
+    xn.resize(std::size_t(n) * kDim); qkv.resize(std::size_t(n) * 3 * kDim); att.resize(std::size_t(n) * kDim);
+    h1.resize(std::size_t(n) * kHidden); h2.resize(std::size_t(n) * kHidden); scores.resize(n);
     const float scale = 1.0f / std::sqrt(float(kHeadDim));
+    // STS_OOC_HEART1_SCALAR=1 keeps every reference loop below.
+    const bool vectorized = useAvx(), attendAvx = vectorized && kHeadDim % 8 == 0 && kHeadDim <= 32;
     for (std::size_t bi = 0; bi < blocks_.size(); ++bi) {
         const auto &b = blocks_[bi];
         // Every row is computed independently after the keys and values, so the
         // last block can skip the rows no logit reads.
         const int q0 = logitsOnly && bi + 1 == blocks_.size() ? nObs : 0, nq = n - q0;
         for (int i = 0; i < n; ++i) rmsNorm(row(i), b.norm1, xn.data() + std::size_t(i) * kDim);
-        linear(b.inProj, xn.data(), n, qkv.data());
-        for (int hd = 0; hd < kHeads; ++hd) {
+        if (q0 == 0) {
+            linear(b.inProj, xn.data(), n, qkv.data());
+        } else {
+            // Rows before q0 are only keys and values: their query outputs are never read.
+            linear(b.inProj, xn.data() + std::size_t(q0) * kDim, nq, qkv.data() + std::size_t(q0) * 3 * kDim);
+            kv.resize(std::size_t(q0) * 2 * kDim);
+            linear(b.inProjKV, xn.data(), q0, kv.data());
+            for (int i = 0; i < q0; ++i)
+                std::copy_n(kv.data() + std::size_t(i) * 2 * kDim, 2 * kDim, qkv.data() + std::size_t(i) * 3 * kDim + kDim);
+        }
+        if (attendAvx)
+            for (int hd = 0; hd < kHeads; ++hd)
+                attendHeadAvx(qkv.data(), n, q0, kDim, hd * kHeadDim, kHeadDim, scale, scores.data(), att.data());
+        else for (int hd = 0; hd < kHeads; ++hd) {
             for (int i = q0; i < n; ++i) {
                 const float *q = qkv.data() + std::size_t(i) * 3 * kDim + hd * kHeadDim;
                 float mx = -std::numeric_limits<float>::infinity();
@@ -1074,9 +1454,18 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
         for (int i = q0; i < n; ++i) rmsNorm(row(i), b.norm2, xn.data() + std::size_t(i) * kDim);
         linear(b.w1, xn.data() + o0, nq, h1.data() + h0);
         linear(b.v, xn.data() + o0, nq, h2.data() + h0);
-        for (std::size_t i = h0; i < h1.size(); ++i) {
-            const float a = h1[i];
-            h1[i] = a / (1.0f + std::exp(-a)) * h2[i];
+        if (vectorized) {
+            // The same SiLU, its exps taken in one pass.
+            const std::size_t m = h1.size() - h0;
+            silu.resize(m);
+            for (std::size_t i = 0; i < m; ++i) silu[i] = -h1[h0 + i];
+            expInPlace(silu.data(), int(m));
+            for (std::size_t i = 0; i < m; ++i) h1[h0 + i] = h1[h0 + i] / (1.0f + silu[i]) * h2[h0 + i];
+        } else {
+            for (std::size_t i = h0; i < h1.size(); ++i) {
+                const float a = h1[i];
+                h1[i] = a / (1.0f + std::exp(-a)) * h2[i];
+            }
         }
         linear(b.w2, h1.data() + h0, nq, x.data() + o0, /*accumulate=*/true);
     }
@@ -1253,6 +1642,69 @@ std::vector<TokenMapping> mapChoiceTokens(const Choice &choice, bool singingBowl
         }
     }
     return out;
+}
+
+void fixedVecMemoSelfTest() {
+    if (!useAvx()) return;  // the memo is off without AVX
+    // Two nets of different row width on one thread, calls interleaved with
+    // repeated inputs: every memo row equals the unmemoized projection bitwise.
+    const auto make = [](int out, unsigned seed) {
+        Net::FixedVec f;
+        f.features = 2;
+        f.invFreq = {1.0f, 0.37f, 0.11f, 0.029f};
+        f.proj.out = out;
+        f.proj.in = f.features * 2 * int(f.invFreq.size());
+        std::uint32_t state = seed;
+        const auto next = [&state] { state = state * 1664525u + 1013904223u; return float(state >> 8) / float(1 << 24) - 0.5f; };
+        f.proj.w.resize(std::size_t(f.proj.out) * f.proj.in);
+        for (float &w : f.proj.w) w = next();
+        f.proj.b.resize(f.proj.out);
+        for (float &b : f.proj.b) b = next();
+        f.memoId = newMemoId();
+        return f;
+    };
+    const Net::FixedVec narrow = make(64, 1), wide = make(256, 2);
+    fixedVecMemo = FixedVecMemo{};
+    for (int call = 0; call < 40; ++call) {
+        const Net::FixedVec &f = call % 3 == 1 ? wide : narrow;
+        const int n = 1 + call % 5;
+        std::vector<float> x(std::size_t(n) * f.features);
+        for (std::size_t i = 0; i < x.size(); ++i) x[i] = float((call * 7 + int(i) * 3) % 11);
+        std::vector<float> got(std::size_t(n) * f.proj.out, 0.25f), want = got;
+        addFixedVecRows(f, x.data(), n, got.data());
+        Net::FixedVec plain = f;
+        plain.memoId = 0;
+        addFixedVecRows(plain, x.data(), n, want.data());
+        if (std::memcmp(got.data(), want.data(), sizeof(float) * got.size()) != 0)
+            throw std::runtime_error("heart1 FixedVec memo selftest: mixed-width rows differ from the plain projection");
+    }
+    fixedVecMemo = FixedVecMemo{};
+}
+
+void linearSelfTest() {
+    // Every projection kernel this CPU uses against the reference loop, bitwise,
+    // over token counts that hit the full tiles and each leftover path.
+    Net::Linear l;
+    l.out = 68;
+    l.in = 64;
+    std::uint32_t state = 7;
+    const auto next = [&state] { state = state * 1664525u + 1013904223u; return float(state >> 8) / float(1 << 24) - 0.5f; };
+    l.w.resize(std::size_t(l.out) * l.in);
+    for (float &w : l.w) w = next();
+    l.b.resize(l.out);
+    for (float &b : l.b) b = next();
+    for (int n : {1, 2, 3, 5, 6, 7, 12, 13, 17})
+        for (bool accumulate : {false, true}) {
+            std::vector<float> x(std::size_t(n) * l.in);
+            for (float &v : x) v = next() * 8;
+            std::vector<float> want(std::size_t(n) * l.out), got;
+            for (float &v : want) v = next();
+            got = want;
+            linearScalar(l, x.data(), n, want.data(), accumulate);
+            linear(l, x.data(), n, got.data(), accumulate);
+            if (std::memcmp(got.data(), want.data(), sizeof(float) * got.size()) != 0)
+                throw std::runtime_error("heart1 linear selftest: vector projection differs from the reference loop");
+        }
 }
 
 void priorMappingSelfTest() {
@@ -1442,13 +1894,18 @@ void captureRow(Capture &c, nlohmann::json row, const Choice &choice, const std:
         throw std::runtime_error("STS_OOC_HEART1_CAPTURE: write failed");
 }
 
+}  // namespace
+
 nlohmann::json captureBase(const GameContext &gc, const char *kind) {
     // deck_misc follows obs.deck.cards (Ritual Dagger damage, Genetic Algorithm block), which heart1 does not see.
     std::vector<int> misc;
     for (const auto &c : gc.deck.cards) misc.push_back(c.misc);
     return {{"kind", kind}, {"act", gc.act}, {"floor", gc.floorNum},
-            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}, {"deck_misc", misc}};
+            {"screen", int(gc.screenState)}, {"select_type", int(gc.info.selectScreenType)}, {"deck_misc", misc},
+            {"wing_boots_counter", wingBootsCounter() ? 1 : 0}};
 }
+
+namespace {
 
 // Every EVERY-th prior call writes the node; every SELECT_EVERY-th card select that a
 // source opens is written too (the state the tree reaches only as a compound
@@ -1581,7 +2038,7 @@ int logitsCheckCommand(int argc, char **argv) {
         float sink = 0;
         for (int k = 0; k < reps; ++k)
             for (const auto &r : records) {
-                const auto out = model.forward(r, logitsOnly);
+                const auto out = model.forward(r, logitsOnly, /*memo=*/false);
                 if (!out.logits.empty()) sink += out.logits[0];
             }
         const double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();

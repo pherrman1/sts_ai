@@ -7,6 +7,7 @@
 
 #include "game/GameContext.h"
 #include "sim/search/ScumSearchAgent2.h"
+#include "combat_transition.h"
 
 struct RunResult {
     bool won;
@@ -41,6 +42,12 @@ extern thread_local std::function<void(const sts::GameContext &, const one_comba
 // "chain", "heart_key", ...). While set, the driver arms
 // one_combat::armOocPolicyTarget before the OOC MCTS step.
 extern thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+// Default-off research observation of each real combat: called after exitBattle
+// with the context copied just before Silver initialized the battle, the ended
+// battle, the number of RAW persistent-exit callbacks and the first one's record
+// (as combattransitiongen captures them). While unset the driver copies nothing.
+extern thread_local std::function<void(const sts::GameContext &pre, const sts::BattleContext &,
+    int rawCaptureCount, const std::optional<one_combat::CombatTransitionRecord> &)> t_realCombatObserver;
 
 // Install the STS_FORCE_RELIC run-start override with native initial relic
 // data, preserving the override's relic-pool removal behavior.
@@ -77,6 +84,9 @@ long long deployedOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent
 // themselves run counterfactual continuations stand down, and E2C capture
 // skips the branch's reward screens.
 extern thread_local bool t_oocContinuation;
+// Research-only (potionpriceprobe ooc=heart1): finishOocCounterfactual lets the
+// STS_OOC_HEART1 student take each out-of-combat step it encodes before the deployed chain.
+extern thread_local bool t_counterfactualHeart1;
 
 // Match and Keep: one fixed-pattern click (sim/search/MatchAndKeepPolicy.h).
 // Cards are valued by the active guide as a lone card reward: OOC MCTS when

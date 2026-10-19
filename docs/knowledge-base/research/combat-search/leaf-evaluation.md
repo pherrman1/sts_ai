@@ -1,6 +1,6 @@
 # Leaf evaluation in combat search
 
-Last verified: 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
+Last verified: 2026-10-18 for the native Silver prior-playout headroom pilot (§540); 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
 
 ## Purpose / research question
 
@@ -55,6 +55,18 @@ simulations end (§142).
 - **Native Silver: learned leaf replacing or mixed with one rollout** — replacement fails (§180 GBM VNet −12.8 floors; §397 Gate A); a blend `(1−α)·R1 + α·V` on the §397 corpus does not beat one rollout, regret −0.017 [−0.436, +0.377], FAIL; its point estimate sits at a second rollout but "at least as good as R2" is not shown (§525)
 - **Native Silver rollout block check against the worst facing under Surrounded** — +2.0 HP lost [−0.2, +4.3] on 192 paired A20 Shield-and-Spear fights, 1.12× CPU; over-blocking is an inference (§528, Shield and Spear rollout facing)
 - **Native Silver tree reuse off** — −2.6 HP lost [−5.4, −0.1] pooled on the same fights but did not replicate on the second seed block (+0.5), Heart 0 pp; not adopted (§528, same entry)
+- **Native Silver rollout attack targeting under Surrounded** — keep the faced monster +2.8 HP lost [+0.3, +5.6], face the bigger intent +0.7 [−2.5, +3.8] on 192 paired A20 Shield-and-Spear fights (§530, Shield and Spear search gap)
+
+## Native Silver leaf headroom
+
+- **Prior-argmax playouts at equal simulations (§540, pilot):** playing every playout card by the gen-6 E prior
+  instead of the greedy list lowers HP lost by 1.45 [0.31, 2.51] per A20 fight (elites and bosses), fight score
+  +3.8 [−2.4, +10.3] INCONCLUSIVE, at 7.6x CPU per simulation. A better playout has some headroom; a deployable
+  version would have to be distilled into something about as cheap as the greedy playout.
+- **Prior playouts vs production greedy 10k (§541, 768 A20 fights, 8 workers):** priorpl2500 +2.0 [−0.7, +4.7]
+  score, HP −0.4 NOT_SHOWN at 1.9x CPU per fight; priorpl10000 +3.3 [−0.6, +7.2] score, HP lost −0.70 [−1.19, −0.22]
+  at 7.3x. Bosses carry most of the point estimate (+9.8 / +12.5). At most a small gain. Philipp made prior playouts the
+  default for real boss and elite fights (ADR-0050; `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy).
 
 ## Relationships
 

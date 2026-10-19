@@ -1186,10 +1186,51 @@ void GameContext::relicsOnCombatEnd() {
     }
 }
 
+// STS_REWARDLESS_COMBAT_RNG_FIX: unset or 1 = a combat that grants no reward
+// (Smoke Bomb escape, Colosseum slaver fight) still makes the reward RNG
+// rolls, as Java's AbstractRoom.update runs addGoldToRewards, dropReward and
+// addPotionToRewards before its rewardAllowed/smoked checks (desktop-1.0.jar
+// cfad868a, issue #641); 0 = the legacy engine skips them. Other values are
+// fatal. Read once per such combat end.
+static bool rewardlessCombatRngFix() {
+    const char *value = std::getenv("STS_REWARDLESS_COMBAT_RNG_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_REWARDLESS_COMBAT_RNG_FIX must be 0 or 1");
+}
+
+void GameContext::rollEscapedCombatRewardRng() {
+    // Java builds the rewards and only skips the reward screen, so the gold,
+    // elite relic (popped from its pool) and potion rolls happen and the
+    // results are discarded. Card rewards are rolled by the screen: none.
+    Rewards discarded;
+    switch (curRoom) {
+        case Room::MONSTER:
+            discarded.addGold(treasureRng.random(10, 20));
+            break;
+        case Room::ELITE:
+            discarded.addGold(treasureRng.random(25, 35));
+            discarded.addRelic(returnRandomRelic(returnRandomRelicTierElite(relicRng)));
+            if (hasRelic(RelicId::BLACK_STAR)) {
+                discarded.addRelic(returnNonCampfireRelic(returnRandomRelicTierElite(relicRng)));
+            }
+            break;
+        case Room::EVENT:
+            break;
+        default:
+            // Smoke Bomb cannot be used against bosses.
+            return;
+    }
+    addPotionRewards(discarded);
+}
+
 void GameContext::afterBattle() {
     relicsOnCombatEnd();
 
     if (smokeBombUsed) {
+        if (rewardlessCombatRngFix()) {
+            rollEscapedCombatRewardRng();
+        }
         smokeBombUsed = false;
         regainControlAction = returnToMapAction;
         regainControl();
@@ -2735,6 +2776,12 @@ void GameContext::chooseEventOption(int idx) {
                     // clear a Smoke Bomb escape marker itself. With
                     // rewardAllowed false an escape still reopens the event.
                     gc.relicsOnCombatEnd();
+                    if (rewardlessCombatRngFix()) {
+                        // Won or escaped, Java rolls a potion into the
+                        // cleared rewards and reopen() discards it.
+                        Rewards discarded;
+                        gc.addPotionRewards(discarded);
+                    }
                     gc.smokeBombUsed = false;
                     gc.screenState = ScreenState::EVENT_SCREEN;
                     gc.regainControlAction = returnToMapAction;

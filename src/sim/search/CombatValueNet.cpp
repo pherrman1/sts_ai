@@ -12,7 +12,10 @@
 #include "sim/search/Action.h"
 #include "sim/search/ExpertKnowledge.h"
 
+#include <cstdlib>
 #include <fstream>
+#include <stdexcept>
+#include <string>
 #include <sstream>
 #include <unordered_map>
 #include <algorithm>
@@ -75,7 +78,18 @@ namespace {
     constexpr int kMonDmgOff    = 4;                        // "mKIntent" = incoming damage (0 if not attacking)
     constexpr int kPolicyMlpEmbRows = 128;                  // policy-MLP embedding table rows
 
-    int powerVal(const Player &p, PlayerStatus s) {
+    // STS_ACTIVE_POWER_FEATURES: unset or 1 = a power whose flag is off reads
+    // 0. The engine clears some powers (Vigor, Flame Barrier, removed debuffs)
+    // by their flag only, so statusMap keeps the old amount. 0 = the legacy
+    // feature, which read that leftover amount. Other values are fatal.
+    bool activePowerFeatures() {
+        const char *value = std::getenv("STS_ACTIVE_POWER_FEATURES");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_ACTIVE_POWER_FEATURES must be 0 or 1");
+    }
+
+    int powerVal(const Player &p, PlayerStatus s, bool activeOnly) {
         switch (s) {
             case PlayerStatus::STRENGTH:  return p.strength;
             case PlayerStatus::DEXTERITY: return p.dexterity;
@@ -83,6 +97,7 @@ namespace {
             case PlayerStatus::ARTIFACT:  return p.artifact;
             default: break;
         }
+        if (activeOnly && !p.hasStatusRuntime(s)) return 0;
         auto it = p.statusMap.find(s);
         if (it != p.statusMap.end()) return it->second;
         return p.hasStatusRuntime(s) ? 1 : 0;
@@ -332,7 +347,8 @@ void combatExtractFeatures(const BattleContext &bc, float *out) {
     out[k++] = (float)nPow;
     out[k++] = (float)nOth;
     out[k++] = (float)bc.potionCount;
-    for (const auto &pf : kPowers) out[k++] = (float)powerVal(p, pf.status);
+    const bool activeOnly = activePowerFeatures();
+    for (const auto &pf : kPowers) out[k++] = (float)powerVal(p, pf.status, activeOnly);
 
     // ---- rich context: relics + per-pile card-id counts (only when read) ----
     if (!g_richCombatFeatures) return;   // narrow fast path: legacy nets don't read these

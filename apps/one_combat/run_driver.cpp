@@ -210,6 +210,8 @@ thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+thread_local std::function<void(const sts::GameContext &, const sts::BattleContext &,
+    int, const std::optional<one_combat::CombatTransitionRecord> &)> t_realCombatObserver;
 
 thread_local MatchAndKeepWantCache t_matchAndKeepWant;
 
@@ -380,6 +382,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
 }
 
 thread_local bool t_oocContinuation = false;
+thread_local bool t_counterfactualHeart1 = false;
 
 bool deployedRestV() {
     const char *d = std::getenv("STS_REST_V");
@@ -477,6 +480,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             nlohmann::json tracePre;
             if (traceOoc) tracePre = oocTraceState(gc);
             BattleContext bc{};
+            std::optional<GameContext> combatPre;
+            if (t_realCombatObserver) combatPre = gc;
             // Silver initializes the battle itself so its observational
             // Runic-Dome hooks see the initial hidden intent lifecycle.
             const double combatWall = floorProfile.on() ? one_combat::runProfileWall() : 0;
@@ -497,7 +502,19 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             }
             if (one_combat::e2cCaptureActive())
                 one_combat::beginE2cFight(fightsTotal - 1, gc, bc);
-            one_combat::exitBattleWithE2cRawCapture(bc, gc);
+            if (combatPre) {
+                std::optional<one_combat::CombatTransitionRecord> record;
+                int rawCaptureCount = 0;
+                {
+                    one_combat::CombatTransitionRawObserverScope scope(
+                        [&](const BattleContext &ended, GameContext &raw) {
+                            if (++rawCaptureCount == 1)
+                                record = one_combat::captureCombatTransition(*combatPre, ended, raw);
+                        });
+                    one_combat::exitBattleWithE2cRawCapture(bc, gc);
+                }
+                t_realCombatObserver(*combatPre, bc, rawCaptureCount, record);
+            } else one_combat::exitBattleWithE2cRawCapture(bc, gc);
             if (bossHook) bossHook->after(gc, bc);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "battle"}, {"fight", fightsTotal},

@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-10-17 for `heartoutcomegen ... policy` search policy-target rows; 2026-10-17 for controlled Ritual/Writhing research setups; 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
+Last verified: 2026-10-18 for `heartoutcomegen` header provenance and real-combat CTM rows; 2026-10-17 for `heartoutcomegen ... policy` search policy-target rows; 2026-10-17 for controlled Ritual/Writhing research setups; 2026-10-17 for the `act4_fork` CTM forced setup; 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for consumed one-shot holdout and marginal early mean-bias gate (§499); 2026-10-17 for observed-outcome value fitting and recovery (§498); 2026-10-16 for observed Heart-outcome collection (§497); 2026-10-09 for the outcome-label learning curve (`tools.vwin_outcome_curve`); 2026-10-08 for the CTM escape fit (`ctmescapefeatures`, `tools/ctm_escape.py`); 2026-10-07 for the CTM retrain union, refit flags and declared HP domain, `ctmscorerows` and its model overrides, the learned-stop Python teacher contract, the CTM corpus adapter and `tools.vwin_e1_focal`; 2026-10-06 for the learned-stop `combattransitiongen` teacher; 2026-10-03 for explicit A3 corpus bindings and predictive summaries; 2026-10-02 for A3 sibling ranking and LF native-parity fixtures; 2026-10-01 for A3 offline model tooling, mixed-producer corpus validation, the Violence/Stasis pile-capacity fixes and `vwinrefreshcrashdiag`; 2026-09-30 for Match and Keep policy snapshot isolation; 2026-09-28 for DECISION capture-error continuation; 2026-09-27 for v_win refresh compound capture and the fail-closed `STS_VPATH` guard; 2026-09-26 for local research execution (ADR-0024); 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -81,6 +81,10 @@ consulted the row also has:
   (`token|skip_card|bowl|gold|discard_potion|none`, the rules of
   `heart1::mapPriorLogits`); and `checkpoints` (`id`, `visits`, `q` after
   128/256/512/... completed simulations, recorded inside the live search).
+- With `STS_OOC_MCTS_FULL_BUDGET_FRACTION` set (playout-cap randomization),
+  `root.fullBudget`: `true` when this root was sampled to run the full budget
+  with no early stop (the clean policy targets), `false` otherwise (singletons
+  are always `false`). The key is absent when the option is unset.
 
 Checkpoints only read root statistics; the singleton bypass and every early
 stop are kept, so capture does not change play. A same-seed `off`/`on`/`policy`
@@ -88,12 +92,39 @@ canary must give byte-identical `STS_OOC_DECISION_TRACE` and
 `STS_OOC_MCTS_TRACE` action files, and `policy` minus its decision rows and
 the added header/footer keys must equal `on`. Match and Keep's hypothetical
 card searches are never recorded. This is capture only: no target fitting,
-training or playout-cap randomization.
+training. Playout-cap randomization (`STS_OOC_MCTS_FULL_BUDGET_FRACTION`, off by
+default) runs its sampled roots past the strict visit lock: the selected action
+is the same unless a later simulation aborts the search (then the V4 fallback
+acts), and the root visits/Q become full-budget policy targets.
 `STS_OOC_MCTS_ROOT_TRACE` (§503, above) already writes per-root candidates
 with prior/visits/Q, the public record and a snapshot to a separate file; policy
 mode adds checkpoints, heart1 token indices, stop/abort/fallback flags and root
 visit statistics in the trajectory itself, with no snapshots or Match and Keep
 hypothetical roots.
+
+### Header provenance and real-combat CTM rows
+
+Every `heartoutcomegen` header has `provenance`: `ctmArtifacts` (role, path,
+sha256 of each combat transition model file the live search loaded, including
+the automatic pathb-r2 and A20 stacks that `policy.ooc_mcts.artifact_sha256`
+does not hash because no environment variable names them), `rolloutRootTable`
+(ADR-0046 model path and sha256, `null` when off), `silverLeaf` (the effective
+Silver leaf specification) and `silverRootPrior` (`null` when unset).
+
+`STS_HEART_OUTCOME_CTM_ROWS=1` (default off, any mode) also writes
+`OUT.ctm.jsonl`: one `combat_transition_row_v2` row per real combat, built
+like `combattransitiongen` rows (predictor input and RAW pre/post transition
+from the context copied before Silver initializes the battle), with
+`sourceSeed` = run seed, `fightIdx` 0..n-1 and `teacherId`
+`heartoutcomegen-real-combat`. `ctmscorerows` reads the file directly. The
+header gains `ctmRows` (file name and row/predictor schemas) and the footer
+`ctmRows` (row count); a file is usable only when its trajectory has the
+healthy footer. The option only observes: a same-seed `policy` run with and
+without it must give byte-identical decision and MCTS action traces and
+trajectory rows (`tools/heart_ctm_rows_canary.py`). Rows come from the run's
+own policy and Silver, so they are a deployment distribution, not the
+calibrated pathb-a20 label corpus; use them to check §470-style calibration
+drift before mixing them into a CTM refit.
 
 ### Recovered outcome-corpus import
 
@@ -227,8 +258,9 @@ are intentionally not overwritten by `applyCombatTransitionState`.
 `combattransitiongen` (not the Lizard candidate mode or other teacher
 consumers) also accepts a learned-stop teacher (#418): `search_configuration`
 sets `"budget_policy": "learned_stop"` with `learned_stop_model` and
-`learned_stop_threshold` equal to the compiled stop model
-(`gbt-770201c31f7b`, `0.0323`). The frozen environment then requires
+`learned_stop_threshold` equal to the selected stop model
+(`gbt-770201c31f7b`, `0.0323` for the existing teachers; since ADR-0051 that model
+needs `STS_SILVER_LEARNED_STOP_MODEL=gbt-770201c31f7b`). The frozen environment then requires
 `STS_SILVER_EXACT_ROOT_BUDGETS=0` and `STS_SILVER_LEARNED_STOP=1`, and the
 process must run plain learned stopping (no adaptive, searched one-action
 roots, boss fallback or boss max). The remaining search constants and the 10,000 cap are unchanged. An absent

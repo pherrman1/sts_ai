@@ -700,6 +700,8 @@ const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutC
         // #544/#579: "0" restores uncapped playouts.
         if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_ACTION_CAP"); raw && *raw)
             c.actionCap = std::max(0, std::atoi(raw));
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_PRIOR"); raw && *raw)
+            c.prior = std::string(raw) == "1";
         return c;
     }();
     return config;
@@ -751,6 +753,8 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
         if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
                 || bc.inputState == InputState::CARD_SELECT)) {
             action = chooseUniformRolloutAction(bc);
+        } else if (rolloutConfig.prior && bc.inputState == InputState::PLAYER_NORMAL) {
+            action = choosePriorRolloutAction(bc);
         } else if (bc.inputState == InputState::PLAYER_NORMAL) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
@@ -786,6 +790,20 @@ search::Action search::SilverSearcher::chooseUniformRolloutAction(BattleContext 
     }
     std::uniform_int_distribution<std::size_t> dist(0, scratch.edges.size() - 1);
     return scratch.edges[dist(rolloutAgent.rng)].action;
+}
+
+search::Action search::SilverSearcher::choosePriorRolloutAction(BattleContext &bc) {
+    if (!rolloutPrior) throw std::runtime_error("SilverSearcher: prior playouts need rolloutPrior");
+    rolloutAgent.materializeHiddenIntents(bc);
+    Node scratch;
+    enumerateCardActions(scratch, bc);
+    scratch.edges.push_back({Action(ActionType::END_TURN)});
+    if (scratch.edges.size() == 1) return scratch.edges[0].action;
+    const auto prior = rolloutPrior(bc, scratch.edges);
+    if (prior.size() != scratch.edges.size())
+        throw std::runtime_error("SilverSearcher: rollout prior size differs from the playout edges");
+    ++stats.rolloutPriorPicks;
+    return scratch.edges[std::max_element(prior.begin(), prior.end()) - prior.begin()].action;
 }
 
 void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleContext &bc) {
@@ -980,7 +998,15 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     }
 
     if (bc.outcome == Outcome::PLAYER_VICTORY) {
-        double score = evalWeights.winBonus + postBattleHealedHp(bc, context) + potionScore
+        double hpScore = postBattleHealedHp(bc, context);
+        if (evalWeights.concaveHpK > 0) {
+            const double k = evalWeights.concaveHpK;
+            const double m = std::max(1, rootState->player.maxHp);
+            const double frac = hpScore / m;
+            hpScore = m / k * std::exp(0.75 * k) * (1 - std::exp(-k * frac));
+            potionScore *= std::exp(-0.5 * k * (frac - 0.75));
+        }
+        double score = evalWeights.winBonus + hpScore + potionScore
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);

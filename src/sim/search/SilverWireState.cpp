@@ -1,8 +1,10 @@
 #include "sim/search/SilverWireState.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 #include "constants/Potions.h"
 #include "sim/search/CombatKnowledge.h"
@@ -26,7 +28,9 @@ namespace sts::search {
                         && (in.status != 0 || in.sourceMonster))
                     || (in.kind == K::BUFF_PLAYER && in.sourceMonster)
                     || ((in.kind == K::GAMBLE || in.kind == K::UPGRADE_RANDOM || in.kind == K::USE_CARD
-                        || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS) && in.amount != 0))
+                        || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS
+                        || in.kind == K::REACTIVE_ROLL_MOVE) && in.amount != 0)
+                    || (in.kind == K::MONSTER_GAIN_BLOCK ? in.monster < 0 || in.monster > 4 : in.monster != 0))
                 throw std::invalid_argument("invalid Silver pending action fields");
             switch (in.kind) {
                 case K::DRAW: return Actions::DrawCards(in.amount);
@@ -39,6 +43,14 @@ namespace sts::search {
                 case K::USE_CARD: return Actions::OnAfterCardUsed();
                 case K::REMOVE_PEN_NIB: return Actions::RemoveStatus<PlayerStatus::PEN_NIB>();
                 case K::REMOVE_PLAYER_DEBUFFS: return Actions::RemovePlayerDebuffs();
+                case K::HEAL_PLAYER:
+                    if (in.amount < 1) throw std::invalid_argument("invalid Silver pending heal amount");
+                    return Actions::HealPlayer(in.amount, true);
+                case K::MONSTER_GAIN_BLOCK: return Actions::MonsterGainBlock(in.monster, in.amount);
+                // Writhing Mass is monster 0; its Reactive scalar counts the rolls.
+                case K::REACTIVE_ROLL_MOVE: return Actions::ReactiveRollMove();
+                // Sharp Hide's THORNS hit on the player (not self-damage).
+                case K::MONSTER_THORNS: return Actions::DamagePlayer(in.amount);
                 case K::BUFF_PLAYER: {
                     const auto status = static_cast<PlayerStatus>(in.status);
                     switch (status) {
@@ -322,6 +334,18 @@ namespace sts::search {
 
     }
 
+    // STS_SILVER_MONSTER_REACTION_QUEUE: unset/1 (default) = a selection's
+    // queued monster reactions (MonsterGainBlock, ReactiveRollMove, Sharp
+    // Hide DamagePlayer; e.g. Headbutt into Writhing Mass) are captured as an exact pending
+    // tail. 0 = legacy: such a tail stays unobserved and conversion falls
+    // back to card replay. Other values are fatal.
+    static bool silverMonsterReactionQueue() {
+        const char *value = std::getenv("STS_SILVER_MONSTER_REACTION_QUEUE");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE must be 0 or 1");
+    }
+
     void capturePendingActionQueue(const BattleContext &state, BattleStateWire &wire) {
         using K = silver_bridge::PendingActionKind;
         wire.pendingActionQueueObserved = false;
@@ -343,6 +367,17 @@ namespace sts::search {
                     if(action.v_RemoveStatus.s!=PlayerStatus::PEN_NIB)return;
                     item.kind=K::REMOVE_PEN_NIB;break;
                 case CombatActionType::RemovePlayerDebuffs: item.kind=K::REMOVE_PLAYER_DEBUFFS;break;
+                case CombatActionType::HealPlayer: item.kind=K::HEAL_PLAYER; item.amount=action.v_HealPlayer.amount; break;
+                case CombatActionType::MonsterGainBlock:
+                    if(!silverMonsterReactionQueue())return;
+                    item.kind=K::MONSTER_GAIN_BLOCK; item.monster=action.v_MonsterGainBlock.idx;
+                    item.amount=action.v_MonsterGainBlock.amount; break;
+                case CombatActionType::ReactiveRollMove:
+                    if(!silverMonsterReactionQueue())return;
+                    item.kind=K::REACTIVE_ROLL_MOVE; break;
+                case CombatActionType::DamagePlayer:
+                    if(!silverMonsterReactionQueue())return;
+                    item.kind=K::MONSTER_THORNS; item.amount=action.v_DamagePlayer.damage; break;
                 case CombatActionType::BuffPlayer:
                     item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
                 case CombatActionType::DebuffPlayer:

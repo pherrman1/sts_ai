@@ -80,6 +80,11 @@ struct OocMctsConfig {
     // Explicit online candidate: after simulation 512, stop at a >=20% root
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
+    // Opt-in gap ladder (STS_OOC_MCTS_GAP_STOP): after each listed simulation
+    // count, stop once the root top-two visit gap is at least gapStopFraction
+    // times the completed simulations. Off when the fraction is 0.
+    std::vector<std::uint64_t> gapStopSimulations;
+    double gapStopFraction = 0;
     // Optional research budget checked after each completed simulation. The
     // host includes model/root preparation in its deadline. Empty is unchanged.
     std::function<bool()> budgetExhausted;
@@ -88,6 +93,12 @@ struct OocMctsConfig {
     // when the provider reports an equal outcomeEquivalenceKey. The particle list
     // keeps one entry per sample, so reuse stays frequency-weighted.
     bool mergeEquivalentOutcomes = false;
+    // Issue #633: an OocSearchUnsupported raised below the root discards only
+    // that simulation (visits rolled back) and prunes the action edge that led
+    // to it; a node whose actions are all pruned prunes its own parent edge.
+    // The search aborts only when every root action is pruned. Off keeps the
+    // old whole-root abort.
+    bool pruneUnsupported = false;
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;
@@ -131,10 +142,15 @@ struct OocMctsMetrics {
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
     // Sampled successors pooled into an existing equivalent particle.
     std::uint64_t mergedOutcomes = 0;
+    // pruneUnsupported: discarded simulations, pruned action edges, and the
+    // OocSearchUnsupported reasons that pruned them.
+    std::uint64_t unsupportedSimulations = 0, prunedActions = 0;
+    std::map<std::string, std::uint64_t> prunedReasons;
     std::uint32_t maxDepthReached = 0;
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;
     std::uint64_t earlyStopVisitGap20 = 0;
+    std::uint64_t earlyStopGapLadder = 0;
     std::uint64_t earlyStopBudget = 0;
     std::uint64_t savedSimulations = 0;
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
@@ -175,6 +191,7 @@ struct OocRootActionStats {
     double prior;
     std::uint64_t visits;
     double q;
+    bool pruned = false;   // pruneUnsupported removed this action from selection
 };
 struct OocRootCheckpointStats {
     std::uint64_t simulations;

@@ -34,10 +34,14 @@ struct LiveOocStateV1 {
     bool matchAndKeep = false;
     bool selectorPreview = false;
     int selectorPreviewDeckIndex = -1;
-    // Java does not expose the private reward pity counters. Synthetic parity
-    // fixtures may opt in when they provide an exact public reconstruction;
-    // real live captures remain false and must not use a fabricated midpoint.
+    // Qualifies the reward pity counters for direct V4 and the MCTS V4
+    // fallback prior. Only synthetic parity fixtures set it; real live
+    // captures leave it false, so V4 stays off in live play.
     bool rewardPityHistoryComplete = false;
+    // The capture carries the exact vanilla reward pity counters (#636):
+    // MCTS keeps them at the root and the v_win leaf evaluates them directly.
+    // STS_LIVE_OOC_EXACT_PITY=0 clears it.
+    bool exactRewardPity = false;
     // Separate transition-capable public-information root. Its hidden pools
     // and RNG streams come from a fixed hypothetical distribution and are
     // re-sampled by OOC MCTS; they are never copied from the live game.
@@ -50,6 +54,9 @@ struct LiveOocStateV1 {
         bool questionHistoryComplete = false;
         QuestionChancePosterior questionChancePosterior;
         bool mapHistoryComplete = false;
+        // Seen-relic history was incomplete and the remaining pool superset
+        // is searched as the uniform public prior (STS_LIVE_RELIC_OFFER_PRIOR).
+        bool seenRelicOfferPrior = false;
         bool supported = true;
         std::string reason;
     } mctsRoot;
@@ -58,8 +65,10 @@ ImportResult importLiveOocStateV1(const nlohmann::json &observation, LiveOocStat
 // Resolves one primitive against the complete captured current-screen mapping.
 // A schema/mapping error throws; it is never a policy UNSUPPORTED fallback.
 nlohmann::json lowerLiveOocAction(const LiveOocStateV1 &state, std::uint32_t primitiveBits);
+// treeRuleChoices: equivalence uses the tree-rule search key (copies of one
+// card are one bottle/duplicate/bonfire choice), as the live search does.
 void validateLiveOocActionSet(const LiveOocStateV1 &state, const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentChoices = false);
+                              bool allowEquivalentChoices = false, bool treeRuleChoices = false);
 std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardGoldLiveAction(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardPotionLiveAction(const LiveOocStateV1 &state);

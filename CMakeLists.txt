@@ -122,6 +122,118 @@ add_test(NAME engine_fidelity_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(engine_fidelity_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(dead_target_debuff_fix_test tests/dead_target_debuff_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_target_debuff_fix_test PRIVATE include json/include)
+add_test(NAME dead_target_debuff_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_target_debuff_fix_test>)
+set_tests_properties(dead_target_debuff_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(curl_up_lethal_test tests/curl_up_lethal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(curl_up_lethal_test PRIVATE include json/include)
+add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:curl_up_lethal_test>)
+set_tests_properties(curl_up_lethal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(half_dead_power_reset_test tests/half_dead_power_reset_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(half_dead_power_reset_test PRIVATE include json/include)
+add_test(NAME half_dead_power_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:half_dead_power_reset_test>)
+set_tests_properties(half_dead_power_reset PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(strike_count_test tests/strike_count_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(strike_count_test PRIVATE include json/include)
+add_test(NAME strike_count COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:strike_count_test>)
+set_tests_properties(strike_count PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(pile_cost_reset_test tests/pile_cost_reset_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(pile_cost_reset_test PRIVATE include json/include)
+add_test(NAME pile_cost_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:pile_cost_reset_test>)
+set_tests_properties(pile_cost_reset PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(panache_test tests/panache_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(panache_test PRIVATE include json/include)
+add_test(NAME panache COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:panache_test>)
+set_tests_properties(panache PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(dead_monster_block_test tests/dead_monster_block_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_monster_block_test PRIVATE include json/include)
+add_test(NAME dead_monster_block COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_monster_block_test>)
+set_tests_properties(dead_monster_block PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(mugger_death_rng_test tests/mugger_death_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mugger_death_rng_test PRIVATE include json/include)
+add_test(NAME mugger_death_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mugger_death_rng_test>)
+set_tests_properties(mugger_death_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(slime_split_rng_test tests/slime_split_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(slime_split_rng_test PRIVATE include json/include)
+add_test(NAME slime_split_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:slime_split_rng_test>)
+set_tests_properties(slime_split_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(dying_attacker_test tests/dying_attacker_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dying_attacker_test PRIVATE include json/include)
+add_test(NAME dying_attacker COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dying_attacker_test>)
+set_tests_properties(dying_attacker PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(blood_potion_heal_test PRIVATE include json/include)
+add_test(NAME blood_potion_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:blood_potion_heal_test>)
+set_tests_properties(blood_potion_heal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(hand_upgrade_all_test tests/hand_upgrade_all_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(hand_upgrade_all_test PRIVATE include json/include)
+add_test(NAME hand_upgrade_all COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:hand_upgrade_all_test>)
+set_tests_properties(hand_upgrade_all PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(mayhem_after_draw_test tests/mayhem_after_draw_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mayhem_after_draw_test PRIVATE include json/include)
+add_test(NAME mayhem_after_draw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mayhem_after_draw_test>)
+set_tests_properties(mayhem_after_draw PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(active_power_features_test tests/active_power_features_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(active_power_features_test PRIVATE include json/include)
+add_test(NAME active_power_features COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:active_power_features_test>)
+set_tests_properties(active_power_features PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(potion_reward_swap_test tests/potion_reward_swap_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(potion_reward_swap_test PRIVATE include json/include)
@@ -216,6 +328,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/differential_replay_native.cpp
@@ -239,6 +352,7 @@ link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
+add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
 add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
@@ -246,6 +360,8 @@ add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
 set_tests_properties(heart_outcome_import_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_collection_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_capture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+set_tests_properties(heart1_public_record_invariance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
@@ -274,6 +390,27 @@ add_executable(screen_leaf_continuations_test
 target_include_directories(screen_leaf_continuations_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_continuations
     COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh $<TARGET_FILE:screen_leaf_continuations_test>)
+
+# Offline exact one-step combat parity against recorded live game steps.
+add_executable(combat_parity_probe apps/combat_parity_probe.cpp
+    apps/one_combat/combat_parity.cpp
+    apps/one_combat/live_silver_importer.cpp
+    apps/one_combat/live_silver_mapping.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_parity_probe PRIVATE include json/include apps)
+target_link_options(combat_parity_probe PRIVATE -Wl,--gc-sections)
+add_test(NAME combat_parity COMMAND python3 -m unittest tests.test_combat_parity)
+set_tests_properties(combat_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    ENVIRONMENT "COMBAT_PARITY_PROBE=$<TARGET_FILE:combat_parity_probe>" LABELS "core;smoke")
+add_executable(combat_parity_projection_test tests/combat_parity_projection_test.cpp
+    apps/one_combat/combat_parity.cpp
+    apps/one_combat/live_silver_importer.cpp
+    apps/one_combat/live_silver_mapping.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_parity_projection_test PRIVATE include json/include apps)
+target_link_options(combat_parity_projection_test PRIVATE -Wl,--gc-sections)
+add_test(NAME combat_parity_projection COMMAND combat_parity_projection_test)
+set_tests_properties(combat_parity_projection PROPERTIES LABELS "core;smoke")
 
 # Read-only newline-delimited JSON endpoint for the private live-model
 # inspector.  Keep it separate from the simulator driver until a proven
@@ -321,6 +458,9 @@ set_tests_properties(render_ooc_mcts PROPERTIES
 add_test(NAME workflow_tools COMMAND python3 -m unittest tests.test_workflow_tools)
 set_tests_properties(workflow_tools PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME heart1_capture_provenance COMMAND python3 -m unittest tests.test_heart1_capture_provenance)
+set_tests_properties(heart1_capture_provenance PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 find_program(STS_NODE_EXECUTABLE node)
 if(STS_NODE_EXECUTABLE)
     add_test(NAME ooc_graph_logic COMMAND ${STS_NODE_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_ooc_graph_logic.js)
@@ -363,7 +503,8 @@ add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
     $<TARGET_FILE:live_ooc_parity_test>
     ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native
     ${CMAKE_CURRENT_BINARY_DIR}/live_ooc_parity_fixtures.jsonl
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act3_entry.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_act1_boss_card_reward.json)
 set_tests_properties(live_ooc_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_ooc_protocol.py
@@ -388,6 +529,7 @@ add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
+    apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ctm_importer_test PRIVATE include json/include)
 link_ctm_crypto(live_ctm_importer_test)
@@ -406,7 +548,9 @@ target_link_options(live_silver_importer_test PRIVATE -Wl,--gc-sections)
 add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:live_silver_importer_test>
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_slime_boss_split.json
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_guardian_a20_phases.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_guardian_a20_phases.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_two_thieves_turn1.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_three_byrds_turn1.json)
 
 add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
     apps/one_combat/combat_transition.cpp
@@ -529,6 +673,8 @@ add_test(NAME silver_rollout_zero_cost_loop COMMAND $<TARGET_FILE:unit-test> sil
 set_tests_properties(silver_escape_penalty PROPERTIES LABELS "core")
 add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_potion_weights)
 set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
+add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_concave_hp_leaf)
+set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
@@ -683,12 +829,40 @@ add_test(NAME silver_learned_stop_rejects_small_boss_max
 set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
+# ADR-0051: STS_SILVER_LEARNED_STOP_MODEL selects a compiled stop model by id; A20
+# whole-run modes default to learned stopping even with a sims argument.
+add_test(NAME silver_learned_stop_rejects_unknown_model
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_unknown_model PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "\\[A20 default: Silver learned stopping.*STS_SILVER_LEARNED_STOP_MODEL must be gbt-0cac7cc64364 or gbt-770201c31f7b")
+add_test(NAME silver_learned_stop_no_default_below_a20
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_no_default_below_a20 PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_MODEL must be"
+    FAIL_REGULAR_EXPRESSION "A20 default")
+add_test(NAME silver_learned_stop_a20_zero_keeps_flat
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_a20_zero_keeps_flat PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK"
+    FAIL_REGULAR_EXPRESSION "A20 default")
 add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
 set_tests_properties(silver_learned_stop_rejects_boss_fallback_without_learned_stop PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK requires STS_SILVER_LEARNED_STOP=1")
+add_test(NAME silver_gold_weight_rejects_negative
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sgw-invalid.csv")
+set_tests_properties(silver_gold_weight_rejects_negative PROPERTIES
+    ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_GOLD_WEIGHT=-1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_GOLD_WEIGHT must be a number in \\[0, 100\\]")
 # strategicgen2 aborts if a Tier-B label branch leaves t_curPath cleared before
 # the main-trajectory policy step (the branch evaluator resets it on return).
 add_test(NAME strategicgen2_policy_keeps_path
@@ -757,6 +931,26 @@ set_tests_properties(learned_stop_teacher_contract PROPERTIES
 add_test(NAME ctm_offline_score_rows COMMAND $<TARGET_FILE:one_combat> ctmscoreselftest)
 set_tests_properties(ctm_offline_score_rows PROPERTIES
     LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_act4_survival_parity COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_parity PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# ADR-TBD: unset, the pathb-a20 stack uses the bundled model; =0 restores the CTM head, so parity must fail.
+add_test(NAME ctm_act4_survival_default COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_default PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT_MODIFICATION "STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_act4_survival_off COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
+    tests/fixtures/ctm_act4_survival_parity.jsonl)
+set_tests_properties(ctm_act4_survival_off PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=0"
+    WILL_FAIL TRUE
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
@@ -1021,6 +1215,7 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
+    apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
 link_ctm_crypto(combat_transition_runtime_probe)

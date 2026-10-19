@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-17 for the card-select student (§524) and its default options (ADR-0047); 2026-10-17 for the A20 limit of the ADR-0044 rollback; 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-18 for default unsupported-edge pruning in OOC MCTS (#633); 2026-10-18 for the Act-4 CTM survival model, its A20 A/B (§534) and A20 default (ADR-0048); 2026-10-17 for the card-select student (§524) and its default options (ADR-0047); 2026-10-17 for the A20 limit of the ADR-0044 rollback; 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -45,9 +45,10 @@ in tree snapshots; `mergedOutcomes` counts pooled samples.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
 `cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
-non-boundary state at `depth >= maxDepth` aborts the entire root with
-`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`; partial action statistics
-are discarded. The cap-hit state is never evaluated as a normal leaf.
+non-boundary state at `depth >= maxDepth` raises
+`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`, which prunes that edge
+(or, with `STS_OOC_MCTS_PRUNE_UNSUPPORTED=0`, aborts the entire root and
+discards partial action statistics; see the unsupported-battle paragraph). The cap-hit state is never evaluated as a normal leaf.
 `maxDepthReached` includes the offending depth for diagnosis. Live accounting
 records this under `continuationLimitAborts`/`continuation_reasons`, without
 inventing an unsupported combat. Priors normalize with uniform zero-mass
@@ -325,7 +326,17 @@ abort to V4. Both have the same exclusions (`STS_OOC_MCTS_COMBAT_RESOLVER`,
 `STS_OOC_MCTS_LEAF_CAPTURE`) and require `STS_OOC_MCTS=1`; `=0` means off, as unset. Per run,
 `[ooc-silver-fallback]` counts these combats as `act4_silver`. The opt-in
 `boss` leaf value still prices the Heart through the CTM expectation. CPU cost
-and playing strength are unmeasured. Startup also requires the effective Silver reuse cap to be
+and playing strength are unmeasured. Default on for the A20 stack (ADR-0048; `STS_CTM_ACT4_SURVIVAL_MODEL=0`
+restores the CTM head, a path applies another model to every runtime, §527): every `pathb-a20` CTM runtime takes the survival probability of Shield and Spear and the
+Heart from an XGBoost model fit on 5,467 A20 Act-4 label rows
+(`models/candidates/ctm_act4_survival_trees.txt`, features from the predictor
+input: HP, gold, belt, deck size, upgrades, card-id counts, relic and potion ids;
+`tools/ctm_act4_survival.py` mirrors `act4SurvivalFeatures`). The HP, potion and
+relic heads stay the CTM's. Offline on TEST it fixes the Heart (death 0.70
+predicted vs 0.68 observed, CTM 0.17) but is not shown better on Shield and
+Spear; Philipp chose to apply it to both. Combats routed to Silver by
+`STS_OOC_MCTS_ACT4_SILVER_SIMS` never reach it. In the A20 student_sel stack at 512 simulations it did not win more
+Hearts (§534: 75 vs 82 of 512 paired seeds, NOT_SHOWN, McNemar p = 0.09); Philipp made it the A20 default anyway. Startup also requires the effective Silver reuse cap to be
 32,768; the experimental 131,072 override is rejected. Real combat requires
 ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
 frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
@@ -557,11 +568,22 @@ trace bookkeeping, Silver diagnostics and potion pricing are scoped and restored
 Corpus capture is incompatible with live MCTS.
 
 Supported imagined battles use the frozen surrogate. If the precombat gate or
-sample returns unsupported, `OocSearchUnsupported` aborts the **entire root's
-search**. Partial Q/visits are discarded and no action is selected; the live
-run loop uses its unchanged V4/OOC policy chain for that decision. Unsupported
-states receive neither a generic precombat value nor an invented scalar penalty.
-Their reason and all completed/attempted search work are retained in diagnostics.
+sample returns unsupported, the planner raises `OocSearchUnsupported`. By
+default (`OocMctsConfig::pruneUnsupported`, issue #633, ADR-0052) the failed simulation
+is discarded: its visits are rolled back, nothing is backed up, and the action
+edge that led to the failure (a tree transition or the edge into a refused
+leaf) is pruned from selection. A decision node whose actions are all pruned
+prunes its own parent edge. The root aborts only when every root action is
+pruned; a pruned root action is never selected, keeps its earlier visits/Q and
+is flagged `pruned` in root traces. This applies to every unsupported reason,
+including the depth safety cap and continuation step limits.
+`unsupportedSimulations`, `prunedActions` and `prunedReasons` are reported in
+decision profiles, policy-target rows and the trace `.support.jsonl`.
+`STS_OOC_MCTS_PRUNE_UNSUPPORTED=0` (also read by the live advisor) restores the
+old behaviour: the exception aborts the **entire root's search**, partial
+Q/visits are discarded, no action is selected, and the run loop uses its
+unchanged V4/OOC policy chain for that decision. Either way, unsupported states
+receive neither a generic precombat value nor an invented scalar penalty.
 A thread-local guard forbids native combat playout during OOC imagination,
 including optional leaf-policy counterfactuals: these also abort the root.
 There are no imagined Silver battles. Supported death is exact zero; victory
@@ -635,11 +657,12 @@ hypothetical encounters, not visibility into the real game's hidden future.
 The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
 (`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather
-than applying the link to an expected margin or conditioning on 0/5. The
-direct V4 scoring fails closed for real live captures because Java does not
-expose an exact pity history. Live MCTS uses an equal public prior instead of a
-fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
-pity reconstruction. Qualified public question-room outcomes reconstruct the
+than applying the link to an expected margin or conditioning on 0/5 when the
+capture lacks the exact counters. Current mod captures export the exact
+counters (#636), so live MCTS keeps them at every particle and the leaf
+evaluates them directly. Either way live captures leave
+`rewardPityHistoryComplete` false: direct V4 scoring fails closed and live MCTS
+uses an equal public prior where Arm C does not cover a node. Qualified public question-room outcomes reconstruct the
 three room chances, which remain fixed when root particles sample reward pity.
 Qualified legacy Juzu ambiguity is represented by a finite weighted distribution
 over monster chances, conditioned on resolved outcomes, ownership, preceding
@@ -745,6 +768,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `ROLLOUT_SHOP` |greedy (ADR-0032)|`greedy` (single best purchase or leave per decision) or `planner` (first item of the best affordable bundle) for shops in leaf rollouts; wins not shown different, about 11% less wall time (§459)|
 | `TREE_RULES` |1 (ADR-0031)|`1` applies the rollout chain's fixed steps (gold, unreviewed reward relics, potions with belt space, chests without Cursed Key, empty reward screens) in the tree and at the live root (rules in `apps/one_combat/ooc_tree_rules.cpp`, shared with the live advisor, which plays root rules as forced clicks), and coalesces bottle/duplicate/bonfire targets per distinct card; with `MERGE_OUTCOMES=1` median search depth 2 → 4, wins not shown different (§464)|
 | `MERGE_OUTCOMES` |1 (ADR-0031)|`0` or `1`; `1` pools sampled successors with equal search-equivalence keys (see below)|
+| `GAP_STOP` |0 (off)|Research, §539: `C1,C2,...:G` (increasing checkpoints below `SIMS`, G in (0,1]); after completing simulation Ci the root stops once its top-two visit gap is at least G·Ci, keeping the visit leader. Visit selection only; off on full-budget (`FULL_BUDGET_FRACTION`) and observed-lock roots; excludes `CPU_SECONDS`. Offline same-action proxy on 628 A20 roots (not winrate): `1024:0.7` kept 99.2% of actions at an estimated 0.69x OOC CPU|
 
 Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
 for unsupported/nonunique selectors; all transitions keep the same combat
@@ -818,7 +842,9 @@ from the forked label child. These are provenance/counters, never student inputs
 §494 requires them for its C-policy labels without rejecting legacy §491 data. `buildChoice`/`recordToJson`
 need no released network weights. Unsupported records carry `recordError`.
 This input is parity-unqualified for learned leaf deployment; limited hidden
-field invariance fixtures do not prove live parity. The default-off path remains
+field invariance fixtures do not prove live parity. Field inventory, the simulator
+invariance test and the known live relic-counter mismatch are in
+[heart1-public-record-contract.md](heart1-public-record-contract.md). The default-off path remains
 unchanged. The [Heart-domain pilot](../../experiments/evidence/heart_rollout_distill_20261016/README.md)
 completed its 64 sources and six fits with Arm C as tree prior and fixed V4
 rollouts. The original post-latch evaluator crash remains `INVALID_TEST_EXECUTION`.
@@ -1610,7 +1636,8 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    `STS_POTION_REWARD_SWAP`, default on). With a free slot it takes the
    best-ranked reward potion. With full slots it discards the worst-ranked held
    potion when the best reward potion ranks strictly higher, then takes it
-   (`potionKeepRank`, fitted on CTM fight data). Sozu keeps the legacy pickup.
+   (`potionKeepRank`, fitted on CTM fight data; Blood Potion's value refit for
+   the fixed in-combat heal, §552, `STS_POTION_KEEP_BLOOD_REFIT`). Sozu keeps the legacy pickup.
    Under the OOC MCTS tree rules a declined reward potion still reaches the
    search root. Once only "leave" and "discard a held potion" remain, that
    root's prior is uniform, also under heart1full (PR #591), and search
@@ -1997,7 +2024,10 @@ with the search and its chain.
   clamped to [-1, 999], act to [0, 4]). Training side:
   `tools/heart1/student_inputs.py` (`distill.py --extra-inputs`), zero-initialised,
   so student C loads unchanged; native logits with all-zero `x_*` tensors equal
-  student C's bit for bit (300 capture records). Torch-native parity of
+  student C's bit for bit (300 capture records). Wing Boots charges reach `x_relic_counter` only
+  under `STS_OOC_HEART1_WING_BOOTS_COUNTER=1` (#638); by default that counter is 0, as in every
+  weights file trained so far. Capture rows record the value (`wing_boots_counter`), and `distill.py` trains on
+  one value only and writes it to `summary.json` (`tools/heart1/capture_provenance.py`). Torch-native parity of
   nonzero `x_*` is checked with `student_inputs.py perturb/score` where torch
   and silverbot are built.
 - Card-select student `student_sel.bin` (`cf6bf7fb…`, data branch
@@ -2039,6 +2069,27 @@ with the search and its chain.
   (`STS_OOC_HEART1_SCALAR=1` forces it). Map and path feature projections are
   batched over rows with the same per-element addition order. About 2.1x faster
   than the first port (`heart1score` on the adapter's 104 early records x10).
+- Exact fast paths (§533), all off under `STS_OOC_HEART1_SCALAR=1` and each
+  bit-identical to the reference loop: attention scores, softmax weights and
+  value sums in AVX with `dot()`'s partial sums and reduction order (eight keys
+  reduced at once); four-output reductions in the projection kernel; a
+  per-thread memo of FixedVec projections (bias included) for inputs with at
+  most four features, keyed by weights and input bits (`fixed_obs` is not
+  memoized); the last block's observation rows compute only keys and values;
+  reused per-thread buffers; and softmax and SiLU exps through a four-lane copy
+  of glibc's `__expf_fma` fast path (its special-case inputs go to `std::exp`).
+  The vector exp is used only after a start-up self-test (1.05M bit patterns
+  plus boundaries) finds it bitwise equal to the process's `std::exp`, so other
+  CPUs or libm versions keep the scalar calls. student_sel logits-only pass on
+  4,383 A20 rollout records: about 910 → 450 µs per call (2.0x).
+- Further exact paths (§535): on CPUs with AVX-512F/DQ the projection kernel
+  holds two tokens per 512-bit register (explicitly rounded multiply and add,
+  so no FMA), and softmax weights are divided eight at a time;
+  `oocmctsselftest` checks every projection kernel against the reference loop.
+  `Net::forward` keeps a per-thread direct-mapped memo (4,096 slots) of recent
+  outputs keyed by a per-load net id, the pass and the whole record (equality
+  decides a hit); about 13% of A20 rollout forwards repeat a recent input.
+  Together about 1.15x less CPU per A20 Act-1 unit with identical play.
 - OOC MCTS tree prior (research, default off): `STS_OOC_MCTS_PRIOR=heart1` with
   `STS_OOC_HEART1` set. At each node V4 would score (the unchanged
   `sourcePriorCovered` rule), heart1's logit replaces V4's for every source

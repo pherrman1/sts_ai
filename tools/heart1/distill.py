@@ -33,6 +33,8 @@ ap.add_argument("--extra-inputs", action="store_true",
                 help="student_inputs.ExtraInputsNN: zero-initialised relic counter, act and card misc inputs")
 a = ap.parse_args()
 sys.path.insert(0, a.repo); sys.path.insert(0, os.path.join(a.repo, "build"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from capture_provenance import row_wing_boots_counter, single_wing_boots_counter
 import torch, torch.nn.functional as F
 from silverbot import network
 torch.set_num_threads(a.threads); torch.manual_seed(a.seed); random.seed(a.seed)
@@ -62,6 +64,8 @@ def group_of(r):
     if s == 4: return "card_select:" + SELECTS[r["record"]["select_screen_type"]].lower()
     return SCREENS.get(s, str(s))
 
+wing_boots_counters = set()
+
 def load(paths, compact=False):
     """compact: keep each training row as its zlib-compressed JSON (unpacked in collate), so 3M+ rows fit in RAM."""
     rows = []
@@ -72,6 +76,7 @@ def load(paths, compact=False):
                 r = json.loads(line)
                 if "record" not in r or len(r["logits"]) < 2: continue
                 rec = r["record"]
+                wing_boots_counters.add(row_wing_boots_counter(r))
                 row = {"record": trim(rec) if a.trim_map else rec, "logits": r["logits"],
                        "token_bits": r["token_bits"], "v4": r.get("v4"), "src_bits": r.get("src_bits"),
                        "serve": r.get("serve"), "screen": r.get("screen", rec["screen_state"]),
@@ -91,7 +96,9 @@ train_files = [f for f in files if f not in val_files]
 train, val = load(train_files, compact=a.compact), load(val_files)
 if a.max_train: random.shuffle(train); train = train[:a.max_train]
 if a.select_repeat > 1: train += [r for r in train if screen_of(r) == 4] * (a.select_repeat - 1)
-print(f"train {len(train)} rows / {len(train_files)} files, val {len(val)} rows / {len(val_files)} files", flush=True)
+wing_boots_counter = single_wing_boots_counter(wing_boots_counters)
+print(f"train {len(train)} rows / {len(train_files)} files, val {len(val)} rows / {len(val_files)} files, "
+      f"wing_boots_counter {wing_boots_counter}", flush=True)
 
 def positions(rec):
     pos, off = [], 0
@@ -119,7 +126,6 @@ def loader(rows, shuffle):
 
 H = network.ModelHP(dim=a.dim, n_layers=a.layers, mlp_dim_mult=a.mult, n_heads=a.heads, use_value_head=True)
 if a.extra_inputs:
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import student_inputs
 net = (student_inputs.ExtraInputsNN(H) if a.extra_inputs else network.NN(H)).to(a.device)
 if a.init:
@@ -182,6 +188,6 @@ for ep in range(a.epochs):
     if best is None or kl < best[0]:
         best = (kl, ag, per); torch.save(net.state_dict(), os.path.join(a.out, "student.pt"))
 print("best per group:", json.dumps(best[2]), flush=True)
-json.dump({"args": vars(a), "params": nparam, "train_rows": len(train), "val_rows": len(val),
+json.dump({"args": vars(a), "wing_boots_counter": wing_boots_counter, "params": nparam, "train_rows": len(train), "val_rows": len(val),
            "best_val_kl": best[0], "best_val_top1": best[1], "per_screen": best[2], "history": hist},
           open(os.path.join(a.out, "summary.json"), "w"), indent=1)

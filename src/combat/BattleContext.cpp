@@ -6,7 +6,9 @@
 #include "game/GameContext.h"
 #include "game/Game.h"
 
+#include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 using namespace sts;
 
@@ -15,6 +17,97 @@ thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_on
 
 namespace sts {
     thread_local BattleContext *g_debug_bc;
+
+    bool deadTargetDebuffFix() {
+        const char *value = std::getenv("STS_DEAD_TARGET_DEBUFF_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_TARGET_DEBUFF_FIX must be 0 or 1");
+    }
+
+    bool curlUpLethalFix() {
+        const char *value = std::getenv("STS_CURL_UP_LETHAL_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
+    }
+
+    bool panacheFix() {
+        const char *value = std::getenv("STS_PANACHE_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_PANACHE_FIX must be 0 or 1");
+    }
+
+    bool deadMonsterBlockFix() {
+        const char *value = std::getenv("STS_DEAD_MONSTER_BLOCK_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_MONSTER_BLOCK_FIX must be 0 or 1");
+    }
+
+    bool muggerDeathRngFix() {
+        const char *value = std::getenv("STS_MUGGER_DEATH_RNG_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_MUGGER_DEATH_RNG_FIX must be 0 or 1");
+    }
+
+    bool slimeSplitRngFix() {
+        const char *value = std::getenv("STS_SLIME_SPLIT_RNG_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SLIME_SPLIT_RNG_FIX must be 0 or 1");
+    }
+
+    bool dyingAttackerFix() {
+        const char *value = std::getenv("STS_DYING_ATTACKER_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DYING_ATTACKER_FIX must be 0 or 1");
+    }
+
+    bool bloodPotionHealFix() {
+        const char *value = std::getenv("STS_BLOOD_POTION_HEAL_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_BLOOD_POTION_HEAL_FIX must be 0 or 1");
+    }
+
+    bool halfDeadPowerResetFix() {
+        const char *value = std::getenv("STS_HALF_DEAD_POWER_RESET_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_HALF_DEAD_POWER_RESET_FIX must be 0 or 1");
+    }
+
+    bool strikeCountFix() {
+        const char *value = std::getenv("STS_STRIKE_COUNT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_STRIKE_COUNT_FIX must be 0 or 1");
+    }
+
+    bool pileCostResetFix() {
+        const char *value = std::getenv("STS_PILE_COST_RESET_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_PILE_COST_RESET_FIX must be 0 or 1");
+    }
+
+    bool handUpgradeAllFix() {
+        const char *value = std::getenv("STS_HAND_UPGRADE_ALL_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_HAND_UPGRADE_ALL_FIX must be 0 or 1");
+    }
+
+    bool mayhemAfterDrawFix() {
+        const char *value = std::getenv("STS_MAYHEM_AFTER_DRAW_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_MAYHEM_AFTER_DRAW_FIX must be 0 or 1");
+    }
 }
 
 
@@ -1168,7 +1261,10 @@ void BattleContext::useAttackCard() {
 
         case CardId::PERFECTED_STRIKE: {
             // hack because we calculate strikeCount while non purge cards are still in hand.
-            const int strikeDmg = cards.strikeCount * (up ? 3 : 2);
+            // A Havoc/Mayhem autoplay took the card off the draw pile, so Java's
+            // countCards (hand, draw, discard) does not see it (STS_STRIKE_COUNT_FIX).
+            const bool offPile = item.autoplay && !item.purgeOnUse && strikeCountFix();
+            const int strikeDmg = (cards.strikeCount - (offPile ? 1 : 0)) * (up ? 3 : 2);
             const int baseDamage = 6 + strikeDmg;
             addToBot( Actions::AttackEnemy(t, calculateCardDamage(c, t, baseDamage)) );
             break;
@@ -1719,6 +1815,7 @@ void BattleContext::onUseAttackCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -1849,6 +1946,7 @@ void BattleContext::onUseSkillCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -1928,6 +2026,7 @@ void BattleContext::onUsePowerCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -1991,6 +2090,7 @@ void BattleContext::onUseStatusOrCurseCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -2364,7 +2464,10 @@ void BattleContext::drinkPotion(int idx, int target) {
 
 
         case Potion::BLOOD_POTION: {
-            int healAmt = static_cast<int>((static_cast<float>(player.maxHp * (hasBark ? 20 : 40)) / 100.0f));
+            // BloodPotion potency is 20% of max HP, 40% with Sacred Bark; the
+            // legacy engine had the two swapped (STS_BLOOD_POTION_HEAL_FIX=0).
+            const bool doubled = bloodPotionHealFix() ? hasBark : !hasBark;
+            int healAmt = static_cast<int>((static_cast<float>(player.maxHp * (doubled ? 40 : 20)) / 100.0f));
             addToBot(Actions::HealPlayer(healAmt));
             break;
         }
