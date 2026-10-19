@@ -176,19 +176,28 @@ public final class CombatBoundaryTest {
             if (automatonClass.getDeclaredField("numTurns").getType() != int.class)
                 throw new AssertionError("BronzeAutomaton numTurns field type changed");
         } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
-        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true)
-                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true)
-                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true))
+        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true, false)
+                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true, false)
+                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true, false))
             throw new AssertionError("unknown selection must retain combat classification");
         // Event fights use this same phase-based gate; no room subclass is required.
-        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.EVENT, CurrentScreen.NONE, true, false))
+        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.EVENT, CurrentScreen.NONE, true, false, false))
             throw new AssertionError("event combat phase gate");
-        if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, false, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.CARD_REWARD, false, true)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.HAND_SELECT, false, true))
+        if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, false, false, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.CARD_REWARD, false, true, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, false, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.HAND_SELECT, false, true, false))
             throw new AssertionError("transitional or OOC modal misclassified");
+        // Smoke Bomb: the escape animation and the post-endBattle window are
+        // idle COMBAT frames, but native combat already ended.
+        if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false, true)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true, true)
+                || !STSModelInspector.isCombatEnding(false, false, true)
+                || !STSModelInspector.isCombatEnding(true, false, false)
+                || !STSModelInspector.isCombatEnding(false, true, false)
+                || STSModelInspector.isCombatEnding(false, false, false))
+            throw new AssertionError("escaping or ended combat published as a decision");
         java.util.List<String> uuids = java.util.Arrays.asList("physical-c", "physical-a", "physical-b");
         for (String task : new String[]{"GAMBLE","EXHAUST_MANY"}) {
             int count="GAMBLE".equals(task)?99:3;
