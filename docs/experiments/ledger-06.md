@@ -21186,7 +21186,7 @@ changing anything. Raw traces stay on the PC under `~/Documents/sts/artifacts/pa
 **Knowledge impact:** `evaluation/differential-correctness.md` (canary continuation paragraph),
 `operations/environment-variables.md` (`STS_BLOOD_POTION_HEAL_FIX`).
 
-## §TBD — Overnight live play: the live importer aliased relics with index >= 128 (2026-10-19)
+## §545 — Overnight live play: the live importer aliased relics with index >= 128 (2026-10-19)
 
 **Question:** with the canary fixes merged (§536, §544), what else differs between live play and the engine?
 Philipp asked 2026-10-19 00:32Z to check the fixes and keep playing the live mod overnight, listing everything wrong.
