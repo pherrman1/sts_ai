@@ -45,7 +45,7 @@ Analysis only, no seeds. Full numbers (all groups, subgroups, single features, C
 - ascension +0.002: it is constant within each source, so it only identifies the source.
 
 ## Findings (**Inference**)
-- **Act 4 leans less on every group.** On the g7a4 roots almost every Δ is 2–4× smaller, and CE is worst there. Targeting is about equal in both, and monster Block matters more in Act 4. The prior is less informed in Act 4; a missing Act-4/boss feature is possible.
+- **Act 4 leans less on every group.** On the g7a4 roots most group Δs are about 1.5–3× smaller, and CE is worst there. Targeting is about equal in both, and monster Block matters more in Act 4. The prior is less informed in Act 4; a missing Act-4/boss feature is possible.
 - **Brittle column:** ex228 (Necronomicurse in exhaust) appears in 0.45% of roots.
   - Permuting it raises value MSE by +0.026, about the size of the whole baseline.
   - It also adds +0.0034 policy CE [0.0015, 0.0073].

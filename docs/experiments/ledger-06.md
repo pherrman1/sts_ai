@@ -21226,12 +21226,13 @@ inputs permuted jointly across roots (candidate blocks only between roots with e
   HP +0.29, held relics +0.29, deck +0.25. Near zero (≤ 0.001): the three `--extra-inputs` (relic counters +0.0001
   although nonzero on 24% of rows, act +0.0007, deck misc untestable at 0.03% coverage) and the map node tokens
   (whole map block +0.014). **The value head is not trained** (distill.py fits KL only): output −0.027 (sd 0.008)
-  against heart1's 0.56 (sd 0.37). On main `815c019a` it is only logged (`heart1_policy.cpp` decision rows, the
-  opt-in heart-leaf tail annotation); no search path reads it.
+  against heart1's 0.56 (sd 0.37). On main `815c019a` no search path reads it; it appears only in diagnostic output (trace line,
+  sibling-capture and opt-in heart-leaf tail annotations). The `value` in policy-capture rows is the heart1
+  teacher's, not student_sel's.
 - **g7f_E** (ΔCE, baseline 1.2222): candidate card id +0.150 [0.148, 0.152], monster slots +0.114 (intent, HP, id
   about +0.03 each), candidate card attributes +0.090, candidate action type +0.086 (potion flag +0.053),
   targeting +0.073, energy +0.060, hand +0.040. Dead: gold, maxHp, pile/hand counts (≤ 0.001). On the 80k
-  Act-4 roots (CE 1.411 vs 1.192 on the A0 window) almost every group is 2–4x weaker. One rare column
+  Act-4 roots (CE 1.411 vs 1.192 on the A0 window) most groups are about 1.5–3x weaker. One rare column
   (Necronomicurse in exhaust, 0.45% of roots) moves value MSE by +0.026, about the whole baseline 0.027.
 - **A20 CTM fast child** (Δ survival BCE, baseline 0.0779, AUC 0.974): act + floor +0.241 [0.236, 0.246] (act alone
   +0.187, floor +0.0055), room type +0.193, deck +0.099, HP +0.081, relics +0.074, encounter id +0.053, potions
