@@ -21150,7 +21150,7 @@ accuracy. That is too small for a full-run play test to detect, so a swap could 
 retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
 
-## §TBD — OOC MCTS prior temperature 3, A20 full-run confirmation: −2.0 pp wins, NOT_SHOWN (2026-10-19)
+## §557 — OOC MCTS prior temperature 3, A20 full-run confirmation: −2.0 pp wins, NOT_SHOWN (2026-10-19)
 
 **Question (Philipp, 2026-10-18, prior-guidance thread):** "set up full run test of temp 3", then "256 seeds on 16
 workers is fine". Does the §532 Act-1 screen pass of `STS_OOC_MCTS_TEMPERATURE=3` carry over to Heart kills in full

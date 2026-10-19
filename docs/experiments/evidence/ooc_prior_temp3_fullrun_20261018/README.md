@@ -1,7 +1,7 @@
 # OOC MCTS prior temperature 3: A20 full-run confirmation (2026-10-19)
 
 Pre-registered in [PREREG.md](PREREG.md). The identity gate passed: [IDENTITY.md](IDENTITY.md).
-Ledger: §TBD in `docs/experiments/ledger-06.md`.
+Ledger: §557 in `docs/experiments/ledger-06.md`.
 
 - RUN_COMMIT `c84d65f4` (frozen `4f5a181d` plus the pre-data failed-unit rule), code `b5dd5557`, binary `01d0f59e…`.
 - 256 units (`units.txt`), arm T3, 16 cloud workers, share `/mnt/project-files/ooc-prior-temp3`.
