@@ -39,6 +39,10 @@ NON_COMBAT_STREAMS = ("cardRng", "eventRng", "merchantRng", "monsterRng", "relic
 # Ordered card collections: a difference that is only order is reported
 # under its own label, because order can matter (draws, shuffles).
 ORDERED_PILES = ("hand",)
+# Collections compared as multisets. Java exhausts end-of-turn ethereal cards
+# in the order of an unseeded Collections.shuffle (DiscardAtEndOfTurnAction),
+# so the exhaust pile order is not reproducible, and no game rule reads it.
+UNORDERED_PILES = ("exhaustPile.unknown",)
 OUTCOME_NAMES = {0: "UNDECIDED", 1: "PLAYER_VICTORY", 2: "PLAYER_LOSS"}
 
 
@@ -142,6 +146,8 @@ def diff(game: Any, native: Any, path: str = "", out: list[dict[str, Any]] | Non
             diff(game.get(key), native.get(key), f"{path}.{key}" if path else key, out)
         return out
     if isinstance(game, list) and isinstance(native, list):
+        if path in UNORDERED_PILES:
+            game, native = sorted(game, key=json.dumps), sorted(native, key=json.dumps)
         if path in ORDERED_PILES and game != native and sorted(map(json.dumps, game)) == sorted(map(json.dumps, native)):
             out.append({"path": path + "(order)", "game": game, "native": native})
             return out

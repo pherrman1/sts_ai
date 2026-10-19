@@ -12,6 +12,7 @@
 #include "constants/SaveFileMappings.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
+#include "ooc_mcts_adapter.h"
 
 namespace one_combat::advisor {
 
@@ -1191,9 +1192,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 const auto &hint=choices.at(0).at("liveAction");
                 require(string(hint,"kind")=="choose" && integer(hint,"choiceIndex",1,1)==1,
                         "mechanical event live choice mismatch");
+                // The Spin click latches buttonPressed; Java spins once the
+                // bounce-in (bounceTimer 2 s -> 0) ends, so any timer value qualifies.
                 if(g.curEvent==Event::WHEEL_OF_CHANGE && phase=="SPIN_READY")
                     require(boolean(d,"startSpin") && !boolean(d,"buttonPressed")
-                            && d.at("bounceTimer").is_number() && d.at("bounceTimer").get<double>()==0,
+                            && d.at("bounceTimer").is_number() && d.at("bounceTimer").get<double>()>=0
+                            && d.at("bounceTimer").get<double>()<=2,
                             "Wheel spin readiness mismatch");
                 next.mechanicalEventTransition=true;
             } else if(g.curEvent==Event::OMINOUS_FORGE || g.curEvent==Event::ANCIENT_WRITING) {
@@ -1304,7 +1308,7 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
     return found;
 }
 void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentChoices) {
+                              bool allowEquivalentChoices,bool treeRuleChoices) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
     std::set<std::string> retainedChoices;
     std::set<std::uint32_t> omittedRewardAliases;
@@ -1314,7 +1318,7 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
         const auto bindings=search::enumerateOocSemanticPrimitiveBindings(state.projected);
         require(bindings.supported && bindings.complete,"native/live semantic enumeration incomplete");
         for(const auto &binding:bindings.bindings) {
-            const auto key=search::canonicalOocMctsChoiceKey(binding.semantic, &state.projected);
+            const auto key=oocMctsChoiceKey(binding.semantic, state.projected, treeRuleChoices);
             require(choiceByPrimitive.emplace(binding.primitiveBits,key).second,
                     "duplicate native semantic primitive mapping");
             if(expected.count(binding.primitiveBits)) retainedChoices.insert(key);

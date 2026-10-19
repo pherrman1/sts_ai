@@ -77,9 +77,14 @@ Strength loss).
 - Bronze Orb Stasis is represented when the runtime exposes the public-facing
   `StasisPower.card` and Bronze Orb constructor slot: the exact physical card
   UUID/state is placed into native stasis slot 0 or 1. If either field is
-  unavailable, only the active-Stasis snapshot is rejected.
-- Hexaghost Divider damage is captured from the public Divider intent and
-  retained by monster object identity after that move resolves, matching the
+  unavailable, only the active-Stasis snapshot is rejected. A dead orb keeps
+  its Stasis power after `StasisPower.onDeath` has returned the card under the
+  same UUID; the importer drops that entry (native `returnStasisCard` empties
+  the slot) when the UUID is present in another pile, and rejects it otherwise.
+- Hexaghost Divider damage is captured from the public Divider intent's base
+  damage (`getIntentBaseDmg`, the raw player HP / 12 + 1; the displayed intent
+  damage already includes Weak/Strength/Vulnerable, which native applies again
+  when the hits resolve) and retained by monster object identity after that move resolves, matching the
   native `miscInfo` value until the next public Activate/Divider cycle. Under
   Runic Dome the tracker instead records public player HP at Activate execution;
   Divider and the subsequent orb phase are derived without reading intent.
