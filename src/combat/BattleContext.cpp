@@ -38,6 +38,13 @@ namespace sts {
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_BLOOD_POTION_HEAL_FIX must be 0 or 1");
     }
+
+    bool mayhemAfterDrawFix() {
+        const char *value = std::getenv("STS_MAYHEM_AFTER_DRAW_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_MAYHEM_AFTER_DRAW_FIX must be 0 or 1");
+    }
 }
 
 
