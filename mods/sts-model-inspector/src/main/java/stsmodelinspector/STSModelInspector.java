@@ -2795,6 +2795,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // removal with no onRemove override. The zero charge and its
             // visual removal are jointly omitted from the native projection.
             if(sourceTask!=null && zeroCopyPowerRemoval(action))continue;
+            // TheGuardian.damage: a hit crossing the Mode Shift threshold queues
+            // VFXAction then ChangeStateAction("Defensive Mode") last; the wire
+            // settles the shift itself (Mode Shift <= 0).
+            if(sourceTask!=null && isActionClass(name,"VFXAction")) {
+                String item=actionIndex+2==manager.actions.size()?guardianShiftJson(manager.actions.get(actionIndex+1)):null;
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
+            }
+            // CurlUpPower.onAttacked: ChangeStateAction("CLOSED") (animation
+            // only), GainBlockAction, RemoveSpecificPowerAction("Curl Up").
+            if(sourceTask!=null && isActionClass(name,"ChangeStateAction")) {
+                String item=curlUpJson(manager.actions,actionIndex);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);actionIndex+=2;continue;
+            }
             if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) {
                 if(sourceTask==null || ++cleanups!=1)return null;
                 String item=pendingUseCardJson(action,sourceTask);
@@ -2816,6 +2831,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))
                         || readObjectField(action,"followUpAction")!=null) return null;
                 kind="DRAW";if(amount!=null && amount>0)++draws;
+            } else if(sourceTask!=null && monsterReactionAction(name,action)) {
+                String item=monsterReactionJson(name,action);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
             } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
                 if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
                 kind="GAIN_BLOCK";
@@ -2885,6 +2904,120 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
         return out.append(']').toString();
+    }
+
+    // Monster on-hit reactions that vanilla queues with addToBot behind an
+    // interrupted source card (e.g. Headbutt into Writhing Mass or Shelled
+    // Parasite): Malleable/Curl Up self-block, Reactive reroll, Plated Armor loss.
+    private static boolean monsterReactionAction(String name,Object action) {
+        if("com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name))return true;
+        if("com.megacrit.cardcrawl.actions.common.DamageAction".equals(name))
+            return readObjectField(action,"target")==AbstractDungeon.player;
+        return ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)
+                || "com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name))
+                && readObjectField(action,"target") instanceof AbstractMonster;
+    }
+
+    private static String monsterReactionJson(String name,Object action) {
+        boolean roll="com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name);
+        if("com.megacrit.cardcrawl.actions.common.DamageAction".equals(name)) {
+            // SharpHidePower.onUseCard: addToBot(DamageAction(player, DamageInfo(owner, amount, THORNS))).
+            Object info=readObjectField(action,"info"), owner=readObjectField(info,"owner");
+            if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type"))) || !(owner instanceof AbstractMonster))return null;
+            AbstractMonster guardian=(AbstractMonster)owner;
+            AbstractPower hide=guardian.getPower("Sharp Hide");
+            Integer output=readIntField(info,"output"), slot=emittedMonsterSlots(liveEncounter).get(guardian);
+            if(!"TheGuardian".equals(guardian.id) || hide==null || slot==null || guardian.isDying || guardian.isDeadOrEscaped()
+                    || !"com.megacrit.cardcrawl.powers.SharpHidePower".equals(hide.getClass().getName())
+                    || output==null || !output.equals(readIntField(info,"base")) || output!=hide.amount)return null;
+            return monsterReactionItemJson("MONSTER_THORNS",output,slot);
+        }
+        Object value=readObjectField(action,roll?"monster":"target");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster monster=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(monster);
+        if(slot==null || monster.isDying || monster.isDeadOrEscaped() || monster.halfDead
+                || (!roll && readObjectField(action,"source")!=monster))return null;
+        Integer amount=readIntField(action,"amount");
+        if(roll) {
+            AbstractPower reactive=monster.getPower("Compulsive");
+            if(!"WrithingMass".equals(monster.id) || reactive==null
+                    || !"com.megacrit.cardcrawl.powers.ReactivePower".equals(reactive.getClass().getName()))return null;
+            return monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,slot);
+        }
+        if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name))
+            return monsterReactionItemJson("MONSTER_GAIN_BLOCK",amount,slot);
+        String powerId=readStringField(action,"powerID");
+        if(readObjectField(action,"powerInstance")!=null)return null;
+        if("Flight".equals(powerId)) {
+            // FlightPower.onAttacked: addToBot(ReducePowerAction(owner, owner, "Flight", 1)).
+            AbstractPower flight=monster.getPower("Flight");
+            if(!"Byrd".equals(monster.id) || flight==null
+                    || !"com.megacrit.cardcrawl.powers.FlightPower".equals(flight.getClass().getName()))return null;
+            return monsterReactionItemJson("MONSTER_REDUCE_FLIGHT",amount,slot);
+        }
+        AbstractPower plated=monster.getPower("Plated Armor");
+        if(!"Plated Armor".equals(powerId)
+                || plated==null || !"com.megacrit.cardcrawl.powers.PlatedArmorPower".equals(plated.getClass().getName()))return null;
+        return monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",amount,slot);
+    }
+
+    private static boolean isActionClass(String name,String simpleName) {
+        return name.startsWith("com.megacrit.cardcrawl.actions.") && name.endsWith("."+simpleName);
+    }
+
+    private static String guardianShiftJson(Object change) {
+        if(change==null || !isActionClass(change.getClass().getName(),"ChangeStateAction")
+                || !Boolean.FALSE.equals(readBooleanField(change,"isDone"))
+                || !Boolean.FALSE.equals(readBooleanField(change,"called"))
+                || !"Defensive Mode".equals(readStringField(change,"stateName")))return null;
+        Object value=readObjectField(change,"m");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster guardian=(AbstractMonster)value;
+        AbstractPower shift=guardian.getPower("Mode Shift");
+        Integer slot=emittedMonsterSlots(liveEncounter).get(guardian);
+        if(!"TheGuardian".equals(guardian.id) || slot==null || guardian.isDying || guardian.isDeadOrEscaped()
+                || shift==null || !"com.megacrit.cardcrawl.powers.ModeShiftPower".equals(shift.getClass().getName())
+                || shift.amount>0 || !Boolean.TRUE.equals(readBooleanField(guardian,"isOpen"))
+                || !Boolean.TRUE.equals(readBooleanField(guardian,"closeUpTriggered")))return null;
+        return monsterReactionItemJson("GUARDIAN_DEFENSIVE_SHIFT",null,slot);
+    }
+
+    private static String curlUpJson(List<?> actions,int first) {
+        if(first+2>=actions.size())return null;
+        Object change=actions.get(first), block=actions.get(first+1), remove=actions.get(first+2);
+        if(!Boolean.FALSE.equals(readBooleanField(change,"called"))
+                || !"CLOSED".equals(readStringField(change,"stateName"))
+                || !"com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(block.getClass().getName())
+                || !"com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(remove.getClass().getName())
+                || !Boolean.FALSE.equals(readBooleanField(block,"isDone"))
+                || !Boolean.FALSE.equals(readBooleanField(remove,"isDone")))return null;
+        Object value=readObjectField(change,"m");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster louse=(AbstractMonster)value;
+        AbstractPower curl=louse.getPower("Curl Up");
+        Integer slot=emittedMonsterSlots(liveEncounter).get(louse), amount=readIntField(block,"amount");
+        if((!"FuzzyLouseNormal".equals(louse.id) && !"FuzzyLouseDefensive".equals(louse.id))
+                || slot==null || louse.isDying || louse.isDeadOrEscaped() || louse.halfDead
+                || curl==null || !"com.megacrit.cardcrawl.powers.CurlUpPower".equals(curl.getClass().getName())
+                || readObjectField(block,"target")!=louse || readObjectField(block,"source")!=louse
+                || amount==null || amount!=curl.amount
+                || readObjectField(remove,"target")!=louse || readObjectField(remove,"source")!=louse
+                || readObjectField(remove,"powerInstance")!=null || !"Curl Up".equals(readStringField(remove,"powerToRemove")))return null;
+        return monsterReactionItemJson("MONSTER_CURL_UP",amount,slot);
+    }
+
+    static String monsterReactionItemJson(String kind,Integer amount,int slot) {
+        if(slot<0 || slot>4)return null;
+        if("REACTIVE_ROLL_MOVE".equals(kind)) return slot==0?"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}":null;
+        if("GUARDIAN_DEFENSIVE_SHIFT".equals(kind)) return slot==0?"{\"kind\":\"GUARDIAN_DEFENSIVE_SHIFT\",\"slot\":0}":null;
+        if(amount==null || amount<0 || amount>999)return null;
+        if(("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) || "MONSTER_REDUCE_FLIGHT".equals(kind)) && amount!=1)return null;
+        if("MONSTER_THORNS".equals(kind) && (slot!=0 || amount<1))return null;
+        if("MONSTER_CURL_UP".equals(kind) && amount<1)return null;
+        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_CURL_UP".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind)
+                && !"MONSTER_REDUCE_FLIGHT".equals(kind) && !"MONSTER_THORNS".equals(kind))return null;
+        return "{\"kind\":\""+kind+"\",\"amount\":"+amount+",\"slot\":"+slot+"}";
     }
 
     // Diagnostic only: names what made a selection's pending queue

@@ -1,0 +1,6 @@
+failed T3 units counted as losses: 0 []
+paired seeds 256 of 256 (T3 present 256, control 256)
+control wins 42/256 act4 reached 86 mean floor 40.98 OOC CPU/run 5362s
+T3      wins 37/256 act4 reached 81 mean floor 41.64 OOC CPU/run 4137s
+T3 - control wins: -2.0 pp [-6.6, +2.7], discordant 17/22, McNemar exact p=0.522 -> NOT_SHOWN
+T3 - control floor: +0.66
