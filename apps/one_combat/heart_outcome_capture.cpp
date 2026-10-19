@@ -60,7 +60,8 @@ nlohmann::json runProvenance() {
     const auto leaf = effectiveSilverLeafSpecification();
     return {{"ctmArtifacts", liveOocMctsCtmArtifacts()},
             {"rolloutRootTable", leaf.contains("rollout_root_table") ? leaf["rollout_root_table"] : nlohmann::json(nullptr)},
-            {"silverLeaf", leaf}, {"silverRootPrior", rootPrior}};
+            {"silverLeaf", leaf}, {"silverRootPrior", rootPrior},
+            {"heart1WingBootsCounter", heart1::wingBootsCounter() ? 1 : 0}};
 }
 }
 

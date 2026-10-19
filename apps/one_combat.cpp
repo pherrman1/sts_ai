@@ -1353,6 +1353,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.oocGbmRankerSha256 = fileSha256(meta.oocGbmRanker);
         }
         meta.oocMcts = one_combat::liveOocMctsEnabled();
+        meta.heart1WingBootsCounter = one_combat::heart1::wingBootsCounter() ? 1 : 0;
         meta.stopAfterAct = g_stopAfterAct;
         if (g_forceRelic != RelicId::INVALID)
             meta.forceRelic = relicEnumNames[static_cast<int>(g_forceRelic)];
@@ -3803,6 +3804,10 @@ int main(int argc, char **argv) {
 
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
+    } else if (mode == "heart1recordselftest") {
+        one_combat::heart1::publicRecordInvarianceSelfTest();
+        std::cout << "heart1 public record invariance selftest: ok\n";
+        return 0;
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"

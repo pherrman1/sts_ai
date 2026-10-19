@@ -829,7 +829,9 @@ from the forked label child. These are provenance/counters, never student inputs
 §494 requires them for its C-policy labels without rejecting legacy §491 data. `buildChoice`/`recordToJson`
 need no released network weights. Unsupported records carry `recordError`.
 This input is parity-unqualified for learned leaf deployment; limited hidden
-field invariance fixtures do not prove live parity. The default-off path remains
+field invariance fixtures do not prove live parity. Field inventory, the simulator
+invariance test and the known live relic-counter mismatch are in
+[heart1-public-record-contract.md](heart1-public-record-contract.md). The default-off path remains
 unchanged. The [Heart-domain pilot](../../experiments/evidence/heart_rollout_distill_20261016/README.md)
 completed its 64 sources and six fits with Arm C as tree prior and fixed V4
 rollouts. The original post-latch evaluator crash remains `INVALID_TEST_EXECUTION`.
@@ -2008,7 +2010,10 @@ with the search and its chain.
   clamped to [-1, 999], act to [0, 4]). Training side:
   `tools/heart1/student_inputs.py` (`distill.py --extra-inputs`), zero-initialised,
   so student C loads unchanged; native logits with all-zero `x_*` tensors equal
-  student C's bit for bit (300 capture records). Torch-native parity of
+  student C's bit for bit (300 capture records). Wing Boots charges reach `x_relic_counter` only
+  under `STS_OOC_HEART1_WING_BOOTS_COUNTER=1` (#638); by default that counter is 0, as in every
+  weights file trained so far. Capture rows record the value (`wing_boots_counter`), and `distill.py` trains on
+  one value only and writes it to `summary.json` (`tools/heart1/capture_provenance.py`). Torch-native parity of
   nonzero `x_*` is checked with `student_inputs.py perturb/score` where torch
   and silverbot are built.
 - Card-select student `student_sel.bin` (`cf6bf7fb…`, data branch

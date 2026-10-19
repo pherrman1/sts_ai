@@ -87,6 +87,14 @@ bool buildChoice(const sts::GameContext &, Choice &, std::string *reason = nullp
 // boundaries before BattleContext construction, never for mid-combat states.
 bool buildPublicLeafRecord(const sts::GameContext &, nlohmann::json &, std::string *reason = nullptr);
 
+// STS_OOC_HEART1_WING_BOOTS_COUNTER (#638): true when records carry the Wing
+// Boots charges as its relic counter. Throws on values other than unset/0/1.
+bool wingBootsCounter();
+
+// The non-record fields of one STS_OOC_HEART1_CAPTURE row (kind, act, floor,
+// screen, select_type, deck_misc, wing_boots_counter).
+nlohmann::json captureBase(const sts::GameContext &, const char *kind);
+
 // take_free_rewards: gold always, relics unless a key shares the screen.
 // Returns the number of actions executed.
 int takeFreeRewards(sts::GameContext &);
@@ -205,6 +213,9 @@ std::vector<TokenMapping> mapChoiceTokens(const Choice &, bool singingBowl,
                                           const std::vector<sts::search::GameAction> &);
 // Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
 void priorMappingSelfTest();
+// Private-state invariance of the public record on every supported screen (#506);
+// throws on failure. Defined in heart1_record_invariance.cpp.
+void publicRecordInvarianceSelfTest();
 // Throws std::runtime_error when the FixedVec projection memo differs from the plain
 // projection with two nets of different width on one thread (oocmctsselftest).
 void fixedVecMemoSelfTest();

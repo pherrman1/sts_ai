@@ -50,6 +50,9 @@ struct LiveOocStateV1 {
         bool questionHistoryComplete = false;
         QuestionChancePosterior questionChancePosterior;
         bool mapHistoryComplete = false;
+        // Seen-relic history was incomplete and the remaining pool superset
+        // is searched as the uniform public prior (STS_LIVE_RELIC_OFFER_PRIOR).
+        bool seenRelicOfferPrior = false;
         bool supported = true;
         std::string reason;
     } mctsRoot;

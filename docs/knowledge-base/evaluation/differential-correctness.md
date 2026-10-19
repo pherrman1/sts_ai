@@ -209,6 +209,19 @@ rewards now opens the boss chest, as native `afterBattle` does, and
 (`tests/fixtures/live_act1_boss_card_reward.json`, checked by
 `live_ooc_parity`).
 
+Continuing canary 2 past the crash (after #672, #676 and #677) reached floor
+29 in Act 2, with 260 matching and 30 mismatching steps in total. It found one
+more engine bug: a Blood Potion drunk in combat healed 40% of max HP without
+Sacred Bark and 20% with it, the reverse of the game.
+`STS_BLOOD_POTION_HEAL_FIX` (default on, `=0` restores) fixes it. Also open:
+- Java draws one more `aiRng` value when Blood for Blood kills a Mugger.
+- Native sets a `miscBits` flag in the Two Thieves' turn that Java has not.
+- After a Discovery, end-of-turn draws differ by one `shuffleRng` draw and
+  an upgrade flag sits on another copy. **Inference:** the probe's draw-order
+  reconstruction is incomplete once a combat-generated card is in the piles.
+- The run stopped on a Headbutt selection with pending actions
+  (`silver_selection_pending_actions`), which Silver does not support.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 
