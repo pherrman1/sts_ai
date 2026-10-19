@@ -21298,8 +21298,9 @@ the parity probe saw the game side still armed.
 **Interpretation:** the mod now emits `usedThisCombat` for Centennial Puzzle (in-combat observation only), and
 `STS_IMPORTER_CENTENNIAL_USED_FIX` (default on, `=0` restores) requires it and drops the bit once it is set.
 `live_silver_importer_test` checks used/unused under both settings and the fail-closed missing field.
-**Unverified:** the field name against the pinned `desktop-1.0.jar` (no JAR in the cloud); a wrong name is not
-silent, since the importer then rejects every Centennial combat. How often the phantom draw changed a live decision.
+`javap -p` on the pinned `desktop-1.0.jar` (SHA-256 `cfad868a…1673`) shows `private static boolean usedThisCombat`;
+the mod's reflection reads it through `Field.get`, which ignores the instance for a static field.
+**Unverified:** how often the phantom draw changed a live decision.
 Seeds: none driven.
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`,
 `operations/live-model-inspector.md`.
