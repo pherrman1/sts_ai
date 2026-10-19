@@ -21205,3 +21205,21 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — Killing the Gremlin Leader did not end imported fights (2026-10-19)
+
+**Question:** why did the parity probe return `UNDECIDED` where the game returned victory after the Gremlin Leader died
+(overnight list problem 12, seed 111194457 segment 9 step 47: Pommel Strike+ kills the Leader, Gremlin Wizard alive)?
+**Setup:** code reading of `importSilverRoot` and `Monster::die`; `javap -c` of `die()` in the pinned
+`desktop-1.0.jar` (sha256 cfad868a) on Philipp's PC; `live_silver_importer_test` (no gameplay seeds).
+**Result:** native fights end on a leader's death through the `MINION_LEADER` status, which `preBattleAction` sets on
+Gremlin Leader, Reptomancer, The Collector and Bronze Automaton. Java has no such power (the only match is `MinionPower`,
+id `Minion`): `GremlinLeader.die` queues `EscapeAction` on every other non-dying monster, and the other three queue
+`SuicideAction` on every other live monster. The importer maps Java powers only, so imported states lacked the marker
+and a leader kill with minions alive stayed `UNDECIDED`. The test renderer emitted a fictitious `MinionLeader` power,
+which hid this.
+**Interpretation:** `STS_IMPORTER_MINION_LEADER_FIX` (default on, `=0` restores) sets the marker at import, as the
+importer already did for Awakened One phase two. It changes the live advisor and the parity probe only; the simulator's
+own fights already had the marker. Live advisor decisions in these four fights before the fix did not see a leader kill
+as a win. **Unverified:** how often that changed a live decision.
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
