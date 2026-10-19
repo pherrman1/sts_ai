@@ -31,9 +31,19 @@ combat rewards, cannot escape a boss, and cannot be used while `SURROUNDED`.
   the marker themselves: a slaver-fight escape clears it and reopens the event
   (the fight has no rewards either way); a Nob-fight escape calls
   `afterBattle`, forfeiting the Victory rewards and returning to the map.
-  **Inference:** Java's smoked-room handling only changes the reward screen,
-  which the reward-less slaver fight never opens; not verified against the
-  live game.
+  Verified against the game bytecode (`desktop-1.0.jar` cfad868a, issue #641,
+  2026-10-18): `EventRoom.update` calls `Colosseum.reopen()` after the escape,
+  and the smoked flag only changes the reward screen, which the reward-less
+  slaver fight never opens.
+- Java still makes the reward RNG rolls on an escape (`AbstractRoom.update`
+  runs `addGoldToRewards`, `dropReward` and `addPotionToRewards` before the
+  `rewardAllowed`/`smoked` checks) and only skips the reward screen, so no
+  card reward is rolled. Since #641's fix the engine does the same:
+  `GameContext::rollEscapedCombatRewardRng` rolls gold (hallway, elite), the
+  elite relics (popped from their pools) and a potion, and the Colosseum
+  slaver fight rolls a potion whether won or escaped.
+  `STS_REWARDLESS_COMBAT_RNG_FIX=0` restores the legacy engine, which skipped
+  these rolls.
 - Dead Adventurer, Masked Bandits and Hypnotizing Colored Mushrooms also set
   their reward screen as the fight continuation. Since 2026-10-07 each one
   calls `afterBattle` on an escape, so the escape forfeits the event's gold,
