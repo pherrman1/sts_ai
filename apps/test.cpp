@@ -1460,6 +1460,15 @@ int testSilverWireState() {
         search::CombatKnowledgeState knowledge;
         knowledge.initializeFromLiveBattle(bc);
         auto wire = search::makeSilverBattleStateWire(bc, knowledge, search::makeSilverRunContext(gc), 0x5eedu);
+        // Java form: the shift (and its 20 block) is still queued as a
+        // ChangeStateAction, which the wire settles itself.
+        if (wire.pendingActionQueueObserved) {
+            check(!wire.pendingActionQueue.empty()
+                      && wire.pendingActionQueue.back().kind == silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
+                      && wire.pendingActionQueue.back().amount == 20,
+                  "mode shift fixture: native tail lacks the Mode Shift block");
+            wire.pendingActionQueue.pop_back();
+        }
         auto &live = wire.monsters[0];
         live.statusBits |= 1ULL << static_cast<int>(MonsterStatus::MODE_SHIFT);
         live.uniquePower0 = 1 - damage;

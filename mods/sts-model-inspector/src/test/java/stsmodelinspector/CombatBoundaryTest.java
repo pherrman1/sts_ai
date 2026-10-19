@@ -245,6 +245,10 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",2,0)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",null,0)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",3,5)!=null
+                || !"{\"kind\":\"GUARDIAN_DEFENSIVE_SHIFT\",\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("GUARDIAN_DEFENSIVE_SHIFT",null,0))
+                || STSModelInspector.monsterReactionItemJson("GUARDIAN_DEFENSIVE_SHIFT",null,1)!=null
+                || !"{\"kind\":\"MONSTER_CURL_UP\",\"amount\":10,\"slot\":1}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_CURL_UP",10,1))
+                || STSModelInspector.monsterReactionItemJson("MONSTER_CURL_UP",0,0)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_ROLL_PRIVATE",0,0)!=null)
             throw new AssertionError("monster reaction pending action qualification");
         for(int count:new int[]{1,2}) {

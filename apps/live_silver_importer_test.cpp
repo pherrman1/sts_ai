@@ -3601,18 +3601,20 @@ int main(int argc, char **argv) {
         // are still queued behind it (Java addToBot): Malleable self-block
         // and Reactive reroll (Writhing Mass), Plated Armor loss (Shelled
         // Parasite), Flight loss (Byrd), and the defensive Guardian's Sharp
-        // Hide thorns hit. Live runs 111194455/111194451/111200382/111200385
-        // stopped here.
-        for (const auto encounter : {MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
-                MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS}) {
-            const bool mass=encounter==MonsterEncounter::WRITHING_MASS;
-            const bool guardian=encounter==MonsterEncounter::THE_GUARDIAN;
-            const bool byrd=encounter==MonsterEncounter::THREE_BYRDS;
+        // Hide thorns hit, the offensive Guardian's Mode Shift crossing and a
+        // louse's Curl Up. Live runs 111194455/111194451/111200382/111200385/
+        // 111200388/111200389 stopped here.
+        for (int variant=0;variant<6;++variant) {
+            const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
+                MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
+                MonsterEncounter::TWO_LOUSE}[variant];
+            const bool mass=variant==0, guardian=variant==2, byrd=variant==3, shift=variant==4, louse=variant==5;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
-            game.act=mass?3:guardian?1:2; game.floorNum=mass?38:guardian?16:29;
+            game.act=mass?3:guardian||shift||louse?1:2; game.floorNum=mass?38:guardian||shift?16:louse?5:29;
             BattleContext live; live.init(game, encounter);
             auto &target=live.monsters.arr[0];
             target.block=0;
+            if(shift) target.setStatus<MonsterStatus::MODE_SHIFT>(1);
             if(guardian) {
                 // Defensive Mode after Close Up: Sharp Hide on, Roll Attack next.
                 target.enterGuardianDefensiveMode();
@@ -3628,6 +3630,10 @@ int main(int argc, char **argv) {
             const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
             const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
             if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
+            const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
+            if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
+            const int hpBefore=target.curHp;
+            const std::array<MonsterMoveId,2> preHitMoves{target.moveHistory[0],target.moveHistory[1]};
             CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=920;
             live.cards.moveToHand(headbutt); live.player.energy=3;
             sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
@@ -3645,14 +3651,19 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE=0 did not restore the legacy tail");
             }
             const auto nativeQueue=expected.pendingActionQueue;
-            const std::size_t wantQueue=mass?3:guardian?2:1;
+            const std::size_t wantQueue=mass?3:guardian||shift||louse?2:1;
             if(!expected.pendingActionQueueObserved || nativeQueue.size()!=wantQueue
                     || (mass && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
                         || nativeQueue[2].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE))
                     || (guardian && (nativeQueue[0].kind!=silver_bridge::PendingActionKind::MONSTER_THORNS
                         || nativeQueue[0].amount!=4 || nativeQueue[1].kind!=silver_bridge::PendingActionKind::USE_CARD))
+                    || ((shift || louse) && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
+                        || nativeQueue[1].amount!=(shift?20:curlBefore) || nativeQueue[1].monster!=0))
+                    || (shift && (target.hasStatus<MonsterStatus::MODE_SHIFT>()
+                        || target.moveHistory[0]!=MonsterMoveId::THE_GUARDIAN_DEFENSIVE_MODE))
+                    || (louse && target.hasStatus<MonsterStatus::CURL_UP>())
                     || (byrd && target.getStatus<MonsterStatus::FLIGHT>()!=flightBefore-1)
-                    || (!mass && !guardian && !byrd && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                    || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
                 throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
             auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
             setProducerV4CardObservation(observation,expected);
@@ -3671,6 +3682,18 @@ int main(int argc, char **argv) {
                 if(power.at("id")=="Plated Armor") power["amount"]=platedBefore;
                 if(power.at("id")=="Flight") power["amount"]=flightBefore;
             }
+            auto &javaTarget=combat["monsters"][0];
+            // Java form: Curl Up stays until its queued RemoveSpecificPowerAction.
+            if(louse) javaTarget["powers"].push_back({{"id","Curl Up"},{"amount",curlBefore}});
+            if(shift) {
+                // TheGuardian.damage lowers Mode Shift at the hit but queues the
+                // state change, so the offensive move is still showing.
+                javaTarget["powers"].push_back({{"id","Mode Shift"},{"amount",1-(hpBefore-target.curHp)}});
+                const auto current=javaMoveByte("TheGuardian",preHitMoves[0]);
+                const auto previous=javaMoveByte("TheGuardian",preHitMoves[1]);
+                javaTarget["nextMove"]=current;
+                javaTarget["moveHistory"]=previous>=0?json::array({previous,current}):json::array({current});
+            }
             // Java order: Sharp Hide's onUseCard thorns precede UseCardAction.
             json pending=guardian?json::array({json{{"kind","MONSTER_THORNS"},{"amount",4},{"slot",0}}}):json::array();
             pending.push_back(producerCleanupJson(combat["curCardQueueItem"]));
@@ -3678,11 +3701,16 @@ int main(int argc, char **argv) {
                 pending.push_back(json{{"kind","MONSTER_GAIN_BLOCK"},{"amount",nativeQueue[1].amount},{"slot",0}});
                 pending.push_back(json{{"kind","REACTIVE_ROLL_MOVE"},{"slot",0}});
             } else if(byrd) pending.push_back(json{{"kind","MONSTER_REDUCE_FLIGHT"},{"amount",1},{"slot",0}});
+            else if(shift) pending.push_back(json{{"kind","GUARDIAN_DEFENSIVE_SHIFT"},{"slot",0}});
+            else if(louse) pending.push_back(json{{"kind","MONSTER_CURL_UP"},{"amount",curlBefore},{"slot",0}});
             else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
-            if(json(imported.wire.pendingActionQueue)!=json(nativeQueue))
+            // The wire itself settles the Guardian's shift and its 20 block.
+            auto wantImported=nativeQueue;
+            if(shift) wantImported.pop_back();
+            if(json(imported.wire.pendingActionQueue)!=json(wantImported))
                 throw std::runtime_error("Headbutt monster-reaction pending queue differs from native");
             normalizeDynamicObservationIdentity(expected);
             // Card identities are observation-assigned; adopt them only where
@@ -3721,12 +3749,16 @@ int main(int argc, char **argv) {
             if(mass && (actual.monsters.arr[0].block!=nativeQueue[1].amount
                     || actual.monsters.arr[0].getStatus<MonsterStatus::REACTIVE>()!=0))
                 throw std::runtime_error("Writhing Mass reactions did not resolve after the selection");
+            if((shift || louse) && actual.monsters.arr[0].block!=(shift?20:curlBefore))
+                throw std::runtime_error("Mode Shift or Curl Up block did not resolve after the selection");
             // Fail closed: a removal (stun) or a reroll for a monster other
             // than Writhing Mass is not representable.
             auto broken=observation;
             auto &brokenQueue=broken["silverRoot"]["combat"]["pendingActionQueue"];
             if(mass) brokenQueue[2]["slot"]=1;
             else if(guardian) brokenQueue[0]["amount"]=3;
+            else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
+            else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
                 if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)
