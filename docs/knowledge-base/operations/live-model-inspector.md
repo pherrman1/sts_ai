@@ -300,6 +300,11 @@ Darkling Regrow, Bronze Orb Stasis, and Awakened One stage 2. The only manifest
 exclusion is the `INVALID` sentinel.
 The combat boundary still requires the installed runtime's waiting-for-user
 phase, no current action, empty action/card/monster queues, and an unended turn.
+It also excludes a combat that is ending: while the player escapes after Smoke
+Bomb (`isEscaping`/`smoked`) and after `endBattle()` (`isBattleOver`) the room
+stays `COMBAT` with idle queues, but native combat has already ended and
+`endBattle()` has cleared the Runic Dome occupant binding, so publishing that
+frame made Silver refuse with `silver_monster_occupant_binding`.
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
