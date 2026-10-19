@@ -227,6 +227,30 @@ def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+# Wheel of Change: after MCP's Spin click Java finishes the bounce-in (<= 2 s),
+# spins (2 s), settles (3 s), pauses (1 s) and bounces out (1 s) before the
+# COMPLETE dialog appears; MCP's state stays unchanged throughout.
+WHEEL_SPIN_EXTRA_SECONDS = 10.0
+
+
+def _is_wheel_spin(screen: Mapping[str, Any], action: "LegalAction") -> bool:
+    state = _mapping(screen.get("screen_state"))
+    return (screen.get("screen_type") == "EVENT" and state.get("event_id") == "Wheel of Change"
+            and action.mcp_tool == "choose" and action.semantic.get("choice") == "spin")
+
+
+# End Turn: the monster turn plays every queued monster action before MCP is
+# ready again (The Collector's turn took > 8 s on 2026-10-19). End Turn always
+# gets the extra seconds; while the polled screen keeps changing the wait also
+# extends to one poll timeout after the last change, up to the cap.
+MONSTER_TURN_EXTRA_SECONDS = 10.0
+MONSTER_TURN_PROGRESS_CAP_SECONDS = 30.0
+
+
+def _is_combat_end_turn(screen: Mapping[str, Any], action: "LegalAction") -> bool:
+    return _is_combat(screen) and action.mcp_tool == "end_turn"
+
+
 def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any] | None = None) -> str:
     """Hash decision state, excluding readiness and qualified pile display resets."""
     screen_state = dict(screen)
@@ -1284,11 +1308,19 @@ class Driver:
             await asyncio.sleep(self.poll_interval)
         raise DriverError("MCP combat monster intent remained DEBUG before the decision boundary")
 
-    async def wait_for_ready_advance(self, before: str) -> tuple[Mapping[str, Any], dict[str, Any]]:
-        deadline, last = time.monotonic() + self.poll_timeout, {}
+    async def wait_for_ready_advance(self, before: str, extra_seconds: float = 0.0,
+                                     progress_cap_seconds: float = 0.0) -> tuple[Mapping[str, Any], dict[str, Any]]:
+        started, last, seen = time.monotonic(), {}, None
+        deadline = started + self.poll_timeout + extra_seconds
+        cap = started + self.poll_timeout + max(extra_seconds, progress_cap_seconds)
         while time.monotonic() < deadline:
             screen = await self.read_screen()
             last = screen
+            if progress_cap_seconds:
+                observed = json.dumps(_without_readiness(screen), sort_keys=True, default=str)
+                if seen is not None and observed != seen:
+                    deadline = max(deadline, min(time.monotonic() + self.poll_timeout, cap))
+                seen = observed
             if _is_terminal(screen):
                 return screen, await self.read_game_state()
             if _ready(screen):
@@ -1298,7 +1330,8 @@ class Driver:
                         and transition_identity(screen, game_state) != before):
                     return screen, game_state
             await asyncio.sleep(self.poll_interval)
-        raise DriverError(f"post-action MCP state did not become ready and advance within {self.poll_timeout:.1f}s: {last!r}")
+        raise DriverError("post-action MCP state did not become ready and advance within "
+                          f"{time.monotonic() - started:.1f}s: {last!r}")
 
     def menu_action(self, screen: Mapping[str, Any], commands: Any) -> LegalAction | None:
         names = _tool_names(commands)
@@ -1690,8 +1723,12 @@ class Driver:
                 self.declined_rewards.add((snapshot.session, reward_identity))
                 row["declined_reward_identity"] = reward_identity
         self.steps += 1
+        extra, progress_cap = ((MONSTER_TURN_EXTRA_SECONDS, MONSTER_TURN_PROGRESS_CAP_SECONDS)
+                               if _is_combat_end_turn(screen, action) else
+                               (WHEEL_SPIN_EXTRA_SECONDS if _is_wheel_spin(screen, action) else 0.0, 0.0))
         wait_started = time.monotonic()
-        post, post_game_state = await self.wait_for_ready_advance(transition_identity(screen, game_state))
+        post, post_game_state = await self.wait_for_ready_advance(
+            transition_identity(screen, game_state), extra, progress_cap)
         row["post_action_wait_micros"] = (time.monotonic() - wait_started) * 1e6
         row.update({"post_action_state": ({"screen": post, "game_state": post_game_state}
                                           if self.differential_trace else
