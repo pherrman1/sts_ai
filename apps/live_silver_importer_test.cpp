@@ -2534,7 +2534,8 @@ int main(int argc, char **argv) {
         // Java PanachePower.amount is the countdown; damage is separate.
         verifyPlayerPowerParity("panache-parity", json{{"id", "Panache"}, {"amount", 3}, {"panacheDamage", 14}},
             [](auto &player) {
-                player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::PANACHE);
+                static_assert(static_cast<int>(PlayerStatus::PANACHE) >= 64);
+                player.statusBits1 |= 1U << (static_cast<int>(PlayerStatus::PANACHE) - 64);
                 player.statusMap.emplace_back(static_cast<std::int16_t>(PlayerStatus::PANACHE), 14);
                 player.panacheCounter = 3;
             });
