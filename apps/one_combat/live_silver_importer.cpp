@@ -372,6 +372,19 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_MINION_LEADER_FIX: unset/1 (default) = the importer sets the
+// native MINION_LEADER victory marker on Gremlin Leader, Reptomancer, The
+// Collector and Bronze Automaton, as their native preBattleAction does. Java
+// has no power for it (die() makes the other monsters escape or die), so
+// imported states lacked it and killing the leader left the fight UNDECIDED;
+// 0 = legacy import without the marker.
+bool minionLeaderFix() {
+    const char *value = std::getenv("STS_IMPORTER_MINION_LEADER_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_MINION_LEADER_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_LAGAVULIN_SLEEP_FIX: unset/1 (default) = outside Runic Dome a
 // Lagavulin whose public intent is IDLE (5) is imported ASLEEP; 0 = legacy
 // import without ASLEEP (native then treats it as awake and stunned).
@@ -965,7 +978,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(lice)allow(sts::MonsterStatus::CURL_UP);
         if(darkling)allow(sts::MonsterStatus::REGROW);
         if(orb)allow(sts::MonsterStatus::STASIS);
-        if(monsterId=="GremlinLeader" || monsterId=="Reptomancer" || monsterId=="TheCollector")allow(sts::MonsterStatus::MINION_LEADER);
+        if(monsterId=="GremlinLeader" || monsterId=="Reptomancer" || monsterId=="TheCollector" || automaton)allow(sts::MonsterStatus::MINION_LEADER);
         if(bound)allow(sts::MonsterStatus::MINION);
         if(awakened) {allow(sts::MonsterStatus::CURIOSITY);allow(sts::MonsterStatus::MINION_LEADER);}
         if(thief) allow(sts::MonsterStatus::THIEVERY);
@@ -1567,6 +1580,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             if (m.miscInfo == 1)
                 m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::MINION_LEADER);
         }
+        if ((*id == sts::MonsterId::GREMLIN_LEADER || *id == sts::MonsterId::REPTOMANCER
+                || *id == sts::MonsterId::THE_COLLECTOR || *id == sts::MonsterId::BRONZE_AUTOMATON)
+            && minionLeaderFix())
+            m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::MINION_LEADER);
         if (runicDome) {
             for(const char *hidden:{"nextMove","moveHistory","previousMove","intent","intentDamage","uniquePower0","uniquePower1"})
                 if(item.contains(hidden)) return unsupported("silver_runic_dome_hidden_field");
