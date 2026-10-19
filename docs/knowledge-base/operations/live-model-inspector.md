@@ -1335,7 +1335,7 @@ and differential replay does not use this refresh path.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in
-the state identity, and a stat appearing there takes the refresh path. A JSON
+the state identity, and a stat appearing or disappearing there takes the refresh path. A JSON
 `null` base counts as absent. Hand values stay strict.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
