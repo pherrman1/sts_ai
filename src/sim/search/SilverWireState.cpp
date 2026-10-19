@@ -26,7 +26,9 @@ namespace sts::search {
                         && (in.status != 0 || in.sourceMonster))
                     || (in.kind == K::BUFF_PLAYER && in.sourceMonster)
                     || ((in.kind == K::GAMBLE || in.kind == K::UPGRADE_RANDOM || in.kind == K::USE_CARD
-                        || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS) && in.amount != 0))
+                        || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS
+                        || in.kind == K::REACTIVE_ROLL_MOVE) && in.amount != 0)
+                    || (in.kind == K::MONSTER_GAIN_BLOCK ? in.monster < 0 || in.monster > 4 : in.monster != 0))
                 throw std::invalid_argument("invalid Silver pending action fields");
             switch (in.kind) {
                 case K::DRAW: return Actions::DrawCards(in.amount);
@@ -39,6 +41,9 @@ namespace sts::search {
                 case K::USE_CARD: return Actions::OnAfterCardUsed();
                 case K::REMOVE_PEN_NIB: return Actions::RemoveStatus<PlayerStatus::PEN_NIB>();
                 case K::REMOVE_PLAYER_DEBUFFS: return Actions::RemovePlayerDebuffs();
+                case K::MONSTER_GAIN_BLOCK: return Actions::MonsterGainBlock(in.monster, in.amount);
+                // Writhing Mass is monster 0; its Reactive scalar counts the rolls.
+                case K::REACTIVE_ROLL_MOVE: return Actions::ReactiveRollMove();
                 case K::BUFF_PLAYER: {
                     const auto status = static_cast<PlayerStatus>(in.status);
                     switch (status) {
@@ -343,6 +348,10 @@ namespace sts::search {
                     if(action.v_RemoveStatus.s!=PlayerStatus::PEN_NIB)return;
                     item.kind=K::REMOVE_PEN_NIB;break;
                 case CombatActionType::RemovePlayerDebuffs: item.kind=K::REMOVE_PLAYER_DEBUFFS;break;
+                case CombatActionType::MonsterGainBlock:
+                    item.kind=K::MONSTER_GAIN_BLOCK; item.monster=action.v_MonsterGainBlock.idx;
+                    item.amount=action.v_MonsterGainBlock.amount; break;
+                case CombatActionType::ReactiveRollMove: item.kind=K::REACTIVE_ROLL_MOVE; break;
                 case CombatActionType::BuffPlayer:
                     item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
                 case CombatActionType::DebuffPlayer:

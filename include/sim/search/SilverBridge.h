@@ -150,13 +150,18 @@ enum class PendingActionKind : std::uint8_t {
     INVALID = 0, DRAW = 1, GAIN_BLOCK = 2, GAIN_ENERGY = 3,
     DAMAGE_ALL = 4, DAMAGE_RANDOM = 5, GAMBLE = 6, UPGRADE_RANDOM = 7,
     BUFF_PLAYER = 8, DEBUFF_PLAYER = 9, DEBUFF_ALL_ENEMY = 10, SHUFFLE_WOUNDS = 11,
-    USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14
+    USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14,
+    // Monster on-hit reactions queued behind an interrupted source card
+    // (Malleable/Curl Up self-block, Writhing Mass Reactive reroll).
+    MONSTER_GAIN_BLOCK = 15, REACTIVE_ROLL_MOVE = 16
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;
     int amount = 0;
     int status = 0;
     bool sourceMonster = false;
+    // Native monster index; nonzero only for MONSTER_GAIN_BLOCK.
+    int monster = 0;
 };
 
 struct BattleStateWire {

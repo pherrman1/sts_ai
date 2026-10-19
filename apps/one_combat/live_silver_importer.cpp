@@ -1824,9 +1824,49 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"USE_CARD",K::USE_CARD},
             {"REMOVE_PEN_NIB",K::REMOVE_PEN_NIB},{"REMOVE_PLAYER_DEBUFFS",K::REMOVE_PLAYER_DEBUFFS}};
         int cleanups=0;
+        bool reactiveRoll=false;
         for(const auto &entry:queue) {
             if(!entry.is_object() || !entry.contains("kind") || !entry.at("kind").is_string()) return unsupported("silver_selection_pending_actions");
-            const auto kind=kinds.find(entry.at("kind").get<std::string>());
+            // Monster on-hit reactions (Java addToBot) queued behind an
+            // interrupted source card such as Headbutt. Native applies Plated
+            // Armor loss at the hit, so the queued reduction is folded into
+            // the imported monster instead of replayed.
+            const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
+                int slot=-1,amount=0;
+                if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>=wire.monsterCount)
+                    return unsupported("silver_selection_pending_actions");
+                auto &monster=wire.monsters[slot];
+                if(monster.idx!=slot || monster.curHp<=0 || monster.isEscapingB || monster.halfDead)
+                    return unsupported("silver_selection_pending_actions");
+                const auto has=[&](sts::MonsterStatus status){return (monster.statusBits & (1ULL<<static_cast<int>(status)))!=0;};
+                if(kindName=="REACTIVE_ROLL_MOVE") {
+                    if(slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::WRITHING_MASS)
+                            || !has(sts::MonsterStatus::REACTIVE) || monster.uniquePower1>=8)
+                        return unsupported("silver_selection_pending_actions");
+                    ++monster.uniquePower1;
+                    if(!reactiveRoll) {
+                        silver_bridge::PendingActionWire action;action.kind=K::REACTIVE_ROLL_MOVE;
+                        wire.pendingActionQueue.push_back(action);
+                    }
+                    reactiveRoll=true;
+                    continue;
+                }
+                if(!requiredInt(entry,"amount",amount)) return unsupported("silver_selection_pending_actions");
+                if(kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
+                    auto &plated=monster.smallPowers[7];
+                    if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || plated<=1)
+                        return unsupported("silver_selection_pending_actions");
+                    --plated;
+                    continue;
+                }
+                if(amount<0 || amount>999) return unsupported("silver_selection_pending_actions");
+                silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
+                action.amount=amount;action.monster=slot;
+                wire.pendingActionQueue.push_back(action);
+                continue;
+            }
+            const auto kind=kinds.find(kindName);
             if(kind==kinds.end()) return unsupported("silver_selection_pending_actions");
             silver_bridge::PendingActionWire action;action.kind=kind->second;
             const bool noAmount=action.kind==K::GAMBLE || action.kind==K::UPGRADE_RANDOM || action.kind==K::USE_CARD

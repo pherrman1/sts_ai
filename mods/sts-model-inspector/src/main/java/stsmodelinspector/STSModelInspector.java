@@ -2799,6 +2799,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))
                         || readObjectField(action,"followUpAction")!=null) return null;
                 kind="DRAW";if(amount!=null && amount>0)++draws;
+            } else if(sourceTask!=null && monsterReactionAction(name,action)) {
+                String item=monsterReactionJson(name,action);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
             } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
                 if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
                 kind="GAIN_BLOCK";
@@ -2861,6 +2865,48 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
         return out.append(']').toString();
+    }
+
+    // Monster on-hit reactions that vanilla queues with addToBot behind an
+    // interrupted source card (e.g. Headbutt into Writhing Mass or Shelled
+    // Parasite): Malleable/Curl Up self-block, Reactive reroll, Plated Armor loss.
+    private static boolean monsterReactionAction(String name,Object action) {
+        if("com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name))return true;
+        return ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)
+                || "com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name))
+                && readObjectField(action,"target") instanceof AbstractMonster;
+    }
+
+    private static String monsterReactionJson(String name,Object action) {
+        boolean roll="com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name);
+        Object value=readObjectField(action,roll?"monster":"target");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster monster=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(monster);
+        if(slot==null || monster.isDying || monster.isDeadOrEscaped() || monster.halfDead
+                || (!roll && readObjectField(action,"source")!=monster))return null;
+        Integer amount=readIntField(action,"amount");
+        if(roll) {
+            AbstractPower reactive=monster.getPower("Compulsive");
+            if(!"WrithingMass".equals(monster.id) || reactive==null
+                    || !"com.megacrit.cardcrawl.powers.ReactivePower".equals(reactive.getClass().getName()))return null;
+            return monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,slot);
+        }
+        if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name))
+            return monsterReactionItemJson("MONSTER_GAIN_BLOCK",amount,slot);
+        AbstractPower plated=monster.getPower("Plated Armor");
+        if(!"Plated Armor".equals(readStringField(action,"powerID")) || readObjectField(action,"powerInstance")!=null
+                || plated==null || !"com.megacrit.cardcrawl.powers.PlatedArmorPower".equals(plated.getClass().getName()))return null;
+        return monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",amount,slot);
+    }
+
+    static String monsterReactionItemJson(String kind,Integer amount,int slot) {
+        if(slot<0 || slot>4)return null;
+        if("REACTIVE_ROLL_MOVE".equals(kind)) return slot==0?"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}":null;
+        if(amount==null || amount<0 || amount>999)return null;
+        if("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) && amount!=1)return null;
+        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind))return null;
+        return "{\"kind\":\""+kind+"\",\"amount\":"+amount+",\"slot\":"+slot+"}";
     }
 
     private static String handMultiContinuation(String task) {

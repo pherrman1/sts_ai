@@ -3597,6 +3597,94 @@ int main(int argc, char **argv) {
             for(const auto &card:resumed.cards.drawPile)originals+=card.id==CardId::HEADBUTT;
             if(originals!=1)throw std::runtime_error("copied source cleanup duplicated or removed original Headbutt");
         }
+        // Headbutt's discard GRID opens while the hit's monster reactions
+        // are still queued behind it (Java addToBot): Malleable self-block
+        // and Reactive reroll (Writhing Mass), Plated Armor loss (Shelled
+        // Parasite). Overnight live runs 111194455/111194451 stopped here.
+        for (const auto encounter : {MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE}) {
+            const bool mass=encounter==MonsterEncounter::WRITHING_MASS;
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=mass?3:2; game.floorNum=mass?38:29;
+            BattleContext live; live.init(game, encounter);
+            auto &target=live.monsters.arr[0];
+            target.block=0;
+            // Two skills fill the discard pile without hitting the monster.
+            for (int played=0;played<2;++played) {
+                CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(910+played);
+                live.cards.moveToHand(defend); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            }
+            const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
+            CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=920;
+            live.cards.moveToHand(headbutt); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT)
+                throw std::runtime_error("monster-reaction fixture did not open Headbutt's selection");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+            const auto nativeQueue=expected.pendingActionQueue;
+            const std::size_t wantQueue=mass?3:1;
+            if(!expected.pendingActionQueueObserved || nativeQueue.size()!=wantQueue
+                    || (mass && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
+                        || nativeQueue[2].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE))
+                    || (!mass && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
+            auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
+            setProducerV4CardObservation(observation,expected);
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"cards",json::array()},{"liveChoices",json::array()}};
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingCardQueue"]=json::array();
+            // Java form: ReactivePower is a -1 marker and Plated Armor keeps
+            // its amount until the queued ReducePowerAction runs.
+            for(auto &power:combat["monsters"][0]["powers"]) {
+                if(power.at("id")=="Reactive") power={{"id","Compulsive"},{"amount",-1}};
+                if(power.at("id")=="Plated Armor") power["amount"]=platedBefore;
+            }
+            json pending=json::array({producerCleanupJson(combat["curCardQueueItem"])});
+            if(mass) {
+                pending.push_back(json{{"kind","MONSTER_GAIN_BLOCK"},{"amount",nativeQueue[1].amount},{"slot",0}});
+                pending.push_back(json{{"kind","REACTIVE_ROLL_MOVE"},{"slot",0}});
+            } else pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
+            combat["pendingActionQueue"]=pending;
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
+            if(json(imported.wire.pendingActionQueue)!=json(nativeQueue))
+                throw std::runtime_error("Headbutt monster-reaction pending queue differs from native");
+            normalizeDynamicObservationIdentity(expected);
+            expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+            expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+            expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+            expected.cardSelect.cards=imported.wire.cardSelect.cards;
+            auto actual=battleContextFromWire(imported.wire);
+            auto reference=battleContextFromWire(expected);
+            if(!actual.equalForSearch(reference)) {
+                const auto context=searchContextFromWire(imported.wire);
+                std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                        json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                throw std::runtime_error("Headbutt monster-reaction root parity failed");
+            }
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(actual); pick.execute(reference);
+            if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                throw std::runtime_error("Headbutt monster-reaction continuation parity failed");
+            if(mass && (actual.monsters.arr[0].block!=nativeQueue[1].amount
+                    || actual.monsters.arr[0].getStatus<MonsterStatus::REACTIVE>()!=0))
+                throw std::runtime_error("Writhing Mass reactions did not resolve after the selection");
+            // Fail closed: a removal (stun) or a reroll for a monster other
+            // than Writhing Mass is not representable.
+            auto broken=observation;
+            auto &brokenQueue=broken["silverRoot"]["combat"]["pendingActionQueue"];
+            if(mass) brokenQueue[2]["slot"]=1;
+            else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
+                if(power.at("id")=="Plated Armor") power["amount"]=1;
+            if(one_combat::advisor::importSilverRoot(broken).ok)
+                throw std::runtime_error("unrepresentable Headbutt monster reaction was accepted");
+        }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");
         const auto v4ContinuationImported = one_combat::advisor::importSilverRoot(v4Continuation);
