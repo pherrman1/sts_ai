@@ -231,6 +231,8 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Echo Form")!=null
                 || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null
+                || STSModelInspector.publicPendingActionJson("HEAL_PLAYER",5,null)==null
+                || STSModelInspector.publicPendingActionJson("HEAL_PLAYER",4,null)!=null
                 || STSModelInspector.publicPendingActionJson("PRIVATE_RANDOM_CARD",1,null)!=null)
             throw new AssertionError("public pending action qualification");
         for(int count:new int[]{1,2}) {

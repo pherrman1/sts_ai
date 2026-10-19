@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-19 for block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -80,12 +80,13 @@ base and upgrade constants of the Ironclad attacks in `BattleContext::useCard`.
 | Hexaghost Inferno | after six hits, `BurnIncreaseAction` upgrades every Burn in the discard and draw piles (not the hand) and adds three upgraded Burns to the discard pile | attacked only | **Mismatch, fixed** (all ascensions) via `Actions::HexaghostBurnIncrease` | `monster_ai_java_parity` |
 | Lagavulin woken by damage | any HP change while asleep sets a Stunned turn and removes Metallicize | clears `ASLEEP` and Metallicize on unblocked damage; the pending `SLEEP` move acts as the Stunned turn | Parity | inspection |
 | Lagavulin awake cycle | `debuffTurnCount` < 2 and attack guard | `lastTwoMoves(ATTACK)` in `takeTurn` | Parity (**Inference**: equivalent for reachable histories) | inspection |
-| Large slime split | float `hp <= max/2` when not already splitting; spawns two medium slimes at its current HP | integer `curHp <= maxHp/2` in `onHpLost` | Parity | inspection |
+| Large slime split | float `hp <= max/2` when not already splitting; spawns two medium slimes at its current HP; `aiRng` only from the two spawns' `init` rolls, plus Spike Slime (L)'s own queued `RollMoveAction`; split recorded twice in `moveHistory` | integer `curHp <= maxHp/2` in `onHpLost`; two extra `aiRng` rolls for either slime; split recorded once | **Mismatch, fixed** (`STS_SLIME_SPLIT_RNG_FIX`, see below) | `slime_split_rng` |
 | Slime Boss | Goop Spray (Slimed 3, 5 at A19) → Preparing → Slam → repeat; split into Spike (L) then Acid (L) | same, slots 0 and 2 | Parity | inspection |
 | The Guardian | Mode Shift 30/35/40 (A9/A19), +10 per cycle; Charging Up 9 block; Defensive Mode 20 block; Sharp Hide 3 (4 at A19); Vent Steam Weak/Vulnerable 2; Whirlwind 5×4; Twin Slam 8×2 | same values and cycle | Parity | inspection |
 | Hexaghost cycle | Activate → Divider (HP/12+1 ×6) → Sear, Tackle, Sear, Inflame, Tackle, Sear, Inferno, repeat; Inflame 12 block, Strength 2 (3 at A19); Sear Burns 1 (2 at A19) | same | Parity | inspection |
 | Hexaghost Sear Burn upgrade | upgraded after the first Inferno (`burnUpgraded` flag) | upgraded when `bc.turn > 8` | Parity (**Inference**: equal while the Hexaghost never skips a turn, which Ironclad cannot cause) | inspection |
 | Looter / Mug, Lunge, Smoke Bomb | first Mug `aiRng.randomBoolean(0.6)` (dialog); after the second Mug `randomBoolean(0.5)`; gold 15 (20 at A17) | same calls and values | Parity | inspection |
+| Mugger death | `die()` starts with `playDeathSfx`, `aiRng.random(2)` (the Looter's uses `MathUtils`) | no draw | **Mismatch, fixed** (`STS_MUGGER_DEATH_RNG_FIX`, see below) | `mugger_death_rng` |
 | Jaw Worm, Cultist, Fungi Beast, lice, slimes, slavers, Sentry, Nob, Fat/Mad/Sneaky/Shield Gremlin, Gremlin Wizard | per-move debuff, block, Strength, Ritual, status-card counts and ascension steps | same | Parity | inspection |
 
 ### HP and damage constants
@@ -402,6 +403,51 @@ partway through a multi-hit, its remaining hits do nothing. Native landed them
 not cancelled, as in Java.
 
 Test: `dying_attacker`.
+
+### Block on a dead monster (mismatch, fixed)
+
+`GainBlockAction.update` adds block only when the target is neither
+`isDying` nor `isDead` (javap on the PC, 2026-10-19). A multi-hit card such
+as Fiend Fire can curl a louse with an early hit and kill it with a later
+one before the queued block resolves; the game leaves the dead louse at 0
+block, native added the Curl Up amount (overnight live play, seed 111194454).
+`STS_DEAD_MONSTER_BLOCK_FIX` (default on, `=0` restores) makes the native
+monster block action skip a dead monster that is not half-dead. It covers
+every queued monster block (Curl Up, Malleable, Guardian mode shift, block
+moves). Only Silver's node identity changes.
+
+Test: `dead_monster_block`.
+
+### Mugger death roll (mismatch, fixed)
+
+`Mugger.die` calls `playDeathSfx`, which draws `aiRng.random(2)`, before
+`AbstractMonster.die`; `Mugger.playSfx` draws the same on Mug and Lunge. The
+Looter's sound methods use `MathUtils` (javap, 2026-10-19). Native drew
+nothing on a Mugger death, so every later monster roll in the fight
+differed (parity canary 2: `aiRng` counter 9 in the game vs 8 natively after
+the kill). `STS_MUGGER_DEATH_RNG_FIX` (default on, `=0` restores) draws it at
+the start of `Monster::die`.
+
+Test: `mugger_death_rng`.
+
+### Large slime split (mismatch, fixed)
+
+`AcidSlime_L.damage` and `SpikeSlime_L.damage` (and `SlimeBoss.damage`) call
+`setMove(SPLIT)` and queue a `SetMoveAction(SPLIT)`, so the split byte enters
+`moveHistory` twice. On the split turn both large slimes queue
+`SpawnMonsterAction` twice; each runs `init`, one `aiRng.random(99)` roll
+(a fresh medium slime has no move history, so its `getMove` draws nothing
+more). `AcidSlime_L.takeTurn` then returns; `SpikeSlime_L.takeTurn` falls
+through to a `RollMoveAction` for itself, one more roll on the dead slime.
+`queueMonsters` snapshots the turn order first, so the new slimes do not act
+that turn (javap, 2026-10-19). Native drew two extra rolls for either slime
+(a `noOpRollMove` plus an `extraRollMoveOnTurn` roll) and kept the previous
+move in `moveHistory[1]` (overnight live play, seed 111194454: `aiRng`
+counter 6 in the game vs 8 natively). `STS_SLIME_SPLIT_RNG_FIX` (default on,
+`=0` restores) draws 2 rolls for Acid Slime (L), 3 for Spike Slime (L), and
+records the split twice for both large slimes and the Slime Boss.
+
+Test: `slime_split_rng`.
 
 ### Ethereal exhaust order at end of turn (parity, not reproducible)
 

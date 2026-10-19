@@ -138,6 +138,38 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(panache_test tests/panache_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(panache_test PRIVATE include json/include)
+add_test(NAME panache COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:panache_test>)
+set_tests_properties(panache PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(dead_monster_block_test tests/dead_monster_block_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_monster_block_test PRIVATE include json/include)
+add_test(NAME dead_monster_block COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_monster_block_test>)
+set_tests_properties(dead_monster_block PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(mugger_death_rng_test tests/mugger_death_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mugger_death_rng_test PRIVATE include json/include)
+add_test(NAME mugger_death_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mugger_death_rng_test>)
+set_tests_properties(mugger_death_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(slime_split_rng_test tests/slime_split_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(slime_split_rng_test PRIVATE include json/include)
+add_test(NAME slime_split_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:slime_split_rng_test>)
+set_tests_properties(slime_split_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(dying_attacker_test tests/dying_attacker_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(dying_attacker_test PRIVATE include json/include)
@@ -160,6 +192,14 @@ target_include_directories(hand_upgrade_all_test PRIVATE include json/include)
 add_test(NAME hand_upgrade_all COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:hand_upgrade_all_test>)
 set_tests_properties(hand_upgrade_all PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(mayhem_after_draw_test tests/mayhem_after_draw_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mayhem_after_draw_test PRIVATE include json/include)
+add_test(NAME mayhem_after_draw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mayhem_after_draw_test>)
+set_tests_properties(mayhem_after_draw PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(active_power_features_test tests/active_power_features_test.cpp

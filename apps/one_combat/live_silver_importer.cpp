@@ -369,6 +369,29 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_SELECTION_TOY_HEAL_FIX: unset/1 (default) = a live selection whose
+// public pending tail holds Toy Ornithopter's queued potion heal (tested for
+// Gambler's Brew) imports with that heal; 0 = legacy refusal as
+// silver_selection_pending_actions.
+bool selectionToyHealFix() {
+    const char *value = std::getenv("STS_SELECTION_TOY_HEAL_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX must be 0 or 1");
+}
+
+// STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
+// stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
+// native stolen-gold check that Java has no field for; without it Silver's
+// effectiveGold ignores the gold a kill returns. 0 = legacy, bit only from an
+// explicit combat.miscBits.
+bool thiefGoldFix() {
+    const char *value = std::getenv("STS_IMPORTER_THIEF_GOLD_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_THIEF_GOLD_FIX must be 0 or 1");
+}
+
 template <typename T>
 bool parseEnumId(const json &item, const char *name, T &out) {
     if (!item.contains(name) || !item.at(name).is_string()) return false;
@@ -1390,6 +1413,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // native bookkeeping explicitly.
             const bool needsCombust = *mapped == PlayerStatus::COMBUST;
             const bool needsEcho = *mapped == PlayerStatus::ECHO_FORM;
+            // Java PanachePower.amount is the cards-until-damage countdown;
+            // the damage is a separate private field. Native keeps the damage
+            // as the status amount and the countdown in panacheCounter.
             const bool needsPanache = *mapped == PlayerStatus::PANACHE;
             const bool needsDeva = *mapped == PlayerStatus::DEVA;
             const bool needsBomb = *mapped == PlayerStatus::THE_BOMB;
@@ -1399,7 +1425,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || *mapped == PlayerStatus::WEAK;
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
-                || (needsPanache && !combat.contains("panacheCounter"))
+                || (needsPanache && (!power.contains("panacheDamage")
+                    || !power.at("panacheDamage").is_number_integer()
+                    || power.value("panacheDamage", 0) < 1 || power.value("panacheDamage", 0) > 127
+                    || power.value("amount", 0) < 1 || power.value("amount", 0) > 5))
                 || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
                 || (needsBomb && (!power.contains("bombDamage")
                     || !power.at("bombDamage").is_number_integer()
@@ -1415,6 +1444,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if (p.bombs[static_cast<std::size_t>(amount - 1)])
                     return unsupported("silver_unmapped_player_power");
                 setPlayerPower(p, *mapped, amount, false, damage);
+            } else if (needsPanache) {
+                p.panacheCounter = static_cast<std::int8_t>(amount);
+                setPlayerPower(p, *mapped, power.at("panacheDamage").get<int>(), false);
             } else {
                 setPlayerPower(p, *mapped, amount, power.value("justApplied", false));
             }
@@ -1598,6 +1630,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             }
         }
         if (m.curHp > 0 && !m.isEscapingB && !m.halfDead && !item.value("dead", false)) ++wire.monstersAlive;
+        if ((*id == sts::MonsterId::LOOTER || *id == sts::MonsterId::MUGGER) && m.miscInfo > 0 && thiefGoldFix())
+            wire.miscBits |= 1U;
     }
     if (combat.contains("monsterCount")) {
         if (!combat.at("monsterCount").is_number_integer())
@@ -1852,8 +1886,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         for(const auto &entry:queue) {
             if(!entry.is_object() || !entry.contains("kind") || !entry.at("kind").is_string()) return unsupported("silver_selection_pending_actions");
             const auto kind=kinds.find(entry.at("kind").get<std::string>());
-            if(kind==kinds.end()) return unsupported("silver_selection_pending_actions");
-            silver_bridge::PendingActionWire action;action.kind=kind->second;
+            silver_bridge::PendingActionWire action;
+            if(kind==kinds.end()) {
+                if(entry.at("kind").get<std::string>()!="HEAL_PLAYER" || !selectionToyHealFix()
+                        || !requiredInt(entry,"amount",action.amount) || action.amount!=5)
+                    return unsupported("silver_selection_pending_actions");
+                action.kind=K::HEAL_PLAYER;wire.pendingActionQueue.push_back(action);continue;
+            }
+            action.kind=kind->second;
             const bool noAmount=action.kind==K::GAMBLE || action.kind==K::UPGRADE_RANDOM || action.kind==K::USE_CARD
                 || action.kind==K::REMOVE_PEN_NIB || action.kind==K::REMOVE_PLAYER_DEBUFFS;
             if(!noAmount && (!requiredInt(entry,"amount",action.amount) || action.amount<0 || action.amount>999
