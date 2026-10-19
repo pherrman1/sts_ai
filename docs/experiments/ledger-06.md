@@ -21242,7 +21242,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §559 — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
+## §560 — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
 
 **Question:** which of the overnight representation-only mismatches (§545 list, problems 8 and 15, Hexaghost move
 history) can change play, and which only differ in how the state is written?
@@ -21518,6 +21518,25 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
+## §559 — Overnight live play: the live importer dropped Lagavulin's sleep (2026-10-19)
+
+**Question:** why did a sleeping Lagavulin turn its Sleep intent into Attack natively and keep Metallicize after waking
+(overnight live play, problem 3 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Result:** seed 111194454 segment 2: at step 23 (End Turn, turn 1) the game kept `moveHistory[0]` LAGAVULIN_SLEEP while
+native moved to LAGAVULIN_ATTACK; at step 24 Bash woke it and the game removed Metallicize 8 while native kept it. Seen on
+3 seeds. Cause: Java Lagavulin has no sleep power (sleep is its private `isOut` flag), so outside Runic Dome
+`importSilverRoot` never set native `ASLEEP`; native then treated the shared SLEEP move as the post-wake stun. The
+public signal is the IDLE intent (move byte 5), which `getMove` rolls only while asleep; a damage wake sets OPEN (4) and
+a natural wake ATTACK (3). The Runic Dome path already reconstructed sleep from public history and is unchanged.
+**Interpretation:** `STS_IMPORTER_LAGAVULIN_SLEEP_FIX` (default on, `=0` restores) sets `ASLEEP` for a Lagavulin with
+intent IDLE. The `live_silver_importer` dynamic corpus now renders Lagavulin as Java does and checks the asleep, idle
+and damage-wake states plus both flag settings; with the old importer the asleep case fails. Live advisor decisions and
+parity verdicts in Lagavulin fights before the fix planned against an awake Lagavulin. **Unverified:** the Java claims
+(IDLE only while asleep, move byte 6, which the importer maps but no observed fight used, never visible at a decision) were not re-checked against the game JAR; a live
+Lagavulin fight after reinstall would confirm. Simulator play, training and benchmarks do not use this importer.
+Seeds: none (live evidence from seeds 111194454 and two other overnight seeds).
+**Knowledge impact:** `operations/live-model-inspector.md`, `operations/environment-variables.md`.
+## §549 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
 ## §555 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
 
 **Question:** do four small monster-side parity differences (overnight list problems 4 and 6, canary-2 Mugger `aiRng` and
