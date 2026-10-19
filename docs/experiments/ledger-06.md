@@ -21225,6 +21225,20 @@ unchanged, as in Java. Unit test `dying_attacker` (seed 111200101 fixed, no game
 Peck and 2 vs 1 for a half-dead Darkling's Chomp.
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md` (`STS_DYING_ATTACKER_FIX`).
+## §549 — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
+
+**Question:** why did live runs 111194454 and 111194460 stop at the Act 2 boss (floor 33) with
+`silver explicitly unsupported: silver_card_identity` (§545 overnight list, problem 7)?
+**Result:** after a Bronze Orb with Stasis dies, Java returns the stolen card under its own UUID while the dead orb
+still lists the same card in its Stasis power, which the inspector exports in `combat.stasis`. The importer saw the
+UUID twice and refused the state. A unit case built from that shape (orb slot 0 dead, Stasis card also in hand)
+fails with `silver_card_identity` at `815c019a` and imports with an empty native stasis slot after the fix.
+**Interpretation:** live importer only; the simulator's own Stasis return (`Monster::returnStasisCard`) already
+empties the slot, so no flag. A dead orb's entry is dropped only when its UUID is in another pile; otherwise the
+import is still rejected. **Unverified:** the recorded failure traces (on Philipp's PC) were not replayed here.
+Seeds: none run.
+**Knowledge impact:** `behavior/live-silver-capability-census.md`.
+
 ## §548 — Blessing of the Forge upgraded curses and statuses natively (2026-10-19)
 
 **Question:** why did Blessing of the Forge upgrade Ascender's Bane natively but not in the game (overnight live play,
