@@ -218,8 +218,11 @@ Sacred Bark and 20% with it, the reverse of the game.
 - Java draws one more `aiRng` value when Blood for Blood kills a Mugger.
 - Native sets a `miscBits` flag in the Two Thieves' turn that Java has not.
 - After a Discovery, end-of-turn draws differ by one `shuffleRng` draw and
-  an upgrade flag sits on another copy. **Inference:** the probe's draw-order
-  reconstruction is incomplete once a combat-generated card is in the piles.
+  an upgrade flag sits on another copy. Not Discovery: the old importer
+  aliased Matryoshka onto Warped Tongs, which upgrades a random hand card with
+  `shuffleRng` at the start of the turn. Re-running these steps with the
+  `STS_IMPORTER_HIGH_RELIC_FIX` probe (below) matches; with `=0` it
+  reproduces the mismatch.
 - The run stopped on a Headbutt selection with pending actions
   (`silver_selection_pending_actions`), which Silver does not support.
 

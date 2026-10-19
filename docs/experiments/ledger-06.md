@@ -21226,7 +21226,9 @@ soul paths and in `ExhaustCardEffect.update`). Native kept the turn cost until e
 reports that stream as unobservable on a Discovery pick (probe-only, no flag). `STS_PILE_COST_RESET_FIX` (default on,
 `=0` restores) resets the turn cost when a card lands in the discard, draw or exhaust pile. Play-changing only when a
 card with a changed turn cost (Discovery copy, Enlightenment) reaches a pile and comes back in the same turn.
-**Unverified:** how often that happens in sim runs. The End Turn draw differences after a Discovery (§544) are a
-separate item.
+**Unverified:** how often that happens in sim runs. The 9 End Turn draw differences after a Discovery (§544) were
+not Discovery: the old importer aliased Matryoshka (enum 147) onto Warped Tongs, whose start-of-turn upgrade draws
+`shuffleRng`. With the probe at main `815c019a` (`STS_IMPORTER_HIGH_RELIC_FIX`, §545) trace8 step 141 and trace9
+step 0 match; with `STS_IMPORTER_HIGH_RELIC_FIX=0` both reproduce the canary diff.
 Seeds: 111200161 (unit test only, no gameplay).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
