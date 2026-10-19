@@ -89,6 +89,18 @@ namespace sts {
     // engine draws nothing. Other values are fatal.
     bool muggerDeathRngFix();
 
+    // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
+    // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
+    // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
+    // its queued RollMoveAction, as in the game; the split trigger of both
+    // large slimes and the Slime Boss records the split move twice in the
+    // move history (damage() calls setMove and queues a SetMoveAction).
+    // Overnight live play 2026-10-19: aiRng counter 6 in Java vs 8 natively
+    // after an Acid Slime (L) split. Later monster rolls in the fight change.
+    // 0 = the legacy engine draws two extra rolls for either large slime and
+    // keeps the previous move in moveHistory[1]. Other values are fatal.
+    bool slimeSplitRngFix();
+
     // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
     // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
     // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max

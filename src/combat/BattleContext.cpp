@@ -46,6 +46,13 @@ namespace sts {
         throw std::runtime_error("STS_MUGGER_DEATH_RNG_FIX must be 0 or 1");
     }
 
+    bool slimeSplitRngFix() {
+        const char *value = std::getenv("STS_SLIME_SPLIT_RNG_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SLIME_SPLIT_RNG_FIX must be 0 or 1");
+    }
+
     bool bloodPotionHealFix() {
         const char *value = std::getenv("STS_BLOOD_POTION_HEAL_FIX");
         if (!value || !*value || std::string(value) == "1") return true;

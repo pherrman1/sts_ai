@@ -154,6 +154,14 @@ add_test(NAME mugger_death_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard
 set_tests_properties(mugger_death_rng PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(slime_split_rng_test tests/slime_split_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(slime_split_rng_test PRIVATE include json/include)
+add_test(NAME slime_split_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:slime_split_rng_test>)
+set_tests_properties(slime_split_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(blood_potion_heal_test PRIVATE include json/include)

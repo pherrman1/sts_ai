@@ -558,6 +558,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (atOrBelowHalf) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::ACID_SLIME_L_SPLIT;
+                if (slimeSplitRngFix()) moveHistory[1] = MMID::ACID_SLIME_L_SPLIT; // setMove, then the queued SetMoveAction
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
@@ -567,6 +568,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (atOrBelowHalf) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SLIME_BOSS_SPLIT;
+                if (slimeSplitRngFix()) moveHistory[1] = MMID::SLIME_BOSS_SPLIT; // setMove, then the queued SetMoveAction
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
@@ -576,6 +578,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             if (atOrBelowHalf) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SPIKE_SLIME_L_SPLIT;
+                if (slimeSplitRngFix()) moveHistory[1] = MMID::SPIKE_SLIME_L_SPLIT; // setMove, then the queued SetMoveAction
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
             }
