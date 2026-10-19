@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Live Bottled Flame pick with card copies failed the advisor's mapping check (2026-10-19)
+## §547 — Live Bottled Flame pick with card copies failed the advisor's mapping check (2026-10-19)
 
 **Question:** why did overnight seed 111194462 stop at the Bottled Flame pick (Act 2 floor 23) with
 `OOC_ACTION_MAPPING: native/live candidate enumeration disagreement: unexpected {"group":0,"index":6,"kind":"option"}`
