@@ -4,7 +4,7 @@
 (40% of max HP without Sacred Bark; `STS_BLOOD_POTION_HEAL_FIX=0`, §544).
 
 1. Bias bound, no seeds: `tools/potion_keep/blood_heal_bound.py` on the ADR-0039 corpora (re-extraction
-   reproduces `a20-fit.csv` / `a0-fit.csv` exactly). A20: Blood held in 12,465 fights, drunk in 75%, old excess
+   reproduces `a20-fit.csv` / `a0-fit.csv` exactly). A20: Blood held in 12,465 fights (the fit's `held` column, 12,564, counts potions, so two Blood Potions in one fight count twice), drunk in 75%, old excess
    heal 12.16 HP per held fight, but 42% of drinking fights end at max HP (overheal). Removing the whole
    excess drops the HP coefficient from 12.58 to 0.24 (A0 8.50 to -0.59): the corrected value lies between
    0.9 and 11.6, which spans the whole ranking. `bound-fits.txt`.
@@ -17,5 +17,9 @@
    - value (HP + 53 x survived, ADR-0039 units): fix on 8.90 (100 states), fix off 12.72 (102 states)
    - change -3.82, 95% seed-bootstrap CI [-5.43, -2.28]; 91 identical start states: paired -4.03 (sd 7.39)
 3. New value: A20 14.12 - 3.82; A0 9.14 - 3.82 x 0.721 (**Inference:** scaled by the old excess heal per held
-   fight, 8.77 / 12.16; A0 not probed); mean 8.34 -> rank 834 (was 1163). Across the CI the rank stays between
-   about 696 and 967: always above Heart of Iron (666), and below Fruit Juice (924) at the point estimate.
+   fight, 8.77 / 12.16; A0 not probed); mean 8.34 -> rank 834 (was 1163). **Inference:** subtracting the probe's
+   causal change from the observational regression value assumes the heal fix shifts both by the same amount.
+   Across the A20 CI, with the 0.721 A0 scaling, the rank stays between about 696 and 967. Letting the A0 shift
+   range from none to the full A20 change as well widens this to 781-972 (reviewer); the A0 value is probably a
+   bit higher than scaled, since more A0 drinking fights end at max HP (51% vs 42%), so more of the old heal was
+   overheal. Always above Heart of Iron (666); below Fruit Juice (924) at the point estimate.
