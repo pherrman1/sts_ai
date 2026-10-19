@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
+## §557 — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
 
 **Question:** which of the overnight representation-only mismatches (§545 list, problems 8 and 15, Hexaghost move
 history) can change play, and which only differ in how the state is written?
