@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD-panache — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
+## §551 — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
 
 **Question:** why did live run 111194463 stop at Act 3 floor 40 (`silver_unmapped_player_power`, problem 21 in
 `engine-parity/overnight-20261019/ISSUES.md`), and does the engine play Panache as Java does?
