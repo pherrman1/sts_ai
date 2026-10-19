@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-19 for exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -1332,6 +1332,13 @@ accepted Silver actions. The state identity itself stays strict. Changes to
 HP, energy, hand, costs, UUIDs, order, base fields or two different present
 stat values still stop before mutation. Zero/absent ambiguity remains strict,
 and differential replay does not use this refresh path.
+MCP also reports exhaust-pile cards with stale displayed values (overnight
+2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
+and discard: a positive explicit base replaces a different displayed stat in
+the state identity, and a stat appearing or disappearing there takes the refresh path. A JSON
+`null` base counts as absent, and a negative base (Java's -1 for a card
+without that stat) drops both the base and its derived display value. Hand
+values and pile-card costs/playability stay strict.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
