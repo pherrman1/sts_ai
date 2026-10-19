@@ -170,6 +170,14 @@ add_test(NAME blood_potion_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guar
 set_tests_properties(blood_potion_heal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(hand_upgrade_all_test tests/hand_upgrade_all_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(hand_upgrade_all_test PRIVATE include json/include)
+add_test(NAME hand_upgrade_all COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:hand_upgrade_all_test>)
+set_tests_properties(hand_upgrade_all PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(active_power_features_test tests/active_power_features_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(active_power_features_test PRIVATE include json/include)
