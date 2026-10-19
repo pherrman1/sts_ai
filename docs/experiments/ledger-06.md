@@ -21511,6 +21511,26 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
+## §561 — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
+
+**Question:** why were all 39 `player.relicBits0` parity mismatches in live seed 111194465 bit 8 (Centennial Puzzle),
+mostly at End Turn (trace4 segment 3 steps 10, 17, 40, 47; problem 24 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share)? Also audit finding 8 (`audit-2026-10-17/live-bridge.md`).
+**Result:** native `Player::hpWasLost` draws 3 on the first HP loss of a combat and clears the relic bit; the bit comes
+back at the next combat from `GameContext`. Vanilla `CentennialPuzzle.wasHPLost` draws 3 once per combat and records it
+in `usedThisCombat` (reset in `atPreBattle`), never setting `usedUp`, so the engine semantics agree. The mod sent only
+`counter`/`usedUp`, and `importSilverRoot` set the bit for every relic without `usedUp`. Every live root after the
+puzzle fired therefore expected another free 3-card draw on the next HP loss, which overvalues self-damage lines, and
+the parity probe saw the game side still armed.
+**Interpretation:** the mod now emits `usedThisCombat` for Centennial Puzzle (in-combat observation only), and
+`STS_IMPORTER_CENTENNIAL_USED_FIX` (default on, `=0` restores) requires it and drops the bit once it is set.
+`live_silver_importer_test` checks used/unused under both settings and the fail-closed missing field.
+`javap -p` on the pinned `desktop-1.0.jar` (SHA-256 `cfad868a…1673`) shows `private static boolean usedThisCombat`;
+the mod's reflection reads it through `Field.get`, which ignores the instance for a static field.
+**Unverified:** how often the phantom draw changed a live decision.
+Seeds: none driven.
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`,
+`operations/live-model-inspector.md`.
 ## §559 — Overnight live play: the live importer dropped Lagavulin's sleep (2026-10-19)
 
 **Question:** why did a sleeping Lagavulin turn its Sleep intent into Attack natively and keep Metallicize after waking

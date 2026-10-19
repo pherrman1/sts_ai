@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <optional>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -2736,6 +2737,36 @@ int main(int argc, char **argv) {
                 throw std::runtime_error(std::string("high relic parity failed, flag=") + flag);
         }
         unsetenv("STS_IMPORTER_HIGH_RELIC_FIX");
+
+        // Centennial Puzzle: vanilla keeps the relic (usedUp false) after the
+        // once-per-combat draw; native marks it used by clearing the bit.
+        const auto centennialBit = 1ULL << static_cast<int>(RelicId::CENTENNIAL_PUZZLE);
+        const auto centennialObservation = [&](const char *label, std::optional<bool> used) {
+            auto obs = genericObservation(fixtures[0], label);
+            json relic{{"id", "Centennial Puzzle"}, {"counter", -1}, {"usedUp", false}};
+            if (used) relic["usedThisCombat"] = *used;
+            obs["silverRoot"]["combat"]["relics"].push_back(relic);
+            return obs;
+        };
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_CENTENNIAL_USED_FIX", flag, 1);
+            const bool fix = std::string(flag) == "1";
+            for (const bool used : {false, true}) {
+                auto imported = one_combat::advisor::importSilverRoot(
+                    centennialObservation("centennial-parity", used));
+                if (!imported.ok) throw std::runtime_error("Centennial import failed: " + imported.reason);
+                const bool armed = (imported.wire.player.relicBits0 & centennialBit) != 0;
+                if (armed != (!fix || !used))
+                    throw std::runtime_error(std::string("Centennial relic bit wrong, flag=") + flag
+                        + " used=" + (used ? "1" : "0"));
+            }
+            auto missing = one_combat::advisor::importSilverRoot(
+                centennialObservation("centennial-missing", std::nullopt));
+            if (missing.ok == fix || (fix && missing.reason != "silver_unmapped_relic_state"))
+                throw std::runtime_error(std::string("Centennial without usedThisCombat, flag=") + flag
+                    + ": " + missing.reason);
+        }
+        unsetenv("STS_IMPORTER_CENTENNIAL_USED_FIX");
 
         // A recounted strikeCount skips exhausted Strikes (Java
         // PerfectedStrike.countCards reads hand, draw and discard only); the
