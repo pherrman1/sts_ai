@@ -1210,6 +1210,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         std::array<CardRecord, 2> orderedStasis;
         std::array<bool, 2> seenStasis {};
         const auto &stasisJson = combat.at("stasis");
+        const json monstersJson = combat.value("monsters", json::array());
+        const auto returnedElsewhere = [&](const std::string &uuid) {
+            const auto has = [&](const std::vector<CardRecord> &cards) {
+                return std::any_of(cards.begin(), cards.end(),
+                                   [&](const CardRecord &card) { return card.uuid == uuid; });
+            };
+            return has(hand) || has(limbo) || has(draw.bottom) || has(draw.unknown) || has(draw.top)
+                || has(discard.bottom) || has(discard.unknown) || has(discard.top)
+                || has(exhaust.bottom) || has(exhaust.unknown) || has(exhaust.top);
+        };
         for (std::size_t i = 0; i < stasis.size(); ++i) {
             if (!stasisJson[i].is_object() || !stasisJson[i].contains("slot")
                 || !stasisJson[i].at("slot").is_number_integer())
@@ -1217,6 +1227,21 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             const int slot = stasisJson[i].at("slot").get<int>();
             if (slot < 0 || slot >= static_cast<int>(orderedStasis.size()) || seenStasis[slot])
                 return unsupported("silver_unmapped_stasis");
+            // Java StasisPower.onDeath returns the card with its own UUID,
+            // but the dead orb keeps listing it until its powers are
+            // cleared.  Native returnStasisCard empties the slot.
+            bool orbDead = false;
+            for (std::size_t m = 0; monstersJson.is_array() && m < monstersJson.size(); ++m) {
+                const auto &orb = monstersJson[m];
+                if (!orb.is_object()
+                    || orb.value("slot", orb.value("idx", static_cast<int>(m))) != slot * 2) continue;
+                orbDead = orb.value("dead", false)
+                    || (orb.value("hp", 1) <= 0 && !orb.value("halfDead", false));
+            }
+            if (orbDead) {
+                if (!returnedElsewhere(stasis[i].uuid)) return unsupported("silver_unmapped_stasis");
+                continue;
+            }
             seenStasis[slot] = true;
             orderedStasis[slot] = std::move(stasis[i]);
         }
