@@ -71,6 +71,16 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_DEAD_MONSTER_BLOCK_FIX: unset/1 (default) = queued monster block
+    // (Curl Up, Malleable, Guardian mode shift, block moves) does nothing once
+    // the monster is dead, as in GainBlockAction.update (skips isDying or
+    // isDead; overnight live play 2026-10-19: Fiend Fire curls a louse with an
+    // early hit and kills it before the block lands). Dead-monster block is
+    // part of Silver's node identity, so this can change search. 0 = the
+    // legacy engine adds the block. Other values are fatal. Read only when
+    // the monster is dead.
+    bool deadMonsterBlockFix();
+
     // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
     // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
     // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max

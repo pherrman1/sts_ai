@@ -138,6 +138,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(dead_monster_block_test tests/dead_monster_block_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_monster_block_test PRIVATE include json/include)
+add_test(NAME dead_monster_block COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_monster_block_test>)
+set_tests_properties(dead_monster_block PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(blood_potion_heal_test PRIVATE include json/include)
