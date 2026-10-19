@@ -198,7 +198,7 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
   discard pile natively; Java resets it. Fixed by `STS_PILE_COST_RESET_FIX`
   (see below).
 - Perfected Strike counts one Strike fewer after Havoc exhausts a Strike
-  (fixed, §TBD below).
+  (fixed, §556 below).
 - Havoc's random target differs (`lastTargetedMonster`).
 - Hexaghost records Inferno twice in Java's move history. **Inference:** no
   behavior reads it.
