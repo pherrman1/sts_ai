@@ -233,6 +233,17 @@ parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
 
+Live parity problem 29 (seed 111200385, Two Thieves) stopped Silver with
+`silver_live_action_lowering` after the Looter fled. The inspector's `dead` is
+`isDeadOrEscaped()`, which includes `isEscaping`, but its `escaping` field is
+`AbstractMonster.escaped`, which Java sets only when the escape animation ends.
+In between, the importer kept the 14-HP Looter as a targetable live monster,
+while the live target list had already dropped it, so an action aimed at it had
+no live target. `STS_IMPORTER_ESCAPING_MONSTER_FIX` (default on, `=0` restores)
+imports a `dead` monster with HP left that is not half dead as escaping.
+**Inference:** the state cleared after a game restart because the reloaded
+combat no longer contains the fled monster.
+
 The same night showed Blessing of the Forge upgrading Ascender's Bane natively
 but not in the game (seed 111194457). The engine's upgrade-all-in-hand action
 (Blessing of the Forge, Armaments+) upgraded every card, while Apotheosis,
