@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-19 for the Lagavulin sleep import; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -229,6 +229,9 @@ Unawakened and Explosive are validated against monster identity and phase/move
 state rather than invented status bits. Awakened One remains in native phase
 zero while half-dead and gains the native minion-leader victory rule after
 rebirth, so surviving Cultists do not delay victory after its final death.
+Java Lagavulin has no sleep power; outside Runic Dome the importer sets native
+`ASLEEP` exactly when its public intent is IDLE (move byte 5), which it rolls
+only while asleep (waking sets OPEN 4 or ATTACK 3).
 Combat capture includes
 `energyPerTurn` from Java `energyMaster`; the importer adds Berserk's power
 amount to this base/relic energy for native future turns. IntangiblePlayer

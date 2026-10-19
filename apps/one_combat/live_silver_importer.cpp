@@ -1522,6 +1522,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 m.moveHistory[1] = static_cast<std::int16_t>(*oldMove);
             }
         } else if (m.curHp > 0 && !item.value("dead", false)) return unsupported("silver_unmapped_move");
+        // Java Lagavulin has no sleep power: its sleep is the private isOut
+        // flag, public only as the IDLE intent (5) that it rolls exactly
+        // while asleep. Waking sets OPEN (4, stun) or ATTACK (3).
+        if (*id == sts::MonsterId::LAGAVULIN && item.contains("nextMove") && nextMove == 5)
+            m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::ASLEEP);
         }
         if (item.contains("powers")) {
             if (!item.at("powers").is_array()) return unsupported("silver_unmapped_monster_power");
