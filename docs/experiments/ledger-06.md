@@ -21149,3 +21149,40 @@ by a small, clear margin. **Inference:** a model swap would cut the learned-stop
 accuracy. That is too small for a full-run play test to detect, so a swap could only be checked for non-harm. No
 retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
+
+## §TBD — OOC MCTS prior temperature 3, A20 full-run confirmation: −2.0 pp wins, NOT_SHOWN (2026-10-19)
+
+**Question (Philipp, 2026-10-18, prior-guidance thread):** "set up full run test of temp 3", then "256 seeds on 16
+workers is fine". Does the §532 Act-1 screen pass of `STS_OOC_MCTS_TEMPERATURE=3` carry over to Heart kills in full
+A20 runs?
+**Design:** [PREREG](evidence/ooc_prior_temp3_fullrun_20261018/PREREG.md), light pre-launch review PASS.
+
+- **Candidate:** RUN_COMMIT `c84d65f4`, code `b5dd5557`, binary `01d0f59e…`. The control's `run_unit.sh` env with
+  temperature 3 added. A PIN block restores the control's behaviour for every play-changing default merged since
+  then.
+- **Control:** the A20 winrate-check units on the same seeds (code `64b38c88`), reused rather than rerun.
+- **Identity gate:** temperature 1 with the new binary replayed 4 control seeds byte-identically
+  ([IDENTITY](evidence/ooc_prior_temp3_fullrun_20261018/IDENTITY.md)).
+- **Seeds:** the first 256 eligible winrate-check seeds in 111194580–111194871.
+- **Primary measure:** paired wins, McNemar exact test plus a seed-bootstrap CI.
+- **Decision rule:** CONFIRMED if the CI lower bound is above 0; WORSE if the upper bound is below 0; otherwise
+  NOT_SHOWN.
+
+**Result.** 256/256 units finished and all 16 worker tars were verified
+([README](evidence/ooc_prior_temp3_fullrun_20261018/README.md)).
+
+| | Control | T3 |
+|---|---|---|
+| Wins | 42 | 37 |
+| Act 4 reached | 86 | 81 |
+| Mean floor | 40.98 | 41.64 |
+
+- **T3 − control, wins:** −2.0 pp [−6.6, +2.7]. Discordant pairs 17 vs 22, p = 0.522. **NOT_SHOWN.**
+- **Floor:** +0.66.
+- **Search behaviour:** under T3 the executed move is the prior argmax on 84.3% of roots, against 90.5% at
+  temperature 1 (§532).
+
+**Interpretation:** the flatter tree prior changes about 6% more root decisions, but the change does not convert into
+more Heart kills. The point estimate is negative. **Inference:** the +3.1 HP Act-1 screen effect was noise or does not
+survive later acts; the test cannot rule out a gain of up to +2.7 pp.
+**Knowledge impact:** KB §532 section updated; default stays `STS_OOC_MCTS_TEMPERATURE=1`. No code changed.
