@@ -15,6 +15,9 @@ double checkedValue(double value) {
         throw std::runtime_error("OOC MCTS value must be finite and in [0,1]");
     return value;
 }
+// pruneUnsupported: unwinds a simulation whose unsupported edge was pruned
+// while its parent still has other actions; ancestors only roll back visits.
+struct DiscardedSimulation {};
 struct DecisionNode;
 struct ChanceNode {
     OocPlannerAction action;
@@ -24,6 +27,7 @@ struct ChanceNode {
     // Merged equivalent outcomes repeat the same node pointer.
     std::vector<DecisionNode *> particles;
     std::vector<std::pair<std::uint64_t, DecisionNode *>> outcomeKeys;
+    bool pruned = false;
     double q() const { return visits ? totalValue / visits : 0; }
 };
 struct DecisionNode {
@@ -48,12 +52,16 @@ struct Search {
     std::map<OocActionId, OocValueDistribution> actionValues;
     std::map<OocActionId, OocHpDistribution> actionHp;
     bool rootWinnerLocked(const DecisionNode &node, std::uint64_t remaining) const {
-        if (node.actions.empty()) return false;
+        const ChanceNode *only = nullptr;
+        std::size_t live = 0;
+        for (const auto &action : node.actions) if (!action.pruned) { only = &action; ++live; }
+        if (!live) return false;
         // With no challenger the visit winner cannot change. The caller still
         // requires visit selection and the guarantee or explicit policy override.
-        if (node.actions.size() == 1) return node.actions.front().visits > 0;
+        if (live == 1) return only->visits > 0;
         std::uint64_t leader = 0, challenger = 0;
         for (const auto &action : node.actions) {
+            if (action.pruned) continue;
             if (action.visits > leader) { challenger = leader; leader = action.visits; }
             else challenger = std::max(challenger, action.visits);
         }
@@ -62,10 +70,15 @@ struct Search {
         return leader > challenger && leader - challenger > remaining;
     }
 
+    static std::size_t liveActions(const DecisionNode &node) {
+        return std::count_if(node.actions.begin(), node.actions.end(), [](const auto &a) { return !a.pruned; });
+    }
+
     bool rootVisitGapAtLeast(const DecisionNode &node, double fraction, std::uint64_t simulations) const {
-        if (node.actions.size() < 2) return false;
+        if (liveActions(node) < 2) return false;
         std::uint64_t leader = 0, challenger = 0;
         for (const auto &action : node.actions) {
+            if (action.pruned) continue;
             if (action.visits > leader) { challenger = leader; leader = action.visits; }
             else challenger = std::max(challenger, action.visits);
         }
@@ -73,9 +86,10 @@ struct Search {
     }
 
     bool rootVisitGapAtLeast20(const DecisionNode &node) const {
-        if (node.actions.size() < 2) return false;
+        if (liveActions(node) < 2) return false;
         std::uint64_t leader = 0, challenger = 0;
         for (const auto &action : node.actions) {
+            if (action.pruned) continue;
             if (action.visits > leader) { challenger = leader; leader = action.visits; }
             else challenger = std::max(challenger, action.visits);
         }
@@ -119,7 +133,7 @@ struct Search {
         terminalKind = sample.terminal ? value == 0 ? 1 : value == 1 ? 2 : 0 : 0;
         return value;
     }
-    double evaluate(DecisionNode &node, std::uint32_t depth, bool root = false) {
+    double evaluateNode(DecisionNode &node, std::uint32_t depth, bool root) {
         metrics.maxDepthReached = std::max(metrics.maxDepthReached, depth);
         metrics.depthSum += depth;
         ++node.visits;
@@ -146,13 +160,14 @@ struct Search {
         // A prior is not an action filter: visit each action once before PUCT.
         // Actions are sorted by ID, so equal-prior ties retain the lowest ID.
         for (auto &action : node.actions) {
-            if (!action.visits && (!chosen || action.action.prior > chosen->action.prior))
+            if (!action.pruned && !action.visits && (!chosen || action.action.prior > chosen->action.prior))
                 chosen = &action;
         }
         if (!chosen) {
             double best = -std::numeric_limits<double>::infinity();
             const double parentSqrt = std::sqrt(static_cast<double>(node.visits - 1));
             for (auto &action : node.actions) {
+                if (action.pruned) continue;
                 // Parent N excludes the simulation currently in progress.
                 double score = action.q() + config.cPuct * action.action.prior
                     * parentSqrt / (1.0 + action.visits);
@@ -160,8 +175,28 @@ struct Search {
                 if (!chosen || score > best) { chosen = &action; best = score; }
             }
         }
+        if (!chosen) throw OocSearchUnsupported("ooc_all_actions_pruned");
         auto &chance = *chosen;
         ++chance.visits;
+        double value;
+        try { value = descend(node, chance, depth); }
+        catch (const OocSearchUnsupported &unsupported) {
+            --chance.visits;
+            if (!config.pruneUnsupported) throw;
+            chance.pruned = true;
+            ++metrics.prunedActions;
+            ++metrics.prunedReasons[unsupported.what()];
+            if (liveActions(node)) throw DiscardedSimulation{};
+            throw;  // every action is pruned: the parent prunes its edge to this node
+        } catch (const DiscardedSimulation &) { --chance.visits; throw; }
+        chance.totalValue += value;
+        if (root && config.captureValueDistribution) {
+            actionValues[chance.action.id].record(value, terminalKind);
+            actionHp[chance.action.id].record(endpoint, terminalKind);
+        }
+        return value;
+    }
+    double descend(DecisionNode &node, ChanceNode &chance, std::uint32_t depth) {
         DecisionNode *next;
         if (!chance.particles.empty() && model.isDeterministicTransition(node.state, chance.action.id)) {
             next = chance.particles.front();
@@ -194,13 +229,12 @@ struct Search {
             std::uniform_int_distribution<std::size_t> uniform(0, chance.particles.size()-1);
             next = chance.particles[uniform(rng)];
         }
-        double value = evaluate(*next, depth + 1);
-        chance.totalValue += value;
-        if (root && config.captureValueDistribution) {
-            actionValues[chance.action.id].record(value, terminalKind);
-            actionHp[chance.action.id].record(endpoint, terminalKind);
-        }
-        return value;
+        return evaluate(*next, depth + 1);
+    }
+    double evaluate(DecisionNode &node, std::uint32_t depth, bool root = false) {
+        // A discarded or aborted simulation leaves no visit on this node.
+        try { return evaluateNode(node, depth, root); }
+        catch (...) { --node.visits; throw; }
     }
 };
 }
@@ -249,7 +283,9 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     try {
         for (std::uint64_t i = 0; i < simulations; ++i) {
             ++search.metrics.simulationAttempts;
-            const double value = search.evaluate(node, 0, true);
+            double value;
+            try { value = search.evaluate(node, 0, true); }
+            catch (const DiscardedSimulation &) { ++search.metrics.unsupportedSimulations; continue; }
             ++search.metrics.simulations;
             if (result.rootValues) result.rootValues->record(value, search.terminalKind);
             if (result.rootHp) result.rootHp->record(search.endpoint, search.terminalKind);
@@ -260,7 +296,7 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                 checkpointActions.reserve(node.actions.size());
                 for (const auto &action : node.actions)
                     checkpointActions.push_back({action.action.id, action.action.prior,
-                        action.visits, action.q()});
+                        action.visits, action.q(), action.pruned});
                 if (!checkpointActions.empty())
                     result.rootCheckpoints.push_back({search.metrics.simulations,
                         std::move(checkpointActions)});
@@ -316,7 +352,9 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     }
     const ChanceNode *best = nullptr;
     for (const auto &action : node.actions) {
-        result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q()});
+        result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q(),
+                                      action.pruned});
+        if (action.pruned) continue;
         // An unvisited action has no estimated Q and cannot win the Q rule.
         if (config.selectByMeanQ && !action.visits) continue;
         const bool better = !best || (config.selectByMeanQ

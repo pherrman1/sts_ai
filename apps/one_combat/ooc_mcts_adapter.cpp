@@ -2610,6 +2610,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
         }
     }
     else if (key == "STS_OOC_MCTS_MERGE_OUTCOMES") config.mergeEquivalentOutcomes = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_PRUNE_UNSUPPORTED") config.pruneUnsupported = choice("0", "1");
     else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
     else if (key == "STS_OOC_MCTS_TEMPERATURE") { const double x = number(); if (x <= 0) invalid(); opts.priorTemperature = x; }
     else if (key == "STS_OOC_MCTS_CPUCT") { const double x = number(); if (x < 0) invalid(); config.cPuct = x; }
@@ -2631,7 +2632,8 @@ const char *const liveControlKeys[] = {
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY", "STS_OOC_MCTS_MERGE_OUTCOMES",
     "STS_OOC_MCTS_ROLLOUT_SHOP", "STS_OOC_MCTS_TREE_RULES", "STS_OOC_MCTS_CPU_SECONDS",
-    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS", "STS_OOC_MCTS_POTION_KEEP_PRIOR"
+    "STS_OOC_MCTS_TARGET_PRIOR", "STS_OOC_MCTS_LEAF_SELECTS", "STS_OOC_MCTS_POTION_KEEP_PRIOR",
+    "STS_OOC_MCTS_PRUNE_UNSUPPORTED"
 };
 void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
     if (!result.aborted) return;
@@ -2970,6 +2972,10 @@ void configureLiveOocMcts() {
     // STS_OOC_MCTS_TREE_RULES=0 / STS_OOC_MCTS_MERGE_OUTCOMES=0 restore the old tree.
     liveConfig.mergeEquivalentOutcomes = true;
     liveOptions.treeRules = true;
+    // ADR-TBD, issue #633 (Philipp 2026-10-18): an unsupported imagined combat or leaf
+    // prunes its edge instead of aborting the whole root search.
+    // STS_OOC_MCTS_PRUNE_UNSUPPORTED=0 restores the whole-root abort.
+    liveConfig.pruneUnsupported = true;
     // ADR-0032 (§459): greedy rollout shops are the default; STS_OOC_MCTS_ROLLOUT_SHOP=planner restores the bundle planner.
     liveOptions.greedyRolloutShop = true;
     for (const char *key : liveControlKeys)
@@ -3256,6 +3262,7 @@ void configureLiveOocMcts() {
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << (liveConfig.gapStopFraction > 0 ? " gap_stop=" + gapStopText(liveConfig) : std::string{})
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
+        << " prune_unsupported=" << liveConfig.pruneUnsupported
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
         << (liveOptions.greedyRolloutShop ? " rollout_shop=greedy" : "")
@@ -3276,6 +3283,7 @@ void configureLiveOocMcts() {
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << (liveConfig.gapStopFraction > 0 ? ",\"gapStop\":\"" + gapStopText(liveConfig) + "\"" : std::string{})
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
+        << ",\"pruneUnsupported\":" << (liveConfig.pruneUnsupported ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
         << "\",\"leafWinModel\":" << (liveOptions.leafWinNet ? "\"" + liveOptions.leafWinPath + "\"" : std::string("null"))
         << ",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.heart1LeafPolicy ? "heart1" : liveOptions.uniformLeafPolicy ? "uniform" : liveOptions.priorLeafPolicy ? "prior" : "v4")
@@ -4051,6 +4059,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
                     {"semantic", c.semantic.has_value()},
                     {"compound", c.compoundSelector != sts::CardSelectScreenType::INVALID},
                     {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+                if (a.pruned) output.back()["pruned"] = true;   // #633: excluded from selection
             }
             return output;
         };
@@ -4081,12 +4090,17 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
         // Only with the option on, so rows without it keep their exact bytes.
         if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
+        if (m.prunedActions) policyRoot->update({{"unsupportedSimulations", m.unsupportedSimulations},
+            {"prunedActions", m.prunedActions}, {"prunedReasons", m.prunedReasons}});
     }
     if (rootActions) {
         *rootActions = nlohmann::json::array();
         for (const auto &action : result.rootActions)
+        {
             rootActions->push_back({{"id", action.id}, {"key", model.candidate(0, action.id).key},
                 {"prior", action.prior}, {"visits", action.visits}, {"q", action.q}});
+            if (action.pruned) rootActions->back()["pruned"] = true;
+        }
     }
     if (config.observeRootLock) {
         const auto &m = result.metrics;
@@ -4334,8 +4348,10 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         using nlohmann::json;
         const auto actionsJson = [](const std::vector<sts::search::OocRootActionStats> &actions) {
             auto output = json::array();
-            for (const auto &a : actions)
+            for (const auto &a : actions) {
                 output.push_back({{"id", a.id}, {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}});
+                if (a.pruned) output.back()["pruned"] = true;
+            }
             return output;
         };
         auto checkpoints = json::array();
@@ -4361,6 +4377,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             {"max_depth", m.maxDepthReached}, {"depth_sum", m.depthSum},
             {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20},
             {"early_stop_gap_ladder", m.earlyStopGapLadder},
+            {"unsupported_simulations", m.unsupportedSimulations}, {"pruned_actions", m.prunedActions},
             {"cpu_budget_seconds", liveOptions.cpuBudgetSeconds}, {"early_stop_budget", m.earlyStopBudget}};
     }
     if (!liveCheckpointTrace.empty()) {
@@ -4444,6 +4461,9 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     m.transitionSamples += result.metrics.transitionSamples;
     m.leafEvaluations += result.metrics.leafEvaluations;
     m.maxDepthReached = std::max(m.maxDepthReached, result.metrics.maxDepthReached);
+    m.unsupportedSimulations += result.metrics.unsupportedSimulations;
+    m.prunedActions += result.metrics.prunedActions;
+    for (const auto &[reason, count] : result.metrics.prunedReasons) m.prunedReasons[reason] += count;
     if (result.aborted) {
         ++metrics.supportAborts; metrics.discardedSimulations+=result.metrics.simulations;
     }
@@ -4635,6 +4655,8 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         << ',' << brewMetrics.fastSupportFailures << ',' << brewMetrics.fallbackSupportFailures << '\n';
     std::ofstream reasons(liveTrace+".support.jsonl",std::ios::app);
     reasons << nlohmann::json{{"seed",seed},{"reasons",m.continuation.supportReasons},
+        {"unsupported_simulations",m.search.unsupportedSimulations},{"pruned_actions",m.search.prunedActions},
+        {"pruned_reasons",m.search.prunedReasons},
         {"continuation_reasons",m.continuation.continuationReasons},
         {"continuation_limit_aborts",m.continuation.continuationLimitAborts},
         {"screen_leaf_evaluations",m.continuation.screenLeafEvaluations},

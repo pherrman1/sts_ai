@@ -28,6 +28,8 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-TBD](TBD-ooc-prune-unsupported-edges.md) makes an unsupported OOC MCTS edge prune itself instead of aborting
+  the whole root search (`STS_OOC_MCTS_PRUNE_UNSUPPORTED=0` restores the abort; issue #633).
 - [ADR-0050](0050-silver-prior-playout-boss-elite.md) makes real boss and elite Silver fights use prior-argmax
   playouts when a root prior is set (`STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy playouts).
 - [ADR-0049](0049-silver-gen7f-root-table.md) makes gen-7f E (gen 7 retrained on active power features) the bundled
