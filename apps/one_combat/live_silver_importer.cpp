@@ -373,6 +373,18 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_ESCAPING_MONSTER_FIX: unset/1 (default) = a monster that Java
+// reports dead (isDeadOrEscaped) with HP left, not half dead and not yet
+// "escaping" (the escape animation is still running) is imported as escaping;
+// 0 = legacy, where it stayed a targetable live monster natively while the
+// live target list had already dropped it (silver_live_action_lowering).
+bool escapingMonsterFix() {
+    const char *value = std::getenv("STS_IMPORTER_ESCAPING_MONSTER_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_ESCAPING_MONSTER_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_CENTENNIAL_USED_FIX: unset/1 (default) = Centennial Puzzle
 // needs the producer's usedThisCombat and gets no relic bit once it fired, as
 // native clears the bit on its first HP loss; 0 = legacy, the bit stays set and
@@ -1606,6 +1618,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         m.curHp = item.value("hp", 0); m.maxHp = item.value("maxHp", 0); m.block = item.value("block", 0);
         m.isEscapingB = item.value("escaping", item.value("escaped", false)); m.halfDead = item.value("halfDead", false);
+        // Java's "escaping" is AbstractMonster.escaped, set only when the
+        // escape animation ends; "dead" is isDeadOrEscaped(), which already
+        // includes isEscaping. A fleeing monster with HP left is untargetable.
+        if (escapingMonsterFix() && !m.isEscapingB && !m.halfDead && m.curHp > 0
+            && item.value("dead", false))
+            m.isEscapingB = true;
         m.escapeNext = item.value("escapeNext", false);
         if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
             return unsupported("silver_unmapped_monster_state");
