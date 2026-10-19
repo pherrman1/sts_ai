@@ -366,6 +366,52 @@ int main(int argc,char **argv){try{
             }
         }
     }
+    // Overnight issue 20 (seed 111194462): with tree rules the search keeps
+    // one candidate per group of card copies on bottle, duplicate and bonfire
+    // selectors; the live mapping must accept the other copies' clicks.
+    for (int variant = 0; variant < 3; ++variant) {
+        auto source = base;
+        if (variant == 0) {
+            source.deck.removeBottle(CardType::ATTACK);
+            source.obtainRelic(RelicId::BOTTLED_FLAME);
+        } else source.openCardSelectScreen(variant == 1 ? CardSelectScreenType::DUPLICATE
+                                                       : CardSelectScreenType::BONFIRE_SPIRITS, 1);
+        check(source.screenState == ScreenState::CARD_SELECT, "copy selector fixture");
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(project(source, path, "selector_copies"), live).ok,
+              "copy selector fixture import");
+        const auto captured = advisor::liveOocPrimitiveBits(live);
+        OocMctsDependencies deps;
+        deps.policyAvailable = [] { return true; };
+        deps.policyLogits = [](const GameContext &, const PathHistory &, const std::vector<A> &as) {
+            return std::vector<double>(as.size(), 0.0);
+        };
+        deps.leafValue = [](const GameContext &, const PathHistory &) { return 0.5; };
+        for (const bool rules : {false, true}) {
+            OocAdapterOptions options;
+            options.uniformPrior = true;
+            options.treeRules = rules;
+            options.rootPrimitiveBits = std::set<std::uint32_t>(captured.begin(), captured.end());
+            OocGameContextModel root(live.mctsRoot.state, live.mctsRoot.path, {}, options, deps);
+            std::vector<std::uint32_t> bits;
+            for (const auto &action : root.legalActions(0))
+                bits.push_back(root.candidate(0, action.id).primitive.bits);
+            check(rules ? bits.size() < captured.size() : bits.size() == captured.size(),
+                  "tree rules must collapse selector card copies");
+            advisor::validateLiveOocActionSet(live, bits, true, rules);
+            if (!rules) continue;
+            bool rejected = false;
+            try { advisor::validateLiveOocActionSet(live, bits, true, false); }
+            catch (const std::exception &) { rejected = true; }
+            check(rejected, "copy aliases need tree-rule keys");
+            auto missing = bits;
+            missing.pop_back();
+            rejected = false;
+            try { advisor::validateLiveOocActionSet(live, missing, true, true); }
+            catch (const std::exception &) { rejected = true; }
+            check(rejected, "missing selector card group accepted");
+        }
+    }
     for(bool bowl:{false,true}) for(int unopened:{0,1,4}) for(bool potions:{false,true}) {
         if(!potions && !unopened)continue;
         auto source=base;source.screenState=ScreenState::REWARDS;source.potionCapacity=3;source.potionCount=3;
