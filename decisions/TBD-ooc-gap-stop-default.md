@@ -10,7 +10,7 @@ the leader. `STS_OOC_MCTS_GAP_STOP=1024:0.7` (§539) stops a root after 1,024 si
 at least 70% of them, and keeps the visit leader.
 
 - §539: offline, on 628 A20 roots, `1024:0.7` kept 99.2% of the full search's actions at an estimated 0.69x OOC CPU.
-- §TBD (PR #680, `docs/experiments/evidence/ooc_stop_ab_20261018/`): 512 paired A20 seeds on the CTM-Act-4 stack
+- §TBD-b (PR #680, `docs/experiments/evidence/ooc_stop_ab_20261018/`): 512 paired A20 seeds on the CTM-Act-4 stack
   (4096 sims, student_sel prior, temperature 1). The real combats used flat Silver 10k, before ADR-0051.
   - Gap ladder vs exact lock only: reached Act 4 +0.6 pp [−2.0, +3.1], NON_INFERIOR (margin −5 pp).
   - Heart kills 110 vs 106.

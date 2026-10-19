@@ -3059,7 +3059,7 @@ void configureLiveOocMcts() {
     liveOptions.greedyRolloutShop = true;
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
-    // ADR-TBD (§TBD A/B, Philipp 2026-10-19): the 1024:0.7 gap ladder is the default wherever it applies (visit
+    // ADR-TBD (§TBD-b A/B, Philipp 2026-10-19): the 1024:0.7 gap ladder is the default wherever it applies (visit
     // selection, more than 1024 simulations, no CPU_SECONDS). A learned stop keeps its tested arm without it.
     // STS_OOC_MCTS_GAP_STOP=0 restores the exact visit lock only.
     if (const char *learned = std::getenv("STS_OOC_MCTS_LEARNED_STOP");

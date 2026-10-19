@@ -20940,7 +20940,7 @@ most of the score gain; a boss-only use would be a separate pre-registered test.
 `/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
 111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
 **Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.
-## §TBD — OOC MCTS stop rules, paired A20 A/B on the CTM-Act-4 stack: learned stop and gap ladder both NON_INFERIOR on reaching Act 4; OOC MCTS CPU 0.53x (learned) and 0.69x (gap ladder) of the exact visit lock (2026-10-19)
+## §TBD-b — OOC MCTS stop rules, paired A20 A/B on the CTM-Act-4 stack: learned stop and gap ladder both NON_INFERIOR on reaching Act 4; OOC MCTS CPU 0.53x (learned) and 0.69x (gap ladder) of the exact visit lock (2026-10-19)
 
 Authorization: Philipp 2026-10-18 18:15Z, card "All three" 21:45Z, "8 workers" 22:09Z. Pre-registration, unit
 script and analyzer: `docs/experiments/evidence/ooc_stop_ab_20261018/` (`PREREG.md`, `run_unit.sh`, `analyze.py`).
