@@ -18,7 +18,7 @@ ADR-0026 default never reached them.
 - The stop model `gbt-770201c31f7b` was trained on 160 A0 runs of the V4 stack (§372).
 - §543 (PR #678, `docs/experiments/evidence/silver_stoptrace_a20_20261018/`): stop traces from 512 A20 seeds of the
   F10 configuration. A model retrained on 384 of them (`gbt-0cac7cc64364`) was compared with the old model on the
-  other 128, at thresholds that match the old model's out-of-fold disagreement. Saving 58.1% vs 56.2% (+1.9 pp
+  other 128, at thresholds whose disagreement is at most the old model's out-of-fold disagreement. Saving 58.1% vs 56.2% (+1.9 pp
   [+1.7, +2.0]), disagreement with the 10k action 0.68% vs 0.71%. Result RETRAIN_BETTER.
 
 On 2026-10-18 at 21:44Z Philipp asked to "make learned stoping the default for a20, swpaw the new model in".
