@@ -21205,3 +21205,26 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — Overnight live play: Mayhem played the pre-draw top card natively (2026-10-19)
+
+**Question:** why did turns with Mayhem diverge from the game (overnight list problem 13)?
+**Setup:** parity traces of seed 111194457 (segments 16, 24, 25; Reptomancer and Jaw Worm horde) from §545's overnight
+runs; `javap` of `MayhemPower`, `MayhemPower$1`, `PlayTopCardAction` and `GameActionManager.getNextAction` in the pinned
+`desktop-1.0.jar` on Philipp's PC (read-only).
+**Result:** `MayhemPower.atStartOfTurn` queues, per stack, a wrapper action; its update rolls
+`getRandomMonster(null, true, cardRandomRng)` and queues `PlayTopCardAction` at the bottom. The wrapper sits ahead of
+the turn's `DrawCardAction`, so the target roll happens before the draw and the card play after the draw and the
+post-draw relics/powers. The engine queued `PlayTopCard` directly and played the pre-draw top card. Segment 16 step 86:
+the game drew Dark Embrace+ and four more, then played Burning Pact+ (exhaust selection); native played Dark Embrace+
+and drew Burning Pact+. Segment 25 step 14: the game played Metallicize+ after filling the hand to 10, the last Jaw
+Worm survived at 3 HP; native played the pre-draw Clothesline+ and won. Segment 24 step 17 and segment 25 step 57
+show the same pattern.
+**Interpretation:** `STS_MAYHEM_AFTER_DRAW_FIX` (default on, `=0` restores) adds the wrapper action
+(`ActData_MayhemPlayTopCard`). Play-changing for every combat with Mayhem; results recorded before this fix are
+comparable only with `STS_MAYHEM_AFTER_DRAW_FIX=0`. `mayhem_after_draw_test` checks the card played and the Armaments
+selection under both settings. **Unverified:** the fixed probe on the recorded traces (traces stay on the PC under
+`~/Documents/sts/artifacts/overnight-20261019/seed-111194457/`); the issue's inference that Mayhem explains other
+Act-3 end-turn hand/discard mismatches.
+Seeds: 111200121 (fixed seed of `mayhem_after_draw_test`, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
