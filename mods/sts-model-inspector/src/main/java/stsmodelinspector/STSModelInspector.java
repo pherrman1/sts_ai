@@ -1303,7 +1303,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String boundary;
         String ooc = "";
         if (isCombatBoundary(room.phase, AbstractDungeon.screen,
-                isPlayerDecisionPoint(), isCardSelectionBoundary())) {
+                isPlayerDecisionPoint(), isCardSelectionBoundary(),
+                isCombatEnding(room.isBattleOver, room.smoked, AbstractDungeon.player.isEscaping))) {
             boundary = "combat";
         } else {
             ooc = LiveOocCapture.capture();
@@ -1714,7 +1715,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return emitted;
     }
 
-    private static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
+    static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
         int total = 0;
         for (Integer value : counts.values()) total += value;
         if (counts.size() == 1) {
@@ -1756,7 +1757,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 return "AWAKENED_ONE";
             if (count(counts, "Cultist") == 1 && count(counts, "Chosen") == 1)
                 return "CULTIST_AND_CHOSEN";
-            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 2)
+            // MonsterHelper "Chosen and Byrds" spawns one Byrd and one Chosen
+            // (native MonsterGroup CHOSEN_AND_BYRDS likewise).
+            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 1)
                 return "CHOSEN_AND_BYRDS";
             if (count(counts, "Sentry") == 1 && count(counts, "SphericGuardian") == 1)
                 return "SENTRY_AND_SPHERE";
@@ -2109,11 +2112,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && !actions.turnHasEnded;
     }
 
+    // A Smoke Bomb escape keeps the room in COMBAT with an idle action queue
+    // while the player runs off (isEscaping), then endBattle() runs (which
+    // clears the Runic Dome occupant binding) before the phase leaves COMBAT.
+    // Native combat already ended when the potion was used; neither window is
+    // a player decision.
+    static boolean isCombatEnding(boolean battleOver, boolean smoked, boolean playerEscaping) {
+        return battleOver || smoked || playerEscaping;
+    }
+
     static boolean isCombatBoundary(AbstractRoom.RoomPhase phase, AbstractDungeon.CurrentScreen screen,
-                                    boolean playerDecision, boolean selectionAvailable) {
+                                    boolean playerDecision, boolean selectionAvailable, boolean combatEnding) {
         // EventRoom fights are combat too. Serializer support is a separate
         // question: an unknown selection must reach Silver as UNSUPPORTED.
-        return phase == AbstractRoom.RoomPhase.COMBAT
+        return phase == AbstractRoom.RoomPhase.COMBAT && !combatEnding
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
                          || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
@@ -2321,13 +2333,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if ("Darkling".equals(id)) return readIntField(monster, "nipDmg");
         if ("GremlinWizard".equals(id)) return readIntField(monster, "currentCharge");
         if ("Hexaghost".equals(id)) {
-            // Native Silver keeps the per-hit Divider damage in miscInfo. The
-            // Java intent damage is the same finalized value once Divider is
-            // selected. Native keeps that value after Divider resolves, so
-            // retain the observed public value for this monster object until
-            // the next Activate move replaces it.
+            // Native Silver keeps the raw per-hit Divider damage (player
+            // HP / 12 + 1 at Activate) in miscInfo and applies Weak, Strength
+            // and Vulnerable when the hits resolve. Activate passes that raw
+            // value to setMove, so read the intent base damage: the displayed
+            // intent damage already includes those modifiers and would apply
+            // them twice. Native keeps the value after Divider resolves, so
+            // retain it for this monster object until the next Activate
+            // move replaces it.
             if (monster.nextMove == 1) {
-                hexaghostDividerDamage.put(monster, monster.getIntentDmg());
+                hexaghostDividerDamage.put(monster, monster.getIntentBaseDmg());
             }
             Integer dividerDamage = hexaghostDividerDamage.get(monster);
             return dividerDamage == null ? 0 : dividerDamage;
@@ -2582,7 +2597,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     || !Boolean.TRUE.equals(readBooleanField(action,"setCost"))
                     || !Integer.valueOf(0).equals(readIntField(action,"newCost"))
                     || handMultiContinuation("GAMBLE")==null)
-                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+                return pendingActionsRejection();
             result = result.substring(0,result.length()-1) + ",\"actionClass\":\"" + action.getClass().getName()
                     + "\",\"continuation\":\"" + handMultiContinuation("GAMBLE") + "\",\"optional\":false,\"newCost\":0}";
         }
@@ -2591,7 +2606,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && hasPendingUseCard();
         if ("GAMBLE".equals(task) || "EXHAUST_MANY".equals(task) && !sourceOwned) {
             String continuation = handMultiContinuation(task);
-            if (continuation == null) return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            if (continuation == null) return pendingActionsRejection();
             result = result.substring(0,result.length()-1) + ",\"continuation\":\"" + continuation + "\"}";
         }
         if ("ARMAMENTS".equals(task) || "EXHUME".equals(task) || "DUAL_WIELD".equals(task)) {
@@ -2615,7 +2630,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if(sourceOwned) {
             if(publicPendingActionsJson(false,task)==null)
-                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+                return pendingActionsRejection();
             result=result.substring(0,result.length()-1)+",\"continuation\":\"source_card_actions\"}";
         }
         return result;
@@ -2720,6 +2735,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
         } else if ("SHUFFLE_WOUNDS".equals(kind)) {
             if (amount != 2) return null;
+        } else if ("HEAL_PLAYER".equals(kind)) {
+            if (amount != 5) return null;
         } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
         return "{\"kind\":\"" + kind + "\",\"amount\":" + amount
                 + (power == null ? "" : ",\"power\":\"" + power + "\",\"sourceMonster\":false") + "}";
@@ -2778,6 +2795,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // removal with no onRemove override. The zero charge and its
             // visual removal are jointly omitted from the native projection.
             if(sourceTask!=null && zeroCopyPowerRemoval(action))continue;
+            // TheGuardian.damage: a hit crossing the Mode Shift threshold queues
+            // VFXAction then ChangeStateAction("Defensive Mode") last; the wire
+            // settles the shift itself (Mode Shift <= 0).
+            if(sourceTask!=null && isActionClass(name,"VFXAction")) {
+                String item=actionIndex+2==manager.actions.size()?guardianShiftJson(manager.actions.get(actionIndex+1)):null;
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
+            }
+            // CurlUpPower.onAttacked: ChangeStateAction("CLOSED") (animation
+            // only), GainBlockAction, RemoveSpecificPowerAction("Curl Up").
+            if(sourceTask!=null && isActionClass(name,"ChangeStateAction")) {
+                String item=curlUpJson(manager.actions,actionIndex);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);actionIndex+=2;continue;
+            }
             if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) {
                 if(sourceTask==null || ++cleanups!=1)return null;
                 String item=pendingUseCardJson(action,sourceTask);
@@ -2799,9 +2831,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))
                         || readObjectField(action,"followUpAction")!=null) return null;
                 kind="DRAW";if(amount!=null && amount>0)++draws;
+            } else if(sourceTask!=null && monsterReactionAction(name,action)) {
+                String item=monsterReactionJson(name,action);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
             } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
                 if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
                 kind="GAIN_BLOCK";
+            } else if("com.megacrit.cardcrawl.actions.common.HealAction".equals(name)) {
+                // Toy Ornithopter queues its potion heal behind the potion's
+                // own actions (Gambler's Brew's GamblingChipAction). Native
+                // queues the same victory-surviving heal in drinkPotion.
+                if(!hasRelic("Toy Ornithopter") || readObjectField(action,"target")!=AbstractDungeon.player
+                        || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return null;
+                kind="HEAL_PLAYER";
             } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
             else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
             else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
@@ -2861,6 +2904,146 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
         return out.append(']').toString();
+    }
+
+    // Monster on-hit reactions that vanilla queues with addToBot behind an
+    // interrupted source card (e.g. Headbutt into Writhing Mass or Shelled
+    // Parasite): Malleable/Curl Up self-block, Reactive reroll, Plated Armor loss.
+    private static boolean monsterReactionAction(String name,Object action) {
+        if("com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name))return true;
+        if("com.megacrit.cardcrawl.actions.common.DamageAction".equals(name))
+            return readObjectField(action,"target")==AbstractDungeon.player;
+        return ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)
+                || "com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name))
+                && readObjectField(action,"target") instanceof AbstractMonster;
+    }
+
+    private static String monsterReactionJson(String name,Object action) {
+        boolean roll="com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name);
+        if("com.megacrit.cardcrawl.actions.common.DamageAction".equals(name)) {
+            // SharpHidePower.onUseCard: addToBot(DamageAction(player, DamageInfo(owner, amount, THORNS))).
+            Object info=readObjectField(action,"info"), owner=readObjectField(info,"owner");
+            if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type"))) || !(owner instanceof AbstractMonster))return null;
+            AbstractMonster guardian=(AbstractMonster)owner;
+            AbstractPower hide=guardian.getPower("Sharp Hide");
+            Integer output=readIntField(info,"output"), slot=emittedMonsterSlots(liveEncounter).get(guardian);
+            if(!"TheGuardian".equals(guardian.id) || hide==null || slot==null || guardian.isDying || guardian.isDeadOrEscaped()
+                    || !"com.megacrit.cardcrawl.powers.SharpHidePower".equals(hide.getClass().getName())
+                    || output==null || !output.equals(readIntField(info,"base")) || output!=hide.amount)return null;
+            return monsterReactionItemJson("MONSTER_THORNS",output,slot);
+        }
+        Object value=readObjectField(action,roll?"monster":"target");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster monster=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(monster);
+        if(slot==null || monster.isDying || monster.isDeadOrEscaped() || monster.halfDead
+                || (!roll && readObjectField(action,"source")!=monster))return null;
+        Integer amount=readIntField(action,"amount");
+        if(roll) {
+            AbstractPower reactive=monster.getPower("Compulsive");
+            if(!"WrithingMass".equals(monster.id) || reactive==null
+                    || !"com.megacrit.cardcrawl.powers.ReactivePower".equals(reactive.getClass().getName()))return null;
+            return monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,slot);
+        }
+        if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name))
+            return monsterReactionItemJson("MONSTER_GAIN_BLOCK",amount,slot);
+        String powerId=readStringField(action,"powerID");
+        if(readObjectField(action,"powerInstance")!=null)return null;
+        if("Flight".equals(powerId)) {
+            // FlightPower.onAttacked: addToBot(ReducePowerAction(owner, owner, "Flight", 1)).
+            AbstractPower flight=monster.getPower("Flight");
+            if(!"Byrd".equals(monster.id) || flight==null
+                    || !"com.megacrit.cardcrawl.powers.FlightPower".equals(flight.getClass().getName()))return null;
+            return monsterReactionItemJson("MONSTER_REDUCE_FLIGHT",amount,slot);
+        }
+        AbstractPower plated=monster.getPower("Plated Armor");
+        if(!"Plated Armor".equals(powerId)
+                || plated==null || !"com.megacrit.cardcrawl.powers.PlatedArmorPower".equals(plated.getClass().getName()))return null;
+        return monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",amount,slot);
+    }
+
+    private static boolean isActionClass(String name,String simpleName) {
+        return name.startsWith("com.megacrit.cardcrawl.actions.") && name.endsWith("."+simpleName);
+    }
+
+    private static String guardianShiftJson(Object change) {
+        if(change==null || !isActionClass(change.getClass().getName(),"ChangeStateAction")
+                || !Boolean.FALSE.equals(readBooleanField(change,"isDone"))
+                || !Boolean.FALSE.equals(readBooleanField(change,"called"))
+                || !"Defensive Mode".equals(readStringField(change,"stateName")))return null;
+        Object value=readObjectField(change,"m");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster guardian=(AbstractMonster)value;
+        AbstractPower shift=guardian.getPower("Mode Shift");
+        Integer slot=emittedMonsterSlots(liveEncounter).get(guardian);
+        if(!"TheGuardian".equals(guardian.id) || slot==null || guardian.isDying || guardian.isDeadOrEscaped()
+                || shift==null || !"com.megacrit.cardcrawl.powers.ModeShiftPower".equals(shift.getClass().getName())
+                || shift.amount>0 || !Boolean.TRUE.equals(readBooleanField(guardian,"isOpen"))
+                || !Boolean.TRUE.equals(readBooleanField(guardian,"closeUpTriggered")))return null;
+        return monsterReactionItemJson("GUARDIAN_DEFENSIVE_SHIFT",null,slot);
+    }
+
+    private static String curlUpJson(List<?> actions,int first) {
+        if(first+2>=actions.size())return null;
+        Object change=actions.get(first), block=actions.get(first+1), remove=actions.get(first+2);
+        if(!Boolean.FALSE.equals(readBooleanField(change,"called"))
+                || !"CLOSED".equals(readStringField(change,"stateName"))
+                || !"com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(block.getClass().getName())
+                || !"com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(remove.getClass().getName())
+                || !Boolean.FALSE.equals(readBooleanField(block,"isDone"))
+                || !Boolean.FALSE.equals(readBooleanField(remove,"isDone")))return null;
+        Object value=readObjectField(change,"m");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster louse=(AbstractMonster)value;
+        AbstractPower curl=louse.getPower("Curl Up");
+        Integer slot=emittedMonsterSlots(liveEncounter).get(louse), amount=readIntField(block,"amount");
+        if((!"FuzzyLouseNormal".equals(louse.id) && !"FuzzyLouseDefensive".equals(louse.id))
+                || slot==null || louse.isDying || louse.isDeadOrEscaped() || louse.halfDead
+                || curl==null || !"com.megacrit.cardcrawl.powers.CurlUpPower".equals(curl.getClass().getName())
+                || readObjectField(block,"target")!=louse || readObjectField(block,"source")!=louse
+                || amount==null || amount!=curl.amount
+                || readObjectField(remove,"target")!=louse || readObjectField(remove,"source")!=louse
+                || readObjectField(remove,"powerInstance")!=null || !"Curl Up".equals(readStringField(remove,"powerToRemove")))return null;
+        return monsterReactionItemJson("MONSTER_CURL_UP",amount,slot);
+    }
+
+    static String monsterReactionItemJson(String kind,Integer amount,int slot) {
+        if(slot<0 || slot>4)return null;
+        if("REACTIVE_ROLL_MOVE".equals(kind)) return slot==0?"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}":null;
+        if("GUARDIAN_DEFENSIVE_SHIFT".equals(kind)) return slot==0?"{\"kind\":\"GUARDIAN_DEFENSIVE_SHIFT\",\"slot\":0}":null;
+        if(amount==null || amount<0 || amount>999)return null;
+        if(("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) || "MONSTER_REDUCE_FLIGHT".equals(kind)) && amount!=1)return null;
+        if("MONSTER_THORNS".equals(kind) && (slot!=0 || amount<1))return null;
+        if("MONSTER_CURL_UP".equals(kind) && amount<1)return null;
+        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_CURL_UP".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind)
+                && !"MONSTER_REDUCE_FLIGHT".equals(kind) && !"MONSTER_THORNS".equals(kind))return null;
+        return "{\"kind\":\""+kind+"\",\"amount\":"+amount+",\"slot\":"+slot+"}";
+    }
+
+    // Diagnostic only: names what made a selection's pending queue
+    // unrepresentable, so a live stop identifies the blocking action.
+    static String pendingActionsBlocker() {
+        com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
+        if(manager==null)return "no_action_manager";
+        StringBuilder out=new StringBuilder();
+        if(!playerSelectionTurn(manager.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn))
+            out.append("not_player_turn;");
+        if(!manager.preTurnActions.isEmpty())out.append("preTurnActions=").append(manager.preTurnActions.size()).append(';');
+        if(!manager.monsterQueue.isEmpty())out.append("monsterQueue=").append(manager.monsterQueue.size()).append(';');
+        if(!manager.cardQueue.isEmpty())out.append("cardQueue=").append(manager.cardQueue.size()).append(';');
+        if(!AbstractDungeon.player.limbo.isEmpty())out.append("limbo=").append(AbstractDungeon.player.limbo.size()).append(';');
+        out.append("actions=[");
+        for(int i=0;i<manager.actions.size() && i<16;++i) {
+            if(i>0)out.append(',');
+            out.append(manager.actions.get(i).getClass().getSimpleName());
+        }
+        if(manager.actions.size()>16)out.append(",...");
+        return out.append(']').toString();
+    }
+
+    static String pendingActionsRejection() {
+        return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\",\"pendingActionsBlocker\":\""
+                + escapeJson(pendingActionsBlocker()) + "\"}";
     }
 
     private static String handMultiContinuation(String task) {
@@ -3251,6 +3434,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer damage = readIntField(power, "damage");
                 if (damage != null) out.append(",\"bombDamage\":").append(damage);
             }
+            // PanachePower.amount is the cards-until-damage countdown; the
+            // damage itself is the private field "damage".
+            if ("Panache".equals(powerId)) {
+                Integer damage = readIntField(power, "damage");
+                if (damage != null) out.append(",\"panacheDamage\":").append(damage);
+            }
             out.append('}');
         }
         out.append("]");
@@ -3262,8 +3451,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer value = readIntField(power, "cardsDoubled", "cardsPlayed");
                 if (value != null) out.append(",\"echoFormCardsDoubled\":").append(value);
             } else if ("Panache".equals(power.ID)) {
-                Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
-                if (value != null) out.append(",\"panacheCounter\":").append(value);
+                out.append(",\"panacheCounter\":").append(power.amount);
             } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
@@ -3421,7 +3609,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 sourceTask=new com.google.gson.JsonParser().parse(selection).getAsJsonObject().get("task").getAsString();
             }
             String pending=publicPendingActionsJson(selection.contains("toolbox_actions"),sourceTask);
-            if(pending==null) out.append(",\"pendingActionQueueError\":\"silver_selection_pending_actions\"");
+            if(pending==null) out.append(",\"pendingActionQueueError\":\"silver_selection_pending_actions\",\"pendingActionsBlocker\":\"")
+                    .append(escapeJson(pendingActionsBlocker())).append('"');
             else out.append(",\"pendingActionQueue\":").append(pending);
         }
         out.append(",\"curCardQueueItem\":").append(cardQueueItemJson(selection!=null && selection.contains("\"continuation\":\"source_card_actions\"")))

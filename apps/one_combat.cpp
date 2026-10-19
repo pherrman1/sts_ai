@@ -1353,6 +1353,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             meta.oocGbmRankerSha256 = fileSha256(meta.oocGbmRanker);
         }
         meta.oocMcts = one_combat::liveOocMctsEnabled();
+        meta.heart1WingBootsCounter = one_combat::heart1::wingBootsCounter() ? 1 : 0;
         meta.stopAfterAct = g_stopAfterAct;
         if (g_forceRelic != RelicId::INVALID)
             meta.forceRelic = relicEnumNames[static_cast<int>(g_forceRelic)];
@@ -3084,7 +3085,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
-        {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_STOP_TRACE", ""},
+        {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_LEARNED_STOP_MODEL", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
@@ -3147,13 +3148,18 @@ int main(int argc, char **argv) {
     }
     setenv("STS_SILVER_SEARCH", "1", 0);
     setenv("STS_FAIR", "1", 0);
-    // Budgeted Silver policies ignore the caller's budget. Only whole-run modes
+    // Budgeted Silver policies ignore the caller's budget. Whole-run modes
     // called without a sims argument use one by default: learned stopping
-    // (ADR-0026, replacing the #199 adaptive default of ADR-0018). Every other
-    // call searches the flat caller budget unless a policy is configured.
+    // (ADR-0026, replacing the #199 adaptive default of ADR-0018). At A20 the
+    // whole-run modes use it with a sims argument too (ADR-0051); the argument
+    // then no longer sets the budget, and STS_SILVER_LEARNED_STOP=0 restores
+    // flat Silver at it. Every other call searches the flat caller budget
+    // unless a policy is configured.
     {
-        const bool wholeRunDefault = argc <= 2
-            && (mode == "run" || mode == "bestbench" || mode == "reprobench");
+        const bool wholeRunMode = mode == "run" || mode == "bestbench" || mode == "reprobench";
+        // All three modes take the ascension as argv[4], default 20.
+        const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
+        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun;
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3162,7 +3168,11 @@ int main(int argc, char **argv) {
         if (wholeRunDefault && !adaptiveConfigured && !learned && !std::getenv("STS_SILVER_STOP_TRACE")) {
             setenv("STS_SILVER_LEARNED_STOP", "1", 0);
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
-        } else if (learnedRequested || (!wholeRunDefault && !adaptiveConfigured)) {
+            if (a20WholeRun && argc > 2)
+                std::cout << "[A20 default: Silver learned stopping, sims argument " << argv[2]
+                          << " not used as budget; STS_SILVER_LEARNED_STOP=0 restores flat Silver]" << std::endl;
+        } else if (learnedRequested || ((!wholeRunDefault || (a20WholeRun && argc > 2)) && !adaptiveConfigured)) {
+            // At A20 with a sims argument, STS_SILVER_LEARNED_STOP=0 is flat Silver at it, as before ADR-0051.
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
         }
     }
@@ -3669,6 +3679,8 @@ int main(int argc, char **argv) {
                          : search::nativeSilverLearnedStopBossMax() > 0 ? "; learned stop, boss cap raised"
                          : "; learned stop")
                       : "; flat budget")
+              << (search::nativeSilverLearnedStopEnabled()
+                      ? std::string(" ") + search::nativeSilverStopModelId() : std::string{})
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
               << "]\n";
@@ -3710,7 +3722,7 @@ int main(int argc, char **argv) {
         // Paired-continuation resource prices (research only):
         // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA] [SAMPLE] [EXTRA]
         // SAMPLE: potions (states holding a potion; default) or all. EXTRA: comma list of
-        // leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1 ("-" = none).
+        // leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1, addpot:NAME ("-" = none).
         if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8] [SAMPLE=potions|all] [EXTRA=-]\n"; return 2; }
         const int nSeeds = std::stoi(argv[2]);
         const std::uint64_t seedStart = std::stoull(argv[3]);

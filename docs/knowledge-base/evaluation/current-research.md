@@ -503,13 +503,14 @@ Merging publicly identical particles (upper bound 26.6%) would be a separate,
 semantics-changing proposal; it is an open question.
 [Evidence](../../experiments/evidence/ooc_reroot_opportunity_2026-09-26/README.md).
 
-## OOC MCTS prior guidance at A20 (§532) — max-Q root pick WORSE, temperature 3 screen-pass
+## OOC MCTS prior guidance at A20 (§532, §557) — max-Q root pick WORSE, temperature 3 not shown in full runs
 
 With the student_sel prior the search spends a median 97.8% of root visits on the prior's top move, and the executed
 move is the prior argmax in ~90% of roots. In an Act-1 A20 screen (64 paired seeds), `STS_OOC_MCTS_ROOT_SELECTION=q`
 lost 20 HP and 25 more Act-1 runs, and q with prior temperature 3 still lost 9 HP, so the leaf's Q ranks options worse
 than the prior. `STS_OOC_MCTS_TEMPERATURE=3` (visit pick) was +3.1 HP [−2.1, +8.3] with ~13% more OOC CPU: a screen
-pass, not shown; defaults unchanged. Next step: a full-run confirmation of temperature 3, on Philipp's word.
+pass. The full-run A20 confirmation (§557, 256 paired seeds) gave 37 vs 42 wins, −2.0 pp [−6.6, +2.7]:
+NOT_SHOWN. Defaults unchanged (temperature 1, visit pick).
 
 ## OOC MCTS equivalent-outcome merging (#384) — opt-in, inconclusive
 
@@ -3063,6 +3064,14 @@ NLL; refit noise about ±0.05–0.15 MSE). Adding the 12 forward-map columns, th
 tested, cuts A20 floor MSE by 2.15 [1.80, 2.51] (win borderline). These are offline error changes on
 the generator's own runs, not win-rate changes; the A0 refit on the #334 fragment resolves nothing.
 No model or contract changed; the forward map is the recommended addition for the next A20 retrain.
+#401 Stage 1 for the deployed learned models (ledger-06 §546, permutation on each model's own held-out split):
+student_sel reads mainly the offered cards and `select_screen_type`; its `--extra-inputs` (relic counters, act,
+deck misc) and the map node tokens contribute about nothing, and its value head is untrained (output about −0.03;
+no search path reads it, only diagnostic annotations show it; it is to be trained in the AlphaZero loop). g7f_E reads the candidate card,
+monster slots (intent, HP, id) and candidate action/targeting; gold, maxHp and pile counts are dead, and
+most groups are about 1.5–3x weaker on Act-4 roots, where its CE is worst. The A20 fast CTM child prices survival mostly by act
+and room type, then deck, HP, relics and encounter id; gold and several token side fields are ≈ 0. Descriptive
+only; removal candidates need refit ablations.
 
 The opt-in MCTS leaf-state trace remains outside this implementation until the
 open #363 adapter/profile seam is available. No inference should be made from

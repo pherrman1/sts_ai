@@ -138,12 +138,84 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(strike_count_test tests/strike_count_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(strike_count_test PRIVATE include json/include)
+add_test(NAME strike_count COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:strike_count_test>)
+set_tests_properties(strike_count PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(pile_cost_reset_test tests/pile_cost_reset_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(pile_cost_reset_test PRIVATE include json/include)
+add_test(NAME pile_cost_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:pile_cost_reset_test>)
+set_tests_properties(pile_cost_reset PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(panache_test tests/panache_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(panache_test PRIVATE include json/include)
+add_test(NAME panache COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:panache_test>)
+set_tests_properties(panache PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(dead_monster_block_test tests/dead_monster_block_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dead_monster_block_test PRIVATE include json/include)
+add_test(NAME dead_monster_block COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dead_monster_block_test>)
+set_tests_properties(dead_monster_block PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(mugger_death_rng_test tests/mugger_death_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mugger_death_rng_test PRIVATE include json/include)
+add_test(NAME mugger_death_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mugger_death_rng_test>)
+set_tests_properties(mugger_death_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(slime_split_rng_test tests/slime_split_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(slime_split_rng_test PRIVATE include json/include)
+add_test(NAME slime_split_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:slime_split_rng_test>)
+set_tests_properties(slime_split_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(dying_attacker_test tests/dying_attacker_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(dying_attacker_test PRIVATE include json/include)
+add_test(NAME dying_attacker COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:dying_attacker_test>)
+set_tests_properties(dying_attacker PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(blood_potion_heal_test PRIVATE include json/include)
 add_test(NAME blood_potion_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:blood_potion_heal_test>)
 set_tests_properties(blood_potion_heal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(hand_upgrade_all_test tests/hand_upgrade_all_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(hand_upgrade_all_test PRIVATE include json/include)
+add_test(NAME hand_upgrade_all COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:hand_upgrade_all_test>)
+set_tests_properties(hand_upgrade_all PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(mayhem_after_draw_test tests/mayhem_after_draw_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mayhem_after_draw_test PRIVATE include json/include)
+add_test(NAME mayhem_after_draw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mayhem_after_draw_test>)
+set_tests_properties(mayhem_after_draw PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(active_power_features_test tests/active_power_features_test.cpp
@@ -368,6 +440,9 @@ set_tests_properties(render_ooc_mcts PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 add_test(NAME workflow_tools COMMAND python3 -m unittest tests.test_workflow_tools)
 set_tests_properties(workflow_tools PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME heart1_capture_provenance COMMAND python3 -m unittest tests.test_heart1_capture_provenance)
+set_tests_properties(heart1_capture_provenance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 find_program(STS_NODE_EXECUTABLE node)
 if(STS_NODE_EXECUTABLE)
@@ -735,6 +810,28 @@ add_test(NAME silver_learned_stop_rejects_small_boss_max
 set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
+# ADR-0051: STS_SILVER_LEARNED_STOP_MODEL selects a compiled stop model by id; A20
+# whole-run modes default to learned stopping even with a sims argument.
+add_test(NAME silver_learned_stop_rejects_unknown_model
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_unknown_model PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "\\[A20 default: Silver learned stopping.*STS_SILVER_LEARNED_STOP_MODEL must be gbt-0cac7cc64364 or gbt-770201c31f7b")
+add_test(NAME silver_learned_stop_no_default_below_a20
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_no_default_below_a20 PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_MODEL must be"
+    FAIL_REGULAR_EXPRESSION "A20 default")
+add_test(NAME silver_learned_stop_a20_zero_keeps_flat
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_a20_zero_keeps_flat PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK"
+    FAIL_REGULAR_EXPRESSION "A20 default")
 add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")

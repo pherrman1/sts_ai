@@ -367,6 +367,8 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
         // These are native convenience fields, not fields emitted by the
         // Java observer.  Dynamic parity must cross the same public boundary
         // as production observations and reconstruct status bits from powers.
+        const bool asleep = (monster.value("statusBits", 0ULL)
+            & (1ULL << static_cast<int>(MonsterStatus::ASLEEP))) != 0;
         monster.erase("statusBits");
         monster.erase("strength");
         monster.erase("vulnerable");
@@ -382,6 +384,23 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
         }
         // Ordinary BronzeOrb capture reads Java usedStasis, set when Stasis
         // is selected. Presence of the later Stasis power is not that flag.
+        if (id == "Lagavulin") {
+            // Java Lagavulin has no sleep power; its sleep shows publicly only
+            // as IDLE (5). Native LAGAVULIN_SLEEP also encodes the post-wake
+            // stun, which Java emits as OPEN (4), and a stun always follows
+            // an idle turn.
+            auto &powers = monster["powers"];
+            powers.erase(std::remove_if(powers.begin(), powers.end(), [](const json &power) {
+                return power.value("id", std::string()) == "Asleep";
+            }), powers.end());
+            auto &history = monster["moveHistory"];
+            if (asleep) {
+                for (auto &move : history) if (move == 4) move = 5;
+                monster["nextMove"] = 5;
+            } else if (history.size() == 2 && history[0] == 4) {
+                history[0] = 5;
+            }
+        }
     }
     return out;
 }
@@ -628,7 +647,53 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
         assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
     }
-    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength\n";
+    {
+        // Overnight live parity 2026-10-19 problem 3: the Java observation
+        // carries Lagavulin's sleep only as its IDLE intent.
+        GameContext game(CharacterClass::IRONCLAD, 0xD50Au, 0);
+        game.act = 1; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::LAGAVULIN);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        auto &laga = live.monsters.arr[0];
+        if (!laga.hasStatus<MonsterStatus::ASLEEP>() || laga.getStatus<MonsterStatus::METALLICIZE>() != 8
+            || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
+            throw std::runtime_error("Lagavulin root did not start asleep with Metallicize 8");
+        assertDynamicParity("LAGAVULIN_ASLEEP", live, knowledge, game);
+        {
+            // STS_IMPORTER_LAGAVULIN_SLEEP_FIX=0 restores the legacy import
+            // without ASLEEP; every other field is unchanged.
+            auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), live.seed);
+            normalizeDynamicObservationIdentity(wire);
+            const auto rendered = javaLikeDynamicObservation(wire, "MONSTER", "LAGAVULIN_ASLEEP_FLAG");
+            const auto asleepBit = 1ULL << static_cast<int>(MonsterStatus::ASLEEP);
+            for (const char *flag : {"1", "0"}) {
+                setenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX", flag, 1);
+                const auto imported = one_combat::advisor::importSilverRoot(rendered);
+                if (!imported.ok) throw std::runtime_error("Lagavulin flag import failed: " + imported.reason);
+                auto expected = wire;
+                if (std::string(flag) == "0") expected.monsters[0].statusBits &= ~asleepBit;
+                expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+                if (!convertedStatesEqualForSearch(expected, imported.wire)
+                        || ((imported.wire.monsters[0].statusBits & asleepBit) != 0) != (std::string(flag) == "1"))
+                    throw std::runtime_error(std::string("Lagavulin sleep flag parity failed, flag=") + flag);
+            }
+            unsetenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX");
+        }
+        resolveMonsterTransition(live, 0);
+        if (!laga.hasStatus<MonsterStatus::ASLEEP>() || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
+            throw std::runtime_error("Lagavulin idle turn did not keep it asleep");
+        assertDynamicParity("LAGAVULIN_IDLE", live, knowledge, game);
+        live.setState(InputState::EXECUTING_ACTIONS);
+        live.addToBot(Actions::DamageEnemy(0, 30));
+        live.executeActions();
+        if (live.inputState != InputState::PLAYER_NORMAL || laga.hasStatus<MonsterStatus::ASLEEP>()
+            || laga.hasStatus<MonsterStatus::METALLICIZE>() || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
+            throw std::runtime_error("Lagavulin damage wake did not produce the stunned awake state");
+        assertDynamicParity("LAGAVULIN_DAMAGE_WAKE", live, knowledge, game);
+    }
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength/lagavulin-sleep\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
@@ -1173,6 +1238,47 @@ void verifyEncounterManifestAndNativeSweep() {
     std::cout << "live Silver encounter manifest/native sweep passed: supported="
               << supported << " excluded=" << excluded << '\n';
 }
+// Java has no miscBits: a thief's stolen gold (Looter/Mugger stolenGold, native
+// miscInfo) must set the native stolen-gold check bit on import
+// (STS_IMPORTER_THIEF_GOLD_FIX, default on; =0 restores the legacy importer).
+void verifyThiefStolenGoldFlag() {
+    GameContext game(CharacterClass::IRONCLAD, 0x51L + static_cast<int>(MonsterEncounter::TWO_THIEVES), 0);
+    game.act = 2;
+    game.floorNum = 1;
+    BattleContext battle;
+    battle.init(game, MonsterEncounter::TWO_THIEVES);
+    CombatKnowledgeState knowledge;
+    knowledge.initializeFromLiveBattle(battle);
+    auto wire = makeSilverBattleStateWire(battle, knowledge, makeSilverRunContext(game), 0x51A000ULL);
+    if (!wire.valid) throw std::runtime_error("thief fixture conversion failed");
+    normalizeFirstObservationIdentity(wire);
+    int mugger = -1;
+    for (int i = 0; i < wire.monsterCount; ++i)
+        if (static_cast<MonsterId>(wire.monsters[i].id) == MonsterId::MUGGER) mugger = i;
+    if (mugger < 0 || wire.miscBits != 0) throw std::runtime_error("thief fixture has no fresh Mugger");
+    for (const int stolen : {0, 15}) {
+        auto stateWire = wire;
+        stateWire.monsters[mugger].miscInfo = stolen;
+        auto rendered = nativeObservation(stateWire, "MONSTER", "thief-stolen-gold");
+        rendered["silverRoot"]["combat"].erase("miscBits");
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_THIEF_GOLD_FIX", flag, 1);
+            one_combat::advisor::SilverImportContext context;
+            context.session = "thief-stolen-gold";
+            const auto imported = one_combat::advisor::importSilverRoot(rendered, context);
+            if (!imported.ok) throw std::runtime_error("thief import failed: " + imported.reason);
+            auto expected = stateWire;
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (stolen > 0 && std::string(flag) == "1") expected.miscBits |= 1U;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error("thief stolen-gold flag parity failed, stolen="
+                    + std::to_string(stolen) + " flag=" + flag + " miscBits="
+                    + std::to_string(imported.wire.miscBits));
+        }
+    }
+    unsetenv("STS_IMPORTER_THIEF_GOLD_FIX");
+    std::cout << "live Silver thief stolen-gold flag passed\n";
+}
 json genericObservation(const Fixture &fixture, const char *instance) {
     auto out = fixture.observation;
     out["sequence"] = 1;
@@ -1436,6 +1542,7 @@ int main(int argc, char **argv) {
         }
         verifyRuntimeMoveBoundary();
         verifyEncounterManifestAndNativeSweep();
+        verifyThiefStolenGoldFlag();
         verifyDynamicTransitionCorpus();
         const std::vector<Fixture> fixtures = {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
@@ -2531,6 +2638,22 @@ int main(int argc, char **argv) {
             throw std::runtime_error("draw reduction parity failed");
         verifyPlayerPowerParity("bomb-parity", json{{"id", "TheBomb0"}, {"amount", 3}, {"bombDamage", 40}},
             [](auto &player) { player.bombs[2] = 40; });
+        // Java PanachePower.amount is the countdown; damage is separate.
+        verifyPlayerPowerParity("panache-parity", json{{"id", "Panache"}, {"amount", 3}, {"panacheDamage", 14}},
+            [](auto &player) {
+                static_assert(static_cast<int>(PlayerStatus::PANACHE) >= 64);
+                player.statusBits1 |= 1U << (static_cast<int>(PlayerStatus::PANACHE) - 64);
+                player.statusMap.emplace_back(static_cast<std::int16_t>(PlayerStatus::PANACHE), 14);
+                player.panacheCounter = 3;
+            });
+        for (const auto &bad : {json{{"id", "Panache"}, {"amount", 5}},
+                                json{{"id", "Panache"}, {"amount", 0}, {"panacheDamage", 10}},
+                                json{{"id", "Panache"}, {"amount", 5}, {"panacheDamage", 0}}}) {
+            auto observation = genericObservation(fixtures[0], "panache-refused");
+            observation["silverRoot"]["combat"]["playerPowers"] = json::array({bad});
+            if (one_combat::advisor::importSilverRoot(observation).ok)
+                throw std::runtime_error("Panache without a valid damage/countdown must be refused");
+        }
         auto penNibRelic = genericObservation(fixtures[0], "pen-nib-relic-parity");
         penNibRelic["silverRoot"]["combat"]["relics"].push_back(
             json{{"id", "Pen Nib"}, {"counter", 9}, {"usedUp", false}});
@@ -2545,6 +2668,70 @@ int main(int argc, char **argv) {
         penNibRelicExpected.isolatedSearchSeed = penNibRelicImported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(penNibRelicExpected, penNibRelicImported.wire))
             throw std::runtime_error("Pen Nib relic parity failed");
+
+        // Relics with enum index >= 128 (Thread and Needle, Maw Bank) have no
+        // combat bit; the legacy importer aliased them onto index - 64.
+        auto highRelic = genericObservation(fixtures[0], "high-relic-parity");
+        highRelic["silverRoot"]["combat"]["relics"].push_back(
+            json{{"id", "Thread and Needle"}, {"counter", -1}, {"usedUp", false}});
+        highRelic["silverRoot"]["combat"]["relics"].push_back(
+            json{{"id", "MawBank"}, {"counter", -1}, {"usedUp", false}});
+        auto highRelicExpected = fixtures[0].wire;
+        normalizeFirstObservationIdentity(highRelicExpected);
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_HIGH_RELIC_FIX", flag, 1);
+            auto imported = one_combat::advisor::importSilverRoot(highRelic);
+            if (!imported.ok) throw std::runtime_error("high relic import failed: " + imported.reason);
+            auto expected = highRelicExpected;
+            if (std::string(flag) == "0") {
+                expected.player.relicBits1 |= 1ULL << (static_cast<int>(RelicId::STRIKE_DUMMY) - 64);
+                expected.player.relicBits1 |= 1ULL << (static_cast<int>(RelicId::WRIST_BLADE) - 64);
+            }
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error(std::string("high relic parity failed, flag=") + flag);
+        }
+        unsetenv("STS_IMPORTER_HIGH_RELIC_FIX");
+
+        // A recounted strikeCount skips exhausted Strikes (Java
+        // PerfectedStrike.countCards reads hand, draw and discard only); the
+        // legacy recount included them, so Perfected Strike hit 2 harder.
+        {
+            auto exhausted = genericObservation(fixtures[0], "strike-count-exhaust");
+            auto &combat = exhausted["silverRoot"]["combat"];
+            auto perfected = combat["hand"][0];
+            perfected["id"] = cardStringIds[static_cast<int>(CardId::PERFECTED_STRIKE)];
+            perfected["upgraded"] = false; perfected["misc"] = 0;
+            perfected["cost"] = perfected["costForTurn"] = 2;
+            combat["hand"][0] = perfected;
+            auto exhaustedStrike = perfected;
+            exhaustedStrike["id"] = "Strike_R"; exhaustedStrike["cost"] = exhaustedStrike["costForTurn"] = 1;
+            exhaustedStrike["uuid"] = "exhausted-strike";
+            combat["exhaust"] = json{{"unknown", json::array({exhaustedStrike})}};
+            combat.erase("strikeCount");
+            std::array<int, 2> counts {}, damages {};
+            for (int fix : {1, 0}) {
+                setenv("STS_STRIKE_COUNT_FIX", fix ? "1" : "0", 1);
+                const auto imported = one_combat::advisor::importSilverRoot(exhausted);
+                if (!imported.ok) throw std::runtime_error("strike count import failed: " + imported.reason);
+                auto battle = battleContextFromWire(imported.wire);
+                counts[fix] = battle.cards.strikeCount;
+                if (fix) {
+                    int live = 0;
+                    for (int i = 0; i < battle.cards.cardsInHand; ++i) live += battle.cards.hand[i].isStrikeCard();
+                    for (const auto &c : battle.cards.drawPile) live += c.isStrikeCard();
+                    for (const auto &c : battle.cards.discardPile) live += c.isStrikeCard();
+                    if (battle.cards.exhaustPile.size() != 1 || counts[fix] != live)
+                        throw std::runtime_error("strikeCount counted the exhaust pile");
+                }
+                const auto hp = battle.monsters.arr[0].curHp;
+                sts::search::Action(sts::search::ActionType::CARD, 0, 0).execute(battle);
+                damages[fix] = hp - battle.monsters.arr[0].curHp;
+            }
+            unsetenv("STS_STRIKE_COUNT_FIX");
+            if (counts[0] != counts[1] + 1 || damages[0] != damages[1] + 2)
+                throw std::runtime_error("strike count flag parity failed");
+        }
 
         auto nativePower = genericObservation(fixtures[0], "native-power-entry");
         nativePower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
@@ -2850,6 +3037,48 @@ int main(int argc, char **argv) {
             auto bad=observation;bad["silverRoot"]["combat"]["cardSelect"]["continuation"]="unknown";
             if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("multi hand ignored pending continuation");
         }
+        // Problem 28: Toy Ornithopter queues its potion heal behind Gambler's
+        // Brew's GamblingChipAction, so the live hand selection carries it.
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_SELECTION_TOY_HEAL_FIX", flag, 1);
+            auto observation = genericObservation(fixtures[0], "gamble-toy-heal-tail");
+            auto &combat = observation["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id","Toy Ornithopter"},{"counter",-1},{"usedUp",false}});
+            const auto prototype = combat["hand"][0];
+            combat["hand"] = json::array();
+            json choices = json::array();
+            for (int i=0;i<3;++i) {
+                auto card=prototype;card["id"]="Strike_R";card["uuid"]="toy-"+std::to_string(i);
+                combat["hand"].push_back(card);
+                choices.push_back(json{{"uuid",card["uuid"]},{"choiceIndex",i+1}});
+            }
+            combat["cardSelect"]=json{{"task","GAMBLE"},{"origin","HAND_SELECT"},{"pickCount",99},
+                {"canPickZero",true},{"canPickAnyNumber",true},{"selectedBits",0},{"selectedCount",0},
+                {"liveChoices",choices},{"continuation","public_actions"},{"cards",json::array()},
+                {"actionClass","com.megacrit.cardcrawl.actions.unique.GamblingChipAction"}};
+            combat["pendingActionQueue"]=json::array({json{{"kind","HEAL_PLAYER"},{"amount",5}}});
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(std::string(flag)=="0") {
+                if(imported.ok || imported.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX=0 accepted the Toy heal tail");
+                continue;
+            }
+            if(!imported.ok) throw std::runtime_error("Toy heal tail import: "+imported.reason);
+            if(!imported.wire.pendingActionQueueObserved || imported.wire.pendingActionQueue.size()!=1
+                    || imported.wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::HEAL_PLAYER)
+                throw std::runtime_error("Toy heal tail not carried on the wire");
+            auto selected=battleContextFromWire(imported.wire);
+            selected.player.curHp=selected.player.maxHp-10;
+            const auto before=selected.player.curHp;
+            sts::search::Action(sts::search::ActionType::MULTI_CARD_SELECT,1).execute(selected);
+            if(selected.inputState!=InputState::PLAYER_NORMAL || selected.player.curHp!=before+5
+                    || selected.cards.cardsInHand!=3)
+                throw std::runtime_error("Toy heal tail did not heal after the Gamble");
+            for(int amount:{4,0}) {auto bad=observation;
+                bad["silverRoot"]["combat"]["pendingActionQueue"][0]["amount"]=amount;
+                if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("unqualified heal tail accepted");}
+        }
+        unsetenv("STS_SELECTION_TOY_HEAL_FIX");
         for (int mask : {0, 1, 5, 7}) {
             auto observation = genericObservation(fixtures[0], "upgraded-forethought-transaction");
             auto &combat = observation["silverRoot"]["combat"];
@@ -3573,6 +3802,173 @@ int main(int argc, char **argv) {
             for(const auto &card:resumed.cards.drawPile)originals+=card.id==CardId::HEADBUTT;
             if(originals!=1)throw std::runtime_error("copied source cleanup duplicated or removed original Headbutt");
         }
+        // Headbutt's discard GRID opens while the hit's monster reactions
+        // are still queued behind it (Java addToBot): Malleable self-block
+        // and Reactive reroll (Writhing Mass), Plated Armor loss (Shelled
+        // Parasite), Flight loss (Byrd), and the defensive Guardian's Sharp
+        // Hide thorns hit, the offensive Guardian's Mode Shift crossing and a
+        // louse's Curl Up. Live runs 111194455/111194451/111200382/111200385/
+        // 111200388/111200389 stopped here.
+        for (int variant=0;variant<6;++variant) {
+            const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
+                MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
+                MonsterEncounter::TWO_LOUSE}[variant];
+            const bool mass=variant==0, guardian=variant==2, byrd=variant==3, shift=variant==4, louse=variant==5;
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=mass?3:guardian||shift||louse?1:2; game.floorNum=mass?38:guardian||shift?16:louse?5:29;
+            BattleContext live; live.init(game, encounter);
+            auto &target=live.monsters.arr[0];
+            target.block=0;
+            if(shift) target.setStatus<MonsterStatus::MODE_SHIFT>(1);
+            if(guardian) {
+                // Defensive Mode after Close Up: Sharp Hide on, Roll Attack next.
+                target.enterGuardianDefensiveMode();
+                target.buff<MonsterStatus::SHARP_HIDE>(4);
+                target.setMove(MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
+            }
+            // Two skills fill the discard pile without hitting the monster.
+            for (int played=0;played<2;++played) {
+                CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(910+played);
+                live.cards.moveToHand(defend); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            }
+            const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
+            const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
+            if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
+            const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
+            if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
+            const int hpBefore=target.curHp;
+            const std::array<MonsterMoveId,2> preHitMoves{target.moveHistory[0],target.moveHistory[1]};
+            CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=920;
+            live.cards.moveToHand(headbutt); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT)
+                throw std::runtime_error("monster-reaction fixture did not open Headbutt's selection");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+            if(mass) {
+                // STS_SILVER_MONSTER_REACTION_QUEUE=0 restores the unobserved
+                // (card-replay) tail for native conversions.
+                setenv("STS_SILVER_MONSTER_REACTION_QUEUE","0",1);
+                const auto legacy=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+                unsetenv("STS_SILVER_MONSTER_REACTION_QUEUE");
+                if(legacy.pendingActionQueueObserved || !legacy.pendingActionQueue.empty())
+                    throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE=0 did not restore the legacy tail");
+            }
+            const auto nativeQueue=expected.pendingActionQueue;
+            const std::size_t wantQueue=mass?3:guardian||shift||louse?2:1;
+            if(!expected.pendingActionQueueObserved || nativeQueue.size()!=wantQueue
+                    || (mass && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
+                        || nativeQueue[2].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE))
+                    || (guardian && (nativeQueue[0].kind!=silver_bridge::PendingActionKind::MONSTER_THORNS
+                        || nativeQueue[0].amount!=4 || nativeQueue[1].kind!=silver_bridge::PendingActionKind::USE_CARD))
+                    || ((shift || louse) && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
+                        || nativeQueue[1].amount!=(shift?20:curlBefore) || nativeQueue[1].monster!=0))
+                    || (shift && (target.hasStatus<MonsterStatus::MODE_SHIFT>()
+                        || target.moveHistory[0]!=MonsterMoveId::THE_GUARDIAN_DEFENSIVE_MODE))
+                    || (louse && target.hasStatus<MonsterStatus::CURL_UP>())
+                    || (byrd && target.getStatus<MonsterStatus::FLIGHT>()!=flightBefore-1)
+                    || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
+            auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
+            setProducerV4CardObservation(observation,expected);
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"cards",json::array()},{"liveChoices",json::array()}};
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingCardQueue"]=json::array();
+            // Java form: ReactivePower is a -1 marker and Plated Armor keeps
+            // its amount until the queued ReducePowerAction runs.
+            for(auto &power:combat["monsters"][0]["powers"]) {
+                if(power.at("id")=="Reactive") power={{"id","Compulsive"},{"amount",-1}};
+                if(power.at("id")=="Plated Armor") power["amount"]=platedBefore;
+                if(power.at("id")=="Flight") power["amount"]=flightBefore;
+            }
+            auto &javaTarget=combat["monsters"][0];
+            // Java form: Curl Up stays until its queued RemoveSpecificPowerAction.
+            if(louse) javaTarget["powers"].push_back({{"id","Curl Up"},{"amount",curlBefore}});
+            if(shift) {
+                // TheGuardian.damage lowers Mode Shift at the hit but queues the
+                // state change, so the offensive move is still showing.
+                javaTarget["powers"].push_back({{"id","Mode Shift"},{"amount",1-(hpBefore-target.curHp)}});
+                const auto current=javaMoveByte("TheGuardian",preHitMoves[0]);
+                const auto previous=javaMoveByte("TheGuardian",preHitMoves[1]);
+                javaTarget["nextMove"]=current;
+                javaTarget["moveHistory"]=previous>=0?json::array({previous,current}):json::array({current});
+            }
+            // Java order: Sharp Hide's onUseCard thorns precede UseCardAction.
+            json pending=guardian?json::array({json{{"kind","MONSTER_THORNS"},{"amount",4},{"slot",0}}}):json::array();
+            pending.push_back(producerCleanupJson(combat["curCardQueueItem"]));
+            if(mass) {
+                pending.push_back(json{{"kind","MONSTER_GAIN_BLOCK"},{"amount",nativeQueue[1].amount},{"slot",0}});
+                pending.push_back(json{{"kind","REACTIVE_ROLL_MOVE"},{"slot",0}});
+            } else if(byrd) pending.push_back(json{{"kind","MONSTER_REDUCE_FLIGHT"},{"amount",1},{"slot",0}});
+            else if(shift) pending.push_back(json{{"kind","GUARDIAN_DEFENSIVE_SHIFT"},{"slot",0}});
+            else if(louse) pending.push_back(json{{"kind","MONSTER_CURL_UP"},{"amount",curlBefore},{"slot",0}});
+            else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
+            combat["pendingActionQueue"]=pending;
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
+            // The wire itself settles the Guardian's shift and its 20 block.
+            auto wantImported=nativeQueue;
+            if(shift) wantImported.pop_back();
+            if(json(imported.wire.pendingActionQueue)!=json(wantImported))
+                throw std::runtime_error("Headbutt monster-reaction pending queue differs from native");
+            normalizeDynamicObservationIdentity(expected);
+            // Card identities are observation-assigned; adopt them only where
+            // the same physical card occupies the same pile position.
+            const auto adoptIds=[](auto &mine,const auto &theirs) {
+                if(mine.size()!=theirs.size()) throw std::runtime_error("Headbutt monster-reaction pile size differs");
+                for(std::size_t i=0;i<mine.size();++i) {
+                    if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                        throw std::runtime_error("Headbutt monster-reaction pile order differs");
+                    mine[i].uniqueId=theirs[i].uniqueId;
+                }
+            };
+            adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+            adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+            adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+            adoptIds(expected.hand,imported.wire.hand);
+            expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+            expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+            expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+            expected.cardSelect.cards=imported.wire.cardSelect.cards;
+            auto actual=battleContextFromWire(imported.wire);
+            auto reference=battleContextFromWire(expected);
+            if(!actual.equalForSearch(reference)) {
+                const auto context=searchContextFromWire(imported.wire);
+                std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                        json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                throw std::runtime_error("Headbutt monster-reaction root parity failed");
+            }
+            const int hpBeforePick=actual.player.curHp, blockBeforePick=actual.player.block;
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(actual); pick.execute(reference);
+            if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                throw std::runtime_error("Headbutt monster-reaction continuation parity failed");
+            if(guardian && actual.player.curHp+actual.player.block!=hpBeforePick+blockBeforePick-4)
+                throw std::runtime_error("Sharp Hide thorns did not resolve after the selection");
+            if(mass && (actual.monsters.arr[0].block!=nativeQueue[1].amount
+                    || actual.monsters.arr[0].getStatus<MonsterStatus::REACTIVE>()!=0))
+                throw std::runtime_error("Writhing Mass reactions did not resolve after the selection");
+            if((shift || louse) && actual.monsters.arr[0].block!=(shift?20:curlBefore))
+                throw std::runtime_error("Mode Shift or Curl Up block did not resolve after the selection");
+            // Fail closed: a removal (stun) or a reroll for a monster other
+            // than Writhing Mass is not representable.
+            auto broken=observation;
+            auto &brokenQueue=broken["silverRoot"]["combat"]["pendingActionQueue"];
+            if(mass) brokenQueue[2]["slot"]=1;
+            else if(guardian) brokenQueue[0]["amount"]=3;
+            else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
+            else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
+            else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
+                if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
+            if(one_combat::advisor::importSilverRoot(broken).ok)
+                throw std::runtime_error("unrepresentable Headbutt monster reaction was accepted");
+        }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");
         const auto v4ContinuationImported = one_combat::advisor::importSilverRoot(v4Continuation);
@@ -4224,6 +4620,29 @@ int main(int argc, char **argv) {
             || !(stasisImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::STASIS))))
             throw std::runtime_error("Bronze Orb Stasis card/state was not imported exactly");
+        // Java StasisPower.onDeath returns the card with its UUID while the
+        // dead orb still lists the same card in its Stasis power.
+        auto returnedStasis = stasis;
+        returnedStasis["silverRoot"]["combat"]["monsters"][0]["hp"] = 0;
+        returnedStasis["silverRoot"]["combat"]["monsters"][0]["dead"] = true;
+        returnedStasis["silverRoot"]["combat"]["hand"].push_back(
+            returnedStasis["silverRoot"]["combat"]["stasis"][0]);
+        returnedStasis["silverRoot"]["combat"]["hand"].back().erase("slot");
+        const auto returnedImported = one_combat::advisor::importSilverRoot(returnedStasis);
+        if (!returnedImported.ok || returnedImported.wire.stasisCards[0].id
+                != static_cast<std::int16_t>(CardId::INVALID)
+            || returnedImported.wire.stasisCards[0].uniqueId != -1
+            || std::count_if(returnedImported.wire.hand.begin(), returnedImported.wire.hand.end(),
+                   [](const auto &card) { return card.id == static_cast<std::int16_t>(CardId::STRIKE_RED); })
+                != std::count_if(stasisImported.wire.hand.begin(), stasisImported.wire.hand.end(),
+                   [](const auto &card) { return card.id == static_cast<std::int16_t>(CardId::STRIKE_RED); }) + 1)
+            throw std::runtime_error("dead Bronze Orb's returned Stasis card was not imported once: ok="
+                + std::to_string(returnedImported.ok) + " reason=" + returnedImported.reason);
+        auto aliveDuplicate = returnedStasis;
+        aliveDuplicate["silverRoot"]["combat"]["monsters"][0]["hp"] = 20;
+        aliveDuplicate["silverRoot"]["combat"]["monsters"][0]["dead"] = false;
+        if (one_combat::advisor::importSilverRoot(aliveDuplicate).reason != "silver_card_identity")
+            throw std::runtime_error("live Bronze Orb Stasis card duplicated in hand was accepted");
         general["silverRoot"]["combat"]["cardSelect"] = json{
             {"task", "EXHAUST_ONE"}, {"cards", json::array({"Strike_R"})},
             {"pickCount", 1}, {"canPickZero", false}};

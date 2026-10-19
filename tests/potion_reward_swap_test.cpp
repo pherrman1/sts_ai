@@ -80,6 +80,20 @@ int main() {
         require(rejected, "decline-leave rejects other values");
         unsetenv("STS_POTION_REWARD_DECLINE_LEAVE");
 
+        // Blood Potion refit for the fixed in-combat heal (default on; 0 = old fit).
+        unsetenv("STS_POTION_KEEP_BLOOD_REFIT");
+        require(potionKeepRank(Potion::BLOOD_POTION) == 834, "Blood Potion refit is the default");
+        require(potionKeepRank(Potion::BLOOD_POTION) < potionKeepRank(Potion::FRUIT_JUICE)
+                && potionKeepRank(Potion::BLOOD_POTION) > potionKeepRank(Potion::HEART_OF_IRON),
+                "refit Blood Potion ranks between Fruit Juice and Heart of Iron");
+        setenv("STS_POTION_KEEP_BLOOD_REFIT", "0", 1);
+        require(potionKeepRank(Potion::BLOOD_POTION) == 1163, "=0 restores the old Blood Potion value");
+        setenv("STS_POTION_KEEP_BLOOD_REFIT", "2", 1);
+        rejected = false;
+        try { potionKeepRank(Potion::BLOOD_POTION); } catch (const std::runtime_error &) { rejected = true; }
+        require(rejected, "Blood refit flag rejects other values");
+        unsetenv("STS_POTION_KEEP_BLOOD_REFIT");
+
         std::cout << "potion_reward_swap: OK\n";
         return 0;
     } catch (const std::exception &e) {

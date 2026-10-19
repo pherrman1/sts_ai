@@ -65,6 +65,7 @@ struct OocRootActionStats {
     double prior;
     std::uint64_t visits;
     double q;
+    bool pruned = false;   // pruneUnsupported removed this action from selection
 };
 struct OocMctsConfig {
     double cPuct = 1.5;
@@ -104,6 +105,12 @@ struct OocMctsConfig {
     // when the provider reports an equal outcomeEquivalenceKey. The particle list
     // keeps one entry per sample, so reuse stays frequency-weighted.
     bool mergeEquivalentOutcomes = false;
+    // Issue #633: an OocSearchUnsupported raised below the root discards only
+    // that simulation (visits rolled back) and prunes the action edge that led
+    // to it; a node whose actions are all pruned prunes its own parent edge.
+    // The search aborts only when every root action is pruned. Off keeps the
+    // old whole-root abort.
+    bool pruneUnsupported = false;
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;
@@ -147,6 +154,10 @@ struct OocMctsMetrics {
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
     // Sampled successors pooled into an existing equivalent particle.
     std::uint64_t mergedOutcomes = 0;
+    // pruneUnsupported: discarded simulations, pruned action edges, and the
+    // OocSearchUnsupported reasons that pruned them.
+    std::uint64_t unsupportedSimulations = 0, prunedActions = 0;
+    std::map<std::string, std::uint64_t> prunedReasons;
     std::uint32_t maxDepthReached = 0;
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;

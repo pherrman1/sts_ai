@@ -118,11 +118,11 @@ the game after malformed capture.
 ordered deck instances (save ID, upgraded, misc, bottle binding, UUID), ordered
 relic counters, five potion slots, visible boss and map DAG, and ten path visit
 counts. Searing Blow's native `misc` is its upgrade count, matching native
-`Card::getUpgraded`; other cards retain vanilla misc. The two exact vanilla
-counters `AbstractRoom.blizzardPotionMod` and
-`AbstractDungeon.cardBlizzRandomizer` are **debug integration state, not
-fair-play evaluation evidence**. No RNG state, encounter queue, or unrevealed
-future reward is captured.
+`Card::getUpgraded`; other cards retain vanilla misc. The reward pity counters
+`AbstractRoom.blizzardPotionMod` and `AbstractDungeon.cardBlizzRandomizer` are
+exported as `potionChance` and `cardRarityFactor`; both follow from reward
+screens already shown. `rewardPityHistoryComplete` stays unset, so the advisor
+never uses V4 on live captures. No RNG state, encounter queue, or unrevealed future reward is captured.
 
 Path counts come from vanilla's persisted run-lifetime `metricData.path_taken`.
 Vanilla appends the original map symbol when the player selects a node, before

@@ -268,9 +268,14 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     const int observedEventRooms = currentActEventVisits;
     const bool questionHistoryComplete = questionHistoryComplete_;
     const auto questionPosterior = questionChancePosterior_;
-    dependencies.sampleHiddenCounters = [observedEventRooms, questionHistoryComplete, questionPosterior](sts::GameContext &gc,
-                                                               std::mt19937_64 &rng) {
+    const bool exactPity = exactRewardPity_;
+    dependencies.sampleHiddenCounters = [observedEventRooms, questionHistoryComplete, questionPosterior, exactPity](
+                                            sts::GameContext &gc, std::mt19937_64 &rng) {
+        // Exact reward pity counters (#636) are kept; the sampler still
+        // consumes its draws so room-chance particles stay unchanged.
+        const int potionChance = gc.potionChance, cardRarityFactor = gc.cardRarityFactor;
         sampleLiveOocHiddenCounters(gc, rng, observedEventRooms, questionHistoryComplete);
+        if (exactPity) { gc.potionChance = potionChance; gc.cardRarityFactor = cardRarityFactor; }
         sampleQuestionChancePosterior(gc,rng,questionPosterior);
     };
     // The deployed CTM was trained with the ordinary fixed search keep value.
@@ -308,9 +313,17 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
     dependencies.policyLogits = policyBatch;
     dependencies.leafValue = [this](const sts::GameContext &gc, const PathHistory &history) {
-        // Java does not expose potionChance or cardRarityFactor through the
-        // public run metrics.  Do not evaluate every particle at the
-        // constructor's 0/5 point prior: v_win explicitly splits on both
+        // With an exact pity history (#636) every particle carries the real
+        // counters forward through native transitions; evaluate them directly.
+        if (exactRewardPity_) {
+            const double value = winModel_->predict(richFeatureVec(gc, history));
+            if (!std::isfinite(value) || value < 0 || value > 1)
+                throw std::runtime_error("OOC MCTS invalid native v_win value");
+            return value;
+        }
+        // Without it, potionChance and cardRarityFactor are unknown.  Do not
+        // evaluate every particle at the constructor's 0/5 point prior: v_win
+        // explicitly splits on both
         // features.  Integrate each tree margin over the native reachable
         // public-belief ranges instead.  The leaf remains deterministic and
         // cheap enough for 512-simulation live searches, while no single
@@ -396,6 +409,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         config.captureTree = captureTree_;
         config.captureValueDistribution = true;
         config.treeNodeCap = treeNodeCap_;
+        // Issue #633: prune an unsupported edge instead of aborting the root; =0 restores the abort.
+        config.pruneUnsupported = liveOocEnvChoice("STS_OOC_MCTS_PRUNE_UNSUPPORTED", "0", "1", true);
         if (researchStack_) {
             config.cPuct = 1.5;
             config.wideningK = 4;
@@ -429,7 +444,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         result.searchModel = {{"ctmStackScope", projected.ascension == 20 && samplerA20_ ? "ascension20" : "base"},
             {"searchStack", researchStack_ ? "a20_research" : "legacy"}, {"collectKeys", options.collectKeys},
             {"leafCombats", options.leafCombats}, {"treeRules", options.treeRules},
-            {"wideningK", config.wideningK}, {"wideningAlpha", config.wideningAlpha}, {"maxDepth", config.maxDepth}};
+            {"wideningK", config.wideningK}, {"wideningAlpha", config.wideningAlpha}, {"maxDepth", config.maxDepth},
+            {"pruneUnsupported", config.pruneUnsupported}, {"prunedActions", search.metrics.prunedActions}};
         if (armC_) {
             const auto &metrics = provider.continuationMetrics();
             result.searchModel.update({{"prior", options.heart1Coverage ? "arm_c_full" : "arm_c"},

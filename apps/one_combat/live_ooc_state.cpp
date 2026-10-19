@@ -12,6 +12,7 @@
 #include "constants/SaveFileMappings.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
+#include "ooc_mcts_adapter.h"
 
 namespace one_combat::advisor {
 
@@ -354,8 +355,12 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.lastRoom = source.projected.lastRoom;
     root.curEvent = source.projected.curEvent;
     root.boss = source.projected.boss;
-    // Keep the constructor's public prior for hidden reward/event counters.
-    // Live Java's private blizzard counters are deliberately not imported.
+    // Exact reward pity counters replace the constructor's values; without an
+    // exact history the root keeps them and MCTS resamples them (#636).
+    if (source.exactRewardPity) {
+        root.potionChance = source.projected.potionChance;
+        root.cardRarityFactor = source.projected.cardRarityFactor;
+    }
     root.shopRemoveCount = source.projected.shopRemoveCount;
     root.curMapNodeX = source.projected.curMapNodeX;
     root.curMapNodeY = source.projected.curMapNodeY;
@@ -733,6 +738,15 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         const auto &p = o.at("publicState");
         next.rewardPityHistoryComplete = p.contains("rewardPityHistoryComplete")
             ? boolean(p, "rewardPityHistoryComplete") : false;
+        const bool hasPityCounters = p.contains("potionChance");
+        require(hasPityCounters == p.contains("cardRarityFactor"),
+                "potionChance and cardRarityFactor must be sent together");
+        require(hasPityCounters || !next.rewardPityHistoryComplete,
+                "rewardPityHistoryComplete requires the exact pity counters");
+        // STS_LIVE_OOC_EXACT_PITY=0 restores the public-belief prior even
+        // when the producer exports the exact counters (#636).
+        const char *exactPityFlag = std::getenv("STS_LIVE_OOC_EXACT_PITY");
+        next.exactRewardPity = hasPityCounters && !(exactPityFlag && std::string(exactPityFlag) == "0");
         require(string(p,"character") == "IRONCLAD", "only Ironclad is representable");
         g.cc = CharacterClass::IRONCLAD;
         g.seed = 0; // Never used. No live RNG or hidden queue is imported.
@@ -740,12 +754,17 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.floorNum=integer(p,"floor",0,1000); g.curHp=integer(p,"hp",0,32767);
         g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
         g.gold=integer(p,"gold",0,1000000);
-        // Hidden native blizzard counters are intentionally absent. These
-        // compatibility fields are populated only for exact synthetic
-        // fixtures; real captures mark rewardPityHistoryComplete=false, so
-        // direct V4 fails closed and MCTS does not consume these values.
+        // Reward pity counters (vanilla blizzardPotionMod and
+        // cardBlizzRandomizer). Without them these placeholders stay unused:
+        // direct V4 fails closed and MCTS samples the counters from the
+        // public-belief prior.
         g.potionChance=30;
         g.cardRarityFactor=-18;
+        if (next.exactRewardPity || next.rewardPityHistoryComplete) {
+            g.potionChance=integer(p,"potionChance",-1000,1000);
+            require(g.potionChance%10==0,"potionChance must be a multiple of 10");
+            g.cardRarityFactor=integer(p,"cardRarityFactor",-40,5);
+        }
         g.shopRemoveCount=integer(p,"shopRemoveCount",0,100);
         g.blueKey=boolean(p,"blueKey"); g.greenKey=boolean(p,"greenKey");
         g.keysEnabled=boolean(p,"keysEnabled"); g.redKey=boolean(p,"redKey");
@@ -1173,9 +1192,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 const auto &hint=choices.at(0).at("liveAction");
                 require(string(hint,"kind")=="choose" && integer(hint,"choiceIndex",1,1)==1,
                         "mechanical event live choice mismatch");
+                // The Spin click latches buttonPressed; Java spins once the
+                // bounce-in (bounceTimer 2 s -> 0) ends, so any timer value qualifies.
                 if(g.curEvent==Event::WHEEL_OF_CHANGE && phase=="SPIN_READY")
                     require(boolean(d,"startSpin") && !boolean(d,"buttonPressed")
-                            && d.at("bounceTimer").is_number() && d.at("bounceTimer").get<double>()==0,
+                            && d.at("bounceTimer").is_number() && d.at("bounceTimer").get<double>()>=0
+                            && d.at("bounceTimer").get<double>()<=2,
                             "Wheel spin readiness mismatch");
                 next.mechanicalEventTransition=true;
             } else if(g.curEvent==Event::OMINOUS_FORGE || g.curEvent==Event::ANCIENT_WRITING) {
@@ -1286,7 +1308,7 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
     return found;
 }
 void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentChoices) {
+                              bool allowEquivalentChoices,bool treeRuleChoices) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
     std::set<std::string> retainedChoices;
     std::set<std::uint32_t> omittedRewardAliases;
@@ -1296,7 +1318,7 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
         const auto bindings=search::enumerateOocSemanticPrimitiveBindings(state.projected);
         require(bindings.supported && bindings.complete,"native/live semantic enumeration incomplete");
         for(const auto &binding:bindings.bindings) {
-            const auto key=search::canonicalOocMctsChoiceKey(binding.semantic, &state.projected);
+            const auto key=oocMctsChoiceKey(binding.semantic, state.projected, treeRuleChoices);
             require(choiceByPrimitive.emplace(binding.primitiveBits,key).second,
                     "duplicate native semantic primitive mapping");
             if(expected.count(binding.primitiveBits)) retainedChoices.insert(key);

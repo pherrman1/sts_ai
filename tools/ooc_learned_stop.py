@@ -34,6 +34,9 @@ def load_roots(dirs):
             for l in open(f):
                 r = json.loads(l)
                 if r.get('kind') != 'ooc_decision' or r.get('aborted') or r.get('singleton_bypass'): continue
+                # Pruned actions cannot be selected; the planner shows the model only the live ones.
+                r['actions'] = [a for a in r['actions'] if not a.get('pruned')]
+                for cp in r.get('checkpoints') or []: cp['actions'] = [a for a in cp['actions'] if not a.get('pruned')]
                 if not r.get('checkpoints') or len(r['actions']) < 2: continue
                 r['stack'] = 'silver4' if 'STS_OOC_MCTS_ACT4_SILVER_SIMS' in env else 'ctm4'
                 roots.append(r)

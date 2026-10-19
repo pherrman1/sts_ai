@@ -36,9 +36,19 @@ UNOBSERVABLE_FIELDS = frozenset({"loopCount", "cardsDrawn", "energyWasted", "mon
 # Java RNG streams with no native combat counterpart. Native cannot consume
 # them, so any change during a combat step is itself a mismatch.
 NON_COMBAT_STREAMS = ("cardRng", "eventRng", "merchantRng", "monsterRng", "relicRng", "treasureRng")
+# Java's DiscoveryAction regenerates its three choices on every frame from the
+# pick until its 0.25 s duration ends (javap on the pinned JAR, 2026-10-19), so
+# the stream's state after a pick depends on the frame rate (counter +181 to
+# +191 at 240 fps). Native draws one set. Reported as unobservable, not judged;
+# the next step starts again from the game's own RNG.
+FRAME_DEPENDENT_STREAMS = {"DISCOVERY": ("cardRandomRng",)}
 # Ordered card collections: a difference that is only order is reported
 # under its own label, because order can matter (draws, shuffles).
 ORDERED_PILES = ("hand",)
+# Collections compared as multisets. Java exhausts end-of-turn ethereal cards
+# in the order of an unseeded Collections.shuffle (DiscardAtEndOfTurnAction),
+# so the exhaust pile order is not reproducible, and no game rule reads it.
+UNORDERED_PILES = ("exhaustPile.unknown",)
 OUTCOME_NAMES = {0: "UNDECIDED", 1: "PLAYER_VICTORY", 2: "PLAYER_LOSS"}
 
 
@@ -142,6 +152,8 @@ def diff(game: Any, native: Any, path: str = "", out: list[dict[str, Any]] | Non
             diff(game.get(key), native.get(key), f"{path}.{key}" if path else key, out)
         return out
     if isinstance(game, list) and isinstance(native, list):
+        if path in UNORDERED_PILES:
+            game, native = sorted(game, key=json.dumps), sorted(native, key=json.dumps)
         if path in ORDERED_PILES and game != native and sorted(map(json.dumps, game)) == sorted(map(json.dumps, native)):
             out.append({"path": path + "(order)", "game": game, "native": native})
             return out
@@ -159,6 +171,11 @@ def diff(game: Any, native: Any, path: str = "", out: list[dict[str, Any]] | Non
 def field_group(path: str) -> str:
     """Collapse indices so mismatches aggregate by field."""
     return re.sub(r"\[\d+\]", "[]", path)
+
+
+def _select_task(step: Mapping[str, Any]) -> str:
+    select = (step.get("pre") or {}).get("silverRoot", {}).get("combat", {}).get("cardSelect")
+    return str(select.get("task") or "") if isinstance(select, Mapping) else ""
 
 
 def compare(step: Mapping[str, Any], result: Mapping[str, Any]) -> dict[str, Any]:
@@ -186,7 +203,10 @@ def compare(step: Mapping[str, Any], result: Mapping[str, Any]) -> dict[str, Any
     all_diffs = diff(normalize(result.get("game")), normalize(result.get("native")))
     hidden = [d for d in all_diffs if re.split(r"[.\[(]", d["path"], maxsplit=1)[0] in UNOBSERVABLE_FIELDS]
     diffs = [d for d in all_diffs if d not in hidden]
-    diffs += diff(result.get("gameRng"), result.get("nativeRng"), "rng")
+    rng_diffs = diff(result.get("gameRng"), result.get("nativeRng"), "rng")
+    frame_dependent = {f"rng.{name}" for name in FRAME_DEPENDENT_STREAMS.get(_select_task(step), ())}
+    hidden += [d for d in rng_diffs if d["path"].rsplit(".", 1)[0] in frame_dependent]
+    diffs += [d for d in rng_diffs if d["path"].rsplit(".", 1)[0] not in frame_dependent]
     pre_streams = (step.get("preRng") or {}).get("streams", {})
     post_streams = (step.get("postRng") or {}).get("streams", {})
     for name in NON_COMBAT_STREAMS:
