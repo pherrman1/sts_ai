@@ -738,6 +738,28 @@ add_test(NAME silver_learned_stop_rejects_small_boss_max
 set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
+# ADR-0051: STS_SILVER_LEARNED_STOP_MODEL selects a compiled stop model by id; A20
+# whole-run modes default to learned stopping even with a sims argument.
+add_test(NAME silver_learned_stop_rejects_unknown_model
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_unknown_model PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "\\[A20 default: Silver learned stopping.*STS_SILVER_LEARNED_STOP_MODEL must be gbt-0cac7cc64364 or gbt-770201c31f7b")
+add_test(NAME silver_learned_stop_no_default_below_a20
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_no_default_below_a20 PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_MODEL must be"
+    FAIL_REGULAR_EXPRESSION "A20 default")
+add_test(NAME silver_learned_stop_a20_zero_keeps_flat
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_a20_zero_keeps_flat PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK"
+    FAIL_REGULAR_EXPRESSION "A20 default")
 add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")

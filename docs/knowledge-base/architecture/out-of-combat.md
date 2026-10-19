@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-10-18 for the Act-4 CTM survival model, its A20 A/B (§534) and A20 default (ADR-0048); 2026-10-17 for the card-select student (§524) and its default options (ADR-0047); 2026-10-17 for the A20 limit of the ADR-0044 rollback; 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-10-18 for default unsupported-edge pruning in OOC MCTS (#633); 2026-10-18 for the Act-4 CTM survival model, its A20 A/B (§534) and A20 default (ADR-0048); 2026-10-17 for the card-select student (§524) and its default options (ADR-0047); 2026-10-17 for the A20 limit of the ADR-0044 rollback; 2026-10-17 for the heart1 distillation capture (STS_OOC_HEART1_CAPTURE) and student inputs; 2026-10-17 for the ADR-0044 Ritual-refit A0 CTM default; 2026-10-17 for the heart1full prior default and its rollout/live fallbacks; 2026-10-17 for the opt-in Act-4 Silver route and the opt-in Silver fallback for CTM-refused combats and the Silver resolver redraw; 2026-10-16 for the CTM input encoding v2 option; 2026-10-16 for optional heart1 rollout scoring/CPU allowance (§493), the §492 evaluation recovery and Heart/key rules; 2026-10-15 for the sibling-leaf capture (§489) and the 64-rollout leaf value net (§490); 2026-10-15 for V4 policy-head rollouts (§487); 2026-10-14 for the default optional Ruby Recall filter (ADR-0034); 2026-10-14 for `LEAF_COMBATS=0` vs 3 on the current defaults (§472, §475); 2026-10-14 for bounded leaf replay and conditional target repeats (#507); 2026-10-14 for the A20 CTM stack default (ADR-0033) and manifest boss calibration (§470); 2026-10-14 for the greedy rollout shop default (ADR-0032); 2026-10-14 for bounded leaf replay (#507) and the shop deck-size playing-strength check (§463); 2026-10-13 for bounded observational leaf capture (#507), the shop deck-size default (ADR-0030), the greedy rollout shop option and shop removal prior split; 2026-10-13 for the research-candidate exposure override (§443, #514); 2026-10-12 for the OOC MCTS public X2-B win-model default (ADR-0029) and the public-futures fallback default (ADR-0028); 2026-10-12 for the CTM encoder memo (§439); 2026-10-11 for `LEAF_COMBATS=5` (§430); 2026-10-09 for the #418 pathb-r2 production CTM stack; 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for the CTM escape capability; 2026-10-07 for the CTM research-candidate mode; 2026-09-28 for opt-in equivalent-outcome merging (#384), final-card reward continuation and search skip/leave equivalence; 2026-09-27 for the qualified default CTM stack when OOC MCTS is enabled; 2026-09-26 for the fail-closed depth safety cap; 2026-09-25 for opt-in authoritative semantic-prior capture; 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -45,9 +45,10 @@ in tree snapshots; `mergedOutcomes` counts pooled samples.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
 `cPuct=1.5`, `k=2`, `alpha=0.5`, safety cap 512. A nonterminal,
-non-boundary state at `depth >= maxDepth` aborts the entire root with
-`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`; partial action statistics
-are discarded. The cap-hit state is never evaluated as a normal leaf.
+non-boundary state at `depth >= maxDepth` raises
+`ooc_depth_safety_cap_<cap>_state_<stored-state-id>`, which prunes that edge
+(or, with `STS_OOC_MCTS_PRUNE_UNSUPPORTED=0`, aborts the entire root and
+discards partial action statistics; see the unsupported-battle paragraph). The cap-hit state is never evaluated as a normal leaf.
 `maxDepthReached` includes the offending depth for diagnosis. Live accounting
 records this under `continuationLimitAborts`/`continuation_reasons`, without
 inventing an unsupported combat. Priors normalize with uniform zero-mass
@@ -567,11 +568,22 @@ trace bookkeeping, Silver diagnostics and potion pricing are scoped and restored
 Corpus capture is incompatible with live MCTS.
 
 Supported imagined battles use the frozen surrogate. If the precombat gate or
-sample returns unsupported, `OocSearchUnsupported` aborts the **entire root's
-search**. Partial Q/visits are discarded and no action is selected; the live
-run loop uses its unchanged V4/OOC policy chain for that decision. Unsupported
-states receive neither a generic precombat value nor an invented scalar penalty.
-Their reason and all completed/attempted search work are retained in diagnostics.
+sample returns unsupported, the planner raises `OocSearchUnsupported`. By
+default (`OocMctsConfig::pruneUnsupported`, issue #633, ADR-0052) the failed simulation
+is discarded: its visits are rolled back, nothing is backed up, and the action
+edge that led to the failure (a tree transition or the edge into a refused
+leaf) is pruned from selection. A decision node whose actions are all pruned
+prunes its own parent edge. The root aborts only when every root action is
+pruned; a pruned root action is never selected, keeps its earlier visits/Q and
+is flagged `pruned` in root traces. This applies to every unsupported reason,
+including the depth safety cap and continuation step limits.
+`unsupportedSimulations`, `prunedActions` and `prunedReasons` are reported in
+decision profiles, policy-target rows and the trace `.support.jsonl`.
+`STS_OOC_MCTS_PRUNE_UNSUPPORTED=0` (also read by the live advisor) restores the
+old behaviour: the exception aborts the **entire root's search**, partial
+Q/visits are discarded, no action is selected, and the run loop uses its
+unchanged V4/OOC policy chain for that decision. Either way, unsupported states
+receive neither a generic precombat value nor an invented scalar penalty.
 A thread-local guard forbids native combat playout during OOC imagination,
 including optional leaf-policy counterfactuals: these also abort the root.
 There are no imagined Silver battles. Supported death is exact zero; victory
@@ -645,11 +657,12 @@ hypothetical encounters, not visibility into the real game's hidden future.
 The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
 (`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather
-than applying the link to an expected margin or conditioning on 0/5. The
-direct V4 scoring fails closed for real live captures because Java does not
-expose an exact pity history. Live MCTS uses an equal public prior instead of a
-fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
-pity reconstruction. Qualified public question-room outcomes reconstruct the
+than applying the link to an expected margin or conditioning on 0/5 when the
+capture lacks the exact counters. Current mod captures export the exact
+counters (#636), so live MCTS keeps them at every particle and the leaf
+evaluates them directly. Either way live captures leave
+`rewardPityHistoryComplete` false: direct V4 scoring fails closed and live MCTS
+uses an equal public prior where Arm C does not cover a node. Qualified public question-room outcomes reconstruct the
 three room chances, which remain fixed when root particles sample reward pity.
 Qualified legacy Juzu ambiguity is represented by a finite weighted distribution
 over monster chances, conditioned on resolved outcomes, ownership, preceding

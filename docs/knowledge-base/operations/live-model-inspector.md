@@ -750,9 +750,11 @@ read-only screen and choice converters. The observation contains:
   and checkpoint rollback can leave stale entries in that file. Missing or
   contradictory history still fails closed with
   `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
-  An optional
-  `rewardPityHistoryComplete` marker is reserved for synthetic captures with
-  an exact reconstruction; the live Java producer leaves it false.
+  `potionChance` (multiple of 10) and `cardRarityFactor` (-40..5) are sent
+  together or not at all; the live Java producer sends both. The separate
+  `rewardPityHistoryComplete=true` marker additionally qualifies them for V4
+  scoring; it requires both counters, and only synthetic parity fixtures set
+  it, so live play never uses V4.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
@@ -886,30 +888,40 @@ validated against the native effect. Its `RESULT` page uses the same strict
 one-button forced transition and differential-trace rejection as Neow.
 Unopened ordinary treasure uses visible chest size and the existing MCTS
 prior for correlated gold/relic-tier draws. Its Java `goldReward` and
-`relicReward` pre-rolls remain hidden. The private Java `potionChance` and
-`cardRarityFactor` counters are
-not captured. Library captures its displayed `healAmt` into `hpAmount0`;
-MCTS uses the existing hypothetical reward-pity prior for Read. Its visible
+`relicReward` pre-rolls remain hidden. The reward pity counters are captured
+exactly (#636): `publicState.potionChance` is vanilla
+`AbstractRoom.blizzardPotionMod` and `publicState.cardRarityFactor` is
+`AbstractDungeon.cardBlizzRandomizer`. Both are determined by reward screens the player has already seen (potion
+drops since the act start, card rarities since the last rare), so exporting
+them is perfect memory of public history rather than hidden information
+(Philipp chose this over a public-history reconstruction, 2026-10-18).
+`STS_LIVE_OOC_EXACT_PITY=0` makes the importer ignore them and restores the
+public-belief prior below. The exact counters change only the root counters,
+root-particle sampling and the v_win leaf: the producer leaves
+`rewardPityHistoryComplete` unset, so direct V4 still fails closed and the
+MCTS prior at nodes Arm C does not cover stays the equal public prior. Install
+the mod and the advisor from the same release; an older advisor ignores the
+counters and keeps the public-belief prior. Library captures its displayed `healAmt` into
+`hpAmount0`; Read uses the exact counters when present. Its visible
 20-card grid imports an OBTAIN selector, preserving offer order and UUIDs,
 requiring distinct class reward cards and exact Egg-preview upgrades, and
 checking the non-cancelable one-pick continuation. Its completed Read/Sleep
 page is a forced Leave. Brutality and Combust already have red native metadata
 and import normally. Searing Blow retains upgrade eligibility after repeated
 upgrades; Egg preview/acquisition never upgrades an already upgraded card twice.
-Direct V4 still rejects unknown pity; differential tracing rejects Library's
-unknown-pity initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
-Mushrooms and Mysterious Sphere use the same reward-pity prior for combat
-rewards. Their native leave effects match installed vanilla: Mushrooms heals
+Direct V4 rejects unqualified pity, and differential tracing rejects Library's
+initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
+Mushrooms and Mysterious Sphere use the same counters for combat rewards. Their native leave effects match installed vanilla: Mushrooms heals
 and adds Parasite; Sphere leaves without granting gold. Event repairs also
 preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
 Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
-The v_win leaf marginalizes the hidden counters
-features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
+With exact counters, MCTS keeps them at every root particle and the v_win
+leaf evaluates them directly. Without them, the v_win leaf marginalizes the
+counter features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
 native lattice (`potionChance` -40 through 60), never applying the link to an
-expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
-MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
-parity fixtures may mark an exact pity reconstruction explicitly. Live
-hypothetical reward-pity counters are sampled once per root particle.
+expected margin, and hypothetical reward-pity counters are sampled once per
+root particle. In both cases MCTS uses an equal public prior where Arm C does
+not cover a node, rather than V4 logits.
 Without qualified question history, room chances use the public current-act
 `?` visit count and jointly advance
 all three counters for each sampled latent room outcome, so every sampled
