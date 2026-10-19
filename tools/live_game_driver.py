@@ -181,17 +181,23 @@ def state_identity(state: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+# Hand cards stay strict: their displayed values are what Silver plays.
+_DISPLAY_RESET_PILES = ("draw_pile", "discard_pile", "exhaust_pile")
+
+
 def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
     """Keep intrinsic pile stats stable across Soul.clearPowers animations.
 
     MCP emits positive derived stats and includes base_* only when different.
-    Soul completion resets those cached display values in draw/discard piles.
+    Soul completion resets those cached display values in draw/discard piles;
+    exhausted cards keep whatever value was last displayed (e.g. Strength-
+    boosted damage) until the game refreshes them.
     Canonicalize to the explicitly known positive base value, never drop the
     stat itself; changed base stats, costs, identity, ordering and hand values
     therefore remain observable. Ambiguous zero/absent values remain strict.
     """
     result = dict(state)
-    for pile in ("draw_pile", "discard_pile"):
+    for pile in _DISPLAY_RESET_PILES:
         if not isinstance(state.get(pile), list):
             continue
         cards = []
@@ -202,6 +208,14 @@ def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
             card = dict(raw)
             for stat in ("damage", "block", "magic_number"):
                 base = "base_" + stat
+                if base in card and card[base] is None:
+                    del card[base]  # null base == absent base
+                if type(card.get(base)) is int and card[base] < 0:
+                    # Java's -1 base marks a card without this stat; the
+                    # displayed value derived from it carries no state.
+                    del card[base]
+                    card.pop(stat, None)
+                    continue
                 if (type(card.get(base)) is int and card[base] > 0
                         and type(card.get(stat)) is int and card[stat] > 0):
                     card[stat] = card.pop(base)
@@ -211,6 +225,18 @@ def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
         if isinstance(state.get(key), Mapping):
             result[key] = _canonical_combat_piles(state[key])
     return result
+
+
+# Wheel of Change: after MCP's Spin click Java finishes the bounce-in (<= 2 s),
+# spins (2 s), settles (3 s), pauses (1 s) and bounces out (1 s) before the
+# COMPLETE dialog appears; MCP's state stays unchanged throughout.
+WHEEL_SPIN_EXTRA_SECONDS = 10.0
+
+
+def _is_wheel_spin(screen: Mapping[str, Any], action: "LegalAction") -> bool:
+    state = _mapping(screen.get("screen_state"))
+    return (screen.get("screen_type") == "EVENT" and state.get("event_id") == "Wheel of Change"
+            and action.mcp_tool == "choose" and action.semantic.get("choice") == "spin")
 
 
 def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any] | None = None) -> str:
@@ -237,7 +263,7 @@ def _pile_display_only_change(screen: Mapping[str, Any], game: Mapping[str, Any]
     changed = False
     def strip_display_pair(left, right):
         nonlocal changed
-        for pile in ("draw_pile", "discard_pile"):
+        for pile in _DISPLAY_RESET_PILES:
             a, b = left.get(pile), right.get(pile)
             if not (isinstance(a, list) and isinstance(b, list) and len(a) == len(b)):
                 continue
@@ -1270,8 +1296,9 @@ class Driver:
             await asyncio.sleep(self.poll_interval)
         raise DriverError("MCP combat monster intent remained DEBUG before the decision boundary")
 
-    async def wait_for_ready_advance(self, before: str) -> tuple[Mapping[str, Any], dict[str, Any]]:
-        deadline, last = time.monotonic() + self.poll_timeout, {}
+    async def wait_for_ready_advance(self, before: str,
+                                     extra_seconds: float = 0.0) -> tuple[Mapping[str, Any], dict[str, Any]]:
+        deadline, last = time.monotonic() + self.poll_timeout + extra_seconds, {}
         while time.monotonic() < deadline:
             screen = await self.read_screen()
             last = screen
@@ -1284,7 +1311,8 @@ class Driver:
                         and transition_identity(screen, game_state) != before):
                     return screen, game_state
             await asyncio.sleep(self.poll_interval)
-        raise DriverError(f"post-action MCP state did not become ready and advance within {self.poll_timeout:.1f}s: {last!r}")
+        raise DriverError("post-action MCP state did not become ready and advance within "
+                          f"{self.poll_timeout + extra_seconds:.1f}s: {last!r}")
 
     def menu_action(self, screen: Mapping[str, Any], commands: Any) -> LegalAction | None:
         names = _tool_names(commands)
@@ -1677,7 +1705,9 @@ class Driver:
                 row["declined_reward_identity"] = reward_identity
         self.steps += 1
         wait_started = time.monotonic()
-        post, post_game_state = await self.wait_for_ready_advance(transition_identity(screen, game_state))
+        post, post_game_state = await self.wait_for_ready_advance(
+            transition_identity(screen, game_state),
+            WHEEL_SPIN_EXTRA_SECONDS if _is_wheel_spin(screen, action) else 0.0)
         row["post_action_wait_micros"] = (time.monotonic() - wait_started) * 1e6
         row.update({"post_action_state": ({"screen": post, "game_state": post_game_state}
                                           if self.differential_trace else

@@ -78,6 +78,14 @@ namespace sts {
     // fatal. Read only when a Blood Potion is drunk in combat.
     bool bloodPotionHealFix();
 
+    // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
+    // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
+    // upgraded, as in the game (ArmamentsAction checks c.canUpgrade(); live
+    // overnight 2026-10-19 seed 111194457: Ascender's Bane stayed unupgraded).
+    // 0 = the legacy engine also upgrades curses and statuses (Burn+ deals 4).
+    // Other values are fatal. Read only when such an upgrade resolves.
+    bool handUpgradeAllFix();
+
     // STS_MAYHEM_AFTER_DRAW_FIX: unset/1 (default) = Mayhem plays the top
     // card after the start-of-turn draw, as in the game (MayhemPower queues a
     // wrapper action that queues PlayTopCardAction at the bottom when it

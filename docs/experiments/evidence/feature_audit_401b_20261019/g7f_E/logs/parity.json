@@ -1,0 +1,21 @@
+{
+ "artifact_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+ "roots": 582140,
+ "edges": 3504320,
+ "ce": 1.222161954069296,
+ "top1": 0.5647266980451437,
+ "value_mse": 0.027027789503335953,
+ "value_var": 0.12518952786922455,
+ "value_rows": 581140,
+ "train_json_val_best": {
+  "roots": 582140,
+  "ce": 1.2221620082855225,
+  "top1": 0.5647266980451437
+ },
+ "best_epoch": 20,
+ "ce_rel_diff": 4.436091617124141e-08,
+ "top1_abs_diff": 0.0,
+ "torch_ckpt_max_abs_logit_diff_20k": 1.9073486328125e-06,
+ "torch_ckpt_max_abs_value_diff_20k": 6.556510925292969e-07,
+ "seconds": 21.646932125091553
+}

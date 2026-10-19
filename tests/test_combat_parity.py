@@ -89,6 +89,14 @@ class DiffTest(unittest.TestCase):
         diffs = combat_parity.diff(combat_parity.normalize(a), combat_parity.normalize(b))
         self.assertEqual([d["path"] for d in diffs], ["hand(order)", "x"])
 
+    def test_exhaust_pile_order_is_ignored(self):
+        a = {"exhaustPile": {"unknown": [{"id": 96, "uniqueId": 1}, {"id": 15, "uniqueId": 2}]}}
+        b = {"exhaustPile": {"unknown": [{"id": 15, "uniqueId": 7}, {"id": 96, "uniqueId": 8}]}}
+        self.assertEqual(combat_parity.diff(combat_parity.normalize(a), combat_parity.normalize(b)), [])
+        c = {"exhaustPile": {"unknown": [{"id": 15}, {"id": 15}]}}
+        diffs = combat_parity.diff(combat_parity.normalize(a), combat_parity.normalize(c))
+        self.assertEqual([d["path"] for d in diffs], ["exhaustPile.unknown[1].id"])
+
     def test_field_group(self):
         self.assertEqual(combat_parity.field_group("monsters[2].curHp"), "monsters[].curHp")
 
