@@ -409,6 +409,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         config.captureTree = captureTree_;
         config.captureValueDistribution = true;
         config.treeNodeCap = treeNodeCap_;
+        // Issue #633: prune an unsupported edge instead of aborting the root; =0 restores the abort.
+        config.pruneUnsupported = liveOocEnvChoice("STS_OOC_MCTS_PRUNE_UNSUPPORTED", "0", "1", true);
         if (researchStack_) {
             config.cPuct = 1.5;
             config.wideningK = 4;
@@ -442,7 +444,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         result.searchModel = {{"ctmStackScope", projected.ascension == 20 && samplerA20_ ? "ascension20" : "base"},
             {"searchStack", researchStack_ ? "a20_research" : "legacy"}, {"collectKeys", options.collectKeys},
             {"leafCombats", options.leafCombats}, {"treeRules", options.treeRules},
-            {"wideningK", config.wideningK}, {"wideningAlpha", config.wideningAlpha}, {"maxDepth", config.maxDepth}};
+            {"wideningK", config.wideningK}, {"wideningAlpha", config.wideningAlpha}, {"maxDepth", config.maxDepth},
+            {"pruneUnsupported", config.pruneUnsupported}, {"prunedActions", search.metrics.prunedActions}};
         if (armC_) {
             const auto &metrics = provider.continuationMetrics();
             result.searchModel.update({{"prior", options.heart1Coverage ? "arm_c_full" : "arm_c"},

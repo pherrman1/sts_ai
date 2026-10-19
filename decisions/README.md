@@ -28,6 +28,8 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0052](0052-ooc-prune-unsupported-edges.md) makes an unsupported OOC MCTS edge prune itself instead of aborting
+  the whole root search (`STS_OOC_MCTS_PRUNE_UNSUPPORTED=0` restores the abort; issue #633).
 - [ADR-0051](0051-a20-learned-stop-default.md) makes A20 `run`/`bestbench`/`reprobench` use learned Silver stopping
   even with a sims argument, and makes the A20-trained stop model `gbt-0cac7cc64364` the default
   (`STS_SILVER_LEARNED_STOP=0` restores flat Silver, `STS_SILVER_LEARNED_STOP_MODEL=gbt-770201c31f7b` the old model).
