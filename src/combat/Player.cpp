@@ -631,7 +631,11 @@ void Player::applyStartOfTurnPowers(BattleContext &bc) {
 
             case PS::MAYHEM:
                 for (int i = 0; i < pair.second; i++) {
-                    bc.addToBot( Actions::PlayTopCard(bc.monsters.getRandomMonsterIdx(bc.cardRandomRng), false) ); // todo fix target
+                    if (mayhemAfterDrawFix()) {
+                        bc.addToBot( Actions::MayhemPlayTopCard() );
+                    } else {
+                        bc.addToBot( Actions::PlayTopCard(bc.monsters.getRandomMonsterIdx(bc.cardRandomRng), false) ); // todo fix target
+                    }
                 }
                 break;
 

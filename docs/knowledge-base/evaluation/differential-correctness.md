@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
 
 ## Purpose
 
@@ -195,7 +195,8 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
 - A Discovery pick leaves `cardRandomRng` at counter 184 in Java and 3
   natively.
 - A card whose cost was set to 0 for the turn keeps `costForTurn` 0 in the
-  discard pile natively; Java resets it.
+  discard pile natively; Java resets it. Fixed by `STS_PILE_COST_RESET_FIX`
+  (see below).
 - Perfected Strike counts one Strike fewer after Havoc exhausts a Strike.
 - Havoc's random target differs (`lastTargetedMonster`).
 - Hexaghost records Inferno twice in Java's move history. **Inference:** no
@@ -219,8 +220,11 @@ Sacred Bark and 20% with it, the reverse of the game.
 - Java draws one more `aiRng` value when Blood for Blood kills a Mugger.
 - Native sets a `miscBits` flag in the Two Thieves' turn that Java has not.
 - After a Discovery, end-of-turn draws differ by one `shuffleRng` draw and
-  an upgrade flag sits on another copy. **Inference:** the probe's draw-order
-  reconstruction is incomplete once a combat-generated card is in the piles.
+  an upgrade flag sits on another copy. Not Discovery: the old importer
+  aliased Matryoshka onto Warped Tongs, which upgrades a random hand card with
+  `shuffleRng` at the start of the turn. Re-running these steps with the
+  `STS_IMPORTER_HIGH_RELIC_FIX` probe (below) matches; with `=0` it
+  reproduces the mismatch.
 - The run stopped on a Headbutt selection with pending actions
   (`silver_selection_pending_actions`), which Silver does not support.
 
@@ -233,6 +237,19 @@ parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
 
+Four smaller monster-side differences from the same overnight list and the
+canary 2 carry-overs are fixed behind default-on flags (`=0` restores):
+`STS_SLIME_SPLIT_RNG_FIX` (native drew two extra `aiRng` rolls on a large
+slime split), `STS_MUGGER_DEATH_RNG_FIX` (the game draws `aiRng` for the
+Mugger's death sound), `STS_DEAD_MONSTER_BLOCK_FIX` (Curl Up block queued
+before a later hit killed the louse) and `STS_IMPORTER_THIEF_GOLD_FIX` (the
+importer never set the native stolen-gold bit, so the probe reported
+`miscBits` 0 vs 1 in Two Thieves). After a split the game reports
+`lastTargetedMonster` 1 when the targeted slime is gone (the inspector's
+default for a target it no longer emits); native keeps 0. Only the Shield
+and Spear fight reads that field, so it is left as a known
+representation-only difference.
+
 The same night showed Blessing of the Forge upgrading Ascender's Bane natively
 but not in the game (seed 111194457). The engine's upgrade-all-in-hand action
 (Blessing of the Forge, Armaments+) upgraded every card, while Apotheosis,
@@ -241,6 +258,58 @@ upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
 there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
 skips statuses here for the same reason it skips curses (its `canUpgrade`
 rule); only the curse case was observed live.
+
+The same overnight runs showed Mayhem playing the wrong card natively (seed
+111194457: Reptomancer and Jaw Worm horde). The game plays the top card after
+the start-of-turn draw (`MayhemPower$1` queues `PlayTopCardAction` at the
+bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
+top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
+won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
+`=0` restores) plays it after the draw.
+
+A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
+Panache, because the live importer refused it. Java `PanachePower.amount` is
+the cards-left countdown and the damage is a private `damage` field, which the
+producer did not send. The engine also differed: a new Panache started its
+countdown at 0, so it dealt damage on the next card, and the countdown never
+went back to 5, so it dealt damage on every later card that turn. The
+producer now sends `panacheDamage`, the importer maps it, and
+`STS_PANACHE_FIX` (default on, `=0` restores) makes the engine count from 5,
+reset after damage, and let a second copy add damage only.
+
+Live play on 2026-10-19 (seed 111200384, Slime Boss) stopped twice on a
+Gambler's Brew hand selection as `silver_selection_pending_actions`. Toy
+Ornithopter's `onUsePotion` queues `RelicAboveCreatureAction` and
+`HealAction(p, p, 5)` behind the Brew's `GamblingChipAction` (game bytecode,
+jar sha256 cfad868a…1673), so the heal is still in `actionManager.actions`
+while the selection is open. The engine queues the same heal after the potion
+effect in `drinkPotion`. The inspector now carries it as the public pending
+action `HEAL_PLAYER` (amount 5, Toy Ornithopter only), and the importer
+accepts it under `STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the
+refusal). A refused pending queue now also names the blocking state and
+action classes in `pendingActionsBlocker`.
+
+The Discovery mismatches from canary 2 were read from the pinned JAR with
+`javap` (2026-10-19):
+
+- `DiscoveryAction.update` calls its card generator on every frame before it
+  checks its duration. The choice screen pauses the action queue, so the
+  first frame draws the three offered cards. After the pick, the action keeps
+  ticking until its 0.25 s duration runs out and draws a fresh set of three on
+  every frame, which it throws away. At the game's 240 fps limit that is about
+  180 extra `cardRandomRng` draws (185, 187 and 194 were seen), and the count
+  depends on frame timing. Native draws one set. The probe reports
+  `cardRandomRng` on a Discovery pick as unobservable; the next step starts
+  from the game's own RNG again. **Inference:** fair play is unaffected,
+  because nothing reads that stream between the pick and the next observation.
+- The copy itself matches: Java sets its turn cost to 0, and with a full hand
+  `ShowCardAndAddToDiscardEffect` adds a stat-equivalent copy (turn cost 0)
+  straight to the discard pile. The `costForTurn` mismatch was the played copy:
+  `CardGroup.moveToDiscardPile` hands the card to a `Soul`, and when it lands
+  `Soul.update` calls `clearPowers`, which calls `resetAttributes` (turn cost
+  back to cost). The draw-pile soul paths (`shuffle`, `onToDeck`) and
+  `ExhaustCardEffect.update` do the same. `STS_PILE_COST_RESET_FIX` (default
+  on, `=0` restores) resets the turn cost on those native pile moves.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
