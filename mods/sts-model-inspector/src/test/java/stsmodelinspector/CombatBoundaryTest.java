@@ -236,6 +236,9 @@ public final class CombatBoundaryTest {
         if(!"{\"kind\":\"MONSTER_GAIN_BLOCK\",\"amount\":6,\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",6,0))
                 || !"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,0))
                 || !"{\"kind\":\"MONSTER_REDUCE_PLATED_ARMOR\",\"amount\":1,\"slot\":1}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",1,1))
+                || !"{\"kind\":\"MONSTER_THORNS\",\"amount\":4,\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_THORNS",4,0))
+                || STSModelInspector.monsterReactionItemJson("MONSTER_THORNS",4,1)!=null
+                || STSModelInspector.monsterReactionItemJson("MONSTER_THORNS",0,0)!=null
                 || STSModelInspector.monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,1)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",2,0)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",null,0)!=null

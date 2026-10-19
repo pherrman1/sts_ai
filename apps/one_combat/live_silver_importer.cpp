@@ -1832,7 +1832,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
-            if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
+            if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR"
+                    || kindName=="MONSTER_THORNS") {
                 int slot=-1,amount=0;
                 if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>=wire.monsterCount)
                     return unsupported("silver_selection_pending_actions");
@@ -1853,6 +1854,15 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     continue;
                 }
                 if(!requiredInt(entry,"amount",amount)) return unsupported("silver_selection_pending_actions");
+                if(kindName=="MONSTER_THORNS") {
+                    // Native Sharp Hide reads monster 0's scalar.
+                    if(slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN)
+                            || !has(sts::MonsterStatus::SHARP_HIDE) || amount<1 || amount!=monster.uniquePower1)
+                        return unsupported("silver_selection_pending_actions");
+                    silver_bridge::PendingActionWire action;action.kind=K::MONSTER_THORNS;action.amount=amount;
+                    wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
                 if(kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
                     auto &plated=monster.smallPowers[7];
                     if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || plated<=1)

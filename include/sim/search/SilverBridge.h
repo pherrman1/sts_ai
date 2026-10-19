@@ -151,9 +151,9 @@ enum class PendingActionKind : std::uint8_t {
     DAMAGE_ALL = 4, DAMAGE_RANDOM = 5, GAMBLE = 6, UPGRADE_RANDOM = 7,
     BUFF_PLAYER = 8, DEBUFF_PLAYER = 9, DEBUFF_ALL_ENEMY = 10, SHUFFLE_WOUNDS = 11,
     USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14,
-    // Monster on-hit reactions queued behind an interrupted source card
-    // (Malleable/Curl Up self-block, Writhing Mass Reactive reroll).
-    MONSTER_GAIN_BLOCK = 15, REACTIVE_ROLL_MOVE = 16
+    // Monster reactions queued behind an interrupted source card (Malleable
+    // self-block, Writhing Mass Reactive reroll, Guardian Sharp Hide thorns).
+    MONSTER_GAIN_BLOCK = 15, REACTIVE_ROLL_MOVE = 16, MONSTER_THORNS = 17
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;

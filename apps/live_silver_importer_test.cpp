@@ -3600,14 +3600,22 @@ int main(int argc, char **argv) {
         // Headbutt's discard GRID opens while the hit's monster reactions
         // are still queued behind it (Java addToBot): Malleable self-block
         // and Reactive reroll (Writhing Mass), Plated Armor loss (Shelled
-        // Parasite). Overnight live runs 111194455/111194451 stopped here.
-        for (const auto encounter : {MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE}) {
+        // Parasite), and the defensive Guardian's Sharp Hide thorns hit.
+        // Live runs 111194455/111194451/111200382 stopped here.
+        for (const auto encounter : {MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE, MonsterEncounter::THE_GUARDIAN}) {
             const bool mass=encounter==MonsterEncounter::WRITHING_MASS;
+            const bool guardian=encounter==MonsterEncounter::THE_GUARDIAN;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
-            game.act=mass?3:2; game.floorNum=mass?38:29;
+            game.act=mass?3:guardian?1:2; game.floorNum=mass?38:guardian?16:29;
             BattleContext live; live.init(game, encounter);
             auto &target=live.monsters.arr[0];
             target.block=0;
+            if(guardian) {
+                // Defensive Mode after Close Up: Sharp Hide on, Roll Attack next.
+                target.enterGuardianDefensiveMode();
+                target.buff<MonsterStatus::SHARP_HIDE>(4);
+                target.setMove(MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
+            }
             // Two skills fill the discard pile without hitting the monster.
             for (int played=0;played<2;++played) {
                 CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(910+played);
@@ -3632,11 +3640,13 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE=0 did not restore the legacy tail");
             }
             const auto nativeQueue=expected.pendingActionQueue;
-            const std::size_t wantQueue=mass?3:1;
+            const std::size_t wantQueue=mass?3:guardian?2:1;
             if(!expected.pendingActionQueueObserved || nativeQueue.size()!=wantQueue
                     || (mass && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
                         || nativeQueue[2].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE))
-                    || (!mass && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                    || (guardian && (nativeQueue[0].kind!=silver_bridge::PendingActionKind::MONSTER_THORNS
+                        || nativeQueue[0].amount!=4 || nativeQueue[1].kind!=silver_bridge::PendingActionKind::USE_CARD))
+                    || (!mass && !guardian && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
                 throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
             auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
             setProducerV4CardObservation(observation,expected);
@@ -3654,11 +3664,13 @@ int main(int argc, char **argv) {
                 if(power.at("id")=="Reactive") power={{"id","Compulsive"},{"amount",-1}};
                 if(power.at("id")=="Plated Armor") power["amount"]=platedBefore;
             }
-            json pending=json::array({producerCleanupJson(combat["curCardQueueItem"])});
+            // Java order: Sharp Hide's onUseCard thorns precede UseCardAction.
+            json pending=guardian?json::array({json{{"kind","MONSTER_THORNS"},{"amount",4},{"slot",0}}}):json::array();
+            pending.push_back(producerCleanupJson(combat["curCardQueueItem"]));
             if(mass) {
                 pending.push_back(json{{"kind","MONSTER_GAIN_BLOCK"},{"amount",nativeQueue[1].amount},{"slot",0}});
                 pending.push_back(json{{"kind","REACTIVE_ROLL_MOVE"},{"slot",0}});
-            } else pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
+            } else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
@@ -3691,10 +3703,13 @@ int main(int argc, char **argv) {
                                         json(wireFromSearchState(actual,context))).dump(2) << '\n';
                 throw std::runtime_error("Headbutt monster-reaction root parity failed");
             }
+            const int hpBeforePick=actual.player.curHp, blockBeforePick=actual.player.block;
             const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
             pick.execute(actual); pick.execute(reference);
             if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
                 throw std::runtime_error("Headbutt monster-reaction continuation parity failed");
+            if(guardian && actual.player.curHp+actual.player.block!=hpBeforePick+blockBeforePick-4)
+                throw std::runtime_error("Sharp Hide thorns did not resolve after the selection");
             if(mass && (actual.monsters.arr[0].block!=nativeQueue[1].amount
                     || actual.monsters.arr[0].getStatus<MonsterStatus::REACTIVE>()!=0))
                 throw std::runtime_error("Writhing Mass reactions did not resolve after the selection");
@@ -3703,6 +3718,7 @@ int main(int argc, char **argv) {
             auto broken=observation;
             auto &brokenQueue=broken["silverRoot"]["combat"]["pendingActionQueue"];
             if(mass) brokenQueue[2]["slot"]=1;
+            else if(guardian) brokenQueue[0]["amount"]=3;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
                 if(power.at("id")=="Plated Armor") power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)

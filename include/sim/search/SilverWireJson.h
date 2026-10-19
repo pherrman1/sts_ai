@@ -94,7 +94,7 @@ inline void from_json(const nlohmann::json &j, PendingActionWire &a) {
             throw std::invalid_argument("invalid pending action integer");
     }
     const int kind=j.at("kind").get<int>();
-    if (kind<1 || kind>16 || !j.at("sourceMonster").is_boolean())
+    if (kind<1 || kind>17 || !j.at("sourceMonster").is_boolean())
         throw std::invalid_argument("invalid pending action kind or source");
     // Absent in wires written before monster-reaction actions existed.
     const auto monster=j.find("monster");

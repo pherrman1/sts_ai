@@ -46,6 +46,8 @@ namespace sts::search {
                 case K::MONSTER_GAIN_BLOCK: return Actions::MonsterGainBlock(in.monster, in.amount);
                 // Writhing Mass is monster 0; its Reactive scalar counts the rolls.
                 case K::REACTIVE_ROLL_MOVE: return Actions::ReactiveRollMove();
+                // Sharp Hide's THORNS hit on the player (not self-damage).
+                case K::MONSTER_THORNS: return Actions::DamagePlayer(in.amount);
                 case K::BUFF_PLAYER: {
                     const auto status = static_cast<PlayerStatus>(in.status);
                     switch (status) {
@@ -330,8 +332,8 @@ namespace sts::search {
     }
 
     // STS_SILVER_MONSTER_REACTION_QUEUE: unset/1 (default) = a selection's
-    // queued monster on-hit reactions (MonsterGainBlock, ReactiveRollMove,
-    // e.g. Headbutt into Writhing Mass) are captured as an exact pending
+    // queued monster reactions (MonsterGainBlock, ReactiveRollMove, Sharp
+    // Hide DamagePlayer; e.g. Headbutt into Writhing Mass) are captured as an exact pending
     // tail. 0 = legacy: such a tail stays unobserved and conversion falls
     // back to card replay. Other values are fatal.
     static bool silverMonsterReactionQueue() {
@@ -369,6 +371,9 @@ namespace sts::search {
                 case CombatActionType::ReactiveRollMove:
                     if(!silverMonsterReactionQueue())return;
                     item.kind=K::REACTIVE_ROLL_MOVE; break;
+                case CombatActionType::DamagePlayer:
+                    if(!silverMonsterReactionQueue())return;
+                    item.kind=K::MONSTER_THORNS; item.amount=action.v_DamagePlayer.damage; break;
                 case CombatActionType::BuffPlayer:
                     item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
                 case CombatActionType::DebuffPlayer:

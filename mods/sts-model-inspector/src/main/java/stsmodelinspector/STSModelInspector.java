@@ -2887,6 +2887,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     // Parasite): Malleable/Curl Up self-block, Reactive reroll, Plated Armor loss.
     private static boolean monsterReactionAction(String name,Object action) {
         if("com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name))return true;
+        if("com.megacrit.cardcrawl.actions.common.DamageAction".equals(name))
+            return readObjectField(action,"target")==AbstractDungeon.player;
         return ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)
                 || "com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name))
                 && readObjectField(action,"target") instanceof AbstractMonster;
@@ -2894,6 +2896,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String monsterReactionJson(String name,Object action) {
         boolean roll="com.megacrit.cardcrawl.actions.common.RollMoveAction".equals(name);
+        if("com.megacrit.cardcrawl.actions.common.DamageAction".equals(name)) {
+            // SharpHidePower.onUseCard: addToBot(DamageAction(player, DamageInfo(owner, amount, THORNS))).
+            Object info=readObjectField(action,"info"), owner=readObjectField(info,"owner");
+            if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type"))) || !(owner instanceof AbstractMonster))return null;
+            AbstractMonster guardian=(AbstractMonster)owner;
+            AbstractPower hide=guardian.getPower("Sharp Hide");
+            Integer output=readIntField(info,"output"), slot=emittedMonsterSlots(liveEncounter).get(guardian);
+            if(!"TheGuardian".equals(guardian.id) || hide==null || slot==null || guardian.isDying || guardian.isDeadOrEscaped()
+                    || !"com.megacrit.cardcrawl.powers.SharpHidePower".equals(hide.getClass().getName())
+                    || output==null || !output.equals(readIntField(info,"base")) || output!=hide.amount)return null;
+            return monsterReactionItemJson("MONSTER_THORNS",output,slot);
+        }
         Object value=readObjectField(action,roll?"monster":"target");
         if(!(value instanceof AbstractMonster))return null;
         AbstractMonster monster=(AbstractMonster)value;
@@ -2920,7 +2934,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if("REACTIVE_ROLL_MOVE".equals(kind)) return slot==0?"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}":null;
         if(amount==null || amount<0 || amount>999)return null;
         if("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) && amount!=1)return null;
-        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind))return null;
+        if("MONSTER_THORNS".equals(kind) && (slot!=0 || amount<1))return null;
+        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind) && !"MONSTER_THORNS".equals(kind))return null;
         return "{\"kind\":\""+kind+"\",\"amount\":"+amount+",\"slot\":"+slot+"}";
     }
 
