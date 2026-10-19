@@ -263,6 +263,16 @@ top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
 won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
 `=0` restores) plays it after the draw.
 
+A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
+Panache, because the live importer refused it. Java `PanachePower.amount` is
+the cards-left countdown and the damage is a private `damage` field, which the
+producer did not send. The engine also differed: a new Panache started its
+countdown at 0, so it dealt damage on the next card, and the countdown never
+went back to 5, so it dealt damage on every later card that turn. The
+producer now sends `panacheDamage`, the importer maps it, and
+`STS_PANACHE_FIX` (default on, `=0` restores) makes the engine count from 5,
+reset after damage, and let a second copy add damage only.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 

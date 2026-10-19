@@ -2573,6 +2573,22 @@ int main(int argc, char **argv) {
             throw std::runtime_error("draw reduction parity failed");
         verifyPlayerPowerParity("bomb-parity", json{{"id", "TheBomb0"}, {"amount", 3}, {"bombDamage", 40}},
             [](auto &player) { player.bombs[2] = 40; });
+        // Java PanachePower.amount is the countdown; damage is separate.
+        verifyPlayerPowerParity("panache-parity", json{{"id", "Panache"}, {"amount", 3}, {"panacheDamage", 14}},
+            [](auto &player) {
+                static_assert(static_cast<int>(PlayerStatus::PANACHE) >= 64);
+                player.statusBits1 |= 1U << (static_cast<int>(PlayerStatus::PANACHE) - 64);
+                player.statusMap.emplace_back(static_cast<std::int16_t>(PlayerStatus::PANACHE), 14);
+                player.panacheCounter = 3;
+            });
+        for (const auto &bad : {json{{"id", "Panache"}, {"amount", 5}},
+                                json{{"id", "Panache"}, {"amount", 0}, {"panacheDamage", 10}},
+                                json{{"id", "Panache"}, {"amount", 5}, {"panacheDamage", 0}}}) {
+            auto observation = genericObservation(fixtures[0], "panache-refused");
+            observation["silverRoot"]["combat"]["playerPowers"] = json::array({bad});
+            if (one_combat::advisor::importSilverRoot(observation).ok)
+                throw std::runtime_error("Panache without a valid damage/countdown must be refused");
+        }
         auto penNibRelic = genericObservation(fixtures[0], "pen-nib-relic-parity");
         penNibRelic["silverRoot"]["combat"]["relics"].push_back(
             json{{"id", "Pen Nib"}, {"counter", 9}, {"usedUp", false}});
