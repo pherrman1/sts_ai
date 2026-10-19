@@ -21298,7 +21298,7 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
-## §TBD — Runic Dome: every first-turn live Dome root was refused (roll clock and omitted nulls) (2026-10-19)
+## §550 — Runic Dome: every first-turn live Dome root was refused (roll clock and omitted nulls) (2026-10-19)
 
 **Question:** why did live seed 111194466 (release 1e2cad47) stop in the first fight after Runic Dome
 (TWO_THIEVES, Act 2 floor 18, turn 1, Looter 48 HP and Mugger 53 HP, occupant generation 1) with
