@@ -116,6 +116,15 @@ namespace sts {
     // Other values are fatal. Read only when such an upgrade resolves.
     bool handUpgradeAllFix();
 
+    // STS_MAYHEM_AFTER_DRAW_FIX: unset/1 (default) = Mayhem plays the top
+    // card after the start-of-turn draw, as in the game (MayhemPower queues a
+    // wrapper action that queues PlayTopCardAction at the bottom when it
+    // runs, behind DrawCardAction; overnight live play 2026-10-19 problem 13:
+    // the played card opened a hand selection, Metallicize instead of a
+    // pre-draw attack). 0 = the legacy engine, which played the pre-draw top
+    // card. Other values are fatal. Read only at a Mayhem turn start.
+    bool mayhemAfterDrawFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
 
 ## Purpose
 
@@ -254,6 +254,14 @@ upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
 there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
 skips statuses here for the same reason it skips curses (its `canUpgrade`
 rule); only the curse case was observed live.
+
+The same overnight runs showed Mayhem playing the wrong card natively (seed
+111194457: Reptomancer and Jaw Worm horde). The game plays the top card after
+the start-of-turn draw (`MayhemPower$1` queues `PlayTopCardAction` at the
+bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
+top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
+won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
+`=0` restores) plays it after the draw.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
