@@ -138,6 +138,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(pile_cost_reset_test tests/pile_cost_reset_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(pile_cost_reset_test PRIVATE include json/include)
+add_test(NAME pile_cost_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:pile_cost_reset_test>)
+set_tests_properties(pile_cost_reset PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(blood_potion_heal_test PRIVATE include json/include)

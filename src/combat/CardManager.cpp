@@ -14,6 +14,14 @@
 
 using namespace sts;
 
+namespace {
+    // Java resetAttributes when a card lands in a pile (STS_PILE_COST_RESET_FIX).
+    CardInstance landed(CardInstance c) {
+        if (c.costForTurn != c.cost && pileCostResetFix()) c.costForTurn = c.cost;
+        return c;
+    }
+}
+
 void CardManager::init(const sts::GameContext &gc, BattleContext &bc) {
 
 //    masterDeckSize = gc.deck.size();
@@ -104,7 +112,10 @@ void CardManager::createTempCardShuffledIntoDrawPile(Random &cardRandomRng, Card
 void CardManager::createTempCardOnDrawPileTop(CardInstance c) {
     c.uniqueId = static_cast<std::int16_t>(nextUniqueCardId++);
     notifyAddCardToCombat(c);
-    moveToDrawPileTop(c);
+    // A created card is added straight to the pile and keeps its cost.
+    notifyAddToDrawPile(c);
+    drawPile.addToTop(c);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_TOP_PLACED, c);
 }
 
 void CardManager::createTempCardInDiscard(CardInstance c) {
@@ -188,7 +199,7 @@ void CardManager::moveToHand(const CardInstance &c) {
 
 void CardManager::moveToExhaustPile(const CardInstance &c) {
     notifyRemoveFromCombat(c);
-    exhaustPile.push_back(c);
+    exhaustPile.push_back(landed(c));
 }
 
 
@@ -201,7 +212,7 @@ void CardManager::moveToDrawPileTop(const CardInstance &c) {
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.addToTop(c);
+    drawPile.addToTop(landed(c));
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_TOP_PLACED, c);
 }
 
@@ -214,7 +225,7 @@ void CardManager::moveToDrawPileBottom(const CardInstance &c) {
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.addToBottom(c);
+    drawPile.addToBottom(landed(c));
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, c);
 }
 
@@ -227,7 +238,7 @@ void CardManager::shuffleIntoDrawPile(Random &cardRandomRng, const CardInstance 
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.shuffleIn(cardRandomRng, c);
+    drawPile.shuffleIn(cardRandomRng, landed(c));
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
 }
 
@@ -241,10 +252,11 @@ void CardManager::moveToDiscardPile(const CardInstance &c) {
     }
 #endif
     notifyAddToDiscardPile(c);
-    discardPile.push_back(c);
+    discardPile.push_back(landed(c));
 }
 
 void CardManager::moveDiscardPileIntoToDrawPile(Random &shuffleRng) {
+    for (auto &c : discardPile) c = landed(c);
     if (!drawPile.isConcrete()) {
         // The shuffle's randomness is deferred to draw time.
         drawPileBloodCardCount += discardPileBloodCardCount;
