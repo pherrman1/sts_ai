@@ -137,7 +137,9 @@ the game's own state, so one difference does not end the comparison.
 - Comparison: `tools/combat_parity.py run TRACE --probe BIN --out-dir OUT`
   diffs every other field (ignoring only `uniqueId`, `isolatedSearchSeed`,
   `observedGeneration` and `nextUniqueCardId`) plus the six RNG counters and
-  seeds. A change in any of the six Java streams with no native combat
+  seeds. The exhaust pile is compared as a multiset, because Java exhausts
+  end-of-turn ethereal cards in an unseeded shuffled order
+  ([Java reference audit](../behavior/java-reference-audit.md#ethereal-exhaust-order-at-end-of-turn-parity-not-reproducible)). A change in any of the six Java streams with no native combat
   counterpart (`cardRng`, `eventRng`, `merchantRng`, `monsterRng`,
   `relicRng`, `treasureRng`) during a combat step is a mismatch. It writes `verdicts.jsonl`, `summary.json` and `REPORT.md` with
   mismatched fields, skip reasons and coverage per action, encounter, relic,

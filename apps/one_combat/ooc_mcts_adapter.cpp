@@ -997,6 +997,9 @@ std::string mctsChoiceKey(sts::search::OocSemanticAction action, const GameConte
     return sts::search::canonicalOocMctsChoiceKey(action, &gc);
 }
 }
+std::string oocMctsChoiceKey(sts::search::OocSemanticAction action, const GameContext &gc, bool treeRules) {
+    return mctsChoiceKey(std::move(action), gc, treeRules);
+}
 std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId id) const {
     switch (state(id).outcome) {
         case sts::GameOutcome::PLAYER_LOSS: return 0;

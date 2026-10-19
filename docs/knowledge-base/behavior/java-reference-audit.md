@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-19 for half-dead Darkling powers; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-19 for half-dead Darkling powers and the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -387,6 +387,27 @@ way, but the dead monster's block and status bits are part of Silver's node
 identity (hash and state equality), so search can change.
 
 Test: `dead_target_debuff_fix`.
+
+### Ethereal exhaust order at end of turn (parity, not reproducible)
+
+`DiscardAtEndOfTurnAction.update` copies the hand, shuffles the copy with the
+one-argument `Collections.shuffle` (Java's unseeded static `Random`, not a
+game RNG stream) and calls `triggerOnEndOfPlayerTurn` on each card, which
+queues `ExhaustSpecificCardAction` with `addToTop` for an ethereal card (javap
+on the PC, 2026-10-19). The order of end-of-turn ethereal exhausts is
+therefore random and unseeded in the game. All of them still resolve before
+the end-of-turn discards, and retained cards are already in limbo. Native
+exhausts them in reverse hand order, which is one of the orders the game can
+produce. Clumsy queues the same exhaust; Ghostly Armor and Entrench queue
+`ExhaustAllEtherealAction`, which only repeats exhausts that the
+`group.contains` guard then skips.
+
+**Inference:** the order cannot change play. On-exhaust effects (Feel No Pain,
+Dark Embrace, Dead Branch, Charon's Ashes) depend on how many cards are
+exhausted, not which one goes first, no ethereal Ironclad, colorless or curse
+card has its own on-exhaust effect, and no rule reads the exhaust pile order
+(Exhume shows a grid). No engine change; the combat parity probe compares the
+exhaust pile as a multiset (`UNORDERED_PILES` in `tools/combat_parity.py`).
 
 ## Ironclad relics
 
