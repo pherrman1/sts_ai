@@ -21298,7 +21298,7 @@ a natural wake ATTACK (3). The Runic Dome path already reconstructed sleep from 
 intent IDLE. The `live_silver_importer` dynamic corpus now renders Lagavulin as Java does and checks the asleep, idle
 and damage-wake states plus both flag settings; with the old importer the asleep case fails. Live advisor decisions and
 parity verdicts in Lagavulin fights before the fix planned against an awake Lagavulin. **Unverified:** the Java claims
-(IDLE only while asleep, move byte 6 never visible at a decision) were not re-checked against the game JAR; a live
+(IDLE only while asleep, move byte 6, which the importer maps but no observed fight used, never visible at a decision) were not re-checked against the game JAR; a live
 Lagavulin fight after reinstall would confirm. Simulator play, training and benchmarks do not use this importer.
 Seeds: none (live evidence from seeds 111194454 and two other overnight seeds).
 **Knowledge impact:** `operations/live-model-inspector.md`, `operations/environment-variables.md`.
