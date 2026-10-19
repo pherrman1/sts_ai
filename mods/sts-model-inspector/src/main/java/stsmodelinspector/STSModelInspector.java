@@ -2323,13 +2323,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if ("Darkling".equals(id)) return readIntField(monster, "nipDmg");
         if ("GremlinWizard".equals(id)) return readIntField(monster, "currentCharge");
         if ("Hexaghost".equals(id)) {
-            // Native Silver keeps the per-hit Divider damage in miscInfo. The
-            // Java intent damage is the same finalized value once Divider is
-            // selected. Native keeps that value after Divider resolves, so
-            // retain the observed public value for this monster object until
-            // the next Activate move replaces it.
+            // Native Silver keeps the raw per-hit Divider damage (player
+            // HP / 12 + 1 at Activate) in miscInfo and applies Weak, Strength
+            // and Vulnerable when the hits resolve. Activate passes that raw
+            // value to setMove, so read the intent base damage: the displayed
+            // intent damage already includes those modifiers and would apply
+            // them twice. Native keeps the value after Divider resolves, so
+            // retain it for this monster object until the next Activate
+            // move replaces it.
             if (monster.nextMove == 1) {
-                hexaghostDividerDamage.put(monster, monster.getIntentDmg());
+                hexaghostDividerDamage.put(monster, monster.getIntentBaseDmg());
             }
             Integer dividerDamage = hexaghostDividerDamage.get(monster);
             return dividerDamage == null ? 0 : dividerDamage;
