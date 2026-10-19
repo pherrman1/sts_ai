@@ -213,6 +213,15 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null
                 || STSModelInspector.publicPendingActionJson("PRIVATE_RANDOM_CARD",1,null)!=null)
             throw new AssertionError("public pending action qualification");
+        if(!"{\"kind\":\"MONSTER_GAIN_BLOCK\",\"amount\":6,\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",6,0))
+                || !"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,0))
+                || !"{\"kind\":\"MONSTER_REDUCE_PLATED_ARMOR\",\"amount\":1,\"slot\":1}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",1,1))
+                || STSModelInspector.monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,1)!=null
+                || STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",2,0)!=null
+                || STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",null,0)!=null
+                || STSModelInspector.monsterReactionItemJson("MONSTER_GAIN_BLOCK",3,5)!=null
+                || STSModelInspector.monsterReactionItemJson("MONSTER_ROLL_PRIVATE",0,0)!=null)
+            throw new AssertionError("monster reaction pending action qualification");
         for(int count:new int[]{1,2}) {
             String owner="com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction";
             JsonObject liquid=new Gson().fromJson(STSModelInspector.singleSelectionJson("LIQUID_MEMORIES_POTION","GRID",false,false,count,0,uuids,3),JsonObject.class);
