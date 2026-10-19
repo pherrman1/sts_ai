@@ -11,6 +11,7 @@ from tools.live_game_driver import (
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
     hand_selection_transaction, grid_selection_transaction, _pile_display_only_change, _is_wheel_spin,
+    _is_combat_end_turn,
 )
 
 
@@ -789,6 +790,33 @@ class LiveGameDriverTest(unittest.TestCase):
                 else:
                     with self.assertRaises(DriverError):
                         asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
+
+    def test_end_turn_waits_while_the_monster_turn_progresses(self):
+        # Overnight 2026-10-19: The Collector's turn exceeded the 8 s post-action wait.
+        before = combat_screen()
+        end_turn = LegalAction("a0", "End turn", "end_turn", {}, {"kind": "end_turn"})
+        self.assertTrue(_is_combat_end_turn(before, end_turn))
+        self.assertFalse(_is_combat_end_turn({**before, "room_phase": "EVENT"}, end_turn))
+        self.assertFalse(_is_combat_end_turn(before, LegalAction("a0", "Play", "play_card", {}, {"kind": "card"})))
+        busy = {**before, "ready_for_command": False}
+        done = {**before, "turn": 2}
+        moving = [{**busy, "player_hp": 80 - index} for index in range(60)]
+        with tempfile.TemporaryDirectory() as directory:
+            def driver(states):
+                return Driver(FakeClient(states + [done], ["end_turn"]), InspectorReader(Path(directory) / "missing"),
+                              TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.002)
+            # A changing screen extends the wait past poll + extra, up to the cap.
+            post, _ = asyncio.run(driver(moving).wait_for_ready_advance(transition_identity(before), .01, 10.0))
+            self.assertEqual(post["turn"], 2)
+            # An unchanged screen still fails after poll + extra (a real hang).
+            with self.assertRaises(DriverError):
+                asyncio.run(driver([busy] * 60).wait_for_ready_advance(transition_identity(before), .01, 10.0))
+            # Without a progress cap a changing screen does not extend the wait.
+            with self.assertRaises(DriverError):
+                asyncio.run(driver(moving).wait_for_ready_advance(transition_identity(before), .01))
+            # The cap bounds a screen that keeps changing forever.
+            with self.assertRaises(DriverError):
+                asyncio.run(driver(moving * 10).wait_for_ready_advance(transition_identity(before), .01, .05))
 
     def test_dry_run_never_mutates(self):
         with tempfile.TemporaryDirectory() as directory:
