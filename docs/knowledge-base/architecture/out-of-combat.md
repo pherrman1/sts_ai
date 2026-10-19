@@ -2010,7 +2010,10 @@ with the search and its chain.
   clamped to [-1, 999], act to [0, 4]). Training side:
   `tools/heart1/student_inputs.py` (`distill.py --extra-inputs`), zero-initialised,
   so student C loads unchanged; native logits with all-zero `x_*` tensors equal
-  student C's bit for bit (300 capture records). Torch-native parity of
+  student C's bit for bit (300 capture records). Wing Boots charges reach `x_relic_counter` only
+  under `STS_OOC_HEART1_WING_BOOTS_COUNTER=1` (#638); by default that counter is 0, as in every
+  weights file trained so far. Capture rows record the value (`wing_boots_counter`), and `distill.py` trains on
+  one value only and writes it to `summary.json` (`tools/heart1/capture_provenance.py`). Torch-native parity of
   nonzero `x_*` is checked with `student_inputs.py perturb/score` where torch
   and silverbot are built.
 - Card-select student `student_sel.bin` (`cf6bf7fb…`, data branch

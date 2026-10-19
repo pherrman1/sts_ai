@@ -369,6 +369,9 @@ set_tests_properties(render_ooc_mcts PROPERTIES
 add_test(NAME workflow_tools COMMAND python3 -m unittest tests.test_workflow_tools)
 set_tests_properties(workflow_tools PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME heart1_capture_provenance COMMAND python3 -m unittest tests.test_heart1_capture_provenance)
+set_tests_properties(heart1_capture_provenance PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 find_program(STS_NODE_EXECUTABLE node)
 if(STS_NODE_EXECUTABLE)
     add_test(NAME ooc_graph_logic COMMAND ${STS_NODE_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_ooc_graph_logic.js)
