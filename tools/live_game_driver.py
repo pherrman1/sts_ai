@@ -181,17 +181,23 @@ def state_identity(state: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+# Hand cards stay strict: their displayed values are what Silver plays.
+_DISPLAY_RESET_PILES = ("draw_pile", "discard_pile", "exhaust_pile")
+
+
 def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
     """Keep intrinsic pile stats stable across Soul.clearPowers animations.
 
     MCP emits positive derived stats and includes base_* only when different.
-    Soul completion resets those cached display values in draw/discard piles.
+    Soul completion resets those cached display values in draw/discard piles;
+    exhausted cards keep whatever value was last displayed (e.g. Strength-
+    boosted damage) until the game refreshes them.
     Canonicalize to the explicitly known positive base value, never drop the
     stat itself; changed base stats, costs, identity, ordering and hand values
     therefore remain observable. Ambiguous zero/absent values remain strict.
     """
     result = dict(state)
-    for pile in ("draw_pile", "discard_pile"):
+    for pile in _DISPLAY_RESET_PILES:
         if not isinstance(state.get(pile), list):
             continue
         cards = []
@@ -202,6 +208,8 @@ def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
             card = dict(raw)
             for stat in ("damage", "block", "magic_number"):
                 base = "base_" + stat
+                if base in card and card[base] is None:
+                    del card[base]  # null base == absent base
                 if (type(card.get(base)) is int and card[base] > 0
                         and type(card.get(stat)) is int and card[stat] > 0):
                     card[stat] = card.pop(base)
@@ -237,7 +245,7 @@ def _pile_display_only_change(screen: Mapping[str, Any], game: Mapping[str, Any]
     changed = False
     def strip_display_pair(left, right):
         nonlocal changed
-        for pile in ("draw_pile", "discard_pile"):
+        for pile in _DISPLAY_RESET_PILES:
             a, b = left.get(pile), right.get(pile)
             if not (isinstance(a, list) and isinstance(b, list) and len(a) == len(b)):
                 continue

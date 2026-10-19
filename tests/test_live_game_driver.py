@@ -10,7 +10,7 @@ from tools.live_game_driver import (
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
-    hand_selection_transaction, grid_selection_transaction,
+    hand_selection_transaction, grid_selection_transaction, _pile_display_only_change,
 )
 
 
@@ -617,12 +617,42 @@ class LiveGameDriverTest(unittest.TestCase):
                             transition_identity({"screen_type": "MAP"}, after))
 
     def test_draw_discard_cached_block_and_magic_resets(self):
-        for pile in ("draw_pile", "discard_pile"):
+        for pile in ("draw_pile", "discard_pile", "exhaust_pile"):
             for stat in ("block", "magic_number"):
                 with self.subTest(pile=pile, stat=stat):
                     before = {pile: [{"id": "test", "uuid": "physical", stat: 4, "base_" + stat: 6}]}
                     after = {pile: [{"id": "test", "uuid": "physical", stat: 6}]}
                     self.assertEqual(transition_identity(combat_screen(), before), transition_identity(combat_screen(), after))
+
+    def test_exhaust_pile_cached_display_reset_and_null_base(self):
+        # Overnight 2026-10-19: exhaust_pile[k].damage 10 vs 4, base_damage 4 vs null.
+        for after_base in ({}, {"base_damage": None}):
+            with self.subTest(after_base=after_base):
+                before = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "damage": 10, "base_damage": 4}]}
+                after = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "damage": 4, **after_base}]}
+                self.assertEqual(transition_identity(combat_screen(), before),
+                                 transition_identity(combat_screen(), after))
+        base = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "damage": 4}]}
+        for field, value in (("damage", 9), ("uuid", "b"), ("id", "Bash"), ("cost", 0)):
+            changed = {"exhaust_pile": [{**base["exhaust_pile"][0], field: value}]}
+            self.assertNotEqual(transition_identity(combat_screen(), base),
+                                transition_identity(combat_screen(), changed), field)
+        # A null base cannot vouch for a different displayed value.
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"exhaust_pile": [{"uuid": "a", "damage": 10, "base_damage": None}]}),
+            transition_identity(combat_screen(), base))
+        # Hand display values stay strict.
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"hand": [{"uuid": "a", "damage": 10, "base_damage": 4}]}),
+            transition_identity(combat_screen(), {"hand": [{"uuid": "a", "damage": 4}]}))
+
+    def test_exhaust_pile_cached_stat_appearance_is_display_only(self):
+        screen = combat_screen()
+        before = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "cost": 0}], "current_hp": 80}
+        after = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "cost": 0, "damage": 6}], "current_hp": 80}
+        self.assertNotEqual(transition_identity(screen, before), transition_identity(screen, after))
+        self.assertTrue(_pile_display_only_change(screen, before, screen, after))
+        self.assertFalse(_pile_display_only_change(screen, before, screen, {**after, "current_hp": 79}))
 
     def test_inspector_compares_full_live_monsters_and_ignores_dead_slots(self):
         with tempfile.TemporaryDirectory() as directory:
