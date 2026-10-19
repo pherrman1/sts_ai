@@ -21206,6 +21206,26 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
+## §553 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
+
+**Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
+hand selection with `silver_selection_pending_actions` (problem 28 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Result:** both stops held Toy Ornithopter. Game bytecode (jar sha256 cfad868a…1673, relayed from Philipp's PC to
+`engine-parity/overnight-20261019/issue28-javap.md`): `ToyOrnithopter.onUsePotion` in combat queues
+`RelicAboveCreatureAction` and `HealAction(p, p, 5)` with `addToBot`, behind the Brew's `GamblingChipAction`, so the heal
+is still in `actionManager.actions` while the selection is open. `HealAction` was not in the inspector's public pending
+action whitelist, so `handMultiContinuation("GAMBLE")` returned null. The stale `curCardQueueItem` (Iron Wave, Defend)
+was not the cause: this path does not read it. The engine already queues the same victory-surviving heal after the
+potion effect in `drinkPotion`.
+**Interpretation:** the inspector emits the heal as public pending action `HEAL_PLAYER` (amount 5, only with Toy
+Ornithopter, source and target the player); the wire maps it to `HealPlayer(5, executeAfterCombatVictory=true)`.
+`STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the refusal) gates the importer. Refusals now carry
+`pendingActionsBlocker`, naming queue state and action classes, so the next unsupported tail is identified from the
+failure dump. `live_silver_importer` and `silver_wire_state` tests cover import, both flag values, bad amounts, wire
+round trip and that a plain (non-Toy) heal stays unobserved. **Unverified:** the Java change is not compiled or run
+here (no game jar in the cloud); live confirmation needs a reinstall.
+Seeds: none driven (unit tests only; 111200431-440 reserved, unused).
 ## §552 — Blood Potion keep value refit for the fixed in-combat heal: 1163 -> 834 (2026-10-19)
 
 **Question:** `potionKeepRank` (ADR-0039) ranked Blood Potion first (1163) from CTM fights played with the legacy

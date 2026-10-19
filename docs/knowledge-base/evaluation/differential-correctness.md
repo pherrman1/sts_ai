@@ -273,6 +273,18 @@ producer now sends `panacheDamage`, the importer maps it, and
 `STS_PANACHE_FIX` (default on, `=0` restores) makes the engine count from 5,
 reset after damage, and let a second copy add damage only.
 
+Live play on 2026-10-19 (seed 111200384, Slime Boss) stopped twice on a
+Gambler's Brew hand selection as `silver_selection_pending_actions`. Toy
+Ornithopter's `onUsePotion` queues `RelicAboveCreatureAction` and
+`HealAction(p, p, 5)` behind the Brew's `GamblingChipAction` (game bytecode,
+jar sha256 cfad868a…1673), so the heal is still in `actionManager.actions`
+while the selection is open. The engine queues the same heal after the potion
+effect in `drinkPotion`. The inspector now carries it as the public pending
+action `HEAL_PLAYER` (amount 5, Toy Ornithopter only), and the importer
+accepts it under `STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the
+refusal). A refused pending queue now also names the blocking state and
+action classes in `pendingActionsBlocker`.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 

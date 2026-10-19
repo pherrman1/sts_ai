@@ -2932,6 +2932,48 @@ int main(int argc, char **argv) {
             auto bad=observation;bad["silverRoot"]["combat"]["cardSelect"]["continuation"]="unknown";
             if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("multi hand ignored pending continuation");
         }
+        // Problem 28: Toy Ornithopter queues its potion heal behind Gambler's
+        // Brew's GamblingChipAction, so the live hand selection carries it.
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_SELECTION_TOY_HEAL_FIX", flag, 1);
+            auto observation = genericObservation(fixtures[0], "gamble-toy-heal-tail");
+            auto &combat = observation["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id","Toy Ornithopter"},{"counter",-1},{"usedUp",false}});
+            const auto prototype = combat["hand"][0];
+            combat["hand"] = json::array();
+            json choices = json::array();
+            for (int i=0;i<3;++i) {
+                auto card=prototype;card["id"]="Strike_R";card["uuid"]="toy-"+std::to_string(i);
+                combat["hand"].push_back(card);
+                choices.push_back(json{{"uuid",card["uuid"]},{"choiceIndex",i+1}});
+            }
+            combat["cardSelect"]=json{{"task","GAMBLE"},{"origin","HAND_SELECT"},{"pickCount",99},
+                {"canPickZero",true},{"canPickAnyNumber",true},{"selectedBits",0},{"selectedCount",0},
+                {"liveChoices",choices},{"continuation","public_actions"},{"cards",json::array()},
+                {"actionClass","com.megacrit.cardcrawl.actions.unique.GamblingChipAction"}};
+            combat["pendingActionQueue"]=json::array({json{{"kind","HEAL_PLAYER"},{"amount",5}}});
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(std::string(flag)=="0") {
+                if(imported.ok || imported.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX=0 accepted the Toy heal tail");
+                continue;
+            }
+            if(!imported.ok) throw std::runtime_error("Toy heal tail import: "+imported.reason);
+            if(!imported.wire.pendingActionQueueObserved || imported.wire.pendingActionQueue.size()!=1
+                    || imported.wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::HEAL_PLAYER)
+                throw std::runtime_error("Toy heal tail not carried on the wire");
+            auto selected=battleContextFromWire(imported.wire);
+            selected.player.curHp=selected.player.maxHp-10;
+            const auto before=selected.player.curHp;
+            sts::search::Action(sts::search::ActionType::MULTI_CARD_SELECT,1).execute(selected);
+            if(selected.inputState!=InputState::PLAYER_NORMAL || selected.player.curHp!=before+5
+                    || selected.cards.cardsInHand!=3)
+                throw std::runtime_error("Toy heal tail did not heal after the Gamble");
+            for(int amount:{4,0}) {auto bad=observation;
+                bad["silverRoot"]["combat"]["pendingActionQueue"][0]["amount"]=amount;
+                if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("unqualified heal tail accepted");}
+        }
+        unsetenv("STS_SELECTION_TOY_HEAL_FIX");
         for (int mask : {0, 1, 5, 7}) {
             auto observation = genericObservation(fixtures[0], "upgraded-forethought-transaction");
             auto &combat = observation["silverRoot"]["combat"];
