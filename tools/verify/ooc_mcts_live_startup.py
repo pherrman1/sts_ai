@@ -82,7 +82,7 @@ def main():
             True, '"mergeOutcomes":false'),
         ('malformed outcome merging', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_MERGE_OUTCOMES': 'yes'}, False,
             'STS_OOC_MCTS_MERGE_OUTCOMES invalid value'),
-        # ADR-TBD (#633): unsupported edges are pruned by default; =0 restores the whole-root abort.
+        # ADR-0052 (#633): unsupported edges are pruned by default; =0 restores the whole-root abort.
         ('unsupported pruning on by default', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True, '"pruneUnsupported":true'),
         ('unsupported pruning opt-out', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_PRUNE_UNSUPPORTED': '0'},
             True, '"pruneUnsupported":false'),

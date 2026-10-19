@@ -241,6 +241,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 state.mctsRoot.questionChancePosterior.size()>1?"finite_posterior":"point"},
             {"prior","fair_uniform_24_bit_room_roll"},
             {"monsterChanceStates",state.mctsRoot.questionChancePosterior}};
+    evaluator["seenRelicOfferPrior"] = state.mctsRoot.seenRelicOfferPrior;
 
     if (!imported.ok) evaluator["reason"] = imported.message;
     else if (std::string(policy.name()) != "mcts_ctm"
@@ -265,6 +266,9 @@ json oocResponse(const one_combat::advisor::Request &request,
     else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
              state.hiddenEventRewardPity && flag && std::string(flag) == "1")
         evaluator["reason"] = "DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE";
+    else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
+             state.mctsRoot.seenRelicOfferPrior && flag && std::string(flag) == "1")
+        evaluator["reason"] = "DIFFERENTIAL_SEEN_RELIC_PRIOR_UNREPRESENTABLE";
     else {
         if (state.selectorPreview) {
             pending=PendingCompoundPlan{};
@@ -1111,7 +1115,7 @@ int main() {
         throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL is no longer supported: "
                                     "the advisor runs native Silver search without a root prior");
     // ADR-0046 rollout root table, as in the simulated Silver path: unset uses the bundled
-    // gen-7f E model (ADR-TBD) next to this executable (the installed release's models/), else under
+    // gen-7f E model (ADR-0049) next to this executable (the installed release's models/), else under
     // the working directory; 0 restores the ADR-0040 table; a path selects another model.
     std::unique_ptr<sts::search::CombatValueNet> rolloutRootTable;
     std::string rolloutRootTableIdentity = "off";

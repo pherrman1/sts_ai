@@ -1,4 +1,4 @@
-# ADR-TBD: an unsupported OOC MCTS edge is pruned instead of aborting the whole root search
+# ADR-0052: an unsupported OOC MCTS edge is pruned instead of aborting the whole root search
 
 Date: 2026-10-18
 Status: accepted

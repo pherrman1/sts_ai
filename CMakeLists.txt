@@ -138,6 +138,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(blood_potion_heal_test PRIVATE include json/include)
+add_test(NAME blood_potion_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:blood_potion_heal_test>)
+set_tests_properties(blood_potion_heal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(active_power_features_test tests/active_power_features_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(active_power_features_test PRIVATE include json/include)
@@ -240,6 +248,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp
     apps/one_combat/differential_state.cpp
     apps/one_combat/differential_replay_native.cpp
@@ -263,6 +272,7 @@ link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
+add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
 add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
@@ -270,6 +280,8 @@ add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
 set_tests_properties(heart_outcome_import_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_collection_python PROPERTIES LABELS "core;smoke")
 set_tests_properties(heart_outcome_capture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+set_tests_properties(heart1_public_record_invariance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
@@ -356,6 +368,9 @@ set_tests_properties(render_ooc_mcts PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 add_test(NAME workflow_tools COMMAND python3 -m unittest tests.test_workflow_tools)
 set_tests_properties(workflow_tools PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME heart1_capture_provenance COMMAND python3 -m unittest tests.test_heart1_capture_provenance)
+set_tests_properties(heart1_capture_provenance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 find_program(STS_NODE_EXECUTABLE node)
 if(STS_NODE_EXECUTABLE)
@@ -723,6 +738,28 @@ add_test(NAME silver_learned_stop_rejects_small_boss_max
 set_tests_properties(silver_learned_stop_rejects_small_boss_max PROPERTIES
     ENVIRONMENT "STS_SILVER_ADAPTIVE=0;STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_BOSS_MAX=5000"
     PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_MAX must be 0 or above 10000")
+# ADR-0051: STS_SILVER_LEARNED_STOP_MODEL selects a compiled stop model by id; A20
+# whole-run modes default to learned stopping even with a sims argument.
+add_test(NAME silver_learned_stop_rejects_unknown_model
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_rejects_unknown_model PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "\\[A20 default: Silver learned stopping.*STS_SILVER_LEARNED_STOP_MODEL must be gbt-0cac7cc64364 or gbt-770201c31f7b")
+add_test(NAME silver_learned_stop_no_default_below_a20
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_no_default_below_a20 PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=1;STS_SILVER_LEARNED_STOP_MODEL=gbt-000000000000"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_MODEL must be"
+    FAIL_REGULAR_EXPRESSION "A20 default")
+add_test(NAME silver_learned_stop_a20_zero_keeps_flat
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 20 46009000 /tmp/sls-invalid.csv")
+set_tests_properties(silver_learned_stop_a20_zero_keeps_flat PROPERTIES
+    ENVIRONMENT "STS_SILVER_LEARNED_STOP=0;STS_SILVER_LEARNED_STOP_BOSS_FALLBACK=1"
+    PASS_REGULAR_EXPRESSION "STS_SILVER_LEARNED_STOP_BOSS_FALLBACK"
+    FAIL_REGULAR_EXPRESSION "A20 default")
 add_test(NAME silver_learned_stop_rejects_boss_fallback_without_learned_stop
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMAND bash -c "! bash tools/seed_guard.sh $<TARGET_FILE:one_combat> bestbench 10000 1 0 46009000 /tmp/sls-invalid.csv")
