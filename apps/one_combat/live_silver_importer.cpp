@@ -370,8 +370,8 @@ bool highRelicFix() {
 }
 
 // STS_SELECTION_TOY_HEAL_FIX: unset/1 (default) = a live selection whose
-// public pending tail holds Toy Ornithopter's queued potion heal (Gambler's
-// Brew, Liquid Memories) imports with that heal; 0 = legacy refusal as
+// public pending tail holds Toy Ornithopter's queued potion heal (tested for
+// Gambler's Brew) imports with that heal; 0 = legacy refusal as
 // silver_selection_pending_actions.
 bool selectionToyHealFix() {
     const char *value = std::getenv("STS_SELECTION_TOY_HEAL_FIX");
