@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Blessing of the Forge upgraded curses and statuses natively (2026-10-19)
+## §548 — Blessing of the Forge upgraded curses and statuses natively (2026-10-19)
 
 **Question:** why did Blessing of the Forge upgrade Ascender's Bane natively but not in the game (overnight live play,
 seed 111194457 segment 8 step 15, problem 14 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
