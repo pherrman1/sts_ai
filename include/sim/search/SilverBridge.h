@@ -150,7 +150,9 @@ enum class PendingActionKind : std::uint8_t {
     INVALID = 0, DRAW = 1, GAIN_BLOCK = 2, GAIN_ENERGY = 3,
     DAMAGE_ALL = 4, DAMAGE_RANDOM = 5, GAMBLE = 6, UPGRADE_RANDOM = 7,
     BUFF_PLAYER = 8, DEBUFF_PLAYER = 9, DEBUFF_ALL_ENEMY = 10, SHUFFLE_WOUNDS = 11,
-    USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14
+    USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14,
+    // Toy Ornithopter's potion heal: HealPlayer(amount, executeAfterCombatVictory).
+    HEAL_PLAYER = 15
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;

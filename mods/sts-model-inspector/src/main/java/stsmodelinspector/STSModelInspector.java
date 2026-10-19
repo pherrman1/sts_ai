@@ -2597,7 +2597,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     || !Boolean.TRUE.equals(readBooleanField(action,"setCost"))
                     || !Integer.valueOf(0).equals(readIntField(action,"newCost"))
                     || handMultiContinuation("GAMBLE")==null)
-                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+                return pendingActionsRejection();
             result = result.substring(0,result.length()-1) + ",\"actionClass\":\"" + action.getClass().getName()
                     + "\",\"continuation\":\"" + handMultiContinuation("GAMBLE") + "\",\"optional\":false,\"newCost\":0}";
         }
@@ -2606,7 +2606,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && hasPendingUseCard();
         if ("GAMBLE".equals(task) || "EXHAUST_MANY".equals(task) && !sourceOwned) {
             String continuation = handMultiContinuation(task);
-            if (continuation == null) return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+            if (continuation == null) return pendingActionsRejection();
             result = result.substring(0,result.length()-1) + ",\"continuation\":\"" + continuation + "\"}";
         }
         if ("ARMAMENTS".equals(task) || "EXHUME".equals(task) || "DUAL_WIELD".equals(task)) {
@@ -2630,7 +2630,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if(sourceOwned) {
             if(publicPendingActionsJson(false,task)==null)
-                return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\"}";
+                return pendingActionsRejection();
             result=result.substring(0,result.length()-1)+",\"continuation\":\"source_card_actions\"}";
         }
         return result;
@@ -2735,6 +2735,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
         } else if ("SHUFFLE_WOUNDS".equals(kind)) {
             if (amount != 2) return null;
+        } else if ("HEAL_PLAYER".equals(kind)) {
+            if (amount != 5) return null;
         } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
         return "{\"kind\":\"" + kind + "\",\"amount\":" + amount
                 + (power == null ? "" : ",\"power\":\"" + power + "\",\"sourceMonster\":false") + "}";
@@ -2817,6 +2819,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
                 if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
                 kind="GAIN_BLOCK";
+            } else if("com.megacrit.cardcrawl.actions.common.HealAction".equals(name)) {
+                // Toy Ornithopter queues its potion heal behind the potion's
+                // own actions (Gambler's Brew's GamblingChipAction). Native
+                // queues the same victory-surviving heal in drinkPotion.
+                if(!hasRelic("Toy Ornithopter") || readObjectField(action,"target")!=AbstractDungeon.player
+                        || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return null;
+                kind="HEAL_PLAYER";
             } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
             else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
             else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
@@ -2876,6 +2885,32 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
         return out.append(']').toString();
+    }
+
+    // Diagnostic only: names what made a selection's pending queue
+    // unrepresentable, so a live stop identifies the blocking action.
+    static String pendingActionsBlocker() {
+        com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
+        if(manager==null)return "no_action_manager";
+        StringBuilder out=new StringBuilder();
+        if(!playerSelectionTurn(manager.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn))
+            out.append("not_player_turn;");
+        if(!manager.preTurnActions.isEmpty())out.append("preTurnActions=").append(manager.preTurnActions.size()).append(';');
+        if(!manager.monsterQueue.isEmpty())out.append("monsterQueue=").append(manager.monsterQueue.size()).append(';');
+        if(!manager.cardQueue.isEmpty())out.append("cardQueue=").append(manager.cardQueue.size()).append(';');
+        if(!AbstractDungeon.player.limbo.isEmpty())out.append("limbo=").append(AbstractDungeon.player.limbo.size()).append(';');
+        out.append("actions=[");
+        for(int i=0;i<manager.actions.size() && i<16;++i) {
+            if(i>0)out.append(',');
+            out.append(manager.actions.get(i).getClass().getSimpleName());
+        }
+        if(manager.actions.size()>16)out.append(",...");
+        return out.append(']').toString();
+    }
+
+    static String pendingActionsRejection() {
+        return "{\"task\":\"\",\"unsupportedReason\":\"silver_selection_pending_actions\",\"pendingActionsBlocker\":\""
+                + escapeJson(pendingActionsBlocker()) + "\"}";
     }
 
     private static String handMultiContinuation(String task) {
@@ -3266,6 +3301,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer damage = readIntField(power, "damage");
                 if (damage != null) out.append(",\"bombDamage\":").append(damage);
             }
+            // PanachePower.amount is the cards-until-damage countdown; the
+            // damage itself is the private field "damage".
+            if ("Panache".equals(powerId)) {
+                Integer damage = readIntField(power, "damage");
+                if (damage != null) out.append(",\"panacheDamage\":").append(damage);
+            }
             out.append('}');
         }
         out.append("]");
@@ -3277,8 +3318,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer value = readIntField(power, "cardsDoubled", "cardsPlayed");
                 if (value != null) out.append(",\"echoFormCardsDoubled\":").append(value);
             } else if ("Panache".equals(power.ID)) {
-                Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
-                if (value != null) out.append(",\"panacheCounter\":").append(value);
+                out.append(",\"panacheCounter\":").append(power.amount);
             } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
@@ -3436,7 +3476,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 sourceTask=new com.google.gson.JsonParser().parse(selection).getAsJsonObject().get("task").getAsString();
             }
             String pending=publicPendingActionsJson(selection.contains("toolbox_actions"),sourceTask);
-            if(pending==null) out.append(",\"pendingActionQueueError\":\"silver_selection_pending_actions\"");
+            if(pending==null) out.append(",\"pendingActionQueueError\":\"silver_selection_pending_actions\",\"pendingActionsBlocker\":\"")
+                    .append(escapeJson(pendingActionsBlocker())).append('"');
             else out.append(",\"pendingActionQueue\":").append(pending);
         }
         out.append(",\"curCardQueueItem\":").append(cardQueueItemJson(selection!=null && selection.contains("\"continuation\":\"source_card_actions\"")))
