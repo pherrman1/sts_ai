@@ -94,16 +94,23 @@ POTION_REFILL_SCREENS = frozenset({"COMBAT_REWARD", "SHOP", "SHOP_SCREEN"})
 
 def _effective_tool_names(commands: Any, game_state: Mapping[str, Any] | None,
                           screen: Mapping[str, Any] | None) -> list[str]:
-    """MCP never advertises discard_potion, but out of combat its executor
-    accepts "potion discard N" whenever a held potion exists (MCPTheSpire
-    1.0.4-dev). Add it on reward and shop screens only, so a full belt can
-    make room for a potion there; per-slot can_discard still gates each
-    candidate, and other screens keep their exact advertised surface."""
+    """MCP never advertises discard_potion, but its executor accepts
+    "potion discard N" whenever a held potion exists, with no room-phase
+    check (MCPTheSpire 1.0.4-dev). Out of combat, add it on reward and shop
+    screens only, so a full belt can make room for a potion there; per-slot
+    can_discard still gates each candidate, and other screens keep their
+    exact advertised surface."""
     names = _tool_names(commands)
     phase = _mapping(commands).get("room_phase")
     potions = _list(normalize_game_state(game_state).get("potions"))
-    if ("discard_potion" not in names and isinstance(phase, str) and phase != "COMBAT"
-            and _mapping(screen).get("screen_type") in POTION_REFILL_SCREENS
+    # In combat the same executor path accepts the discard; offer it only
+    # where MCP itself offers use_potion (COMBAT, no screen up), so Silver's
+    # discard-before-Entropic-Brew line maps. STS_LIVE_COMBAT_POTION_DISCARD=0
+    # restores the advertised-only combat surface.
+    in_combat = (phase == "COMBAT" and "use_potion" in names
+                 and os.environ.get("STS_LIVE_COMBAT_POTION_DISCARD", "1") != "0")
+    if ("discard_potion" not in names and isinstance(phase, str)
+            and (in_combat or (phase != "COMBAT" and _mapping(screen).get("screen_type") in POTION_REFILL_SCREENS))
             and any(_mapping(p).get("can_discard", _mapping(p).get("canDiscard")) is True for p in potions)):
         names.append("discard_potion")
     return names
@@ -1020,7 +1027,7 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
     screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
     phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
     if phase == "COMBAT" or screen_type in {"NONE", "COMBAT"}:
-        for tool in ("play_card", "use_potion", "discard_potion", "end_turn"):
+        for tool in ("play_card", "use_potion", "end_turn"):
             match = next((candidate for candidate in candidates if candidate.mcp_tool == tool), None)
             if match:
                 return match
