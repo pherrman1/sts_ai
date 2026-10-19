@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
+## §549 — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
 
 **Question:** why did live runs 111194454 and 111194460 stop at the Act 2 boss (floor 33) with
 `silver explicitly unsupported: silver_card_identity` (§545 overnight list, problem 7)?
