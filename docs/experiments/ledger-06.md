@@ -21150,6 +21150,42 @@ accuracy. That is too small for a full-run play test to detect, so a swap could 
 retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
 
+## §557 — OOC MCTS prior temperature 3, A20 full-run confirmation: −2.0 pp wins, NOT_SHOWN (2026-10-19)
+
+**Question (Philipp, 2026-10-18, prior-guidance thread):** "set up full run test of temp 3", then "256 seeds on 16
+workers is fine". Does the §532 Act-1 screen pass of `STS_OOC_MCTS_TEMPERATURE=3` carry over to Heart kills in full
+A20 runs?
+**Design:** [PREREG](evidence/ooc_prior_temp3_fullrun_20261018/PREREG.md), light pre-launch review PASS.
+
+- **Candidate:** RUN_COMMIT `c84d65f4`, code `b5dd5557`, binary `01d0f59e…`. The control's `run_unit.sh` env with
+  temperature 3 added. A PIN block restores the control's behaviour for every play-changing default merged since
+  then.
+- **Control:** the A20 winrate-check units on the same seeds (code `64b38c88`), reused rather than rerun.
+- **Identity gate:** temperature 1 with the new binary replayed 4 control seeds byte-identically
+  ([IDENTITY](evidence/ooc_prior_temp3_fullrun_20261018/IDENTITY.md)).
+- **Seeds:** the first 256 eligible winrate-check seeds in 111194580–111194871.
+- **Primary measure:** paired wins, McNemar exact test plus a seed-bootstrap CI.
+- **Decision rule:** CONFIRMED if the CI lower bound is above 0; WORSE if the upper bound is below 0; otherwise
+  NOT_SHOWN.
+
+**Result.** 256/256 units finished and all 16 worker tars were verified
+([README](evidence/ooc_prior_temp3_fullrun_20261018/README.md)).
+
+| | Control | T3 |
+|---|---|---|
+| Wins | 42 | 37 |
+| Act 4 reached | 86 | 81 |
+| Mean floor | 40.98 | 41.64 |
+
+- **T3 − control, wins:** −2.0 pp [−6.6, +2.7]. Discordant pairs 17 vs 22, p = 0.522. **NOT_SHOWN.**
+- **Floor:** +0.66.
+- **Search behaviour:** under T3 the executed move is the prior argmax on 84.3% of roots, against 90.5% at
+  temperature 1 (§532).
+
+**Interpretation:** the flatter tree prior changes about 6% more root decisions, but the change does not convert into
+more Heart kills. The point estimate is negative. **Inference:** the +3.1 HP Act-1 screen effect was noise or does not
+survive later acts; the test cannot rule out a gain of up to +2.7 pp.
+**Knowledge impact:** KB §532 section updated; default stays `STS_OOC_MCTS_TEMPERATURE=1`. No code changed.
 ## §544 — Second combat parity canary continued into Act 2: 260/290 steps match, Blood Potion heal fixed (2026-10-18)
 
 **Question:** past the floor-16 crash of §536, does the engine still reproduce the game's combat steps in Act 2?
@@ -21206,6 +21242,55 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
+## §556 — Perfected Strike count: the live importer counted exhausted Strikes (2026-10-19)
+
+**Question:** why does native Perfected Strike count one Strike more than the game (overnight problem 10), and why
+does the probe report `strikeCount` game 5 / native 4 after Havoc exhausts a Strike (canary 2, §536/§544)?
+**Setup:** evidence from §545 (seed 111194455 Act 2 CHOSEN segment 4 step 1: 53 -> 29 in the game, 53 -> 26 natively,
+Vulnerable 3) and canary 2 summaries parity3/parity8 (Havoc+ steps). Java checked read-only with `javap -c -p` on the
+pinned `desktop-1.0.jar` (sha256 cfad868a...1673) on Philipp's PC; no game was driven.
+**Result:** `PerfectedStrike.countCards` iterates `hand`, `drawPile` and `discardPile` only (not exhaust, not limbo).
+`importSilverRoot` recounted `strikeCount` over draw, discard, exhaust, hand, limbo and Stasis, while native combat
+decrements it on exhaust and Stasis. Every earlier exhausted Strike (Havoc, Fiend Fire) therefore added one in the
+imported pre-state (problem 10), and the probe's recounted post-state showed one more than native after an exhaust
+(the canary entries). Second Java difference in the same path: `PlayTopCardAction` removes the card from the draw pile,
+puts it in limbo and `UnlimboAction` removes it before `NewQueueCardAction` runs, so a Havoc- or Mayhem-autoplayed
+Perfected Strike does not count itself; natively it did. From hand, `AbstractPlayer.useCard` calls
+`calculateCardDamage` before `hand.removeCard`, so it counts itself in both.
+**Interpretation:** `STS_STRIKE_COUNT_FIX` (default on, `=0` restores) skips exhaust and Stasis in the importer recount
+and drops the autoplayed card from its own count. Checked by `tests/strike_count_test.cpp` and a
+`live_silver_importer_test` case (exhausted Strike: legacy count one higher, Perfected Strike 2 more damage). Havoc's
+`lastTargetedMonster` difference is not part of this: Java's `PlayTopCardAction` writes no last-target field.
+**Unverified:** effect on win rate (expected tiny; Perfected Strike decks only). No seeds were driven (unit-test seed
+111200141).
+## §554 — Discovery parity: frame-dependent cardRandomRng and pile turn-cost reset (2026-10-19)
+
+**Question:** why do Discovery picks leave `cardRandomRng` at counter 185-194 in Java and 3-4 natively, and why does
+the played Discovery copy show `costForTurn` 1 in Java's discard pile and 0 natively (§536, §544, §545 list)?
+Philipp asked 2026-10-19 08:34Z for one fix thread per open parity problem.
+**Setup:** `javap -c -p -constants` on the pinned JAR (`cfad868a…1673`, V2.3.4) and the installed mod JARs on
+Philipp's PC (read-only), plus the canary-2 traces (trace8 steps 134-141, trace9 steps 20-21) and overnight seed
+111194452 segment 1 steps 55-56.
+**Result:** `DiscoveryAction.update` runs its generator on every frame before its duration check. The choice screen
+pauses the action queue, so the offered set comes from the first frame (+3/+4 draws, matching native); after the pick
+the action keeps generating and discarding three cards per frame until its 0.25 s duration ends (240 fps limit: about
+180 draws; seen +181, +183, +191). No mod reads `cardRandomRng`. Picks via Attack, Skill, Power and Colorless Potion
+use the same action. The copy matches (turn cost 0; with a full hand `ShowCardAndAddToDiscardEffect` adds a
+stat-equivalent copy straight to the discard pile). The `costForTurn` mismatch was the *played* copy: the card lands
+in the discard pile through a `Soul`, and `Soul.update` calls `clearPowers` -> `resetAttributes` (also on the draw-pile
+soul paths and in `ExhaustCardEffect.update`). Native kept the turn cost until end of turn.
+**Interpretation:** the post-pick `cardRandomRng` state is frame-dependent and cannot be reproduced; the probe now
+reports that stream as unobservable on a Discovery pick (probe-only, no flag). `STS_PILE_COST_RESET_FIX` (default on,
+`=0` restores) resets the turn cost when a card lands in the discard, draw or exhaust pile; the draw-pile placements
+also report the reset card to Silver's known-card tracker. Runs diverge from the legacy engine (review: 3 of 4 A0 seeds,
+`=0` byte-identical to main on 6 seeds); **Inference:** mostly through search-state identity, since discard and exhaust
+cards now carry their reset cost. The game-rule effect needs a card with a changed turn cost (Discovery copy,
+Enlightenment, Mummified Hand, Infernal Blade) to come back from a pile in the same turn.
+**Unverified:** how often that changes outcomes. The 9 End Turn draw differences after a Discovery (§544) were
+not Discovery: the old importer aliased Matryoshka (enum 147) onto Warped Tongs, whose start-of-turn upgrade draws
+`shuffleRng`. With the probe at main `815c019a` (`STS_IMPORTER_HIGH_RELIC_FIX`, §545) trace8 step 141 and trace9
+step 0 match; with `STS_IMPORTER_HIGH_RELIC_FIX=0` both reproduce the canary diff.
+Seeds: 111200161 (unit test only, no gameplay).
 ## §553 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
 
 **Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
@@ -21388,7 +21473,7 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
-## §549 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
+## §555 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
 
 **Question:** do four small monster-side parity differences (overnight list problems 4 and 6, canary-2 Mugger `aiRng` and
 Two Thieves `miscBits`) come from the engine, the importer or the probe? Philipp asked 2026-10-19 08:34Z for fix threads
