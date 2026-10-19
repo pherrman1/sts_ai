@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-18 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
 
 ## Purpose
 
@@ -196,8 +196,7 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
   discard pile natively; Java resets it.
 - Perfected Strike counts one Strike fewer after Havoc exhausts a Strike.
 - Havoc's random target differs (`lastTargetedMonster`).
-- Hexaghost records Inferno twice in Java's move history. **Inference:** no
-  behavior reads it.
+- Hexaghost records Inferno twice in Java's move history (resolved below).
 
 The run ended on a live advisor crash, not a parity issue. The live importer
 sent every reward exit to the map, but after an act 1 or 2 boss the player
@@ -230,6 +229,19 @@ became Wrist Blade (+4 on 0-cost attacks). This affected the live advisor and th
 parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
+
+A Darkling killed into half-dead kept its Vulnerable and Weak amounts
+natively (overnight, 9 diffs). Java `Darkling.damage` clears its powers;
+native cleared only the status bits, and a later debuff on the revived
+Darkling added to the old amount. `STS_HALF_DEAD_POWER_RESET_FIX` (default on,
+`=0` restores) clears the amounts too. The probe ignores two
+representation-only differences that no native decision reads:
+- `cardSelect.pickCount` outside Exhaust-many and Liquid Memories (Exhume and
+  Warcry 1 in Java, 0 natively), and the Exhaust-many count above the
+  10-card hand (Elixir 99 in Java, 10 natively).
+- The move before last of Hexaghost, Taskmaster and Fat Gremlin. Java appends
+  a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
+  the roll of a single-move monster.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).

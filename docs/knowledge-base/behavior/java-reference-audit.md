@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-19 for half-dead Darkling powers; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -366,6 +366,16 @@ A dead monster's powers stay in the native state; Java clears them in
 `updateDeathAnimation`, after `die()` (javap on the PC, 2026-10-18).
 **Inference:** no game rule reads them, so the parity probe ignores them
 instead of the engine clearing them.
+
+### Half-dead Darkling powers (mismatch, fixed)
+
+`Darkling.damage` calls `powers.clear()` when a Darkling goes half-dead, and
+REINCARNATE applies a fresh Regrow (javap on the PC, 2026-10-19). Native
+`Monster::resetAllStatusEffects` cleared the status bits but kept the
+amounts, so a debuff on the revived Darkling added to them.
+`STS_HALF_DEAD_POWER_RESET_FIX` (default on, `=0` restores) clears them.
+
+Test: `half_dead_power_reset`.
 
 ### Curl Up on a lethal hit (mismatch, fixed)
 

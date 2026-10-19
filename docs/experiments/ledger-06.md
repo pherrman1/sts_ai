@@ -21205,3 +21205,27 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
+
+**Question:** which of the overnight representation-only mismatches (§545 list, problems 8 and 15, Hexaghost move
+history) can change play, and which only differ in how the state is written?
+**Setup:** the overnight traces (seeds 111194454-463) re-probed on Philipp's PC with `combat_parity_probe` at `815c019a`
+(read-only, raw projections kept off the artifacts tree), javap of the pinned `desktop-1.0.jar`, and native code reads.
+**Result:**
+- 9 Darkling diffs on 6 steps (seeds 111194457, 111194463): a Darkling killed into half-dead kept Vulnerable or Weak
+  natively (e.g. 2 vs 0). Java `Darkling.damage` calls `powers.clear()`; native `Monster::resetAllStatusEffects`
+  cleared only the status bits and Strength. A monster debuff adds to the stored amount, so a debuff on the revived
+  Darkling added to the old one (Vulnerable 2 left, then Vulnerable 1 gives 3). This is an engine bug.
+- `cardSelect.pickCount`: Elixir 99 in Java vs 10 natively (3 steps), Exhume and Warcry 1 vs 0 (7 steps). Native reads
+  the pick count only for Exhaust-many (as a cap; the hand holds at most 10 cards) and Liquid Memories.
+- `moveHistory[1]`: Hexaghost Inferno (4 steps; Java `changeState("Activate Orb")` and the following roll both call
+  `setMove(INFERNO)`), Taskmaster (3) and Fat Gremlin (1; native skips the roll of a single-move monster). None of
+  these monsters' native AI reads the move before last.
+**Interpretation:** `STS_HALF_DEAD_POWER_RESET_FIX` (default on, `=0` restores) clears the amounts too. The probe now
+ignores the pick count where native does not read it and the move before last for Hexaghost, Taskmaster and Fat Gremlin.
+Not covered here: Lagavulin sleep and slime split histories (problems 3 and 4) and End Turn card-select tasks after
+Mayhem (problem 13).
+Seeds: none driven (unit tests use the fixed seed 111197786, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `behavior/java-reference-audit.md`,
+`operations/environment-variables.md`.

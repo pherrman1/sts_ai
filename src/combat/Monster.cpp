@@ -613,6 +613,17 @@ void Monster::resetAllStatusEffects() {
     statusBits = 0;
     setStatus<MS::STRENGTH>(0);
     block = 0;
+    // Java Darkling.damage clears its powers when it goes half-dead. Clearing
+    // only the bits left the amounts behind, and a later debuff on the revived
+    // Darkling added to them (STS_HALF_DEAD_POWER_RESET_FIX=0 restores).
+    if (halfDeadPowerResetFix()) {
+        artifact = blockReturn = choked = corpseExplosion = lockOn = 0;
+        mark = 0;
+        metallicize = platedArmor = poison = regen = shackled = 0;
+        vulnerable = weak = 0;
+        uniquePower0 = 0;
+        uniquePower1 = 0;
+    }
 }
 
 // this is calculated at the player when the damage occurs in game, consider testing whether there are any scenarios when it can't be done before
