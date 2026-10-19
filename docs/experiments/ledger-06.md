@@ -20983,11 +20983,12 @@ script and analyzer: `docs/experiments/evidence/ooc_stop_ab_20261018/` (`PREREG.
 - **After the run:** main's unsupported-edge pruning (#686, default on) postdates RUN_COMMIT, so the A/B ran
   without it. Merging main, the learned stop now shows the model only unpruned root actions, as the gap ladder
   does; on roots with no pruned action, which were all roots in this run, play is unchanged.
-- **Decision:** none recorded. Making either rule an A20 default is Philipp's decision; both flags stay off.
+- **Decision:** Philipp 2026-10-19 21:58Z "Make gap stop the default and merge": ADR-TBD makes `1024:0.7` the OOC
+  MCTS default (`STS_OOC_MCTS_GAP_STOP=0` restores no stop). The learned stop stays opt-in.
 
 Seeds used: 111199495–111200006 (campaign); smoke 111200007, 111200009.
 
-**Knowledge impact:** `GAP_STOP` and `LEARNED_STOP` rows in `architecture/out-of-combat.md` gain the A/B result.
+**Knowledge impact:** ADR-TBD (gap-stop default); `GAP_STOP` and `LEARNED_STOP` rows in `architecture/out-of-combat.md`.
 ## §TBD — Learned OOC MCTS stop (`STS_OOC_MCTS_LEARNED_STOP`) on the CTM-Act-4 A20 stack: offline same-action proxy 99.5% at an estimated 0.50x OOC CPU (gap ladder 0.66x), not a winrate result (2026-10-18)
 
 Philipp asked on 2026-10-18 at 18:15Z: "act 4 fights can just be done by the ctm now. so turn that on, then test

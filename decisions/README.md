@@ -28,6 +28,8 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-TBD](TBD-ooc-gap-stop-default.md) makes OOC MCTS stop roots with the `1024:0.7` gap ladder by default
+  (`STS_OOC_MCTS_GAP_STOP=0` restores the exact visit lock only; the learned stop stays opt-in).
 - [ADR-0052](0052-ooc-prune-unsupported-edges.md) makes an unsupported OOC MCTS edge prune itself instead of aborting
   the whole root search (`STS_OOC_MCTS_PRUNE_UNSUPPORTED=0` restores the abort; issue #633).
 - [ADR-0051](0051-a20-learned-stop-default.md) makes A20 `run`/`bestbench`/`reprobench` use learned Silver stopping
