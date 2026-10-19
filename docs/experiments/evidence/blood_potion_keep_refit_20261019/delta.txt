@@ -1,0 +1,4 @@
+fix1: states 100 seeds 19 value 8.90 (dHP 7.31, dSurvived 0.0300)
+fix0: states 102 seeds 19 value 12.72 (dHP 11.16, dSurvived 0.0294)
+identical start states 91: paired change -4.03 (sd 7.39)
+change fix1 - fix0 -3.82  95% seed-bootstrap CI [-5.43, -2.28]

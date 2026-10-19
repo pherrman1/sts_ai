@@ -13,7 +13,8 @@
 // Optional (SAMPLE=all, EXTRA): sample every battle-start state, add copies with
 // gold or max HP lowered, and leaf arms (leaf:concave=K) that differ from base only
 // in Silver's victory leaf during the continuation; ooc=heart1 lets the
-// STS_OOC_HEART1 student take the out-of-combat steps it encodes.
+// STS_OOC_HEART1 student take the out-of-combat steps it encodes; addpot:NAME adds
+// a copy holding one more potion NAME (only when a slot is free and no Sozu).
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/ooc_policy.h"
@@ -40,9 +41,10 @@ struct PriceProbeVariant {
     std::optional<double> concaveHpK;   // leaf arm: Silver's concave-HP leaf for this copy
 };
 
-// EXTRA tokens (comma list): leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1.
+// EXTRA tokens (comma list): leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1, addpot:NAME.
 struct PriceProbeExtra {
     std::vector<double> concaveK;
+    std::vector<Potion> addPotions;
     int goldDelta = 0;
     int maxHpDelta = 0;
     bool oocHeart1 = false;
@@ -68,6 +70,14 @@ PriceProbeExtra parseExtra(const std::string &spec) {
         else if (item.rfind("gold:-", 0) == 0) e.goldDelta = static_cast<int>(number(6));
         else if (item.rfind("maxhp:-", 0) == 0) e.maxHpDelta = static_cast<int>(number(7));
         else if (item == "ooc=heart1") e.oocHeart1 = true;
+        else if (item.rfind("addpot:", 0) == 0) {
+            const std::string name = item.substr(7);
+            int id = 2;  // skip INVALID and EMPTY_POTION_SLOT
+            while (id < static_cast<int>(std::size(potionEnumNames)) && name != potionEnumNames[id]) ++id;
+            if (id >= static_cast<int>(std::size(potionEnumNames)))
+                throw std::runtime_error("potionpriceprobe: unknown potion in EXTRA item " + item);
+            e.addPotions.push_back(static_cast<Potion>(id));
+        }
         else throw std::runtime_error("potionpriceprobe: unknown EXTRA item " + item);
     }
     return e;
@@ -103,6 +113,12 @@ std::vector<PriceProbeVariant> priceVariants(const GameContext &base, int hpDelt
         GameContext copy = detachedCounterfactualCopy(base);
         copy.discardPotionAtIdx(i);
         v.push_back({std::string("pot:") + potionEnumNames[static_cast<int>(p)], std::move(copy)});
+    }
+    for (const Potion p : extra.addPotions) {
+        if (base.potionCount >= base.potionCapacity || base.relics.has(RelicId::SOZU)) continue;
+        GameContext copy = detachedCounterfactualCopy(base);
+        copy.obtainPotion(p);
+        v.push_back({std::string("addpot:") + potionEnumNames[static_cast<int>(p)], std::move(copy)});
     }
     if (hpDelta > 0 && base.curHp > hpDelta) {
         GameContext copy = detachedCounterfactualCopy(base);

@@ -1,0 +1,4 @@
+a20          BLOOD_POTION 12564 12.583    NaN -0.029       NaN
+a0          BLOOD_POTION 13028 8.495    NaN -0.012       NaN
+a20adj          BLOOD_POTION 12564  0.236    NaN -0.029       NaN
+a0adj          BLOOD_POTION 13028 -0.589    NaN -0.012       NaN
