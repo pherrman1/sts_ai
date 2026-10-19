@@ -335,6 +335,21 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                 search.metrics.savedSimulations = remaining;
                 break;
             }
+            if (remaining && config.learnedStop && !config.observeRootLock && !config.selectByMeanQ
+                && std::find(config.learnedStopSimulations.begin(), config.learnedStopSimulations.end(),
+                       search.metrics.simulations) != config.learnedStopSimulations.end()) {
+                std::vector<OocRootActionStats> stats;
+                stats.reserve(node.actions.size());
+                // Pruned actions cannot be selected, so the model sees only the live ones, like the gap ladder.
+                for (const auto &action : node.actions)
+                    if (!action.pruned)
+                        stats.push_back({action.action.id, action.action.prior, action.visits, action.q()});
+                if (stats.size() >= 2 && config.learnedStop(search.metrics.simulations, stats)) {
+                    search.metrics.earlyStopLearned = true;
+                    search.metrics.savedSimulations = remaining;
+                    break;
+                }
+            }
         }
     } catch (const OocSearchUnsupported &unsupported) {
         // Partial root Q/visits are discarded, including prior supported paths.

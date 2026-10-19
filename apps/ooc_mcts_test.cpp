@@ -374,6 +374,36 @@ void tests() {
     const auto ladderObserved = OocMctsPlanner(ladderObservedConfig).search(ladderObservedModel, 0, 2048);
     require(ladderObserved.metrics.simulations == 2048 && !ladderObserved.metrics.earlyStopGapLadder,
         "full-budget observation disables the gap ladder");
+    auto learnedConfig = config;
+    learnedConfig.cPuct = 0;
+    learnedConfig.learnedStopSimulations = {256, 512};
+    std::vector<std::uint64_t> learnedCalls;
+    learnedConfig.learnedStop = [&](std::uint64_t simulations, const std::vector<OocRootActionStats> &stats) {
+        learnedCalls.push_back(simulations);
+        std::uint64_t visits = 0;
+        for (const auto &a : stats) visits += a.visits;
+        return simulations == 512 && visits == 512;
+    };
+    auto learnedModel = deterministic();
+    const auto learnedStopped = OocMctsPlanner(learnedConfig).search(learnedModel, 0, 2048);
+    require(learnedStopped.metrics.earlyStopLearned && learnedStopped.metrics.simulations == 512
+        && learnedStopped.metrics.savedSimulations == 1536 && learnedCalls == std::vector<std::uint64_t>{256, 512}
+        && learnedStopped.selectedAction == ladderBase.selectedAction,
+        "learned stop is asked at the listed checkpoints with the root visits and keeps the visit leader");
+    auto learnedNeverConfig = learnedConfig;
+    learnedNeverConfig.learnedStop = [](std::uint64_t, const std::vector<OocRootActionStats> &) { return false; };
+    auto learnedNeverModel = deterministic();
+    const auto learnedNever = OocMctsPlanner(learnedNeverConfig).search(learnedNeverModel, 0, 2048);
+    require(!learnedNever.metrics.earlyStopLearned && learnedNever.metrics.simulations == ladderBase.metrics.simulations
+        && learnedNever.selectedAction == ladderBase.selectedAction,
+        "a learned stop that never fires leaves the search unchanged");
+    auto learnedObservedConfig = learnedConfig;
+    learnedObservedConfig.observeRootLock = true;
+    learnedCalls.clear();
+    auto learnedObservedModel = deterministic();
+    const auto learnedObserved = OocMctsPlanner(learnedObservedConfig).search(learnedObservedModel, 0, 2048);
+    require(learnedObserved.metrics.simulations == 2048 && !learnedObserved.metrics.earlyStopLearned
+        && learnedCalls.empty(), "full-budget observation disables the learned stop");
     for (const auto &thresholds : std::vector<std::vector<std::uint64_t>>{{0},{2,1},{2,2}}) {
         auto invalidCheckpointConfig=config; invalidCheckpointConfig.rootCheckpointSimulations=thresholds;
         rejects([&] { OocMctsPlanner invalid(invalidCheckpointConfig); });
