@@ -28,6 +28,14 @@
 
 namespace sts {
 
+    // STS_PANACHE_FIX: unset/1 (default) = Panache matches PanachePower: a
+    // newly applied Panache starts at 5 cards, a second copy only adds
+    // damage, and the counter returns to 5 after it deals damage. 0 = the
+    // legacy engine, which left the counter at 0 when Panache was first
+    // played (damage on the next card) and never reset it after a trigger
+    // (damage on every later card that turn). Other values are fatal.
+    bool panacheFix();
+
     class BattleContext;
 
     struct Player {
@@ -366,6 +374,10 @@ namespace sts {
 
         if (s == PS::COMBUST) {
             ++combustHpLoss;
+        }
+
+        if (s == PS::PANACHE && !hasStatus<s>() && panacheFix()) {
+            panacheCounter = 5;
         }
 
         if (hasStatus<s>()) {

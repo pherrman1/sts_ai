@@ -32,6 +32,13 @@ namespace sts {
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
 
+    bool panacheFix() {
+        const char *value = std::getenv("STS_PANACHE_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_PANACHE_FIX must be 0 or 1");
+    }
+
     bool deadMonsterBlockFix() {
         const char *value = std::getenv("STS_DEAD_MONSTER_BLOCK_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -1777,6 +1784,7 @@ void BattleContext::onUseAttackCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -1907,6 +1915,7 @@ void BattleContext::onUseSkillCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -1986,6 +1995,7 @@ void BattleContext::onUsePowerCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 
@@ -2049,6 +2059,7 @@ void BattleContext::onUseStatusOrCurseCard() {
     }
 
     if (p.hasStatus<PS::PANACHE>() && --p.panacheCounter <= 0) {
+        if (panacheFix()) p.panacheCounter = 5;
         addToBot( Actions::DamageAllEnemy(p.getStatus<PS::PANACHE>()) );
     }
 

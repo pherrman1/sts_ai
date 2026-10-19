@@ -138,6 +138,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(panache_test tests/panache_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(panache_test PRIVATE include json/include)
+add_test(NAME panache COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:panache_test>)
+set_tests_properties(panache PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(dead_monster_block_test tests/dead_monster_block_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(dead_monster_block_test PRIVATE include json/include)

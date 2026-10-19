@@ -21206,6 +21206,27 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
+## §551 — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
+
+**Question:** why did live run 111194463 stop at Act 3 floor 40 (`silver_unmapped_player_power`, problem 21 in
+`engine-parity/overnight-20261019/ISSUES.md`), and does the engine play Panache as Java does?
+**Setup:** read-only `javap -c -p` of `desktop-1.0.jar` (sha256 `cfad868a…081673`) on Philipp's PC, the run's
+`trace28.jsonl.failure.json`, and `tests/panache_test.cpp` (fixed seed 111200211, no gameplay).
+**Result:** Java `PanachePower(owner, dmg)` sets `amount = 5` (the countdown) and a private `damage = dmg`;
+`stackPower(n)` adds to `damage` only; `onUseCard` decrements `amount` and at 0 resets it to 5 and queues
+`DamageAllEnemiesAction(createDamageMatrix(damage, true), THORNS)`; `atStartOfTurn` sets `amount = 5`. The Panache
+card is cost 0, magic 10 (+4 upgraded). The trace's observation had `{"id":"Panache","amount":5}` with no damage and
+no `panacheCounter`, so the importer refused (the producer looked for fields named `panacheCounter` /
+`cardsUntilTrigger`, which do not exist). The engine started the countdown at 0 when Panache was first applied
+(damage on the next card) and never reset it after a trigger (damage on every later card that turn): with the fix off
+the test sees 10 damage on each of the 5 cards after Panache; with it on, 10 damage on the 5th card only.
+**Interpretation:** `STS_PANACHE_FIX` (default on, `=0` restores) fixes the engine; the producer now sends
+`panacheDamage` and `panacheCounter = amount`, and the importer maps Java `amount` to the native countdown and
+`panacheDamage` to the status amount. Live use needs a mod reinstall. Combat-net features already encode
+`pPanache` (status amount) and `panacheCtr` (countdown), so the values they see change for Panache states; no
+model was retrained. Panache is a rare colorless card, so the effect on win rate is expected to be small (**Inference**).
+Seeds: 111200211 (unit test only).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md` (`STS_PANACHE_FIX`).
 ## §550 — Overnight live play: Mayhem played the pre-draw top card natively (2026-10-19)
 
 **Question:** why did turns with Mayhem diverge from the game (overnight list problem 13)?
