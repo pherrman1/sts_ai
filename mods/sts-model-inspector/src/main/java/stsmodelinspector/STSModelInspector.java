@@ -3251,6 +3251,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer damage = readIntField(power, "damage");
                 if (damage != null) out.append(",\"bombDamage\":").append(damage);
             }
+            // PanachePower.amount is the cards-until-damage countdown; the
+            // damage itself is the private field "damage".
+            if ("Panache".equals(powerId)) {
+                Integer damage = readIntField(power, "damage");
+                if (damage != null) out.append(",\"panacheDamage\":").append(damage);
+            }
             out.append('}');
         }
         out.append("]");
@@ -3262,8 +3268,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer value = readIntField(power, "cardsDoubled", "cardsPlayed");
                 if (value != null) out.append(",\"echoFormCardsDoubled\":").append(value);
             } else if ("Panache".equals(power.ID)) {
-                Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
-                if (value != null) out.append(",\"panacheCounter\":").append(value);
+                out.append(",\"panacheCounter\":").append(power.amount);
             } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
