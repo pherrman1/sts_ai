@@ -242,6 +242,17 @@ there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
 skips statuses here for the same reason it skips curses (its `canUpgrade`
 rule); only the curse case was observed live.
 
+Seed 111194465 showed Centennial Puzzle still armed in every imported root
+after it fired (all 39 `player.relicBits0` mismatches, bit 8). Vanilla keeps
+the relic with `usedUp` false and records the once-per-combat draw in
+`usedThisCombat`; native clears the relic bit when it draws, so the engine
+semantics agree but the importer never saw the used state. Live Silver roots
+therefore expected another free 3-card draw on the next HP loss. The mod now
+emits `usedThisCombat` for Centennial Puzzle, and
+`STS_IMPORTER_CENTENNIAL_USED_FIX` (default on, `=0` restores) requires it and
+gives a used puzzle no combat bit. Traces recorded with an older mod lack the
+field and are rejected as `silver_unmapped_relic_state` unless run with `=0`.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 

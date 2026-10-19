@@ -3469,6 +3469,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Boolean activated = readBooleanField(relic, "activated");
                 if (activated != null) out.append(",\"usedThisTurn\":").append(activated);
             }
+            if ("Centennial Puzzle".equals(relic.relicId)) {
+                // Vanilla marks the once-per-combat draw in a private static
+                // usedThisCombat (reset in atPreBattle) and never sets usedUp.
+                Boolean used = readBooleanField(relic, "usedThisCombat");
+                if (used != null) out.append(",\"usedThisCombat\":").append(used);
+            }
             out.append('}');
         }
         out.append("],\"potions\":[");
