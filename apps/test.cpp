@@ -3653,6 +3653,71 @@ int testIssueFixes() {
             return fail("Smoke Bomb skipped normal combat-exit bookkeeping");
         }
     }
+    // Issue #641: Java makes the reward RNG rolls even when no reward is
+    // granted. A Smoke Bomb escape rolls gold (treasureRng), an elite relic
+    // (relicRng, popped from its pool; Black Star adds a second) and a potion
+    // (potionRng, potionChance) but no card reward; the reward-less Colosseum
+    // slaver fight rolls a potion whether won or escaped.
+    // STS_REWARDLESS_COMBAT_RNG_FIX=0 skips them (legacy).
+    {
+        struct RngState {
+            int treasure, potion, relic, card, chance; std::size_t pools; ScreenState screen;
+        };
+        auto exitCombat = [](bool fix, Room room, MonsterEncounter encounter, bool smoke, bool blackStar) {
+            if (fix) unsetenv("STS_REWARDLESS_COMBAT_RNG_FIX");
+            else setenv("STS_REWARDLESS_COMBAT_RNG_FIX", "0", 1);
+            GameContext gc(CharacterClass::IRONCLAD, 641641641u, 0);
+            gc.curRoom = room;
+            if (blackStar) gc.relics.add({RelicId::BLACK_STAR, 0});
+            if (room == Room::EVENT) {
+                gc.act = 2;
+                gc.floorNum = 25;
+                gc.curMapNodeY = 9;
+                gc.curEvent = Event::COLOSSEUM;
+                gc.setupEvent();
+                gc.chooseEventOption(0);
+            } else {
+                gc.screenState = ScreenState::BATTLE;
+                gc.regainControlAction = [](GameContext &g) { g.afterBattle(); };
+            }
+            BattleContext bc;
+            bc.init(gc, encounter);
+            if (smoke) {
+                bc.potions[0] = Potion::SMOKE_BOMB;
+                bc.potionCount = 1;
+                search::Action(search::ActionType::POTION, 0).execute(bc);
+            } else {
+                bc.outcome = Outcome::PLAYER_VICTORY;
+            }
+            bc.exitBattle(gc);
+            unsetenv("STS_REWARDLESS_COMBAT_RNG_FIX");
+            return RngState{gc.treasureRng.counter, gc.potionRng.counter, gc.relicRng.counter,
+                            gc.cardRng.counter, gc.potionChance,
+                            gc.commonRelicPool.size() + gc.uncommonRelicPool.size() + gc.rareRelicPool.size(),
+                            gc.screenState};
+        };
+        struct Case { Room room; MonsterEncounter encounter; bool smoke; bool blackStar; const char *name; };
+        for (const Case c : {Case{Room::MONSTER, MonsterEncounter::CULTIST, true, false, "hallway escape"},
+                             Case{Room::ELITE, MonsterEncounter::GREMLIN_NOB, true, false, "elite escape"},
+                             Case{Room::ELITE, MonsterEncounter::GREMLIN_NOB, true, true, "elite escape with Black Star"},
+                             Case{Room::EVENT, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS, true, false, "slaver escape"},
+                             Case{Room::EVENT, MonsterEncounter::COLOSSEUM_EVENT_SLAVERS, false, false, "slaver win"}}) {
+            const RngState legacy = exitCombat(false, c.room, c.encounter, c.smoke, c.blackStar);
+            const RngState fixed = exitCombat(true, c.room, c.encounter, c.smoke, c.blackStar);
+            const bool elite = c.room == Room::ELITE;
+            if (fixed.treasure - legacy.treasure != (c.room == Room::EVENT ? 0 : 1)
+                    || fixed.potion - legacy.potion < 1
+                    || std::abs(fixed.chance - legacy.chance) != 10
+                    || (fixed.relic > legacy.relic) != elite
+                    || fixed.relic - legacy.relic != (elite ? (c.blackStar ? 2 : 1) : 0)
+                    || legacy.pools - fixed.pools != (elite ? (c.blackStar ? 2u : 1u) : 0u)
+                    || fixed.card != legacy.card
+                    || fixed.screen != legacy.screen) {
+                std::cerr << c.name << '\n';
+                return fail("reward-less combat end did not make exactly Java's reward RNG rolls");
+            }
+        }
+    }
     // Colosseum's fight continuations bypass afterBattle(): a slaver escape
     // must still clear smokeBombUsed and reopen the event, and a Nob escape
     // must forfeit the Victory rewards and return to the map.
