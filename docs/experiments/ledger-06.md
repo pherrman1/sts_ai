@@ -21360,6 +21360,49 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
+## §563 — Overnight parity: killed Darklings kept their debuffs; representation-only probe differences (2026-10-19)
+
+**Question:** which of the overnight representation-only mismatches (§545 list, problems 8 and 15, Hexaghost move
+history) can change play, and which only differ in how the state is written?
+**Setup:** the overnight traces (seeds 111194454-463) re-probed on Philipp's PC with `combat_parity_probe` at `815c019a`
+(read-only, raw projections kept off the artifacts tree), javap of the pinned `desktop-1.0.jar`, and native code reads.
+**Result:**
+- 9 Darkling diffs on 6 steps (seeds 111194457, 111194463): a Darkling killed into half-dead kept Vulnerable or Weak
+  natively (e.g. 2 vs 0). Java `Darkling.damage` calls `powers.clear()`; native `Monster::resetAllStatusEffects`
+  cleared only the status bits and Strength. A monster debuff adds to the stored amount, so a debuff on the revived
+  Darkling added to the old one (Vulnerable 2 left, then Vulnerable 1 gives 3). This is an engine bug.
+- `cardSelect.pickCount`: Elixir 99 in Java vs 10 natively (3 steps), Exhume and Warcry 1 vs 0 (7 steps). Native reads
+  the pick count only for Exhaust-many (as a cap; the hand holds at most 10 cards) and Liquid Memories.
+- `moveHistory[1]`: Hexaghost Inferno (4 steps; Java `changeState("Activate Orb")` and the following roll both call
+  `setMove(INFERNO)`), Taskmaster (3) and Fat Gremlin (1; native skips the roll of a single-move monster). None of
+  these monsters' native AI reads the move before last.
+**Interpretation:** `STS_HALF_DEAD_POWER_RESET_FIX` (default on, `=0` restores) clears the amounts too. The probe now
+ignores the pick count where native does not read it and the move before last for Hexaghost, Taskmaster and Fat Gremlin.
+Not covered here: Lagavulin sleep and slime split histories (problems 3 and 4) and End Turn card-select tasks after
+Mayhem (problem 13).
+**Open question** (review of the fix, pre-existing): a regrowing Darkling's Corpse Explosion is cleared before
+`Monster::die` checks it, while Java runs the powers' `onDeath` before `powers.clear()`.
+Seeds: none driven (unit tests use the fixed seed 111197786, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `behavior/java-reference-audit.md`,
+`operations/environment-variables.md`.
+## §560 — Killing the Gremlin Leader did not end imported fights (2026-10-19)
+
+**Question:** why did the parity probe return `UNDECIDED` where the game returned victory after the Gremlin Leader died
+(overnight list problem 12, seed 111194457 segment 9 step 47: Pommel Strike+ kills the Leader, Gremlin Wizard alive)?
+**Setup:** code reading of `importSilverRoot` and `Monster::die`; `javap -c` of `die()` in the pinned
+`desktop-1.0.jar` (sha256 cfad868a) on Philipp's PC; `live_silver_importer_test` (no gameplay seeds).
+**Result:** native fights end on a leader's death through the `MINION_LEADER` status, which `preBattleAction` sets on
+Gremlin Leader, Reptomancer, The Collector and Bronze Automaton. Java has no such power (the only match is `MinionPower`,
+id `Minion`): `GremlinLeader.die` queues `EscapeAction` on every other non-dying monster, and the other three queue
+`SuicideAction` on every other live monster. The importer maps Java powers only, so imported states lacked the marker
+and a leader kill with minions alive stayed `UNDECIDED`. The test renderer emitted a fictitious `MinionLeader` power,
+which hid this.
+**Interpretation:** `STS_IMPORTER_MINION_LEADER_FIX` (default on, `=0` restores) sets the marker at import, as the
+importer already did for Awakened One phase two. It changes the live advisor and the parity probe only; the simulator's
+own fights already had the marker. Live advisor decisions in these four fights before the fix did not see a leader kill
+as a win. **Unverified:** how often that changed a live decision.
+Seeds: none (unit test and bytecode reading only).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 ## §558 — Overnight live play: a monster's multi-hit kept hitting after Thorns killed it (2026-10-19)
 
 **Question:** why did native lose 2 more HP than the game on seed 111194455 (overnight list problem 9)?
@@ -21611,6 +21654,51 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
+## §562 — Runic Dome: every first-turn live Dome root was refused (roll clock and omitted nulls) (2026-10-19)
+
+**Question:** why did live seed 111194466 (release 1e2cad47) stop in the first fight after Runic Dome
+(TWO_THIEVES, Act 2 floor 18, turn 1, Looter 48 HP and Mugger 53 HP, occupant generation 1) with
+`silver_runic_dome_occupant_schema`, also after a game restart (overnight list problem 26)? Seed 111194467 then
+stopped the same way at THREE_BYRDS (floor 18, turn 1, first fight after Runic Dome).
+**Setup:** the failure observations relayed byte-exact from Philipp's PC (`engine-parity/overnight-20261019/` on the
+share; now `tests/fixtures/live_runic_dome_two_thieves_turn1.json` and `live_runic_dome_three_byrds_turn1.json`), code reading of `importBoundedRunicDome` and the
+mod's `RunicDomeCapture`/`RunicDomeTracker`; `live_silver_importer_test` (no gameplay seeds).
+**Result:** both occupants are initial, unexecuted, with one pending roll and `rollGlobalTurn` 1 (epoch 4 and, after the
+restart, epoch 1). The tracker stamps rolls with `GameActionManager.turn`, which already reads 1 at the combat-start
+roll, while the importer's global clock puts that roll at native turn 0 and requires `rollGlobalTurn <= turn` (0 at
+player turn 1). With that check relaxed, the real roots then failed `silver_runic_dome_known_next_schema`: the
+snapshot is written with a default `Gson`, which omits the null `knownNextMove` and `knownRollPredecessor` members the
+importer requires. So every Dome fight was refused at its first decision; the existing tests used `rollGlobalTurn` 0
+and explicit nulls. (`firstHp` 48 on the Mugger row is the first monster's HP, as specified.)
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_WIRE_FIX` (default on, `=0` restores) imports the first roll of
+an initial occupant that has not executed (Writhing Mass: the front pending roll) at global turn 0 and a missing
+nullable member as null. The pending roll's
+`monsterTurnNumber` is 1 in both clocks (`max(1, rollGlobalTurn)`; native `getMonsterTurnNumber()` at `turn` 0), so
+the imported state is unchanged; only the refusal goes. The test imports the seed's rows (turn 1, and 9 as a
+hypothetical stale counter) exactly like turn 0, and rolls after a first execution keep the strict clock. Both
+captured roots are refused with `=0` and import and search (1,000 simulations) with the fix.
+**Open question:** later turns of a live Dome fight are not yet exercised live.
+Seeds: none new (live seeds 111194466 and 111194467 as captured; unit test only).
+## §561 — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
+
+**Question:** why were all 39 `player.relicBits0` parity mismatches in live seed 111194465 bit 8 (Centennial Puzzle),
+mostly at End Turn (trace4 segment 3 steps 10, 17, 40, 47; problem 24 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share)? Also audit finding 8 (`audit-2026-10-17/live-bridge.md`).
+**Result:** native `Player::hpWasLost` draws 3 on the first HP loss of a combat and clears the relic bit; the bit comes
+back at the next combat from `GameContext`. Vanilla `CentennialPuzzle.wasHPLost` draws 3 once per combat and records it
+in `usedThisCombat` (reset in `atPreBattle`), never setting `usedUp`, so the engine semantics agree. The mod sent only
+`counter`/`usedUp`, and `importSilverRoot` set the bit for every relic without `usedUp`. Every live root after the
+puzzle fired therefore expected another free 3-card draw on the next HP loss, which overvalues self-damage lines, and
+the parity probe saw the game side still armed.
+**Interpretation:** the mod now emits `usedThisCombat` for Centennial Puzzle (in-combat observation only), and
+`STS_IMPORTER_CENTENNIAL_USED_FIX` (default on, `=0` restores) requires it and drops the bit once it is set.
+`live_silver_importer_test` checks used/unused under both settings and the fail-closed missing field.
+`javap -p` on the pinned `desktop-1.0.jar` (SHA-256 `cfad868a…1673`) shows `private static boolean usedThisCombat`;
+the mod's reflection reads it through `Field.get`, which ignores the instance for a static field.
+**Unverified:** how often the phantom draw changed a live decision.
+Seeds: none driven.
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`,
+`operations/live-model-inspector.md`.
 ## §559 — Overnight live play: the live importer dropped Lagavulin's sleep (2026-10-19)
 
 **Question:** why did a sleeping Lagavulin turn its Sleep intent into Attack natively and keep Metallicize after waking

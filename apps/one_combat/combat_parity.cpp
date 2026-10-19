@@ -145,6 +145,8 @@ J gameCombatRng(const J &rng) {
     return out;
 }
 
+}
+
 // Engine leftovers with no meaning once their flag is off. The native engine
 // clears a status by its bit only, so the old payload stays and is exported,
 // while a fresh import of the game state starts from zero.
@@ -177,7 +179,23 @@ void dropInactivePayloads(silver_bridge::BattleStateWire &w) {
     // The finished selection's task stays in cardSelectInfo after the input
     // state moves on.
     if (w.inputState != static_cast<int>(InputState::CARD_SELECT)) w.cardSelect = {};
+    // Only Exhaust-many (as a cap) and Liquid Memories read the pick count.
+    // The cap is the hand size, so Java's 99 and native's 10 for Elixir offer
+    // the same subsets; single picks (Exhume, Warcry) leave native at 0.
+    const auto task = static_cast<CardSelectTask>(w.cardSelect.task);
+    if (task == CardSelectTask::EXHAUST_MANY) w.cardSelect.pickCount = std::min(w.cardSelect.pickCount, 10);
+    else if (task != CardSelectTask::LIQUID_MEMORIES_POTION) w.cardSelect.pickCount = 0;
+    for (auto &m : w.monsters) {
+        // These follow a fixed move sequence and never read the move before
+        // last. Java appends a move on every setMove (Hexaghost sets Inferno
+        // twice); native skips the roll of a single-move monster.
+        const auto id = static_cast<MonsterId>(m.id);
+        if (id == MonsterId::HEXAGHOST || id == MonsterId::TASKMASTER || id == MonsterId::FAT_GREMLIN)
+            m.moveHistory[1] = 0;
+    }
 }
+
+namespace {
 
 // One projection for both sides, so importer conventions cancel out.
 J project(const BattleContext &bc, const search::SilverSearchContext &context) {

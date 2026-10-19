@@ -4,10 +4,12 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <optional>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <set>
+#include <utility>
 #include <vector>
 #include <tuple>
 
@@ -382,6 +384,13 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
             });
             monster["miscInfo"] = phase2 ? 1 : 0;
         }
+        // Java has no MinionLeader power; the importer restores the native
+        // leader victory marker from the monster id and phase.
+        auto &powers = monster["powers"];
+        if (powers.is_array())
+            powers.erase(std::remove_if(powers.begin(), powers.end(), [](const json &power) {
+                return power.value("id", std::string()) == "MinionLeader";
+            }), powers.end());
         // Ordinary BronzeOrb capture reads Java usedStasis, set when Stasis
         // is selected. Presence of the later Stasis power is not that flag.
         if (id == "Lagavulin") {
@@ -647,6 +656,43 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
         assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
     }
+    // Killing a leader ends the fight in Java (GremlinLeader.die escapes the
+    // others; Reptomancer/TheCollector/BronzeAutomaton.die kill them).
+    for (const auto encounter : {MonsterEncounter::GREMLIN_LEADER, MonsterEncounter::REPTOMANCER,
+                                 MonsterEncounter::COLLECTOR, MonsterEncounter::AUTOMATON}) {
+        GameContext game(CharacterClass::IRONCLAD, 0xD507u, 0);
+        game.act = encounter == MonsterEncounter::REPTOMANCER ? 3 : 2; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, encounter);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), live.seed);
+        if (!wire.valid) throw std::runtime_error("leader fixture conversion failed");
+        normalizeDynamicObservationIdentity(wire);
+        int leader = -1;
+        for (int i = 0; i < wire.monsterCount; ++i)
+            if (wire.monsters[i].statusBits & (1ULL << static_cast<int>(MonsterStatus::MINION_LEADER))) leader = i;
+        if (leader < 0) throw std::runtime_error("leader fixture has no native MINION_LEADER");
+        const auto rendered = javaLikeDynamicObservation(wire, "MONSTER", "minion-leader");
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_MINION_LEADER_FIX", flag, 1);
+            const auto imported = one_combat::advisor::importSilverRoot(rendered);
+            if (!imported.ok) throw std::runtime_error("leader import failed: " + imported.reason);
+            const bool fixed = std::string(flag) == "1";
+            auto expected = wire;
+            if (!fixed) expected.monsters[leader].statusBits &= ~(1ULL << static_cast<int>(MonsterStatus::MINION_LEADER));
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error(std::string("leader import parity failed, flag=") + flag);
+            auto battle = battleContextFromWire(imported.wire);
+            battle.monsters.arr[leader].curHp = 0;
+            battle.monsters.arr[leader].die(battle);
+            const bool othersAlive = battle.monsters.monstersAlive > 0;
+            if ((battle.outcome == Outcome::PLAYER_VICTORY) != (fixed || !othersAlive))
+                throw std::runtime_error(std::string("leader death outcome wrong, flag=") + flag);
+        }
+        unsetenv("STS_IMPORTER_MINION_LEADER_FIX");
+    }
     {
         // Overnight live parity 2026-10-19 problem 3: the Java observation
         // carries Lagavulin's sleep only as its IDLE intent.
@@ -693,7 +739,7 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Lagavulin damage wake did not produce the stunned awake state");
         assertDynamicParity("LAGAVULIN_DAMAGE_WAKE", live, knowledge, game);
     }
-    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength/lagavulin-sleep\n";
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength/leader-death/lagavulin-sleep\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
@@ -1457,6 +1503,30 @@ int main(int argc, char **argv) {
             }
             std::cout << "captured A20 Guardian offense/defense/return search parity passed\n";
         }
+        // Overnight live seeds 111194466 (TWO_THIEVES) and 111194467 (THREE_BYRDS on a Gambling Chip selection),
+        // problem 26: the first Runic Dome fight was refused at turn 1 before the fix.
+        for(const auto &[index,fallback]:std::vector<std::pair<int,std::string>>{
+                {3,"tests/fixtures/live_runic_dome_two_thieves_turn1.json"},{4,"tests/fixtures/live_runic_dome_three_byrds_turn1.json"}}) {
+            const std::string path=argc>index?argv[index]:fallback;
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Runic Dome fixture: "+path);
+            json observation; input >> observation;
+            setenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX");
+            if(legacy.ok || legacy.reason!="silver_runic_dome_occupant_schema")
+                throw std::runtime_error("captured Runic Dome legacy refusal changed: "+path+": "+legacy.reason);
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Runic Dome import: "+path+": "+imported.reason);
+            for(int slot=0;slot<imported.wire.monsterCount;++slot)if(imported.wire.monsters[slot].pendingMoveRolls!=1
+                    || imported.wire.monsters[slot].pendingRollInputs.monsterTurnNumber!=1)
+                throw std::runtime_error("captured Runic Dome occupants must keep their hidden combat-start roll: "+path);
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Runic Dome search: "+path+": "+decision.failureReason);
+            std::cout << "captured Runic Dome turn-1 import and search passed: " << path << "\n";
+        }
         {
             const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";
             std::ifstream input(path);
@@ -1744,6 +1814,63 @@ int main(int argc, char **argv) {
                 row["birthGlobalTurn"]=8;
                 if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("future birth accepted");
             }
+            {
+                // Live seed 111194466 (A20 TWO_THIEVES, player turn 1): the mod stamps the combat-start roll with
+                // the game's turn counter (1), not the native combat-start turn 0.
+                auto obs=groupDome({"Looter","Mugger"},{{},{}});auto &c=obs["silverRoot"]["combat"];
+                obs["silverRoot"]["act"]=2;obs["silverRoot"]["encounter"]="TWO_THIEVES";obs["silverRoot"]["ascension"]=20;
+                auto &knowledge=c["runicDomeKnowledge"];knowledge["schemaVersion"]=3;
+                for(int slot=0;slot<2;++slot) {
+                    knowledge["monsters"][slot].update({{"schemaVersion",4},{"historySchemaVersion",3},{"occupantGeneration",1},
+                        {"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},{"birthParentGeneration",0},
+                        {"lastExecutionGlobalTurn",-1},{"rollGlobalTurn",1},{"totalRolls",1},{"knownTransitions",0},
+                        {"pendingDirectMoveChoice",0},{"directChoices",0},{"knownNextMove",nullptr},{"knownRollPredecessor",nullptr},
+                        {"firstHp",48},{"firstMaxHp",48},{"aliveCount",2},{"rollHp",slot?53:48},{"rollMaxHp",slot?53:48}});
+                    c["monsters"][slot]["hp"]=slot?53:48;c["monsters"][slot]["maxHp"]=slot?53:48;
+                    c["monsters"][slot]["powers"]=json::array({{{"id","Thievery"},{"amount",20}},{{"id","Strength"},{"amount",1}}});
+                }
+                const auto stale=one_combat::advisor::importSilverRoot(obs);
+                if(!stale.ok)throw std::runtime_error("Dome combat-start roll with stale game turn: "+stale.reason);
+                for(int slot=0;slot<2;++slot)if(stale.wire.monsters[slot].pendingRollInputs.monsterTurnNumber!=1
+                        || stale.wire.monsters[slot].occupantGeneration!=1 || stale.wire.monsters[slot].pendingMoveRolls!=1)
+                    throw std::runtime_error("Dome combat-start roll must import as the native first-turn roll");
+                auto fresh=obs;for(auto &row:fresh["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"])row["rollGlobalTurn"]=0;
+                const auto exact=one_combat::advisor::importSilverRoot(fresh);
+                if(!exact.ok || !(battleContextFromWire(exact.wire)==battleContextFromWire(stale.wire)))
+                    throw std::runtime_error("combat-start turn 1 must import exactly like turn 0");
+                auto later9=obs;for(auto &row:later9["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"])row["rollGlobalTurn"]=9;
+                const auto stale9=one_combat::advisor::importSilverRoot(later9);
+                if(!stale9.ok || !(battleContextFromWire(stale9.wire)==battleContextFromWire(stale.wire)))
+                    throw std::runtime_error("any combat-start game turn must import exactly like turn 0");
+                setenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(obs);
+                const auto legacyFresh=one_combat::advisor::importSilverRoot(fresh);
+                unsetenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX");
+                if(legacy.ok || legacy.reason!="silver_runic_dome_occupant_schema" || !legacyFresh.ok)
+                    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_WIRE_FIX=0 must restore the legacy rejection");
+                // A roll after the first execution keeps the strict global clock.
+                auto later=boundDome("Dagger");auto &laterRow=later["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                later["silverRoot"]["playerTurn"]=2;later["silverRoot"]["combat"]["turn"]=2;
+                laterRow.update({{"completedTurns",1},{"executedMoves",json::array({1})},{"generation",3},{"totalRolls",2},
+                    {"lastExecutionGlobalTurn",1},{"rollGlobalTurn",1}});
+                const auto laterOk=one_combat::advisor::importSilverRoot(later);
+                if(!laterOk.ok)throw std::runtime_error("bound Dagger second turn: "+laterOk.reason);
+                laterRow["rollGlobalTurn"]=9;
+                if(one_combat::advisor::importSilverRoot(later).ok)throw std::runtime_error("future post-execution roll accepted");
+                // Reactive: only the front pending row of an unexecuted initial occupant is the combat-start roll.
+                auto mass=boundDome("WrithingMass");auto &massRow=mass["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                massRow.erase("knownNextMove");massRow.erase("knownRollPredecessor");massRow.erase("knownTransitions");
+                massRow.update({{"historySchemaVersion",2},{"generation",2},{"totalRolls",2},{"pendingMoveRolls",2},{"rollGlobalTurn",1}});
+                json inputs={{"rollHp",30},{"rollMaxHp",40},{"firstHp",35},{"firstMaxHp",40},{"firstAlive",true},
+                    {"aliveCount",1},{"playerConstricted",false},{"rollGlobalTurn",1}};
+                massRow["pendingRollInputs"]=json::array({inputs,inputs});
+                const auto massImported=one_combat::advisor::importSilverRoot(mass);
+                if(!massImported.ok || massImported.wire.monsters[0].pendingRollInputHistory.size()!=2
+                        || massImported.wire.monsters[0].pendingRollInputHistory[0].monsterTurnNumber!=1)
+                    throw std::runtime_error("reactive combat-start roll at game turn 1: "+massImported.reason);
+                massRow["pendingRollInputs"][1]["rollGlobalTurn"]=2;
+                if(one_combat::advisor::importSilverRoot(mass).ok)throw std::runtime_error("future reactive reroll accepted");
+            }
             for(const auto &ids:std::vector<std::vector<std::string>>{{"FungiBeast","FungiBeast"},
                     {"SlaverRed","SlaverBlue"},{"AcidSlime_M","SpikeSlime_M"}}) {
                 auto obs=groupDome(ids,{{1},{1}});
@@ -1856,7 +1983,16 @@ int main(int argc, char **argv) {
                     const auto rejectAcid=[&](json bad) {
                         if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("unproven Acid known intent accepted");
                     };
-                    auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("knownNextMove");rejectAcid(bad);
+                    auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("knownNextMove");
+                    if(completed) rejectAcid(bad);
+                    else {
+                        // Gson omits a null knownNextMove: absent reads as null, except under the legacy reading.
+                        if(!one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("omitted null Acid proof refused");
+                        setenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX","0",1);
+                        const bool legacyOk=one_combat::advisor::importSilverRoot(bad).ok;
+                        unsetenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX");
+                        if(legacyOk) throw std::runtime_error("legacy reading accepted an omitted Acid proof");
+                    }
                     if(completed) {
                         bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["knownNextMove"]["move"]=history.back();rejectAcid(bad);
                         bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["pendingMoveRolls"]=1;rejectAcid(bad);
@@ -1897,7 +2033,8 @@ int main(int argc, char **argv) {
                 if(phase==1 && id=="Shelled Parasite" && m.moveHistory[1]!=MMID::SHELLED_PARASITE_FELL)
                     throw std::runtime_error("Shelled post-stun predecessor lost");
                 auto bad=obs;bad["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("knownRollPredecessor");
-                if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("missing public predecessor proof accepted");
+                // Gson omits a null predecessor: only a required non-null proof may be missing-rejected.
+                if(one_combat::advisor::importSilverRoot(bad).ok!=k["knownRollPredecessor"].is_null()) throw std::runtime_error("public predecessor proof presence");
             }
             {
                 auto obs=groupDome({"Exploder","Repulsor"},{{1,2},{1,1}});
@@ -2692,6 +2829,36 @@ int main(int argc, char **argv) {
                 throw std::runtime_error(std::string("high relic parity failed, flag=") + flag);
         }
         unsetenv("STS_IMPORTER_HIGH_RELIC_FIX");
+
+        // Centennial Puzzle: vanilla keeps the relic (usedUp false) after the
+        // once-per-combat draw; native marks it used by clearing the bit.
+        const auto centennialBit = 1ULL << static_cast<int>(RelicId::CENTENNIAL_PUZZLE);
+        const auto centennialObservation = [&](const char *label, std::optional<bool> used) {
+            auto obs = genericObservation(fixtures[0], label);
+            json relic{{"id", "Centennial Puzzle"}, {"counter", -1}, {"usedUp", false}};
+            if (used) relic["usedThisCombat"] = *used;
+            obs["silverRoot"]["combat"]["relics"].push_back(relic);
+            return obs;
+        };
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_CENTENNIAL_USED_FIX", flag, 1);
+            const bool fix = std::string(flag) == "1";
+            for (const bool used : {false, true}) {
+                auto imported = one_combat::advisor::importSilverRoot(
+                    centennialObservation("centennial-parity", used));
+                if (!imported.ok) throw std::runtime_error("Centennial import failed: " + imported.reason);
+                const bool armed = (imported.wire.player.relicBits0 & centennialBit) != 0;
+                if (armed != (!fix || !used))
+                    throw std::runtime_error(std::string("Centennial relic bit wrong, flag=") + flag
+                        + " used=" + (used ? "1" : "0"));
+            }
+            auto missing = one_combat::advisor::importSilverRoot(
+                centennialObservation("centennial-missing", std::nullopt));
+            if (missing.ok == fix || (fix && missing.reason != "silver_unmapped_relic_state"))
+                throw std::runtime_error(std::string("Centennial without usedThisCombat, flag=") + flag
+                    + ": " + missing.reason);
+        }
+        unsetenv("STS_IMPORTER_CENTENNIAL_USED_FIX");
 
         // A recounted strikeCount skips exhausted Strikes (Java
         // PerfectedStrike.countCards reads hand, draw and discard only); the

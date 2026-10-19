@@ -11,6 +11,7 @@
 #include <limits>
 #include <iterator>
 #include <optional>
+#include <utility>
 
 #include "constants/CharacterClasses.h"
 #include "constants/Relics.h"
@@ -372,6 +373,30 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_CENTENNIAL_USED_FIX: unset/1 (default) = Centennial Puzzle
+// needs the producer's usedThisCombat and gets no relic bit once it fired, as
+// native clears the bit on its first HP loss; 0 = legacy, the bit stays set and
+// every later root expects another free 3-card draw.
+bool centennialUsedFix() {
+    const char *value = std::getenv("STS_IMPORTER_CENTENNIAL_USED_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_CENTENNIAL_USED_FIX must be 0 or 1");
+}
+
+// STS_IMPORTER_MINION_LEADER_FIX: unset/1 (default) = the importer sets the
+// native MINION_LEADER victory marker on Gremlin Leader, Reptomancer, The
+// Collector and Bronze Automaton, as their native preBattleAction does. Java
+// has no power for it (die() makes the other monsters escape or die), so
+// imported states lacked it and killing the leader left the fight UNDECIDED;
+// 0 = legacy import without the marker.
+bool minionLeaderFix() {
+    const char *value = std::getenv("STS_IMPORTER_MINION_LEADER_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_MINION_LEADER_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_LAGAVULIN_SLEEP_FIX: unset/1 (default) = outside Runic Dome a
 // Lagavulin whose public intent is IDLE (5) is imported ASLEEP; 0 = legacy
 // import without ASLEEP (native then treats it as awake and stunned).
@@ -657,6 +682,24 @@ SilverRootImportResult importSilverRootLegacy(const json &observation) {
     return result;
 }
 
+// STS_IMPORTER_RUNIC_DOME_WIRE_FIX: unset/1 (default) = read the live mod's
+// Runic Dome rows as the mod writes them (live seeds 111194466/111194467,
+// where every first-turn Dome root was refused):
+// - the pending roll of an initial occupant that has not executed yet is its
+//   combat-start roll, imported at global turn 0 like the native one
+//   (monsterTurnNumber 1 either way); the mod stamps it with
+//   GameActionManager.turn, which already reads 1
+//   (silver_runic_dome_occupant_schema);
+// - Gson omits null members, so a missing knownNextMove/knownRollPredecessor
+//   of a monster that carries them is null (silver_runic_dome_known_next_schema).
+// 0 = legacy strict reading.
+bool domeWireFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_WIRE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_WIRE_FIX must be 0 or 1");
+}
+
 // Audited stable-slot monsters whose next roll depends on public executed history.
 // Spot Weakness carries only its public attack predicate for the pending roll.
 // Generators and unaudited monster lifecycles remain outside this domain.
@@ -682,15 +725,22 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                     || wire.monsters[slot].id!=static_cast<int>(sts::MonsterId::INVALID))return "silver_runic_dome_occupant_schema";
             wire.monsters[slot].occupantGeneration=0;continue;
         }
-        int birthTurn=0,rollTurn=0,lastExecution=-1;
+        int birthTurn=0,rollTurn=0,lastExecution=-1;bool unexecutedInitial=false;
         if(bound) {
             if(!validInteger(k,"schemaVersion",4,4) || !validInteger(k,"historySchemaVersion",1,3)
                     || !validInteger(k,"occupantGeneration",1,1000000) || !validInteger(k,"birthGlobalTurn",0,wire.turn)
-                    || !validInteger(k,"rollGlobalTurn",0,wire.turn+1) || !validInteger(k,"lastExecutionGlobalTurn",-1,wire.turn)
+                    || !validInteger(k,"rollGlobalTurn",0,1000000) || !validInteger(k,"lastExecutionGlobalTurn",-1,wire.turn)
                     || !validInteger(k,"birthParentSlot",-1,4) || !validInteger(k,"birthParentGeneration",0,1000000)
                     || !k.contains("birthKind") || !k.at("birthKind").is_string())return "silver_runic_dome_occupant_schema";
             birthTurn=k.at("birthGlobalTurn");rollTurn=k.at("rollGlobalTurn");lastExecution=k.at("lastExecutionGlobalTurn");
             const auto kind=k.at("birthKind").get<std::string>();
+            // The first roll of an initial occupant that has not executed yet is its combat-start roll.
+            unexecutedInitial=kind=="initial" && lastExecution==-1 && k.contains("completedTurns") && k.at("completedTurns")==0
+                && domeWireFix();
+            if(unexecutedInitial && (k.at("historySchemaVersion")==1 || (k.contains("totalRolls") && k.at("totalRolls")==1))) {
+                rollTurn=0;k["rollGlobalTurn"]=0;
+            }
+            if(rollTurn>wire.turn+1)return "silver_runic_dome_occupant_schema";
             if((kind=="initial"?(birthTurn!=0 || k.at("occupantGeneration")!=1 || k.at("birthParentSlot")!=-1 || k.at("birthParentGeneration")!=0)
                     :((kind!="split" && kind!="summon") || birthTurn<1 || k.at("birthParentSlot")==-1 || k.at("birthParentGeneration")==0))
                     || rollTurn<birthTurn || (lastExecution!=-1 && lastExecution<birthTurn))return "silver_runic_dome_occupant_schema";
@@ -760,6 +810,10 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         } else if(k.contains("pendingDirectMoveChoice") || k.contains("directChoices")) return "silver_runic_dome_history_schema";
         const bool knownNext=!dead && !direct && ((deterministic && completed>0) || (dynamic && pending==0));
         if((dead || knownNext || direct)?pending!=0:(reactive?pending<1:pending!=1)) return "silver_runic_dome_history_gap";
+        if(domeWireFix()) {
+            if((deterministic || dynamic) && !k.contains("knownNextMove")) k["knownNextMove"]=nullptr;
+            if(dynamic && !k.contains("knownRollPredecessor")) k["knownRollPredecessor"]=nullptr;
+        }
         if(deterministic || dynamic) {
             if(!k.contains("knownNextMove")) return "silver_runic_dome_known_next_schema";
             const auto &proof=k.at("knownNextMove");
@@ -965,7 +1019,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(lice)allow(sts::MonsterStatus::CURL_UP);
         if(darkling)allow(sts::MonsterStatus::REGROW);
         if(orb)allow(sts::MonsterStatus::STASIS);
-        if(monsterId=="GremlinLeader" || monsterId=="Reptomancer" || monsterId=="TheCollector")allow(sts::MonsterStatus::MINION_LEADER);
+        if(monsterId=="GremlinLeader" || monsterId=="Reptomancer" || monsterId=="TheCollector" || automaton)allow(sts::MonsterStatus::MINION_LEADER);
         if(bound)allow(sts::MonsterStatus::MINION);
         if(awakened) {allow(sts::MonsterStatus::CURIOSITY);allow(sts::MonsterStatus::MINION_LEADER);}
         if(thief) allow(sts::MonsterStatus::THIEVERY);
@@ -1042,7 +1096,10 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             if(!k.contains("pendingRollInputs") || !k.at("pendingRollInputs").is_array()
                     || k.at("pendingRollInputs").size()!=static_cast<std::size_t>(pending))
                 return "silver_runic_dome_history_schema";
-            for(const auto &r:k.at("pendingRollInputs")) {
+            bool front=true;
+            for(auto r:k.at("pendingRollInputs")) {
+                const bool initialRow=std::exchange(front,false) && unexecutedInitial && pending==k.at("totalRolls").get<int>();
+                if(initialRow && r.is_object() && r.contains("rollGlobalTurn")) r["rollGlobalTurn"]=0;
                 if(!r.is_object() || r.size()!=(bound?8:7) || !validInteger(r,"rollHp",1,999) || !validInteger(r,"rollMaxHp",1,999)
                         || r.at("rollHp")>r.at("rollMaxHp") || r.at("rollMaxHp")!=m.maxHp
                         || !validInteger(r,"firstHp",0,999) || !validInteger(r,"firstMaxHp",1,999)
@@ -1485,6 +1542,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         if (id == sts::RelicId::NECRONOMICON
             && (!relic.contains("usedThisTurn") || !relic.at("usedThisTurn").is_boolean()))
             return unsupported("silver_unmapped_relic_state");
+        if (id == sts::RelicId::CENTENNIAL_PUZZLE && centennialUsedFix()) {
+            if (!relic.contains("usedThisCombat") || !relic.at("usedThisCombat").is_boolean())
+                return unsupported("silver_unmapped_relic_state");
+            if (relic.at("usedThisCombat").get<bool>()) continue;
+        }
         if (relic.at("usedUp").get<bool>()) continue;
         const int rid = static_cast<int>(id);
         if (rid < 64) p.relicBits0 |= 1ULL << rid;
@@ -1567,6 +1629,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             if (m.miscInfo == 1)
                 m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::MINION_LEADER);
         }
+        if ((*id == sts::MonsterId::GREMLIN_LEADER || *id == sts::MonsterId::REPTOMANCER
+                || *id == sts::MonsterId::THE_COLLECTOR || *id == sts::MonsterId::BRONZE_AUTOMATON)
+            && minionLeaderFix())
+            m.statusBits |= 1ULL << static_cast<int>(sts::MonsterStatus::MINION_LEADER);
         if (runicDome) {
             for(const char *hidden:{"nextMove","moveHistory","previousMove","intent","intentDamage","uniquePower0","uniquePower1"})
                 if(item.contains(hidden)) return unsupported("silver_runic_dome_hidden_field");
