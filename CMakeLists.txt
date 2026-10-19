@@ -138,6 +138,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(half_dead_power_reset_test tests/half_dead_power_reset_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(half_dead_power_reset_test PRIVATE include json/include)
+add_test(NAME half_dead_power_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:half_dead_power_reset_test>)
+set_tests_properties(half_dead_power_reset PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(strike_count_test tests/strike_count_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(strike_count_test PRIVATE include json/include)
@@ -394,6 +402,15 @@ target_link_options(combat_parity_probe PRIVATE -Wl,--gc-sections)
 add_test(NAME combat_parity COMMAND python3 -m unittest tests.test_combat_parity)
 set_tests_properties(combat_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     ENVIRONMENT "COMBAT_PARITY_PROBE=$<TARGET_FILE:combat_parity_probe>" LABELS "core;smoke")
+add_executable(combat_parity_projection_test tests/combat_parity_projection_test.cpp
+    apps/one_combat/combat_parity.cpp
+    apps/one_combat/live_silver_importer.cpp
+    apps/one_combat/live_silver_mapping.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_parity_projection_test PRIVATE include json/include apps)
+target_link_options(combat_parity_projection_test PRIVATE -Wl,--gc-sections)
+add_test(NAME combat_parity_projection COMMAND combat_parity_projection_test)
+set_tests_properties(combat_parity_projection PROPERTIES LABELS "core;smoke")
 
 # Read-only newline-delimited JSON endpoint for the private live-model
 # inspector.  Keep it separate from the simulator driver until a proven
