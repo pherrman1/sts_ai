@@ -67,6 +67,13 @@ namespace sts {
         throw std::runtime_error("STS_BLOOD_POTION_HEAL_FIX must be 0 or 1");
     }
 
+    bool strikeCountFix() {
+        const char *value = std::getenv("STS_STRIKE_COUNT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_STRIKE_COUNT_FIX must be 0 or 1");
+    }
+
     bool pileCostResetFix() {
         const char *value = std::getenv("STS_PILE_COST_RESET_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -1240,7 +1247,10 @@ void BattleContext::useAttackCard() {
 
         case CardId::PERFECTED_STRIKE: {
             // hack because we calculate strikeCount while non purge cards are still in hand.
-            const int strikeDmg = cards.strikeCount * (up ? 3 : 2);
+            // A Havoc/Mayhem autoplay took the card off the draw pile, so Java's
+            // countCards (hand, draw, discard) does not see it (STS_STRIKE_COUNT_FIX).
+            const bool offPile = item.autoplay && !item.purgeOnUse && strikeCountFix();
+            const int strikeDmg = (cards.strikeCount - (offPile ? 1 : 0)) * (up ? 3 : 2);
             const int baseDamage = 6 + strikeDmg;
             addToBot( Actions::AttackEnemy(t, calculateCardDamage(c, t, baseDamage)) );
             break;
