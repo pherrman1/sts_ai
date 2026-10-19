@@ -55,6 +55,7 @@ public:
     virtual void setSearchSeed(std::uint64_t) {}
     virtual void setRootPrimitiveBits(const std::vector<std::uint32_t> &) {}
     virtual void setRewardPityHistoryComplete(bool) {}
+    virtual void setExactRewardPity(bool) {}
     virtual void setQuestionHistoryComplete(bool) {}
     virtual void setMapHistoryComplete(bool) {}
     virtual void setQuestionChancePosterior(const QuestionChancePosterior &) {}
@@ -99,6 +100,7 @@ public:
     void setSearchSeed(std::uint64_t seed) override { searchSeed_ = seed; }
     void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
     void setRewardPityHistoryComplete(bool value) override { rewardPityHistoryComplete_ = value; }
+    void setExactRewardPity(bool value) override { exactRewardPity_ = value; }
     void setQuestionHistoryComplete(bool value) override { questionHistoryComplete_ = value; }
     void setMapHistoryComplete(bool value) override { mapHistoryComplete_ = value; }
     void setQuestionChancePosterior(const QuestionChancePosterior &value) override { questionChancePosterior_ = value; }
@@ -116,6 +118,7 @@ private:
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;
     bool rewardPityHistoryComplete_ = true;
+    bool exactRewardPity_ = false;
     bool questionHistoryComplete_ = false;
     bool mapHistoryComplete_ = false;
     QuestionChancePosterior questionChancePosterior_;
