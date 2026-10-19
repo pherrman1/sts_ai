@@ -178,6 +178,14 @@ add_test(NAME hand_upgrade_all COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard
 set_tests_properties(hand_upgrade_all PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(mayhem_after_draw_test tests/mayhem_after_draw_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mayhem_after_draw_test PRIVATE include json/include)
+add_test(NAME mayhem_after_draw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mayhem_after_draw_test>)
+set_tests_properties(mayhem_after_draw PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(active_power_features_test tests/active_power_features_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(active_power_features_test PRIVATE include json/include)
