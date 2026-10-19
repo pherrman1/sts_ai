@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
 
 ## Purpose
 
@@ -233,6 +233,19 @@ parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
 
+Four smaller monster-side differences from the same overnight list and the
+canary 2 carry-overs are fixed behind default-on flags (`=0` restores):
+`STS_SLIME_SPLIT_RNG_FIX` (native drew two extra `aiRng` rolls on a large
+slime split), `STS_MUGGER_DEATH_RNG_FIX` (the game draws `aiRng` for the
+Mugger's death sound), `STS_DEAD_MONSTER_BLOCK_FIX` (Curl Up block queued
+before a later hit killed the louse) and `STS_IMPORTER_THIEF_GOLD_FIX` (the
+importer never set the native stolen-gold bit, so the probe reported
+`miscBits` 0 vs 1 in Two Thieves). After a split the game reports
+`lastTargetedMonster` 1 when the targeted slime is gone (the inspector's
+default for a target it no longer emits); native keeps 0. Only the Shield
+and Spear fight reads that field, so it is left as a known
+representation-only difference.
+
 The same night showed Blessing of the Forge upgrading Ascender's Bane natively
 but not in the game (seed 111194457). The engine's upgrade-all-in-hand action
 (Blessing of the Forge, Armaments+) upgraded every card, while Apotheosis,
@@ -241,6 +254,14 @@ upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
 there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
 skips statuses here for the same reason it skips curses (its `canUpgrade`
 rule); only the curse case was observed live.
+
+The same overnight runs showed Mayhem playing the wrong card natively (seed
+111194457: Reptomancer and Jaw Worm horde). The game plays the top card after
+the start-of-turn draw (`MayhemPower$1` queues `PlayTopCardAction` at the
+bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
+top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
+won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
+`=0` restores) plays it after the draw.
 
 A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
 Panache, because the live importer refused it. Java `PanachePower.amount` is

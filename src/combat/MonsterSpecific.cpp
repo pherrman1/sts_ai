@@ -3402,8 +3402,16 @@ void Monster::largeSlimeSplit(BattleContext &bc, const MonsterId mediumSlimeType
     bc.monsters.monstersAlive++;
     bc.monsters.monsterCount = std::min(bc.monsters.monsterCount+1, 4);
 
-    bc.noOpRollMove();
-    bc.monsters.extraRollMoveOnTurn.set(idx2, true);
+    // Java's split turn rolls in the two SpawnMonsterAction inits above; only
+    // SpikeSlime_L then queues a RollMoveAction for itself (the dead slime's
+    // getMove draws nothing more). STS_SLIME_SPLIT_RNG_FIX=0 restores the
+    // legacy engine's two extra rolls for both slimes.
+    if (!slimeSplitRngFix()) {
+        bc.noOpRollMove();
+        bc.monsters.extraRollMoveOnTurn.set(idx2, true);
+    } else if (mediumSlimeType == MonsterId::SPIKE_SLIME_M) {
+        bc.noOpRollMove();
+    }
     bc.monsterTurnIdx++;
 }
 
