@@ -1173,6 +1173,47 @@ void verifyEncounterManifestAndNativeSweep() {
     std::cout << "live Silver encounter manifest/native sweep passed: supported="
               << supported << " excluded=" << excluded << '\n';
 }
+// Java has no miscBits: a thief's stolen gold (Looter/Mugger stolenGold, native
+// miscInfo) must set the native stolen-gold check bit on import
+// (STS_IMPORTER_THIEF_GOLD_FIX, default on; =0 restores the legacy importer).
+void verifyThiefStolenGoldFlag() {
+    GameContext game(CharacterClass::IRONCLAD, 0x51L + static_cast<int>(MonsterEncounter::TWO_THIEVES), 0);
+    game.act = 2;
+    game.floorNum = 1;
+    BattleContext battle;
+    battle.init(game, MonsterEncounter::TWO_THIEVES);
+    CombatKnowledgeState knowledge;
+    knowledge.initializeFromLiveBattle(battle);
+    auto wire = makeSilverBattleStateWire(battle, knowledge, makeSilverRunContext(game), 0x51A000ULL);
+    if (!wire.valid) throw std::runtime_error("thief fixture conversion failed");
+    normalizeFirstObservationIdentity(wire);
+    int mugger = -1;
+    for (int i = 0; i < wire.monsterCount; ++i)
+        if (static_cast<MonsterId>(wire.monsters[i].id) == MonsterId::MUGGER) mugger = i;
+    if (mugger < 0 || wire.miscBits != 0) throw std::runtime_error("thief fixture has no fresh Mugger");
+    for (const int stolen : {0, 15}) {
+        auto stateWire = wire;
+        stateWire.monsters[mugger].miscInfo = stolen;
+        auto rendered = nativeObservation(stateWire, "MONSTER", "thief-stolen-gold");
+        rendered["silverRoot"]["combat"].erase("miscBits");
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_THIEF_GOLD_FIX", flag, 1);
+            one_combat::advisor::SilverImportContext context;
+            context.session = "thief-stolen-gold";
+            const auto imported = one_combat::advisor::importSilverRoot(rendered, context);
+            if (!imported.ok) throw std::runtime_error("thief import failed: " + imported.reason);
+            auto expected = stateWire;
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (stolen > 0 && std::string(flag) == "1") expected.miscBits |= 1U;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error("thief stolen-gold flag parity failed, stolen="
+                    + std::to_string(stolen) + " flag=" + flag + " miscBits="
+                    + std::to_string(imported.wire.miscBits));
+        }
+    }
+    unsetenv("STS_IMPORTER_THIEF_GOLD_FIX");
+    std::cout << "live Silver thief stolen-gold flag passed\n";
+}
 json genericObservation(const Fixture &fixture, const char *instance) {
     auto out = fixture.observation;
     out["sequence"] = 1;
@@ -1436,6 +1477,7 @@ int main(int argc, char **argv) {
         }
         verifyRuntimeMoveBoundary();
         verifyEncounterManifestAndNativeSweep();
+        verifyThiefStolenGoldFlag();
         verifyDynamicTransitionCorpus();
         const std::vector<Fixture> fixtures = {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
@@ -2531,6 +2573,22 @@ int main(int argc, char **argv) {
             throw std::runtime_error("draw reduction parity failed");
         verifyPlayerPowerParity("bomb-parity", json{{"id", "TheBomb0"}, {"amount", 3}, {"bombDamage", 40}},
             [](auto &player) { player.bombs[2] = 40; });
+        // Java PanachePower.amount is the countdown; damage is separate.
+        verifyPlayerPowerParity("panache-parity", json{{"id", "Panache"}, {"amount", 3}, {"panacheDamage", 14}},
+            [](auto &player) {
+                static_assert(static_cast<int>(PlayerStatus::PANACHE) >= 64);
+                player.statusBits1 |= 1U << (static_cast<int>(PlayerStatus::PANACHE) - 64);
+                player.statusMap.emplace_back(static_cast<std::int16_t>(PlayerStatus::PANACHE), 14);
+                player.panacheCounter = 3;
+            });
+        for (const auto &bad : {json{{"id", "Panache"}, {"amount", 5}},
+                                json{{"id", "Panache"}, {"amount", 0}, {"panacheDamage", 10}},
+                                json{{"id", "Panache"}, {"amount", 5}, {"panacheDamage", 0}}}) {
+            auto observation = genericObservation(fixtures[0], "panache-refused");
+            observation["silverRoot"]["combat"]["playerPowers"] = json::array({bad});
+            if (one_combat::advisor::importSilverRoot(observation).ok)
+                throw std::runtime_error("Panache without a valid damage/countdown must be refused");
+        }
         auto penNibRelic = genericObservation(fixtures[0], "pen-nib-relic-parity");
         penNibRelic["silverRoot"]["combat"]["relics"].push_back(
             json{{"id", "Pen Nib"}, {"counter", 9}, {"usedUp", false}});
@@ -2874,6 +2932,48 @@ int main(int argc, char **argv) {
             auto bad=observation;bad["silverRoot"]["combat"]["cardSelect"]["continuation"]="unknown";
             if(one_combat::advisor::importSilverRoot(bad).ok) throw std::runtime_error("multi hand ignored pending continuation");
         }
+        // Problem 28: Toy Ornithopter queues its potion heal behind Gambler's
+        // Brew's GamblingChipAction, so the live hand selection carries it.
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_SELECTION_TOY_HEAL_FIX", flag, 1);
+            auto observation = genericObservation(fixtures[0], "gamble-toy-heal-tail");
+            auto &combat = observation["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id","Toy Ornithopter"},{"counter",-1},{"usedUp",false}});
+            const auto prototype = combat["hand"][0];
+            combat["hand"] = json::array();
+            json choices = json::array();
+            for (int i=0;i<3;++i) {
+                auto card=prototype;card["id"]="Strike_R";card["uuid"]="toy-"+std::to_string(i);
+                combat["hand"].push_back(card);
+                choices.push_back(json{{"uuid",card["uuid"]},{"choiceIndex",i+1}});
+            }
+            combat["cardSelect"]=json{{"task","GAMBLE"},{"origin","HAND_SELECT"},{"pickCount",99},
+                {"canPickZero",true},{"canPickAnyNumber",true},{"selectedBits",0},{"selectedCount",0},
+                {"liveChoices",choices},{"continuation","public_actions"},{"cards",json::array()},
+                {"actionClass","com.megacrit.cardcrawl.actions.unique.GamblingChipAction"}};
+            combat["pendingActionQueue"]=json::array({json{{"kind","HEAL_PLAYER"},{"amount",5}}});
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(std::string(flag)=="0") {
+                if(imported.ok || imported.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX=0 accepted the Toy heal tail");
+                continue;
+            }
+            if(!imported.ok) throw std::runtime_error("Toy heal tail import: "+imported.reason);
+            if(!imported.wire.pendingActionQueueObserved || imported.wire.pendingActionQueue.size()!=1
+                    || imported.wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::HEAL_PLAYER)
+                throw std::runtime_error("Toy heal tail not carried on the wire");
+            auto selected=battleContextFromWire(imported.wire);
+            selected.player.curHp=selected.player.maxHp-10;
+            const auto before=selected.player.curHp;
+            sts::search::Action(sts::search::ActionType::MULTI_CARD_SELECT,1).execute(selected);
+            if(selected.inputState!=InputState::PLAYER_NORMAL || selected.player.curHp!=before+5
+                    || selected.cards.cardsInHand!=3)
+                throw std::runtime_error("Toy heal tail did not heal after the Gamble");
+            for(int amount:{4,0}) {auto bad=observation;
+                bad["silverRoot"]["combat"]["pendingActionQueue"][0]["amount"]=amount;
+                if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("unqualified heal tail accepted");}
+        }
+        unsetenv("STS_SELECTION_TOY_HEAL_FIX");
         for (int mask : {0, 1, 5, 7}) {
             auto observation = genericObservation(fixtures[0], "upgraded-forethought-transaction");
             auto &combat = observation["silverRoot"]["combat"];
@@ -4415,6 +4515,29 @@ int main(int argc, char **argv) {
             || !(stasisImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::STASIS))))
             throw std::runtime_error("Bronze Orb Stasis card/state was not imported exactly");
+        // Java StasisPower.onDeath returns the card with its UUID while the
+        // dead orb still lists the same card in its Stasis power.
+        auto returnedStasis = stasis;
+        returnedStasis["silverRoot"]["combat"]["monsters"][0]["hp"] = 0;
+        returnedStasis["silverRoot"]["combat"]["monsters"][0]["dead"] = true;
+        returnedStasis["silverRoot"]["combat"]["hand"].push_back(
+            returnedStasis["silverRoot"]["combat"]["stasis"][0]);
+        returnedStasis["silverRoot"]["combat"]["hand"].back().erase("slot");
+        const auto returnedImported = one_combat::advisor::importSilverRoot(returnedStasis);
+        if (!returnedImported.ok || returnedImported.wire.stasisCards[0].id
+                != static_cast<std::int16_t>(CardId::INVALID)
+            || returnedImported.wire.stasisCards[0].uniqueId != -1
+            || std::count_if(returnedImported.wire.hand.begin(), returnedImported.wire.hand.end(),
+                   [](const auto &card) { return card.id == static_cast<std::int16_t>(CardId::STRIKE_RED); })
+                != std::count_if(stasisImported.wire.hand.begin(), stasisImported.wire.hand.end(),
+                   [](const auto &card) { return card.id == static_cast<std::int16_t>(CardId::STRIKE_RED); }) + 1)
+            throw std::runtime_error("dead Bronze Orb's returned Stasis card was not imported once: ok="
+                + std::to_string(returnedImported.ok) + " reason=" + returnedImported.reason);
+        auto aliveDuplicate = returnedStasis;
+        aliveDuplicate["silverRoot"]["combat"]["monsters"][0]["hp"] = 20;
+        aliveDuplicate["silverRoot"]["combat"]["monsters"][0]["dead"] = false;
+        if (one_combat::advisor::importSilverRoot(aliveDuplicate).reason != "silver_card_identity")
+            throw std::runtime_error("live Bronze Orb Stasis card duplicated in hand was accepted");
         general["silverRoot"]["combat"]["cardSelect"] = json{
             {"task", "EXHAUST_ONE"}, {"cards", json::array({"Strike_R"})},
             {"pickCount", 1}, {"canPickZero", false}};

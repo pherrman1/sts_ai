@@ -1318,10 +1318,11 @@ int testSilverWireState() {
         bc.addToBot(Actions::BuffPlayer<PlayerStatus::PEN_NIB>(1));
         bc.addToBot(Actions::RemoveStatus<PlayerStatus::PEN_NIB>());
         bc.addToBot(Actions::RemovePlayerDebuffs());
+        bc.addToBot(Actions::HealPlayer(5,true));
         search::CombatKnowledgeState knowledge;
         knowledge.initializeFromLiveBattle(bc);
         auto wire=search::makeSilverBattleStateWire(bc,knowledge,search::makeSilverRunContext(gc),0x5eedu);
-        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.size()==15,
+        check(wire.pendingActionQueueObserved && wire.pendingActionQueue.size()==16,
               "typed selector tail must be observed completely");
         auto restored=search::battleContextFromWire(wire);
         check(restored.actionQueue==bc.actionQueue,"typed selector tail changed order or parameters");
@@ -1352,6 +1353,7 @@ int testSilverWireState() {
         bad=wire; bad.pendingActionQueue[13].amount=1; reject(bad,"Pen Nib removal cannot carry amount");
         bad=wire; bad.pendingActionQueue[14].status=static_cast<int>(PlayerStatus::WEAK);
         reject(bad,"Pellets cleanup cannot carry arbitrary status");
+        bad=wire; bad.pendingActionQueue[15].amount=0; reject(bad,"Toy heal tail needs a positive amount");
         bad=wire; bad.pendingActionQueue[0]={silver_bridge::PendingActionKind::USE_CARD,0,0,false};
         reject(bad,"card cleanup without physical owner must reject");
         bad=wire; bad.pendingActionQueue.resize(129); reject(bad,"oversized pending queue must reject");
@@ -1363,6 +1365,8 @@ int testSilverWireState() {
         bc.actionQueue.clear(); auto block=Actions::GainBlock(2); block.clearOnCombatVictory=true; bc.addToBot(block);
         search::capturePendingActionQueue(bc,wire);
         check(!wire.pendingActionQueueObserved,"changed native victory flags cannot be discarded");
+        bc.actionQueue.clear(); bc.addToBot(Actions::HealPlayer(5)); search::capturePendingActionQueue(bc,wire);
+        check(!wire.pendingActionQueueObserved,"only the victory-surviving Toy heal maps to HEAL_PLAYER");
         bc.actionQueue.clear(); search::capturePendingActionQueue(bc,wire);
         check(wire.pendingActionQueueObserved && wire.pendingActionQueue.empty(),"observed empty tail must stay exact");
         auto envelope=silver_bridge::battleStateWireEnvelope(persisted);

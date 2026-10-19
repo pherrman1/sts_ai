@@ -43,6 +43,9 @@ namespace sts::search {
                 case K::USE_CARD: return Actions::OnAfterCardUsed();
                 case K::REMOVE_PEN_NIB: return Actions::RemoveStatus<PlayerStatus::PEN_NIB>();
                 case K::REMOVE_PLAYER_DEBUFFS: return Actions::RemovePlayerDebuffs();
+                case K::HEAL_PLAYER:
+                    if (in.amount < 1) throw std::invalid_argument("invalid Silver pending heal amount");
+                    return Actions::HealPlayer(in.amount, true);
                 case K::MONSTER_GAIN_BLOCK: return Actions::MonsterGainBlock(in.monster, in.amount);
                 // Writhing Mass is monster 0; its Reactive scalar counts the rolls.
                 case K::REACTIVE_ROLL_MOVE: return Actions::ReactiveRollMove();
@@ -364,6 +367,7 @@ namespace sts::search {
                     if(action.v_RemoveStatus.s!=PlayerStatus::PEN_NIB)return;
                     item.kind=K::REMOVE_PEN_NIB;break;
                 case CombatActionType::RemovePlayerDebuffs: item.kind=K::REMOVE_PLAYER_DEBUFFS;break;
+                case CombatActionType::HealPlayer: item.kind=K::HEAL_PLAYER; item.amount=action.v_HealPlayer.amount; break;
                 case CombatActionType::MonsterGainBlock:
                     if(!silverMonsterReactionQueue())return;
                     item.kind=K::MONSTER_GAIN_BLOCK; item.monster=action.v_MonsterGainBlock.idx;

@@ -21206,6 +21206,110 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
+## §553 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
+
+**Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
+hand selection with `silver_selection_pending_actions` (problem 28 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Result:** both stops held Toy Ornithopter. Game bytecode (jar sha256 cfad868a…1673, relayed from Philipp's PC to
+`engine-parity/overnight-20261019/issue28-javap.md`): `ToyOrnithopter.onUsePotion` in combat queues
+`RelicAboveCreatureAction` and `HealAction(p, p, 5)` with `addToBot`, behind the Brew's `GamblingChipAction`, so the heal
+is still in `actionManager.actions` while the selection is open. `HealAction` was not in the inspector's public pending
+action whitelist, so `handMultiContinuation("GAMBLE")` returned null. The stale `curCardQueueItem` (Iron Wave, Defend)
+was not the cause: this path does not read it. The engine already queues the same victory-surviving heal after the
+potion effect in `drinkPotion`.
+**Interpretation:** the inspector emits the heal as public pending action `HEAL_PLAYER` (amount 5, only with Toy
+Ornithopter, source and target the player); the wire maps it to `HealPlayer(5, executeAfterCombatVictory=true)`.
+`STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the refusal) gates the importer. Refusals now carry
+`pendingActionsBlocker`, naming queue state and action classes, so the next unsupported tail is identified from the
+failure dump. `live_silver_importer` and `silver_wire_state` tests cover import, both flag values, bad amounts, wire
+round trip and that a plain (non-Toy) heal stays unobserved. **Unverified:** the Java change is not compiled or run
+here (no game jar in the cloud); live confirmation needs a reinstall.
+Seeds: none driven (unit tests only; 111200431-440 reserved, unused).
+## §552 — Blood Potion keep value refit for the fixed in-combat heal: 1163 -> 834 (2026-10-19)
+
+**Question:** `potionKeepRank` (ADR-0039) ranked Blood Potion first (1163) from CTM fights played with the legacy
+in-combat heal (40% of max HP without Sacred Bark, fixed by `STS_BLOOD_POTION_HEAL_FIX`, §544). What is its value
+under the fixed heal? Carried-over item of the overnight parity list (§545), asked by Philipp 2026-10-19 08:34Z
+("Open fix threads for all of the things which are not fixed").
+**Bound (no seeds):** re-extracting the ADR-0039 corpora reproduces both fits exactly. At A20 a held Blood Potion is
+drunk in 75% of fights and the old heal adds 12.16 HP per held fight beyond the fixed one, but 42% of drinking
+fights end at max HP. Removing the whole excess (`tools/potion_keep/blood_heal_bound.py`) leaves a value between 0.9
+and 11.6: too wide to rank.
+**Probe:** `potionpriceprobe` with the new `EXTRA addpot:BLOOD_POTION` copy (research only), one fight ahead,
+student_sel OOC, OOC MCTS off, A20, current Silver defaults, each seed run with the heal fix on and off. Seeds
+111200191–111200210, 40/40 runs rc=0, ~100 states per regime. Value (HP + 53 × survived): fix on 8.90, off 12.72;
+change **−3.82 [−5.43, −2.28]** (seed bootstrap); on the 91 start states identical in both regimes, −4.03 (sd 7.39).
+**Result:** A20 value 14.12 − 3.82; A0 shifted by −3.82 × 0.721 (**Inference:** scaled by the old excess heal per
+held fight, A0 not probed); mean 8.34, rank **834** (**Inference:** applying the probe's causal change to the
+observational regression value assumes both shift equally) (`STS_POTION_KEEP_BLOOD_REFIT`, default on, `=0` restores
+1163). Blood Potion now ranks second, below Fruit Juice (924) and above Heart of Iron (666). Under the 0.721 A0
+scaling the rank stays between ~696 and ~967 across the CI, so only its order against Fruit Juice is uncertain.
+At the point estimate, A0 shifts from none to the full A20 change give ~781–972; combined with the CI, ~620–1049,
+which reaches below Heart of Iron (full A0 shift) and above Fruit Juice (no A0 shift). A0 is likely a bit higher
+than scaled (51% of A0 drinking fights end at max HP vs 42%). Play-changing only where a
+reward or discard choice involves Blood Potion. No game test of playing strength. The §510 and §537 Blood prices
+stay descriptive and biased (no code reads them).
+[README](evidence/blood_potion_keep_refit_20261019/README.md), `delta.txt`, `bound-fits.txt`, `probe-csv.tar.gz`.
+**Knowledge impact:** `operations/environment-variables.md` (`STS_POTION_KEEP_BLOOD_REFIT`),
+`architecture/out-of-combat.md` (pickup paragraph), `tools/potion_keep/combine.py`.
+## §551 — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
+
+**Question:** why did live run 111194463 stop at Act 3 floor 40 (`silver_unmapped_player_power`, problem 21 in
+`engine-parity/overnight-20261019/ISSUES.md`), and does the engine play Panache as Java does?
+**Setup:** read-only `javap -c -p` of `desktop-1.0.jar` (sha256 `cfad868a…081673`) on Philipp's PC, the run's
+`trace28.jsonl.failure.json`, and `tests/panache_test.cpp` (fixed seed 111200211, no gameplay).
+**Result:** Java `PanachePower(owner, dmg)` sets `amount = 5` (the countdown) and a private `damage = dmg`;
+`stackPower(n)` adds to `damage` only; `onUseCard` decrements `amount` and at 0 resets it to 5 and queues
+`DamageAllEnemiesAction(createDamageMatrix(damage, true), THORNS)`; `atStartOfTurn` sets `amount = 5`. The Panache
+card is cost 0, magic 10 (+4 upgraded). The trace's observation had `{"id":"Panache","amount":5}` with no damage and
+no `panacheCounter`, so the importer refused (the producer looked for fields named `panacheCounter` /
+`cardsUntilTrigger`, which do not exist). The engine started the countdown at 0 when Panache was first applied
+(damage on the next card) and never reset it after a trigger (damage on every later card that turn): with the fix off
+the test sees 10 damage on each of the 5 cards after Panache; with it on, 10 damage on the 5th card only.
+**Interpretation:** `STS_PANACHE_FIX` (default on, `=0` restores) fixes the engine; the producer now sends
+`panacheDamage` and `panacheCounter = amount`, and the importer maps Java `amount` to the native countdown and
+`panacheDamage` to the status amount. Live use needs a mod reinstall. Combat-net features already encode
+`pPanache` (status amount) and `panacheCtr` (countdown), so the values they see change for Panache states; no
+model was retrained. Panache is a rare colorless card, so the effect on win rate is expected to be small (**Inference**).
+Seeds: 111200211 (unit test only).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md` (`STS_PANACHE_FIX`).
+## §550 — Overnight live play: Mayhem played the pre-draw top card natively (2026-10-19)
+
+**Question:** why did turns with Mayhem diverge from the game (overnight list problem 13)?
+**Setup:** parity traces of seed 111194457 (segments 16, 24, 25; Reptomancer and Jaw Worm horde) from §545's overnight
+runs; `javap` of `MayhemPower`, `MayhemPower$1`, `PlayTopCardAction` and `GameActionManager.getNextAction` in the pinned
+`desktop-1.0.jar` on Philipp's PC (read-only).
+**Result:** `MayhemPower.atStartOfTurn` queues, per stack, a wrapper action; its update rolls
+`getRandomMonster(null, true, cardRandomRng)` and queues `PlayTopCardAction` at the bottom. The wrapper sits ahead of
+the turn's `DrawCardAction`, so the target roll happens before the draw and the card play after the draw and the
+post-draw relics/powers. The engine queued `PlayTopCard` directly and played the pre-draw top card. Segment 16 step 86:
+the game drew Dark Embrace+ and four more, then played Burning Pact+ (exhaust selection); native played Dark Embrace+
+and drew Burning Pact+. Segment 25 step 14: the game played Metallicize+ after filling the hand to 10, the last Jaw
+Worm survived at 3 HP; native played the pre-draw Clothesline+ and won. Segment 24 step 17 and segment 25 step 57
+show the same pattern.
+**Interpretation:** `STS_MAYHEM_AFTER_DRAW_FIX` (default on, `=0` restores) adds the wrapper action
+(`ActData_MayhemPlayTopCard`). Play-changing for every combat with Mayhem; results recorded before this fix are
+comparable only with `STS_MAYHEM_AFTER_DRAW_FIX=0`. `mayhem_after_draw_test` checks the card played and the Armaments
+selection under both settings. **Unverified:** the fixed probe on the recorded traces (traces stay on the PC under
+`~/Documents/sts/artifacts/overnight-20261019/seed-111194457/`); the issue's inference that Mayhem explains other
+Act-3 end-turn hand/discard mismatches.
+Seeds: 111200121 (fixed seed of `mayhem_after_draw_test`, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+## §549 — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
+
+**Question:** why did live runs 111194454 and 111194460 stop at the Act 2 boss (floor 33) with
+`silver explicitly unsupported: silver_card_identity` (§545 overnight list, problem 7)?
+**Result:** after a Bronze Orb with Stasis dies, Java returns the stolen card under its own UUID while the dead orb
+still lists the same card in its Stasis power, which the inspector exports in `combat.stasis`. The importer saw the
+UUID twice and refused the state. A unit case built from that shape (orb slot 0 dead, Stasis card also in hand)
+fails with `silver_card_identity` at `815c019a` and imports with an empty native stasis slot after the fix.
+**Interpretation:** live importer only; the simulator's own Stasis return (`Monster::returnStasisCard`) already
+empties the slot, so no flag. A dead orb's entry is dropped only when its UUID is in another pile; otherwise the
+import is still rejected. **Unverified:** the recorded failure traces (on Philipp's PC) were not replayed here.
+Seeds: none run.
+**Knowledge impact:** `behavior/live-silver-capability-census.md`.
+
 ## §548 — Blessing of the Forge upgraded curses and statuses natively (2026-10-19)
 
 **Question:** why did Blessing of the Forge upgrade Ascender's Bane natively but not in the game (overnight live play,
@@ -21283,3 +21387,29 @@ the combat prior; the CTM standard child; #401 Stage 2 ablations.
 group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
+
+## §549 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
+
+**Question:** do four small monster-side parity differences (overnight list problems 4 and 6, canary-2 Mugger `aiRng` and
+Two Thieves `miscBits`) come from the engine, the importer or the probe? Philipp asked 2026-10-19 08:34Z for fix threads
+for every open problem.
+**Setup:** read-only `javap -c -p -constants` of the pinned JAR (`cfad868a…`, JDK 1.8.0_504) and the raw traces on
+Philipp's PC (`~/Documents/sts/artifacts/monster-rng-gaps-20261019/`): seed 111194454 segments 1 and 2, canary 2 trace 8.
+**Result:** all four are real.
+- Acid Slime (L) split (seed 111194454 segment 2 step 2): game `aiRng` 4 -> 6, native 8. Java rolls once per spawned
+  medium slime (`SpawnMonsterAction` -> `init`); `AcidSlime_L.takeTurn` queues no `RollMoveAction`, while
+  `SpikeSlime_L.takeTurn` does (one more roll). Native drew two extra rolls for either. `damage()` records the split byte
+  twice (`setMove` plus a queued `SetMoveAction`): game `moveHistory` [3, 3], native kept the previous move.
+- Curl Up on a dead louse (seed 111194454 segment 1 step 7): Fiend Fire curls with an early hit and kills with a later one;
+  `GainBlockAction.update` skips a dying or dead target (game block 0, native 12).
+- Mugger kill (canary 2 trace 8 step 21): `Mugger.die` draws `aiRng.random(2)` in `playDeathSfx`; game counter 9, native 8.
+  The per-turn counts (Looter 0.6/0.5 dialog rolls, Mugger `playSfx`) already matched.
+- Two Thieves `miscBits` (trace 8 steps 14, 18, 22): Java has no such field. The generic importer read only an explicit
+  `combat.miscBits`, so a thief's stolen gold (`miscInfo` > 0) never set the native stolen-gold check; the live advisor's
+  `effectiveGold` ignored the gold a thief kill returns.
+**Interpretation:** default-on fixes, `=0` restores each: `STS_SLIME_SPLIT_RNG_FIX`, `STS_DEAD_MONSTER_BLOCK_FIX`,
+`STS_MUGGER_DEATH_RNG_FIX` (engine, change later monster rolls or Silver node identity) and `STS_IMPORTER_THIEF_GOLD_FIX`
+(live importer and probe). `lastTargetedMonster` 1 vs 0 after the split is the inspector's default for a target it no
+longer emits; left as representation-only. No gameplay seeds were run; the unit tests use fixed seeds 111200151-153.
+**Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
+`operations/environment-variables.md`.
