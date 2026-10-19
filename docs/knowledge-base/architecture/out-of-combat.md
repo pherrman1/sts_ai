@@ -646,10 +646,11 @@ The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
 (`potionChance=-40..60` in steps of 10 and `cardRarityFactor=-40..5`) rather
 than applying the link to an expected margin or conditioning on 0/5 when the
-capture lacks the exact counters. In that case direct V4 scoring fails closed
-and live MCTS uses an equal public prior instead of a fabricated midpoint.
-Current mod captures export the exact counters (#636), so live MCTS keeps them
-at every particle and the leaf evaluates them directly. Qualified public question-room outcomes reconstruct the
+capture lacks the exact counters. Current mod captures export the exact
+counters (#636), so live MCTS keeps them at every particle and the leaf
+evaluates them directly. Either way live captures leave
+`rewardPityHistoryComplete` false: direct V4 scoring fails closed and live MCTS
+uses an equal public prior where Arm C does not cover a node. Qualified public question-room outcomes reconstruct the
 three room chances, which remain fixed when root particles sample reward pity.
 Qualified legacy Juzu ambiguity is represented by a finite weighted distribution
 over monster chances, conditioned on resolved outcomes, ownership, preceding

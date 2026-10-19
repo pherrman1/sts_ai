@@ -277,6 +277,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 for(const auto &action:v4CandidateActions(state.mctsRoot.state)) targets.push_back(action.bits);
                 policy.setRootPrimitiveBits(targets);
                 policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+                policy.setExactRewardPity(state.exactRewardPity);
                 policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
                 policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
                 policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
@@ -320,6 +321,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                     throw std::runtime_error("DIFFERENTIAL_PUBLIC_MATCH_KEEP_UNREPRESENTABLE");
                 std::map<std::tuple<int,int,bool>,bool> wants;
                 policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+                policy.setExactRewardPity(state.exactRewardPity);
                 policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
                 policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
                 policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
@@ -539,6 +541,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             validateCapturedLiveOocMapping(state);
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
             policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+            policy.setExactRewardPity(state.exactRewardPity);
             policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
             policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
             policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);

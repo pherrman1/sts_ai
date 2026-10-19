@@ -59,7 +59,7 @@ Random.counter, RandomXS128.seed0/seed1, and getState(int) contract. No RNG
 values are imported into Silver, OOC observations, policy scoring, or native
 execution.
 
-Canonical OOC comparison excludes unobserved reward-pity counters, including
+Canonical OOC comparison excludes reward-pity counters, including
 importer placeholders, and room fields the public importer does not populate. Details are restricted to the active screen, and sold
 shop slots use a common unavailable representation. This is a public-state
 projection, not equality of hidden counters or stale simulator storage.

@@ -268,7 +268,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     const int observedEventRooms = currentActEventVisits;
     const bool questionHistoryComplete = questionHistoryComplete_;
     const auto questionPosterior = questionChancePosterior_;
-    const bool exactPity = rewardPityHistoryComplete_;
+    const bool exactPity = exactRewardPity_;
     dependencies.sampleHiddenCounters = [observedEventRooms, questionHistoryComplete, questionPosterior, exactPity](
                                             sts::GameContext &gc, std::mt19937_64 &rng) {
         // Exact reward pity counters (#636) are kept; the sampler still
@@ -315,7 +315,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     dependencies.leafValue = [this](const sts::GameContext &gc, const PathHistory &history) {
         // With an exact pity history (#636) every particle carries the real
         // counters forward through native transitions; evaluate them directly.
-        if (rewardPityHistoryComplete_) {
+        if (exactRewardPity_) {
             const double value = winModel_->predict(richFeatureVec(gc, history));
             if (!std::isfinite(value) || value < 0 || value > 1)
                 throw std::runtime_error("OOC MCTS invalid native v_win value");

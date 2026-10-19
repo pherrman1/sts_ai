@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -880,19 +881,33 @@ int main(int argc,char **argv){try{
         if(name=="event_library") {
             auto healed=live.mctsRoot.state;healed.chooseEventOption(1);
             check(healed.curHp==std::min(source.maxHp,source.curHp+source.info.hpAmount0),"Library public heal transition");
-            auto unknown=wire;unknown["ooc"]["publicState"]["rewardPityHistoryComplete"]=false;
+            auto unknown=wire;auto &unknownPublic=unknown["ooc"]["publicState"];
+            unknownPublic["rewardPityHistoryComplete"]=false;unknownPublic.erase("potionChance");
+            unknownPublic.erase("cardRarityFactor");
             advisor::LiveOocStateV1 belief;
-            check(advisor::importLiveOocStateV1(unknown,belief).ok && belief.hiddenEventRewardPity,
-                    "Library unknown pity must reach public-belief policy");
+            check(advisor::importLiveOocStateV1(unknown,belief).ok && belief.hiddenEventRewardPity
+                    && !belief.exactRewardPity,"Library unknown pity must reach public-belief policy");
             check(!belief.mctsRoot.supported || (belief.mctsRoot.state.potionChance!=source.potionChance
                     || belief.mctsRoot.state.cardRarityFactor!=source.cardRarityFactor),
                     "unknown pity must not import the exact counters");
-            for(int defect=0;defect<4;++defect) {
+            // Real mod captures (#636): exact counters without the V4 marker.
+            auto captured=wire;captured["ooc"]["publicState"].erase("rewardPityHistoryComplete");
+            check(advisor::importLiveOocStateV1(captured,belief).ok && belief.exactRewardPity
+                    && !belief.rewardPityHistoryComplete && belief.hiddenEventRewardPity
+                    && belief.mctsRoot.state.potionChance==source.potionChance
+                    && belief.mctsRoot.state.cardRarityFactor==source.cardRarityFactor,
+                    "mod capture must import exact counters but keep V4 unqualified");
+            setenv("STS_LIVE_OOC_EXACT_PITY","0",1);
+            const bool disabled=advisor::importLiveOocStateV1(captured,belief).ok && !belief.exactRewardPity;
+            unsetenv("STS_LIVE_OOC_EXACT_PITY");
+            check(disabled,"STS_LIVE_OOC_EXACT_PITY=0 must ignore the exact counters");
+            for(int defect=0;defect<5;++defect) {
                 auto bad=wire;auto &pub=bad["ooc"]["publicState"];
                 if(defect==0)pub.erase("potionChance");
                 if(defect==1)pub.erase("cardRarityFactor");
                 if(defect==2)pub["potionChance"]=15;
                 if(defect==3)pub["cardRarityFactor"]=6;
+                if(defect==4){pub.erase("potionChance");pub.erase("cardRarityFactor");}
                 check(!advisor::importLiveOocStateV1(bad,belief).ok,"malformed exact reward pity accepted");
             }
             for(int defect=0;defect<3;++defect) {

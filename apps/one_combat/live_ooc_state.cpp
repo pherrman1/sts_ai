@@ -347,7 +347,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.boss = source.projected.boss;
     // Exact reward pity counters replace the constructor's values; without an
     // exact history the root keeps them and MCTS resamples them (#636).
-    if (source.rewardPityHistoryComplete) {
+    if (source.exactRewardPity) {
         root.potionChance = source.projected.potionChance;
         root.cardRarityFactor = source.projected.cardRarityFactor;
     }
@@ -719,10 +719,15 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         const auto &p = o.at("publicState");
         next.rewardPityHistoryComplete = p.contains("rewardPityHistoryComplete")
             ? boolean(p, "rewardPityHistoryComplete") : false;
-        // STS_LIVE_OOC_EXACT_PITY=0 restores the old public-belief prior even
+        const bool hasPityCounters = p.contains("potionChance");
+        require(hasPityCounters == p.contains("cardRarityFactor"),
+                "potionChance and cardRarityFactor must be sent together");
+        require(hasPityCounters || !next.rewardPityHistoryComplete,
+                "rewardPityHistoryComplete requires the exact pity counters");
+        // STS_LIVE_OOC_EXACT_PITY=0 restores the public-belief prior even
         // when the producer exports the exact counters (#636).
-        if (const char *flag = std::getenv("STS_LIVE_OOC_EXACT_PITY"); flag && std::string(flag) == "0")
-            next.rewardPityHistoryComplete = false;
+        const char *exactPityFlag = std::getenv("STS_LIVE_OOC_EXACT_PITY");
+        next.exactRewardPity = hasPityCounters && !(exactPityFlag && std::string(exactPityFlag) == "0");
         require(string(p,"character") == "IRONCLAD", "only Ironclad is representable");
         g.cc = CharacterClass::IRONCLAD;
         g.seed = 0; // Never used. No live RNG or hidden queue is imported.
@@ -731,12 +736,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
         g.gold=integer(p,"gold",0,1000000);
         // Reward pity counters (vanilla blizzardPotionMod and
-        // cardBlizzRandomizer). They are consumed only with an exact history;
-        // otherwise these placeholders stay unused: direct V4 fails closed and
-        // MCTS samples the counters from the public-belief prior.
+        // cardBlizzRandomizer). Without them these placeholders stay unused:
+        // direct V4 fails closed and MCTS samples the counters from the
+        // public-belief prior.
         g.potionChance=30;
         g.cardRarityFactor=-18;
-        if (next.rewardPityHistoryComplete) {
+        if (next.exactRewardPity || next.rewardPityHistoryComplete) {
             g.potionChance=integer(p,"potionChance",-1000,1000);
             require(g.potionChance%10==0,"potionChance must be a multiple of 10");
             g.cardRarityFactor=integer(p,"cardRarityFactor",-40,5);

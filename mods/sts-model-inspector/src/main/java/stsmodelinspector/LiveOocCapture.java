@@ -570,9 +570,9 @@ final class LiveOocCapture {
         // cardRarityFactor; saved as potion_chance and
         // card_random_seed_randomizer). Both follow from reward screens the
         // player has already seen, so exporting them equals perfect memory.
+        // rewardPityHistoryComplete stays unset: it would enable V4 scoring.
         p.put("potionChance", AbstractRoom.blizzardPotionMod);
         p.put("cardRarityFactor", AbstractDungeon.cardBlizzRandomizer);
-        p.put("rewardPityHistoryComplete", true);
     }
 
     static String canonicalEventId(String liveId) {
