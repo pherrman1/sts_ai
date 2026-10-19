@@ -25,6 +25,7 @@
 #include "combat/CardQueue.h"
 #include "combat/PublicDamageBelief.h"
 #include "combat/Monster.h"
+#include "combat/BattleContext.h"
 #include "live_silver_mapping.h"
 
 namespace one_combat::advisor {
@@ -1346,6 +1347,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (!combat.contains("strikeCount")) {
         wire.strikeCount = 0;
         for (const auto &card : allCards) if (isStrike(card.wire)) ++wire.strikeCount;
+        // STS_STRIKE_COUNT_FIX=0 restores the legacy recount, one too high
+        // per exhausted Strike or Strike held by a Stasis orb.
+        if (sts::strikeCountFix()) {
+            for (const auto *pile : {&exhaust.bottom, &exhaust.unknown, &exhaust.top, &stasis})
+                for (const auto &card : *pile) if (isStrike(card.wire)) --wire.strikeCount;
+        }
     }
     wire.handNormalityCount = combat.value("handNormalityCount", countWire(wire.hand, isNormality));
     wire.handPainCount = combat.value("handPainCount", countWire(wire.hand, isPain));
