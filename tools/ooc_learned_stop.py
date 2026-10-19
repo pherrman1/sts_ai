@@ -40,6 +40,9 @@ def load_roots(dirs):
     return roots, digest.hexdigest()
 
 
+# Label: most visits, ties to the lower id. The planner's own selection (visits_q_id) breaks visit ties by Q, so
+# on an exact final visit tie the label can name a different action than the one played; rare, and the online
+# rule only reads checkpoint statistics.
 def final(r): return max(r['actions'], key=lambda a: a['visits'])['id']
 
 

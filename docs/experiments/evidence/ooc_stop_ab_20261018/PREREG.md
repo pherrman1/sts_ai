@@ -25,8 +25,8 @@ Common, the §539 A20 stack minus `STS_OOC_MCTS_ACT4_SILVER_SIMS`: OOC MCTS 4096
 `LEAF_SELECTS=heart1`, `LEAF_POLICY=heart1`, rollout3 native leaf, `TEMPERATURE=1`, cPUCT 1.5, widening 4/0.75,
 tree rules, 8 public futures; imagined fights on the A20 CTM, with Shield and Spear and the Heart through the
 ADR-0048 survival model, CTM-refused fights on Silver 500 (`UNSUPPORTED_SILVER_SIMS=500`); real combats on
-Silver flat exact 10k with the g6_E root prior (weight 400, tree prior K=8) and main's defaults (g7f_E rollout
-root table). A20 full runs to the Heart (`STS_STOP_AFTER_ACT=0 STS_COLLECT_KEYS=1 STS_FAIR=1`), one thread per
+Silver flat exact 10k with the g7f_E root and tree prior (weight 400, K=8; ADR-0049, Philipp 2026-10-18 23:53Z)
+and main's defaults (g7f_E rollout root table, #675 prior playouts in real boss and elite fights). A20 full runs to the Heart (`STS_STOP_AFTER_ACT=0 STS_COLLECT_KEYS=1 STS_FAIR=1`), one thread per
 process.
 
 A unit is rc=97 when its OOC MCTS banner does not show exactly its arm's stop rule, and rc=96 when the Act-4
@@ -47,7 +47,8 @@ A seed counts only when all three arms finished with rc 0 and wrote their result
 - A rule is proposed as a default only if it is NON_INFERIOR and saves CPU; that is Philipp's decision.
 
 ## Model validity
-The learned model was trained at `STS_OOC_MCTS_TEMPERATURE=1` with student_sel root priors and refuses any other
+The checkpoint data came from the g6_E-prior stack before #675; those settings change real fights only, not the
+OOC search the model reads, so the model is used as trained (Inference). The learned model was trained at `STS_OOC_MCTS_TEMPERATURE=1` with student_sel root priors and refuses any other
 temperature. A change of root temperature, prior network or simulation budget needs new checkpoint data and a
 retrained model before its result applies (Philipp 22:09Z).
 
