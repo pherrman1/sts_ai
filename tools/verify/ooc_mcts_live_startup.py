@@ -117,7 +117,7 @@ def main():
         cases.append(('ON accepts 20% gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '2048',
             'STS_OOC_MCTS_GAP_STOP_20': '1', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
             True, '"gapStop20":true'))
-        # ADR-TBD: the 1024:0.7 gap ladder is the default above 1024 sims; =0 and a learned stop leave it off.
+        # ADR-0053: the 1024:0.7 gap ladder is the default above 1024 sims; =0 and a learned stop leave it off.
         model = str(Path(args.artifact).resolve())
         for name, extra, present in (('gap stop on by default', {}, True),
                                      ('gap stop opt-out', {'STS_OOC_MCTS_GAP_STOP': '0'}, False),
