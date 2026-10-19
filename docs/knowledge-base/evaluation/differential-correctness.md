@@ -227,7 +227,8 @@ Sacred Bark and 20% with it, the reverse of the game.
   behind the open grid (Shelled Parasite `ReducePowerAction` Plated Armor;
   Writhing Mass Malleable `GainBlockAction` and Reactive `RollMoveAction`,
   also overnight seed 111194455 floor 38; defensive Guardian Sharp Hide
-  thorns, seed 111200382 floor 16). The producer now emits them and
+  thorns, seed 111200382 floor 16; Byrd Flight `ReducePowerAction`, seed
+  111200385 floor 21). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
 
 Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live

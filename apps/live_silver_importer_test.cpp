@@ -3600,11 +3600,14 @@ int main(int argc, char **argv) {
         // Headbutt's discard GRID opens while the hit's monster reactions
         // are still queued behind it (Java addToBot): Malleable self-block
         // and Reactive reroll (Writhing Mass), Plated Armor loss (Shelled
-        // Parasite), and the defensive Guardian's Sharp Hide thorns hit.
-        // Live runs 111194455/111194451/111200382 stopped here.
-        for (const auto encounter : {MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE, MonsterEncounter::THE_GUARDIAN}) {
+        // Parasite), Flight loss (Byrd), and the defensive Guardian's Sharp
+        // Hide thorns hit. Live runs 111194455/111194451/111200382/111200385
+        // stopped here.
+        for (const auto encounter : {MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
+                MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS}) {
             const bool mass=encounter==MonsterEncounter::WRITHING_MASS;
             const bool guardian=encounter==MonsterEncounter::THE_GUARDIAN;
+            const bool byrd=encounter==MonsterEncounter::THREE_BYRDS;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
             game.act=mass?3:guardian?1:2; game.floorNum=mass?38:guardian?16:29;
             BattleContext live; live.init(game, encounter);
@@ -3623,6 +3626,8 @@ int main(int argc, char **argv) {
                 sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
             }
             const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
+            const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
+            if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
             CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=920;
             live.cards.moveToHand(headbutt); live.player.energy=3;
             sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
@@ -3646,7 +3651,8 @@ int main(int argc, char **argv) {
                         || nativeQueue[2].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE))
                     || (guardian && (nativeQueue[0].kind!=silver_bridge::PendingActionKind::MONSTER_THORNS
                         || nativeQueue[0].amount!=4 || nativeQueue[1].kind!=silver_bridge::PendingActionKind::USE_CARD))
-                    || (!mass && !guardian && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                    || (byrd && target.getStatus<MonsterStatus::FLIGHT>()!=flightBefore-1)
+                    || (!mass && !guardian && !byrd && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
                 throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
             auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
             setProducerV4CardObservation(observation,expected);
@@ -3663,6 +3669,7 @@ int main(int argc, char **argv) {
             for(auto &power:combat["monsters"][0]["powers"]) {
                 if(power.at("id")=="Reactive") power={{"id","Compulsive"},{"amount",-1}};
                 if(power.at("id")=="Plated Armor") power["amount"]=platedBefore;
+                if(power.at("id")=="Flight") power["amount"]=flightBefore;
             }
             // Java order: Sharp Hide's onUseCard thorns precede UseCardAction.
             json pending=guardian?json::array({json{{"kind","MONSTER_THORNS"},{"amount",4},{"slot",0}}}):json::array();
@@ -3670,7 +3677,8 @@ int main(int argc, char **argv) {
             if(mass) {
                 pending.push_back(json{{"kind","MONSTER_GAIN_BLOCK"},{"amount",nativeQueue[1].amount},{"slot",0}});
                 pending.push_back(json{{"kind","REACTIVE_ROLL_MOVE"},{"slot",0}});
-            } else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
+            } else if(byrd) pending.push_back(json{{"kind","MONSTER_REDUCE_FLIGHT"},{"amount",1},{"slot",0}});
+            else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
@@ -3720,7 +3728,7 @@ int main(int argc, char **argv) {
             if(mass) brokenQueue[2]["slot"]=1;
             else if(guardian) brokenQueue[0]["amount"]=3;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
-                if(power.at("id")=="Plated Armor") power["amount"]=1;
+                if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)
                 throw std::runtime_error("unrepresentable Headbutt monster reaction was accepted");
         }

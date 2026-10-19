@@ -1325,11 +1325,12 @@ self-`GainBlockAction` such as Malleable, with the emitted `slot`),
 `REACTIVE_ROLL_MOVE` (Writhing Mass `RollMoveAction`, slot 0), `MONSTER_THORNS`
 (defensive Guardian's Sharp Hide `DamageAction(player, THORNS)`, queued by
 `onUseCard` ahead of `UseCardAction`, slot 0) and
-`MONSTER_REDUCE_PLATED_ARMOR` (`ReducePowerAction` "Plated Armor" by 1). The
+`MONSTER_REDUCE_PLATED_ARMOR` / `MONSTER_REDUCE_FLIGHT` (`ReducePowerAction`
+"Plated Armor" or Byrd "Flight" by 1). The
 first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` queue items
-(Reactive's scalar counts the queued rolls); the Plated Armor loss is folded
-into the imported monster because native applies it at the hit. A reduction
-that would remove the power (Shelled Parasite stun) stays unsupported, as do
+(Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
+into the imported monster because native applies them at the hit. A reduction
+that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
 Curl Up (its queued power removal has no form) and a Guardian hit that crosses
 the Mode Shift threshold (queued `ChangeStateAction` "Defensive Mode"). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native

@@ -238,6 +238,8 @@ public final class CombatBoundaryTest {
                 || !"{\"kind\":\"MONSTER_REDUCE_PLATED_ARMOR\",\"amount\":1,\"slot\":1}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",1,1))
                 || !"{\"kind\":\"MONSTER_THORNS\",\"amount\":4,\"slot\":0}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_THORNS",4,0))
                 || STSModelInspector.monsterReactionItemJson("MONSTER_THORNS",4,1)!=null
+                || !"{\"kind\":\"MONSTER_REDUCE_FLIGHT\",\"amount\":1,\"slot\":2}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_FLIGHT",1,2))
+                || STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_FLIGHT",2,0)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_THORNS",0,0)!=null
                 || STSModelInspector.monsterReactionItemJson("REACTIVE_ROLL_MOVE",null,1)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",2,0)!=null

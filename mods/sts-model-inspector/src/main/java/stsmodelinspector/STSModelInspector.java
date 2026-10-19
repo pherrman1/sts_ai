@@ -2923,8 +2923,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name))
             return monsterReactionItemJson("MONSTER_GAIN_BLOCK",amount,slot);
+        String powerId=readStringField(action,"powerID");
+        if(readObjectField(action,"powerInstance")!=null)return null;
+        if("Flight".equals(powerId)) {
+            // FlightPower.onAttacked: addToBot(ReducePowerAction(owner, owner, "Flight", 1)).
+            AbstractPower flight=monster.getPower("Flight");
+            if(!"Byrd".equals(monster.id) || flight==null
+                    || !"com.megacrit.cardcrawl.powers.FlightPower".equals(flight.getClass().getName()))return null;
+            return monsterReactionItemJson("MONSTER_REDUCE_FLIGHT",amount,slot);
+        }
         AbstractPower plated=monster.getPower("Plated Armor");
-        if(!"Plated Armor".equals(readStringField(action,"powerID")) || readObjectField(action,"powerInstance")!=null
+        if(!"Plated Armor".equals(powerId)
                 || plated==null || !"com.megacrit.cardcrawl.powers.PlatedArmorPower".equals(plated.getClass().getName()))return null;
         return monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",amount,slot);
     }
@@ -2933,9 +2942,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(slot<0 || slot>4)return null;
         if("REACTIVE_ROLL_MOVE".equals(kind)) return slot==0?"{\"kind\":\"REACTIVE_ROLL_MOVE\",\"slot\":0}":null;
         if(amount==null || amount<0 || amount>999)return null;
-        if("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) && amount!=1)return null;
+        if(("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) || "MONSTER_REDUCE_FLIGHT".equals(kind)) && amount!=1)return null;
         if("MONSTER_THORNS".equals(kind) && (slot!=0 || amount<1))return null;
-        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind) && !"MONSTER_THORNS".equals(kind))return null;
+        if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind)
+                && !"MONSTER_REDUCE_FLIGHT".equals(kind) && !"MONSTER_THORNS".equals(kind))return null;
         return "{\"kind\":\""+kind+"\",\"amount\":"+amount+",\"slot\":"+slot+"}";
     }
 
