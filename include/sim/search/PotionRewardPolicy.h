@@ -14,6 +14,10 @@ namespace sts::search {
     // Unset or 1: on (default). 0: the legacy pickup. Other values are fatal.
     bool potionRewardSwapEnabled();
 
+    // STS_POTION_KEEP_BLOOD_REFIT: unset or 1 (default) = Blood Potion's keep
+    // value refit for the fixed heal (834); 0 = the old fit (1163). Other values are fatal.
+    bool bloodPotionKeepRefitEnabled();
+
     // Fitted Ironclad keep value x100 (ADR-0039, tools/potion_keep/); higher is better.
     int potionKeepRank(Potion p);
 
