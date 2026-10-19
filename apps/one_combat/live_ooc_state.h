@@ -65,8 +65,10 @@ ImportResult importLiveOocStateV1(const nlohmann::json &observation, LiveOocStat
 // Resolves one primitive against the complete captured current-screen mapping.
 // A schema/mapping error throws; it is never a policy UNSUPPORTED fallback.
 nlohmann::json lowerLiveOocAction(const LiveOocStateV1 &state, std::uint32_t primitiveBits);
+// treeRuleChoices: equivalence uses the tree-rule search key (copies of one
+// card are one bottle/duplicate/bonfire choice), as the live search does.
 void validateLiveOocActionSet(const LiveOocStateV1 &state, const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentChoices = false);
+                              bool allowEquivalentChoices = false, bool treeRuleChoices = false);
 std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardGoldLiveAction(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardPotionLiveAction(const LiveOocStateV1 &state);
