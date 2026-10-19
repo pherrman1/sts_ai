@@ -21416,7 +21416,7 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
-## §TBD — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
+## §555 — Live importer re-armed Centennial Puzzle after it fired (2026-10-19)
 
 **Question:** why were all 39 `player.relicBits0` parity mismatches in live seed 111194465 bit 8 (Centennial Puzzle),
 mostly at End Turn (trace4 segment 3 steps 10, 17, 40, 47; problem 24 in `engine-parity/overnight-20261019/ISSUES.md`
