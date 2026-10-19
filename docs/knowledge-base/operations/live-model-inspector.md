@@ -300,6 +300,11 @@ Darkling Regrow, Bronze Orb Stasis, and Awakened One stage 2. The only manifest
 exclusion is the `INVALID` sentinel.
 The combat boundary still requires the installed runtime's waiting-for-user
 phase, no current action, empty action/card/monster queues, and an unended turn.
+It also excludes a combat that is ending: while the player escapes after Smoke
+Bomb (`isEscaping`/`smoked`) and after `endBattle()` (`isBattleOver`) the room
+stays `COMBAT` with idle queues, but native combat has already ended and
+`endBattle()` has cleared the Runic Dome occupant binding, so publishing that
+frame made Silver refuse with `silver_monster_occupant_binding`.
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
@@ -404,7 +409,12 @@ failure reproduction commands. Vanilla `CardCrawlGame.render()` returns before
 updating the game when `getRawDeltaTime()` exceeds 0.1 seconds. Repeated slow
 software-rendered frames can therefore advance an animation much more slowly
 than wall time; extending the wait does not change the animation or reapply its
-effect. Advisor waiting remains separately configured by `--inspector-timeout`.
+effect. The Wheel of Change Spin click adds 10 seconds to that wait: MCP's
+screen is unchanged while Java finishes the bounce-in, spins and bounces out
+(about 9 seconds) before the result dialog appears. The inspector qualifies the
+Spin page (`SPIN_READY`) during the bounce-in as well, because MCP's click only
+latches `buttonPressed` and Java starts the spin when the bounce ends.
+Advisor waiting remains separately configured by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 
