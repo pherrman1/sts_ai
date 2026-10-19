@@ -1714,7 +1714,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return emitted;
     }
 
-    private static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
+    static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
         int total = 0;
         for (Integer value : counts.values()) total += value;
         if (counts.size() == 1) {
@@ -1756,7 +1756,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 return "AWAKENED_ONE";
             if (count(counts, "Cultist") == 1 && count(counts, "Chosen") == 1)
                 return "CULTIST_AND_CHOSEN";
-            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 2)
+            // MonsterHelper "Chosen and Byrds" spawns one Byrd and one Chosen
+            // (native MonsterGroup CHOSEN_AND_BYRDS likewise).
+            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 1)
                 return "CHOSEN_AND_BYRDS";
             if (count(counts, "Sentry") == 1 && count(counts, "SphericGuardian") == 1)
                 return "SENTRY_AND_SPHERE";
