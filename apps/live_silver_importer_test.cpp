@@ -367,6 +367,8 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
         // These are native convenience fields, not fields emitted by the
         // Java observer.  Dynamic parity must cross the same public boundary
         // as production observations and reconstruct status bits from powers.
+        const bool asleep = (monster.value("statusBits", 0ULL)
+            & (1ULL << static_cast<int>(MonsterStatus::ASLEEP))) != 0;
         monster.erase("statusBits");
         monster.erase("strength");
         monster.erase("vulnerable");
@@ -382,6 +384,23 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
         }
         // Ordinary BronzeOrb capture reads Java usedStasis, set when Stasis
         // is selected. Presence of the later Stasis power is not that flag.
+        if (id == "Lagavulin") {
+            // Java Lagavulin has no sleep power; its sleep shows publicly only
+            // as IDLE (5). Native LAGAVULIN_SLEEP also encodes the post-wake
+            // stun, which Java emits as OPEN (4), and a stun always follows
+            // an idle turn.
+            auto &powers = monster["powers"];
+            powers.erase(std::remove_if(powers.begin(), powers.end(), [](const json &power) {
+                return power.value("id", std::string()) == "Asleep";
+            }), powers.end());
+            auto &history = monster["moveHistory"];
+            if (asleep) {
+                for (auto &move : history) if (move == 4) move = 5;
+                monster["nextMove"] = 5;
+            } else if (history.size() == 2 && history[0] == 4) {
+                history[0] = 5;
+            }
+        }
     }
     return out;
 }
@@ -628,7 +647,53 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
         assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
     }
-    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength\n";
+    {
+        // Overnight live parity 2026-10-19 problem 3: the Java observation
+        // carries Lagavulin's sleep only as its IDLE intent.
+        GameContext game(CharacterClass::IRONCLAD, 0xD50Au, 0);
+        game.act = 1; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::LAGAVULIN);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        auto &laga = live.monsters.arr[0];
+        if (!laga.hasStatus<MonsterStatus::ASLEEP>() || laga.getStatus<MonsterStatus::METALLICIZE>() != 8
+            || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
+            throw std::runtime_error("Lagavulin root did not start asleep with Metallicize 8");
+        assertDynamicParity("LAGAVULIN_ASLEEP", live, knowledge, game);
+        {
+            // STS_IMPORTER_LAGAVULIN_SLEEP_FIX=0 restores the legacy import
+            // without ASLEEP; every other field is unchanged.
+            auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), live.seed);
+            normalizeDynamicObservationIdentity(wire);
+            const auto rendered = javaLikeDynamicObservation(wire, "MONSTER", "LAGAVULIN_ASLEEP_FLAG");
+            const auto asleepBit = 1ULL << static_cast<int>(MonsterStatus::ASLEEP);
+            for (const char *flag : {"1", "0"}) {
+                setenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX", flag, 1);
+                const auto imported = one_combat::advisor::importSilverRoot(rendered);
+                if (!imported.ok) throw std::runtime_error("Lagavulin flag import failed: " + imported.reason);
+                auto expected = wire;
+                if (std::string(flag) == "0") expected.monsters[0].statusBits &= ~asleepBit;
+                expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+                if (!convertedStatesEqualForSearch(expected, imported.wire)
+                        || ((imported.wire.monsters[0].statusBits & asleepBit) != 0) != (std::string(flag) == "1"))
+                    throw std::runtime_error(std::string("Lagavulin sleep flag parity failed, flag=") + flag);
+            }
+            unsetenv("STS_IMPORTER_LAGAVULIN_SLEEP_FIX");
+        }
+        resolveMonsterTransition(live, 0);
+        if (!laga.hasStatus<MonsterStatus::ASLEEP>() || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
+            throw std::runtime_error("Lagavulin idle turn did not keep it asleep");
+        assertDynamicParity("LAGAVULIN_IDLE", live, knowledge, game);
+        live.setState(InputState::EXECUTING_ACTIONS);
+        live.addToBot(Actions::DamageEnemy(0, 30));
+        live.executeActions();
+        if (live.inputState != InputState::PLAYER_NORMAL || laga.hasStatus<MonsterStatus::ASLEEP>()
+            || laga.hasStatus<MonsterStatus::METALLICIZE>() || laga.moveHistory[0] != MonsterMoveId::LAGAVULIN_SLEEP)
+            throw std::runtime_error("Lagavulin damage wake did not produce the stunned awake state");
+        assertDynamicParity("LAGAVULIN_DAMAGE_WAKE", live, knowledge, game);
+    }
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength/lagavulin-sleep\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
