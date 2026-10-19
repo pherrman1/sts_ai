@@ -21219,6 +21219,7 @@ empties the slot, so no flag. A dead orb's entry is dropped only when its UUID i
 import is still rejected. **Unverified:** the recorded failure traces (on Philipp's PC) were not replayed here.
 Seeds: none run.
 **Knowledge impact:** `behavior/live-silver-capability-census.md`.
+
 ## §548 — Blessing of the Forge upgraded curses and statuses natively (2026-10-19)
 
 **Question:** why did Blessing of the Forge upgrade Ascender's Bane natively but not in the game (overnight live play,
