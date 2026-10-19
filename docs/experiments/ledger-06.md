@@ -21227,6 +21227,7 @@ the test sees 10 damage on each of the 5 cards after Panache; with it on, 10 dam
 model was retrained. Panache is a rare colorless card, so the effect on win rate is expected to be small (**Inference**).
 Seeds: 111200211 (unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md` (`STS_PANACHE_FIX`).
+
 ## §547 — Live Bottled Flame pick with card copies failed the advisor's mapping check (2026-10-19)
 
 **Question:** why did overnight seed 111194462 stop at the Bottled Flame pick (Act 2 floor 23) with
