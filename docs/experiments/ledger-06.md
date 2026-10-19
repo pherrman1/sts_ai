@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Perfected Strike count: the live importer counted exhausted Strikes (2026-10-19)
+## §550 — Perfected Strike count: the live importer counted exhausted Strikes (2026-10-19)
 
 **Question:** why does native Perfected Strike count one Strike more than the game (overnight problem 10), and why
 does the probe report `strikeCount` game 5 / native 4 after Havoc exhausts a Strike (canary 2, §536/§544)?

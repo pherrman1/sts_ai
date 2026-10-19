@@ -197,7 +197,7 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
 - A card whose cost was set to 0 for the turn keeps `costForTurn` 0 in the
   discard pile natively; Java resets it.
 - Perfected Strike counts one Strike fewer after Havoc exhausts a Strike
-  (fixed, §TBD below).
+  (fixed, §550 below).
 - Havoc's random target differs (`lastTargetedMonster`).
 - Hexaghost records Inferno twice in Java's move history. **Inference:** no
   behavior reads it.
