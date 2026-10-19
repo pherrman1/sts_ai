@@ -21222,7 +21222,9 @@ which hid this.
 importer already did for Awakened One phase two. It changes the live advisor and the parity probe only; the simulator's
 own fights already had the marker. Live advisor decisions in these four fights before the fix did not see a leader kill
 as a win. **Unverified:** how often that changed a live decision.
+Seeds: none (unit test and bytecode reading only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
 ## §547 — Live Bottled Flame pick with card copies failed the advisor's mapping check (2026-10-19)
 
 **Question:** why did overnight seed 111194462 stop at the Bottled Flame pick (Act 2 floor 23) with
