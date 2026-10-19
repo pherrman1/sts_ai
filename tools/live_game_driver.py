@@ -239,6 +239,24 @@ def _is_wheel_spin(screen: Mapping[str, Any], action: "LegalAction") -> bool:
             and action.mcp_tool == "choose" and action.semantic.get("choice") == "spin")
 
 
+# Overnight 2026-10-19 (#18): after a Smoke Bomb MCP stays ready in screen NONE,
+# phase COMBAT while the player runs off. The inspector publishes no combat
+# decision in that window (#695) and next shows the post-escape reward screen.
+SMOKE_BOMB_EXTRA_SECONDS = 10.0
+
+
+def _is_smoke_bomb_use(screen: Mapping[str, Any], game_state: Mapping[str, Any],
+                       action: "LegalAction") -> bool:
+    slot = action.mcp_arguments.get("potion_slot")
+    if action.mcp_tool != "use_potion" or type(slot) is not int or slot < 1 or not _is_combat(screen):
+        return False
+    potions = _list(screen.get("potions", normalize_game_state(game_state).get("potions")))
+    if slot > len(potions):
+        return False
+    potion = _mapping(potions[slot - 1])
+    return any(_text(potion.get(key)).replace(" ", "").lower() == "smokebomb" for key in ("id", "name"))
+
+
 def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any] | None = None) -> str:
     """Hash decision state, excluding readiness and qualified pile display resets."""
     screen_state = dict(screen)
@@ -1296,8 +1314,8 @@ class Driver:
             await asyncio.sleep(self.poll_interval)
         raise DriverError("MCP combat monster intent remained DEBUG before the decision boundary")
 
-    async def wait_for_ready_advance(self, before: str,
-                                     extra_seconds: float = 0.0) -> tuple[Mapping[str, Any], dict[str, Any]]:
+    async def wait_for_ready_advance(self, before: str, extra_seconds: float = 0.0,
+                                     leave_combat: bool = False) -> tuple[Mapping[str, Any], dict[str, Any]]:
         deadline, last = time.monotonic() + self.poll_timeout + extra_seconds, {}
         while time.monotonic() < deadline:
             screen = await self.read_screen()
@@ -1308,6 +1326,7 @@ class Driver:
                 commands = await self.client.call("get_available_commands")
                 game_state = await self.read_game_state()
                 if (_ready(commands) and not _has_uninitialized_combat_intent(screen, game_state)
+                        and not (leave_combat and _is_combat(screen))
                         and transition_identity(screen, game_state) != before):
                     return screen, game_state
             await asyncio.sleep(self.poll_interval)
@@ -1705,9 +1724,12 @@ class Driver:
                 row["declined_reward_identity"] = reward_identity
         self.steps += 1
         wait_started = time.monotonic()
+        smoke_bomb = _is_smoke_bomb_use(screen, game_state, action)
         post, post_game_state = await self.wait_for_ready_advance(
             transition_identity(screen, game_state),
-            WHEEL_SPIN_EXTRA_SECONDS if _is_wheel_spin(screen, action) else 0.0)
+            WHEEL_SPIN_EXTRA_SECONDS if _is_wheel_spin(screen, action)
+            else SMOKE_BOMB_EXTRA_SECONDS if smoke_bomb else 0.0,
+            leave_combat=smoke_bomb)
         row["post_action_wait_micros"] = (time.monotonic() - wait_started) * 1e6
         row.update({"post_action_state": ({"screen": post, "game_state": post_game_state}
                                           if self.differential_trace else

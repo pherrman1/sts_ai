@@ -10,7 +10,7 @@ from tools.live_game_driver import (
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
-    hand_selection_transaction, grid_selection_transaction, _pile_display_only_change, _is_wheel_spin,
+    hand_selection_transaction, grid_selection_transaction, _pile_display_only_change, _is_wheel_spin, _is_smoke_bomb_use,
 )
 
 
@@ -789,6 +789,42 @@ class LiveGameDriverTest(unittest.TestCase):
                 else:
                     with self.assertRaises(DriverError):
                         asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
+
+    def test_smoke_bomb_waits_until_combat_is_left(self):
+        # Overnight 2026-10-19 (#18): MCP stays ready in NONE/COMBAT while the
+        # player runs off; that window is not a decision (the inspector skips it).
+        combat = {"screen_type": "NONE", "room_phase": "COMBAT", "ready_for_command": True,
+                  "potions": [{"id": "SmokeBomb", "can_use": True}, {"id": "Fire Potion", "can_use": True}]}
+        smoke = LegalAction("a0", "Use Potion SmokeBomb slot 1", "use_potion", {"potion_slot": 1},
+                            {"kind": "potion", "potion_slot": 1, "discard": False})
+        fire = LegalAction("a1", "Use Potion Fire Potion slot 2", "use_potion", {"potion_slot": 2},
+                           {"kind": "potion", "potion_slot": 2, "discard": False})
+        self.assertTrue(_is_smoke_bomb_use(combat, {}, smoke))
+        self.assertTrue(_is_smoke_bomb_use({**combat, "potions": [{"name": "Smoke Bomb"}]}, {}, smoke))
+        self.assertFalse(_is_smoke_bomb_use(combat, {}, fire))
+        self.assertFalse(_is_smoke_bomb_use({**combat, "room_phase": "COMPLETE", "screen_type": "COMBAT_REWARD"}, {}, smoke))
+        self.assertFalse(_is_smoke_bomb_use({**combat, "potions": []}, {}, smoke))
+        escaping = {**combat, "potions": [{"id": "Potion Slot"}, {"id": "Fire Potion", "can_use": True}]}
+        reward = {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE", "ready_for_command": True,
+                  "choice_list": []}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient([escaping] * 5 + [reward], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.5, poll_interval=.001)
+            post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(combat), leave_combat=True))
+            self.assertEqual(post["screen_type"], "COMBAT_REWARD")
+            # Without the escape wait the in-flight combat state is accepted.
+            client = FakeClient([escaping] * 5 + [reward], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.5, poll_interval=.001)
+            post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(combat)))
+            self.assertEqual(post["room_phase"], "COMBAT")
+            # A Smoke Bomb that never leaves combat still fails closed.
+            client = FakeClient([escaping], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.001)
+            with self.assertRaises(DriverError):
+                asyncio.run(driver.wait_for_ready_advance(transition_identity(combat), leave_combat=True))
 
     def test_dry_run_never_mutates(self):
         with tempfile.TemporaryDirectory() as directory:
