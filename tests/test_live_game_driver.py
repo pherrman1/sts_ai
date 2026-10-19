@@ -11,7 +11,7 @@ from tools.live_game_driver import (
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
     hand_selection_transaction, grid_selection_transaction, _pile_display_only_change, _is_wheel_spin,
-    _is_combat_end_turn,
+    _is_combat_end_turn, _is_smoke_bomb_use,
 )
 
 
@@ -527,6 +527,29 @@ class LiveGameDriverTest(unittest.TestCase):
         game["potions"][0]["can_discard"] = False
         self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(screen, commands, game)])
 
+    def test_in_combat_discard_before_entropic_brew_maps(self):
+        # Seed 111194466 floor 11: Silver chose "Discard Swift Potion" ahead
+        # of Entropic Brew; MCP executes the discard but never lists it.
+        import os
+        from unittest import mock
+        game = {"potions": [{"id": "Swift Potion", "can_use": True, "can_discard": True},
+                            {"id": "EntropicBrew", "can_use": True, "can_discard": True}]}
+        screen = combat_screen()
+        commands = {"available_tools": [{"tool": "play_card"}, {"tool": "use_potion"}, {"tool": "end_turn"}],
+                    "room_phase": "COMBAT"}
+        selected = {"discard": True, "kind": "potion", "potionSlot": 1}
+        actions = build_legal_actions(screen, commands, game)
+        chosen = map_silver_action(selected, actions)
+        self.assertEqual((chosen.mcp_tool, chosen.mcp_arguments), ("discard_potion", {"potion_slot": 1}))
+        self.assertEqual(map_silver_action({**selected, "discard": False}, actions).mcp_tool, "use_potion")
+        self.assertNotEqual(choose_deterministic_action(screen, actions).mcp_tool, "discard_potion")
+        # Without an advertised use_potion (e.g. a screen up) the surface stays exact.
+        self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(
+            screen, {**commands, "available_tools": [{"tool": "end_turn"}]}, game)])
+        with mock.patch.dict(os.environ, {"STS_LIVE_COMBAT_POTION_DISCARD": "0"}):
+            with self.assertRaises(IntegrationFailure):
+                map_silver_action(selected, build_legal_actions(screen, commands, game))
+
     def test_unadvertised_discard_leaves_single_action_navigators_alone(self):
         fairy = [{"id": "FairyPotion", "can_discard": True}]
         boss = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
@@ -790,6 +813,42 @@ class LiveGameDriverTest(unittest.TestCase):
                 else:
                     with self.assertRaises(DriverError):
                         asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
+
+    def test_smoke_bomb_waits_until_combat_is_left(self):
+        # Overnight 2026-10-19 (#18): MCP stays ready in NONE/COMBAT while the
+        # player runs off; that window is not a decision (the inspector skips it).
+        combat = {"screen_type": "NONE", "room_phase": "COMBAT", "ready_for_command": True,
+                  "potions": [{"id": "SmokeBomb", "can_use": True}, {"id": "Fire Potion", "can_use": True}]}
+        smoke = LegalAction("a0", "Use Potion SmokeBomb slot 1", "use_potion", {"potion_slot": 1},
+                            {"kind": "potion", "potion_slot": 1, "discard": False})
+        fire = LegalAction("a1", "Use Potion Fire Potion slot 2", "use_potion", {"potion_slot": 2},
+                           {"kind": "potion", "potion_slot": 2, "discard": False})
+        self.assertTrue(_is_smoke_bomb_use(combat, {}, smoke))
+        self.assertTrue(_is_smoke_bomb_use({**combat, "potions": [{"name": "Smoke Bomb"}]}, {}, smoke))
+        self.assertFalse(_is_smoke_bomb_use(combat, {}, fire))
+        self.assertFalse(_is_smoke_bomb_use({**combat, "room_phase": "COMPLETE", "screen_type": "COMBAT_REWARD"}, {}, smoke))
+        self.assertFalse(_is_smoke_bomb_use({**combat, "potions": []}, {}, smoke))
+        escaping = {**combat, "potions": [{"id": "Potion Slot"}, {"id": "Fire Potion", "can_use": True}]}
+        reward = {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE", "ready_for_command": True,
+                  "choice_list": []}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient([escaping] * 5 + [reward], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.5, poll_interval=.001)
+            post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(combat), leave_combat=True))
+            self.assertEqual(post["screen_type"], "COMBAT_REWARD")
+            # Without the escape wait the in-flight combat state is accepted.
+            client = FakeClient([escaping] * 5 + [reward], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.5, poll_interval=.001)
+            post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(combat)))
+            self.assertEqual(post["room_phase"], "COMBAT")
+            # A Smoke Bomb that never leaves combat still fails closed.
+            client = FakeClient([escaping], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.001)
+            with self.assertRaises(DriverError):
+                asyncio.run(driver.wait_for_ready_advance(transition_identity(combat), leave_combat=True))
 
     def test_end_turn_waits_while_the_monster_turn_progresses(self):
         # Overnight 2026-10-19: The Collector's turn exceeded the 8 s post-action wait.

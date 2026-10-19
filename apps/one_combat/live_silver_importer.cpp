@@ -369,6 +369,18 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
+// stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
+// native stolen-gold check that Java has no field for; without it Silver's
+// effectiveGold ignores the gold a kill returns. 0 = legacy, bit only from an
+// explicit combat.miscBits.
+bool thiefGoldFix() {
+    const char *value = std::getenv("STS_IMPORTER_THIEF_GOLD_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_THIEF_GOLD_FIX must be 0 or 1");
+}
+
 template <typename T>
 bool parseEnumId(const json &item, const char *name, T &out) {
     if (!item.contains(name) || !item.at(name).is_string()) return false;
@@ -1598,6 +1610,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             }
         }
         if (m.curHp > 0 && !m.isEscapingB && !m.halfDead && !item.value("dead", false)) ++wire.monstersAlive;
+        if ((*id == sts::MonsterId::LOOTER || *id == sts::MonsterId::MUGGER) && m.miscInfo > 0 && thiefGoldFix())
+            wire.miscBits |= 1U;
     }
     if (combat.contains("monsterCount")) {
         if (!combat.at("monsterCount").is_number_integer())

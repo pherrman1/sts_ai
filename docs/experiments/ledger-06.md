@@ -21233,6 +21233,28 @@ stay descriptive and biased (no code reads them).
 [README](evidence/blood_potion_keep_refit_20261019/README.md), `delta.txt`, `bound-fits.txt`, `probe-csv.tar.gz`.
 **Knowledge impact:** `operations/environment-variables.md` (`STS_POTION_KEEP_BLOOD_REFIT`),
 `architecture/out-of-combat.md` (pickup paragraph), `tools/potion_keep/combine.py`.
+## §550 — Overnight live play: Mayhem played the pre-draw top card natively (2026-10-19)
+
+**Question:** why did turns with Mayhem diverge from the game (overnight list problem 13)?
+**Setup:** parity traces of seed 111194457 (segments 16, 24, 25; Reptomancer and Jaw Worm horde) from §545's overnight
+runs; `javap` of `MayhemPower`, `MayhemPower$1`, `PlayTopCardAction` and `GameActionManager.getNextAction` in the pinned
+`desktop-1.0.jar` on Philipp's PC (read-only).
+**Result:** `MayhemPower.atStartOfTurn` queues, per stack, a wrapper action; its update rolls
+`getRandomMonster(null, true, cardRandomRng)` and queues `PlayTopCardAction` at the bottom. The wrapper sits ahead of
+the turn's `DrawCardAction`, so the target roll happens before the draw and the card play after the draw and the
+post-draw relics/powers. The engine queued `PlayTopCard` directly and played the pre-draw top card. Segment 16 step 86:
+the game drew Dark Embrace+ and four more, then played Burning Pact+ (exhaust selection); native played Dark Embrace+
+and drew Burning Pact+. Segment 25 step 14: the game played Metallicize+ after filling the hand to 10, the last Jaw
+Worm survived at 3 HP; native played the pre-draw Clothesline+ and won. Segment 24 step 17 and segment 25 step 57
+show the same pattern.
+**Interpretation:** `STS_MAYHEM_AFTER_DRAW_FIX` (default on, `=0` restores) adds the wrapper action
+(`ActData_MayhemPlayTopCard`). Play-changing for every combat with Mayhem; results recorded before this fix are
+comparable only with `STS_MAYHEM_AFTER_DRAW_FIX=0`. `mayhem_after_draw_test` checks the card played and the Armaments
+selection under both settings. **Unverified:** the fixed probe on the recorded traces (traces stay on the PC under
+`~/Documents/sts/artifacts/overnight-20261019/seed-111194457/`); the issue's inference that Mayhem explains other
+Act-3 end-turn hand/discard mismatches.
+Seeds: 111200121 (fixed seed of `mayhem_after_draw_test`, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 ## §549 — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
 
 **Question:** why did live runs 111194454 and 111194460 stop at the Act 2 boss (floor 33) with
@@ -21324,3 +21346,29 @@ the combat prior; the CTM standard child; #401 Stage 2 ablations.
 group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
+
+## §549 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
+
+**Question:** do four small monster-side parity differences (overnight list problems 4 and 6, canary-2 Mugger `aiRng` and
+Two Thieves `miscBits`) come from the engine, the importer or the probe? Philipp asked 2026-10-19 08:34Z for fix threads
+for every open problem.
+**Setup:** read-only `javap -c -p -constants` of the pinned JAR (`cfad868a…`, JDK 1.8.0_504) and the raw traces on
+Philipp's PC (`~/Documents/sts/artifacts/monster-rng-gaps-20261019/`): seed 111194454 segments 1 and 2, canary 2 trace 8.
+**Result:** all four are real.
+- Acid Slime (L) split (seed 111194454 segment 2 step 2): game `aiRng` 4 -> 6, native 8. Java rolls once per spawned
+  medium slime (`SpawnMonsterAction` -> `init`); `AcidSlime_L.takeTurn` queues no `RollMoveAction`, while
+  `SpikeSlime_L.takeTurn` does (one more roll). Native drew two extra rolls for either. `damage()` records the split byte
+  twice (`setMove` plus a queued `SetMoveAction`): game `moveHistory` [3, 3], native kept the previous move.
+- Curl Up on a dead louse (seed 111194454 segment 1 step 7): Fiend Fire curls with an early hit and kills with a later one;
+  `GainBlockAction.update` skips a dying or dead target (game block 0, native 12).
+- Mugger kill (canary 2 trace 8 step 21): `Mugger.die` draws `aiRng.random(2)` in `playDeathSfx`; game counter 9, native 8.
+  The per-turn counts (Looter 0.6/0.5 dialog rolls, Mugger `playSfx`) already matched.
+- Two Thieves `miscBits` (trace 8 steps 14, 18, 22): Java has no such field. The generic importer read only an explicit
+  `combat.miscBits`, so a thief's stolen gold (`miscInfo` > 0) never set the native stolen-gold check; the live advisor's
+  `effectiveGold` ignored the gold a thief kill returns.
+**Interpretation:** default-on fixes, `=0` restores each: `STS_SLIME_SPLIT_RNG_FIX`, `STS_DEAD_MONSTER_BLOCK_FIX`,
+`STS_MUGGER_DEATH_RNG_FIX` (engine, change later monster rolls or Silver node identity) and `STS_IMPORTER_THIEF_GOLD_FIX`
+(live importer and probe). `lastTargetedMonster` 1 vs 0 after the split is the inspector's default for a target it no
+longer emits; left as representation-only. No gameplay seeds were run; the unit tests use fixed seeds 111200151-153.
+**Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
+`operations/environment-variables.md`.

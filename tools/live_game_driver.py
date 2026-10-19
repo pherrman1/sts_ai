@@ -94,16 +94,23 @@ POTION_REFILL_SCREENS = frozenset({"COMBAT_REWARD", "SHOP", "SHOP_SCREEN"})
 
 def _effective_tool_names(commands: Any, game_state: Mapping[str, Any] | None,
                           screen: Mapping[str, Any] | None) -> list[str]:
-    """MCP never advertises discard_potion, but out of combat its executor
-    accepts "potion discard N" whenever a held potion exists (MCPTheSpire
-    1.0.4-dev). Add it on reward and shop screens only, so a full belt can
-    make room for a potion there; per-slot can_discard still gates each
-    candidate, and other screens keep their exact advertised surface."""
+    """MCP never advertises discard_potion, but its executor accepts
+    "potion discard N" whenever a held potion exists, with no room-phase
+    check (MCPTheSpire 1.0.4-dev). Out of combat, add it on reward and shop
+    screens only, so a full belt can make room for a potion there; per-slot
+    can_discard still gates each candidate, and other screens keep their
+    exact advertised surface."""
     names = _tool_names(commands)
     phase = _mapping(commands).get("room_phase")
     potions = _list(normalize_game_state(game_state).get("potions"))
-    if ("discard_potion" not in names and isinstance(phase, str) and phase != "COMBAT"
-            and _mapping(screen).get("screen_type") in POTION_REFILL_SCREENS
+    # In combat the same executor path accepts the discard; offer it only
+    # where MCP itself offers use_potion (COMBAT, no screen up), so Silver's
+    # discard-before-Entropic-Brew line maps. STS_LIVE_COMBAT_POTION_DISCARD=0
+    # restores the advertised-only combat surface.
+    in_combat = (phase == "COMBAT" and "use_potion" in names
+                 and os.environ.get("STS_LIVE_COMBAT_POTION_DISCARD", "1") != "0")
+    if ("discard_potion" not in names and isinstance(phase, str)
+            and (in_combat or (phase != "COMBAT" and _mapping(screen).get("screen_type") in POTION_REFILL_SCREENS))
             and any(_mapping(p).get("can_discard", _mapping(p).get("canDiscard")) is True for p in potions)):
         names.append("discard_potion")
     return names
@@ -237,6 +244,24 @@ def _is_wheel_spin(screen: Mapping[str, Any], action: "LegalAction") -> bool:
     state = _mapping(screen.get("screen_state"))
     return (screen.get("screen_type") == "EVENT" and state.get("event_id") == "Wheel of Change"
             and action.mcp_tool == "choose" and action.semantic.get("choice") == "spin")
+
+
+# Overnight 2026-10-19 (#18): after a Smoke Bomb MCP stays ready in screen NONE,
+# phase COMBAT while the player runs off. The inspector publishes no combat
+# decision in that window (#695) and next shows the post-escape reward screen.
+SMOKE_BOMB_EXTRA_SECONDS = 10.0
+
+
+def _is_smoke_bomb_use(screen: Mapping[str, Any], game_state: Mapping[str, Any],
+                       action: "LegalAction") -> bool:
+    slot = action.mcp_arguments.get("potion_slot")
+    if action.mcp_tool != "use_potion" or type(slot) is not int or slot < 1 or not _is_combat(screen):
+        return False
+    potions = _list(screen.get("potions", normalize_game_state(game_state).get("potions")))
+    if slot > len(potions):
+        return False
+    potion = _mapping(potions[slot - 1])
+    return any(_text(potion.get(key)).replace(" ", "").lower() == "smokebomb" for key in ("id", "name"))
 
 
 # End Turn: the monster turn plays every queued monster action before MCP is
@@ -1032,7 +1057,7 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
     screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
     phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
     if phase == "COMBAT" or screen_type in {"NONE", "COMBAT"}:
-        for tool in ("play_card", "use_potion", "discard_potion", "end_turn"):
+        for tool in ("play_card", "use_potion", "end_turn"):
             match = next((candidate for candidate in candidates if candidate.mcp_tool == tool), None)
             if match:
                 return match
@@ -1309,7 +1334,8 @@ class Driver:
         raise DriverError("MCP combat monster intent remained DEBUG before the decision boundary")
 
     async def wait_for_ready_advance(self, before: str, extra_seconds: float = 0.0,
-                                     progress_cap_seconds: float = 0.0) -> tuple[Mapping[str, Any], dict[str, Any]]:
+                                     progress_cap_seconds: float = 0.0,
+                                     leave_combat: bool = False) -> tuple[Mapping[str, Any], dict[str, Any]]:
         started, last, seen = time.monotonic(), {}, None
         deadline = started + self.poll_timeout + extra_seconds
         cap = started + self.poll_timeout + max(extra_seconds, progress_cap_seconds)
@@ -1327,6 +1353,7 @@ class Driver:
                 commands = await self.client.call("get_available_commands")
                 game_state = await self.read_game_state()
                 if (_ready(commands) and not _has_uninitialized_combat_intent(screen, game_state)
+                        and not (leave_combat and _is_combat(screen))
                         and transition_identity(screen, game_state) != before):
                     return screen, game_state
             await asyncio.sleep(self.poll_interval)
@@ -1723,12 +1750,14 @@ class Driver:
                 self.declined_rewards.add((snapshot.session, reward_identity))
                 row["declined_reward_identity"] = reward_identity
         self.steps += 1
+        smoke_bomb = _is_smoke_bomb_use(screen, game_state, action)
         extra, progress_cap = ((MONSTER_TURN_EXTRA_SECONDS, MONSTER_TURN_PROGRESS_CAP_SECONDS)
                                if _is_combat_end_turn(screen, action) else
-                               (WHEEL_SPIN_EXTRA_SECONDS if _is_wheel_spin(screen, action) else 0.0, 0.0))
+                               (WHEEL_SPIN_EXTRA_SECONDS if _is_wheel_spin(screen, action)
+                                else SMOKE_BOMB_EXTRA_SECONDS if smoke_bomb else 0.0, 0.0))
         wait_started = time.monotonic()
         post, post_game_state = await self.wait_for_ready_advance(
-            transition_identity(screen, game_state), extra, progress_cap)
+            transition_identity(screen, game_state), extra, progress_cap, leave_combat=smoke_bomb)
         row["post_action_wait_micros"] = (time.monotonic() - wait_started) * 1e6
         row.update({"post_action_state": ({"screen": post, "game_state": post_game_state}
                                           if self.differential_trace else
