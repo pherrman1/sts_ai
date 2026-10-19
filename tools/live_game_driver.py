@@ -210,6 +210,12 @@ def _canonical_combat_piles(state: Mapping[str, Any]) -> dict[str, Any]:
                 base = "base_" + stat
                 if base in card and card[base] is None:
                     del card[base]  # null base == absent base
+                if type(card.get(base)) is int and card[base] < 0:
+                    # Java's -1 base marks a card without this stat; the
+                    # displayed value derived from it carries no state.
+                    del card[base]
+                    card.pop(stat, None)
+                    continue
                 if (type(card.get(base)) is int and card[base] > 0
                         and type(card.get(stat)) is int and card[stat] > 0):
                     card[stat] = card.pop(base)

@@ -646,6 +646,28 @@ class LiveGameDriverTest(unittest.TestCase):
             transition_identity(combat_screen(), {"hand": [{"uuid": "a", "damage": 10, "base_damage": 4}]}),
             transition_identity(combat_screen(), {"hand": [{"uuid": "a", "damage": 4}]}))
 
+    def test_negative_base_marks_absent_pile_stat(self):
+        # Overnight 2026-10-19 samples: Java's -1 base with a derived display value.
+        cases = (
+            ("exhaust_pile", {"id": "Bandage Up", "uuid": "b", "cost": 0},
+             {"base_damage": -1, "damage": 2}),
+            ("discard_pile", {"id": "Defend_R", "uuid": "d", "cost": 1, "block": 5},
+             {"base_damage": -1, "damage": 5}),
+            ("exhaust_pile", {"id": "Strike_R", "uuid": "s", "cost": 1, "damage": 6},
+             {"base_block": -1, "block": 1, "base_damage": 6, "damage": 9}),
+        )
+        for pile, card, display in cases:
+            with self.subTest(card=card["id"]):
+                self.assertEqual(transition_identity(combat_screen(), {pile: [card]}),
+                                 transition_identity(combat_screen(), {pile: [{**card, **display}]}))
+        # Hand values and pile costs stay strict.
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"hand": [{"uuid": "h", "base_damage": -1, "damage": 2}]}),
+            transition_identity(combat_screen(), {"hand": [{"uuid": "h"}]}))
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"exhaust_pile": [{"uuid": "p", "cost": 0}]}),
+            transition_identity(combat_screen(), {"exhaust_pile": [{"uuid": "p", "cost": 1}]}))
+
     def test_exhaust_pile_cached_stat_appearance_is_display_only(self):
         screen = combat_screen()
         before = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "cost": 0}], "current_hp": 80}
