@@ -24,6 +24,15 @@ using RT = A::RewardsActionType;
 void require(bool yes, const std::string &why) {
     if (!yes) throw std::invalid_argument(why);
 }
+// STS_LIVE_RELIC_OFFER_PRIOR: unset/1 (default) = search with the uniform
+// public prior over relic offers skipped before the observer ran; 0 restores
+// PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED for those roots.
+bool liveRelicOfferPrior() {
+    const char *value = std::getenv("STS_LIVE_RELIC_OFFER_PRIOR");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_LIVE_RELIC_OFFER_PRIOR must be 0 or 1");
+}
 int integerValue(const J &v, int lo, int hi, const std::string &key) {
     require(v.is_number_integer(), key + " must be an integer");
     if (v.is_number_unsigned()) {
@@ -559,7 +568,14 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     const bool seenRelicsComplete = boolean(publicState, "seenRelicsComplete");
     require(array(publicState, "seenRelics", 181).size() <= 181,
         "seen relic history too large");
-    if (seenRelicsComplete) {
+    // Offers skipped before the observer ran (old save, mid-run install,
+    // unopened shop) left the pools without revealing which relics. Native
+    // pools are one uniform shuffle consumed without regard to identity, so
+    // given the known exclusions, future draws are a uniform sample without
+    // replacement from the remaining superset. MCTS already reshuffles each
+    // pool per particle, so keeping the superset is that public prior.
+    const bool seenRelicOfferPrior = !seenRelicsComplete && liveRelicOfferPrior();
+    if (seenRelicsComplete || seenRelicOfferPrior) {
         for (const auto &relic : array(publicState, "seenRelics", 181))
             eraseRelic(id<RelicId>(relic, RelicId::INVALID));
     }
@@ -585,7 +601,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     if (root.curEvent != Event::INVALID && root.curEvent != Event::NEOW) eraseEvent(root.curEvent);
 
     const bool canDrawUnseenRelic = [&] {
-        if (seenRelicsComplete) return false;
+        if (seenRelicsComplete || seenRelicOfferPrior) return false;
         // A direct MAP root searches its next room before the hard downstream
         // MAP checkpoint. Any branch may generate a relic offer there.
         if (source.projected.screenState == ScreenState::MAP_SCREEN) return true;
@@ -658,11 +674,13 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     // Unknown sibling card identities are not captured or fabricated. Resolve
     // this visible offer and known potions, then value the resulting player
     // state at a hard checkpoint; omitted sibling choices are disclosed.
-    result.mapHistoryComplete=result.questionHistoryComplete && seenRelicsComplete
+    result.seenRelicOfferPrior=seenRelicOfferPrior;
+    result.mapHistoryComplete=result.questionHistoryComplete && (seenRelicsComplete || seenRelicOfferPrior)
         && !source.ooc.at("details").contains("parentUnrevealedCardRewards");
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
-    // relic branches still require complete public offer history.
+    // relic branches require complete public offer history or the uniform
+    // relic offer prior (STS_LIVE_RELIC_OFFER_PRIOR).
     if (!combatHistoryComplete) {
         result.supported = false;
         result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";

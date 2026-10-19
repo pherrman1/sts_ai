@@ -241,6 +241,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 state.mctsRoot.questionChancePosterior.size()>1?"finite_posterior":"point"},
             {"prior","fair_uniform_24_bit_room_roll"},
             {"monsterChanceStates",state.mctsRoot.questionChancePosterior}};
+    evaluator["seenRelicOfferPrior"] = state.mctsRoot.seenRelicOfferPrior;
 
     if (!imported.ok) evaluator["reason"] = imported.message;
     else if (std::string(policy.name()) != "mcts_ctm"
@@ -265,6 +266,9 @@ json oocResponse(const one_combat::advisor::Request &request,
     else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
              state.hiddenEventRewardPity && flag && std::string(flag) == "1")
         evaluator["reason"] = "DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE";
+    else if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE");
+             state.mctsRoot.seenRelicOfferPrior && flag && std::string(flag) == "1")
+        evaluator["reason"] = "DIFFERENTIAL_SEEN_RELIC_PRIOR_UNREPRESENTABLE";
     else {
         if (state.selectorPreview) {
             pending=PendingCompoundPlan{};

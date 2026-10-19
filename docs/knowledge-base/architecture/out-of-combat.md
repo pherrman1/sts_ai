@@ -829,7 +829,9 @@ from the forked label child. These are provenance/counters, never student inputs
 §494 requires them for its C-policy labels without rejecting legacy §491 data. `buildChoice`/`recordToJson`
 need no released network weights. Unsupported records carry `recordError`.
 This input is parity-unqualified for learned leaf deployment; limited hidden
-field invariance fixtures do not prove live parity. The default-off path remains
+field invariance fixtures do not prove live parity. Field inventory, the simulator
+invariance test and the known live relic-counter mismatch are in
+[heart1-public-record-contract.md](heart1-public-record-contract.md). The default-off path remains
 unchanged. The [Heart-domain pilot](../../experiments/evidence/heart_rollout_distill_20261016/README.md)
 completed its 64 sources and six fits with Arm C as tree prior and fixed V4
 rollouts. The original post-latch evaluator crash remains `INVALID_TEST_EXECUTION`.

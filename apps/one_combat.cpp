@@ -3793,6 +3793,10 @@ int main(int argc, char **argv) {
 
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
+    } else if (mode == "heart1recordselftest") {
+        one_combat::heart1::publicRecordInvarianceSelfTest();
+        std::cout << "heart1 public record invariance selftest: ok\n";
+        return 0;
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"

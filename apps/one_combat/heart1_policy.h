@@ -213,6 +213,9 @@ std::vector<TokenMapping> mapChoiceTokens(const Choice &, bool singingBowl,
                                           const std::vector<sts::search::GameAction> &);
 // Throws std::runtime_error when mapPriorLogits breaks its rules (oocmctsselftest).
 void priorMappingSelfTest();
+// Private-state invariance of the public record on every supported screen (#506);
+// throws on failure. Defined in heart1_record_invariance.cpp.
+void publicRecordInvarianceSelfTest();
 // Throws std::runtime_error when the FixedVec projection memo differs from the plain
 // projection with two nets of different width on one thread (oocmctsselftest).
 void fixedVecMemoSelfTest();
