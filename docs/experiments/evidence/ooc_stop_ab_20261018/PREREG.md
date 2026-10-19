@@ -4,7 +4,7 @@ Authorization: Philipp 2026-10-18 18:15Z ("act 4 fights can just be done by the 
 test adpative stop or a model which predicts whether we wont need more simulations"), decision card 21:45Z
 ("All three": no stop, gap ladder and learned stop in one paired A/B), 22:09Z ("8 workers. make sure we rethink
 this approach when we chang ethe root emperature"). Code commit `code_commit` in `campaign.manifest`. The result
-gets the next free ledger § when it is recorded; the offline evidence is the learned-stop ledger entry (§TBD at
+gets the next free ledger § when it is recorded; the offline evidence is the learned-stop ledger entry (§565 at
 freeze).
 
 ## Question

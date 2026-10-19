@@ -20940,7 +20940,7 @@ most of the score gain; a boss-only use would be a separate pre-registered test.
 `/mnt/project-files/silver-prior-playout-ab/` (SHA256SUMS in the evidence dir). Seeds used: 111197708–111197771,
 111197784 (canary); with the pilot, 111197692–111197707 and 111197780–111197784; the rest of 111197692–111197791 unused.
 **Knowledge impact:** result line in `research/combat-search/leaf-evaluation.md`.
-## §TBD-b — OOC MCTS stop rules, paired A20 A/B on the CTM-Act-4 stack: learned stop and gap ladder both NON_INFERIOR on reaching Act 4; OOC MCTS CPU 0.53x (learned) and 0.69x (gap ladder) of the exact visit lock (2026-10-19)
+## §564 — OOC MCTS stop rules, paired A20 A/B on the CTM-Act-4 stack: learned stop and gap ladder both NON_INFERIOR on reaching Act 4; OOC MCTS CPU 0.53x (learned) and 0.69x (gap ladder) of the exact visit lock (2026-10-19)
 
 Authorization: Philipp 2026-10-18 18:15Z, card "All three" 21:45Z, "8 workers" 22:09Z. Pre-registration, unit
 script and analyzer: `docs/experiments/evidence/ooc_stop_ab_20261018/` (`PREREG.md`, `run_unit.sh`, `analyze.py`).
@@ -20970,7 +20970,7 @@ script and analyzer: `docs/experiments/evidence/ooc_stop_ab_20261018/` (`PREREG.
   | G − N | +0.6 pp [−2.0, +3.1] | NON_INFERIOR | +0.8 pp [−1.5, +3.1], p 0.61 | 0.80x / 0.69x |
   | L − G (descriptive) | −1.8 pp [−4.4, +0.9] | — | −1.4 pp [−3.7, +0.9], p 0.31 | 0.85x / 0.77x |
 
-  Non-inferiority margin −5 pp on the lower bound (pre-registered). The offline CPU estimates (§TBD learned-stop
+  Non-inferiority margin −5 pp on the lower bound (pre-registered). The offline CPU estimates (§565 learned-stop
   entry: 0.50x and 0.66x) held up: measured OOC MCTS CPU 0.53x and 0.69x. The rest of process CPU is mostly the
   real-combat Silver search, which the stop rules do not touch, so the process ratio is smaller.
 - **Reading:** both rules save CPU without a detectable loss in reaching Act 4 or killing the Heart. Neither
@@ -20983,13 +20983,13 @@ script and analyzer: `docs/experiments/evidence/ooc_stop_ab_20261018/` (`PREREG.
 - **After the run:** main's unsupported-edge pruning (#686, default on) postdates RUN_COMMIT, so the A/B ran
   without it. Merging main, the learned stop now shows the model only unpruned root actions, as the gap ladder
   does; on roots with no pruned action, which were all roots in this run, play is unchanged.
-- **Decision:** Philipp 2026-10-19 21:58Z "Make gap stop the default and merge": ADR-TBD makes `1024:0.7` the OOC
+- **Decision:** Philipp 2026-10-19 21:58Z "Make gap stop the default and merge": ADR-0053 makes `1024:0.7` the OOC
   MCTS default (`STS_OOC_MCTS_GAP_STOP=0` restores no stop). The learned stop stays opt-in.
 
 Seeds used: 111199495–111200006 (campaign); smoke 111200007, 111200009.
 
-**Knowledge impact:** ADR-TBD (gap-stop default); `GAP_STOP` and `LEARNED_STOP` rows in `architecture/out-of-combat.md`.
-## §TBD — Learned OOC MCTS stop (`STS_OOC_MCTS_LEARNED_STOP`) on the CTM-Act-4 A20 stack: offline same-action proxy 99.5% at an estimated 0.50x OOC CPU (gap ladder 0.66x), not a winrate result (2026-10-18)
+**Knowledge impact:** ADR-0053 (gap-stop default); `GAP_STOP` and `LEARNED_STOP` rows in `architecture/out-of-combat.md`.
+## §565 — Learned OOC MCTS stop (`STS_OOC_MCTS_LEARNED_STOP`) on the CTM-Act-4 A20 stack: offline same-action proxy 99.5% at an estimated 0.50x OOC CPU (gap ladder 0.66x), not a winrate result (2026-10-18)
 
 Philipp asked on 2026-10-18 at 18:15Z: "act 4 fights can just be done by the ctm now. so turn that on, then test
 adpative stop or a model which predicts whether we wont need more simulations". On the card at 21:45Z he chose to
