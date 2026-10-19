@@ -4290,6 +4290,29 @@ int main(int argc, char **argv) {
             || !(stasisImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::STASIS))))
             throw std::runtime_error("Bronze Orb Stasis card/state was not imported exactly");
+        // Java StasisPower.onDeath returns the card with its UUID while the
+        // dead orb still lists the same card in its Stasis power.
+        auto returnedStasis = stasis;
+        returnedStasis["silverRoot"]["combat"]["monsters"][0]["hp"] = 0;
+        returnedStasis["silverRoot"]["combat"]["monsters"][0]["dead"] = true;
+        returnedStasis["silverRoot"]["combat"]["hand"].push_back(
+            returnedStasis["silverRoot"]["combat"]["stasis"][0]);
+        returnedStasis["silverRoot"]["combat"]["hand"].back().erase("slot");
+        const auto returnedImported = one_combat::advisor::importSilverRoot(returnedStasis);
+        if (!returnedImported.ok || returnedImported.wire.stasisCards[0].id
+                != static_cast<std::int16_t>(CardId::INVALID)
+            || returnedImported.wire.stasisCards[0].uniqueId != -1
+            || std::count_if(returnedImported.wire.hand.begin(), returnedImported.wire.hand.end(),
+                   [](const auto &card) { return card.id == static_cast<std::int16_t>(CardId::STRIKE_RED); })
+                != std::count_if(stasisImported.wire.hand.begin(), stasisImported.wire.hand.end(),
+                   [](const auto &card) { return card.id == static_cast<std::int16_t>(CardId::STRIKE_RED); }) + 1)
+            throw std::runtime_error("dead Bronze Orb's returned Stasis card was not imported once: ok="
+                + std::to_string(returnedImported.ok) + " reason=" + returnedImported.reason);
+        auto aliveDuplicate = returnedStasis;
+        aliveDuplicate["silverRoot"]["combat"]["monsters"][0]["hp"] = 20;
+        aliveDuplicate["silverRoot"]["combat"]["monsters"][0]["dead"] = false;
+        if (one_combat::advisor::importSilverRoot(aliveDuplicate).reason != "silver_card_identity")
+            throw std::runtime_error("live Bronze Orb Stasis card duplicated in hand was accepted");
         general["silverRoot"]["combat"]["cardSelect"] = json{
             {"task", "EXHAUST_ONE"}, {"cards", json::array({"Strike_R"})},
             {"pickCount", 1}, {"canPickZero", false}};
