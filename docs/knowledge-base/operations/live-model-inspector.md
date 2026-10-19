@@ -1345,6 +1345,31 @@ the selected cards are removed. A partial transaction, unknown owner, missing/du
 changed hand stops before any further click. Differential replay excludes UI
 confirmations without an equivalent native state.
 
+A source-card selection (`continuation: source_card_actions`) may also carry
+the monster on-hit reactions vanilla queues with `addToBot` behind the
+interrupted card, e.g. a Headbutt hit: `MONSTER_GAIN_BLOCK` (monster
+self-`GainBlockAction` such as Malleable, with the emitted `slot`),
+`REACTIVE_ROLL_MOVE` (Writhing Mass `RollMoveAction`, slot 0), `MONSTER_THORNS`
+(defensive Guardian's Sharp Hide `DamageAction(player, THORNS)`, queued by
+`onUseCard` ahead of `UseCardAction`, slot 0) and
+`MONSTER_REDUCE_PLATED_ARMOR` / `MONSTER_REDUCE_FLIGHT` (`ReducePowerAction`
+"Plated Armor" or Byrd "Flight" by 1), `MONSTER_CURL_UP` (a louse's
+`ChangeStateAction` "CLOSED", which is animation only, plus `GainBlockAction` and
+`RemoveSpecificPowerAction` "Curl Up"; imported as `MonsterGainBlock` with Curl Up
+cleared, as native does at the hit) and `GUARDIAN_DEFENSIVE_SHIFT` (`VFXAction` plus
+`ChangeStateAction` "Defensive Mode", last in the queue, after a hit crosses the
+Mode Shift threshold; the importer emits nothing, and the wire settles Mode Shift <= 0
+itself by shifting and queueing the 20 block behind the tail). The
+first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` queue items
+(Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
+into the imported monster because native applies them at the hit. A reduction
+that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
+any other queued monster action. In the wire, a pending action's JSON now carries `monster` (native
+index, `0` when absent). Native
+conversions capture the same two queue items as an exact tail
+(`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
+unobserved tail and its card-replay fallback).
+
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case
 where only one card fits in hand. The driver clicks the ordered physical UUID
