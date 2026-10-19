@@ -21205,3 +21205,52 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — #401 Stage 1 for the deployed learned models: student_sel reads offered cards and screen type, g7f_E candidate card and monsters, the A20 CTM act and room type; student_sel's value head is untrained (2026-10-19)
+
+**Question:** issue #401 Stage 1 (§438 covered only the tree value models): which semantic input groups do the
+deployed student_sel OOC policy, the g7f_E Silver root prior and the A20 CTM read on held-out data, and which
+inputs are dead? Philipp asked 2026-10-18 23:01Z ("die permutation für den student sel, g7f_E und das ctm").
+**Design:** analysis only, no gameplay seeds. Deployed artifacts: `student_sel.bin` (`cf6bf7fb…`), 
+`models/combat_policy_mlp_g7f_E.txt` (`c45dcc0a…`), A20 fast DeepSets CTM child (`ae785ec2…`). Held-out data: the
+models' own held-out splits (student_sel: distill.py held-out runs, seed % 8 == 7, 243,103 rows, 50k sampled;
+g7f_E: trainer validation fold `r_seed % 5 == 3`, 582,140 roots, also used for epoch selection; CTM: #418
+source-seed VALIDATION of the Stage 1 corpus, the §470 rows, 57,790 served by the fast child). No TEST split read.
+Parity first: student_sel KL 0.05222 vs logged 0.05215 (fp32 CPU vs bf16 CUDA log), native gate 94.04/94.12/97.60%
+reproduced; g7f_E val CE 1.2221620 = `train.json`; CTM boss NLL 0.3046648 = §470 native scoring. Each group's
+inputs permuted jointly across roots (candidate blocks only between roots with equal candidate count), 5 repeats,
+95% source-seed cluster-bootstrap CIs.
+**Result:**
+- **student_sel** (ΔKL to heart1, baseline 0.0525): offered cards +5.06 [4.69, 5.46], screen/select context
+  +1.54 [0.85, 2.22] (`select_screen_type` +1.40), path options +0.48, offered relics +0.31, fixed actions +0.29,
+  HP +0.29, held relics +0.29, deck +0.25. Near zero (≤ 0.001): the three `--extra-inputs` (relic counters +0.0001
+  although nonzero on 24% of rows, act +0.0007, deck misc untestable at 0.03% coverage) and the map node tokens
+  (whole map block +0.014). **The value head is not trained** (distill.py fits KL only): output −0.027 (sd 0.008)
+  against heart1's 0.56 (sd 0.37). On main `815c019a` it is only logged (`heart1_policy.cpp` decision rows, the
+  opt-in heart-leaf tail annotation); no search path reads it.
+- **g7f_E** (ΔCE, baseline 1.2222): candidate card id +0.150 [0.148, 0.152], monster slots +0.114 (intent, HP, id
+  about +0.03 each), candidate card attributes +0.090, candidate action type +0.086 (potion flag +0.053),
+  targeting +0.073, energy +0.060, hand +0.040. Dead: gold, maxHp, pile/hand counts (≤ 0.001). On the 80k
+  Act-4 roots (CE 1.411 vs 1.192 on the A0 window) almost every group is 2–4x weaker. One rare column
+  (Necronomicurse in exhaust, 0.45% of roots) moves value MSE by +0.026, about the whole baseline 0.027.
+- **A20 CTM fast child** (Δ survival BCE, baseline 0.0779, AUC 0.974): act + floor +0.241 [0.236, 0.246] (act alone
+  +0.187, floor +0.0055), room type +0.193, deck +0.099, HP +0.081, relics +0.074, encounter id +0.053, potions
+  +0.015. Deck and relic deltas grow from act 1 to 3 (0.05→0.19, 0.03→0.18). Gold, card misc, relic order and
+  bottle binding ≈ 0; ascension, character and `potionKeepValue` are constant in training (inverse std 1e6). The
+  corpus has no Act-4 rows; the standard child (`e338506d…`) was not audited (about 7 CPU-hours).
+**Interpretation (Inference):** permutation importance is descriptive (correlated inputs share credit; large
+candidate-identity deltas are expected by construction). student_sel routes through precomputed path features,
+not map node tokens. g7f_E is least informed exactly where Act-4 play is weakest. The CTM prices difficulty mostly
+through act and room type, refined by encounter id. `potionKeepValue` would sit about 1e6 standardized units
+off-distribution if `STS_POTION_SAVE=1` (default off, shelved §35) ran with the A20 CTM.
+**Decision:** no model, default or contract change. The student_sel value head is trained in the AlphaZero loop
+(ADR-0043 gen-0 plan); its current output must not be used as a value target. Removal-ablation candidates for the
+next retrains (need refits; importance alone does not show they are unnecessary): student_sel map node tokens,
+relic counters and act; g7f_E gold, maxHp, pile/hand counts, relic counters, and the Necronomicurse-in-exhaust
+column clipped or presence-only; CTM gold, card misc, relic order, bottle binding. Open: an Act-4/boss feature for
+the combat prior; the CTM standard child; #401 Stage 2 ablations.
+
+**Evidence:** [packet](evidence/feature_audit_401b_20261019/README.md) (per-model REPORT.md, results.json with
+group mappings and CIs, scripts). No seeds used.
+
+**Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
