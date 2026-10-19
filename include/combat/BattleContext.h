@@ -81,6 +81,14 @@ namespace sts {
     // the monster is dead.
     bool deadMonsterBlockFix();
 
+    // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
+    // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
+    // which uses aiRng; the Looter's uses MathUtils), as in the game (combat
+    // parity canary 2 2026-10-18: aiRng counter 9 in Java vs 8 natively after
+    // the kill). Later monster rolls in the fight change. 0 = the legacy
+    // engine draws nothing. Other values are fatal.
+    bool muggerDeathRngFix();
+
     // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
     // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
     // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max

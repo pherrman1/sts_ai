@@ -146,6 +146,14 @@ add_test(NAME dead_monster_block COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(dead_monster_block PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(mugger_death_rng_test tests/mugger_death_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(mugger_death_rng_test PRIVATE include json/include)
+add_test(NAME mugger_death_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:mugger_death_rng_test>)
+set_tests_properties(mugger_death_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(blood_potion_heal_test tests/blood_potion_heal_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(blood_potion_heal_test PRIVATE include json/include)

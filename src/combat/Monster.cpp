@@ -305,6 +305,11 @@ void Monster::addBlock(int amount) {
 }
 
 void Monster::die(BattleContext &bc) {
+    // Mugger.die starts with playDeathSfx, which draws aiRng.random(2)
+    // (STS_MUGGER_DEATH_RNG_FIX=0 restores the legacy engine, which drew nothing).
+    if (id == MonsterId::MUGGER && muggerDeathRngFix()) {
+        bc.aiRng.random(2);
+    }
     --bc.monsters.monstersAlive;
 
     if (id == MonsterId::AWAKENED_ONE && !miscInfo) { // is awakened one stage 1 // todo change to status
