@@ -21,8 +21,19 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.replacedSlimeBossParent("SLIME_BOSS","AcidSlime_L",boss,true,true,retired))
             throw new AssertionError("unqualified parent was hidden");
     }
+    private static void verifyChosenAndByrds() {
+        // Overnight seed 111194461 floor 31: Byrd + Chosen had no encounter id.
+        java.util.Map<String,Integer> counts=new java.util.HashMap<>();
+        counts.put("Byrd",1);counts.put("Chosen",1);
+        if(!"CHOSEN_AND_BYRDS".equals(STSModelInspector.multiEncounterName(counts,false)))
+            throw new AssertionError("one Byrd + Chosen is CHOSEN_AND_BYRDS");
+        counts.put("Byrd",2);
+        if(!STSModelInspector.multiEncounterName(counts,false).isEmpty())
+            throw new AssertionError("two Byrds + Chosen is not a native encounter");
+    }
     public static void main(String[] args) {
         verifyRetiredSlimeBoss();
+        verifyChosenAndByrds();
         // Vanilla Searing Blow writes its repeat-upgrade count, while Rampage
         // grows baseDamage through ModifyDamageAction without changing misc.
         if (STSModelInspector.combatCardMisc("Searing Blow", 0, 3, 27) != 3
@@ -176,19 +187,28 @@ public final class CombatBoundaryTest {
             if (automatonClass.getDeclaredField("numTurns").getType() != int.class)
                 throw new AssertionError("BronzeAutomaton numTurns field type changed");
         } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
-        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true)
-                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true)
-                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true))
+        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true, false)
+                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true, false)
+                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true, false))
             throw new AssertionError("unknown selection must retain combat classification");
         // Event fights use this same phase-based gate; no room subclass is required.
-        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.EVENT, CurrentScreen.NONE, true, false))
+        if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.EVENT, CurrentScreen.NONE, true, false, false))
             throw new AssertionError("event combat phase gate");
-        if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, false, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.CARD_REWARD, false, true)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.HAND_SELECT, false, true))
+        if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, false, false, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.CARD_REWARD, false, true, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, false, false)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.HAND_SELECT, false, true, false))
             throw new AssertionError("transitional or OOC modal misclassified");
+        // Smoke Bomb: the escape animation and the post-endBattle window are
+        // idle COMBAT frames, but native combat already ended.
+        if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false, true)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true, true)
+                || !STSModelInspector.isCombatEnding(false, false, true)
+                || !STSModelInspector.isCombatEnding(true, false, false)
+                || !STSModelInspector.isCombatEnding(false, true, false)
+                || STSModelInspector.isCombatEnding(false, false, false))
+            throw new AssertionError("escaping or ended combat published as a decision");
         java.util.List<String> uuids = java.util.Arrays.asList("physical-c", "physical-a", "physical-b");
         for (String task : new String[]{"GAMBLE","EXHAUST_MANY"}) {
             int count="GAMBLE".equals(task)?99:3;
@@ -211,6 +231,8 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Echo Form")!=null
                 || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null
+                || STSModelInspector.publicPendingActionJson("HEAL_PLAYER",5,null)==null
+                || STSModelInspector.publicPendingActionJson("HEAL_PLAYER",4,null)!=null
                 || STSModelInspector.publicPendingActionJson("PRIVATE_RANDOM_CARD",1,null)!=null)
             throw new AssertionError("public pending action qualification");
         for(int count:new int[]{1,2}) {

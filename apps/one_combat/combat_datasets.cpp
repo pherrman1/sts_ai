@@ -74,6 +74,8 @@ nlohmann::json effectiveSilverLeafSpecification() {
     // Recorded only when on (ADR-0046 default), so =0 specifications match earlier ones.
     if (!leaf.rolloutRootTable.empty())
         spec["rollout_root_table"] = {{"path", leaf.rolloutRootTable}, {"sha256", fileSha256(leaf.rolloutRootTable)}};
+    // Recorded only when on (ADR-0050 default with a root prior), so earlier specifications match.
+    if (leaf.priorPlayoutBossElite) spec["prior_playout_rooms"] = "boss,elite";
     return spec;
 }
 
@@ -266,7 +268,7 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (learnedStopTeacher) {
         if (s.value("learned_stop_model",std::string{})!=search::nativeSilverStopModelId()
             || s.value("learned_stop_threshold",-1.0)!=search::nativeSilverLearnedStopThreshold())
-            throw std::runtime_error("wholecombatgen: learned-stop model/threshold mismatch with the compiled stop model");
+            throw std::runtime_error("wholecombatgen: learned-stop model/threshold mismatch with the selected stop model (STS_SILVER_LEARNED_STOP_MODEL)");
         if (!search::nativeSilverLearnedStopEnabled() || search::nativeSilverAdaptiveEnabled()
             || search::nativeSilverExactRootBudgets() || search::nativeSilverSearchesSingletonRoots()
             || search::nativeSilverLearnedStopBossFallback()

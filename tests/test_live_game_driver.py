@@ -10,7 +10,8 @@ from tools.live_game_driver import (
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
-    hand_selection_transaction, grid_selection_transaction,
+    hand_selection_transaction, grid_selection_transaction, _pile_display_only_change, _is_wheel_spin,
+    _is_combat_end_turn, _is_smoke_bomb_use,
 )
 
 
@@ -526,6 +527,29 @@ class LiveGameDriverTest(unittest.TestCase):
         game["potions"][0]["can_discard"] = False
         self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(screen, commands, game)])
 
+    def test_in_combat_discard_before_entropic_brew_maps(self):
+        # Seed 111194466 floor 11: Silver chose "Discard Swift Potion" ahead
+        # of Entropic Brew; MCP executes the discard but never lists it.
+        import os
+        from unittest import mock
+        game = {"potions": [{"id": "Swift Potion", "can_use": True, "can_discard": True},
+                            {"id": "EntropicBrew", "can_use": True, "can_discard": True}]}
+        screen = combat_screen()
+        commands = {"available_tools": [{"tool": "play_card"}, {"tool": "use_potion"}, {"tool": "end_turn"}],
+                    "room_phase": "COMBAT"}
+        selected = {"discard": True, "kind": "potion", "potionSlot": 1}
+        actions = build_legal_actions(screen, commands, game)
+        chosen = map_silver_action(selected, actions)
+        self.assertEqual((chosen.mcp_tool, chosen.mcp_arguments), ("discard_potion", {"potion_slot": 1}))
+        self.assertEqual(map_silver_action({**selected, "discard": False}, actions).mcp_tool, "use_potion")
+        self.assertNotEqual(choose_deterministic_action(screen, actions).mcp_tool, "discard_potion")
+        # Without an advertised use_potion (e.g. a screen up) the surface stays exact.
+        self.assertNotIn("discard_potion", [a.mcp_tool for a in build_legal_actions(
+            screen, {**commands, "available_tools": [{"tool": "end_turn"}]}, game)])
+        with mock.patch.dict(os.environ, {"STS_LIVE_COMBAT_POTION_DISCARD": "0"}):
+            with self.assertRaises(IntegrationFailure):
+                map_silver_action(selected, build_legal_actions(screen, commands, game))
+
     def test_unadvertised_discard_leaves_single_action_navigators_alone(self):
         fairy = [{"id": "FairyPotion", "can_discard": True}]
         boss = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
@@ -617,12 +641,64 @@ class LiveGameDriverTest(unittest.TestCase):
                             transition_identity({"screen_type": "MAP"}, after))
 
     def test_draw_discard_cached_block_and_magic_resets(self):
-        for pile in ("draw_pile", "discard_pile"):
+        for pile in ("draw_pile", "discard_pile", "exhaust_pile"):
             for stat in ("block", "magic_number"):
                 with self.subTest(pile=pile, stat=stat):
                     before = {pile: [{"id": "test", "uuid": "physical", stat: 4, "base_" + stat: 6}]}
                     after = {pile: [{"id": "test", "uuid": "physical", stat: 6}]}
                     self.assertEqual(transition_identity(combat_screen(), before), transition_identity(combat_screen(), after))
+
+    def test_exhaust_pile_cached_display_reset_and_null_base(self):
+        # Overnight 2026-10-19: exhaust_pile[k].damage 10 vs 4, base_damage 4 vs null.
+        for after_base in ({}, {"base_damage": None}):
+            with self.subTest(after_base=after_base):
+                before = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "damage": 10, "base_damage": 4}]}
+                after = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "damage": 4, **after_base}]}
+                self.assertEqual(transition_identity(combat_screen(), before),
+                                 transition_identity(combat_screen(), after))
+        base = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "damage": 4}]}
+        for field, value in (("damage", 9), ("uuid", "b"), ("id", "Bash"), ("cost", 0)):
+            changed = {"exhaust_pile": [{**base["exhaust_pile"][0], field: value}]}
+            self.assertNotEqual(transition_identity(combat_screen(), base),
+                                transition_identity(combat_screen(), changed), field)
+        # A null base cannot vouch for a different displayed value.
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"exhaust_pile": [{"uuid": "a", "damage": 10, "base_damage": None}]}),
+            transition_identity(combat_screen(), base))
+        # Hand display values stay strict.
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"hand": [{"uuid": "a", "damage": 10, "base_damage": 4}]}),
+            transition_identity(combat_screen(), {"hand": [{"uuid": "a", "damage": 4}]}))
+
+    def test_negative_base_marks_absent_pile_stat(self):
+        # Overnight 2026-10-19 samples: Java's -1 base with a derived display value.
+        cases = (
+            ("exhaust_pile", {"id": "Bandage Up", "uuid": "b", "cost": 0},
+             {"base_damage": -1, "damage": 2}),
+            ("discard_pile", {"id": "Defend_R", "uuid": "d", "cost": 1, "block": 5},
+             {"base_damage": -1, "damage": 5}),
+            ("exhaust_pile", {"id": "Strike_R", "uuid": "s", "cost": 1, "damage": 6},
+             {"base_block": -1, "block": 1, "base_damage": 6, "damage": 9}),
+        )
+        for pile, card, display in cases:
+            with self.subTest(card=card["id"]):
+                self.assertEqual(transition_identity(combat_screen(), {pile: [card]}),
+                                 transition_identity(combat_screen(), {pile: [{**card, **display}]}))
+        # Hand values and pile costs stay strict.
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"hand": [{"uuid": "h", "base_damage": -1, "damage": 2}]}),
+            transition_identity(combat_screen(), {"hand": [{"uuid": "h"}]}))
+        self.assertNotEqual(
+            transition_identity(combat_screen(), {"exhaust_pile": [{"uuid": "p", "cost": 0}]}),
+            transition_identity(combat_screen(), {"exhaust_pile": [{"uuid": "p", "cost": 1}]}))
+
+    def test_exhaust_pile_cached_stat_appearance_is_display_only(self):
+        screen = combat_screen()
+        before = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "cost": 0}], "current_hp": 80}
+        after = {"exhaust_pile": [{"id": "Anger", "uuid": "a", "cost": 0, "damage": 6}], "current_hp": 80}
+        self.assertNotEqual(transition_identity(screen, before), transition_identity(screen, after))
+        self.assertTrue(_pile_display_only_change(screen, before, screen, after))
+        self.assertFalse(_pile_display_only_change(screen, before, screen, {**after, "current_hp": 79}))
 
     def test_inspector_compares_full_live_monsters_and_ignores_dead_slots(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -714,6 +790,92 @@ class LiveGameDriverTest(unittest.TestCase):
             driver = Driver(client, InspectorReader(Path(directory) / "missing"), TraceWriter(Path(directory) / "trace"), dry_run=True, poll_timeout=.01, poll_interval=.001)
             with self.assertRaises(DriverError):
                 asyncio.run(driver.step(0))
+
+    def test_wheel_spin_waits_for_the_animation(self):
+        # Overnight 2026-10-19: MCP's Wheel screen is unchanged for ~9 s after Spin.
+        spin = {"screen_type": "EVENT", "choice_list": ["spin"], "ready_for_command": True,
+                "screen_state": {"event_id": "Wheel of Change", "options": [{"label": "spin"}]}}
+        action = LegalAction("a0", "Choose 1: spin", "choose", {"choice_index": 1},
+                             {"choice": "spin", "choice_index": 1, "kind": "choice"})
+        self.assertTrue(_is_wheel_spin(spin, action))
+        self.assertFalse(_is_wheel_spin({**spin, "screen_state": {"event_id": "Transmorgrifier"}}, action))
+        self.assertFalse(_is_wheel_spin(spin, LegalAction("a0", "Play", "choose", {"choice_index": 1},
+                                                          {"choice": "[Play]", "kind": "choice"})))
+        complete = {**spin, "choice_list": ["[Leave]"]}
+        with tempfile.TemporaryDirectory() as directory:
+            for extra, advances in ((0.0, False), (1.0, True)):
+                client = FakeClient([spin] * 60 + [complete], ["choose"])
+                driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                                TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.002)
+                if advances:
+                    post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
+                    self.assertEqual(post["choice_list"], ["[Leave]"])
+                else:
+                    with self.assertRaises(DriverError):
+                        asyncio.run(driver.wait_for_ready_advance(transition_identity(spin), extra))
+
+    def test_smoke_bomb_waits_until_combat_is_left(self):
+        # Overnight 2026-10-19 (#18): MCP stays ready in NONE/COMBAT while the
+        # player runs off; that window is not a decision (the inspector skips it).
+        combat = {"screen_type": "NONE", "room_phase": "COMBAT", "ready_for_command": True,
+                  "potions": [{"id": "SmokeBomb", "can_use": True}, {"id": "Fire Potion", "can_use": True}]}
+        smoke = LegalAction("a0", "Use Potion SmokeBomb slot 1", "use_potion", {"potion_slot": 1},
+                            {"kind": "potion", "potion_slot": 1, "discard": False})
+        fire = LegalAction("a1", "Use Potion Fire Potion slot 2", "use_potion", {"potion_slot": 2},
+                           {"kind": "potion", "potion_slot": 2, "discard": False})
+        self.assertTrue(_is_smoke_bomb_use(combat, {}, smoke))
+        self.assertTrue(_is_smoke_bomb_use({**combat, "potions": [{"name": "Smoke Bomb"}]}, {}, smoke))
+        self.assertFalse(_is_smoke_bomb_use(combat, {}, fire))
+        self.assertFalse(_is_smoke_bomb_use({**combat, "room_phase": "COMPLETE", "screen_type": "COMBAT_REWARD"}, {}, smoke))
+        self.assertFalse(_is_smoke_bomb_use({**combat, "potions": []}, {}, smoke))
+        escaping = {**combat, "potions": [{"id": "Potion Slot"}, {"id": "Fire Potion", "can_use": True}]}
+        reward = {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE", "ready_for_command": True,
+                  "choice_list": []}
+        with tempfile.TemporaryDirectory() as directory:
+            client = FakeClient([escaping] * 5 + [reward], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.5, poll_interval=.001)
+            post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(combat), leave_combat=True))
+            self.assertEqual(post["screen_type"], "COMBAT_REWARD")
+            # Without the escape wait the in-flight combat state is accepted.
+            client = FakeClient([escaping] * 5 + [reward], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.5, poll_interval=.001)
+            post, _ = asyncio.run(driver.wait_for_ready_advance(transition_identity(combat)))
+            self.assertEqual(post["room_phase"], "COMBAT")
+            # A Smoke Bomb that never leaves combat still fails closed.
+            client = FakeClient([escaping], ["proceed"])
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.001)
+            with self.assertRaises(DriverError):
+                asyncio.run(driver.wait_for_ready_advance(transition_identity(combat), leave_combat=True))
+
+    def test_end_turn_waits_while_the_monster_turn_progresses(self):
+        # Overnight 2026-10-19: The Collector's turn exceeded the 8 s post-action wait.
+        before = combat_screen()
+        end_turn = LegalAction("a0", "End turn", "end_turn", {}, {"kind": "end_turn"})
+        self.assertTrue(_is_combat_end_turn(before, end_turn))
+        self.assertFalse(_is_combat_end_turn({**before, "room_phase": "EVENT"}, end_turn))
+        self.assertFalse(_is_combat_end_turn(before, LegalAction("a0", "Play", "play_card", {}, {"kind": "card"})))
+        busy = {**before, "ready_for_command": False}
+        done = {**before, "turn": 2}
+        moving = [{**busy, "player_hp": 80 - index} for index in range(60)]
+        with tempfile.TemporaryDirectory() as directory:
+            def driver(states):
+                return Driver(FakeClient(states + [done], ["end_turn"]), InspectorReader(Path(directory) / "missing"),
+                              TraceWriter(Path(directory) / "trace"), poll_timeout=.02, poll_interval=.002)
+            # A changing screen extends the wait past poll + extra, up to the cap.
+            post, _ = asyncio.run(driver(moving).wait_for_ready_advance(transition_identity(before), .01, 10.0))
+            self.assertEqual(post["turn"], 2)
+            # An unchanged screen still fails after poll + extra (a real hang).
+            with self.assertRaises(DriverError):
+                asyncio.run(driver([busy] * 60).wait_for_ready_advance(transition_identity(before), .01, 10.0))
+            # Without a progress cap a changing screen does not extend the wait.
+            with self.assertRaises(DriverError):
+                asyncio.run(driver(moving).wait_for_ready_advance(transition_identity(before), .01))
+            # The cap bounds a screen that keeps changing forever.
+            with self.assertRaises(DriverError):
+                asyncio.run(driver(moving * 10).wait_for_ready_advance(transition_identity(before), .01, .05))
 
     def test_dry_run_never_mutates(self):
         with tempfile.TemporaryDirectory() as directory:

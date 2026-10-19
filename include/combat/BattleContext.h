@@ -71,6 +71,80 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_DEAD_MONSTER_BLOCK_FIX: unset/1 (default) = queued monster block
+    // (Curl Up, Malleable, Guardian mode shift, block moves) does nothing once
+    // the monster is dead, as in GainBlockAction.update (skips isDying or
+    // isDead; overnight live play 2026-10-19: Fiend Fire curls a louse with an
+    // early hit and kills it before the block lands). Dead-monster block is
+    // part of Silver's node identity, so this can change search. 0 = the
+    // legacy engine adds the block. Other values are fatal. Read only when
+    // the monster is dead.
+    bool deadMonsterBlockFix();
+
+    // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
+    // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
+    // which uses aiRng; the Looter's uses MathUtils), as in the game (combat
+    // parity canary 2 2026-10-18: aiRng counter 9 in Java vs 8 natively after
+    // the kill). Later monster rolls in the fight change. 0 = the legacy
+    // engine draws nothing. Other values are fatal.
+    bool muggerDeathRngFix();
+
+    // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
+    // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
+    // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
+    // its queued RollMoveAction, as in the game; the split trigger of both
+    // large slimes and the Slime Boss records the split move twice in the
+    // move history (damage() calls setMove and queues a SetMoveAction).
+    // Overnight live play 2026-10-19: aiRng counter 6 in Java vs 8 natively
+    // after an Acid Slime (L) split. Later monster rolls in the fight change.
+    // 0 = the legacy engine draws two extra rolls for either large slime and
+    // keeps the previous move in moveHistory[1]. Other values are fatal.
+    bool slimeSplitRngFix();
+
+    // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
+    // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
+    // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max
+    // HP). 0 = the legacy engine, which had the two swapped. Other values are
+    // fatal. Read only when a Blood Potion is drunk in combat.
+    bool bloodPotionHealFix();
+
+    // STS_STRIKE_COUNT_FIX: unset/1 (default) = Perfected Strike counts Strikes
+    // in hand, draw and discard only, as Java PerfectedStrike.countCards: a
+    // Havoc/Mayhem-autoplayed Perfected Strike does not count itself, and the
+    // live importer's recounted strikeCount skips the exhaust pile and Stasis
+    // cards (overnight live play 2026-10-19, problem 10: 53 -> 26 natively vs
+    // 29 in the game). 0 = the legacy counts. Other values are fatal. Read only
+    // when an autoplayed Perfected Strike is used or the importer recounts.
+    bool strikeCountFix();
+
+    // STS_PILE_COST_RESET_FIX: unset/1 (default) = a card that lands in the
+    // discard, draw or exhaust pile mid-turn gets costForTurn = cost, as in the
+    // game (Soul.update calls clearPowers -> resetAttributes when the card
+    // lands; ExhaustCardEffect.update calls resetAttributes; combat parity
+    // canary 2 2026-10-19: a played 0-cost Discovery Power Through shows
+    // costForTurn 1 in the discard pile). Cards created straight into a pile
+    // (ShowCardAndAddToDiscardEffect etc.) keep their cost. 0 = the legacy
+    // engine, which kept the turn cost until the end of turn. Other values are
+    // fatal. Read only when a moved card's costForTurn differs from its cost.
+    bool pileCostResetFix();
+
+    // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
+    // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
+    // upgraded, as in the game (ArmamentsAction checks c.canUpgrade(); live
+    // overnight 2026-10-19 seed 111194457: Ascender's Bane stayed unupgraded).
+    // 0 = the legacy engine also upgrades curses and statuses (Burn+ deals 4).
+    // Other values are fatal. Read only when such an upgrade resolves.
+    bool handUpgradeAllFix();
+
+    // STS_MAYHEM_AFTER_DRAW_FIX: unset/1 (default) = Mayhem plays the top
+    // card after the start-of-turn draw, as in the game (MayhemPower queues a
+    // wrapper action that queues PlayTopCardAction at the bottom when it
+    // runs, behind DrawCardAction; overnight live play 2026-10-19 problem 13:
+    // the played card opened a hand selection, Metallicize instead of a
+    // pre-draw attack). 0 = the legacy engine, which played the pre-draw top
+    // card. Other values are fatal. Read only at a Mayhem turn start.
+    bool mayhemAfterDrawFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

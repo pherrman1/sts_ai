@@ -1,6 +1,8 @@
+#include <cstdlib>
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -54,7 +56,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"pathHistory",J::array()},{"combatFloors",J::array()},
         {"combatHistory",J::array()},{"combatHistoryComplete",true},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
-        {"rewardPityHistoryComplete",true},
+        {"rewardPityHistoryComplete",true},{"potionChance",g.potionChance},{"cardRarityFactor",g.cardRarityFactor},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
     for(const auto pot:g.potions)p["potions"].push_back(J(pot));
     for(int i=0;i<g.deck.size();++i){auto c=cardWire(g.deck.cards[i]);int bottle=-1;
@@ -362,6 +364,52 @@ int main(int argc,char **argv){try{
                 check(choices.size() == 1 && one.candidate(0, choices[0].id).primitive.bits == alias.bits,
                       "root filtering must retain whichever skip alias is captured");
             }
+        }
+    }
+    // Overnight issue 20 (seed 111194462): with tree rules the search keeps
+    // one candidate per group of card copies on bottle, duplicate and bonfire
+    // selectors; the live mapping must accept the other copies' clicks.
+    for (int variant = 0; variant < 3; ++variant) {
+        auto source = base;
+        if (variant == 0) {
+            source.deck.removeBottle(CardType::ATTACK);
+            source.obtainRelic(RelicId::BOTTLED_FLAME);
+        } else source.openCardSelectScreen(variant == 1 ? CardSelectScreenType::DUPLICATE
+                                                       : CardSelectScreenType::BONFIRE_SPIRITS, 1);
+        check(source.screenState == ScreenState::CARD_SELECT, "copy selector fixture");
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(project(source, path, "selector_copies"), live).ok,
+              "copy selector fixture import");
+        const auto captured = advisor::liveOocPrimitiveBits(live);
+        OocMctsDependencies deps;
+        deps.policyAvailable = [] { return true; };
+        deps.policyLogits = [](const GameContext &, const PathHistory &, const std::vector<A> &as) {
+            return std::vector<double>(as.size(), 0.0);
+        };
+        deps.leafValue = [](const GameContext &, const PathHistory &) { return 0.5; };
+        for (const bool rules : {false, true}) {
+            OocAdapterOptions options;
+            options.uniformPrior = true;
+            options.treeRules = rules;
+            options.rootPrimitiveBits = std::set<std::uint32_t>(captured.begin(), captured.end());
+            OocGameContextModel root(live.mctsRoot.state, live.mctsRoot.path, {}, options, deps);
+            std::vector<std::uint32_t> bits;
+            for (const auto &action : root.legalActions(0))
+                bits.push_back(root.candidate(0, action.id).primitive.bits);
+            check(rules ? bits.size() < captured.size() : bits.size() == captured.size(),
+                  "tree rules must collapse selector card copies");
+            advisor::validateLiveOocActionSet(live, bits, true, rules);
+            if (!rules) continue;
+            bool rejected = false;
+            try { advisor::validateLiveOocActionSet(live, bits, true, false); }
+            catch (const std::exception &) { rejected = true; }
+            check(rejected, "copy aliases need tree-rule keys");
+            auto missing = bits;
+            missing.pop_back();
+            rejected = false;
+            try { advisor::validateLiveOocActionSet(live, missing, true, true); }
+            catch (const std::exception &) { rejected = true; }
+            check(rejected, "missing selector card group accepted");
         }
     }
     for(bool bowl:{false,true}) for(int unopened:{0,1,4}) for(bool potions:{false,true}) {
@@ -880,10 +928,35 @@ int main(int argc,char **argv){try{
         if(name=="event_library") {
             auto healed=live.mctsRoot.state;healed.chooseEventOption(1);
             check(healed.curHp==std::min(source.maxHp,source.curHp+source.info.hpAmount0),"Library public heal transition");
-            auto unknown=wire;unknown["ooc"]["publicState"]["rewardPityHistoryComplete"]=false;
+            auto unknown=wire;auto &unknownPublic=unknown["ooc"]["publicState"];
+            unknownPublic["rewardPityHistoryComplete"]=false;unknownPublic.erase("potionChance");
+            unknownPublic.erase("cardRarityFactor");
             advisor::LiveOocStateV1 belief;
-            check(advisor::importLiveOocStateV1(unknown,belief).ok && belief.hiddenEventRewardPity,
-                    "Library unknown pity must reach public-belief policy");
+            check(advisor::importLiveOocStateV1(unknown,belief).ok && belief.hiddenEventRewardPity
+                    && !belief.exactRewardPity,"Library unknown pity must reach public-belief policy");
+            check(!belief.mctsRoot.supported || (belief.mctsRoot.state.potionChance!=source.potionChance
+                    || belief.mctsRoot.state.cardRarityFactor!=source.cardRarityFactor),
+                    "unknown pity must not import the exact counters");
+            // Real mod captures (#636): exact counters without the V4 marker.
+            auto captured=wire;captured["ooc"]["publicState"].erase("rewardPityHistoryComplete");
+            check(advisor::importLiveOocStateV1(captured,belief).ok && belief.exactRewardPity
+                    && !belief.rewardPityHistoryComplete && belief.hiddenEventRewardPity
+                    && belief.mctsRoot.state.potionChance==source.potionChance
+                    && belief.mctsRoot.state.cardRarityFactor==source.cardRarityFactor,
+                    "mod capture must import exact counters but keep V4 unqualified");
+            setenv("STS_LIVE_OOC_EXACT_PITY","0",1);
+            const bool disabled=advisor::importLiveOocStateV1(captured,belief).ok && !belief.exactRewardPity;
+            unsetenv("STS_LIVE_OOC_EXACT_PITY");
+            check(disabled,"STS_LIVE_OOC_EXACT_PITY=0 must ignore the exact counters");
+            for(int defect=0;defect<5;++defect) {
+                auto bad=wire;auto &pub=bad["ooc"]["publicState"];
+                if(defect==0)pub.erase("potionChance");
+                if(defect==1)pub.erase("cardRarityFactor");
+                if(defect==2)pub["potionChance"]=15;
+                if(defect==3)pub["cardRarityFactor"]=6;
+                if(defect==4){pub.erase("potionChance");pub.erase("cardRarityFactor");}
+                check(!advisor::importLiveOocStateV1(bad,belief).ok,"malformed exact reward pity accepted");
+            }
             for(int defect=0;defect<3;++defect) {
                 auto bad=wire;
                 if(defect==0)bad["ooc"]["details"].erase("hpAmount0");
@@ -990,8 +1063,10 @@ int main(int argc,char **argv){try{
                 visibleRelicRemoved(source.info.rewardsContainer.relics[i]);
         if (source.screenState==ScreenState::BOSS_RELIC_REWARDS)
             for(RelicId relic:source.info.bossRelics)visibleRelicRemoved(relic);
-        auto publicSource=source;publicSource.potionChance=30;publicSource.cardRarityFactor=-18;
-        sameTokens(buildTokStatePure(publicSource,path),buildTokStatePure(live.projected,live.path));
+        check(live.projected.potionChance==source.potionChance && live.projected.cardRarityFactor==source.cardRarityFactor
+                && (!live.mctsRoot.supported || (live.mctsRoot.state.potionChance==source.potionChance
+                    && live.mctsRoot.state.cardRarityFactor==source.cardRarityFactor)),name+" exact reward pity counters");
+        sameTokens(buildTokStatePure(source,path),buildTokStatePure(live.projected,live.path));
         check(source.deck.cardTypeCounts==live.projected.deck.cardTypeCounts,name+" deck type counts");
         check(source.deck.transformableCount==live.projected.deck.transformableCount,name+" transformable count");
         check(source.deck.upgradeableCount==live.projected.deck.upgradeableCount,name+" upgradeable count");
@@ -1021,7 +1096,7 @@ int main(int argc,char **argv){try{
                     representativeBits.push_back(binding.primitiveBits);
             advisor::validateLiveOocActionSet(live,representativeBits,true);
         }
-        auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
+        auto qa=scoreLiveOocV4(source,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
         const bool v4Unsupported = name.rfind("unsupported_",0)==0
             || name=="rewards_without_cards" || (source.screenState==ScreenState::CARD_SELECT
@@ -1234,8 +1309,14 @@ int main(int argc,char **argv){try{
         p["seenRelicsComplete"]=false;
         p["knownRelicOffers"]=J::array({J(RelicId::RUNIC_DOME),J(RelicId::BLACK_STAR)});
         advisor::LiveOocStateV1 recovered;
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR","0",1);
         check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
                 && !recovered.mctsRoot.mapHistoryComplete,"boss subset promoted missing global offers");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
+                && recovered.mctsRoot.seenRelicOfferPrior
+                && recovered.mctsRoot.mapHistoryComplete==recovered.mctsRoot.questionHistoryComplete,
+                "relic offer prior did not qualify downstream map search");
         for(auto relic:{RelicId::RUNIC_DOME,RelicId::BLACK_STAR})
             check(std::find(recovered.mctsRoot.state.bossRelicPool.begin(),
                     recovered.mctsRoot.state.bossRelicPool.end(),relic)
@@ -1244,9 +1325,13 @@ int main(int argc,char **argv){try{
         wire=project(source,path,"known_boss_offers_keep_map_guard");
         wire["ooc"]["publicState"]["seenRelicsComplete"]=false;
         wire["ooc"]["publicState"]["knownRelicOffers"]=J::array({J(RelicId::RUNIC_DOME),J(RelicId::BLACK_STAR)});
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR","0",1);
         check(advisor::importLiveOocStateV1(wire,recovered).ok && !recovered.mctsRoot.supported
                 && recovered.mctsRoot.reason=="PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
                 "known boss subset bypassed missing shop stock gate");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        check(advisor::importLiveOocStateV1(wire,recovered).ok && recovered.mctsRoot.supported
+                && recovered.mctsRoot.seenRelicOfferPrior,"relic offer prior did not support MAP root");
     }
     {
         auto source = base;
@@ -1353,8 +1438,13 @@ int main(int argc,char **argv){try{
             auto &p=wire["ooc"]["publicState"];
             p["questionHistoryComplete"]=question;p["questionOutcomes"]=J::array();p["seenRelicsComplete"]=seen;
             advisor::LiveOocStateV1 live;
+            setenv("STS_LIVE_RELIC_OFFER_PRIOR","0",1);
             check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.supported
                     && live.mctsRoot.mapHistoryComplete==(question&&seen),"downstream map requires both histories");
+            unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+            check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.supported
+                    && live.mctsRoot.mapHistoryComplete==question && live.mctsRoot.seenRelicOfferPrior==!seen,
+                    "relic offer prior changed the question-history requirement");
             p["relics"].push_back({{"id",J(RelicId::WING_BOOTS)},{"data",0},{"liveCounter",2}});
             check(advisor::importLiveOocStateV1(wire,live).ok && live.mctsRoot.state.wingBootsCharges==2,
                     "transition root lost public Wing Boots charges");
@@ -1373,10 +1463,23 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "incomplete_seen_relic_map_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR", "0", 1);
         const auto result = advisor::importLiveOocStateV1(wire, live);
         check(result.ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
-            "MAP search must fail closed without prior offered-relic history");
+            "STS_LIVE_RELIC_OFFER_PRIOR=0 MAP search must fail closed without prior offered-relic history");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        // A partial observer ledger still excludes the offers it did see.
+        const auto seenOffer = live.mctsRoot.state.commonRelicPool.at(0);
+        wire["ooc"]["publicState"]["seenRelics"] = J::array({J(seenOffer)});
+        const auto prior = advisor::importLiveOocStateV1(wire, live);
+        const auto &pool = live.mctsRoot.state.commonRelicPool;
+        check(prior.ok && live.mctsRoot.supported && live.mctsRoot.seenRelicOfferPrior
+                && std::find(pool.begin(), pool.end(), seenOffer) == pool.end(),
+            "relic offer prior must search MAP and exclude partially seen offers");
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR", "2", 1);
+        check(!advisor::importLiveOocStateV1(wire, live).ok, "invalid STS_LIVE_RELIC_OFFER_PRIOR accepted");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
     }
     {
         auto source = base;
@@ -1385,10 +1488,14 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "incomplete_seen_relic_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;
+        setenv("STS_LIVE_RELIC_OFFER_PRIOR", "0", 1);
         const auto result = advisor::importLiveOocStateV1(wire, live);
         check(result.ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
-            "random relic event must fail closed without seen relic history");
+            "STS_LIVE_RELIC_OFFER_PRIOR=0 random relic event must fail closed without seen relic history");
+        unsetenv("STS_LIVE_RELIC_OFFER_PRIOR");
+        check(advisor::importLiveOocStateV1(wire, live).ok && live.mctsRoot.supported
+                && live.mctsRoot.seenRelicOfferPrior, "relic offer prior must support random relic event");
     }
     {
         auto source=base;source.act=2;source.floorNum=23;source.screenState=ScreenState::REWARDS;

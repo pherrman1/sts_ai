@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
+#include <stdexcept>
 #include <map>
 #include <set>
 #include <sstream>
@@ -23,6 +25,7 @@
 #include "combat/CardQueue.h"
 #include "combat/PublicDamageBelief.h"
 #include "combat/Monster.h"
+#include "combat/BattleContext.h"
 #include "live_silver_mapping.h"
 
 namespace one_combat::advisor {
@@ -354,6 +357,40 @@ bool setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
         if (status == sts::MonsterStatus::RITUAL) monster.statusBits |= 1ULL << 61;
     }
     return true;
+}
+
+// STS_IMPORTER_HIGH_RELIC_FIX: unset/1 (default) = relics with enum index >= 128
+// get no combat relic bit (the combat Player has 128 bits and no combat code
+// reads them); 0 = legacy aliasing, where the out-of-range shift set the bit of
+// relic index - 64 (e.g. Thread and Needle -> Strike Dummy, Maw Bank -> Wrist Blade).
+bool highRelicFix() {
+    const char *value = std::getenv("STS_IMPORTER_HIGH_RELIC_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
+}
+
+// STS_SELECTION_TOY_HEAL_FIX: unset/1 (default) = a live selection whose
+// public pending tail holds Toy Ornithopter's queued potion heal (tested for
+// Gambler's Brew) imports with that heal; 0 = legacy refusal as
+// silver_selection_pending_actions.
+bool selectionToyHealFix() {
+    const char *value = std::getenv("STS_SELECTION_TOY_HEAL_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX must be 0 or 1");
+}
+
+// STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
+// stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
+// native stolen-gold check that Java has no field for; without it Silver's
+// effectiveGold ignores the gold a kill returns. 0 = legacy, bit only from an
+// explicit combat.miscBits.
+bool thiefGoldFix() {
+    const char *value = std::getenv("STS_IMPORTER_THIEF_GOLD_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_THIEF_GOLD_FIX must be 0 or 1");
 }
 
 template <typename T>
@@ -1164,6 +1201,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         std::array<CardRecord, 2> orderedStasis;
         std::array<bool, 2> seenStasis {};
         const auto &stasisJson = combat.at("stasis");
+        const json monstersJson = combat.value("monsters", json::array());
+        const auto returnedElsewhere = [&](const std::string &uuid) {
+            const auto has = [&](const std::vector<CardRecord> &cards) {
+                return std::any_of(cards.begin(), cards.end(),
+                                   [&](const CardRecord &card) { return card.uuid == uuid; });
+            };
+            return has(hand) || has(limbo) || has(draw.bottom) || has(draw.unknown) || has(draw.top)
+                || has(discard.bottom) || has(discard.unknown) || has(discard.top)
+                || has(exhaust.bottom) || has(exhaust.unknown) || has(exhaust.top);
+        };
         for (std::size_t i = 0; i < stasis.size(); ++i) {
             if (!stasisJson[i].is_object() || !stasisJson[i].contains("slot")
                 || !stasisJson[i].at("slot").is_number_integer())
@@ -1171,6 +1218,21 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             const int slot = stasisJson[i].at("slot").get<int>();
             if (slot < 0 || slot >= static_cast<int>(orderedStasis.size()) || seenStasis[slot])
                 return unsupported("silver_unmapped_stasis");
+            // Java StasisPower.onDeath returns the card with its own UUID,
+            // but the dead orb keeps listing it until its powers are
+            // cleared.  Native returnStasisCard empties the slot.
+            bool orbDead = false;
+            for (std::size_t m = 0; monstersJson.is_array() && m < monstersJson.size(); ++m) {
+                const auto &orb = monstersJson[m];
+                if (!orb.is_object()
+                    || orb.value("slot", orb.value("idx", static_cast<int>(m))) != slot * 2) continue;
+                orbDead = orb.value("dead", false)
+                    || (orb.value("hp", 1) <= 0 && !orb.value("halfDead", false));
+            }
+            if (orbDead) {
+                if (!returnedElsewhere(stasis[i].uuid)) return unsupported("silver_unmapped_stasis");
+                continue;
+            }
             seenStasis[slot] = true;
             orderedStasis[slot] = std::move(stasis[i]);
         }
@@ -1275,6 +1337,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (!combat.contains("strikeCount")) {
         wire.strikeCount = 0;
         for (const auto &card : allCards) if (isStrike(card.wire)) ++wire.strikeCount;
+        // STS_STRIKE_COUNT_FIX=0 restores the legacy recount, one too high
+        // per exhausted Strike or Strike held by a Stasis orb.
+        if (sts::strikeCountFix()) {
+            for (const auto *pile : {&exhaust.bottom, &exhaust.unknown, &exhaust.top, &stasis})
+                for (const auto &card : *pile) if (isStrike(card.wire)) --wire.strikeCount;
+        }
     }
     wire.handNormalityCount = combat.value("handNormalityCount", countWire(wire.hand, isNormality));
     wire.handPainCount = combat.value("handPainCount", countWire(wire.hand, isPain));
@@ -1352,6 +1420,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // native bookkeeping explicitly.
             const bool needsCombust = *mapped == PlayerStatus::COMBUST;
             const bool needsEcho = *mapped == PlayerStatus::ECHO_FORM;
+            // Java PanachePower.amount is the cards-until-damage countdown;
+            // the damage is a separate private field. Native keeps the damage
+            // as the status amount and the countdown in panacheCounter.
             const bool needsPanache = *mapped == PlayerStatus::PANACHE;
             const bool needsDeva = *mapped == PlayerStatus::DEVA;
             const bool needsBomb = *mapped == PlayerStatus::THE_BOMB;
@@ -1361,7 +1432,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || *mapped == PlayerStatus::WEAK;
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
-                || (needsPanache && !combat.contains("panacheCounter"))
+                || (needsPanache && (!power.contains("panacheDamage")
+                    || !power.at("panacheDamage").is_number_integer()
+                    || power.value("panacheDamage", 0) < 1 || power.value("panacheDamage", 0) > 127
+                    || power.value("amount", 0) < 1 || power.value("amount", 0) > 5))
                 || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
                 || (needsBomb && (!power.contains("bombDamage")
                     || !power.at("bombDamage").is_number_integer()
@@ -1377,6 +1451,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if (p.bombs[static_cast<std::size_t>(amount - 1)])
                     return unsupported("silver_unmapped_player_power");
                 setPlayerPower(p, *mapped, amount, false, damage);
+            } else if (needsPanache) {
+                p.panacheCounter = static_cast<std::int8_t>(amount);
+                setPlayerPower(p, *mapped, power.at("panacheDamage").get<int>(), false);
             } else {
                 setPlayerPower(p, *mapped, amount, power.value("justApplied", false));
             }
@@ -1398,7 +1475,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             return unsupported("silver_unmapped_relic_state");
         if (relic.at("usedUp").get<bool>()) continue;
         const int rid = static_cast<int>(id);
-        if (rid < 64) p.relicBits0 |= 1ULL << rid; else p.relicBits1 |= 1ULL << (rid - 64);
+        if (rid < 64) p.relicBits0 |= 1ULL << rid;
+        else if (rid < 128) p.relicBits1 |= 1ULL << (rid - 64);
+        else if (!highRelicFix()) p.relicBits1 |= 1ULL << (rid - 128);
         const auto counter = static_cast<std::int8_t>(relic.at("counter").get<int>());
         const std::array<sts::RelicId, 7> counterRelics = {sts::RelicId::HAPPY_FLOWER, sts::RelicId::INCENSE_BURNER,
             sts::RelicId::INK_BOTTLE, sts::RelicId::INSERTER, sts::RelicId::NUNCHAKU, sts::RelicId::PEN_NIB, sts::RelicId::SUNDIAL};
@@ -1558,6 +1637,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             }
         }
         if (m.curHp > 0 && !m.isEscapingB && !m.halfDead && !item.value("dead", false)) ++wire.monstersAlive;
+        if ((*id == sts::MonsterId::LOOTER || *id == sts::MonsterId::MUGGER) && m.miscInfo > 0 && thiefGoldFix())
+            wire.miscBits |= 1U;
     }
     if (combat.contains("monsterCount")) {
         if (!combat.at("monsterCount").is_number_integer())
@@ -1812,8 +1893,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         for(const auto &entry:queue) {
             if(!entry.is_object() || !entry.contains("kind") || !entry.at("kind").is_string()) return unsupported("silver_selection_pending_actions");
             const auto kind=kinds.find(entry.at("kind").get<std::string>());
-            if(kind==kinds.end()) return unsupported("silver_selection_pending_actions");
-            silver_bridge::PendingActionWire action;action.kind=kind->second;
+            silver_bridge::PendingActionWire action;
+            if(kind==kinds.end()) {
+                if(entry.at("kind").get<std::string>()!="HEAL_PLAYER" || !selectionToyHealFix()
+                        || !requiredInt(entry,"amount",action.amount) || action.amount!=5)
+                    return unsupported("silver_selection_pending_actions");
+                action.kind=K::HEAL_PLAYER;wire.pendingActionQueue.push_back(action);continue;
+            }
+            action.kind=kind->second;
             const bool noAmount=action.kind==K::GAMBLE || action.kind==K::UPGRADE_RANDOM || action.kind==K::USE_CARD
                 || action.kind==K::REMOVE_PEN_NIB || action.kind==K::REMOVE_PLAYER_DEBUFFS;
             if(!noAmount && (!requiredInt(entry,"amount",action.amount) || action.amount<0 || action.amount>999

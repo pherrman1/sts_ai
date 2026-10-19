@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-19 for the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -300,6 +300,11 @@ Darkling Regrow, Bronze Orb Stasis, and Awakened One stage 2. The only manifest
 exclusion is the `INVALID` sentinel.
 The combat boundary still requires the installed runtime's waiting-for-user
 phase, no current action, empty action/card/monster queues, and an unended turn.
+It also excludes a combat that is ending: while the player escapes after Smoke
+Bomb (`isEscaping`/`smoked`) and after `endBattle()` (`isBattleOver`) the room
+stays `COMBAT` with idle queues, but native combat has already ended and
+`endBattle()` has cleared the Runic Dome occupant binding, so publishing that
+frame made Silver refuse with `silver_monster_occupant_binding`.
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
@@ -404,7 +409,24 @@ failure reproduction commands. Vanilla `CardCrawlGame.render()` returns before
 updating the game when `getRawDeltaTime()` exceeds 0.1 seconds. Repeated slow
 software-rendered frames can therefore advance an animation much more slowly
 than wall time; extending the wait does not change the animation or reapply its
-effect. Advisor waiting remains separately configured by `--inspector-timeout`.
+effect. The Wheel of Change Spin click adds 10 seconds to that wait: MCP's
+screen is unchanged while Java finishes the bounce-in, spins and bounces out
+(about 9 seconds) before the result dialog appears. The inspector qualifies the
+Spin page (`SPIN_READY`) during the bounce-in as well, because MCP's click only
+latches `buttonPressed` and Java starts the spin when the bounce ends.
+A combat End Turn adds 10 seconds as well, because the monster turn plays every
+queued monster action first (The Collector's turn exceeded 8 seconds on
+2026-10-19). While MCP's polled screen keeps changing after End Turn, the wait
+also extends to one transition timeout after the last change, capped at the
+transition timeout plus 30 seconds; an unchanged screen still fails after the
+transition timeout plus 10 seconds.
+After a Smoke Bomb the driver waits until MCP's room phase leaves combat, with
+10 extra seconds: MCP stays ready in screen `NONE`, phase `COMBAT` while the
+player runs off, and the inspector publishes no combat decision in that window
+(#695) but next shows the post-escape reward screen. Accepting that window as
+a decision stopped two live runs with an observation boundary mismatch; a
+Smoke Bomb that never leaves combat still times out.
+Advisor waiting remains separately configured by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:
 
@@ -717,8 +739,9 @@ read-only screen and choice converters. The observation contains:
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
-  `seenRelics` list is accepted only when its producer marks the history
-  complete. The Java observer accumulates visible shop, reward and boss offers
+  `seenRelics` list fully qualifies relic pools only when its producer marks
+  the history complete; an incomplete list still excludes the offers it names
+  under the relic offer prior below. The Java observer accumulates visible shop, reward and boss offers
   from a fresh Neow boundary. `RelicOfferRecorder` captures those offers before
   shop/reward input and persists the ledger with the BaseMod run-save field
   `stsmodelinspector:relicOffersV1`. Restoration validates schema version,
@@ -749,9 +772,11 @@ read-only screen and choice converters. The observation contains:
   and checkpoint rollback can leave stale entries in that file. Missing or
   contradictory history still fails closed with
   `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
-  An optional
-  `rewardPityHistoryComplete` marker is reserved for synthetic captures with
-  an exact reconstruction; the live Java producer leaves it false.
+  `potionChance` (multiple of 10) and `cardRarityFactor` (-40..5) are sent
+  together or not at all; the live Java producer sends both. The separate
+  `rewardPityHistoryComplete=true` marker additionally qualifies them for V4
+  scoring; it requires both counters, and only synthetic parity fixtures set
+  it, so live play never uses V4.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
@@ -824,9 +849,19 @@ Validated historical boss `picked`/`not_picked` metrics contribute known
 exclusions without marking that global history complete. Legacy normal/elite
 encounter history can be recovered only from canonical encounter identities
 joined to validated resolved public path floors. An uninterrupted
-fresh-run observer accumulates them from each public screen; random-relic
-branches and direct MAP search fail closed with
-`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
+fresh-run observer accumulates them from each public screen. When that
+ledger is incomplete (a save from before the recorder, a mid-run install, or
+an unopened shop), the importer keeps the remaining pool superset as a public
+prior (`STS_LIVE_RELIC_OFFER_PRIOR`, default 1, issue #637). Native pools are
+one uniform shuffle consumed regardless of identity, so given the known
+exclusions the unknown future draws are a uniform sample without replacement
+from that superset, which is what the per-particle pool reshuffle in OOC MCTS
+samples. **Inference:** it is exact up to native redraws of relics that cannot
+spawn and real pool exhaustion changing the tier fallback. Random-relic branches and downstream MAP search are then supported,
+the evaluator reports `seenRelicOfferPrior=true`, and differential tracing
+rejects such roots (`DIFFERENTIAL_SEEN_RELIC_PRIOR_UNREPRESENTABLE`).
+`STS_LIVE_RELIC_OFFER_PRIOR=0` restores the fail-closed
+`PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED`. The
 resolved `?`-room outcomes are recovered from vanilla's persisted
 `path_per_floor`, checked against `path_taken`, with the current public room
 allowed to complete the current floor. Continuing a save made after a boss
@@ -875,30 +910,40 @@ validated against the native effect. Its `RESULT` page uses the same strict
 one-button forced transition and differential-trace rejection as Neow.
 Unopened ordinary treasure uses visible chest size and the existing MCTS
 prior for correlated gold/relic-tier draws. Its Java `goldReward` and
-`relicReward` pre-rolls remain hidden. The private Java `potionChance` and
-`cardRarityFactor` counters are
-not captured. Library captures its displayed `healAmt` into `hpAmount0`;
-MCTS uses the existing hypothetical reward-pity prior for Read. Its visible
+`relicReward` pre-rolls remain hidden. The reward pity counters are captured
+exactly (#636): `publicState.potionChance` is vanilla
+`AbstractRoom.blizzardPotionMod` and `publicState.cardRarityFactor` is
+`AbstractDungeon.cardBlizzRandomizer`. Both are determined by reward screens the player has already seen (potion
+drops since the act start, card rarities since the last rare), so exporting
+them is perfect memory of public history rather than hidden information
+(Philipp chose this over a public-history reconstruction, 2026-10-18).
+`STS_LIVE_OOC_EXACT_PITY=0` makes the importer ignore them and restores the
+public-belief prior below. The exact counters change only the root counters,
+root-particle sampling and the v_win leaf: the producer leaves
+`rewardPityHistoryComplete` unset, so direct V4 still fails closed and the
+MCTS prior at nodes Arm C does not cover stays the equal public prior. Install
+the mod and the advisor from the same release; an older advisor ignores the
+counters and keeps the public-belief prior. Library captures its displayed `healAmt` into
+`hpAmount0`; Read uses the exact counters when present. Its visible
 20-card grid imports an OBTAIN selector, preserving offer order and UUIDs,
 requiring distinct class reward cards and exact Egg-preview upgrades, and
 checking the non-cancelable one-pick continuation. Its completed Read/Sleep
 page is a forced Leave. Brutality and Combust already have red native metadata
 and import normally. Searing Blow retains upgrade eligibility after repeated
 upgrades; Egg preview/acquisition never upgrades an already upgraded card twice.
-Direct V4 still rejects unknown pity; differential tracing rejects Library's
-unknown-pity initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
-Mushrooms and Mysterious Sphere use the same reward-pity prior for combat
-rewards. Their native leave effects match installed vanilla: Mushrooms heals
+Direct V4 rejects unqualified pity, and differential tracing rejects Library's
+initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
+Mushrooms and Mysterious Sphere use the same counters for combat rewards. Their native leave effects match installed vanilla: Mushrooms heals
 and adds Parasite; Sphere leaves without granting gold. Event repairs also
 preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
 Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
-The v_win leaf marginalizes the hidden counters
-features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
+With exact counters, MCTS keeps them at every root particle and the v_win
+leaf evaluates them directly. Without them, the v_win leaf marginalizes the
+counter features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
 native lattice (`potionChance` -40 through 60), never applying the link to an
-expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
-MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
-parity fixtures may mark an exact pity reconstruction explicitly. Live
-hypothetical reward-pity counters are sampled once per root particle.
+expected margin, and hypothetical reward-pity counters are sampled once per
+root particle. In both cases MCTS uses an equal public prior where Arm C does
+not cover a node, rather than V4 logits.
 Without qualified question history, room chances use the public current-act
 `?` visit count and jointly advance
 all three counters for each sampled latent room outcome, so every sampled
@@ -1094,15 +1139,26 @@ without Prismatic Shard, but subsequent combat still requires broader
 Silver/CTM card support and qualification; OOC capture does not establish it.
 Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
+With the research stack's tree rules (ADR-0031), live MCTS offers one bottle,
+duplicate or Bonfire candidate per distinct card; the advisor's live mapping
+check accepts the other copies' clicks as the same choice (`validateLiveOocActionSet`,
+`treeRuleChoices`) instead of failing with `OOC_ACTION_MAPPING`.
 When a full belt blocks a visible potion reward or affordable shop potion,
 MCTS enumerates each held-slot discard using public potion identity and duplicate
 occurrence. Sozu prevents these replacement actions. MCPTheSpire 1.0.4-dev never lists
-`discard_potion` in `get_available_commands`, but outside the `COMBAT` room
-phase its executor accepts `potion discard N` whenever a potion is held
+`discard_potion` in `get_available_commands`, but its executor accepts
+`potion discard N` whenever a potion is held, with no room-phase check
 (bytecode of `MCPToolHandler`/`CommandExecutor`). The driver therefore offers
 `discard_potion` on combat-reward and shop screens when MCP reports a
-non-`COMBAT` `room_phase`, and only for slots with `can_discard`; other
+non-`COMBAT` `room_phase`, and in `COMBAT` wherever MCP advertises
+`use_potion` (no screen up), always only for slots with `can_discard`; other
 screens keep their exact advertised surface; discarding never takes a monster target. The next observation scores the actual refill separately.
+The combat case serves Silver's only discard edge, a discard that frees a
+slot for a held Entropic Brew (`SilverSearcher.cpp`
+`potionDiscardEnablesEntropicBrew`); `STS_LIVE_COMBAT_POTION_DISCARD=0`
+restores the advertised-only combat surface, where such a choice stops the
+driver with a mapping failure. The deterministic fallback policy never
+discards in combat.
 Shop mapping validation includes the semantic discard actions before model
 loading. Both native and captured shop purchases require a free potion slot
 and no Sozu; MCP can advertise a purchase that would not obtain a potion.
@@ -1309,6 +1365,13 @@ accepted Silver actions. The state identity itself stays strict. Changes to
 HP, energy, hand, costs, UUIDs, order, base fields or two different present
 stat values still stop before mutation. Zero/absent ambiguity remains strict,
 and differential replay does not use this refresh path.
+MCP also reports exhaust-pile cards with stale displayed values (overnight
+2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
+and discard: a positive explicit base replaces a different displayed stat in
+the state identity, and a stat appearing or disappearing there takes the refresh path. A JSON
+`null` base counts as absent, and a negative base (Java's -1 for a card
+without that stat) drops both the base and its derived display value. Hand
+values and pile-card costs/playability stay strict.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other

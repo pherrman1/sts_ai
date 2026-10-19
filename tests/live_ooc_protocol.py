@@ -39,6 +39,7 @@ class LiveOocProtocol(unittest.TestCase):
         env.pop("STS_LIVE_OOC_ARM_C", None)
         env.pop("STS_OOC_MCTS_TARGET_PRIOR", None)
         env.pop("STS_OOC_MCTS_LEAF_SELECTS", None)
+        env.pop("STS_LIVE_RELIC_OFFER_PRIOR", None)
         env.update(extra_env or {})
         env.pop("STS_LIVE_OOC_WING_BOOTS", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
@@ -342,6 +343,18 @@ class LiveOocProtocol(unittest.TestCase):
         invalid["ooc"]["details"]["buttonPressed"] = True
         response, = self.run_rows([invalid], model=False)
         self.assertEqual(response["status"], "ERROR", response)
+        # Overnight 2026-10-19: the capture after [Play] lands in the bounce-in.
+        bouncing = copy.deepcopy(observations[-1])
+        bouncing["ooc"]["details"]["bounceTimer"] = 1.85
+        response, = self.run_rows([bouncing], model=False)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        for timer in (-0.5, 2.5):
+            invalid = copy.deepcopy(observations[-1])
+            invalid["ooc"]["details"]["bounceTimer"] = timer
+            response, = self.run_rows([invalid], model=False)
+            self.assertEqual(response["status"], "ERROR", response)
 
     def test_boss_chest_reveal_preserves_skip_without_hidden_offers(self):
         observation = copy.deepcopy(self.fixtures["neow"])
@@ -619,7 +632,8 @@ class LiveOocProtocol(unittest.TestCase):
         public=observation["ooc"]["publicState"]
         public.update(questionHistoryComplete=True,questionOutcomes=[],seenRelicsComplete=False)
         public["relics"].append(dict(id="WingedGreaves",data=0,liveCounter=2))
-        response, = self.run_rows([observation],label="downstream public history gate")
+        response, = self.run_rows([observation],label="downstream public history gate",
+                                  extra_env={"STS_LIVE_RELIC_OFFER_PRIOR":"0"})
         evaluator=response["evaluators"][0]
         self.assertEqual(evaluator["status"],"OK",response)
         self.assertEqual(set(evaluator["endpointHpDistribution"]["root"]["floorOffsets"]),{"0"})
@@ -636,10 +650,18 @@ class LiveOocProtocol(unittest.TestCase):
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])
         observation["ooc"]["publicState"]["seenRelicsComplete"] = False
-        response, = self.run_rows([observation])
+        response, = self.run_rows([observation], extra_env={"STS_LIVE_RELIC_OFFER_PRIOR": "0"})
         evaluator = response["evaluators"][0]
         self.assertEqual(evaluator["status"], "UNSUPPORTED")
         self.assertEqual(evaluator["reason"], "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED")
+
+    def test_map_root_searches_incomplete_offered_relic_history_under_prior(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        observation["ooc"]["publicState"]["seenRelicsComplete"] = False
+        response, = self.run_rows([observation])
+        evaluator = response["evaluators"][0]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertTrue(evaluator["seenRelicOfferPrior"])
 
     def test_unqualified_pity_never_becomes_a_v4_midpoint(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])
