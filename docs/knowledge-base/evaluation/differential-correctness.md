@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
 
 ## Purpose
 
@@ -254,6 +254,24 @@ upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
 there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
 skips statuses here for the same reason it skips curses (its `canUpgrade`
 rule); only the curse case was observed live.
+
+The same overnight runs showed Mayhem playing the wrong card natively (seed
+111194457: Reptomancer and Jaw Worm horde). The game plays the top card after
+the start-of-turn draw (`MayhemPower$1` queues `PlayTopCardAction` at the
+bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
+top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
+won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
+`=0` restores) plays it after the draw.
+
+A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
+Panache, because the live importer refused it. Java `PanachePower.amount` is
+the cards-left countdown and the damage is a private `damage` field, which the
+producer did not send. The engine also differed: a new Panache started its
+countdown at 0, so it dealt damage on the next card, and the countdown never
+went back to 5, so it dealt damage on every later card that turn. The
+producer now sends `panacheDamage`, the importer maps it, and
+`STS_PANACHE_FIX` (default on, `=0` restores) makes the engine count from 5,
+reset after damage, and let a second copy add damage only.
 
 Live play on 2026-10-19 (seed 111200384, Slime Boss) stopped twice on a
 Gambler's Brew hand selection as `silver_selection_pending_actions`. Toy

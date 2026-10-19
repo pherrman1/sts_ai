@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-19 for in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-19 for the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -420,6 +420,12 @@ queued monster action first (The Collector's turn exceeded 8 seconds on
 also extends to one transition timeout after the last change, capped at the
 transition timeout plus 30 seconds; an unchanged screen still fails after the
 transition timeout plus 10 seconds.
+After a Smoke Bomb the driver waits until MCP's room phase leaves combat, with
+10 extra seconds: MCP stays ready in screen `NONE`, phase `COMBAT` while the
+player runs off, and the inspector publishes no combat decision in that window
+(#695) but next shows the post-escape reward screen. Accepting that window as
+a decision stopped two live runs with an observation boundary mismatch; a
+Smoke Bomb that never leaves combat still times out.
 Advisor waiting remains separately configured by `--inspector-timeout`.
 It uses the seed guard and forwards arguments as an array; `--run` cannot be
 combined with `--check` or `--foreground`. For a fresh run with no existing save:

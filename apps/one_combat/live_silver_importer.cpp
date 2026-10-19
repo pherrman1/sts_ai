@@ -1413,6 +1413,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // native bookkeeping explicitly.
             const bool needsCombust = *mapped == PlayerStatus::COMBUST;
             const bool needsEcho = *mapped == PlayerStatus::ECHO_FORM;
+            // Java PanachePower.amount is the cards-until-damage countdown;
+            // the damage is a separate private field. Native keeps the damage
+            // as the status amount and the countdown in panacheCounter.
             const bool needsPanache = *mapped == PlayerStatus::PANACHE;
             const bool needsDeva = *mapped == PlayerStatus::DEVA;
             const bool needsBomb = *mapped == PlayerStatus::THE_BOMB;
@@ -1422,7 +1425,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || *mapped == PlayerStatus::WEAK;
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
-                || (needsPanache && !combat.contains("panacheCounter"))
+                || (needsPanache && (!power.contains("panacheDamage")
+                    || !power.at("panacheDamage").is_number_integer()
+                    || power.value("panacheDamage", 0) < 1 || power.value("panacheDamage", 0) > 127
+                    || power.value("amount", 0) < 1 || power.value("amount", 0) > 5))
                 || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
                 || (needsBomb && (!power.contains("bombDamage")
                     || !power.at("bombDamage").is_number_integer()
@@ -1438,6 +1444,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if (p.bombs[static_cast<std::size_t>(amount - 1)])
                     return unsupported("silver_unmapped_player_power");
                 setPlayerPower(p, *mapped, amount, false, damage);
+            } else if (needsPanache) {
+                p.panacheCounter = static_cast<std::int8_t>(amount);
+                setPlayerPower(p, *mapped, power.at("panacheDamage").get<int>(), false);
             } else {
                 setPlayerPower(p, *mapped, amount, power.value("justApplied", false));
             }

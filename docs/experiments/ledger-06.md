@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §550 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
+## §552 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
 
 **Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
 hand selection with `silver_selection_pending_actions` (problem 28 in `engine-parity/overnight-20261019/ISSUES.md` on
@@ -21226,6 +21226,48 @@ failure dump. `live_silver_importer` and `silver_wire_state` tests cover import,
 round trip and that a plain (non-Toy) heal stays unobserved. **Unverified:** the Java change is not compiled or run
 here (no game jar in the cloud); live confirmation needs a reinstall.
 Seeds: none driven (unit tests only; 111200431-440 reserved, unused).
+## §551 — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
+
+**Question:** why did live run 111194463 stop at Act 3 floor 40 (`silver_unmapped_player_power`, problem 21 in
+`engine-parity/overnight-20261019/ISSUES.md`), and does the engine play Panache as Java does?
+**Setup:** read-only `javap -c -p` of `desktop-1.0.jar` (sha256 `cfad868a…081673`) on Philipp's PC, the run's
+`trace28.jsonl.failure.json`, and `tests/panache_test.cpp` (fixed seed 111200211, no gameplay).
+**Result:** Java `PanachePower(owner, dmg)` sets `amount = 5` (the countdown) and a private `damage = dmg`;
+`stackPower(n)` adds to `damage` only; `onUseCard` decrements `amount` and at 0 resets it to 5 and queues
+`DamageAllEnemiesAction(createDamageMatrix(damage, true), THORNS)`; `atStartOfTurn` sets `amount = 5`. The Panache
+card is cost 0, magic 10 (+4 upgraded). The trace's observation had `{"id":"Panache","amount":5}` with no damage and
+no `panacheCounter`, so the importer refused (the producer looked for fields named `panacheCounter` /
+`cardsUntilTrigger`, which do not exist). The engine started the countdown at 0 when Panache was first applied
+(damage on the next card) and never reset it after a trigger (damage on every later card that turn): with the fix off
+the test sees 10 damage on each of the 5 cards after Panache; with it on, 10 damage on the 5th card only.
+**Interpretation:** `STS_PANACHE_FIX` (default on, `=0` restores) fixes the engine; the producer now sends
+`panacheDamage` and `panacheCounter = amount`, and the importer maps Java `amount` to the native countdown and
+`panacheDamage` to the status amount. Live use needs a mod reinstall. Combat-net features already encode
+`pPanache` (status amount) and `panacheCtr` (countdown), so the values they see change for Panache states; no
+model was retrained. Panache is a rare colorless card, so the effect on win rate is expected to be small (**Inference**).
+Seeds: 111200211 (unit test only).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md` (`STS_PANACHE_FIX`).
+## §550 — Overnight live play: Mayhem played the pre-draw top card natively (2026-10-19)
+
+**Question:** why did turns with Mayhem diverge from the game (overnight list problem 13)?
+**Setup:** parity traces of seed 111194457 (segments 16, 24, 25; Reptomancer and Jaw Worm horde) from §545's overnight
+runs; `javap` of `MayhemPower`, `MayhemPower$1`, `PlayTopCardAction` and `GameActionManager.getNextAction` in the pinned
+`desktop-1.0.jar` on Philipp's PC (read-only).
+**Result:** `MayhemPower.atStartOfTurn` queues, per stack, a wrapper action; its update rolls
+`getRandomMonster(null, true, cardRandomRng)` and queues `PlayTopCardAction` at the bottom. The wrapper sits ahead of
+the turn's `DrawCardAction`, so the target roll happens before the draw and the card play after the draw and the
+post-draw relics/powers. The engine queued `PlayTopCard` directly and played the pre-draw top card. Segment 16 step 86:
+the game drew Dark Embrace+ and four more, then played Burning Pact+ (exhaust selection); native played Dark Embrace+
+and drew Burning Pact+. Segment 25 step 14: the game played Metallicize+ after filling the hand to 10, the last Jaw
+Worm survived at 3 HP; native played the pre-draw Clothesline+ and won. Segment 24 step 17 and segment 25 step 57
+show the same pattern.
+**Interpretation:** `STS_MAYHEM_AFTER_DRAW_FIX` (default on, `=0` restores) adds the wrapper action
+(`ActData_MayhemPlayTopCard`). Play-changing for every combat with Mayhem; results recorded before this fix are
+comparable only with `STS_MAYHEM_AFTER_DRAW_FIX=0`. `mayhem_after_draw_test` checks the card played and the Armaments
+selection under both settings. **Unverified:** the fixed probe on the recorded traces (traces stay on the PC under
+`~/Documents/sts/artifacts/overnight-20261019/seed-111194457/`); the issue's inference that Mayhem explains other
+Act-3 end-turn hand/discard mismatches.
+Seeds: 111200121 (fixed seed of `mayhem_after_draw_test`, no gameplay).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 ## §549 — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
 
