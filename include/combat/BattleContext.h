@@ -89,6 +89,14 @@ namespace sts {
     // fatal. Read only when a moved card's costForTurn differs from its cost.
     bool pileCostResetFix();
 
+    // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
+    // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
+    // upgraded, as in the game (ArmamentsAction checks c.canUpgrade(); live
+    // overnight 2026-10-19 seed 111194457: Ascender's Bane stayed unupgraded).
+    // 0 = the legacy engine also upgrades curses and statuses (Burn+ deals 4).
+    // Other values are fatal. Read only when such an upgrade resolves.
+    bool handUpgradeAllFix();
+
     struct BattleContext {
 
         // begin for debugging purposes
