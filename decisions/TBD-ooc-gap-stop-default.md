@@ -32,6 +32,8 @@ On 2026-10-19 at 21:58Z Philipp asked to "Make gap stop the default and merge".
   own checks.
 - As before, the ladder is off on full-budget and observed-lock roots.
 - The learned stop stays opt-in.
+- `STS_OOC_MCTS_EARLY_STOP=0` does not turn the gap ladder off; a full-budget search needs
+  `STS_OOC_MCTS_GAP_STOP=0` as well.
 
 ## Consequences
 
