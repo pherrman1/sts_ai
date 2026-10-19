@@ -1,8 +1,10 @@
 #include "sim/search/SilverWireState.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 #include "constants/Potions.h"
 #include "sim/search/CombatKnowledge.h"
@@ -327,6 +329,18 @@ namespace sts::search {
 
     }
 
+    // STS_SILVER_MONSTER_REACTION_QUEUE: unset/1 (default) = a selection's
+    // queued monster on-hit reactions (MonsterGainBlock, ReactiveRollMove,
+    // e.g. Headbutt into Writhing Mass) are captured as an exact pending
+    // tail. 0 = legacy: such a tail stays unobserved and conversion falls
+    // back to card replay. Other values are fatal.
+    static bool silverMonsterReactionQueue() {
+        const char *value = std::getenv("STS_SILVER_MONSTER_REACTION_QUEUE");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE must be 0 or 1");
+    }
+
     void capturePendingActionQueue(const BattleContext &state, BattleStateWire &wire) {
         using K = silver_bridge::PendingActionKind;
         wire.pendingActionQueueObserved = false;
@@ -349,9 +363,12 @@ namespace sts::search {
                     item.kind=K::REMOVE_PEN_NIB;break;
                 case CombatActionType::RemovePlayerDebuffs: item.kind=K::REMOVE_PLAYER_DEBUFFS;break;
                 case CombatActionType::MonsterGainBlock:
+                    if(!silverMonsterReactionQueue())return;
                     item.kind=K::MONSTER_GAIN_BLOCK; item.monster=action.v_MonsterGainBlock.idx;
                     item.amount=action.v_MonsterGainBlock.amount; break;
-                case CombatActionType::ReactiveRollMove: item.kind=K::REACTIVE_ROLL_MOVE; break;
+                case CombatActionType::ReactiveRollMove:
+                    if(!silverMonsterReactionQueue())return;
+                    item.kind=K::REACTIVE_ROLL_MOVE; break;
                 case CombatActionType::BuffPlayer:
                     item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
                 case CombatActionType::DebuffPlayer:

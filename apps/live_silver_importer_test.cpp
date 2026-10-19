@@ -3622,6 +3622,15 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("monster-reaction fixture did not open Headbutt's selection");
             CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
             auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+            if(mass) {
+                // STS_SILVER_MONSTER_REACTION_QUEUE=0 restores the unobserved
+                // (card-replay) tail for native conversions.
+                setenv("STS_SILVER_MONSTER_REACTION_QUEUE","0",1);
+                const auto legacy=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+                unsetenv("STS_SILVER_MONSTER_REACTION_QUEUE");
+                if(legacy.pendingActionQueueObserved || !legacy.pendingActionQueue.empty())
+                    throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE=0 did not restore the legacy tail");
+            }
             const auto nativeQueue=expected.pendingActionQueue;
             const std::size_t wantQueue=mass?3:1;
             if(!expected.pendingActionQueueObserved || nativeQueue.size()!=wantQueue

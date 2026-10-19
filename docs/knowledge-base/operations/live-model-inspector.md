@@ -1313,7 +1313,10 @@ self-`GainBlockAction`, Malleable/Curl Up, with the emitted `slot`),
 first two become native `MonsterGainBlock`/`ReactiveRollMove` queue items
 (Reactive's scalar counts the queued rolls); the Plated Armor loss is folded
 into the imported monster because native applies it at the hit. A reduction
-that would remove the power (Shelled Parasite stun) stays unsupported.
+that would remove the power (Shelled Parasite stun) stays unsupported. Native
+conversions capture the same two queue items as an exact tail
+(`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
+unobserved tail and its card-replay fallback).
 
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case
