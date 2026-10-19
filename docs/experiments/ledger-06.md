@@ -21227,6 +21227,18 @@ and drops the autoplayed card from its own count. Checked by `tests/strike_count
 `lastTargetedMonster` difference is not part of this: Java's `PlayTopCardAction` writes no last-target field.
 **Unverified:** effect on win rate (expected tiny; Perfected Strike decks only). No seeds were driven (unit-test seed
 111200141).
+## §548 — Blessing of the Forge upgraded curses and statuses natively (2026-10-19)
+
+**Question:** why did Blessing of the Forge upgrade Ascender's Bane natively but not in the game (overnight live play,
+seed 111194457 segment 8 step 15, problem 14 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Result:** `ActData_UpgradeAllCardsInHand`, used by Blessing of the Forge and Armaments+, called `upgrade()` on every
+card in hand. The other upgrade effects (Apotheosis, Warped Tongs, the Armaments choice, random upgrades) already
+check `canUpgrade()`, which excludes curses and statuses. Natively this also turned a Burn in hand into Burn+ (4 damage
+at end of turn instead of 2).
+**Interpretation:** `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips cards that cannot be upgraded.
+`tests/hand_upgrade_all_test.cpp` checks Ascender's Bane, Burn, Strike and Searing Blow under both settings.
+**Inference:** the game skips statuses for the same reason as curses; only the curse case was seen live.
+Seeds: 111200181 (unit test only; no gameplay driven).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 ## §547 — Live Bottled Flame pick with card copies failed the advisor's mapping check (2026-10-19)
 

@@ -249,6 +249,15 @@ natively it counted itself. `STS_STRIKE_COUNT_FIX` (default on, `=0`
 restores) fixes both. Havoc's `lastTargetedMonster` difference is a separate
 issue: Java's `PlayTopCardAction` writes no last-target field.
 
+The same night showed Blessing of the Forge upgrading Ascender's Bane natively
+but not in the game (seed 111194457). The engine's upgrade-all-in-hand action
+(Blessing of the Forge, Armaments+) upgraded every card, while Apotheosis,
+Warped Tongs and the Armaments choice already skipped cards that cannot be
+upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
+there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
+skips statuses here for the same reason it skips curses (its `canUpgrade`
+rule); only the curse case was observed live.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 

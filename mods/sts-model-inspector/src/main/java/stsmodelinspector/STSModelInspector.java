@@ -1303,7 +1303,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String boundary;
         String ooc = "";
         if (isCombatBoundary(room.phase, AbstractDungeon.screen,
-                isPlayerDecisionPoint(), isCardSelectionBoundary())) {
+                isPlayerDecisionPoint(), isCardSelectionBoundary(),
+                isCombatEnding(room.isBattleOver, room.smoked, AbstractDungeon.player.isEscaping))) {
             boundary = "combat";
         } else {
             ooc = LiveOocCapture.capture();
@@ -2111,11 +2112,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && !actions.turnHasEnded;
     }
 
+    // A Smoke Bomb escape keeps the room in COMBAT with an idle action queue
+    // while the player runs off (isEscaping), then endBattle() runs (which
+    // clears the Runic Dome occupant binding) before the phase leaves COMBAT.
+    // Native combat already ended when the potion was used; neither window is
+    // a player decision.
+    static boolean isCombatEnding(boolean battleOver, boolean smoked, boolean playerEscaping) {
+        return battleOver || smoked || playerEscaping;
+    }
+
     static boolean isCombatBoundary(AbstractRoom.RoomPhase phase, AbstractDungeon.CurrentScreen screen,
-                                    boolean playerDecision, boolean selectionAvailable) {
+                                    boolean playerDecision, boolean selectionAvailable, boolean combatEnding) {
         // EventRoom fights are combat too. Serializer support is a separate
         // question: an unknown selection must reach Silver as UNSUPPORTED.
-        return phase == AbstractRoom.RoomPhase.COMBAT
+        return phase == AbstractRoom.RoomPhase.COMBAT && !combatEnding
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
                          || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
