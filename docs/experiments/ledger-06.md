@@ -21437,6 +21437,7 @@ Seeds: none driven.
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`,
 `operations/live-model-inspector.md`.
 ## §549 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
+## §555 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
 
 **Question:** do four small monster-side parity differences (overnight list problems 4 and 6, canary-2 Mugger `aiRng` and
 Two Thieves `miscBits`) come from the engine, the importer or the probe? Philipp asked 2026-10-19 08:34Z for fix threads
