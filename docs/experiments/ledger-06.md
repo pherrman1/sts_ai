@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §552 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
+## §553 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
 
 **Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
 hand selection with `silver_selection_pending_actions` (problem 28 in `engine-parity/overnight-20261019/ISSUES.md` on
@@ -21226,6 +21226,33 @@ failure dump. `live_silver_importer` and `silver_wire_state` tests cover import,
 round trip and that a plain (non-Toy) heal stays unobserved. **Unverified:** the Java change is not compiled or run
 here (no game jar in the cloud); live confirmation needs a reinstall.
 Seeds: none driven (unit tests only; 111200431-440 reserved, unused).
+## §552 — Blood Potion keep value refit for the fixed in-combat heal: 1163 -> 834 (2026-10-19)
+
+**Question:** `potionKeepRank` (ADR-0039) ranked Blood Potion first (1163) from CTM fights played with the legacy
+in-combat heal (40% of max HP without Sacred Bark, fixed by `STS_BLOOD_POTION_HEAL_FIX`, §544). What is its value
+under the fixed heal? Carried-over item of the overnight parity list (§545), asked by Philipp 2026-10-19 08:34Z
+("Open fix threads for all of the things which are not fixed").
+**Bound (no seeds):** re-extracting the ADR-0039 corpora reproduces both fits exactly. At A20 a held Blood Potion is
+drunk in 75% of fights and the old heal adds 12.16 HP per held fight beyond the fixed one, but 42% of drinking
+fights end at max HP. Removing the whole excess (`tools/potion_keep/blood_heal_bound.py`) leaves a value between 0.9
+and 11.6: too wide to rank.
+**Probe:** `potionpriceprobe` with the new `EXTRA addpot:BLOOD_POTION` copy (research only), one fight ahead,
+student_sel OOC, OOC MCTS off, A20, current Silver defaults, each seed run with the heal fix on and off. Seeds
+111200191–111200210, 40/40 runs rc=0, ~100 states per regime. Value (HP + 53 × survived): fix on 8.90, off 12.72;
+change **−3.82 [−5.43, −2.28]** (seed bootstrap); on the 91 start states identical in both regimes, −4.03 (sd 7.39).
+**Result:** A20 value 14.12 − 3.82; A0 shifted by −3.82 × 0.721 (**Inference:** scaled by the old excess heal per
+held fight, A0 not probed); mean 8.34, rank **834** (**Inference:** applying the probe's causal change to the
+observational regression value assumes both shift equally) (`STS_POTION_KEEP_BLOOD_REFIT`, default on, `=0` restores
+1163). Blood Potion now ranks second, below Fruit Juice (924) and above Heart of Iron (666). Under the 0.721 A0
+scaling the rank stays between ~696 and ~967 across the CI, so only its order against Fruit Juice is uncertain.
+At the point estimate, A0 shifts from none to the full A20 change give ~781–972; combined with the CI, ~620–1049,
+which reaches below Heart of Iron (full A0 shift) and above Fruit Juice (no A0 shift). A0 is likely a bit higher
+than scaled (51% of A0 drinking fights end at max HP vs 42%). Play-changing only where a
+reward or discard choice involves Blood Potion. No game test of playing strength. The §510 and §537 Blood prices
+stay descriptive and biased (no code reads them).
+[README](evidence/blood_potion_keep_refit_20261019/README.md), `delta.txt`, `bound-fits.txt`, `probe-csv.tar.gz`.
+**Knowledge impact:** `operations/environment-variables.md` (`STS_POTION_KEEP_BLOOD_REFIT`),
+`architecture/out-of-combat.md` (pickup paragraph), `tools/potion_keep/combine.py`.
 ## §551 — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
 
 **Question:** why did live run 111194463 stop at Act 3 floor 40 (`silver_unmapped_player_power`, problem 21 in
