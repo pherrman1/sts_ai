@@ -226,7 +226,17 @@ Sacred Bark and 20% with it, the reverse of the game.
   `STS_IMPORTER_HIGH_RELIC_FIX` probe (below) matches; with `=0` it
   reproduces the mismatch.
 - The run stopped on a Headbutt selection with pending actions
-  (`silver_selection_pending_actions`), which Silver does not support.
+  (`silver_selection_pending_actions`). Cause (javap of the pinned JAR):
+  the Headbutt hit's monster reactions are still queued with `addToBot`
+  behind the open grid (Shelled Parasite `ReducePowerAction` Plated Armor;
+  Writhing Mass Malleable `GainBlockAction` and Reactive `RollMoveAction`,
+  also overnight seed 111194455 floor 38; defensive Guardian Sharp Hide
+  thorns, seed 111200382 floor 16; Byrd Flight `ReducePowerAction`, seed
+  111200385 floor 21; offensive Guardian crossing Mode Shift, `VFXAction` and
+  `ChangeStateAction` "Defensive Mode", seed 111200388 floor 16; louse Curl Up
+  `ChangeStateAction` "CLOSED", `GainBlockAction` and `RemoveSpecificPowerAction`,
+  seed 111200389 floor 5). The producer now emits them and
+  the importer imports them; see live-model-inspector.md.
 
 Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live
 importer gave the player phantom relics. The combat `Player` has 128 relic
@@ -236,6 +246,10 @@ became Wrist Blade (+4 on 0-cost attacks). This affected the live advisor and th
 parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
+The same night, on seed 111194455, player Thorns killed a Byrd partway
+through its Peck; the game skipped its remaining pecks and native landed them
+(46 vs 44 HP). `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) cancels a
+dead or half-dead monster's queued hits, as Java's `DamageAction` does.
 
 The same overnight runs (problem 10) showed Perfected Strike hitting harder
 natively (53 -> 26 HP vs 29 in the game: one more Strike counted). Java
