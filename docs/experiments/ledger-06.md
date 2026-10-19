@@ -21225,6 +21225,7 @@ unchanged, as in Java. Unit test `dying_attacker` (seed 111200101 fixed, no game
 Peck and 2 vs 1 for a half-dead Darkling's Chomp.
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md` (`STS_DYING_ATTACKER_FIX`).
+
 ## §549 — Overnight live play: a dead Bronze Orb's returned Stasis card blocked the Automaton fight (2026-10-19)
 
 **Question:** why did live runs 111194454 and 111194460 stop at the Act 2 boss (floor 33) with
