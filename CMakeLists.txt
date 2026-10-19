@@ -146,6 +146,14 @@ add_test(NAME half_dead_power_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_
 set_tests_properties(half_dead_power_reset PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(strike_count_test tests/strike_count_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(strike_count_test PRIVATE include json/include)
+add_test(NAME strike_count COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:strike_count_test>)
+set_tests_properties(strike_count PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(pile_cost_reset_test tests/pile_cost_reset_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(pile_cost_reset_test PRIVATE include json/include)

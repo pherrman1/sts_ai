@@ -197,7 +197,8 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
 - A card whose cost was set to 0 for the turn keeps `costForTurn` 0 in the
   discard pile natively; Java resets it. Fixed by `STS_PILE_COST_RESET_FIX`
   (see below).
-- Perfected Strike counts one Strike fewer after Havoc exhausts a Strike.
+- Perfected Strike counts one Strike fewer after Havoc exhausts a Strike
+  (fixed, §556 below).
 - Havoc's random target differs (`lastTargetedMonster`).
 - Hexaghost records Inferno twice in Java's move history (resolved below).
 
@@ -235,6 +236,21 @@ became Wrist Blade (+4 on 0-cost attacks). This affected the live advisor and th
 parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
+
+The same overnight runs (problem 10) showed Perfected Strike hitting harder
+natively (53 -> 26 HP vs 29 in the game: one more Strike counted). Java
+`PerfectedStrike.countCards` counts Strike-tagged cards in hand, draw and
+discard only. The live importer recounted `strikeCount` over every imported
+card, including the exhaust pile and Stasis cards, while native combat drops a
+Strike from the count when it is exhausted or taken by Stasis. So every Strike
+exhausted earlier (Havoc, Fiend Fire) added one, and the probe's post-step
+recount showed the canary's "game 5 / native 4" after Havoc exhausted a
+Strike. Also, a Perfected Strike autoplayed by Havoc or Mayhem is off the draw
+pile when its damage is calculated (`PlayTopCardAction` moves it to limbo and
+`UnlimboAction` removes it before it is queued), so Java does not count it;
+natively it counted itself. `STS_STRIKE_COUNT_FIX` (default on, `=0`
+restores) fixes both. Havoc's `lastTargetedMonster` difference is a separate
+issue: Java's `PlayTopCardAction` writes no last-target field.
 
 Four smaller monster-side differences from the same overnight list and the
 canary 2 carry-overs are fixed behind default-on flags (`=0` restores):

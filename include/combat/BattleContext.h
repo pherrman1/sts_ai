@@ -116,6 +116,15 @@ namespace sts {
     // are fatal. Read only when a Darkling goes half-dead.
     bool halfDeadPowerResetFix();
 
+    // STS_STRIKE_COUNT_FIX: unset/1 (default) = Perfected Strike counts Strikes
+    // in hand, draw and discard only, as Java PerfectedStrike.countCards: a
+    // Havoc/Mayhem-autoplayed Perfected Strike does not count itself, and the
+    // live importer's recounted strikeCount skips the exhaust pile and Stasis
+    // cards (overnight live play 2026-10-19, problem 10: 53 -> 26 natively vs
+    // 29 in the game). 0 = the legacy counts. Other values are fatal. Read only
+    // when an autoplayed Perfected Strike is used or the importer recounts.
+    bool strikeCountFix();
+
     // STS_PILE_COST_RESET_FIX: unset/1 (default) = a card that lands in the
     // discard, draw or exhaust pile mid-turn gets costForTurn = cost, as in the
     // game (Soul.update calls clearPowers -> resetAttributes when the card
