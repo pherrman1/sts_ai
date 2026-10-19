@@ -78,6 +78,15 @@ namespace sts {
     // fatal. Read only when a Blood Potion is drunk in combat.
     bool bloodPotionHealFix();
 
+    // STS_STRIKE_COUNT_FIX: unset/1 (default) = Perfected Strike counts Strikes
+    // in hand, draw and discard only, as Java PerfectedStrike.countCards: a
+    // Havoc/Mayhem-autoplayed Perfected Strike does not count itself, and the
+    // live importer's recounted strikeCount skips the exhaust pile and Stasis
+    // cards (overnight live play 2026-10-19, problem 10: 53 -> 26 natively vs
+    // 29 in the game). 0 = the legacy counts. Other values are fatal. Read only
+    // when an autoplayed Perfected Strike is used or the importer recounts.
+    bool strikeCountFix();
+
     struct BattleContext {
 
         // begin for debugging purposes
