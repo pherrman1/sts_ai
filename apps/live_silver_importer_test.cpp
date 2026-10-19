@@ -3656,6 +3656,20 @@ int main(int argc, char **argv) {
             if(json(imported.wire.pendingActionQueue)!=json(nativeQueue))
                 throw std::runtime_error("Headbutt monster-reaction pending queue differs from native");
             normalizeDynamicObservationIdentity(expected);
+            // Card identities are observation-assigned; adopt them only where
+            // the same physical card occupies the same pile position.
+            const auto adoptIds=[](auto &mine,const auto &theirs) {
+                if(mine.size()!=theirs.size()) throw std::runtime_error("Headbutt monster-reaction pile size differs");
+                for(std::size_t i=0;i<mine.size();++i) {
+                    if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                        throw std::runtime_error("Headbutt monster-reaction pile order differs");
+                    mine[i].uniqueId=theirs[i].uniqueId;
+                }
+            };
+            adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+            adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+            adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+            adoptIds(expected.hand,imported.wire.hand);
             expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
             expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
             expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;

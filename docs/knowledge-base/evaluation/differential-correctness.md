@@ -220,7 +220,12 @@ Sacred Bark and 20% with it, the reverse of the game.
   an upgrade flag sits on another copy. **Inference:** the probe's draw-order
   reconstruction is incomplete once a combat-generated card is in the piles.
 - The run stopped on a Headbutt selection with pending actions
-  (`silver_selection_pending_actions`), which Silver does not support.
+  (`silver_selection_pending_actions`). Cause (javap of the pinned JAR):
+  the Headbutt hit's monster reactions are still queued with `addToBot`
+  behind the open grid (Shelled Parasite `ReducePowerAction` Plated Armor;
+  Writhing Mass Malleable `GainBlockAction` and Reactive `RollMoveAction`,
+  also overnight seed 111194455 floor 38). The producer now emits them and
+  the importer imports them; see live-model-inspector.md.
 
 Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live
 importer gave the player phantom relics. The combat `Player` has 128 relic

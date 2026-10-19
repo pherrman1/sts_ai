@@ -1304,6 +1304,17 @@ the selected cards are removed. A partial transaction, unknown owner, missing/du
 changed hand stops before any further click. Differential replay excludes UI
 confirmations without an equivalent native state.
 
+A source-card selection (`continuation: source_card_actions`) may also carry
+the monster on-hit reactions vanilla queues with `addToBot` behind the
+interrupted card, e.g. a Headbutt hit: `MONSTER_GAIN_BLOCK` (monster
+self-`GainBlockAction`, Malleable/Curl Up, with the emitted `slot`),
+`REACTIVE_ROLL_MOVE` (Writhing Mass `RollMoveAction`, slot 0) and
+`MONSTER_REDUCE_PLATED_ARMOR` (`ReducePowerAction` "Plated Armor" by 1). The
+first two become native `MonsterGainBlock`/`ReactiveRollMove` queue items
+(Reactive's scalar counts the queued rolls); the Plated Armor loss is folded
+into the imported monster because native applies it at the hit. A reduction
+that would remove the power (Shelled Parasite stun) stays unsupported.
+
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case
 where only one card fits in hand. The driver clicks the ordered physical UUID
