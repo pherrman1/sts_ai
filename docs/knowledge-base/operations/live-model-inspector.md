@@ -242,7 +242,8 @@ against `desktop-1.0.jar` SHA-256
 `cfad868ac8d65a88e71a0bf096fb09f78811e553effe0787c5309a655e081673` and native
 regression fixtures; they do not establish live whole-fight parity.
 Special bookkeeping for Combust, Echo Form, Panache, Deva Form, Orange
-Pellets, used-up relics, and Necronomicon is serialized when its runtime field
+Pellets, used-up relics, Necronomicon, and Centennial Puzzle
+(`usedThisCombat`, a private static in vanilla) is serialized when its runtime field
 is accessible; otherwise the importer rejects that state. Monster `miscInfo`
 is similarly serialized from known runtime trackers or omitted so the importer
 fails closed. Bronze Orb Stasis uses the runtime `StasisPower.card` object to
