@@ -92,6 +92,21 @@ class DiffTest(unittest.TestCase):
     def test_field_group(self):
         self.assertEqual(combat_parity.field_group("monsters[2].curHp"), "monsters[].curHp")
 
+    def test_discovery_pick_card_random_rng_is_unobservable(self):
+        def verdict(task):
+            pre = {"silverRoot": {"combat": {"cardSelect": {"task": task}}}}
+            stream = lambda counter: {"counter": counter, "seed0": str(counter), "seed1": "1"}
+            result = {"status": "COMPARED", "game": {"x": 1}, "native": {"x": 1},
+                      "gameRng": {"cardRandomRng": stream(185), "shuffleRng": stream(2)},
+                      "nativeRng": {"cardRandomRng": stream(4), "shuffleRng": stream(2)}}
+            return combat_parity.compare({"step": 1, "pre": pre}, result)
+        picked = verdict("DISCOVERY")
+        self.assertEqual(picked["verdict"], "MATCH", picked.get("diffs"))
+        self.assertIn("rng.cardRandomRng.counter", [d["path"] for d in picked["unobservable"]])
+        other = verdict("EXHUME")
+        self.assertEqual([d["path"] for d in other["diffs"]],
+                         ["rng.cardRandomRng.counter", "rng.cardRandomRng.seed0"])
+
 
 PROBE = os.environ.get("COMBAT_PARITY_PROBE")
 

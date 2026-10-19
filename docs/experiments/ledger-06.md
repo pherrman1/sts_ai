@@ -21205,3 +21205,28 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — Discovery parity: frame-dependent cardRandomRng and pile turn-cost reset (2026-10-19)
+
+**Question:** why do Discovery picks leave `cardRandomRng` at counter 185-194 in Java and 3-4 natively, and why does
+the played Discovery copy show `costForTurn` 1 in Java's discard pile and 0 natively (§536, §544, §545 list)?
+Philipp asked 2026-10-19 08:34Z for one fix thread per open parity problem.
+**Setup:** `javap -c -p -constants` on the pinned JAR (`cfad868a…1673`, V2.3.4) and the installed mod JARs on
+Philipp's PC (read-only), plus the canary-2 traces (trace8 steps 134-141, trace9 steps 20-21) and overnight seed
+111194452 segment 1 steps 55-56.
+**Result:** `DiscoveryAction.update` runs its generator on every frame before its duration check. The choice screen
+pauses the action queue, so the offered set comes from the first frame (+3/+4 draws, matching native); after the pick
+the action keeps generating and discarding three cards per frame until its 0.25 s duration ends (240 fps limit: about
+180 draws; seen +181, +183, +191). No mod reads `cardRandomRng`. Picks via Attack, Skill, Power and Colorless Potion
+use the same action. The copy matches (turn cost 0; with a full hand `ShowCardAndAddToDiscardEffect` adds a
+stat-equivalent copy straight to the discard pile). The `costForTurn` mismatch was the *played* copy: the card lands
+in the discard pile through a `Soul`, and `Soul.update` calls `clearPowers` -> `resetAttributes` (also on the draw-pile
+soul paths and in `ExhaustCardEffect.update`). Native kept the turn cost until end of turn.
+**Interpretation:** the post-pick `cardRandomRng` state is frame-dependent and cannot be reproduced; the probe now
+reports that stream as unobservable on a Discovery pick (probe-only, no flag). `STS_PILE_COST_RESET_FIX` (default on,
+`=0` restores) resets the turn cost when a card lands in the discard, draw or exhaust pile. Play-changing only when a
+card with a changed turn cost (Discovery copy, Enlightenment) reaches a pile and comes back in the same turn.
+**Unverified:** how often that happens in sim runs. The End Turn draw differences after a Discovery (§544) are a
+separate item.
+Seeds: 111200161 (unit test only, no gameplay).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.

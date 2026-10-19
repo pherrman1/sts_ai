@@ -36,6 +36,12 @@ UNOBSERVABLE_FIELDS = frozenset({"loopCount", "cardsDrawn", "energyWasted", "mon
 # Java RNG streams with no native combat counterpart. Native cannot consume
 # them, so any change during a combat step is itself a mismatch.
 NON_COMBAT_STREAMS = ("cardRng", "eventRng", "merchantRng", "monsterRng", "relicRng", "treasureRng")
+# Java's DiscoveryAction regenerates its three choices on every frame from the
+# pick until its 0.25 s duration ends (javap on the pinned JAR, 2026-10-19), so
+# the stream's state after a pick depends on the frame rate (counter +181 to
+# +191 at 240 fps). Native draws one set. Reported as unobservable, not judged;
+# the next step starts again from the game's own RNG.
+FRAME_DEPENDENT_STREAMS = {"DISCOVERY": ("cardRandomRng",)}
 # Ordered card collections: a difference that is only order is reported
 # under its own label, because order can matter (draws, shuffles).
 ORDERED_PILES = ("hand",)
@@ -161,6 +167,11 @@ def field_group(path: str) -> str:
     return re.sub(r"\[\d+\]", "[]", path)
 
 
+def _select_task(step: Mapping[str, Any]) -> str:
+    select = (step.get("pre") or {}).get("silverRoot", {}).get("combat", {}).get("cardSelect")
+    return str(select.get("task") or "") if isinstance(select, Mapping) else ""
+
+
 def compare(step: Mapping[str, Any], result: Mapping[str, Any]) -> dict[str, Any]:
     status = result.get("status")
     out: dict[str, Any] = {"step": step.get("step"), "action": result.get("actionLabel") or step.get("actionLabel"),
@@ -186,7 +197,10 @@ def compare(step: Mapping[str, Any], result: Mapping[str, Any]) -> dict[str, Any
     all_diffs = diff(normalize(result.get("game")), normalize(result.get("native")))
     hidden = [d for d in all_diffs if re.split(r"[.\[(]", d["path"], maxsplit=1)[0] in UNOBSERVABLE_FIELDS]
     diffs = [d for d in all_diffs if d not in hidden]
-    diffs += diff(result.get("gameRng"), result.get("nativeRng"), "rng")
+    rng_diffs = diff(result.get("gameRng"), result.get("nativeRng"), "rng")
+    frame_dependent = {f"rng.{name}" for name in FRAME_DEPENDENT_STREAMS.get(_select_task(step), ())}
+    hidden += [d for d in rng_diffs if d["path"].rsplit(".", 1)[0] in frame_dependent]
+    diffs += [d for d in rng_diffs if d["path"].rsplit(".", 1)[0] not in frame_dependent]
     pre_streams = (step.get("preRng") or {}).get("streams", {})
     post_streams = (step.get("postRng") or {}).get("streams", {})
     for name in NON_COMBAT_STREAMS:
