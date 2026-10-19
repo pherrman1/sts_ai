@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
+#include <stdexcept>
 #include <map>
 #include <set>
 #include <sstream>
@@ -354,6 +356,17 @@ bool setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
         if (status == sts::MonsterStatus::RITUAL) monster.statusBits |= 1ULL << 61;
     }
     return true;
+}
+
+// STS_IMPORTER_HIGH_RELIC_FIX: unset/1 (default) = relics with enum index >= 128
+// get no combat relic bit (the combat Player has 128 bits and no combat code
+// reads them); 0 = legacy aliasing, where the out-of-range shift set the bit of
+// relic index - 64 (e.g. Thread and Needle -> Strike Dummy, Maw Bank -> Wrist Blade).
+bool highRelicFix() {
+    const char *value = std::getenv("STS_IMPORTER_HIGH_RELIC_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
 template <typename T>
@@ -1398,7 +1411,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             return unsupported("silver_unmapped_relic_state");
         if (relic.at("usedUp").get<bool>()) continue;
         const int rid = static_cast<int>(id);
-        if (rid < 64) p.relicBits0 |= 1ULL << rid; else p.relicBits1 |= 1ULL << (rid - 64);
+        if (rid < 64) p.relicBits0 |= 1ULL << rid;
+        else if (rid < 128) p.relicBits1 |= 1ULL << (rid - 64);
+        else if (!highRelicFix()) p.relicBits1 |= 1ULL << (rid - 128);
         const auto counter = static_cast<std::int8_t>(relic.at("counter").get<int>());
         const std::array<sts::RelicId, 7> counterRelics = {sts::RelicId::HAPPY_FLOWER, sts::RelicId::INCENSE_BURNER,
             sts::RelicId::INK_BOTTLE, sts::RelicId::INSERTER, sts::RelicId::NUNCHAKU, sts::RelicId::PEN_NIB, sts::RelicId::SUNDIAL};

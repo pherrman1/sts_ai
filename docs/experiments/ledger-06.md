@@ -21185,3 +21185,23 @@ changing anything. Raw traces stay on the PC under `~/Documents/sts/artifacts/pa
 (canary); 111194453 (fixed seed of `blood_potion_heal_test`, no gameplay).
 **Knowledge impact:** `evaluation/differential-correctness.md` (canary continuation paragraph),
 `operations/environment-variables.md` (`STS_BLOOD_POTION_HEAL_FIX`).
+
+## §TBD — Overnight live play: the live importer aliased relics with index >= 128 (2026-10-19)
+
+**Question:** with the canary fixes merged (§536, §544), what else differs between live play and the engine?
+Philipp asked 2026-10-19 00:32Z to check the fixes and keep playing the live mod overnight, listing everything wrong.
+**Setup:** A20 Ironclad runs on Philipp's PC, seeds 111194452 and 111194454-460, releases `8d0d8bbd7bb2-cb5220f8fb1c`
+and `2f483424ba63-6fee4e4efb81`, game with `STS_DIFFERENTIAL_DEBUG_RNG=1`, `combat_parity_probe` after each segment.
+**Result:** re-running the canary traces at main `8d0d8bbd` gave canary 1 34 MATCH / 0 MISMATCH and canary 2 265 / 25
+(all remaining mismatches already known). Overnight runs found Strike-tagged cards dealing +3 natively with Thread and
+Needle (seed 111194459) and Anger dealing +4 natively with Maw Bank (seed 111194452). Cause: `importSilverRoot` set
+`relicBits1 |= 1ULL << (rid - 64)` for every relic, but the combat `Player` holds 128 relic bits, so ids >= 128 shifted
+by >= 64 (undefined behaviour; x86 masks the count) and set the bit of relic id - 64: Thread and Needle -> Strike Dummy,
+Maw Bank -> Wrist Blade, Sling of Courage -> Sozu, Lee's Waffle -> Velvet Choker, Singing Bowl -> Cursed Key and others.
+The live advisor and the parity probe import through this function; the simulator's `GameContext` path does not.
+**Interpretation:** `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no combat bit. No
+combat code reads relics with index >= 128. Live advisor decisions and parity verdicts recorded before the fix were
+made with phantom relics whenever such a relic was held. **Unverified:** how often that changed a live decision.
+The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
+Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
+**Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.

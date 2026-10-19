@@ -222,6 +222,15 @@ Sacred Bark and 20% with it, the reverse of the game.
 - The run stopped on a Headbutt selection with pending actions
   (`silver_selection_pending_actions`), which Silver does not support.
 
+Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live
+importer gave the player phantom relics. The combat `Player` has 128 relic
+bits, but `importSilverRoot` shifted every relic id, so ids >= 128 set the bit
+of id - 64: Thread and Needle became Strike Dummy (+3 on Strikes), Maw Bank
+became Wrist Blade (+4 on 0-cost cards). This affected the live advisor and the
+parity probe, not the simulator's own `GameContext` path.
+`STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
+combat bit; no combat code reads them.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 
