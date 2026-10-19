@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Overnight live play: a monster's multi-hit kept hitting after Thorns killed it (2026-10-19)
+## §550 — Overnight live play: a monster's multi-hit kept hitting after Thorns killed it (2026-10-19)
 
 **Question:** why did native lose 2 more HP than the game on seed 111194455 (overnight list problem 9)?
 **Setup:** overnight live trace `seed-111194455/trace3.jsonl` (on Philipp's PC), A20 floor 18 Three Byrds, step 31
