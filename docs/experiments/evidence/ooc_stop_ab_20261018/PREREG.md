@@ -52,10 +52,15 @@ OOC search the model reads, so the model is used as trained (Inference). The lea
 temperature. A change of root temperature, prior network or simulation budget needs new checkpoint data and a
 retrained model before its result applies (Philipp 22:09Z).
 
-## Smoke (seeds 111198370-111198372, not part of the test; branch binary before freeze)
-Flag off: play files byte-identical to main c890da5b on 111198370. L on 111198370: same 70 actions, OOC CPU
-804 → 516 s; on 111198371: first different action at decision 71 of 104, OOC CPU 945 → 543 s. 111198372:
-temperature-guard check only.
+## Smoke (not part of the test)
+Branch binary before freeze, seeds 111198370-111198372 (g6_E stack): flag off byte-identical to main c890da5b on
+111198370; L on 111198370 kept all 70 actions with OOC CPU 804 → 516 s; on 111198371 the first different action
+came at decision 71 of 104, OOC CPU 945 → 543 s; 111198372 checked the temperature guard. Earlier frozen binary
+2fce1f76 (g6_E), seed 111200007: N/G/L rc 0, process CPU 780 / 492 / 399 s.
+Frozen binary 871b4c1d (this stack), seed 111200009: arm N play files (`.csv`, `.mcts.csv`, log) identical to main
+c58e0db3's binary; N, G and L all rc 0 with their arm checks passing; all three reached floor 56, N killed the
+Heart, G and L did not; process CPU N 1,452 s, G 1,732 s, L 1,559 s (the stop arms took a different path, so one
+seed says nothing about CPU).
 
 ## Cost estimate (Inference from the 36 checkpoint runs, `sec` ≈ 1,000 s per control run)
 About 2,400 CPU-seconds per seed for all three arms, about 340 core-hours; per worker roughly 10-11 h wall.
