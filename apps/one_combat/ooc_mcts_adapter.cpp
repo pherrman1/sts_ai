@@ -2331,6 +2331,7 @@ namespace one_combat {
 
 namespace {
 bool liveEnabled = false;
+bool liveRealLearnedStop = false;   // STS_OOC_MCTS_REAL_LEARNED_STOP
 std::uint64_t liveSimulations = 512;
 // Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
 double liveFullBudgetFraction = 0;
@@ -2806,6 +2807,7 @@ nlohmann::json reuseMatchJson(const ReuseIndex &index, const std::unordered_mult
 }
 }
 bool liveOocMctsEnabled() { return liveEnabled; }
+bool liveOocMctsRealLearnedStop() { return liveEnabled && liveRealLearnedStop; }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
 bool liveOocMctsHeart1Fallback(const GameContext &gc) {
     return liveEnabled && liveOptions.heart1Coverage && heart1FullScreen(gc);
@@ -2922,6 +2924,15 @@ void configureLiveOocMcts() {
     const char *act4Silver = silverSimsEnv("STS_OOC_MCTS_ACT4_SILVER_SIMS");
     if (act4Silver && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_ACT4_SILVER_SIMS requires STS_OOC_MCTS=1");
+    liveRealLearnedStop = false;
+    if (const char *raw = std::getenv("STS_OOC_MCTS_REAL_LEARNED_STOP")) {
+        const std::string value(raw);
+        if (value != "0" && value != "1")
+            throw std::runtime_error("STS_OOC_MCTS_REAL_LEARNED_STOP must be 0 or 1");
+        if (value == "1" && !liveEnabled)
+            throw std::runtime_error("STS_OOC_MCTS_REAL_LEARNED_STOP requires STS_OOC_MCTS=1");
+        liveRealLearnedStop = value == "1";
+    }
     if (!liveEnabled) return;
     decisionLogPath.clear();
     if (const char *path = std::getenv("STS_OOC_MCTS_DECISION_LOG"); path && *path) decisionLogPath = path;

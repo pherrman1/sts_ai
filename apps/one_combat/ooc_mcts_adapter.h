@@ -340,6 +340,9 @@ int oocLeafReplaySelfTest();
 int oocLeafStabilityProbe(std::uint64_t seed, int ascension, const std::string &planPath);
 int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
+// STS_OOC_MCTS_REAL_LEARNED_STOP=1 (default off): real combats under live OOC
+// MCTS stop learned (exact root budgets kept) instead of flat exact 10k.
+bool liveOocMctsRealLearnedStop();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
 // Root choice key of the search: with tree rules, copies of one card are one

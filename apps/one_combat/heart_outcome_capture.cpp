@@ -41,6 +41,10 @@ bool ctmRowsRequested() {
 }
 
 constexpr const char *kCtmRowsTeacherId = "heartoutcomegen-real-combat";
+constexpr const char *kCtmRowsLearnedStopTeacherId = "heartoutcomegen-real-combat-learnedstop";
+const char *ctmRowsTeacherId() {
+    return liveOocMctsRealLearnedStop() ? kCtmRowsLearnedStopTeacherId : kCtmRowsTeacherId;
+}
 
 // OUT.jsonl -> OUT.ctm.jsonl; any other name gets .ctm.jsonl appended.
 std::string ctmRowsPath(const std::string &output) {
@@ -58,10 +62,15 @@ nlohmann::json runProvenance() {
         rootPrior = {{"path", path}, {"sha256", fileSha256(path)},
                      {"weight", sts::search::nativeSilverRootPriorWeight()}};
     const auto leaf = effectiveSilverLeafSpecification();
-    return {{"ctmArtifacts", liveOocMctsCtmArtifacts()},
+    nlohmann::json provenance = {{"ctmArtifacts", liveOocMctsCtmArtifacts()},
             {"rolloutRootTable", leaf.contains("rollout_root_table") ? leaf["rollout_root_table"] : nlohmann::json(nullptr)},
             {"silverLeaf", leaf}, {"silverRootPrior", rootPrior},
             {"heart1WingBootsCounter", heart1::wingBootsCounter() ? 1 : 0}};
+    // Only STS_OOC_MCTS_REAL_LEARNED_STOP=1 adds this key; flat exact-10k headers are unchanged.
+    if (liveOocMctsRealLearnedStop())
+        provenance["silverLearnedStop"] = {{"model", sts::search::nativeSilverStopModelId()},
+            {"threshold", sts::search::nativeSilverLearnedStopThreshold()}};
+    return provenance;
 }
 }
 
@@ -90,7 +99,7 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
             {"rowSchemaVersion", COMBAT_TRANSITION_ROW_SCHEMA}, {"schemaVersion", CombatTransitionRecord::SCHEMA},
             {"predictorInputSchemaVersion", CombatPredictorInputV1::SCHEMA},
             {"predictorInputFieldSchemaHash", combatPredictorInputFieldSchemaHash()},
-            {"teacherId", kCtmRowsTeacherId}};
+            {"teacherId", ctmRowsTeacherId()}};
     // Only policy mode adds these two keys.
     if (policyTargets) {
         header["policyTargets"] = true;
@@ -142,7 +151,7 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
             const auto predictorInput = combatPredictorInputJson(
                 captureCombatPredictorInput(pre, pre.info.encounter, potionKeepValue(pre)));
             ctmWriter->write(combatTransitionRowJson(seed, static_cast<int>(combats++), pre.act, pre.floorNum,
-                pre.curRoom, static_cast<int>(pre.info.encounter), kCtmRowsTeacherId,
+                pre.curRoom, static_cast<int>(pre.info.encounter), ctmRowsTeacherId(),
                 trainingRunValid(decided), decided, rawCaptureCount, record, predictorInput));
         };
     }
