@@ -1117,6 +1117,10 @@ without Prismatic Shard, but subsequent combat still requires broader
 Silver/CTM card support and qualification; OOC capture does not establish it.
 Removal, bottle, duplicate and Bonfire selectors may still
 fall outside direct V4 scoring; their native semantic/MCTS support is separate.
+With the research stack's tree rules (ADR-0031), live MCTS offers one bottle,
+duplicate or Bonfire candidate per distinct card; the advisor's live mapping
+check accepts the other copies' clicks as the same choice (`validateLiveOocActionSet`,
+`treeRuleChoices`) instead of failing with `OOC_ACTION_MAPPING`.
 When a full belt blocks a visible potion reward or affordable shop potion,
 MCTS enumerates each held-slot discard using public potion identity and duplicate
 occurrence. Sozu prevents these replacement actions. MCPTheSpire 1.0.4-dev never lists

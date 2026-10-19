@@ -21205,3 +21205,19 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §TBD — Live Bottled Flame pick with card copies failed the advisor's mapping check (2026-10-19)
+
+**Question:** why did overnight seed 111194462 stop at the Bottled Flame pick (Act 2 floor 23) with
+`OOC_ACTION_MAPPING: native/live candidate enumeration disagreement: unexpected {"group":0,"index":6,"kind":"option"}`
+(overnight list problem 20)?
+**Cause:** with tree rules (ADR-0031, on in the live research stack) the search keys bottle, duplicate and bonfire
+candidates without the copy occurrence, so five Strikes are one root candidate. The advisor's check of the search's
+candidates against the captured live clicks used `canonicalOocMctsChoiceKey`, which keeps the occurrence for these
+selectors, so the other Strike clicks were neither candidates nor equivalent to one.
+**Fix:** the check uses the search's own key (`oocMctsChoiceKey`) when the live policy runs with tree rules. Live
+advisor only; simulator play is unchanged, so there is no flag. `live_ooc_parity` covers bottle, duplicate and bonfire
+selectors with Strike copies: the old key reproduces the same error, the search key accepts the copies and still rejects
+a missing card group. No seeds used.
+**Knowledge impact:** `operations/live-model-inspector.md`.
+
