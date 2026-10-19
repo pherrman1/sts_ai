@@ -305,6 +305,14 @@ Bomb (`isEscaping`/`smoked`) and after `endBattle()` (`isBattleOver`) the room
 stays `COMBAT` with idle queues, but native combat has already ended and
 `endBattle()` has cleared the Runic Dome occupant binding, so publishing that
 frame made Silver refuse with `silver_monster_occupant_binding`.
+The Runic Dome tracker stamps rolls with `GameActionManager.turn`, which already
+reads 1 at the combat-start roll (live seed 111194466, also after a game
+restart), while the importer's global clock puts that roll at native turn 0. Its
+snapshot is serialized with a default `Gson`, which omits null members such as
+`knownNextMove` and `knownRollPredecessor`. The importer reads the first roll of
+an unexecuted initial occupant as global turn 0 and a missing nullable member as
+null (`STS_IMPORTER_RUNIC_DOME_WIRE_FIX`, default on; `=0` restores the strict
+reading, which refused every first-turn Dome root).
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
