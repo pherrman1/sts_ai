@@ -303,9 +303,11 @@ bool setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
     // negative/sentinel amount for them; presence must still set the native
     // status bit before numeric powers are rejected as invalid.
     // Strength is the one signed numeric monster power: Disarm legitimately
-    // exposes negative values.  Other negative numeric powers are not a
-    // representable Java/native state and must fail closed.
-    if (value < 0 && status != sts::MonsterStatus::STRENGTH
+    // exposes negative values, and Mode Shift goes negative when a hit crosses
+    // the threshold (TheGuardian.damage subtracts the HP lost; the queued shift
+    // is checked against the pending tail).  Other negative numeric powers are
+    // not a representable Java/native state and must fail closed.
+    if (value < 0 && status != sts::MonsterStatus::STRENGTH && status != sts::MonsterStatus::MODE_SHIFT
         && !sts::isBooleanPower(status)) return false;
     switch (status) {
     case sts::MonsterStatus::ARTIFACT: monster.smallPowers[0] = static_cast<std::int16_t>(value); break;
@@ -1907,12 +1909,95 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"USE_CARD",K::USE_CARD},
             {"REMOVE_PEN_NIB",K::REMOVE_PEN_NIB},{"REMOVE_PLAYER_DEBUFFS",K::REMOVE_PLAYER_DEBUFFS}};
         int cleanups=0;
+        bool reactiveRoll=false,guardianShift=false;
         for(const auto &entry:queue) {
             if(!entry.is_object() || !entry.contains("kind") || !entry.at("kind").is_string()) return unsupported("silver_selection_pending_actions");
-            const auto kind=kinds.find(entry.at("kind").get<std::string>());
+            // Monster on-hit reactions (Java addToBot) queued behind an
+            // interrupted source card such as Headbutt. Native applies Plated
+            // Armor loss at the hit, so the queued reduction is folded into
+            // the imported monster instead of replayed.
+            const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR"
+                    || kindName=="MONSTER_REDUCE_FLIGHT" || kindName=="MONSTER_THORNS" || kindName=="MONSTER_CURL_UP"
+                    || kindName=="GUARDIAN_DEFENSIVE_SHIFT") {
+                int slot=-1,amount=0;
+                if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>=wire.monsterCount)
+                    return unsupported("silver_selection_pending_actions");
+                auto &monster=wire.monsters[slot];
+                if(monster.idx!=slot || monster.curHp<=0 || monster.isEscapingB || monster.halfDead)
+                    return unsupported("silver_selection_pending_actions");
+                const auto has=[&](sts::MonsterStatus status){return (monster.statusBits & (1ULL<<static_cast<int>(status)))!=0;};
+                if(kindName=="REACTIVE_ROLL_MOVE") {
+                    if(slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::WRITHING_MASS)
+                            || !has(sts::MonsterStatus::REACTIVE) || monster.uniquePower1>=8)
+                        return unsupported("silver_selection_pending_actions");
+                    ++monster.uniquePower1;
+                    if(!reactiveRoll) {
+                        silver_bridge::PendingActionWire action;action.kind=K::REACTIVE_ROLL_MOVE;
+                        wire.pendingActionQueue.push_back(action);
+                    }
+                    reactiveRoll=true;
+                    continue;
+                }
+                if(kindName=="GUARDIAN_DEFENSIVE_SHIFT") {
+                    // Java queues the shift last (ChangeStateAction "Defensive
+                    // Mode"); the wire settles an exhausted Mode Shift itself and
+                    // queues the 20 block behind the observed tail.
+                    if(slot!=0 || &entry!=&queue.back() || monster.id!=static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN)
+                            || !has(sts::MonsterStatus::MODE_SHIFT) || monster.uniquePower0>0)
+                        return unsupported("silver_selection_pending_actions");
+                    guardianShift=true;
+                    continue;
+                }
+                if(!requiredInt(entry,"amount",amount)) return unsupported("silver_selection_pending_actions");
+                if(kindName=="MONSTER_CURL_UP") {
+                    // Native removes Curl Up at the hit and queues its block.
+                    if((monster.id!=static_cast<std::int16_t>(sts::MonsterId::RED_LOUSE)
+                                && monster.id!=static_cast<std::int16_t>(sts::MonsterId::GREEN_LOUSE))
+                            || !has(sts::MonsterStatus::CURL_UP) || amount<1 || amount!=monster.uniquePower0)
+                        return unsupported("silver_selection_pending_actions");
+                    monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::CURL_UP));
+                    silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
+                    action.amount=amount;action.monster=slot;
+                    wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
+                if(kindName=="MONSTER_THORNS") {
+                    // Native Sharp Hide reads monster 0's scalar.
+                    if(slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN)
+                            || !has(sts::MonsterStatus::SHARP_HIDE) || amount<1 || amount!=monster.uniquePower1)
+                        return unsupported("silver_selection_pending_actions");
+                    silver_bridge::PendingActionWire action;action.kind=K::MONSTER_THORNS;action.amount=amount;
+                    wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
+                if(kindName=="MONSTER_REDUCE_FLIGHT") {
+                    // Native Flight loss happens at the hit, like Plated Armor;
+                    // reaching 0 grounds (stuns) the Byrd and stays unsupported.
+                    auto &flight=monster.uniquePower0;
+                    if(amount!=1 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::BYRD)
+                            || !has(sts::MonsterStatus::FLIGHT) || flight<=1)
+                        return unsupported("silver_selection_pending_actions");
+                    --flight;
+                    continue;
+                }
+                if(kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
+                    auto &plated=monster.smallPowers[7];
+                    if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || plated<=1)
+                        return unsupported("silver_selection_pending_actions");
+                    --plated;
+                    continue;
+                }
+                if(amount<0 || amount>999) return unsupported("silver_selection_pending_actions");
+                silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
+                action.amount=amount;action.monster=slot;
+                wire.pendingActionQueue.push_back(action);
+                continue;
+            }
+            const auto kind=kinds.find(kindName);
             silver_bridge::PendingActionWire action;
             if(kind==kinds.end()) {
-                if(entry.at("kind").get<std::string>()!="HEAL_PLAYER" || !selectionToyHealFix()
+                if(kindName!="HEAL_PLAYER" || !selectionToyHealFix()
                         || !requiredInt(entry,"amount",action.amount) || action.amount!=5)
                     return unsupported("silver_selection_pending_actions");
                 action.kind=K::HEAL_PLAYER;wire.pendingActionQueue.push_back(action);continue;
@@ -1967,6 +2052,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             wire.pendingActionQueue.push_back(action);
         }
         if(sourceCard && cleanups!=1)return unsupported("silver_selection_pending_actions");
+        // An exhausted Mode Shift must come with its queued shift.
+        for(int i=0;i<wire.monsterCount;++i) {
+            const auto &m=wire.monsters[i];
+            if(!guardianShift && m.id==static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN) && m.curHp>0
+                    && (m.statusBits & (1ULL<<static_cast<int>(sts::MonsterStatus::MODE_SHIFT))) && m.uniquePower0<=0)
+                return unsupported("silver_selection_pending_actions");
+        }
         wire.pendingActionQueueObserved=true;
     }
     if(cardSelect && (selectionIt->value("continuation",std::string())=="public_actions"

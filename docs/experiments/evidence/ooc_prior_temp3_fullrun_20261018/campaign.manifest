@@ -1,0 +1,7 @@
+name          ooc-prior-temp3
+code_commit   b5dd55570d64dff698fc8f182d375243b3332ea0
+binary_sha256 01d0f59eb5a618f8c08139854087328c8b59ed3b77cc79913e5e15ef402a310c
+workers       16
+share         /mnt/project-files/ooc-prior-temp3
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
