@@ -3722,7 +3722,7 @@ int main(int argc, char **argv) {
         // Paired-continuation resource prices (research only):
         // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA] [SAMPLE] [EXTRA]
         // SAMPLE: potions (states holding a potion; default) or all. EXTRA: comma list of
-        // leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1 ("-" = none).
+        // leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1, addpot:NAME ("-" = none).
         if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8] [SAMPLE=potions|all] [EXTRA=-]\n"; return 2; }
         const int nSeeds = std::stoi(argv[2]);
         const std::uint64_t seedStart = std::stoull(argv[3]);

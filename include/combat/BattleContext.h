@@ -71,6 +71,36 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_DEAD_MONSTER_BLOCK_FIX: unset/1 (default) = queued monster block
+    // (Curl Up, Malleable, Guardian mode shift, block moves) does nothing once
+    // the monster is dead, as in GainBlockAction.update (skips isDying or
+    // isDead; overnight live play 2026-10-19: Fiend Fire curls a louse with an
+    // early hit and kills it before the block lands). Dead-monster block is
+    // part of Silver's node identity, so this can change search. 0 = the
+    // legacy engine adds the block. Other values are fatal. Read only when
+    // the monster is dead.
+    bool deadMonsterBlockFix();
+
+    // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
+    // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
+    // which uses aiRng; the Looter's uses MathUtils), as in the game (combat
+    // parity canary 2 2026-10-18: aiRng counter 9 in Java vs 8 natively after
+    // the kill). Later monster rolls in the fight change. 0 = the legacy
+    // engine draws nothing. Other values are fatal.
+    bool muggerDeathRngFix();
+
+    // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
+    // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
+    // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
+    // its queued RollMoveAction, as in the game; the split trigger of both
+    // large slimes and the Slime Boss records the split move twice in the
+    // move history (damage() calls setMove and queues a SetMoveAction).
+    // Overnight live play 2026-10-19: aiRng counter 6 in Java vs 8 natively
+    // after an Acid Slime (L) split. Later monster rolls in the fight change.
+    // 0 = the legacy engine draws two extra rolls for either large slime and
+    // keeps the previous move in moveHistory[1]. Other values are fatal.
+    bool slimeSplitRngFix();
+
     // STS_BLOOD_POTION_HEAL_FIX: unset/1 (default) = a Blood Potion drunk in
     // combat heals 20% of max HP, 40% with Sacred Bark, as in the game and as
     // out of combat (combat parity canary 2 2026-10-18: 15 vs 31 HP at 79 max
@@ -96,6 +126,15 @@ namespace sts {
     // 0 = the legacy engine also upgrades curses and statuses (Burn+ deals 4).
     // Other values are fatal. Read only when such an upgrade resolves.
     bool handUpgradeAllFix();
+
+    // STS_MAYHEM_AFTER_DRAW_FIX: unset/1 (default) = Mayhem plays the top
+    // card after the start-of-turn draw, as in the game (MayhemPower queues a
+    // wrapper action that queues PlayTopCardAction at the bottom when it
+    // runs, behind DrawCardAction; overnight live play 2026-10-19 problem 13:
+    // the played card opened a hand selection, Metallicize instead of a
+    // pre-draw attack). 0 = the legacy engine, which played the pre-draw top
+    // card. Other values are fatal. Read only at a Mayhem turn start.
+    bool mayhemAfterDrawFix();
 
     struct BattleContext {
 
