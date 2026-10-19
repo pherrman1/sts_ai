@@ -383,6 +383,13 @@ json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
             });
             monster["miscInfo"] = phase2 ? 1 : 0;
         }
+        // Java has no MinionLeader power; the importer restores the native
+        // leader victory marker from the monster id and phase.
+        auto &powers = monster["powers"];
+        if (powers.is_array())
+            powers.erase(std::remove_if(powers.begin(), powers.end(), [](const json &power) {
+                return power.value("id", std::string()) == "MinionLeader";
+            }), powers.end());
         // Ordinary BronzeOrb capture reads Java usedStasis, set when Stasis
         // is selected. Presence of the later Stasis power is not that flag.
         if (id == "Lagavulin") {
@@ -648,6 +655,43 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
         assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
     }
+    // Killing a leader ends the fight in Java (GremlinLeader.die escapes the
+    // others; Reptomancer/TheCollector/BronzeAutomaton.die kill them).
+    for (const auto encounter : {MonsterEncounter::GREMLIN_LEADER, MonsterEncounter::REPTOMANCER,
+                                 MonsterEncounter::COLLECTOR, MonsterEncounter::AUTOMATON}) {
+        GameContext game(CharacterClass::IRONCLAD, 0xD507u, 0);
+        game.act = encounter == MonsterEncounter::REPTOMANCER ? 3 : 2; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, encounter);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), live.seed);
+        if (!wire.valid) throw std::runtime_error("leader fixture conversion failed");
+        normalizeDynamicObservationIdentity(wire);
+        int leader = -1;
+        for (int i = 0; i < wire.monsterCount; ++i)
+            if (wire.monsters[i].statusBits & (1ULL << static_cast<int>(MonsterStatus::MINION_LEADER))) leader = i;
+        if (leader < 0) throw std::runtime_error("leader fixture has no native MINION_LEADER");
+        const auto rendered = javaLikeDynamicObservation(wire, "MONSTER", "minion-leader");
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_MINION_LEADER_FIX", flag, 1);
+            const auto imported = one_combat::advisor::importSilverRoot(rendered);
+            if (!imported.ok) throw std::runtime_error("leader import failed: " + imported.reason);
+            const bool fixed = std::string(flag) == "1";
+            auto expected = wire;
+            if (!fixed) expected.monsters[leader].statusBits &= ~(1ULL << static_cast<int>(MonsterStatus::MINION_LEADER));
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error(std::string("leader import parity failed, flag=") + flag);
+            auto battle = battleContextFromWire(imported.wire);
+            battle.monsters.arr[leader].curHp = 0;
+            battle.monsters.arr[leader].die(battle);
+            const bool othersAlive = battle.monsters.monstersAlive > 0;
+            if ((battle.outcome == Outcome::PLAYER_VICTORY) != (fixed || !othersAlive))
+                throw std::runtime_error(std::string("leader death outcome wrong, flag=") + flag);
+        }
+        unsetenv("STS_IMPORTER_MINION_LEADER_FIX");
+    }
     {
         // Overnight live parity 2026-10-19 problem 3: the Java observation
         // carries Lagavulin's sleep only as its IDLE intent.
@@ -694,7 +738,7 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Lagavulin damage wake did not produce the stunned awake state");
         assertDynamicParity("LAGAVULIN_DAMAGE_WAKE", live, knowledge, game);
     }
-    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength/lagavulin-sleep\n";
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength/leader-death/lagavulin-sleep\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {

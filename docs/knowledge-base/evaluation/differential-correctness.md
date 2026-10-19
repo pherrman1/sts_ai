@@ -247,6 +247,12 @@ became Wrist Blade (+4 on 0-cost attacks). This affected the live advisor and th
 parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
+The same importer also lacked the native leader victory rule: Java has no
+power for it (`GremlinLeader.die` makes the other monsters escape;
+`Reptomancer`, `TheCollector` and `BronzeAutomaton.die` kill them), so killing
+the Gremlin Leader with a minion alive returned `UNDECIDED` natively where the
+game returned victory. `STS_IMPORTER_MINION_LEADER_FIX` (default on, `=0`
+restores) sets native `MINION_LEADER` on those four monsters at import.
 The same night, on seed 111194455, player Thorns killed a Byrd partway
 through its Peck; the game skipped its remaining pecks and native landed them
 (46 vs 44 HP). `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) cancels a
