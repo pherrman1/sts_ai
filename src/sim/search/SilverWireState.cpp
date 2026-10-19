@@ -39,6 +39,9 @@ namespace sts::search {
                 case K::USE_CARD: return Actions::OnAfterCardUsed();
                 case K::REMOVE_PEN_NIB: return Actions::RemoveStatus<PlayerStatus::PEN_NIB>();
                 case K::REMOVE_PLAYER_DEBUFFS: return Actions::RemovePlayerDebuffs();
+                case K::HEAL_PLAYER:
+                    if (in.amount < 1) throw std::invalid_argument("invalid Silver pending heal amount");
+                    return Actions::HealPlayer(in.amount, true);
                 case K::BUFF_PLAYER: {
                     const auto status = static_cast<PlayerStatus>(in.status);
                     switch (status) {
@@ -343,6 +346,7 @@ namespace sts::search {
                     if(action.v_RemoveStatus.s!=PlayerStatus::PEN_NIB)return;
                     item.kind=K::REMOVE_PEN_NIB;break;
                 case CombatActionType::RemovePlayerDebuffs: item.kind=K::REMOVE_PLAYER_DEBUFFS;break;
+                case CombatActionType::HealPlayer: item.kind=K::HEAL_PLAYER; item.amount=action.v_HealPlayer.amount; break;
                 case CombatActionType::BuffPlayer:
                     item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
                 case CombatActionType::DebuffPlayer:
