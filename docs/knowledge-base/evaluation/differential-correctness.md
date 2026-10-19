@@ -195,7 +195,8 @@ on, `=0` restores) stops native Curl Up on a lethal hit. Still open:
 - A Discovery pick leaves `cardRandomRng` at counter 184 in Java and 3
   natively.
 - A card whose cost was set to 0 for the turn keeps `costForTurn` 0 in the
-  discard pile natively; Java resets it.
+  discard pile natively; Java resets it. Fixed by `STS_PILE_COST_RESET_FIX`
+  (see below).
 - Perfected Strike counts one Strike fewer after Havoc exhausts a Strike.
 - Havoc's random target differs (`lastTargetedMonster`).
 - Hexaghost records Inferno twice in Java's move history. **Inference:** no
@@ -219,8 +220,11 @@ Sacred Bark and 20% with it, the reverse of the game.
 - Java draws one more `aiRng` value when Blood for Blood kills a Mugger.
 - Native sets a `miscBits` flag in the Two Thieves' turn that Java has not.
 - After a Discovery, end-of-turn draws differ by one `shuffleRng` draw and
-  an upgrade flag sits on another copy. **Inference:** the probe's draw-order
-  reconstruction is incomplete once a combat-generated card is in the piles.
+  an upgrade flag sits on another copy. Not Discovery: the old importer
+  aliased Matryoshka onto Warped Tongs, which upgrades a random hand card with
+  `shuffleRng` at the start of the turn. Re-running these steps with the
+  `STS_IMPORTER_HIGH_RELIC_FIX` probe (below) matches; with `=0` it
+  reproduces the mismatch.
 - The run stopped on a Headbutt selection with pending actions
   (`silver_selection_pending_actions`), which Silver does not support.
 
@@ -284,6 +288,28 @@ action `HEAL_PLAYER` (amount 5, Toy Ornithopter only), and the importer
 accepts it under `STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the
 refusal). A refused pending queue now also names the blocking state and
 action classes in `pendingActionsBlocker`.
+
+The Discovery mismatches from canary 2 were read from the pinned JAR with
+`javap` (2026-10-19):
+
+- `DiscoveryAction.update` calls its card generator on every frame before it
+  checks its duration. The choice screen pauses the action queue, so the
+  first frame draws the three offered cards. After the pick, the action keeps
+  ticking until its 0.25 s duration runs out and draws a fresh set of three on
+  every frame, which it throws away. At the game's 240 fps limit that is about
+  180 extra `cardRandomRng` draws (185, 187 and 194 were seen), and the count
+  depends on frame timing. Native draws one set. The probe reports
+  `cardRandomRng` on a Discovery pick as unobservable; the next step starts
+  from the game's own RNG again. **Inference:** fair play is unaffected,
+  because nothing reads that stream between the pick and the next observation.
+- The copy itself matches: Java sets its turn cost to 0, and with a full hand
+  `ShowCardAndAddToDiscardEffect` adds a stat-equivalent copy (turn cost 0)
+  straight to the discard pile. The `costForTurn` mismatch was the played copy:
+  `CardGroup.moveToDiscardPile` hands the card to a `Soul`, and when it lands
+  `Soul.update` calls `clearPowers`, which calls `resetAttributes` (turn cost
+  back to cost). The draw-pile soul paths (`shuffle`, `onToDeck`) and
+  `ExhaustCardEffect.update` do the same. `STS_PILE_COST_RESET_FIX` (default
+  on, `=0` restores) resets the turn cost on those native pile moves.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
