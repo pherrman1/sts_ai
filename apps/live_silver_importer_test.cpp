@@ -2546,6 +2546,30 @@ int main(int argc, char **argv) {
         if (!convertedStatesEqualForSearch(penNibRelicExpected, penNibRelicImported.wire))
             throw std::runtime_error("Pen Nib relic parity failed");
 
+        // Relics with enum index >= 128 (Thread and Needle, Maw Bank) have no
+        // combat bit; the legacy importer aliased them onto index - 64.
+        auto highRelic = genericObservation(fixtures[0], "high-relic-parity");
+        highRelic["silverRoot"]["combat"]["relics"].push_back(
+            json{{"id", "Thread and Needle"}, {"counter", -1}, {"usedUp", false}});
+        highRelic["silverRoot"]["combat"]["relics"].push_back(
+            json{{"id", "MawBank"}, {"counter", -1}, {"usedUp", false}});
+        auto highRelicExpected = fixtures[0].wire;
+        normalizeFirstObservationIdentity(highRelicExpected);
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_HIGH_RELIC_FIX", flag, 1);
+            auto imported = one_combat::advisor::importSilverRoot(highRelic);
+            if (!imported.ok) throw std::runtime_error("high relic import failed: " + imported.reason);
+            auto expected = highRelicExpected;
+            if (std::string(flag) == "0") {
+                expected.player.relicBits1 |= 1ULL << (static_cast<int>(RelicId::STRIKE_DUMMY) - 64);
+                expected.player.relicBits1 |= 1ULL << (static_cast<int>(RelicId::WRIST_BLADE) - 64);
+            }
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error(std::string("high relic parity failed, flag=") + flag);
+        }
+        unsetenv("STS_IMPORTER_HIGH_RELIC_FIX");
+
         auto nativePower = genericObservation(fixtures[0], "native-power-entry");
         nativePower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Vulnerable"}, {"amount", 2}, {"justApplied", false}}});
