@@ -34,10 +34,14 @@ struct LiveOocStateV1 {
     bool matchAndKeep = false;
     bool selectorPreview = false;
     int selectorPreviewDeckIndex = -1;
-    // Java does not expose the private reward pity counters. Synthetic parity
-    // fixtures may opt in when they provide an exact public reconstruction;
-    // real live captures remain false and must not use a fabricated midpoint.
+    // Qualifies the reward pity counters for direct V4 and the MCTS V4
+    // fallback prior. Only synthetic parity fixtures set it; real live
+    // captures leave it false, so V4 stays off in live play.
     bool rewardPityHistoryComplete = false;
+    // The capture carries the exact vanilla reward pity counters (#636):
+    // MCTS keeps them at the root and the v_win leaf evaluates them directly.
+    // STS_LIVE_OOC_EXACT_PITY=0 clears it.
+    bool exactRewardPity = false;
     // Separate transition-capable public-information root. Its hidden pools
     // and RNG streams come from a fixed hypothetical distribution and are
     // re-sampled by OOC MCTS; they are never copied from the live game.
