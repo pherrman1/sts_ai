@@ -1637,7 +1637,7 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    best-ranked reward potion. With full slots it discards the worst-ranked held
    potion when the best reward potion ranks strictly higher, then takes it
    (`potionKeepRank`, fitted on CTM fight data; Blood Potion's value refit for
-   the fixed in-combat heal, §TBD, `STS_POTION_KEEP_BLOOD_REFIT`). Sozu keeps the legacy pickup.
+   the fixed in-combat heal, §552, `STS_POTION_KEEP_BLOOD_REFIT`). Sozu keeps the legacy pickup.
    Under the OOC MCTS tree rules a declined reward potion still reaches the
    search root. Once only "leave" and "discard a held potion" remain, that
    root's prior is uniform, also under heart1full (PR #591), and search

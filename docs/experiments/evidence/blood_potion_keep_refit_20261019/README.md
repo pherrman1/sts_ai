@@ -1,4 +1,4 @@
-# Blood Potion keep-value refit for the fixed heal (§TBD)
+# Blood Potion keep-value refit for the fixed heal (§552)
 
 `potionKeepRank` (ADR-0039) was fitted on CTM corpora played with the legacy in-combat Blood Potion heal
 (40% of max HP without Sacred Bark; `STS_BLOOD_POTION_HEAL_FIX=0`, §544).

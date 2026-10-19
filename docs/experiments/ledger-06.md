@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Blood Potion keep value refit for the fixed in-combat heal: 1163 -> 834 (2026-10-19)
+## §552 — Blood Potion keep value refit for the fixed in-combat heal: 1163 -> 834 (2026-10-19)
 
 **Question:** `potionKeepRank` (ADR-0039) ranked Blood Potion first (1163) from CTM fights played with the legacy
 in-combat heal (40% of max HP without Sacred Bark, fixed by `STS_BLOOD_POTION_HEAL_FIX`, §544). What is its value
