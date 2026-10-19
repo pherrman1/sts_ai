@@ -21206,7 +21206,7 @@ The overnight list of other differences is on the share (`engine-parity/overnigh
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
 
-## §TBD — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
+## §550 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
 
 **Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
 hand selection with `silver_selection_pending_actions` (problem 28 in `engine-parity/overnight-20261019/ISSUES.md` on
