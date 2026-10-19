@@ -32,6 +32,27 @@ namespace sts {
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
 
+    bool deadMonsterBlockFix() {
+        const char *value = std::getenv("STS_DEAD_MONSTER_BLOCK_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_MONSTER_BLOCK_FIX must be 0 or 1");
+    }
+
+    bool muggerDeathRngFix() {
+        const char *value = std::getenv("STS_MUGGER_DEATH_RNG_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_MUGGER_DEATH_RNG_FIX must be 0 or 1");
+    }
+
+    bool slimeSplitRngFix() {
+        const char *value = std::getenv("STS_SLIME_SPLIT_RNG_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SLIME_SPLIT_RNG_FIX must be 0 or 1");
+    }
+
     bool bloodPotionHealFix() {
         const char *value = std::getenv("STS_BLOOD_POTION_HEAL_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -51,6 +72,13 @@ namespace sts {
         if (!value || !*value || std::string(value) == "1") return true;
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_HAND_UPGRADE_ALL_FIX must be 0 or 1");
+    }
+
+    bool mayhemAfterDrawFix() {
+        const char *value = std::getenv("STS_MAYHEM_AFTER_DRAW_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_MAYHEM_AFTER_DRAW_FIX must be 0 or 1");
     }
 }
 
