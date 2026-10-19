@@ -21150,6 +21150,42 @@ accuracy. That is too small for a full-run play test to detect, so a swap could 
 retrained model is compiled in; no code changed.
 **Knowledge impact:** none beyond this entry; no default or code change.
 
+## §557 — OOC MCTS prior temperature 3, A20 full-run confirmation: −2.0 pp wins, NOT_SHOWN (2026-10-19)
+
+**Question (Philipp, 2026-10-18, prior-guidance thread):** "set up full run test of temp 3", then "256 seeds on 16
+workers is fine". Does the §532 Act-1 screen pass of `STS_OOC_MCTS_TEMPERATURE=3` carry over to Heart kills in full
+A20 runs?
+**Design:** [PREREG](evidence/ooc_prior_temp3_fullrun_20261018/PREREG.md), light pre-launch review PASS.
+
+- **Candidate:** RUN_COMMIT `c84d65f4`, code `b5dd5557`, binary `01d0f59e…`. The control's `run_unit.sh` env with
+  temperature 3 added. A PIN block restores the control's behaviour for every play-changing default merged since
+  then.
+- **Control:** the A20 winrate-check units on the same seeds (code `64b38c88`), reused rather than rerun.
+- **Identity gate:** temperature 1 with the new binary replayed 4 control seeds byte-identically
+  ([IDENTITY](evidence/ooc_prior_temp3_fullrun_20261018/IDENTITY.md)).
+- **Seeds:** the first 256 eligible winrate-check seeds in 111194580–111194871.
+- **Primary measure:** paired wins, McNemar exact test plus a seed-bootstrap CI.
+- **Decision rule:** CONFIRMED if the CI lower bound is above 0; WORSE if the upper bound is below 0; otherwise
+  NOT_SHOWN.
+
+**Result.** 256/256 units finished and all 16 worker tars were verified
+([README](evidence/ooc_prior_temp3_fullrun_20261018/README.md)).
+
+| | Control | T3 |
+|---|---|---|
+| Wins | 42 | 37 |
+| Act 4 reached | 86 | 81 |
+| Mean floor | 40.98 | 41.64 |
+
+- **T3 − control, wins:** −2.0 pp [−6.6, +2.7]. Discordant pairs 17 vs 22, p = 0.522. **NOT_SHOWN.**
+- **Floor:** +0.66.
+- **Search behaviour:** under T3 the executed move is the prior argmax on 84.3% of roots, against 90.5% at
+  temperature 1 (§532).
+
+**Interpretation:** the flatter tree prior changes about 6% more root decisions, but the change does not convert into
+more Heart kills. The point estimate is negative. **Inference:** the +3.1 HP Act-1 screen effect was noise or does not
+survive later acts; the test cannot rule out a gain of up to +2.7 pp.
+**Knowledge impact:** KB §532 section updated; default stays `STS_OOC_MCTS_TEMPERATURE=1`. No code changed.
 ## §544 — Second combat parity canary continued into Act 2: 260/290 steps match, Blood Potion heal fixed (2026-10-18)
 
 **Question:** past the floor-16 crash of §536, does the engine still reproduce the game's combat steps in Act 2?
@@ -21205,6 +21241,26 @@ made with phantom relics whenever such a relic was held. **Unverified:** how oft
 The overnight list of other differences is on the share (`engine-parity/overnight-20261019/ISSUES.md`).
 Seeds: 111194452, 111194454-460 (live play; 111194453 unchanged, unit test only).
 **Knowledge impact:** `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §558 — Overnight live play: a monster's multi-hit kept hitting after Thorns killed it (2026-10-19)
+
+**Question:** why did native lose 2 more HP than the game on seed 111194455 (overnight list problem 9)?
+**Setup:** overnight live trace `seed-111194455/trace3.jsonl` (on Philipp's PC), A20 floor 18 Three Byrds, step 31
+End Turn: player 67 HP, block 10, Thorns 3; Byrd 1 at 10 HP Pecks 1x6, Byrd 2 at 17 HP Pecks 2x6, Byrd 0 Swoops 15.
+Java read with `javap -c -p` from the pinned `desktop-1.0.jar` (cfad868a).
+**Result:** game 67 -> 46 HP and 11 hits taken; native 67 -> 44 and 13. Byrd 1 dies to the Thorns of its 4th peck;
+the game skips pecks 5 and 6, native lands them (5 + 4 + 12 = 21 vs 5 + 6 + 12 = 23 damage). In Java,
+`DamageAction.update` cancels a non-`THORNS` hit on every tick when `shouldCancelAction()` holds
+(`source.isDying`), and on its first tick when the owner `isDying` or `halfDead`. `AbstractMonster.die` sets `isDying`
+synchronously inside the killing `damage` call. A Darkling or stage-1 Awakened One at 0 HP is `halfDead` only, so its
+queued hits are skipped too. Byrd's Peck is N separate `DamageAction`s.
+**Interpretation:** `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) makes `ActData_AttackPlayer` do nothing when
+its attacker is dead or half-dead. Play-changing whenever player Thorns, Flame Barrier or a Bronze Scales hit kills a
+monster mid multi-hit; no RNG draw changes. Monster `THORNS`-type damage (Spiker Thorns, Sharp Hide, Exploder) is
+unchanged, as in Java. Unit test `dying_attacker` (seed 111200101 fixed, no gameplay) reproduces 5 vs 1 HP for a
+Peck and 2 vs 1 for a half-dead Darkling's Chomp.
+**Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
+`operations/environment-variables.md` (`STS_DYING_ATTACKER_FIX`).
 
 ## §556 — Perfected Strike count: the live importer counted exhausted Strikes (2026-10-19)
 
