@@ -13,13 +13,25 @@ bool search::potionRewardSwapEnabled() {
     throw std::runtime_error("STS_POTION_REWARD_SWAP must be 0 or 1");
 }
 
+bool search::bloodPotionKeepRefitEnabled() {
+    const char *value = std::getenv("STS_POTION_KEEP_BLOOD_REFIT");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_POTION_KEEP_BLOOD_REFIT must be 0 or 1");
+}
+
 int search::potionKeepRank(Potion p) {
     // Fitted keep values x100 (tools/potion_keep/, ADR-0039): HP-equivalent
     // fight outcome gain from holding the potion at fight start, with seed and
     // encounter fixed effects on the A20 and A0 CTM corpora; a death counts
     // SilverEvalWeights::winBonus (53). Mean of the two ascensions.
     switch (p) {
-        case Potion::BLOOD_POTION:           return 1163;
+        // Blood Potion was fitted while the combat engine healed 40% of max HP
+        // (STS_BLOOD_POTION_HEAL_FIX). Refit (§552): paired one-fight copies
+        // with one Blood Potion added, heal fix on vs off, A20: -3.82 HP-eq;
+        // the A0 value is shifted by -3.82 x 0.721 (A0/A20 old excess heal per
+        // held fight). STS_POTION_KEEP_BLOOD_REFIT=0 restores 1163.
+        case Potion::BLOOD_POTION:           return bloodPotionKeepRefitEnabled() ? 834 : 1163;
         case Potion::SMOKE_BOMB:             return 234;   // fitted 1034 minus 8 HP (Philipp, 2026-10-15)
         case Potion::FRUIT_JUICE:            return 924;
         case Potion::HEART_OF_IRON:          return 666;

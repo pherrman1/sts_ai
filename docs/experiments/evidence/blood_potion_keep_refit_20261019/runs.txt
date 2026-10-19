@@ -1,0 +1,80 @@
+[potionpriceprobe] seed=111200191 sourceFloor=52 sourceWon=1 eligible=28 sampled=8
+rc=0 wall=261
+[potionpriceprobe] seed=111200192 sourceFloor=56 sourceWon=0 eligible=29 sampled=8
+rc=0 wall=150
+[potionpriceprobe] seed=111200193 sourceFloor=51 sourceWon=0 eligible=29 sampled=8
+rc=0 wall=123
+[potionpriceprobe] seed=111200194 sourceFloor=16 sourceWon=0 eligible=9 sampled=8
+rc=0 wall=58
+[potionpriceprobe] seed=111200195 sourceFloor=25 sourceWon=0 eligible=17 sampled=8
+rc=0 wall=77
+[potionpriceprobe] seed=111200196 sourceFloor=56 sourceWon=1 eligible=30 sampled=8
+rc=0 wall=321
+[potionpriceprobe] seed=111200197 sourceFloor=56 sourceWon=1 eligible=29 sampled=8
+rc=0 wall=261
+[potionpriceprobe] seed=111200198 sourceFloor=10 sourceWon=0 eligible=5 sampled=5
+rc=0 wall=46
+[potionpriceprobe] seed=111200199 sourceFloor=56 sourceWon=1 eligible=33 sampled=8
+rc=0 wall=217
+[potionpriceprobe] seed=111200200 sourceFloor=6 sourceWon=0 eligible=5 sampled=5
+rc=0 wall=20
+[potionpriceprobe] seed=111200201 sourceFloor=24 sourceWon=0 eligible=14 sampled=8
+rc=0 wall=95
+[potionpriceprobe] seed=111200202 sourceFloor=50 sourceWon=0 eligible=29 sampled=8
+rc=0 wall=153
+[potionpriceprobe] seed=111200203 sourceFloor=56 sourceWon=1 eligible=29 sampled=8
+rc=0 wall=131
+[potionpriceprobe] seed=111200204 sourceFloor=22 sourceWon=0 eligible=13 sampled=8
+rc=0 wall=66
+[potionpriceprobe] seed=111200205 sourceFloor=51 sourceWon=0 eligible=31 sampled=8
+rc=0 wall=165
+[potionpriceprobe] seed=111200206 sourceFloor=16 sourceWon=0 eligible=10 sampled=8
+rc=0 wall=41
+[potionpriceprobe] seed=111200207 sourceFloor=51 sourceWon=0 eligible=25 sampled=8
+rc=0 wall=270
+[potionpriceprobe] seed=111200208 sourceFloor=56 sourceWon=0 eligible=28 sampled=8
+rc=0 wall=145
+[potionpriceprobe] seed=111200209 sourceFloor=56 sourceWon=1 eligible=32 sampled=8
+rc=0 wall=257
+[potionpriceprobe] seed=111200210 sourceFloor=51 sourceWon=0 eligible=24 sampled=8
+rc=0 wall=132
+[potionpriceprobe] seed=111200191 sourceFloor=50 sourceWon=0 eligible=27 sampled=8
+rc=0 wall=220
+[potionpriceprobe] seed=111200192 sourceFloor=56 sourceWon=0 eligible=29 sampled=8
+rc=0 wall=144
+[potionpriceprobe] seed=111200193 sourceFloor=51 sourceWon=0 eligible=29 sampled=8
+rc=0 wall=124
+[potionpriceprobe] seed=111200194 sourceFloor=16 sourceWon=0 eligible=9 sampled=8
+rc=0 wall=61
+[potionpriceprobe] seed=111200195 sourceFloor=25 sourceWon=0 eligible=17 sampled=8
+rc=0 wall=76
+[potionpriceprobe] seed=111200196 sourceFloor=45 sourceWon=0 eligible=24 sampled=8
+rc=0 wall=148
+[potionpriceprobe] seed=111200197 sourceFloor=56 sourceWon=1 eligible=29 sampled=8
+rc=0 wall=259
+[potionpriceprobe] seed=111200198 sourceFloor=10 sourceWon=0 eligible=5 sampled=5
+rc=0 wall=45
+[potionpriceprobe] seed=111200199 sourceFloor=56 sourceWon=1 eligible=33 sampled=8
+rc=0 wall=219
+[potionpriceprobe] seed=111200200 sourceFloor=6 sourceWon=0 eligible=5 sampled=5
+rc=0 wall=21
+[potionpriceprobe] seed=111200201 sourceFloor=24 sourceWon=0 eligible=14 sampled=8
+rc=0 wall=93
+[potionpriceprobe] seed=111200202 sourceFloor=50 sourceWon=0 eligible=29 sampled=8
+rc=0 wall=157
+[potionpriceprobe] seed=111200203 sourceFloor=56 sourceWon=1 eligible=29 sampled=8
+rc=0 wall=133
+[potionpriceprobe] seed=111200204 sourceFloor=22 sourceWon=0 eligible=13 sampled=8
+rc=0 wall=66
+[potionpriceprobe] seed=111200205 sourceFloor=51 sourceWon=0 eligible=31 sampled=8
+rc=0 wall=164
+[potionpriceprobe] seed=111200206 sourceFloor=16 sourceWon=0 eligible=10 sampled=8
+rc=0 wall=42
+[potionpriceprobe] seed=111200207 sourceFloor=51 sourceWon=0 eligible=25 sampled=8
+rc=0 wall=268
+[potionpriceprobe] seed=111200208 sourceFloor=56 sourceWon=0 eligible=28 sampled=8
+rc=0 wall=148
+[potionpriceprobe] seed=111200209 sourceFloor=56 sourceWon=1 eligible=32 sampled=8
+rc=0 wall=261
+[potionpriceprobe] seed=111200210 sourceFloor=52 sourceWon=1 eligible=27 sampled=8
+rc=0 wall=142

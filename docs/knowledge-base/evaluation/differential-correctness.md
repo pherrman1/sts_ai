@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
 
 ## Purpose
 
@@ -233,6 +233,19 @@ parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
 
+Four smaller monster-side differences from the same overnight list and the
+canary 2 carry-overs are fixed behind default-on flags (`=0` restores):
+`STS_SLIME_SPLIT_RNG_FIX` (native drew two extra `aiRng` rolls on a large
+slime split), `STS_MUGGER_DEATH_RNG_FIX` (the game draws `aiRng` for the
+Mugger's death sound), `STS_DEAD_MONSTER_BLOCK_FIX` (Curl Up block queued
+before a later hit killed the louse) and `STS_IMPORTER_THIEF_GOLD_FIX` (the
+importer never set the native stolen-gold bit, so the probe reported
+`miscBits` 0 vs 1 in Two Thieves). After a split the game reports
+`lastTargetedMonster` 1 when the targeted slime is gone (the inspector's
+default for a target it no longer emits); native keeps 0. Only the Shield
+and Spear fight reads that field, so it is left as a known
+representation-only difference.
+
 Live parity problem 29 (seed 111200385, Two Thieves) stopped Silver with
 `silver_live_action_lowering` after the Looter fled. The inspector's `dead` is
 `isDeadOrEscaped()`, which includes `isEscaping`, but its `escaping` field is
@@ -252,6 +265,36 @@ upgraded. `STS_HAND_UPGRADE_ALL_FIX` (default on, `=0` restores) skips them
 there too, so a Burn in hand no longer becomes Burn+. **Inference:** the game
 skips statuses here for the same reason it skips curses (its `canUpgrade`
 rule); only the curse case was observed live.
+
+The same overnight runs showed Mayhem playing the wrong card natively (seed
+111194457: Reptomancer and Jaw Worm horde). The game plays the top card after
+the start-of-turn draw (`MayhemPower$1` queues `PlayTopCardAction` at the
+bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
+top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
+won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
+`=0` restores) plays it after the draw.
+
+A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
+Panache, because the live importer refused it. Java `PanachePower.amount` is
+the cards-left countdown and the damage is a private `damage` field, which the
+producer did not send. The engine also differed: a new Panache started its
+countdown at 0, so it dealt damage on the next card, and the countdown never
+went back to 5, so it dealt damage on every later card that turn. The
+producer now sends `panacheDamage`, the importer maps it, and
+`STS_PANACHE_FIX` (default on, `=0` restores) makes the engine count from 5,
+reset after damage, and let a second copy add damage only.
+
+Live play on 2026-10-19 (seed 111200384, Slime Boss) stopped twice on a
+Gambler's Brew hand selection as `silver_selection_pending_actions`. Toy
+Ornithopter's `onUsePotion` queues `RelicAboveCreatureAction` and
+`HealAction(p, p, 5)` behind the Brew's `GamblingChipAction` (game bytecode,
+jar sha256 cfad868a…1673), so the heal is still in `actionManager.actions`
+while the selection is open. The engine queues the same heal after the potion
+effect in `drinkPotion`. The inspector now carries it as the public pending
+action `HEAL_PLAYER` (amount 5, Toy Ornithopter only), and the importer
+accepts it under `STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the
+refusal). A refused pending queue now also names the blocking state and
+action classes in `pendingActionsBlocker`.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
