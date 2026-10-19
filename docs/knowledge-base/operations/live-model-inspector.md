@@ -1321,13 +1321,16 @@ confirmations without an equivalent native state.
 A source-card selection (`continuation: source_card_actions`) may also carry
 the monster on-hit reactions vanilla queues with `addToBot` behind the
 interrupted card, e.g. a Headbutt hit: `MONSTER_GAIN_BLOCK` (monster
-self-`GainBlockAction`, Malleable/Curl Up, with the emitted `slot`),
+self-`GainBlockAction` such as Malleable, with the emitted `slot`),
 `REACTIVE_ROLL_MOVE` (Writhing Mass `RollMoveAction`, slot 0) and
 `MONSTER_REDUCE_PLATED_ARMOR` (`ReducePowerAction` "Plated Armor" by 1). The
 first two become native `MonsterGainBlock`/`ReactiveRollMove` queue items
 (Reactive's scalar counts the queued rolls); the Plated Armor loss is folded
 into the imported monster because native applies it at the hit. A reduction
-that would remove the power (Shelled Parasite stun) stays unsupported. Native
+that would remove the power (Shelled Parasite stun) stays unsupported, as do
+Curl Up (its queued power removal has no form), Sharp Hide and Guardian
+reactions. In the wire, a pending action's JSON now carries `monster` (native
+index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
 unobserved tail and its card-replay fallback).
