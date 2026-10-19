@@ -19,7 +19,9 @@
 3. New value: A20 14.12 - 3.82; A0 9.14 - 3.82 x 0.721 (**Inference:** scaled by the old excess heal per held
    fight, 8.77 / 12.16; A0 not probed); mean 8.34 -> rank 834 (was 1163). **Inference:** subtracting the probe's
    causal change from the observational regression value assumes the heal fix shifts both by the same amount.
-   Across the A20 CI, with the 0.721 A0 scaling, the rank stays between about 696 and 967. Letting the A0 shift
-   range from none to the full A20 change as well widens this to 781-972 (reviewer); the A0 value is probably a
-   bit higher than scaled, since more A0 drinking fights end at max HP (51% vs 42%), so more of the old heal was
-   overheal. Always above Heart of Iron (666); below Fruit Juice (924) at the point estimate.
+   Across the A20 CI, with the 0.721 A0 scaling, the rank stays between about 696 and 967: above Heart of Iron
+   (666), and below Fruit Juice (924) at the point estimate, so under this scaling only the order against Fruit
+   Juice is uncertain. At the point estimate, letting the A0 shift range from none to the full A20 change gives
+   781-972. Combining that with the A20 CI gives about 620-1049: below Heart of Iron at the low end (full A0
+   shift) and above Fruit Juice at the high end (no A0 shift). The A0 value is probably a bit higher than
+   scaled, since more A0 drinking fights end at max HP (51% vs 42%), so more of the old heal was overheal.

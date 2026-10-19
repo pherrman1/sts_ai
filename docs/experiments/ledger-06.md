@@ -21223,10 +21223,11 @@ change **−3.82 [−5.43, −2.28]** (seed bootstrap); on the 91 start states i
 **Result:** A20 value 14.12 − 3.82; A0 shifted by −3.82 × 0.721 (**Inference:** scaled by the old excess heal per
 held fight, A0 not probed); mean 8.34, rank **834** (**Inference:** applying the probe's causal change to the
 observational regression value assumes both shift equally) (`STS_POTION_KEEP_BLOOD_REFIT`, default on, `=0` restores
-1163). Blood Potion now ranks second, below Fruit Juice (924) and above Heart of Iron (666). Across the CI the rank
-stays between ~696 and ~967 with the 0.721 A0 scaling, or ~781–972 over A0 shifts from none to the full A20
-change (A0 likely a bit higher: 51% of A0 drinking fights end at max HP vs 42%), so only its order against
-Fruit Juice is uncertain. Play-changing only where a
+1163). Blood Potion now ranks second, below Fruit Juice (924) and above Heart of Iron (666). Under the 0.721 A0
+scaling the rank stays between ~696 and ~967 across the CI, so only its order against Fruit Juice is uncertain.
+At the point estimate, A0 shifts from none to the full A20 change give ~781–972; combined with the CI, ~620–1049,
+which reaches below Heart of Iron (full A0 shift) and above Fruit Juice (no A0 shift). A0 is likely a bit higher
+than scaled (51% of A0 drinking fights end at max HP vs 42%). Play-changing only where a
 reward or discard choice involves Blood Potion. No game test of playing strength. The §510 and §537 Blood prices
 stay descriptive and biased (no code reads them).
 [README](evidence/blood_potion_keep_refit_20261019/README.md), `delta.txt`, `bound-fits.txt`, `probe-csv.tar.gz`.
