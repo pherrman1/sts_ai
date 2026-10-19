@@ -2672,6 +2672,46 @@ int main(int argc, char **argv) {
         }
         unsetenv("STS_IMPORTER_HIGH_RELIC_FIX");
 
+        // A recounted strikeCount skips exhausted Strikes (Java
+        // PerfectedStrike.countCards reads hand, draw and discard only); the
+        // legacy recount included them, so Perfected Strike hit 2 harder.
+        {
+            auto exhausted = genericObservation(fixtures[0], "strike-count-exhaust");
+            auto &combat = exhausted["silverRoot"]["combat"];
+            auto perfected = combat["hand"][0];
+            perfected["id"] = cardStringIds[static_cast<int>(CardId::PERFECTED_STRIKE)];
+            perfected["upgraded"] = false; perfected["misc"] = 0;
+            perfected["cost"] = perfected["costForTurn"] = 2;
+            combat["hand"][0] = perfected;
+            auto exhaustedStrike = perfected;
+            exhaustedStrike["id"] = "Strike_R"; exhaustedStrike["cost"] = exhaustedStrike["costForTurn"] = 1;
+            exhaustedStrike["uuid"] = "exhausted-strike";
+            combat["exhaust"] = json{{"unknown", json::array({exhaustedStrike})}};
+            combat.erase("strikeCount");
+            std::array<int, 2> counts {}, damages {};
+            for (int fix : {1, 0}) {
+                setenv("STS_STRIKE_COUNT_FIX", fix ? "1" : "0", 1);
+                const auto imported = one_combat::advisor::importSilverRoot(exhausted);
+                if (!imported.ok) throw std::runtime_error("strike count import failed: " + imported.reason);
+                auto battle = battleContextFromWire(imported.wire);
+                counts[fix] = battle.cards.strikeCount;
+                if (fix) {
+                    int live = 0;
+                    for (int i = 0; i < battle.cards.cardsInHand; ++i) live += battle.cards.hand[i].isStrikeCard();
+                    for (const auto &c : battle.cards.drawPile) live += c.isStrikeCard();
+                    for (const auto &c : battle.cards.discardPile) live += c.isStrikeCard();
+                    if (battle.cards.exhaustPile.size() != 1 || counts[fix] != live)
+                        throw std::runtime_error("strikeCount counted the exhaust pile");
+                }
+                const auto hp = battle.monsters.arr[0].curHp;
+                sts::search::Action(sts::search::ActionType::CARD, 0, 0).execute(battle);
+                damages[fix] = hp - battle.monsters.arr[0].curHp;
+            }
+            unsetenv("STS_STRIKE_COUNT_FIX");
+            if (counts[0] != counts[1] + 1 || damages[0] != damages[1] + 2)
+                throw std::runtime_error("strike count flag parity failed");
+        }
+
         auto nativePower = genericObservation(fixtures[0], "native-power-entry");
         nativePower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Vulnerable"}, {"amount", 2}, {"justApplied", false}}});
