@@ -247,6 +247,12 @@ became Wrist Blade (+4 on 0-cost attacks). This affected the live advisor and th
 parity probe, not the simulator's own `GameContext` path.
 `STS_IMPORTER_HIGH_RELIC_FIX` (default on, `=0` restores) gives those relics no
 combat bit; no combat code reads them.
+The same importer also lacked the native leader victory rule: Java has no
+power for it (`GremlinLeader.die` makes the other monsters escape;
+`Reptomancer`, `TheCollector` and `BronzeAutomaton.die` kill them), so killing
+the Gremlin Leader with a minion alive returned `UNDECIDED` natively where the
+game returned victory. `STS_IMPORTER_MINION_LEADER_FIX` (default on, `=0`
+restores) sets native `MINION_LEADER` on those four monsters at import.
 The same night, on seed 111194455, player Thorns killed a Byrd partway
 through its Peck; the game skipped its remaining pecks and native landed them
 (46 vs 44 HP). `STS_DYING_ATTACKER_FIX` (default on, `=0` restores) cancels a
@@ -351,6 +357,17 @@ The Discovery mismatches from canary 2 were read from the pinned JAR with
   back to cost). The draw-pile soul paths (`shuffle`, `onToDeck`) and
   `ExhaustCardEffect.update` do the same. `STS_PILE_COST_RESET_FIX` (default
   on, `=0` restores) resets the turn cost on those native pile moves.
+
+Seed 111194465 showed Centennial Puzzle still armed in every imported root
+after it fired (all 39 `player.relicBits0` mismatches, bit 8). Vanilla keeps
+the relic with `usedUp` false and records the once-per-combat draw in
+`usedThisCombat`; native clears the relic bit when it draws, so the engine
+semantics agree but the importer never saw the used state. Live Silver roots
+therefore expected another free 3-card draw on the next HP loss. The mod now
+emits `usedThisCombat` for Centennial Puzzle, and
+`STS_IMPORTER_CENTENNIAL_USED_FIX` (default on, `=0` restores) requires it and
+gives a used puzzle no combat bit. Traces recorded with an older mod lack the
+field and are rejected as `silver_unmapped_relic_state` unless run with `=0`.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
