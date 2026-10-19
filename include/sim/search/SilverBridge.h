@@ -152,13 +152,18 @@ enum class PendingActionKind : std::uint8_t {
     BUFF_PLAYER = 8, DEBUFF_PLAYER = 9, DEBUFF_ALL_ENEMY = 10, SHUFFLE_WOUNDS = 11,
     USE_CARD = 12, REMOVE_PEN_NIB = 13, REMOVE_PLAYER_DEBUFFS = 14,
     // Toy Ornithopter's potion heal: HealPlayer(amount, executeAfterCombatVictory).
-    HEAL_PLAYER = 15
+    HEAL_PLAYER = 15,
+    // Monster reactions queued behind an interrupted source card (Malleable
+    // self-block, Writhing Mass Reactive reroll, Guardian Sharp Hide thorns).
+    MONSTER_GAIN_BLOCK = 16, REACTIVE_ROLL_MOVE = 17, MONSTER_THORNS = 18
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;
     int amount = 0;
     int status = 0;
     bool sourceMonster = false;
+    // Native monster index; nonzero only for MONSTER_GAIN_BLOCK.
+    int monster = 0;
 };
 
 struct BattleStateWire {

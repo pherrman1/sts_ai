@@ -599,6 +599,9 @@ void ActData_DamageAllEnemy::operator()(BattleContext &bc) const {
 
 void ActData_AttackPlayer::operator()(BattleContext &bc) const {
         auto &m=bc.monsters.arr[idx];
+        // DamageAction cancels when its source isDying or halfDead: the rest
+        // of a multi-hit stops once Thorns kills the attacker.
+        if ((m.isDying() || m.isHalfDead()) && dyingAttackerFix()) return;
         const bool persistent = m.latentDamageMask &&
             (m.moveHistory[0]==MMID::RED_LOUSE_BITE || m.moveHistory[0]==MMID::GREEN_LOUSE_BITE || m.moveHistory[0]==MMID::DARKLING_NIP);
         if(!persistent) { bc.player.attacked(bc, idx, damage); return; }

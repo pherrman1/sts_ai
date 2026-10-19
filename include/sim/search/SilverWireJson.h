@@ -82,7 +82,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardQueueItemWire, card, target, isEndTurn, t
     ignoreEnergyTotal, energyOnUse, freeToPlay, randomTarget, autoplay, regretCardCount,
     purgeOnUse, exhaustOnUse)
 inline void to_json(nlohmann::json &j, const PendingActionWire &a) {
-    j = {{"kind",static_cast<int>(a.kind)},{"amount",a.amount},{"status",a.status},{"sourceMonster",a.sourceMonster}};
+    j = {{"kind",static_cast<int>(a.kind)},{"amount",a.amount},{"status",a.status},{"sourceMonster",a.sourceMonster},{"monster",a.monster}};
 }
 inline void from_json(const nlohmann::json &j, PendingActionWire &a) {
     for (const char *field : {"kind","amount","status"}) {
@@ -94,10 +94,15 @@ inline void from_json(const nlohmann::json &j, PendingActionWire &a) {
             throw std::invalid_argument("invalid pending action integer");
     }
     const int kind=j.at("kind").get<int>();
-    if (kind<1 || kind>15 || !j.at("sourceMonster").is_boolean())
+    if (kind<1 || kind>18 || !j.at("sourceMonster").is_boolean())
         throw std::invalid_argument("invalid pending action kind or source");
+    // Absent in wires written before monster-reaction actions existed.
+    const auto monster=j.find("monster");
+    if (monster!=j.end() && (!monster->is_number_integer() || monster->get<std::int64_t>()<0 || monster->get<std::int64_t>()>4))
+        throw std::invalid_argument("invalid pending action monster");
     a.kind=static_cast<PendingActionKind>(kind);
     j.at("amount").get_to(a.amount); j.at("status").get_to(a.status); j.at("sourceMonster").get_to(a.sourceMonster);
+    a.monster=monster==j.end()?0:monster->get<int>();
 }
 inline void to_json(nlohmann::json &j, const BattleStateWire &w) {
     j=nlohmann::json::object();
