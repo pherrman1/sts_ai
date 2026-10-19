@@ -21493,7 +21493,7 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
-## §TBD — Overnight live play: the live importer dropped Lagavulin's sleep (2026-10-19)
+## §559 — Overnight live play: the live importer dropped Lagavulin's sleep (2026-10-19)
 
 **Question:** why did a sleeping Lagavulin turn its Sleep intent into Attack natively and keep Metallicize after waking
 (overnight live play, problem 3 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
