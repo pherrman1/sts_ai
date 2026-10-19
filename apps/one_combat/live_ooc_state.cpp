@@ -12,6 +12,7 @@
 #include "constants/SaveFileMappings.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
+#include "ooc_mcts_adapter.h"
 
 namespace one_combat::advisor {
 
@@ -1304,7 +1305,7 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
     return found;
 }
 void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits,
-                              bool allowEquivalentChoices) {
+                              bool allowEquivalentChoices,bool treeRuleChoices) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
     std::set<std::string> retainedChoices;
     std::set<std::uint32_t> omittedRewardAliases;
@@ -1314,7 +1315,7 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
         const auto bindings=search::enumerateOocSemanticPrimitiveBindings(state.projected);
         require(bindings.supported && bindings.complete,"native/live semantic enumeration incomplete");
         for(const auto &binding:bindings.bindings) {
-            const auto key=search::canonicalOocMctsChoiceKey(binding.semantic, &state.projected);
+            const auto key=oocMctsChoiceKey(binding.semantic, state.projected, treeRuleChoices);
             require(choiceByPrimitive.emplace(binding.primitiveBits,key).second,
                     "duplicate native semantic primitive mapping");
             if(expected.count(binding.primitiveBits)) retainedChoices.insert(key);
