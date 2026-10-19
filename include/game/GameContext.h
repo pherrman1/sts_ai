@@ -314,6 +314,7 @@ namespace sts {
 
         RelicId returnRandomRelic(RelicTier tier, bool shopRoom=false, bool fromFront=true);
         RelicId returnNonCampfireRelic(RelicTier tier, bool shopRoom=false);
+        void rollEscapedCombatRewardRng();
         RelicId returnRandomScreenlessRelic(RelicTier tier, bool shopRoom=false);
 
         Card previewObtainCard(Card card);
