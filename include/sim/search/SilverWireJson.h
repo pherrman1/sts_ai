@@ -94,7 +94,7 @@ inline void from_json(const nlohmann::json &j, PendingActionWire &a) {
             throw std::invalid_argument("invalid pending action integer");
     }
     const int kind=j.at("kind").get<int>();
-    if (kind<1 || kind>14 || !j.at("sourceMonster").is_boolean())
+    if (kind<1 || kind>15 || !j.at("sourceMonster").is_boolean())
         throw std::invalid_argument("invalid pending action kind or source");
     a.kind=static_cast<PendingActionKind>(kind);
     j.at("amount").get_to(a.amount); j.at("status").get_to(a.status); j.at("sourceMonster").get_to(a.sourceMonster);

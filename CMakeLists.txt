@@ -146,6 +146,14 @@ add_test(NAME strike_count COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
 set_tests_properties(strike_count PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(pile_cost_reset_test tests/pile_cost_reset_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(pile_cost_reset_test PRIVATE include json/include)
+add_test(NAME pile_cost_reset COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:pile_cost_reset_test>)
+set_tests_properties(pile_cost_reset PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(panache_test tests/panache_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(panache_test PRIVATE include json/include)

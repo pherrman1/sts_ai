@@ -21227,6 +21227,81 @@ and drops the autoplayed card from its own count. Checked by `tests/strike_count
 `lastTargetedMonster` difference is not part of this: Java's `PlayTopCardAction` writes no last-target field.
 **Unverified:** effect on win rate (expected tiny; Perfected Strike decks only). No seeds were driven (unit-test seed
 111200141).
+## §554 — Discovery parity: frame-dependent cardRandomRng and pile turn-cost reset (2026-10-19)
+
+**Question:** why do Discovery picks leave `cardRandomRng` at counter 185-194 in Java and 3-4 natively, and why does
+the played Discovery copy show `costForTurn` 1 in Java's discard pile and 0 natively (§536, §544, §545 list)?
+Philipp asked 2026-10-19 08:34Z for one fix thread per open parity problem.
+**Setup:** `javap -c -p -constants` on the pinned JAR (`cfad868a…1673`, V2.3.4) and the installed mod JARs on
+Philipp's PC (read-only), plus the canary-2 traces (trace8 steps 134-141, trace9 steps 20-21) and overnight seed
+111194452 segment 1 steps 55-56.
+**Result:** `DiscoveryAction.update` runs its generator on every frame before its duration check. The choice screen
+pauses the action queue, so the offered set comes from the first frame (+3/+4 draws, matching native); after the pick
+the action keeps generating and discarding three cards per frame until its 0.25 s duration ends (240 fps limit: about
+180 draws; seen +181, +183, +191). No mod reads `cardRandomRng`. Picks via Attack, Skill, Power and Colorless Potion
+use the same action. The copy matches (turn cost 0; with a full hand `ShowCardAndAddToDiscardEffect` adds a
+stat-equivalent copy straight to the discard pile). The `costForTurn` mismatch was the *played* copy: the card lands
+in the discard pile through a `Soul`, and `Soul.update` calls `clearPowers` -> `resetAttributes` (also on the draw-pile
+soul paths and in `ExhaustCardEffect.update`). Native kept the turn cost until end of turn.
+**Interpretation:** the post-pick `cardRandomRng` state is frame-dependent and cannot be reproduced; the probe now
+reports that stream as unobservable on a Discovery pick (probe-only, no flag). `STS_PILE_COST_RESET_FIX` (default on,
+`=0` restores) resets the turn cost when a card lands in the discard, draw or exhaust pile; the draw-pile placements
+also report the reset card to Silver's known-card tracker. Runs diverge from the legacy engine (review: 3 of 4 A0 seeds,
+`=0` byte-identical to main on 6 seeds); **Inference:** mostly through search-state identity, since discard and exhaust
+cards now carry their reset cost. The game-rule effect needs a card with a changed turn cost (Discovery copy,
+Enlightenment, Mummified Hand, Infernal Blade) to come back from a pile in the same turn.
+**Unverified:** how often that changes outcomes. The 9 End Turn draw differences after a Discovery (§544) were
+not Discovery: the old importer aliased Matryoshka (enum 147) onto Warped Tongs, whose start-of-turn upgrade draws
+`shuffleRng`. With the probe at main `815c019a` (`STS_IMPORTER_HIGH_RELIC_FIX`, §545) trace8 step 141 and trace9
+step 0 match; with `STS_IMPORTER_HIGH_RELIC_FIX=0` both reproduce the canary diff.
+Seeds: 111200161 (unit test only, no gameplay).
+## §553 — Gambler's Brew selection refused live because of Toy Ornithopter's queued heal (2026-10-19)
+
+**Question:** why did live seed 111200384 (Act 1 floor 16, Slime Boss, release 1e2cad47) stop twice on a Gambler's Brew
+hand selection with `silver_selection_pending_actions` (problem 28 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Result:** both stops held Toy Ornithopter. Game bytecode (jar sha256 cfad868a…1673, relayed from Philipp's PC to
+`engine-parity/overnight-20261019/issue28-javap.md`): `ToyOrnithopter.onUsePotion` in combat queues
+`RelicAboveCreatureAction` and `HealAction(p, p, 5)` with `addToBot`, behind the Brew's `GamblingChipAction`, so the heal
+is still in `actionManager.actions` while the selection is open. `HealAction` was not in the inspector's public pending
+action whitelist, so `handMultiContinuation("GAMBLE")` returned null. The stale `curCardQueueItem` (Iron Wave, Defend)
+was not the cause: this path does not read it. The engine already queues the same victory-surviving heal after the
+potion effect in `drinkPotion`.
+**Interpretation:** the inspector emits the heal as public pending action `HEAL_PLAYER` (amount 5, only with Toy
+Ornithopter, source and target the player); the wire maps it to `HealPlayer(5, executeAfterCombatVictory=true)`.
+`STS_SELECTION_TOY_HEAL_FIX` (default on, `=0` restores the refusal) gates the importer. Refusals now carry
+`pendingActionsBlocker`, naming queue state and action classes, so the next unsupported tail is identified from the
+failure dump. `live_silver_importer` and `silver_wire_state` tests cover import, both flag values, bad amounts, wire
+round trip and that a plain (non-Toy) heal stays unobserved. **Unverified:** the Java change is not compiled or run
+here (no game jar in the cloud); live confirmation needs a reinstall.
+Seeds: none driven (unit tests only; 111200431-440 reserved, unused).
+## §552 — Blood Potion keep value refit for the fixed in-combat heal: 1163 -> 834 (2026-10-19)
+
+**Question:** `potionKeepRank` (ADR-0039) ranked Blood Potion first (1163) from CTM fights played with the legacy
+in-combat heal (40% of max HP without Sacred Bark, fixed by `STS_BLOOD_POTION_HEAL_FIX`, §544). What is its value
+under the fixed heal? Carried-over item of the overnight parity list (§545), asked by Philipp 2026-10-19 08:34Z
+("Open fix threads for all of the things which are not fixed").
+**Bound (no seeds):** re-extracting the ADR-0039 corpora reproduces both fits exactly. At A20 a held Blood Potion is
+drunk in 75% of fights and the old heal adds 12.16 HP per held fight beyond the fixed one, but 42% of drinking
+fights end at max HP. Removing the whole excess (`tools/potion_keep/blood_heal_bound.py`) leaves a value between 0.9
+and 11.6: too wide to rank.
+**Probe:** `potionpriceprobe` with the new `EXTRA addpot:BLOOD_POTION` copy (research only), one fight ahead,
+student_sel OOC, OOC MCTS off, A20, current Silver defaults, each seed run with the heal fix on and off. Seeds
+111200191–111200210, 40/40 runs rc=0, ~100 states per regime. Value (HP + 53 × survived): fix on 8.90, off 12.72;
+change **−3.82 [−5.43, −2.28]** (seed bootstrap); on the 91 start states identical in both regimes, −4.03 (sd 7.39).
+**Result:** A20 value 14.12 − 3.82; A0 shifted by −3.82 × 0.721 (**Inference:** scaled by the old excess heal per
+held fight, A0 not probed); mean 8.34, rank **834** (**Inference:** applying the probe's causal change to the
+observational regression value assumes both shift equally) (`STS_POTION_KEEP_BLOOD_REFIT`, default on, `=0` restores
+1163). Blood Potion now ranks second, below Fruit Juice (924) and above Heart of Iron (666). Under the 0.721 A0
+scaling the rank stays between ~696 and ~967 across the CI, so only its order against Fruit Juice is uncertain.
+At the point estimate, A0 shifts from none to the full A20 change give ~781–972; combined with the CI, ~620–1049,
+which reaches below Heart of Iron (full A0 shift) and above Fruit Juice (no A0 shift). A0 is likely a bit higher
+than scaled (51% of A0 drinking fights end at max HP vs 42%). Play-changing only where a
+reward or discard choice involves Blood Potion. No game test of playing strength. The §510 and §537 Blood prices
+stay descriptive and biased (no code reads them).
+[README](evidence/blood_potion_keep_refit_20261019/README.md), `delta.txt`, `bound-fits.txt`, `probe-csv.tar.gz`.
+**Knowledge impact:** `operations/environment-variables.md` (`STS_POTION_KEEP_BLOOD_REFIT`),
+`architecture/out-of-combat.md` (pickup paragraph), `tools/potion_keep/combine.py`.
 ## §551 — Overnight live play: Panache refused by the live importer and miscounted by the engine (2026-10-19)
 
 **Question:** why did live run 111194463 stop at Act 3 floor 40 (`silver_unmapped_player_power`, problem 21 in
@@ -21362,7 +21437,7 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
-## §549 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
+## §555 — Monster RNG and state gaps from overnight live play and canary 2 (2026-10-19)
 
 **Question:** do four small monster-side parity differences (overnight list problems 4 and 6, canary-2 Mugger `aiRng` and
 Two Thieves `miscBits`) come from the engine, the importer or the probe? Philipp asked 2026-10-19 08:34Z for fix threads

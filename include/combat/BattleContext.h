@@ -117,6 +117,17 @@ namespace sts {
     // when an autoplayed Perfected Strike is used or the importer recounts.
     bool strikeCountFix();
 
+    // STS_PILE_COST_RESET_FIX: unset/1 (default) = a card that lands in the
+    // discard, draw or exhaust pile mid-turn gets costForTurn = cost, as in the
+    // game (Soul.update calls clearPowers -> resetAttributes when the card
+    // lands; ExhaustCardEffect.update calls resetAttributes; combat parity
+    // canary 2 2026-10-19: a played 0-cost Discovery Power Through shows
+    // costForTurn 1 in the discard pile). Cards created straight into a pile
+    // (ShowCardAndAddToDiscardEffect etc.) keep their cost. 0 = the legacy
+    // engine, which kept the turn cost until the end of turn. Other values are
+    // fatal. Read only when a moved card's costForTurn differs from its cost.
+    bool pileCostResetFix();
+
     // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
     // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
     // upgraded, as in the game (ArmamentsAction checks c.canUpgrade(); live
