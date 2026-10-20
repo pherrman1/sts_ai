@@ -1085,7 +1085,7 @@ def boss_completion_proceed_action(screen: Mapping[str, Any], game: Mapping[str,
     hp = game.get("current_hp", screen.get("current_hp"))
     ascension = game.get("ascension_level", game.get("ascension", screen.get("ascension_level")))
     # The Heart is Act 4's fourth room after the VictoryRoom: floor 56 at A20
-    # (Act 3's second boss shifts it), floor 55 below.
+    # (Act 3's second boss shifts it), floor 55 below (inferred, not seen live).
     heart = (type(act) is int and act == 4 and type(floor) is int and type(ascension) is int
              and 0 <= ascension <= 20 and floor == (56 if ascension == 20 else 55))
     if (not heart and (type(act) is not int or act != 3 or type(floor) is not int or floor not in (50, 51)

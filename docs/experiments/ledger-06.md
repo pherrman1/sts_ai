@@ -22016,7 +22016,8 @@ live error exactly.
 Live retest (canary, restored pre-Heart save of the same seed, advisor 4ef863d9 plus this importer hunk): the advisor
 chose `Boss!`, the Heart imported and Silver won it (turn 8, 65/75 HP, true victory, floor 57). The completed boss room
 after the kill was refused (`NATIVE_SCREEN_UNSUPPORTED:COMPLETE`, problem 52): the live driver's boss-completion
-Proceed qualified only Act 3. It now also qualifies the completed Heart room (Act 4 floor 56 at A20, 55 below), with
+Proceed qualified only Act 3. It now also qualifies the completed Heart room (Act 4 floor 56 at A20, live-evidenced; floor 55 below A20
+is **Inference** from the floor arithmetic, not observed live), with
 the same empty-surface checks (UI navigation only, no flag).
 **Interpretation:** `STS_IMPORTER_ACT4_BOSS_MAP_FIX` (default on, `=0` restores the error) remaps exactly that sole
 public choice to option 3 in the importer; the advisor passes it through as `forced_no_search` (`choose 1`). No mod
@@ -22025,6 +22026,7 @@ change. Play-changing for the live advisor at that one Act 4 decision only.
 Seeds: none new (live seed 111200440 as reported; protocol test only).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md` (incl. the driver's
 boss-completion rule).
+
 ## §575 — Live Silver: Warcry drawing Void under Evolve refused its put-on-top choice (2026-10-20)
 
 **Question:** why did live seed 111200440 (release 0582219a, floor 50, Awakened One form 2) stop with
