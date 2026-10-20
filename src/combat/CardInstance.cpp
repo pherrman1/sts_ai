@@ -139,6 +139,8 @@ void CardInstance::upgrade() {
 
     // todo assert not upgraded here?
     // not sure where this is used
+    const bool costDeltaFix = upgradeCostDeltaFix();
+    bool costHandled = false;
 
     switch (id) {
         case CardId::SEARING_BLOW:
@@ -146,7 +148,13 @@ void CardInstance::upgrade() {
             break;
 
         case CardId::BLOOD_FOR_BLOOD: // the game upgrades the cost to 3 if the cost is over 4 but would it ever be higher?
-            if (!isUpgraded() && cost < 4 && cost > 0) {
+            if (!isUpgraded() && costDeltaFix) {
+                // Java BloodForBlood.upgrade: upgradeBaseCost(cost < 4 ? cost-1 : 3), then cost >= 0,
+                // so a damage-taken reduction survives the upgrade.
+                upgradeBaseCost(cost < 4 ? cost-1 : 3);
+                if (cost < 0) cost = 0;
+                costHandled = true;
+            } else if (!isUpgraded() && cost < 4 && cost > 0) {
                 upgradeBaseCost(cost-1);
             }
             break;
@@ -166,8 +174,13 @@ void CardInstance::upgrade() {
         upgraded = true;
         // TODO(dmz) is this logic right?
         int newcost = getEnergyCost(id, true);
-        if (getEnergyCost(id, false) != newcost) {
-            cost = costForTurn = newcost;
+        if (getEnergyCost(id, false) != newcost && !costHandled) {
+            if (costDeltaFix) {
+                // Java upgradeBaseCost keeps a turn-cost modification (costForTurn - cost).
+                upgradeBaseCost(newcost);
+            } else {
+                cost = costForTurn = newcost;
+            }
         }
     }
 }

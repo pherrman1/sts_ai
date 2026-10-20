@@ -32,6 +32,13 @@ namespace sts {
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
 
+    bool upgradeCostDeltaFix() {
+        const char *value = std::getenv("STS_UPGRADE_COST_DELTA_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_UPGRADE_COST_DELTA_FIX must be 0 or 1");
+    }
+
     bool panacheFix() {
         const char *value = std::getenv("STS_PANACHE_FIX");
         if (!value || !*value || std::string(value) == "1") return true;

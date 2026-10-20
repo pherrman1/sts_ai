@@ -71,6 +71,15 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_UPGRADE_COST_DELTA_FIX: unset/1 (default) = an in-combat upgrade
+    // (Armaments, Apotheosis, ...) changes cost as Java upgradeBaseCost does:
+    // Blood for Blood takes cost-1 from its current cost (keeping a
+    // damage-taken reduction; live parity problem 59, seed 111200448), and a
+    // cost-changing upgrade keeps the card's costForTurn - cost difference.
+    // 0 = the legacy engine, which reset both costs to the upgraded base.
+    // Other values are fatal. Read on every CardInstance::upgrade.
+    bool upgradeCostDeltaFix();
+
     // STS_DEAD_MONSTER_BLOCK_FIX: unset/1 (default) = queued monster block
     // (Curl Up, Malleable, Guardian mode shift, block moves) does nothing once
     // the monster is dead, as in GainBlockAction.update (skips isDying or
