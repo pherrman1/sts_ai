@@ -22001,6 +22001,32 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
+
+**Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
+`OOC_ACTION_MAPPING` "unexpected option 0" (problem 51 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's untrimmed observation (`issue51-observation.json`, sha256 9422c6b3…16af8, now
+`tests/fixtures/live_act4_heart_map.json`); `LiveOocCapture.mapScreen`, `GameContext::mapMoveCost`, `Map::act4Map`;
+`live_ooc_protocol` (no gameplay seeds).
+**Result:** MCP shows the Heart only as the choice `Boss!` (`boss_available`, empty `next_nodes`, current node (3,2)).
+The mod's boss branch qualifies a forced boss map only for acts 1-3 at row 14 and otherwise sends native option 0, the
+act 1-3 boss index. Native Act 4 reaches the boss (3,3) through the elite's single edge, so its only map action is
+option 3, and the action-set check rejected option 0. With `STS_IMPORTER_ACT4_BOSS_MAP_FIX=0` the fixture reproduces the
+live error exactly.
+Live retest (canary, restored pre-Heart save of the same seed, advisor 4ef863d9 plus this importer hunk): the advisor
+chose `Boss!`, the Heart imported and Silver won it (turn 8, 65/75 HP, true victory, floor 57). The completed boss room
+after the kill was refused (`NATIVE_SCREEN_UNSUPPORTED:COMPLETE`, problem 52): the live driver's boss-completion
+Proceed qualified only Act 3. It now also qualifies the completed Heart room (Act 4 floor 56 at A20, live-evidenced; floor 55 below A20
+is **Inference** from the floor arithmetic, not observed live), with
+the same empty-surface checks (UI navigation only, no flag).
+**Interpretation:** `STS_IMPORTER_ACT4_BOSS_MAP_FIX` (default on, `=0` restores the error) remaps exactly that sole
+public choice to option 3 in the importer; the advisor passes it through as `forced_no_search` (`choose 1`). No mod
+change. Play-changing for the live advisor at that one Act 4 decision only.
+**Open question:** the mod could send option 3 itself; the importer keeps the producer's mapping for any other shape.
+Seeds: none new (live seed 111200440 as reported; protocol test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md` (incl. the driver's
+boss-completion rule).
+
 ## §575 — Live Silver: Warcry drawing Void under Evolve refused its put-on-top choice (2026-10-20)
 
 **Question:** why did live seed 111200440 (release 0582219a, floor 50, Awakened One form 2) stop with
