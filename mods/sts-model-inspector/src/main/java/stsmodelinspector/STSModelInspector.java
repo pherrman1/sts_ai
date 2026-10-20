@@ -3075,10 +3075,30 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append("actions=[");
         for(int i=0;i<manager.actions.size() && i<16;++i) {
             if(i>0)out.append(',');
-            out.append(manager.actions.get(i).getClass().getSimpleName());
+            Object action=manager.actions.get(i);
+            String className=action.getClass().getName();
+            out.append(className.startsWith("com.megacrit.cardcrawl.")?action.getClass().getSimpleName():className);
+            if(className.endsWith("PowerAction"))out.append('(').append(powerActionDetail(action)).append(')');
         }
         if(manager.actions.size()>16)out.append(",...");
         return out.append(']').toString();
+    }
+
+    // Diagnostic only: which power a queued power action names, and for whom.
+    private static String powerActionDetail(Object action) {
+        Object power=readObjectField(action,"powerInstance"), toApply=readObjectField(action,"powerToApply");
+        Object target=readObjectField(action,"target"), source=readObjectField(action,"source");
+        String id=readStringField(action,"powerID");
+        if(id==null && power instanceof AbstractPower)id=((AbstractPower)power).ID;
+        if(id==null && toApply instanceof AbstractPower)id=((AbstractPower)toApply).ID;
+        return "power="+id+" amount="+readIntField(action,"amount")+" target="+creatureLabel(target)+" source="+creatureLabel(source);
+    }
+
+    private static String creatureLabel(Object creature) {
+        if(creature==null)return "null";
+        if(creature==AbstractDungeon.player)return "player";
+        if(creature instanceof AbstractMonster)return ((AbstractMonster)creature).id;
+        return creature.getClass().getSimpleName();
     }
 
     static String pendingActionsRejection() {
