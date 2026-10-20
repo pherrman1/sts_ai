@@ -143,6 +143,13 @@ namespace sts {
         throw std::runtime_error("STS_AUTOPLAY_QUEUE_ORDER_FIX must be 0 or 1");
     }
 
+    bool purgeCopyCanUseFix() {
+        const char *value = std::getenv("STS_PURGE_COPY_CAN_USE_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_PURGE_COPY_CAN_USE_FIX must be 0 or 1");
+    }
+
     bool magnetismFix() {
         const char *value = std::getenv("STS_MAGNETISM_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -1061,7 +1068,12 @@ void BattleContext::playCardQueueItem(CardQueueItem playItem) {
 
 //    bool canPlayCard = false; // not really sure what this is used for
     const bool chokerAllowsPlay = !player.hasRelic<R::VELVET_CHOKER>() || player.cardsPlayedThisTurn < 6;
-    const bool canUseCard = item.purgeOnUse || (item.triggerOnUse && chokerAllowsPlay && c.canUse(*this, item.target, item.autoplay) && (!c.requiresTarget() || monsters.arr[item.target].isTargetable()));
+    // GameActionManager.getNextAction: canPlayCard = canUse || dontTriggerOnUseCard,
+    // with no purgeOnUse exception, so a replay copy (Duplication, Double Tap,
+    // Burst, Echo Form, Necronomicon) is also stopped by Velvet Choker, a dead
+    // target or any other canUse failure (STS_PURGE_COPY_CAN_USE_FIX).
+    const bool purgeBypass = item.purgeOnUse && !purgeCopyCanUseFix();
+    const bool canUseCard = purgeBypass || (item.triggerOnUse && chokerAllowsPlay && c.canUse(*this, item.target, item.autoplay) && (!c.requiresTarget() || monsters.arr[item.target].isTargetable()));
     if (canUseCard) { // not sure if this is correct,
 //        canPlayCard = true; // what is this for......
 
@@ -1079,7 +1091,9 @@ void BattleContext::playCardQueueItem(CardQueueItem playItem) {
 
     }
 
-    if (!canUseCard && item.triggerOnUse && item.autoplay && unplayableAutoplayFix()) {
+    // A purge copy that cannot be used only poofs (UseCardAction: purgeOnUse ->
+    // ShowCardAndPoofAction); it never reaches a pile.
+    if (!canUseCard && !item.purgeOnUse && item.triggerOnUse && item.autoplay && unplayableAutoplayFix()) {
         // GameActionManager: an autoplayed card that cannot be used gets
         // dontTriggerOnUseCard and a UseCardAction at the bottom, which only
         // routes it (UseCardAction's exhaustCard = exhaustOnUseOnce || exhaust).
