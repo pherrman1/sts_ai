@@ -1,6 +1,6 @@
 # A20 winrate check of the current best stack (2026-10-18)
 
-Status: frozen before launch. Descriptive measurement, no comparison arm, no default change. Ledger §TBD.
+Status: frozen before launch. Descriptive measurement, no comparison arm, no default change. Ledger §566.
 
 Authorization: Philipp, 2026-10-18 01:00Z, thread "A20 winrate check": "can you run an a20 stack on 512 seeds on 16
 workers, 4 threads each. i just want to verify the current winrate. gimme the best stack and a paramters for that."

@@ -21744,7 +21744,7 @@ longer emits; left as representation-only. No gameplay seeds were run; the unit 
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
 
-## §TBD — A20 winrate check of the best stack: 90/512 Heart kills = 17.6% with OOC MCTS 4096 and flat 10k Silver (2026-10-19)
+## §566 — A20 winrate check of the best stack: 90/512 Heart kills = 17.6% with OOC MCTS 4096 and flat 10k Silver (2026-10-19)
 
 **Question (Philipp, 2026-10-18 01:00Z, thread "A20 winrate check"):** "can you run an a20 stack on 512 seeds on 16
 workers, 4 threads each. i just want to erify the current winrate. gimme the best stack and a paramters for that."
