@@ -14,6 +14,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace sts;
@@ -105,8 +106,35 @@ static void check(bool fixed, bool orderFixed) {
     check(fixed);
 }
 
+// An autoplayed Strike whose target already died (Java cardPlayable: isDying)
+// is routed hook-free; a half-dead target keeps the legacy path (the game
+// would use the card normally). Returns {exhausted Strikes, damage dealt}.
+static std::pair<int, int> deadTargetStrike(bool halfDead) {
+    GameContext gc(CharacterClass::IRONCLAD, SEED, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::TWO_LOUSE);
+    bc.inputState = InputState::EXECUTING_ACTIONS;
+    bc.executeActions();
+    auto &m = bc.monsters.arr[1];
+    m.curHp = 0;
+    m.halfDead = halfDead;
+    --bc.monsters.monstersAlive;
+    bc.cards.createTempCardOnDrawPileTop(CardInstance(CardId::STRIKE_RED));
+    const int hp0 = bc.monsters.arr[0].curHp;
+    bc.addToBot(Actions::PlayTopCard(1, true));
+    bc.inputState = InputState::EXECUTING_ACTIONS;
+    bc.executeActions();
+    return {countId(bc.cards.exhaustPile, CardId::STRIKE_RED), hp0 - bc.monsters.arr[0].curHp};
+}
+
 static void check(bool fixed) {
     using C = CardId;
+    {
+        const auto dead = deadTargetStrike(false);
+        require(dead.first == (fixed ? 1 : 0) && dead.second == 0, "Strike at a dead target exhausted hook-free");
+        const auto half = deadTargetStrike(true);
+        require(half.first == 0 && half.second == 0, "half-dead target keeps the legacy path");
+    }
     const int on = fixed ? 1 : 0;
     {
         // Problem 41 steps 204/229: Havoc+ plays Burn, which is exhausted.

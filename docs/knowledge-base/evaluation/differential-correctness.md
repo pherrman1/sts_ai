@@ -333,7 +333,13 @@ no `onUseCard`/`onAfterUseCard` hooks, but the action still routes it
 (exhaust when `exhaustOnUseOnce || exhaust`, Strange Spoon on cardRandomRng
 for non-powers, otherwise discard; powers leave combat).
 `STS_UNPLAYABLE_AUTOPLAY_FIX` (default on, `=0` restores) does this
-(`tests/unplayable_autoplay_test.cpp`). Problem 44 (seed 111200436, Distilled
+(`tests/unplayable_autoplay_test.cpp`). Java `cardPlayable` also rejects a
+targeted card whose target `isDying` (or when every monster is dying or
+escaping), so an autoplay at an already-dead target takes the same path. It
+does not reject a half-dead (Darkling, Awakened One; `isDying` stays false at
+0 HP) or escaping target: the game uses that card normally. The engine does
+not model that case and keeps its legacy behavior there (Open question for a
+later fix). Problem 44 (seed 111200436, Distilled
 Chaos over Ascender's Bane, Defend, Shrug It Off) hit the same path and showed
 a second difference: the game discarded Bane, Defend, Shrug, native Shrug then
 Defend. `PlayTopCardAction` queues `NewQueueCardAction(card, target, false,

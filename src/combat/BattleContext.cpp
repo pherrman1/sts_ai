@@ -1063,7 +1063,16 @@ void BattleContext::playCardQueueItem(CardQueueItem playItem) {
         // GameActionManager: an autoplayed card that cannot be used gets
         // dontTriggerOnUseCard and a UseCardAction at the bottom, which only
         // routes it (UseCardAction's exhaustCard = exhaustOnUseOnce || exhaust).
-        addToBot( Actions::UnplayableAutoplayUseCard(c, item.exhaustOnUse || c.doesExhaust()) );
+        // Java cardPlayable rejects a dying target, but not a half-dead
+        // (isDying stays false at 0 HP) or escaping one: the game uses that
+        // card normally, which this path does not model, so it keeps the
+        // legacy engine behavior.
+        const bool halfDeadOrEscapingTarget = c.requiresTarget() && item.target >= 0
+            && (monsters.arr[item.target].isHalfDead() || monsters.arr[item.target].isEscaping())
+            && !monsters.areMonstersBasicallyDead();
+        if (!halfDeadOrEscapingTarget || !chokerAllowsPlay) {
+            addToBot( Actions::UnplayableAutoplayUseCard(c, item.exhaustOnUse || c.doesExhaust()) );
+        }
     }
 
     if (!item.triggerOnUse) {
