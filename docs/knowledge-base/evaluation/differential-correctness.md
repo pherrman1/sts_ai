@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode).
 
 ## Purpose
 
@@ -321,6 +321,19 @@ bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
 top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
 won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
 `=0` restores) plays it after the draw.
+
+A run on 2026-10-20 (seed 111200429, The Guardian, problem 39) played
+Magnetism on turn 1; every later end-turn verdict had a six-card game hand
+against a five-card native hand, with cardRandomRng diverging at the same
+steps. The engine never implemented `MagnetismPower.atStartOfTurn` (the case
+was a commented-out no-op), so it neither added the card nor rolled
+cardRandomRng. The game, unless the monsters are basically dead, rolls
+`returnTrulyRandomColorlessCardInCombat()` (cardRandomRng, the 34-card
+non-healing colorless pool) once per stack immediately and queues
+`MakeTempCardInHandAction` at the bottom, ahead of the turn's draw; Master
+Reality upgrades the card and a full hand sends it to the discard pile.
+`STS_MAGNETISM_FIX` (default on, `=0` restores) implements this
+(`tests/magnetism_start_of_turn_test.cpp`).
 
 A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
 Panache, because the live importer refused it. Java `PanachePower.amount` is

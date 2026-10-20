@@ -8,6 +8,7 @@
 #include <combat/BattleContext.h>
 #include <combat/Actions.h>
 #include "combat/Player.h"
+#include "game/Game.h"
 
 using namespace sts;
 
@@ -626,7 +627,15 @@ void Player::applyStartOfTurnPowers(BattleContext &bc) {
                 break;
 
             case PS::MAGNETISM:
-//                bc.addToBot( Actions::SetState(InputState::CREATE_RANDOM_CARD_IN_HAND_COLORLESS, pair.second) );
+                // MagnetismPower.atStartOfTurn rolls each card from
+                // cardRandomRng immediately and queues MakeTempCardInHandAction
+                // at the bottom (ahead of the turn's draw).
+                if (magnetismFix() && !bc.monsters.areMonstersBasicallyDead()) {
+                    for (int i = 0; i < pair.second; ++i) {
+                        const auto cid = getTrulyRandomColorlessCardInCombat(bc.cardRandomRng);
+                        bc.addToBot( Actions::MakeTempCardInHand(cid, hasStatus<PS::MASTER_REALITY>()) );
+                    }
+                }
                 break;
 
             case PS::MAYHEM:
