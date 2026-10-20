@@ -2065,6 +2065,17 @@ int main(int argc, char **argv) {
                 bc.monsters.arr[0].materializePendingMove(bc);
                 if(javaMoveByte("TheGuardian",bc.monsters.arr[0].moveHistory[0])!=target || (phase && bc.aiRng!=rng))
                     throw std::runtime_error("Guardian phase consumed RNG or changed move");
+                if(phase==0) {
+                    // An exhausted Mode Shift without its queued shift
+                    // (GUARDIAN_DEFENSIVE_SHIFT) is refused at a normal decision.
+                    for(const int amount:{0,-3}) {
+                        auto unqueued=obs;
+                        unqueued["silverRoot"]["combat"]["monsters"][0]["powers"].back()["amount"]=amount;
+                        const auto refused=one_combat::advisor::importSilverRoot(unqueued);
+                        if(refused.ok || refused.reason!="silver_unmapped_monster_power")
+                            throw std::runtime_error("unqueued exhausted Mode Shift accepted: "+refused.reason);
+                    }
+                }
                 if(phase==4) {
                     c["monsters"][0]["powers"].push_back({{"id","Mode Shift"},{"amount",1}});
                     if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("Guardian contradictory forced defense accepted");
@@ -2609,6 +2620,40 @@ int main(int argc, char **argv) {
         if (!halfDeadImported.ok || !halfDeadImported.wire.monsters[0].halfDead
             || halfDeadImported.wire.monstersAlive != 2)
             throw std::runtime_error("half-dead monster state was not preserved");
+        {
+            // Java publishes a fleeing thief as dead (isDeadOrEscaped) with HP
+            // left before "escaping" (AbstractMonster.escaped) flips at the end
+            // of the escape animation; the live target list already drops it.
+            auto fleeing = multi.observation;
+            auto &fleeingCombat = fleeing["silverRoot"]["combat"];
+            fleeingCombat["monsters"][0]["dead"] = true;
+            fleeingCombat["monsters"][0]["escaping"] = false;
+            fleeingCombat["monstersAlive"] = 2;
+            for (const char *flag : {"1", "0"}) {
+                setenv("STS_IMPORTER_ESCAPING_MONSTER_FIX", flag, 1);
+                const bool fixed = std::string(flag) == "1";
+                one_combat::advisor::SilverImportContext context;
+                const auto imported = one_combat::advisor::importSilverRoot(fleeing, context);
+                if (!imported.ok || imported.wire.monstersAlive != 2
+                    || imported.wire.monsters[0].isEscapingB != fixed
+                    || imported.wire.monsters[0].curHp <= 0)
+                    throw std::runtime_error(std::string("fleeing monster import, flag=") + flag);
+                SilverSearchSession session;
+                const auto decision = session.decide(imported.wire, 200);
+                if (!decision.accepted) throw std::runtime_error("fleeing monster search: " + decision.failureReason);
+                bool targetedFleeing = false, unlowered = false;
+                for (const auto &action : decision.legalActions) {
+                    targetedFleeing = targetedFleeing || action.target == 0;
+                    const auto live = one_combat::advisor::selectedLiveAction(action, context, fleeing);
+                    unlowered = unlowered || live.is_null();
+                    if (!live.is_null() && action.target > 0 && live.value("targetIndex", -1) != action.target)
+                        throw std::runtime_error("fleeing monster shifted the live target index");
+                }
+                if (fixed ? (targetedFleeing || unlowered) : !(targetedFleeing && unlowered))
+                    throw std::runtime_error(std::string("fleeing monster targeting, flag=") + flag);
+            }
+            unsetenv("STS_IMPORTER_ESCAPING_MONSTER_FIX");
+        }
         const auto multiHit = multiHitFixture();
         auto multiHitImported = one_combat::advisor::importSilverRoot(
             genericObservation(multiHit, "multi-hit-damage-entry"));

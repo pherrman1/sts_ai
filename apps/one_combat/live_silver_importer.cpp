@@ -373,6 +373,18 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_ESCAPING_MONSTER_FIX: unset/1 (default) = a monster that Java
+// reports dead (isDeadOrEscaped) with HP left, not half dead and not yet
+// "escaping" (the escape animation is still running) is imported as escaping;
+// 0 = legacy, where it stayed a targetable live monster natively while the
+// live target list had already dropped it (silver_live_action_lowering).
+bool escapingMonsterFix() {
+    const char *value = std::getenv("STS_IMPORTER_ESCAPING_MONSTER_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_ESCAPING_MONSTER_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_CENTENNIAL_USED_FIX: unset/1 (default) = Centennial Puzzle
 // needs the producer's usedThisCombat and gets no relic bit once it fired, as
 // native clears the bit on its first HP loss; 0 = legacy, the bit stays set and
@@ -1606,6 +1618,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         m.curHp = item.value("hp", 0); m.maxHp = item.value("maxHp", 0); m.block = item.value("block", 0);
         m.isEscapingB = item.value("escaping", item.value("escaped", false)); m.halfDead = item.value("halfDead", false);
+        // Java's "escaping" is AbstractMonster.escaped, set only when the
+        // escape animation ends; "dead" is isDeadOrEscaped(), which already
+        // includes isEscaping. A fleeing monster with HP left is untargetable.
+        if (escapingMonsterFix() && !m.isEscapingB && !m.halfDead && m.curHp > 0
+            && item.value("dead", false))
+            m.isEscapingB = true;
         m.escapeNext = item.value("escapeNext", false);
         if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
             return unsupported("silver_unmapped_monster_state");
@@ -1947,6 +1965,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         wire.pendingCardQueueObserved = true;
     }
+    bool guardianShift=false;
     if (combat.contains("pendingActionQueue")) {
         using K=silver_bridge::PendingActionKind;
         const auto &queue=combat.at("pendingActionQueue");
@@ -1974,7 +1993,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"USE_CARD",K::USE_CARD},
             {"REMOVE_PEN_NIB",K::REMOVE_PEN_NIB},{"REMOVE_PLAYER_DEBUFFS",K::REMOVE_PLAYER_DEBUFFS}};
         int cleanups=0;
-        bool reactiveRoll=false,guardianShift=false;
+        bool reactiveRoll=false;
         for(const auto &entry:queue) {
             if(!entry.is_object() || !entry.contains("kind") || !entry.at("kind").is_string()) return unsupported("silver_selection_pending_actions");
             // Monster on-hit reactions (Java addToBot) queued behind an
@@ -2117,14 +2136,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             wire.pendingActionQueue.push_back(action);
         }
         if(sourceCard && cleanups!=1)return unsupported("silver_selection_pending_actions");
-        // An exhausted Mode Shift must come with its queued shift.
-        for(int i=0;i<wire.monsterCount;++i) {
-            const auto &m=wire.monsters[i];
-            if(!guardianShift && m.id==static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN) && m.curHp>0
-                    && (m.statusBits & (1ULL<<static_cast<int>(sts::MonsterStatus::MODE_SHIFT))) && m.uniquePower0<=0)
-                return unsupported("silver_selection_pending_actions");
-        }
         wire.pendingActionQueueObserved=true;
+    }
+    // An exhausted Mode Shift must come with its queued shift
+    // (GUARDIAN_DEFENSIVE_SHIFT); Java resolves the shift before any other
+    // decision, so anywhere else it is not a representable state.
+    for(int i=0;i<wire.monsterCount;++i) {
+        const auto &m=wire.monsters[i];
+        if(!guardianShift && m.id==static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN) && m.curHp>0
+                && (m.statusBits & (1ULL<<static_cast<int>(sts::MonsterStatus::MODE_SHIFT))) && m.uniquePower0<=0)
+            return unsupported(combat.contains("pendingActionQueue")?"silver_selection_pending_actions":"silver_unmapped_monster_power");
     }
     if(cardSelect && (selectionIt->value("continuation",std::string())=="public_actions"
             || selectionIt->value("continuation",std::string())=="toolbox_actions"

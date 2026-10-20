@@ -43,6 +43,13 @@ class ScreenLeafGbm;
 class RolloutStudent;
 struct CompactTreeNet;
 class HeartLeafModel;
+// Learned OOC stop (STS_OOC_MCTS_LEARNED_STOP): features in tools/ooc_learned_stop.py order, model loader,
+// and the ooclearnedstoptest parity command.
+std::vector<float> oocLearnedStopFeatures(std::uint64_t simulations,
+                                          const std::vector<sts::search::OocRootActionStats> &stats,
+                                          int act, int floor, int screen);
+std::shared_ptr<const CompactTreeNet> loadOocLearnedStopNet(const std::string &path);
+int oocLearnedStopTestCommand(int argc, char **argv);
 // Borrowed inputs/results for a synchronous diagnostic. References must not be
 // retained after the observer returns; hidden state/RNG are replay metadata.
 struct OocLeafObservation {
