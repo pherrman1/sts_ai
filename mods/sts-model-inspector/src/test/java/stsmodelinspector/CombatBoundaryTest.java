@@ -245,6 +245,8 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_WOUNDS",3,null)!=null
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",1,null)==null
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",2,null)!=null
+                || STSModelInspector.publicPendingActionJson("LOSE_ENERGY",1,null)==null
+                || STSModelInspector.publicPendingActionJson("LOSE_ENERGY",2,null)!=null
                 || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Echo Form")!=null
                 || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null

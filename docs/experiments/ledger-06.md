@@ -21966,3 +21966,25 @@ the candidates. Play-changing for simulator play with Mummified Hand, unmeasured
 the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
+
+## §TBD — Live Silver: Warcry drawing Void under Evolve refused its put-on-top choice (2026-10-20)
+
+**Question:** why did live seed 111200440 (release 0582219a, floor 50, Awakened One form 2) stop with
+`silver_selection_pending_actions` and pending actions `[UseCardAction, LoseEnergyAction, DrawCardAction]` (problem 50
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue50-extract.json`); read-only `javap` of the pinned JAR on Philipp's PC
+(`issue50-javap.md`): `LoseEnergyAction`, `VoidCard.triggerWhenDrawn`, `EvolvePower.onCardDraw`,
+`AbstractPlayer.draw`, `DrawCardAction`, `Warcry.use`, and every constructor of `LoseEnergyAction`;
+`live_silver_importer_test` (no gameplay seeds).
+**Result:** Warcry queues its draw, then `PutOnDeckAction`, then the `UseCardAction`. Drawing Void runs
+`triggerWhenDrawn` (`addToBot(LoseEnergyAction(1))`) before the powers' `onCardDraw` (Evolve: `addToBot(DrawCardAction(1))`
+unless No Draw), so both wait behind the put-on-top choice. The producer had no mapping for `LoseEnergyAction` (package
+`actions.unique`, amount in `energyLoss`; only Void and the Watcher's Energy Down construct it). Native
+`CardManager::draw` applies Void's loss at the draw and queues the Evolve draw, so a native Warcry leaves the tail
+`[USE_CARD, DRAW]` with the energy already lost.
+**Interpretation:** the producer emits `LOSE_ENERGY` (amount 1); `STS_SILVER_VOID_ENERGY_QUEUE` (default on, `=0`
+restores the refusal) folds it into the imported energy, and refuses it behind a pending energy gain. The folded import
+matches the native Warcry state. Changes only which live roots Silver searches.
+**Open question:** Java's `loseEnergy` clamp at 0 is inferred (not in the javap); native clamps.
+Seeds: none new (live seed 111200440 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
