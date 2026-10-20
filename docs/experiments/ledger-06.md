@@ -22000,3 +22000,22 @@ the candidates. Play-changing for simulator play with Mummified Hand, unmeasured
 the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
+
+## §574 — Live combat parity: Magnetism never added its start-of-turn card natively (2026-10-20)
+
+**Question:** why did every End Turn verdict of live seed 111200429 (release f2e3f48d, The Guardian, Magnetism 1
+played on turn 1) show a six-card game hand against a five-card native hand (problem 39 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue39-extract.json`: 7 MISMATCH verdicts, steps 212-252, RNG snapshots at steps
+203 and 213); `Player::applyStartOfTurnPowers`; `magnetism_start_of_turn` unit test (no gameplay seeds).
+**Result:** at each verdict the game's cardRandomRng counter was native + 1 (native seed1 = game seed0) and the
+extra game card was a random colorless card at hand index 0. The engine's `MAGNETISM` case was a commented-out
+no-op, so it neither rolled cardRandomRng nor added the card.
+**Interpretation:** `STS_MAGNETISM_FIX` (default on, `=0` restores) rolls
+`getTrulyRandomColorlessCardInCombat(cardRandomRng)` once per stack at the trigger, unless monsters are basically
+dead, and queues the card at the bottom ahead of the draw (Master Reality upgrades; a full hand discards).
+Play- and RNG-changing for simulator play with Magnetism, unmeasured.
+**Open question:** the Java semantics were recalled, not re-read from bytecode; the live RNG evidence (one roll per
+turn, card before the draw) agrees.
+Seeds: none new (live seed 111200429 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
