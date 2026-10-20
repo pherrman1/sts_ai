@@ -18,13 +18,17 @@ def arm(t, m, a, s):
     lines = gzip.decompress(j).splitlines(); foot = json.loads(lines[-1])
     if foot.get('type') != 'outcome' or not foot.get('complete') or not foot.get('integrityPassed'): return None, rc
     d = dict(foot=foot, wall=int(re.search(r'wall=(\d+)', done).group(1)), searched=0, fullBudget=0, aborted=0,
-             changed=0, decisions=0)
+             changed=0, decisions=0, stopRoots=0, stopSims=0, stopped=0)
     for x in lines[1:-1]:
         r = json.loads(x)
         if r.get('type') != 'decision': continue
         d['decisions'] += 1; root = r.get('root')
         if root and not root.get('singleton'):
             d['searched'] += 1; d['fullBudget'] += bool(root.get('fullBudget')); d['aborted'] += bool(root.get('aborted'))
+            # Search effort where the learned OOC stop may act (its features include root Q gaps, B's scale differs).
+            if not root.get('fullBudget') and not root.get('aborted'):
+                d['stopRoots'] += 1; d['stopSims'] += root.get('completedSimulations', 0)
+                d['stopped'] += bool(root.get('savedSimulations'))
             c = root.get('candidates', [])
             if c and root.get('selectedId') != max(c, key=lambda x: x['prior'])['id']: d['changed'] += 1
     return d, rc
@@ -42,7 +46,7 @@ for path in sorted(glob.glob(sys.argv[1] + '/w*.tar')):
         res['act1death'].append((int(b['foot']['finalAct'] == 1), int(a['foot']['finalAct'] == 1)))
         res['floor'].append((b['foot']['finalFloor'], a['foot']['finalFloor'])); res['wall'].append((b['wall'], a['wall']))
         for k, d in (('A', a), ('B', b)):
-            for f in ('decisions', 'searched', 'fullBudget', 'aborted', 'changed'):
+            for f in ('decisions', 'searched', 'fullBudget', 'aborted', 'changed', 'stopRoots', 'stopSims', 'stopped'):
                 res['data'][k][f] = res['data'][k].get(f, 0) + d[f]
 out = dict(seeds=res['seeds'], valid=res['valid'], invalid=res['invalid'])
 for k in ('heart', 'act4', 'act1death'):
@@ -59,4 +63,6 @@ h = out['heart']; ahead = h['B'] > h['A']; sig = h['mcnemar_p'] < 0.05
 out['verdict'] = ('WIN' if out['wall_s']['B_over_A'] <= 1.10 else 'WIN_AT_HIGHER_CPU') if sig and ahead else \
     'WORSE' if sig else 'NOT_SHOWN'
 out['data'] = res['data']
+out['search_effort'] = {k: dict(sims_per_stop_root=d['stopSims'] / max(d['stopRoots'], 1),
+                                early_stop_rate=d['stopped'] / max(d['stopRoots'], 1)) for k, d in res['data'].items()}
 print(json.dumps(out, indent=1))

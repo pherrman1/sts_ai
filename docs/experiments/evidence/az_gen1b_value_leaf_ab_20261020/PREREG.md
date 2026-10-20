@@ -29,6 +29,10 @@ often at A20?
 - **Scale.** X2-B is a win estimate with a mean near 0.5 on these leaves; gen 1b predicts the Heart kill (base rate
   about 0.12-0.25). Terminal leaves stay 0 (death) and 1 (Heart kill). B's Q values are therefore compressed and the
   prior weighs relatively more at the same cpuct (1.5). This is part of the intervention as asked, not corrected.
+- **Learned OOC stop.** `ooc_learned_stop_trees.txt` was trained on X2-B-scale root Q values; its features include
+  root Q gaps (`oocLearnedStopFeatures`). B's compressed Q changes those gaps, so B may stop at other points, which can
+  move both win rate and CPU. Kept as is (the ask was to swap only the end value); per-arm search effort is reported.
+  Alternatives for Philipp before the freeze: B with a rescaled value, or both arms with the learned stop off.
 - **Act 1.** The §522 Heart-leaf A/B (`heart_leaf_td2`, a P(Heart) leaf on rollout3) was NOT_SHOWN with many more
   act-1 deaths (114 vs 69 of 512). Act-1 deaths are reported as a secondary.
 - **Gen 1b's value head** passed its gate on a reused validation fold (§573) and memorises runs from epoch 2.
@@ -45,7 +49,8 @@ often at A20?
   unexpected `leaf_heart1_value=` banner). Invalid seeds are reported, not replaced.
 - **Primary:** Heart kills, B − A, paired: difference with 95% CI and exact McNemar p.
 - **Secondary:** reached Act 4; act-1 deaths (final act 1); same statistics.
-- **Descriptive:** mean floor, wall time per arm (matched CPU), searched / full-budget / aborted roots, the fraction of
+- **Descriptive:** search effort per arm on roots where the learned stop can act (not full-budget, not aborted):
+  completed simulations per root and early-stop rate (`search_effort`); mean floor, wall time per arm (matched CPU), searched / full-budget / aborted roots, the fraction of
   searched roots where the search's choice differs from the prior's argmax.
 - **Decision rule:**
   - **WIN:** McNemar p < 0.05 with B ahead on Heart kills and B's mean wall per run ≤ 1.10× A's. Then propose the
