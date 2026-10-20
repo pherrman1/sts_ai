@@ -1,0 +1,1986 @@
+{
+ "act": 4,
+ "ascension": 20,
+ "boundary": "combat",
+ "candidates": [],
+ "character": "IRONCLAD",
+ "combat": {
+  "attacksPlayedThisTurn": 0,
+  "block": 0,
+  "cardDrawPerTurn": 5,
+  "cardSelect": false,
+  "cardsDiscardedThisTurn": 0,
+  "cardsPlayedThisTurn": 0,
+  "curCardQueueItem": null,
+  "damageTrackingExact": true,
+  "discard": [],
+  "draw": [
+   {
+    "cost": 0,
+    "costForTurn": 0,
+    "freeToPlayOnce": false,
+    "id": "Anger",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "a51780ea-9992-46f5-a9cb-0eb58f34c92d"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Apotheosis",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "46b70158-2deb-4f7a-af7e-9df4fbc83e6b"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Armaments",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "7b6e998d-e975-45c5-8e1a-12277e7b4117"
+   },
+   {
+    "cost": -2,
+    "costForTurn": -2,
+    "freeToPlayOnce": false,
+    "id": "AscendersBane",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "0152bc50-e719-43d5-b559-eed5d6b00776"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Bash",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "7b0b4edd-fb4a-4fdf-959a-cd261d67b939"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Burning Pact",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "ec4af873-eb25-4b17-97b7-caff1bc2077d"
+   },
+   {
+    "cost": 0,
+    "costForTurn": 0,
+    "freeToPlayOnce": false,
+    "id": "Clash",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "db61215e-50d7-47ef-9f50-8419d7b06378"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Clothesline",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "258bc159-cfad-40c8-93eb-680aa7ecc1b6"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Dark Embrace",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "1596fa1d-87ef-420a-ac12-fff9305a61fd"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Defend_R",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "3dc0a7a2-41af-4e18-93e6-2ccdcec43e00"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Defend_R",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "563f6ee3-92ff-4a23-8674-82347ae2dbc9"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Defend_R",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "752fa040-28f1-4fd1-a58f-0675c4251704"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Evolve",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "fdcbdc14-1446-4462-823f-88b18ee29517"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Exhume",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "e5ba4fad-d42d-408f-8e17-cdfefe7451b3"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Feel No Pain",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "85ddf42d-9dba-462c-9771-b61619a1de2c"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Feel No Pain",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "c9551a4c-691f-4995-9933-acaf248cbc1b"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Havoc",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "dda061be-7114-405b-b3e5-a8fe1ac0078e"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Iron Wave",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "0bfa922c-20d3-4ae5-8b4a-9d779494083e"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Metallicize",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "33de2fbf-82c5-43de-9437-2be4a93eb404"
+   },
+   {
+    "cost": 0,
+    "costForTurn": 0,
+    "freeToPlayOnce": false,
+    "id": "Offering",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "321e530c-cc24-46e6-b184-0cca59b8d621"
+   },
+   {
+    "cost": -2,
+    "costForTurn": -2,
+    "freeToPlayOnce": false,
+    "id": "Parasite",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "63731387-0f6c-49c0-a3cc-c2cd5767c975"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Pommel Strike",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "5106f560-6a24-44e6-bccd-60b6fe04247e"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Pommel Strike",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "669fc5e5-ae88-479a-adeb-666df48d4037"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Pommel Strike",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "98c3bae1-b2ce-4da5-bf0c-c780a02a15b1"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Seeing Red",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "25e720a4-8da7-42ae-b8ba-c2418713e6a6"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Shrug It Off",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "08c22e2e-75e1-4282-93ae-4239a2d28ce7"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Shrug It Off",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "e20c1aef-398d-45df-8f18-3974de3f90f1"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Spot Weakness",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "a2ff989b-1947-4092-bc62-4a71af5a87b6"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Strike_R",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "d4053ecc-f653-4beb-8b5a-1d94b8d4ba10"
+   },
+   {
+    "cost": 1,
+    "costForTurn": 1,
+    "freeToPlayOnce": false,
+    "id": "Strike_R",
+    "location": "DRAW",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "ed5fe81b-4b1b-44f9-acfb-6e783af5693e"
+   }
+  ],
+  "energy": 4,
+  "energyPerTurn": 4,
+  "exhaust": [],
+  "extraRollMoveOnTurn": 0,
+  "frozenEye": false,
+  "hand": [
+   {
+    "cost": 0,
+    "costForTurn": 0,
+    "freeToPlayOnce": false,
+    "id": "Intimidate",
+    "location": "HAND",
+    "misc": 0,
+    "retain": false,
+    "upgraded": true,
+    "uuid": "1270de7e-30b8-4c6c-94ce-e2f2791b7a1c"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Clothesline",
+    "location": "HAND",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "075c0fc0-7466-434b-b181-0eaa2bfd4e58"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Reaper",
+    "location": "HAND",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "01d87763-9745-4fb4-9e12-48ada7fb1335"
+   },
+   {
+    "cost": 0,
+    "costForTurn": 0,
+    "freeToPlayOnce": false,
+    "id": "Anger",
+    "location": "HAND",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "811a7ee1-c3e2-49ee-b023-62557972349a"
+   },
+   {
+    "cost": 2,
+    "costForTurn": 2,
+    "freeToPlayOnce": false,
+    "id": "Fiend Fire",
+    "location": "HAND",
+    "misc": 0,
+    "retain": false,
+    "upgraded": false,
+    "uuid": "ba39a59f-a8ba-4923-a742-3ffcbac13b62"
+   }
+  ],
+  "lastAttackUnblockedDamage": 0,
+  "lastCard": null,
+  "lastTargetedMonster": 1,
+  "limbo": [],
+  "monsterCount": 2,
+  "monsters": [
+   {
+    "block": 0,
+    "dead": false,
+    "escapeNext": false,
+    "escaping": false,
+    "halfDead": false,
+    "hp": 93,
+    "id": "SpireShield",
+    "idx": 0,
+    "intent": "ATTACK_DEBUFF",
+    "intentDamage": 21,
+    "maxHp": 125,
+    "miscInfo": 0,
+    "moveHistory": [
+     1
+    ],
+    "nextMove": 1,
+    "occupantGeneration": 1,
+    "powers": [
+     {
+      "amount": -1,
+      "id": "BackAttack"
+     },
+     {
+      "amount": 1,
+      "id": "Artifact"
+     }
+    ],
+    "slot": 0
+   },
+   {
+    "block": 0,
+    "dead": false,
+    "escapeNext": false,
+    "escaping": false,
+    "halfDead": false,
+    "hp": 135,
+    "id": "SpireSpear",
+    "idx": 1,
+    "intent": "ATTACK_DEBUFF",
+    "intentDamage": 6,
+    "maxHp": 180,
+    "miscInfo": 0,
+    "moveHistory": [
+     1
+    ],
+    "nextMove": 1,
+    "occupantGeneration": 1,
+    "powers": [
+     {
+      "amount": 1,
+      "id": "Artifact"
+     }
+    ],
+    "slot": 1
+   }
+  ],
+  "monstersAlive": 2,
+  "playedThisTurn": [],
+  "playerPowers": [
+   {
+    "amount": -1,
+    "id": "Surrounded"
+   },
+   {
+    "amount": 3,
+    "id": "Flex"
+   },
+   {
+    "amount": 3,
+    "id": "Strength"
+   }
+  ],
+  "playerVulnerableSeen": false,
+  "potions": [
+   {
+    "id": "AttackPotion",
+    "slot": 0
+   },
+   {
+    "id": "Potion Slot",
+    "slot": 1
+   }
+  ],
+  "relics": [
+   {
+    "counter": -1,
+    "id": "Burning Blood",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Shovel",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "War Paint",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Whetstone",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Pantograph",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Paper Frog",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Old Coin",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Astrolabe",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Medical Kit",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Bag of Marbles",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "MutagenicStrength",
+    "usedUp": false
+   },
+   {
+    "counter": 1,
+    "id": "HornCleat",
+    "usedUp": false
+   },
+   {
+    "counter": 1,
+    "id": "Tiny Chest",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Meat on the Bone",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "SlaversCollar",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "TungstenRod",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "PreservedInsect",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Strawberry",
+    "usedUp": false
+   },
+   {
+    "counter": -2,
+    "id": "MawBank",
+    "usedUp": true
+   },
+   {
+    "counter": 4,
+    "id": "Pen Nib",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Unceasing Top",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Darkstone Periapt",
+    "usedUp": false
+   },
+   {
+    "counter": 2,
+    "id": "Nunchaku",
+    "usedUp": false
+   },
+   {
+    "counter": -1,
+    "id": "Mummified Hand",
+    "usedUp": false
+   }
+  ],
+  "resolving": false,
+  "runicDome": false,
+  "skillsPlayedThisTurn": 0,
+  "skipMonsterTurnBits": 0,
+  "stasis": [],
+  "timesDamagedThisCombat": 0,
+  "turn": 1
+ },
+ "combatEntry": {
+  "act": 4,
+  "ascension": 20,
+  "character": "IRONCLAD",
+  "deck": [
+   {
+    "bottleBinding": -1,
+    "id": "AscendersBane",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Strike_R",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Strike_R",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Defend_R",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Defend_R",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Defend_R",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Bash",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Clothesline",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Clash",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Spot Weakness",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Anger",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Pommel Strike",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Metallicize",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Anger",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Shrug It Off",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Reaper",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Burning Pact",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Pommel Strike",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Apotheosis",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Dark Embrace",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Havoc",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Iron Wave",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Shrug It Off",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Fiend Fire",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Offering",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Clothesline",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Feel No Pain",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Armaments",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Evolve",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Seeing Red",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Intimidate",
+    "misc": 0,
+    "upgraded": true
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Parasite",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Exhume",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Feel No Pain",
+    "misc": 0,
+    "upgraded": false
+   },
+   {
+    "bottleBinding": -1,
+    "id": "Pommel Strike",
+    "misc": 0,
+    "upgraded": true
+   }
+  ],
+  "encounter": "SHIELD_AND_SPEAR",
+  "floor": 55,
+  "gold": 31,
+  "hp": 87,
+  "isBurningElite": false,
+  "maxHp": 87,
+  "potionCapacity": 2,
+  "potionKeepValue": 4.0,
+  "potions": [
+   "AttackPotion",
+   "Potion Slot",
+   "Potion Slot",
+   "Potion Slot",
+   "Potion Slot"
+  ],
+  "previousRoomClass": "SHOP",
+  "relics": [
+   {
+    "data": -1,
+    "id": "Burning Blood",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Shovel",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "War Paint",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Whetstone",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Pantograph",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Paper Frog",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Old Coin",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Astrolabe",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Medical Kit",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Bag of Marbles",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "MutagenicStrength",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "HornCleat",
+    "usedUp": false
+   },
+   {
+    "data": 1,
+    "id": "Tiny Chest",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Meat on the Bone",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "SlaversCollar",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "TungstenRod",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "PreservedInsect",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Strawberry",
+    "usedUp": false
+   },
+   {
+    "data": -2,
+    "id": "MawBank",
+    "usedUp": true
+   },
+   {
+    "data": 4,
+    "id": "Pen Nib",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Unceasing Top",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Darkstone Periapt",
+    "usedUp": false
+   },
+   {
+    "data": 2,
+    "id": "Nunchaku",
+    "usedUp": false
+   },
+   {
+    "data": -1,
+    "id": "Mummified Hand",
+    "usedUp": false
+   }
+  ],
+  "roomClass": "ELITE"
+ },
+ "combatEntryHash": "ed276f1cb4eee35aade1b47e6a6931141a656878ebcb8863175abecd961e1a50",
+ "deck": [
+  {
+   "cost": -2,
+   "costForTurn": -2,
+   "freeToPlayOnce": false,
+   "id": "AscendersBane",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "0152bc50-e719-43d5-b559-eed5d6b00776"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Strike_R",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "ed5fe81b-4b1b-44f9-acfb-6e783af5693e"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Strike_R",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "d4053ecc-f653-4beb-8b5a-1d94b8d4ba10"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Defend_R",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "752fa040-28f1-4fd1-a58f-0675c4251704"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Defend_R",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "563f6ee3-92ff-4a23-8674-82347ae2dbc9"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Defend_R",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "3dc0a7a2-41af-4e18-93e6-2ccdcec43e00"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Bash",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "7b0b4edd-fb4a-4fdf-959a-cd261d67b939"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Clothesline",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "075c0fc0-7466-434b-b181-0eaa2bfd4e58"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Clash",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "db61215e-50d7-47ef-9f50-8419d7b06378"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Spot Weakness",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "a2ff989b-1947-4092-bc62-4a71af5a87b6"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Anger",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "a51780ea-9992-46f5-a9cb-0eb58f34c92d"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Pommel Strike",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "98c3bae1-b2ce-4da5-bf0c-c780a02a15b1"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Metallicize",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "33de2fbf-82c5-43de-9437-2be4a93eb404"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Anger",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "811a7ee1-c3e2-49ee-b023-62557972349a"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Shrug It Off",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "08c22e2e-75e1-4282-93ae-4239a2d28ce7"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Reaper",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "01d87763-9745-4fb4-9e12-48ada7fb1335"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Burning Pact",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "ec4af873-eb25-4b17-97b7-caff1bc2077d"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Pommel Strike",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "5106f560-6a24-44e6-bccd-60b6fe04247e"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Apotheosis",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "46b70158-2deb-4f7a-af7e-9df4fbc83e6b"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Dark Embrace",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "1596fa1d-87ef-420a-ac12-fff9305a61fd"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Havoc",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "dda061be-7114-405b-b3e5-a8fe1ac0078e"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Iron Wave",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "0bfa922c-20d3-4ae5-8b4a-9d779494083e"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Shrug It Off",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "e20c1aef-398d-45df-8f18-3974de3f90f1"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Fiend Fire",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "ba39a59f-a8ba-4923-a742-3ffcbac13b62"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Offering",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "321e530c-cc24-46e6-b184-0cca59b8d621"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Clothesline",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "258bc159-cfad-40c8-93eb-680aa7ecc1b6"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Feel No Pain",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "c9551a4c-691f-4995-9933-acaf248cbc1b"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Armaments",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "7b6e998d-e975-45c5-8e1a-12277e7b4117"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Evolve",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "fdcbdc14-1446-4462-823f-88b18ee29517"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Seeing Red",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "25e720a4-8da7-42ae-b8ba-c2418713e6a6"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Intimidate",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "1270de7e-30b8-4c6c-94ce-e2f2791b7a1c"
+  },
+  {
+   "cost": -2,
+   "costForTurn": -2,
+   "freeToPlayOnce": false,
+   "id": "Parasite",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "63731387-0f6c-49c0-a3cc-c2cd5767c975"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Exhume",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "e5ba4fad-d42d-408f-8e17-cdfefe7451b3"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Feel No Pain",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "85ddf42d-9dba-462c-9771-b61619a1de2c"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Pommel Strike",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "669fc5e5-ae88-479a-adeb-666df48d4037"
+  }
+ ],
+ "floor": 55,
+ "gold": 31,
+ "hp": 87,
+ "maxHp": 87,
+ "silverRoot": {
+  "act": 4,
+  "ascension": 20,
+  "burningElite": false,
+  "character": "IRONCLAD",
+  "combat": {
+   "attacksPlayedThisTurn": 0,
+   "block": 0,
+   "cardDrawPerTurn": 5,
+   "cardSelect": false,
+   "cardsDiscardedThisTurn": 0,
+   "cardsPlayedThisTurn": 0,
+   "curCardQueueItem": null,
+   "damageTrackingExact": true,
+   "discard": [],
+   "draw": [
+    {
+     "cost": 0,
+     "costForTurn": 0,
+     "freeToPlayOnce": false,
+     "id": "Anger",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "a51780ea-9992-46f5-a9cb-0eb58f34c92d"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Apotheosis",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "46b70158-2deb-4f7a-af7e-9df4fbc83e6b"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Armaments",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "7b6e998d-e975-45c5-8e1a-12277e7b4117"
+    },
+    {
+     "cost": -2,
+     "costForTurn": -2,
+     "freeToPlayOnce": false,
+     "id": "AscendersBane",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "0152bc50-e719-43d5-b559-eed5d6b00776"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Bash",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "7b0b4edd-fb4a-4fdf-959a-cd261d67b939"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Burning Pact",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "ec4af873-eb25-4b17-97b7-caff1bc2077d"
+    },
+    {
+     "cost": 0,
+     "costForTurn": 0,
+     "freeToPlayOnce": false,
+     "id": "Clash",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "db61215e-50d7-47ef-9f50-8419d7b06378"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Clothesline",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "258bc159-cfad-40c8-93eb-680aa7ecc1b6"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Dark Embrace",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "1596fa1d-87ef-420a-ac12-fff9305a61fd"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Defend_R",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "3dc0a7a2-41af-4e18-93e6-2ccdcec43e00"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Defend_R",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "563f6ee3-92ff-4a23-8674-82347ae2dbc9"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Defend_R",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "752fa040-28f1-4fd1-a58f-0675c4251704"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Evolve",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "fdcbdc14-1446-4462-823f-88b18ee29517"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Exhume",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "e5ba4fad-d42d-408f-8e17-cdfefe7451b3"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Feel No Pain",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "85ddf42d-9dba-462c-9771-b61619a1de2c"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Feel No Pain",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "c9551a4c-691f-4995-9933-acaf248cbc1b"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Havoc",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "dda061be-7114-405b-b3e5-a8fe1ac0078e"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Iron Wave",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "0bfa922c-20d3-4ae5-8b4a-9d779494083e"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Metallicize",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "33de2fbf-82c5-43de-9437-2be4a93eb404"
+    },
+    {
+     "cost": 0,
+     "costForTurn": 0,
+     "freeToPlayOnce": false,
+     "id": "Offering",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "321e530c-cc24-46e6-b184-0cca59b8d621"
+    },
+    {
+     "cost": -2,
+     "costForTurn": -2,
+     "freeToPlayOnce": false,
+     "id": "Parasite",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "63731387-0f6c-49c0-a3cc-c2cd5767c975"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Pommel Strike",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "5106f560-6a24-44e6-bccd-60b6fe04247e"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Pommel Strike",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "669fc5e5-ae88-479a-adeb-666df48d4037"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Pommel Strike",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "98c3bae1-b2ce-4da5-bf0c-c780a02a15b1"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Seeing Red",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "25e720a4-8da7-42ae-b8ba-c2418713e6a6"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Shrug It Off",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "08c22e2e-75e1-4282-93ae-4239a2d28ce7"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Shrug It Off",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "e20c1aef-398d-45df-8f18-3974de3f90f1"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Spot Weakness",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "a2ff989b-1947-4092-bc62-4a71af5a87b6"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Strike_R",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "d4053ecc-f653-4beb-8b5a-1d94b8d4ba10"
+    },
+    {
+     "cost": 1,
+     "costForTurn": 1,
+     "freeToPlayOnce": false,
+     "id": "Strike_R",
+     "location": "DRAW",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "ed5fe81b-4b1b-44f9-acfb-6e783af5693e"
+    }
+   ],
+   "energy": 4,
+   "energyPerTurn": 4,
+   "exhaust": [],
+   "extraRollMoveOnTurn": 0,
+   "frozenEye": false,
+   "hand": [
+    {
+     "cost": 0,
+     "costForTurn": 0,
+     "freeToPlayOnce": false,
+     "id": "Intimidate",
+     "location": "HAND",
+     "misc": 0,
+     "retain": false,
+     "upgraded": true,
+     "uuid": "1270de7e-30b8-4c6c-94ce-e2f2791b7a1c"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Clothesline",
+     "location": "HAND",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "075c0fc0-7466-434b-b181-0eaa2bfd4e58"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Reaper",
+     "location": "HAND",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "01d87763-9745-4fb4-9e12-48ada7fb1335"
+    },
+    {
+     "cost": 0,
+     "costForTurn": 0,
+     "freeToPlayOnce": false,
+     "id": "Anger",
+     "location": "HAND",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "811a7ee1-c3e2-49ee-b023-62557972349a"
+    },
+    {
+     "cost": 2,
+     "costForTurn": 2,
+     "freeToPlayOnce": false,
+     "id": "Fiend Fire",
+     "location": "HAND",
+     "misc": 0,
+     "retain": false,
+     "upgraded": false,
+     "uuid": "ba39a59f-a8ba-4923-a742-3ffcbac13b62"
+    }
+   ],
+   "lastAttackUnblockedDamage": 0,
+   "lastCard": null,
+   "lastTargetedMonster": 1,
+   "limbo": [],
+   "monsterCount": 2,
+   "monsters": [
+    {
+     "block": 0,
+     "dead": false,
+     "escapeNext": false,
+     "escaping": false,
+     "halfDead": false,
+     "hp": 93,
+     "id": "SpireShield",
+     "idx": 0,
+     "intent": "ATTACK_DEBUFF",
+     "intentDamage": 21,
+     "maxHp": 125,
+     "miscInfo": 0,
+     "moveHistory": [
+      1
+     ],
+     "nextMove": 1,
+     "occupantGeneration": 1,
+     "powers": [
+      {
+       "amount": -1,
+       "id": "BackAttack"
+      },
+      {
+       "amount": 1,
+       "id": "Artifact"
+      }
+     ],
+     "slot": 0
+    },
+    {
+     "block": 0,
+     "dead": false,
+     "escapeNext": false,
+     "escaping": false,
+     "halfDead": false,
+     "hp": 135,
+     "id": "SpireSpear",
+     "idx": 1,
+     "intent": "ATTACK_DEBUFF",
+     "intentDamage": 6,
+     "maxHp": 180,
+     "miscInfo": 0,
+     "moveHistory": [
+      1
+     ],
+     "nextMove": 1,
+     "occupantGeneration": 1,
+     "powers": [
+      {
+       "amount": 1,
+       "id": "Artifact"
+      }
+     ],
+     "slot": 1
+    }
+   ],
+   "monstersAlive": 2,
+   "playedThisTurn": [],
+   "playerPowers": [
+    {
+     "amount": -1,
+     "id": "Surrounded"
+    },
+    {
+     "amount": 3,
+     "id": "Flex"
+    },
+    {
+     "amount": 3,
+     "id": "Strength"
+    }
+   ],
+   "playerVulnerableSeen": false,
+   "potions": [
+    {
+     "id": "AttackPotion",
+     "slot": 0
+    },
+    {
+     "id": "Potion Slot",
+     "slot": 1
+    }
+   ],
+   "relics": [
+    {
+     "counter": -1,
+     "id": "Burning Blood",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Shovel",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "War Paint",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Whetstone",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Pantograph",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Paper Frog",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Old Coin",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Astrolabe",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Medical Kit",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Bag of Marbles",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "MutagenicStrength",
+     "usedUp": false
+    },
+    {
+     "counter": 1,
+     "id": "HornCleat",
+     "usedUp": false
+    },
+    {
+     "counter": 1,
+     "id": "Tiny Chest",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Meat on the Bone",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "SlaversCollar",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "TungstenRod",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "PreservedInsect",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Strawberry",
+     "usedUp": false
+    },
+    {
+     "counter": -2,
+     "id": "MawBank",
+     "usedUp": true
+    },
+    {
+     "counter": 4,
+     "id": "Pen Nib",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Unceasing Top",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Darkstone Periapt",
+     "usedUp": false
+    },
+    {
+     "counter": 2,
+     "id": "Nunchaku",
+     "usedUp": false
+    },
+    {
+     "counter": -1,
+     "id": "Mummified Hand",
+     "usedUp": false
+    }
+   ],
+   "resolving": false,
+   "runicDome": false,
+   "skillsPlayedThisTurn": 0,
+   "skipMonsterTurnBits": 0,
+   "stasis": [],
+   "timesDamagedThisCombat": 0,
+   "turn": 1
+  },
+  "combatInstance": "ed276f1cb4eee35aade1b47e6a6931141a656878ebcb8863175abecd961e1a50",
+  "decisionInTurn": 0,
+  "encounter": "SHIELD_AND_SPEAR",
+  "floor": 55,
+  "gold": 31,
+  "hp": 87,
+  "maxHp": 87,
+  "playerTurn": 1,
+  "potionCapacity": 2,
+  "roomClass": "ELITE",
+  "schemaVersion": 4
+ },
+ "silverSearchBudget": 1000
+}

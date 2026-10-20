@@ -148,6 +148,11 @@ namespace sts {
     // rules follow the game (2026-10-17 engine A20 fidelity audit); 0 = the
     // legacy simulator rules. Other values are fatal. Read per call.
     bool engineFidelityFix();
+    // STS_DU_VU_DOLL_COUNT_FIX: unset or 1 = Du-Vu Doll data is the number of
+    // CURSE-type master-deck cards, refreshed on every deck change as Java's
+    // onEquip/onMasterDeckChange do; 0 = the legacy data 0 (no Strength).
+    // Other values are fatal. Read per call.
+    bool duVuDollCountFix();
     typedef std::function<void(GameContext&)> GameContextAction;
 
     class BattleContext;
@@ -307,6 +312,8 @@ namespace sts {
 
         // actions
         void obtainCard(Card c, int count=1);
+        int masterDeckCurseCount() const;
+        void syncDuVuDollCounter();
         void obtainGold(int amount);
         void obtainKey(Key key);
         void obtainPotion(Potion p);
