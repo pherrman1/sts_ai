@@ -757,7 +757,7 @@ read-only screen and choice converters. The observation contains:
 - `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
   potion capacity and five exact slots, physical deck instances with bottle
   binding, relic data, visible boss, the complete visible 15-by-7 map and edges
-  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`),
+  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`; the elite's sole `Boss!` choice, sent as option 0, is remapped to the native Heart node option 3, `STS_IMPORTER_ACT4_BOSS_MAP_FIX`),
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
