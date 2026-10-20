@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live combat parity: Magnetism never added its start-of-turn card natively (2026-10-20)
+## §574 — Live combat parity: Magnetism never added its start-of-turn card natively (2026-10-20)
 
 **Question:** why did every End Turn verdict of live seed 111200429 (release f2e3f48d, The Guardian, Magnetism 1
 played on turn 1) show a six-card game hand against a five-card native hand (problem 39 in
