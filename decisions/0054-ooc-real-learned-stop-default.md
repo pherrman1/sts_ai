@@ -1,4 +1,4 @@
-# ADR-TBD: Real combats under A20 OOC MCTS stop learned by default
+# ADR-0054: Real combats under A20 OOC MCTS stop learned by default
 
 Date: 2026-10-20
 Status: accepted

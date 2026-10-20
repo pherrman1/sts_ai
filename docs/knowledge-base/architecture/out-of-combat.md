@@ -344,7 +344,7 @@ frozen teacher cap contract. That guard dates from the first live OOC MCTS
 (exact-10k label and CTM teachers); the CTMs used today (`pathb-r2`, `pathb-a20`
 Stage 1 teacher `silver-ordinary-fair-learnedstop-ctm-pathb-90f6df64`, and the
 §527 Act-4 labels) were fit on learned-stop Silver outcomes. At ascension 20 real
-combats stop learned by default (ADR-TBD, `STS_OOC_MCTS_REAL_LEARNED_STOP`; exact
+combats stop learned by default (ADR-0054, `STS_OOC_MCTS_REAL_LEARNED_STOP`; exact
 root budgets kept, so imagined fights are unchanged); this default is not measured
 under OOC MCTS. `STS_OOC_MCTS` itself remains OFF by default and
 does not load a combat artifact or run MCTS. Both arms retain the same normal

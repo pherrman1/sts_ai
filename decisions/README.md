@@ -28,7 +28,7 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-ooc-real-learned-stop-default.md) makes real combats under A20 OOC MCTS stop learned by default
+- [ADR-0054](0054-ooc-real-learned-stop-default.md) makes real combats under A20 OOC MCTS stop learned by default
   (`STS_OOC_MCTS_REAL_LEARNED_STOP=0` restores flat exact 10k; not measured under OOC MCTS).
 - [ADR-0053](0053-ooc-gap-stop-default.md) makes OOC MCTS stop roots with the `1024:0.7` gap ladder by default
   (`STS_OOC_MCTS_GAP_STOP=0` restores the exact visit lock only; the learned stop stays opt-in).
