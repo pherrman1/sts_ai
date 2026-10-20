@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live Silver: Warcry drawing Void under Evolve refused its put-on-top choice (2026-10-20)
+## §574 — Live Silver: Warcry drawing Void under Evolve refused its put-on-top choice (2026-10-20)
 
 **Question:** why did live seed 111200440 (release 0582219a, floor 50, Awakened One form 2) stop with
 `silver_selection_pending_actions` and pending actions `[UseCardAction, LoseEnergyAction, DrawCardAction]` (problem 50
