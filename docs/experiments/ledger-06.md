@@ -21826,7 +21826,7 @@ of the current main defaults listed above. Act-4 conversion (49%) stays the gap 
 Raw: `/mnt/project-files/a20-winrate-check/w01..w32.tar`.
 **Knowledge impact:** reference row in `evaluation/current-baselines.md`.
 
-## §TBD — AZ loop generation 0: 1,664 paired A20 self-play seeds. OOC MCTS (4096 sims, student_sel prior, learned stop) beats student_sel alone by +2.4 pp Heart kills [+0.1, +4.7] and +4.9 pp Act 4 [+2.2, +7.7]; 247k policy-target rows and 41k real-combat CTM rows captured (2026-10-20)
+## §569 — AZ loop generation 0: 1,664 paired A20 self-play seeds. OOC MCTS (4096 sims, student_sel prior, learned stop) beats student_sel alone by +2.4 pp Heart kills [+0.1, +4.7] and +4.9 pp Act 4 [+2.2, +7.7]; 247k policy-target rows and 41k real-combat CTM rows captured (2026-10-20)
 
 Authorization: Philipp 2026-10-19 21:57Z ("Do 4096, do the stopped learning, freeze later"), 22:01Z ("Oke do
 learned for now"), and 22:05Z ("start as many seeds such that 32 workers are done in 6 hours"). The

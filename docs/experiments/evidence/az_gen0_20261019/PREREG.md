@@ -38,6 +38,6 @@ See `run_unit.sh`, which is the source of truth.
 - A seed is valid when both arms have rc 0, the search-arm footer has `complete` and `integrityPassed` true, and both banner checks pass (learned stop loaded, Act-4 survival model).
 - Invalid seeds are reported, not replaced.
 - Verify with `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/az_gen0_20261019`.
-- Ledger §TBD reports:
+- Ledger §569 reports:
   - row counts, the fullBudget fraction, Heart kills per arm with a paired 95% CI, and CTM row counts;
   - no gate.
