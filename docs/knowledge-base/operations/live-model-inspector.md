@@ -1377,6 +1377,12 @@ index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
 unobserved tail and its card-replay fallback).
+Under Runic Dome the folded Reactive count is accepted for Writhing Mass when the
+queue carries its `REACTIVE_ROLL_MOVE` (live seed 111200416): the mod's history has
+not counted the queued reroll, and native defers it under hidden intents with the
+inputs of the moment it runs, as Java's `RollMoveAction` rolls then
+(`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
+`silver_runic_dome_monster_power_domain`).
 
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case

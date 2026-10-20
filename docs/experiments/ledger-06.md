@@ -21654,6 +21654,30 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
+## §567 — Runic Dome: a Headbutt GRID after hitting Writhing Mass was refused (queued Reactive reroll) (2026-10-20)
+
+**Question:** why did live seed 111200416 (release 0abc831a, Runic Dome held) stop at Act 3 floor 38, WRITHING_MASS
+turn 2 (HP 55), after Shrug It Off, Sentinel and Headbutt on m1, with `silver_runic_dome_monster_power_domain` at the
+GRID (monster powers Malleable 4, Strength -3, Compulsive; problem 34 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share)?
+**Setup:** code reading of `importSilverRootGeneric` and `importBoundedRunicDome`; the captured importer input relayed
+byte-exact from Philipp's PC (sha256 `945315b0…4f60`; now
+`tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json`); `live_silver_importer_test` (no gameplay seeds).
+**Result:** the generic import maps Compulsive (Java marker, amount -1) to Reactive 0, and the #711 reaction fold turns
+the hit's queued `REACTIVE_ROLL_MOVE` into Reactive 1 plus one native `ReactiveRollMove` queue item. The Dome check
+runs after that fold and refuses any nonzero second unique power on a monster other than The Guardian, so every
+Writhing Mass selection with a queued reroll was refused under Runic Dome. The state is sound: Java's
+`RollMoveAction` has not run, so the mod's history does not count it, and native `rollMove` under hidden intents defers
+the reroll with the inputs of the moment the queued action runs.
+The captured queue is Orange Pellets `REMOVE_PLAYER_DEBUFFS`, Headbutt's `USE_CARD`, Malleable block 3 and the
+reroll; the fold accepted all four, and the Dome check was the only refusal.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX` (default on, `=0` restores the refusal) accepts the
+count when the queue carries the reroll. The captured root is refused with `=0` (and with the check reverted), and
+imports and searches (1,000 simulations) with the fix; after the GRID pick its reroll is a second pending hidden roll
+with the post-hit inputs. The native Headbutt-on-Writhing-Mass fixture under Runic Dome keeps the native queue and
+defers the reroll the same way, and the deferred chain materializes.
+**Open question:** not yet exercised live.
+Seeds: none new (live seed 111200416 as reported; unit test only).
 ## §562 — Runic Dome: every first-turn live Dome root was refused (roll clock and omitted nulls) (2026-10-19)
 
 **Question:** why did live seed 111194466 (release 1e2cad47) stop in the first fight after Runic Dome
@@ -21743,7 +21767,7 @@ Philipp's PC (`~/Documents/sts/artifacts/monster-rng-gaps-20261019/`): seed 1111
 longer emits; left as representation-only. No gameplay seeds were run; the unit tests use fixed seeds 111200151-153.
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
-## §567 — Live parity: the mod never exported Orange Pellets' played card types (2026-10-20)
+## §568 — Live parity: the mod never exported Orange Pellets' played card types (2026-10-20)
 
 **Question:** why does the live import always report Orange Pellets' played-types field as 0 (parity problem 32), and is
 the cause in the C++ importer or the Java mod?
