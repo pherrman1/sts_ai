@@ -441,6 +441,17 @@ bool halfDeadSetMoveQueue() {
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a pending tail holding
+// Hex's queued Dazed (HexPower.onUseCard for a non-Attack, e.g. Discovery's
+// choice under Hex) imports it as a native MakeTempCardInDrawPile(Dazed);
+// 0 = legacy refusal (silver_selection_pending_actions).
+bool hexDazedQueue() {
+    const char *value = std::getenv("STS_SILVER_HEX_DAZED_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE must be 0 or 1");
+}
+
 // STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
 // stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
 // native stolen-gold check that Java has no field for; without it Silver's
@@ -2032,7 +2043,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         const std::map<std::string,K> kinds={{"DRAW",K::DRAW},{"GAIN_BLOCK",K::GAIN_BLOCK},{"GAIN_ENERGY",K::GAIN_ENERGY},
             {"DAMAGE_ALL",K::DAMAGE_ALL},{"DAMAGE_RANDOM",K::DAMAGE_RANDOM},{"GAMBLE",K::GAMBLE},
             {"UPGRADE_RANDOM",K::UPGRADE_RANDOM},{"BUFF_PLAYER",K::BUFF_PLAYER},{"DEBUFF_PLAYER",K::DEBUFF_PLAYER},
-            {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"USE_CARD",K::USE_CARD},
+            {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"SHUFFLE_DAZED",K::SHUFFLE_DAZED},{"USE_CARD",K::USE_CARD},
             {"REMOVE_PEN_NIB",K::REMOVE_PEN_NIB},{"REMOVE_PLAYER_DEBUFFS",K::REMOVE_PLAYER_DEBUFFS}};
         int cleanups=0;
         bool reactiveRoll=false;
@@ -2175,6 +2186,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     return unsupported("silver_selection_pending_actions");
             }
             if(action.kind==K::SHUFFLE_WOUNDS && action.amount!=2)return unsupported("silver_selection_pending_actions");
+            // Native Hex is a flag that always makes one Dazed.
+            constexpr int hex=static_cast<int>(PlayerStatus::HEX);
+            if(action.kind==K::SHUFFLE_DAZED && (!hexDazedQueue() || action.amount!=1
+                    || !(hex<64 ? (wire.player.statusBits0>>hex)&1ULL : (wire.player.statusBits1>>(hex-64))&1U)))
+                return unsupported("silver_selection_pending_actions");
             if(action.kind==K::DEBUFF_ALL_ENEMY) {
                 const auto power=entry.value("power",std::string());
                 const auto status=live_silver::monsterStatus(power);

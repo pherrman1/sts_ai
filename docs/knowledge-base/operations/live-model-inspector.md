@@ -282,7 +282,9 @@ block order and lethal damage.
 Qualified source-card selectors, standalone selectors and Toolbox capture an
 ordered typed action tail: opening draws, block/energy, literal or random enemy damage,
 Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
-batches, Mark of Pain's two shuffled Wounds, and the owning card's cleanup.
+batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
+non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
+Discovery choice under Hex), and the owning card's cleanup.
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,

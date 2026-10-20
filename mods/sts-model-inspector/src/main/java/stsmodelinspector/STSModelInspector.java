@@ -2741,6 +2741,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
         } else if ("SHUFFLE_WOUNDS".equals(kind)) {
             if (amount != 2) return null;
+        } else if ("SHUFFLE_DAZED".equals(kind)) {
+            if (amount != 1) return null;
         } else if ("HEAL_PLAYER".equals(kind)) {
             if (amount != 5) return null;
         } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
@@ -2881,14 +2883,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 kind="DAMAGE_RANDOM";
             } else if("com.megacrit.cardcrawl.actions.common.MakeTempCardInDrawPileAction".equals(name)) {
                 Object value=readObjectField(action,"cardToMake");
-                if(!hasRelic("Mark of Pain") || !(value instanceof AbstractCard)
-                        || !value.getClass().getName().equals("com.megacrit.cardcrawl.cards.status.Wound")
+                String made=value==null?"":value.getClass().getName();
+                // HexPower.onUseCard: a non-Attack queues
+                // MakeTempCardInDrawPileAction(new Dazed(), amount, true, true).
+                AbstractPower hex=AbstractDungeon.player.getPower("Hex");
+                boolean wound=hasRelic("Mark of Pain") && made.equals("com.megacrit.cardcrawl.cards.status.Wound");
+                boolean dazed=made.equals("com.megacrit.cardcrawl.cards.status.Dazed") && hex!=null
+                        && amount!=null && amount==hex.amount;
+                if((!wound && !dazed) || !(value instanceof AbstractCard)
                         || !Boolean.TRUE.equals(readBooleanField(action,"randomSpot"))
                         || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return null;
                 AbstractCard card=(AbstractCard)value;
                 if(card.upgraded || card.timesUpgraded!=0 || card.misc!=0 || card.cost!=-2
                         || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return null;
-                kind="SHUFFLE_WOUNDS";
+                kind=wound?"SHUFFLE_WOUNDS":"SHUFFLE_DAZED";
             } else if("com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(name)) {
                 Object value=readObjectField(action,"powerToApply");
                 if(!(value instanceof AbstractPower)) return null;

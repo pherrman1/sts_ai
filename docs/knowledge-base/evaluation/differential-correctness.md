@@ -238,6 +238,11 @@ Sacred Bark and 20% with it, the reverse of the game.
   seed 111200389 floor 5; Headbutt killing a Darkling to half-dead, its queued
   Regrow `SetMoveAction`, seed 111200400 floor 35). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
+- The run stopped on a Discovery choice under Hex
+  (`silver_card_reward_pending_actions`, seed 111200415 floor 21, Chosen and
+  Byrds): `HexPower.onUseCard` queues `MakeTempCardInDrawPileAction(Dazed)`
+  behind the choice. The producer now emits it as `SHUFFLE_DAZED` and the
+  importer imports it; see live-model-inspector.md.
 
 Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live
 importer gave the player phantom relics. The combat `Player` has 128 relic

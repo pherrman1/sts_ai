@@ -3878,7 +3878,9 @@ int main(int argc, char **argv) {
             if (selected.player.strength != 2 || selected.inputState != InputState::PLAYER_NORMAL)
                 throw std::runtime_error("standalone offer replayed a completed historical power");
         }
-        for (bool upgraded : {false, true}) for(bool exactTail:{false,true}) {
+        for (bool upgraded : {false, true}) for(int tail:{0,1,2}) {
+            // tail 2: Hex's Dazed queued behind the choice (live seed 111200415).
+            const bool exactTail=tail>0, hexTail=tail==2;
             auto discovery = genericObservation(fixtures[0], "discovery-card-continuation");
             auto &root = discovery["silverRoot"];
             auto &combat = root["combat"];
@@ -3902,6 +3904,20 @@ int main(int argc, char **argv) {
                 combat["pendingCardQueue"]=json::array();
                 combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"])});
             }
+            if(hexTail) {
+                combat["playerPowers"].push_back(json{{"id","Hex"},{"amount",1}});
+                combat["pendingActionQueue"].insert(combat["pendingActionQueue"].begin(),json{{"kind","SHUFFLE_DAZED"},{"amount",1}});
+                for(int defect=0;defect<3;++defect) {
+                    auto bad=discovery;auto &c=bad["silverRoot"]["combat"];
+                    if(defect==0)c["pendingActionQueue"][0]["amount"]=2;
+                    if(defect==1)c["playerPowers"].erase(c["playerPowers"].size()-1);
+                    if(defect==2)setenv("STS_SILVER_HEX_DAZED_QUEUE","0",1);
+                    const auto rejected=one_combat::advisor::importSilverRoot(bad);
+                    unsetenv("STS_SILVER_HEX_DAZED_QUEUE");
+                    if(rejected.ok || rejected.reason!="silver_selection_pending_actions")
+                        throw std::runtime_error("unqualified Hex Dazed tail accepted");
+                }
+            }
             one_combat::advisor::SilverImportContext context;
             const auto imported = one_combat::advisor::importSilverRoot(discovery, context);
             if (!imported.ok) throw std::runtime_error("Discovery cleanup import: " + imported.reason);
@@ -3917,6 +3933,41 @@ int main(int argc, char **argv) {
                     return c.id == CardId::DISCOVERY && c.uniqueId == discoveryId;
                 }))
                 throw std::runtime_error("Discovery cleanup did not preserve exhaust/discard semantics");
+            const auto dazed=std::count_if(selected.cards.drawPile.begin(),selected.cards.drawPile.end(),
+                [](const auto &c){return c.id==CardId::DAZED;});
+            if(dazed!=(hexTail?1:0))throw std::runtime_error("Hex Dazed tail not applied exactly once");
+        }
+        {
+            // Native Discovery under Hex leaves the same tail: Dazed, then cleanup.
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=2; game.floorNum=21;
+            BattleContext live; live.init(game, MonsterEncounter::CHOSEN_AND_BYRDS);
+            live.player.setHasStatus<PlayerStatus::HEX>(true);
+            CardInstance discoveryCard(CardId::DISCOVERY); discoveryCard.uniqueId=930;
+            live.cards.moveToHand(discoveryCard); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::DISCOVERY)
+                throw std::runtime_error("Hex fixture did not open Discovery's choice");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            const auto wire=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x7151bu);
+            if(!wire.pendingActionQueueObserved || wire.pendingActionQueue.size()!=2
+                    || wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::SHUFFLE_DAZED
+                    || wire.pendingActionQueue[0].amount!=1
+                    || wire.pendingActionQueue[1].kind!=silver_bridge::PendingActionKind::USE_CARD)
+                throw std::runtime_error("native Discovery under Hex tail is not [SHUFFLE_DAZED, USE_CARD]");
+            setenv("STS_SILVER_HEX_DAZED_QUEUE","0",1);
+            const auto legacy=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x7151bu);
+            unsetenv("STS_SILVER_HEX_DAZED_QUEUE");
+            if(legacy.pendingActionQueueObserved)
+                throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE=0 did not restore the legacy tail");
+            auto restored=battleContextFromWire(json(wire).get<silver_bridge::BattleStateWire>());
+            auto reference=live;
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(restored); pick.execute(reference);
+            const auto count=[](const auto &pile){return std::count_if(pile.begin(),pile.end(),[](const auto &c){return c.id==CardId::DAZED;});};
+            if(count(restored.cards.drawPile)!=1 || count(reference.cards.drawPile)!=1
+                    || restored.inputState!=InputState::PLAYER_NORMAL)
+                throw std::runtime_error("Hex Dazed tail lost in the wire roundtrip");
         }
         for (const char *reason : {"silver_card_reward_end_turn_continuation", "silver_card_reward_toolbox_cost",
                                   "silver_card_reward_skip_unrepresentable", "silver_card_reward_pending_actions"}) {

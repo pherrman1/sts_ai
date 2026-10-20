@@ -157,7 +157,9 @@ enum class PendingActionKind : std::uint8_t {
     // self-block, Writhing Mass Reactive reroll, Guardian Sharp Hide thorns).
     MONSTER_GAIN_BLOCK = 16, REACTIVE_ROLL_MOVE = 17, MONSTER_THORNS = 18,
     // A half-dead Darkling's queued SetMoveAction (amount = native move id).
-    MONSTER_SET_MOVE = 19
+    MONSTER_SET_MOVE = 19,
+    // Hex's Dazed for a played non-Attack: MakeTempCardInDrawPile(Dazed, amount, random spot).
+    SHUFFLE_DAZED = 20
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;
