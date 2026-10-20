@@ -425,11 +425,23 @@ bool installRunForcedRelic(GameContext &gc, RelicId relic) {
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
                         bool e2cCapture) {
     const auto publicScorersBefore = one_combat::nativeOocPublicScorerCalls();
-    if (one_combat::liveOocMctsEnabled()) {
+    if (one_combat::liveOocMctsRealLearnedStop()) {
+        // Opt-in: real combats stop learned (ADR-0051; the A20 CTM and its Act-4 survival
+        // model were fit on learned-stop outcomes). Imagined fights keep their flat budget
+        // override; exact root budgets stay on so their boss budgets stay unmultiplied.
+        if (sims != 10000 || !search::nativeSilverBackendInstalled()
+            || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
+            || !search::nativeSilverLearnedStopEnabled() || search::nativeSilverLearnedStopBossFallback()
+            || search::nativeSilverLearnedStopBossMax() != 0 || search::nativeSilverReuseCap() != 32768)
+            throw std::runtime_error("STS_OOC_MCTS_REAL_LEARNED_STOP requires learned-stop Silver real combat with"
+                                     " exact root budgets, no adaptive or boss fallback/max, reuse cap 32768");
+    } else if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
             || search::nativeSilverLearnedStopEnabled() || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
+    }
+    if (one_combat::liveOocMctsEnabled()) {
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
         // real decisions stay with the search and its chain.
