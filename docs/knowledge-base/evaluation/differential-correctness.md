@@ -390,6 +390,14 @@ representation-only differences that no native decision reads:
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
 
+Seed 111200436 (live problem 43, four steps): under Confusion, Anger's
+discard copy cost 1/1 in the game and 0/0 natively. Java `Anger.use` queues
+`makeStatEquivalentCopy()`, which copies `cost` and `costForTurn`; native
+built a fresh base-cost Anger. `STS_ANGER_COPY_COST_FIX` (default on, `=0`
+restores) copies both costs from the played card. **Open question:**
+`makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, and no
+live trace has shown a free Anger copy yet.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 
