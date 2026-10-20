@@ -53,5 +53,9 @@ for k in ('heart', 'act4'):
 out['mean_floor'] = dict(B=statistics.mean(x for x, _ in res['floor']), A=statistics.mean(y for _, y in res['floor']))
 out['wall_s'] = dict(B_mean=statistics.mean(x for x, _ in res['wall']), A_mean=statistics.mean(y for _, y in res['wall']),
                      B_max=max(x for x, _ in res['wall']), A_max=max(y for _, y in res['wall']))
+out['wall_s']['B_over_A'] = out['wall_s']['B_mean'] / out['wall_s']['A_mean']
+h = out['heart']; ahead = h['B'] > h['A']; sig = h['mcnemar_p'] < 0.05
+out['verdict'] = ('WIN' if out['wall_s']['B_over_A'] <= 1.10 else 'WIN_AT_HIGHER_CPU') if sig and ahead else \
+    'WORSE' if sig else 'NOT_SHOWN'
 out['data'] = res['data']
 print(json.dumps(out, indent=1))

@@ -42,8 +42,9 @@ student_sel at A20?
   - searched / full-budget / aborted roots;
   - the fraction of searched roots where the search's choice differs from the prior's argmax.
 - **Decision rule:**
-  - **WIN:** McNemar p < 0.05 with B ahead on Heart kills. Then propose gen 1b as the AZ-loop prior, and Philipp
-    decides.
+  - **WIN:** McNemar p < 0.05 with B ahead on Heart kills, and B's mean wall per run ≤ 1.10× A's (matched CPU; same
+    container, same unit). Then propose gen 1b as the AZ-loop prior, and Philipp decides. B ahead with p < 0.05 but
+    above 1.10× is **WIN_AT_HIGHER_CPU**, for Philipp to judge.
   - **WORSE:** p < 0.05 with A ahead.
   - **NOT_SHOWN:** anything else; student_sel stays.
   - At 512 pairs from a ~25% base, this detects roughly ±5 pp. Smaller effects read as NOT_SHOWN.
