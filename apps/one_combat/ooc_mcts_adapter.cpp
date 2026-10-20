@@ -7852,12 +7852,14 @@ void oocMctsAdapterSelfTest() {
         const auto noisedAgain=selectOocMctsAction(live,livePath,42,7,128,lethal,n2,nullptr,nullptr,nullptr,false,true);
         liveRootNoiseFraction=0;
         bool same=noised.rootActions.size()==first.rootActions.size()
-            && noised.selectedAction==noisedAgain.selectedAction && n1==n2;
-        for (std::size_t i=0;same && i<noised.rootActions.size();++i)
+            && noised.selectedAction==noisedAgain.selectedAction && n1==n2, moved=false;
+        for (std::size_t i=0;same && i<noised.rootActions.size();++i) {
             same=noised.rootActions[i].prior==first.rootActions[i].prior
                 && noised.rootActions[i].visits==noisedAgain.rootActions[i].visits;
-        require(same && test::oocStateFingerprint(live)==before,
-            "root noise: deterministic, reported priors stay clean");
+            moved=moved || noised.rootActions[i].visits!=first.rootActions[i].visits;
+        }
+        require(same && moved && test::oocStateFingerprint(live)==before,
+            "root noise: deterministic, reported priors stay clean, visits change");
         livePlaySampleFloor=100; livePlaySampleTemperature=1;
         std::uint64_t s1=0, s2=0;
         const auto sampled=selectOocMctsAction(live,livePath,42,7,128,lethal,s1,nullptr,nullptr,nullptr,false,true);

@@ -155,7 +155,7 @@ def fit_sigma(paths, fold, sims=2048, visit_scaled=False):
             pi = checkpoint_policy(root, sims, cs, visit_scaled)
             if pi is None: continue
             ids = [x["id"] for x in root["candidates"]]
-            k = ids.index(root["selectedId"])
+            k = ids.index(root.get("searchSelectedId", root["selectedId"]))   # the search's pick, not a sampled play
             nll -= math.log(max(pi[k], 1e-30)); top += max(range(len(pi)), key=pi.__getitem__) == k; n += 1
         res.append({"beta": cs, "roots": n, "nll": nll / n if n else None, "top1": top / n if n else None})
     best = min((r for r in res if r["nll"] is not None), key=lambda r: r["nll"])
