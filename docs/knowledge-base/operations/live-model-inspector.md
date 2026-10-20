@@ -246,7 +246,10 @@ Pellets, used-up relics, Necronomicon, and Centennial Puzzle
 (`usedThisCombat`, a private static in vanilla) is serialized when its runtime field
 is accessible; otherwise the importer rejects that state. Monster `miscInfo`
 is similarly serialized from known runtime trackers or omitted so the importer
-fails closed. Bronze Orb Stasis uses the runtime `StasisPower.card` object to
+fails closed. Orange Pellets' played card types come from the relic's private
+static `ATTACK`/`SKILL`/`POWER` flags (not a power; before live parity
+problem 32 the mod looked for a power and never wrote the field); a missing
+field imports as 0 (`STS_IMPORTER_ORANGE_PELLETS_FIX`). Bronze Orb Stasis uses the runtime `StasisPower.card` object to
 preserve the exact physical card UUID and state, rejecting only the active-
 Stasis snapshot when that field is unavailable.
 The observer's post-`AbstractPlayer.damage()` patch records finalized damage

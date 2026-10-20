@@ -442,6 +442,18 @@ bool thiefGoldFix() {
     throw std::runtime_error("STS_IMPORTER_THIEF_GOLD_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_ORANGE_PELLETS_FIX: unset/1 (default) = import the live mod's
+// combat.orangePelletsCardTypesPlayed (bit 0 Attack, 1 Skill, 2 Power), read
+// from the OrangePellets relic's static ATTACK/SKILL/POWER flags (live seed
+// 111200414, problem 32: the older mod looked for a nonexistent power and never
+// exported it). 0 = legacy, the field is ignored and always imports as 0.
+bool orangePelletsFix() {
+    const char *value = std::getenv("STS_IMPORTER_ORANGE_PELLETS_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_ORANGE_PELLETS_FIX must be 0 or 1");
+}
+
 template <typename T>
 bool parseEnumId(const json &item, const char *name, T &out) {
     if (!item.contains(name) || !item.at(name).is_string()) return false;
@@ -1480,7 +1492,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     p.devaFormEnergyPerTurn = static_cast<std::int16_t>(combat.value("devaFormEnergyPerTurn", 0));
     p.echoFormCardsDoubled = static_cast<std::int8_t>(combat.value("echoFormCardsDoubled", 0));
     p.panacheCounter = static_cast<std::int8_t>(combat.value("panacheCounter", 0));
-    if (combat.contains("orangePelletsCardTypesPlayed"))
+    if (orangePelletsFix() && combat.contains("orangePelletsCardTypesPlayed"))
         p.orangePelletsCardTypesPlayed = static_cast<std::uint8_t>(combat.value("orangePelletsCardTypesPlayed", 0));
     if (combat.contains("statusBits0")) p.statusBits0 = combat.value("statusBits0", 0ULL);
     if (combat.contains("statusBits1")) p.statusBits1 = combat.value("statusBits1", 0U);

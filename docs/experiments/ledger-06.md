@@ -21767,6 +21767,26 @@ Philipp's PC (`~/Documents/sts/artifacts/monster-rng-gaps-20261019/`): seed 1111
 longer emits; left as representation-only. No gameplay seeds were run; the unit tests use fixed seeds 111200151-153.
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
+## §568 — Live parity: the mod never exported Orange Pellets' played card types (2026-10-20)
+
+**Question:** why does the live import always report Orange Pellets' played-types field as 0 (parity problem 32), and is
+the cause in the C++ importer or the Java mod?
+**Setup:** canary run of live seed 111200414 (release 0abc831a): 300 of 304 MISMATCH verdicts are this field, first at
+step 285 (Battle Trance), game 0 vs native 1/2/4. Code reads of the mod exporter and `live_silver_importer.cpp`;
+read-only `javap -c -p` of the pinned `desktop-1.0.jar` (`cfad868a…`) on Philipp's PC.
+**Result:** the cause is in the mod. The exporter searched `player.powers` for an "Orange Pellets" power, but Orange
+Pellets is a relic, so the field was never written; the importer reads it only when present, so it defaulted to 0.
+Vanilla `OrangePellets` keeps private static `ATTACK`/`SKILL`/`POWER` flags: `onUseCard` sets the card's type and, once
+all three are set, queues `RemoveDebuffsAction` and clears them; `atTurnStart` clears them. This matches native
+`orangePelletsCardTypesPlayed` (bit 0 Attack, 1 Skill, 2 Power; reset at turn start and on trigger). The old
+power-branch fallback rebuilt the bits from `cardsPlayedThisTurn`, which would also have been wrong after a mid-turn
+trigger. The mod now exports the relic's flags (a `CombatBoundaryTest` contract checks them against the JAR; mod
+`test.sh` exit 0 on the PC).
+**Interpretation:** `STS_IMPORTER_ORANGE_PELLETS_FIX` (default on, `=0` ignores the field as before) changes live
+advisor play and the parity probe for runs with Orange Pellets only; simulator play, training and benchmarks do not use
+this importer. Live confirmation (the verdicts back to MATCH) waits for the canary after reinstall.
+Seeds: none driven (live evidence from seed 111200414).
+**Knowledge impact:** `operations/live-model-inspector.md`, `operations/environment-variables.md`.
 
 ## §566 — A20 winrate check of the best stack: 90/512 Heart kills = 17.6% with OOC MCTS 4096 and flat 10k Silver (2026-10-19)
 
