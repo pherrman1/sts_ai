@@ -550,7 +550,8 @@ add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_slime_boss_split.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_guardian_a20_phases.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_two_thieves_turn1.json
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_three_byrds_turn1.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_three_byrds_turn1.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json)
 
 add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
     apps/one_combat/combat_transition.cpp
@@ -1195,6 +1196,10 @@ set_tests_properties(arm_c_rollout_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_
 add_test(NAME ooc_leaf_capture_startup COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/test_ooc_leaf_capture_startup.py $<TARGET_FILE:one_combat>)
 set_tests_properties(ooc_leaf_capture_startup PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration")
+add_test(NAME ooc_real_learned_stop_guard COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/test_ooc_real_learned_stop_guard.py $<TARGET_FILE:one_combat>)
+set_tests_properties(ooc_real_learned_stop_guard PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration")
 add_test(NAME ooc_leaf_replay COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:one_combat> oocleafreplayselftest)

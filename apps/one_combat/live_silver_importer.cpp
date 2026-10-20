@@ -430,6 +430,39 @@ bool selectionToyHealFix() {
     throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX must be 0 or 1");
 }
 
+// STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE: unset/1 (default) = a source-card
+// selection whose pending tail holds a half-dead Darkling's queued
+// SetMoveAction (Headbutt killing a Darkling) imports it as a native
+// SetMonsterMove; 0 = legacy refusal as silver_selection_pending_actions.
+bool halfDeadSetMoveQueue() {
+    const char *value = std::getenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
+}
+
+// STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a pending tail holding
+// Hex's queued Dazed (HexPower.onUseCard for a non-Attack, e.g. Discovery's
+// choice under Hex) imports it as a native MakeTempCardInDrawPile(Dazed);
+// 0 = legacy refusal (silver_selection_pending_actions).
+bool hexDazedQueue() {
+    const char *value = std::getenv("STS_SILVER_HEX_DAZED_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE must be 0 or 1");
+}
+
+// STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS: unset/1 (default) = a potion's
+// Discovery card reward (Attack/Skill/Power/Colorless Potion) whose typed
+// public tail (Toy Ornithopter's heal) is queued behind the choice imports
+// that tail; 0 = legacy refusal (silver_selection_pending_actions).
+bool cardRewardPublicActions() {
+    const char *value = std::getenv("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS must be 0 or 1");
+}
+
 // STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
 // stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
 // native stolen-gold check that Java has no field for; without it Silver's
@@ -440,6 +473,18 @@ bool thiefGoldFix() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_IMPORTER_THIEF_GOLD_FIX must be 0 or 1");
+}
+
+// STS_IMPORTER_ORANGE_PELLETS_FIX: unset/1 (default) = import the live mod's
+// combat.orangePelletsCardTypesPlayed (bit 0 Attack, 1 Skill, 2 Power), read
+// from the OrangePellets relic's static ATTACK/SKILL/POWER flags (live seed
+// 111200414, problem 32: the older mod looked for a nonexistent power and never
+// exported it). 0 = legacy, the field is ignored and always imports as 0.
+bool orangePelletsFix() {
+    const char *value = std::getenv("STS_IMPORTER_ORANGE_PELLETS_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_ORANGE_PELLETS_FIX must be 0 or 1");
 }
 
 template <typename T>
@@ -710,6 +755,20 @@ bool domeWireFix() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_WIRE_FIX must be 0 or 1");
+}
+
+// STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX: unset/1 (default) = a Writhing Mass
+// hit by an interrupted source card (Headbutt GRID) under Runic Dome keeps the
+// queued Reactive reroll folded from the observed pending queue (live seed
+// 111200416, problem 34). Native defers that reroll under hidden intents with
+// the inputs of the moment the queued action runs, as Java's RollMoveAction
+// rolls then; the mod's history has not counted it yet. 0 = legacy refusal
+// (silver_runic_dome_monster_power_domain).
+bool domeReactiveFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX must be 0 or 1");
 }
 
 // Audited stable-slot monsters whose next roll depends on public executed history.
@@ -1043,7 +1102,12 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(monsterId=="Transient") {allow(sts::MonsterStatus::FADING);allow(sts::MonsterStatus::SHIFTING);}
         const auto uniqueMask=((1ULL<<(static_cast<int>(sts::MonsterStatus::TIME_WARP)+1))-1)
                 ^ ((1ULL<<static_cast<int>(sts::MonsterStatus::ANGRY))-1);
-        if((m.statusBits & ~allowed) || (!guardian && m.uniquePower1) || (!(m.statusBits & uniqueMask) && m.uniquePower0))
+        // Generic import maps Compulsive to 0; a nonzero count can only be the
+        // folded REACTIVE_ROLL_MOVE of the pending queue.
+        const bool queuedReroll=reactive && domeReactiveFix() && m.uniquePower1>0
+            && std::any_of(wire.pendingActionQueue.begin(),wire.pendingActionQueue.end(),[](const auto &action) {
+                return action.kind==silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE;});
+        if((m.statusBits & ~allowed) || (!guardian && !queuedReroll && m.uniquePower1) || (!(m.statusBits & uniqueMask) && m.uniquePower0))
             return "silver_runic_dome_monster_power_domain";
         for(std::size_t i=1;i<m.smallPowers.size();++i)
             if(m.smallPowers[i] && !(allowed & (1ULL<<i))) return "silver_runic_dome_monster_power_domain";
@@ -1461,7 +1525,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     p.devaFormEnergyPerTurn = static_cast<std::int16_t>(combat.value("devaFormEnergyPerTurn", 0));
     p.echoFormCardsDoubled = static_cast<std::int8_t>(combat.value("echoFormCardsDoubled", 0));
     p.panacheCounter = static_cast<std::int8_t>(combat.value("panacheCounter", 0));
-    if (combat.contains("orangePelletsCardTypesPlayed"))
+    if (orangePelletsFix() && combat.contains("orangePelletsCardTypesPlayed"))
         p.orangePelletsCardTypesPlayed = static_cast<std::uint8_t>(combat.value("orangePelletsCardTypesPlayed", 0));
     if (combat.contains("statusBits0")) p.statusBits0 = combat.value("statusBits0", 0ULL);
     if (combat.contains("statusBits1")) p.statusBits1 = combat.value("statusBits1", 0U);
@@ -1965,6 +2029,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         wire.pendingCardQueueObserved = true;
     }
+    bool guardianShift=false;
     if (combat.contains("pendingActionQueue")) {
         using K=silver_bridge::PendingActionKind;
         const auto &queue=combat.at("pendingActionQueue");
@@ -1975,7 +2040,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || (sourceOrigin=="CARD_REWARD" && wire.cardSelect.task==static_cast<int>(sts::CardSelectTask::DISCOVERY)
                     && wire.cardSelect.data0==1 && wire.cardSelect.setCostToZero && !wire.cardSelect.canPickZero)))
             return unsupported("silver_selection_pending_actions");
-        if (!cardSelect || (continuation=="public_actions"
+        const bool rewardPublic=cardSelect && sourceOrigin=="CARD_REWARD" && cardRewardPublicActions()
+            && wire.cardSelect.task==static_cast<int>(sts::CardSelectTask::DISCOVERY);
+        if (!cardSelect || (continuation=="public_actions" && !rewardPublic
                     && wire.cardSelect.task!=static_cast<int>(sts::CardSelectTask::GAMBLE)
                     && wire.cardSelect.task!=static_cast<int>(sts::CardSelectTask::EXHAUST_MANY)
                     && wire.cardSelect.task!=static_cast<int>(sts::CardSelectTask::LIQUID_MEMORIES_POTION))
@@ -1989,10 +2056,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         const std::map<std::string,K> kinds={{"DRAW",K::DRAW},{"GAIN_BLOCK",K::GAIN_BLOCK},{"GAIN_ENERGY",K::GAIN_ENERGY},
             {"DAMAGE_ALL",K::DAMAGE_ALL},{"DAMAGE_RANDOM",K::DAMAGE_RANDOM},{"GAMBLE",K::GAMBLE},
             {"UPGRADE_RANDOM",K::UPGRADE_RANDOM},{"BUFF_PLAYER",K::BUFF_PLAYER},{"DEBUFF_PLAYER",K::DEBUFF_PLAYER},
-            {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"USE_CARD",K::USE_CARD},
+            {"DEBUFF_ALL_ENEMY",K::DEBUFF_ALL_ENEMY},{"SHUFFLE_WOUNDS",K::SHUFFLE_WOUNDS},{"SHUFFLE_DAZED",K::SHUFFLE_DAZED},{"USE_CARD",K::USE_CARD},
             {"REMOVE_PEN_NIB",K::REMOVE_PEN_NIB},{"REMOVE_PLAYER_DEBUFFS",K::REMOVE_PLAYER_DEBUFFS}};
         int cleanups=0;
-        bool reactiveRoll=false,guardianShift=false;
+        bool reactiveRoll=false;
         for(const auto &entry:queue) {
             if(!entry.is_object() || !entry.contains("kind") || !entry.at("kind").is_string()) return unsupported("silver_selection_pending_actions");
             // Monster on-hit reactions (Java addToBot) queued behind an
@@ -2000,6 +2067,22 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="MONSTER_SET_MOVE") {
+                // Darkling.damage sets Regrow at the half-death and queues the
+                // same SetMoveAction behind the card; native does the same.
+                int slot=-1,move=-1;
+                if(!sourceCard || !halfDeadSetMoveQueue() || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"move",move)
+                        || slot<0 || slot>=wire.monsterCount || move!=4)
+                    return unsupported("silver_selection_pending_actions");
+                const auto &monster=wire.monsters[slot];
+                if(monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::DARKLING) || !monster.halfDead
+                        || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::DARKLING_REGROW))
+                    return unsupported("silver_selection_pending_actions");
+                silver_bridge::PendingActionWire action;action.kind=K::MONSTER_SET_MOVE;
+                action.amount=static_cast<int>(sts::MonsterMoveId::DARKLING_REGROW);action.monster=slot;
+                wire.pendingActionQueue.push_back(action);
+                continue;
+            }
             if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR"
                     || kindName=="MONSTER_REDUCE_FLIGHT" || kindName=="MONSTER_THORNS" || kindName=="MONSTER_CURL_UP"
                     || kindName=="GUARDIAN_DEFENSIVE_SHIFT") {
@@ -2116,6 +2199,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     return unsupported("silver_selection_pending_actions");
             }
             if(action.kind==K::SHUFFLE_WOUNDS && action.amount!=2)return unsupported("silver_selection_pending_actions");
+            // Native Hex is a flag that always makes one Dazed.
+            constexpr int hex=static_cast<int>(PlayerStatus::HEX);
+            if(action.kind==K::SHUFFLE_DAZED && (!hexDazedQueue() || action.amount!=1
+                    || !(hex<64 ? (wire.player.statusBits0>>hex)&1ULL : (wire.player.statusBits1>>(hex-64))&1U)))
+                return unsupported("silver_selection_pending_actions");
             if(action.kind==K::DEBUFF_ALL_ENEMY) {
                 const auto power=entry.value("power",std::string());
                 const auto status=live_silver::monsterStatus(power);
@@ -2135,14 +2223,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             wire.pendingActionQueue.push_back(action);
         }
         if(sourceCard && cleanups!=1)return unsupported("silver_selection_pending_actions");
-        // An exhausted Mode Shift must come with its queued shift.
-        for(int i=0;i<wire.monsterCount;++i) {
-            const auto &m=wire.monsters[i];
-            if(!guardianShift && m.id==static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN) && m.curHp>0
-                    && (m.statusBits & (1ULL<<static_cast<int>(sts::MonsterStatus::MODE_SHIFT))) && m.uniquePower0<=0)
-                return unsupported("silver_selection_pending_actions");
-        }
         wire.pendingActionQueueObserved=true;
+    }
+    // An exhausted Mode Shift must come with its queued shift
+    // (GUARDIAN_DEFENSIVE_SHIFT); Java resolves the shift before any other
+    // decision, so anywhere else it is not a representable state.
+    for(int i=0;i<wire.monsterCount;++i) {
+        const auto &m=wire.monsters[i];
+        if(!guardianShift && m.id==static_cast<std::int16_t>(sts::MonsterId::THE_GUARDIAN) && m.curHp>0
+                && (m.statusBits & (1ULL<<static_cast<int>(sts::MonsterStatus::MODE_SHIFT))) && m.uniquePower0<=0)
+            return unsupported(combat.contains("pendingActionQueue")?"silver_selection_pending_actions":"silver_unmapped_monster_power");
     }
     if(cardSelect && (selectionIt->value("continuation",std::string())=="public_actions"
             || selectionIt->value("continuation",std::string())=="toolbox_actions"
@@ -2152,7 +2242,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         const auto continuation = selectionIt->value("continuation", std::string());
         const bool codex = continuation == "codex_end_turn" && wire.cardSelect.task == static_cast<std::int16_t>(sts::CardSelectTask::CODEX);
         if ((!codex && wire.cardSelect.task != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY))
-            || (!codex && continuation != "none" && continuation != "discovery_card" && continuation != "toolbox_draw" && continuation != "toolbox_actions" && continuation != "source_card_actions")
+            || (!codex && continuation != "none" && continuation != "discovery_card" && continuation != "toolbox_draw" && continuation != "toolbox_actions" && continuation != "source_card_actions"
+                && !(continuation == "public_actions" && cardRewardPublicActions() && wire.pendingActionQueueObserved))
             || wire.endTurnQueued || wire.turnHasEnded || (!codex && continuation!="source_card_actions" && !wire.pendingCardQueue.empty()))
             return unsupported("silver_card_reward_pending_actions");
         if (codex) {

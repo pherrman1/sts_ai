@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-20 for the Act 4 map import; 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -246,7 +246,10 @@ Pellets, used-up relics, Necronomicon, and Centennial Puzzle
 (`usedThisCombat`, a private static in vanilla) is serialized when its runtime field
 is accessible; otherwise the importer rejects that state. Monster `miscInfo`
 is similarly serialized from known runtime trackers or omitted so the importer
-fails closed. Bronze Orb Stasis uses the runtime `StasisPower.card` object to
+fails closed. Orange Pellets' played card types come from the relic's private
+static `ATTACK`/`SKILL`/`POWER` flags (not a power; before live parity
+problem 32 the mod looked for a power and never wrote the field); a missing
+field imports as 0 (`STS_IMPORTER_ORANGE_PELLETS_FIX`). Bronze Orb Stasis uses the runtime `StasisPower.card` object to
 preserve the exact physical card UUID and state, rejecting only the active-
 Stasis snapshot when that field is unavailable.
 The observer's post-`AbstractPlayer.damage()` patch records finalized damage
@@ -279,7 +282,12 @@ block order and lethal damage.
 Qualified source-card selectors, standalone selectors and Toolbox capture an
 ordered typed action tail: opening draws, block/energy, literal or random enemy damage,
 Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
-batches, Mark of Pain's two shuffled Wounds, and the owning card's cleanup.
+batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
+non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
+Discovery choice under Hex), and the owning card's cleanup.
+A potion's Discovery offer with Toy Ornithopter's heal queued behind it uses
+continuation `public_actions` (`STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS`); an
+offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
@@ -748,7 +756,8 @@ read-only screen and choice converters. The observation contains:
 
 - `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
   potion capacity and five exact slots, physical deck instances with bottle
-  binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
+  binding, relic data, visible boss, the complete visible 15-by-7 map and edges
+  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`),
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
@@ -1369,11 +1378,17 @@ first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` q
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
 that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
-any other queued monster action. In the wire, a pending action's JSON now carries `monster` (native
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
 unobserved tail and its card-replay fallback).
+Under Runic Dome the folded Reactive count is accepted for Writhing Mass when the
+queue carries its `REACTIVE_ROLL_MOVE` (live seed 111200416): the mod's history has
+not counted the queued reroll, and native defers it under hidden intents with the
+inputs of the moment it runs, as Java's `RollMoveAction` rolls then
+(`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
+`silver_runic_dome_monster_power_domain`).
 
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case

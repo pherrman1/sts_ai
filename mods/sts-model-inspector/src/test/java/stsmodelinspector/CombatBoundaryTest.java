@@ -121,6 +121,21 @@ public final class CombatBoundaryTest {
             catch(ClassNotFoundException error){throw new AssertionError(error);}
         }
         try {
+            // Problem 32: the played-types state lives in the relic's static flags.
+            Class<?> pellets=Class.forName("com.megacrit.cardcrawl.relics.OrangePellets",false,CombatBoundaryTest.class.getClassLoader());
+            for(String flag:new String[]{"ATTACK","SKILL","POWER"}) {
+                java.lang.reflect.Field field=pellets.getDeclaredField(flag);
+                if(field.getType()!=boolean.class || !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+                    throw new AssertionError("OrangePellets "+flag+" flag contract changed");
+            }
+        } catch(ReflectiveOperationException error){throw new AssertionError(error);}
+        if(STSModelInspector.orangePelletsNativeBits(true,false,false)!=1
+                || STSModelInspector.orangePelletsNativeBits(false,true,false)!=2
+                || STSModelInspector.orangePelletsNativeBits(true,false,true)!=5
+                || STSModelInspector.orangePelletsNativeBits(false,false,false)!=0
+                || STSModelInspector.orangePelletsNativeBits(true,null,false)!=null)
+            throw new AssertionError("Orange Pellets native bits changed");
+        try {
             Class<?> cleanup=Class.forName("com.megacrit.cardcrawl.actions.utility.UseCardAction",false,CombatBoundaryTest.class.getClassLoader());
             Class<?> cleanse=Class.forName("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction",false,CombatBoundaryTest.class.getClassLoader());
             if(cleanse.getDeclaredField("c").getType()!=com.megacrit.cardcrawl.core.AbstractCreature.class)
@@ -228,6 +243,8 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Pen Nib")==null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",2,"Pen Nib")!=null
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_WOUNDS",3,null)!=null
+                || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",1,null)==null
+                || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",2,null)!=null
                 || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Echo Form")!=null
                 || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null
@@ -251,6 +268,9 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.monsterReactionItemJson("GUARDIAN_DEFENSIVE_SHIFT",null,1)!=null
                 || !"{\"kind\":\"MONSTER_CURL_UP\",\"amount\":10,\"slot\":1}".equals(STSModelInspector.monsterReactionItemJson("MONSTER_CURL_UP",10,1))
                 || STSModelInspector.monsterReactionItemJson("MONSTER_CURL_UP",0,0)!=null
+                || !"{\"kind\":\"MONSTER_SET_MOVE\",\"move\":4,\"slot\":2}".equals(STSModelInspector.monsterSetMoveItemJson(4,2))
+                || STSModelInspector.monsterSetMoveItemJson(3,0)!=null
+                || STSModelInspector.monsterSetMoveItemJson(4,5)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_ROLL_PRIVATE",0,0)!=null)
             throw new AssertionError("monster reaction pending action qualification");
         for(int count:new int[]{1,2}) {
@@ -312,6 +332,13 @@ public final class CombatBoundaryTest {
                 "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless", 1, false, "none", offers, true), JsonObject.class);
         if (!typedPotion.get("canPickZero").getAsBoolean() || toolbox.get("setCostToZero").getAsBoolean())
             throw new AssertionError("typed potion skip or Toolbox normal cost lost");
+        JsonObject potionTail = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                discovery, 1, true, "public_actions", offers, true), JsonObject.class);
+        JsonObject toolboxPublic = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless", 1, false, "public_actions", offers, true), JsonObject.class);
+        if (potionTail.has("unsupportedReason") || !"public_actions".equals(potionTail.get("continuation").getAsString())
+                || !"silver_card_reward_pending_actions".equals(toolboxPublic.get("unsupportedReason").getAsString()))
+            throw new AssertionError("potion offer public tail not limited to DiscoveryAction");
         java.util.List<String> openingDraw = java.util.Arrays.asList(
                 "com.megacrit.cardcrawl.actions.common.DrawCardAction",
                 "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction");

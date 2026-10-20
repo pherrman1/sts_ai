@@ -2201,6 +2201,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    static Integer orangePelletsNativeBits(Boolean attack, Boolean skill, Boolean power) {
+        // Native bitset<3>: bit 0 Attack, 1 Skill, 2 Power.
+        if (attack == null || skill == null || power == null) return null;
+        return (attack ? 1 : 0) | (skill ? 2 : 0) | (power ? 4 : 0);
+    }
+
     static Integer awakenedNativePhase(Boolean form1, boolean halfDead) {
         // Vanilla flips form1 in damage(), before the rebirth move executes.
         // Native remains in phase zero through the half-dead interval.
@@ -2735,6 +2741,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
         } else if ("SHUFFLE_WOUNDS".equals(kind)) {
             if (amount != 2) return null;
+        } else if ("SHUFFLE_DAZED".equals(kind)) {
+            if (amount != 1) return null;
         } else if ("HEAL_PLAYER".equals(kind)) {
             if (amount != 5) return null;
         } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
@@ -2803,6 +2811,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return null;
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
+            // Darkling.damage at a half-death: setMove(4) now, then
+            // addToBot(SetMoveAction(this, 4, UNKNOWN)) behind the card.
+            if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
+                String item=halfDeadSetMoveJson(action);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
             // CurlUpPower.onAttacked: ChangeStateAction("CLOSED") (animation
             // only), GainBlockAction, RemoveSpecificPowerAction("Curl Up").
             if(sourceTask!=null && isActionClass(name,"ChangeStateAction")) {
@@ -2868,14 +2883,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 kind="DAMAGE_RANDOM";
             } else if("com.megacrit.cardcrawl.actions.common.MakeTempCardInDrawPileAction".equals(name)) {
                 Object value=readObjectField(action,"cardToMake");
-                if(!hasRelic("Mark of Pain") || !(value instanceof AbstractCard)
-                        || !value.getClass().getName().equals("com.megacrit.cardcrawl.cards.status.Wound")
+                String made=value==null?"":value.getClass().getName();
+                // HexPower.onUseCard: a non-Attack queues
+                // MakeTempCardInDrawPileAction(new Dazed(), amount, true, true).
+                AbstractPower hex=AbstractDungeon.player.getPower("Hex");
+                boolean wound=hasRelic("Mark of Pain") && made.equals("com.megacrit.cardcrawl.cards.status.Wound");
+                boolean dazed=made.equals("com.megacrit.cardcrawl.cards.status.Dazed") && hex!=null
+                        && amount!=null && amount==hex.amount;
+                if((!wound && !dazed) || !(value instanceof AbstractCard)
                         || !Boolean.TRUE.equals(readBooleanField(action,"randomSpot"))
                         || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return null;
                 AbstractCard card=(AbstractCard)value;
                 if(card.upgraded || card.timesUpgraded!=0 || card.misc!=0 || card.cost!=-2
                         || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return null;
-                kind="SHUFFLE_WOUNDS";
+                kind=wound?"SHUFFLE_WOUNDS":"SHUFFLE_DAZED";
             } else if("com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(name)) {
                 Object value=readObjectField(action,"powerToApply");
                 if(!(value instanceof AbstractPower)) return null;
@@ -2964,6 +2985,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static boolean isActionClass(String name,String simpleName) {
         return name.startsWith("com.megacrit.cardcrawl.actions.") && name.endsWith("."+simpleName);
+    }
+
+    private static String halfDeadSetMoveJson(Object action) {
+        Object value=readObjectField(action,"monster");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster darkling=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(darkling), move=readIntField(action,"theNextMove");
+        if(!"Darkling".equals(darkling.id) || slot==null || !darkling.halfDead || darkling.isDeadOrEscaped()
+                || move==null || move!=4 || darkling.nextMove!=4
+                || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
+        return monsterSetMoveItemJson(move,slot);
+    }
+
+    static String monsterSetMoveItemJson(int move,int slot) {
+        return move==4 && slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SET_MOVE\",\"move\":4,\"slot\":"+slot+"}" : null;
     }
 
     private static String guardianShiftJson(Object change) {
@@ -3109,6 +3145,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         else if (!codex && (copies == null || copies < 1 || copies > 2))
             reason = "silver_card_reward_copy_count";
         else if (!codex && !"none".equals(continuation) && !"discovery_card".equals(continuation) && !"source_card_actions".equals(continuation)
+                && !("public_actions".equals(continuation) && "com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass))
                 && !(("toolbox_draw".equals(continuation) || "toolbox_actions".equals(continuation))
                     && "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)))
             reason = "silver_card_reward_pending_actions";
@@ -3275,6 +3312,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && sourceSelectionOwner("DISCOVERY",trackedLastCardQueueItem.physicalCard.getClass().getName())) {
             continuation=publicPendingActionsJson(false,"DISCOVERY")!=null?"source_card_actions":"unsupported";
         }
+        // An Attack/Skill/Power/Colorless Potion's DiscoveryAction with Toy
+        // Ornithopter's HealAction(5) queued behind the choice; no card owns it.
+        if("com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass) && "unsupported".equals(continuation)
+                && !hasPendingUseCard()) {
+            String tail=publicPendingActionsJson(false);
+            if(tail!=null && !"[]".equals(tail)) continuation="public_actions";
+        }
         List<Integer> drawsAfter = null;
         List<Integer> blocksAfter = new ArrayList<>();
         int damageAllBeforeBlocks = 0;
@@ -3301,6 +3345,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             selection = selection.substring(0, selection.length() - 1) + ",\"blocksAfter\":" + blocksAfter + "}";
         if (damageAllBeforeBlocks > 0 && "codex_end_turn".equals(continuation))
             selection = selection.substring(0, selection.length() - 1) + ",\"damageAllBeforeBlocks\":" + damageAllBeforeBlocks + "}";
+        // Diagnostic only: name the queue that blocked this offer.
+        if (selection.contains("\"unsupportedReason\":\"silver_card_reward_pending_actions\""))
+            selection = selection.substring(0, selection.length() - 1) + ",\"pendingActionsBlocker\":\""
+                    + escapeJson(pendingActionsBlocker()) + "\"}";
         return selection;
     }
 
@@ -3455,16 +3503,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
-            } else if ("Orange Pellets".equals(power.ID) || "OrangePelletsPower".equals(power.ID)) {
-                int cardTypes = 0;
-                for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
-                    if (card.type == AbstractCard.CardType.ATTACK) cardTypes |= 1;
-                    else if (card.type == AbstractCard.CardType.SKILL) cardTypes |= 2;
-                    else if (card.type == AbstractCard.CardType.POWER) cardTypes |= 4;
-                }
-                out.append(",\"orangePelletsCardTypesPlayed\":")
-                        .append(cardTypes == 7 ? 0 : cardTypes);
             }
+        }
+        // Orange Pellets is a relic, not a power: vanilla keeps the played
+        // types in its private static ATTACK/SKILL/POWER flags, set in
+        // onUseCard, cleared when all three fire and in atTurnStart.
+        for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
+            if (!"OrangePellets".equals(relic.relicId)) continue;
+            Integer cardTypes = orangePelletsNativeBits(readBooleanField(relic, "ATTACK"),
+                    readBooleanField(relic, "SKILL"), readBooleanField(relic, "POWER"));
+            if (cardTypes != null) out.append(",\"orangePelletsCardTypesPlayed\":").append(cardTypes);
+            break;
         }
         out.append(",\"cardSelect\":").append(selection == null ? "false" : selection)
                 .append(",\"resolving\":false")

@@ -166,6 +166,33 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
                                 "MODEL_UNAVAILABLE", (defect, response))
 
+    def test_captured_act4_opening_map_imports_native_act4_map(self):
+        # Live-canary problem 38: the fixed Act 4 map behind the Heart door.
+        observation = json.loads((Path(__file__).parent / "fixtures/live_act4_entry.json").read_text())
+        response, = self.run_rows([observation], model=False, policy="mcts")
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE", response)
+        response, = self.run_rows([observation], model=False, policy="mcts",
+                                  extra_env={"STS_IMPORTER_ACT4_MAP_FIX": "0"})
+        self.assertEqual(response["evaluators"][0]["reason"], "VISIBLE_MAP_UNREPRESENTABLE:ACT_4", response)
+        for defect in range(6):
+            malformed = copy.deepcopy(observation)
+            nodes = {(n["x"], n["y"]): n for n in malformed["ooc"]["publicState"]["map"]["nodes"]}
+            if defect == 0:
+                nodes[(3, 2)]["room"] = "MONSTER"
+            elif defect == 1:
+                nodes[(3, 3)]["edges"] = [3]
+            elif defect == 2:
+                nodes[(2, 0)]["edges"] = [3]
+            elif defect == 3:
+                malformed["ooc"]["publicState"]["map"]["nodes"].pop()
+            elif defect == 4:
+                malformed["ooc"]["publicState"]["floor"] = 53
+            else:
+                malformed["ooc"]["mcpState"]["room_type"] = "TreasureRoomBoss"
+            response, = self.run_rows([malformed], model=False, policy="mcts")
+            self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
+                                "MODEL_UNAVAILABLE", (defect, response))
+
     def test_selector_preview_scores_confirm_or_return_to_original_grid(self):
         observation = next(row for name,row in self.fixtures.items()
                            if name.startswith("selector_preview_") and row["ooc"]["details"]["type"] == "upgrade")

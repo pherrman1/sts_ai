@@ -1527,6 +1527,39 @@ int main(int argc, char **argv) {
             if(!decision.accepted)throw std::runtime_error("captured Runic Dome search: "+path+": "+decision.failureReason);
             std::cout << "captured Runic Dome turn-1 import and search passed: " << path << "\n";
         }
+        // Overnight live seed 111200416, problem 34: under Runic Dome, Headbutt's GRID after hitting Writhing Mass
+        // (turn 2; Orange Pellets, Headbutt cleanup, Malleable block and the Reactive reroll still queued).
+        {
+            const std::string path=argc>5?argv[5]:"tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Runic Dome Writhing Mass fixture: "+path);
+            json observation; input >> observation;
+            setenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX");
+            if(legacy.ok || legacy.reason!="silver_runic_dome_monster_power_domain")
+                throw std::runtime_error("captured Runic Dome Writhing Mass legacy refusal changed: "+legacy.reason);
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Runic Dome Writhing Mass import: "+imported.reason);
+            const auto &queue=imported.wire.pendingActionQueue;
+            if(imported.wire.monsters[0].uniquePower1!=1 || imported.wire.monsters[0].pendingMoveRolls!=1 || queue.size()!=4
+                    || queue[0].kind!=silver_bridge::PendingActionKind::REMOVE_PLAYER_DEBUFFS
+                    || queue[2].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK || queue[2].amount!=3
+                    || queue[3].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE)
+                throw std::runtime_error("captured Runic Dome Writhing Mass root lost its queued reactions");
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Runic Dome Writhing Mass search: "+decision.failureReason);
+            auto root=battleContextFromWire(imported.wire);
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,0).execute(root);
+            const auto &mass=root.monsters.arr[0];
+            if(root.inputState!=InputState::PLAYER_NORMAL || mass.getStatus<MonsterStatus::REACTIVE>()!=0
+                    || mass.pendingMoveRolls!=2 || mass.pendingRollInputHistory.size()!=2
+                    || mass.pendingRollInputHistory[1].curHp!=mass.curHp || mass.pendingRollInputHistory[0].curHp!=175)
+                throw std::runtime_error("captured Runic Dome Writhing Mass reroll was not deferred after the selection");
+            std::cout << "captured Runic Dome Writhing Mass Headbutt import and search passed: " << path << "\n";
+        }
         {
             const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";
             std::ifstream input(path);
@@ -2065,6 +2098,17 @@ int main(int argc, char **argv) {
                 bc.monsters.arr[0].materializePendingMove(bc);
                 if(javaMoveByte("TheGuardian",bc.monsters.arr[0].moveHistory[0])!=target || (phase && bc.aiRng!=rng))
                     throw std::runtime_error("Guardian phase consumed RNG or changed move");
+                if(phase==0) {
+                    // An exhausted Mode Shift without its queued shift
+                    // (GUARDIAN_DEFENSIVE_SHIFT) is refused at a normal decision.
+                    for(const int amount:{0,-3}) {
+                        auto unqueued=obs;
+                        unqueued["silverRoot"]["combat"]["monsters"][0]["powers"].back()["amount"]=amount;
+                        const auto refused=one_combat::advisor::importSilverRoot(unqueued);
+                        if(refused.ok || refused.reason!="silver_unmapped_monster_power")
+                            throw std::runtime_error("unqueued exhausted Mode Shift accepted: "+refused.reason);
+                    }
+                }
                 if(phase==4) {
                     c["monsters"][0]["powers"].push_back({{"id","Mode Shift"},{"amount",1}});
                     if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("Guardian contradictory forced defense accepted");
@@ -2840,6 +2884,28 @@ int main(int argc, char **argv) {
         if (!convertedStatesEqualForSearch(penNibRelicExpected, penNibRelicImported.wire))
             throw std::runtime_error("Pen Nib relic parity failed");
 
+        // Problem 32 (live seed 111200414): the mod now exports Orange Pellets'
+        // played types; STS_IMPORTER_ORANGE_PELLETS_FIX=0 restores the old 0.
+        for (const char *flag : {"1", "0"}) {
+            auto pellets = genericObservation(fixtures[0], "orange-pellets-parity");
+            pellets["silverRoot"]["combat"]["relics"].push_back(
+                json{{"id", "OrangePellets"}, {"counter", -1}, {"usedUp", false}});
+            pellets["silverRoot"]["combat"]["orangePelletsCardTypesPlayed"] = 5;
+            setenv("STS_IMPORTER_ORANGE_PELLETS_FIX", flag, 1);
+            const auto pelletsImported = one_combat::advisor::importSilverRoot(pellets);
+            unsetenv("STS_IMPORTER_ORANGE_PELLETS_FIX");
+            if (!pelletsImported.ok)
+                throw std::runtime_error("Orange Pellets import failed: " + pelletsImported.reason);
+            auto pelletsExpected = fixtures[0].wire;
+            normalizeFirstObservationIdentity(pelletsExpected);
+            pelletsExpected.player.relicBits0 |= 1ULL << static_cast<int>(RelicId::ORANGE_PELLETS);
+            pelletsExpected.player.orangePelletsCardTypesPlayed = std::string(flag) == "1" ? 5 : 0;
+            pelletsExpected.isolatedSearchSeed = pelletsImported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(pelletsExpected, pelletsImported.wire))
+                throw std::runtime_error(std::string("Orange Pellets parity failed, flag=") + flag
+                    + " imported=" + std::to_string(pelletsImported.wire.player.orangePelletsCardTypesPlayed));
+        }
+
         // Relics with enum index >= 128 (Thread and Needle, Maw Bank) have no
         // combat bit; the legacy importer aliased them onto index - 64.
         auto highRelic = genericObservation(fixtures[0], "high-relic-parity");
@@ -3395,6 +3461,58 @@ int main(int argc, char **argv) {
             if (!one_combat::advisor::selectedLiveAction(semantic, context, offer).is_null())
                 throw std::runtime_error("non-skippable reward accepted Skip");
         }
+        // Problem 33 variant (live seed 111200417): Colorless Potion's offer
+        // with Toy Ornithopter's heal queued behind the choice.
+        for (int copies : {1, 2}) for (int flag : {1, 0}) {
+            auto offer = genericObservation(fixtures[0], "potion-offer-toy-heal-tail");
+            auto &combat = offer["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id","Toy Ornithopter"},{"counter",-1},{"usedUp",false}});
+            combat["cardSelect"] = offerSelection(copies, "public_actions");
+            combat["pendingActionQueue"] = json::array({json{{"kind","HEAL_PLAYER"},{"amount",5}}});
+            if (!flag) setenv("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS", "0", 1);
+            const auto imported = one_combat::advisor::importSilverRoot(offer);
+            unsetenv("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS");
+            if (!flag) {
+                if (imported.ok || imported.reason != "silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS=0 accepted the potion offer tail");
+                continue;
+            }
+            if (!imported.ok) throw std::runtime_error("potion offer heal tail import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            selected.player.curHp = selected.player.maxHp - 10;
+            const int before = selected.player.curHp, handCount = selected.cards.cardsInHand;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(selected);
+            if (selected.inputState != InputState::PLAYER_NORMAL || selected.player.curHp != before + 5
+                    || selected.cards.cardsInHand != handCount + copies
+                    || selected.cards.hand[handCount].id != CardId::SHRUG_IT_OFF)
+                throw std::runtime_error("potion offer heal tail did not add the pick and then heal");
+            for (int defect = 0; defect < 3; ++defect) {
+                auto bad = offer; auto &c = bad["silverRoot"]["combat"];
+                if (defect == 0) c["pendingActionQueue"][0]["amount"] = 4;
+                if (defect == 1) c["pendingActionQueue"] = json::array();
+                if (defect == 2) c.erase("pendingActionQueue");
+                if (one_combat::advisor::importSilverRoot(bad).ok)
+                    throw std::runtime_error("unqualified potion offer tail accepted");
+            }
+        }
+        {
+            // Native Colorless Potion with Toy Ornithopter leaves the same tail.
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act = 1; game.floorNum = 1;
+            BattleContext native; native.init(game, MonsterEncounter::CULTIST);
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(native);
+            native.player.setHasRelic<RelicId::TOY_ORNITHOPTER>(true);
+            native.potions[0] = Potion::COLORLESS_POTION; native.potionCount = 1;
+            native.player.curHp = native.player.maxHp - 10;
+            sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(native);
+            if (native.inputState != InputState::CARD_SELECT || native.cardSelectInfo.cardSelectTask != CardSelectTask::DISCOVERY)
+                throw std::runtime_error("Colorless Potion fixture did not open its offer");
+            const auto wire = makeSilverBattleStateWire(native, knowledge, makeSilverRunContext(game), 0x7151cu);
+            if (!wire.pendingActionQueueObserved || wire.pendingActionQueue.size() != 1
+                    || wire.pendingActionQueue[0].kind != silver_bridge::PendingActionKind::HEAL_PLAYER
+                    || wire.pendingActionQueue[0].amount != 5)
+                throw std::runtime_error("native potion offer tail is not [HEAL_PLAYER 5]");
+        }
         {
             auto offer = genericObservation(fixtures[0], "normal-cost-toolbox-offer");
             auto &selection = offer["silverRoot"]["combat"]["cardSelect"];
@@ -3812,7 +3930,9 @@ int main(int argc, char **argv) {
             if (selected.player.strength != 2 || selected.inputState != InputState::PLAYER_NORMAL)
                 throw std::runtime_error("standalone offer replayed a completed historical power");
         }
-        for (bool upgraded : {false, true}) for(bool exactTail:{false,true}) {
+        for (bool upgraded : {false, true}) for(int tail:{0,1,2}) {
+            // tail 2: Hex's Dazed queued behind the choice (live seed 111200415).
+            const bool exactTail=tail>0, hexTail=tail==2;
             auto discovery = genericObservation(fixtures[0], "discovery-card-continuation");
             auto &root = discovery["silverRoot"];
             auto &combat = root["combat"];
@@ -3836,6 +3956,20 @@ int main(int argc, char **argv) {
                 combat["pendingCardQueue"]=json::array();
                 combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"])});
             }
+            if(hexTail) {
+                combat["playerPowers"].push_back(json{{"id","Hex"},{"amount",1}});
+                combat["pendingActionQueue"].insert(combat["pendingActionQueue"].begin(),json{{"kind","SHUFFLE_DAZED"},{"amount",1}});
+                for(int defect=0;defect<3;++defect) {
+                    auto bad=discovery;auto &c=bad["silverRoot"]["combat"];
+                    if(defect==0)c["pendingActionQueue"][0]["amount"]=2;
+                    if(defect==1)c["playerPowers"].erase(c["playerPowers"].size()-1);
+                    if(defect==2)setenv("STS_SILVER_HEX_DAZED_QUEUE","0",1);
+                    const auto rejected=one_combat::advisor::importSilverRoot(bad);
+                    unsetenv("STS_SILVER_HEX_DAZED_QUEUE");
+                    if(rejected.ok || rejected.reason!="silver_selection_pending_actions")
+                        throw std::runtime_error("unqualified Hex Dazed tail accepted");
+                }
+            }
             one_combat::advisor::SilverImportContext context;
             const auto imported = one_combat::advisor::importSilverRoot(discovery, context);
             if (!imported.ok) throw std::runtime_error("Discovery cleanup import: " + imported.reason);
@@ -3851,6 +3985,41 @@ int main(int argc, char **argv) {
                     return c.id == CardId::DISCOVERY && c.uniqueId == discoveryId;
                 }))
                 throw std::runtime_error("Discovery cleanup did not preserve exhaust/discard semantics");
+            const auto dazed=std::count_if(selected.cards.drawPile.begin(),selected.cards.drawPile.end(),
+                [](const auto &c){return c.id==CardId::DAZED;});
+            if(dazed!=(hexTail?1:0))throw std::runtime_error("Hex Dazed tail not applied exactly once");
+        }
+        {
+            // Native Discovery under Hex leaves the same tail: Dazed, then cleanup.
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=2; game.floorNum=21;
+            BattleContext live; live.init(game, MonsterEncounter::CHOSEN_AND_BYRDS);
+            live.player.setHasStatus<PlayerStatus::HEX>(true);
+            CardInstance discoveryCard(CardId::DISCOVERY); discoveryCard.uniqueId=930;
+            live.cards.moveToHand(discoveryCard); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::DISCOVERY)
+                throw std::runtime_error("Hex fixture did not open Discovery's choice");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            const auto wire=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x7151bu);
+            if(!wire.pendingActionQueueObserved || wire.pendingActionQueue.size()!=2
+                    || wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::SHUFFLE_DAZED
+                    || wire.pendingActionQueue[0].amount!=1
+                    || wire.pendingActionQueue[1].kind!=silver_bridge::PendingActionKind::USE_CARD)
+                throw std::runtime_error("native Discovery under Hex tail is not [SHUFFLE_DAZED, USE_CARD]");
+            setenv("STS_SILVER_HEX_DAZED_QUEUE","0",1);
+            const auto legacy=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x7151bu);
+            unsetenv("STS_SILVER_HEX_DAZED_QUEUE");
+            if(legacy.pendingActionQueueObserved)
+                throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE=0 did not restore the legacy tail");
+            auto restored=battleContextFromWire(json(wire).get<silver_bridge::BattleStateWire>());
+            auto reference=live;
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(restored); pick.execute(reference);
+            const auto count=[](const auto &pile){return std::count_if(pile.begin(),pile.end(),[](const auto &c){return c.id==CardId::DAZED;});};
+            if(count(restored.cards.drawPile)!=1 || count(reference.cards.drawPile)!=1
+                    || restored.inputState!=InputState::PLAYER_NORMAL)
+                throw std::runtime_error("Hex Dazed tail lost in the wire roundtrip");
         }
         for (const char *reason : {"silver_card_reward_end_turn_continuation", "silver_card_reward_toolbox_cost",
                                   "silver_card_reward_skip_unrepresentable", "silver_card_reward_pending_actions"}) {
@@ -4010,13 +4179,16 @@ int main(int argc, char **argv) {
         // Hide thorns hit, the offensive Guardian's Mode Shift crossing and a
         // louse's Curl Up. Live runs 111194455/111194451/111200382/111200385/
         // 111200388/111200389 stopped here.
-        for (int variant=0;variant<6;++variant) {
+        // A Headbutt that kills a Darkling leaves its half-death Regrow
+        // SetMoveAction queued (live seed 111200400).
+        for (int variant=0;variant<7;++variant) {
             const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
                 MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
-                MonsterEncounter::TWO_LOUSE}[variant];
+                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS}[variant];
             const bool mass=variant==0, guardian=variant==2, byrd=variant==3, shift=variant==4, louse=variant==5;
+            const bool darkling=variant==6;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
-            game.act=mass?3:guardian||shift||louse?1:2; game.floorNum=mass?38:guardian||shift?16:louse?5:29;
+            game.act=mass||darkling?3:guardian||shift||louse?1:2; game.floorNum=mass?38:darkling?35:guardian||shift?16:louse?5:29;
             BattleContext live; live.init(game, encounter);
             auto &target=live.monsters.arr[0];
             target.block=0;
@@ -4038,6 +4210,11 @@ int main(int argc, char **argv) {
             if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
             const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
             if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
+            if(darkling) {
+                // Ink Bottle's 10th card queues its draw ahead of the cleanup, as live.
+                target.curHp=5;
+                live.player.setHasRelic<RelicId::INK_BOTTLE>(true); live.player.inkBottleCounter=9;
+            }
             const int hpBefore=target.curHp;
             const std::array<MonsterMoveId,2> preHitMoves{target.moveHistory[0],target.moveHistory[1]};
             CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=920;
@@ -4047,6 +4224,13 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("monster-reaction fixture did not open Headbutt's selection");
             CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
             auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+            if(darkling) {
+                setenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE","0",1);
+                const auto legacy=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+                unsetenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
+                if(legacy.pendingActionQueueObserved)
+                    throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE=0 did not restore the legacy tail");
+            }
             if(mass) {
                 // STS_SILVER_MONSTER_REACTION_QUEUE=0 restores the unobserved
                 // (card-replay) tail for native conversions.
@@ -4057,7 +4241,7 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE=0 did not restore the legacy tail");
             }
             const auto nativeQueue=expected.pendingActionQueue;
-            const std::size_t wantQueue=mass?3:guardian||shift||louse?2:1;
+            const std::size_t wantQueue=mass||darkling?3:guardian||shift||louse?2:1;
             if(!expected.pendingActionQueueObserved || nativeQueue.size()!=wantQueue
                     || (mass && (nativeQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK
                         || nativeQueue[2].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE))
@@ -4068,6 +4252,10 @@ int main(int argc, char **argv) {
                     || (shift && (target.hasStatus<MonsterStatus::MODE_SHIFT>()
                         || target.moveHistory[0]!=MonsterMoveId::THE_GUARDIAN_DEFENSIVE_MODE))
                     || (louse && target.hasStatus<MonsterStatus::CURL_UP>())
+                    || (darkling && (nativeQueue[0].kind!=silver_bridge::PendingActionKind::DRAW
+                        || nativeQueue[2].kind!=silver_bridge::PendingActionKind::MONSTER_SET_MOVE
+                        || nativeQueue[2].monster!=0 || !target.isHalfDead()
+                        || target.moveHistory[0]!=MonsterMoveId::DARKLING_REGROW))
                     || (byrd && target.getStatus<MonsterStatus::FLIGHT>()!=flightBefore-1)
                     || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
                 throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
@@ -4102,6 +4290,10 @@ int main(int argc, char **argv) {
             }
             // Java order: Sharp Hide's onUseCard thorns precede UseCardAction.
             json pending=guardian?json::array({json{{"kind","MONSTER_THORNS"},{"amount",4},{"slot",0}}}):json::array();
+            if(darkling) {
+                pending.push_back(json{{"kind","DRAW"},{"amount",1}});
+                combat["relics"].push_back({{"id","InkBottle"},{"counter",0},{"usedUp",false}});
+            }
             pending.push_back(producerCleanupJson(combat["curCardQueueItem"]));
             if(mass) {
                 pending.push_back(json{{"kind","MONSTER_GAIN_BLOCK"},{"amount",nativeQueue[1].amount},{"slot",0}});
@@ -4109,6 +4301,7 @@ int main(int argc, char **argv) {
             } else if(byrd) pending.push_back(json{{"kind","MONSTER_REDUCE_FLIGHT"},{"amount",1},{"slot",0}});
             else if(shift) pending.push_back(json{{"kind","GUARDIAN_DEFENSIVE_SHIFT"},{"slot",0}});
             else if(louse) pending.push_back(json{{"kind","MONSTER_CURL_UP"},{"amount",curlBefore},{"slot",0}});
+            else if(darkling) pending.push_back(json{{"kind","MONSTER_SET_MOVE"},{"move",4},{"slot",0}});
             else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
             const auto imported=one_combat::advisor::importSilverRoot(observation);
@@ -4155,8 +4348,49 @@ int main(int argc, char **argv) {
             if(mass && (actual.monsters.arr[0].block!=nativeQueue[1].amount
                     || actual.monsters.arr[0].getStatus<MonsterStatus::REACTIVE>()!=0))
                 throw std::runtime_error("Writhing Mass reactions did not resolve after the selection");
+            if(darkling && (actual.monsters.arr[0].moveHistory[0]!=MonsterMoveId::DARKLING_REGROW
+                    || actual.monsters.arr[0].moveHistory[1]!=MonsterMoveId::DARKLING_REGROW))
+                throw std::runtime_error("Darkling Regrow SetMoveAction did not resolve after the selection");
             if((shift || louse) && actual.monsters.arr[0].block!=(shift?20:curlBefore))
                 throw std::runtime_error("Mode Shift or Curl Up block did not resolve after the selection");
+            if(mass) {
+                // Problem 34 (live seed 111200416): the same GRID under Runic
+                // Dome. The mod's history has not counted the queued reroll; the
+                // root keeps it queued and defers it with the inputs of the
+                // moment it runs, after the selection.
+                auto dome=observation;auto &dc=dome["silverRoot"]["combat"];
+                dc["runicDome"]=true;dc["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+                auto &dm=dc["monsters"][0];dm.erase("nextMove");dm.erase("moveHistory");
+                const int maxHp=dm["maxHp"].get<int>();
+                json inputs={{"rollHp",maxHp},{"rollMaxHp",maxHp},{"firstHp",maxHp},{"firstMaxHp",maxHp},{"firstAlive",true},
+                    {"aliveCount",1},{"playerConstricted",false},{"rollGlobalTurn",0}};
+                dc["runicDomeKnowledge"]={{"schemaVersion",3},{"epoch",1},{"complete",true},{"monsters",json::array({json{
+                    {"schemaVersion",4},{"historySchemaVersion",2},{"epoch",1},{"generation",1},{"complete",true},
+                    {"monsterId","WrithingMass"},{"slot",0},{"completedTurns",0},{"executedMoves",json::array()},
+                    {"pendingMoveRolls",1},{"totalRolls",1},{"rollHp",maxHp},{"rollMaxHp",maxHp},{"publicMisc",0},
+                    {"firstHp",maxHp},{"firstMaxHp",maxHp},{"firstAlive",true},{"aliveCount",1},
+                    {"pendingAttackPredicates",json::array()},{"pendingRollInputs",json::array({inputs})},
+                    {"occupantGeneration",1},{"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},
+                    {"birthParentGeneration",0},{"lastExecutionGlobalTurn",-1},{"rollGlobalTurn",0}}})}};
+                const auto domeImported=one_combat::advisor::importSilverRoot(dome);
+                if(!domeImported.ok) throw std::runtime_error("Runic Dome Headbutt reactive reroll import: "+domeImported.reason);
+                auto domeRoot=battleContextFromWire(domeImported.wire);
+                auto &domeMass=domeRoot.monsters.arr[0];
+                if(!domeRoot.intentsHidden || domeMass.getStatus<MonsterStatus::REACTIVE>()!=1 || domeMass.pendingMoveRolls!=1
+                        || json(domeImported.wire.pendingActionQueue)!=json(nativeQueue))
+                    throw std::runtime_error("Runic Dome Headbutt root lost the queued reactive reroll");
+                pick.execute(domeRoot);
+                if(domeRoot.inputState!=InputState::PLAYER_NORMAL || domeMass.getStatus<MonsterStatus::REACTIVE>()!=0
+                        || domeMass.pendingMoveRolls!=2 || domeMass.pendingRollInputHistory.size()!=2
+                        || domeMass.pendingRollInputHistory[1].curHp!=domeMass.curHp || domeMass.block!=nativeQueue[1].amount)
+                    throw std::runtime_error("Runic Dome reactive reroll was not deferred after the selection");
+                domeMass.materializePendingMove(domeRoot);
+                setenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX","0",1);
+                const auto legacyDome=one_combat::advisor::importSilverRoot(dome);
+                unsetenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX");
+                if(legacyDome.reason!="silver_runic_dome_monster_power_domain")
+                    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX=0 did not restore the refusal: "+legacyDome.reason);
+            }
             // Fail closed: a removal (stun) or a reroll for a monster other
             // than Writhing Mass is not representable.
             auto broken=observation;
@@ -4165,10 +4399,23 @@ int main(int argc, char **argv) {
             else if(guardian) brokenQueue[0]["amount"]=3;
             else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
             else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
+            else if(darkling) brokenQueue[2]["move"]=3;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
                 if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)
                 throw std::runtime_error("unrepresentable Headbutt monster reaction was accepted");
+            if(darkling) {
+                // A living Darkling has no queued Regrow; the flag's legacy refusal.
+                auto alive=observation;
+                alive["silverRoot"]["combat"]["pendingActionQueue"][2]["slot"]=1;
+                if(one_combat::advisor::importSilverRoot(alive).ok)
+                    throw std::runtime_error("SetMoveAction for a living Darkling was accepted");
+                setenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE=0 did not restore the refusal");
+            }
         }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");

@@ -21654,6 +21654,30 @@ group mappings and CIs, scripts). No seeds used.
 
 **Knowledge impact:** one paragraph after the §438 paragraph in `evaluation/current-research.md`.
 
+## §567 — Runic Dome: a Headbutt GRID after hitting Writhing Mass was refused (queued Reactive reroll) (2026-10-20)
+
+**Question:** why did live seed 111200416 (release 0abc831a, Runic Dome held) stop at Act 3 floor 38, WRITHING_MASS
+turn 2 (HP 55), after Shrug It Off, Sentinel and Headbutt on m1, with `silver_runic_dome_monster_power_domain` at the
+GRID (monster powers Malleable 4, Strength -3, Compulsive; problem 34 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share)?
+**Setup:** code reading of `importSilverRootGeneric` and `importBoundedRunicDome`; the captured importer input relayed
+byte-exact from Philipp's PC (sha256 `945315b0…4f60`; now
+`tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json`); `live_silver_importer_test` (no gameplay seeds).
+**Result:** the generic import maps Compulsive (Java marker, amount -1) to Reactive 0, and the #711 reaction fold turns
+the hit's queued `REACTIVE_ROLL_MOVE` into Reactive 1 plus one native `ReactiveRollMove` queue item. The Dome check
+runs after that fold and refuses any nonzero second unique power on a monster other than The Guardian, so every
+Writhing Mass selection with a queued reroll was refused under Runic Dome. The state is sound: Java's
+`RollMoveAction` has not run, so the mod's history does not count it, and native `rollMove` under hidden intents defers
+the reroll with the inputs of the moment the queued action runs.
+The captured queue is Orange Pellets `REMOVE_PLAYER_DEBUFFS`, Headbutt's `USE_CARD`, Malleable block 3 and the
+reroll; the fold accepted all four, and the Dome check was the only refusal.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX` (default on, `=0` restores the refusal) accepts the
+count when the queue carries the reroll. The captured root is refused with `=0` (and with the check reverted), and
+imports and searches (1,000 simulations) with the fix; after the GRID pick its reroll is a second pending hidden roll
+with the post-hit inputs. The native Headbutt-on-Writhing-Mass fixture under Runic Dome keeps the native queue and
+defers the reroll the same way, and the deferred chain materializes.
+**Open question:** not yet exercised live.
+Seeds: none new (live seed 111200416 as reported; unit test only).
 ## §562 — Runic Dome: every first-turn live Dome root was refused (roll clock and omitted nulls) (2026-10-19)
 
 **Question:** why did live seed 111194466 (release 1e2cad47) stop in the first fight after Runic Dome
@@ -21743,3 +21767,61 @@ Philipp's PC (`~/Documents/sts/artifacts/monster-rng-gaps-20261019/`): seed 1111
 longer emits; left as representation-only. No gameplay seeds were run; the unit tests use fixed seeds 111200151-153.
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
+## §568 — Live parity: the mod never exported Orange Pellets' played card types (2026-10-20)
+
+**Question:** why does the live import always report Orange Pellets' played-types field as 0 (parity problem 32), and is
+the cause in the C++ importer or the Java mod?
+**Setup:** canary run of live seed 111200414 (release 0abc831a): 300 of 304 MISMATCH verdicts are this field, first at
+step 285 (Battle Trance), game 0 vs native 1/2/4. Code reads of the mod exporter and `live_silver_importer.cpp`;
+read-only `javap -c -p` of the pinned `desktop-1.0.jar` (`cfad868a…`) on Philipp's PC.
+**Result:** the cause is in the mod. The exporter searched `player.powers` for an "Orange Pellets" power, but Orange
+Pellets is a relic, so the field was never written; the importer reads it only when present, so it defaulted to 0.
+Vanilla `OrangePellets` keeps private static `ATTACK`/`SKILL`/`POWER` flags: `onUseCard` sets the card's type and, once
+all three are set, queues `RemoveDebuffsAction` and clears them; `atTurnStart` clears them. This matches native
+`orangePelletsCardTypesPlayed` (bit 0 Attack, 1 Skill, 2 Power; reset at turn start and on trigger). The old
+power-branch fallback rebuilt the bits from `cardsPlayedThisTurn`, which would also have been wrong after a mid-turn
+trigger. The mod now exports the relic's flags (a `CombatBoundaryTest` contract checks them against the JAR; mod
+`test.sh` exit 0 on the PC).
+**Interpretation:** `STS_IMPORTER_ORANGE_PELLETS_FIX` (default on, `=0` ignores the field as before) changes live
+advisor play and the parity probe for runs with Orange Pellets only; simulator play, training and benchmarks do not use
+this importer. Live confirmation (the verdicts back to MATCH) waits for the canary after reinstall.
+Seeds: none driven (live evidence from seed 111200414).
+**Knowledge impact:** `operations/live-model-inspector.md`, `operations/environment-variables.md`.
+
+## §566 — A20 winrate check of the best stack: 90/512 Heart kills = 17.6% with OOC MCTS 4096 and flat 10k Silver (2026-10-19)
+
+**Question (Philipp, 2026-10-18 01:00Z, thread "A20 winrate check"):** "can you run an a20 stack on 512 seeds on 16
+workers, 4 threads each. i just want to erify the current winrate. gimme the best stack and a paramters for that."
+Stack choices 01:02Z–01:27Z ("definitley some ooc mcts, distille dheart arm with recent fixes, 4096 sims, silver combat
+also with prior and new fixes, maybe 10k sims?"; "silver combat fallback for act 4"; "rollout 3"; "500 sims, 24h
+timeout"), 01:32Z "Maybe do 32 workers instead of 16".
+**Design:** [PLAN](evidence/a20_winrate_check_20261018/PLAN.md), descriptive, one arm, no comparison and no default
+change. Code main `64b38c88` defaults (root table g6_E, A20 CTM, keys on, fair), RUN_COMMIT `9db53ea3`, binary
+`9daffbd4…`. OOC MCTS 4,096 simulations, tree prior heart1full with `student_sel.bin` (`cf6bf7fb…`), TARGET_PRIOR=1,
+LEAF_SELECTS=heart1, rollout3 leaf (heart1 policy, public X2-B value); real combats native Silver flat exact 10k per
+root with g6_E (`ca9bd7f2…`) root prior weight 400 and tree prior K=8; imagined Act-4 fights and CTM-refused fights
+played by Silver at 500 (`STS_OOC_MCTS_ACT4_SILVER_SIMS=500`, `STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=500`); 24 h
+unit timeout. Predates (not in this stack): g7f_E prior (#668), boss/elite prior playouts (#675, ADR-0050), learned
+stop at A20 (#684, ADR-0051), Blood Potion heal fix (#679), rewardless-combat RNG fix (#687), CTM Act-4 model (#667,
+not used here: Act 4 imagined fights ran Silver 500).
+**Result.** Seeds 111194580–111195091, 32 workers x 16 seeds, 512/512 units rc=0 (no timeout), 32 tars verified.
+
+| metric | value |
+|---|---|
+| Heart kills | **90 / 512 = 17.6%**, Wilson 95% [14.5, 21.1] |
+| reached Act 4 | 184 / 512 = 35.9% [31.9, 40.2] |
+| Heart kills per Act-4 run | 48.9% |
+| furthest act 1 / 2 / 3 / 4 | 45 / 149 / 134 / 184 |
+| mean floor | 41.63 |
+| wall seconds per run (4 runs per 4-CPU container) | 5,852 |
+| OOC MCTS CPU seconds per decision | 67.2 |
+
+Run time per seed: median 0.61 h, top three 18.3 / 18.9 / 22.3 h (close to the 24 h timeout); container restarts reran four
+last units from scratch.
+**Interpretation:** descriptive reference for this stack only. It overlaps the external heart1 claim (18.6% ± 2.4%,
+n=1000) and our heart1 repro (21.5% [16.4, 27.7], 200 seeds); it is not paired with either and not a qualification
+of the current main defaults listed above. Act-4 conversion (49%) stays the gap to heart1 (~60–67%). Seeds
+111194580–111195091 used (canary in-thread reused 111194580, 111194596, 111194612).
+[README](evidence/a20_winrate_check_20261018/README.md), `report.json`, `verify.txt`, `tars.sha256`, `analyze.py`.
+Raw: `/mnt/project-files/a20-winrate-check/w01..w32.tar`.
+**Knowledge impact:** reference row in `evaluation/current-baselines.md`.

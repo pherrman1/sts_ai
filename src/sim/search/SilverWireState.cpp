@@ -30,7 +30,8 @@ namespace sts::search {
                     || ((in.kind == K::GAMBLE || in.kind == K::UPGRADE_RANDOM || in.kind == K::USE_CARD
                         || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS
                         || in.kind == K::REACTIVE_ROLL_MOVE) && in.amount != 0)
-                    || (in.kind == K::MONSTER_GAIN_BLOCK ? in.monster < 0 || in.monster > 4 : in.monster != 0))
+                    || (in.kind == K::MONSTER_GAIN_BLOCK || in.kind == K::MONSTER_SET_MOVE
+                        ? in.monster < 0 || in.monster > 4 : in.monster != 0))
                 throw std::invalid_argument("invalid Silver pending action fields");
             switch (in.kind) {
                 case K::DRAW: return Actions::DrawCards(in.amount);
@@ -51,6 +52,11 @@ namespace sts::search {
                 case K::REACTIVE_ROLL_MOVE: return Actions::ReactiveRollMove();
                 // Sharp Hide's THORNS hit on the player (not self-damage).
                 case K::MONSTER_THORNS: return Actions::DamagePlayer(in.amount);
+                // Only the half-dead Darkling's re-queued Regrow is representable.
+                case K::MONSTER_SET_MOVE:
+                    if (in.amount != static_cast<int>(MonsterMoveId::DARKLING_REGROW))
+                        throw std::invalid_argument("unsupported Silver pending monster move");
+                    return Actions::SetMonsterMove(in.monster, MonsterMoveId::DARKLING_REGROW);
                 case K::BUFF_PLAYER: {
                     const auto status = static_cast<PlayerStatus>(in.status);
                     switch (status) {
@@ -81,6 +87,9 @@ namespace sts::search {
                 case K::SHUFFLE_WOUNDS:
                     if (in.amount != 2) throw std::invalid_argument("unsupported Silver pending Wound generation");
                     return Actions::MakeTempCardInDrawPile(CardInstance(CardId::WOUND),2,true);
+                case K::SHUFFLE_DAZED:
+                    if (in.amount != 1) throw std::invalid_argument("unsupported Silver pending Dazed generation");
+                    return Actions::MakeTempCardInDrawPile(CardInstance(CardId::DAZED),1,true);
                 default: throw std::invalid_argument("unsupported Silver pending action kind");
             }
         }
@@ -346,6 +355,28 @@ namespace sts::search {
         throw std::runtime_error("STS_SILVER_MONSTER_REACTION_QUEUE must be 0 or 1");
     }
 
+    // STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE: unset/1 (default) = a selection's
+    // queued SetMonsterMove for a half-dead Darkling (Headbutt killing one) is
+    // captured as an exact pending tail item. 0 = legacy: such a tail stays
+    // unobserved and conversion falls back to card replay. Other values are fatal.
+    static bool silverHalfDeadSetMoveQueue() {
+        const char *value = std::getenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
+    }
+
+    // STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a selection's queued
+    // Hex Dazed (MakeTempCardInDrawPile(Dazed), e.g. Discovery under Hex) is
+    // captured as an exact pending tail item. 0 = legacy: such a tail stays
+    // unobserved and conversion falls back to card replay. Other values are fatal.
+    static bool silverHexDazedQueue() {
+        const char *value = std::getenv("STS_SILVER_HEX_DAZED_QUEUE");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE must be 0 or 1");
+    }
+
     void capturePendingActionQueue(const BattleContext &state, BattleStateWire &wire) {
         using K = silver_bridge::PendingActionKind;
         wire.pendingActionQueueObserved = false;
@@ -378,6 +409,10 @@ namespace sts::search {
                 case CombatActionType::DamagePlayer:
                     if(!silverMonsterReactionQueue())return;
                     item.kind=K::MONSTER_THORNS; item.amount=action.v_DamagePlayer.damage; break;
+                case CombatActionType::SetMonsterMove:
+                    if(!silverHalfDeadSetMoveQueue())return;
+                    item.kind=K::MONSTER_SET_MOVE; item.monster=action.v_SetMonsterMove.monsterIdx;
+                    item.amount=static_cast<int>(action.v_SetMonsterMove.move); break;
                 case CombatActionType::BuffPlayer:
                     item.kind=K::BUFF_PLAYER; item.status=static_cast<int>(action.v_BuffPlayer.s); item.amount=action.v_BuffPlayer.amount; break;
                 case CombatActionType::DebuffPlayer:
@@ -387,7 +422,11 @@ namespace sts::search {
                     item.kind=K::DEBUFF_ALL_ENEMY; item.status=static_cast<int>(action.v_DebuffAllEnemy.s);
                     item.amount=action.v_DebuffAllEnemy.amount; item.sourceMonster=action.v_DebuffAllEnemy.isSourceMonster; break;
                 case CombatActionType::MakeTempCardInDrawPile:
-                    item.kind=K::SHUFFLE_WOUNDS; item.amount=action.v_MakeTempCardInDrawPile.amount; break;
+                    if(action.v_MakeTempCardInDrawPile.c.id==CardId::DAZED) {
+                        if(!silverHexDazedQueue())return;
+                        item.kind=K::SHUFFLE_DAZED;
+                    } else item.kind=K::SHUFFLE_WOUNDS;
+                    item.amount=action.v_MakeTempCardInDrawPile.amount; break;
                 default: return;
             }
             // Nondefault victory flags or unsupported parameterizations must
