@@ -174,6 +174,14 @@ namespace sts {
     // card. Other values are fatal. Read only at a Mayhem turn start.
     bool mayhemAfterDrawFix();
 
+    // STS_MAGNETISM_FIX: unset/1 (default) = Magnetism adds its random
+    // colorless card(s) to the hand at the start of each turn, as in the game
+    // (MagnetismPower.atStartOfTurn rolls returnTrulyRandomColorlessCardInCombat
+    // on cardRandomRng and queues MakeTempCardInHandAction; overnight live play
+    // 2026-10-20 problem 39). 0 = the legacy engine, where Magnetism did
+    // nothing. Other values are fatal. Read only at a Magnetism turn start.
+    bool magnetismFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

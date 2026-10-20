@@ -284,7 +284,11 @@ ordered typed action tail: opening draws, block/energy, literal or random enemy 
 Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
 batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
 non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
-Discovery choice under Hex), and the owning card's cleanup.
+Discovery choice under Hex), Void's energy loss (`LOSE_ENERGY`, amount 1, from
+`actions.unique.LoseEnergyAction.energyLoss`; e.g. Warcry drawing Void under
+Evolve), and the owning card's cleanup. The importer folds `LOSE_ENERGY` into
+the imported energy, as native `CardManager::draw` applies Void at the draw,
+and refuses it behind a pending energy gain (`STS_SILVER_VOID_ENERGY_QUEUE`).
 A potion's Discovery offer with Toy Ornithopter's heal queued behind it uses
 continuation `public_actions` (`STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS`); an
 offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
@@ -757,7 +761,7 @@ read-only screen and choice converters. The observation contains:
 - `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
   potion capacity and five exact slots, physical deck instances with bottle
   binding, relic data, visible boss, the complete visible 15-by-7 map and edges
-  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`),
+  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`; the elite's sole `Boss!` choice, sent as option 0, is remapped to the native Heart node option 3, `STS_IMPORTER_ACT4_BOSS_MAP_FIX`),
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
@@ -1286,7 +1290,8 @@ path recovery after save loading if the initial transition latch was empty.
 Missing or contradictory records remain unqualified.
 After the Act 3 boss dies, MCP can expose an empty `COMPLETE` surface rather
 than a reward screen. The strict driver advances its single Proceed button
-only for a living player at Act 3 floor 50 (or floor 51 with verified A20), with a completed MonsterRoomBoss,
+only for a living player at Act 3 floor 50 (or floor 51 with verified A20) or after the Heart (Act 4 floor 56 at
+verified A20, live problem 52; floor 55 below A20 is **Inference** from Act 3's single boss, not observed live), with a completed MonsterRoomBoss,
 no active overlay, no choices/cancel action, and agreeing run coordinates.
 It records `boss_completion` and waits for the following boss or actual terminal screen; it does
 not declare victory from the boss-room phase alone. Differential capture

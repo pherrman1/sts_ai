@@ -21897,6 +21897,40 @@ Raw: `/mnt/project-files/az-gen0/w01..w32.tar`.
 
 **Knowledge impact:** none beyond this entry. Gen 0 is a data generation, and no default or interface changed.
 
+## §573 — AZ loop generation 1: student_sel fine-tuned on gen-0 Gumbel targets. Gen 1 FAILED its offline gate (value head overfit); gen 1b, with held-out epoch selection, PASSED. No A/B yet (2026-10-20)
+
+**Question:** can a net trained on gen 0's (§569) search targets fit them better than student_sel, and can its
+never-trained value head beat the base rate? Philipp's go: 2026-10-20 15:46Z / 15:53Z ("Let's go").
+
+- **Rows:** `tools/heart1/az_targets.py` (#732) on the 32 gen-0 tars (data branch `claude/az-gen0-data` 54033d1).
+  - 27,631 policy rows from full-budget, non-singleton roots: the ADR-0043 improved policy softmax(log prior + β·q̂).
+  - 260,416 value-only rows: every other supported state, z = Heart killed.
+  - β = 2.37, fitted on fold seed % 8 == 6: π' from the 2,048-sim checkpoint scored on the 4,096-sim choice. NLL
+    0.374 vs prior alone 0.437; top-1 0.921 vs 0.911.
+  - β was 2.37 at the 512- to 2,048-sim checkpoints. The paper's visit-scaled σ fit a scale that fell about as
+    1/visits, so it would over-sharpen at 4,096 sims.
+- **Training:** Philipp's RTX 3060 Ti via Remote Control, about 11.5 min per run.
+  - Init: student_sel (re-export reproduces `cf6bf7fb…`), `--extra-inputs`, Wing Boots flag 1.
+  - Loss: KL to π' on covered tokens + 1 × value BCE + 1 × KL anchor to student_sel; 6 epochs.
+- **Gen 1** ([GATE.md](evidence/az_gen1_20261020/GATE.md), `--select last`): **FAIL**.
+  - P passed: validation KL 0.0868 → 0.0568.
+  - V failed: value BCE 0.699 ≥ constant 0.639. Validation BCE was best at epoch 2 (0.495), then rose every epoch.
+  - **Inference:** all states of a run share one label, so the value head memorises runs.
+- **Gen 1b** ([GATE-1b.md](evidence/az_gen1_20261020/GATE-1b.md), `--select fold`: seeds % 8 == 6 held out of
+  training; the epoch with the lowest training objective on them is kept): **PASS**.
+  - Selected epoch 1. Validation KL 0.0868 → 0.0606; top-1 0.946 → 0.930.
+  - Value BCE 0.555 < 0.639. AUC 0.74 overall; per act 0.60 / 0.76 / 0.81 / 0.80.
+  - Native parity: max |Δ| 7.6e-6 (logits) and 1.1e-6 (value) on 400 records. `gen1b.bin` `e6aa044c…`.
+  - **Caveat:** this is a second gate attempt on the same validation fold. It was designed after gen 1's curve had
+    been seen, and it stopped at epoch 1 because the value head still overfits from epoch 2. A V pass is therefore
+    weak evidence, and the paired A20 A/B decides.
+- **Next:** a paired A20 A/B, gen 1b vs student_sel inside the same search stack, needs Philipp's go. Open: a value
+  target with less run-level correlation (fewer states per run, or X2-B), and the potion-discard output.
+
+[result-gen1.json](evidence/az_gen1_20261020/result-gen1.json), [result-gen1b.json](evidence/az_gen1_20261020/result-gen1b.json),
+[sigma_fit.json](evidence/az_gen1_20261020/sigma_fit.json). Weights: data branch `claude/az-gen1-data`. No seeds used.
+
+**Knowledge impact:** `architecture/out-of-combat.md` describes the AZ-loop row builder and the distill.py flags.
 ## §570 — Live Act 4: Spire Shield's BackAttack refused the first Shield and Spear fight (2026-10-20)
 
 **Question:** why were the first live Act 4 elites (seeds 111200433 and 111200434, release f2e3f48d, SHIELD_AND_SPEAR
@@ -21985,3 +22019,68 @@ unexplained problem 37 (seed 111200425) will show its source.
 Seeds: none new (live seeds as reported).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`,
 `evaluation/differential-correctness.md`.
+## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
+
+**Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
+`OOC_ACTION_MAPPING` "unexpected option 0" (problem 51 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's untrimmed observation (`issue51-observation.json`, sha256 9422c6b3…16af8, now
+`tests/fixtures/live_act4_heart_map.json`); `LiveOocCapture.mapScreen`, `GameContext::mapMoveCost`, `Map::act4Map`;
+`live_ooc_protocol` (no gameplay seeds).
+**Result:** MCP shows the Heart only as the choice `Boss!` (`boss_available`, empty `next_nodes`, current node (3,2)).
+The mod's boss branch qualifies a forced boss map only for acts 1-3 at row 14 and otherwise sends native option 0, the
+act 1-3 boss index. Native Act 4 reaches the boss (3,3) through the elite's single edge, so its only map action is
+option 3, and the action-set check rejected option 0. With `STS_IMPORTER_ACT4_BOSS_MAP_FIX=0` the fixture reproduces the
+live error exactly.
+Live retest (canary, restored pre-Heart save of the same seed, advisor 4ef863d9 plus this importer hunk): the advisor
+chose `Boss!`, the Heart imported and Silver won it (turn 8, 65/75 HP, true victory, floor 57). The completed boss room
+after the kill was refused (`NATIVE_SCREEN_UNSUPPORTED:COMPLETE`, problem 52): the live driver's boss-completion
+Proceed qualified only Act 3. It now also qualifies the completed Heart room (Act 4 floor 56 at A20, live-evidenced; floor 55 below A20
+is **Inference** from the floor arithmetic, not observed live), with
+the same empty-surface checks (UI navigation only, no flag).
+**Interpretation:** `STS_IMPORTER_ACT4_BOSS_MAP_FIX` (default on, `=0` restores the error) remaps exactly that sole
+public choice to option 3 in the importer; the advisor passes it through as `forced_no_search` (`choose 1`). No mod
+change. Play-changing for the live advisor at that one Act 4 decision only.
+**Open question:** the mod could send option 3 itself; the importer keeps the producer's mapping for any other shape.
+Seeds: none new (live seed 111200440 as reported; protocol test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md` (incl. the driver's
+boss-completion rule).
+
+## §575 — Live Silver: Warcry drawing Void under Evolve refused its put-on-top choice (2026-10-20)
+
+**Question:** why did live seed 111200440 (release 0582219a, floor 50, Awakened One form 2) stop with
+`silver_selection_pending_actions` and pending actions `[UseCardAction, LoseEnergyAction, DrawCardAction]` (problem 50
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue50-extract.json`); read-only `javap` of the pinned JAR on Philipp's PC
+(`issue50-javap.md`): `LoseEnergyAction`, `VoidCard.triggerWhenDrawn`, `EvolvePower.onCardDraw`,
+`AbstractPlayer.draw`, `DrawCardAction`, `Warcry.use`, and every constructor of `LoseEnergyAction`;
+`live_silver_importer_test` (no gameplay seeds).
+**Result:** Warcry queues its draw, then `PutOnDeckAction`, then the `UseCardAction`. Drawing Void runs
+`triggerWhenDrawn` (`addToBot(LoseEnergyAction(1))`) before the powers' `onCardDraw` (Evolve: `addToBot(DrawCardAction(1))`
+unless No Draw), so both wait behind the put-on-top choice. The producer had no mapping for `LoseEnergyAction` (package
+`actions.unique`, amount in `energyLoss`; only Void and the Watcher's Energy Down construct it). Native
+`CardManager::draw` applies Void's loss at the draw and queues the Evolve draw, so a native Warcry leaves the tail
+`[USE_CARD, DRAW]` with the energy already lost.
+**Interpretation:** the producer emits `LOSE_ENERGY` (amount 1); `STS_SILVER_VOID_ENERGY_QUEUE` (default on, `=0`
+restores the refusal) folds it into the imported energy, and refuses it behind a pending energy gain. The folded import
+matches the native Warcry state. Changes only which live roots Silver searches.
+**Open question:** Java's `loseEnergy` clamp at 0 is inferred (not in the javap); native clamps.
+Seeds: none new (live seed 111200440 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §574 — Live combat parity: Magnetism never added its start-of-turn card natively (2026-10-20)
+
+**Question:** why did every End Turn verdict of live seed 111200429 (release f2e3f48d, The Guardian, Magnetism 1
+played on turn 1) show a six-card game hand against a five-card native hand (problem 39 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue39-extract.json`: 7 MISMATCH verdicts, steps 212-252, RNG snapshots at steps
+203 and 213); `Player::applyStartOfTurnPowers`; `magnetism_start_of_turn` unit test (no gameplay seeds).
+**Result:** at each verdict the game's cardRandomRng counter was native + 1 (native seed1 = game seed0) and the
+extra game card was a random colorless card at hand index 0. The engine's `MAGNETISM` case was a commented-out
+no-op, so it neither rolled cardRandomRng nor added the card.
+**Interpretation:** `STS_MAGNETISM_FIX` (default on, `=0` restores) rolls
+`getTrulyRandomColorlessCardInCombat(cardRandomRng)` once per stack at the trigger, unless monsters are basically
+dead, and queues the card at the bottom ahead of the draw (Master Reality upgrades; a full hand discards).
+Play- and RNG-changing for simulator play with Magnetism, unmeasured.
+**Open question:** the Java semantics were recalled, not re-read from bytecode; the live RNG evidence (one roll per
+turn, card before the draw) agrees.
+Seeds: none new (live seed 111200429 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.

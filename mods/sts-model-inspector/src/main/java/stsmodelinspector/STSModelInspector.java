@@ -2743,6 +2743,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (amount != 2) return null;
         } else if ("SHUFFLE_DAZED".equals(kind)) {
             if (amount != 1) return null;
+        } else if ("LOSE_ENERGY".equals(kind)) {
+            // VoidCard.triggerWhenDrawn: LoseEnergyAction(1).
+            if (amount != 1) return null;
         } else if ("HEAL_PLAYER".equals(kind)) {
             if (amount != 5) return null;
         } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
@@ -2841,6 +2844,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction".equals(name)) {
                 if(readObjectField(action,"c")!=AbstractDungeon.player || !hasRelic("OrangePellets"))return null;
                 kind="REMOVE_PLAYER_DEBUFFS";
+            } else if("com.megacrit.cardcrawl.actions.unique.LoseEnergyAction".equals(name)) {
+                // VoidCard.triggerWhenDrawn queues addToBot(LoseEnergyAction(1)),
+                // e.g. Warcry drawing Void before its put-on-top choice; the
+                // amount is energyLoss (setValues stores 0 in amount).
+                amount=readIntField(action,"energyLoss");
+                kind="LOSE_ENERGY";
             } else if("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
                 if(!Boolean.FALSE.equals(readBooleanField(action,"shuffleCheck"))
                         || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))

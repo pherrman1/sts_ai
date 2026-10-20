@@ -1,0 +1,8 @@
+name          az-gen1-ab
+code_commit   6e62cb644614dee61c67dab896f954458f7dd464
+binary_sha256 193b0000efbb13098470d525d6193d4a9045ae85e60f9192ddeaaf06f3243259
+workers       32
+share         /mnt/project-files/az-gen1-ab
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input gen1b.bin /mnt/project-files/az-gen1-ab/gen1b.bin e6aa044cea8aea6287060c1d71f3c2b327676aa4876448e0cadba2177087ddb3
