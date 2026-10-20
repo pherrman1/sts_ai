@@ -6,6 +6,8 @@
 
 #include "game/Random.h"
 #include <stdexcept>
+#include <algorithm>
+#include <cstdlib>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
@@ -874,6 +876,19 @@ void Monster::setMove(MMID moveId) {
 }
 
 namespace sts {
+
+    bool shackledOverflowFix() {
+        const char *value = std::getenv("STS_SHACKLED_OVERFLOW_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SHACKLED_OVERFLOW_FIX must be 0 or 1");
+    }
+
+    std::int16_t shackledAmount(int amount) {
+        // GainStrengthPower's constructor and stackPower clamp to [-999, 999].
+        if (shackledOverflowFix()) return static_cast<std::int16_t>(std::clamp(amount, -999, 999));
+        return static_cast<std::int8_t>(amount);
+    }
 
     std::ostream& printIfHaveStatus(std::ostream &os, const Monster &m, MonsterStatus s, bool &havePrint) {
         if (!m.getStatusInternal(s)) {
