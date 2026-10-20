@@ -2741,6 +2741,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!("Vulnerable".equals(power) && amount==1 || "Weakened".equals(power) && amount==1 || "Poison".equals(power) && amount==4)) return null;
         } else if ("SHUFFLE_WOUNDS".equals(kind)) {
             if (amount != 2) return null;
+        } else if ("SHUFFLE_DAZED".equals(kind)) {
+            if (amount != 1) return null;
         } else if ("HEAL_PLAYER".equals(kind)) {
             if (amount != 5) return null;
         } else if (!java.util.Arrays.asList("DRAW","GAIN_BLOCK","GAIN_ENERGY","DAMAGE_ALL","DAMAGE_RANDOM").contains(kind)) return null;
@@ -2881,14 +2883,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 kind="DAMAGE_RANDOM";
             } else if("com.megacrit.cardcrawl.actions.common.MakeTempCardInDrawPileAction".equals(name)) {
                 Object value=readObjectField(action,"cardToMake");
-                if(!hasRelic("Mark of Pain") || !(value instanceof AbstractCard)
-                        || !value.getClass().getName().equals("com.megacrit.cardcrawl.cards.status.Wound")
+                String made=value==null?"":value.getClass().getName();
+                // HexPower.onUseCard: a non-Attack queues
+                // MakeTempCardInDrawPileAction(new Dazed(), amount, true, true).
+                AbstractPower hex=AbstractDungeon.player.getPower("Hex");
+                boolean wound=hasRelic("Mark of Pain") && made.equals("com.megacrit.cardcrawl.cards.status.Wound");
+                boolean dazed=made.equals("com.megacrit.cardcrawl.cards.status.Dazed") && hex!=null
+                        && amount!=null && amount==hex.amount;
+                if((!wound && !dazed) || !(value instanceof AbstractCard)
                         || !Boolean.TRUE.equals(readBooleanField(action,"randomSpot"))
                         || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return null;
                 AbstractCard card=(AbstractCard)value;
                 if(card.upgraded || card.timesUpgraded!=0 || card.misc!=0 || card.cost!=-2
                         || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return null;
-                kind="SHUFFLE_WOUNDS";
+                kind=wound?"SHUFFLE_WOUNDS":"SHUFFLE_DAZED";
             } else if("com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(name)) {
                 Object value=readObjectField(action,"powerToApply");
                 if(!(value instanceof AbstractPower)) return null;
@@ -3137,6 +3145,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         else if (!codex && (copies == null || copies < 1 || copies > 2))
             reason = "silver_card_reward_copy_count";
         else if (!codex && !"none".equals(continuation) && !"discovery_card".equals(continuation) && !"source_card_actions".equals(continuation)
+                && !("public_actions".equals(continuation) && "com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass))
                 && !(("toolbox_draw".equals(continuation) || "toolbox_actions".equals(continuation))
                     && "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)))
             reason = "silver_card_reward_pending_actions";
@@ -3303,6 +3312,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && sourceSelectionOwner("DISCOVERY",trackedLastCardQueueItem.physicalCard.getClass().getName())) {
             continuation=publicPendingActionsJson(false,"DISCOVERY")!=null?"source_card_actions":"unsupported";
         }
+        // An Attack/Skill/Power/Colorless Potion's DiscoveryAction with Toy
+        // Ornithopter's HealAction(5) queued behind the choice; no card owns it.
+        if("com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass) && "unsupported".equals(continuation)
+                && !hasPendingUseCard()) {
+            String tail=publicPendingActionsJson(false);
+            if(tail!=null && !"[]".equals(tail)) continuation="public_actions";
+        }
         List<Integer> drawsAfter = null;
         List<Integer> blocksAfter = new ArrayList<>();
         int damageAllBeforeBlocks = 0;
@@ -3329,6 +3345,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             selection = selection.substring(0, selection.length() - 1) + ",\"blocksAfter\":" + blocksAfter + "}";
         if (damageAllBeforeBlocks > 0 && "codex_end_turn".equals(continuation))
             selection = selection.substring(0, selection.length() - 1) + ",\"damageAllBeforeBlocks\":" + damageAllBeforeBlocks + "}";
+        // Diagnostic only: name the queue that blocked this offer.
+        if (selection.contains("\"unsupportedReason\":\"silver_card_reward_pending_actions\""))
+            selection = selection.substring(0, selection.length() - 1) + ",\"pendingActionsBlocker\":\""
+                    + escapeJson(pendingActionsBlocker()) + "\"}";
         return selection;
     }
 

@@ -243,6 +243,8 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Pen Nib")==null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",2,"Pen Nib")!=null
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_WOUNDS",3,null)!=null
+                || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",1,null)==null
+                || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",2,null)!=null
                 || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null
                 || STSModelInspector.publicPendingActionJson("BUFF_PLAYER",1,"Echo Form")!=null
                 || STSModelInspector.publicPendingActionJson("DEBUFF_PLAYER",1,"Weak")!=null
@@ -330,6 +332,13 @@ public final class CombatBoundaryTest {
                 "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless", 1, false, "none", offers, true), JsonObject.class);
         if (!typedPotion.get("canPickZero").getAsBoolean() || toolbox.get("setCostToZero").getAsBoolean())
             throw new AssertionError("typed potion skip or Toolbox normal cost lost");
+        JsonObject potionTail = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                discovery, 1, true, "public_actions", offers, true), JsonObject.class);
+        JsonObject toolboxPublic = new Gson().fromJson(STSModelInspector.cardRewardSelectionJson(
+                "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless", 1, false, "public_actions", offers, true), JsonObject.class);
+        if (potionTail.has("unsupportedReason") || !"public_actions".equals(potionTail.get("continuation").getAsString())
+                || !"silver_card_reward_pending_actions".equals(toolboxPublic.get("unsupportedReason").getAsString()))
+            throw new AssertionError("potion offer public tail not limited to DiscoveryAction");
         java.util.List<String> openingDraw = java.util.Arrays.asList(
                 "com.megacrit.cardcrawl.actions.common.DrawCardAction",
                 "com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction");
