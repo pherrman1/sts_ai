@@ -22066,3 +22066,19 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable (2026-10-20)
+
+**Question:** why did live seed 111200446 (floor 10, release 9ec8a51d) stop after the advisor chose "[Stomp] Anger the
+Mushrooms" (problem 57 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue57-observation.json`, now `tests/fixtures/live_mushrooms_ambush.json`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** Stomp sets Mushrooms' `screenNum` to 2, the "Ambushed!" page whose sole option [Fight] starts the fight. The
+mod's event tables qualified only the decision page 0 and the leave page 1, so it refused page 2 with
+`EVENT_PHASE_UNREPRESENTABLE:Mushrooms:2`; it recurs whenever Stomp is picked.
+**Interpretation:** the mod adds page 2 to its `event_continue` table; `STS_IMPORTER_MUSHROOMS_FIGHT_FIX` (default on,
+`=0` restores the refusal) qualifies exactly that page, and the advisor passes it through (`forced_no_search`). The live
+capture with the fixed producer's two fields reproduces the pass-through.
+**Open question:** the following Mushroom fight and its reward (Odd Mushroom) are not exercised here.
+Seeds: none new (live seed 111200446 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
