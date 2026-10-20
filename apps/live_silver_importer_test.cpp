@@ -3262,6 +3262,81 @@ int main(int argc, char **argv) {
                 if(one_combat::advisor::importSilverRoot(bad).ok)throw std::runtime_error("unqualified source cleanup accepted");
             }
         }
+        for(int energy:{0,1}) {
+            // Live seed 111200440 (problem 50): Warcry drew Void under
+            // Evolve. VoidCard.triggerWhenDrawn queued LoseEnergyAction(1)
+            // and Evolve a DrawCardAction(1), both behind Warcry's
+            // UseCardAction while its put-on-top choice is open.
+            auto observation=genericObservation(fixtures[0],"warcry-void-evolve-tail");
+            auto &combat=observation["silverRoot"]["combat"];
+            const auto prototype=combat["hand"][0];
+            auto source=prototype;source["id"]="Warcry";source["uuid"]="played-warcry";
+            source["cost"]=source["costForTurn"]=0;
+            auto voidCard=prototype;voidCard["id"]="Void";voidCard["uuid"]="drawn-void";
+            voidCard["cost"]=voidCard["costForTurn"]=-2;voidCard["upgraded"]=false;
+            combat["hand"].push_back(voidCard);
+            combat["energy"]=energy;
+            combat["playerPowers"]=json::array({json{{"id","Corruption"},{"amount",1}},json{{"id","Evolve"},{"amount",1}}});
+            CardQueueItemWire queue;queue.triggerOnUse=true;queue.exhaustOnUse=true;
+            combat["curCardQueueItem"]=producerQueueJson(queue);combat["curCardQueueItem"]["card"]=source;
+            combat["pendingCardQueue"]=json::array();
+            json choices=json::array();
+            for(const auto &card:combat["hand"]) choices.push_back(json{{"uuid",card.at("uuid")},{"choiceIndex",choices.size()+1}});
+            combat["cardSelect"]={{"task","WARCRY"},{"origin","HAND_SELECT"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"liveChoices",choices},
+                {"continuation","source_card_actions"}};
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                json{{"kind","LOSE_ENERGY"},{"amount",1}},json{{"kind","DRAW"},{"amount",1}}});
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("Warcry Void/Evolve tail import: "+imported.reason);
+            using PK=silver_bridge::PendingActionKind;
+            if(imported.wire.player.energy!=std::max(0,energy-1) || imported.wire.pendingActionQueue.size()!=2
+                    || imported.wire.pendingActionQueue[0].kind!=PK::USE_CARD
+                    || imported.wire.pendingActionQueue[1].kind!=PK::DRAW || imported.wire.pendingActionQueue[1].amount!=1)
+                throw std::runtime_error("Void energy loss not folded or Evolve draw lost");
+            auto selected=battleContextFromWire(json(imported.wire).get<silver_bridge::BattleStateWire>());
+            const int handBefore=selected.cards.cardsInHand;
+            const auto putBack=selected.cards.hand[0].uniqueId;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,0).execute(selected);
+            if(selected.inputState!=InputState::PLAYER_NORMAL || selected.cards.cardsInHand!=handBefore
+                    || selected.cards.hand[selected.cards.cardsInHand-1].uniqueId!=putBack
+                    || std::count_if(selected.cards.exhaustPile.begin(),selected.cards.exhaustPile.end(),
+                        [&](const auto &c){return c.uniqueId==context.cardIds.at("played-warcry");})!=1)
+                throw std::runtime_error("Warcry tail did not clean up and redraw the put-back card");
+            for(int defect=0;defect<3;++defect) {
+                auto bad=observation;auto &c=bad["silverRoot"]["combat"];
+                if(defect==0)c["pendingActionQueue"][1]["amount"]=2;
+                if(defect==1)c["pendingActionQueue"].insert(c["pendingActionQueue"].begin()+1,json{{"kind","GAIN_ENERGY"},{"amount",1}});
+                if(defect==2)setenv("STS_SILVER_VOID_ENERGY_QUEUE","0",1);
+                const auto rejected=one_combat::advisor::importSilverRoot(bad);
+                unsetenv("STS_SILVER_VOID_ENERGY_QUEUE");
+                if(rejected.ok || rejected.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("unqualified Void energy tail accepted");
+            }
+        }
+        {
+            // Native Warcry drawing Void under Evolve: energy is lost at the
+            // draw and the tail is [USE_CARD, DRAW], as the folded import.
+            GameContext game(CharacterClass::IRONCLAD, 111200440, 0);
+            game.act=3; game.floorNum=50;
+            BattleContext live; live.init(game, MonsterEncounter::AWAKENED_ONE);
+            while(live.inputState!=InputState::PLAYER_NORMAL && live.outcome==Outcome::UNDECIDED) live.executeActions();
+            live.player.buff<PlayerStatus::EVOLVE>(1);
+            CardInstance voidCard(CardId::VOID); voidCard.uniqueId=940;
+            live.cards.moveToDrawPileTop(voidCard);
+            CardInstance warcry(CardId::WARCRY); warcry.uniqueId=941;
+            live.cards.moveToHand(warcry); live.player.energy=1;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::WARCRY)
+                throw std::runtime_error("native Warcry fixture did not open its put-on-top choice");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            const auto wire=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x7150u);
+            if(live.player.energy!=0 || !wire.pendingActionQueueObserved || wire.pendingActionQueue.size()!=2
+                    || wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::USE_CARD
+                    || wire.pendingActionQueue[1].kind!=silver_bridge::PendingActionKind::DRAW)
+                throw std::runtime_error("native Warcry/Void/Evolve tail is not [USE_CARD, DRAW] with energy lost");
+        }
         for (int count : {1,2}) for (int handCount : {8,9,10}) {
             auto observation=genericObservation(fixtures[0],"liquid-memories-ordered-choice");
             auto &combat=observation["silverRoot"]["combat"];

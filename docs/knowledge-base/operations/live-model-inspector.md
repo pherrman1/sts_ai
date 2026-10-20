@@ -284,7 +284,11 @@ ordered typed action tail: opening draws, block/energy, literal or random enemy 
 Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
 batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
 non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
-Discovery choice under Hex), and the owning card's cleanup.
+Discovery choice under Hex), Void's energy loss (`LOSE_ENERGY`, amount 1, from
+`actions.unique.LoseEnergyAction.energyLoss`; e.g. Warcry drawing Void under
+Evolve), and the owning card's cleanup. The importer folds `LOSE_ENERGY` into
+the imported energy, as native `CardManager::draw` applies Void at the draw,
+and refuses it behind a pending energy gain (`STS_SILVER_VOID_ENERGY_QUEUE`).
 A potion's Discovery offer with Toy Ornithopter's heal queued behind it uses
 continuation `public_actions` (`STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS`); an
 offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
