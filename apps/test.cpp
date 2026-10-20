@@ -2395,6 +2395,56 @@ int testIroncladCardJavaParity() {
         return fail("Seeing Red does not exhaust");
     }
 
+    // Live parity problem 48 (seed 111200438, floor 32, release 0582219a):
+    // Java's MummifiedHand.onUseCard drops every cardQueue card from its
+    // candidates, and the played Power's queue item is still in cardQueue, so
+    // the Power itself is never a candidate. Game picks: Inflame+ zeroed
+    // Sentinel, then Metallicize zeroed the first Defend.
+    // STS_MUMMIFIED_HAND_PLAYED_CARD_FIX=0 keeps the legacy candidate set.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX");
+        else setenv("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX", "0", 1);
+        auto zeroedAfterPlay = [](std::initializer_list<CardInstance> hand, int playIdx, int rngCounter) {
+            BattleContext bc = simulatorCorrectnessBattle({RelicId::MUMMIFIED_HAND}, Card(CardId::DEFEND_RED), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            while (bc.cards.cardsInHand > 0) bc.cards.removeFromHandAtIdx(bc.cards.cardsInHand - 1);
+            for (const auto &c : hand) bc.cards.createTempCardInHand(c);
+            bc.player.energy = 10;
+            bc.cardRandomRng = Random(111200438ULL + 32, rngCounter);
+            std::vector<std::int16_t> before;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                if (bc.cards.hand[i].costForTurn > 0) before.push_back(bc.cards.hand[i].getUniqueId());
+            }
+            simulatorCorrectnessPlay(bc, playIdx, 0);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                const auto &c = bc.cards.hand[i];
+                if (c.costForTurn == 0 && std::find(before.begin(), before.end(), c.getUniqueId()) != before.end()) {
+                    return i;
+                }
+            }
+            return -1;
+        };
+        CardInstance sentinelFree(CardId::SENTINEL);
+        sentinelFree.setCostForTurn(0);
+        const int first = zeroedAfterPlay({CardInstance(CardId::DEFEND_RED), CardInstance(CardId::DEFEND_RED),
+                                           CardInstance(CardId::SENTINEL), CardInstance(CardId::SECOND_WIND),
+                                           CardInstance(CardId::INFLAME, true), CardInstance(CardId::METALLICIZE)}, 4, 0);
+        const int second = zeroedAfterPlay({CardInstance(CardId::DEFEND_RED), CardInstance(CardId::DEFEND_RED),
+                                            sentinelFree, CardInstance(CardId::SECOND_WIND),
+                                            CardInstance(CardId::METALLICIZE)}, 4, 1);
+        unsetenv("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX");
+        // The legacy pick at the first step is the live native one (the
+        // second Defend); at the second it zeroes the played Metallicize.
+        if (fix ? (first != 2 || second != 0) : (first != 1 || second != -1)) {
+            return fail("Mummified Hand did not reproduce the game's picks");
+        }
+    }
+
     // Disarm+ removes 3 Strength.
     {
         BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DISARM, 1), 10);
