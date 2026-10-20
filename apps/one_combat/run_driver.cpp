@@ -426,7 +426,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                         bool e2cCapture) {
     const auto publicScorersBefore = one_combat::nativeOocPublicScorerCalls();
     if (one_combat::liveOocMctsRealLearnedStop(asc)) {
-        // Default at A20 (ADR-TBD): real combats stop learned (ADR-0051; the A20 CTM and its Act-4 survival
+        // Default at A20 (ADR-0054): real combats stop learned (ADR-0051; the A20 CTM and its Act-4 survival
         // model were fit on learned-stop outcomes). Imagined fights keep their flat budget
         // override; exact root budgets stay on so their boss budgets stay unmultiplied.
         if (sims != 10000 || !search::nativeSilverBackendInstalled()

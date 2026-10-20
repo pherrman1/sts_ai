@@ -35,7 +35,7 @@ def main():
     # Exact root budgets off would multiply imagined boss budgets.
     fails_with({**flag_on, "STS_SILVER_LEARNED_STOP": "1", "STS_SILVER_EXACT_ROOT_BUDGETS": "0"},
                "requires learned-stop Silver real")
-    # Unset is on at A20 (ADR-TBD): flat exact 10k is refused, naming the =0 switch.
+    # Unset is on at A20 (ADR-0054): flat exact 10k is refused, naming the =0 switch.
     fails_with({**mcts, "STS_SILVER_LEARNED_STOP": "0", "STS_SILVER_EXACT_ROOT_BUDGETS": "1"},
                "STS_OOC_MCTS_REAL_LEARNED_STOP=0 restores flat exact 10k")
     # =0 restores the exact-10k guard.

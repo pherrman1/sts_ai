@@ -349,7 +349,7 @@ int oocLeafStabilitySelfTest();
 bool liveOocMctsEnabled();
 // STS_OOC_MCTS_REAL_LEARNED_STOP: real combats under live OOC MCTS stop learned
 // (exact root budgets kept) instead of flat exact 10k. Unset: on at ascension 20
-// (ADR-TBD), off below; 0 restores flat exact 10k, 1 forces it on.
+// (ADR-0054), off below; 0 restores flat exact 10k, 1 forces it on.
 bool liveOocMctsRealLearnedStop(int ascension);
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();

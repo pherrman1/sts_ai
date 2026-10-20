@@ -2401,7 +2401,7 @@ int oocLearnedStopTestCommand(int argc, char **argv) {
 
 namespace {
 bool liveEnabled = false;
-std::optional<bool> liveRealLearnedStop;   // STS_OOC_MCTS_REAL_LEARNED_STOP; unset: on at A20 (ADR-TBD)
+std::optional<bool> liveRealLearnedStop;   // STS_OOC_MCTS_REAL_LEARNED_STOP; unset: on at A20 (ADR-0054)
 std::uint64_t liveSimulations = 512;
 // Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
 double liveFullBudgetFraction = 0;
