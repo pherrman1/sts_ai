@@ -193,6 +193,35 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
                                 "MODEL_UNAVAILABLE", (defect, response))
 
+    def test_act4_elite_map_maps_boss_choice_to_native_heart_node(self):
+        # Live-canary problem 51 (seed 111200440, floor 55): after the Act 4
+        # elite, MCP offers the Heart only as "Boss!" and the producer sent
+        # the act 1-3 boss option 0; native reaches (3,3) only as option 3.
+        observation = json.loads((Path(__file__).parent / "fixtures/live_act4_heart_map.json").read_text())
+        response, = self.run_rows([observation], policy="mcts")
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search", response)
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+        response, = self.run_rows([observation], policy="mcts",
+                                  extra_env={"STS_IMPORTER_ACT4_BOSS_MAP_FIX": "0"})
+        self.assertEqual(response["code"], "OOC_ACTION_MAPPING", response)
+        for defect in range(5):
+            malformed = copy.deepcopy(observation)
+            state = malformed["ooc"]["mcpState"]
+            if defect == 0:
+                state["choice_list"] = ["Return"]
+            elif defect == 1:
+                state["screen_state"]["next_nodes"] = [dict(x=3, y=3)]
+            elif defect == 2:
+                state["screen_state"]["current_node"]["x"] = 2
+            elif defect == 3:
+                malformed["ooc"]["liveChoices"][0]["nativeAction"]["index"] = 1
+            else:
+                malformed["ooc"]["liveChoices"][0]["mcpLabel"] = "Return"
+            response, = self.run_rows([malformed], policy="mcts")
+            self.assertEqual(response.get("code"), "OOC_ACTION_MAPPING", (defect, response))
+
     def test_du_vu_doll_counter_must_match_master_deck_curses(self):
         # Live-canary problem 46: Java DuVuDoll's counter is the master deck's
         # CURSE-type card count, Ascender's Bane included.

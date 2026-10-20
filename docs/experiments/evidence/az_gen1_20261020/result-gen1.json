@@ -1,0 +1,30 @@
+{
+ "run": "gen 1 per GATE.md at 9bc71469, Philipp's RTX 3060 Ti, 11m35s, 2026-10-20",
+ "init_sha256": "1f96f4bf51ccf6b8a30b0a3af0b6ec7062d6bc4571badddeb1cc46723b1b1773",
+ "student_pt_sha256": "a3d2a9f29477b1b93642ac76abac38b8847824954196d284a9570665742e1f4d",
+ "gen1_bin_sha256": "8eae1a8f7962ea17eabc6cc017af7ed00f20c12f91b736943e4726ce39efd069",
+ "rows": {"train": 252615, "train_files": 1456, "val": 35432, "val_files": 208, "rows_sha256_diff": "empty"},
+ "epochs": [
+  {"epoch": 0, "val_kl": 0.086767, "val_top1": 0.946275, "value_bce": 0.6893, "auc": 0.382},
+  {"epoch": 1, "train_loss": 0.6838, "val_kl": 0.05715, "val_top1": 0.93500, "value_bce": 0.5379, "auc": 0.760},
+  {"epoch": 2, "train_loss": 0.5481, "val_kl": 0.05486, "val_top1": 0.93589, "value_bce": 0.4954, "auc": 0.802},
+  {"epoch": 3, "train_loss": 0.4561, "val_kl": 0.05766, "val_top1": 0.93500, "value_bce": 0.5750, "auc": 0.769},
+  {"epoch": 4, "train_loss": 0.3764, "val_kl": 0.05711, "val_top1": 0.93411, "value_bce": 0.6403, "auc": 0.755},
+  {"epoch": 5, "train_loss": 0.3214, "val_kl": 0.05723, "val_top1": 0.93589, "value_bce": 0.6803, "auc": 0.756},
+  {"epoch": 6, "train_loss": 0.3002, "val_kl": 0.056807, "val_top1": 0.934996, "value_bce": 0.6988, "auc": 0.752}
+ ],
+ "final_value": {
+  "all": {"bce": 0.6988, "const_bce": 0.6389, "auc": 0.752, "mean_p": 0.3055, "mean_z": 0.3368},
+  "act1": {"bce": 0.6606, "const_bce": 0.5781, "auc": 0.609},
+  "act2": {"bce": 0.7229, "const_bce": 0.6262, "auc": 0.778},
+  "act3": {"bce": 0.7175, "const_bce": 0.6839, "auc": 0.846},
+  "act4": {"bce": 0.7704, "const_bce": 0.6588, "auc": 0.862},
+  "anchor_kl": 0.0155
+ },
+ "init_value_per_act": {"act1": {"bce": 0.6881, "auc": 0.467}, "act2": {"bce": 0.6882, "auc": 0.417},
+                        "act3": {"bce": 0.6911, "auc": 0.430}, "act4": {"bce": 0.7000, "auc": 0.480}},
+ "gate": {"P": "PASS (0.0568 < 0.0868)", "V": "FAIL (0.6988 >= const 0.6389)", "verdict": "FAIL"},
+ "native_parity": {"records": 400, "logits": 1652, "records_sha256": "f8ff5778fcf9de591026767593e76ca48c58d00a2d0490b831017594cd85c13b",
+                   "max_abs_logit_diff": 1.17e-5, "max_abs_value_diff": 1.34e-5,
+                   "env": "STS_OOC_HEART1_WING_BOOTS_COUNTER=1, run from repo root"}
+}
