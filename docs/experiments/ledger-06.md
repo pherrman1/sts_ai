@@ -21897,7 +21897,7 @@ Raw: `/mnt/project-files/az-gen0/w01..w32.tar`.
 
 **Knowledge impact:** none beyond this entry. Gen 0 is a data generation, and no default or interface changed.
 
-## §TBD — AZ loop generation 1: student_sel fine-tuned on gen-0 Gumbel targets. Gen 1 FAILED its offline gate (value head overfit); gen 1b, with held-out epoch selection, PASSED. No A/B yet (2026-10-20)
+## §573 — AZ loop generation 1: student_sel fine-tuned on gen-0 Gumbel targets. Gen 1 FAILED its offline gate (value head overfit); gen 1b, with held-out epoch selection, PASSED. No A/B yet (2026-10-20)
 
 **Question:** can a net trained on gen 0's (§569) search targets fit them better than student_sel, and can its
 never-trained value head beat the base rate? Philipp's go: 2026-10-20 15:46Z / 15:53Z ("Let's go").
