@@ -8,13 +8,18 @@ the V4 prior ("v4", "src_bits"); newer rows carry "kind" (node/select) and the s
 
 usage: distill.py SILVERBOT_REPO OUTDIR --data a.capture.jsonl.gz ... [--dim 64 --layers 2 --mult 2 --heads 4]
   [--trim-map] [--epochs 8] [--device cuda] [--workers 6] [--amp] [--init student.pt] [--select-repeat 1]
-  [--extra-inputs] [--compact]
+  [--extra-inputs] [--compact] [--value-weight 1 --anchor-weight 1 --select last]
+AZ-loop rows (az_targets.py convert) may carry null entries in "logits" (tokens without a search target: masked
+out of the policy loss) and a value target "z" (1 = the run killed the Heart); rows may carry only "z".
+--value-weight W adds W * BCE(value head logit, z); --anchor-weight A adds A * KL(--init student || student) over
+all of the row's choice tokens (a frozen copy of --init). Validation then also reports value BCE/AUC per act.
+--select last keeps the last epoch instead of the best validation epoch (keeps the validation split clean for a gate).
 Validation = held-out seeds: files whose seed (from "-<seed>.capture" in the name) has seed % --val-mod ==
 --val-mod - 1. Loss: KL(teacher softmax || student softmax) over the row's choice tokens (temperature 1).
 Reports val KL and top-1 agreement with the teacher per screen and card-select type, and the agreement of
 V4 / the serving net where rows carry them. SILVERBOT_REPO is daniel-ziegler/sts_lightspeed built at 84ab3ea
 (silverbot.network imports its compiled module). The student exports with export_heart1_weights.py."""
-import argparse, collections, gzip, json, os, random, re, sys, time, zlib
+import argparse, collections, gzip, json, math, os, random, re, sys, time, zlib
 ap = argparse.ArgumentParser()
 ap.add_argument("repo"); ap.add_argument("out"); ap.add_argument("--data", nargs="+", required=True)
 ap.add_argument("--dim", type=int, default=128); ap.add_argument("--layers", type=int, default=2)
@@ -29,9 +34,13 @@ ap.add_argument("--amp", action="store_true", help="bf16 autocast forward (TF32 
 ap.add_argument("--init", help="start from this student state dict (fine-tune) instead of random weights")
 ap.add_argument("--select-repeat", type=int, default=1, help="repeat card-select training rows this often")
 ap.add_argument("--compact", action="store_true", help="keep training rows compressed in RAM (large captures)")
+ap.add_argument("--value-weight", type=float, default=0.0, help="weight of the value-head BCE on rows with z")
+ap.add_argument("--anchor-weight", type=float, default=0.0, help="weight of KL(frozen --init || student)")
+ap.add_argument("--select", choices=("best", "last"), default="best")
 ap.add_argument("--extra-inputs", action="store_true",
                 help="student_inputs.ExtraInputsNN: zero-initialised relic counter, act and card misc inputs")
 a = ap.parse_args()
+if a.anchor_weight and not a.init: sys.exit("--anchor-weight needs --init")
 sys.path.insert(0, a.repo); sys.path.insert(0, os.path.join(a.repo, "build"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from capture_provenance import row_wing_boots_counter, single_wing_boots_counter
@@ -74,16 +83,19 @@ def load(paths, compact=False):
         with op(p, "rt") as f:
             for line in f:
                 r = json.loads(line)
-                if "record" not in r or len(r["logits"]) < 2: continue
+                if "record" not in r: continue
+                lg, z = r.get("logits"), r.get("z")
+                if lg is not None and sum(x is not None for x in lg) < 2: lg = None
+                if lg is None and z is None: continue
                 rec = r["record"]
                 wing_boots_counters.add(row_wing_boots_counter(r))
-                row = {"record": trim(rec) if a.trim_map else rec, "logits": r["logits"],
-                       "token_bits": r["token_bits"], "v4": r.get("v4"), "src_bits": r.get("src_bits"),
+                row = {"record": trim(rec) if a.trim_map else rec, "logits": lg, "z": z,
+                       "token_bits": r.get("token_bits"), "v4": r.get("v4"), "src_bits": r.get("src_bits"),
                        "serve": r.get("serve"), "screen": r.get("screen", rec["screen_state"]),
                        "act": r.get("act", 0), "deck_misc": r.get("deck_misc"), "seed": seed_of(p)}
                 if compact:
                     row = (row["screen"], zlib.compress(json.dumps(
-                        {k: row[k] for k in ("record", "logits", "act", "deck_misc")}).encode(), 1))
+                        {k: row[k] for k in ("record", "logits", "z", "act", "deck_misc")}).encode(), 1))
                 rows.append(row)
     return rows
 
@@ -111,9 +123,13 @@ def collate(rows):
     b = network.collate_fn([{**r["record"], "chosen_idx": 0, "outcome": 0.0} for r in rows])
     if a.extra_inputs: b["extra"] = student_inputs.extra_batch(rows)
     mask = torch.zeros(len(rows), WIDTH, dtype=torch.bool); tgt = torch.full((len(rows), WIDTH), -1e9)
+    full = torch.zeros(len(rows), WIDTH, dtype=torch.bool)
     for i, r in enumerate(rows):
-        p = positions(r["record"]); mask[i, p] = True; tgt[i, p] = torch.tensor(r["logits"], dtype=torch.float32)
-    return b, mask, tgt
+        p = positions(r["record"]); full[i, p] = True
+        for pos, l in zip(p, r["logits"] or []):
+            if l is not None: mask[i, pos] = True; tgt[i, pos] = l
+    z = torch.tensor([-1.0 if r.get("z") is None else float(r["z"]) for r in rows])
+    return b, mask, tgt, full, z
 
 def to_dev(x):
     if isinstance(x, dict): return {k: to_dev(v) for k, v in x.items()}
@@ -132,62 +148,125 @@ if a.init:
     # A plain student loads into ExtraInputsNN with only the zero-initialised x_* inputs missing.
     missing, unexpected = net.load_state_dict(torch.load(a.init, map_location=a.device), strict=False)
     if unexpected or any(not k.startswith("x_") for k in missing): sys.exit(f"--init mismatch: {missing} {unexpected}")
+ref = None
+if a.anchor_weight:
+    import copy
+    ref = copy.deepcopy(net).eval()
+    for p in ref.parameters(): p.requires_grad_(False)
 nparam = sum(p.numel() for p in net.parameters()); print("student params", nparam, flush=True)
 opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
 train_dl, val_dl = loader(train, True), loader(val, False)
 sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.epochs * len(train_dl), pct_start=0.05)
 
-def logits_of(b):
+def outputs_of(model, b):
+    """(choice logits, value-head logit), fp32."""
     with torch.autocast("cuda", dtype=torch.bfloat16, enabled=a.amp and a.device.startswith("cuda")):
-        out = net(b)[0]
-    return out.float()
+        out = model(b)
+    return out[0].float(), out[1].float()
 
 def kl_rows(logits, mask, tgt):
     lp = F.log_softmax(logits.masked_fill(~mask, -1e9), -1); lt = F.log_softmax(tgt, -1)
     return (lt.exp() * (lt - lp)).masked_fill(~mask, 0).sum(-1)
 
-def argmax(v): return max(range(len(v)), key=v.__getitem__)
+def argmax(v): return max(range(len(v)), key=lambda i: -1e18 if v[i] is None else v[i])
+
+def auc(y, p):
+    pos = sum(y); neg = len(y) - pos
+    if not pos or not neg: return None
+    order = sorted(range(len(p)), key=p.__getitem__); rank = [0.0] * len(p); i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and p[order[j + 1]] == p[order[i]]: j += 1
+        for k in range(i, j + 1): rank[order[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return (sum(r for r, t in zip(rank, y) if t) - pos * (pos + 1) / 2) / (pos * neg)
+
+def losses(b, m, t, full, z):
+    """Per-row policy KL (0 without targets), value BCE (0 without z), anchor KL; plus logits and value logits."""
+    lg, v = outputs_of(net, b)
+    kl = kl_rows(lg, m, t)
+    bce = F.binary_cross_entropy_with_logits(v, z.clamp(min=0), reduction="none") * (z >= 0)
+    anc = torch.zeros_like(kl)
+    if ref is not None:
+        with torch.no_grad(): rl = outputs_of(ref, b)[0].masked_fill(~full, -1e9)
+        anc = kl_rows(lg, full, rl)
+    return kl, bce, anc, lg, v
+
+def combine(kl, bce, anc, m, z):
+    hp, hz = m.any(-1), z >= 0
+    loss = kl.sum() / hp.sum().clamp(min=1)
+    if a.value_weight: loss = loss + a.value_weight * bce.sum() / hz.sum().clamp(min=1)
+    if ref is not None: loss = loss + a.anchor_weight * anc.mean()
+    return loss
 
 def evaluate():
-    net.eval(); kls, agr = [], []
+    net.eval(); kls, agr, hps, vp, ancs = [], [], [], [], []
     with torch.no_grad():
-        for b, m, t in val_dl:
-            b, m, t = to_dev(b), m.to(a.device), t.to(a.device)
-            lg = logits_of(b)
-            kls += kl_rows(lg, m, t).tolist(); agr += (lg.masked_fill(~m, -1e9).argmax(-1) == t.argmax(-1)).tolist()
+        for b, m, t, full, z in val_dl:
+            b, m, t, full, z = to_dev(b), m.to(a.device), t.to(a.device), full.to(a.device), z.to(a.device)
+            kl, _, anc, lg, v = losses(b, m, t, full, z)
+            kls += kl.tolist(); agr += (lg.masked_fill(~m, -1e9).argmax(-1) == t.argmax(-1)).tolist()
+            hps += m.any(-1).tolist(); vp += torch.sigmoid(v).tolist(); ancs += anc.tolist()
     net.train()
+    value = value_metrics(vp)
+    if ref is not None: value["anchor_kl"] = round(sum(ancs) / len(ancs), 4)
+    pol = [(r, k, g) for r, k, g, h in zip(val, kls, agr, hps) if h]
+    val_p = [r for r, _, _ in pol]; kls = [k for _, k, _ in pol]; agr = [g for _, _, g in pol]
+    if not pol: return (None, None), {}, value
     # per group: n, KL, top1, V4 n, V4 top1, serve n, serve top1
     per = collections.defaultdict(lambda: [0, 0.0, 0, 0, 0, 0, 0])
-    for r, k, g in zip(val, kls, agr):
-        s = per[group_of(r)]; s[0] += 1; s[1] += k; s[2] += g
-        top = r["token_bits"][argmax(r["logits"])]
-        if r["v4"]:
+    for r, k, g in zip(val_p, kls, agr):
+        r = unpack(r); s = per[group_of(r)]; s[0] += 1; s[1] += k; s[2] += g
+        top = r["token_bits"][argmax(r["logits"])] if r.get("token_bits") else None
+        if r.get("v4"):
             vb = r["src_bits"][argmax(r["v4"])]; s[3] += 1; s[4] += (vb == top) or (is_skip(vb) and is_skip(top))
-        if r["serve"]:
+        if r.get("serve"):
             s[5] += 1; s[6] += argmax(r["serve"]) == argmax(r["logits"])
-    n = len(val)
+    n = len(val_p)
     tot = (sum(kls) / n, sum(agr) / n)
     rnd = lambda x, d: round(x / d, 4) if d else None
     return tot, {k: {"n": s[0], "kl": rnd(s[1], s[0]), "top1": rnd(s[2], s[0]), "v4_top1": rnd(s[4], s[3]),
-                     "serve_top1": rnd(s[6], s[5])} for k, s in sorted(per.items())}
+                     "serve_top1": rnd(s[6], s[5])} for k, s in sorted(per.items())}, value
+
+def value_metrics(vp):
+    """Value-head BCE/AUC on validation rows with z, overall and per act."""
+    groups = collections.defaultdict(lambda: ([], []))
+    for r, p in zip(val, vp):
+        r = unpack(r)
+        if r.get("z") is None: continue
+        for g in ("all", "act%d" % int(r.get("act") or r["record"].get("obs.act", 0) or 0)):
+            groups[g][0].append(int(r["z"])); groups[g][1].append(min(max(p, 1e-7), 1 - 1e-7))
+    out = {}
+    for g, (y, p) in sorted(groups.items()):
+        bce = -sum(math.log(q) if t else math.log(1 - q) for t, q in zip(y, p)) / len(y)
+        base = sum(y) / len(y)
+        const = -(base * math.log(base) + (1 - base) * math.log(1 - base)) if 0 < base < 1 else 0.0
+        out[g] = {"n": len(y), "bce": round(bce, 4), "const_bce": round(const, 4), "auc": auc(y, p),
+                  "mean_p": round(sum(p) / len(p), 4), "mean_z": round(base, 4)}
+    return out
 
 os.makedirs(a.out, exist_ok=True); t0 = time.time(); best = None; hist = []
 if a.init:
-    (kl, ag), per = evaluate(); print(f"init val KL {kl:.4f} top1 {ag:.4f}", json.dumps(per), flush=True)
-    hist.append({"epoch": 0, "val_kl": kl, "val_top1": ag, "per_screen": per})
+    (kl, ag), per, value = evaluate()
+    print(f"init val KL {kl} top1 {ag}", json.dumps(per), json.dumps(value), flush=True)
+    hist.append({"epoch": 0, "val_kl": kl, "val_top1": ag, "per_screen": per, "value": value})
 for ep in range(a.epochs):
     tot = n = 0
-    for b, m, t in train_dl:
-        b, m, t = to_dev(b), m.to(a.device), t.to(a.device)
-        loss = kl_rows(logits_of(b), m, t).mean(); opt.zero_grad(set_to_none=True); loss.backward()
+    for b, m, t, full, z in train_dl:
+        b, m, t, full, z = to_dev(b), m.to(a.device), t.to(a.device), full.to(a.device), z.to(a.device)
+        kl, bce, anc, _, _ = losses(b, m, t, full, z)
+        loss = combine(kl, bce, anc, m, z); opt.zero_grad(set_to_none=True); loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step(); sched.step()
         tot += loss.item() * len(m); n += len(m)
-    (kl, ag), per = evaluate()
-    hist.append({"epoch": ep + 1, "train_kl": tot / n, "val_kl": kl, "val_top1": ag, "sec": time.time() - t0})
-    print(f"ep {ep+1} train KL {tot/n:.4f} val KL {kl:.4f} top1 {ag:.4f} {time.time()-t0:.0f}s", flush=True)
-    if best is None or kl < best[0]:
-        best = (kl, ag, per); torch.save(net.state_dict(), os.path.join(a.out, "student.pt"))
+    (kl, ag), per, value = evaluate()
+    hist.append({"epoch": ep + 1, "train_loss": tot / n, "val_kl": kl, "val_top1": ag, "value": value,
+                 "sec": time.time() - t0})
+    print(f"ep {ep+1} train loss {tot/n:.4f} val KL {kl} top1 {ag} value {json.dumps(value.get('all'))} "
+          f"{time.time()-t0:.0f}s", flush=True)
+    score = kl if kl is not None else value["all"]["bce"]
+    if a.select == "last" or best is None or score < best[0]:
+        best = (score, ag, per, kl, value); torch.save(net.state_dict(), os.path.join(a.out, "student.pt"))
 print("best per group:", json.dumps(best[2]), flush=True)
 json.dump({"args": vars(a), "wing_boots_counter": wing_boots_counter, "params": nparam, "train_rows": len(train), "val_rows": len(val),
-           "best_val_kl": best[0], "best_val_top1": best[1], "per_screen": best[2], "history": hist},
+           "best_val_kl": best[3], "best_val_top1": best[1], "per_screen": best[2], "value": best[4], "history": hist},
           open(os.path.join(a.out, "summary.json"), "w"), indent=1)
