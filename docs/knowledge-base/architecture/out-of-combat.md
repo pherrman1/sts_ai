@@ -339,7 +339,12 @@ Spear; Philipp chose to apply it to both. Combats routed to Silver by
 Hearts (§534: 75 vs 82 of 512 paired seeds, NOT_SHOWN, McNemar p = 0.09); Philipp made it the A20 default anyway. Startup also requires the effective Silver reuse cap to be
 32,768; the experimental 131,072 override is rejected. Real combat requires
 ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
-frozen teacher cap contract. `STS_OOC_MCTS` itself remains OFF by default and
+frozen teacher cap contract. That guard dates from the first live OOC MCTS
+(exact-10k label and CTM teachers); the CTMs used today (`pathb-r2`, `pathb-a20`
+Stage 1 teacher `silver-ordinary-fair-learnedstop-ctm-pathb-90f6df64`, and the
+§527 Act-4 labels) were fit on learned-stop Silver outcomes. Research-only
+`STS_OOC_MCTS_REAL_LEARNED_STOP=1` lets real combats stop learned (exact root
+budgets kept, so imagined fights are unchanged); it is not measured. `STS_OOC_MCTS` itself remains OFF by default and
 does not load a combat artifact or run MCTS. Both arms retain the same normal
 real combat branch and the same fallback OOC policy chain.
 
