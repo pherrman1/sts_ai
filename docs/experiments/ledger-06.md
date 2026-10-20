@@ -21966,3 +21966,22 @@ the candidates. Play-changing for simulator play with Mummified Hand, unmeasured
 the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
+
+## §TBD — Live Headbutt grids refused after a lethal hit on a Byrd and after Plated Armor 1 on Donu (2026-10-20)
+
+**Question:** why did live runs stop at Headbutt's discard grid with `silver_selection_pending_actions` on seeds
+111200421 (floor 28), 111200430 (floor 18), 111200439 (floor 21; problems 35 and 49) and 111200422 (floor 50,
+problem 36) in `engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's failure snapshots and extracts (`issue49-extract.json`: a 7 HP Flight 3 Byrd hit for exactly
+7); the native-vs-Java parity loop in `live_silver_importer_test` (Headbutt variants 7 and 8; no gameplay seeds).
+**Result:** a lethal hit still queues `FlightPower`'s (or `PlatedArmorPower`'s) `ReducePowerAction`, because
+`onAttacked`/`wasHPLost` run before `die()` and `FlightPower` tests `calculateDamageTakenAmount` (which halves again)
+against HP. The producer and importer refused a dead target. Plated Armor 1 queues the reduction that removes the
+power, which the importer refused for every monster because of Shelled Parasite's stun. Native applies both at the hit.
+**Interpretation:** `STS_SILVER_LETHAL_REACTION_QUEUE` and `STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE` (default on, `=0`
+restores the refusal) fold both into the native state. Byrd grounding and Shelled Parasite's stun stay unsupported.
+Live-import support only; native play is unchanged. `pendingActionsBlocker` now names queued power actions, so the
+unexplained problem 37 (seed 111200425) will show its source.
+Seeds: none new (live seeds as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`,
+`evaluation/differential-correctness.md`.
