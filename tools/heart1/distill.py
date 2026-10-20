@@ -110,6 +110,7 @@ val_files = [f for f in files if seed_of(f) % a.val_mod == a.val_mod - 1]
 select_mod = (a.val_mod - 2 if a.select_mod is None else a.select_mod) if a.select == "fold" else None
 if select_mod is not None and select_mod % a.val_mod == a.val_mod - 1: sys.exit("--select-mod is the validation fold")
 sel_files = [f for f in files if select_mod is not None and seed_of(f) % a.val_mod == select_mod]
+if select_mod is not None and not sel_files: sys.exit(f"--select fold: no files with seed % {a.val_mod} == {select_mod}")
 train_files = [f for f in files if f not in val_files and f not in sel_files]
 train, val, sel = load(train_files, compact=a.compact), load(val_files), load(sel_files)
 if a.max_train: random.shuffle(train); train = train[:a.max_train]

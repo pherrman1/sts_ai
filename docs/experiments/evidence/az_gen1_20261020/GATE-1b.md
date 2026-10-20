@@ -33,3 +33,7 @@ Read from `summary.json`: `history[0]` is student_sel; the gen-1b numbers are `b
 Integrity check: `history[0]` must reproduce gen 1's init numbers (val KL 0.086767, top-1 0.946275), which shows the
 init is the same student_sel. On PASS: export, native parity as in GATE.md, then a paired A20 A/B vs student_sel
 (needs Philipp's go). On FAIL: ledger, no A/B.
+
+**Caveat (to carry into the ledger):** gen 1b is a second gate attempt on the same validation fold. It was designed
+after gen 1's validation curve had been seen, so a V pass is weaker evidence than a first-attempt pass. The paired
+A20 A/B stays the deciding test.
