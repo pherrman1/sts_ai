@@ -21980,3 +21980,23 @@ importer then refuses); research `obtainRaw` paths do not sync (#734 review).
 Seeds: none new (live seed 111200437 as reported; unit tests only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`,
 `mods/sts-model-inspector/README.md`.
+
+## §572 — Live combat parity: Mummified Hand counted the Power being played (2026-10-20)
+
+**Question:** why did all 12 combat parity diffs of live seed 111200438 (release 0582219a) show Mummified Hand zeroing
+a different hand card than the game (problem 48 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue48-extract.json`, steps 254 and 255: hands in order, game `cardRandomRng`
+counters 0→1 and 1→2 matching native); read-only `javap` of the pinned JAR on Philipp's PC (`issue48-javap.md`):
+`MummifiedHand.onUseCard`, `AbstractPlayer.useCard`, `UseCardAction.<init>`, `GameActionManager.getNextAction`;
+`ironclad_card_java_parity` (no gameplay seeds).
+**Result:** Java runs relic `onUseCard` in the `UseCardAction` constructor while the played Power is still in the hand
+and still `cardQueue[0]` (popped after `useCard`); Mummified Hand removes queued cards from its candidates, so the Power
+is never one. Native pops the item first, so its candidate list had one more card and the same draw picked another
+card. Replaying `Random(111200438+32)` with the fix reproduces both game picks (Sentinel, then the first Defend); the
+legacy candidate set reproduces the live native first pick.
+**Interpretation:** `STS_MUMMIFIED_HAND_PLAYED_CARD_FIX` (default on, `=0` restores) excludes `curCardQueueItem` from
+the candidates. Play-changing for simulator play with Mummified Hand, unmeasured.
+**Open question:** the live native second-step pick (Second Wind) is not reproduced by the legacy replay (which zeroes
+the played Metallicize); the fixed replay matches the game at both steps.
+Seeds: none new (live seed 111200438 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
