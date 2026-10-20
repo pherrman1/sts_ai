@@ -452,6 +452,17 @@ bool hexDazedQueue() {
     throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS: unset/1 (default) = a potion's
+// Discovery card reward (Attack/Skill/Power/Colorless Potion) whose typed
+// public tail (Toy Ornithopter's heal) is queued behind the choice imports
+// that tail; 0 = legacy refusal (silver_selection_pending_actions).
+bool cardRewardPublicActions() {
+    const char *value = std::getenv("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS must be 0 or 1");
+}
+
 // STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
 // stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
 // native stolen-gold check that Java has no field for; without it Silver's
@@ -2029,7 +2040,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || (sourceOrigin=="CARD_REWARD" && wire.cardSelect.task==static_cast<int>(sts::CardSelectTask::DISCOVERY)
                     && wire.cardSelect.data0==1 && wire.cardSelect.setCostToZero && !wire.cardSelect.canPickZero)))
             return unsupported("silver_selection_pending_actions");
-        if (!cardSelect || (continuation=="public_actions"
+        const bool rewardPublic=cardSelect && sourceOrigin=="CARD_REWARD" && cardRewardPublicActions()
+            && wire.cardSelect.task==static_cast<int>(sts::CardSelectTask::DISCOVERY);
+        if (!cardSelect || (continuation=="public_actions" && !rewardPublic
                     && wire.cardSelect.task!=static_cast<int>(sts::CardSelectTask::GAMBLE)
                     && wire.cardSelect.task!=static_cast<int>(sts::CardSelectTask::EXHAUST_MANY)
                     && wire.cardSelect.task!=static_cast<int>(sts::CardSelectTask::LIQUID_MEMORIES_POTION))
@@ -2229,7 +2242,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         const auto continuation = selectionIt->value("continuation", std::string());
         const bool codex = continuation == "codex_end_turn" && wire.cardSelect.task == static_cast<std::int16_t>(sts::CardSelectTask::CODEX);
         if ((!codex && wire.cardSelect.task != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY))
-            || (!codex && continuation != "none" && continuation != "discovery_card" && continuation != "toolbox_draw" && continuation != "toolbox_actions" && continuation != "source_card_actions")
+            || (!codex && continuation != "none" && continuation != "discovery_card" && continuation != "toolbox_draw" && continuation != "toolbox_actions" && continuation != "source_card_actions"
+                && !(continuation == "public_actions" && cardRewardPublicActions() && wire.pendingActionQueueObserved))
             || wire.endTurnQueued || wire.turnHasEnded || (!codex && continuation!="source_card_actions" && !wire.pendingCardQueue.empty()))
             return unsupported("silver_card_reward_pending_actions");
         if (codex) {

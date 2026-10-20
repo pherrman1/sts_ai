@@ -285,6 +285,9 @@ Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
 batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
 non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
 Discovery choice under Hex), and the owning card's cleanup.
+A potion's Discovery offer with Toy Ornithopter's heal queued behind it uses
+continuation `public_actions` (`STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS`); an
+offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,

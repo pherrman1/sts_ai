@@ -3461,6 +3461,58 @@ int main(int argc, char **argv) {
             if (!one_combat::advisor::selectedLiveAction(semantic, context, offer).is_null())
                 throw std::runtime_error("non-skippable reward accepted Skip");
         }
+        // Problem 33 variant (live seed 111200417): Colorless Potion's offer
+        // with Toy Ornithopter's heal queued behind the choice.
+        for (int copies : {1, 2}) for (int flag : {1, 0}) {
+            auto offer = genericObservation(fixtures[0], "potion-offer-toy-heal-tail");
+            auto &combat = offer["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id","Toy Ornithopter"},{"counter",-1},{"usedUp",false}});
+            combat["cardSelect"] = offerSelection(copies, "public_actions");
+            combat["pendingActionQueue"] = json::array({json{{"kind","HEAL_PLAYER"},{"amount",5}}});
+            if (!flag) setenv("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS", "0", 1);
+            const auto imported = one_combat::advisor::importSilverRoot(offer);
+            unsetenv("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS");
+            if (!flag) {
+                if (imported.ok || imported.reason != "silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS=0 accepted the potion offer tail");
+                continue;
+            }
+            if (!imported.ok) throw std::runtime_error("potion offer heal tail import: " + imported.reason);
+            auto selected = battleContextFromWire(imported.wire);
+            selected.player.curHp = selected.player.maxHp - 10;
+            const int before = selected.player.curHp, handCount = selected.cards.cardsInHand;
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT, 1).execute(selected);
+            if (selected.inputState != InputState::PLAYER_NORMAL || selected.player.curHp != before + 5
+                    || selected.cards.cardsInHand != handCount + copies
+                    || selected.cards.hand[handCount].id != CardId::SHRUG_IT_OFF)
+                throw std::runtime_error("potion offer heal tail did not add the pick and then heal");
+            for (int defect = 0; defect < 3; ++defect) {
+                auto bad = offer; auto &c = bad["silverRoot"]["combat"];
+                if (defect == 0) c["pendingActionQueue"][0]["amount"] = 4;
+                if (defect == 1) c["pendingActionQueue"] = json::array();
+                if (defect == 2) c.erase("pendingActionQueue");
+                if (one_combat::advisor::importSilverRoot(bad).ok)
+                    throw std::runtime_error("unqualified potion offer tail accepted");
+            }
+        }
+        {
+            // Native Colorless Potion with Toy Ornithopter leaves the same tail.
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act = 1; game.floorNum = 1;
+            BattleContext native; native.init(game, MonsterEncounter::CULTIST);
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(native);
+            native.player.setHasRelic<RelicId::TOY_ORNITHOPTER>(true);
+            native.potions[0] = Potion::COLORLESS_POTION; native.potionCount = 1;
+            native.player.curHp = native.player.maxHp - 10;
+            sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(native);
+            if (native.inputState != InputState::CARD_SELECT || native.cardSelectInfo.cardSelectTask != CardSelectTask::DISCOVERY)
+                throw std::runtime_error("Colorless Potion fixture did not open its offer");
+            const auto wire = makeSilverBattleStateWire(native, knowledge, makeSilverRunContext(game), 0x7151cu);
+            if (!wire.pendingActionQueueObserved || wire.pendingActionQueue.size() != 1
+                    || wire.pendingActionQueue[0].kind != silver_bridge::PendingActionKind::HEAL_PLAYER
+                    || wire.pendingActionQueue[0].amount != 5)
+                throw std::runtime_error("native potion offer tail is not [HEAL_PLAYER 5]");
+        }
         {
             auto offer = genericObservation(fixtures[0], "normal-cost-toolbox-offer");
             auto &selection = offer["silverRoot"]["combat"]["cardSelect"];

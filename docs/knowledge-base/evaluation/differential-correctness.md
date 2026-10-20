@@ -243,6 +243,9 @@ Sacred Bark and 20% with it, the reverse of the game.
   Byrds): `HexPower.onUseCard` queues `MakeTempCardInDrawPileAction(Dazed)`
   behind the choice. The producer now emits it as `SHUFFLE_DAZED` and the
   importer imports it; see live-model-inspector.md.
+- Same stop on a Colorless Potion offer (seed 111200417 floor 37, Transient):
+  Toy Ornithopter's `HealAction(5)` is queued behind the choice. The offer now
+  carries it as a `public_actions` tail.
 
 Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live
 importer gave the player phantom relics. The combat `Player` has 128 relic

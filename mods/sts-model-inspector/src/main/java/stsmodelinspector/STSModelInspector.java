@@ -3145,6 +3145,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         else if (!codex && (copies == null || copies < 1 || copies > 2))
             reason = "silver_card_reward_copy_count";
         else if (!codex && !"none".equals(continuation) && !"discovery_card".equals(continuation) && !"source_card_actions".equals(continuation)
+                && !("public_actions".equals(continuation) && "com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass))
                 && !(("toolbox_draw".equals(continuation) || "toolbox_actions".equals(continuation))
                     && "com.megacrit.cardcrawl.actions.utility.ChooseOneColorless".equals(actionClass)))
             reason = "silver_card_reward_pending_actions";
@@ -3311,6 +3312,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && sourceSelectionOwner("DISCOVERY",trackedLastCardQueueItem.physicalCard.getClass().getName())) {
             continuation=publicPendingActionsJson(false,"DISCOVERY")!=null?"source_card_actions":"unsupported";
         }
+        // An Attack/Skill/Power/Colorless Potion's DiscoveryAction with Toy
+        // Ornithopter's HealAction(5) queued behind the choice; no card owns it.
+        if("com.megacrit.cardcrawl.actions.unique.DiscoveryAction".equals(actionClass) && "unsupported".equals(continuation)
+                && !hasPendingUseCard()) {
+            String tail=publicPendingActionsJson(false);
+            if(tail!=null && !"[]".equals(tail)) continuation="public_actions";
+        }
         List<Integer> drawsAfter = null;
         List<Integer> blocksAfter = new ArrayList<>();
         int damageAllBeforeBlocks = 0;
@@ -3337,6 +3345,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             selection = selection.substring(0, selection.length() - 1) + ",\"blocksAfter\":" + blocksAfter + "}";
         if (damageAllBeforeBlocks > 0 && "codex_end_turn".equals(continuation))
             selection = selection.substring(0, selection.length() - 1) + ",\"damageAllBeforeBlocks\":" + damageAllBeforeBlocks + "}";
+        // Diagnostic only: name the queue that blocked this offer.
+        if (selection.contains("\"unsupportedReason\":\"silver_card_reward_pending_actions\""))
+            selection = selection.substring(0, selection.length() - 1) + ",\"pendingActionsBlocker\":\""
+                    + escapeJson(pendingActionsBlocker()) + "\"}";
         return selection;
     }
 
