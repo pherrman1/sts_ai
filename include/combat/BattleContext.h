@@ -89,6 +89,13 @@ namespace sts {
     // engine draws nothing. Other values are fatal.
     bool muggerDeathRngFix();
 
+    // STS_SPIRE_SURROUNDED_DEATH_FIX: unset/1 (default) = when Spire Shield
+    // or Spire Spear dies with its partner alive, the player loses Surrounded,
+    // as SpireShield/SpireSpear.die() queue RemoveSpecificPowerAction
+    // (javap, live parity problem 40); this unblocks Smoke Bomb. 0 = the legacy
+    // engine keeps Surrounded for the rest of the fight. Other values are fatal.
+    bool spireSurroundedDeathFix();
+
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
     // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from

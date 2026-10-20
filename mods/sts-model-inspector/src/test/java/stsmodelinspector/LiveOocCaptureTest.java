@@ -383,6 +383,8 @@ public final class LiveOocCaptureTest {
         check("NlothsMask", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:counter");
         check("Matryoshka", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Matryoshka:counter");
         check("Matryoshka", -2, true, 0, null);
+        check("Du-Vu Doll", 1, false, 1, null);
+        check("Du-Vu Doll", 0, false, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
         if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
             throw new AssertionError("Gambler's Brew hand selector was not classified as GAMBLE");

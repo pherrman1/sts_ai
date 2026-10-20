@@ -631,7 +631,10 @@ final class LiveOocCapture {
 
     private static final List<String> PERSISTENT_RELIC_COUNTERS = Arrays.asList(
             "Happy Flower", "Incense Burner", "InkBottle", "Inserter", "Nunchaku", "Pen Nib", "Sundial",
-            "NeowsBlessing", "Omamori", "Girya", "Tiny Chest", "WingedGreaves");
+            "NeowsBlessing", "Omamori", "Girya", "Tiny Chest", "WingedGreaves",
+            // Master-deck curse count; native maintains it on every deck
+            // change and the OOC importer checks it against the deck.
+            "Du-Vu Doll");
 
     private static void unsupported(Map<String,Object> state, String reason) {
         if (!state.containsKey("unsupportedReason")) state.put("unsupportedReason", reason);
