@@ -21922,7 +21922,7 @@ either dies with its partner alive; play-changing for simulator play in the Act 
 Seeds: none new (live seeds 111200433 and 111200434 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live OOC: Du-Vu Doll's curse counter was unqualified and never maintained natively (2026-10-20)
+## §571 — Live OOC: Du-Vu Doll's curse counter was unqualified and never maintained natively (2026-10-20)
 
 **Question:** why was the live OOC card reward on seed 111200437 (Act 3 floor 45, right after taking Du-Vu Doll)
 refused with `RELIC_NATIVE_COUNTER_UNQUALIFIED:Du-Vu Doll` (problem 46 in
