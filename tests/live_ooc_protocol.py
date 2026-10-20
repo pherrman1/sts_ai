@@ -196,6 +196,11 @@ class LiveOocProtocol(unittest.TestCase):
     def test_du_vu_doll_counter_must_match_master_deck_curses(self):
         # Live-canary problem 46: Java DuVuDoll's counter is the master deck's
         # CURSE-type card count, Ascender's Bane included.
+        # The live card reward (seed 111200437, floor 45) with the producer's
+        # former RELIC_NATIVE_COUNTER_UNQUALIFIED marker removed.
+        captured = json.loads((Path(__file__).parent / "fixtures/live_du_vu_card_reward.json").read_text())
+        response, = self.run_rows([captured], model=False, policy="mcts")
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE", response)
         observation = json.loads((Path(__file__).parent / "fixtures/live_act4_entry.json").read_text())
         def variant(counter, regret=False):
             row = copy.deepcopy(observation)

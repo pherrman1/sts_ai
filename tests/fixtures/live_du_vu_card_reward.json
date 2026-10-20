@@ -1,0 +1,1839 @@
+{
+ "act": 3,
+ "ascension": 20,
+ "boundary": "ooc",
+ "candidates": [],
+ "character": "IRONCLAD",
+ "deck": [
+  {
+   "cost": -2,
+   "costForTurn": -2,
+   "freeToPlayOnce": false,
+   "id": "AscendersBane",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "a2ad8bd6-6d07-482d-950f-24a3c62d22fe"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Bash",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "9c5c9c69-d89c-473e-bb9b-2cbb2e10aeda"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Inflame",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "9b372be9-8e89-40f5-8c07-2c1dfc3dba8d"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Second Wind",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "c6d35d5f-3587-4198-b003-de3dfe7d4c79"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Headbutt",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "d81de7d2-371b-4e2d-b296-07e1f7309f8a"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Reckless Charge",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "fa18c224-7eea-4bca-96ca-e51847cfee85"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Iron Wave",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "98c8cc00-f4e6-48ea-964e-3c66246a11e3"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Shrug It Off",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "0969e490-3de1-452f-97c6-d32c6f31dad5"
+  },
+  {
+   "cost": 3,
+   "costForTurn": 3,
+   "freeToPlayOnce": false,
+   "id": "Corruption",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "389758c6-606f-4938-a8a2-eeb4173065da"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Warcry",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "d58cd72d-79b4-4ab2-bc16-a75fc93445c7"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Feel No Pain",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "a55b4bb3-258b-42e8-b0fc-25d493ae40b2"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Limit Break",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "a5e76433-6dea-4398-b9aa-20c528613555"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Flex",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "44e24432-7bcb-422b-8587-6b22d42f3a92"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Pommel Strike",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "99cd33b9-8240-4c77-a9a0-29351ede8b6d"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Pummel",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "fe6c27bf-f563-4dbf-a515-be90efd1dd51"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Disarm",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "86a140b0-6368-43d1-be91-0184f343a2da"
+  },
+  {
+   "cost": 3,
+   "costForTurn": 3,
+   "freeToPlayOnce": false,
+   "id": "Barricade",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "4d9d1ca2-47d4-4daa-a584-0d3e58f39520"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Metallicize",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "f7f51ba8-6541-4fcf-a90f-5f716075f49d"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Rampage",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "72aab8dd-0aef-4031-844a-fe55aca4c6e0"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Iron Wave",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "f7d1acf3-eefd-4bb1-bb6a-d08fffeb5f75"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Havoc",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "b1fadeec-34f4-45cc-a995-a48720abb20f"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Hemokinesis",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "f3ed22c1-918a-491f-816a-1085c364cd08"
+  },
+  {
+   "cost": 2,
+   "costForTurn": 2,
+   "freeToPlayOnce": false,
+   "id": "Shockwave",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "eb923411-4ecf-44d8-87ab-f285b433de56"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Seeing Red",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "98b9463a-a584-4b73-b831-fe54442cbdb8"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Rage",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "c06750fc-5634-4b9d-b6dc-1791c4e7b8c2"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Metallicize",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "065a27c0-0e9c-46c5-9b68-d7c283b47f85"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Anger",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "5eae5ce3-7adb-4701-9f3b-296c930288fa"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Bloodletting",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "254000b9-9ff7-4ecd-bc96-ec99b3ccd11a"
+  },
+  {
+   "cost": 1,
+   "costForTurn": 1,
+   "freeToPlayOnce": false,
+   "id": "Sentinel",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "a9aebbfd-b1fc-4722-975c-a8d5d9d66d98"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Purity",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "5e92f167-8fed-409b-a363-2260b7867fa6"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Thinking Ahead",
+   "misc": 0,
+   "retain": false,
+   "upgraded": false,
+   "uuid": "48631b99-a357-4e03-9172-834fdf01e2b8"
+  },
+  {
+   "cost": 0,
+   "costForTurn": 0,
+   "freeToPlayOnce": false,
+   "id": "Flash of Steel",
+   "misc": 0,
+   "retain": false,
+   "upgraded": true,
+   "uuid": "ce5fc4a2-f335-4882-aa59-a82c183b10e1"
+  }
+ ],
+ "floor": 45,
+ "gold": 312,
+ "hp": 93,
+ "maxHp": 110,
+ "ooc": {
+  "details": {
+   "cardRewards": [
+    [
+     {
+      "bottleBinding": -1,
+      "id": "Twin Strike",
+      "misc": 0,
+      "upgraded": true,
+      "uuid": "68c9e774-b0c8-490c-a9b3-c50ea6c1399c"
+     },
+     {
+      "bottleBinding": -1,
+      "id": "Thunderclap",
+      "misc": 0,
+      "upgraded": true,
+      "uuid": "f034a011-af61-4107-a37f-e450237b520f"
+     },
+     {
+      "bottleBinding": -1,
+      "id": "Heavy Blade",
+      "misc": 0,
+      "upgraded": true,
+      "uuid": "25439562-1631-49bd-bed1-827d5956b0b3"
+     }
+    ]
+   ],
+   "emeraldKey": false,
+   "gold": [],
+   "potions": [],
+   "relics": [],
+   "sapphireKey": false
+  },
+  "liveChoices": [
+   {
+    "choiceIndex": 1,
+    "liveAction": {
+     "choiceIndex": 1,
+     "kind": "choose"
+    },
+    "mcpLabel": "[Twin Strike+] Cost: 1 ATTACK",
+    "nativeAction": {
+     "group": 0,
+     "index": 0,
+     "kind": "card"
+    }
+   },
+   {
+    "choiceIndex": 2,
+    "liveAction": {
+     "choiceIndex": 2,
+     "kind": "choose"
+    },
+    "mcpLabel": "[Thunderclap+] Cost: 1 ATTACK",
+    "nativeAction": {
+     "group": 0,
+     "index": 1,
+     "kind": "card"
+    }
+   },
+   {
+    "choiceIndex": 3,
+    "liveAction": {
+     "choiceIndex": 3,
+     "kind": "choose"
+    },
+    "mcpLabel": "[Heavy Blade+] Cost: 2 ATTACK",
+    "nativeAction": {
+     "group": 0,
+     "index": 2,
+     "kind": "card"
+    }
+   },
+   {
+    "liveAction": {
+     "kind": "skip"
+    },
+    "nativeAction": {
+     "group": 0,
+     "index": 5,
+     "kind": "card"
+    }
+   },
+   {
+    "liveAction": {
+     "kind": "skip"
+    },
+    "nativeAction": {
+     "group": 0,
+     "index": 0,
+     "kind": "skip"
+    }
+   }
+  ],
+  "mcpState": {
+   "can_cancel": true,
+   "can_proceed": false,
+   "cancel_button": "skip",
+   "choice_list": [
+    "[Twin Strike+] Cost: 1 ATTACK",
+    "[Thunderclap+] Cost: 1 ATTACK",
+    "[Heavy Blade+] Cost: 2 ATTACK"
+   ],
+   "current_hp": 93,
+   "floor": 45,
+   "gold": 312,
+   "in_game": true,
+   "is_screen_up": true,
+   "max_hp": 110,
+   "ready_for_command": true,
+   "room_phase": "COMPLETE",
+   "room_type": "EventRoom",
+   "screen_name": "CARD_REWARD",
+   "screen_state": {
+    "bowl_available": false,
+    "cards": [
+     {
+      "cost": 1,
+      "has_target": true,
+      "id": "Twin Strike",
+      "is_playable": false,
+      "name": "Twin Strike+",
+      "type": "ATTACK",
+      "upgrades": 1,
+      "uuid": "68c9e774-b0c8-490c-a9b3-c50ea6c1399c"
+     },
+     {
+      "cost": 1,
+      "id": "Thunderclap",
+      "is_playable": false,
+      "name": "Thunderclap+",
+      "type": "ATTACK",
+      "upgrades": 1,
+      "uuid": "f034a011-af61-4107-a37f-e450237b520f"
+     },
+     {
+      "cost": 2,
+      "has_target": true,
+      "id": "Heavy Blade",
+      "is_playable": false,
+      "magic_number": 5,
+      "name": "Heavy Blade+",
+      "type": "ATTACK",
+      "upgrades": 1,
+      "uuid": "25439562-1631-49bd-bed1-827d5956b0b3"
+     }
+    ],
+    "skip_available": true
+   },
+   "screen_type": "CARD_REWARD"
+  },
+  "publicState": {
+   "acquiredRelics": [
+    "Lizard Tail",
+    "Dead Branch",
+    "StrikeDummy",
+    "Kunai",
+    "Enchiridion",
+    "War Paint",
+    "Peace Pipe",
+    "Red Mask",
+    "Molten Egg 2",
+    "Juzu Bracelet",
+    "Frozen Egg 2",
+    "Du-Vu Doll",
+    "Burning Blood",
+    "Smiling Mask",
+    "Lee's Waffle",
+    "Philosopher's Stone",
+    "OrangePellets",
+    "Pandora's Box"
+   ],
+   "act": 3,
+   "ascension": 20,
+   "blueKey": true,
+   "boss": "Time Eater",
+   "cardRarityFactor": 2,
+   "character": "IRONCLAD",
+   "combatFloors": [
+    1,
+    2,
+    5,
+    6,
+    8,
+    13,
+    14,
+    16,
+    18,
+    19,
+    24,
+    27,
+    28,
+    29,
+    30,
+    31,
+    33,
+    35,
+    38,
+    39,
+    41,
+    45
+   ],
+   "combatHistory": [
+    {
+     "encounter": "THREE_DARKLINGS",
+     "floor": 35,
+     "kind": "NORMAL_QUEUE"
+    },
+    {
+     "encounter": "ORB_WALKER",
+     "floor": 38,
+     "kind": "NORMAL_QUEUE"
+    },
+    {
+     "encounter": "TRANSIENT",
+     "floor": 39,
+     "kind": "NORMAL_QUEUE"
+    },
+    {
+     "encounter": "NEMESIS",
+     "floor": 41,
+     "kind": "ELITE_QUEUE"
+    },
+    {
+     "encounter": "SLIME_BOSS",
+     "floor": 45,
+     "kind": "FIXED_EVENT"
+    }
+   ],
+   "combatHistoryComplete": true,
+   "currentActPathVisits": [
+    0,
+    2,
+    4,
+    1,
+    3,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "deck": [
+    {
+     "bottleBinding": -1,
+     "id": "AscendersBane",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "a2ad8bd6-6d07-482d-950f-24a3c62d22fe"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Bash",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "9c5c9c69-d89c-473e-bb9b-2cbb2e10aeda"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Inflame",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "9b372be9-8e89-40f5-8c07-2c1dfc3dba8d"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Second Wind",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "c6d35d5f-3587-4198-b003-de3dfe7d4c79"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Headbutt",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "d81de7d2-371b-4e2d-b296-07e1f7309f8a"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Reckless Charge",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "fa18c224-7eea-4bca-96ca-e51847cfee85"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Iron Wave",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "98c8cc00-f4e6-48ea-964e-3c66246a11e3"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Shrug It Off",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "0969e490-3de1-452f-97c6-d32c6f31dad5"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Corruption",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "389758c6-606f-4938-a8a2-eeb4173065da"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Warcry",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "d58cd72d-79b4-4ab2-bc16-a75fc93445c7"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Feel No Pain",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "a55b4bb3-258b-42e8-b0fc-25d493ae40b2"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Limit Break",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "a5e76433-6dea-4398-b9aa-20c528613555"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Flex",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "44e24432-7bcb-422b-8587-6b22d42f3a92"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Pommel Strike",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "99cd33b9-8240-4c77-a9a0-29351ede8b6d"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Pummel",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "fe6c27bf-f563-4dbf-a515-be90efd1dd51"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Disarm",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "86a140b0-6368-43d1-be91-0184f343a2da"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Barricade",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "4d9d1ca2-47d4-4daa-a584-0d3e58f39520"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Metallicize",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "f7f51ba8-6541-4fcf-a90f-5f716075f49d"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Rampage",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "72aab8dd-0aef-4031-844a-fe55aca4c6e0"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Iron Wave",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "f7d1acf3-eefd-4bb1-bb6a-d08fffeb5f75"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Havoc",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "b1fadeec-34f4-45cc-a995-a48720abb20f"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Hemokinesis",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "f3ed22c1-918a-491f-816a-1085c364cd08"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Shockwave",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "eb923411-4ecf-44d8-87ab-f285b433de56"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Seeing Red",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "98b9463a-a584-4b73-b831-fe54442cbdb8"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Rage",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "c06750fc-5634-4b9d-b6dc-1791c4e7b8c2"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Metallicize",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "065a27c0-0e9c-46c5-9b68-d7c283b47f85"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Anger",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "5eae5ce3-7adb-4701-9f3b-296c930288fa"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Bloodletting",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "254000b9-9ff7-4ecd-bc96-ec99b3ccd11a"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Sentinel",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "a9aebbfd-b1fc-4722-975c-a8d5d9d66d98"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Purity",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "5e92f167-8fed-409b-a363-2260b7867fa6"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Thinking Ahead",
+     "misc": 0,
+     "upgraded": false,
+     "uuid": "48631b99-a357-4e03-9172-834fdf01e2b8"
+    },
+    {
+     "bottleBinding": -1,
+     "id": "Flash of Steel",
+     "misc": 0,
+     "upgraded": true,
+     "uuid": "ce5fc4a2-f335-4882-aa59-a82c183b10e1"
+    }
+   ],
+   "floor": 45,
+   "gold": 312,
+   "greenKey": false,
+   "hp": 93,
+   "keysEnabled": true,
+   "knownRelicOffers": [
+    "Cursed Key",
+    "Astrolabe",
+    "Philosopher's Stone",
+    "Velvet Choker",
+    "Runic Dome",
+    "Pandora's Box"
+   ],
+   "map": {
+    "burningEliteX": 5,
+    "burningEliteY": 11,
+    "nodes": [
+     {
+      "edges": [],
+      "room": "MONSTER",
+      "x": 0,
+      "y": 0
+     },
+     {
+      "edges": [
+       2
+      ],
+      "room": "MONSTER",
+      "x": 1,
+      "y": 0
+     },
+     {
+      "edges": [],
+      "room": "MONSTER",
+      "x": 2,
+      "y": 0
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "MONSTER",
+      "x": 3,
+      "y": 0
+     },
+     {
+      "edges": [],
+      "room": "MONSTER",
+      "x": 4,
+      "y": 0
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "MONSTER",
+      "x": 5,
+      "y": 0
+     },
+     {
+      "edges": [],
+      "room": "MONSTER",
+      "x": 6,
+      "y": 0
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 1
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 1,
+      "y": 1
+     },
+     {
+      "edges": [
+       2,
+       3
+      ],
+      "room": "EVENT",
+      "x": 2,
+      "y": 1
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "MONSTER",
+      "x": 3,
+      "y": 1
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "SHOP",
+      "x": 4,
+      "y": 1
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 5,
+      "y": 1
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 1
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 2
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 1,
+      "y": 2
+     },
+     {
+      "edges": [
+       1,
+       2
+      ],
+      "room": "EVENT",
+      "x": 2,
+      "y": 2
+     },
+     {
+      "edges": [
+       3,
+       4
+      ],
+      "room": "MONSTER",
+      "x": 3,
+      "y": 2
+     },
+     {
+      "edges": [
+       5
+      ],
+      "room": "EVENT",
+      "x": 4,
+      "y": 2
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 5,
+      "y": 2
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 2
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 3
+     },
+     {
+      "edges": [
+       0
+      ],
+      "room": "MONSTER",
+      "x": 1,
+      "y": 3
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "EVENT",
+      "x": 2,
+      "y": 3
+     },
+     {
+      "edges": [
+       2,
+       3
+      ],
+      "room": "MONSTER",
+      "x": 3,
+      "y": 3
+     },
+     {
+      "edges": [
+       5
+      ],
+      "room": "EVENT",
+      "x": 4,
+      "y": 3
+     },
+     {
+      "edges": [
+       5
+      ],
+      "room": "MONSTER",
+      "x": 5,
+      "y": 3
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 3
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "MONSTER",
+      "x": 0,
+      "y": 4
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "MONSTER",
+      "x": 1,
+      "y": 4
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "MONSTER",
+      "x": 2,
+      "y": 4
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "EVENT",
+      "x": 3,
+      "y": 4
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 4,
+      "y": 4
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "MONSTER",
+      "x": 5,
+      "y": 4
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 4
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 5
+     },
+     {
+      "edges": [
+       0,
+       1
+      ],
+      "room": "REST",
+      "x": 1,
+      "y": 5
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 2,
+      "y": 5
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "ELITE",
+      "x": 3,
+      "y": 5
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "ELITE",
+      "x": 4,
+      "y": 5
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 5,
+      "y": 5
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 5
+     },
+     {
+      "edges": [
+       0,
+       1
+      ],
+      "room": "MONSTER",
+      "x": 0,
+      "y": 6
+     },
+     {
+      "edges": [
+       2
+      ],
+      "room": "ELITE",
+      "x": 1,
+      "y": 6
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 2,
+      "y": 6
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "REST",
+      "x": 3,
+      "y": 6
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "MONSTER",
+      "x": 4,
+      "y": 6
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 5,
+      "y": 6
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 6
+     },
+     {
+      "edges": [
+       0
+      ],
+      "room": "REST",
+      "x": 0,
+      "y": 7
+     },
+     {
+      "edges": [
+       2
+      ],
+      "room": "MONSTER",
+      "x": 1,
+      "y": 7
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "EVENT",
+      "x": 2,
+      "y": 7
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "ELITE",
+      "x": 3,
+      "y": 7
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 4,
+      "y": 7
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 5,
+      "y": 7
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 7
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "TREASURE",
+      "x": 0,
+      "y": 8
+     },
+     {
+      "edges": [],
+      "room": "TREASURE",
+      "x": 1,
+      "y": 8
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "TREASURE",
+      "x": 2,
+      "y": 8
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "TREASURE",
+      "x": 3,
+      "y": 8
+     },
+     {
+      "edges": [
+       4,
+       5
+      ],
+      "room": "TREASURE",
+      "x": 4,
+      "y": 8
+     },
+     {
+      "edges": [],
+      "room": "TREASURE",
+      "x": 5,
+      "y": 8
+     },
+     {
+      "edges": [],
+      "room": "TREASURE",
+      "x": 6,
+      "y": 8
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 9
+     },
+     {
+      "edges": [
+       2
+      ],
+      "room": "SHOP",
+      "x": 1,
+      "y": 9
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 2,
+      "y": 9
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 3,
+      "y": 9
+     },
+     {
+      "edges": [
+       3,
+       4
+      ],
+      "room": "REST",
+      "x": 4,
+      "y": 9
+     },
+     {
+      "edges": [
+       6
+      ],
+      "room": "ELITE",
+      "x": 5,
+      "y": 9
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 9
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 10
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 1,
+      "y": 10
+     },
+     {
+      "edges": [
+       1,
+       3
+      ],
+      "room": "MONSTER",
+      "x": 2,
+      "y": 10
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "SHOP",
+      "x": 3,
+      "y": 10
+     },
+     {
+      "edges": [
+       4,
+       5
+      ],
+      "room": "EVENT",
+      "x": 4,
+      "y": 10
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 5,
+      "y": 10
+     },
+     {
+      "edges": [
+       5
+      ],
+      "room": "MONSTER",
+      "x": 6,
+      "y": 10
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 11
+     },
+     {
+      "edges": [
+       2
+      ],
+      "room": "EVENT",
+      "x": 1,
+      "y": 11
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 2,
+      "y": 11
+     },
+     {
+      "edges": [
+       4
+      ],
+      "room": "MONSTER",
+      "x": 3,
+      "y": 11
+     },
+     {
+      "edges": [
+       4,
+       5
+      ],
+      "room": "EVENT",
+      "x": 4,
+      "y": 11
+     },
+     {
+      "edges": [
+       6
+      ],
+      "room": "ELITE",
+      "x": 5,
+      "y": 11
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 6,
+      "y": 11
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 12
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 1,
+      "y": 12
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "ELITE",
+      "x": 2,
+      "y": 12
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 3,
+      "y": 12
+     },
+     {
+      "edges": [
+       4,
+       5
+      ],
+      "room": "MONSTER",
+      "x": 4,
+      "y": 12
+     },
+     {
+      "edges": [
+       6
+      ],
+      "room": "REST",
+      "x": 5,
+      "y": 12
+     },
+     {
+      "edges": [
+       6
+      ],
+      "room": "MONSTER",
+      "x": 6,
+      "y": 12
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 0,
+      "y": 13
+     },
+     {
+      "edges": [
+       1
+      ],
+      "room": "MONSTER",
+      "x": 1,
+      "y": 13
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 2,
+      "y": 13
+     },
+     {
+      "edges": [],
+      "room": "NONE",
+      "x": 3,
+      "y": 13
+     },
+     {
+      "edges": [
+       5
+      ],
+      "room": "EVENT",
+      "x": 4,
+      "y": 13
+     },
+     {
+      "edges": [
+       5
+      ],
+      "room": "MONSTER",
+      "x": 5,
+      "y": 13
+     },
+     {
+      "edges": [
+       5,
+       6
+      ],
+      "room": "MONSTER",
+      "x": 6,
+      "y": 13
+     },
+     {
+      "edges": [],
+      "room": "REST",
+      "x": 0,
+      "y": 14
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "REST",
+      "x": 1,
+      "y": 14
+     },
+     {
+      "edges": [],
+      "room": "REST",
+      "x": 2,
+      "y": 14
+     },
+     {
+      "edges": [],
+      "room": "REST",
+      "x": 3,
+      "y": 14
+     },
+     {
+      "edges": [],
+      "room": "REST",
+      "x": 4,
+      "y": 14
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "REST",
+      "x": 5,
+      "y": 14
+     },
+     {
+      "edges": [
+       3
+      ],
+      "room": "REST",
+      "x": 6,
+      "y": 14
+     }
+    ],
+    "x": 4,
+    "y": 10
+   },
+   "maxHp": 110,
+   "pathComplete": true,
+   "pathHistory": [
+    "MONSTER",
+    "MONSTER",
+    "EVENT",
+    "EVENT",
+    "MONSTER",
+    "ELITE",
+    "REST",
+    "ELITE",
+    "TREASURE",
+    "SHOP",
+    "EVENT",
+    "EVENT",
+    "ELITE",
+    "MONSTER",
+    "REST",
+    "BOSS",
+    "MONSTER",
+    "MONSTER",
+    "SHOP",
+    "EVENT",
+    "EVENT",
+    "REST",
+    "ELITE",
+    "REST",
+    "TREASURE",
+    "EVENT",
+    "MONSTER",
+    "EVENT",
+    "ELITE",
+    "MONSTER",
+    "REST",
+    "BOSS",
+    "MONSTER",
+    "EVENT",
+    "EVENT",
+    "MONSTER",
+    "MONSTER",
+    "REST",
+    "ELITE",
+    "EVENT",
+    "TREASURE",
+    "REST",
+    "EVENT"
+   ],
+   "pathVisits": [
+    2,
+    7,
+    12,
+    6,
+    11,
+    3,
+    0,
+    0,
+    0,
+    0
+   ],
+   "potionCapacity": 2,
+   "potionChance": 10,
+   "potions": [
+    "DistilledChaos",
+    "Potion Slot",
+    "Potion Slot",
+    "Potion Slot",
+    "Potion Slot"
+   ],
+   "priorEvents": [
+    "Big Fish",
+    "Golden Idol",
+    "World of Goop",
+    "Back to Basics",
+    "Cursed Tome",
+    "Masked Bandits",
+    "Falling",
+    "Lab",
+    "Sensory Stone",
+    "MindBloom"
+   ],
+   "questionHistoryComplete": true,
+   "questionOutcomes": [
+    {
+     "floor": 36,
+     "juzuConverted": false,
+     "juzuOwnedAtEntry": false,
+     "outcome": "EVENT",
+     "previousRoomWasShop": false,
+     "tinyChestForced": false
+    },
+    {
+     "floor": 37,
+     "juzuConverted": false,
+     "juzuOwnedAtEntry": false,
+     "outcome": "EVENT",
+     "previousRoomWasShop": false,
+     "tinyChestForced": false
+    },
+    {
+     "floor": 42,
+     "juzuConverted": true,
+     "juzuOwnedAtEntry": true,
+     "outcome": "EVENT",
+     "previousRoomWasShop": false,
+     "tinyChestForced": false
+    },
+    {
+     "floor": 45,
+     "juzuConverted": false,
+     "juzuOwnedAtEntry": true,
+     "outcome": "EVENT",
+     "previousRoomWasShop": false,
+     "tinyChestForced": false
+    }
+   ],
+   "questionRoomRules": "vanilla_ordinary_v1",
+   "redKey": true,
+   "relics": [
+    {
+     "data": -1,
+     "id": "Burning Blood",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Smiling Mask",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": 1,
+     "id": "Lizard Tail",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Dead Branch",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Lee's Waffle",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "StrikeDummy",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Kunai",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Philosopher's Stone",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "OrangePellets",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Enchiridion",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "War Paint",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Peace Pipe",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Red Mask",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Molten Egg 2",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Pandora's Box",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Juzu Bracelet",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": -1,
+     "id": "Frozen Egg 2",
+     "liveCounter": -1,
+     "usedUp": false
+    },
+    {
+     "data": 1,
+     "id": "Du-Vu Doll",
+     "liveCounter": 1,
+     "usedUp": false
+    }
+   ],
+   "seenRelics": [
+    "Lizard Tail",
+    "Dead Branch",
+    "Old Coin",
+    "Bag of Marbles",
+    "Vajra",
+    "Lee's Waffle",
+    "StrikeDummy",
+    "Kunai",
+    "Cursed Key",
+    "Philosopher's Stone",
+    "Astrolabe",
+    "Gambling Chip",
+    "Sundial",
+    "OrangePellets",
+    "Enchiridion",
+    "War Paint",
+    "Peace Pipe",
+    "Red Mask",
+    "Molten Egg 2",
+    "Velvet Choker",
+    "Runic Dome",
+    "Pandora's Box",
+    "Juzu Bracelet",
+    "Frozen Egg 2",
+    "Du-Vu Doll"
+   ],
+   "seenRelicsComplete": true,
+   "shopRemoveCount": 0,
+   "unsupportedReason": "RELIC_NATIVE_COUNTER_UNQUALIFIED:Du-Vu Doll"
+  },
+  "rewardIdentity": "reward-73",
+  "schemaVersion": 1,
+  "screen": "card_reward"
+ }
+}
