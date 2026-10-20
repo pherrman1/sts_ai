@@ -21931,3 +21931,52 @@ never-trained value head beat the base rate? Philipp's go: 2026-10-20 15:46Z / 1
 [sigma_fit.json](evidence/az_gen1_20261020/sigma_fit.json). Weights: data branch `claude/az-gen1-data`. No seeds used.
 
 **Knowledge impact:** `architecture/out-of-combat.md` describes the AZ-loop row builder and the distill.py flags.
+## §570 — Live Act 4: Spire Shield's BackAttack refused the first Shield and Spear fight (2026-10-20)
+
+**Question:** why were the first live Act 4 elites (seeds 111200433 and 111200434, release f2e3f48d, SHIELD_AND_SPEAR
+turn 1) refused with `silver_unmapped_monster_power` (problem 40 in `engine-parity/overnight-20261019/ISSUES.md` on the
+share)?
+**Setup:** code reading of `importSilverRootGeneric` and `Monster::calculateDamageToPlayer`; read-only `javap` of the
+pinned JAR on Philipp's PC (`issue40-javap.md` on the share): `AbstractMonster.applyBackAttack/applyPowers/
+calculateDamage`, `BackAttackPower`, `SurroundedPower`, `AbstractPlayer.playCard`, MCPTheSpire's play and potion
+commands, `SpireShield/SpireSpear.die`; the importer input relayed byte-exact (sha256 `76bb8dce…5f3d`, now
+`tests/fixtures/live_shield_spear_back_attack_turn1.json`); `live_silver_importer_test` (no gameplay seeds).
+**Result:** Java marks the monster behind the Surrounded player with the hookless `BackAttack` power; behind is decided
+by `player.flipHorizontal`, which a targeted card turns toward its target (also MCP's play command; MCP potions do
+not turn). `calculateDamage` applies `(int)(tmp*1.5f)` after the stance; native multiplies by 1.5 before Weak and
+Vulnerable and floors once, which gives the same integer for these factors, and models facing as
+`player.lastTargetedMonster` (set by targeted cards, not potions). The importer had no mapping for the marker.
+`SpireShield/SpireSpear.die()` remove the player's Surrounded; native kept it, which blocked Smoke Bomb afterwards.
+**Interpretation:** `STS_IMPORTER_BACK_ATTACK_FIX` (default on, `=0` restores the refusal) sets `lastTargetedMonster`
+to the alive Spire monster without the marker; Surrounded with both alive and no marker fails closed
+(`silver_back_attack_facing`). The captured root imports, native damage reproduces the Java intents (Shield 14 → 21,
+Spear 6) and Silver searches it. `STS_SPIRE_SURROUNDED_DEATH_FIX` (default on, `=0` restores) removes Surrounded when
+either dies with its partner alive; play-changing for simulator play in the Act 4 elite (Smoke Bomb only), unmeasured.
+**Open question:** not yet exercised live (#731); Heart powers are mapped but not yet seen live.
+Seeds: none new (live seeds 111200433 and 111200434 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
+
+## §571 — Live OOC: Du-Vu Doll's curse counter was unqualified and never maintained natively (2026-10-20)
+
+**Question:** why was the live OOC card reward on seed 111200437 (Act 3 floor 45, right after taking Du-Vu Doll)
+refused with `RELIC_NATIVE_COUNTER_UNQUALIFIED:Du-Vu Doll` (problem 46 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** code reading of `BattleContext` relic init, `Deck` and `GameContext::obtainRelic`; read-only `javap` of the
+pinned JAR on Philipp's PC (`issue46-javap.md` on the share): `DuVuDoll`, every `onMasterDeckChange` call site and a
+scripted scan of relic `counter` writers; the live observation (sha256 `071495c3…a542`, now
+`tests/fixtures/live_du_vu_card_reward.json` without the producer's refusal marker); `issue_fixes`,
+`live_ooc_protocol` and the mod's `test.sh` (no gameplay seeds).
+**Result:** Java's counter is the number of master-deck cards with type `CURSE` (Ascender's Bane included), recounted
+in `onEquip` and `onMasterDeckChange` (called from `CardGroup.removeCard`, `ShowCardAndObtainEffect`,
+`FastCardObtainEffect` and `NoteForYourself`), never reset; `atBattleStart` grants that much Strength. Native never set
+the relic data, so every simulated fight with the relic started without Strength; `Deck::cardTypeCounts` skips
+untransformable curses. The scan found no other unhandled persistent counter an Ironclad run can own.
+**Interpretation:** `STS_DU_VU_DOLL_COUNT_FIX` (default on, `=0` restores data 0) sets the data to the curse count on
+obtain and after every `Deck::obtain`/`Deck::remove`; the inspector copies the counter and the OOC importer requires it
+to equal the imported deck's curse count. The captured root imports. Play-changing for simulator play with Du-Vu Doll
+(Strength at battle start and the relic-data feature), unmeasured; the mod side is not flag-gated.
+**Open question:** a Java obtain or removal that bypasses the four call sites leaves the Java counter stale (the
+importer then refuses); research `obtainRaw` paths do not sync (#734 review).
+Seeds: none new (live seed 111200437 as reported; unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`,
+`mods/sts-model-inspector/README.md`.
