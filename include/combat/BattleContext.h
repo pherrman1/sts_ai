@@ -174,6 +174,14 @@ namespace sts {
     // card. Other values are fatal. Read only at a Mayhem turn start.
     bool mayhemAfterDrawFix();
 
+    // STS_LAGAVULIN_WAKE_METALLICIZE_FIX: unset/1 (default) = a Lagavulin woken
+    // by HP damage loses 8 Metallicize, as in the game (Lagavulin.damage queues
+    // ChangeStateAction("OPEN"); changeState queues ReducePowerAction(
+    // Metallicize, 8)), the same as the natural wake (overnight live play
+    // 2026-10-20 problem 58: 12 -> 4). 0 = the legacy engine, which removed
+    // Metallicize. Other values are fatal. Read only at a damage wake.
+    bool lagavulinWakeMetallicizeFix();
+
     // STS_MAGNETISM_FIX: unset/1 (default) = Magnetism adds its random
     // colorless card(s) to the hand at the start of each turn, as in the game
     // (MagnetismPower.atStartOfTurn rolls returnTrulyRandomColorlessCardInCombat

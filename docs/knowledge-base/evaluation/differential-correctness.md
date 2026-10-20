@@ -322,6 +322,14 @@ top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
 won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
 `=0` restores) plays it after the draw.
 
+A run on 2026-10-20 (seed 111200447, floor 8, problem 58) woke a sleeping
+Lagavulin with Metallicize 12 by a Strike: the game kept Metallicize 4, native
+removed it. The pinned-jar javap shows both wakes running
+`changeState("OPEN")`, which queues `ReducePowerAction(Metallicize, 8)`; the
+engine already subtracted 8 on the natural wake but removed the power on the
+damage wake. `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (default on, `=0`
+restores) subtracts 8 (`tests/lagavulin_wake_metallicize_test.cpp`).
+
 A run on 2026-10-20 (seed 111200429, The Guardian, problem 39) played
 Magnetism on turn 1; every later end-turn verdict had a six-card game hand
 against a five-card native hand, with cardRandomRng diverging at the same
