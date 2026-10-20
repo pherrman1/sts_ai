@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode.
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
 
 ## Purpose
 
@@ -321,6 +321,25 @@ bottom when it runs, behind `DrawCardAction`); the engine played the pre-draw
 top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
 won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
 `=0` restores) plays it after the draw.
+
+A run on 2026-10-20 (seed 111200435, problem 41) showed the game's exhaust
+pile one card longer than native after four Havoc+ plays; each time the card
+Havoc played was unplayable (Burn, Burn+, Clash+ with a non-attack in hand).
+The engine dropped an autoplayed card that failed `canUse`, so it reached no
+pile. In the game (pinned-jar javap, `GameActionManager.getNextAction`), such
+a card is removed from the queue and, because it is in autoplay, gets
+`dontTriggerOnUseCard = true` and a `UseCardAction` at the bottom: no `use`,
+no `onUseCard`/`onAfterUseCard` hooks, but the action still routes it
+(exhaust when `exhaustOnUseOnce || exhaust`, Strange Spoon on cardRandomRng
+for non-powers, otherwise discard; powers leave combat).
+`STS_UNPLAYABLE_AUTOPLAY_FIX` (default on, `=0` restores) does this
+(`tests/unplayable_autoplay_test.cpp`). Problem 44 (seed 111200436, Distilled
+Chaos over Ascender's Bane, Defend, Shrug It Off) hit the same path and showed
+a second difference: the game discarded Bane, Defend, Shrug, native Shrug then
+Defend. `PlayTopCardAction` queues `NewQueueCardAction(card, target, false,
+true)`, whose `addCardQueueItem(item, false)` appends, so autoplayed cards
+play first-in first-out; the engine pushed each to the front of the card
+queue. `STS_AUTOPLAY_QUEUE_ORDER_FIX` (default on, `=0` restores) appends.
 
 A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
 Panache, because the live importer refused it. Java `PanachePower.amount` is
