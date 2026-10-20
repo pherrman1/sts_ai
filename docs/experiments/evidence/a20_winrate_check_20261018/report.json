@@ -1,0 +1,29 @@
+{
+ "counted": 512,
+ "expected": 512,
+ "missing_count": 0,
+ "nonzero_rc": {},
+ "heart_kills": 90,
+ "winrate": 0.1758,
+ "winrate_wilson95": [
+  0.1453,
+  0.2111
+ ],
+ "reached_act4": 184,
+ "act4_rate": 0.3594,
+ "act4_wilson95": [
+  0.319,
+  0.4018
+ ],
+ "heart_kills_per_act4": 0.4891,
+ "act1_deaths": 45,
+ "mean_floor": 41.63,
+ "sec_per_run": 5851.9,
+ "mcts_cpu_sec_per_decision": 67.18,
+ "act_reached": {
+  "1": 45,
+  "2": 149,
+  "3": 134,
+  "4": 184
+ }
+}
