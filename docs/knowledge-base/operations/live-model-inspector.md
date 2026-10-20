@@ -246,7 +246,10 @@ Pellets, used-up relics, Necronomicon, and Centennial Puzzle
 (`usedThisCombat`, a private static in vanilla) is serialized when its runtime field
 is accessible; otherwise the importer rejects that state. Monster `miscInfo`
 is similarly serialized from known runtime trackers or omitted so the importer
-fails closed. Bronze Orb Stasis uses the runtime `StasisPower.card` object to
+fails closed. Orange Pellets' played card types come from the relic's private
+static `ATTACK`/`SKILL`/`POWER` flags (not a power; before live parity
+problem 32 the mod looked for a power and never wrote the field); a missing
+field imports as 0 (`STS_IMPORTER_ORANGE_PELLETS_FIX`). Bronze Orb Stasis uses the runtime `StasisPower.card` object to
 preserve the exact physical card UUID and state, rejecting only the active-
 Stasis snapshot when that field is unavailable.
 The observer's post-`AbstractPlayer.damage()` patch records finalized damage
@@ -1374,6 +1377,12 @@ index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
 unobserved tail and its card-replay fallback).
+Under Runic Dome the folded Reactive count is accepted for Writhing Mass when the
+queue carries its `REACTIVE_ROLL_MOVE` (live seed 111200416): the mod's history has
+not counted the queued reroll, and native defers it under hidden intents with the
+inputs of the moment it runs, as Java's `RollMoveAction` rolls then
+(`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
+`silver_runic_dome_monster_power_domain`).
 
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case

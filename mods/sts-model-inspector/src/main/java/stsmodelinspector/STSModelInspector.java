@@ -2201,6 +2201,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    static Integer orangePelletsNativeBits(Boolean attack, Boolean skill, Boolean power) {
+        // Native bitset<3>: bit 0 Attack, 1 Skill, 2 Power.
+        if (attack == null || skill == null || power == null) return null;
+        return (attack ? 1 : 0) | (skill ? 2 : 0) | (power ? 4 : 0);
+    }
+
     static Integer awakenedNativePhase(Boolean form1, boolean halfDead) {
         // Vanilla flips form1 in damage(), before the rebirth move executes.
         // Native remains in phase zero through the half-dead interval.
@@ -3477,16 +3483,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if ("DevaForm".equals(power.ID) || "Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
-            } else if ("Orange Pellets".equals(power.ID) || "OrangePelletsPower".equals(power.ID)) {
-                int cardTypes = 0;
-                for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
-                    if (card.type == AbstractCard.CardType.ATTACK) cardTypes |= 1;
-                    else if (card.type == AbstractCard.CardType.SKILL) cardTypes |= 2;
-                    else if (card.type == AbstractCard.CardType.POWER) cardTypes |= 4;
-                }
-                out.append(",\"orangePelletsCardTypesPlayed\":")
-                        .append(cardTypes == 7 ? 0 : cardTypes);
             }
+        }
+        // Orange Pellets is a relic, not a power: vanilla keeps the played
+        // types in its private static ATTACK/SKILL/POWER flags, set in
+        // onUseCard, cleared when all three fire and in atTurnStart.
+        for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
+            if (!"OrangePellets".equals(relic.relicId)) continue;
+            Integer cardTypes = orangePelletsNativeBits(readBooleanField(relic, "ATTACK"),
+                    readBooleanField(relic, "SKILL"), readBooleanField(relic, "POWER"));
+            if (cardTypes != null) out.append(",\"orangePelletsCardTypesPlayed\":").append(cardTypes);
+            break;
         }
         out.append(",\"cardSelect\":").append(selection == null ? "false" : selection)
                 .append(",\"resolving\":false")

@@ -1527,6 +1527,39 @@ int main(int argc, char **argv) {
             if(!decision.accepted)throw std::runtime_error("captured Runic Dome search: "+path+": "+decision.failureReason);
             std::cout << "captured Runic Dome turn-1 import and search passed: " << path << "\n";
         }
+        // Overnight live seed 111200416, problem 34: under Runic Dome, Headbutt's GRID after hitting Writhing Mass
+        // (turn 2; Orange Pellets, Headbutt cleanup, Malleable block and the Reactive reroll still queued).
+        {
+            const std::string path=argc>5?argv[5]:"tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Runic Dome Writhing Mass fixture: "+path);
+            json observation; input >> observation;
+            setenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX");
+            if(legacy.ok || legacy.reason!="silver_runic_dome_monster_power_domain")
+                throw std::runtime_error("captured Runic Dome Writhing Mass legacy refusal changed: "+legacy.reason);
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Runic Dome Writhing Mass import: "+imported.reason);
+            const auto &queue=imported.wire.pendingActionQueue;
+            if(imported.wire.monsters[0].uniquePower1!=1 || imported.wire.monsters[0].pendingMoveRolls!=1 || queue.size()!=4
+                    || queue[0].kind!=silver_bridge::PendingActionKind::REMOVE_PLAYER_DEBUFFS
+                    || queue[2].kind!=silver_bridge::PendingActionKind::MONSTER_GAIN_BLOCK || queue[2].amount!=3
+                    || queue[3].kind!=silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE)
+                throw std::runtime_error("captured Runic Dome Writhing Mass root lost its queued reactions");
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Runic Dome Writhing Mass search: "+decision.failureReason);
+            auto root=battleContextFromWire(imported.wire);
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,0).execute(root);
+            const auto &mass=root.monsters.arr[0];
+            if(root.inputState!=InputState::PLAYER_NORMAL || mass.getStatus<MonsterStatus::REACTIVE>()!=0
+                    || mass.pendingMoveRolls!=2 || mass.pendingRollInputHistory.size()!=2
+                    || mass.pendingRollInputHistory[1].curHp!=mass.curHp || mass.pendingRollInputHistory[0].curHp!=175)
+                throw std::runtime_error("captured Runic Dome Writhing Mass reroll was not deferred after the selection");
+            std::cout << "captured Runic Dome Writhing Mass Headbutt import and search passed: " << path << "\n";
+        }
         {
             const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";
             std::ifstream input(path);
@@ -2850,6 +2883,28 @@ int main(int argc, char **argv) {
         penNibRelicExpected.isolatedSearchSeed = penNibRelicImported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(penNibRelicExpected, penNibRelicImported.wire))
             throw std::runtime_error("Pen Nib relic parity failed");
+
+        // Problem 32 (live seed 111200414): the mod now exports Orange Pellets'
+        // played types; STS_IMPORTER_ORANGE_PELLETS_FIX=0 restores the old 0.
+        for (const char *flag : {"1", "0"}) {
+            auto pellets = genericObservation(fixtures[0], "orange-pellets-parity");
+            pellets["silverRoot"]["combat"]["relics"].push_back(
+                json{{"id", "OrangePellets"}, {"counter", -1}, {"usedUp", false}});
+            pellets["silverRoot"]["combat"]["orangePelletsCardTypesPlayed"] = 5;
+            setenv("STS_IMPORTER_ORANGE_PELLETS_FIX", flag, 1);
+            const auto pelletsImported = one_combat::advisor::importSilverRoot(pellets);
+            unsetenv("STS_IMPORTER_ORANGE_PELLETS_FIX");
+            if (!pelletsImported.ok)
+                throw std::runtime_error("Orange Pellets import failed: " + pelletsImported.reason);
+            auto pelletsExpected = fixtures[0].wire;
+            normalizeFirstObservationIdentity(pelletsExpected);
+            pelletsExpected.player.relicBits0 |= 1ULL << static_cast<int>(RelicId::ORANGE_PELLETS);
+            pelletsExpected.player.orangePelletsCardTypesPlayed = std::string(flag) == "1" ? 5 : 0;
+            pelletsExpected.isolatedSearchSeed = pelletsImported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(pelletsExpected, pelletsImported.wire))
+                throw std::runtime_error(std::string("Orange Pellets parity failed, flag=") + flag
+                    + " imported=" + std::to_string(pelletsImported.wire.player.orangePelletsCardTypesPlayed));
+        }
 
         // Relics with enum index >= 128 (Thread and Needle, Maw Bank) have no
         // combat bit; the legacy importer aliased them onto index - 64.
@@ -4195,6 +4250,44 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("Darkling Regrow SetMoveAction did not resolve after the selection");
             if((shift || louse) && actual.monsters.arr[0].block!=(shift?20:curlBefore))
                 throw std::runtime_error("Mode Shift or Curl Up block did not resolve after the selection");
+            if(mass) {
+                // Problem 34 (live seed 111200416): the same GRID under Runic
+                // Dome. The mod's history has not counted the queued reroll; the
+                // root keeps it queued and defers it with the inputs of the
+                // moment it runs, after the selection.
+                auto dome=observation;auto &dc=dome["silverRoot"]["combat"];
+                dc["runicDome"]=true;dc["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+                auto &dm=dc["monsters"][0];dm.erase("nextMove");dm.erase("moveHistory");
+                const int maxHp=dm["maxHp"].get<int>();
+                json inputs={{"rollHp",maxHp},{"rollMaxHp",maxHp},{"firstHp",maxHp},{"firstMaxHp",maxHp},{"firstAlive",true},
+                    {"aliveCount",1},{"playerConstricted",false},{"rollGlobalTurn",0}};
+                dc["runicDomeKnowledge"]={{"schemaVersion",3},{"epoch",1},{"complete",true},{"monsters",json::array({json{
+                    {"schemaVersion",4},{"historySchemaVersion",2},{"epoch",1},{"generation",1},{"complete",true},
+                    {"monsterId","WrithingMass"},{"slot",0},{"completedTurns",0},{"executedMoves",json::array()},
+                    {"pendingMoveRolls",1},{"totalRolls",1},{"rollHp",maxHp},{"rollMaxHp",maxHp},{"publicMisc",0},
+                    {"firstHp",maxHp},{"firstMaxHp",maxHp},{"firstAlive",true},{"aliveCount",1},
+                    {"pendingAttackPredicates",json::array()},{"pendingRollInputs",json::array({inputs})},
+                    {"occupantGeneration",1},{"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},
+                    {"birthParentGeneration",0},{"lastExecutionGlobalTurn",-1},{"rollGlobalTurn",0}}})}};
+                const auto domeImported=one_combat::advisor::importSilverRoot(dome);
+                if(!domeImported.ok) throw std::runtime_error("Runic Dome Headbutt reactive reroll import: "+domeImported.reason);
+                auto domeRoot=battleContextFromWire(domeImported.wire);
+                auto &domeMass=domeRoot.monsters.arr[0];
+                if(!domeRoot.intentsHidden || domeMass.getStatus<MonsterStatus::REACTIVE>()!=1 || domeMass.pendingMoveRolls!=1
+                        || json(domeImported.wire.pendingActionQueue)!=json(nativeQueue))
+                    throw std::runtime_error("Runic Dome Headbutt root lost the queued reactive reroll");
+                pick.execute(domeRoot);
+                if(domeRoot.inputState!=InputState::PLAYER_NORMAL || domeMass.getStatus<MonsterStatus::REACTIVE>()!=0
+                        || domeMass.pendingMoveRolls!=2 || domeMass.pendingRollInputHistory.size()!=2
+                        || domeMass.pendingRollInputHistory[1].curHp!=domeMass.curHp || domeMass.block!=nativeQueue[1].amount)
+                    throw std::runtime_error("Runic Dome reactive reroll was not deferred after the selection");
+                domeMass.materializePendingMove(domeRoot);
+                setenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX","0",1);
+                const auto legacyDome=one_combat::advisor::importSilverRoot(dome);
+                unsetenv("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX");
+                if(legacyDome.reason!="silver_runic_dome_monster_power_domain")
+                    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX=0 did not restore the refusal: "+legacyDome.reason);
+            }
             // Fail closed: a removal (stun) or a reroll for a monster other
             // than Writhing Mass is not representable.
             auto broken=observation;

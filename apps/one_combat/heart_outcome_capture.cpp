@@ -43,7 +43,7 @@ bool ctmRowsRequested() {
 constexpr const char *kCtmRowsTeacherId = "heartoutcomegen-real-combat";
 constexpr const char *kCtmRowsLearnedStopTeacherId = "heartoutcomegen-real-combat-learnedstop";
 const char *ctmRowsTeacherId() {
-    return liveOocMctsRealLearnedStop() ? kCtmRowsLearnedStopTeacherId : kCtmRowsTeacherId;
+    return liveOocMctsRealLearnedStop(20) ? kCtmRowsLearnedStopTeacherId : kCtmRowsTeacherId;
 }
 
 // OUT.jsonl -> OUT.ctm.jsonl; any other name gets .ctm.jsonl appended.
@@ -67,7 +67,7 @@ nlohmann::json runProvenance() {
             {"silverLeaf", leaf}, {"silverRootPrior", rootPrior},
             {"heart1WingBootsCounter", heart1::wingBootsCounter() ? 1 : 0}};
     // Only STS_OOC_MCTS_REAL_LEARNED_STOP=1 adds this key; flat exact-10k headers are unchanged.
-    if (liveOocMctsRealLearnedStop())
+    if (liveOocMctsRealLearnedStop(20))
         provenance["silverLearnedStop"] = {{"model", sts::search::nativeSilverStopModelId()},
             {"threshold", sts::search::nativeSilverLearnedStopThreshold()}};
     return provenance;
