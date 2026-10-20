@@ -403,6 +403,14 @@ representation-only differences that no native decision reads:
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
 
+Seed 111200445 (live problem 54): a Headbutt that moved Pen Nib's counter
+from 8 to 9 imported with the Pen Nib status bit already set, while native
+still held its `BuffPlayer<PEN_NIB>` behind the Headbutt grid. The importer
+turned the counter-9 sentinel into the bit even though the game's PenNibPower
+was only queued. `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0`
+restores) leaves the bit clear while a pending Pen Nib buff is queued and no
+Pen Nib power is present.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 
