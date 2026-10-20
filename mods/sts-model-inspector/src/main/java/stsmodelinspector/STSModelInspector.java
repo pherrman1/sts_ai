@@ -2803,6 +2803,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return null;
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
+            // Darkling.damage at a half-death: setMove(4) now, then
+            // addToBot(SetMoveAction(this, 4, UNKNOWN)) behind the card.
+            if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
+                String item=halfDeadSetMoveJson(action);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
             // CurlUpPower.onAttacked: ChangeStateAction("CLOSED") (animation
             // only), GainBlockAction, RemoveSpecificPowerAction("Curl Up").
             if(sourceTask!=null && isActionClass(name,"ChangeStateAction")) {
@@ -2964,6 +2971,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static boolean isActionClass(String name,String simpleName) {
         return name.startsWith("com.megacrit.cardcrawl.actions.") && name.endsWith("."+simpleName);
+    }
+
+    private static String halfDeadSetMoveJson(Object action) {
+        Object value=readObjectField(action,"monster");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster darkling=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(darkling), move=readIntField(action,"theNextMove");
+        if(!"Darkling".equals(darkling.id) || slot==null || !darkling.halfDead || darkling.isDeadOrEscaped()
+                || move==null || move!=4 || darkling.nextMove!=4
+                || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
+        return monsterSetMoveItemJson(move,slot);
+    }
+
+    static String monsterSetMoveItemJson(int move,int slot) {
+        return move==4 && slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SET_MOVE\",\"move\":4,\"slot\":"+slot+"}" : null;
     }
 
     private static String guardianShiftJson(Object change) {
