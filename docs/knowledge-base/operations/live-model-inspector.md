@@ -1286,7 +1286,8 @@ path recovery after save loading if the initial transition latch was empty.
 Missing or contradictory records remain unqualified.
 After the Act 3 boss dies, MCP can expose an empty `COMPLETE` surface rather
 than a reward screen. The strict driver advances its single Proceed button
-only for a living player at Act 3 floor 50 (or floor 51 with verified A20), with a completed MonsterRoomBoss,
+only for a living player at Act 3 floor 50 (or floor 51 with verified A20) or after the Heart (Act 4 floor 56 at
+verified A20, floor 55 below; live problem 52), with a completed MonsterRoomBoss,
 no active overlay, no choices/cancel action, and agreeing run coordinates.
 It records `boss_completion` and waits for the following boss or actual terminal screen; it does
 not declare victory from the boss-room phase alone. Differential capture

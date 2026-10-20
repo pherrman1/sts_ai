@@ -21967,7 +21967,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live Act 4: the Heart's "Boss!" map choice had no native action (2026-10-20)
+## §TBD — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
 `OOC_ACTION_MAPPING` "unexpected option 0" (problem 51 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
@@ -21981,10 +21981,13 @@ option 3, and the action-set check rejected option 0. With `STS_IMPORTER_ACT4_BO
 live error exactly.
 Live retest (canary, restored pre-Heart save of the same seed, advisor 4ef863d9 plus this importer hunk): the advisor
 chose `Boss!`, the Heart imported and Silver won it (turn 8, 65/75 HP, true victory, floor 57). The completed boss room
-after the kill was refused (`NATIVE_SCREEN_UNSUPPORTED:COMPLETE`, problem 52, separate).
+after the kill was refused (`NATIVE_SCREEN_UNSUPPORTED:COMPLETE`, problem 52): the live driver's boss-completion
+Proceed qualified only Act 3. It now also qualifies the completed Heart room (Act 4 floor 56 at A20, 55 below), with
+the same empty-surface checks (UI navigation only, no flag).
 **Interpretation:** `STS_IMPORTER_ACT4_BOSS_MAP_FIX` (default on, `=0` restores the error) remaps exactly that sole
 public choice to option 3 in the importer; the advisor passes it through as `forced_no_search` (`choose 1`). No mod
 change. Play-changing for the live advisor at that one Act 4 decision only.
 **Open question:** the mod could send option 3 itself; the importer keeps the producer's mapping for any other shape.
 Seeds: none new (live seed 111200440 as reported; protocol test only).
-**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md` (incl. the driver's
+boss-completion rule).
