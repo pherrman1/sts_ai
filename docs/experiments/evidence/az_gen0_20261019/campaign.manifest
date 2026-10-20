@@ -1,0 +1,7 @@
+name          az-gen0
+code_commit   0abc831a1a014073765ec7f394eadf29b27433f7
+binary_sha256 decd91eadfa7a8cacb00bc3b999c941e732804af61f656625de0f132066f9741
+workers       32
+share         /mnt/project-files/az-gen0
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

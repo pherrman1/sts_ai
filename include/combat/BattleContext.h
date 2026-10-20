@@ -89,6 +89,18 @@ namespace sts {
     // engine draws nothing. Other values are fatal.
     bool muggerDeathRngFix();
 
+    // STS_SPIRE_SURROUNDED_DEATH_FIX: unset/1 (default) = when Spire Shield
+    // or Spire Spear dies with its partner alive, the player loses Surrounded,
+    // as SpireShield/SpireSpear.die() queue RemoveSpecificPowerAction
+    // (javap, live parity problem 40); this unblocks Smoke Bomb. 0 = the legacy
+    // engine keeps Surrounded for the rest of the fight. Other values are fatal.
+    bool spireSurroundedDeathFix();
+
+    // STS_MUMMIFIED_HAND_PLAYED_CARD_FIX: unset/1 (default) = Mummified Hand
+    // never picks the Power being played, which Java's cardQueue still holds
+    // (live parity problem 48). 0 = the legacy pick. Other values are fatal.
+    bool mummifiedHandPlayedCardFix();
+
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
     // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
