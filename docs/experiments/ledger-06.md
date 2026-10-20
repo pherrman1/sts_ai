@@ -21947,7 +21947,7 @@ Seeds: none new (live seed 111200437 as reported; unit tests only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`,
 `mods/sts-model-inspector/README.md`.
 
-## §TBD — Live combat parity: Mummified Hand counted the Power being played (2026-10-20)
+## §572 — Live combat parity: Mummified Hand counted the Power being played (2026-10-20)
 
 **Question:** why did all 12 combat parity diffs of live seed 111200438 (release 0582219a) show Mummified Hand zeroing
 a different hand card than the game (problem 48 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
