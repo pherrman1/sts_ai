@@ -22066,3 +22066,19 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Live combat parity: Deca's Square of Protection shielded a dead Donu (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show `monsters[1].block` game 0 vs native 16 at the
+End Turn after Donu died (problem 56 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue56-extract.json`: Deca intent DEFEND_BUFF, Donu dead with hp 0 and no powers);
+`MonsterSpecific.cpp`; `monster_ai_java_parity` (no gameplay seeds).
+**Result:** native resolves Deca's Square of Protection and Spire Shield's Fortify by adding block (and Deca's A19 Plated
+Armor) to the ally directly, outside the queued `MonsterGainBlock` that `STS_DEAD_MONSTER_BLOCK_FIX` gates, so a dead
+ally gained it. The game shows Deca 1 -> 20 (16 plus Plated Armor 4 → 7 at end of turn) and dead Donu block 0 with no
+powers, as Java's per-monster `GainBlockAction`/`ApplyPowerAction` skip a dying target.
+**Interpretation:** `STS_DEAD_ALLY_BLOCK_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both moves.
+Play-changing for simulator play (dead-monster block is in Silver's node identity), unmeasured.
+**Open question:** Spire Shield's Fortify is covered by the same native shape, not by a live observation.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.

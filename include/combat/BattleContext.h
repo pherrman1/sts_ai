@@ -81,6 +81,16 @@ namespace sts {
     // the monster is dead.
     bool deadMonsterBlockFix();
 
+    // STS_DEAD_ALLY_BLOCK_FIX: unset/1 (default) = a monster move that adds
+    // block to an ally directly skips a dead ally, as the queued
+    // GainBlockAction/ApplyPowerAction do in Java (live problem 56, seed
+    // 111200445: Deca's Square of Protection gave a dead Donu 16 block).
+    // Covers Deca's Square of Protection (block and A19 Plated Armor) and
+    // Spire Shield's Fortify. Dead-monster block is part of Silver's node
+    // identity, so this can change search. 0 = the legacy engine adds them.
+    // Other values are fatal. Read only when the ally is dead.
+    bool deadAllyBlockFix();
+
     // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
     // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
     // which uses aiRng; the Looter's uses MathUtils), as in the game (combat
