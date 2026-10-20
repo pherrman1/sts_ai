@@ -99,13 +99,15 @@ static void check(bool fixed) {
     {
         // Full hand: the card goes to the discard pile and the RNG still rolls.
         BattleContext bc;
-        const int discardBefore = 0;
         Random rolls = startTurn(bc, 1, 10);
         require(bc.cards.cardsInHand == 10, "hand stays at ten");
         if (fixed) {
-            getTrulyRandomColorlessCardInCombat(rolls);
+            const CardId expected = getTrulyRandomColorlessCardInCombat(rolls);
             require(bc.cardRandomRng.counter == rolls.counter, "roll with a full hand");
-            require(static_cast<int>(bc.cards.discardPile.size()) > discardBefore, "card discarded");
+            // The starter deck holds no colorless card, so this is the roll.
+            int discarded = 0;
+            for (const auto &c : bc.cards.discardPile) discarded += c.getId() == expected;
+            require(discarded == 1, "rolled card discarded");
         }
     }
 }
