@@ -234,6 +234,14 @@ add_test(NAME unplayable_autoplay COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(unplayable_autoplay PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(magnetism_start_of_turn_test tests/magnetism_start_of_turn_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(magnetism_start_of_turn_test PRIVATE include json/include)
+add_test(NAME magnetism_start_of_turn COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:magnetism_start_of_turn_test>)
+set_tests_properties(magnetism_start_of_turn PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(active_power_features_test tests/active_power_features_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(active_power_features_test PRIVATE include json/include)

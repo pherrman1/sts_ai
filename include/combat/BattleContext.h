@@ -96,6 +96,11 @@ namespace sts {
     // engine keeps Surrounded for the rest of the fight. Other values are fatal.
     bool spireSurroundedDeathFix();
 
+    // STS_MUMMIFIED_HAND_PLAYED_CARD_FIX: unset/1 (default) = Mummified Hand
+    // never picks the Power being played, which Java's cardQueue still holds
+    // (live parity problem 48). 0 = the legacy pick. Other values are fatal.
+    bool mummifiedHandPlayedCardFix();
+
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
     // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
@@ -188,6 +193,14 @@ namespace sts {
     // 2026-10-20 problem 44). 0 = the legacy engine, which pushed it to the
     // front (reverse order). Other values are fatal. Read at each autoplay.
     bool autoplayQueueOrderFix();
+
+    // STS_MAGNETISM_FIX: unset/1 (default) = Magnetism adds its random
+    // colorless card(s) to the hand at the start of each turn, as in the game
+    // (MagnetismPower.atStartOfTurn rolls returnTrulyRandomColorlessCardInCombat
+    // on cardRandomRng and queues MakeTempCardInHandAction; overnight live play
+    // 2026-10-20 problem 39). 0 = the legacy engine, where Magnetism did
+    // nothing. Other values are fatal. Read only at a Magnetism turn start.
+    bool magnetismFix();
 
     struct BattleContext {
 
