@@ -22067,7 +22067,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable (2026-10-20)
+## §TBD — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable; the True Victory cutscene timed out (2026-10-20)
 
 **Question:** why did live seed 111200446 (floor 10, release 9ec8a51d) stop after the advisor chose "[Stomp] Anger the
 Mushrooms" (problem 57 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
@@ -22079,6 +22079,9 @@ mod's event tables qualified only the decision page 0 and the leave page 1, so i
 **Interpretation:** the mod adds page 2 to its `event_continue` table; `STS_IMPORTER_MUSHROOMS_FIGHT_FIX` (default on,
 `=0` restores the refusal) qualifies exactly that page, and the advisor passes it through (`forced_no_search`). The live
 capture with the fixed producer's two fields reproduces the pass-through.
+Same PR, live problem 60 (seed 111200449, the first fully autonomous live A20 win): after the Heart's Proceed the game
+sits in `TrueVictoryRoom` (`NO_INTERACT`, never `ready_for_command`) and the driver timed out, so the win was logged as
+abandoned. The driver now treats `TrueVictoryRoom` as a terminal victory (UI only, no flag).
 **Open question:** the following Mushroom fight and its reward (Odd Mushroom) are not exercised here.
 Seeds: none new (live seed 111200446 as reported; protocol and mod unit tests only).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.

@@ -1295,7 +1295,9 @@ than a reward screen. The strict driver advances its single Proceed button
 only for a living player at Act 3 floor 50 (or floor 51 with verified A20) or after the Heart (Act 4 floor 56 at
 verified A20, live problem 52; floor 55 below A20 is **Inference** from Act 3's single boss, not observed live), with a completed MonsterRoomBoss,
 no active overlay, no choices/cancel action, and agreeing run coordinates.
-It records `boss_completion` and waits for the following boss or actual terminal screen; it does
+It records `boss_completion` and waits for the following boss or actual terminal screen (after the Heart that is
+`TrueVictoryRoom`, whose `NO_INTERACT` ending cutscene is never command-ready; the driver treats that room as a terminal
+victory, live problem 60); it does
 not declare victory from the boss-room phase alone. Differential capture
 retains the native unsupported boundary for this UI-only transition.
 The following `Spire Heart` story in `VictoryRoom` is also mechanical: the
