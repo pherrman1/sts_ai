@@ -2329,12 +2329,86 @@ sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerative
 #ifndef STS_LIVE_ADVISOR
 namespace one_combat {
 
+const std::vector<std::string> &oocLearnedStopFeatureNames() {
+    static const std::vector<std::string> names{"log2_sims", "gap_frac", "top_visit_frac", "second_visit_frac",
+        "top_prior", "second_prior", "top_is_prior_argmax", "top_q_minus_best_other_q", "top_q_minus_second_q",
+        "best_q_minus_top_q", "n_actions", "act", "floor", "screen"};
+    return names;
+}
+
+// Matches features() in tools/ooc_learned_stop.py: leaders by visits, then by prior, ties to the lower id;
+// Q comparisons over visited actions only. stats needs at least two actions.
+std::vector<float> oocLearnedStopFeatures(std::uint64_t simulations,
+                                          const std::vector<sts::search::OocRootActionStats> &stats,
+                                          int act, int floor, int screen) {
+    const auto better = [](const sts::search::OocRootActionStats &a, const sts::search::OocRootActionStats &b) {
+        return a.visits != b.visits ? a.visits > b.visits : a.id < b.id;
+    };
+    const sts::search::OocRootActionStats *top = nullptr, *second = nullptr, *priorTop = nullptr;
+    for (const auto &a : stats) {
+        if (!top || better(a, *top)) { second = top; top = &a; }
+        else if (!second || better(a, *second)) second = &a;
+        if (!priorTop || a.prior > priorTop->prior || (a.prior == priorTop->prior && a.id < priorTop->id)) priorTop = &a;
+    }
+    if (!second) throw std::logic_error("oocLearnedStopFeatures needs two root actions");
+    std::optional<double> bestOther, bestVisited;
+    for (const auto &a : stats) {
+        if (!a.visits) continue;
+        bestVisited = std::max(bestVisited.value_or(a.q), a.q);
+        if (a.id != top->id) bestOther = std::max(bestOther.value_or(a.q), a.q);
+    }
+    const double c = double(simulations);
+    return {float(std::log2(c)), float((double(top->visits) - double(second->visits)) / c),
+            float(double(top->visits) / c), float(double(second->visits) / c), float(top->prior),
+            float(second->prior), priorTop->id == top->id ? 1.0f : 0.0f,
+            float(top->q - bestOther.value_or(top->q)), float(top->q - second->q),
+            float(bestVisited.value_or(top->q) - top->q), float(stats.size()), float(act), float(floor),
+            float(screen)};
+}
+
+std::shared_ptr<const CompactTreeNet> loadOocLearnedStopNet(const std::string &path) {
+    std::unordered_map<std::string, int> index;
+    const auto &names = oocLearnedStopFeatureNames();
+    for (std::size_t i = 0; i < names.size(); ++i) index[names[i]] = int(i);
+    auto net = std::make_shared<CompactTreeNet>();
+    if (!net->load(path, index, "ooc-learned-stop") || !net->logistic)
+        throw std::runtime_error("STS_OOC_MCTS_LEARNED_STOP: " + path + " is not a logistic CompactTreeNet over the learned-stop features");
+    return net;
+}
+
+// ooclearnedstoptest FIXTURE.jsonl MODEL: features and predictions match tools/ooc_learned_stop.py export.
+int oocLearnedStopTestCommand(int argc, char **argv) {
+    if (argc < 4) { std::fprintf(stderr, "usage: one_combat ooclearnedstoptest <fixture.jsonl> <trees.txt>\n"); return 2; }
+    const auto net = loadOocLearnedStopNet(argv[3]);
+    std::ifstream in(argv[2]);
+    if (!in) throw std::runtime_error("ooclearnedstoptest: cannot open fixture");
+    std::string line; std::size_t rows = 0, bad = 0; double maxError = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const auto row = nlohmann::json::parse(line);
+        std::vector<sts::search::OocRootActionStats> stats;
+        for (const auto &a : row.at("actions"))
+            stats.push_back({a.at("id").get<sts::search::OocActionId>(), a.at("prior").get<double>(),
+                             a.at("visits").get<std::uint64_t>(), a.at("q").get<double>()});
+        const double p = net->predict(oocLearnedStopFeatures(row.at("simulations").get<std::uint64_t>(), stats,
+            row.at("act").get<int>(), row.at("floor").get<int>(), row.at("screen").get<int>()));
+        const double error = std::abs(p - row.at("p_same").get<double>());
+        maxError = std::max(maxError, error); bad += error > 1e-5; ++rows;
+    }
+    std::printf("ooclearnedstoptest rows=%zu mismatched=%zu max_abs_error=%.3g\n", rows, bad, maxError);
+    return rows && !bad ? 0 : 1;
+}
+
 namespace {
 bool liveEnabled = false;
 bool liveRealLearnedStop = false;   // STS_OOC_MCTS_REAL_LEARNED_STOP
 std::uint64_t liveSimulations = 512;
 // Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
 double liveFullBudgetFraction = 0;
+// Learned stop (STS_OOC_MCTS_LEARNED_STOP=PATH:TAU, research, opt-in): a logistic CompactTreeNet of
+// P(the root visit leader is the full search's choice), checked at 128..2048 simulations; stop at >= TAU.
+std::shared_ptr<const CompactTreeNet> liveLearnedStopNet;
+double liveLearnedStopTau = 0;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
@@ -2879,6 +2953,7 @@ void configureLiveOocMcts() {
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     liveFullBudgetFraction = 0;
+    liveLearnedStopNet.reset(); liveLearnedStopTau = 0;
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     liveLeafCapture.reset();
     pendingLeafCapturePath.clear();
@@ -2995,6 +3070,13 @@ void configureLiveOocMcts() {
     liveOptions.greedyRolloutShop = true;
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
+    // ADR-0053 (§564 A/B, Philipp 2026-10-19): the 1024:0.7 gap ladder is the default wherever it applies (visit
+    // selection, more than 1024 simulations, no CPU_SECONDS). A learned stop keeps its tested arm without it.
+    // STS_OOC_MCTS_GAP_STOP=0 restores the exact visit lock only.
+    if (const char *learned = std::getenv("STS_OOC_MCTS_LEARNED_STOP");
+        !std::getenv("STS_OOC_MCTS_GAP_STOP") && (!learned || std::string(learned) == "0")
+        && !liveConfig.selectByMeanQ && liveSimulations > 1024 && liveOptions.cpuBudgetSeconds == 0)
+        applyLiveControl("STS_OOC_MCTS_GAP_STOP", "1024:0.7", liveConfig, liveOptions);
     if (liveOptions.cpuBudgetSeconds > 0 && (liveConfig.allowUnqualifiedRootStop
             || liveConfig.stopAt512VisitGap20 || liveConfig.gapStopFraction > 0 || liveConfig.observeRootLock
             || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") || std::getenv("STS_OOC_SIBLING_CAPTURE")
@@ -3082,6 +3164,24 @@ void configureLiveOocMcts() {
     if (liveConfig.gapStopFraction > 0
         && (liveConfig.selectByMeanQ || liveConfig.gapStopSimulations.back() >= liveSimulations))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP requires visit selection and checkpoints below the simulations");
+    if (const char *raw = std::getenv("STS_OOC_MCTS_LEARNED_STOP"); raw && std::string(raw) != "0") {
+        const std::string value(raw);
+        const auto colon = value.rfind(':');
+        char *end = nullptr;
+        const std::string tauText = colon == std::string::npos ? std::string{} : value.substr(colon + 1);
+        const double tau = tauText.empty() ? 0 : std::strtod(tauText.c_str(), &end);
+        if (colon == std::string::npos || colon == 0 || tauText.empty() || end != tauText.c_str() + tauText.size()
+            || !(tau > 0 && tau < 1))
+            throw std::runtime_error("STS_OOC_MCTS_LEARNED_STOP must be 0 or PATH:TAU with TAU in (0, 1)");
+        if (liveConfig.selectByMeanQ || liveOptions.cpuBudgetSeconds > 0 || liveSimulations <= 2048)
+            throw std::runtime_error("STS_OOC_MCTS_LEARNED_STOP requires visit selection, no CPU budget and more than 2048 simulations");
+        // The model saw root priors and visit shares at temperature 1 only (Philipp 2026-10-18 22:09Z: rethink the
+        // learned stop when the root temperature changes), so other temperatures need a retrained model.
+        if (liveOptions.priorTemperature != 1)
+            throw std::runtime_error("STS_OOC_MCTS_LEARNED_STOP was trained at STS_OOC_MCTS_TEMPERATURE=1; retrain it for another temperature");
+        liveLearnedStopNet = loadOocLearnedStopNet(value.substr(0, colon));
+        liveLearnedStopTau = tau;
+    }
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
     liveConfig.observeRootLock = !liveRootLockTrace.empty();
     // Observation only (heart outcome round 2): one row per live root with
@@ -3276,6 +3376,7 @@ void configureLiveOocMcts() {
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << (liveConfig.gapStopFraction > 0 ? " gap_stop=" + gapStopText(liveConfig) : std::string{})
+        << (liveLearnedStopNet ? " learned_stop=" + liveLearnedStopNet->path + ":" + std::to_string(liveLearnedStopTau) : std::string{})
         << " merge_outcomes=" << liveConfig.mergeEquivalentOutcomes
         << " prune_unsupported=" << liveConfig.pruneUnsupported
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
@@ -3297,6 +3398,7 @@ void configureLiveOocMcts() {
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << (liveConfig.gapStopFraction > 0 ? ",\"gapStop\":\"" + gapStopText(liveConfig) + "\"" : std::string{})
+        << (liveLearnedStopNet ? ",\"learnedStop\":\"" + liveLearnedStopNet->path + ":" + std::to_string(liveLearnedStopTau) + "\"" : std::string{})
         << ",\"mergeOutcomes\":" << (liveConfig.mergeEquivalentOutcomes ? "true" : "false")
         << ",\"pruneUnsupported\":" << (liveConfig.pruneUnsupported ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.bossRollout ? "bossrollout" : liveOptions.constantLeaf ? "constant" : liveOptions.directLeaf ? "direct" : liveOptions.screenLeaf ? (liveOptions.screenLeafGbm ? "screengbm" : "screen") : "native")
@@ -3918,6 +4020,14 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // but keeps the singleton shortcut: a sole action has no policy target.
     fullBudget = fullBudget && !sole;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
+    if (liveLearnedStopNet && !fullBudget && !sole) {
+        config.learnedStopSimulations = {128, 256, 512, 1024, 2048};
+        config.learnedStop = [net = liveLearnedStopNet, tau = liveLearnedStopTau, act = gc.act, floor = gc.floorNum,
+                              screen = int(gc.screenState)](std::uint64_t simulations,
+                                                            const std::vector<sts::search::OocRootActionStats> &stats) {
+            return net->predict(oocLearnedStopFeatures(simulations, stats, act, floor, screen)) >= tau;
+        };
+    }
     if (!runProfilePath().empty()) {
         config.profileSearch = true;
         // Preserve the singleton shortcut and every existing stopping rule.
@@ -4394,7 +4504,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             {"ctm_samples", samples}, {"leaf_evaluations", m.leafEvaluations},
             {"max_depth", m.maxDepthReached}, {"depth_sum", m.depthSum},
             {"early_stop_lock", m.earlyStopLockedRoot}, {"early_stop_gap", m.earlyStopVisitGap20},
-            {"early_stop_gap_ladder", m.earlyStopGapLadder},
+            {"early_stop_gap_ladder", m.earlyStopGapLadder}, {"early_stop_learned", m.earlyStopLearned},
             {"unsupported_simulations", m.unsupportedSimulations}, {"pruned_actions", m.prunedActions},
             {"cpu_budget_seconds", liveOptions.cpuBudgetSeconds}, {"early_stop_budget", m.earlyStopBudget}};
     }
@@ -4472,6 +4582,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     m.earlyStopLockedRoot += result.metrics.earlyStopLockedRoot;
     m.earlyStopVisitGap20 += result.metrics.earlyStopVisitGap20;
     m.earlyStopGapLadder += result.metrics.earlyStopGapLadder;
+    m.earlyStopLearned += result.metrics.earlyStopLearned;
     m.earlyStopBudget += result.metrics.earlyStopBudget;
     m.savedSimulations += result.metrics.savedSimulations;
     m.simulations += result.metrics.simulations;

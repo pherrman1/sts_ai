@@ -932,6 +932,10 @@ add_test(NAME ctm_offline_score_rows COMMAND $<TARGET_FILE:one_combat> ctmscores
 set_tests_properties(ctm_offline_score_rows PROPERTIES
     LABELS "core;research-repro"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ooc_learned_stop_parity COMMAND $<TARGET_FILE:one_combat> ooclearnedstoptest
+    tests/fixtures/ooc_learned_stop_parity.jsonl models/candidates/ooc_learned_stop_trees.txt)
+set_tests_properties(ooc_learned_stop_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration" PASS_REGULAR_EXPRESSION "ooclearnedstoptest rows=256 mismatched=0 ")
 add_test(NAME ctm_act4_survival_parity COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
     tests/fixtures/ctm_act4_survival_parity.jsonl)
 set_tests_properties(ctm_act4_survival_parity PROPERTIES
