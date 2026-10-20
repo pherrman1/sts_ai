@@ -463,6 +463,18 @@ bool hexDazedQueue() {
     throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_VOID_ENERGY_QUEUE: unset/1 (default) = a pending tail holding
+// Void's queued LoseEnergyAction(1) (VoidCard.triggerWhenDrawn, e.g. Warcry
+// drawing Void before its put-on-top choice) folds the loss into the imported
+// energy, as native CardManager::draw applies it at the draw; 0 = legacy
+// refusal (silver_selection_pending_actions).
+bool voidEnergyQueue() {
+    const char *value = std::getenv("STS_SILVER_VOID_ENERGY_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_VOID_ENERGY_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS: unset/1 (default) = a potion's
 // Discovery card reward (Attack/Skill/Power/Colorless Potion) whose typed
 // public tail (Toy Ornithopter's heal) is queued behind the choice imports
@@ -2198,6 +2210,17 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
                 action.amount=amount;action.monster=slot;
                 wire.pendingActionQueue.push_back(action);
+                continue;
+            }
+            if(kindName=="LOSE_ENERGY") {
+                // Java loses the energy only after the earlier tail items; the
+                // fold is exact while none of them can gain energy.
+                int amount=0;
+                if(!voidEnergyQueue() || !requiredInt(entry,"amount",amount) || amount!=1
+                        || std::any_of(wire.pendingActionQueue.begin(),wire.pendingActionQueue.end(),
+                            [](const auto &item){return item.kind==K::GAIN_ENERGY;}))
+                    return unsupported("silver_selection_pending_actions");
+                wire.player.energy=std::max(0,wire.player.energy-amount);
                 continue;
             }
             const auto kind=kinds.find(kindName);
