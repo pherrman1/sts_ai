@@ -475,6 +475,17 @@ bool lethalReactionQueue() {
     throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE: unset/1 (default) = a queued
+// Plated Armor reduction from 1 on a monster other than Shelled Parasite
+// (whose stun stays unsupported), e.g. Donu after Headbutt, removes the power
+// as native does at the hit; 0 = legacy refusal (silver_selection_pending_actions).
+bool platedArmorRemovalQueue() {
+    const char *value = std::getenv("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE must be 0 or 1");
+}
+
 // STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
 // stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
 // native stolen-gold check that Java has no field for; without it Silver's
@@ -2163,9 +2174,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
                     auto &plated=monster.smallPowers[7];
-                    if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || plated<=1)
+                    const bool removal=plated==1 && platedArmorRemovalQueue()
+                        && monster.id!=static_cast<std::int16_t>(sts::MonsterId::SHELLED_PARASITE);
+                    if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || (plated<=1 && !removal))
                         return unsupported("silver_selection_pending_actions");
                     --plated;
+                    if(removal) monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::PLATED_ARMOR));
                     continue;
                 }
                 if(amount<0 || amount>999) return unsupported("silver_selection_pending_actions");

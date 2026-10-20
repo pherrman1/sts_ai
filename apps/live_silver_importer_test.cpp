@@ -4182,18 +4182,22 @@ int main(int argc, char **argv) {
         // A Headbutt that kills a Darkling leaves its half-death Regrow
         // SetMoveAction queued (live seed 111200400).
         // A lethal Headbutt into a Byrd still queues Flight's reduction (live seed 111200421).
-        for (int variant=0;variant<8;++variant) {
+        // Plated Armor 1 on Donu/Deca reaches 0 and is removed (live seed 111200422).
+        for (int variant=0;variant<9;++variant) {
             const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
                 MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
-                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS, MonsterEncounter::THREE_BYRDS}[variant];
+                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS, MonsterEncounter::THREE_BYRDS,
+                MonsterEncounter::DONU_AND_DECA}[variant];
             const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7, shift=variant==4, louse=variant==5;
-            const bool darkling=variant==6, lethal=variant==7;
+            const bool darkling=variant==6, lethal=variant==7, plateRemoved=variant==8;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
-            game.act=mass||darkling?3:guardian||shift||louse?1:2; game.floorNum=mass?38:darkling?35:guardian||shift?16:louse?5:29;
+            game.act=plateRemoved?4:mass||darkling?3:guardian||shift||louse?1:2;
+            game.floorNum=plateRemoved?54:mass?38:darkling?35:guardian||shift?16:louse?5:29;
             BattleContext live; live.init(game, encounter);
             auto &target=live.monsters.arr[0];
             target.block=0;
             if(shift) target.setStatus<MonsterStatus::MODE_SHIFT>(1);
+            if(plateRemoved) target.buff<MonsterStatus::PLATED_ARMOR>(1);
             if(guardian) {
                 // Defensive Mode after Close Up: Sharp Hide on, Roll Attack next.
                 target.enterGuardianDefensiveMode();
@@ -4207,9 +4211,10 @@ int main(int argc, char **argv) {
                 sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
             }
             const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
+            if(plateRemoved && platedBefore!=1) throw std::runtime_error("Donu/Deca fixture needs Plated Armor 1");
             const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
             if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
-            if(lethal) target.curHp=5;
+            if(lethal) target.curHp=2; // Flight halves Headbutt's 9 damage
             const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
             if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
             if(darkling) {
@@ -4259,7 +4264,8 @@ int main(int argc, char **argv) {
                         || nativeQueue[2].monster!=0 || !target.isHalfDead()
                         || target.moveHistory[0]!=MonsterMoveId::DARKLING_REGROW))
                     || (byrd && target.getStatus<MonsterStatus::FLIGHT>()!=flightBefore-1)
-                    || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                    || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1)
+                    || (plateRemoved && target.hasStatus<MonsterStatus::PLATED_ARMOR>()))
                 throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
             auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
             setProducerV4CardObservation(observation,expected);
@@ -4279,6 +4285,8 @@ int main(int argc, char **argv) {
                 if(power.at("id")=="Flight") power["amount"]=flightBefore;
             }
             auto &javaTarget=combat["monsters"][0];
+            // Java form: Plated Armor 1 stays until its queued ReducePowerAction.
+            if(plateRemoved) javaTarget["powers"].push_back({{"id","Plated Armor"},{"amount",1}});
             // Java form: Curl Up stays until its queued RemoveSpecificPowerAction.
             if(louse) javaTarget["powers"].push_back({{"id","Curl Up"},{"amount",curlBefore}});
             if(shift) {
@@ -4306,6 +4314,13 @@ int main(int argc, char **argv) {
             else if(darkling) pending.push_back(json{{"kind","MONSTER_SET_MOVE"},{"move",4},{"slot",0}});
             else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
+            if(plateRemoved) {
+                setenv("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE=0 accepted Plated Armor removal");
+            }
             if(lethal) {
                 if(target.curHp!=0 || !target.isDeadOrEscaped())
                     throw std::runtime_error("lethal Byrd fixture did not kill the Byrd");
@@ -4411,6 +4426,7 @@ int main(int argc, char **argv) {
             else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
             else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
             else if(darkling) brokenQueue[2]["move"]=3;
+            else if(plateRemoved) brokenQueue[1]["amount"]=2;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
                 if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)
