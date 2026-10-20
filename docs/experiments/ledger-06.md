@@ -21896,3 +21896,28 @@ Seeds used: 111140712–111142375 (campaign). Timing seeds 111194477–480; smok
 Raw: `/mnt/project-files/az-gen0/w01..w32.tar`.
 
 **Knowledge impact:** none beyond this entry. Gen 0 is a data generation, and no default or interface changed.
+
+## §570 — Live Act 4: Spire Shield's BackAttack refused the first Shield and Spear fight (2026-10-20)
+
+**Question:** why were the first live Act 4 elites (seeds 111200433 and 111200434, release f2e3f48d, SHIELD_AND_SPEAR
+turn 1) refused with `silver_unmapped_monster_power` (problem 40 in `engine-parity/overnight-20261019/ISSUES.md` on the
+share)?
+**Setup:** code reading of `importSilverRootGeneric` and `Monster::calculateDamageToPlayer`; read-only `javap` of the
+pinned JAR on Philipp's PC (`issue40-javap.md` on the share): `AbstractMonster.applyBackAttack/applyPowers/
+calculateDamage`, `BackAttackPower`, `SurroundedPower`, `AbstractPlayer.playCard`, MCPTheSpire's play and potion
+commands, `SpireShield/SpireSpear.die`; the importer input relayed byte-exact (sha256 `76bb8dce…5f3d`, now
+`tests/fixtures/live_shield_spear_back_attack_turn1.json`); `live_silver_importer_test` (no gameplay seeds).
+**Result:** Java marks the monster behind the Surrounded player with the hookless `BackAttack` power; behind is decided
+by `player.flipHorizontal`, which a targeted card turns toward its target (also MCP's play command; MCP potions do
+not turn). `calculateDamage` applies `(int)(tmp*1.5f)` after the stance; native multiplies by 1.5 before Weak and
+Vulnerable and floors once, which gives the same integer for these factors, and models facing as
+`player.lastTargetedMonster` (set by targeted cards, not potions). The importer had no mapping for the marker.
+`SpireShield/SpireSpear.die()` remove the player's Surrounded; native kept it, which blocked Smoke Bomb afterwards.
+**Interpretation:** `STS_IMPORTER_BACK_ATTACK_FIX` (default on, `=0` restores the refusal) sets `lastTargetedMonster`
+to the alive Spire monster without the marker; Surrounded with both alive and no marker fails closed
+(`silver_back_attack_facing`). The captured root imports, native damage reproduces the Java intents (Shield 14 → 21,
+Spear 6) and Silver searches it. `STS_SPIRE_SURROUNDED_DEATH_FIX` (default on, `=0` restores) removes Surrounded when
+either dies with its partner alive; play-changing for simulator play in the Act 4 elite (Smoke Bomb only), unmeasured.
+**Open question:** not yet exercised live (#731); Heart powers are mapped but not yet seen live.
+Seeds: none new (live seeds 111200433 and 111200434 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
