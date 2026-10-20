@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
+## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
 `OOC_ACTION_MAPPING` "unexpected option 0" (problem 51 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
