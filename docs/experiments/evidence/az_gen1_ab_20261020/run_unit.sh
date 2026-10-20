@@ -43,6 +43,7 @@ for arm in A B; do
   if [ "$rc" = 0 ]; then
     grep -q "ooc-learned-stop: .*ooc_learned_stop_trees.txt" "$b.log" "$b.err" || rc=97
     grep -q "ctm-act4-survival\] model=" "$b.log" "$b.err" || rc=96
+    grep -qF "[heart1] loaded $RUN/$net " "$b.log" "$b.err" || rc=95
   fi
   echo "tag=$arm-$SEED rc=$rc start=$start wall=$(( $(date +%s)-t0 ))" > "$b.done"
 done
