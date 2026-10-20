@@ -551,7 +551,8 @@ add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_guardian_a20_phases.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_two_thieves_turn1.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_three_byrds_turn1.json
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_shield_spear_back_attack_turn1.json)
 
 add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
     apps/one_combat/combat_transition.cpp

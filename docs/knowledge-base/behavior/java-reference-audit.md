@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-20 for the Spire Shield/Spear death and back-attack rows; 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -278,7 +278,7 @@ reduced to its gameplay operations; animation, sound and VFX were ignored.
 | `AwakenedOne.damage` (first death) | half-dead, power and relic death hooks (e.g. Gremlin Horn), card queue cleared, debuffs removed, Rebirth | `Monster::die` |
 | `TheCollector`, `BronzeAutomaton`, `GremlinLeader`, `AwakenedOne` `die` | minions die or escape | the minion-leader branch of `Monster::die` ends the fight |
 | `Looter`, `Mugger` `die` | stolen gold returned as a reward | the native theft accounting |
-| `SpireShield`, `SpireSpear` `die` | remove the player's Surrounded and the partner's BackAttack | the back-attack ×1.5 in `Monster::calculateDamageToPlayer` cannot apply once either has died. **Inference:** Java multiplies after Weak and Vulnerable and native before; the product is the same apart from float rounding |
+| `SpireShield`, `SpireSpear` `die` | remove the player's Surrounded and the partner's BackAttack | `Monster::die` removes Surrounded (`STS_SPIRE_SURROUNDED_DEATH_FIX`, problem 40); the back-attack ×1.5 in `Monster::calculateDamageToPlayer` cannot apply once either has died. javap (2026-10-20): Java's `AbstractMonster.calculateDamage` applies `(int)(tmp*1.5f)` after the stance, native multiplies before Weak and Vulnerable; the integer is the same apart from float rounding |
 
 ### Dead code in vanilla
 

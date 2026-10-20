@@ -331,6 +331,11 @@ void Monster::die(BattleContext &bc) {
         return;
     }
 
+    if ((id == MonsterId::SPIRE_SHIELD || id == MonsterId::SPIRE_SPEAR)
+            && bc.player.hasStatus<PS::SURROUNDED>() && spireSurroundedDeathFix()) {
+        bc.player.removeStatus<PS::SURROUNDED>();
+    }
+
     if (hasStatus<MS::SPORE_CLOUD>()) {
         // spore cloud always has a value of 2 in game
         bc.addToTop( Actions::DebuffPlayer<PS::VULNERABLE>(2, bc.turnHasEnded) );
