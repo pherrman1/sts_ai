@@ -60,6 +60,19 @@ namespace sts {
         throw std::runtime_error("STS_SPIRE_SURROUNDED_DEATH_FIX must be 0 or 1");
     }
 
+    // STS_MUMMIFIED_HAND_PLAYED_CARD_FIX: unset or 1 = Mummified Hand never
+    // picks the Power being played. Java's GameActionManager keeps the played
+    // card's item in cardQueue while onUseCard runs, and MummifiedHand removes
+    // every queued card from its candidates; native pops the item into
+    // curCardQueueItem first (live parity problem 48). 0 = the legacy pick,
+    // which counts the played Power; other values are fatal.
+    bool mummifiedHandPlayedCardFix() {
+        const char *value = std::getenv("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX must be 0 or 1");
+    }
+
     bool slimeSplitRngFix() {
         const char *value = std::getenv("STS_SLIME_SPLIT_RNG_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -3077,7 +3090,9 @@ void BattleContext::mummifiedHandOnUsePower() {
 
     for (int i = matchingIdxList.size()-1; i >= 0; --i) {
         const auto uniqueId = cards.hand[matchingIdxList[i]].getUniqueId();
-        if (cardQueue.containsCardWithId(uniqueId)) {
+        const bool beingPlayed = uniqueId == curCardQueueItem.card.getUniqueId()
+                && mummifiedHandPlayedCardFix();
+        if (beingPlayed || cardQueue.containsCardWithId(uniqueId)) {
             matchingIdxList.remove(i);
         }
     }
