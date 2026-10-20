@@ -21921,3 +21921,28 @@ either dies with its partner alive; play-changing for simulator play in the Act 
 **Open question:** not yet exercised live (#731); Heart powers are mapped but not yet seen live.
 Seeds: none new (live seeds 111200433 and 111200434 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
+
+## §TBD — Live OOC: Du-Vu Doll's curse counter was unqualified and never maintained natively (2026-10-20)
+
+**Question:** why was the live OOC card reward on seed 111200437 (Act 3 floor 45, right after taking Du-Vu Doll)
+refused with `RELIC_NATIVE_COUNTER_UNQUALIFIED:Du-Vu Doll` (problem 46 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** code reading of `BattleContext` relic init, `Deck` and `GameContext::obtainRelic`; read-only `javap` of the
+pinned JAR on Philipp's PC (`issue46-javap.md` on the share): `DuVuDoll`, every `onMasterDeckChange` call site and a
+scripted scan of relic `counter` writers; the live observation (sha256 `071495c3…a542`, now
+`tests/fixtures/live_du_vu_card_reward.json` without the producer's refusal marker); `issue_fixes`,
+`live_ooc_protocol` and the mod's `test.sh` (no gameplay seeds).
+**Result:** Java's counter is the number of master-deck cards with type `CURSE` (Ascender's Bane included), recounted
+in `onEquip` and `onMasterDeckChange` (called from `CardGroup.removeCard`, `ShowCardAndObtainEffect`,
+`FastCardObtainEffect` and `NoteForYourself`), never reset; `atBattleStart` grants that much Strength. Native never set
+the relic data, so every simulated fight with the relic started without Strength; `Deck::cardTypeCounts` skips
+untransformable curses. The scan found no other unhandled persistent counter an Ironclad run can own.
+**Interpretation:** `STS_DU_VU_DOLL_COUNT_FIX` (default on, `=0` restores data 0) sets the data to the curse count on
+obtain and after every `Deck::obtain`/`Deck::remove`; the inspector copies the counter and the OOC importer requires it
+to equal the imported deck's curse count. The captured root imports. Play-changing for simulator play with Du-Vu Doll
+(Strength at battle start and the relic-data feature), unmeasured; the mod side is not flag-gated.
+**Open question:** a Java obtain or removal that bypasses the four call sites leaves the Java counter stale (the
+importer then refuses); research `obtainRaw` paths do not sync (#734 review).
+Seeds: none new (live seed 111200437 as reported; unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`,
+`mods/sts-model-inspector/README.md`.
