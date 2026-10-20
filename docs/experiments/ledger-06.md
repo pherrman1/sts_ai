@@ -21979,6 +21979,9 @@ The mod's boss branch qualifies a forced boss map only for acts 1-3 at row 14 an
 act 1-3 boss index. Native Act 4 reaches the boss (3,3) through the elite's single edge, so its only map action is
 option 3, and the action-set check rejected option 0. With `STS_IMPORTER_ACT4_BOSS_MAP_FIX=0` the fixture reproduces the
 live error exactly.
+Live retest (canary, restored pre-Heart save of the same seed, advisor 4ef863d9 plus this importer hunk): the advisor
+chose `Boss!`, the Heart imported and Silver won it (turn 8, 65/75 HP, true victory, floor 57). The completed boss room
+after the kill was refused (`NATIVE_SCREEN_UNSUPPORTED:COMPLETE`, problem 52, separate).
 **Interpretation:** `STS_IMPORTER_ACT4_BOSS_MAP_FIX` (default on, `=0` restores the error) remaps exactly that sole
 public choice to option 3 in the importer; the advisor passes it through as `forced_no_search` (`choose 1`). No mod
 change. Play-changing for the live advisor at that one Act 4 decision only.
