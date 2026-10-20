@@ -413,7 +413,13 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
             search::emitHiddenMonsterIntentMaterialized(
                 idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         }
-        setStatus<MS::FLIGHT>(flight-1);
+        // Java ReducePowerAction removes Flight at 0 (the Byrd is grounded): no more
+        // halved damage and no start-of-turn reset (STS_BYRD_GROUNDED_FLIGHT_FIX=0 restores).
+        if (flight == 1 && byrdGroundedFlightFix()) {
+            removeStatus<MS::FLIGHT>();
+        } else {
+            setStatus<MS::FLIGHT>(flight-1);
+        }
 
     } else if (hasStatus<MS::MALLEABLE>() || hasStatus<MS::REACTIVE>()) {
         if (hasStatus<MS::MALLEABLE>()) {
