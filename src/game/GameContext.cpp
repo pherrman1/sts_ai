@@ -1508,6 +1508,11 @@ bool GameContext::obtainRelic(RelicId r) {
             break;
         }
 
+        case RelicId::DU_VU_DOLL:
+            // Java onEquip sets the counter to the current curse count.
+            if (duVuDollCountFix()) relicData = masterDeckCurseCount();
+            break;
+
         case RelicId::NEOWS_LAMENT: {
             relicData = 3;
             break;
@@ -2402,6 +2407,25 @@ bool sts::engineFidelityFix() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_ENGINE_FIDELITY_FIX must be 0 or 1");
+}
+
+bool sts::duVuDollCountFix() {
+    const char *value = std::getenv("STS_DU_VU_DOLL_COUNT_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_DU_VU_DOLL_COUNT_FIX must be 0 or 1");
+}
+
+// Java DuVuDoll counts every CURSE-type master-deck card, including the
+// untransformable ones (Ascender's Bane, Necronomicurse, Curse of the Bell)
+// that Deck::cardTypeCounts leaves out.
+int GameContext::masterDeckCurseCount() const {
+    return deck.getCountMatching([](const Card &c) { return c.getType() == CardType::CURSE; });
+}
+
+void GameContext::syncDuVuDollCounter() {
+    if (!relics.has(RelicId::DU_VU_DOLL) || !duVuDollCountFix()) return;
+    relics.getRelicValueRef(RelicId::DU_VU_DOLL) = masterDeckCurseCount();
 }
 
 // STS_NEOW_TRANSFORM_CURSE_FIX (ADR-0038): unset or 1 = Neow "transform two

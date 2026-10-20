@@ -346,6 +346,12 @@ json nativeObservation(const BattleStateWire &wire, const char *room, const char
             static_cast<MonsterMoveId>(monster.moveHistory[1]));
         if (previous >= 0) history.push_back(previous);
         history.push_back(current);
+        auto powers = nativeMonsterPowers(monster);
+        // Java marks the monster behind the Surrounded player with BackAttack.
+        const auto &faced = wire.monsters[wire.player.lastTargetedMonster];
+        if (((wire.player.statusBits0 >> static_cast<int>(PlayerStatus::SURROUNDED)) & 1ULL)
+                && monster.curHp > 0 && monster.idx != wire.player.lastTargetedMonster && faced.curHp > 0)
+            powers.push_back({{"id", "BackAttack"}, {"amount", -1}});
         combat["monsters"].push_back({
             {"id", name}, {"slot", monster.idx}, {"idx", monster.idx}, {"occupantGeneration",monster.occupantGeneration},
             {"hp", monster.curHp}, {"maxHp", monster.maxHp}, {"block", monster.block},
@@ -356,7 +362,7 @@ json nativeObservation(const BattleStateWire &wire, const char *room, const char
             {"strength", monster.strength}, {"vulnerable", monster.vulnerable},
             {"weak", monster.weak}, {"uniquePower0", monster.uniquePower0},
             {"uniquePower1", monster.uniquePower1}, {"miscInfo", monster.miscInfo},
-            {"powers", nativeMonsterPowers(monster)}});
+            {"powers", std::move(powers)}});
     }
     return out;
 }
@@ -1559,6 +1565,55 @@ int main(int argc, char **argv) {
                     || mass.pendingRollInputHistory[1].curHp!=mass.curHp || mass.pendingRollInputHistory[0].curHp!=175)
                 throw std::runtime_error("captured Runic Dome Writhing Mass reroll was not deferred after the selection");
             std::cout << "captured Runic Dome Writhing Mass Headbutt import and search passed: " << path << "\n";
+        }
+        // Live seed 111200433, problem 40: the first Act 4 elite (SHIELD_AND_SPEAR turn 1). Spire Shield carries
+        // Java's BackAttack marker: the Surrounded player faces Spire Spear (slot 1).
+        {
+            const std::string path=argc>6?argv[6]:"tests/fixtures/live_shield_spear_back_attack_turn1.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Shield and Spear fixture: "+path);
+            json observation; input >> observation;
+            setenv("STS_IMPORTER_BACK_ATTACK_FIX","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_IMPORTER_BACK_ATTACK_FIX");
+            if(legacy.ok || legacy.reason!="silver_unmapped_monster_power")
+                throw std::runtime_error("captured Shield and Spear legacy refusal changed: "+legacy.reason);
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Shield and Spear import: "+imported.reason);
+            if(imported.wire.player.lastTargetedMonster!=1)
+                throw std::runtime_error("captured Shield and Spear: the player must face Spire Spear");
+            const auto root=battleContextFromWire(imported.wire);
+            // Java intents: Shield Bash 14 -> 21 from behind; Spear Burn Strike 6 faced.
+            if(!root.player.hasStatus<PlayerStatus::SURROUNDED>()
+                    || root.monsters.arr[0].calculateDamageToPlayer(root,14)!=21
+                    || root.monsters.arr[1].calculateDamageToPlayer(root,6)!=6)
+                throw std::runtime_error("captured Shield and Spear back attack damage differs from the Java intents");
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Shield and Spear search: "+decision.failureReason);
+            auto flipped=observation;
+            auto &monsters=flipped["silverRoot"]["combat"]["monsters"];
+            monsters[1]["powers"].push_back(monsters[0]["powers"][0]);
+            monsters[0]["powers"].erase(0);
+            const auto behindShield=one_combat::advisor::importSilverRoot(flipped);
+            if(!behindShield.ok || behindShield.wire.player.lastTargetedMonster!=0)
+                throw std::runtime_error("captured Shield and Spear: BackAttack on Spear must face Shield: "+behindShield.reason);
+            monsters[1]["powers"].erase(1);
+            const auto unmarked=one_combat::advisor::importSilverRoot(flipped);
+            if(unmarked.ok || unmarked.reason!="silver_back_attack_facing")
+                throw std::runtime_error("captured Shield and Spear: Surrounded without BackAttack must fail closed: "+unmarked.reason);
+            // SpireShield/SpireSpear.die() remove Surrounded while the partner lives.
+            for(const char *flag:{"1","0"}) {
+                setenv("STS_SPIRE_SURROUNDED_DEATH_FIX",flag,1);
+                auto killed=battleContextFromWire(imported.wire);
+                killed.monsters.arr[1].curHp=0;
+                killed.monsters.arr[1].die(killed);
+                if(killed.player.hasStatus<PlayerStatus::SURROUNDED>()!=(flag[0]=='0'))
+                    throw std::runtime_error(std::string("Spire Spear death Surrounded removal, flag ")+flag);
+            }
+            unsetenv("STS_SPIRE_SURROUNDED_DEATH_FIX");
+            std::cout << "captured Shield and Spear BackAttack import and search passed: " << path << "\n";
         }
         {
             const std::string path=argc>1?argv[1]:"tests/fixtures/live_slime_boss_split.json";

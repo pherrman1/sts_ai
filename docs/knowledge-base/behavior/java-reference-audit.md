@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-10-20 for Mummified Hand; 2026-10-20 for Du-Vu Doll and the relic counter scan; 2026-10-20 for the Spire Shield/Spear death and back-attack rows; 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -278,7 +278,7 @@ reduced to its gameplay operations; animation, sound and VFX were ignored.
 | `AwakenedOne.damage` (first death) | half-dead, power and relic death hooks (e.g. Gremlin Horn), card queue cleared, debuffs removed, Rebirth | `Monster::die` |
 | `TheCollector`, `BronzeAutomaton`, `GremlinLeader`, `AwakenedOne` `die` | minions die or escape | the minion-leader branch of `Monster::die` ends the fight |
 | `Looter`, `Mugger` `die` | stolen gold returned as a reward | the native theft accounting |
-| `SpireShield`, `SpireSpear` `die` | remove the player's Surrounded and the partner's BackAttack | the back-attack ×1.5 in `Monster::calculateDamageToPlayer` cannot apply once either has died. **Inference:** Java multiplies after Weak and Vulnerable and native before; the product is the same apart from float rounding |
+| `SpireShield`, `SpireSpear` `die` | remove the player's Surrounded and the partner's BackAttack | `Monster::die` removes Surrounded (`STS_SPIRE_SURROUNDED_DEATH_FIX`, problem 40); the back-attack ×1.5 in `Monster::calculateDamageToPlayer` cannot apply once either has died. javap (2026-10-20): Java's `AbstractMonster.calculateDamage` applies `(int)(tmp*1.5f)` after the stance, native multiplies before Weak and Vulnerable; the integer is the same apart from float rounding |
 
 ### Dead code in vanilla
 
@@ -502,7 +502,9 @@ was compared with the native references.
 | Ancient Tea Set | **Mismatch, fixed** | Java charges the relic on entering any rest site (`onEnterRestRoom` sets the counter to −2) and spends it on the first turn of the next combat, however many rooms later. Native used `gc.lastRoom == Room::REST`, which missed rest → event, shop or treasure → fight. Now relic `data` is 1 while charged: `GameContext::transitionToMapNode` sets it on entering a rest site, `BattleContext::initRelics` grants +2 energy when it is set, and `updateRelicsOnExit` clears it. Save files and the inspector map the vanilla −2 to 1 and everything else to 0. In the inspector this is `combatEntryRelicData`, which is used for combat entry and the CTM and is shared by `LiveOocCapture.nativeRelicData` for live out-of-combat roots. **Limitations:**
 - The lazy combat-entry fallback, which captures at the first decision when the battle-start capture was missed, sees the already spent −1, so that entry records 0 although Java granted +2.
 - Snapshots recorded before this change replay without the old `lastRoom` energy. The CTM relic legality and native contract model the post-combat data as 0. Covered by `ironclad_card_java_parity` and `CombatBoundaryTest`. |
-| All other Ironclad-pool and red relics | Parity | Includes the counter relics (Pen Nib's −1 encodes "9 with the power active"; Sundial, Happy Flower, Incense Burner and Nunchaku are offset but equivalent); turn-indexed relics (Captain's Wheel, Horn Cleat, Stone Calendar); Art of War and Pocketwatch from turn 2 only; Orichalcum (its `trigger` flag is never set); Boot and Torii (after block, attack damage only); Preserved Insect; Magic Flower's rounding; Gremlin Horn on Darkling half-death; Mummified Hand's filters and `cardRandomRng`; Strange Spoon's `cardRandomRng`; Whetstone, War Paint and Tiny House with `java.util.Random(miscRng.randomLong())`; Slaver's Collar (elite or boss); Brimstone on turn 1; the Burning and Black Blood victory heals. |
+| Du-Vu Doll | **Mismatch, fixed** (live parity problem 46) | javap (2026-10-20): `onEquip` and `onMasterDeckChange` set the counter to the number of master-deck cards with type `CURSE`, Ascender's Bane and other untransformable curses included, and `atBattleStart` applies that much Strength when it is positive; it is never reset to −1. `onMasterDeckChange` is called only from `CardGroup.removeCard` (master deck), `ShowCardAndObtainEffect.update`, `FastCardObtainEffect.update` and `NoteForYourself.buttonEffect`. Native never set the relic data, so simulated fights gave no Strength. Now `obtainRelic` and every `Deck::obtain`/`Deck::remove` set it to the curse count (`STS_DU_VU_DOLL_COUNT_FIX`, `=0` restores data 0), and the live OOC importer requires the live counter to equal the imported deck's curse count. `Deck::cardTypeCounts` is not used because it skips untransformable curses. **Unverified:** a Java obtain or removal that bypasses those four call sites leaves the Java counter stale while native recounts; the importer then refuses the root. |
+| Mummified Hand | **Mismatch, fixed** (live parity problem 48) | javap (2026-10-20): `onUseCard` (Powers only) collects hand cards with `cost>0 && costForTurn>0 && !freeToPlayOnce`, removes every `cardQueue` item's card, then zeroes `candidates.get(cardRandomRng.random(0, n-1))`. It runs inside the `UseCardAction` constructor, while the played Power is still in the hand and still `cardQueue[0]` (`GameActionManager.getNextAction` pops the queue after `useCard`), so the played Power is never a candidate. Native pops the item into `curCardQueueItem` before playing, so the Power was counted: one more candidate, and the same draw picked a different card. `BattleContext::mummifiedHandOnUsePower` now also excludes `curCardQueueItem` (`STS_MUMMIFIED_HAND_PLAYED_CARD_FIX`, `=0` restores). Covered by `ironclad_card_java_parity`, which reproduces both game picks of seed 111200438 floor 32 |
+| All other Ironclad-pool and red relics | Parity | Includes the counter relics (Pen Nib's −1 encodes "9 with the power active"; Sundial, Happy Flower, Incense Burner and Nunchaku are offset but equivalent); turn-indexed relics (Captain's Wheel, Horn Cleat, Stone Calendar); Art of War and Pocketwatch from turn 2 only; Orichalcum (its `trigger` flag is never set); Boot and Torii (after block, attack damage only); Preserved Insect; Magic Flower's rounding; Gremlin Horn on Darkling half-death; Strange Spoon's `cardRandomRng`; Whetstone, War Paint and Tiny House with `java.util.Random(miscRng.randomLong())`; Slaver's Collar (elite or boss); Brimstone on turn 1; the Burning and Black Blood victory heals. |
 
 ### Necronomicon and Necronomicurse
 
@@ -531,6 +533,22 @@ before the fix carry the 0-based dagger. Covered by `issue_fixes`.
 from `javap` on the pinned JAR. Genetic Algorithm also starts with a nonzero
 `misc` in Java (1); native leaves it at 0, but it is a Defect card whose
 play is not implemented natively.
+
+### Relic counters out of combat
+
+A scripted `javap` scan (2026-10-20, problem 46, not checked relic by relic)
+found 30 relic classes that write their own `counter`. Captain's Wheel, Horn
+Cleat, Kunai, Letter Opener, Ornamental Fan, Pocketwatch, Shuriken, Stone
+Calendar and Velvet Choker reset it to −1 in `onVictory`, Ancient Tea Set in
+`atTurnStart`. The counters that persist between combats are Ceramic Fish,
+Circlet, Du-Vu Doll, Girya, Happy Flower, Incense Burner, Ink Bottle,
+Inserter, Lizard Tail, Matryoshka, Maw Bank, Neow's Lament, N'loth's Hungry
+Face, Nunchaku, Omamori, Pen Nib, Sundial, Tiny Chest and Wing Boots. Every
+one an Ironclad run can own is either in the inspector's
+`PERSISTENT_RELIC_COUNTERS` or mapped explicitly by
+`LiveOocCapture.nativeRelicData`, except Ceramic Fish, whose counter is
+written only by a `use` method; any positive value still fails closed as
+`RELIC_NATIVE_COUNTER_UNQUALIFIED`.
 
 **Not inspected:** relics only reachable through events, Neow or other
 classes, and relic hooks that act purely out of combat beyond the

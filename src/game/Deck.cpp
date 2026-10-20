@@ -186,6 +186,7 @@ void Deck::obtain(GameContext &gc, Card card, int count) {
     for (int i = 0; i < count; ++i) {
         cards.push_back(card);
     }
+    gc.syncDuVuDollCounter();
 }
 
 // Bookkeeping matches Deck::obtain without acquisition effects: each card is
@@ -245,6 +246,7 @@ void Deck::remove(GameContext &gc, int idx) {
             // Java onRemoveFromMasterDeck returns a new copy of the curse.
             cards.push_back(c);
         }
+        gc.syncDuVuDollCounter();
         return;
     }
 
@@ -256,6 +258,7 @@ void Deck::remove(GameContext &gc, int idx) {
 
     if (!anyCardBottled()) { // if no bottled cards, can do simple remove
         cards.remove(idx);
+        gc.syncDuVuDollCounter();
         return;
     }
 
@@ -274,6 +277,7 @@ void Deck::remove(GameContext &gc, int idx) {
         cards[i] = cards[i+1]; // shift cards to erase remove card
     }
     cards.resize(cards.size()-1);
+    gc.syncDuVuDollCounter();
 }
 
 void Deck::upgrade(int idx) {

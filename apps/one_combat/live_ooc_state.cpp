@@ -821,6 +821,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 g.relics.add({r, modelData});
             }
         }
+        // Java DuVuDoll keeps its counter equal to the master deck's CURSE-type
+        // card count (onEquip/onMasterDeckChange); native maintains the same
+        // data (STS_DU_VU_DOLL_COUNT_FIX), so a mismatch is not representable.
+        if (g.relics.has(RelicId::DU_VU_DOLL) && duVuDollCountFix())
+            require(g.relics.getRelicValueRef(RelicId::DU_VU_DOLL) == g.masterDeckCurseCount(),
+                    "Du-Vu Doll counter differs from master-deck curse count");
         g.boss=id<MonsterEncounter>(p.at("boss"),MonsterEncounter::INVALID);
         const auto &m=p.at("map");
         g.curMapNodeX=integer(m,"x",-1,6); g.curMapNodeY=integer(m,"y",-1,16);
