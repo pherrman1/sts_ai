@@ -21896,3 +21896,38 @@ Seeds used: 111140712–111142375 (campaign). Timing seeds 111194477–480; smok
 Raw: `/mnt/project-files/az-gen0/w01..w32.tar`.
 
 **Knowledge impact:** none beyond this entry. Gen 0 is a data generation, and no default or interface changed.
+
+## §TBD — AZ loop generation 1: student_sel fine-tuned on gen-0 Gumbel targets. Gen 1 FAILED its offline gate (value head overfit); gen 1b, with held-out epoch selection, PASSED. No A/B yet (2026-10-20)
+
+**Question:** can a net trained on gen 0's (§569) search targets fit them better than student_sel, and can its
+never-trained value head beat the base rate? Philipp's go: 2026-10-20 15:46Z / 15:53Z ("Let's go").
+
+- **Rows:** `tools/heart1/az_targets.py` (#732) on the 32 gen-0 tars (data branch `claude/az-gen0-data` 54033d1).
+  - 27,631 policy rows from full-budget, non-singleton roots: the ADR-0043 improved policy softmax(log prior + β·q̂).
+  - 260,416 value-only rows: every other supported state, z = Heart killed.
+  - β = 2.37, fitted on fold seed % 8 == 6: π' from the 2,048-sim checkpoint scored on the 4,096-sim choice. NLL
+    0.374 vs prior alone 0.437; top-1 0.921 vs 0.911.
+  - β was 2.37 at the 512- to 2,048-sim checkpoints. The paper's visit-scaled σ fit a scale that fell about as
+    1/visits, so it would over-sharpen at 4,096 sims.
+- **Training:** Philipp's RTX 3060 Ti via Remote Control, about 11.5 min per run.
+  - Init: student_sel (re-export reproduces `cf6bf7fb…`), `--extra-inputs`, Wing Boots flag 1.
+  - Loss: KL to π' on covered tokens + 1 × value BCE + 1 × KL anchor to student_sel; 6 epochs.
+- **Gen 1** ([GATE.md](evidence/az_gen1_20261020/GATE.md), `--select last`): **FAIL**.
+  - P passed: validation KL 0.0868 → 0.0568.
+  - V failed: value BCE 0.699 ≥ constant 0.639. Validation BCE was best at epoch 2 (0.495), then rose every epoch.
+  - **Inference:** all states of a run share one label, so the value head memorises runs.
+- **Gen 1b** ([GATE-1b.md](evidence/az_gen1_20261020/GATE-1b.md), `--select fold`: seeds % 8 == 6 held out of
+  training; the epoch with the lowest training objective on them is kept): **PASS**.
+  - Selected epoch 1. Validation KL 0.0868 → 0.0606; top-1 0.946 → 0.930.
+  - Value BCE 0.555 < 0.639. AUC 0.74 overall; per act 0.60 / 0.76 / 0.81 / 0.80.
+  - Native parity: max |Δ| 7.6e-6 (logits) and 1.1e-6 (value) on 400 records. `gen1b.bin` `e6aa044c…`.
+  - **Caveat:** this is a second gate attempt on the same validation fold. It was designed after gen 1's curve had
+    been seen, and it stopped at epoch 1 because the value head still overfits from epoch 2. A V pass is therefore
+    weak evidence, and the paired A20 A/B decides.
+- **Next:** a paired A20 A/B, gen 1b vs student_sel inside the same search stack, needs Philipp's go. Open: a value
+  target with less run-level correlation (fewer states per run, or X2-B), and the potion-discard output.
+
+[result-gen1.json](evidence/az_gen1_20261020/result-gen1.json), [result-gen1b.json](evidence/az_gen1_20261020/result-gen1b.json),
+[sigma_fit.json](evidence/az_gen1_20261020/sigma_fit.json). Weights: data branch `claude/az-gen1-data`. No seeds used.
+
+**Knowledge impact:** `architecture/out-of-combat.md` describes the AZ-loop row builder and the distill.py flags.
