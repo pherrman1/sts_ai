@@ -1377,7 +1377,8 @@ itself by shifting and queueing the 20 block behind the tail). The
 first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` queue items
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
-that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
+that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported. A lethal hit
+still queues the reduction; it folds into the dead monster (`STS_SILVER_LETHAL_REACTION_QUEUE`). Also unsupported is
 any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail

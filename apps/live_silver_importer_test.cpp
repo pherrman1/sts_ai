@@ -4181,12 +4181,13 @@ int main(int argc, char **argv) {
         // 111200388/111200389 stopped here.
         // A Headbutt that kills a Darkling leaves its half-death Regrow
         // SetMoveAction queued (live seed 111200400).
-        for (int variant=0;variant<7;++variant) {
+        // A lethal Headbutt into a Byrd still queues Flight's reduction (live seed 111200421).
+        for (int variant=0;variant<8;++variant) {
             const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
                 MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
-                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS}[variant];
-            const bool mass=variant==0, guardian=variant==2, byrd=variant==3, shift=variant==4, louse=variant==5;
-            const bool darkling=variant==6;
+                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS, MonsterEncounter::THREE_BYRDS}[variant];
+            const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7, shift=variant==4, louse=variant==5;
+            const bool darkling=variant==6, lethal=variant==7;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
             game.act=mass||darkling?3:guardian||shift||louse?1:2; game.floorNum=mass?38:darkling?35:guardian||shift?16:louse?5:29;
             BattleContext live; live.init(game, encounter);
@@ -4208,6 +4209,7 @@ int main(int argc, char **argv) {
             const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
             const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
             if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
+            if(lethal) target.curHp=5;
             const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
             if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
             if(darkling) {
@@ -4304,6 +4306,15 @@ int main(int argc, char **argv) {
             else if(darkling) pending.push_back(json{{"kind","MONSTER_SET_MOVE"},{"move",4},{"slot",0}});
             else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
+            if(lethal) {
+                if(target.curHp!=0 || !target.isDeadOrEscaped())
+                    throw std::runtime_error("lethal Byrd fixture did not kill the Byrd");
+                setenv("STS_SILVER_LETHAL_REACTION_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_LETHAL_REACTION_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE=0 accepted the dead Byrd's Flight reduction");
+            }
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
             // The wire itself settles the Guardian's shift and its 20 block.

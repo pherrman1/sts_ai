@@ -2957,7 +2957,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(!(value instanceof AbstractMonster))return null;
         AbstractMonster monster=(AbstractMonster)value;
         Integer slot=emittedMonsterSlots(liveEncounter).get(monster);
-        if(slot==null || monster.isDying || monster.isDeadOrEscaped() || monster.halfDead
+        // A lethal hit still queues Flight's / Plated Armor's ReducePowerAction
+        // (onAttacked / wasHPLost run before die()); the monster is dying, not escaping.
+        boolean lethalReduce="com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name)
+                && monster.isDying && monster.currentHealth<=0 && !monster.halfDead && !monster.escaped && !monster.isEscaping;
+        if(slot==null || ((monster.isDying || monster.isDeadOrEscaped()) && !lethalReduce) || monster.halfDead
                 || (!roll && readObjectField(action,"source")!=monster))return null;
         Integer amount=readIntField(action,"amount");
         if(roll) {
