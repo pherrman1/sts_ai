@@ -34,6 +34,14 @@ bool liveRelicOfferPrior() {
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_LIVE_RELIC_OFFER_PRIOR must be 0 or 1");
 }
+// STS_IMPORTER_ACT4_MAP_FIX: unset/1 (default) = import the fixed public
+// Act 4 map as Map::act4Map(); 0 restores VISIBLE_MAP_UNREPRESENTABLE:ACT_4.
+bool importerAct4MapFix() {
+    const char *value = std::getenv("STS_IMPORTER_ACT4_MAP_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_ACT4_MAP_FIX must be 0 or 1");
+}
 int integerValue(const J &v, int lo, int hi, const std::string &key) {
     require(v.is_number_integer(), key + " must be an integer");
     if (v.is_number_unsigned()) {
@@ -824,33 +832,59 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         require(g.curMapNodeY < 0 || g.curMapNodeX >= 0
                     || (g.curMapNodeY == 15 && g.curMapNodeX == -1),
                 "invalid current map coordinate");
-        g.map=std::make_shared<Map>();
-        g.map->burningEliteX=integer(m,"burningEliteX",-1,6);
-        g.map->burningEliteY=integer(m,"burningEliteY",-1,14);
-        require((g.map->burningEliteX<0)==(g.map->burningEliteY<0),"partial burning elite coordinate");
-        for(int y=0;y<15;++y)for(int x=0;x<7;++x){g.map->nodes[y][x].x=x;g.map->nodes[y][x].y=y;}
-        std::set<std::pair<int,int>> seen;
-        const auto &nodes=array(m,"nodes",105);
-        require(nodes.size()==105,"complete 15 by 7 visible map required");
-        for(const auto &n:nodes) {
-            const int x=integer(n,"x",0,6),y=integer(n,"y",0,14);
-            require(seen.insert({x,y}).second,"duplicate map node");
-            auto &node=g.map->nodes[y][x]; node.room=room(n.at("room"));
-            std::set<int> children;
-            for(const auto &e:array(n,"edges",3)) {
-                const auto cx=integerValue(e,0,6,"edge child x");
-                require(children.insert(cx).second,"duplicate map edge");
-                node.addEdge(cx);
+        if(g.act==4) {
+            if(!importerAct4MapFix()) return {false,"UNSUPPORTED","VISIBLE_MAP_UNREPRESENTABLE:ACT_4"};
+            // Vanilla TheEnding.generateMap builds five 7-node rows: rest ->
+            // shop -> elite -> boss in column 3 and an edgeless victory node
+            // at (3,4). Native Map::act4Map is the same graph on rows 0-3.
+            // Accept only that exact public map and reuse the native one.
+            const Map act4=Map::act4Map();
+            require(integer(m,"burningEliteX",-1,-1)==-1 && integer(m,"burningEliteY",-1,-1)==-1,
+                    "Act 4 has no burning elite");
+            const auto &nodes=array(m,"nodes",35);
+            require(nodes.size()==35,"complete 5 by 7 Act 4 map required");
+            std::set<std::pair<int,int>> seen;
+            for(const auto &n:nodes) {
+                const int x=integer(n,"x",0,6),y=integer(n,"y",0,4);
+                require(seen.insert({x,y}).second,"duplicate map node");
+                const auto &expected=act4.getNode(x,y);
+                require(room(n.at("room"))==expected.room,"Act 4 map room differs from native");
+                const auto &edges=array(n,"edges",3);
+                require(static_cast<int>(edges.size())==expected.edgeCount,"Act 4 map edges differ from native");
+                for(int e=0;e<expected.edgeCount;++e)
+                    require(integerValue(edges[e],0,6,"edge child x")==expected.edges[e],
+                            "Act 4 map edges differ from native");
             }
-        }
-        // Reconstruct parent lists from the complete visible edge set.
-        for(int y=0;y<14;++y)for(int x=0;x<7;++x) {
-            auto &n=g.map->nodes[y][x];
-            for(int e=0;e<n.edgeCount;++e) {
-                require(seen.count({n.edges[e],y+1}),"map edge target missing");
-                auto &child=g.map->nodes[y+1][n.edges[e]];
-                require(child.parentCount < static_cast<int>(child.parents.size()), "map parent capacity exceeded");
-                child.addParent(x);
+            g.map=std::make_shared<Map>(act4);
+        } else {
+            g.map=std::make_shared<Map>();
+            g.map->burningEliteX=integer(m,"burningEliteX",-1,6);
+            g.map->burningEliteY=integer(m,"burningEliteY",-1,14);
+            require((g.map->burningEliteX<0)==(g.map->burningEliteY<0),"partial burning elite coordinate");
+            for(int y=0;y<15;++y)for(int x=0;x<7;++x){g.map->nodes[y][x].x=x;g.map->nodes[y][x].y=y;}
+            std::set<std::pair<int,int>> seen;
+            const auto &nodes=array(m,"nodes",105);
+            require(nodes.size()==105,"complete 15 by 7 visible map required");
+            for(const auto &n:nodes) {
+                const int x=integer(n,"x",0,6),y=integer(n,"y",0,14);
+                require(seen.insert({x,y}).second,"duplicate map node");
+                auto &node=g.map->nodes[y][x]; node.room=room(n.at("room"));
+                std::set<int> children;
+                for(const auto &e:array(n,"edges",3)) {
+                    const auto cx=integerValue(e,0,6,"edge child x");
+                    require(children.insert(cx).second,"duplicate map edge");
+                    node.addEdge(cx);
+                }
+            }
+            // Reconstruct parent lists from the complete visible edge set.
+            for(int y=0;y<14;++y)for(int x=0;x<7;++x) {
+                auto &n=g.map->nodes[y][x];
+                for(int e=0;e<n.edgeCount;++e) {
+                    require(seen.count({n.edges[e],y+1}),"map edge target missing");
+                    auto &child=g.map->nodes[y+1][n.edges[e]];
+                    require(child.parentCount < static_cast<int>(child.parents.size()), "map parent capacity exceeded");
+                    child.addParent(x);
+                }
             }
         }
         require(boolean(p,"pathComplete"),"path history not reconstructed");
@@ -871,13 +905,15 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         // Vanilla can retain the previous boss-room sentinel on the next
         // act's unchosen map. Normalize only the complete public first-row
         // boundary; row 15 during an ordinary boss transition stays refused.
-        if (g.screenState==ScreenState::MAP_SCREEN && g.act>=2 && g.act<=3
-                && g.floorNum==17*(g.act-1) && g.curMapNodeX==-1
+        // Act 4 opens from the Act 3 VictoryRoom (Heart door) on floor 52,
+        // where native enterAct3VictoryRoom keeps curRoom at BOSS.
+        if (g.screenState==ScreenState::MAP_SCREEN && g.act>=2 && g.act<=4
+                && g.floorNum==(g.act==4?52:17*(g.act-1)) && g.curMapNodeX==-1
                 && (g.curMapNodeY==-1 || g.curMapNodeY==15)
                 && o.contains("mcpState") && o.at("mcpState").is_object()) {
             const auto &mcp=o.at("mcpState");
             if (mcp.value("screen_type",std::string())=="MAP"
-                    && mcp.value("room_type",std::string())=="TreasureRoomBoss"
+                    && mcp.value("room_type",std::string())==(g.act==4?"VictoryRoom":"TreasureRoomBoss")
                     && mcp.value("room_phase",std::string())=="COMPLETE"
                     && mcp.value("ready_for_command",false) && !mcp.value("can_cancel",true)
                     && !mcp.value("can_proceed",true) && mcp.value("floor",-1)==g.floorNum
@@ -905,7 +941,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                         firstRow=(g.map->getNode(x,0).edgeCount>0)==(columns.count(x)>0);
                     if (firstRow) {
                         g.curMapNodeY=-1;
-                        g.curRoom=Room::BOSS_TREASURE;
+                        g.curRoom=g.act==4?Room::BOSS:Room::BOSS_TREASURE;
                     }
                 }
             }

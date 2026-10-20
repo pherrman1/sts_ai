@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-20 for the Act 4 map import; 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -751,7 +751,8 @@ read-only screen and choice converters. The observation contains:
 
 - `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
   potion capacity and five exact slots, physical deck instances with bottle
-  binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
+  binding, relic data, visible boss, the complete visible 15-by-7 map and edges
+  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`),
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
