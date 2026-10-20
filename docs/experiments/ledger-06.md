@@ -21743,7 +21743,7 @@ Philipp's PC (`~/Documents/sts/artifacts/monster-rng-gaps-20261019/`): seed 1111
 longer emits; left as representation-only. No gameplay seeds were run; the unit tests use fixed seeds 111200151-153.
 **Knowledge impact:** `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
-## §566 — Live parity: the mod never exported Orange Pellets' played card types (2026-10-20)
+## §567 — Live parity: the mod never exported Orange Pellets' played card types (2026-10-20)
 
 **Question:** why does the live import always report Orange Pellets' played-types field as 0 (parity problem 32), and is
 the cause in the C++ importer or the Java mod?
