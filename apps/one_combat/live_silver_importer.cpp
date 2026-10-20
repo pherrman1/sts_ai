@@ -430,6 +430,17 @@ bool selectionToyHealFix() {
     throw std::runtime_error("STS_SELECTION_TOY_HEAL_FIX must be 0 or 1");
 }
 
+// STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE: unset/1 (default) = a source-card
+// selection whose pending tail holds a half-dead Darkling's queued
+// SetMoveAction (Headbutt killing a Darkling) imports it as a native
+// SetMonsterMove; 0 = legacy refusal as silver_selection_pending_actions.
+bool halfDeadSetMoveQueue() {
+    const char *value = std::getenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
+}
+
 // STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
 // stolen gold (Java stolenGold, native miscInfo) sets miscBits bit 0, the
 // native stolen-gold check that Java has no field for; without it Silver's
@@ -2032,6 +2043,22 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="MONSTER_SET_MOVE") {
+                // Darkling.damage sets Regrow at the half-death and queues the
+                // same SetMoveAction behind the card; native does the same.
+                int slot=-1,move=-1;
+                if(!sourceCard || !halfDeadSetMoveQueue() || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"move",move)
+                        || slot<0 || slot>=wire.monsterCount || move!=4)
+                    return unsupported("silver_selection_pending_actions");
+                const auto &monster=wire.monsters[slot];
+                if(monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::DARKLING) || !monster.halfDead
+                        || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::DARKLING_REGROW))
+                    return unsupported("silver_selection_pending_actions");
+                silver_bridge::PendingActionWire action;action.kind=K::MONSTER_SET_MOVE;
+                action.amount=static_cast<int>(sts::MonsterMoveId::DARKLING_REGROW);action.monster=slot;
+                wire.pendingActionQueue.push_back(action);
+                continue;
+            }
             if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR"
                     || kindName=="MONSTER_REDUCE_FLIGHT" || kindName=="MONSTER_THORNS" || kindName=="MONSTER_CURL_UP"
                     || kindName=="GUARDIAN_DEFENSIVE_SHIFT") {

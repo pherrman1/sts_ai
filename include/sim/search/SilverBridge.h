@@ -155,14 +155,16 @@ enum class PendingActionKind : std::uint8_t {
     HEAL_PLAYER = 15,
     // Monster reactions queued behind an interrupted source card (Malleable
     // self-block, Writhing Mass Reactive reroll, Guardian Sharp Hide thorns).
-    MONSTER_GAIN_BLOCK = 16, REACTIVE_ROLL_MOVE = 17, MONSTER_THORNS = 18
+    MONSTER_GAIN_BLOCK = 16, REACTIVE_ROLL_MOVE = 17, MONSTER_THORNS = 18,
+    // A half-dead Darkling's queued SetMoveAction (amount = native move id).
+    MONSTER_SET_MOVE = 19
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;
     int amount = 0;
     int status = 0;
     bool sourceMonster = false;
-    // Native monster index; nonzero only for MONSTER_GAIN_BLOCK.
+    // Native monster index; nonzero only for MONSTER_GAIN_BLOCK and MONSTER_SET_MOVE.
     int monster = 0;
 };
 

@@ -235,7 +235,8 @@ Sacred Bark and 20% with it, the reverse of the game.
   111200385 floor 21; offensive Guardian crossing Mode Shift, `VFXAction` and
   `ChangeStateAction` "Defensive Mode", seed 111200388 floor 16; louse Curl Up
   `ChangeStateAction` "CLOSED", `GainBlockAction` and `RemoveSpecificPowerAction`,
-  seed 111200389 floor 5). The producer now emits them and
+  seed 111200389 floor 5; Headbutt killing a Darkling to half-dead, its queued
+  Regrow `SetMoveAction`, seed 111200400 floor 35). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
 
 Overnight live play on 2026-10-19 (seeds 111194452-460) found that the live
