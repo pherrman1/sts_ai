@@ -21825,3 +21825,74 @@ of the current main defaults listed above. Act-4 conversion (49%) stays the gap 
 [README](evidence/a20_winrate_check_20261018/README.md), `report.json`, `verify.txt`, `tars.sha256`, `analyze.py`.
 Raw: `/mnt/project-files/a20-winrate-check/w01..w32.tar`.
 **Knowledge impact:** reference row in `evaluation/current-baselines.md`.
+
+## §569 — AZ loop generation 0: 1,664 paired A20 self-play seeds. OOC MCTS (4096 sims, student_sel prior, learned stop) beats student_sel alone by +2.4 pp Heart kills [+0.1, +4.7] and +4.9 pp Act 4 [+2.2, +7.7]; 247k policy-target rows and 41k real-combat CTM rows captured (2026-10-20)
+
+Authorization: Philipp 2026-10-19 21:57Z ("Do 4096, do the stopped learning, freeze later"), 22:01Z ("Oke do
+learned for now"), and 22:05Z ("start as many seeds such that 32 workers are done in 6 hours"). The
+pre-registration, unit script, analyzer and outputs are in `docs/experiments/evidence/az_gen0_20261019/`:
+`PREREG.md`, `run_unit.sh`, `analyze.py`, `result.json`, `verify.txt`, `tars.sha256`.
+
+- **Freeze:**
+  - RUN_COMMIT `76a31cd8` (main `0abc831a` plus the campaign dir); binary sha256 `decd91ea…`.
+  - student_sel sha256 `cf6bf7fb…`; worker brief sha256 `dec649bd…`.
+  - Re-smoke on the freeze commit with seeds 111194481–482: all four arm runs rc 0. The header provenance pins g7f_E
+    `c45dcc0a…` as rollout root table and Silver prior, plus `heart1WingBootsCounter=1`.
+  - Light independent pre-launch review: PASS.
+- **Search arm:** `heartoutcomegen 1 SEED OUT policy`.
+  - OOC MCTS at 4096 sims with student_sel as prior (`heart1full`, TARGET_PRIOR=1, LEAF_SELECTS=heart1).
+  - Leaf: rollout3 + X2-B public. Imagined Act-4 fights use the A20 CTM with the ADR-0048 survival model; other
+    CTM-refused fights use Silver 500.
+  - Stopping: learned OOC stop `ooc_learned_stop_trees.txt:0.99` set explicitly, `STS_OOC_MCTS_GAP_STOP=0`.
+  - `STS_OOC_MCTS_FULL_BUDGET_FRACTION=0.25`, refusal pruning on, `STS_HEART_OUTCOME_CTM_ROWS=1`.
+- **Search-off arm:** `bestbench` on the same seed, with student_sel alone deciding out of combat.
+- **What the contrast compares:** the full search stack against student_sel alone. The search arm is OOC MCTS plus
+  its rule chain (tree, relic and chest rules, keys, match_and_keep); in a reviewer sample the rules made about a
+  third of the decisions, and the V4 fallback was never used.
+- **Both arms:**
+  - Flat exact-10k Silver real combats. `runFullRunOOC` refuses the Silver learned stop when OOC MCTS is on
+    (`apps/one_combat/run_driver.cpp:429-432`).
+  - g7f_E rollout root table and root/tree prior (weight 400, tree prior from 8 visits).
+  - Flexible keys: `STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask`.
+  - `STS_OOC_HEART1_WING_BOOTS_COUNTER=1`, `STS_ACTIVE_POWER_FEATURES=1`, `STS_REWARDLESS_COMBAT_RNG_FIX=1`,
+    `STS_HAND_UPGRADE_ALL_FIX=1`.
+- **Run:**
+  - 1,664 seeds 111140712–111142375 as 32 workers × 52 units; one unit is one seed with both arms.
+  - All 32 tars verified with `verify_campaign.py` (OK 1–32). All 3,328 arm runs rc 0 and 1,664 of 1,664 seeds
+    valid; none dropped.
+  - Several containers restarted overnight and redid their in-flight units.
+- **Result** (`result.json`):
+
+  | arm | Heart kills | reached Act 4 | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|
+  | search (OOC MCTS) | 430 (25.8%) | 773 (46.5%) | 44.62 | 1,967, 7,089 |
+  | search-off (student_sel alone) | 390 (23.4%) | 691 (41.5%) | 40.69 | 570, 4,241 |
+
+  | paired contrast | Δ [95% CI] | discordant (search only / off only) | McNemar exact p |
+  |---|---|---|---|
+  | Heart kills | +2.4 pp [+0.1, +4.7] | 207 / 167 | 0.044 |
+  | reached Act 4 | +4.9 pp [+2.2, +7.7] | 315 / 233 | 0.0005 |
+
+- **Captured data:**
+  - 288,047 state rows and 246,836 decision rows. 152,306 searched roots, of which 111,544 are non-singleton.
+  - 28,072 full-budget roots, 25.2% of non-singleton roots (singletons are never sampled, by design). 0 aborted
+    searches.
+  - 41,211 real-combat CTM rows. About 128 MB of gzipped tars.
+- **Reading:**
+  - This is descriptive: the pre-registration has no gate. The search beats its own prior on the same seeds, with
+    both intervals above zero, so gen-0 policy targets carry information beyond student_sel.
+  - Search-arm Heart kills (25.8%) sit above §497's teacher (12.0%) and the 2026-10-18 winrate check (17.6%).
+    Those used other stacks: flexible keys and tonight's parity fixes are new here. **Inference:** this is not a
+    like-for-like baseline comparison.
+- **Cost:** a search run took 2.1x the 4-seed timing estimate (mean 1,967 s vs 15.8 min), and campaign wall time
+  was about 3x the estimate. Act-4 runs, slower worker containers and off-arm Heart runs (mean 9.5 min) dominate.
+- **Next:** train the gen-1 student_sel on these rows.
+  - Policy head on Gumbel completed-Q targets (ADR-0043).
+  - Value head via `tools/heart1/distill.py --extra-inputs` with the Wing Boots flag 1 recorded.
+  - Never use the capture `value` field as a target.
+  - It replaces student_sel only after a paired A20 A/B win at matched CPU.
+
+Seeds used: 111140712–111142375 (campaign). Timing seeds 111194477–480; smoke 111194481–482.
+Raw: `/mnt/project-files/az-gen0/w01..w32.tar`.
+
+**Knowledge impact:** none beyond this entry. Gen 0 is a data generation, and no default or interface changed.
