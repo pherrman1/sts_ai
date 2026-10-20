@@ -21846,6 +21846,9 @@ pre-registration, unit script, analyzer and outputs are in `docs/experiments/evi
   - Stopping: learned OOC stop `ooc_learned_stop_trees.txt:0.99` set explicitly, `STS_OOC_MCTS_GAP_STOP=0`.
   - `STS_OOC_MCTS_FULL_BUDGET_FRACTION=0.25`, refusal pruning on, `STS_HEART_OUTCOME_CTM_ROWS=1`.
 - **Search-off arm:** `bestbench` on the same seed, with student_sel alone deciding out of combat.
+- **What the contrast compares:** the full search stack against student_sel alone. The search arm is OOC MCTS plus
+  its rule chain (tree, relic and chest rules, keys, match_and_keep); in a reviewer sample the rules made about a
+  third of the decisions, and the V4 fallback was never used.
 - **Both arms:**
   - Flat exact-10k Silver real combats. `runFullRunOOC` refuses the Silver learned stop when OOC MCTS is on
     (`apps/one_combat/run_driver.cpp:429-432`).
@@ -21881,8 +21884,8 @@ pre-registration, unit script, analyzer and outputs are in `docs/experiments/evi
   - Search-arm Heart kills (25.8%) sit above §497's teacher (12.0%) and the 2026-10-18 winrate check (17.6%).
     Those used other stacks: flexible keys and tonight's parity fixes are new here. **Inference:** this is not a
     like-for-like baseline comparison.
-- **Cost:** about 3x the 4-seed timing estimate (search arm 15.8 min). Act-4 runs, slower worker containers and
-  off-arm Heart runs (mean 9.5 min) dominate.
+- **Cost:** a search run took 2.1x the 4-seed timing estimate (mean 1,967 s vs 15.8 min), and campaign wall time
+  was about 3x the estimate. Act-4 runs, slower worker containers and off-arm Heart runs (mean 9.5 min) dominate.
 - **Next:** train the gen-1 student_sel on these rows.
   - Policy head on Gumbel completed-Q targets (ADR-0043).
   - Value head via `tools/heart1/distill.py --extra-inputs` with the Wing Boots flag 1 recorded.
