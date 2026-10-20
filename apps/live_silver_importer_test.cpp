@@ -4214,7 +4214,9 @@ int main(int argc, char **argv) {
             if(plateRemoved && platedBefore!=1) throw std::runtime_error("Donu/Deca fixture needs Plated Armor 1");
             const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
             if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
-            if(lethal) target.curHp=2; // Flight halves Headbutt's 9 damage
+            // Flight halves Headbutt's 9 to 4 (lethal); Java FlightPower still queues its reduction because
+            // calculateDamageTakenAmount halves again (2 < 3), so 3 HP is a reachable lethal hit.
+            if(lethal) target.curHp=3;
             const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
             if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
             if(darkling) {
