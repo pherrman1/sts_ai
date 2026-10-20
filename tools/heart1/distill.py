@@ -13,7 +13,9 @@ AZ-loop rows (az_targets.py convert) may carry null entries in "logits" (tokens 
 out of the policy loss) and a value target "z" (1 = the run killed the Heart); rows may carry only "z".
 --value-weight W adds W * BCE(value head logit, z); --anchor-weight A adds A * KL(--init student || student) over
 all of the row's choice tokens (a frozen copy of --init). Validation then also reports value BCE/AUC per act.
---select last keeps the last epoch instead of the best validation epoch (keeps the validation split clean for a gate).
+--select last keeps the last epoch instead of the best validation epoch (keeps the validation split clean for a gate);
+--select fold holds out the files with seed % --val-mod == --select-mod (default --val-mod - 2) from training and keeps
+the epoch with the lowest training objective (policy KL + weighted value BCE + weighted anchor KL) on them.
 Validation = held-out seeds: files whose seed (from "-<seed>.capture" in the name) has seed % --val-mod ==
 --val-mod - 1. Loss: KL(teacher softmax || student softmax) over the row's choice tokens (temperature 1).
 Reports val KL and top-1 agreement with the teacher per screen and card-select type, and the agreement of
@@ -36,7 +38,8 @@ ap.add_argument("--select-repeat", type=int, default=1, help="repeat card-select
 ap.add_argument("--compact", action="store_true", help="keep training rows compressed in RAM (large captures)")
 ap.add_argument("--value-weight", type=float, default=0.0, help="weight of the value-head BCE on rows with z")
 ap.add_argument("--anchor-weight", type=float, default=0.0, help="weight of KL(frozen --init || student)")
-ap.add_argument("--select", choices=("best", "last"), default="best")
+ap.add_argument("--select", choices=("best", "last", "fold"), default="best")
+ap.add_argument("--select-mod", type=int, help="--select fold: seed %% --val-mod of the selection files")
 ap.add_argument("--extra-inputs", action="store_true",
                 help="student_inputs.ExtraInputsNN: zero-initialised relic counter, act and card misc inputs")
 a = ap.parse_args()
@@ -104,13 +107,17 @@ def unpack(r): return json.loads(zlib.decompress(r[1])) if isinstance(r, tuple) 
 
 files = sorted(a.data)
 val_files = [f for f in files if seed_of(f) % a.val_mod == a.val_mod - 1]
-train_files = [f for f in files if f not in val_files]
-train, val = load(train_files, compact=a.compact), load(val_files)
+select_mod = (a.val_mod - 2 if a.select_mod is None else a.select_mod) if a.select == "fold" else None
+if select_mod is not None and select_mod % a.val_mod == a.val_mod - 1: sys.exit("--select-mod is the validation fold")
+sel_files = [f for f in files if select_mod is not None and seed_of(f) % a.val_mod == select_mod]
+train_files = [f for f in files if f not in val_files and f not in sel_files]
+train, val, sel = load(train_files, compact=a.compact), load(val_files), load(sel_files)
 if a.max_train: random.shuffle(train); train = train[:a.max_train]
 if a.select_repeat > 1: train += [r for r in train if screen_of(r) == 4] * (a.select_repeat - 1)
 wing_boots_counter = single_wing_boots_counter(wing_boots_counters)
 print(f"train {len(train)} rows / {len(train_files)} files, val {len(val)} rows / {len(val_files)} files, "
-      f"wing_boots_counter {wing_boots_counter}", flush=True)
+      f"wing_boots_counter {wing_boots_counter}" + (f", select {len(sel)} rows / {len(sel_files)} files" if sel_files else ""),
+      flush=True)
 
 def positions(rec):
     pos, off = [], 0
@@ -156,6 +163,7 @@ if a.anchor_weight:
 nparam = sum(p.numel() for p in net.parameters()); print("student params", nparam, flush=True)
 opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
 train_dl, val_dl = loader(train, True), loader(val, False)
+sel_dl = loader(sel, False) if sel else None
 sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.epochs * len(train_dl), pct_start=0.05)
 
 def outputs_of(model, b):
@@ -199,7 +207,7 @@ def combine(kl, bce, anc, m, z):
     if ref is not None: loss = loss + a.anchor_weight * anc.mean()
     return loss
 
-def evaluate():
+def evaluate(val=val, val_dl=val_dl):
     net.eval(); kls, agr, hps, vp, ancs = [], [], [], [], []
     with torch.no_grad():
         for b, m, t, full, z in val_dl:
@@ -208,7 +216,7 @@ def evaluate():
             kls += kl.tolist(); agr += (lg.masked_fill(~m, -1e9).argmax(-1) == t.argmax(-1)).tolist()
             hps += m.any(-1).tolist(); vp += torch.sigmoid(v).tolist(); ancs += anc.tolist()
     net.train()
-    value = value_metrics(vp)
+    value = value_metrics(val, vp)
     if ref is not None: value["anchor_kl"] = round(sum(ancs) / len(ancs), 4)
     pol = [(r, k, g) for r, k, g, h in zip(val, kls, agr, hps) if h]
     val_p = [r for r, _, _ in pol]; kls = [k for _, k, _ in pol]; agr = [g for _, _, g in pol]
@@ -228,7 +236,7 @@ def evaluate():
     return tot, {k: {"n": s[0], "kl": rnd(s[1], s[0]), "top1": rnd(s[2], s[0]), "v4_top1": rnd(s[4], s[3]),
                      "serve_top1": rnd(s[6], s[5])} for k, s in sorted(per.items())}, value
 
-def value_metrics(vp):
+def value_metrics(val, vp):
     """Value-head BCE/AUC on validation rows with z, overall and per act."""
     groups = collections.defaultdict(lambda: ([], []))
     for r, p in zip(val, vp):
@@ -264,9 +272,16 @@ for ep in range(a.epochs):
     print(f"ep {ep+1} train loss {tot/n:.4f} val KL {kl} top1 {ag} value {json.dumps(value.get('all'))} "
           f"{time.time()-t0:.0f}s", flush=True)
     score = kl if kl is not None else value["all"]["bce"]
+    if sel_dl is not None:
+        (skl, _), _, sval = evaluate(sel, sel_dl)
+        score = (skl or 0.0) + (a.value_weight * sval["all"]["bce"] if a.value_weight and "all" in sval else 0.0) \
+            + a.anchor_weight * sval.get("anchor_kl", 0.0)
+        hist[-1]["select"] = {"kl": skl, "value": sval, "objective": score}
+        print(f"   select fold objective {score:.4f} KL {skl} value {json.dumps(sval.get('all'))}", flush=True)
     if a.select == "last" or best is None or score < best[0]:
-        best = (score, ag, per, kl, value); torch.save(net.state_dict(), os.path.join(a.out, "student.pt"))
+        best = (score, ag, per, kl, value, ep + 1); torch.save(net.state_dict(), os.path.join(a.out, "student.pt"))
 print("best per group:", json.dumps(best[2]), flush=True)
 json.dump({"args": vars(a), "wing_boots_counter": wing_boots_counter, "params": nparam, "train_rows": len(train), "val_rows": len(val),
+           "select_rows": len(sel), "selected_epoch": best[5],
            "best_val_kl": best[3], "best_val_top1": best[1], "per_screen": best[2], "value": best[4], "history": hist},
           open(os.path.join(a.out, "summary.json"), "w"), indent=1)
