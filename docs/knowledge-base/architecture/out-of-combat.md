@@ -337,14 +337,16 @@ predicted vs 0.68 observed, CTM 0.17) but is not shown better on Shield and
 Spear; Philipp chose to apply it to both. Combats routed to Silver by
 `STS_OOC_MCTS_ACT4_SILVER_SIMS` never reach it. In the A20 student_sel stack at 512 simulations it did not win more
 Hearts (§534: 75 vs 82 of 512 paired seeds, NOT_SHOWN, McNemar p = 0.09); Philipp made it the A20 default anyway. Startup also requires the effective Silver reuse cap to be
-32,768; the experimental 131,072 override is rejected. Real combat requires
+32,768; the experimental 131,072 override is rejected. Below ascension 20 (or with
+`STS_OOC_MCTS_REAL_LEARNED_STOP=0`), real combat requires
 ordinary exact-10k Silver, allocated reuse, and adaptive-off, preserving the
 frozen teacher cap contract. That guard dates from the first live OOC MCTS
 (exact-10k label and CTM teachers); the CTMs used today (`pathb-r2`, `pathb-a20`
 Stage 1 teacher `silver-ordinary-fair-learnedstop-ctm-pathb-90f6df64`, and the
-§527 Act-4 labels) were fit on learned-stop Silver outcomes. Research-only
-`STS_OOC_MCTS_REAL_LEARNED_STOP=1` lets real combats stop learned (exact root
-budgets kept, so imagined fights are unchanged); it is not measured. `STS_OOC_MCTS` itself remains OFF by default and
+§527 Act-4 labels) were fit on learned-stop Silver outcomes. At ascension 20 real
+combats stop learned by default (ADR-0054, `STS_OOC_MCTS_REAL_LEARNED_STOP`; exact
+root budgets kept, so imagined fights are unchanged); this default is not measured
+under OOC MCTS. `STS_OOC_MCTS` itself remains OFF by default and
 does not load a combat artifact or run MCTS. Both arms retain the same normal
 real combat branch and the same fallback OOC policy chain.
 
