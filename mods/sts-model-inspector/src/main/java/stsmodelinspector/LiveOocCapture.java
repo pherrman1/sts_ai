@@ -418,7 +418,9 @@ final class LiveOocCapture {
                 nodes.add(object("x", n.x, "y", n.y, "room", roomSymbol(n.room == null
                         ? null : n.room.getMapSymbol()), "edges", edges));
             }
-        if (AbstractDungeon.actNum == 4 || nodes.size() != 105)
+        // TheEnding.generateMap has five 7-node rows; the native importer
+        // checks them against its fixed Act 4 map (STS_IMPORTER_ACT4_MAP_FIX).
+        if (nodes.size() != (AbstractDungeon.actNum == 4 ? 35 : 105))
             unsupported(p, "VISIBLE_MAP_UNREPRESENTABLE:ACT_" + AbstractDungeon.actNum);
         p.put("map", object("x", AbstractDungeon.currMapNode.x, "y", AbstractDungeon.currMapNode.y,
                 "burningEliteX", burningX, "burningEliteY", burningY, "nodes", nodes));
