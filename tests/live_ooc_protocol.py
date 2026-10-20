@@ -193,6 +193,28 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
                                 "MODEL_UNAVAILABLE", (defect, response))
 
+    def test_du_vu_doll_counter_must_match_master_deck_curses(self):
+        # Live-canary problem 46: Java DuVuDoll's counter is the master deck's
+        # CURSE-type card count, Ascender's Bane included.
+        observation = json.loads((Path(__file__).parent / "fixtures/live_act4_entry.json").read_text())
+        def variant(counter, regret=False):
+            row = copy.deepcopy(observation)
+            state = row["ooc"]["publicState"]
+            state["relics"].append({"data": counter, "id": "Du-Vu Doll", "liveCounter": counter, "usedUp": False})
+            if regret:
+                state["deck"].append({"bottleBinding": -1, "id": "Regret", "misc": 0, "upgraded": False,
+                                      "uuid": "46464646-0000-0000-0000-000000000046"})
+            return row
+        for row in (variant(1), variant(2, regret=True)):
+            response, = self.run_rows([row], model=False, policy="mcts")
+            self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE", response)
+        for row in (variant(0), variant(2), variant(1, regret=True)):
+            response, = self.run_rows([row], model=False, policy="mcts")
+            self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"), "MODEL_UNAVAILABLE", response)
+        response, = self.run_rows([variant(0)], model=False, policy="mcts",
+                                  extra_env={"STS_DU_VU_DOLL_COUNT_FIX": "0"})
+        self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE", response)
+
     def test_selector_preview_scores_confirm_or_return_to_original_grid(self):
         observation = next(row for name,row in self.fixtures.items()
                            if name.startswith("selector_preview_") and row["ooc"]["details"]["type"] == "upgrade")

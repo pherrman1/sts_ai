@@ -3666,6 +3666,40 @@ int testIssueFixes() {
             return fail("Smoke Bomb skipped normal combat-exit bookkeeping");
         }
     }
+    // Problem 46: Java DuVuDoll's counter is the master deck's CURSE-type card
+    // count (Ascender's Bane included), set by onEquip and onMasterDeckChange;
+    // atBattleStart grants that much Strength. STS_DU_VU_DOLL_COUNT_FIX=0
+    // keeps the legacy data 0.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DU_VU_DOLL_COUNT_FIX");
+        else setenv("STS_DU_VU_DOLL_COUNT_FIX", "0", 1);
+        GameContext gc(CharacterClass::IRONCLAD, 464646464u, 20);
+        gc.obtainRelic(RelicId::DU_VU_DOLL);
+        const int equipped = gc.relics.getRelicValueRef(RelicId::DU_VU_DOLL);
+        gc.deck.obtain(gc, Card(CardId::REGRET));
+        gc.deck.obtain(gc, Card(CardId::INFLAME));
+        const int withRegret = gc.relics.getRelicValueRef(RelicId::DU_VU_DOLL);
+        int regretIdx = -1;
+        for (int i = 0; i < gc.deck.size(); ++i)
+            if (gc.deck.cards[i].getId() == CardId::REGRET) regretIdx = i;
+        gc.deck.obtain(gc, Card(CardId::DOUBT));
+        gc.deck.remove(gc, regretIdx);
+        const int afterRemove = gc.relics.getRelicValueRef(RelicId::DU_VU_DOLL);
+        gc.curRoom = Room::MONSTER;
+        gc.screenState = ScreenState::BATTLE;
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        const int strength = bc.player.getStatus<PS::STRENGTH>();
+        unsetenv("STS_DU_VU_DOLL_COUNT_FIX");
+        const int expected[] = {1, 2, 2, 2};
+        const int actual[] = {equipped, withRegret, afterRemove, strength};
+        for (int i = 0; i < 4; ++i) {
+            if (actual[i] != (fix ? expected[i] : 0)) {
+                std::cerr << "fix=" << fix << " step " << i << " got " << actual[i] << '\n';
+                return fail("Du-Vu Doll counter does not track the master-deck curse count");
+            }
+        }
+    }
     // Issue #641: Java makes the reward RNG rolls even when no reward is
     // granted. A Smoke Bomb escape rolls gold (treasureRng), an elite relic
     // (relicRng, popped from its pool; Black Star adds a second) and a potion
