@@ -1,0 +1,29 @@
+{
+ "run": "gen 1b per GATE-1b.md at 85430fb3, Philipp's RTX 3060 Ti, 11m32s, 2026-10-20",
+ "init_reexport_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+ "student_pt_sha256": "56769855964c61aaf6f68cea147b65be72464dd218482efeeec622593bfe6b67",
+ "gen1b_bin_sha256": "e6aa044cea8aea6287060c1d71f3c2b327676aa4876448e0cadba2177087ddb3",
+ "rows": {"train": 217316, "train_files": 1248, "val": 35432, "val_files": 208, "select": 35299, "select_files": 208},
+ "init": {"val_kl": 0.086767, "val_top1": 0.946275},
+ "epochs": [
+  {"epoch": 1, "train_loss": 0.6911, "val_kl": 0.060593, "val_top1": 0.93025, "value_bce": 0.5547, "auc": 0.740, "select_objective": 0.6545, "select_kl": 0.066454, "select_bce": 0.5732},
+  {"epoch": 2, "train_loss": 0.5589, "val_kl": 0.061009, "val_top1": 0.93648, "value_bce": 0.5208, "auc": 0.783, "select_objective": 0.6804, "select_kl": 0.067448, "select_bce": 0.5977},
+  {"epoch": 3, "train_loss": 0.4577, "val_kl": 0.059525, "val_top1": 0.93084, "value_bce": 0.5484, "auc": 0.774, "select_objective": 0.7311, "select_kl": 0.060972, "select_bce": 0.6549},
+  {"epoch": 4, "train_loss": 0.3813, "val_kl": 0.057398, "val_top1": 0.93796, "value_bce": 0.6264, "auc": 0.758, "select_objective": 0.8359, "select_kl": 0.062259, "select_bce": 0.7583},
+  {"epoch": 5, "train_loss": 0.3270, "val_kl": 0.057395, "val_top1": 0.93589, "value_bce": 0.6556, "auc": 0.758, "select_objective": 0.8936, "select_kl": 0.062644, "select_bce": 0.8160},
+  {"epoch": 6, "train_loss": 0.3049, "val_kl": 0.057494, "val_top1": 0.93767, "value_bce": 0.6702, "auc": 0.754, "select_objective": 0.9127, "select_kl": 0.062125, "select_bce": 0.8355}
+ ],
+ "selected_epoch": 1,
+ "selected_value": {
+  "all": {"bce": 0.5547, "const_bce": 0.6389, "auc": 0.740, "mean_p": 0.328, "mean_z": 0.337},
+  "act1": {"bce": 0.5671, "const_bce": 0.5781, "auc": 0.596},
+  "act2": {"bce": 0.5425, "const_bce": 0.6262, "auc": 0.757},
+  "act3": {"bce": 0.5499, "const_bce": 0.6839, "auc": 0.805},
+  "act4": {"bce": 0.5619, "const_bce": 0.6588, "auc": 0.795},
+  "anchor_kl": 0.0147
+ },
+ "gate": {"P": "PASS (0.0606 < 0.0868)", "V": "PASS (0.5547 < 0.6389)", "verdict": "PASS",
+          "caveat": "second attempt on the same validation fold, designed after gen 1's curve; selection stopped at epoch 1, val top-1 0.930 vs student_sel 0.946"},
+ "native_parity": {"records": 400, "logits": 1652, "records_sha256": "f8ff5778fcf9de591026767593e76ca48c58d00a2d0490b831017594cd85c13b",
+                   "max_abs_logit_diff": 7.63e-6, "max_abs_value_diff": 1.07e-6}
+}
