@@ -22079,6 +22079,9 @@ ally gained it. The game shows Deca 1 -> 20 (16 plus Plated Armor 4 → 7 at end
 powers, as Java's per-monster `GainBlockAction`/`ApplyPowerAction` skip a dying target.
 **Interpretation:** `STS_DEAD_ALLY_BLOCK_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both moves.
 Play-changing for simulator play (dead-monster block is in Silver's node identity), unmeasured.
-**Open question:** Spire Shield's Fortify is covered by the same native shape, not by a live observation.
+Javap of the pinned JAR (`issue56-javap.md` on the share) confirms both call sites: `Deca.takeTurn` case 2 and
+`SpireShield.takeTurn` case 2 loop over every monster with no alive check and queue `GainBlockAction` (Deca also
+`ApplyPowerAction` Plated Armor at A19+); only `GainBlockAction.update` skips a dying or dead target.
+**Open question:** Spire Shield's Fortify is confirmed by javap, not by a live observation.
 Seeds: none new (live seed 111200445 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`.
