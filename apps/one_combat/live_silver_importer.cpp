@@ -385,6 +385,17 @@ bool escapingMonsterFix() {
     throw std::runtime_error("STS_IMPORTER_ESCAPING_MONSTER_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_BACK_ATTACK_FIX: unset/1 (default) = Spire Shield/Spear's
+// BackAttack marker (Java AbstractMonster.applyBackAttack: the monster behind
+// the Surrounded player) sets native lastTargetedMonster to the monster the
+// player faces; 0 = legacy, BackAttack is silver_unmapped_monster_power.
+bool backAttackFix() {
+    const char *value = std::getenv("STS_IMPORTER_BACK_ATTACK_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_BACK_ATTACK_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_CENTENNIAL_USED_FIX: unset/1 (default) = Centennial Puzzle
 // needs the producer's usedThisCombat and gets no relic bit once it fired, as
 // native clears the bit on its first HP loss; 0 = legacy, the bit stays set and
@@ -1664,6 +1675,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (!monsters.is_array() || monsters.empty() || monsters.size() > wire.monsters.size()) return unsupported("silver_unknown_monster");
     wire.monsterCount = 0; wire.monstersAlive = 0;
     std::array<bool, 5> seenMonsterSlots {};
+    int backAttackSlot = -1;
     for (std::size_t i = 0; i < monsters.size(); ++i) {
         const auto &item = monsters[i]; if (!item.is_object()) return unsupported("silver_monster_state");
         const auto idText = item.value("id", std::string()); const auto id = live_silver::monsterId(idText);
@@ -1768,6 +1780,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                         return unsupported("silver_unmapped_monster_power");
                     continue;
                 }
+                if (powerId == "BackAttack" && backAttackFix()) {
+                    // A marker without hooks; native derives it from facing.
+                    if ((*id != sts::MonsterId::SPIRE_SHIELD && *id != sts::MonsterId::SPIRE_SPEAR)
+                        || power.value("amount", 0) != -1 || backAttackSlot >= 0)
+                        return unsupported("silver_unmapped_monster_power");
+                    backAttackSlot = slot;
+                    continue;
+                }
                 if (powerId == "Explosive") {
                     // Dome validates this public countdown against captured executions below.
                     if(runicDome && *id==sts::MonsterId::EXPLODER) continue;
@@ -1805,6 +1825,26 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         if (m.curHp > 0 && !m.isEscapingB && !m.halfDead && !item.value("dead", false)) ++wire.monstersAlive;
         if ((*id == sts::MonsterId::LOOTER || *id == sts::MonsterId::MUGGER) && m.miscInfo > 0 && thiefGoldFix())
             wire.miscBits |= 1U;
+    }
+    if (backAttackFix()) {
+        // Java applyBackAttack: with Surrounded, the monster behind the player
+        // deals 1.5x. Native's equivalent is "not lastTargetedMonster", so
+        // the player faces the alive Spire monster without the marker. The
+        // live driver's target tracker is not Java's flipHorizontal.
+        const bool surrounded = (p.statusBits0 >> static_cast<int>(PlayerStatus::SURROUNDED)) & 1ULL;
+        const auto alive = [&](int slot) {
+            const auto &m = wire.monsters[slot];
+            return m.curHp > 0 && !m.isEscapingB && !m.halfDead;
+        };
+        const bool spirePair = wire.monsterCount == 2
+            && wire.monsters[0].id == static_cast<std::int16_t>(sts::MonsterId::SPIRE_SHIELD)
+            && wire.monsters[1].id == static_cast<std::int16_t>(sts::MonsterId::SPIRE_SPEAR)
+            && alive(0) && alive(1);
+        if (backAttackSlot >= 0 || (surrounded && spirePair)) {
+            if (!surrounded || !spirePair || backAttackSlot < 0)
+                return unsupported("silver_back_attack_facing");
+            p.lastTargetedMonster = static_cast<std::int8_t>(1 - backAttackSlot);
+        }
     }
     if (combat.contains("monsterCount")) {
         if (!combat.at("monsterCount").is_number_integer())

@@ -178,7 +178,9 @@ Wing Boots keeps its historical native relic data value of zero while its
   encode remaining charges. Active
 Lizard Tail, Matryoshka, and N'loth's Hungry Face are explicit
 `RELIC_NATIVE_STATE_UNREPRESENTABLE` boundaries because native fresh-run
-initialization differs from vanilla. Other unqualified positive counters
+initialization differs from vanilla. Du-Vu Doll's counter (the master deck's
+curse count) is copied exactly; the native importer requires it to equal the
+imported deck's CURSE-type card count. Other unqualified positive counters
 produce `RELIC_NATIVE_COUNTER_UNQUALIFIED`, preserving their actual values.
 Act 4's map shape is explicitly unsupported by the current detached map
 contract. The inspector does not invent padding for missing visible nodes.
