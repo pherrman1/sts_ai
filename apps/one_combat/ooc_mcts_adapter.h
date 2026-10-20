@@ -376,7 +376,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr,
-    nlohmann::json *rootActions = nullptr, bool fullBudget = false);
+    nlohmann::json *rootActions = nullptr, bool fullBudget = false, bool explore = false);
 // Research (issue #605 Heart leaf targets): `repeats` leaf evaluations of the
 // snapshot root under the live configuration, each from a fresh stream seeded
 // by (salt, r). `atEnd` receives every rollout endpoint that the leaf model
