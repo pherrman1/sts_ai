@@ -121,6 +121,21 @@ public final class CombatBoundaryTest {
             catch(ClassNotFoundException error){throw new AssertionError(error);}
         }
         try {
+            // Problem 32: the played-types state lives in the relic's static flags.
+            Class<?> pellets=Class.forName("com.megacrit.cardcrawl.relics.OrangePellets",false,CombatBoundaryTest.class.getClassLoader());
+            for(String flag:new String[]{"ATTACK","SKILL","POWER"}) {
+                java.lang.reflect.Field field=pellets.getDeclaredField(flag);
+                if(field.getType()!=boolean.class || !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+                    throw new AssertionError("OrangePellets "+flag+" flag contract changed");
+            }
+        } catch(ReflectiveOperationException error){throw new AssertionError(error);}
+        if(STSModelInspector.orangePelletsNativeBits(true,false,false)!=1
+                || STSModelInspector.orangePelletsNativeBits(false,true,false)!=2
+                || STSModelInspector.orangePelletsNativeBits(true,false,true)!=5
+                || STSModelInspector.orangePelletsNativeBits(false,false,false)!=0
+                || STSModelInspector.orangePelletsNativeBits(true,null,false)!=null)
+            throw new AssertionError("Orange Pellets native bits changed");
+        try {
             Class<?> cleanup=Class.forName("com.megacrit.cardcrawl.actions.utility.UseCardAction",false,CombatBoundaryTest.class.getClassLoader());
             Class<?> cleanse=Class.forName("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction",false,CombatBoundaryTest.class.getClassLoader());
             if(cleanse.getDeclaredField("c").getType()!=com.megacrit.cardcrawl.core.AbstractCreature.class)

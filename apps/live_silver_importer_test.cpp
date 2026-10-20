@@ -2840,6 +2840,28 @@ int main(int argc, char **argv) {
         if (!convertedStatesEqualForSearch(penNibRelicExpected, penNibRelicImported.wire))
             throw std::runtime_error("Pen Nib relic parity failed");
 
+        // Problem 32 (live seed 111200414): the mod now exports Orange Pellets'
+        // played types; STS_IMPORTER_ORANGE_PELLETS_FIX=0 restores the old 0.
+        for (const char *flag : {"1", "0"}) {
+            auto pellets = genericObservation(fixtures[0], "orange-pellets-parity");
+            pellets["silverRoot"]["combat"]["relics"].push_back(
+                json{{"id", "OrangePellets"}, {"counter", -1}, {"usedUp", false}});
+            pellets["silverRoot"]["combat"]["orangePelletsCardTypesPlayed"] = 5;
+            setenv("STS_IMPORTER_ORANGE_PELLETS_FIX", flag, 1);
+            const auto pelletsImported = one_combat::advisor::importSilverRoot(pellets);
+            unsetenv("STS_IMPORTER_ORANGE_PELLETS_FIX");
+            if (!pelletsImported.ok)
+                throw std::runtime_error("Orange Pellets import failed: " + pelletsImported.reason);
+            auto pelletsExpected = fixtures[0].wire;
+            normalizeFirstObservationIdentity(pelletsExpected);
+            pelletsExpected.player.relicBits0 |= 1ULL << static_cast<int>(RelicId::ORANGE_PELLETS);
+            pelletsExpected.player.orangePelletsCardTypesPlayed = std::string(flag) == "1" ? 5 : 0;
+            pelletsExpected.isolatedSearchSeed = pelletsImported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(pelletsExpected, pelletsImported.wire))
+                throw std::runtime_error(std::string("Orange Pellets parity failed, flag=") + flag
+                    + " imported=" + std::to_string(pelletsImported.wire.player.orangePelletsCardTypesPlayed));
+        }
+
         // Relics with enum index >= 128 (Thread and Needle, Maw Bank) have no
         // combat bit; the legacy importer aliased them onto index - 64.
         auto highRelic = genericObservation(fixtures[0], "high-relic-parity");
