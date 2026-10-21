@@ -315,7 +315,7 @@ final class RunicDomeTracker {
             case "SlimeBoss": return move>=1 && move<=4;
             case "BronzeAutomaton": return move>=1 && move<=5;
             case "BronzeOrb": return move>=1 && move<=3;
-            case "GremlinLeader": return move>=1 && move<=3;
+            case "GremlinLeader": return move>=2 && move<=4; // RALLY 2, ENCOURAGE 3, STAB 4
             case "Reptomancer": return move>=1 && move<=3;
             case "Dagger": return move==(completed==0?1:2);
             case "TheCollector": return move>=1 && move<=5;

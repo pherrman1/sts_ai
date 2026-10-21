@@ -22001,6 +22001,42 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §592 — Live Runic Dome: a Slime Boss split child's birth roll with aliveCount 0 stopped the run (2026-10-21)
+
+**Question:** why did live seed 111200458 (release 9ec8a51d, Act 3 floor 38, Slime Boss event, Runic Dome) stop at s546
+with `silver_runic_dome_history_schema` (problem 63 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (row for slot 0, SpikeSlime_L, occupantGeneration 2, split from slot 0 gen 1: aliveCount 0,
+firstAlive false, firstHp 0, firstMaxHp 150); `live_silver_importer.cpp` Runic Dome row validation;
+`live_silver_importer` test (no gameplay seeds).
+**Result:** the values are real Java: the child rolls in `init()` before `SpawnMonsterAction` adds it, so the only listed
+monster is the dead boss. The importer required `aliveCount >= 1` on every row. The second child (AcidSlime_L) sees the
+first and has aliveCount 1. No split or summoned monster's move rule reads aliveCount/monstersAlive (only Centurion,
+Gremlin Leader, Reptomancer and The Collector do, and they are never spawned), so native rolls are unaffected.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX` (default on, `=0` restores) accepts aliveCount 0 only for
+the birth roll of a split/summon row (`rollGlobalTurn == birthGlobalTurn`). Unblocks live Slime Boss fights with Runic
+Dome; no play change otherwise.
+Seeds: none new (live seed 111200458 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
+## §591 — Live Runic Dome: the producer refused every Gremlin Leader Stab (2026-10-21)
+
+**Question:** why did live seed 111200463 (release 9ec8a51d, Act 2 floor 24, GREMLIN_LEADER elite, Runic Dome) stop at
+s391 with `silver_runic_dome_incomplete_history` after the AI killed GremlinFat and GremlinWizard on turn 1 (problem 67
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (slot-3 GremlinLeader row `{complete:false, reason:"execution_lifecycle"}`);
+`RunicDomeTracker.execute`/`legalExecuted`; the live move mapping `live_silver_mapping.cpp` (GremlinLeader RALLY 2,
+ENCOURAGE 3, STAB 4, as in `MonsterSpecific.cpp`); a scratch harness compiling `RunicDomeTracker.java` alone with the
+new `RunicDomeTrackerTest` case.
+**Result:** `legalExecuted` allowed GremlinLeader moves 1-3, so the first executed STAB (4) failed
+`execution_lifecycle`. With the old tracker the new test case fails at move 4 with exactly that reason; with the fix
+2, 3 and 4 complete and 1 is refused. The other bound-occupant families (Automaton, Orb, Reptomancer, Dagger, Collector,
+Torch Head) match the live mapping.
+**Interpretation:** producer bug, fixed in the mod (`move>=2 && move<=4`); no flag, since the old behaviour only refused
+the history. Live Gremlin Leader fights under Runic Dome no longer stop on a Stab. No engine or simulation change.
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 091b8a52 (EXIT=0).
+Seeds: none new (live seed 111200463 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
 ## §584 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d) show Anger cost diffs in the discard and draw piles at
@@ -22136,6 +22172,19 @@ checks `isDying`). Play-changing for simulator play with Havoc, Mayhem and Disti
 **Open question:** a half-dead (Darkling, Awakened One) or escaping target passes Java `canUse` and the card is used
 normally; the engine keeps its legacy behavior there.
 Seeds: none new (live seeds 111200435 and 111200436 as reported; unit test only).
+## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
+
+**Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with
+Metallicize 4 in the game but none natively (problem 58 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** read-only `javap` of the pinned JAR on Philipp's PC (`issue58-javap.md`: `Lagavulin` fields, `damage`,
+`changeState`, `takeTurn`, `usePreBattleAction`); `lagavulin_wake_metallicize` unit test (no gameplay seeds).
+**Result:** a Strike woke the sleeping Lagavulin at Metallicize 12. `Lagavulin.damage` queues
+`ChangeStateAction("OPEN")`, whose `changeState` queues `ReducePowerAction(Metallicize, 8)`; the natural wake runs the
+same `changeState`. The engine subtracted 8 on the natural wake but removed Metallicize on the damage wake.
+**Interpretation:** `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (default on, `=0` restores) subtracts 8 on the damage wake
+(removing the power when 8 or fewer remain). Play-changing for simulator play against a Lagavulin above 8
+Metallicize, unmeasured.
+Seeds: none new (live seed 111200447 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §590 — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
 
