@@ -22024,6 +22024,8 @@ seeds 111148000-111148063 with the flag 0 vs 1: all trace digests identical, 17 
 exact state match, which includes `monsterCount`, so without the fix the first decision after a spike-first split
 misses the reuse and searches from scratch.
 Seeds: 111148000-111148063 (review harness, not committed); live seed 111200456 as reported.
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
 ## §597 — Live combat parity: Curiosity never gave the Awakened One Strength natively (2026-10-21)
 
 **Question:** why was the Awakened One's Strength game N+2 vs native N after every Power play (live seed 111200436,
