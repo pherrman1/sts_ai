@@ -22016,7 +22016,7 @@ new `RunicDomeTrackerTest` case.
 Torch Head) match the live mapping.
 **Interpretation:** producer bug, fixed in the mod (`move>=2 && move<=4`); no flag, since the old behaviour only refused
 the history. Live Gremlin Leader fights under Runic Dome no longer stop on a Stab. No engine or simulation change.
-**Open question:** the full `test.sh` needs the game jars and has not run (PC, via the canary).
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 091b8a52 (EXIT=0).
 Seeds: none new (live seed 111200463 as reported).
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
