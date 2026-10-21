@@ -22618,3 +22618,48 @@ two-card hand still draws once; Fiend Fire is unchanged. Play-changing: later `c
 shift, so sim trajectories after such a True Grit now follow the game.
 Seeds: none new (live seed 111200476 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
+
+## §606 — Silver prior playouts in real boss fights only, for CPU (ADR-0056, 2026-10-21)
+
+**Question:** Should real elite fights keep ADR-0050's prior-argmax playouts? They are about 12% of A20 run CPU.
+**Setup:** AZ-loop profile `/mnt/project-files/az-speed-profile/REPORT.md` (seeds 111145000-003). Check seed 111145006,
+arm A of `az_gen1b_value_leaf_ab_20261020`.
+**Result:** With prior playouts, elite decisions cost about 1.12 s (about 0.15 s greedy). §541's elite subset was
++0.11 (priorpl2500) and +2.89 (priorpl10000) score. On seed 111145006, `STS_SILVER_PRIOR_PLAYOUT_ELITE=1` plays
+the same decisions as main; the default diverges at floor 6.
+**Interpretation:** Philipp decided boss rooms only (2026-10-21, no gate). The expected saving is about 10% of run
+CPU, or about 6% on top of the real-combat learned stop. `STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores ADR-0050. The
+leaf spec records `prior_playout_rooms` as `boss`.
+**Open question:** The strength effect of greedy elite playouts at run level is not measured.
+Seeds: 111145006 (from this thread's block 111145000-145999).
+**Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
+`decisions/0056-silver-prior-playout-boss-only.md`.
+
+## §607 — CRN paired continuations to the end of the act as Silver-leaf difference labels (A20, 64 sources, 4 workers): STOP, noise dominates (2026-10-21)
+
+**Question (Philipp, 2026-10-21, thread "Silver leaf from OOC value"):** score Silver leaves with an OOC-level label,
+possibly through a net trained on differences of outcomes within one fight. Offline, gen 1b's value head failed as a
+difference teacher. On 2,916 post-combat states: per-type potion prices r = 0.02 with §510, Fairy 13 vs 44 HP,
+max HP priced negative, 1–3 HP sign wrong in 11–24% of states (`/mnt/project-files/silver-leaf-eval/ooc-label-leaf/
+DESIGN.md`). The cleaner label is common-random-number (CRN) paired continuations. 12:45Z "write a small pre
+registration for a cost estimate"; 13:44Z "Let's do 4 workers".
+**Design:** [PREREG](evidence/crn_act_price_pilot_20261021/PREREG.md), light pre-launch review PASS (reviewer C).
+New research horizon `potionpriceprobe … FIGHTS_AHEAD=act`: each copy plays until the current act's boss fight ends,
+then the A20 floor model (`altFloor`) values it. Copies: base, HP −12, gold −50, max HP −5, each held potion removed.
+student_sel OOC argmax, OOC MCTS off, keys off, production Silver (learned stop, g7f_E, ADR-0050 prior playouts pinned
+by `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=1`). Seeds 111146000–111146063, RUN_COMMIT `cc78c5e5` (code `56950107`,
+binary `9829d475…`). Pre-registered rule: GO only if the HP slope CI excludes 0 and a ±3 HP-eq per-act potion price
+projects to ≤ 800 core-h.
+**Result: STOP.** 64/64 units rc 0, 4 tars verified, 668 states. HP slope 0.054 floors/HP [−0.031, +0.134] (§537,
+3 fights: 0.066 [0.046, 0.086]). Paired-Δ SD for −12 HP 7.3 floors vs 4.8 at 3 fights, mean Δ −0.65 vs −0.79. Gold −50
+and max HP −5 copies end ahead of base on average. Non-Fairy potion 9.2 HP-eq [−6.1, +41.0]. Projected campaign
+≈ 14,600 core-h. Cost 9.5 s CPU per continuation.
+Deviations: copies are valued right after the act's boss, not at the next battle; §537 used flat exact-10k Silver
+and has 4x the states, so the comparison rests on per-pair SD and signal-to-noise (0.09 vs 0.16 per pair).
+**Interpretation:** past the next few fights the paired copies diverge, and noise grows faster than the signal.
+**Inference:** CRN difference labels are affordable only at short horizons, whose prices did not transfer to whole
+runs (§537 → §542). So neither gen 1b nor CRN continuations give a usable difference label for a learned Silver leaf
+today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
+[Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
+Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
+**Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
