@@ -98,6 +98,14 @@ target_include_directories(run_goal_test PRIVATE include json/include)
 add_test(NAME run_goal COMMAND $<TARGET_FILE:run_goal_test>)
 set_tests_properties(run_goal PROPERTIES LABELS "core;smoke")
 
+# predictPolicyMlp stays bit-identical to the plain reference loops (Silver
+# prior playouts take its argmax).
+add_executable(policy_mlp_exact_test tests/policy_mlp_exact_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(policy_mlp_exact_test PRIVATE include json/include)
+add_test(NAME policy_mlp_exact COMMAND $<TARGET_FILE:policy_mlp_exact_test>
+         ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
+set_tests_properties(policy_mlp_exact PROPERTIES LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)

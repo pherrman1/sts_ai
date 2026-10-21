@@ -21,7 +21,9 @@ run_unit.sh         bash run_unit.sh REPO RUN UNIT_OUT <unit args...>   (exit 0 
 ```
 name          potion-weights            # lowercase [a-z0-9_-]; local dir is $HOME/cw-<name>-wWW
 code_commit   <40-char sha>             # build inputs (apps src include extern cmake models ...) must equal it
-binary_sha256 <64-char sha256>          # of build/linux-gcc-release/one_combat at code_commit
+binary_sha256 <64-char sha256>          # of build/<configure_preset>/one_combat at code_commit
+configure_preset linux-gcc-release-x86-64-v3   # optional, default linux-gcc-release; the v3 build is ~10%
+                                        # faster, same decisions on fixed seeds, needs an AVX2 CPU
 workers       8                         # the worker count Philipp authorized; unit line i goes to worker i%workers+1
 share         /mnt/project-files/<dir>  # where wWW.tar and wWW.DONE.json are uploaded
 parallel      4                         # units run at once per worker (default 4)
@@ -42,7 +44,8 @@ Everything the analysis needs must be written under the unit output dir. The wor
    [agent workflow](../../docs/knowledge-base/operations/agent-context-and-workflow.md#frozen-runs).
 2. Commit the campaign dir. Set `code_commit` and, after one build, `binary_sha256`.
 3. `bash tools/cloud/worker.sh publish-binary <campaign>` builds at `code_commit`, checks the hash and uploads
-   the binary to `/mnt/project-files/bin-cache/one_combat-<sha256>` (plus `commit-<sha>.sha256`). Workers
+   the binary to `/mnt/project-files/bin-cache/one_combat-<sha256>` (plus `commit-<sha>.sha256`, or
+   `commit-<sha>.<configure_preset>.sha256` for a non-default `configure_preset`). Workers
    then copy it instead of building, which saves 4-9 min per worker. A worker that finds no cached binary,
    or one with the wrong hash, falls back to a local build and the same hash check.
 4. The pre-launch reviewer does an independent clean build and checks it against `binary_sha256`. That
@@ -135,5 +138,6 @@ every unit is OK.
 
 `bash tools/cloud/worker.sh cache-get <sha256> $HOME/base/one_combat` fetches a binary someone already
 published, for example the base side of a default-off identity check. `cat
-/mnt/project-files/bin-cache/commit-<sha>.sha256` gives the sha256 for a commit. The PR side is still built
-fresh.
+/mnt/project-files/bin-cache/commit-<sha>.sha256` gives the sha256 of the default-preset (`linux-gcc-release`)
+binary for a commit; a v3 campaign binary has its own `commit-<sha>.linux-gcc-release-x86-64-v3.sha256` and
+never replaces that pointer. The PR side is still built fresh.
