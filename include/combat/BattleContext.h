@@ -105,6 +105,33 @@ namespace sts {
     // the monster is dead.
     bool deadMonsterBlockFix();
 
+    // STS_DEAD_ALLY_BLOCK_FIX: unset/1 (default) = a monster move that adds
+    // block to an ally directly skips a dead ally, as the queued
+    // GainBlockAction/ApplyPowerAction do in Java (live problem 56, seed
+    // 111200445: Deca's Square of Protection gave a dead Donu 16 block).
+    // Covers Deca's Square of Protection (block and A19 Plated Armor) and
+    // Spire Shield's Fortify. Dead-monster block is part of Silver's node
+    // identity, so this can change search. 0 = the legacy engine adds them.
+    // Other values are fatal. Read only when the ally is dead.
+    bool deadAllyBlockFix();
+
+    // STS_DEAD_ALLY_STRENGTH_FIX: unset/1 (default) = Donu's Circle of Power
+    // and Spire Spear's Piercer skip a dead ally's Strength, as Java's queued
+    // ApplyPowerAction skips a target that isDeadOrEscaped (dying, half-dead
+    // or escaping; follow-up to live problem 56).
+    // Dead monsters' powers are part of Silver's node identity, so this can
+    // change search. 0 = the legacy engine buffs the dead ally. Other values
+    // are fatal. Read only when the ally is dead.
+    bool deadAllyStrengthFix();
+
+    // STS_ENRAGE_ALL_MONSTERS_FIX: unset/1 (default) = Gremlin Nob's Anger
+    // (Enrage) gains Strength on every played Skill whichever monster slot the
+    // Nob is in, as Java's per-monster AngerPower.onUseCard (live problem 64b,
+    // seed 111200459: Colosseum Nobs puts the Nob in slot 1 behind the
+    // Taskmaster, and native only checked slot 0). A dead Nob gains nothing.
+    // 0 = the legacy slot-0-only check. Other values are fatal.
+    bool enrageAllMonstersFix();
+
     // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
     // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
     // which uses aiRng; the Looter's uses MathUtils), as in the game (combat

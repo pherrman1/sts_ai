@@ -22116,6 +22116,74 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §588 — Live combat parity: Transient's Shackled wrapped at 8 bits (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show Transient's Strength game -5 vs native -261 after
+an End Turn (problem 53 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue53-extract.json`: before the step Str -147, Shackled 145, 142 damage taken this
+turn; after it Str -5, Shackled 3); read-only `javap` of the pinned JAR (`issue53-javap.md`: `ShiftingPower`,
+`GainStrengthPower`, `Transient.usePreBattleAction`); `monster_ai_java_parity` (no gameplay seeds).
+**Result:** Java's `GainStrengthPower` (ID Shackled) restores its full amount at the owner's end of turn and clamps
+to [-999, 999]. Native restores at the same point, but `Monster::shackled` was `std::int8_t`, so 145 was stored as -111:
+-147 - 111 = -258, then 3 more damage gives -261, exactly the live native value. The replay reproduces both values.
+**Interpretation:** `STS_SHACKLED_OVERFLOW_FIX` (default on, `=0` restores the wraparound) widens the field to 16 bits
+with Java's clamp, also on the Silver wire import. Play-changing for simulator play and the live advisor once a Transient takes over 127 damage
+in one turn, unmeasured.
+**Open question:** the `BattleContextBinary` format still writes Shackled as one byte (lossy above 127); no format
+bump here.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+
+## §587 — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
+
+**Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after
+Second Wind+ with Anger 3 (problem 64b in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** `BattleContext::onUseSkillCard`, `MonsterGroup.cpp` (Colosseum Nobs layout); `ironclad_card_java_parity`
+(no gameplay seeds).
+**Result:** native applied the Skill-played Enrage only to `monsters.arr[0]`. Colosseum Nobs creates the Taskmaster in
+slot 0 and the Nob in slot 1, so the Nob never gained Strength. In Java the Nob's own `AngerPower.onUseCard` runs for
+every monster's powers. The Second Wind exhaust inference in the report is not needed.
+**Interpretation:** `STS_ENRAGE_ALL_MONSTERS_FIX` (default on, `=0` restores) checks every living monster. Play-changing
+for simulator play in that fight, unmeasured.
+Javap of the pinned JAR (`issue64-javap.md` on the share): the `UseCardAction` constructor calls every monster power's
+`onUseCard` (gate only `dontTriggerOnUseCard`), and `AngerPower.onUseCard` on a Skill queues
+`addToTop(ApplyPowerAction(owner, owner, Strength))`, which skips a dead owner (`isDeadOrEscaped`, `issue56b-javap.md`).
+**Open question:** native applies the Strength at once rather than through the queue; not observed to differ.
+Seeds: none new (live seed 111200459 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+## §586 — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
+
+**Question:** do the other direct ally buffs next to problem 56's block moves reach a dead ally natively?
+**Setup:** `MonsterSpecific.cpp` (Donu's Circle of Power, Spire Spear's Piercer); `monster_ai_java_parity` (no gameplay
+seeds). Found in the #742 review, not live.
+**Result:** both moves call `buff<STRENGTH>` on the ally directly, so a dead Deca or Spire Shield gained Strength. In Java
+the buffs are queued `ApplyPowerAction`s, which skip a dead target.
+Javap of the pinned JAR (`issue56b-javap.md` on the share): both `takeTurn` cases loop over every monster with no alive
+check and queue `ApplyPowerAction(m, this, Strength)`; `ApplyPowerAction.update` returns first when
+`target.isDeadOrEscaped()` (dying, half-dead or escaping).
+**Interpretation:** `STS_DEAD_ALLY_STRENGTH_FIX` (default on, `=0` restores) skips an ally that `isDeadOrEscaped` in both.
+Play-changing for simulator play (dead monsters' powers are in Silver's node identity), unmeasured.
+**Open question:** none for these two moves; other direct ally buffs were not audited here.
+Seeds: none new (unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+## §585 — Live combat parity: Deca's Square of Protection shielded a dead Donu (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show `monsters[1].block` game 0 vs native 16 at the
+End Turn after Donu died (problem 56 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue56-extract.json`: Deca intent DEFEND_BUFF, Donu dead with hp 0 and no powers);
+`MonsterSpecific.cpp`; `monster_ai_java_parity` (no gameplay seeds).
+**Result:** native resolves Deca's Square of Protection and Spire Shield's Fortify by adding block (and Deca's A19 Plated
+Armor) to the ally directly, outside the queued `MonsterGainBlock` that `STS_DEAD_MONSTER_BLOCK_FIX` gates, so a dead
+ally gained it. The game shows Deca 1 -> 20 (16 plus Plated Armor 4 → 7 at end of turn) and dead Donu block 0 with no
+powers, as Java's per-monster `GainBlockAction`/`ApplyPowerAction` skip a dying target.
+**Interpretation:** `STS_DEAD_ALLY_BLOCK_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both moves.
+Play-changing for simulator play (dead-monster block is in Silver's node identity), unmeasured.
+Javap of the pinned JAR (`issue56-javap.md` on the share) confirms both call sites: `Deca.takeTurn` case 2 and
+`SpireShield.takeTurn` case 2 loop over every monster with no alive check and queue `GainBlockAction` (Deca also
+`ApplyPowerAction` Plated Armor at A19+); only `GainBlockAction.update` skips a dying or dead target.
+**Open question:** Spire Shield's Fortify is confirmed by javap, not by a live observation.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
 ## §583 — Live Silver: Headbutt splitting a large slime refused its put-on-top choice (2026-10-21)
 
 **Question:** why did live seed 111200464 seg1 s307 (release 9ec8a51d, Act 1 floor 16, Slime Boss fight after the boss
