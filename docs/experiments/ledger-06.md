@@ -22239,7 +22239,7 @@ Seeds: none.
 Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
 
-## §TBD — Live problem 74 resolved: Red Skull's anonymous battle-start action refused Toolbox's offer (2026-10-21)
+## §618 — Live problem 74 resolved: Red Skull's anonymous battle-start action refused Toolbox's offer (2026-10-21)
 
 **Observation.** The §604 diagnostic fired on live A20 seed 111200504 (release 010d797c, act 2 Chosen, turn 1, Red Skull and Toolbox, HP 74/85). Toolbox's offer was refused with `pendingActionsBlocker` `actions=[DrawCardAction,EnableEndTurnButtonAction,];refusal=2:unknown_action`. Index 2 has an empty simple name: it is `relics.RedSkull$1`, the anonymous action `RedSkull.atBattleStart` queues with `addToBot`. The original problem-74 blocker (seed 111200473, which owned Red Skull) also ended in an empty name after Red Mask's actions (`...,ApplyPowerAction(...),]`). So Red Mask was never the refusing action.
 
