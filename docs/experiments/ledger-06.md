@@ -22001,6 +22001,25 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §TBD — Live Runic Dome: the producer refused every Gremlin Leader Stab (2026-10-21)
+
+**Question:** why did live seed 111200463 (release 9ec8a51d, Act 2 floor 24, GREMLIN_LEADER elite, Runic Dome) stop at
+s391 with `silver_runic_dome_incomplete_history` after the AI killed GremlinFat and GremlinWizard on turn 1 (problem 67
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (slot-3 GremlinLeader row `{complete:false, reason:"execution_lifecycle"}`);
+`RunicDomeTracker.execute`/`legalExecuted`; the live move mapping `live_silver_mapping.cpp` (GremlinLeader RALLY 2,
+ENCOURAGE 3, STAB 4, as in `MonsterSpecific.cpp`); a scratch harness compiling `RunicDomeTracker.java` alone with the
+new `RunicDomeTrackerTest` case.
+**Result:** `legalExecuted` allowed GremlinLeader moves 1-3, so the first executed STAB (4) failed
+`execution_lifecycle`. With the old tracker the new test case fails at move 4 with exactly that reason; with the fix
+2, 3 and 4 complete and 1 is refused. The other bound-occupant families (Automaton, Orb, Reptomancer, Dagger, Collector,
+Torch Head) match the live mapping.
+**Interpretation:** producer bug, fixed in the mod (`move>=2 && move<=4`); no flag, since the old behaviour only refused
+the history. Live Gremlin Leader fights under Runic Dome no longer stop on a Stab. No engine or simulation change.
+**Open question:** the full `test.sh` needs the game jars and has not run (PC, via the canary).
+Seeds: none new (live seed 111200463 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
