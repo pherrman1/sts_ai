@@ -22148,6 +22148,23 @@ executed move, and refuses a wrong, missing or extra proof and a wrong executed 
 play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
 **Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
 Seeds: none.
+## §603 — Live combat parity: purge-on-use replay copies skipped canUse (Velvet Choker let Duplication replay a sixth card) (2026-10-21)
+
+**Question:** why did live seed 111200445 (Velvet Choker, Rupture played as the sixth card under Duplication; problem
+55 in `engine-parity/overnight-20261019/ISSUES.md` on the share) show the game resolving one play (cardsPlayedThisTurn
+6, one Bird-Faced Urn heal) while native also played the Duplication copy?
+**Setup:** pinned-jar javap of `GameActionManager.getNextAction` and `UseCardAction`; `BattleContext` card-queue
+code; `purge_copy_can_use` unit test (no gameplay seeds).
+**Result:** Java computes `canPlayCard = canUse || dontTriggerOnUseCard` with no `purgeOnUse` exception, so a replay copy
+(Duplication, Double Tap, Burst, Echo Form, Necronomicon) must pass `canUse` (Choker's `canPlay`, a dying target, ...)
+and otherwise only poofs (`UseCardAction`: purgeOnUse -> `ShowCardAndPoofAction`). The engine let every purge copy
+skip `canUse`, so the sixth-card copy under Choker resolved.
+**Interpretation:** `STS_PURGE_COPY_CAN_USE_FIX` (default on, `=0` restores) applies `canUse` to copies; an unusable
+copy poofs and reaches no pile (the #733 unplayable-autoplay routing skips purge copies). Play-changing in simulation
+wherever a copy fails `canUse` (Choker at six cards, a copy aimed at a target that died); unmeasured, so A20
+whole-run results across this merge are not comparable without `=0`.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §600 — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
 
 **Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with

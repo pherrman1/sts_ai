@@ -348,6 +348,15 @@ Defend. `PlayTopCardAction` queues `NewQueueCardAction(card, target, false,
 true)`, whose `addCardQueueItem(item, false)` appends, so autoplayed cards
 play first-in first-out; the engine pushed each to the front of the card
 queue. `STS_AUTOPLAY_QUEUE_ORDER_FIX` (default on, `=0` restores) appends.
+Problem 55 (seed 111200445, Velvet Choker, Rupture played as the sixth card
+under Duplication) showed the game resolving one play (cardsPlayedThisTurn 6,
+one Bird-Faced Urn heal) while native also played the copy. The same javap
+shows `getNextAction`'s `canPlayCard = canUse || dontTriggerOnUseCard` with
+no `purgeOnUse` exception, so a replay copy must pass `canUse` (Choker's
+`canPlay`, a dying target, ...) and otherwise only poofs; the engine let
+every purge copy skip `canUse`. `STS_PURGE_COPY_CAN_USE_FIX` (default on,
+`=0` restores) applies `canUse` to copies
+(`tests/purge_copy_can_use_test.cpp`).
 
 A run on 2026-10-20 (seed 111200447, floor 8, problem 58) woke a sleeping
 Lagavulin with Metallicize 12 by a Strike: the game kept Metallicize 4, native
