@@ -22618,6 +22618,22 @@ two-card hand still draws once; Fiend Fire is unchanged. Play-changing: later `c
 shift, so sim trajectories after such a True Grit now follow the game.
 Seeds: none new (live seed 111200476 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
+## §608 — Live advisor: #769's Gremlin Leader check threw on every combat without a selection (2026-10-21)
+
+**Question:** why did live seed 111200480 on ab8833a8 (main with #769, §605) get no advisor answer at its first combat
+(problem 77 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report; the #769 advisor on three live fixtures (`tests/fixtures/live_runic_dome_two_thieves_turn1.json`,
+`live_shield_spear_back_attack_turn1.json`, `live_slime_boss_split.json`); `live_silver_importer_test` (no gameplay runs).
+**Result:** `minionLeaderEscapeChoice` read `combat.value("cardSelect", {})` and then called `.value()` on it. Outside a
+selection the mod sends `"cardSelect": false`, so every such observation threw nlohmann `type_error.306` and the advisor
+answered `MALFORMED_JSON` (reproduced on all three fixtures). #769's tests only used a Headbutt grid observation.
+**Interpretation:** the check now reads every field type-checked and returns 0 (ordinary import) for any other shape;
+the fixed advisor returns OK on the three fixtures. The importer test covers 16 malformed shapes (cardSelect false or
+missing, non-object combat/root/observation, wrong-typed choices, pending items, slots, monsters and monster fields),
+and `live_advisor_protocol.py` gains a real `cardSelect=false` fixture so the advisor path is exercised. No play
+change beyond restoring the advisor; `STS_SILVER_LEADER_ESCAPE_PASS_THROUGH=0` was the interim workaround.
+Seeds: none new (live seed 111200480 as reported).
+**Knowledge impact:** `NONE — restores the behaviour §605 documents`.
 
 ## §606 — Silver prior playouts in real boss fights only, for CPU (ADR-0056, 2026-10-21)
 
@@ -22635,6 +22651,26 @@ Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
 `decisions/0056-silver-prior-playout-boss-only.md`.
 
+## §609 — OOC value head: monotonicity penalty fails the offline gate (2026-10-21)
+
+**Question:** Does a training penalty that forbids the value head from preferring the worse of two states (less HP,
+less max HP, less gold, one potion fewer, one curse more) fix gen 2's wrong-signed end-state prices without hurting
+the head?
+**Setup:** `distill.py --mono-weight M` (`tools/heart1/monotone.py`, default off): gen-2 pick recipe
+(`S_d64L2_lr1e-4_a0.3_v0.3`, same rows, folds and cache), M ∈ {0, 0.3, 1, 3} at seed 0, plus B seed 1; `prices.py` on
+the exported heads. Pre-registered plan and full tables: `evidence/value_monotone_penalty_20261021/`.
+**Result:** Selection-fold violation rates for B / 0.3 / 1 / 3: max HP +5 83.6 / 52.6 / 33.8 / 27.7 %, gold +50 47.1 /
+26.9 / 17.8 / 13.2 %, −3 HP 15.7 / 14.7 / 14.4 / 13.9 %. Policy KL 0.0554 / 0.0553 / 0.0551 / 0.0549. Value BCE 0.559 /
+0.561 / 0.569 / 0.582 (AUC 0.740 / 0.739 / 0.729 / 0.708). Only M = 0.3 is within BCE + 0.003. `prices.py`: max-HP price
+> 0 in 11 / 30 / 46 / 59 % of states, −3 HP sign right 88.6 / 90.8 / 91.2 / 91.2 %; per-HP slope 0.00128 → 0.00031.
+**Interpretation:** FAIL. The hinge is met mostly by flattening the head along HP, max HP and gold rather than by
+learning the right differences; HP errors barely move. Inference: the sinusoid-only encoding of these scalars is the
+limit, not the loss. Seeds 1–2 of M = 0.3 not run (stopped by Philipp to free the GPU); they could not reach the
+`prices.py` thresholds.
+**Open question:** a sign-agreement penalty against raw heart1 (≈10 % wrong on max HP and gold) or smooth linear
+extra inputs for HP, max HP and gold.
+Seeds: none (offline training).
+**Knowledge impact:** none (option stays default off).
 ## §607 — CRN paired continuations to the end of the act as Silver-leaf difference labels (A20, 64 sources, 4 workers): STOP, noise dominates (2026-10-21)
 
 **Question (Philipp, 2026-10-21, thread "Silver leaf from OOC value"):** score Silver leaves with an OOC-level label,
