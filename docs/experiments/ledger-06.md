@@ -22198,6 +22198,16 @@ entry. No engine or simulation change.
 Seeds: none.
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
+## §604 — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
+
+**Observation.** Live A20 seed 111200473 (release eeb17782, Chosen and Byrds, floor 30, turn 1): Toolbox's battle-start `ChooseOneColorless` offer reached the advisor as `silver_card_reward_pending_actions`. The queue behind it was `[DrawCardAction(5), EnableEndTurnButtonAction, (RelicAboveCreatureAction, ApplyPowerAction Weak 1 from the player) x 2]`. The mod refused (no continuation was sent); the importer already accepts `toolbox_actions` with `DRAW` plus `DEBUFF_ALL_ENEMY`.
+
+**Analysis.** javap of the pinned jar (RedMask.atBattleStart, ApplyPowerAction, WeakPower, DrawCardAction, AbstractRoom battle start) matches every check in `publicPendingActionsJson(true)` and `allEnemyPowerBatch` on paper: Red Mask builds `WeakPower(m, 1, false)` (justApplied false), source is the player, and the opening draw is the default 3-arg DrawCardAction. Which check refused could not be decided from the snapshot. The old blocker also printed `power=` blank because `readStringField` returns "" for a missing `powerID` field.
+
+**Change (diagnostic only, no play change, no flag).** Every refusal in `publicPendingActionsJson` and `allEnemyPowerBatch` records `<queue index>:<check>`; `pendingActionsBlocker` appends it as `;refusal=...`. `powerActionDetail` now falls back to the power instance's ID. A repeat of problem 74 names the exact failing check, and the fix follows from it.
+
+**Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
