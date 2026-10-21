@@ -260,6 +260,17 @@ void Monster::enterGuardianDefensiveMode() {
         idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
 }
 
+void Monster::wakeMetallicize(BattleContext &bc) {
+    // Lagavulin.damage queues ChangeStateAction("OPEN"), whose changeState
+    // queues ReducePowerAction(Metallicize, 8): the wake subtracts 8, the same
+    // as the natural wake (STS_LAGAVULIN_WAKE_METALLICIZE_FIX).
+    if (lagavulinWakeMetallicizeFix() && getStatus<MS::METALLICIZE>() > 8) {
+        decrementStatus<MS::METALLICIZE>(8);
+    } else { // ReducePowerAction removes the power when the amount runs out
+        removeStatus<MS::METALLICIZE>();
+    }
+}
+
 bool Monster::isAlive() const {
     return curHp > 0;
 }
@@ -450,7 +461,7 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
     } else if (hasStatus<MS::ASLEEP>()) {
         // lagavulin
         setHasStatus<MS::ASLEEP>(false);
-        removeStatus<MS::METALLICIZE>();
+        wakeMetallicize(bc);
         cancelPendingMove();
         setMove(MMID::LAGAVULIN_SLEEP);
 
@@ -512,7 +523,7 @@ void Monster::damageUnblockedHelper(BattleContext &bc, int damage) {
         if (hasStatus<MS::ASLEEP>()) {
         // lagavulin
         setHasStatus<MS::ASLEEP>(false);
-        removeStatus<MS::METALLICIZE>();
+        wakeMetallicize(bc);
         cancelPendingMove();
         setMove(MMID::LAGAVULIN_SLEEP);
     }

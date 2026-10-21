@@ -266,6 +266,14 @@ add_test(NAME slime_split_monster_count COMMAND bash ${CMAKE_SOURCE_DIR}/tools/s
 set_tests_properties(slime_split_monster_count PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(lagavulin_wake_metallicize_test tests/lagavulin_wake_metallicize_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(lagavulin_wake_metallicize_test PRIVATE include json/include)
+add_test(NAME lagavulin_wake_metallicize COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:lagavulin_wake_metallicize_test>)
+set_tests_properties(lagavulin_wake_metallicize PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(magnetism_start_of_turn_test tests/magnetism_start_of_turn_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(magnetism_start_of_turn_test PRIVATE include json/include)

@@ -22177,6 +22177,20 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
+
+**Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with
+Metallicize 4 in the game but none natively (problem 58 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** read-only `javap` of the pinned JAR on Philipp's PC (`issue58-javap.md`: `Lagavulin` fields, `damage`,
+`changeState`, `takeTurn`, `usePreBattleAction`); `lagavulin_wake_metallicize` unit test (no gameplay seeds).
+**Result:** a Strike woke the sleeping Lagavulin at Metallicize 12. `Lagavulin.damage` queues
+`ChangeStateAction("OPEN")`, whose `changeState` queues `ReducePowerAction(Metallicize, 8)`; the natural wake runs the
+same `changeState`. The engine subtracted 8 on the natural wake but removed Metallicize on the damage wake.
+**Interpretation:** `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (default on, `=0` restores) subtracts 8 on the damage wake
+(removing the power when 8 or fewer remain). Play-changing for simulator play against a Lagavulin above 8
+Metallicize, unmeasured.
+Seeds: none new (live seed 111200447 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §590 — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
 
 **Question:** why did live seed 111200459 seg1 s852 (Awakened One, floor 50) show native with an open
@@ -22395,3 +22409,19 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
 - **Data:** both arms' captures (≈34k searched roots each, ≈8.4k full-budget) join gen 0's 1,664 runs as the gen-2
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
+
+## §594 — Live driver: the boss-relic Skip was unmappable (2026-10-21)
+
+**Question:** why did live seed 111200468 (Act 1 floor 17, BOSS_REWARD Black Blood / Empty Cage / Sacred Bark) stop when
+the OOC advisor skipped the boss relic (problem 71 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's failure record; `tools/live_game_driver.py` `map_ooc_action`; `tests/test_live_game_driver.py`
+(no gameplay seeds).
+**Result:** the inspector publishes the boss-relic Skip button as live action `{"kind": "cancel"}`, but MCP advertises
+that button (`can_cancel` true, `cancel_button` "skip") only as its `skip` tool, so the driver found 0 candidates. It was
+the first boss-relic skip of the overnight runs.
+**Interpretation:** on BOSS_REWARD only, and only when MCP offers no `cancel` tool, `cancel` now maps to the bare `skip`
+candidate. Other screens keep exact tool matching. Driver mapping only (no flag): before, the run stopped.
+**Open question:** the live click itself (MCP `skip` on BOSS_REWARD) is not exercised here; the canary's next boss-relic
+skip confirms it.
+Seeds: none new (live seed 111200468 as reported; driver unit tests only).
+**Knowledge impact:** `operations/live-model-inspector.md`.
