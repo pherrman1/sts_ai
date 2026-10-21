@@ -236,7 +236,9 @@ Sacred Bark and 20% with it, the reverse of the game.
   `ChangeStateAction` "Defensive Mode", seed 111200388 floor 16; louse Curl Up
   `ChangeStateAction` "CLOSED", `GainBlockAction` and `RemoveSpecificPowerAction`,
   seed 111200389 floor 5; Headbutt killing a Darkling to half-dead, its queued
-  Regrow `SetMoveAction`, seed 111200400 floor 35). The producer now emits them and
+  Regrow `SetMoveAction`, seed 111200400 floor 35; a lethal Headbutt into a Byrd,
+  whose Flight `ReducePowerAction` stays queued, seed 111200421 floor 28; Headbutt
+  removing Donu's last Plated Armor, seed 111200422 floor 50). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
 - The run stopped on a Discovery choice under Hex
   (`silver_card_reward_pending_actions`, seed 111200415 floor 21, Chosen and
