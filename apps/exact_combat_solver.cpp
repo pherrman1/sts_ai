@@ -430,19 +430,25 @@ namespace {
                 const Key k = pre ? keyAtHp(*pre, s.player.curHp) : stateKey(s);
                 if (Val hit; oracle_->find(k, hit)) { ++oracleBounds_; return std::min(hit.v, formulaBound(s)); }
             }
+            double ub = formulaBound(s);
             // The same state at more HP is worth at least as much (see monotone()):
             // a memoized twin a few HP higher, exact or itself a bound, bounds it.
             if (pre && quiet(s) && lipschitz_) {
                 const double t = twinUpperBound(*pre, s, 0);
                 if (t < 1e299) ++twinBounds_;
-                return std::min(t, formulaBound(s));
-            }
-            if (pre && quiet(s)) {
+                ub = std::min(t, ub);
+            } else if (pre && quiet(s)) {
                 const int top = std::min(s.player.maxHp, s.player.curHp + kTwinProbes);
                 for (int h = s.player.curHp + 1; h <= top; ++h)
-                    if (Val hit; memo_.find(keyAtHp(*pre, h), hit)) { ++twinBounds_; return std::min(hit.v, formulaBound(s)); }
+                    if (Val hit; memo_.find(keyAtHp(*pre, h), hit)) { ++twinBounds_; ub = std::min(hit.v, ub); break; }
             }
-            return formulaBound(s);
+            if (relaxedBound_ && quiet(s) && s.turn <= turnCap_) {
+                if (RxView x; rxView(s, x)) {
+                    const double r = rxPad(rxDecAt(0, x));
+                    if (r < ub) { ++relaxedDecTighter_; ub = r; }
+                }
+            }
+            return ub;
         }
 
     public:
@@ -468,6 +474,500 @@ namespace {
         // anyway and counts outcomes whose bound is above it.
         bool intentBound_ = false, intentCheck_ = false;
         std::int64_t intentCutoffs_ = 0, intentViolations_ = 0, endFirstCuts_ = 0, endFirstCutReplays_ = 0;
+        // Research (--relaxed-bound): the value of a relaxed game in which the
+        // player picks every card drawn (any cards the draw could deliver) while
+        // the monster keeps its exact move probabilities. A max over draws is at
+        // least their expectation, so the relaxed value bounds the exact one in
+        // every state. Jaw Worm with the starter deck only: there the relaxed
+        // state between turns needs no hand, discard pile or block, only the
+        // monster's HP, Strength, Vulnerable and last two moves, the draw pile's
+        // counts, whether Ascender's Bane is exhausted and the turn, with one
+        // value per player HP. --relaxed-free-draws lets every turn draw any
+        // cards of the deck (no draw pile in the state: smaller and looser).
+        // --relaxed-check compares the bound with every exact value and the
+        // mirrored monster turn and draw with the engine's outcomes, and prunes
+        // nothing with it.
+        // --relaxed-order: search end-of-turn candidates by their relaxed value (ties by --order-heuristic).
+        bool relaxedBound_ = false, relaxedCheck_ = false, relaxedFreeDraws_ = false, relaxedOrder_ = false;
+        std::int64_t relaxedCutoffs_ = 0, relaxedDecTighter_ = 0, relaxedViolations_ = 0, relaxedMirror_ = 0;
+        std::int64_t relaxedChecked_ = 0, relaxedGateMisses_ = 0, relaxedEndChecks_ = 0, relaxedDecChecks_ = 0;
+        std::int64_t relaxedEndSlack_[7] = {}, relaxedDecSlack_[7] = {}, relaxedIntentSlack_[7] = {}, relaxedWouldCut_ = 0;
+        double rxSeconds_[2] = {0, 0};
+        bool relaxedReady() const { return rxOn_; }
+        std::size_t relaxedStates() const { return rxTab_[0].index.size(); }
+        // Research (--abstract-check, --abstract-only): table 1 runs the same
+        // recursion with the draw's exact probabilities instead of the max, which
+        // on this abstract state is the fight's exact value (the hand is empty
+        // between turns, and the discard pile, energy, block and cards drawn
+        // follow from the rest). --abstract-check compares it with every exact
+        // value of the search; --abstract-only skips the search.
+        bool abstractCheck_ = false;
+        std::int64_t abstractChecks_ = 0, abstractMismatches_ = 0;
+        double abstractMaxDiff_ = 0;
+        std::size_t abstractStates() const { return rxTab_[1].index.size(); }
+        // A root action's value from the abstract exact recursion (false where it does not apply).
+        bool abstractQ(const BattleContext &s, const SAction &a, double &out) {
+            RxView x;
+            if (a.getActionType() == search::ActionType::END_TURN) {
+                if (!quiet(s) || !rxView(s, x)) return false;
+                out = rxEndOf(1, x);
+                return true;
+            }
+            double v = 0;
+            for (const auto &o : outcomes(s, a)) {
+                if (o.state.outcome != Outcome::UNDECIDED) { v += o.p * terminal(o.state).v; continue; }
+                if (!quiet(o.state) || !rxView(o.state, x)) return false;
+                v += o.p * (o.state.turn > turnCap_ ? terminal(o.state).v : rxDecAt(1, x));
+            }
+            out = v;
+            return true;
+        }
+
+        // Sets the relaxed game up for the root's fight; false where it does not apply.
+        bool relaxedInit() {
+            const BattleContext &r = rootCopy_;
+            if (r.monsters.monsterCount != 1 || r.monsters.arr[0].id != MonsterId::JAW_WORM) return false;
+            RxDeck all;
+            bool ok = true;
+            auto add = [&](const CardInstance &c) { ok = ok && rxCount(c, all); };
+            const auto &cm = r.cards;
+            for (int i = 0; i < cm.cardsInHand; ++i) add(cm.hand[i]);
+            for (const auto &c : cm.drawPile) add(c);
+            for (const auto &c : cm.discardPile) add(c);
+            for (const auto &c : cm.exhaustPile) add(c);
+            // At most one Bash keeps the play orders below exhaustive; the key packs counts in 4 bits.
+            if (!ok || all.b > 1 || all.a > 1 || all.s > 15 || all.d > 15) return false;
+            rxDeck_ = all;
+            rxH_ = r.player.curHp;
+            rxEnergy_ = r.player.energyPerTurn;
+            rxDraw_ = r.player.cardDrawPerTurn;
+            rxCardsOffset_ = r.cardsDrawn - rxDraw_ * r.turn;
+            const int asc = r.ascension;
+            rxAttack_[0] = asc >= 2 ? 12 : 11;   // Chomp
+            rxAttack_[1] = 7;                    // Thrash
+            rxBlock_[0] = 0; rxBlock_[1] = 5; rxBlock_[2] = asc >= 17 ? 9 : 6; rxBlock_[3] = 0;
+            rxBellowStr_ = asc >= 17 ? 5 : asc >= 2 ? 4 : 3;
+            // The move roll (MonsterSpecific.cpp, JAW_WORM): 0..99 uniform with the
+            // engine's float coin flips, after the move `last` with `before` before it.
+            using exact::ChanceScript;
+            const double b1 = ChanceScript::booleanProbability(0.5625f), b2 = ChanceScript::booleanProbability(0.357f),
+                         b3 = ChanceScript::booleanProbability(0.416f);
+            for (int last = 0; last < 3; ++last)
+                for (int before = 0; before < 4; ++before) {
+                    double p[3] = {0, 0, 0};
+                    if (last == 0) { p[2] += 0.25 * b1; p[1] += 0.25 * (1 - b1); } else p[0] += 0.25;
+                    if (last == 1 && before == 1) { p[0] += 0.30 * b2; p[2] += 0.30 * (1 - b2); } else p[1] += 0.30;
+                    if (last == 2) { p[0] += 0.45 * b3; p[1] += 0.45 * (1 - b3); } else p[2] += 0.45;
+                    for (int n = 0; n < 3; ++n) rxRoll_[last][before][n] = p[n];
+                }
+            rxOn_ = true;
+            RxView x;
+            rxOn_ = rxView(r, x);
+            return rxOn_;
+        }
+    private:
+        // ---- relaxed game (--relaxed-bound) -----------------------------------
+        enum { RX_CHOMP = 0, RX_THRASH = 1, RX_BELLOW = 2, RX_NONE = 3 };
+        struct RxDeck {
+            int s = 0, d = 0, b = 0, a = 0;   // Strikes, Defends, Bashes, Ascender's Banes
+            int total() const { return s + d + b + a; }
+        };
+        // A concrete state as the relaxed game sees it.
+        struct RxView {
+            int m = 0, mb = 0, str = 0, vuln = 0, mv0 = 0, mv1 = 0, h = 0, pblock = 0, e = 0, t = 0;
+            RxDeck hand, pile;
+            bool abGone = false;   // Ascender's Bane exhausted
+        };
+        bool rxOn_ = false;
+        RxDeck rxDeck_;
+        int rxH_ = 0, rxEnergy_ = 3, rxDraw_ = 5, rxCardsOffset_ = 0, rxBellowStr_ = 5;
+        int rxAttack_[2] = {}, rxBlock_[4] = {};
+        double rxRoll_[3][4][3] = {};
+        int rxDepth_ = 0;
+        // Open addressing, power-of-two table: every bound query looks up start states.
+        class RxIndex {
+            static constexpr std::uint64_t kEmpty = ~0ULL;   // no key has its top bits set
+            std::vector<std::uint64_t> keys_;
+            std::vector<std::size_t> vals_;
+            std::size_t size_ = 0;
+            std::size_t slot(std::uint64_t k) const {
+                const std::size_t mask = keys_.size() - 1;
+                std::size_t i = static_cast<std::size_t>(splitmix(k)) & mask;
+                while (keys_[i] != kEmpty && keys_[i] != k) i = (i + 1) & mask;
+                return i;
+            }
+        public:
+            std::size_t size() const { return size_; }
+            bool find(std::uint64_t k, std::size_t &v) const {
+                if (keys_.empty()) return false;
+                const std::size_t i = slot(k);
+                if (keys_[i] == kEmpty) return false;
+                v = vals_[i];
+                return true;
+            }
+            void emplace(std::uint64_t k, std::size_t v) {
+                if ((size_ + 1) * 2 > keys_.size()) {
+                    std::vector<std::uint64_t> oldK(keys_.empty() ? std::size_t(1) << 16 : keys_.size() * 2, kEmpty);
+                    std::vector<std::size_t> oldV(oldK.size(), 0);
+                    oldK.swap(keys_);
+                    oldV.swap(vals_);
+                    for (std::size_t j = 0; j < oldK.size(); ++j)
+                        if (oldK[j] != kEmpty) { const std::size_t i = slot(oldK[j]); keys_[i] = oldK[j]; vals_[i] = oldV[j]; }
+                }
+                const std::size_t i = slot(k);
+                if (keys_[i] == kEmpty) ++size_;
+                keys_[i] = k;
+                vals_[i] = v;
+            }
+        };
+        // Start-of-turn state -> offset of its values (one per player HP 0..rxH_) in the pool;
+        // table 0 the relaxed game, table 1 the abstract exact recursion.
+        struct RxTable { RxIndex index; std::vector<double> pool; };
+        RxTable rxTab_[2];
+        std::unordered_map<std::uint64_t, double> rxLeafCache_;
+        std::vector<std::vector<double>> rxWinRows_;                // per turn, the win score per HP
+
+        // The damage of the monster's move: Chomp and Thrash attack (base + Strength); Bellow does not.
+        int rxHit(int mv, int str) const { return mv == RX_BELLOW ? 0 : rxAttack_[mv] + str; }
+        static bool rxCount(const CardInstance &c, RxDeck &d) {
+            if (c.upgraded || c.freeToPlayOnce) return false;
+            switch (c.id) {
+                case CardId::STRIKE_RED: if (c.costForTurn != 1) return false; ++d.s; return true;
+                case CardId::DEFEND_RED: if (c.costForTurn != 1) return false; ++d.d; return true;
+                case CardId::BASH: if (c.costForTurn != 2) return false; ++d.b; return true;
+                case CardId::ASCENDERS_BANE: ++d.a; return true;
+                default: return false;
+            }
+        }
+        static int rxMove(MonsterMoveId id) {
+            switch (id) {
+                case MonsterMoveId::JAW_WORM_CHOMP: return RX_CHOMP;
+                case MonsterMoveId::JAW_WORM_THRASH: return RX_THRASH;
+                case MonsterMoveId::JAW_WORM_BELLOW: return RX_BELLOW;
+                case MonsterMoveId::INVALID: return RX_NONE;
+                default: return -1;
+            }
+        }
+
+        // The relaxed view of `s`, or false where the relaxed game does not model it.
+        bool rxView(const BattleContext &s, RxView &x) const {
+            if (!rxOn_ || s.outcome != Outcome::UNDECIDED || s.monsters.monsterCount != 1) return false;
+            const auto &m = s.monsters.arr[0];
+            if (m.id != MonsterId::JAW_WORM || !m.isAlive() || m.weak || m.artifact || m.strength < 0 || m.block < 0
+                || m.wasJustApplied<MonsterStatus::VULNERABLE>())
+                return false;
+            const auto &p = s.player;
+            if (p.strength || p.dexterity || p.statusBits0 || p.statusBits1 || !p.statusMap.empty() || p.energy < 0
+                || p.energyPerTurn != rxEnergy_ || p.cardDrawPerTurn != rxDraw_ || p.curHp > rxH_ || p.curHp <= 0)
+                return false;
+            if (s.cardsDrawn - rxDraw_ * s.turn != rxCardsOffset_ || s.turn < 0 || s.turn > 200) return false;
+            x.m = m.curHp; x.mb = m.block; x.str = m.strength; x.vuln = m.vulnerable;
+            x.mv0 = rxMove(m.moveHistory[0]); x.mv1 = rxMove(m.moveHistory[1]);
+            if (x.mv0 < 0 || x.mv0 == RX_NONE || x.mv1 < 0) return false;
+            x.h = p.curHp; x.pblock = p.block; x.e = p.energy; x.t = s.turn;
+            const auto &cm = s.cards;
+            RxDeck hand, pile, rest, ex;
+            for (int i = 0; i < cm.cardsInHand; ++i) if (!rxCount(cm.hand[i], hand)) return false;
+            for (const auto &c : cm.drawPile) if (!rxCount(c, pile)) return false;
+            for (const auto &c : cm.discardPile) if (!rxCount(c, rest)) return false;
+            for (const auto &c : cm.exhaustPile) if (!rxCount(c, ex)) return false;
+            if (ex.s || ex.d || ex.b) return false;
+            for (const auto &c : cm.stasisCards) if (c.id != CardId::INVALID) return false;
+            if (hand.s + pile.s + rest.s != rxDeck_.s || hand.d + pile.d + rest.d != rxDeck_.d
+                || hand.b + pile.b + rest.b != rxDeck_.b || hand.a + pile.a + rest.a + ex.a != rxDeck_.a)
+                return false;
+            if (x.m > 255 || x.str > 255 || x.vuln > 15) return false;
+            x.hand = hand; x.pile = pile; x.abGone = ex.a > 0;
+            return true;
+        }
+
+        std::uint64_t rxKey(int m, int str, int vuln, int mv0, int mv1, const RxDeck &pile, bool abGone, int t) const {
+            using U = std::uint64_t;
+            if (m < 0 || m > 255 || str < 0 || str > 255 || vuln < 0 || vuln > 15 || t < 0 || t > 255)
+                throw std::runtime_error("relaxed bound: state out of range");
+            return U(m) | U(str) << 8 | U(vuln) << 16 | U(mv0) << 20 | U(mv1) << 22 | U(pile.s) << 24 | U(pile.d) << 28
+                | U(pile.b) << 32 | U(pile.a) << 36 | U(abGone ? 1 : 0) << 40 | U(t) << 41;
+        }
+
+        // Silver's (or the HP objective's) leaf values: a win at HP h on turn t;
+        // a death in the monster turn of turn t (death) or the turn-cap leaf at
+        // turn t, both at monster HP m.
+        double rxWin(int h, int t) {
+            if (hpObjective_) return h;
+            if (static_cast<int>(rxWinRows_.size()) <= t) rxWinRows_.resize(t + 1);
+            auto &row = rxWinRows_[t];
+            if (row.empty()) {
+                row.assign(rxH_ + 1, 0);
+                for (int hp = 1; hp <= rxH_; ++hp) {
+                    BattleContext w = rootCopy_;
+                    w.player.curHp = hp;
+                    w.turn = t;
+                    w.outcome = Outcome::PLAYER_VICTORY;
+                    row[hp] = scorer_.scoreEndState(w);
+                }
+            }
+            return row[h];
+        }
+        double rxLeaf(int m, int t, bool death) {
+            if (hpObjective_) return 0;
+            const std::uint64_t k = static_cast<std::uint64_t>(m) << 32 | static_cast<std::uint64_t>(t) << 1 | (death ? 1 : 0);
+            if (auto it = rxLeafCache_.find(k); it != rxLeafCache_.end()) return it->second;
+            BattleContext w = rootCopy_;
+            w.outcome = death ? Outcome::PLAYER_LOSS : Outcome::UNDECIDED;
+            w.player.curHp = death ? 0 : 1;
+            w.turn = t;
+            w.cardsDrawn = rxCardsOffset_ + rxDraw_ * t;
+            w.energyWasted = 0;
+            w.monsters.arr[0].curHp = m;
+            const double v = scorer_.scoreEndState(w);
+            rxLeafCache_.emplace(k, v);
+            return v;
+        }
+
+        // Every play of a hand with `e` energy against a monster at HP m with
+        // block mb and Vulnerable vuln: any number of Strikes and Defends the
+        // energy pays for, the Bash (if played) at any position among the
+        // Strikes. Calls win() for a play that kills, else end(m', vuln', maxD)
+        // for every play of Strikes and Bash, with every Defend count 0..maxD.
+        // Unupgraded starter cards: Strike 6, Bash 8 then 2 Vulnerable (both
+        // x1.5 rounded down against Vulnerable), Defend 5 block.
+        template <typename Win, typename End>
+        static void rxPlays(int m, int mb, int vuln, const RxDeck &hand, int e, Win win, End end) {
+            for (int nb = 0; nb <= std::min(hand.b, 1) && 2 * nb <= e; ++nb)
+                for (int ns = 0; ns <= std::min(hand.s, e - 2 * nb); ++ns)
+                    for (int pos = 0; pos <= (nb ? ns : 0); ++pos) {   // Strikes played before the Bash
+                        int v = vuln, dmg = pos * (v > 0 ? 9 : 6);
+                        if (nb) { dmg += v > 0 ? 12 : 8; v += 2; }
+                        dmg += (ns - pos) * (v > 0 ? 9 : 6);
+                        const int m2 = m - std::max(0, dmg - mb);
+                        if (m2 <= 0) win();
+                        else end(m2, v, std::min(hand.d, e - 2 * nb - ns));
+                    }
+        }
+
+        // Every hand the turn's draw could deliver from draw pile `pile`, with the
+        // draw pile it leaves and its probability: the whole pile first when it
+        // holds fewer cards than the draw, then the rest from the discard pile
+        // (every card not drawn and not exhausted) shuffled; each multiset of the
+        // cards drawn from a pile is hypergeometric. With free draws: any cards
+        // of the deck (probabilities meaningless, the pile left empty).
+        template <typename F>
+        void rxHands(const RxDeck &pile, bool abGone, bool freeDraws, F f) const {
+            using exact::ChanceScript;
+            RxDeck avail = rxDeck_;
+            if (abGone) avail.a = 0;
+            RxDeck from = pile, base;
+            int need = rxDraw_;
+            if (freeDraws) {
+                from = avail;
+                need = std::min(rxDraw_, avail.total());
+            } else if (pile.total() < rxDraw_) {
+                base = pile;
+                from = {avail.s - pile.s, avail.d - pile.d, avail.b - pile.b, avail.a - pile.a};
+                need = std::min(rxDraw_ - pile.total(), from.total());
+            }
+            const double ways = ChanceScript::binom(from.total(), need);
+            for (int s = 0; s <= std::min(from.s, need); ++s)
+                for (int d = 0; d <= std::min(from.d, need - s); ++d)
+                    for (int b = 0; b <= std::min(from.b, need - s - d); ++b) {
+                        const int a = need - s - d - b;
+                        if (a > from.a) continue;
+                        const RxDeck hand{base.s + s, base.d + d, base.b + b, base.a + a};
+                        const RxDeck left = freeDraws ? RxDeck{} : RxDeck{from.s - s, from.d - d, from.b - b, from.a - a};
+                        const double p = ChanceScript::binom(from.s, s) * ChanceScript::binom(from.d, d)
+                            * ChanceScript::binom(from.b, b) * ChanceScript::binom(from.a, a) / ways;
+                        f(hand, left, p);
+                    }
+        }
+
+        // The value per player HP of the start of turn t (before its draw): in
+        // table 0 the relaxed game's (max over hands), in table 1 the same
+        // recursion's with the draw's exact probabilities (expectation over hands).
+        std::size_t rxStart(int mode, int m, int str, int vuln, int mv0, int mv1, const RxDeck &pile, bool abGone, int t) {
+            const bool freeDraws = mode == 0 && relaxedFreeDraws_;
+            const RxDeck keyPile = freeDraws ? RxDeck{} : pile;
+            const std::uint64_t key = rxKey(m, str, vuln, mv0, mv1, keyPile, abGone, t);
+            if (std::size_t off; rxTab_[mode].index.find(key, off)) return off;
+            const auto t0 = rxDepth_ == 0 ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+            ++rxDepth_;
+            std::vector<double> value(rxH_ + 1, mode == 0 ? -1e300 : 0.0), best(rxH_ + 1);
+            if (t > turnCap_) {
+                std::fill(value.begin(), value.end(), rxLeaf(m, t, false));
+            } else {
+                rxHands(keyPile, abGone, freeDraws, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                    const bool gone = abGone || hand.a > 0;
+                    std::fill(best.begin(), best.end(), -1e300);
+                    rxPlays(m, rxBlock_[mv1], vuln, hand, rxEnergy_,
+                            [&] { for (int h = 1; h <= rxH_; ++h) best[h] = std::max(best[h], rxWin(h, t)); },
+                            [&](int m2, int v, int maxD) {
+                                const auto g = rxAfterMonster(mode, m2, v, str, mv0, mv1, left, gone, t);
+                                const double death = rxLeaf(m2, t, true);
+                                for (int nd = 0; nd <= maxD; ++nd) {
+                                    const int loss = std::max(0, rxHit(mv0, str) - 5 * nd);
+                                    for (int h = 1; h <= rxH_; ++h)
+                                        best[h] = std::max(best[h], h - loss <= 0 ? death : g[h - loss]);
+                                }
+                            });
+                    for (int h = 1; h <= rxH_; ++h) value[h] = mode == 0 ? std::max(value[h], best[h]) : value[h] + p * best[h];
+                });
+            }
+            --rxDepth_;
+            auto &tab = rxTab_[mode];
+            const std::size_t off = tab.pool.size();
+            tab.pool.insert(tab.pool.end(), value.begin(), value.end());
+            tab.index.emplace(key, off);
+            if (rxDepth_ == 0) rxSeconds_[mode] += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            return off;
+        }
+
+        // After the monster's move `mv0` of turn t (its attack already taken off
+        // the player's HP): the expected value per player HP over its next move,
+        // at the start of turn t+1.
+        std::vector<double> rxAfterMonster(int mode, int m, int vuln, int str, int mv0, int mv1, const RxDeck &pile, bool abGone, int t) {
+            std::vector<double> g(rxH_ + 1, 0);
+            if (t + 1 > turnCap_) {
+                std::fill(g.begin(), g.end(), rxLeaf(m, t + 1, false));
+                return g;
+            }
+            const int str2 = str + (mv0 == RX_BELLOW ? rxBellowStr_ : 0), v2 = std::max(0, vuln - 1);
+            for (int n = 0; n < 3; ++n) {
+                const double p = rxRoll_[mv0][mv1][n];
+                if (p <= 0) continue;
+                const std::size_t off = rxStart(mode, m, str2, v2, n, mv0, pile, abGone, t + 1);
+                const auto &pool = rxTab_[mode].pool;
+                for (int h = 1; h <= rxH_; ++h) g[h] += p * pool[off + h];
+            }
+            return g;
+        }
+
+        // The value of ending the turn now (at player block pblock), at HP h.
+        double rxEndAt(int mode, int m, int vuln, int str, int mv0, int mv1, const RxDeck &pile, bool abGone, int t, int pblock, int h) {
+            const int hp = h - std::max(0, rxHit(mv0, str) - pblock);
+            if (hp <= 0) return rxLeaf(m, t, true);
+            if (t + 1 > turnCap_) return rxLeaf(m, t + 1, false);
+            const int str2 = str + (mv0 == RX_BELLOW ? rxBellowStr_ : 0), v2 = std::max(0, vuln - 1);
+            double v = 0;
+            for (int n = 0; n < 3; ++n) {
+                const double p = rxRoll_[mv0][mv1][n];
+                if (p <= 0) continue;
+                const std::size_t off = rxStart(mode, m, str2, v2, n, mv0, pile, abGone, t + 1);
+                v += p * rxTab_[mode].pool[off + hp];
+            }
+            return v;
+        }
+
+        // The value of a decision state (the rest of its turn played from its
+        // hand), and of an end-of-turn state.
+        double rxDecAt(int mode, const RxView &x) {
+            double best = -1e300;
+            const bool gone = x.abGone || x.hand.a > 0;
+            rxPlays(x.m, x.mb, x.vuln, x.hand, x.e, [&] { best = std::max(best, rxWin(x.h, x.t)); },
+                    [&](int m2, int v, int maxD) {
+                        for (int nd = 0; nd <= maxD; ++nd)
+                            best = std::max(best, rxEndAt(mode, m2, v, x.str, x.mv0, x.mv1, x.pile, gone, x.t, x.pblock + 5 * nd, x.h));
+                    });
+            return best;
+        }
+        double rxEndOf(int mode, const RxView &x) {
+            return rxEndAt(mode, x.m, x.vuln, x.str, x.mv0, x.mv1, x.pile, x.abGone || x.hand.a > 0, x.t, x.pblock, x.h);
+        }
+        // Summation order differs from the exact solver's: pad by rounding error.
+        static double rxPad(double v) { return v + 1e-9 * (1 + std::abs(v)); }
+
+        static int slackBucket(double d) {
+            return d < 0.5 ? 0 : d < 1 ? 1 : d < 2 ? 2 : d < 4 ? 3 : d < 8 ? 4 : d < 16 ? 5 : 6;
+        }
+        // --relaxed-check: the bound against an exact value.
+        void rxCheck(const BattleContext &s, double exact, bool end) {
+            RxView x;
+            if (!rxView(s, x) || s.turn > turnCap_) { ++relaxedGateMisses_; return; }
+            const double ub = rxPad(end ? rxEndOf(0, x) : rxDecAt(0, x));
+            ++(end ? relaxedEndChecks_ : relaxedDecChecks_);
+            if (ub < exact - 1e-9) {
+                if (++relaxedViolations_ <= 10)
+                    std::cerr << "relaxed bound violated (" << (end ? "end" : "decision") << "): bound " << ub << " exact "
+                              << exact << " turn " << s.turn << " hp " << x.h << " monster " << x.m << '\n';
+                return;
+            }
+            ++(end ? relaxedEndSlack_ : relaxedDecSlack_)[slackBucket(ub - exact)];
+        }
+
+        // --abstract-check: the abstract exact recursion against an exact value of the search.
+        void abstractCompare(const BattleContext &s, double exact, bool end) {
+            RxView x;
+            if (!rxView(s, x) || s.turn > turnCap_) { ++relaxedGateMisses_; return; }
+            const double a = end ? rxEndOf(1, x) : rxDecAt(1, x);
+            ++abstractChecks_;
+            const double diff = std::abs(a - exact);
+            abstractMaxDiff_ = std::max(abstractMaxDiff_, diff);
+            if (diff > 1e-9 * (1 + std::abs(exact)) && ++abstractMismatches_ <= 10)
+                std::cerr << "abstract value differs (" << (end ? "end" : "decision") << "): abstract " << a << " exact " << exact
+                          << " turn " << s.turn << " hp " << x.h << " monster " << x.m << '\n';
+        }
+
+        // --relaxed-check: the engine's outcomes of ending the turn at `s` against
+        // the relaxed game's monster turn, leaves and draw.
+        void rxMirror(const BattleContext &s, const SAction &endTurn) {
+            RxView x;
+            if (!rxView(s, x)) { ++relaxedGateMisses_; return; }
+            ++relaxedChecked_;
+            const int hp = x.h - std::max(0, rxHit(x.mv0, x.str) - x.pblock);
+            const bool gone = x.abGone || x.hand.a > 0;
+            const int str2 = x.str + (x.mv0 == RX_BELLOW ? rxBellowStr_ : 0), v2 = std::max(0, x.vuln - 1);
+            auto bad = [&](const char *what) {
+                if (++relaxedMirror_ <= 10)
+                    std::cerr << "relaxed mirror mismatch: " << what << " (turn " << s.turn << " hp " << x.h << " monster "
+                              << x.m << " move " << x.mv0 << ")\n";
+            };
+            double pMove[3] = {0, 0, 0};
+            for (const auto &o : outcomes(s, endTurn)) {
+                const BattleContext &n = o.state;
+                if (hp <= 0) {
+                    if (n.outcome != Outcome::PLAYER_LOSS) bad("expected a death");
+                    else if (std::abs(terminal(n).v - rxLeaf(x.m, s.turn, true)) > 1e-9) bad("death leaf");
+                    continue;
+                }
+                if (n.outcome != Outcome::UNDECIDED || !quiet(n)) { bad("expected a quiet undecided state"); continue; }
+                const auto &mn = n.monsters.arr[0];
+                if (n.turn != s.turn + 1 || n.player.curHp != hp || n.player.block != 0 || n.player.energy != rxEnergy_
+                    || mn.curHp != x.m || mn.block != rxBlock_[x.mv0] || mn.strength != str2 || mn.vulnerable != v2
+                    || rxMove(mn.moveHistory[1]) != x.mv0) {
+                    if (relaxedMirror_ < 10)
+                        std::cerr << "  engine: turn " << n.turn << " hp " << n.player.curHp << " block " << n.player.block
+                                  << " energy " << int(n.player.energy) << " monster " << mn.curHp << " block " << mn.block
+                                  << " str " << mn.strength << " vuln " << mn.vulnerable << " last " << rxMove(mn.moveHistory[1])
+                                  << "; relaxed: hp " << hp << " block " << rxBlock_[x.mv0] << " str " << str2 << " vuln " << v2
+                                  << " (pblock " << x.pblock << " mb " << x.mb << " mv1 " << x.mv1 << ")\n";
+                    bad("monster turn");
+                    continue;
+                }
+                RxView y;
+                if (!rxView(n, y)) { bad("next state outside the relaxed game"); continue; }
+                pMove[y.mv0] += o.p;
+                if (y.abGone != gone) bad("exhaust");
+                // The drawn hand and the pile it leaves must be a draw the relaxed game
+                // offers, with the engine's probability (move roll times draw).
+                double pDraw = -1;
+                const RxDeck before = x.pile;
+                rxHands(before, gone, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                    if (hand.s == y.hand.s && hand.d == y.hand.d && hand.b == y.hand.b && hand.a == y.hand.a
+                        && left.s == y.pile.s && left.d == y.pile.d && left.b == y.pile.b && left.a == y.pile.a)
+                        pDraw = p;
+                });
+                if (pDraw < 0) bad("draw");
+                else if (std::abs(o.p - rxRoll_[x.mv0][x.mv1][y.mv0] * pDraw) > 1e-9) bad("draw probability");
+                if (n.turn > turnCap_) {
+                    if (std::abs(terminal(n).v - rxLeaf(x.m, n.turn, false)) > 1e-9) bad("cap leaf");
+                } else {
+                    // The start value maxes over hands: at least this hand's value.
+                    const std::size_t off = rxStart(0, x.m, str2, v2, y.mv0, x.mv0, before, gone, n.turn);
+                    if (rxDecAt(0, y) > rxTab_[0].pool[off + hp] + 1e-9) bad("start value below a drawn hand");
+                }
+            }
+            if (hp > 0)
+                for (int k = 0; k < 3; ++k)
+                    if (std::abs(pMove[k] - rxRoll_[x.mv0][x.mv1][k]) > 1e-9) bad("move probabilities");
+        }
     private:
         Key twinKey(const KeyBuilder &pre, int hp, std::uint64_t tag) const {
             Key k = keyAtHp(pre, hp);
@@ -853,6 +1353,8 @@ namespace {
             }
             if (memoize) {
                 inProgress_.erase(key);
+                if (relaxedCheck_ && best.exact) rxCheck(s, best.v, false);
+                if (abstractCheck_ && best.exact) abstractCompare(s, best.v, false);
                 ++statesByTurn_[s.turn];
                 noteState(s, 0);
                 remember(key, best);
@@ -902,6 +1404,12 @@ namespace {
                 return bound(hit.v);
             }
             if (intentCheck_) checkIntentBound(s, endTurn);
+            if (relaxedCheck_) rxMirror(s, endTurn);
+            // Research (--relaxed-check): end-of-turn states the relaxed bound would refute before any replay.
+            const bool rxWould = relaxedCheck_ && alpha > kNoAlpha && [&] {
+                RxView x;
+                return rxView(s, x) && rxPad(rxEndOf(0, x)) <= alpha;
+            }();
             if (intentBound_ && alpha > kNoAlpha) {
                 if (const double ub = intentUpperBound(s); ub <= alpha) {
                     ++cutoffs_;
@@ -911,7 +1419,26 @@ namespace {
                     return bound(ub);
                 }
             }
+            if (relaxedBound_ && alpha > kNoAlpha) {
+                if (RxView x; rxView(s, x)) {
+                    if (const double ub = rxPad(rxEndOf(0, x)); ub <= alpha) {
+                        ++cutoffs_;
+                        ++relaxedCutoffs_;
+                        noteState(s, 1);
+                        remember(key, bound(ub));
+                        return bound(ub);
+                    }
+                } else {
+                    ++relaxedGateMisses_;
+                }
+            }
+            if (rxWould) ++relaxedWouldCut_;
             const Val v = expand(s, endTurn, alpha);
+            if (relaxedCheck_ && v.exact) {
+                rxCheck(s, v.v, true);
+                ++relaxedIntentSlack_[slackBucket(std::max(0.0, intentUpperBound(s) - v.v))];
+            }
+            if (abstractCheck_ && v.exact) abstractCompare(s, v.v, true);
             noteState(s, 1);
             remember(key, v);
             return v;
@@ -1044,10 +1571,19 @@ namespace {
                     for (int h : {s.player.curHp + d, s.player.curHp - d})
                         if (Val hit; h > 0 && h <= s.player.maxHp && memo_.find(keyAtHp(spre, h), hit) && hit.exact && hit.sig) { hashSig = hit.sig; break; }
             }
-            if (orderHeuristic_ >= 0) {
+            if (orderHeuristic_ >= 0 || relaxedOrder_) {
                 std::vector<double> hk(cands.size(), 0);
-                for (std::size_t i : survivors) hk[i] = heuristicKey(cands[i].st, orderHeuristic_);
-                std::stable_sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) { return hk[x] > hk[y]; });
+                if (orderHeuristic_ >= 0) {
+                    for (std::size_t i : survivors) hk[i] = heuristicKey(cands[i].st, orderHeuristic_);
+                    std::stable_sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) { return hk[x] > hk[y]; });
+                }
+                if (relaxedOrder_) {
+                    for (std::size_t i : survivors) {
+                        RxView x;
+                        hk[i] = rxView(cands[i].st, x) ? rxEndOf(0, x) : 1e300;
+                    }
+                    std::stable_sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) { return hk[x] > hk[y]; });
+                }
             } else if (oracle_ && oracleOrder_) {
                 // Research: order by the previous solve's values (best first).
                 std::vector<double> ov(cands.size(), -1e300);
@@ -1252,6 +1788,8 @@ int main(int argc, char **argv) {
         int orderHeuristic = -1, oracleCap = -1;
         bool twinOrder = false;
         bool lipschitz = false, interpolate = false, endTwin = false, intentBound = false, intentCheck = false;
+        bool relaxedBound = false, relaxedCheck = false, relaxedFree = false, relaxedOrder = false;
+        bool abstractCheck = false, abstractOnly = false;
         double epsilon = 0;
         int turnCap = 8;
         for (int i = 4; i < argc; ++i) {
@@ -1291,6 +1829,12 @@ int main(int argc, char **argv) {
             else if (arg == "--end-twin") endTwin = true;
             else if (arg == "--intent-bound") intentBound = true;
             else if (arg == "--intent-check") intentCheck = true;
+            else if (arg == "--relaxed-bound") relaxedBound = true;
+            else if (arg == "--relaxed-check") relaxedCheck = true;
+            else if (arg == "--relaxed-free-draws") relaxedFree = true;
+            else if (arg == "--relaxed-order") relaxedOrder = true;
+            else if (arg == "--abstract-check") abstractCheck = true;
+            else if (arg == "--abstract-only") abstractOnly = true;
             else if (arg == "--epsilon") epsilon = std::stod(value());
             else throw std::invalid_argument("unknown option " + arg);
         }
@@ -1360,6 +1904,17 @@ int main(int argc, char **argv) {
                             solver->endTwin_ = (endTwin || lipschitz) && solver->bounds_;
                             solver->intentBound_ = intentBound && solver->bounds_;
                             solver->intentCheck_ = intentCheck && solver->bounds_;
+                            if ((relaxedBound || relaxedCheck || relaxedOrder || abstractCheck || abstractOnly) && solver->bounds_) {
+                                solver->relaxedFreeDraws_ = relaxedFree;
+                                if (solver->relaxedInit()) {
+                                    solver->relaxedBound_ = relaxedBound;
+                                    solver->relaxedCheck_ = relaxedCheck;
+                                    solver->relaxedOrder_ = relaxedOrder;
+                                    solver->abstractCheck_ = abstractCheck;
+                                } else {
+                                    std::cerr << "relaxed bound: this fight is not modelled; flag ignored\n";
+                                }
+                            }
                         }
                         const auto t0 = std::chrono::steady_clock::now();
                         const auto &edges = searcher.rootNode().edges;
@@ -1368,8 +1923,28 @@ int main(int argc, char **argv) {
                         double best = -1e300;
                         int bestIdx = -1, chosenIdx = -1;
                         std::vector<Val> qs;
+                        // Research: every root action's value from the abstract exact recursion, from fresh tables.
+                        json qAbstract = json::array();
+                        double abstractRootSeconds = 0;
+                        if ((abstractCheck || abstractOnly) && solver->relaxedReady()) {
+                            const auto ta = std::chrono::steady_clock::now();
+                            for (const auto &e : edges) {
+                                double qa = 0;
+                                qAbstract.push_back(solver->abstractQ(root, e.action, qa) ? json(qa) : json(nullptr));
+                            }
+                            abstractRootSeconds = seconds(ta);
+                        }
+                        if (abstractOnly && qAbstract.size() != edges.size())
+                            throw std::runtime_error("--abstract-only: this fight is not modelled");
                         for (std::size_t i = 0; i < edges.size(); ++i) {
-                            const Val v = solver->q(root, edges[i].action);
+                            Val v;
+                            if (abstractOnly) {
+                                if (qAbstract[i].is_null()) throw std::runtime_error("--abstract-only: a root action is not modelled");
+                                v.v = qAbstract[i].get<double>();
+                                v.score = v.hp = v.win = v.capped = -1;   // not tracked by the recursion
+                            } else {
+                                v = solver->q(root, edges[i].action);
+                            }
                             if (!v.exact) throw std::runtime_error("exact solver: a root value came back as a bound");
                             qs.push_back(v);
                             if (v.v > best) { best = v.v; bestIdx = static_cast<int>(i); }
@@ -1388,6 +1963,11 @@ int main(int argc, char **argv) {
                                     {"regret", best - qs[chosenIdx].v}, {"optimal", qs[chosenIdx].v >= best - 1e-9},
                                     {"states", solver->states()}};
                         if (verify) row["verifiedHits"] = solver->verifiedHits();
+                        if (!qAbstract.empty()) {
+                            row["qAbstract"] = qAbstract;
+                            row["abstractRootSeconds"] = abstractRootSeconds;
+                            row["abstractOnly"] = abstractOnly;
+                        }
                         row["solveSecondsSoFar"] = solveSeconds;
                         if (stats && !firstRootDone) {
                             ExactSolver::SolutionStats opt, all;
@@ -1487,6 +2067,26 @@ int main(int argc, char **argv) {
                                 {"endFirstCuts", solver ? solver->endFirstCuts_ : 0},
                                 {"endFirstCutReplays", solver ? solver->endFirstCutReplays_ : 0},
                                 {"replays", solver ? solver->replays() : 0},
+                                {"relaxed", solver && (solver->relaxedBound_ || solver->relaxedCheck_)},
+                                {"relaxedCutoffs", solver ? solver->relaxedCutoffs_ : 0},
+                                {"relaxedDecTighter", solver ? solver->relaxedDecTighter_ : 0},
+                                {"relaxedViolations", solver ? solver->relaxedViolations_ : 0},
+                                {"relaxedMirrorMismatches", solver ? solver->relaxedMirror_ : 0},
+                                {"relaxedMirrorChecked", solver ? solver->relaxedChecked_ : 0},
+                                {"relaxedGateMisses", solver ? solver->relaxedGateMisses_ : 0},
+                                {"relaxedEndChecks", solver ? solver->relaxedEndChecks_ : 0},
+                                {"relaxedDecChecks", solver ? solver->relaxedDecChecks_ : 0},
+                                {"relaxedEndSlack<.5,1,2,4,8,16,inf", solver ? json(std::vector<std::int64_t>(solver->relaxedEndSlack_, solver->relaxedEndSlack_ + 7)) : json::array()},
+                                {"relaxedDecSlack<.5,1,2,4,8,16,inf", solver ? json(std::vector<std::int64_t>(solver->relaxedDecSlack_, solver->relaxedDecSlack_ + 7)) : json::array()},
+                                {"relaxedIntentSlack<.5,1,2,4,8,16,inf", solver ? json(std::vector<std::int64_t>(solver->relaxedIntentSlack_, solver->relaxedIntentSlack_ + 7)) : json::array()},
+                                {"relaxedWouldCut", solver ? solver->relaxedWouldCut_ : 0},
+                                {"relaxedStates", solver ? solver->relaxedStates() : 0},
+                                {"relaxedSeconds", solver ? solver->rxSeconds_[0] : 0.0},
+                                {"abstractChecks", solver ? solver->abstractChecks_ : 0},
+                                {"abstractMismatches", solver ? solver->abstractMismatches_ : 0},
+                                {"abstractMaxDiff", solver ? solver->abstractMaxDiff_ : 0.0},
+                                {"abstractStates", solver ? solver->abstractStates() : 0},
+                                {"abstractSeconds", solver ? solver->rxSeconds_[1] : 0.0},
                                 {"lipschitzTighter", solver ? solver->lipschitzTighter_ : 0},
                                 {"interpNoLo", solver ? solver->interpNoLo_ : 0},
                                 {"interpNoHi", solver ? solver->interpNoHi_ : 0},
