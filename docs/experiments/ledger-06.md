@@ -22165,7 +22165,7 @@ for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
 Seeds: none new (live seed 111200472 as reported).
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
-## §TBD — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
+## §602 — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
 
 **Question:** after §600 (Darkling "Life Link"), are the generic entries of the tracker's monster-power whitelist real
 Java POWER_IDs? (Reviewer E's follow-up on #763.)
@@ -22177,7 +22177,7 @@ Java POWER_IDs? (Reviewer E's follow-up on #763.)
 stopped the live run; it failed closed.
 **Interpretation:** producer bug, fixed in the mod (three strings); no flag. The jar check now covers every whitelist
 entry. No engine or simulation change.
-**Open question:** the full `test.sh` (jar check) runs on the PC via the canary.
+**Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
 Seeds: none.
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
@@ -22530,7 +22530,7 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
-## §600 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+## §601 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
 
 **Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
 `engine-parity/overnight-20261019/ISSUES.md` on the share)?
