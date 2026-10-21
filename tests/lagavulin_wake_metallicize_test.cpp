@@ -44,6 +44,7 @@ static void check(bool fixed) {
     require(wake(12, true) == (fixed ? 4 : 0), "attack wake: Metallicize 12 -> 4");
     require(wake(12, false) == (fixed ? 4 : 0), "HP-loss wake: Metallicize 12 -> 4");
     require(wake(8, true) == 0, "Metallicize 8 is used up by the wake");
+    require(wake(5, false) == 0, "Metallicize below 8 is removed, not negative");
 }
 
 int main() {
