@@ -411,6 +411,21 @@ path reset both costs to the upgraded base. `STS_UPGRADE_COST_DELTA_FIX`
 upgrade (Armaments, Apotheosis, ...): Blood for Blood keeps its reduction, and a
 cost-changing upgrade keeps the card's `costForTurn - cost` difference.
 
+Seed 111200445 (live problem 54): a Headbutt that moved Pen Nib's counter
+from 8 to 9 imported with the Pen Nib status bit already set, while native
+still held its `BuffPlayer<PEN_NIB>` behind the Headbutt grid. The importer
+turned the counter-9 sentinel into the bit even though the game's PenNibPower
+was only queued. `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0`
+restores) leaves the bit clear while a pending Pen Nib buff is queued and no
+Pen Nib power is present.
+
+Seed 111200436 (live problem 42): Fiend Fire grounded a Byrd at 1 HP, and
+native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
+20). Java `ReducePowerAction` removes the power, so the grounded Byrd takes
+full damage and gets no Flight back at its next start of turn; native still
+halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
+`STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 
