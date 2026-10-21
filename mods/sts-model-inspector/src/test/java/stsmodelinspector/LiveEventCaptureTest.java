@@ -17,6 +17,7 @@ public final class LiveEventCaptureTest {
     static class Bonfire { String screen="CHOOSE"; }
     static class Ghosts extends Base { int hpLoss=40; }
     static class Mushrooms extends Base {}
+    static class TheJoust { String screen="HALT"; }
     static class Unknown { String screen="COMPLETE"; }
     static Map<String,Object> obj(Object...pairs) {Map<String,Object> m=new LinkedHashMap<>();for(int i=0;i<pairs.length;i+=2)m.put((String)pairs[i],pairs[i+1]);return m;}
     @SuppressWarnings("unchecked") static Map<String,Object> map(Object v){return (Map<String,Object>)v;}
@@ -38,7 +39,7 @@ public final class LiveEventCaptureTest {
             try {LiveEventCapture.weMeetGold(malformed[0],malformed[1]);throw new AssertionError("malformed gold offer accepted");}
             catch(IllegalArgumentException expected) {}
         }
-        for(String name:Arrays.asList("SensoryStone","TheJoust","Bonfire"))
+        for(String name:Arrays.asList("SensoryStone","Bonfire"))
             check(LiveEventCapture.matches(LiveEventCapture.CONTINUES,name,"INTRO"),"later phases replaced intro "+name);
         check(LiveEventCapture.matches(LiveEventCapture.LEAVES,"SensoryStone","LEAVE"),"Sensory Stone reward exit missing");
         Cleric cleric=new Cleric();Map<String,Object> out=capture(cleric,0,1,2);
@@ -71,6 +72,10 @@ public final class LiveEventCaptureTest {
         check("event_continue".equals(map(out.get("details")).get("mechanicalTransition"))&&!out.containsKey("unsupportedReason"),"Mushrooms ambush Fight not forced");
         mushrooms.screenNum=1;check("event_leave".equals(map(capture(mushrooms,0).get("details")).get("mechanicalTransition")),"Mushrooms leave page changed");
         mushrooms.screenNum=3;check(capture(mushrooms,0).containsKey("unsupportedReason"),"unknown Mushrooms page accepted");
+        TheJoust joust=new TheJoust();out=capture(joust,0);
+        check("event_continue".equals(map(out.get("details")).get("mechanicalTransition"))&&!out.containsKey("unsupportedReason"),"Joust HALT Continue not forced");
+        joust.screen="EXPLANATION";check(capture(joust,0,1).containsKey("unsupportedReason"),"Joust bet treated as forced");
+        joust.screen="INTRO";check(capture(joust,0).containsKey("unsupportedReason"),"nonexistent Joust INTRO page accepted");
         check(capture(new Unknown(),0).containsKey("unsupportedReason"),"unknown class accepted as leave");
         for(String owner:Arrays.asList("DrugDealer","DesignerTransform"))check("transform".equals(LiveOocCapture.selectorType(false,false,false,Arrays.asList(owner),false,false).get("type")),"unflagged transform owner");
         check("remove".equals(LiveOocCapture.selectorType(false,false,false,Arrays.asList("NoteForYourself"),false,false).get("type")),"Note selector owner");
