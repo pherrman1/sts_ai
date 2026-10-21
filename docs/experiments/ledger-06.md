@@ -22066,3 +22066,18 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
+
+**Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after
+Second Wind+ with Anger 3 (problem 64b in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** `BattleContext::onUseSkillCard`, `MonsterGroup.cpp` (Colosseum Nobs layout); `ironclad_card_java_parity`
+(no gameplay seeds).
+**Result:** native applied the Skill-played Enrage only to `monsters.arr[0]`. Colosseum Nobs creates the Taskmaster in
+slot 0 and the Nob in slot 1, so the Nob never gained Strength. In Java the Nob's own `AngerPower.onUseCard` runs for
+every monster's powers. The Second Wind exhaust inference in the report is not needed.
+**Interpretation:** `STS_ENRAGE_ALL_MONSTERS_FIX` (default on, `=0` restores) checks every living monster. Play-changing
+for simulator play in that fight, unmeasured.
+**Open question:** javap of `AngerPower` and the `UseCardAction` monster-power loop is requested.
+Seeds: none new (live seed 111200459 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
