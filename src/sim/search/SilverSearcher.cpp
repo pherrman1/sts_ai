@@ -1133,6 +1133,15 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
     }
 }
 
+std::vector<search::Action> search::SilverSearcher::enumerateActions(const BattleContext &state) {
+    Node node;
+    enumerateActionsForNode(node, state);
+    std::vector<Action> actions;
+    actions.reserve(node.edges.size());
+    for (const auto &edge : node.edges) actions.push_back(edge.action);
+    return actions;
+}
+
 std::size_t search::SilverSearcher::prepareRootActions() {
     if (root->state->outcome == Outcome::UNDECIDED && root->edges.empty()) {
         enumerateActionsForNode(*root, *root->state);
