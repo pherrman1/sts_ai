@@ -74,3 +74,15 @@ Heart at least as often as PUCT at 4096, and at lower CPU?
 ## Verification
 `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/az_gumbel_root_ab_20261021`. The lead releases only
 the `OK:` workers.
+
+## Freeze (2026-10-21)
+- Authorization: Philipp 2026-10-21 21:07Z "Jo mach den gepaarten a/b mit 32 wirken nach gen2" (32 workers, launch
+  after the gen-2 A/B releases its workers).
+- Code: main `b0a8f5962ec8cd5d1d27ec070ebf90b4b2337797` (#791 `STS_OOC_MCTS_FULL_ROOT_SIMS`, review PASS B).
+  Since the gen-2 A/B freeze (`844bd923`), main also has #782 (Gumbel root, §619), #789 (engine speed,
+  bit-identical) and #790 (`STS_CORRUPTION_HAND_COST_FIX`, default-on play change, §620). Both arms carry #790, so the
+  contrast is unchanged, but absolute numbers are not comparable to gen 2's A/B.
+- Preset `linux-gcc-release-x86-64-v3`; binary `one_combat` sha256
+  `be70a1c19056c48a32cc00e86240c0f2956c8904c9f2b13d947221d49d0e616b`, published to the bin-cache.
+- Prior: student_sel in both arms (gen-2 A/B not finished at freeze).
+- Workers: 32. RUN_COMMIT = the commit that adds this record.

@@ -3,7 +3,7 @@
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=__RUN_COMMIT__  CAMPAIGN=docs/experiments/evidence/az_gumbel_root_ab_20261021
 
-Philipp authorized this run (__AUTHORIZATION__).
+Philipp authorized this run (2026-10-21 21:07Z: "Jo mach den gepaarten a/b mit 32 wirken nach gen2").
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads exactly wWW.tar and wWW.DONE.json to /mnt/project-files/az-gumbel-root-ab. Write nothing else to the share.

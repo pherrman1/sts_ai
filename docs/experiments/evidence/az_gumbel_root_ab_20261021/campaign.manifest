@@ -1,6 +1,6 @@
 name          az-gumbel-root-ab
 code_commit   b0a8f5962ec8cd5d1d27ec070ebf90b4b2337797
-binary_sha256 __BINARY_SHA256__
+binary_sha256 be70a1c19056c48a32cc00e86240c0f2956c8904c9f2b13d947221d49d0e616b
 workers       32
 share         /mnt/project-files/az-gumbel-root-ab
 configure_preset linux-gcc-release-x86-64-v3
