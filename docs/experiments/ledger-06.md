@@ -22171,7 +22171,7 @@ with the wake fix off). Changes only which live roots Silver searches. Stacked o
 **Open question:** none beyond #745's (Java reduces by 8; the unit test uses Metallicize 12 to tell -8 from removal).
 Seeds: none new (live seed 111200455 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
-## §TBD — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
+
 ## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
 
 **Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with
