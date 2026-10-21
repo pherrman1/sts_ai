@@ -23,6 +23,11 @@ Prices at the act-end horizon (ratio of means, HP-eq): non-Fairy potion 9.2 [−
 max HP −1.6 per point [−32.7, +0.7]; gold −0.37 per gold [−5.1, −0.05]. The −50 gold and −5 max HP copies end
 *ahead* of base on average (+1.0 and +0.4 floors). That is noise, not a price.
 
+**Deviations and comparability:** the copies are valued right after the act's boss fight (the probe's `stopAfterAct`
+break), not "at the next battle" as the PREREG says. The §537 comparison also differs in Silver settings (flat
+exact 10k there, learned stop and prior playouts here) and has 4x more states, so its slope CI is narrower partly for
+that reason. The conclusion therefore rests on per-pair SD and signal-to-noise, not on the slope CIs.
+
 Projected N\* for a ±3 HP-eq per-act potion price: about 8,400 / 179,000 / 438,000 states for acts 1/2/3, or about
 14,600 core-h.
 

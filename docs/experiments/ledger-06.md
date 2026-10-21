@@ -22638,6 +22638,8 @@ projects to ≤ 800 core-h.
 3 fights: 0.066 [0.046, 0.086]). Paired-Δ SD for −12 HP 7.3 floors vs 4.8 at 3 fights, mean Δ −0.65 vs −0.79. Gold −50
 and max HP −5 copies end ahead of base on average. Non-Fairy potion 9.2 HP-eq [−6.1, +41.0]. Projected campaign
 ≈ 14,600 core-h. Cost 9.5 s CPU per continuation.
+Deviations: copies are valued right after the act's boss, not at the next battle; §537 used flat exact-10k Silver
+and has 4x the states, so the comparison rests on per-pair SD and signal-to-noise (0.09 vs 0.16 per pair).
 **Interpretation:** past the next few fights the paired copies diverge, and noise grows faster than the signal.
 **Inference:** CRN difference labels are affordable only at short horizons, whose prices did not transfer to whole
 runs (§537 → §542). So neither gen 1b nor CRN continuations give a usable difference label for a learned Silver leaf
