@@ -2843,7 +2843,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if(sourceTask!=null && isActionClass(name,"ShoutAction")) {
                 int next=leaderEscapeEnd(manager.actions,actionIndex);
                 String item=next<0?null:leaderEscapeJson(manager.actions,actionIndex,next);
-                if(item==null)return refusePending(actionIndex,"leader_escape");
+                if(item==null)return null;
                 if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
             }
             // Darkling.damage at a half-death: setMove(4) now, then
