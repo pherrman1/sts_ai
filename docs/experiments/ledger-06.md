@@ -22298,3 +22298,39 @@ smoke with a bad config (aborted before play).
 0's search arm vs the same plus the flag, Heart-kill McNemar with the matched-CPU rule. Not launched; needs Philipp's
 authorization and worker count. [Offline report](evidence/az_gen1b_value_leaf_ab_20261020/OFFLINE.md).
 **Knowledge impact:** `operations/environment-variables.md` (flag), `evaluation/current-research.md` (status).
+
+## §589 — AZ gen 1b vs student_sel as OOC prior: NOT_SHOWN on 512 paired A20 seeds, −1.0 pp Heart kills [−4.9, +3.0] at 1.04× wall (2026-10-21)
+
+Authorization: Philipp 2026-10-20 17:50Z ("Push it. Then do 512 seeds with 32 workers A/B"). Pre-registration, unit
+script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (`PREREG.md`, `run_unit.sh`,
+`analyze.py`, `result.json`, `verify.txt`, `tars.sha256`). PREREG's ledger reference for #732 means §573.
+
+- **Freeze:** RUN_COMMIT `826b5dda` (main `6e62cb64` plus the campaign dir); binary sha256 `193b0000…`.
+  student_sel `cf6bf7fb…`, gen1b `e6aa044c…` (data branch `claude/az-gen1-data` `65762545`); brief `d8f9dedb…`.
+  Smoke seeds 111200453–454: 4/4 arm runs rc 0, B loaded gen1b.
+- **Arms** (differ only in `STS_OOC_HEART1`): gen 0's search arm (§569) with A = student_sel, B = gen 1b as OOC prior,
+  rollout net and leaf selector. OOC MCTS 4096 sims, learned OOC stop 0.99, `GAP_STOP=0`, 25% full-budget roots, real
+  combats flat exact-10k Silver (`STS_OOC_MCTS_REAL_LEARNED_STOP=0`). The value head of gen 1b is not read by the
+  search. Main's parity fixes since gen 0 apply to both arms.
+- **Run:** seeds 111142376–111142887, 32 workers × 16 units (one unit = one seed, both arms, same container).
+  `verify_campaign.py` OK 1–32 plus a per-unit check (one `.done`, header and outcome row per arm; no duplicates after
+  container restarts of W2, W13, W19, W28–W30). 1,024 of 1,024 arm runs rc 0; 512 of 512 seeds valid.
+- **Result** (`result.json`):
+
+  | arm | Heart kills | reached Act 4 | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|
+  | A student_sel | 119 (23.2%) | 238 (46.5%) | 44.25 | 1,453, 3,306 |
+  | B gen 1b | 114 (22.3%) | 239 (46.7%) | 44.72 | 1,514, 3,711 |
+
+  Heart kills B − A −1.0 pp [−4.9, +3.0], discordant 51 B-only / 56 A-only, McNemar p 0.70. Act 4 +0.2 pp
+  [−4.4, +4.8], p 1.0. Wall B/A 1.04 (matched). Searched roots A 33,985 / B 34,292 (full-budget 8,469 / 8,431, none
+  aborted); the search's pick differed from the prior's argmax at 2,918 vs 3,465 roots.
+- **Verdict: NOT_SHOWN** (pre-registered rule). student_sel stays the OOC prior. The test resolves about ±4 pp.
+- **Descriptive:** arm A replays gen 0's search arm on newer code and fresh seeds: 23.2% here vs 25.8% in §569
+  (different seeds; the per-arm 95% half-width at 512 seeds is ≈3.7 pp), and 1,453 vs 1,967 s/run.
+- **Inference:** gen 1b's offline gain (validation KL to π' 0.087→0.061) did not show up as Heart kills at this
+  resolution. The search overrode gen 1b's argmax more often than student_sel's (3,465 vs 2,918 roots), so the
+  fine-tuned prior is less decisive, with no measurable effect on kills.
+- **Data:** both arms' captures (≈34k searched roots each, ≈8.4k full-budget) join gen 0's 1,664 runs as the gen-2
+  window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
+- **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
