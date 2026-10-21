@@ -22001,6 +22001,24 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §597 — Live combat parity: Curiosity never gave the Awakened One Strength natively (2026-10-21)
+
+**Question:** why was the Awakened One's Strength game N+2 vs native N after every Power play (live seed 111200436,
+problem 45), and exactly 2 lower for the rest of the fight in seed 111200459 seg2 (problem 65; s856 Inflame)?
+**Setup:** `ISSUES.md` #45/#65 on the share; `BattleContext::onUsePowerCard`; `curiosity_power_play` unit test (no
+gameplay seeds).
+**Result:** the native engine never implemented `CuriosityPower.onUseCard`; the hook at the end of `onUsePowerCard`
+was commented out, and nothing else reads Curiosity. Live play re-imports the game state each decision, which hid
+it in most verdicts.
+**Interpretation:** `STS_CURIOSITY_FIX` (default on, `=0` restores) queues `BuffEnemy<STRENGTH>(Curiosity)` at the
+bottom for each monster holding Curiosity on every Power use (Duplication/Echo Form/Burst copies included; unplayable
+autoplay uses skip hooks; Curiosity is already removed at the stage-1 death). Play-changing for simulated Awakened One
+fights (Silver search and rollouts now see the Strength the Powers give); unmeasured.
+**Comparability:** this changes simulated Awakened One fights (Act 3 boss), so A20 whole-run results before and after
+this merge are not comparable; compare with `STS_CURIOSITY_FIX=0` or rerun both arms on one commit.
+Seeds: none new (live seeds as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
 ## §592 — Live Runic Dome: a Slime Boss split child's birth roll with aliveCount 0 stopped the run (2026-10-21)
 
 **Question:** why did live seed 111200458 (release 9ec8a51d, Act 3 floor 38, Slime Boss event, Runic Dome) stop at s546

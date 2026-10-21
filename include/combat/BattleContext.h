@@ -267,6 +267,14 @@ namespace sts {
     // nothing. Other values are fatal. Read only at a Magnetism turn start.
     bool magnetismFix();
 
+    // STS_CURIOSITY_FIX: unset/1 (default) = each Power play queues Strength
+    // equal to Curiosity at the bottom for every monster holding it, as in the
+    // game (CuriosityPower.onUseCard -> ApplyPowerAction; overnight live play
+    // 2026-10-20 problems 45 and 65: the Awakened One's Strength stayed 2 lower
+    // per Power natively). 0 = the legacy engine, where Curiosity did nothing.
+    // Other values are fatal. Read only when a Power card is used.
+    bool curiosityFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

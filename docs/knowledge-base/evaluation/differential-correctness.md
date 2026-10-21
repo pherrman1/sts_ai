@@ -370,6 +370,15 @@ Reality upgrades the card and a full hand sends it to the discard pile.
 `STS_MAGNETISM_FIX` (default on, `=0` restores) implements this
 (`tests/magnetism_start_of_turn_test.cpp`).
 
+Runs on 2026-10-20 (seed 111200436, problem 45; seed 111200459, problem 65)
+showed the Awakened One's Strength game N+2 against native N after every
+Power play. Native never implemented `CuriosityPower.onUseCard` (the hook in
+`onUsePowerCard` was commented out). Live decisions re-import the game state,
+so the gap reset at the next import; it persisted when native carried the
+state on (#65). `STS_CURIOSITY_FIX` (default on, `=0` restores) queues
+Strength equal to Curiosity at the bottom for each monster holding it on
+every Power use, copies included (`tests/curiosity_power_play_test.cpp`).
+
 A run on 2026-10-20 (seed 111200459, Awakened One, problem 64(d)) played
 Purity as the last card in hand on Letter Opener's third skill. The game
 finished the play at once (no selection, every monster 5 HP lower); native
