@@ -178,6 +178,13 @@ namespace sts {
         throw std::runtime_error("STS_MAYHEM_AFTER_DRAW_FIX must be 0 or 1");
     }
 
+    bool lagavulinWakeMetallicizeFix() {
+        const char *value = std::getenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_LAGAVULIN_WAKE_METALLICIZE_FIX must be 0 or 1");
+    }
+
     bool magnetismFix() {
         const char *value = std::getenv("STS_MAGNETISM_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
