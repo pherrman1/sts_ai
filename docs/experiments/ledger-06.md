@@ -22612,7 +22612,7 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
-## §TBD — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
+## §611 — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
 
 **Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
 22 in the game and 23 natively after True Grit with hand [True Grit, Anger] (problem 76 in
