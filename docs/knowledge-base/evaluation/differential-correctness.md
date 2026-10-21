@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode).
+Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
 
 ## Purpose
 
@@ -324,6 +324,31 @@ top, so Burning Pact's hand selection never opened and a pre-draw Clothesline+
 won a fight the game had not ended. `STS_MAYHEM_AFTER_DRAW_FIX` (default on,
 `=0` restores) plays it after the draw.
 
+A run on 2026-10-20 (seed 111200435, problem 41) showed the game's exhaust
+pile one card longer than native after four Havoc+ plays; each time the card
+Havoc played was unplayable (Burn, Burn+, Clash+ with a non-attack in hand).
+The engine dropped an autoplayed card that failed `canUse`, so it reached no
+pile. In the game (pinned-jar javap, `GameActionManager.getNextAction`), such
+a card is removed from the queue and, because it is in autoplay, gets
+`dontTriggerOnUseCard = true` and a `UseCardAction` at the bottom: no `use`,
+no `onUseCard`/`onAfterUseCard` hooks, but the action still routes it
+(exhaust when `exhaustOnUseOnce || exhaust`, Strange Spoon on cardRandomRng
+for non-powers, otherwise discard; powers leave combat).
+`STS_UNPLAYABLE_AUTOPLAY_FIX` (default on, `=0` restores) does this
+(`tests/unplayable_autoplay_test.cpp`). Java `cardPlayable` also rejects a
+targeted card whose target `isDying` (or when every monster is dying or
+escaping), so an autoplay at an already-dead target takes the same path. It
+does not reject a half-dead (Darkling, Awakened One; `isDying` stays false at
+0 HP) or escaping target: the game uses that card normally. The engine does
+not model that case and keeps its legacy behavior there (Open question for a
+later fix). Problem 44 (seed 111200436, Distilled
+Chaos over Ascender's Bane, Defend, Shrug It Off) hit the same path and showed
+a second difference: the game discarded Bane, Defend, Shrug, native Shrug then
+Defend. `PlayTopCardAction` queues `NewQueueCardAction(card, target, false,
+true)`, whose `addCardQueueItem(item, false)` appends, so autoplayed cards
+play first-in first-out; the engine pushed each to the front of the card
+queue. `STS_AUTOPLAY_QUEUE_ORDER_FIX` (default on, `=0` restores) appends.
+
 A run on 2026-10-20 (seed 111200447, floor 8, problem 58) woke a sleeping
 Lagavulin with Metallicize 12 by a Strike: the game kept Metallicize 4, native
 removed it. The pinned-jar javap shows both wakes running
@@ -361,6 +386,15 @@ restores) grows the count only to `placeIdx+2`
 (`tests/slime_split_monster_count_test.cpp`). The same step's
 `endHpGameMinusNative` of 6 at s221 is Burning Blood healing after combat,
 which Java applies before the inspector's post snapshot.
+
+Runs on 2026-10-20 (seed 111200436, problem 45; seed 111200459, problem 65)
+showed the Awakened One's Strength game N+2 against native N after every
+Power play. Native never implemented `CuriosityPower.onUseCard` (the hook in
+`onUsePowerCard` was commented out). Live decisions re-import the game state,
+so the gap reset at the next import; it persisted when native carried the
+state on (#65). `STS_CURIOSITY_FIX` (default on, `=0` restores) queues
+Strength equal to Curiosity at the bottom for each monster holding it on
+every Power use, copies included (`tests/curiosity_power_play_test.cpp`).
 
 A run on 2026-10-20 (seed 111200459, Awakened One, problem 64(d)) played
 Purity as the last card in hand on Letter Opener's third skill. The game
