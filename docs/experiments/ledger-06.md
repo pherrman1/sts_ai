@@ -22177,7 +22177,7 @@ Java POWER_IDs? (Reviewer E's follow-up on #763.)
 stopped the live run; it failed closed.
 **Interpretation:** producer bug, fixed in the mod (three strings); no flag. The jar check now covers every whitelist
 entry. No engine or simulation change.
-**Open question:** the full `test.sh` (jar check) runs on the PC via the canary.
+**Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
 Seeds: none.
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
