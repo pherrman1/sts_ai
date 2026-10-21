@@ -262,9 +262,9 @@ void Monster::wakeMetallicize(BattleContext &bc) {
     // Lagavulin.damage queues ChangeStateAction("OPEN"), whose changeState
     // queues ReducePowerAction(Metallicize, 8): the wake subtracts 8, the same
     // as the natural wake (STS_LAGAVULIN_WAKE_METALLICIZE_FIX).
-    if (lagavulinWakeMetallicizeFix()) {
+    if (lagavulinWakeMetallicizeFix() && getStatus<MS::METALLICIZE>() > 8) {
         decrementStatus<MS::METALLICIZE>(8);
-    } else {
+    } else { // ReducePowerAction removes the power when the amount runs out
         removeStatus<MS::METALLICIZE>();
     }
 }
