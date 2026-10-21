@@ -22602,7 +22602,7 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
-## §607 — Live advisor: #769's Gremlin Leader check threw on every combat without a selection (2026-10-21)
+## §608 — Live advisor: #769's Gremlin Leader check threw on every combat without a selection (2026-10-21)
 
 **Question:** why did live seed 111200480 on ab8833a8 (main with #769, §605) get no advisor answer at its first combat
 (problem 77 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
