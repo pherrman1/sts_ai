@@ -1009,7 +1009,7 @@ void ActData_DiscoveryAction::operator()(BattleContext &bc) const {
 
 void ActData_InfernalBladeAction::operator()(BattleContext &bc) const {
         const auto cid = getTrulyRandomCardInCombat(bc.cardRandomRng, bc.player.cc, CardType::ATTACK);
-        CardInstance c(cid);
+        CardInstance c = bc.generatedCombatCard(cid);
         c.setCostForTurn(0);
         bc.addToTop( Actions::MakeTempCardInHand(c) );
     }
