@@ -22218,6 +22218,16 @@ Seeds: none.
 
 **Knowledge impact:** shop slot identity no longer depends on render state.
 
+## §613 — Live problem 81: Headbutt killing Spire Shield was refused; the death's Surrounded removal is now folded (2026-10-21)
+
+**Observation.** Live A20 seed 111200492 (release 3f2dc148, Act 4 Shield and Spear): Headbutt killed Spire Shield (slot 0). Before its put-on-top GRID could be offered, the mod refused the queue as `silver_selection_pending_actions` with `refusal=3:pen_nib_removal`. The queue was `[RelicAboveCreatureAction (Kunai), ApplyPowerAction Dexterity 1, UseCardAction, RemoveSpecificPowerAction(player, player, "Surrounded")]`. The dead Shield still listed BackAttack -1. Extract: `engine-parity/overnight-20261019/issue81/p92-observation.json` on the share.
+
+**Cause.** `SpireShield/SpireSpear.die()` (javap in `issue40-javap.md`) queue `RemoveSpecificPowerAction(player, player, "Surrounded")` for each living partner, plus `(partner, partner, "BackAttack")` when the partner carries the marker. The producer only knew Pen Nib's String-ID removal. In addition, the importer counted the dead Shield's leftover BackAttack marker and would have refused the facing.
+
+**Change.** Producer (no flag): with a source card pending, these removals emit `PLAYER_REMOVE_SURROUNDED` and `MONSTER_REMOVE_BACK_ATTACK` (slot), qualified by exactly one living Spire monster, a dying or dead partner, `SurroundedPower`, and the survivor as target and source. Importer, `STS_SILVER_SPIRE_DEATH_QUEUE` (default on, `=0` restores the refusals): it folds the removal into the imported player, as native removes Surrounded at the death (`STS_SPIRE_SURROUNDED_DEATH_FIX`), skips the facing derivation, and ignores BackAttack on a dead Spire monster. Unit test: native Headbutt kills Spire Shield; root and continuation parity hold against the Java-form import; the Spear's marker removal is accepted; a dead-slot removal, a removal without Surrounded, both monsters alive, and `=0` all fail closed.
+
+**Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22729,3 +22739,20 @@ today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
 [Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
 Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
 **Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
+## §612 — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
+
+**Question:** why did live seed 111200476 parity s117 (release 0ba0e9a9, Discovery+ pick with three hits taken) show the
+new Blood for Blood at cost 1 in the game and 4 natively (problem 76; seed 111200481 s281 shows the same, 2 vs 4)?
+**Setup:** the canary's trace extract and javap of `BloodForBlood`, `DiscoveryAction`, `InfernalBlade`, `DeadBranch` and
+`AbstractCard.makeStatEquivalentCopy` (`issue76/` on the share); `blood_for_blood_copy_cost_test` (Ironclad seed
+111200071, JAW_WORM, no gameplay runs).
+**Result:** `BloodForBlood.makeCopy()` returns a new card with `updateCost(-player.damagedThisCombat)`. Discovery's
+offers (`generateCardChoices`), Infernal Blade and Dead Branch all call `makeCopy()`; Discovery's pick copies the offered
+card's cost via `makeStatEquivalentCopy`. Native built these cards with the base cost.
+**Interpretation:** `BattleContext::generatedCombatCard` applies the reduction for those three generators under
+`STS_BLOOD_FOR_BLOOD_COPY_COST_FIX` (default on, `=0` restores the base cost); the reduction clamps at 0 and no other
+card changes. Play-changing: generated Blood for Blood is cheaper after HP loss. The same trace's s489 draw-pile cost
+diff (game 0/0 vs native 1/1 for the deck's own Blood for Blood+ at an End Turn whose game observation precedes the
+draw) is not this path and stays open.
+Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
