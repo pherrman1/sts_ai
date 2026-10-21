@@ -129,6 +129,12 @@ the shared bounded dependency to a resolved map checkpoint before `v_win` is
 evaluated. Semantic roots outside V4's screen support use uniform source
 priors; REMOVE, TRANSFORM, and non-card reward roots are not rejected merely
 because V4 cannot supply their prior.
+Shop card slots (0-4 class, 5-6 colorless) are tracked by card identity from
+the shop's first capture. A Courier restock takes the bought card's index in
+`coloredCards`/`colorlessCards`, so it inherits the slot of the card that
+previously held that index in the last captured list. Card positions are not
+used, because `ShopScreen.updateCards` re-derives them from the sliding rug every frame
+(problem 79).
 
 Each supported OOC candidate reports a semantic key/payload, physical live
 action, Q, visit count, visit share, and prior. The selected candidate is the

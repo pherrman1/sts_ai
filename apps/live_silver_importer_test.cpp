@@ -4943,6 +4943,109 @@ int main(int argc, char **argv) {
             }
         }
         {
+            // Problem 81 (overnight live play 2026-10-21, seed 111200492): Headbutt
+            // killing Spire Shield opens its GRID with SpireShield.die()'s
+            // RemoveSpecificPowerAction(player, "Surrounded") queued behind the
+            // cleanup; native removes Surrounded at the death. The dead Shield
+            // keeps Java's BackAttack marker.
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=4; game.floorNum=54;
+            BattleContext live; live.init(game, MonsterEncounter::SHIELD_AND_SPEAR);
+            auto &shield=live.monsters.arr[0];
+            if(shield.id!=MonsterId::SPIRE_SHIELD || !live.player.hasStatus<PlayerStatus::SURROUNDED>())
+                throw std::runtime_error("Shield and Spear fixture has no Shield in slot 0 or no Surrounded");
+            for (int played=0;played<2;++played) {
+                CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(990+played);
+                live.cards.moveToHand(defend); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            }
+            shield.block=0; shield.curHp=3;
+            CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=995;
+            live.cards.moveToHand(headbutt); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
+                    || shield.curHp>0 || live.player.hasStatus<PlayerStatus::SURROUNDED>())
+                throw std::runtime_error("native Headbutt did not kill Spire Shield and remove Surrounded");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x81581u);
+            if(!expected.pendingActionQueueObserved || expected.pendingActionQueue.size()!=1)
+                throw std::runtime_error("native Spire Shield Headbutt queue is not the cleanup alone");
+            auto observation=javaLikeDynamicObservation(expected,"MonsterRoomElite","headbutt-spire-shield");
+            setProducerV4CardObservation(observation,expected);
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"cards",json::array()},{"liveChoices",json::array()}};
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingCardQueue"]=json::array();
+            combat["playerPowers"].push_back({{"id","Surrounded"},{"amount",-1}});
+            combat["monsters"][0]["powers"].push_back({{"id","BackAttack"},{"amount",-1}});
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                json{{"kind","PLAYER_REMOVE_SURROUNDED"}}});
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(!imported.ok) throw std::runtime_error("Spire Shield Headbutt import: "+imported.reason);
+            if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
+                throw std::runtime_error("Spire Shield Headbutt pending queue differs from native");
+            normalizeDynamicObservationIdentity(expected);
+            const auto adoptIds=[](auto &mine,const auto &theirs) {
+                if(mine.size()!=theirs.size()) throw std::runtime_error("Spire Shield Headbutt pile size differs");
+                for(std::size_t i=0;i<mine.size();++i) {
+                    if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                        throw std::runtime_error("Spire Shield Headbutt pile order differs");
+                    mine[i].uniqueId=theirs[i].uniqueId;
+                }
+            };
+            adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+            adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+            adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+            adoptIds(expected.hand,imported.wire.hand);
+            expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+            expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+            expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+            expected.cardSelect.cards=imported.wire.cardSelect.cards;
+            auto actual=battleContextFromWire(imported.wire);
+            auto reference=battleContextFromWire(expected);
+            if(!actual.equalForSearch(reference)) {
+                const auto context=searchContextFromWire(imported.wire);
+                std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                        json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                throw std::runtime_error("Spire Shield Headbutt root parity failed");
+            }
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(actual); pick.execute(reference);
+            if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                throw std::runtime_error("Spire Shield Headbutt continuation parity failed");
+            // The surviving Spear's BackAttack removal follows the Surrounded one.
+            auto spearMarked=observation;
+            spearMarked["silverRoot"]["combat"]["monsters"][1]["powers"].push_back({{"id","BackAttack"},{"amount",-1}});
+            spearMarked["silverRoot"]["combat"]["pendingActionQueue"].push_back(json{{"kind","MONSTER_REMOVE_BACK_ATTACK"},{"slot",1}});
+            const auto withSpear=one_combat::advisor::importSilverRoot(spearMarked);
+            if(!withSpear.ok || battleContextFromWire(withSpear.wire).player.hasStatus<PlayerStatus::SURROUNDED>())
+                throw std::runtime_error("Spire Shield Headbutt with the Spear's BackAttack removal: "+withSpear.reason);
+            // Fail closed: a removal naming the dead Shield, a removal without
+            // Surrounded, both Spire monsters alive, and the flag's legacy refusal.
+            auto wrongSlot=spearMarked;
+            wrongSlot["silverRoot"]["combat"]["pendingActionQueue"].back()["slot"]=0;
+            if(one_combat::advisor::importSilverRoot(wrongSlot).ok)
+                throw std::runtime_error("BackAttack removal on the dead Shield was accepted");
+            auto unsurrounded=observation;
+            unsurrounded["silverRoot"]["combat"]["playerPowers"].erase(unsurrounded["silverRoot"]["combat"]["playerPowers"].size()-1);
+            if(one_combat::advisor::importSilverRoot(unsurrounded).ok)
+                throw std::runtime_error("Surrounded removal without Surrounded was accepted");
+            auto alive=observation;
+            alive["silverRoot"]["combat"]["monsters"][0]["hp"]=5;
+            alive["silverRoot"]["combat"]["monsters"][0]["dead"]=false;
+            if(one_combat::advisor::importSilverRoot(alive).ok)
+                throw std::runtime_error("Surrounded removal with both Spire monsters alive was accepted");
+            setenv("STS_SILVER_SPIRE_DEATH_QUEUE","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_SILVER_SPIRE_DEATH_QUEUE");
+            if(legacy.ok || (legacy.reason!="silver_selection_pending_actions" && legacy.reason!="silver_back_attack_facing"))
+                throw std::runtime_error("STS_SILVER_SPIRE_DEATH_QUEUE=0 did not restore the refusal: "+legacy.reason);
+        }
+        {
             // Problem 72 (overnight live play 2026-10-21, seed 111200472): Headbutt
             // killing the Gremlin Leader opens its GRID with GremlinLeader.die()'s
             // Shout and EscapeAction for every surviving minion queued; native's
@@ -5002,7 +5105,23 @@ int main(int argc, char **argv) {
                 if(m.value("slot",m.value("idx",-1))==3) {m["hp"]=10;m["dead"]=false;}
             auto more=observation;
             more["silverRoot"]["combat"]["pendingActionQueue"].push_back(json{{"kind","GAIN_ENERGY"},{"amount",1}});
-            for(const auto *broken:{&partial,&extra,&alive,&more})
+            // Malformed shapes fall through without throwing (live problem 77:
+            // outside a selection the mod sends cardSelect as false).
+            auto selectFalse=observation; selectFalse["silverRoot"]["combat"]["cardSelect"]=false;
+            auto selectMissing=observation; selectMissing["silverRoot"]["combat"].erase("cardSelect");
+            auto choicesFalse=observation; choicesFalse["silverRoot"]["combat"]["cardSelect"]["liveChoices"]=false;
+            auto taskNull=observation; taskNull["silverRoot"]["combat"]["cardSelect"]["task"]=nullptr;
+            auto pendingFalse=observation; pendingFalse["silverRoot"]["combat"]["pendingActionQueue"]=false;
+            auto pendingItemFalse=observation; pendingItemFalse["silverRoot"]["combat"]["pendingActionQueue"][1]=false;
+            auto slotsNull=observation; slotsNull["silverRoot"]["combat"]["pendingActionQueue"][1]["slots"]=nullptr;
+            auto monstersFalse=observation; monstersFalse["silverRoot"]["combat"]["monsters"]=false;
+            auto hpText=observation;
+            for(auto &m:hpText["silverRoot"]["combat"]["monsters"]) {m["hp"]="x";m["dead"]="no";m["slot"]="a";}
+            auto combatFalse=observation; combatFalse["silverRoot"]["combat"]=false;
+            auto rootFalse=observation; rootFalse["silverRoot"]=false;
+            json notObject=false;
+            for(const auto *broken:{&partial,&extra,&alive,&more,&selectFalse,&selectMissing,&choicesFalse,&taskNull,
+                    &pendingFalse,&pendingItemFalse,&slotsNull,&monstersFalse,&hpText,&combatFalse,&rootFalse,&notObject})
                 if(one_combat::advisor::minionLeaderEscapeChoice(*broken)!=0)
                     throw std::runtime_error("unqualified Gremlin Leader death grid was passed through");
             setenv("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH","0",1);
