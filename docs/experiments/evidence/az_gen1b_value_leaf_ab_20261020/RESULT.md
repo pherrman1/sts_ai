@@ -1,4 +1,4 @@
-# Gen-1b value head as the rollout3 end value: result (ledger §TBD)
+# Gen-1b value head as the rollout3 end value: result (ledger §615)
 
 **NOT_SHOWN.** Over 512 paired A20 seeds, the gen-1b value leaf killed the Heart on 123 seeds (24.0%) and X2-B on 107
 (20.9%): +3.1 pp [−1.0, +7.2], exact McNemar p 0.16, at 1.07× wall per run. X2-B stays the rollout3 end value.

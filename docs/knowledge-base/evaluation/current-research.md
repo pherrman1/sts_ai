@@ -232,7 +232,7 @@ prior and rollout net inside gen 0's search stack. On 512 paired A20 seeds it ki
 each), which with gen 0 form the gen-2 training window. Self-play exploration flags exist for gen-2 data runs
 (`STS_OOC_MCTS_ROOT_NOISE`, `STS_OOC_MCTS_PLAY_SAMPLE`, #741, off by default).
 
-## AZ gen-1b value head as the rollout3 end value (opt-in) — §TBD A/B NOT_SHOWN, +3.1 pp lean
+## AZ gen-1b value head as the rollout3 end value (opt-in) — §615 A/B NOT_SHOWN, +3.1 pp lean
 
 `STS_OOC_MCTS_LEAF_HEART1_VALUE=<weights.bin>` (default unset) ends each rollout3 leaf in sigmoid(value head) of the
 given heart1-format weights instead of X2-B; rollouts and prior are unchanged. Offline on unseen §494/§503 data, gen 1b's

@@ -22752,7 +22752,7 @@ draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
 
-## §TBD — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
+## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
 
 Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
 #765 queue worker (09:59Z). Pre-registration and outputs: `docs/experiments/evidence/az_gen1b_value_leaf_ab_20261020/`
