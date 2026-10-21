@@ -22123,6 +22123,21 @@ both encounters. Changes only which live roots Silver searches.
 Darkling; `TextAboveCreatureAction` itself is not inspected.
 Seeds: none new (live seed 111200464 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §582 — Live combat parity: an in-combat upgrade reset Blood for Blood's damage-taken reduction (2026-10-20)
+
+**Question:** why did live seed 111200448 (release 9ec8a51d, step 8, Armaments+) leave a Blood for Blood at 2/2 in the
+game and 3/3 natively (problem 59 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (cost 3 before the upgrade: base 4, one hit this combat); `upgrade_cost_delta_test`
+(no gameplay seeds).
+**Result:** `CardInstance::upgrade` applied Blood for Blood's `upgradeBaseCost(cost - 1)` and then, because the
+upgraded base cost differs, its generic branch set `cost = costForTurn = 3`. Java has no generic branch: each card's
+`upgrade` calls `upgradeBaseCost`, which keeps `costForTurn - cost`. The same reset hit every cost-changing upgrade of a
+card with a turn-cost modification, and a fully reduced (0-cost) Blood for Blood upgraded to 3.
+**Interpretation:** `STS_UPGRADE_COST_DELTA_FIX` (default on, `=0` restores) follows Java `upgradeBaseCost` for all
+in-combat upgrades (Armaments, Apotheosis, other hand/pile upgrades). Play-changing, unmeasured; unmodified cards
+upgrade as before.
+Seeds: none new (live seed 111200448 as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §580 — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable; the True Victory cutscene timed out (2026-10-20)
 
 **Question:** why did live seed 111200446 (floor 10, release 9ec8a51d) stop after the advisor chose "[Stomp] Anger the
