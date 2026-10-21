@@ -72,3 +72,15 @@ often at A20?
 ## Verification
 `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/az_gen1b_value_leaf_ab_20261020`. The lead releases
 only the `OK:` workers.
+
+## Freeze record (2026-10-21)
+- Authorization: Philipp 2026-10-21 06:49Z "Just update to main, then go 32 workers"; 05:22Z "Also learned stop off".
+- Code commit: main `eeb17782c8286b7afef8625113375a7cb0b55a82` (§599 on main). RUN_COMMIT = the commit that adds this
+  record (campaign files only on top of main). Binary sha256 `a42a575a…` (local Release build, GCC 13, cloud container);
+  the pre-launch reviewer rebuilds it independently.
+- Engine changes since #740 that alter simulated play in both arms: #749 `STS_CURIOSITY_FIX` (Awakened One gains
+  Strength from Power plays), #733 (unplayable autoplay routing, FIFO autoplay queue), #751 (empty-hand exhaust),
+  #745 (Lagavulin wake), #748 (slime split monsterCount), plus the other engine fixes merged up to eeb17782. Paired
+  arms share them, so the contrast is unchanged; absolute rates are not comparable with gen 0 or the gen-1b A/B.
+- Prior: student_sel in both arms (the gen-1b prior A/B was NOT_SHOWN, 22.3% vs 23.2%).
+- Workers: 32 × 4 parallel. Smoke on the frozen binary: seed 111144993 (`smoke-frozen/`).

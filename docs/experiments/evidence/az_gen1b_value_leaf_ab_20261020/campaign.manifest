@@ -1,7 +1,7 @@
 name          az-gen1b-value-leaf-ab
-code_commit   __CODE_COMMIT__
-binary_sha256 __BINARY_SHA256__
-workers       __WORKERS__
+code_commit   eeb17782c8286b7afef8625113375a7cb0b55a82
+binary_sha256 a42a575adb2f4ce868ab8742eeb717a3b8a9284eb7f612d88037bbd74e76cfb6
+workers       32
 share         /mnt/project-files/az-gen1b-value-leaf-ab
 parallel      4
 input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
