@@ -78,6 +78,10 @@ student_sel at A20?
 Static per-worker unit split, so a dead worker loses only its own units. The `schedule queue` mode
 (#765) is not used, because of the claim race seen in the value-leaf A/B, unless a fix lands on main before the freeze.
 
+## Main changes since the draft (fixed at freeze)
+- **Prior playouts in boss rooms only:** `STS_SILVER_PRIOR_PLAYOUT_ELITE=0` (#775, ADR-0056, main's default since 2026-10-21; ~−10% A20 run CPU). It is set explicitly in both arms. Gen 1b's A/B ran boss and elite playouts.
+- **Binary build:** the freeze commit is ≥ 49935bb3, so the binary builds with the x86-64-v3 preset (#780/#781; decisions bit-identical, faster real combats). The preset is recorded in the freeze file.
+
 ## Freeze waits on the value-leaf A/B (`../az_gen1b_value_leaf_ab_20261020/`)
 Philipp, 2026-10-21 13:43Z: gen 2's lead may depend on that campaign. The freeze happens after its verdict.
 - **NOT_SHOWN or WORSE:** this A/B runs as written, with the X2-B leaf in both arms.
