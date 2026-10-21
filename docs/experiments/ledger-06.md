@@ -22017,9 +22017,13 @@ native `monsterCount` loop skips dead slots and the `aliveOnly=false` random pic
 `endHpGameMinusNative` of 6 is Burning Blood.
 **Interpretation:** representational, not a play bug. `STS_SLIME_SPLIT_MONSTER_COUNT_FIX` (default on, `=0`
 restores) sets `monsterCount = max(count, placeIdx+2)`, which removes the parity diff and makes the simulated
-state equal to the imported one (state equality compares slots up to `monsterCount`). Expected play-neutral; not
-measured.
-Seeds: none new (live seed 111200456 as reported; unit test only).
+state equal to the imported one (state equality compares slots up to `monsterCount`). Neutral in simulated fights
+(reviewer F, scratch harness: Slime Boss, Ironclad A20 starter deck at 400 HP, Silver 1000 sims with reuse, 64 paired
+seeds 111148000-111148063 with the flag 0 vs 1: all trace digests identical, 17 seeds entered the spike-first window,
+10 ended with count 3 vs 4). Can change live advisor play: Silver reuses its tree between live decisions only on an
+exact state match, which includes `monsterCount`, so without the fix the first decision after a spike-first split
+misses the reuse and searches from scratch.
+Seeds: 111148000-111148063 (review harness, not committed); live seed 111200456 as reported.
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
