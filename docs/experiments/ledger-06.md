@@ -22116,6 +22116,24 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §588 — Live combat parity: Transient's Shackled wrapped at 8 bits (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show Transient's Strength game -5 vs native -261 after
+an End Turn (problem 53 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue53-extract.json`: before the step Str -147, Shackled 145, 142 damage taken this
+turn; after it Str -5, Shackled 3); read-only `javap` of the pinned JAR (`issue53-javap.md`: `ShiftingPower`,
+`GainStrengthPower`, `Transient.usePreBattleAction`); `monster_ai_java_parity` (no gameplay seeds).
+**Result:** Java's `GainStrengthPower` (ID Shackled) restores its full amount at the owner's end of turn and clamps
+to [-999, 999]. Native restores at the same point, but `Monster::shackled` was `std::int8_t`, so 145 was stored as -111:
+-147 - 111 = -258, then 3 more damage gives -261, exactly the live native value. The replay reproduces both values.
+**Interpretation:** `STS_SHACKLED_OVERFLOW_FIX` (default on, `=0` restores the wraparound) widens the field to 16 bits
+with Java's clamp, also on the Silver wire import. Play-changing for simulator play and the live advisor once a Transient takes over 127 damage
+in one turn, unmeasured.
+**Open question:** the `BattleContextBinary` format still writes Shackled as one byte (lossy above 127); no format
+bump here.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+
 ## §587 — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
 
 **Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after

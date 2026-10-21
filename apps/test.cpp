@@ -3150,6 +3150,44 @@ int testMonsterAiJavaParity() {
     }
     unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
 
+    // Live problem 53 (seed 111200445, A20): Transient's Shifting stacked
+    // Shackled 145 under Strength -147. Java's GainStrengthPower restores the
+    // full 145 at the Transient's end of turn (Str -2), then 3 more damage
+    // shifts it to Str -5 / Shackled 3. The 8-bit field wrapped 145 to -111
+    // (Str -147 - 111 - 3 = -261, the live native value);
+    // STS_SHACKLED_OVERFLOW_FIX=0 restores that wraparound.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+        else setenv("STS_SHACKLED_OVERFLOW_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::TRANSIENT, 20);
+        Monster &transient = bc.monsters.arr[0];
+        transient.setHasStatus<MS::SHIFTING>(true);
+        transient.setStatus<MS::STRENGTH>(-2);
+        transient.damage(bc, 142);
+        transient.damage(bc, 3);
+        const int stacked = transient.getStatus<MS::SHACKLED>();
+        transient.applyEndOfTurnTriggers(bc);
+        drain(bc);
+        transient.damage(bc, 3);
+        const int strength = transient.getStatus<MS::STRENGTH>();
+        const int shackled = transient.getStatus<MS::SHACKLED>();
+        if (stacked != (fix ? 145 : -111) || strength != (fix ? -5 : -261) || shackled != 3) {
+            unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+            return fail(std::string(fix ? "Shackled 145 did not restore Transient's Strength"
+                                        : "STS_SHACKLED_OVERFLOW_FIX=0 did not restore the 8-bit wraparound")
+                        + " (stacked " + std::to_string(stacked) + ", Str " + std::to_string(strength)
+                        + ", Shackled " + std::to_string(shackled) + ")");
+        }
+        if (fix) {
+            transient.buff<MS::SHACKLED>(5000);
+            if (transient.getStatus<MS::SHACKLED>() != 999) {
+                unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+                return fail("Shackled does not clamp at Java's 999");
+            }
+        }
+    }
+    unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+
     // ---- Act 4 (monsters.ending) ----
 
     // Spire Shield's Fortify skips a dead Spear (GainBlockAction on a dying
