@@ -2426,6 +2426,9 @@ double liveFullBudgetFraction = 0;
 // root that is not a full-budget root searches at most this many simulations (its early stops
 // still apply below it). Unset: 1024 (Philipp 2026-10-21); 0 restores the uncapped fast roots.
 std::uint64_t liveFastRootCap = 0;
+// STS_OOC_MCTS_FULL_ROOT_SIMS (opt-in, off by default): a full-budget root of a playout-cap-randomized run
+// searches exactly this many simulations instead of STS_OOC_MCTS_SIMS (offline scoring keeps the whole budget).
+std::uint64_t liveFullRootSims = 0;
 // Self-play exploration for AZ data runs (both opt-in, off by default):
 // STS_OOC_MCTS_ROOT_NOISE=FRACTION[:ALPHA] mixes Dirichlet noise into the root PUCT prior;
 // STS_OOC_MCTS_PLAY_SAMPLE=FLOOR[:TEMPERATURE] plays a root action sampled in proportion to
@@ -2992,7 +2995,7 @@ void configureLiveOocMcts() {
     liveCheckpointTrace.clear();
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
-    liveFullBudgetFraction = 0; liveFastRootCap = 0;
+    liveFullBudgetFraction = 0; liveFastRootCap = 0; liveFullRootSims = 0;
     liveLearnedStopNet.reset(); liveLearnedStopTau = 0;
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     liveLeafCapture.reset();
@@ -3103,6 +3106,14 @@ void configureLiveOocMcts() {
     }
     if (liveFastRootCap > 0 && liveFullBudgetFraction <= 0)
         throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+    if (const char *full = std::getenv("STS_OOC_MCTS_FULL_ROOT_SIMS"); full && *full) {
+        const std::string value(full);
+        if (value.size() > 12 || value.find_first_not_of("0123456789") != std::string::npos || std::stoull(value) == 0)
+            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS must be a positive integer");
+        if (liveFullBudgetFraction <= 0)
+            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+        liveFullRootSims = std::stoull(value);
+    }
     liveRootNoiseFraction = 0; liveRootNoiseAlpha = 0.3;
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
     liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveRootComparePath.clear();
@@ -3518,6 +3529,7 @@ void configureLiveOocMcts() {
         << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
         << (liveFastRootCap > 0 ? " fast_root_cap=" + std::to_string(liveFastRootCap) : std::string{})
+        << (liveFullRootSims > 0 ? " full_root_sims=" + std::to_string(liveFullRootSims) : std::string{})
         << (liveRootNoiseFraction > 0 ? " root_noise=" + std::to_string(liveRootNoiseFraction) + ":"
             + std::to_string(liveRootNoiseAlpha) : std::string{})
         << (liveGumbelRootActions ? " gumbel_root=" + std::to_string(liveGumbelRootActions) + ":"
@@ -4168,6 +4180,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // offline decision scoring keeps the whole budget.
     const bool fastCapped = explore && liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
     if (fastCapped) simulations = liveFastRootCap;
+    if (explore && fullBudget && liveFullRootSims > 0) simulations = liveFullRootSims;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
     // Gumbel root and Dirichlet noise are two exploration schemes: the Gumbel draw replaces the noise.
     const auto gumbelConfig = [](sts::search::OocMctsConfig &c, std::uint32_t m, double scale) {
@@ -4447,6 +4460,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         // Only with the option on, so rows without it keep their exact bytes.
         if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
         if (liveFastRootCap > 0) (*policyRoot)["fastRootCap"] = liveFastRootCap;
+        if (liveFullRootSims > 0) (*policyRoot)["fullRootSims"] = liveFullRootSims;
         if (explore && liveRootNoiseFraction > 0 && !config.gumbelRootActions)
             (*policyRoot)["rootNoise"] = {liveRootNoiseFraction, liveRootNoiseAlpha};
         if (config.gumbelRootActions) (*policyRoot)["gumbelRoot"] = {config.gumbelRootActions, config.gumbelScale};
