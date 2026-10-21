@@ -22116,6 +22116,21 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §586 — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
+
+**Question:** do the other direct ally buffs next to problem 56's block moves reach a dead ally natively?
+**Setup:** `MonsterSpecific.cpp` (Donu's Circle of Power, Spire Spear's Piercer); `monster_ai_java_parity` (no gameplay
+seeds). Found in the #742 review, not live.
+**Result:** both moves call `buff<STRENGTH>` on the ally directly, so a dead Deca or Spire Shield gained Strength. In Java
+the buffs are queued `ApplyPowerAction`s, which skip a dead target.
+Javap of the pinned JAR (`issue56b-javap.md` on the share): both `takeTurn` cases loop over every monster with no alive
+check and queue `ApplyPowerAction(m, this, Strength)`; `ApplyPowerAction.update` returns first when
+`target.isDeadOrEscaped()` (dying, half-dead or escaping).
+**Interpretation:** `STS_DEAD_ALLY_STRENGTH_FIX` (default on, `=0` restores) skips an ally that `isDeadOrEscaped` in both.
+Play-changing for simulator play (dead monsters' powers are in Silver's node identity), unmeasured.
+**Open question:** none for these two moves; other direct ally buffs were not audited here.
+Seeds: none new (unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
 ## §585 — Live combat parity: Deca's Square of Protection shielded a dead Donu (2026-10-20)
 
 **Question:** why did live seed 111200445 (A20, release 9ec8a51d) show `monsters[1].block` game 0 vs native 16 at the

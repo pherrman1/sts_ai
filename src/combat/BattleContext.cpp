@@ -74,6 +74,13 @@ namespace sts {
         throw std::runtime_error("STS_DEAD_ALLY_BLOCK_FIX must be 0 or 1");
     }
 
+    bool deadAllyStrengthFix() {
+        const char *value = std::getenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_ALLY_STRENGTH_FIX must be 0 or 1");
+    }
+
     bool muggerDeathRngFix() {
         const char *value = std::getenv("STS_MUGGER_DEATH_RNG_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
