@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
+## §579 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d) show Anger cost diffs in the discard and draw piles at
 four steps (parity1 s77/s355, parity2 s57, parity3 s2; problem 43 in `engine-parity/overnight-20261019/ISSUES.md` on
