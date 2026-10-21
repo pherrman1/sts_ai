@@ -22116,7 +22116,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
+## §590 — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
 
 **Question:** why did live seed 111200459 seg1 s852 (Awakened One, floor 50) show native with an open
 `EXHAUST_MANY` selection (pickCount 3, any number) and a queued 5 damage to all, while the game had finished the
