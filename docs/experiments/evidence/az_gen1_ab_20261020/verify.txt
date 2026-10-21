@@ -30,3 +30,6 @@ w29 OK      16 units, run 826b5dda5b19, tar 623a66a6e99f, 2026-10-20T23:30:21Z
 w30 OK      16 units, run 826b5dda5b19, tar b905deb1b31e, 2026-10-20T23:22:12Z
 w31 OK      16 units, run 826b5dda5b19, tar 0ec030bf027a, 2026-10-20T22:41:36Z
 w32 OK      16 units, run 826b5dda5b19, tar c68e1a0cd9a3, 2026-10-20T22:48:42Z
+OK: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+MISSING: -
+BAD: -
