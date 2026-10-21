@@ -40,14 +40,14 @@ cache_get() {  # cache_get SHA DEST -> 0 if DEST now holds the binary with that 
   cp "$f" "$2.part" && chmod +x "$2.part" && mv "$2.part" "$2" || return 1
   [ "$(sha "$2")" = "$1" ] || { rm -f "$2"; return 1; }
 }
-cache_put() {  # cache_put FILE [COMMIT]
+cache_put() {  # cache_put FILE [COMMIT [POINTER_SUFFIX]]
   local s; s=$(sha "$1"); mkdir -p "$CACHE" || stop "cannot create $CACHE"
   if [ ! -f "$CACHE/one_combat-$s" ] || [ "$(sha "$CACHE/one_combat-$s")" != "$s" ]; then
     cp "$1" "$CACHE/one_combat-$s.part" && mv "$CACHE/one_combat-$s.part" "$CACHE/one_combat-$s" || stop "cache upload failed"
     cmp -s "$1" "$CACHE/one_combat-$s" || stop "cached copy differs (share full?)"
   fi
-  [ -n "${2:-}" ] && echo "$s" > "$CACHE/commit-$2.sha256"
-  echo "cached one_combat-$s${2:+ for commit $2}"
+  [ -n "${2:-}" ] && echo "$s" > "$CACHE/commit-$2${3:-}.sha256"
+  echo "cached one_combat-$s${2:+ for commit $2${3:-}}"
 }
 build_one_combat() {  # build_one_combat TARGET -> path of the built binary on stdout (preset $PRESET)
   git submodule update --init --recursive >/dev/null 2>&1 || stop "submodules"
@@ -96,7 +96,10 @@ if [ "$CMD" = publish-binary ]; then
   b=$(build_one_combat "$TARGET"); got=$(sha "$b")
   if [[ "$BIN" =~ ^[0-9a-f]{64}$ ]]; then [ "$got" = "$BIN" ] || stop "built $got != manifest binary_sha256 $BIN ($(g++ --version | head -1))"
   else echo "manifest binary_sha256 is not set; the built binary is $got"; fi
-  cache_put "$b" "$CODE"; exit 0
+  # Only the default preset writes the plain commit pointer that reviewers read for base binaries;
+  # another preset gets its own pointer so it never replaces the default build's.
+  if [ "$PRESET" = linux-gcc-release ]; then cache_put "$b" "$CODE"; else cache_put "$b" "$CODE" ".$PRESET"; fi
+  exit 0
 fi
 
 [[ "$BIN" =~ ^[0-9a-f]{64}$ ]] || stop "manifest binary_sha256 must be a 64-char sha256"
