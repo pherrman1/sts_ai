@@ -135,6 +135,13 @@ namespace sts {
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_MAGNETISM_FIX must be 0 or 1");
     }
+
+    bool curiosityFix() {
+        const char *value = std::getenv("STS_CURIOSITY_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_CURIOSITY_FIX must be 0 or 1");
+    }
 }
 
 
@@ -2083,10 +2090,17 @@ void BattleContext::onUsePowerCard() {
         mummifiedHandOnUsePower();
     }
 
-//    auto &m = monsters.optionMap[2];
-//    if (m.hasStatusInternal<MS::CURIOSITY>()) {
-//        m.buff<MS::STRENGTH>(m.getStatus<MS::CURIOSITY>());
-//    }
+    // CuriosityPower.onUseCard: a Power play queues ApplyPowerAction(Strength)
+    // at the bottom for each monster holding Curiosity (the Awakened One).
+    // STS_CURIOSITY_FIX=0 restores the legacy engine, where it did nothing.
+    if (curiosityFix()) {
+        for (int i = 0; i < monsters.monsterCount; ++i) {
+            const auto &m = monsters.arr[i];
+            if (m.hasStatus<MS::CURIOSITY>()) {
+                addToBot( Actions::BuffEnemy<MS::STRENGTH>(i, m.getStatus<MS::CURIOSITY>()) );
+            }
+        }
+    }
 }
 
 void BattleContext::onUseStatusOrCurseCard() {

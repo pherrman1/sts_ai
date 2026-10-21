@@ -226,6 +226,14 @@ add_test(NAME mayhem_after_draw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guar
 set_tests_properties(mayhem_after_draw PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(curiosity_power_play_test tests/curiosity_power_play_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(curiosity_power_play_test PRIVATE include json/include)
+add_test(NAME curiosity_power_play COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:curiosity_power_play_test>)
+set_tests_properties(curiosity_power_play PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(magnetism_start_of_turn_test tests/magnetism_start_of_turn_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(magnetism_start_of_turn_test PRIVATE include json/include)
