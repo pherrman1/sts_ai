@@ -22001,6 +22001,23 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §TBD — Live Runic Dome: a Slime Boss split child's birth roll with aliveCount 0 stopped the run (2026-10-21)
+
+**Question:** why did live seed 111200458 (release 9ec8a51d, Act 3 floor 38, Slime Boss event, Runic Dome) stop at s546
+with `silver_runic_dome_history_schema` (problem 63 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (row for slot 0, SpikeSlime_L, occupantGeneration 2, split from slot 0 gen 1: aliveCount 0,
+firstAlive false, firstHp 0, firstMaxHp 150); `live_silver_importer.cpp` Runic Dome row validation;
+`live_silver_importer` test (no gameplay seeds).
+**Result:** the values are real Java: the child rolls in `init()` before `SpawnMonsterAction` adds it, so the only listed
+monster is the dead boss. The importer required `aliveCount >= 1` on every row. The second child (AcidSlime_L) sees the
+first and has aliveCount 1. No split or summoned monster's move rule reads aliveCount/monstersAlive (only Centurion,
+Gremlin Leader, Reptomancer and The Collector do, and they are never spawned), so native rolls are unaffected.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX` (default on, `=0` restores) accepts aliveCount 0 only for
+the birth roll of a split/summon row (`rollGlobalTurn == birthGlobalTurn`). Unblocks live Slime Boss fights with Runic
+Dome; no play change otherwise.
+Seeds: none new (live seed 111200458 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

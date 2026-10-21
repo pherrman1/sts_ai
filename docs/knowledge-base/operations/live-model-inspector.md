@@ -1395,6 +1395,13 @@ inputs of the moment it runs, as Java's `RollMoveAction` rolls then
 (`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
 `silver_runic_dome_monster_power_domain`).
 
+A split- or summon-born occupant's birth roll may carry `aliveCount` 0 (live seed
+111200458 s546, problem 63): Java rolls the child's first move in `init()` before
+`SpawnMonsterAction` adds it to the group, so the first Slime Boss child sees only the
+dead boss. The importer accepts 0 only when `rollGlobalTurn == birthGlobalTurn` on a
+non-initial row (`STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX`, default on; `=0` restores
+the refusal `silver_runic_dome_history_schema`).
+
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case
 where only one card fits in hand. The driver clicks the ordered physical UUID
