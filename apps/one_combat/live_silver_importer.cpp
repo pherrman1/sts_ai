@@ -409,6 +409,19 @@ bool backAttackFix() {
     throw std::runtime_error("STS_IMPORTER_BACK_ATTACK_FIX must be 0 or 1");
 }
 
+// STS_SILVER_SPIRE_DEATH_QUEUE: unset/1 (default) = a Spire Shield/Spear that
+// died to a source card queues RemoveSpecificPowerAction(player, "Surrounded")
+// (and the survivor's "BackAttack") behind it (SpireShield/SpireSpear.die());
+// native removes Surrounded at the death, so the importer folds both, and a
+// dead Spire monster's leftover BackAttack marker is ignored (problem 81);
+// 0 = legacy refusals (silver_selection_pending_actions / silver_back_attack_facing).
+bool spireDeathQueue() {
+    const char *value = std::getenv("STS_SILVER_SPIRE_DEATH_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_SPIRE_DEATH_QUEUE must be 0 or 1");
+}
+
 // STS_IMPORTER_CENTENNIAL_USED_FIX: unset/1 (default) = Centennial Puzzle
 // needs the producer's usedThisCombat and gets no relic bit once it fired, as
 // native clears the bit on its first HP loss; 0 = legacy, the bit stays set and
@@ -1919,6 +1932,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if (powerId == "BackAttack" && backAttackFix()) {
                     // A marker without hooks; native derives it from facing.
+                    // A dead monster never attacks; Java leaves its marker.
+                    if ((m.curHp <= 0 || item.value("dead", false)) && spireDeathQueue()
+                        && (*id == sts::MonsterId::SPIRE_SHIELD || *id == sts::MonsterId::SPIRE_SPEAR)
+                        && power.value("amount", 0) == -1)
+                        continue;
                     if ((*id != sts::MonsterId::SPIRE_SHIELD && *id != sts::MonsterId::SPIRE_SPEAR)
                         || power.value("amount", 0) != -1 || backAttackSlot >= 0)
                         return unsupported("silver_unmapped_monster_power");
@@ -1963,7 +1981,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         if ((*id == sts::MonsterId::LOOTER || *id == sts::MonsterId::MUGGER) && m.miscInfo > 0 && thiefGoldFix())
             wire.miscBits |= 1U;
     }
-    if (backAttackFix()) {
+    // A pending Spire death removes Surrounded (folded below), so facing no
+    // longer affects damage.
+    bool spireDeathPending = false;
+    if (spireDeathQueue() && combat.contains("pendingActionQueue") && combat.at("pendingActionQueue").is_array())
+        for (const auto &entry : combat.at("pendingActionQueue"))
+            if (entry.is_object() && entry.value("kind", std::string()) == "PLAYER_REMOVE_SURROUNDED") spireDeathPending = true;
+    if (backAttackFix() && !spireDeathPending) {
         // Java applyBackAttack: with Surrounded, the monster behind the player
         // deals 1.5x. Native's equivalent is "not lastTargetedMonster", so
         // the player faces the alive Spire monster without the marker. The
@@ -2244,6 +2268,32 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="PLAYER_REMOVE_SURROUNDED" || kindName=="MONSTER_REMOVE_BACK_ATTACK") {
+                // SpireShield/SpireSpear.die() queue these behind the killing
+                // card; native removes Surrounded at the death itself.
+                int survivor=-1,dead=0;
+                for(int slot=0;slot<wire.monsterCount;++slot) {
+                    const auto &monster=wire.monsters[slot];
+                    if(monster.id!=static_cast<std::int16_t>(sts::MonsterId::SPIRE_SHIELD)
+                            && monster.id!=static_cast<std::int16_t>(sts::MonsterId::SPIRE_SPEAR)) continue;
+                    if(monster.curHp>0 && !monster.isEscapingB && !monster.halfDead) survivor=survivor<0?slot:-2;
+                    else ++dead;
+                }
+                const auto surroundedBit=1ULL<<static_cast<int>(PlayerStatus::SURROUNDED);
+                if(!sourceCard || !spireDeathPending || !sts::spireSurroundedDeathFix() || survivor<0 || dead!=1)
+                    return unsupported("silver_selection_pending_actions");
+                if(kindName=="PLAYER_REMOVE_SURROUNDED") {
+                    if(!(p.statusBits0 & surroundedBit)) return unsupported("silver_selection_pending_actions");
+                    p.statusBits0 &= ~surroundedBit;
+                } else {
+                    // Java queues it after the Surrounded removal; the marker
+                    // has no native state once Surrounded is gone.
+                    int slot=-1;
+                    if(!requiredInt(entry,"slot",slot) || slot!=survivor || backAttackSlot!=survivor
+                            || (p.statusBits0 & surroundedBit)) return unsupported("silver_selection_pending_actions");
+                }
+                continue;
+            }
             if(kindName=="MONSTER_SPLIT_SET_MOVE") {
                 // The split is already the current move (Java setMove at the
                 // hit); native's onHpLost also writes it as the previous move,

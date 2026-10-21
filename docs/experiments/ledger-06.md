@@ -22218,6 +22218,16 @@ Seeds: none.
 
 **Knowledge impact:** shop slot identity no longer depends on render state.
 
+## §TBD — Live problem 81: Headbutt killing Spire Shield was refused; the death's Surrounded removal is now folded (2026-10-21)
+
+**Observation.** Live A20 seed 111200492 (release 3f2dc148, Act 4 Shield and Spear): Headbutt killed Spire Shield (slot 0). Before its put-on-top GRID could be offered, the mod refused the queue as `silver_selection_pending_actions` with `refusal=3:pen_nib_removal`. The queue was `[RelicAboveCreatureAction (Kunai), ApplyPowerAction Dexterity 1, UseCardAction, RemoveSpecificPowerAction(player, player, "Surrounded")]`. The dead Shield still listed BackAttack -1. Extract: `engine-parity/overnight-20261019/issue81/p92-observation.json` on the share.
+
+**Cause.** `SpireShield/SpireSpear.die()` (javap in `issue40-javap.md`) queue `RemoveSpecificPowerAction(player, player, "Surrounded")` for each living partner, plus `(partner, partner, "BackAttack")` when the partner carries the marker. The producer only knew Pen Nib's String-ID removal. In addition, the importer counted the dead Shield's leftover BackAttack marker and would have refused the facing.
+
+**Change.** Producer (no flag): with a source card pending, these removals emit `PLAYER_REMOVE_SURROUNDED` and `MONSTER_REMOVE_BACK_ATTACK` (slot), qualified by exactly one living Spire monster, a dying or dead partner, `SurroundedPower`, and the survivor as target and source. Importer, `STS_SILVER_SPIRE_DEATH_QUEUE` (default on, `=0` restores the refusals): it folds the removal into the imported player, as native removes Surrounded at the death (`STS_SPIRE_SURROUNDED_DEATH_FIX`), skips the facing derivation, and ignores BackAttack on a dead Spire monster. Unit test: native Headbutt kills Spire Shield; root and continuation parity hold against the Java-form import; the Spear's marker removal is accepted; a dead-slot removal, a removal without Surrounded, both monsters alive, and `=0` all fail closed.
+
+**Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
