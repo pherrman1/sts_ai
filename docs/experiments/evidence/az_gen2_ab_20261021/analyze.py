@@ -1,5 +1,6 @@
-"""AZ gen-2 A/B analysis: python3 -I analyze.py SHARE_DIR -> JSON (paired B = gen2 vs A = student_sel)."""
-import sys, tarfile, json, gzip, re, glob, math, statistics
+"""AZ gen-2 A/B analysis: python3 -I analyze.py DIR -> JSON (paired B = gen2 vs A = student_sel).
+DIR holds static-schedule wWW.tar files, or is the --extract dir of `verify_campaign.py` for the queue schedule."""
+import sys, tarfile, json, gzip, re, glob, math, statistics, os
 def mcnemar_p(b, c):
     n = b + c
     if n == 0: return 1.0
@@ -11,7 +12,8 @@ def paired_ci(pairs):
     h = 1.96 * sd / math.sqrt(n); return m, m - h, m + h
 def arm(t, m, a, s):
     def rd(sfx):
-        k = [n for n in m if n.endswith(sfx)]; return t.extractfile(m[k[0]]).read() if k else None
+        k = [n for n in m if n.endswith(sfx)]
+        return (t.extractfile(m[k[0]]).read() if t else open(m[k[0]], 'rb').read()) if k else None
     done = (rd(f'{a}-{s}.done') or b'rc=-1 wall=0').decode()
     rc = re.search(r'rc=(-?\d+)', done).group(1); j = rd(f'{a}-{s}.jsonl.gz')
     if rc != '0' or not j: return None, rc
@@ -29,8 +31,13 @@ def arm(t, m, a, s):
             if c and root.get('selectedId') != max(c, key=lambda x: x['prior'])['id']: d['changed'] += 1
     return d, rc
 res = dict(seeds=0, valid=0, invalid=[], heart=[], act4=[], floor=[], wall=[], data={'A': {}, 'B': {}})
-for path in sorted(glob.glob(sys.argv[1] + '/w*.tar')):
-    t = tarfile.open(path); m = {x.name: x for x in t.getmembers() if x.isfile()}
+def sources(root):
+    tars = sorted(glob.glob(root + '/w*.tar'))
+    for path in tars:
+        t = tarfile.open(path); yield t, {x.name: x for x in t.getmembers() if x.isfile()}
+    if not tars:  # extracted queue layout: plain files anywhere under root
+        yield None, {f: f for d, _, fs in os.walk(root) for f in (os.path.join(d, x) for x in fs)}
+for t, m in sources(sys.argv[1]):
     seeds = sorted({re.search(r'A-(\d+)\.done$', n).group(1) for n in m if re.search(r'/A-\d+\.done$', n)})
     for s in seeds:
         res['seeds'] += 1
