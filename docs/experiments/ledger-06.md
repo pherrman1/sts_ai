@@ -22014,6 +22014,8 @@ it in most verdicts.
 bottom for each monster holding Curiosity on every Power use (Duplication/Echo Form/Burst copies included; unplayable
 autoplay uses skip hooks; Curiosity is already removed at the stage-1 death). Play-changing for simulated Awakened One
 fights (Silver search and rollouts now see the Strength the Powers give); unmeasured.
+**Comparability:** this changes simulated Awakened One fights (Act 3 boss), so A20 whole-run results before and after
+this merge are not comparable; compare with `STS_CURIOSITY_FIX=0` or rerun both arms on one commit.
 Seeds: none new (live seeds as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
