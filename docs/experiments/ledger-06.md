@@ -22236,6 +22236,7 @@ Seeds: none.
 
 **Change (driver only, `STS_LIVE_PILE_SETTLING_REFRESH`, default on, `=0` restores the stop).** A draw/discard/exhaust entry with the same UUID and id at the same position may differ in `cost`, `is_playable`, `damage`, `block`, `magic_number` and `base_*`. The canary classified all 36 transient dumps of seeds 450-519 as this signature (0 real changes): the card exhausted by its own use is snapshotted with its in-use state, not only under Corruption/Snecko. The driver then discards the unexecuted decision and re-reads, within the existing three-refresh limit. HP, hand, UUID, order, upgrades and everything else stay strict, and no click is ever authorized by the match. Unit tests: the three observed shapes refresh; HP, UUID, upgrade and hand changes still stop; `=0` stops. The driver integration test now refreshes on cost/zero/changed-value drift and keeps the legacy stop under `=0`.
 
+Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
 
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
