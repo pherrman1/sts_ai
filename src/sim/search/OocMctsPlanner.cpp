@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <random>
+#include <vector>
 #include <deque>
 #include <stdexcept>
 #include <utility>
@@ -28,6 +30,7 @@ struct ChanceNode {
     std::vector<DecisionNode *> particles;
     std::vector<std::pair<std::uint64_t, DecisionNode *>> outcomeKeys;
     bool pruned = false;
+    double searchPrior = 0;   // PUCT prior: action.prior, or its root-noised mix
     double q() const { return visits ? totalValue / visits : 0; }
 };
 struct DecisionNode {
@@ -120,9 +123,22 @@ struct Search {
         for (auto a : actions) {
             a.prior = largest > 0 ? (a.prior / largest) / mass : 1.0 / actions.size();
             node.actions.push_back(ChanceNode{a, 0, 0, {}});
+            node.actions.back().searchPrior = a.prior;
         }
         metrics.chanceNodes += actions.size();
         node.expanded = true;
+    }
+    void addRootNoise(DecisionNode &node) const {
+        if (node.actions.size() < 2) return;
+        std::mt19937_64 noiseRng(config.rootNoiseSeed);
+        std::gamma_distribution<double> gamma(config.rootNoiseAlpha, 1.0);
+        std::vector<double> draws(node.actions.size());
+        double total = 0;
+        for (auto &d : draws) total += d = gamma(noiseRng);
+        if (!(total > 0) || !std::isfinite(total)) return;
+        const double f = config.rootNoiseFraction;
+        for (std::size_t i = 0; i < draws.size(); ++i)
+            node.actions[i].searchPrior = (1 - f) * node.actions[i].action.prior + f * draws[i] / total;
     }
     double leaf(OocStateId state) {
         ++metrics.leafEvaluations;
@@ -151,6 +167,7 @@ struct Search {
                 + "_state_" + std::to_string(node.state));
         if (!node.expanded) {
             expand(node);
+            if (root && config.rootNoiseFraction > 0) addRootNoise(node);
             // Root expands before action selection; new downstream leaves stop.
             if (!root) {
                 return leaf(node.state);
@@ -160,7 +177,7 @@ struct Search {
         // A prior is not an action filter: visit each action once before PUCT.
         // Actions are sorted by ID, so equal-prior ties retain the lowest ID.
         for (auto &action : node.actions) {
-            if (!action.pruned && !action.visits && (!chosen || action.action.prior > chosen->action.prior))
+            if (!action.pruned && !action.visits && (!chosen || action.searchPrior > chosen->searchPrior))
                 chosen = &action;
         }
         if (!chosen) {
@@ -169,7 +186,7 @@ struct Search {
             for (auto &action : node.actions) {
                 if (action.pruned) continue;
                 // Parent N excludes the simulation currently in progress.
-                double score = action.q() + config.cPuct * action.action.prior
+                double score = action.q() + config.cPuct * action.searchPrior
                     * parentSqrt / (1.0 + action.visits);
                 if (!std::isfinite(score)) throw std::runtime_error("OOC MCTS PUCT score overflow");
                 if (!chosen || score > best) { chosen = &action; best = score; }

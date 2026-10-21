@@ -32,6 +32,27 @@ namespace sts {
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
 
+    bool angerCopyCostFix() {
+        const char *value = std::getenv("STS_ANGER_COPY_COST_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_ANGER_COPY_COST_FIX must be 0 or 1");
+    }
+
+    bool upgradeCostDeltaFix() {
+        const char *value = std::getenv("STS_UPGRADE_COST_DELTA_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_UPGRADE_COST_DELTA_FIX must be 0 or 1");
+    }
+
+    bool byrdGroundedFlightFix() {
+        const char *value = std::getenv("STS_BYRD_GROUNDED_FLIGHT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_BYRD_GROUNDED_FLIGHT_FIX must be 0 or 1");
+    }
+
     bool panacheFix() {
         const char *value = std::getenv("STS_PANACHE_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -44,6 +65,20 @@ namespace sts {
         if (!value || !*value || std::string(value) == "1") return true;
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_DEAD_MONSTER_BLOCK_FIX must be 0 or 1");
+    }
+
+    bool deadAllyBlockFix() {
+        const char *value = std::getenv("STS_DEAD_ALLY_BLOCK_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_ALLY_BLOCK_FIX must be 0 or 1");
+    }
+
+    bool deadAllyStrengthFix() {
+        const char *value = std::getenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_ALLY_STRENGTH_FIX must be 0 or 1");
     }
 
     bool enrageAllMonstersFix() {
@@ -1183,7 +1218,16 @@ void BattleContext::useAttackCard() {
 
         case CardId::ANGER:
             addToBot( Actions::AttackEnemy(t, calculateCardDamage(c, t, up ? 8 : 6)) );
-            addToBot( Actions::MakeTempCardInDiscard( CardInstance(CardId::ANGER, up), 1) );
+            {
+                // Java Anger.use queues makeStatEquivalentCopy(), which keeps cost and costForTurn
+                // (e.g. a Confusion roll); STS_ANGER_COPY_COST_FIX=0 restores the base-cost copy.
+                CardInstance copy(CardId::ANGER, up);
+                if (angerCopyCostFix()) {
+                    copy.cost = c.cost;
+                    copy.costForTurn = c.costForTurn;
+                }
+                addToBot( Actions::MakeTempCardInDiscard(copy, 1) );
+            }
             break;
 
         case CardId::BASH:

@@ -3105,7 +3105,93 @@ int testMonsterAiJavaParity() {
         if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
     }
 
+    // Live problem 56 (seed 111200445, A20): Donu died during the player's
+    // turn; Deca's Square of Protection then gave only Deca block and Plated
+    // Armor (game: Donu block 0, no powers). STS_DEAD_ALLY_BLOCK_FIX=0
+    // restores the legacy block on the dead ally.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+        else setenv("STS_DEAD_ALLY_BLOCK_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA, 20);
+        Monster &deca = bc.monsters.arr[0], &donu = bc.monsters.arr[1];
+        donu.curHp = 0;
+        deca.block = 1;
+        deca.moveHistory[0] = MMID::DECA_SQUARE_OF_PROTECTION;
+        deca.takeTurn(bc);
+        drain(bc);
+        const int donuBlock = fix ? 0 : 16, donuPlated = fix ? 0 : 3;
+        if (deca.block != 17 || deca.getStatus<MS::PLATED_ARMOR>() != 3
+                || donu.block != donuBlock || donu.getStatus<MS::PLATED_ARMOR>() != donuPlated) {
+            unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+            return fail(fix ? "Deca's Square of Protection shielded a dead Donu"
+                            : "STS_DEAD_ALLY_BLOCK_FIX=0 did not restore the legacy dead-Donu block");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+
+    // Donu's Circle of Power skips a dead Deca's Strength (ApplyPowerAction on
+    // a dead target); STS_DEAD_ALLY_STRENGTH_FIX=0 restores the legacy buff.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        else setenv("STS_DEAD_ALLY_STRENGTH_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA, 20);
+        Monster &deca = bc.monsters.arr[0], &donu = bc.monsters.arr[1];
+        deca.curHp = 0;
+        const int decaBefore = deca.getStatus<MS::STRENGTH>(), donuBefore = donu.getStatus<MS::STRENGTH>();
+        donu.moveHistory[0] = MMID::DONU_CIRCLE_OF_POWER;
+        donu.takeTurn(bc);
+        drain(bc);
+        if (donu.getStatus<MS::STRENGTH>() != donuBefore + 3
+                || deca.getStatus<MS::STRENGTH>() != decaBefore + (fix ? 0 : 3)) {
+            unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+            return fail(fix ? "Donu's Circle of Power buffed a dead Deca"
+                            : "STS_DEAD_ALLY_STRENGTH_FIX=0 did not restore the legacy dead-Deca Strength");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+
     // ---- Act 4 (monsters.ending) ----
+
+    // Spire Shield's Fortify skips a dead Spear (GainBlockAction on a dying
+    // target); STS_DEAD_ALLY_BLOCK_FIX=0 restores the legacy block.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+        else setenv("STS_DEAD_ALLY_BLOCK_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 20);
+        Monster &shield = bc.monsters.arr[0], &spear = bc.monsters.arr[1];
+        spear.curHp = 0;
+        shield.block = 0;
+        spear.block = 0;
+        shield.moveHistory[0] = MMID::SPIRE_SHIELD_FORTIFY;
+        shield.takeTurn(bc);
+        drain(bc);
+        if (shield.block != 30 || spear.block != (fix ? 0 : 30)) {
+            unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+            return fail(fix ? "Spire Shield's Fortify shielded a dead Spear"
+                            : "STS_DEAD_ALLY_BLOCK_FIX=0 did not restore the legacy dead-Spear block");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+
+    // Spire Spear's Piercer skips a dead Shield's Strength (same shape).
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        else setenv("STS_DEAD_ALLY_STRENGTH_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 20);
+        Monster &shield = bc.monsters.arr[0], &spear = bc.monsters.arr[1];
+        shield.curHp = 0;
+        const int shieldBefore = shield.getStatus<MS::STRENGTH>(), spearBefore = spear.getStatus<MS::STRENGTH>();
+        spear.moveHistory[0] = MMID::SPIRE_SPEAR_PIERCER;
+        spear.takeTurn(bc);
+        drain(bc);
+        if (spear.getStatus<MS::STRENGTH>() != spearBefore + 2
+                || shield.getStatus<MS::STRENGTH>() != shieldBefore + (fix ? 0 : 2)) {
+            unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+            return fail(fix ? "Spire Spear's Piercer buffed a dead Shield"
+                            : "STS_DEAD_ALLY_STRENGTH_FIX=0 did not restore the legacy dead-Shield Strength");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
 
     // A18 Spire Spear Burn Strike puts two Burns on top of the draw pile.
     {
