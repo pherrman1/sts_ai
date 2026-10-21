@@ -81,6 +81,8 @@ namespace sts::search {
             // ADR-0050: real boss and elite fights use prior-argmax playouts (RolloutConfig::prior)
             // when the root prior is on (STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE; =0 restores greedy).
             bool priorPlayoutBossElite = true;
+            // ADR-0056: elite rooms are left out unless STS_SILVER_PRIOR_PLAYOUT_ELITE=1 (ADR-0050's rooms).
+            bool priorPlayoutElite = false;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -595,13 +597,14 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
-                // ADR-0050: boss and elite rooms of whole-run fights play prior playouts. A rollout,
-                // root-prior or prior-net override (research arms, source runs, imagined OOC fights)
-                // keeps its own setting, as the whole-run tree prior above does.
+                // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
+                // of whole-run fights play prior playouts. A rollout, root-prior or prior-net override
+                // (research arms, source runs, imagined OOC fights) keeps its own setting, as the
+                // whole-run tree prior above does.
                 if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
                         && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
                         && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
-                        && (gc.curRoom == Room::BOSS || gc.curRoom == Room::ELITE))
+                        && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE && g_options.priorPlayoutElite)))
                     searcher->rolloutConfig.prior = true;
                 searcher->rolloutPrior = nullptr;
                 if (searcher->rolloutConfig.prior) {
@@ -966,6 +969,12 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE must be 0 or 1");
             g_options.priorPlayoutBossElite = value == "1";
         }
+        if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_ELITE"); raw && *raw) {
+            const std::string value = raw;
+            if (value != "0" && value != "1")
+                throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_ELITE must be 0 or 1");
+            g_options.priorPlayoutElite = value == "1";
+        }
         if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
             char *end = nullptr;
             const long value = std::strtol(raw, &end, 10);
@@ -1212,7 +1221,8 @@ namespace sts::search {
                 g_options.a20BossHealFix, g_options.escapePenalty, g_options.eliteEscapePenalty,
                 table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap, rollout.actionCap,
                 g_options.rolloutRootTablePath,
-                g_options.priorPlayoutBossElite && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly};
+                g_options.priorPlayoutBossElite && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly,
+                g_options.priorPlayoutElite};
     }
 
     bool nativeSilverLearnedStopEnabled() {

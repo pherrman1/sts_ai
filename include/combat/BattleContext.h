@@ -152,6 +152,17 @@ namespace sts {
     // (live parity problem 48). 0 = the legacy pick. Other values are fatal.
     bool mummifiedHandPlayedCardFix();
 
+    // STS_BLOOD_FOR_BLOOD_COPY_COST_FIX: unset/1 (default) = a Blood for Blood
+    // generated in combat (Discovery, Infernal Blade, Dead Branch, Nilry's Codex) starts at 4
+    // minus the times the player lost HP this combat, as Java's makeCopy does
+    // (live parity problem 76). 0 = the legacy base cost. Other values are fatal.
+    bool bloodForBloodCopyCostFix();
+    // STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX: unset/1 (default) = unupgraded True
+    // Grit exhausts a lone hand card without a cardRandomRng draw, as Java's
+    // ExhaustAction does (live parity problem 76). 0 = the legacy draw.
+    // Other values are fatal.
+    bool trueGritSingleCardRngFix();
+
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
     // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
@@ -475,6 +486,10 @@ namespace sts {
         void chooseCodexCard(CardId id);
         void chooseDiscardToHandCard(int discardIdx, bool forZeroCost);
         void chooseDiscoveryCard(CardId id);
+        // A card Java creates with makeCopy() in combat (Discovery choices,
+        // Infernal Blade, Dead Branch, Nilry's Codex): BloodForBlood.makeCopy() applies
+        // updateCost(-damagedThisCombat) (STS_BLOOD_FOR_BLOOD_COPY_COST_FIX).
+        CardInstance generatedCombatCard(CardId id) const;
         void chooseDualWieldCard(int handIdx);
         void chooseExhaustOneCard(int handIdx);
         void chooseExhumeCard(int exhaustIdx);

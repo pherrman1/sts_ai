@@ -40,20 +40,20 @@ cache_get() {  # cache_get SHA DEST -> 0 if DEST now holds the binary with that 
   cp "$f" "$2.part" && chmod +x "$2.part" && mv "$2.part" "$2" || return 1
   [ "$(sha "$2")" = "$1" ] || { rm -f "$2"; return 1; }
 }
-cache_put() {  # cache_put FILE [COMMIT]
+cache_put() {  # cache_put FILE [COMMIT [POINTER_SUFFIX]]
   local s; s=$(sha "$1"); mkdir -p "$CACHE" || stop "cannot create $CACHE"
   if [ ! -f "$CACHE/one_combat-$s" ] || [ "$(sha "$CACHE/one_combat-$s")" != "$s" ]; then
     cp "$1" "$CACHE/one_combat-$s.part" && mv "$CACHE/one_combat-$s.part" "$CACHE/one_combat-$s" || stop "cache upload failed"
     cmp -s "$1" "$CACHE/one_combat-$s" || stop "cached copy differs (share full?)"
   fi
-  [ -n "${2:-}" ] && echo "$s" > "$CACHE/commit-$2.sha256"
-  echo "cached one_combat-$s${2:+ for commit $2}"
+  [ -n "${2:-}" ] && echo "$s" > "$CACHE/commit-$2${3:-}.sha256"
+  echo "cached one_combat-$s${2:+ for commit $2${3:-}}"
 }
-build_one_combat() {  # build_one_combat TARGET -> path of the built binary on stdout
+build_one_combat() {  # build_one_combat TARGET -> path of the built binary on stdout (preset $PRESET)
   git submodule update --init --recursive >/dev/null 2>&1 || stop "submodules"
-  cmake --preset linux-gcc-release >/dev/null 2>&1 || stop "configure failed"
-  cmake --build build/linux-gcc-release --target "$1" -j"$(nproc)" >/dev/null 2>&1 || stop "build failed"
-  echo "$REPO/build/linux-gcc-release/$1"
+  cmake --preset "$PRESET" >/dev/null 2>&1 || stop "configure failed"
+  cmake --build "build/$PRESET" --target "$1" -j"$(nproc)" >/dev/null 2>&1 || stop "build failed"
+  echo "$REPO/build/$PRESET/$1"
 }
 
 case "${1:-}" in
@@ -79,6 +79,19 @@ LEASE=$(key lease_minutes); LEASE=${LEASE:-30}
 [[ "$SCHED" =~ ^(static|queue)$ ]] || stop "manifest schedule must be static or queue"
 [[ "$LEASE" =~ ^[1-9][0-9]*$ ]] || stop "manifest lease_minutes must be a positive integer"
 TARGET=$(key build_target); TARGET=${TARGET:-one_combat}
+# Without the key, the preset is the one tools/cloud/default_configure_preset names at code_commit, so a
+# changed default only reaches campaigns frozen after it; commits without that file use linux-gcc-release.
+PRESET=$(key configure_preset)
+if [ -z "$PRESET" ]; then
+  git cat-file -e "$CODE^{commit}" 2>/dev/null || stop "code_commit $CODE is not in this checkout (fetch it)"
+  PRESET=$(git show "$CODE:tools/cloud/default_configure_preset" 2>/dev/null | head -1)
+fi
+PRESET=${PRESET:-linux-gcc-release}
+[[ "$PRESET" =~ ^(linux-gcc-release|linux-gcc-release-x86-64-v3)$ ]] \
+  || stop "manifest configure_preset must be linux-gcc-release or linux-gcc-release-x86-64-v3"
+if [ "$PRESET" = linux-gcc-release-x86-64-v3 ]; then
+  grep -qw avx2 /proc/cpuinfo && grep -qw bmi2 /proc/cpuinfo || stop "configure_preset $PRESET needs an AVX2 CPU"
+fi
 [[ "$NAME" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || stop "manifest name must be lowercase [a-z0-9_-]"
 [[ "$NW" =~ ^[1-9][0-9]*$ ]] || stop "manifest workers must be a positive integer"
 [[ "$CODE" =~ ^[0-9a-f]{40}$ ]] || stop "manifest code_commit must be a full 40-char sha"
@@ -90,7 +103,10 @@ if [ "$CMD" = publish-binary ]; then
   b=$(build_one_combat "$TARGET"); got=$(sha "$b")
   if [[ "$BIN" =~ ^[0-9a-f]{64}$ ]]; then [ "$got" = "$BIN" ] || stop "built $got != manifest binary_sha256 $BIN ($(g++ --version | head -1))"
   else echo "manifest binary_sha256 is not set; the built binary is $got"; fi
-  cache_put "$b" "$CODE"; exit 0
+  # Only the default preset writes the plain commit pointer that reviewers read for base binaries;
+  # another preset gets its own pointer so it never replaces the default build's.
+  if [ "$PRESET" = linux-gcc-release ]; then cache_put "$b" "$CODE"; else cache_put "$b" "$CODE" ".$PRESET"; fi
+  exit 0
 fi
 
 [[ "$BIN" =~ ^[0-9a-f]{64}$ ]] || stop "manifest binary_sha256 must be a 64-char sha256"
@@ -109,22 +125,37 @@ frozen_identity() {  # what must not change between setup, resume and verify
 is_running() { [ -e "$RUN/lock" ] && ! flock -n "$RUN/lock" true; }
 
 # Queue schedule: units are claimed on the share instead of assigned by line number. A claim is the directory
-# $SHARE/claims/<id>.a<n> (mkdir decides between racing workers); its owner rewrites hb ("TAG EPOCH") every
-# minute while the unit runs. A claim whose heartbeat is older than lease_minutes, or that holds `failed`, may be
-# superseded by attempt n+1 (at most QMAX attempts). A finished unit is uploaded at once as
-# $SHARE/units/<id>.<TAG>.tar, so a worker that dies later loses nothing. Two workers can run one unit (a lost
-# race on a non-atomic share, or a heartbeat that stalled); verify_campaign.py then reports the duplicate.
+# $SHARE/claims/<id>.a<n>; its owner rewrites hb ("TAG EPOCH") every minute while the unit runs. A claim whose
+# heartbeat is older than lease_minutes, or that holds `failed`, may be superseded by attempt n+1 (at most QMAX
+# attempts). A finished unit is uploaded at once as $SHARE/units/<id>.<TAG>.tar, so a worker that dies later loses
+# nothing.
+# mkdir is atomic only within one container: the share's other containers see a new claim dir late, so two of them
+# can both create it. Each worker therefore takes its static units (line i -> worker i mod workers + 1) first, in
+# order, and only then takes other workers' unclaimed units, from the end. Each claimer also writes a candidate
+# file cand.<KEY>.<TAG>.<pid> into the claim dir. KEY is 0 for the static owner's first attempt, so that claim
+# needs no wait. Every other claimer waits claim_settle_seconds, lists the candidates, and runs the unit only if
+# its own candidate sorts first (KEY = claim epoch). A duplicate is still possible when a candidate stays
+# invisible for longer than the settle time; verify_campaign.py then reports it and keeps the first tar.
 QMAX=4
 QDIR=$SHARE/claims UDIR=$SHARE/units
-pending_units() {  # unit lines without an uploaded tar, in units.txt order
+SETTLE=$(key claim_settle_seconds); SETTLE=${SETTLE:-900}
+[[ "$SETTLE" =~ ^[0-9]+$ ]] || stop "manifest claim_settle_seconds must be a non-negative integer"
+pending_units() {  # unit lines without an uploaded tar: this worker's static units in order, then the others reversed
   local have; have=$(ls "$UDIR" 2>/dev/null | sed -n 's/\.w[0-9][0-9]*\.tar$//p' | sort -u)
-  grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" | while IFS= read -r u; do
+  grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" | awk -v n="$NW" -v w="$W" \
+      '{ printf "%d %d %s\n", (NR-1)%n+1!=w, (NR-1)%n+1==w ? NR : -NR, $0 }' | sort -k1,1n -k2,2n | cut -d' ' -f3- \
+    | while IFS= read -r u; do
     grep -qxF -- "$(unit_id "$u")" <<< "$have" || printf '%s\n' "$u"
   done
 }
-try_claim() {  # try_claim ID -> prints the claim dir; 1 = claimed by a live worker, 2 = out of attempts
-  local id=$1 n=1 c hb age
-  while [ -d "$QDIR/$id.a$n" ]; do n=$((n + 1)); done
+is_mine() {  # is_mine UNIT_LINE -> 0 if the static schedule gives the unit to this worker
+  local i; i=$(grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" | grep -nxF -m1 -- "$1" | cut -d: -f1)
+  [ -n "$i" ] && [ $(( (i - 1) % NW + 1 )) = "$W" ]
+}
+try_claim() {  # try_claim ID MINE -> prints the claim dir; 1 = claimed by another worker, 2 = out of attempts
+  local id=$1 mine=$2 n=1 c hb age key cand first
+  # CW_TEST_SPLIT_SHARE (tests only) plays a container that sees none of the others' claims yet.
+  [ -n "${CW_TEST_SPLIT_SHARE:-}" ] || while [ -d "$QDIR/$id.a$n" ]; do n=$((n + 1)); done
   if [ "$n" -gt 1 ]; then
     c="$QDIR/$id.a$((n - 1))"
     if [ ! -e "$c/failed" ]; then
@@ -133,9 +164,19 @@ try_claim() {  # try_claim ID -> prints the claim dir; 1 = claimed by a live wor
     fi
     [ "$n" -gt "$QMAX" ] && return 2
   fi
-  mkdir "$QDIR/$id.a$n" 2>/dev/null || return 1
-  echo "$TAG $(date +%s)" > "$QDIR/$id.a$n/hb"
-  echo "$QDIR/$id.a$n"
+  c="$QDIR/$id.a$n"
+  if [ -n "${CW_TEST_SPLIT_SHARE:-}" ]; then mkdir -p "$c" || return 1   # tests: every claimer "wins" the mkdir
+  else mkdir "$c" 2>/dev/null || return 1; fi
+  key=$(date +%s); [ "$n" = 1 ] && [ "$mine" = 1 ] && key=0
+  cand="cand.$key.$TAG.$BASHPID"
+  : > "$c/$cand" || return 1
+  if [ "$key" != 0 ]; then
+    sleep "$SETTLE"
+    first=$(ls "$c" | grep '^cand\.' | sort -t. -k2,2n -k3,3 -k4,4n | head -1)
+    [ "$first" = "$cand" ] || return 1
+  fi
+  echo "$TAG $(date +%s)" > "$c/hb"
+  echo "$c"
 }
 upload_unit() {  # upload_unit ID -> $UDIR/<id>.<TAG>.tar (unit dir, markers, FROZEN.txt, SETUP.txt)
   local id=$1 t="$RUN/q/$1.$TAG.tar"
@@ -188,7 +229,7 @@ run)
     mkdir -p "$OUT/units" "$QDIR" "$UDIR" || stop "cannot create $OUT/units or the share's claims/units dirs"
     grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" > "$OUT/units.txt"   # all units: any worker may run any of them
     rm -f "$OUT"/units/*.failed
-    for _ in $(seq "$PAR"); do bash "$SELF" _qlane "$C" "$W" & done
+    for l in $(seq 0 $((PAR - 1))); do bash "$SELF" _qlane "$C" "$W" "$l" & done
     wait
     [ -e "$RUN/STOP" ] && { echo "stopped by request; no upload"; exit 0; }
     left=$(pending_units | wc -l)
@@ -249,6 +290,7 @@ _unit)
   else echo "rc=$?" > "$UO.failed"; fi
   exit 0 ;;
 _qlane)  # one queue lane: claim the first claimable pending unit, run it, upload it; idle-poll until none is left
+  sleep $(( ${4:-0} * 3 ))   # stagger the lanes' first scans
   while :; do
     [ -e "$RUN/STOP" ] && exit 0
     mapfile -t todo < <(pending_units)
@@ -258,7 +300,8 @@ _qlane)  # one queue lane: claim the first claimable pending unit, run it, uploa
       id=$(unit_id "$u"); UO="$OUT/units/$id"
       case "$id" in ''|.*) continue;; esac
       if [ -e "$UO.done" ]; then upload_unit "$id" || echo "upload of $id failed" >&2; ran=1; break; fi  # resumed worker
-      c=$(try_claim "$id"); rc=$?
+      mine=0; is_mine "$u" && mine=1
+      c=$(try_claim "$id" "$mine"); rc=$?
       [ "$rc" = 2 ] && exhausted=$((exhausted + 1))
       [ "$rc" = 0 ] || continue
       ( while sleep 60; do echo "$TAG $(date +%s)" > "$c/hb.part" && mv "$c/hb.part" "$c/hb"; done ) & hbp=$!
@@ -276,6 +319,9 @@ _qlane)  # one queue lane: claim the first claimable pending unit, run it, uploa
     [ "$exhausted" -eq "${#todo[@]}" ] && exit 0   # only units that failed QMAX times are left
     [ "$ran" = 1 ] || sleep 120   # every pending unit is claimed by a live worker: wait for it or for its lease
   done ;;
+_claim)  # tests: _claim CAMPAIGN W ID MINE -> try_claim's output and exit code
+  mkdir -p "$QDIR" || exit 1
+  try_claim "$4" "$5"; exit $? ;;
 wait)
   lim=$(( ${4:-110} * 60 )) t=0
   while [ $t -lt "$lim" ]; do
