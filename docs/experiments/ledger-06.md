@@ -22618,3 +22618,24 @@ leaf spec records `prior_playout_rooms` as `boss`.
 Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
 `decisions/0056-silver-prior-playout-boss-only.md`.
+
+## §TBD — OOC value head: monotonicity penalty fails the offline gate (2026-10-21)
+
+**Question:** Does a training penalty that forbids the value head from preferring the worse of two states (less HP,
+less max HP, less gold, one potion fewer, one curse more) fix gen 2's wrong-signed end-state prices without hurting
+the head?
+**Setup:** `distill.py --mono-weight M` (`tools/heart1/monotone.py`, default off): gen-2 pick recipe
+(`S_d64L2_lr1e-4_a0.3_v0.3`, same rows, folds and cache), M ∈ {0, 0.3, 1, 3} at seed 0, plus B seed 1; `prices.py` on
+the exported heads. Pre-registered plan and full tables: `evidence/value_monotone_penalty_20261021/`.
+**Result:** Selection-fold violation rates for B / 0.3 / 1 / 3: max HP +5 83.6 / 52.6 / 33.8 / 27.7 %, gold +50 47.1 /
+26.9 / 17.8 / 13.2 %, −3 HP 15.7 / 14.7 / 14.4 / 13.9 %. Policy KL 0.0554 / 0.0553 / 0.0551 / 0.0549. Value BCE 0.559 /
+0.561 / 0.569 / 0.582 (AUC 0.740 / 0.739 / 0.729 / 0.708). Only M = 0.3 is within BCE + 0.003. `prices.py`: max-HP price
+> 0 in 11 / 30 / 46 / 59 % of states, −3 HP sign right 88.6 / 90.8 / 91.2 / 91.2 %; per-HP slope 0.00128 → 0.00031.
+**Interpretation:** FAIL. The hinge is met mostly by flattening the head along HP, max HP and gold rather than by
+learning the right differences; HP errors barely move. Inference: the sinusoid-only encoding of these scalars is the
+limit, not the loss. Seeds 1–2 of M = 0.3 not run (stopped by Philipp to free the GPU); they could not reach the
+`prices.py` thresholds.
+**Open question:** a sign-agreement penalty against raw heart1 (≈10 % wrong on max HP and gold) or smooth linear
+extra inputs for HP, max HP and gold.
+Seeds: none (offline training).
+**Knowledge impact:** none (option stays default off).
