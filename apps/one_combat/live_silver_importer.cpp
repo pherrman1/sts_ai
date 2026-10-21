@@ -373,6 +373,19 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_PEN_NIB_PENDING_FIX: unset/1 (default) = Pen Nib at counter 9
+// with its PenNibPower still queued (a pending BUFF_PLAYER Pen Nib, no Pen Nib
+// power yet) imports without the Pen Nib status bit, as native holds it until
+// the queued BuffPlayer runs (live parity problem 54, seed 111200445: Headbutt
+// armed Pen Nib behind its grid); 0 = legacy, where the counter sentinel set
+// the bit at once.
+bool penNibPendingFix() {
+    const char *value = std::getenv("STS_IMPORTER_PEN_NIB_PENDING_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_PEN_NIB_PENDING_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_ESCAPING_MONSTER_FIX: unset/1 (default) = a monster that Java
 // reports dead (isDeadOrEscaped) with HP left, not half dead and not yet
 // "escaping" (the escape animation is still running) is imported as escaping;
@@ -2321,6 +2334,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         if(sourceCard && cleanups!=1)return unsupported("silver_selection_pending_actions");
         wire.pendingActionQueueObserved=true;
+        // Pen Nib's counter-9 sentinel set the status bit above; while its
+        // PenNibPower is still queued, native has not applied it yet.
+        constexpr int penNib=static_cast<int>(PlayerStatus::PEN_NIB);
+        const bool penNibPower=combat.contains("playerPowers") && std::any_of(combat.at("playerPowers").begin(),
+            combat.at("playerPowers").end(),[](const auto &power){return power.value("id",std::string())=="Pen Nib";});
+        if(penNibPendingFix() && !penNibPower && std::any_of(wire.pendingActionQueue.begin(),wire.pendingActionQueue.end(),
+                [&](const auto &action){return action.kind==K::BUFF_PLAYER && action.status==penNib;}))
+            wire.player.statusBits0&=~(1ULL<<penNib);
     }
     // An exhausted Mode Shift must come with its queued shift
     // (GUARDIAN_DEFENSIVE_SHIFT); Java resolves the shift before any other
