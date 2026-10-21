@@ -194,6 +194,15 @@ const std::map<Event,std::string> eventContinuePages{
     {Event::MINDBLOOM,"FIGHT"},{Event::SECRET_PORTAL,"ACCEPT"},
     {Event::MATCH_AND_KEEP,"INTRO|RULE_EXPLANATION"}
 };
+// STS_IMPORTER_MUSHROOMS_FIGHT_FIX: unset/1 (default) = Mushrooms' "Ambushed!"
+// page (screenNum 2 after Stomp, sole [Fight]) is a forced event_continue;
+// 0 restores the unqualified-transition refusal (live problem 57).
+bool importerMushroomsFightFix() {
+    const char *value = std::getenv("STS_IMPORTER_MUSHROOMS_FIGHT_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_MUSHROOMS_FIGHT_FIX must be 0 or 1");
+}
 bool eventPage(const std::map<Event,std::string> &pages,Event e,const std::string &phase) {
     const auto it=pages.find(e);
     return it!=pages.end() && ("|"+it->second+"|").find("|"+phase+"|")!=std::string::npos;
@@ -1254,7 +1263,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 const bool vanilla=d.contains("eventContract") && string(d,"eventContract")=="vanilla_v1"
                         && capturedId==J(g.curEvent).get<std::string>()
                         && ((transition=="event_leave" && eventPage(eventLeavePages,g.curEvent,phase))
-                            || (transition=="event_continue" && eventPage(eventContinuePages,g.curEvent,phase)));
+                            || (transition=="event_continue" && (eventPage(eventContinuePages,g.curEvent,phase)
+                                || (g.curEvent==Event::HYPNOTIZING_COLORED_MUSHROOMS && phase=="2"
+                                    && importerMushroomsFightFix()))));
                 require(neow || goop || forge || writing || library || vanilla,"unqualified mechanical event transition");
                 const auto &options=array(eventCapture,"options",1);
                 require(options.size()==1 && integer(options.at(0),"index",0,0)==0

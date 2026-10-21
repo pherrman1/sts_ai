@@ -960,7 +960,9 @@ upgrades; Egg preview/acquisition never upgrades an already upgraded card twice.
 Direct V4 rejects unqualified pity, and differential tracing rejects Library's
 initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
 Mushrooms and Mysterious Sphere use the same counters for combat rewards. Their native leave effects match installed vanilla: Mushrooms heals
-and adds Parasite; Sphere leaves without granting gold. Event repairs also
+and adds Parasite; Sphere leaves without granting gold. Mushrooms' Stomp opens the "Ambushed!" page (`screenNum`
+2) whose sole [Fight] starts the fight; the mod marks it a vanilla `event_continue` and the importer passes it through
+(`STS_IMPORTER_MUSHROOMS_FIGHT_FIX`, live problem 57). Event repairs also
 preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
 Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
 With exact counters, MCTS keeps them at every root particle and the v_win
@@ -1293,7 +1295,9 @@ than a reward screen. The strict driver advances its single Proceed button
 only for a living player at Act 3 floor 50 (or floor 51 with verified A20) or after the Heart (Act 4 floor 56 at
 verified A20, live problem 52; floor 55 below A20 is **Inference** from Act 3's single boss, not observed live), with a completed MonsterRoomBoss,
 no active overlay, no choices/cancel action, and agreeing run coordinates.
-It records `boss_completion` and waits for the following boss or actual terminal screen; it does
+It records `boss_completion` and waits for the following boss or actual terminal screen (after the Heart that is
+`TrueVictoryRoom`, whose `NO_INTERACT` ending cutscene is never command-ready; the driver treats that room as a terminal
+victory, live problem 60); it does
 not declare victory from the boss-room phase alone. Differential capture
 retains the native unsupported boundary for this UI-only transition.
 The following `Spire Heart` story in `VictoryRoom` is also mechanical: the
