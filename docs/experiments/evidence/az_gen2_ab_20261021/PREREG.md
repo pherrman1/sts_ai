@@ -75,14 +75,18 @@ student_sel at A20?
 - B's capture rows are self-play data for gen 3 whatever the outcome. A's add to the student_sel pool.
 
 ## Scheduling
-Static per-worker unit split, so a dead worker loses only its own units. The `schedule queue` mode
-(#765) is not used, because of the claim race seen in the value-leaf A/B, unless a fix lands on main before the freeze.
+`schedule queue` (#765) with the claim fix from #773 (on main since 2026-10-21, claim settle 900 s), lease 30 min.
+Units spread over the live workers, so one slow or dead worker does not hold up the campaign. Duplicate units are
+seed-deterministic; the analysis uses the first tar in name order.
 
 ## Main changes since the draft (fixed at freeze)
 - **Prior playouts in boss rooms only:** `STS_SILVER_PRIOR_PLAYOUT_ELITE=0` (#775, ADR-0056, main's default since 2026-10-21; ~−10% A20 run CPU). It is set explicitly in both arms. Gen 1b's A/B ran boss and elite playouts.
 - **Binary build:** the freeze commit is ≥ 49935bb3, so the binary builds with the x86-64-v3 preset (#780/#781; decisions bit-identical, faster real combats). The preset is recorded in the freeze file.
 
 ## Freeze waits on the value-leaf A/B (`../az_gen1b_value_leaf_ab_20261020/`)
+**Outcome (2026-10-21 18:37Z): NOT_SHOWN** (Heart kills 123 vs 107, +3.1 pp [−1.0, +7.2], p 0.16; PR #753).
+So this A/B runs as written, with the X2-B leaf in both arms.
+
 Philipp, 2026-10-21 13:43Z: gen 2's lead may depend on that campaign. The freeze happens after its verdict.
 - **NOT_SHOWN or WORSE:** this A/B runs as written, with the X2-B leaf in both arms.
 - **WIN:** both arms get the learned value leaf (`STS_OOC_MCTS_LEAF_HEART1_VALUE`).
@@ -97,3 +101,9 @@ Philipp, 2026-10-21 13:43Z: gen 2's lead may depend on that campaign. The freeze
 ## Verification
 `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/az_gen2_ab_20261021`. The lead releases only the
 `OK:` workers.
+
+## Freeze (2026-10-21)
+- Code: main `844bd9239c6621968f5095c6f84aba6de27bbf2f`. Preset `linux-gcc-release-x86-64-v3`; binary `one_combat`
+  sha256 `23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c`.
+- Value leaf: X2-B in both arms (value-leaf A/B NOT_SHOWN). Prior playouts boss-only in both arms (`STS_SILVER_PRIOR_PLAYOUT_ELITE=0`).
+- `workers` stays a placeholder until Philipp gives the count; the run commit fills it and nothing else.
