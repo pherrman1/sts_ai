@@ -489,11 +489,24 @@ public final class RunicDomeTrackerTest {
             try { Class.forName("com.megacrit.cardcrawl.monsters."+pkg+"."+cls,false,loader).getDeclaredMethod("takeTurn"); }
             catch(ClassNotFoundException expectedOtherPackage) { }
         }
+        // Every monster-specific Dome power is checked against the jar's POWER_ID (live problem 73: Darkling's
+        // RegrowPower is "Life Link"); all mismatches are reported at once.
+        List<String> powerIdErrors=new ArrayList<>();
         for(String[] power:new String[][]{{"WeakPower","FuzzyLouseNormal"},{"GenericStrengthUpPower","Orb Walker"},{"AngryPower","GremlinWarrior"},
-                {"MalleablePower","SnakePlant"},{"ReactivePower","WrithingMass"},{"SlowPower","GiantHead"}}) {
-            String publicId=(String)pool.get("com.megacrit.cardcrawl.powers."+power[0]).getDeclaredField("POWER_ID").getConstantValue();
-            if(!RunicDomeTracker.monsterPowerAllowed(publicId,power[1])) throw new AssertionError("vanilla power ID rejected "+publicId);
+                {"MalleablePower","SnakePlant"},{"ReactivePower","WrithingMass"},{"SlowPower","GiantHead"},{"RegrowPower","Darkling"},
+                {"SplitPower","AcidSlime_L"},{"CurlUpPower","FuzzyLouseNormal"},{"MinionPower","Dagger"},{"StasisPower","BronzeOrb"},
+                {"RitualPower","Cultist"},{"SporeCloudPower","FungiBeast"},{"AngerPower","GremlinNob"},{"BarricadePower","SphericGuardian"},
+                {"ExplosivePower","Exploder"},{"IntangiblePower","Nemesis"},{"ThornsPower","Spiker"},{"PainfulStabsPower","BookOfStabbing"},
+                {"TimeWarpPower","TimeEater"},{"ShiftingPower","Transient"},{"FadingPower","Transient"},{"FlightPower","Byrd"},
+                {"CuriosityPower","AwakenedOne"},{"UnawakenedPower","AwakenedOne"},{"ThieveryPower","Looter"},{"ModeShiftPower","TheGuardian"},
+                {"SharpHidePower","TheGuardian"},{"InvinciblePower","CorruptHeart"},{"BeatOfDeathPower","CorruptHeart"},
+                {"PainfulStabsPower","CorruptHeart"},{"BackAttackPower","SpireShield"}}) {
+            try {
+                String publicId=(String)pool.get("com.megacrit.cardcrawl.powers."+power[0]).getDeclaredField("POWER_ID").getConstantValue();
+                if(!RunicDomeTracker.monsterPowerAllowed(publicId,power[1])) powerIdErrors.add(power[0]+" id "+publicId+" rejected for "+power[1]);
+            } catch(Exception missing) { powerIdErrors.add(power[0]+": "+missing); }
         }
+        if(!powerIdErrors.isEmpty()) throw new AssertionError("vanilla power IDs rejected: "+powerIdErrors);
         Class.forName("com.megacrit.cardcrawl.monsters.MonsterGroup",false,loader).getDeclaredMethod("init");
         // New occupants carry local execution history and the public global birth clock.
         for(String id:Arrays.asList("AcidSlime_L","SpikeSlime_L","SlimeBoss","BronzeAutomaton","BronzeOrb","GremlinLeader","Reptomancer","Dagger","TheCollector","TorchHead","FuzzyLouseNormal","FuzzyLouseDefensive","Darkling")) {
@@ -562,6 +575,8 @@ public final class RunicDomeTrackerTest {
         terminalJaw.globalTurn(1);terminalJaw.execute(terminalJawIdentity,1);terminalJaw.beginTerminalRoll(terminalJawIdentity);terminalJaw.setMove(terminalJawIdentity);terminalJaw.endRoll(terminalJawIdentity);
         Map<String,Object> terminalJawRow=terminalJaw.snapshot(terminalJawIdentity,2,0,true);
         if(!Boolean.TRUE.equals(terminalJawRow.get("complete")) || !Long.valueOf(3).equals(terminalJawRow.get("generation")) || !Integer.valueOf(0).equals(terminalJawRow.get("pendingMoveRolls")))throw new AssertionError("retaliation terminal roll "+terminalJawRow);
+        if(!RunicDomeTracker.monsterPowerAllowed("Life Link","Darkling") || RunicDomeTracker.monsterPowerAllowed("Regrow","Darkling"))
+            throw new AssertionError("Darkling RegrowPower.POWER_ID is Life Link (live problem 73)");
         Object darkIdentity=new Object();RunicDomeTracker darkTracker=new RunicDomeTracker(darkIdentity,"Darkling",17,3,3,0);
         darkTracker.bind(1,0,"initial",-1,0);darkTracker.globalTurn(0);darkTracker.beginRoll(darkIdentity,50,50);darkTracker.setMove(darkIdentity);darkTracker.endRoll(darkIdentity);
         darkTracker.publicOverride(darkIdentity,4,true);darkTracker.setMove(darkIdentity);darkTracker.endKnownTurn(darkIdentity);
