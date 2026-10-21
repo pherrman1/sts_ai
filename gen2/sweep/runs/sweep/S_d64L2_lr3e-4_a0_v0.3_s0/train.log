@@ -1,0 +1,30 @@
+sha 41e3a2acea6fd418773e7fa687aaa16ff907cdfa distill.py sha256 0f25037c7778e4720e052acb37641268bd36fa082562acd269a7475ce4247522
+args --dim 64 --layers 2 --mult 4 --heads 4 --lr 3e-4 --anchor-weight 0 --value-weight 0.3 --seed 0 --init /home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt
+cache /home/philippherrmann/h1distill/gen2/cache/eb5e79069123c0c1
+train 350256 rows / 2016 files, val 56882 rows / 336 files, wing_boots_counter 1, select 57873 rows / 336 files
+/home/philippherrmann/Documents/sts/az-gen2-sweep/tools/heart1/distill.py:307: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  missing, unexpected = net.load_state_dict(torch.load(a.init, map_location=a.device), strict=False)
+student params 280844
+ep 1 train loss 0.2623 val KL None top1 None value null 14s
+   select fold objective 0.2521 KL 0.06252091243496369 value {"n": 57873, "bce": 0.632, "const_bce": 0.642, "auc": 0.6167944208374182, "mean_p": 0.2776, "mean_z": 0.3414}
+ep 2 train loss 0.2166 val KL None top1 None value null 33s
+   select fold objective 0.2427 KL 0.05913982987996076 value {"n": 57873, "bce": 0.6119, "const_bce": 0.642, "auc": 0.6643309534559012, "mean_p": 0.2789, "mean_z": 0.3414}
+ep 3 train loss 0.2044 val KL None top1 None value null 52s
+   select fold objective 0.2341 KL 0.057915458065728675 value {"n": 57873, "bce": 0.5874, "const_bce": 0.642, "auc": 0.6991824423379224, "mean_p": 0.2851, "mean_z": 0.3414}
+ep 4 train loss 0.1936 val KL None top1 None value null 70s
+   select fold objective 0.2344 KL 0.06304490270846128 value {"n": 57873, "bce": 0.5713, "const_bce": 0.642, "auc": 0.7325195980776522, "mean_p": 0.2691, "mean_z": 0.3414}
+ep 5 train loss 0.1831 val KL None top1 None value null 89s
+   select fold objective 0.2387 KL 0.06323238226788523 value {"n": 57873, "bce": 0.5848, "const_bce": 0.642, "auc": 0.7415959235109352, "mean_p": 0.2334, "mean_z": 0.3414}
+ep 6 train loss 0.1731 val KL None top1 None value null 107s
+   select fold objective 0.2322 KL 0.0628717515135115 value {"n": 57873, "bce": 0.5644, "const_bce": 0.642, "auc": 0.7520777916263861, "mean_p": 0.2588, "mean_z": 0.3414}
+ep 7 train loss 0.1646 val KL None top1 None value null 126s
+   select fold objective 0.2327 KL 0.06323787568646841 value {"n": 57873, "bce": 0.5649, "const_bce": 0.642, "auc": 0.7581982417702502, "mean_p": 0.2608, "mean_z": 0.3414}
+ep 8 train loss 0.1587 val KL None top1 None value null 144s
+   select fold objective 0.2323 KL 0.06454848064263805 value {"n": 57873, "bce": 0.5593, "const_bce": 0.642, "auc": 0.7562444392272744, "mean_p": 0.2939, "mean_z": 0.3414}
+ep 9 train loss 0.1525 val KL None top1 None value null 163s
+   select fold objective 0.2398 KL 0.06580583078059506 value {"n": 57873, "bce": 0.58, "const_bce": 0.642, "auc": 0.7491924552907984, "mean_p": 0.262, "mean_z": 0.3414}
+early stop: no better selection score for 3 epochs
+chosen epoch 6 val KL 0.06116035449307227 top1 0.9259464450600184 value {"n": 56882, "bce": 0.5247, "const_bce": 0.6216, "auc": 0.7697012596541979, "mean_p": 0.264, "mean_z": 0.3132}
+best per group: {"boss_relic": {"n": 135, "kl": 0.0404, "top1": 0.9556, "v4_top1": null, "serve_top1": null}, "card_select:bonfire_spirits": {"n": 7, "kl": 0.1578, "top1": 0.1429, "v4_top1": null, "serve_top1": null}, "card_select:bottle": {"n": 17, "kl": 0.5482, "top1": 0.1765, "v4_top1": null, "serve_top1": null}, "card_select:obtain": {"n": 6, "kl": 0.2243, "top1": 0.0, "v4_top1": null, "serve_top1": null}, "card_select:transform": {"n": 4, "kl": 0.0081, "top1": 0.25, "v4_top1": null, "serve_top1": null}, "card_select:transform_upgrade": {"n": 9, "kl": 0.1811, "top1": 0.3333, "v4_top1": null, "serve_top1": null}, "card_select:upgrade": {"n": 5, "kl": 0.0035, "top1": 1.0, "v4_top1": null, "serve_top1": null}, "event": {"n": 471, "kl": 0.0435, "top1": 0.9639, "v4_top1": null, "serve_top1": null}, "map": {"n": 1302, "kl": 0.1318, "top1": 0.8602, "v4_top1": null, "serve_top1": null}, "rest": {"n": 534, "kl": 0.0264, "top1": 0.9719, "v4_top1": null, "serve_top1": null}, "rewards": {"n": 2275, "kl": 0.0324, "top1": 0.9609, "v4_top1": null, "serve_top1": null}, "shop": {"n": 641, "kl": 0.0504, "top1": 0.9111, "v4_top1": null, "serve_top1": null}, "treasure": {"n": 9, "kl": 0.0, "top1": 1.0, "v4_top1": null, "serve_top1": null}}
+real 177.57 user 178.50 sys 1.48 maxrss_kb 3892492
+EXIT 0
