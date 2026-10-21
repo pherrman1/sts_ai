@@ -146,6 +146,22 @@ add_test(NAME exhaust_empty_hand COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(exhaust_empty_hand PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(upgrade_cost_delta_test tests/upgrade_cost_delta_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(upgrade_cost_delta_test PRIVATE include json/include)
+add_test(NAME upgrade_cost_delta COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:upgrade_cost_delta_test>)
+set_tests_properties(upgrade_cost_delta PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(byrd_grounded_flight_test tests/byrd_grounded_flight_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(byrd_grounded_flight_test PRIVATE include json/include)
+add_test(NAME byrd_grounded_flight COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:byrd_grounded_flight_test>)
+set_tests_properties(byrd_grounded_flight PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(half_dead_power_reset_test tests/half_dead_power_reset_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(half_dead_power_reset_test PRIVATE include json/include)
