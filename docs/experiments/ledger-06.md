@@ -22189,7 +22189,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live Silver: Headbutt waking a sleeping Lagavulin refused its put-on-top choice (2026-10-21)
+## §598 — Live Silver: Headbutt waking a sleeping Lagavulin refused its put-on-top choice (2026-10-21)
 
 **Question:** why did live seed 111200455 (release 9ec8a51d, Act 1 floor 6, Lagavulin asleep) stop with
 `silver_selection_pending_actions` and pending actions `[UseCardAction, ChangeStateAction]` after Headbutt (problem 61
