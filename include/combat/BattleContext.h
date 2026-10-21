@@ -225,6 +225,32 @@ namespace sts {
     // card. Other values are fatal. Read only at a Mayhem turn start.
     bool mayhemAfterDrawFix();
 
+    // STS_UNPLAYABLE_AUTOPLAY_FIX: unset/1 (default) = an autoplayed card
+    // (Havoc, Mayhem) that fails canUse (Burn, Clash with a non-attack in
+    // hand, Velvet Choker) is still routed like a played card, as in the game
+    // (GameActionManager.getNextAction sets dontTriggerOnUseCard and queues
+    // UseCardAction at the bottom: no use/onUseCard/onAfterUseCard hooks, but
+    // Havoc's exhaust, Strange Spoon and the discard move still apply;
+    // overnight live play 2026-10-20 problem 41). 0 = the legacy engine, where
+    // the card vanished. Other values are fatal. Read only when an autoplayed
+    // card cannot be played.
+    bool unplayableAutoplayFix();
+
+    // STS_AUTOPLAY_QUEUE_ORDER_FIX: unset/1 (default) = a card autoplayed from
+    // the draw pile (Havoc, Mayhem, Distilled Chaos) joins the BACK of the card
+    // queue, as in the game (PlayTopCardAction queues NewQueueCardAction(card,
+    // target, false, true), whose addCardQueueItem(item, false) appends), so a
+    // multi-card Distilled Chaos plays the top card first (overnight live play
+    // 2026-10-20 problem 44). 0 = the legacy engine, which pushed it to the
+    // front (reverse order). Other values are fatal. Read at each autoplay.
+    bool autoplayQueueOrderFix();
+    // STS_LAGAVULIN_WAKE_METALLICIZE_FIX: unset/1 (default) = a Lagavulin woken
+    // by HP damage loses 8 Metallicize, as in the game (Lagavulin.damage queues
+    // ChangeStateAction("OPEN"); changeState queues ReducePowerAction(
+    // Metallicize, 8)), the same as the natural wake (overnight live play
+    // 2026-10-20 problem 58: 12 -> 4). 0 = the legacy engine, which removed
+    // Metallicize. Other values are fatal. Read only at a damage wake.
+    bool lagavulinWakeMetallicizeFix();
     // STS_EXHAUST_EMPTY_HAND_FIX: unset/1 (default) = ExhaustMany (Purity,
     // Elixir) does nothing on an empty hand, as Java ExhaustAction.update
     // ends at once when the hand is empty (overnight live play 2026-10-20
@@ -240,6 +266,25 @@ namespace sts {
     // 2026-10-20 problem 39). 0 = the legacy engine, where Magnetism did
     // nothing. Other values are fatal. Read only at a Magnetism turn start.
     bool magnetismFix();
+
+    // STS_SLIME_SPLIT_MONSTER_COUNT_FIX: unset/1 (default) = a large slime
+    // split grows monsterCount only to cover the two child slots (max with
+    // placeIdx+2), so a Spike Slime (L) splitting in slot 0 of the Slime Boss
+    // layout (0,1,2) leaves monsterCount 3, as the live inspector reports
+    // (overnight live play 2026-10-20 problem 62, seed 111200456 s217). Java
+    // itself keeps dead parents in its list (raw size 5 there); the alive
+    // monsters and their order are the same either way, so this only removes
+    // an always-dead empty slot 3. 0 = the legacy engine (+1 per split, capped
+    // at 4). Other values are fatal. Read only at a large slime split.
+    bool slimeSplitMonsterCountFix();
+
+    // STS_CURIOSITY_FIX: unset/1 (default) = each Power play queues Strength
+    // equal to Curiosity at the bottom for every monster holding it, as in the
+    // game (CuriosityPower.onUseCard -> ApplyPowerAction; overnight live play
+    // 2026-10-20 problems 45 and 65: the Awakened One's Strength stayed 2 lower
+    // per Power natively). 0 = the legacy engine, where Curiosity did nothing.
+    // Other values are fatal. Read only when a Power card is used.
+    bool curiosityFix();
 
     struct BattleContext {
 
@@ -409,6 +454,7 @@ namespace sts {
         void onManualDiscard(const CardInstance &c);
         void onShuffle();
         void triggerAndMoveToExhaustPile(CardInstance c);
+        void unplayableAutoplayUseCard(CardInstance c, bool exhaust);
         void mummifiedHandOnUsePower();
 
         // card select screens

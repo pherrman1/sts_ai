@@ -178,11 +178,46 @@ namespace sts {
         throw std::runtime_error("STS_MAYHEM_AFTER_DRAW_FIX must be 0 or 1");
     }
 
+    bool unplayableAutoplayFix() {
+        const char *value = std::getenv("STS_UNPLAYABLE_AUTOPLAY_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_UNPLAYABLE_AUTOPLAY_FIX must be 0 or 1");
+    }
+
+    bool autoplayQueueOrderFix() {
+        const char *value = std::getenv("STS_AUTOPLAY_QUEUE_ORDER_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_AUTOPLAY_QUEUE_ORDER_FIX must be 0 or 1");
+    }
+
+    bool lagavulinWakeMetallicizeFix() {
+        const char *value = std::getenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_LAGAVULIN_WAKE_METALLICIZE_FIX must be 0 or 1");
+    }
+
     bool magnetismFix() {
         const char *value = std::getenv("STS_MAGNETISM_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_MAGNETISM_FIX must be 0 or 1");
+    }
+
+    bool slimeSplitMonsterCountFix() {
+        const char *value = std::getenv("STS_SLIME_SPLIT_MONSTER_COUNT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SLIME_SPLIT_MONSTER_COUNT_FIX must be 0 or 1");
+    }
+
+    bool curiosityFix() {
+        const char *value = std::getenv("STS_CURIOSITY_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_CURIOSITY_FIX must be 0 or 1");
     }
 }
 
@@ -1114,8 +1149,45 @@ void BattleContext::playCardQueueItem(CardQueueItem playItem) {
 
     }
 
+    if (!canUseCard && item.triggerOnUse && item.autoplay && unplayableAutoplayFix()) {
+        // GameActionManager: an autoplayed card that cannot be used gets
+        // dontTriggerOnUseCard and a UseCardAction at the bottom, which only
+        // routes it (UseCardAction's exhaustCard = exhaustOnUseOnce || exhaust).
+        // Java cardPlayable rejects a dying target, but not a half-dead
+        // (isDying stays false at 0 HP) or escaping one: the game uses that
+        // card normally, which this path does not model, so it keeps the
+        // legacy engine behavior.
+        const bool halfDeadOrEscapingTarget = c.requiresTarget() && item.target >= 0
+            && (monsters.arr[item.target].isHalfDead() || monsters.arr[item.target].isEscaping())
+            && !monsters.areMonstersBasicallyDead();
+        if (!halfDeadOrEscapingTarget || !chokerAllowsPlay) {
+            addToBot( Actions::UnplayableAutoplayUseCard(c, item.exhaustOnUse || c.doesExhaust()) );
+        }
+    }
+
     if (!item.triggerOnUse) {
         useNoTriggerCard(); // for burn, decay, doubt, regret and shame,
+    }
+}
+
+void BattleContext::unplayableAutoplayUseCard(CardInstance c, bool exhaust) {
+    // UseCardAction.update with dontTriggerOnUseCard: no onAfterUseCard hooks.
+    c.freeToPlayOnce = false;
+    if (c.getType() == CardType::POWER) {
+        return; // empowered: the card leaves combat
+    }
+
+    bool spoonProc = false;
+    if (exhaust && player.hasRelic<R::STRANGE_SPOON>()) {
+        spoonProc = cardRandomRng.randomBoolean();
+    }
+
+    if (exhaust && !spoonProc) {
+        triggerAndMoveToExhaustPile(c);
+    } else if (c.id == CardId::TANTRUM) {
+        cards.shuffleIntoDrawPile(cardRandomRng, c);
+    } else {
+        cards.moveToDiscardPile(c);
     }
 }
 
@@ -2153,10 +2225,17 @@ void BattleContext::onUsePowerCard() {
         mummifiedHandOnUsePower();
     }
 
-//    auto &m = monsters.optionMap[2];
-//    if (m.hasStatusInternal<MS::CURIOSITY>()) {
-//        m.buff<MS::STRENGTH>(m.getStatus<MS::CURIOSITY>());
-//    }
+    // CuriosityPower.onUseCard: a Power play queues ApplyPowerAction(Strength)
+    // at the bottom for each monster holding Curiosity (the Awakened One).
+    // STS_CURIOSITY_FIX=0 restores the legacy engine, where it did nothing.
+    if (curiosityFix()) {
+        for (int i = 0; i < monsters.monsterCount; ++i) {
+            const auto &m = monsters.arr[i];
+            if (m.hasStatus<MS::CURIOSITY>()) {
+                addToBot( Actions::BuffEnemy<MS::STRENGTH>(i, m.getStatus<MS::CURIOSITY>()) );
+            }
+        }
+    }
 }
 
 void BattleContext::onUseStatusOrCurseCard() {
@@ -2831,7 +2910,13 @@ void BattleContext::playTopCardInDrawPile(int monsterTargetIdx, bool exhausts) {
     item.exhaustOnUse = exhausts;
     item.autoplay = true;
     item.freeToPlay = true; // todo remove the autoplay boolean? added this instead
-    addToTopCard(item);
+    if (autoplayQueueOrderFix()) {
+        // NewQueueCardAction(card, target, false, true): addCardQueueItem(item,
+        // false) appends, so several autoplays (Distilled Chaos) play FIFO.
+        addToBotCard(item);
+    } else {
+        addToTopCard(item);
+    }
 }
 
 void BattleContext::moveToHandHelper(CardInstance c) {

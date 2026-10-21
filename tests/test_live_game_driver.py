@@ -1160,6 +1160,18 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual(packet["summary"]["counters"]["mapping_failures"], 1)
             self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
 
+    def test_boss_relic_cancel_maps_to_mcp_skip(self):
+        # Live-canary problem 71 (seed 111200468, Act 1 floor 17): the advisor
+        # skipped the boss relic ({"kind": "cancel"}) but MCP offers only "skip".
+        actions = build_legal_actions({"screen_type": "BOSS_REWARD"}, ["choose", "skip"])
+        candidate = map_ooc_action({"kind": "cancel"}, actions, "BOSS_REWARD")
+        self.assertEqual((candidate.mcp_tool, candidate.mcp_arguments), ("skip", {}))
+        for screen_type in ("CARD_REWARD", "SHOP", ""):
+            with self.subTest(screen_type=screen_type), self.assertRaises(IntegrationFailure):
+                map_ooc_action({"kind": "cancel"}, actions, screen_type)
+        both = build_legal_actions({"screen_type": "BOSS_REWARD"}, ["choose", "skip", "cancel"])
+        self.assertEqual(map_ooc_action({"kind": "cancel"}, both, "BOSS_REWARD").mcp_tool, "cancel")
+
     def test_map_coordinates_resolve_exact_visible_candidate(self):
         screen = {"screen_type": "MAP", "choice_list": [{"x": 1, "y": 2}, {"x": 3, "y": 2}]}
         actions = build_legal_actions(screen, ["choose"])
