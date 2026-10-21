@@ -22633,6 +22633,26 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §617 — Live advisor: Headbutt grounding a living Byrd was refused (2026-10-21)
+
+**Question:** why did live seed 111200490 (release 8aa99624) stop at Headbutt's grid with
+`silver_selection_pending_actions` after a non-lethal hit on the last Byrd at Flight 1 (problem 80 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue80-byrd/p90-observation.json` on the share, kept as
+`tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+THREE_BYRDS; no gameplay runs).
+**Result:** the importer folded a queued `MONSTER_REDUCE_FLIGHT` at Flight 1 only into a dead Byrd (§581,
+`STS_SILVER_LETHAL_REACTION_QUEUE`) and refused it for a living one. Native `Monster::damage` grounds at the
+hit: it cancels any deferred roll, sets Stunned and removes Flight. The fight had Runic Dome, so the Byrd's turn-4
+roll was still deferred in the mod's history (`pendingMoveRolls` 1).
+**Interpretation:** under `STS_SILVER_BYRD_GROUNDING_QUEUE` (default on, `=0` restores the refusal) the importer folds
+the grounding the same way: Stunned next, Flight removed (under `STS_BYRD_GROUNDED_FLIGHT_FIX`), and under Runic Dome
+the deferred roll cancelled after the history import. The importer test's Headbutt loop gains a living-Byrd variant
+with native parity before and after the pick, and the captured observation imports and searches. Play-changing only
+where the advisor used to refuse.
+Seeds: none new (live seed 111200490 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
 ## §611 — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
 
 **Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
