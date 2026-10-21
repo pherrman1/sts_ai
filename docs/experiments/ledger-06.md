@@ -22228,6 +22228,17 @@ Seeds: none.
 
 **Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
 
+## §616 — Live problem 82: an exhausted card's settling cost/stats stopped the driver as a state change (2026-10-21)
+
+**Observation.** Live A20 seed 111200502 (release 844bd923, act 2 Shelled Parasite) was abandoned through the transient cap: three back-to-back "MCP state changed while awaiting the advisor" stops. Each time, the only difference between the decision state and the pre-click re-read was the stats of the card Corruption had just exhausted: Shockwave cost 0→3; Shrug It Off cost 0→2, block 8→11, `base_block` dropped; Defend_R cost 0→1, block 3→5, damage dropped. The player had Corruption, Snecko Eye (Confusion), Frail and Demon Form. The exhausted skill first shows its hand values and settles a frame later. The same signature is the candidate root cause of the recurring #75 transients.
+
+**Cause.** `_pile_display_only_change` only forgave a positive cached stat appearing or disappearing on entries without `base_*`. Cost and stat value changes were treated as real state changes.
+
+**Change (driver only, `STS_LIVE_PILE_SETTLING_REFRESH`, default on, `=0` restores the stop).** A draw/discard/exhaust entry with the same UUID and id at the same position may differ in `cost`, `is_playable`, `damage`, `block`, `magic_number` and `base_*`. The canary classified all 36 transient dumps of seeds 450-519 as this signature (0 real changes): the card exhausted by its own use is snapshotted with its in-use state, not only under Corruption/Snecko. The driver then discards the unexecuted decision and re-reads, within the existing three-refresh limit. HP, hand, UUID, order, upgrades and everything else stay strict, and no click is ever authorized by the match. Unit tests: the three observed shapes refresh; HP, UUID, upgrade and hand changes still stop; `=0` stops. The driver integration test now refreshes on cost/zero/changed-value drift and keeps the legacy stop under `=0`.
+
+Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
+**Knowledge impact:** `operations/live-model-inspector.md`.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22739,6 +22750,21 @@ today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
 [Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
 Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
 **Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
+## §614 — Live combat parity: Nilry's Codex offered Blood for Blood at full cost (2026-10-21)
+
+**Question:** does Nilry's Codex, like the generators §612 fixed, give a Blood for Blood the combat's damage discount?
+**Setup:** the canary's `CodexAction` javap and live-trace scan (`engine-parity/overnight-20261019/issue784/javap.md` on
+the share); `blood_for_blood_copy_cost_test` (Ironclad seed 111200071, JAW_WORM; no gameplay runs).
+**Result:** `CodexAction.generateCardChoices()` adds `c.makeCopy()` for each of its three cards, and the pick goes to the
+draw pile as `makeStatEquivalentCopy()`, so the game's Codex Blood for Blood costs 4 minus `damagedThisCombat`. The
+canary found 7 of 31 in-combat offers at exactly that cost, Codex included (runs 466 and 487); 24 of 24 reward and shop
+offers were at base cost (the counter resets outside combat). Native `chooseCodexCard` created a plain card.
+**Interpretation:** `chooseCodexCard` now builds the card with `generatedCombatCard`, under the same
+`STS_BLOOD_FOR_BLOOD_COPY_COST_FIX` (`=0` restores full cost here too). Native Blood for Blood upgrade already matches
+`BloodForBlood.upgrade()` (`STS_UPGRADE_COST_DELTA_FIX`). Play-changing for Codex runs only.
+Seeds: none new (unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
+
 ## §612 — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
 
 **Question:** why did live seed 111200476 parity s117 (release 0ba0e9a9, Discovery+ pick with three hits taken) show the
@@ -22756,3 +22782,33 @@ diff (game 0/0 vs native 1/1 for the deck's own Blood for Blood+ at an End Turn 
 draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
+
+## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
+
+Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
+#765 queue worker (09:59Z). Pre-registration and outputs: `docs/experiments/evidence/az_gen1b_value_leaf_ab_20261020/`
+(`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`, `verify.txt`, `tars.sha256`). Offline numbers: §577.
+
+- **Freeze:** RUN_COMMIT `7cd3ae69` (main `0ba0e9a9` plus the campaign dir); binary sha256 `a822b950…`. student_sel
+  `cf6bf7fb…`, gen1b `e6aa044c…`. Smoke seed 111144994 (both arms rc 0); seeds 111144990–994 were smokes.
+- **Arms:** gen 0's search stack (student_sel prior, rollout net and leaf selector, OOC MCTS 4096 sims, rollout3,
+  `GAP_STOP=0`, 25% full-budget roots, flat exact-10k Silver real combats) with the learned OOC stop OFF in both.
+  A ends every rollout3 leaf in X2-B; B adds `STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin`.
+- **Run:** seeds 111144000–111144511, 32 workers × 4 lanes, `schedule queue`. `verify_campaign.py`: 512 of 512 units
+  OK; 67 units ran twice (claim race on the share, fixed by #773 for later campaigns; identical outcomes, first tar
+  used). 1,024 of 1,024 arm runs rc 0; 512 of 512 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | act-1 deaths | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|---|
+  | A X2-B | 107 (20.9%) | 209 (40.8%) | 48 | 43.9 | 1,976, 5,649 |
+  | B gen 1b value | 123 (24.0%) | 222 (43.4%) | 50 | 44.1 | 2,105, 4,669 |
+
+  Heart kills B − A +3.1 pp [−1.0, +7.2], discordant 66 B-only / 50 A-only, exact McNemar p 0.16. Act 4 +2.5 pp
+  [−2.3, +7.3], p 0.34. Act-1 deaths +0.4 pp, p 0.89. Wall B/A 1.07 (≤ 1.10). The search's pick differed from the
+  prior's argmax at 3,043 vs 2,302 searched roots (9.0% vs 6.8%).
+- **Verdict: NOT_SHOWN** (pre-registered rule). X2-B stays the rollout3 end value; the flag stays default off.
+- **Inference:** the lean favours the value head, within a test that resolves about ±4 pp. No act-1 penalty, unlike
+  §522. The compressed value scale makes the prior weigh more at the same cpuct (fewer overrides).
+- **Knowledge impact:** `evaluation/current-research.md`.
+

@@ -2,10 +2,10 @@
 # usage: run_unit.sh REPO RUN UNIT_OUT SEED -- one gen-1b value-leaf A/B seed, both arms in sequence; always exits 0
 # (per-arm rc in the .done lines). PREREG.md has the full config and its provenance.
 #   A  heartoutcomegen policy capture with student_sel as the OOC prior and rollout net; rollout3 ends in X2-B
-#      (gen 0's search arm, = arm A of az_gen1_ab_20261020).
+#      (arm A of az_gen1_ab_20261020 with the learned OOC stop off).
 #   B  the same, but rollout3 ends in sigmoid(gen1b value head) (STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin).
 #      Nothing else differs. 7 h timeout per arm (rc 124).
-# Both arms: OOC MCTS 4096 sims, learned OOC stop 0.99, 25% full-budget roots, real-combat CTM rows; flat exact-10k
+# Both arms: OOC MCTS 4096 sims, learned OOC stop OFF (Philipp 2026-10-21), exact visit lock only, 25% full-budget roots, real-combat CTM rows; flat exact-10k
 # Silver real combats as in gen 0 (STS_OOC_MCTS_REAL_LEARNED_STOP=0, STS_SILVER_LEARNED_STOP=0), g7f_E rollout root
 # table + root/tree prior, flexible keys, Wing Boots counter on, engine fixes explicit.
 set -uo pipefail
@@ -33,7 +33,7 @@ COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA
   STS_OOC_MCTS_CPUCT=1.5 STS_OOC_MCTS_TEMPERATURE=1 STS_OOC_MCTS_ROOT_SELECTION=visits STS_OOC_MCTS_EARLY_STOP=1
   STS_OOC_MCTS_MAX_DEPTH=32 STS_OOC_MCTS_TREE_RULES=1 STS_OOC_MCTS_WIDEN_K=4 STS_OOC_MCTS_WIDEN_ALPHA=0.75
   STS_OOC_MCTS_PRUNE_UNSUPPORTED=1 STS_OOC_MCTS_GAP_STOP=0
-  STS_OOC_MCTS_LEARNED_STOP=models/candidates/ooc_learned_stop_trees.txt:0.99
+  STS_OOC_MCTS_LEARNED_STOP=0
   STS_OOC_PUBLIC_FUTURES=8 STS_OOC_MCTS_FULL_BUDGET_FRACTION=0.25 STS_HEART_OUTCOME_CTM_ROWS=1)
 cd "$REPO" || exit 2
 for arm in A B; do
@@ -44,7 +44,7 @@ for arm in A B; do
   env -i "${E[@]}" timeout 7h bash tools/seed_guard.sh "$RUN/one_combat" heartoutcomegen 1 "$SEED" "$b.jsonl" policy > "$b.log" 2> "$b.err"
   rc=$?
   if [ "$rc" = 0 ]; then
-    grep -q "ooc-learned-stop: .*ooc_learned_stop_trees.txt" "$b.log" "$b.err" || rc=97
+    grep -q "ooc-learned-stop: " "$b.log" "$b.err" && rc=97
     grep -q "ctm-act4-survival\] model=" "$b.log" "$b.err" || rc=96
     grep -qF "[heart1] loaded $RUN/student_sel.bin " "$b.log" "$b.err" || rc=95
     if [ "$arm" = B ]; then grep -qF "leaf_heart1_value=$RUN/gen1b.bin" "$b.log" "$b.err" || rc=94

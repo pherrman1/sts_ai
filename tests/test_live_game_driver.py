@@ -700,6 +700,34 @@ class LiveGameDriverTest(unittest.TestCase):
         self.assertTrue(_pile_display_only_change(screen, before, screen, after))
         self.assertFalse(_pile_display_only_change(screen, before, screen, {**after, "current_hp": 79}))
 
+    def test_exhausted_card_settling_cost_and_stats_is_display_only(self):
+        # Problem 82 (seed 111200502): Corruption exhausted a skill that showed
+        # its hand cost 0 and Frail block, then settled to Snecko cost and base stats.
+        import os
+        from unittest import mock
+        screen = combat_screen()
+        cases = (({"id": "Shockwave", "uuid": "w", "cost": 0}, {"id": "Shockwave", "uuid": "w", "cost": 3}),
+                 ({"id": "Shrug It Off", "uuid": "s", "cost": 0, "block": 8, "base_block": 8},
+                  {"id": "Shrug It Off", "uuid": "s", "cost": 2, "block": 11}),
+                 ({"id": "Defend_R", "uuid": "d", "cost": 0, "block": 3, "damage": 1},
+                  {"id": "Defend_R", "uuid": "d", "cost": 1, "block": 5}),
+                 ({"id": "Pummel", "uuid": "p", "cost": 0, "is_playable": True, "damage": 6, "base_damage": 2},
+                  {"id": "Pummel", "uuid": "p", "cost": 1, "is_playable": False, "damage": 2}))
+        for old, new in cases:
+            with self.subTest(card=old["id"]):
+                before = {"exhaust_pile": [old], "current_hp": 66}
+                after = {"exhaust_pile": [new], "current_hp": 66}
+                self.assertTrue(_pile_display_only_change(screen, before, screen, after))
+                self.assertFalse(_pile_display_only_change(screen, before, screen, {**after, "current_hp": 65}))
+                other = {"exhaust_pile": [{**new, "uuid": "x"}], "current_hp": 66}
+                self.assertFalse(_pile_display_only_change(screen, before, screen, other))
+                upgraded = {"exhaust_pile": [{**new, "upgrades": 1}], "current_hp": 66}
+                self.assertFalse(_pile_display_only_change(screen, before, screen, upgraded))
+                self.assertFalse(_pile_display_only_change(
+                    screen, {"hand": [old]}, screen, {"hand": [new]}))
+                with mock.patch.dict(os.environ, {"STS_LIVE_PILE_SETTLING_REFRESH": "0"}):
+                    self.assertFalse(_pile_display_only_change(screen, before, screen, after))
+
     def test_inspector_compares_full_live_monsters_and_ignores_dead_slots(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "latest.json"
@@ -1262,8 +1290,17 @@ class OocDriverTest(unittest.TestCase):
             self.assertIsNotNone(driver.failure_path)
 
     def test_cached_pile_stat_appearance_restarts_decision_before_clicking(self):
-        for drift in ("display", "hp", "hand", "cost", "uuid", "zero", "positive_change", "oscillating"):
-            with self.subTest(drift=drift), tempfile.TemporaryDirectory() as directory:
+        import os
+        from unittest import mock
+        # Settling cost/stat values of the same pile card refresh too (problem
+        # 82); STS_LIVE_PILE_SETTLING_REFRESH=0 restores the legacy transient.
+        settling = {"cost", "zero", "positive_change"}
+        for case in ("display", "hp", "hand", "cost", "uuid", "zero", "positive_change", "oscillating",
+                     "cost_legacy", "zero_legacy", "positive_change_legacy"):
+            legacy = case.endswith("_legacy")
+            drift = case.removesuffix("_legacy")
+            with self.subTest(drift=case), tempfile.TemporaryDirectory() as directory, \
+                    mock.patch.dict(os.environ, {"STS_LIVE_PILE_SETTLING_REFRESH": "0" if legacy else "1"}):
                 from copy import deepcopy
                 screen = combat_screen(session="s", sequence=1, observationHash="h")
                 before = {"current_hp": 80, "discard_pile": [
@@ -1300,7 +1337,7 @@ class OocDriverTest(unittest.TestCase):
                 trace = TraceWriter(Path(directory) / "trace")
                 driver = Driver(client, reader, trace, strict_silver=True, max_steps=1,
                                 poll_interval=.001, poll_timeout=.05)
-                if drift == "display":
+                if drift == "display" or (drift in settling and not legacy):
                     asyncio.run(driver.run())
                     self.assertEqual(len(advisor_reads), 2)
                     self.assertEqual(sum(tool == "play_card" for tool, _ in client.calls), 1)
