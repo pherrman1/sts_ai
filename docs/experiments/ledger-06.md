@@ -22792,3 +22792,25 @@ Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 worke
   §522. The compressed value scale makes the prior weigh more at the same cpuct (fewer overrides).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+
+## §TBD — Gumbel sequential halving at OOC full-budget roots: offline target quality (116 A20 roots): SH beats PUCT against a uniform reference, play A/B pending (2026-10-21)
+
+**Question (Philipp, 2026-10-21 15:04Z):** full-budget OOC roots are ~59% of run CPU. Does a Gumbel AlphaZero root
+with sequential halving (SH) give better root choices and targets than PUCT at matched or lower budget?
+**Design:** new opt-in `STS_OOC_MCTS_GUMBEL_ROOT=M[:SCALE]` (full-budget roots only, default off, byte-identical) and
+research `STS_OOC_MCTS_ROOT_COMPARE`. At each full root it runs a uniform 8192-sim reference (even split over all
+root actions, own seed) and SH with M = 4/16 at 512/1024/2048. PUCT@k is the main 4096 search's checkpoint.
+Combined-stack A20 config, seeds 111145010–017 (014–017 cut short by a container restart), 116 full roots.
+**Result:** paired regret in reference Q (×1e-3, SH − PUCT, matched sims): M16@2048 −6.91 [−10.33, −3.83],
+M16@1024 −4.92 [−8.37, −1.75], M16@512 −4.40 [−7.43, −1.50]. Every SH cell is below 0, and M16@2048 also beats
+PUCT@4096 (−6.30) at half the root CPU. Agreement with the reference's best action: M16@2048 0.69, PUCT@4096 0.44,
+prior argmax 0.41. Target KL(π'_ref‖π'): M16@2048 0.030 vs PUCT@2048 0.091 (paired −0.062 [−0.112, −0.021]) and
+PUCT@4096 0.060. At 512/1024 KL shows no difference. Flag-off identity run and compare-mode non-intrusion are
+byte-identical on seed 111145010.
+**Interpretation:** PUCT at 4096 barely leaves student_sel's ~0.99 prior. SH explores the sampled candidates and plays
+by Q.
+**Inference:** offline only. The reference shares the leaf evaluator (rollout3 + X2-B), and Q-based root selection lost
+twice in play (§414, §560). So this does not show more Heart kills; a paired A20 play A/B (GUMBEL_ROOT=16, full roots
+2048, vs current) must decide. The flag stays default off.
+[Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
+Seeds 111145010–017 used (010 reused from the speed profile).
