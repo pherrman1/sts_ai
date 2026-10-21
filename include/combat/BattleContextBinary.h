@@ -422,7 +422,7 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
                     || !r.i8(orb) || !r.i8(ltm) || !r.i32(block) || !r.i32(artifact)
                     || !r.i32(dext) || !r.i32(focus) || !r.i32(strength) || !r.u32(jab)
                     || !r.u64(sb0) || !r.u32(sb1) || !r.u32(smSize)) { ok = false; break; }
-                std::map<PlayerStatus, std::int16_t> statusMap;
+                decltype(p.statusMap) statusMap;
                 for (std::uint32_t i = 0; i < smSize; ++i) {
                     std::int16_t key, val;
                     if (!r.i16(key) || !r.i16(val)) { ok = false; break; }

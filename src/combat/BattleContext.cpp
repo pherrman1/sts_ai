@@ -6,6 +6,8 @@
 #include "game/GameContext.h"
 #include "game/Game.h"
 
+#include <atomic>
+#include <cstdint>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
@@ -18,88 +20,92 @@ thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_on
 namespace sts {
     thread_local BattleContext *g_debug_bc;
 
+    namespace {
+        // Engine fix flags are read on hot paths (every card play, every
+        // feature extraction), and getenv scans the whole environment. Each
+        // flag is read once per epoch per thread; BattleContext::init and
+        // search::battleContextFromWire start a new epoch, so a setenv before a
+        // combat starts still takes effect.
+        std::atomic<std::uint32_t> g_engineFlagEpoch{1};
+
+        bool readFixFlag(const char *name) {
+            const char *value = std::getenv(name);
+            if (!value || !*value || std::string(value) == "1") return true;
+            if (std::string(value) == "0") return false;
+            throw std::runtime_error(std::string(name) + " must be 0 or 1");
+        }
+    }
+
+    std::uint32_t engineFlagEpoch() { return g_engineFlagEpoch.load(std::memory_order_relaxed); }
+    void refreshEngineFlags() { g_engineFlagEpoch.fetch_add(1, std::memory_order_relaxed); }
+
+    bool cachedFixFlag(CachedFixFlag &cache, const char *name) {
+        const std::uint32_t epoch = engineFlagEpoch();
+        if (cache.epoch != epoch) {
+            cache.value = readFixFlag(name);
+            cache.epoch = epoch;
+        }
+        return cache.value;
+    }
+
     bool deadTargetDebuffFix() {
-        const char *value = std::getenv("STS_DEAD_TARGET_DEBUFF_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_DEAD_TARGET_DEBUFF_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DEAD_TARGET_DEBUFF_FIX");
     }
 
     bool curlUpLethalFix() {
-        const char *value = std::getenv("STS_CURL_UP_LETHAL_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_CURL_UP_LETHAL_FIX");
     }
 
     bool angerCopyCostFix() {
-        const char *value = std::getenv("STS_ANGER_COPY_COST_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_ANGER_COPY_COST_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_ANGER_COPY_COST_FIX");
     }
 
     bool upgradeCostDeltaFix() {
-        const char *value = std::getenv("STS_UPGRADE_COST_DELTA_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_UPGRADE_COST_DELTA_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_UPGRADE_COST_DELTA_FIX");
     }
 
     bool byrdGroundedFlightFix() {
-        const char *value = std::getenv("STS_BYRD_GROUNDED_FLIGHT_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_BYRD_GROUNDED_FLIGHT_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_BYRD_GROUNDED_FLIGHT_FIX");
     }
 
     bool panacheFix() {
-        const char *value = std::getenv("STS_PANACHE_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_PANACHE_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_PANACHE_FIX");
     }
 
     bool deadMonsterBlockFix() {
-        const char *value = std::getenv("STS_DEAD_MONSTER_BLOCK_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_DEAD_MONSTER_BLOCK_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DEAD_MONSTER_BLOCK_FIX");
     }
 
     bool deadAllyBlockFix() {
-        const char *value = std::getenv("STS_DEAD_ALLY_BLOCK_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_DEAD_ALLY_BLOCK_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DEAD_ALLY_BLOCK_FIX");
     }
 
     bool deadAllyStrengthFix() {
-        const char *value = std::getenv("STS_DEAD_ALLY_STRENGTH_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_DEAD_ALLY_STRENGTH_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DEAD_ALLY_STRENGTH_FIX");
     }
 
     bool enrageAllMonstersFix() {
-        const char *value = std::getenv("STS_ENRAGE_ALL_MONSTERS_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_ENRAGE_ALL_MONSTERS_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_ENRAGE_ALL_MONSTERS_FIX");
     }
 
     bool muggerDeathRngFix() {
-        const char *value = std::getenv("STS_MUGGER_DEATH_RNG_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_MUGGER_DEATH_RNG_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_MUGGER_DEATH_RNG_FIX");
     }
 
     bool spireSurroundedDeathFix() {
-        const char *value = std::getenv("STS_SPIRE_SURROUNDED_DEATH_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_SPIRE_SURROUNDED_DEATH_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_SPIRE_SURROUNDED_DEATH_FIX");
     }
 
     // STS_MUMMIFIED_HAND_PLAYED_CARD_FIX: unset or 1 = Mummified Hand never
@@ -109,10 +115,8 @@ namespace sts {
     // curCardQueueItem first (live parity problem 48). 0 = the legacy pick,
     // which counts the played Power; other values are fatal.
     bool mummifiedHandPlayedCardFix() {
-        const char *value = std::getenv("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_MUMMIFIED_HAND_PLAYED_CARD_FIX");
     }
 
     // STS_BLOOD_FOR_BLOOD_COPY_COST_FIX: unset or 1 = a generated Blood for
@@ -138,45 +142,33 @@ namespace sts {
     }
 
     bool slimeSplitRngFix() {
-        const char *value = std::getenv("STS_SLIME_SPLIT_RNG_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_SLIME_SPLIT_RNG_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_SLIME_SPLIT_RNG_FIX");
     }
 
     bool dyingAttackerFix() {
-        const char *value = std::getenv("STS_DYING_ATTACKER_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_DYING_ATTACKER_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DYING_ATTACKER_FIX");
     }
 
     bool bloodPotionHealFix() {
-        const char *value = std::getenv("STS_BLOOD_POTION_HEAL_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_BLOOD_POTION_HEAL_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_BLOOD_POTION_HEAL_FIX");
     }
 
     bool halfDeadPowerResetFix() {
-        const char *value = std::getenv("STS_HALF_DEAD_POWER_RESET_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_HALF_DEAD_POWER_RESET_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_HALF_DEAD_POWER_RESET_FIX");
     }
 
     bool strikeCountFix() {
-        const char *value = std::getenv("STS_STRIKE_COUNT_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_STRIKE_COUNT_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_STRIKE_COUNT_FIX");
     }
 
     bool pileCostResetFix() {
-        const char *value = std::getenv("STS_PILE_COST_RESET_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_PILE_COST_RESET_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_PILE_COST_RESET_FIX");
     }
 
     bool corruptionHandCostFix() {
@@ -187,73 +179,53 @@ namespace sts {
     }
 
     bool handUpgradeAllFix() {
-        const char *value = std::getenv("STS_HAND_UPGRADE_ALL_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_HAND_UPGRADE_ALL_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_HAND_UPGRADE_ALL_FIX");
     }
 
     bool exhaustEmptyHandFix() {
-        const char *value = std::getenv("STS_EXHAUST_EMPTY_HAND_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_EXHAUST_EMPTY_HAND_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_EXHAUST_EMPTY_HAND_FIX");
     }
 
     bool mayhemAfterDrawFix() {
-        const char *value = std::getenv("STS_MAYHEM_AFTER_DRAW_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_MAYHEM_AFTER_DRAW_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_MAYHEM_AFTER_DRAW_FIX");
     }
 
     bool unplayableAutoplayFix() {
-        const char *value = std::getenv("STS_UNPLAYABLE_AUTOPLAY_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_UNPLAYABLE_AUTOPLAY_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_UNPLAYABLE_AUTOPLAY_FIX");
     }
 
     bool autoplayQueueOrderFix() {
-        const char *value = std::getenv("STS_AUTOPLAY_QUEUE_ORDER_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_AUTOPLAY_QUEUE_ORDER_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_AUTOPLAY_QUEUE_ORDER_FIX");
     }
 
     bool purgeCopyCanUseFix() {
-        const char *value = std::getenv("STS_PURGE_COPY_CAN_USE_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_PURGE_COPY_CAN_USE_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_PURGE_COPY_CAN_USE_FIX");
     }
 
     bool lagavulinWakeMetallicizeFix() {
-        const char *value = std::getenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_LAGAVULIN_WAKE_METALLICIZE_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_LAGAVULIN_WAKE_METALLICIZE_FIX");
     }
 
     bool magnetismFix() {
-        const char *value = std::getenv("STS_MAGNETISM_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_MAGNETISM_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_MAGNETISM_FIX");
     }
 
     bool slimeSplitMonsterCountFix() {
-        const char *value = std::getenv("STS_SLIME_SPLIT_MONSTER_COUNT_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_SLIME_SPLIT_MONSTER_COUNT_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_SLIME_SPLIT_MONSTER_COUNT_FIX");
     }
 
     bool curiosityFix() {
-        const char *value = std::getenv("STS_CURIOSITY_FIX");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_CURIOSITY_FIX must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_CURIOSITY_FIX");
     }
 }
 
@@ -264,6 +236,7 @@ void BattleContext::init(const GameContext &gc) {
 }
 
 void BattleContext::init(const GameContext &gc, MonsterEncounter encounterToInit) {
+    refreshEngineFlags();
     // init() is also used by probes which reuse a BattleContext.  Fully reset
     // all nested combat state first: several of these objects contain fields
     // that are only assigned on the uncommon card-select/relic paths.  Leaving

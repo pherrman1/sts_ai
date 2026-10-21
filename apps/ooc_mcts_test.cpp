@@ -817,6 +817,50 @@ void tests() {
         require(OocMctsPlanner(limited).search(a,0,20).metrics.simulations == 1,
             "expired budget completes at least one simulation");
     }
+    {
+        // Gumbel root: scale 0 keeps the top-M by prior; sequential halving over 64 simulations with
+        // M = 4 is 2 phases of 64/(2*4) = 8 visits per candidate, then 64/(2*2) = 16 more for the best 2.
+        const auto eight = [] {
+            Toy t;
+            for (OocActionId a = 0; a < 8; ++a) {
+                t.actions[0].push_back({a, 8.0 - a});
+                t.terminals[OocStateId(a + 1)] = a == 3 ? .9 : a == 2 ? .6 : .1 * double(a % 3);
+            }
+            t.transition = [](auto, auto a, auto &) { return OocStateId(a + 1); };
+            return t;
+        };
+        OocMctsConfig gumbel;
+        gumbel.gumbelRootActions = 4;
+        gumbel.gumbelScale = 0;
+        auto t = eight();
+        const auto r = OocMctsPlanner(gumbel).search(t, 0, 64);
+        std::uint64_t total = 0;
+        for (const auto &a : r.rootActions) {
+            total += a.visits;
+            require(a.visits == (a.id == 2 || a.id == 3 ? 24u : a.id < 2 ? 8u : 0u), "Gumbel halving visit schedule");
+        }
+        require(total == 64 && r.selectedAction == OocActionId(3), "Gumbel root spends the budget and picks the best Q");
+        auto t2 = eight();
+        gumbel.gumbelRootActions = 16;   // more than the legal actions: every action is a candidate
+        const auto all = OocMctsPlanner(gumbel).search(t2, 0, 64);
+        for (const auto &a : all.rootActions) require(a.visits >= 2, "Gumbel M above legal actions samples all");
+        require(all.selectedAction == OocActionId(3), "Gumbel M=16 picks the best Q");
+        gumbel.gumbelRootActions = 2; gumbel.gumbelScale = 1;
+        std::map<OocActionId, int> picked;
+        for (std::uint64_t seed = 0; seed < 32; ++seed) {
+            gumbel.gumbelSeed = seed;
+            auto a = eight(), b = eight();
+            const auto x = OocMctsPlanner(gumbel).search(a, 0, 16), y = OocMctsPlanner(gumbel).search(b, 0, 16);
+            for (std::size_t i = 0; i < x.rootActions.size(); ++i)
+                require(x.rootActions[i].visits == y.rootActions[i].visits, "Gumbel root is deterministic per seed");
+            for (const auto &v : x.rootActions) if (v.visits) ++picked[v.id];
+        }
+        require(picked.size() > 2, "Gumbel draws vary the sampled candidates across seeds");
+        gumbel.gumbelRootActions = 64; gumbel.gumbelScale = 0; gumbel.gumbelUniform = true;
+        auto u = eight();
+        for (const auto &a : OocMctsPlanner(gumbel).search(u, 0, 64).rootActions)
+            require(a.visits == 8, "uniform Gumbel reference splits the budget evenly");
+    }
 }
 }
 int main() {

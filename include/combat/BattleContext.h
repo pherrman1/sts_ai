@@ -5,6 +5,7 @@
 #ifndef STS_LIGHTSPEED_BATTLECONTEXT_H
 #define STS_LIGHTSPEED_BATTLECONTEXT_H
 
+#include <cstdint>
 #include <vector>
 #include <array>
 #include <functional>
@@ -54,6 +55,17 @@ namespace sts {
     extern thread_local std::function<void(const BattleContext &, GameContext &)> g_onBattleExitRaw;
 
     extern thread_local BattleContext *g_debug_bc;
+
+    // Engine fix flags (the *Fix() switches below and STS_ACTIVE_POWER_FEATURES)
+    // are read from the environment once per epoch per thread. BattleContext::init
+    // and search::battleContextFromWire call refreshEngineFlags(), so a flag set
+    // before a combat starts takes effect in that combat. Code that changes a flag
+    // with setenv at any other point (tests) must call refreshEngineFlags() itself.
+    struct CachedFixFlag { std::uint32_t epoch = 0; bool value = false; };
+    // Unset, empty or 1 = true, 0 = false, anything else throws "NAME must be 0 or 1".
+    bool cachedFixFlag(CachedFixFlag &cache, const char *name);
+    std::uint32_t engineFlagEpoch();
+    void refreshEngineFlags();
 
     // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff or buff on a dead,
     // half-dead or escaped monster does nothing, as in the game

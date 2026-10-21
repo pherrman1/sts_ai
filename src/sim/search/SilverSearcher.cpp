@@ -781,7 +781,9 @@ search::Action search::SilverSearcher::chooseUniformRolloutAction(BattleContext 
     if (bc.inputState == InputState::PLAYER_NORMAL) {
         rolloutAgent.materializeHiddenIntents(bc);
     }
-    Node scratch;
+    // Reused across playout steps so each step does not allocate its edge list.
+    thread_local Node scratch;
+    scratch.edges.clear();
     enumerateActionsForNode(scratch, bc);
     if (scratch.edges.empty()) {
         return bc.inputState == InputState::CARD_SELECT
@@ -795,7 +797,8 @@ search::Action search::SilverSearcher::chooseUniformRolloutAction(BattleContext 
 search::Action search::SilverSearcher::choosePriorRolloutAction(BattleContext &bc) {
     if (!rolloutPrior) throw std::runtime_error("SilverSearcher: prior playouts need rolloutPrior");
     rolloutAgent.materializeHiddenIntents(bc);
-    Node scratch;
+    thread_local Node scratch;   // reused across playout steps, as above
+    scratch.edges.clear();
     enumerateCardActions(scratch, bc);
     scratch.edges.push_back({Action(ActionType::END_TURN)});
     if (scratch.edges.size() == 1) return scratch.edges[0].action;
