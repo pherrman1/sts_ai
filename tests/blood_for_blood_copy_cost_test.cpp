@@ -2,7 +2,8 @@
 // in combat starts at 4 minus the times the player lost HP this combat, as
 // Java's BloodForBlood.makeCopy() calls updateCost(-damagedThisCombat) (live
 // parity problem 76, seed 111200476 s117: a Discovery+ copy cost 1 in the game
-// after three hits, 4 natively). =0 restores the legacy base cost.
+// after three hits, 4 natively; Nilry's Codex likewise, issue784). =0 restores
+// the legacy base cost.
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 
@@ -42,6 +43,19 @@ static void check(int damaged, int expectedCost) {
     require(bc.cards.cardsInHand == 1 && bc.cards.hand[0].id == CardId::BLOOD_FOR_BLOOD, "Discovery adds the card");
     require(bc.cards.hand[0].cost == expectedCost && bc.cards.hand[0].costForTurn == expectedCost,
         "Discovery copy cost " + std::to_string(bc.cards.hand[0].cost) + ", expected " + std::to_string(expectedCost));
+
+    // Nilry's Codex shuffles the pick into the draw pile (CodexAction javap, issue784).
+    const int drawBefore = bc.cards.drawPile.size();
+    bc.chooseCodexCard(CardId::BLOOD_FOR_BLOOD);
+    require(static_cast<int>(bc.cards.drawPile.size()) == drawBefore+1, "Codex adds one card to the draw pile");
+    int codexCopies = 0;
+    for (const auto &card : bc.cards.drawPile) {
+        if (card.id != CardId::BLOOD_FOR_BLOOD) continue;
+        ++codexCopies;
+        require(card.cost == expectedCost && card.costForTurn == expectedCost,
+            "Codex copy cost " + std::to_string(card.cost) + ", expected " + std::to_string(expectedCost));
+    }
+    require(codexCopies == 1, "Codex adds exactly one Blood for Blood");
 }
 
 int main() {
