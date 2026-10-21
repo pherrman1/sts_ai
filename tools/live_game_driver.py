@@ -1044,7 +1044,15 @@ def _has_uninitialized_combat_intent(screen: Mapping[str, Any], game: Mapping[st
                for source in (screen, game or {}) for monster in _list(source.get("monsters")))
 
 
+def _is_true_victory_room(screen: Mapping[str, Any]) -> bool:
+    """Vanilla enters TrueVictoryRoom only after the Heart dies; its ending
+    cutscene is NO_INTERACT and never becomes ready for a command."""
+    return _text(screen.get("room_type", screen.get("roomType", ""))) == "TrueVictoryRoom"
+
+
 def _is_terminal(screen: Mapping[str, Any]) -> bool:
+    if _is_true_victory_room(screen):
+        return True
     text = " ".join(_text(screen.get(key, "")).upper() for key in
                      ("screen_type", "screenType", "room_phase", "roomPhase", "outcome", "run_state"))
     return any(marker in text for marker in ("VICTORY", "DEATH", "GAME_OVER", "GAME OVER", "RUN_COMPLETE"))
@@ -1860,6 +1868,8 @@ def _terminal_outcome(screen: Mapping[str, Any]) -> str:
     victory = _mapping(screen.get("screen_state")).get("victory")
     if type(victory) is bool:
         return "victory" if victory else "death"
+    if _is_true_victory_room(screen):
+        return "victory"
     text = " ".join(_text(screen.get(key, "")).upper() for key in
                     ("screen_type", "screenType", "screen_name", "outcome", "run_state"))
     return "victory" if "VICTORY" in text else "death" if "DEATH" in text else "run_complete"

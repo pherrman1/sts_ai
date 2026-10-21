@@ -6,6 +6,8 @@
 
 #include "game/Random.h"
 #include <stdexcept>
+#include <algorithm>
+#include <cstdlib>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
@@ -418,7 +420,13 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
             search::emitHiddenMonsterIntentMaterialized(
                 idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         }
-        setStatus<MS::FLIGHT>(flight-1);
+        // Java ReducePowerAction removes Flight at 0 (the Byrd is grounded): no more
+        // halved damage and no start-of-turn reset (STS_BYRD_GROUNDED_FLIGHT_FIX=0 restores).
+        if (flight == 1 && byrdGroundedFlightFix()) {
+            removeStatus<MS::FLIGHT>();
+        } else {
+            setStatus<MS::FLIGHT>(flight-1);
+        }
 
     } else if (hasStatus<MS::MALLEABLE>() || hasStatus<MS::REACTIVE>()) {
         if (hasStatus<MS::MALLEABLE>()) {
@@ -874,6 +882,19 @@ void Monster::setMove(MMID moveId) {
 }
 
 namespace sts {
+
+    bool shackledOverflowFix() {
+        const char *value = std::getenv("STS_SHACKLED_OVERFLOW_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SHACKLED_OVERFLOW_FIX must be 0 or 1");
+    }
+
+    std::int16_t shackledAmount(int amount) {
+        // GainStrengthPower's constructor and stackPower clamp to [-999, 999].
+        if (shackledOverflowFix()) return static_cast<std::int16_t>(std::clamp(amount, -999, 999));
+        return static_cast<std::int8_t>(amount);
+    }
 
     std::ostream& printIfHaveStatus(std::ostream &os, const Monster &m, MonsterStatus s, bool &havePrint) {
         if (!m.getStatusInternal(s)) {
