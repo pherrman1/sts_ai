@@ -22250,6 +22250,18 @@ Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-5
 **Knowledge impact:** `operations/live-model-inspector.md`.
 Seeds: none new (live seeds 111200473 and 111200504).
 
+## §TBD — Live problem 83: Corruption's hand pass zeroes a generated skill's cost for the combat (2026-10-21)
+
+**Question:** Why did seed 111200508 (A20 Heart kill, Snecko Eye + Corruption + Dead Branch) show 88 `hand[].cost` mismatches (game 0, native base cost) with `costForTurn` agreeing?
+
+**Evidence:** The canary's extract (issue83/p83-verdicts.json) shows every mismatched card was a SKILL newly made in hand while Corruption was active. In step 856, Fiend Fire's exhausts fed Dead Branch, and the five skills among the ten new cards mismatched; Entrench in step 494 was likewise new. The javap (issue83/javap3-root-cause.md, desktop jar cfad868a) shows the mechanism. `ShowCardAndAddToHandEffect` first runs `hand.addToHand`, then `player.onCardDrawOrDiscard()`, then its own `if Corruption && SKILL: setCostForTurn(-9)`. `AbstractPlayer.onCardDrawOrDiscard` runs `modifyCostForCombat(-9)` on every SKILL in hand with `costForTurn != 0`. The fresh card still has `costForTurn` = base, so `cost` becomes 0 for the combat. Native `moveToHandHelper` ran only `setCostForTurn(-9)`. Confusion then rerolls against the zero cost, so the cost shows up once the card is drawn again.
+
+**Change:** `STS_CORRUPTION_HAND_COST_FIX` (default on, `=0` restores) adds `BattleContext::corruptionHandCostPass` and `CardInstance::modifyCostForCombat`. `ActData_MakeTempCardInHand` (when the card fits in hand) and `chooseDiscoveryCard` add the card first and then run the pass. No RNG draw changes. Test: `tests/corruption_hand_cost_test.cpp` (Entrench 0/0 vs legacy 2/0; Double Tap 0/0 vs 1/0; attacks and no-Corruption unchanged).
+
+**Interpretation:** This is a play-changing engine fix for Corruption decks: generated skills that Snecko later rerolls start from 0. Not done: Java also runs the pass after each `draw()` and discard. That only matters for a hand skill with `costForTurn != 0` under Corruption, which is not seen live (Exhume and Liquid Memories set it to 0).
+
+**Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

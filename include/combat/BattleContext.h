@@ -219,6 +219,18 @@ namespace sts {
     // fatal. Read only when a moved card's costForTurn differs from its cost.
     bool pileCostResetFix();
 
+    // STS_CORRUPTION_HAND_COST_FIX: unset/1 (default) = a card made in hand
+    // (MakeTempCardInHand: Dead Branch etc.; Discovery-style choices) under
+    // Corruption runs the game's AbstractPlayer.onCardDrawOrDiscard pass first:
+    // every SKILL in hand with costForTurn != 0 gets modifyCostForCombat(-9),
+    // so a generated skill ends at cost 0 / costForTurn 0 for the rest of the
+    // combat (ShowCardAndAddToHandEffect calls the pass before its own
+    // setCostForTurn(-9); live parity problem 83, seed 111200508: Dead Branch
+    // skills game 0/0, native base/0). 0 = the legacy engine, which zeroed only
+    // costForTurn. Other values are fatal. Read only when a card is made in
+    // hand while the player has Corruption.
+    bool corruptionHandCostFix();
+
     // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
     // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
     // upgraded, as in the game (ArmamentsAction checks c.canUpgrade(); live
@@ -453,6 +465,7 @@ namespace sts {
         void playTopCardInDrawPile(int monsterTargetIdx, bool exhausts);
 
         void moveToHandHelper(CardInstance c);
+        void corruptionHandCostPass(); // AbstractPlayer.onCardDrawOrDiscard's Corruption loop
         void exhaustSpecificCardInHand(int idx, std::int16_t uniqueId);
         void restoreRetainedCards(int count);
         void exhaustTopCardInHand();
