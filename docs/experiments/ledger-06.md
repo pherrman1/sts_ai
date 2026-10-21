@@ -22602,6 +22602,22 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §608 — Live advisor: #769's Gremlin Leader check threw on every combat without a selection (2026-10-21)
+
+**Question:** why did live seed 111200480 on ab8833a8 (main with #769, §605) get no advisor answer at its first combat
+(problem 77 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report; the #769 advisor on three live fixtures (`tests/fixtures/live_runic_dome_two_thieves_turn1.json`,
+`live_shield_spear_back_attack_turn1.json`, `live_slime_boss_split.json`); `live_silver_importer_test` (no gameplay runs).
+**Result:** `minionLeaderEscapeChoice` read `combat.value("cardSelect", {})` and then called `.value()` on it. Outside a
+selection the mod sends `"cardSelect": false`, so every such observation threw nlohmann `type_error.306` and the advisor
+answered `MALFORMED_JSON` (reproduced on all three fixtures). #769's tests only used a Headbutt grid observation.
+**Interpretation:** the check now reads every field type-checked and returns 0 (ordinary import) for any other shape;
+the fixed advisor returns OK on the three fixtures. The importer test covers 16 malformed shapes (cardSelect false or
+missing, non-object combat/root/observation, wrong-typed choices, pending items, slots, monsters and monster fields),
+and `live_advisor_protocol.py` gains a real `cardSelect=false` fixture so the advisor path is exercised. No play
+change beyond restoring the advisor; `STS_SILVER_LEADER_ESCAPE_PASS_THROUGH=0` was the interim workaround.
+Seeds: none new (live seed 111200480 as reported).
+**Knowledge impact:** `NONE — restores the behaviour §605 documents`.
 
 ## §606 — Silver prior playouts in real boss fights only, for CPU (ADR-0056, 2026-10-21)
 
