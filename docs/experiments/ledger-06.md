@@ -22066,3 +22066,23 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Live Silver: Headbutt waking a sleeping Lagavulin refused its put-on-top choice (2026-10-21)
+
+**Question:** why did live seed 111200455 (release 9ec8a51d, Act 1 floor 6, Lagavulin asleep) stop with
+`silver_selection_pending_actions` and pending actions `[UseCardAction, ChangeStateAction]` after Headbutt (problem 61
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report and `issue58-javap.md` (`Lagavulin.damage`, `Lagavulin.changeState`);
+`live_silver_importer_test` (Ironclad seed 111200071, no gameplay runs).
+**Result:** `Lagavulin.damage` sets OPEN (4) at the hit and queues `ChangeStateAction("OPEN")` behind Headbutt's
+`UseCardAction`; its `changeState` queues the Metallicize reduction, so the grid opens with Metallicize unreduced.
+Native wakes at the hit (`Monster::wakeMetallicize`), so its tail is `[USE_CARD]` with the reduction applied. The
+producer had no item for this `ChangeStateAction`.
+**Interpretation:** the producer emits `MONSTER_LAGAVULIN_OPEN` (amount = Metallicize; only for a Lagavulin with
+OPEN set, `isOutTriggered` and not yet `isOut`). `STS_SILVER_LAGAVULIN_OPEN_QUEUE` (default on, `=0` restores the
+refusal) folds it by native's wake rule in both states of `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (-8, or removal), and
+refuses Metallicize under 8. The folded import matches the native Headbutt state (Metallicize 12 -> 4, and removal
+with the wake fix off). Changes only which live roots Silver searches. Stacked on #745.
+**Open question:** none beyond #745's (Java reduces by 8; the unit test uses Metallicize 12 to tell -8 from removal).
+Seeds: none new (live seed 111200455 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.

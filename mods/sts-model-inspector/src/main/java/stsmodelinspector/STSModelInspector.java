@@ -2821,6 +2821,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return null;
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
+            // Lagavulin.damage waking it: setMove(4 OPEN) now, then
+            // addToBottom(ChangeStateAction("OPEN")), whose changeState
+            // queues the Metallicize reduction (problem 61).
+            if(sourceTask!=null && isActionClass(name,"ChangeStateAction") && "OPEN".equals(readStringField(action,"stateName"))) {
+                String item=lagavulinOpenJson(action);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
             // CurlUpPower.onAttacked: ChangeStateAction("CLOSED") (animation
             // only), GainBlockAction, RemoveSpecificPowerAction("Curl Up").
             if(sourceTask!=null && isActionClass(name,"ChangeStateAction")) {
@@ -3028,6 +3036,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return monsterReactionItemJson("GUARDIAN_DEFENSIVE_SHIFT",null,slot);
     }
 
+    private static String lagavulinOpenJson(Object change) {
+        if(!Boolean.FALSE.equals(readBooleanField(change,"isDone"))
+                || !Boolean.FALSE.equals(readBooleanField(change,"called")))return null;
+        Object value=readObjectField(change,"m");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster lagavulin=(AbstractMonster)value;
+        AbstractPower metallicize=lagavulin.getPower("Metallicize");
+        Integer slot=emittedMonsterSlots(liveEncounter).get(lagavulin);
+        if(!"Lagavulin".equals(lagavulin.id) || slot==null || lagavulin.isDying || lagavulin.isDeadOrEscaped() || lagavulin.halfDead
+                || lagavulin.nextMove!=4 || !Boolean.TRUE.equals(readBooleanField(lagavulin,"isOutTriggered"))
+                || !Boolean.FALSE.equals(readBooleanField(lagavulin,"isOut"))
+                || metallicize==null || !"com.megacrit.cardcrawl.powers.MetallicizePower".equals(metallicize.getClass().getName()))return null;
+        return monsterReactionItemJson("MONSTER_LAGAVULIN_OPEN",metallicize.amount,slot);
+    }
+
     private static String curlUpJson(List<?> actions,int first) {
         if(first+2>=actions.size())return null;
         Object change=actions.get(first), block=actions.get(first+1), remove=actions.get(first+2);
@@ -3060,8 +3083,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(("MONSTER_REDUCE_PLATED_ARMOR".equals(kind) || "MONSTER_REDUCE_FLIGHT".equals(kind)) && amount!=1)return null;
         if("MONSTER_THORNS".equals(kind) && (slot!=0 || amount<1))return null;
         if("MONSTER_CURL_UP".equals(kind) && amount<1)return null;
+        // amount = the Lagavulin's Metallicize before the wake's reduction.
+        if("MONSTER_LAGAVULIN_OPEN".equals(kind) && (slot!=0 || amount<1))return null;
         if(!"MONSTER_GAIN_BLOCK".equals(kind) && !"MONSTER_CURL_UP".equals(kind) && !"MONSTER_REDUCE_PLATED_ARMOR".equals(kind)
-                && !"MONSTER_REDUCE_FLIGHT".equals(kind) && !"MONSTER_THORNS".equals(kind))return null;
+                && !"MONSTER_REDUCE_FLIGHT".equals(kind) && !"MONSTER_THORNS".equals(kind)
+                && !"MONSTER_LAGAVULIN_OPEN".equals(kind))return null;
         return "{\"kind\":\""+kind+"\",\"amount\":"+amount+",\"slot\":"+slot+"}";
     }
 

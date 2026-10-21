@@ -452,6 +452,18 @@ bool halfDeadSetMoveQueue() {
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_LAGAVULIN_OPEN_QUEUE: unset/1 (default) = a source-card
+// selection whose pending tail holds the ChangeStateAction("OPEN") of a
+// Lagavulin woken by the hit folds its Metallicize reduction into the
+// imported monster, as native applies it at the hit; 0 = legacy refusal as
+// silver_selection_pending_actions.
+bool lagavulinOpenQueue() {
+    const char *value = std::getenv("STS_SILVER_LAGAVULIN_OPEN_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_LAGAVULIN_OPEN_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a pending tail holding
 // Hex's queued Dazed (HexPower.onUseCard for a non-Attack, e.g. Discovery's
 // choice under Hex) imports it as a native MakeTempCardInDrawPile(Dazed);
@@ -2137,7 +2149,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             }
             if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR"
                     || kindName=="MONSTER_REDUCE_FLIGHT" || kindName=="MONSTER_THORNS" || kindName=="MONSTER_CURL_UP"
-                    || kindName=="GUARDIAN_DEFENSIVE_SHIFT") {
+                    || kindName=="GUARDIAN_DEFENSIVE_SHIFT" || kindName=="MONSTER_LAGAVULIN_OPEN") {
                 int slot=-1,amount=0;
                 if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>=wire.monsterCount)
                     return unsupported("silver_selection_pending_actions");
@@ -2178,6 +2190,25 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
                     action.amount=amount;action.monster=slot;
                     wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
+                if(kindName=="MONSTER_LAGAVULIN_OPEN") {
+                    // Native wakes the Lagavulin at the hit (Monster::
+                    // wakeMetallicize, the same rule in both states of
+                    // STS_LAGAVULIN_WAKE_METALLICIZE_FIX); the producer has
+                    // already set OPEN, so only the reduction is pending.
+                    // Java removes a power reduced to 0 or below; a
+                    // Metallicize under 8 stays unsupported.
+                    auto &metallicize=monster.smallPowers[6];
+                    if(!lagavulinOpenQueue() || slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::LAGAVULIN)
+                            || has(sts::MonsterStatus::ASLEEP) || !has(sts::MonsterStatus::METALLICIZE)
+                            || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::LAGAVULIN_SLEEP)
+                            || amount<1 || amount!=metallicize)
+                        return unsupported("silver_selection_pending_actions");
+                    const bool reduce=sts::lagavulinWakeMetallicizeFix();
+                    if(reduce && metallicize<8) return unsupported("silver_selection_pending_actions");
+                    metallicize=reduce?metallicize-8:0;
+                    if(metallicize==0) monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::METALLICIZE));
                     continue;
                 }
                 if(kindName=="MONSTER_THORNS") {

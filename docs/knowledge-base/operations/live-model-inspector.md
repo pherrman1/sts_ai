@@ -1383,7 +1383,7 @@ first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` q
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
 that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
-any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
