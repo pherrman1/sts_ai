@@ -49,11 +49,11 @@ cache_put() {  # cache_put FILE [COMMIT]
   [ -n "${2:-}" ] && echo "$s" > "$CACHE/commit-$2.sha256"
   echo "cached one_combat-$s${2:+ for commit $2}"
 }
-build_one_combat() {  # build_one_combat TARGET -> path of the built binary on stdout
+build_one_combat() {  # build_one_combat TARGET -> path of the built binary on stdout (preset $PRESET)
   git submodule update --init --recursive >/dev/null 2>&1 || stop "submodules"
-  cmake --preset linux-gcc-release >/dev/null 2>&1 || stop "configure failed"
-  cmake --build build/linux-gcc-release --target "$1" -j"$(nproc)" >/dev/null 2>&1 || stop "build failed"
-  echo "$REPO/build/linux-gcc-release/$1"
+  cmake --preset "$PRESET" >/dev/null 2>&1 || stop "configure failed"
+  cmake --build "build/$PRESET" --target "$1" -j"$(nproc)" >/dev/null 2>&1 || stop "build failed"
+  echo "$REPO/build/$PRESET/$1"
 }
 
 case "${1:-}" in
@@ -79,6 +79,12 @@ LEASE=$(key lease_minutes); LEASE=${LEASE:-30}
 [[ "$SCHED" =~ ^(static|queue)$ ]] || stop "manifest schedule must be static or queue"
 [[ "$LEASE" =~ ^[1-9][0-9]*$ ]] || stop "manifest lease_minutes must be a positive integer"
 TARGET=$(key build_target); TARGET=${TARGET:-one_combat}
+PRESET=$(key configure_preset); PRESET=${PRESET:-linux-gcc-release}
+[[ "$PRESET" =~ ^(linux-gcc-release|linux-gcc-release-x86-64-v3)$ ]] \
+  || stop "manifest configure_preset must be linux-gcc-release or linux-gcc-release-x86-64-v3"
+if [ "$PRESET" = linux-gcc-release-x86-64-v3 ]; then
+  grep -qw avx2 /proc/cpuinfo && grep -qw bmi2 /proc/cpuinfo || stop "configure_preset $PRESET needs an AVX2 CPU"
+fi
 [[ "$NAME" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || stop "manifest name must be lowercase [a-z0-9_-]"
 [[ "$NW" =~ ^[1-9][0-9]*$ ]] || stop "manifest workers must be a positive integer"
 [[ "$CODE" =~ ^[0-9a-f]{40}$ ]] || stop "manifest code_commit must be a full 40-char sha"

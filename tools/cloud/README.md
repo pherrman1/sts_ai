@@ -21,7 +21,9 @@ run_unit.sh         bash run_unit.sh REPO RUN UNIT_OUT <unit args...>   (exit 0 
 ```
 name          potion-weights            # lowercase [a-z0-9_-]; local dir is $HOME/cw-<name>-wWW
 code_commit   <40-char sha>             # build inputs (apps src include extern cmake models ...) must equal it
-binary_sha256 <64-char sha256>          # of build/linux-gcc-release/one_combat at code_commit
+binary_sha256 <64-char sha256>          # of build/<configure_preset>/one_combat at code_commit
+configure_preset linux-gcc-release-x86-64-v3   # optional, default linux-gcc-release; the v3 build is ~10%
+                                        # faster, same decisions on fixed seeds, needs an AVX2 CPU
 workers       8                         # the worker count Philipp authorized; unit line i goes to worker i%workers+1
 share         /mnt/project-files/<dir>  # where wWW.tar and wWW.DONE.json are uploaded
 parallel      4                         # units run at once per worker (default 4)

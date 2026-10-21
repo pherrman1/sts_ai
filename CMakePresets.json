@@ -18,6 +18,16 @@
       }
     },
     {
+      "name": "linux-gcc-release-x86-64-v3",
+      "displayName": "Linux/WSL GCC Release for x86-64-v3 (AVX2) CPUs",
+      "description": "Release build with -march=x86-64-v3 -mno-fma. No FMA contraction, so float results match linux-gcc-release; the binary needs an AVX2 CPU.",
+      "inherits": "linux-gcc-release",
+      "binaryDir": "${sourceDir}/build/linux-gcc-release-x86-64-v3",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-march=x86-64-v3 -mno-fma"
+      }
+    },
+    {
       "name": "linux-gcc-debug",
       "displayName": "Linux/WSL GCC Debug",
       "description": "GNU C++/Unix Makefiles configuration for assertion-dependent CTest checks.",
@@ -66,6 +76,12 @@
       "name": "linux-gcc-build",
       "displayName": "Build Linux/WSL GCC Release",
       "configurePreset": "linux-gcc-release",
+      "jobs": 0
+    },
+    {
+      "name": "linux-gcc-x86-64-v3-build",
+      "displayName": "Build Linux/WSL GCC Release for x86-64-v3 (AVX2) CPUs",
+      "configurePreset": "linux-gcc-release-x86-64-v3",
       "jobs": 0
     },
     {
