@@ -77,6 +77,18 @@ student_sel at A20?
 Static per-worker unit split, so a dead worker loses only its own units. The `schedule queue` mode
 (#765) is not used, because of the claim race seen in the value-leaf A/B, unless a fix lands on main before the freeze.
 
+## Freeze waits on the value-leaf A/B (`../az_gen1b_value_leaf_ab_20261020/`)
+Philipp, 2026-10-21 13:43Z: gen 2's lead may depend on that campaign. The freeze happens after its verdict.
+- **NOT_SHOWN or WORSE:** this A/B runs as written, with the X2-B leaf in both arms.
+- **WIN:** both arms get the learned value leaf (`STS_OOC_MCTS_LEAF_HEART1_VALUE`).
+  - Arm B uses gen 2's own head. Arm A uses gen 1b's head, since student_sel's value head is untrained.
+  - The question is then explicitly whole-net: is gen 2, prior plus value head, better than the current loop net?
+    Prior and leaf both differ between arms, so a gain cannot be split between them. That is the AZ-loop question,
+    because a generation replaces the whole net.
+  - The second candidate, `S_d64L2_lr1e-4_a1_v1_s0`, is added as a third arm only if Philipp asks. It has the best
+    value head among the good-KL runs: value BCE 0.549 vs 0.559, policy KL 0.0591 vs 0.0554.
+  - PREREG.md and run_unit.sh get updated, and Philipp confirms before launch.
+
 ## Verification
 `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/az_gen2_ab_20261021`. The lead releases only the
 `OK:` workers.
