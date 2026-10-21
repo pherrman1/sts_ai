@@ -28,7 +28,7 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-ooc-fast-root-cap.md) caps the fast (non-full-budget) roots of playout-cap-randomized OOC MCTS at
+- [ADR-0055](0055-ooc-fast-root-cap.md) caps the fast (non-full-budget) roots of playout-cap-randomized OOC MCTS at
   1024 simulations (`STS_OOC_MCTS_FAST_ROOT_CAP=0` restores uncapped fast roots; no gate, Philipp's call).
 - [ADR-0054](0054-ooc-real-learned-stop-default.md) makes real combats under A20 OOC MCTS stop learned by default
   (`STS_OOC_MCTS_REAL_LEARNED_STOP=0` restores flat exact 10k; not measured under OOC MCTS).
