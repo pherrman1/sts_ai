@@ -22102,7 +22102,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live Silver: Headbutt splitting a large slime refused its put-on-top choice (2026-10-21)
+## §583 — Live Silver: Headbutt splitting a large slime refused its put-on-top choice (2026-10-21)
 
 **Question:** why did live seed 111200464 seg1 s307 (release 9ec8a51d, Act 1 floor 16, Slime Boss fight after the boss
 split) stop with `silver_selection_pending_actions` and pending actions `[UseCardAction, TextAboveCreatureAction,
