@@ -403,6 +403,13 @@ representation-only differences that no native decision reads:
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
 
+Seed 111200436 (live problem 42): Fiend Fire grounded a Byrd at 1 HP, and
+native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
+20). Java `ReducePowerAction` removes the power, so the grounded Byrd takes
+full damage and gets no Flight back at its next start of turn; native still
+halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
+`STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
+
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
 

@@ -22001,6 +22001,21 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §578 — Live combat parity: a grounded Byrd kept its Flight status natively (2026-10-20)
+
+**Question:** why did live seed 111200436 (release f2e3f48d, parity1 step 516, Fiend Fire) show
+`monsters[0].statusBits` 0 in the game and 1048576 natively (problem 42 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share)?
+**Setup:** the canary's extract (`issue42-extract.json`: a 13 HP Flight 4 Byrd hit four times to 1 HP, grounded with
+intent STUN); `byrd_grounded_flight_test` (no gameplay seeds).
+**Result:** native `Monster::attackedUnblockedHelper` stunned the Byrd at Flight 1 but stored Flight 0 with the status
+bit (20) still set. The grounded Byrd therefore kept halved damage (`calculateCardDamage`) and got Flight 3/4 back at
+its next `applyStartOfTurnPowers`. Java's `ReducePowerAction` removes the power at 0.
+**Interpretation:** `STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status on the grounding
+hit. Play-changing in every Byrd fight that grounds a Byrd (full damage while grounded), unmeasured.
+Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`,
+`behavior/java-reference-audit.md`.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
