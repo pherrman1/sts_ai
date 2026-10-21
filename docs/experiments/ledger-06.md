@@ -22770,7 +22770,7 @@ with the optimal action over 90 decisions: prod 98.9%, flat-prior 10k 98.9%, liv
 per fight is 0.23 / 0.23 / 0.33 / 0.33 Silver points, and HP lost per fight is 0.28 / 0.28 / 0.38 / 0.38. Two
 decisions were wrong; every other decision lost less than 0.01:
 - Jaw Worm 111147001, game turn 2, 1 energy: all configs played Strike (Q* 116.68) over Defend (118.98). That is about
-  2.8 HP, with visits 2:1 for Strike at every budget.
+  2.8 HP, with visits 1.6-2.2:1 for Strike at every budget.
 - Cultist 111147000, game turn 3: live and 2.5k only, Strike over Defend, 1 HP.
 Small Slimes 111147005 and 008 exceeded 80M states from turn 1 and were solved from turn 2 (3 turn-1 roots each
 unscored).

@@ -22,7 +22,7 @@ Only two decisions were wrong. Every other decision lost less than 0.01.
 
 - **Jaw Worm, seed 111147001, game turn 2, 1 energy left: every config.** Silver played Strike (Q* 116.68) over Defend
   (Q* 118.98); End turn is Q* 113.98. Regret 2.29, about 2.8 expected HP. All four configs pick Strike, with visits
-  favouring it about 2:1 at every budget. That points to a leaf/rollout bias, not too few simulations. It is being
+  favouring it 1.6-2.2:1 at every budget. That points to a leaf/rollout bias, not too few simulations. It is being
   investigated in the "Silver leaf and rollout bias" thread.
 - **Cultist, seed 111147000, game turn 3: live and flat 2.5k only.** Silver played Strike over Defend: regret 1.0,
   exactly 1 HP. prod and flat 10k got it right.
@@ -98,6 +98,19 @@ cannot cut them before the cap. Memory is about 40 B per state. Two Slimes solve
 cgroup on a table grow; seed 008 was restarted alone. The follow-up research thread
 (`/mnt/project-files/exact-combat-research/REPORT.md`, branch `claude/project-thread-kgjoid`) has exact orderings and
 bounds that cut Small Slimes about 2.7x and Two Louse about 25x.
+
+## Reproduce
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && make -C build exact_combat_solver -j4
+export STS_SILVER_ROOT_PRIOR=models/combat_policy_mlp_g7f_E.txt STS_SILVER_ROOT_PRIOR_WEIGHT=400 \
+       STS_SILVER_TREE_PRIOR_MIN_VISITS=8 OMP_NUM_THREADS=1   # needed for config prod
+./build/exact_combat_solver <nSeeds> <firstSeed> out.jsonl --max-states 80000000
+python3 tools/analyze_exact_combat.py out.jsonl
+```
+
+Each seed's first fight is solved once and all four configs are scored. Seeds 111147000-111147009 were run as
+single-seed jobs, at most two Small Slimes solves at a time (memory).
 
 ## Caveats
 
