@@ -22228,6 +22228,17 @@ Seeds: none.
 
 **Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
 
+## §616 — Live problem 82: an exhausted card's settling cost/stats stopped the driver as a state change (2026-10-21)
+
+**Observation.** Live A20 seed 111200502 (release 844bd923, act 2 Shelled Parasite) was abandoned through the transient cap: three back-to-back "MCP state changed while awaiting the advisor" stops. Each time, the only difference between the decision state and the pre-click re-read was the stats of the card Corruption had just exhausted: Shockwave cost 0→3; Shrug It Off cost 0→2, block 8→11, `base_block` dropped; Defend_R cost 0→1, block 3→5, damage dropped. The player had Corruption, Snecko Eye (Confusion), Frail and Demon Form. The exhausted skill first shows its hand values and settles a frame later. The same signature is the candidate root cause of the recurring #75 transients.
+
+**Cause.** `_pile_display_only_change` only forgave a positive cached stat appearing or disappearing on entries without `base_*`. Cost and stat value changes were treated as real state changes.
+
+**Change (driver only, `STS_LIVE_PILE_SETTLING_REFRESH`, default on, `=0` restores the stop).** A draw/discard/exhaust entry with the same UUID and id at the same position may differ in `cost`, `is_playable`, `damage`, `block`, `magic_number` and `base_*`. The canary classified all 36 transient dumps of seeds 450-519 as this signature (0 real changes): the card exhausted by its own use is snapshotted with its in-use state, not only under Corruption/Snecko. The driver then discards the unexecuted decision and re-reads, within the existing three-refresh limit. HP, hand, UUID, order, upgrades and everything else stay strict, and no click is ever authorized by the match. Unit tests: the three observed shapes refresh; HP, UUID, upgrade and hand changes still stop; `=0` stops. The driver integration test now refreshes on cost/zero/changed-value drift and keeps the legacy stop under `=0`.
+
+Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
+**Knowledge impact:** `operations/live-model-inspector.md`.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
