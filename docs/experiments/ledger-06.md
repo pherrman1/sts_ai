@@ -22619,7 +22619,7 @@ Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
 `decisions/0056-silver-prior-playout-boss-only.md`.
 
-## §TBD — CRN paired continuations to the end of the act as Silver-leaf difference labels (A20, 64 sources, 4 workers): STOP, noise dominates (2026-10-21)
+## §607 — CRN paired continuations to the end of the act as Silver-leaf difference labels (A20, 64 sources, 4 workers): STOP, noise dominates (2026-10-21)
 
 **Question (Philipp, 2026-10-21, thread "Silver leaf from OOC value"):** score Silver leaves with an OOC-level label,
 possibly through a net trained on differences of outcomes within one fight. Offline, gen 1b's value head failed as a

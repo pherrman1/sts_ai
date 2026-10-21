@@ -1,4 +1,4 @@
-# CRN act-end price pilot: STOP (ledger §TBD, 2026-10-21)
+# CRN act-end price pilot: STOP (ledger §607, 2026-10-21)
 
 Pre-registration: [PREREG.md](PREREG.md). The campaign ran on 4 workers (Philipp 2026-10-21 13:44Z), RUN_COMMIT `cc78c5e5`,
 code `56950107`, binary `9829d475…`. All 64 units have rc 0 and all 4 tars are verified ([verify.txt](verify.txt),
