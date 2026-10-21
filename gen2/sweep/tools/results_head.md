@@ -59,8 +59,7 @@ Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live pari
    captured before #638 (`wing_boots_counter` 0) while gen2 rows carry 1; `distill.py` refuses mixed sets and old records
    cannot be re-encoded, so T3 trains on the gen2 states only (all 465k rows carry teacher logits; z where present).
 10. bs 1024 (+lr ×2) was benchmarked only: OOM unpacked (≈3.5 GB of GPU free), no speedup packed.
-11. Not done here: native-forward parity of the exported students (needs the one_combat build; gen 1 did it on the cloud binary)
-    and the ≤1.10× native-cost microbench (no non-d64/L2 size qualifies anyway).
+11. Not done here: the ≤1.10× native-cost microbench (no non-d64/L2 size qualifies anyway). Native parity: see "Native parity".
 
 Columns: "sel" = selection fold (seed % 8 == 6), "val" = validation fold (seed % 8 == 7, report only). Objective =
 policy KL + value weight × value BCE + anchor weight × anchor KL (so objectives are only comparable at equal weights).

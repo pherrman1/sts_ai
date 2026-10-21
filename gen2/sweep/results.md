@@ -59,8 +59,7 @@ Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live pari
    captured before #638 (`wing_boots_counter` 0) while gen2 rows carry 1; `distill.py` refuses mixed sets and old records
    cannot be re-encoded, so T3 trains on the gen2 states only (all 465k rows carry teacher logits; z where present).
 10. bs 1024 (+lr ×2) was benchmarked only: OOM unpacked (≈3.5 GB of GPU free), no speedup packed.
-11. Not done here: native-forward parity of the exported students (needs the one_combat build; gen 1 did it on the cloud binary)
-    and the ≤1.10× native-cost microbench (no non-d64/L2 size qualifies anyway).
+11. Not done here: the ≤1.10× native-cost microbench (no non-d64/L2 size qualifies anyway). Native parity: see "Native parity".
 
 Columns: "sel" = selection fold (seed % 8 == 6), "val" = validation fold (seed % 8 == 7, report only). Objective =
 policy KL + value weight × value BCE + anchor weight × anchor KL (so objectives are only comparable at equal weights).
@@ -176,4 +175,15 @@ Per-epoch selection-fold policy KL / value BCE (const 0.642):
   `weights/SHA256SUMS`. Not pushed (24 MB each): the T1 teacher, kept on the PC at
   `~/h1distill/gen2/sweep/T1_heart1_lr1e-4_a1_v1_bs256_s0/student.pt` (sha256 `610b509b…`; export `--n-heads 8`, untrimmed,
   sha256 `d42b1c99…` at `~/h1distill/gen2/export/T1_heart1.bin`), and the teacher-labeled rows (`~/h1distill/gen2/teacher_rows`, 2,816 files).
+
+## Native parity (bar ≤ 1e-4)
+`one_combat` Release built in the sweep clone at `41e3a2ac` (json/pybind11 pointed at the pinned 2222d386 / 63d627c5 checkouts,
+since main commits them as dangling symlinks); 400 records = gen 1's `parity/records.jsonl` (sha256 `f8ff5778…`).
+torch: `student_inputs.py score SILVERBOT student.pt records.jsonl torch.jsonl --trim-map`; native:
+`STS_OOC_HEART1_WING_BOOTS_COUNTER=1 one_combat heart1score student.bin records.jsonl native.jsonl`. Files in `parity/`.
+
+| net | .bin sha256 | records | logits | max abs Δ logit | max abs Δ value | argmax mismatches |
+|---|---|---|---|---|---|---|
+| pick S_d64L2_lr1e-4_a0.3_v0.3_s0 | `fc32d8f4…` | 400 | 1,652 | 9.54e-6 | 1.31e-6 | 0 |
+| T3_distill_d64L2_lr3e-4_a0_v1_s0 | `3088ccd0…` | 400 | 1,652 | 8.58e-6 | 1.49e-6 | 0 |
 
