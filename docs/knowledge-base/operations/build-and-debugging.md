@@ -247,8 +247,12 @@ binary dir `build/linux-gcc-release-x86-64-v3`) is the Release build with
 `-march=x86-64-v3 -mno-fma`. `-mno-fma` keeps every multiply and add separately
 rounded, so results match the ordinary Release build. On 2026-10-21 Silver
 decisions were identical on fixed A20 seeds, and real combats ran about 10%
-faster. The binary needs an AVX2 CPU (the cloud containers have one). Campaigns
-opt in with the manifest key `configure_preset` (`tools/cloud/README.md`).
+faster. The binary needs an AVX2 CPU (the cloud containers have one). It is the
+default for cloud campaigns whose `code_commit` contains
+`tools/cloud/default_configure_preset`; older frozen campaigns keep
+`linux-gcc-release`, and the manifest key `configure_preset` overrides both
+(`tools/cloud/README.md`). Local and live builds still default to
+`linux-gcc-release`.
 
 During iteration, build only affected focused targets; perform the required
 complete build/test pass once before handoff. Never share one CMake binary
