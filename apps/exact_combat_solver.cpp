@@ -277,6 +277,9 @@ namespace {
 
     // ---- solver ----------------------------------------------------------
 
+    // Research: parameters of ordering heuristic 7 (--order-lambda, --order-vuln).
+    double g_orderLambda = 1.0, g_orderVuln = 0.0, g_orderBlockMon = 0.0;
+
     struct Val {
         double v = 0;     // optimised objective
         double score = 0; // Silver terminal evaluation
@@ -285,6 +288,8 @@ namespace {
         double capped = 0; // probability of reaching the turn cap
         // false: a fail-low bound from pruning, v >= the true value and the rest unset.
         bool exact = true;
+        // Research (--twin-order): signature of the best end-of-turn candidate of a decision state.
+        std::uint32_t sig = 0;
     };
 
     constexpr double kNoAlpha = -1e300;
@@ -301,7 +306,7 @@ namespace {
     // Open-addressing memo, about 40 bytes per state (an unordered_map node took ~95).
     // A fail-low bound is stored with win = -1.
     class CompactMemo {
-        struct Slot { std::uint64_t a = 0, b = 0; double v = 0; float hp = 0, win = 0, capped = 0, score = 0; };
+        struct Slot { std::uint64_t a = 0, b = 0; double v = 0; float hp = 0, win = 0, capped = 0, score = 0; std::uint32_t sig = 0; };
         std::vector<Slot> slots_;
         std::size_t size_ = 0;
         static bool empty(const Slot &s) { return s.a == 0 && s.b == 0; }
@@ -328,6 +333,7 @@ namespace {
             if (empty(s)) return false;
             out.v = s.v; out.hp = s.hp; out.win = s.win; out.capped = s.capped; out.score = s.score;
             out.exact = s.win >= 0;
+            out.sig = s.sig;
             return true;
         }
         void emplace(Key k, const Val &v) {
@@ -336,7 +342,7 @@ namespace {
             auto &s = slots_[probe(k)];
             if (empty(s)) ++size_;
             s = {k.a, k.b, v.v, static_cast<float>(v.hp), v.exact ? static_cast<float>(v.win) : -1.0f,
-                 static_cast<float>(v.capped), static_cast<float>(v.score)};
+                 static_cast<float>(v.capped), static_cast<float>(v.score), v.sig};
         }
     };
 
@@ -412,14 +418,92 @@ namespace {
         // or cap leaf is bounded term by term.
         double upperBound(const BattleContext &s, const KeyBuilder *pre = nullptr) {
             if (s.outcome != Outcome::UNDECIDED) return terminal(s).v;
+            // Research (--oracle-pass): the values of a previous full solve as
+            // upper bounds, to measure what perfect bounds would save.
+            if (oracle_ && oracleBoundsOn_ && quiet(s)) {
+                const Key k = pre ? keyAtHp(*pre, s.player.curHp) : stateKey(s);
+                if (Val hit; oracle_->find(k, hit)) { ++oracleBounds_; return std::min(hit.v, formulaBound(s)); }
+            }
             // The same state at more HP is worth at least as much (see monotone()):
             // a memoized twin a few HP higher, exact or itself a bound, bounds it.
+            if (pre && quiet(s) && lipschitz_) {
+                const double t = twinUpperBound(*pre, s, 0);
+                if (t < 1e299) ++twinBounds_;
+                return std::min(t, formulaBound(s));
+            }
             if (pre && quiet(s)) {
                 const int top = std::min(s.player.maxHp, s.player.curHp + kTwinProbes);
                 for (int h = s.player.curHp + 1; h <= top; ++h)
                     if (Val hit; memo_.find(keyAtHp(*pre, h), hit)) { ++twinBounds_; return std::min(hit.v, formulaBound(s)); }
             }
             return formulaBound(s);
+        }
+
+    public:
+        // Research (--lipschitz, HP objective only): the value is non-decreasing
+        // and 1-Lipschitz in player HP. Playing the higher-HP state's policy from
+        // the lower one ends every scenario the same way and at most d HP apart
+        // (where only the lower one dies, the higher one ends with at most d HP),
+        // since in the fights the bounds are gated to HP changes nothing but
+        // death and never rises. So every memoized twin
+        // d HP below, exact or a fail-low bound, bounds from above with its
+        // value + d, as a twin above does with its value; and (--interpolate) two
+        // exact twins whose values differ by exactly their HP gap, or not at all,
+        // fix the value of every HP between them.
+        bool lipschitz_ = false, interpolate_ = false, endTwin_ = false;
+        double eps_ = 0;
+        std::int64_t interpolations_ = 0, endTwinCutoffs_ = 0, lipschitzTighter_ = 0;
+        std::int64_t interpNoLo_ = 0, interpNoHi_ = 0, slopeHist_[7] = {};
+    private:
+        Key twinKey(const KeyBuilder &pre, int hp, std::uint64_t tag) const {
+            Key k = keyAtHp(pre, hp);
+            k.b ^= tag;
+            return k;
+        }
+
+        // The tightest bound the memo's HP twins of `s` give (+inf without one);
+        // `tag` selects the end-of-turn entries.
+        double twinUpperBound(const KeyBuilder &pre, const BattleContext &s, std::uint64_t tag) {
+            double up = 1e300, down = 1e300;
+            const int hp = s.player.curHp;
+            for (int h = hp + 1; h <= std::min(s.player.maxHp, hp + kTwinProbes); ++h)
+                if (Val hit; memo_.find(twinKey(pre, h, tag), hit)) up = std::min(up, hit.v);
+            if (lipschitz_)
+                for (int h = hp - 1; h >= std::max(1, hp - kTwinProbes); --h)
+                    if (Val hit; memo_.find(twinKey(pre, h, tag), hit)) down = std::min(down, hit.v + (hp - h));
+            if (down < up) ++lipschitzTighter_;
+            return std::min(up, down);
+        }
+
+        // The exact value of `s` from two exact twins around it (see lipschitz_).
+        bool interpolate(const KeyBuilder &pre, const BattleContext &s, std::uint64_t tag, Val &out) {
+            const int hp = s.player.curHp;
+            Val lo, hi;
+            int dlo = 0, dhi = 0;
+            for (int h = hp - 1; h >= std::max(1, hp - kTwinProbes) && !dlo; --h)
+                if (Val hit; memo_.find(twinKey(pre, h, tag), hit) && hit.exact) { lo = hit; dlo = hp - h; }
+            if (!dlo) { ++interpNoLo_; return false; }
+            for (int h = hp + 1; h <= std::min(s.player.maxHp, hp + kTwinProbes) && !dhi; ++h)
+                if (Val hit; memo_.find(twinKey(pre, h, tag), hit) && hit.exact) { hi = hit; dhi = h - hp; }
+            if (!dhi) { ++interpNoHi_; return false; }
+            const double gap = hi.v - lo.v, eps = 1e-9 * (1 + std::abs(hi.v));
+            {
+                const double slope = gap / (dlo + dhi);
+                ++slopeHist_[slope < 0.001 ? 0 : slope < 0.5 ? 1 : slope < 0.9 ? 2 : slope < 0.99 ? 3 : slope < 0.999999 ? 4 : slope <= 1.000001 ? 5 : 6];
+            }
+            if (std::abs(gap - (dlo + dhi)) <= eps) {
+                out = lo;
+                out.v = lo.v + dlo;
+                out.hp = lo.hp + dlo;
+                out.score = lo.score + dlo * lo.win;
+            } else if (std::abs(gap) <= eps) {
+                out = lo;
+            } else {
+                return false;
+            }
+            out.sig = 0;
+            ++interpolations_;
+            return true;
         }
 
         double formulaBound(const BattleContext &s) {
@@ -470,11 +554,165 @@ namespace {
         }
         std::int64_t twinBounds_ = 0;
 
+        // ---- research statistics (--stats) ----------------------------------
+        // Per memoized state: its key without player HP, and its "exogenous"
+        // key (also without player block and every monster's HP, block,
+        // Vulnerable and Weak: what remains is the deck partition, the
+        // monsters' AI state and the turn), counted per turn and kind
+        // (0 = turn-start/mid-turn decision state, 1 = end-of-turn state).
+        bool stats_ = false;
+        struct KindStats {
+            std::int64_t states = 0;
+            std::unordered_map<Key, char, KeyHash> hpFree, exo, turnFree;
+        };
+        std::map<std::pair<int, int>, KindStats> kindStats_;
+
+        static Key exoKey(const BattleContext &s) {
+            BattleContext e = s;
+            e.player.curHp = 0;
+            e.player.block = 0;
+            for (int i = 0; i < e.monsters.monsterCount; ++i) {
+                auto &m = e.monsters.arr[i];
+                const bool alive = m.isAlive();
+                m.curHp = alive ? 1 : 0;
+                m.block = 0;
+                m.vulnerable = 0;
+                m.weak = 0;
+                m.statusBits &= ~monotoneStatusBits(m);
+            }
+            return stateKey(e);
+        }
+
+        void noteState(const BattleContext &s, int kind) {
+            if (!stats_) return;
+            auto &ks = kindStats_[{s.turn, kind}];
+            ++ks.states;
+            ks.hpFree.emplace(statePrefix(s).key(), 1);
+            ks.exo.emplace(exoKey(s), 1);
+            BattleContext t = s;
+            t.turn = 0;
+            kindStats_[{-1, kind}].turnFree.emplace(stateKey(t), 1);
+        }
+
+        // The optimal policy's solution graph from `s`: every decision state
+        // and end-of-turn state reached under optimal play (argmax over the
+        // memoized exact values) and every chance outcome. Its size is the
+        // floor for any method that must certify V*(s) exactly.
+        struct SolutionStats {
+            std::unordered_map<Key, char, KeyHash> decision, endTurn;
+            std::map<int, std::int64_t> byTurn;
+            std::int64_t inexactTurns = 0, ties = 0;
+        };
+        void solutionGraph(const BattleContext &s, SolutionStats &st) {
+            if (s.outcome != Outcome::UNDECIDED || s.turn > turnCap_) return;
+            if (!quiet(s)) {
+                ++st.inexactTurns;
+                return;
+            }
+            if (!st.decision.emplace(stateKey(s), 1).second) return;
+            ++st.byTurn[s.turn];
+            // Follow every line of plays of the turn to its end, as turnValue does.
+            struct Cand { BattleContext st; SAction endTurn; };
+            std::vector<Cand> cands;
+            std::unordered_map<Key, char, KeyHash> seen;
+            seen.emplace(stateKey(s), 1);
+            std::vector<BattleContext> stack{s};
+            double bestLeaf = -1e300;
+            while (!stack.empty()) {
+                BattleContext n = std::move(stack.back());
+                stack.pop_back();
+                const auto acts = actions(n);
+                if (acts.empty()) { bestLeaf = std::max(bestLeaf, terminal(n).v); continue; }
+                for (const auto &a : acts) {
+                    if (a.getActionType() == search::ActionType::END_TURN) { cands.push_back({n, a}); continue; }
+                    auto outs = outcomes(n, a);
+                    if (outs.size() != 1) { ++st.inexactTurns; return; }
+                    auto &o = outs[0].state;
+                    if (o.outcome != Outcome::UNDECIDED) { bestLeaf = std::max(bestLeaf, terminal(o).v); continue; }
+                    if (!quiet(o) || o.turn != s.turn) { ++st.inexactTurns; return; }
+                    if (seen.emplace(stateKey(o), 1).second) stack.push_back(std::move(o));
+                }
+            }
+            double best = bestLeaf;
+            std::vector<std::size_t> arg;
+            for (std::size_t i = 0; i < cands.size(); ++i) {
+                Key key = stateKey(cands[i].st);
+                key.b ^= 0x5bd1e9955bd1e995ULL;
+                Val hit;
+                if (!memo_.find(key, hit) || !hit.exact) continue;
+                if (hit.v > best + 1e-9) { best = hit.v; arg.assign(1, i); }
+                else if (hit.v >= best - 1e-9) arg.push_back(i);
+            }
+            if (arg.size() > 1) ++st.ties;
+            if (arg.empty()) return;   // the best line wins the fight this turn
+            const auto &c = cands[arg[0]];
+            Key ekey = stateKey(c.st);
+            if (!st.endTurn.emplace(ekey, 1).second) return;
+            for (const auto &o : outcomes(c.st, c.endTurn)) solutionGraph(o.state, st);
+        }
+
+        // The union of the solution graphs below every root action: the floor
+        // for certifying every root Q value exactly.
+        void solutionGraphForActions(const BattleContext &root, const std::vector<SAction> &acts, SolutionStats &st) {
+            for (const auto &a : acts) {
+                if (a.getActionType() == search::ActionType::END_TURN) {
+                    if (!st.endTurn.emplace(stateKey(root), 1).second) continue;
+                    for (const auto &o : outcomes(root, a)) solutionGraph(o.state, st);
+                } else {
+                    for (const auto &o : outcomes(root, a)) solutionGraph(o.state, st);
+                }
+            }
+        }
+
+        json statsJson() const {
+            json rows = json::array();
+            for (const auto &[tk, ks] : kindStats_)
+                rows.push_back({{"turn", tk.first}, {"kind", tk.second == 0 ? "decision" : "endTurn"},
+                                {"states", ks.states}, {"hpFree", ks.hpFree.size()}, {"exo", ks.exo.size()},
+                                {"turnFree", ks.turnFree.size()}});
+            return rows;
+        }
+
     private:
         static constexpr int kTwinProbes = 12;
 
     public:
         std::size_t states() const { return memo_.size(); }
+        const CompactMemo &memo() const { return memo_; }
+        // Research: candidate-ordering heuristics (higher key = tried first).
+        static constexpr int kHeuristics = 7;
+        std::int64_t diagTotal_ = 0, diagHits_[kHeuristics] = {};
+        std::int64_t marginHist_[7] = {}, slackHist_[7] = {}, oneTurnRefutes_ = 0;
+        bool orderDiag_ = false;
+        int orderHeuristic_ = -1;
+        static double heuristicKey(const BattleContext &y, int h) {
+            int incoming = 0, monsterHp = 0, monsterBlock = 0, vuln = 0;
+            for (int i = 0; i < y.monsters.monsterCount; ++i) {
+                const auto &m = y.monsters.arr[i];
+                if (!m.isAlive()) continue;
+                incoming += m.publicIncomingDamage(y);
+                monsterHp += m.curHp;
+                monsterBlock += m.block;
+                vuln += std::min(m.vulnerable, 2);
+            }
+            const double hpAfter = y.player.curHp - std::max(0, incoming - y.player.block);
+            switch (h) {
+                case 0: return -1000.0 * (monsterHp + monsterBlock) + y.player.block;   // the solver's default
+                case 1: return 1000.0 * hpAfter - monsterHp;
+                case 2: return hpAfter - 0.3 * monsterHp;
+                case 3: return hpAfter - 0.6 * monsterHp;
+                case 4: return hpAfter - 1.0 * monsterHp;
+                case 5: return hpAfter - 0.6 * monsterHp + 1.5 * vuln;
+                case 6: return hpAfter - 0.45 * monsterHp + 1.0 * vuln;
+                default: return hpAfter - g_orderLambda * monsterHp + g_orderVuln * vuln - g_orderBlockMon * monsterBlock;
+            }
+        }
+        bool twinOrder_ = false;
+        std::int64_t hashMoveHits_ = 0;
+        static std::uint32_t sigOf(const BattleContext &y) { return static_cast<std::uint32_t>(statePrefix(y).key().a) | 1u; }
+        const CompactMemo *oracle_ = nullptr;
+        bool oracleBoundsOn_ = true, oracleOrder_ = false;
+        std::int64_t oracleBounds_ = 0;
         // Drop every memoized state (after an infeasible solve) to free memory.
         void clear() { memo_.clear(); inProgress_.clear(); }
         std::int64_t replays() const { return replays_; }
@@ -555,6 +793,10 @@ namespace {
                 key = keyAtHp(pre, s.player.curHp);
                 checkSame(key, s);
                 if (Val hit; memo_.find(key, hit) && answers(hit, alpha)) return hit;
+                if (Val iv; interpolate_ && interpolate(pre, s, 0, iv)) {
+                    remember(key, iv);
+                    return iv;
+                }
             }
             if (bounds_ && alpha > kNoAlpha) {
                 const double ub = upperBound(s, memoize ? &pre : nullptr);
@@ -576,6 +818,7 @@ namespace {
             if (memoize) {
                 inProgress_.erase(key);
                 ++statesByTurn_[s.turn];
+                noteState(s, 0);
                 remember(key, best);
             }
             return best;
@@ -588,14 +831,16 @@ namespace {
         Val maxOver(std::size_t n, double alpha, F child, Val best = bound(kNoAlpha)) {
             double ceiling = best.v;
             for (std::size_t i = 0; i < n; ++i) {
-                const double a = bounds_ ? std::max(alpha, best.exact ? best.v : kNoAlpha) : kNoAlpha;
+                // Research (--epsilon): a child only has to beat the best so far by eps_, so the
+                // result can be up to eps_ below the true maximum (errors add up along a line).
+                const double a = bounds_ ? std::max(alpha, best.exact ? best.v + eps_ : kNoAlpha) : kNoAlpha;
                 const Val v = child(i, a);
                 ceiling = std::max(ceiling, v.v);
                 if (v.exact && (!best.exact || v.v > best.v)) best = v;
             }
             // A bound above the best exact value is <= its query's alpha, which is then alpha itself
             // (up to rounding: a child's bound can land a few ulps above the alpha it was given).
-            if (best.exact && best.v >= ceiling - 1e-9) return best;
+            if (best.exact && best.v >= ceiling - eps_ - 1e-9) return best;
             return bound(ceiling);
         }
 
@@ -604,7 +849,24 @@ namespace {
             Key key = stateKey(s);
             key.b ^= 0x5bd1e9955bd1e995ULL;
             if (Val hit; memo_.find(key, hit) && answers(hit, alpha)) return hit;
+            if (interpolate_ || (endTwin_ && bounds_ && alpha > kNoAlpha)) {
+                const KeyBuilder pre = statePrefix(s);
+                if (Val iv; interpolate_ && interpolate(pre, s, 0x5bd1e9955bd1e995ULL, iv)) {
+                    remember(key, iv);
+                    return iv;
+                }
+                if (endTwin_ && bounds_ && alpha > kNoAlpha) {
+                    const double ub = twinUpperBound(pre, s, 0x5bd1e9955bd1e995ULL);
+                    if (ub <= alpha) { ++cutoffs_; ++endTwinCutoffs_; return bound(ub); }
+                }
+            }
+            if (Val hit; bounds_ && oracle_ && oracleBoundsOn_ && alpha > kNoAlpha && oracle_->find(key, hit) && hit.v <= alpha) {
+                ++oracleBounds_;
+                ++cutoffs_;
+                return bound(hit.v);
+            }
             const Val v = expand(s, endTurn, alpha);
+            noteState(s, 1);
             remember(key, v);
             return v;
         }
@@ -685,12 +947,93 @@ namespace {
                     if (st.monsters.arr[m].isAlive()) hp += st.monsters.arr[m].curHp + st.monsters.arr[m].block;
                 return std::pair<int, int>(hp, -st.player.block);
             };
+            if (oracle_ && orderDiag_ && survivors.size() >= 2) {
+                // Research: how often each ordering heuristic puts an optimal candidate first.
+                std::vector<double> ov(cands.size(), -1e300);
+                double best = -1e300;
+                for (std::size_t i : survivors) {
+                    Key k = stateKey(cands[i].st);
+                    k.b ^= 0x5bd1e9955bd1e995ULL;
+                    if (Val hit; oracle_->find(k, hit) && hit.exact) ov[i] = hit.v;
+                    best = std::max(best, ov[i]);
+                }
+                if (best > -1e299) {
+                    // Margins of the other candidates below the best, and the slack of a
+                    // one-turn bound (win score at the HP left after this turn's attack).
+                    for (std::size_t i : survivors) {
+                        if (ov[i] <= -1e299 || ov[i] >= best - 1e-9) continue;
+                        const double margin = best - ov[i];
+                        int bucket = margin < 0.5 ? 0 : margin < 1 ? 1 : margin < 2 ? 2 : margin < 4 ? 3 : margin < 8 ? 4 : margin < 16 ? 5 : 6;
+                        ++marginHist_[bucket];
+                        int incoming = 0;
+                        for (int m = 0; m < cands[i].st.monsters.monsterCount; ++m)
+                            if (cands[i].st.monsters.arr[m].isAlive()) incoming += cands[i].st.monsters.arr[m].publicIncomingDamage(cands[i].st);
+                        BattleContext w = cands[i].st;
+                        w.player.curHp -= std::max(0, incoming - w.player.block);
+                        w.turn += 1;
+                        if (w.player.curHp > 0) {
+                            const double slack = formulaBound(w) - ov[i];
+                            int sb = slack < 0.5 ? 0 : slack < 1 ? 1 : slack < 2 ? 2 : slack < 4 ? 3 : slack < 8 ? 4 : slack < 16 ? 5 : 6;
+                            ++slackHist_[sb];
+                            if (slack < margin) ++oneTurnRefutes_;
+                        }
+                    }
+                    ++diagTotal_;
+                    for (int h = 0; h < kHeuristics; ++h) {
+                        std::size_t first = survivors[0];
+                        double fk = heuristicKey(cands[first].st, h);
+                        for (std::size_t i : survivors) {
+                            const double k = heuristicKey(cands[i].st, h);
+                            if (k > fk) { fk = k; first = i; }
+                        }
+                        if (ov[first] >= best - 1e-9) ++diagHits_[h];
+                    }
+                }
+            }
+            // Research (--twin-order): the best candidate of a memoized HP twin of `s` goes first.
+            std::uint32_t hashSig = 0;
+            if (twinOrder_) {
+                const KeyBuilder spre = statePrefix(s);
+                for (int d = 1; d <= kTwinProbes && !hashSig; ++d)
+                    for (int h : {s.player.curHp + d, s.player.curHp - d})
+                        if (Val hit; h > 0 && h <= s.player.maxHp && memo_.find(keyAtHp(spre, h), hit) && hit.exact && hit.sig) { hashSig = hit.sig; break; }
+            }
+            if (orderHeuristic_ >= 0) {
+                std::vector<double> hk(cands.size(), 0);
+                for (std::size_t i : survivors) hk[i] = heuristicKey(cands[i].st, orderHeuristic_);
+                std::stable_sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) { return hk[x] > hk[y]; });
+            } else if (oracle_ && oracleOrder_) {
+                // Research: order by the previous solve's values (best first).
+                std::vector<double> ov(cands.size(), -1e300);
+                for (std::size_t i : survivors) {
+                    Key k = stateKey(cands[i].st);
+                    k.b ^= 0x5bd1e9955bd1e995ULL;
+                    // Exact values first; a fail-low bound only says "at most v".
+                    if (Val hit; oracle_->find(k, hit)) ov[i] = hit.exact ? hit.v : hit.v - 1e6;
+                }
+                std::stable_sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) { return ov[x] > ov[y]; });
+            } else {
             std::sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) {
                 return order(x) != order(y) ? order(x) < order(y) : x < y;
             });
+            }
+            if (hashSig) {
+                for (std::size_t r = 0; r < survivors.size(); ++r)
+                    if (sigOf(cands[survivors[r]].st) == hashSig) {
+                        std::rotate(survivors.begin(), survivors.begin() + static_cast<std::ptrdiff_t>(r),
+                                    survivors.begin() + static_cast<std::ptrdiff_t>(r) + 1);
+                        ++hashMoveHits_;
+                        break;
+                    }
+            }
+            std::vector<Val> childVals(survivors.size());
             out = maxOver(survivors.size(), alpha, [&](std::size_t i, double a) {
-                return endValue(cands[survivors[i]].st, cands[survivors[i]].endTurn, a);
+                childVals[i] = endValue(cands[survivors[i]].st, cands[survivors[i]].endTurn, a);
+                return childVals[i];
             }, best);
+            if (out.exact)
+                for (std::size_t i = 0; i < survivors.size(); ++i)
+                    if (childVals[i].exact && childVals[i].v >= out.v - 1e-12) { out.sig = sigOf(cands[survivors[i]].st); break; }
             return true;
         }
 
@@ -858,6 +1201,12 @@ int main(int argc, char **argv) {
         std::optional<MonsterEncounter> forced;
         std::int64_t maxStates = 60'000'000;
         bool hpObjective = false, verify = false, canonicalOff = false, keepEnergyWaste = false, noDominance = false, noBounds = false;
+        bool stats = false, firstRootOnly = false, oraclePass = false, oracleOrder = false, oracleBoundsOff = false;
+        bool orderDiag = false;
+        int orderHeuristic = -1, oracleCap = -1;
+        bool twinOrder = false;
+        bool lipschitz = false, interpolate = false, endTwin = false;
+        double epsilon = 0;
         int turnCap = 8;
         for (int i = 4; i < argc; ++i) {
             const std::string arg = argv[i];
@@ -880,11 +1229,28 @@ int main(int argc, char **argv) {
             else if (arg == "--no-bounds") noBounds = true;
             else if (arg == "--keep-energy-waste") keepEnergyWaste = true;
             else if (arg == "--turn-cap") turnCap = std::stoi(value());
+            else if (arg == "--stats") stats = true;
+            else if (arg == "--first-root-only") firstRootOnly = true;
+            else if (arg == "--oracle-pass") oraclePass = true;
+            else if (arg == "--oracle-order") oracleOrder = true;
+            else if (arg == "--oracle-no-bounds") oracleBoundsOff = true;
+            else if (arg == "--order-diag") orderDiag = true;
+            else if (arg == "--oracle-cap") oracleCap = std::stoi(value());
+            else if (arg == "--twin-order") twinOrder = true;
+            else if (arg == "--order-lambda") g_orderLambda = std::stod(value());
+            else if (arg == "--order-vuln") g_orderVuln = std::stod(value());
+            else if (arg == "--order-heuristic") orderHeuristic = std::stoi(value());
+            else if (arg == "--lipschitz") lipschitz = true;
+            else if (arg == "--interpolate") interpolate = true;
+            else if (arg == "--end-twin") endTwin = true;
+            else if (arg == "--epsilon") epsilon = std::stod(value());
             else throw std::invalid_argument("unknown option " + arg);
         }
         if (configs.empty()) configs = {parseConfig("prod"), parseConfig("live"),
                                         parseConfig("flatprior:2500"), parseConfig("flatprior:10000")};
         const std::string objective = std::string(hpObjective ? "hp" : "silver") + (keepEnergyWaste ? "" : "-noew");
+        if ((lipschitz || interpolate) && !hpObjective)
+            throw std::invalid_argument("--lipschitz and --interpolate need --objective hp (Silver's value is not Lipschitz in HP)");
 
         sts::search::installNativeSilverBackend();
         for (const auto &c : configs)
@@ -917,8 +1283,10 @@ int main(int argc, char **argv) {
                 int searchedRoots = 0, optimalRoots = 0, unscoredRoots = 0;
                 double regretSum = 0, hpLossSum = 0, winLossSum = 0;
                 const auto fightStart = std::chrono::steady_clock::now();
+                bool firstRootDone = false;
                 sts::search::g_nativeSilverRootObserver = [&](const sts::search::NativeSilverRootView &view) {
                     if (view.skipped || !fightFailure.empty()) return;
+                    if (firstRootOnly && firstRootDone) return;
                     const SilverSearcher &searcher = view.searcher;
                     const BattleContext &root = searcher.rootSearchState();
                     if (root.turn <= unsolvableThroughTurn) { ++unscoredRoots; return; }
@@ -926,12 +1294,22 @@ int main(int argc, char **argv) {
                         if (!solver) {
                             solver = std::make_unique<ExactSolver>(root, searcher, hpObjective, maxStates, verify,
                                                                    !canonicalOff && canonicalDrawsSafe(root), !keepEnergyWaste);
-                            solver->turnCap_ = turnCap;
+                            // --oracle-cap: the first solve runs at a smaller cap and only orders the second
+                            // (iterative deepening); the reported Q values are then the first solve's.
+                            solver->turnCap_ = oracleCap >= 0 ? oracleCap : turnCap;
+                            solver->stats_ = stats;
+                            solver->orderHeuristic_ = orderHeuristic;
+                            solver->twinOrder_ = twinOrder;
+                            solver->eps_ = epsilon;
                             // Energy left over is not compared, so the energy-waste term must be off.
                             const bool safe = !keepEnergyWaste && dominanceSafe(root) && solver->monotone();
                             solver->prune_ = !noDominance && safe;
                             solver->bounds_ = !noBounds && safe && root.potionCount == 0
                                 && searcher.evalWeights.victoryTurnPenalty >= 0;
+                            // The HP-twin rules rest on the same gate (HP changes nothing but death, and never rises).
+                            solver->lipschitz_ = lipschitz && solver->bounds_;
+                            solver->interpolate_ = interpolate && solver->bounds_;
+                            solver->endTwin_ = (endTwin || lipschitz) && solver->bounds_;
                         }
                         const auto t0 = std::chrono::steady_clock::now();
                         const auto &edges = searcher.rootNode().edges;
@@ -960,6 +1338,57 @@ int main(int argc, char **argv) {
                                     {"regret", best - qs[chosenIdx].v}, {"optimal", qs[chosenIdx].v >= best - 1e-9},
                                     {"states", solver->states()}};
                         if (verify) row["verifiedHits"] = solver->verifiedHits();
+                        row["solveSecondsSoFar"] = solveSeconds;
+                        if (stats && !firstRootDone) {
+                            ExactSolver::SolutionStats opt, all;
+                            solver->solutionGraph(root, opt);
+                            std::vector<SAction> rootActs;
+                            for (const auto &e : edges) rootActs.push_back(e.action);
+                            solver->solutionGraphForActions(root, rootActs, all);
+                            json byTurn = json::object();
+                            for (const auto &[t, n] : opt.byTurn) byTurn[std::to_string(t)] = n;
+                            json byTurnAll = json::object();
+                            for (const auto &[t, n] : all.byTurn) byTurnAll[std::to_string(t)] = n;
+                            row["stats"] = {{"memoByTurnKind", solver->statsJson()},
+                                            {"solutionDecision", opt.decision.size()}, {"solutionEndTurn", opt.endTurn.size()},
+                                            {"solutionByTurn", byTurn}, {"solutionTies", opt.ties},
+                                            {"solutionInexactTurns", opt.inexactTurns},
+                                            {"allActionsDecision", all.decision.size()}, {"allActionsEndTurn", all.endTurn.size()},
+                                            {"allActionsByTurn", byTurnAll}};
+                        }
+                        if (oraclePass && !firstRootDone) {
+                            // A second solve of the same root whose upper bounds are the first solve's
+                            // values: the state count perfect bounds would leave with this search order.
+                            ExactSolver second(root, searcher, hpObjective, maxStates, false,
+                                               !canonicalOff && canonicalDrawsSafe(root), !keepEnergyWaste);
+                            second.turnCap_ = turnCap;
+                            second.prune_ = solver->prune_;
+                            second.bounds_ = solver->bounds_;
+                            second.oracle_ = &solver->memo();
+                            second.oracleOrder_ = oracleOrder;
+                            second.oracleBoundsOn_ = !oracleBoundsOff;
+                            second.orderDiag_ = orderDiag;
+                            second.orderHeuristic_ = orderHeuristic;
+                            const auto t1 = std::chrono::steady_clock::now();
+                            double maxDiff = 0;
+                            for (std::size_t i = 0; i < edges.size(); ++i) {
+                                const Val v = second.q(root, edges[i].action);
+                                maxDiff = std::max(maxDiff, std::abs(v.v - qs[i].v));
+                            }
+                            row["oracle"] = {{"states", second.states()}, {"seconds", seconds(t1)},
+                                             {"maxAbsDiffQ", maxDiff}, {"oracleBounds", second.oracleBounds_},
+                                             {"cutoffs", second.cutoffs_}};
+                            if (orderDiag) {
+                                json hits = json::array();
+                                for (int h = 0; h < ExactSolver::kHeuristics; ++h) hits.push_back(second.diagHits_[h]);
+                                json mh = json::array(), sh = json::array();
+                                for (int b = 0; b < 7; ++b) { mh.push_back(second.marginHist_[b]); sh.push_back(second.slackHist_[b]); }
+                                row["oracle"]["orderDiag"] = {{"total", second.diagTotal_}, {"firstIsOptimal", hits},
+                                                              {"marginHist<.5,1,2,4,8,16,inf", mh}, {"oneTurnSlackHist", sh},
+                                                              {"oneTurnBoundRefutes", second.oneTurnRefutes_}};
+                            }
+                        }
+                        firstRootDone = true;
                         out << row.dump() << '\n';
                         out.flush();
                         ++searchedRoots;
@@ -998,7 +1427,19 @@ int main(int argc, char **argv) {
                                 {"chanceTurns", solver ? solver->chanceTurns_ : 0},
                                 {"bounds", solver && solver->bounds_}, {"cutoffs", solver ? solver->cutoffs_ : 0},
                                 {"twinBounds", solver ? solver->twinBounds_ : 0}, {"turnCap", turnCap},
+                                {"hashMoveHits", solver ? solver->hashMoveHits_ : 0},
+                                {"interpolations", solver ? solver->interpolations_ : 0},
+                                {"endTwinCutoffs", solver ? solver->endTwinCutoffs_ : 0},
+                                {"lipschitzTighter", solver ? solver->lipschitzTighter_ : 0},
+                                {"interpNoLo", solver ? solver->interpNoLo_ : 0},
+                                {"interpNoHi", solver ? solver->interpNoHi_ : 0},
+                                {"slopeHist<.001,.5,.9,.99,1-,1,>1", solver ? json(std::vector<std::int64_t>(solver->slopeHist_, solver->slopeHist_ + 7)) : json::array()},
                                 {"solveSeconds", solveSeconds}, {"seconds", seconds(fightStart)}};
+                if (solver) {
+                    json bt = json::object();
+                    for (const auto &[t, n] : solver->statesByTurn_) bt[std::to_string(t)] = n;
+                    summary["decisionStatesByTurn"] = bt;
+                }
                 if (!fightFailure.empty()) summary["failure"] = fightFailure;
                 out << summary.dump() << '\n';
                 out.flush();
