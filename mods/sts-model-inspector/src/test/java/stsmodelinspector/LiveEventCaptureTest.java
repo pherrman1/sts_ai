@@ -74,7 +74,8 @@ public final class LiveEventCaptureTest {
         mushrooms.screenNum=3;check(capture(mushrooms,0).containsKey("unsupportedReason"),"unknown Mushrooms page accepted");
         TheJoust joust=new TheJoust();out=capture(joust,0);
         check("event_continue".equals(map(out.get("details")).get("mechanicalTransition"))&&!out.containsKey("unsupportedReason"),"Joust HALT Continue not forced");
-        joust.screen="EXPLANATION";check(capture(joust,0,1).containsKey("unsupportedReason"),"Joust bet treated as forced");
+        joust.screen="EXPLANATION";out=capture(joust,0,1);indices(out,0,1);
+        check(!out.containsKey("unsupportedReason")&&!map(out.get("details")).containsKey("mechanicalTransition"),"Joust bet page not a two-slot decision");
         joust.screen="INTRO";check(capture(joust,0).containsKey("unsupportedReason"),"nonexistent Joust INTRO page accepted");
         check(capture(new Unknown(),0).containsKey("unsupportedReason"),"unknown class accepted as leave");
         for(String owner:Arrays.asList("DrugDealer","DesignerTransform"))check("transform".equals(LiveOocCapture.selectorType(false,false,false,Arrays.asList(owner),false,false).get("type")),"unflagged transform owner");
