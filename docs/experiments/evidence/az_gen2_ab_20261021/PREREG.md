@@ -106,4 +106,4 @@ Philipp, 2026-10-21 13:43Z: gen 2's lead may depend on that campaign. The freeze
 - Code: main `844bd9239c6621968f5095c6f84aba6de27bbf2f`. Preset `linux-gcc-release-x86-64-v3`; binary `one_combat`
   sha256 `23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c`.
 - Value leaf: X2-B in both arms (value-leaf A/B NOT_SHOWN). Prior playouts boss-only in both arms (`STS_SILVER_PRIOR_PLAYOUT_ELITE=0`).
-- `workers` stays a placeholder until Philipp gives the count; the run commit fills it and nothing else.
+- Workers: 32 (Philipp, 2026-10-21 19:08Z: "Then let's go on 32 workers").

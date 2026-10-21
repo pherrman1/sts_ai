@@ -1,7 +1,7 @@
 name          az-gen2-ab
 code_commit   844bd9239c6621968f5095c6f84aba6de27bbf2f
 binary_sha256 23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c
-workers       __WORKERS__
+workers       32
 share         /mnt/project-files/az-gen2-ab
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4
