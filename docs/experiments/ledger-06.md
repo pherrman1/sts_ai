@@ -22619,7 +22619,7 @@ Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
 `decisions/0056-silver-prior-playout-boss-only.md`.
 
-## §TBD — OOC value head: monotonicity penalty fails the offline gate (2026-10-21)
+## §609 — OOC value head: monotonicity penalty fails the offline gate (2026-10-21)
 
 **Question:** Does a training penalty that forbids the value head from preferring the worse of two states (less HP,
 less max HP, less gold, one potion fewer, one curse more) fix gen 2's wrong-signed end-state prices without hurting
