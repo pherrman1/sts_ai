@@ -22165,7 +22165,7 @@ for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
 Seeds: none new (live seed 111200472 as reported).
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
-## §TBD — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
+## §602 — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
 
 **Question:** after §600 (Darkling "Life Link"), are the generic entries of the tracker's monster-power whitelist real
 Java POWER_IDs? (Reviewer E's follow-up on #763.)
