@@ -2814,6 +2814,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return null;
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
+            // SpikeSlime_L/AcidSlime_L/SlimeBoss.damage at half HP: setMove(3)
+            // now, then addToBot(TextAboveCreatureAction) and addToBot(
+            // SetMoveAction(this, 3, UNKNOWN)) behind the card (problem 68).
+            if(sourceTask!=null && isActionClass(name,"TextAboveCreatureAction")) {
+                String item=actionIndex+1<manager.actions.size()?slimeSplitJson(manager.actions.get(actionIndex+1)):null;
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
+            }
             // Darkling.damage at a half-death: setMove(4) now, then
             // addToBot(SetMoveAction(this, 4, UNKNOWN)) behind the card.
             if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
@@ -3009,6 +3017,24 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || move==null || move!=4 || darkling.nextMove!=4
                 || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
         return monsterSetMoveItemJson(move,slot);
+    }
+
+    private static String slimeSplitJson(Object action) {
+        if(action==null || !"com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(action.getClass().getName())
+                || !Boolean.FALSE.equals(readBooleanField(action,"isDone")))return null;
+        Object value=readObjectField(action,"monster");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster slime=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(slime), move=readIntField(action,"theNextMove");
+        if((!"SpikeSlime_L".equals(slime.id) && !"AcidSlime_L".equals(slime.id) && !"SlimeBoss".equals(slime.id))
+                || slot==null || slime.isDying || slime.isDeadOrEscaped() || slime.halfDead
+                || move==null || move!=3 || slime.nextMove!=3
+                || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
+        return monsterSplitItemJson(slot);
+    }
+
+    static String monsterSplitItemJson(int slot) {
+        return slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SPLIT_SET_MOVE\",\"slot\":"+slot+"}" : null;
     }
 
     static String monsterSetMoveItemJson(int move,int slot) {

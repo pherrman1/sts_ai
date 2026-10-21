@@ -465,6 +465,18 @@ bool halfDeadSetMoveQueue() {
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_SLIME_SPLIT_QUEUE: unset/1 (default) = a source-card selection
+// whose pending tail holds a large slime's or Slime Boss's queued split
+// SetMoveAction (the hit took it to half HP) folds it into the imported
+// monster's move history, as native sets the split at the hit; 0 = legacy
+// refusal as silver_selection_pending_actions.
+bool slimeSplitQueue() {
+    const char *value = std::getenv("STS_SILVER_SLIME_SPLIT_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_SLIME_SPLIT_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a pending tail holding
 // Hex's queued Dazed (HexPower.onUseCard for a non-Attack, e.g. Discovery's
 // choice under Hex) imports it as a native MakeTempCardInDrawPile(Dazed);
@@ -2155,6 +2167,27 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="MONSTER_SPLIT_SET_MOVE") {
+                // The split is already the current move (Java setMove at the
+                // hit); native's onHpLost also writes it as the previous move,
+                // which the queued SetMoveAction does in Java
+                // (STS_SLIME_SPLIT_RNG_FIX).
+                int slot=-1;
+                if(!sourceCard || !slimeSplitQueue() || !sts::slimeSplitRngFix() || !requiredInt(entry,"slot",slot)
+                        || slot<0 || slot>=wire.monsterCount)
+                    return unsupported("silver_selection_pending_actions");
+                auto &monster=wire.monsters[slot];
+                const auto id=static_cast<sts::MonsterId>(monster.id);
+                const auto split=id==sts::MonsterId::SPIKE_SLIME_L?sts::MonsterMoveId::SPIKE_SLIME_L_SPLIT
+                    :id==sts::MonsterId::ACID_SLIME_L?sts::MonsterMoveId::ACID_SLIME_L_SPLIT
+                    :id==sts::MonsterId::SLIME_BOSS?sts::MonsterMoveId::SLIME_BOSS_SPLIT:sts::MonsterMoveId::INVALID;
+                if(split==sts::MonsterMoveId::INVALID || monster.idx!=slot || monster.curHp<=0 || monster.halfDead
+                        || monster.isEscapingB || monster.curHp>monster.maxHp/2
+                        || monster.moveHistory[0]!=static_cast<std::int16_t>(split))
+                    return unsupported("silver_selection_pending_actions");
+                monster.moveHistory[1]=static_cast<std::int16_t>(split);
+                continue;
+            }
             if(kindName=="MONSTER_SET_MOVE") {
                 // Darkling.damage sets Regrow at the half-death and queues the
                 // same SetMoveAction behind the card; native does the same.
