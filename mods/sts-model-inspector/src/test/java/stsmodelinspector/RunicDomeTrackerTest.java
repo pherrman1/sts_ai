@@ -502,8 +502,8 @@ public final class RunicDomeTrackerTest {
                 {"SharpHidePower","TheGuardian"},{"InvinciblePower","CorruptHeart"},{"BeatOfDeathPower","CorruptHeart"},
                 {"PainfulStabsPower","CorruptHeart"},{"BackAttackPower","SpireShield"},
                 // generic powers any monster may carry (player debuffs and monster buffs)
-                {"StrengthPower","JawWorm"},{"ArtifactPower","JawWorm"},{"VulnerablePower","JawWorm"},{"BlockReturnPower","JawWorm"},
-                {"ChokePower","JawWorm"},{"CorpseExplosionPower","JawWorm"},{"LockOnPower","JawWorm"},{"MarkPower","JawWorm"},
+                {"StrengthPower","JawWorm"},{"ArtifactPower","JawWorm"},{"VulnerablePower","JawWorm"},{"watcher.BlockReturnPower","JawWorm"},
+                {"ChokePower","JawWorm"},{"CorpseExplosionPower","JawWorm"},{"LockOnPower","JawWorm"},{"watcher.MarkPower","JawWorm"},
                 {"MetallicizePower","JawWorm"},{"PlatedArmorPower","JawWorm"},{"PoisonPower","JawWorm"},{"RegenerateMonsterPower","JawWorm"},
                 {"GainStrengthPower","JawWorm"}}) {
             try {
