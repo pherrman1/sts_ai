@@ -84,8 +84,8 @@ def main():
         print(f"win-probability loss per fight: {100 * sum(win) / len(pf):.3f} pp")
         by_turn = collections.defaultdict(list)
         for r in multi:
-            by_turn[min(r['turn'], 6)].append(r)
-        print("by turn: " + "; ".join(
+            by_turn[min(r['turn'] + 1, 6)].append(r)
+        print("by game turn (1-based): " + "; ".join(
             f"t{t}{'+' if t == 6 else ''} n={len(v)} agree {100 * sum(1 for r in v if r['optimal']) / len(v):.0f}% "
             f"regret {sum(r['regret'] for r in v) / len(v):.3f}" for t, v in sorted(by_turn.items())))
         by_enc = collections.defaultdict(list)
@@ -97,7 +97,7 @@ def main():
         worst = sorted(multi, key=lambda r: -r['regret'])[:args.examples]
         for r in worst:
             a, b = r['actions'][r['chosen']], r['actions'][r['best']]
-            print(f"  seed {r['seed']} {r['encounter']} turn {r['turn']} hp {r['hp']} energy {r['energy']}: "
+            print(f"  seed {r['seed']} {r['encounter']} game turn {r['turn'] + 1} hp {r['hp']} energy {r['energy']}: "
                   f"Silver '{a['label']}' q={a['q']:.2f} (visits {a['visits']}) vs best '{b['label']}' q={b['q']:.2f} "
                   f"(visits {b['visits']}); regret {r['regret']:.2f}, HP {a['hp']:.1f} vs {b['hp']:.1f}")
         print()

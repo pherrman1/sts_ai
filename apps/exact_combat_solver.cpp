@@ -22,7 +22,8 @@
 //       live       flat 10,000 per root, no prior (the live advisor's search)
 //       flat:N     flat N per root, no prior
 //       flatprior:N flat N per root, prior from the environment
-//   --turn-cap T       an undecided fight past turn T scores as Silver's loss leaf (default 25); every
+//   --turn-cap T       an undecided fight past turn T scores as Silver's loss leaf (default 8; dominance
+//                      and bounds need T <= 8, where a 1-HP win still beats any loss or cap leaf); every
 //                      action reports the probability `capped` of reaching it under optimal play
 //   --keep-energy-waste  keep Silver's loss-score energy-waste term (and the counter in the
 //                        state key); by default it is dropped, which only changes losing leaves
@@ -31,6 +32,13 @@
 //   --objective silver|hp   value optimised by the solver (default silver; hp = end HP, 0 on death)
 //   --verify-memo      keep full states and check every memo hit with equalForSearch (slow)
 //   --no-canonical-draws  enumerate draw orders too (slow; a check of the canonical-draw probabilities)
+//   --no-dominance     solve every end-of-turn state; by default, in fights where it is exact
+//                      (dominanceSafe), an end-of-turn state is skipped when another one reachable
+//                      from the same state is at least as good in player block and every monster's
+//                      HP, block, Vulnerable and Weak, and equal in everything else
+//   --no-bounds        no alpha pruning; by default (same fights, no potions) chance and decision
+//                      nodes stop once an upper bound shows they cannot beat a sibling; every
+//                      reported value stays exact
 
 #include <algorithm>
 #include <chrono>
@@ -87,9 +95,11 @@ namespace {
 
     struct KeyBuilder {
         std::uint64_t a = 0x243F6A8885A308D3ULL, b = 0x13198A2E03707344ULL;
+        // Two cheap order-sensitive streams, mixed fully only in key().
+        static std::uint64_t rotl(std::uint64_t x, int r) { return (x << r) | (x >> (64 - r)); }
         void add(std::uint64_t v) {
-            a = splitmix(a ^ v);
-            b = splitmix(b + v * 0xD6E8FEB86659FD93ULL + 0x632BE59BD9B4E019ULL);
+            a = rotl(a ^ v, 29) * 0x9E3779B97F4A7C15ULL;
+            b = rotl(b + v * 0xD6E8FEB86659FD93ULL, 31) * 0xC2B2AE3D27D4EB4FULL + 0x632BE59BD9B4E019ULL;
         }
         void add(std::int64_t v) { add(static_cast<std::uint64_t>(v)); }
         void add(int v) { add(static_cast<std::uint64_t>(static_cast<std::int64_t>(v))); }
@@ -104,8 +114,13 @@ namespace {
             add(static_cast<int>(v.size()));
             for (const auto &c : v) addCard(c);
         }
-        Key key() const { return {a, b}; }
+        Key key() const { return {splitmix(a ^ rotl(b, 17)), splitmix(b ^ splitmix(a))}; }
     };
+
+    // Status bits implied by the amounts dominance compares (Vulnerable, Weak).
+    std::uint64_t monotoneStatusBits(const Monster &) {
+        return (1ULL << static_cast<int>(MonsterStatus::VULNERABLE)) | (1ULL << static_cast<int>(MonsterStatus::WEAK));
+    }
 
     bool quiet(const BattleContext &bc) {
         return bc.outcome == Outcome::UNDECIDED && bc.inputState == InputState::PLAYER_NORMAL
@@ -153,18 +168,27 @@ namespace {
         for (auto &c : cm.exhaustPile) c.uniqueId = nextId(c);
     }
 
-    Key stateKey(const BattleContext &bc) {
+    // `endTurnProjection`: the key of a state about to end its turn with the
+    // fields that dominance compares (player block, each monster's HP, block,
+    // Vulnerable, Weak, and everything of a dead monster) and the fields the end
+    // of the turn forgets (energy, this turn's counters, which cards sit in hand
+    // rather than discard) left out. Only used where dominanceSafe() holds.
+    // The key builder over everything but the player's current HP, which
+    // stateKey() adds last, so the key of the same state at another HP is one
+    // add() away (upper bounds from memoized higher-HP twins).
+    KeyBuilder statePrefix(const BattleContext &bc, bool endTurnProjection = false) {
+        const bool proj = endTurnProjection;
         KeyBuilder k;
         k.add(bc.turn); k.add(static_cast<int>(bc.outcome)); k.add(static_cast<int>(bc.inputState));
-        k.add(bc.energyWasted); k.add(bc.cardsDrawn); k.add(bc.monsterTurnIdx);
+        k.add(proj ? 0 : bc.energyWasted); k.add(bc.cardsDrawn); k.add(bc.monsterTurnIdx);
         k.add(static_cast<std::uint64_t>(bc.miscBits.to_ullong()));
         k.add((bc.smokeBombUsed ? 1 : 0) | (bc.skipMonsterTurn ? 2 : 0) | (bc.intentsHidden ? 4 : 0));
         k.add(bc.potionCount); k.add(bc.potionCapacity);
         for (int i = 0; i < bc.potionCapacity; ++i) k.add(static_cast<int>(bc.potions[i]));
         const auto &p = bc.player;
-        k.add(p.gold); k.add(p.curHp); k.add(p.maxHp); k.add(p.energy); k.add(p.energyPerTurn); k.add(p.cardDrawPerTurn);
-        k.add(static_cast<int>(p.stance)); k.add(p.orbSlots); k.add(p.lastTargetedMonster);
-        k.add(p.block); k.add(p.artifact); k.add(p.dexterity); k.add(p.focus); k.add(p.strength);
+        k.add(p.gold); k.add(p.maxHp); k.add(proj ? 0 : p.energy); k.add(p.energyPerTurn); k.add(p.cardDrawPerTurn);
+        k.add(static_cast<int>(p.stance)); k.add(p.orbSlots); k.add(proj ? 0 : p.lastTargetedMonster);
+        k.add(proj ? 0 : p.block); k.add(p.artifact); k.add(p.dexterity); k.add(p.focus); k.add(p.strength);
         k.add(static_cast<std::uint64_t>(p.justAppliedBits)); k.add(p.statusBits0); k.add(static_cast<std::uint64_t>(p.statusBits1));
         k.add(static_cast<int>(p.statusMap.size()));
         for (const auto &[s, v] : p.statusMap) { k.add(static_cast<int>(s)); k.add(static_cast<int>(v)); }
@@ -172,17 +196,31 @@ namespace {
         for (int v : {int(p.happyFlowerCounter), int(p.incenseBurnerCounter), int(p.inkBottleCounter), int(p.inserterCounter),
                       int(p.nunchakuCounter), int(p.penNibCounter), int(p.sundialCounter), int(p.haveUsedNecronomiconThisTurn),
                       int(p.combustHpLoss), int(p.devaFormEnergyPerTurn), int(p.echoFormCardsDoubled), int(p.panacheCounter),
-                      int(p.cardsPlayedThisTurn), int(p.attacksPlayedThisTurn), int(p.skillsPlayedThisTurn),
+                      proj ? 0 : int(p.cardsPlayedThisTurn), proj ? 0 : int(p.attacksPlayedThisTurn),
+                      proj ? 0 : int(p.skillsPlayedThisTurn),
                       int(p.orangePelletsCardTypesPlayed.to_ulong()), int(p.cardsDiscardedThisTurn),
                       int(p.lastAttackUnblockedDamage), int(p.timesDamagedThisCombat), int(p.bomb1), int(p.bomb2), int(p.bomb3)})
             k.add(v);
         const auto &mg = bc.monsters;
-        k.add(mg.monstersAlive); k.add(mg.monsterCount);
+        k.add(proj ? 0 : mg.monstersAlive); k.add(mg.monsterCount);
         k.add(static_cast<int>(mg.extraRollMoveOnTurn.to_ulong())); k.add(static_cast<int>(mg.skipTurn.to_ulong()));
         for (int i = 0; i < mg.monsterCount; ++i) {
             const auto &m = mg.arr[i];
             if (m.pendingMoveRolls != 0 || m.pendingDirectMoveChoice != 0)
                 throw std::runtime_error("exact solver: pending hidden monster roll (Runic Dome) unsupported");
+            if (proj) {
+                k.add(m.idx); k.add(int(m.id));
+                if (!m.isAlive()) continue;
+                for (int v : {m.maxHp, int(m.isEscapingB), int(m.halfDead), int(m.escapeNext), int(m.moveHistory[0]),
+                              int(m.moveHistory[1]), int(m.artifact), int(m.blockReturn), int(m.choked),
+                              int(m.corpseExplosion), int(m.lockOn), int(m.mark), int(m.metallicize), int(m.platedArmor),
+                              int(m.poison), int(m.regen), int(m.shackled), m.strength, m.uniquePower0,
+                              int(m.uniquePower1), m.miscInfo, int(m.occupantGeneration), int(m.latentDamageMask),
+                              int(m.latentDamageMaterialized)})
+                    k.add(v);
+                k.add(m.statusBits & ~monotoneStatusBits(m));
+                continue;
+            }
             for (int v : {m.idx, int(m.id), m.curHp, m.maxHp, m.block, int(m.isEscapingB), int(m.halfDead), int(m.escapeNext),
                           int(m.moveHistory[0]), int(m.moveHistory[1]), int(m.artifact), int(m.blockReturn), int(m.choked),
                           int(m.corpseExplosion), int(m.lockOn), int(m.mark), int(m.metallicize), int(m.platedArmor),
@@ -193,6 +231,29 @@ namespace {
             k.add(m.statusBits);
         }
         const auto &cm = bc.cards;
+        if (proj) {
+            // End of turn: the hand joins the discard pile (ethereal cards exhaust),
+            // so only the union matters; copies are interchangeable by class.
+            std::vector<std::uint64_t> leaving, ethereal;
+            for (int i = 0; i < cm.cardsInHand; ++i)
+                (cm.hand[i].isEthereal() ? ethereal : leaving).push_back(cm.hand[i].exactChanceClassKey());
+            for (const auto &c : cm.discardPile) leaving.push_back(c.exactChanceClassKey());
+            for (auto *v : {&leaving, &ethereal}) {
+                std::sort(v->begin(), v->end());
+                k.add(static_cast<int>(v->size()));
+                for (auto x : *v) k.add(x);
+            }
+            k.add(cm.nextUniqueCardId); k.add(cm.strikeCount); k.add(cm.drawPileBloodCardCount);
+            k.add(cm.drawPile.size()); k.add(cm.drawPile.knownTop()); k.add(cm.drawPile.knownBottom());
+            k.add(cm.drawPile.isConcrete() ? 1 : 0);
+            for (const auto &c : cm.drawPile) k.add(c.exactChanceClassKey());
+            std::vector<std::uint64_t> ex;
+            for (const auto &c : cm.exhaustPile) ex.push_back(c.exactChanceClassKey());
+            std::sort(ex.begin(), ex.end());
+            for (auto x : ex) k.add(x);
+            for (const auto &c : cm.stasisCards) k.addCard(c);
+            return k;
+        }
         k.add(cm.nextUniqueCardId); k.add(cm.handNormalityCount); k.add(cm.handPainCount); k.add(cm.strikeCount);
         k.add(cm.handBloodCardCount); k.add(cm.drawPileBloodCardCount); k.add(cm.discardPileBloodCardCount);
         k.addSorted(cm.hand.begin(), cm.hand.begin() + cm.cardsInHand);
@@ -202,7 +263,16 @@ namespace {
         k.addSorted(cm.discardPile.begin(), cm.discardPile.end());
         k.addSorted(cm.exhaustPile.begin(), cm.exhaustPile.end());
         for (const auto &c : cm.stasisCards) k.addCard(c);
+        return k;
+    }
+
+    Key keyAtHp(KeyBuilder k, int hp) {
+        k.add(hp);
         return k.key();
+    }
+
+    Key stateKey(const BattleContext &bc, bool endTurnProjection = false) {
+        return keyAtHp(statePrefix(bc, endTurnProjection), bc.player.curHp);
     }
 
     // ---- solver ----------------------------------------------------------
@@ -213,11 +283,23 @@ namespace {
         double hp = 0;    // end HP (0 on death), before post-combat heals
         double win = 0;
         double capped = 0; // probability of reaching the turn cap
+        // false: a fail-low bound from pruning, v >= the true value and the rest unset.
+        bool exact = true;
     };
 
-    struct Outcome1 { BattleContext state; double p; };
+    constexpr double kNoAlpha = -1e300;
+
+    Val bound(double v) {
+        Val b;
+        b.v = v;
+        b.exact = false;
+        return b;
+    }
+
+    struct Outcome1 { BattleContext state; double p; KeyBuilder pre; bool hasPre; };
 
     // Open-addressing memo, about 40 bytes per state (an unordered_map node took ~95).
+    // A fail-low bound is stored with win = -1.
     class CompactMemo {
         struct Slot { std::uint64_t a = 0, b = 0; double v = 0; float hp = 0, win = 0, capped = 0, score = 0; };
         std::vector<Slot> slots_;
@@ -245,6 +327,7 @@ namespace {
             const auto &s = slots_[probe(k)];
             if (empty(s)) return false;
             out.v = s.v; out.hp = s.hp; out.win = s.win; out.capped = s.capped; out.score = s.score;
+            out.exact = s.win >= 0;
             return true;
         }
         void emplace(Key k, const Val &v) {
@@ -252,7 +335,7 @@ namespace {
             k = norm(k);
             auto &s = slots_[probe(k)];
             if (empty(s)) ++size_;
-            s = {k.a, k.b, v.v, static_cast<float>(v.hp), static_cast<float>(v.win),
+            s = {k.a, k.b, v.v, static_cast<float>(v.hp), v.exact ? static_cast<float>(v.win) : -1.0f,
                  static_cast<float>(v.capped), static_cast<float>(v.score)};
         }
     };
@@ -261,7 +344,7 @@ namespace {
     public:
         ExactSolver(const BattleContext &battleRoot, const SilverSearcher &live, bool hpObjective,
                     std::int64_t maxStates, bool verify, bool canonicalDraws, bool dropEnergyWaste)
-            : scorer_(battleRoot, live.searchContext()), enumerator_(battleRoot, live.searchContext()),
+            : scorer_(battleRoot, live.searchContext()), enumerator_(battleRoot, live.searchContext()), rootCopy_(battleRoot),
               hpObjective_(hpObjective), dropEnergyWaste_(dropEnergyWaste), maxStates_(maxStates), verify_(verify) {
             scorer_.evalWeights = live.evalWeights;
             enumerator_.evalWeights = live.evalWeights;
@@ -270,20 +353,127 @@ namespace {
 
         std::vector<SAction> actions(const BattleContext &s) { return enumerator_.enumerateActions(s); }
 
-        Val q(const BattleContext &s, const SAction &a) {
-            Val total;
+        // The exact value of `a` at `s` (alpha = kNoAlpha), or with a higher alpha
+        // either the exact value or a fail-low bound <= alpha.
+        Val q(const BattleContext &s, const SAction &a, double alpha = kNoAlpha) {
+            if (prune_ && quiet(s) && a.getActionType() == search::ActionType::END_TURN) return endValue(s, a, alpha);
+            return expand(s, a, alpha);
+        }
+
+        // Dominance pruning (see dominanceSafe): set when every mechanic of the
+        // fight is monotone in the compared fields.
+        bool prune_ = false;
+        // Bound pruning: expectimax alpha pruning (Ballard's Star1) with the
+        // upper bound of upperBound(). Exact for the reported values; needs the
+        // same safety conditions as dominance plus no potions.
+        bool bounds_ = false;
+        std::int64_t candidates_ = 0, dominated_ = 0, chanceTurns_ = 0, cutoffs_ = 0;
+
+    private:
+        // Expected value of `a` at `s` over its exact outcomes; with alpha, stops
+        // as soon as the outcomes left cannot lift the expectation above alpha.
+        Val expand(const BattleContext &s, const SAction &a, double alpha) {
+            auto outs = outcomes(s, a);
             double mass = 0;
-            for (auto &o : outcomes(s, a)) {
-                const Val v = solve(o.state);
-                total.v += o.p * v.v; total.score += o.p * v.score; total.hp += o.p * v.hp; total.win += o.p * v.win;
-                total.capped += o.p * v.capped;
-                mass += o.p;
-            }
+            for (const auto &o : outs) mass += o.p;
             if (std::abs(mass - 1.0) > 1e-9)
                 throw std::runtime_error("exact solver: outcome probabilities sum to " + std::to_string(mass));
+            std::vector<double> ub(outs.size(), 0);
+            double rest = 0;   // sum of p * upper bound over the outcomes not yet solved
+            if (bounds_ && alpha > kNoAlpha) {
+                for (std::size_t i = 0; i < outs.size(); ++i) {
+                    ub[i] = upperBound(outs[i].state, outs[i].hasPre ? &outs[i].pre : nullptr);
+                    rest += outs[i].p * ub[i];
+                }
+                if (rest <= alpha) { ++cutoffs_; return bound(rest); }
+            }
+            Val total;
+            double acc = 0;
+            for (std::size_t i = 0; i < outs.size(); ++i) {
+                const auto &o = outs[i];
+                double childAlpha = kNoAlpha;
+                if (bounds_ && alpha > kNoAlpha) {
+                    rest -= o.p * ub[i];
+                    childAlpha = (alpha - acc - rest) / o.p;
+                }
+                const Val v = solve(o.state, childAlpha, o.hasPre ? &o.pre : nullptr);
+                if (!v.exact) { ++cutoffs_; return bound(acc + o.p * v.v + rest); }
+                acc += o.p * v.v;
+                total.v += o.p * v.v; total.score += o.p * v.score; total.hp += o.p * v.hp; total.win += o.p * v.win;
+                total.capped += o.p * v.capped;
+            }
             return total;
         }
 
+        // An upper bound on the value of `s` under any play: HP never rises
+        // during these fights (Burning Blood heals after them, inside the
+        // victory score) and a later win only pays more turn penalty, so the
+        // win score at the current HP and turn bounds every win; every loss
+        // or cap leaf is bounded term by term.
+        double upperBound(const BattleContext &s, const KeyBuilder *pre = nullptr) {
+            if (s.outcome != Outcome::UNDECIDED) return terminal(s).v;
+            // The same state at more HP is worth at least as much (see monotone()):
+            // a memoized twin a few HP higher, exact or itself a bound, bounds it.
+            if (pre && quiet(s)) {
+                const int top = std::min(s.player.maxHp, s.player.curHp + kTwinProbes);
+                for (int h = s.player.curHp + 1; h <= top; ++h)
+                    if (Val hit; memo_.find(keyAtHp(*pre, h), hit)) { ++twinBounds_; return std::min(hit.v, formulaBound(s)); }
+            }
+            return formulaBound(s);
+        }
+
+        double formulaBound(const BattleContext &s) {
+            if (hpObjective_) return s.player.curHp;
+            // The win score depends on nothing that changes within these fights
+            // but HP and turn: cache it by those (a state copy per call was the
+            // solver's largest cost).
+            const std::uint64_t wk = (static_cast<std::uint64_t>(s.player.curHp) << 32) | static_cast<std::uint32_t>(s.turn);
+            auto it = winScoreCache_.find(wk);
+            if (it == winScoreCache_.end()) {
+                BattleContext w = s;
+                w.outcome = Outcome::PLAYER_VICTORY;
+                it = winScoreCache_.emplace(wk, scorer_.scoreEndState(w)).first;
+            }
+            const double win = it->second;
+            const auto &ew = scorer_.evalWeights;
+            const int turnsLeft = std::max(0, turnCap_ + 1 - s.turn) + 1;
+            const double loss = ew.monsterDamageWeight
+                + ew.drawWeight * (s.cardsDrawn + 20.0 * turnsLeft)
+                + ew.turnSurvivalWeight * std::max(s.turn, turnCap_ + 1);
+            return std::max(win, loss);
+        }
+
+    public:
+        // Dominance and bounds assume the value never drops when the player has
+        // more HP or block or the monsters less HP. Playing the same moves from
+        // the better state, every leaf is at least as good except where the
+        // worse state dies and the better one wins in the same or a later turn,
+        // or reaches the cap, and the better one wins, so it suffices that every
+        // win (worst: 1 HP) beats every loss or cap leaf (best: the cap leaf,
+        // a loss scored one turn past the cap). Silver pays 1.5 per turn survived
+        // and 0.4 less per turn for a win, so this fails for caps above about 8.
+        bool monotone() {
+            if (hpObjective_) return true;
+            const auto &ew = scorer_.evalWeights;
+            const int last = turnCap_ + 1;
+            // Turns count from 0 and 5 cards are drawn per turn (the starter-deck fights this is gated to).
+            const double bestLoss = ew.monsterDamageWeight - ew.aliveWeight
+                + ew.drawWeight * 5.0 * (last + 1) + ew.turnSurvivalWeight * last;
+            for (int t = 0; t <= turnCap_; ++t) {
+                BattleContext w = rootCopy_;
+                w.outcome = Outcome::PLAYER_VICTORY;
+                w.player.curHp = 1;
+                w.turn = t;
+                if (scorer_.scoreEndState(w) <= bestLoss) return false;
+            }
+            return true;
+        }
+        std::int64_t twinBounds_ = 0;
+
+    private:
+        static constexpr int kTwinProbes = 12;
+
+    public:
         std::size_t states() const { return memo_.size(); }
         // Drop every memoized state (after an infeasible solve) to free memory.
         void clear() { memo_.clear(); inProgress_.clear(); }
@@ -293,6 +483,7 @@ namespace {
     private:
         SilverSearcher scorer_;
         SilverSearcher enumerator_;
+        BattleContext rootCopy_;
         bool hpObjective_;
         bool dropEnergyWaste_;
     public:
@@ -305,6 +496,7 @@ namespace {
         std::unordered_map<Key, int, KeyHash> inProgress_;
         std::unordered_map<Key, std::unique_ptr<BattleContext>, KeyHash> verifyStates_;
         std::int64_t replays_ = 0;
+        std::unordered_map<std::uint64_t, double> winScoreCache_;
     public:
         std::int64_t endCalls_ = 0, endReplays_ = 0, endDead_ = 0, endOutcomes_ = 0, cardCalls_ = 0, cardReplays_ = 0;
         std::map<int, std::int64_t> statesByTurn_;
@@ -333,7 +525,19 @@ namespace {
             ++verifiedHits_;
         }
 
-        Val solve(const BattleContext &s) {
+        void remember(const Key &key, const Val &v) {
+            memo_.emplace(key, v);
+            if (memo_.size() % 100000 == 0)
+                std::cerr << "  states=" << memo_.size() << " replays=" << replays_ << " cutoffs=" << cutoffs_
+                          << " dominated=" << dominated_ << '/' << candidates_ << '\n';
+            if (static_cast<std::int64_t>(memo_.size()) > maxStates_)
+                throw Infeasible("more than " + std::to_string(maxStates_) + " states");
+        }
+
+        // A memo entry answers a query when it is exact, or a bound at or below alpha.
+        static bool answers(const Val &hit, double alpha) { return hit.exact || hit.v <= alpha; }
+
+        Val solve(const BattleContext &s, double alpha = kNoAlpha, const KeyBuilder *knownPre = nullptr) {
             if (s.outcome != Outcome::UNDECIDED) return terminal(s);
             if (s.turn > turnCap_) {
                 // Horizon: an undecided fight past the cap scores like a loss leaf
@@ -345,34 +549,149 @@ namespace {
             }
             const bool memoize = quiet(s);
             Key key;
+            KeyBuilder pre;
             if (memoize) {
-                key = stateKey(s);
+                pre = knownPre ? *knownPre : statePrefix(s);
+                key = keyAtHp(pre, s.player.curHp);
                 checkSame(key, s);
-                if (Val hit; memo_.find(key, hit)) return hit;
+                if (Val hit; memo_.find(key, hit) && answers(hit, alpha)) return hit;
+            }
+            if (bounds_ && alpha > kNoAlpha) {
+                const double ub = upperBound(s, memoize ? &pre : nullptr);
+                if (ub <= alpha) { ++cutoffs_; return bound(ub); }
+            }
+            if (memoize) {
                 if (inProgress_.count(key)) throw std::runtime_error("exact solver: cycle in the game graph");
                 inProgress_[key] = 1;
             }
-            const auto acts = actions(s);
             Val best;
-            if (acts.empty()) {
-                best = terminal(s);
-            } else {
-                best.v = -1e300;
-                for (const auto &a : acts) {
-                    const Val v = q(s, a);
-                    if (v.v > best.v) best = v;
+            if (!prune_ || !memoize || !turnValue(s, alpha, best)) {
+                const auto acts = actions(s);
+                if (acts.empty()) {
+                    best = terminal(s);
+                } else {
+                    best = maxOver(acts.size(), alpha, [&](std::size_t i, double a) { return q(s, acts[i], a); });
                 }
             }
             if (memoize) {
                 inProgress_.erase(key);
-                memo_.emplace(key, best);
                 ++statesByTurn_[s.turn];
-                if (memo_.size() % 100000 == 0)
-                    std::cerr << "  states=" << memo_.size() << " replays=" << replays_ << " turn=" << s.turn << '\n';
-                if (static_cast<std::int64_t>(memo_.size()) > maxStates_)
-                    throw Infeasible("more than " + std::to_string(maxStates_) + " states");
+                remember(key, best);
             }
             return best;
+        }
+
+        // max over n children: each child is queried with alpha raised to the best
+        // exact value so far; the result is exact when it beats alpha, else a
+        // fail-low bound (the largest child value or bound).
+        template <typename F>
+        Val maxOver(std::size_t n, double alpha, F child, Val best = bound(kNoAlpha)) {
+            double ceiling = best.v;
+            for (std::size_t i = 0; i < n; ++i) {
+                const double a = bounds_ ? std::max(alpha, best.exact ? best.v : kNoAlpha) : kNoAlpha;
+                const Val v = child(i, a);
+                ceiling = std::max(ceiling, v.v);
+                if (v.exact && (!best.exact || v.v > best.v)) best = v;
+            }
+            // A bound above the best exact value is <= its query's alpha, which is then alpha itself
+            // (up to rounding: a child's bound can land a few ulps above the alpha it was given).
+            if (best.exact && best.v >= ceiling - 1e-9) return best;
+            return bound(ceiling);
+        }
+
+        // The value of ending the turn at `s`, memoized under its own tag.
+        Val endValue(const BattleContext &s, const SAction &endTurn, double alpha) {
+            Key key = stateKey(s);
+            key.b ^= 0x5bd1e9955bd1e995ULL;
+            if (Val hit; memo_.find(key, hit) && answers(hit, alpha)) return hit;
+            const Val v = expand(s, endTurn, alpha);
+            remember(key, v);
+            return v;
+        }
+
+        // The rest of the turn from `s` when the turn has no chance event: every
+        // line of plays is followed to its end (a won fight, or a state that ends
+        // the turn); a state that ends the turn is dropped when another one in the
+        // same reachable set is at least as good in every compared field and equal
+        // in the rest (the projection key), and only the survivors are solved.
+        // Returns false (and leaves `out` alone) when the turn has a chance event
+        // or a non-quiet intermediate state, so the caller falls back to plain
+        // expectimax.
+        bool turnValue(const BattleContext &s, double alpha, Val &out) {
+            struct Cand { BattleContext st; SAction endTurn; Key proj; };
+            std::vector<Cand> cands;
+            Val best = bound(kNoAlpha);
+            std::unordered_map<Key, char, KeyHash> seen;
+            seen.emplace(stateKey(s), 1);
+            bool plain = true;
+            std::vector<BattleContext> stack{s};
+            auto leaf = [&](const BattleContext &t) {
+                const Val v = terminal(t);
+                if (!best.exact || v.v > best.v) best = v;
+            };
+            while (!stack.empty() && plain) {
+                BattleContext n = std::move(stack.back());
+                stack.pop_back();
+                const auto acts = actions(n);
+                if (acts.empty()) { leaf(n); continue; }
+                for (const auto &a : acts) {
+                    if (a.getActionType() == search::ActionType::END_TURN) {
+                        cands.push_back({n, a, stateKey(n, true)});
+                        continue;
+                    }
+                    auto outs = outcomes(n, a);
+                    if (outs.size() != 1) { plain = false; break; }
+                    auto &o = outs[0].state;
+                    if (o.outcome != Outcome::UNDECIDED) { leaf(o); continue; }
+                    if (!quiet(o) || o.turn != s.turn) { plain = false; break; }
+                    if (seen.emplace(stateKey(o), 1).second) stack.push_back(std::move(o));
+                }
+            }
+            if (!plain) { ++chanceTurns_; return false; }
+            // a is at least as good as b in every compared field.
+            auto covers = [](const BattleContext &a, const BattleContext &b) {
+                if (a.player.block < b.player.block) return false;
+                for (int i = 0; i < a.monsters.monsterCount; ++i) {
+                    const auto &ma = a.monsters.arr[i], &mb = b.monsters.arr[i];
+                    if (!ma.isAlive()) continue;
+                    if (ma.curHp > mb.curHp || ma.block > mb.block || ma.vulnerable < mb.vulnerable || ma.weak < mb.weak)
+                        return false;
+                }
+                return true;
+            };
+            std::unordered_map<Key, std::vector<std::size_t>, KeyHash> groups;
+            for (std::size_t i = 0; i < cands.size(); ++i) groups[cands[i].proj].push_back(i);
+            candidates_ += static_cast<std::int64_t>(cands.size());
+            std::vector<std::size_t> survivors;
+            for (const auto &[proj, members] : groups) {
+                for (std::size_t x = 0; x < members.size(); ++x) {
+                    const auto &c = cands[members[x]];
+                    bool beaten = false;
+                    for (std::size_t y = 0; y < members.size() && !beaten; ++y) {
+                        if (x == y) continue;
+                        const auto &d = cands[members[y]].st;
+                        // Equal candidates: keep the first.
+                        beaten = covers(d, c.st) && (!covers(c.st, d) || y < x);
+                    }
+                    if (beaten) ++dominated_;
+                    else survivors.push_back(members[x]);
+                }
+            }
+            // Likely-best first, so alpha rises early: least monster HP left, then most block.
+            auto order = [&](std::size_t i) {
+                const auto &st = cands[i].st;
+                int hp = 0;
+                for (int m = 0; m < st.monsters.monsterCount; ++m)
+                    if (st.monsters.arr[m].isAlive()) hp += st.monsters.arr[m].curHp + st.monsters.arr[m].block;
+                return std::pair<int, int>(hp, -st.player.block);
+            };
+            std::sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) {
+                return order(x) != order(y) ? order(x) < order(y) : x < y;
+            });
+            out = maxOver(survivors.size(), alpha, [&](std::size_t i, double a) {
+                return endValue(cands[survivors[i]].st, cands[survivors[i]].endTurn, a);
+            }, best);
+            return true;
         }
 
         // Every outcome of `a` at `s` with its exact probability, equal states merged.
@@ -429,15 +748,16 @@ namespace {
                 // Quiet decisions and terminals merge by key; anything else (a card
                 // selection mid-action) stays its own outcome.
                 if (!quiet(next) && next.outcome == Outcome::UNDECIDED) {
-                    out.push_back({next, p});
+                    out.push_back({next, p, KeyBuilder{}, false});
                     continue;
                 }
-                const Key key = stateKey(next);
+                const KeyBuilder pre = statePrefix(next);
+                const Key key = keyAtHp(pre, next.player.curHp);
                 if (auto it = index.find(key); it != index.end()) {
                     out[it->second].p += p;
                 } else {
                     index.emplace(key, out.size());
-                    out.push_back({next, p});
+                    out.push_back({next, p, pre, true});
                 }
             }
             return out;
@@ -458,6 +778,25 @@ namespace {
         for (const auto &c : cm.drawPile) if (!ok(c)) return false;
         for (const auto &c : cm.discardPile) if (!ok(c)) return false;
         for (const auto &c : cm.exhaustPile) if (!ok(c)) return false;
+        return true;
+    }
+
+    // Dominance pruning is exact only when the fight's future is monotone in the
+    // compared fields: lower monster HP/block and more monster Vulnerable/Weak
+    // or player block never hurt. That holds for the starter cards, Burning
+    // Blood and the Act-1 weak monsters listed here (no HP-threshold moves,
+    // splits or on-death effects).
+    bool dominanceSafe(const BattleContext &bc) {
+        if (!canonicalDrawsSafe(bc)) return false;
+        const int bb = static_cast<int>(RelicId::BURNING_BLOOD);
+        const std::uint64_t want0 = bb < 64 ? 1ULL << bb : 0, want1 = bb < 64 ? 0 : 1ULL << (bb - 64);
+        if (bc.player.relicBits0 != want0 || bc.player.relicBits1 != want1) return false;
+        static const std::vector<MonsterId> safe = {
+            MonsterId::CULTIST, MonsterId::JAW_WORM, MonsterId::RED_LOUSE, MonsterId::GREEN_LOUSE,
+            MonsterId::ACID_SLIME_S, MonsterId::SPIKE_SLIME_S, MonsterId::SPIKE_SLIME_M, MonsterId::ACID_SLIME_M,
+        };
+        for (int i = 0; i < bc.monsters.monsterCount; ++i)
+            if (std::find(safe.begin(), safe.end(), bc.monsters.arr[i].id) == safe.end()) return false;
         return true;
     }
 
@@ -508,7 +847,7 @@ int main(int argc, char **argv) {
         if (argc < 4) {
             std::cerr << "usage: exact_combat_solver COUNT START_SEED OUT.jsonl [--configs a,b,...] [--encounter NAME]"
                          " [--max-states N] [--objective silver|hp] [--keep-energy-waste] [--verify-memo]"
-                         " [--no-canonical-draws]\n";
+                         " [--no-canonical-draws] [--no-dominance] [--no-bounds]\n";
             return 2;
         }
         const int count = std::stoi(argv[1]);
@@ -518,8 +857,8 @@ int main(int argc, char **argv) {
         std::vector<Config> configs;
         std::optional<MonsterEncounter> forced;
         std::int64_t maxStates = 60'000'000;
-        bool hpObjective = false, verify = false, canonicalOff = false, keepEnergyWaste = false;
-        int turnCap = 25;
+        bool hpObjective = false, verify = false, canonicalOff = false, keepEnergyWaste = false, noDominance = false, noBounds = false;
+        int turnCap = 8;
         for (int i = 4; i < argc; ++i) {
             const std::string arg = argv[i];
             auto value = [&]() -> std::string {
@@ -537,6 +876,8 @@ int main(int argc, char **argv) {
                 hpObjective = v == "hp";
             } else if (arg == "--verify-memo") verify = true;
             else if (arg == "--no-canonical-draws") canonicalOff = true;
+            else if (arg == "--no-dominance") noDominance = true;
+            else if (arg == "--no-bounds") noBounds = true;
             else if (arg == "--keep-energy-waste") keepEnergyWaste = true;
             else if (arg == "--turn-cap") turnCap = std::stoi(value());
             else throw std::invalid_argument("unknown option " + arg);
@@ -586,6 +927,11 @@ int main(int argc, char **argv) {
                             solver = std::make_unique<ExactSolver>(root, searcher, hpObjective, maxStates, verify,
                                                                    !canonicalOff && canonicalDrawsSafe(root), !keepEnergyWaste);
                             solver->turnCap_ = turnCap;
+                            // Energy left over is not compared, so the energy-waste term must be off.
+                            const bool safe = !keepEnergyWaste && dominanceSafe(root) && solver->monotone();
+                            solver->prune_ = !noDominance && safe;
+                            solver->bounds_ = !noBounds && safe && root.potionCount == 0
+                                && searcher.evalWeights.victoryTurnPenalty >= 0;
                         }
                         const auto t0 = std::chrono::steady_clock::now();
                         const auto &edges = searcher.rootNode().edges;
@@ -596,6 +942,7 @@ int main(int argc, char **argv) {
                         std::vector<Val> qs;
                         for (std::size_t i = 0; i < edges.size(); ++i) {
                             const Val v = solver->q(root, edges[i].action);
+                            if (!v.exact) throw std::runtime_error("exact solver: a root value came back as a bound");
                             qs.push_back(v);
                             if (v.v > best) { best = v.v; bestIdx = static_cast<int>(i); }
                             if (edges[i].action == chosen) chosenIdx = static_cast<int>(i);
@@ -645,6 +992,12 @@ int main(int argc, char **argv) {
                                 {"unsolvableThroughTurn", unsolvableThroughTurn}, {"infeasibleSolves", infeasibleSolves},
                                 {"regretSum", regretSum}, {"hpLossSum", hpLossSum},
                                 {"winLossSum", winLossSum}, {"states", solver ? solver->states() : 0},
+                                {"dominance", solver && solver->prune_},
+                                {"endTurnCandidates", solver ? solver->candidates_ : 0},
+                                {"dominated", solver ? solver->dominated_ : 0},
+                                {"chanceTurns", solver ? solver->chanceTurns_ : 0},
+                                {"bounds", solver && solver->bounds_}, {"cutoffs", solver ? solver->cutoffs_ : 0},
+                                {"twinBounds", solver ? solver->twinBounds_ : 0}, {"turnCap", turnCap},
                                 {"solveSeconds", solveSeconds}, {"seconds", seconds(fightStart)}};
                 if (!fightFailure.empty()) summary["failure"] = fightFailure;
                 out << summary.dump() << '\n';
