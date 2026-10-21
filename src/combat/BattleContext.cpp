@@ -135,6 +135,13 @@ namespace sts {
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_MAGNETISM_FIX must be 0 or 1");
     }
+
+    bool slimeSplitMonsterCountFix() {
+        const char *value = std::getenv("STS_SLIME_SPLIT_MONSTER_COUNT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SLIME_SPLIT_MONSTER_COUNT_FIX must be 0 or 1");
+    }
 }
 
 

@@ -3400,7 +3400,14 @@ void Monster::largeSlimeSplit(BattleContext &bc, const MonsterId mediumSlimeType
     }
 
     bc.monsters.monstersAlive++;
-    bc.monsters.monsterCount = std::min(bc.monsters.monsterCount+1, 4);
+    // The children take the parent's slot and the next one. In the Slime Boss
+    // layout that next slot is the dead boss's, so the count must not grow
+    // past it. STS_SLIME_SPLIT_MONSTER_COUNT_FIX=0 restores the legacy +1.
+    if (slimeSplitMonsterCountFix()) {
+        bc.monsters.monsterCount = std::max(bc.monsters.monsterCount, idx2 + 1);
+    } else {
+        bc.monsters.monsterCount = std::min(bc.monsters.monsterCount+1, 4);
+    }
 
     // Java's split turn rolls in the two SpawnMonsterAction inits above; only
     // SpikeSlime_L then queues a RollMoveAction for itself (the dead slime's

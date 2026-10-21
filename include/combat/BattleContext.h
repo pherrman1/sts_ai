@@ -182,6 +182,17 @@ namespace sts {
     // nothing. Other values are fatal. Read only at a Magnetism turn start.
     bool magnetismFix();
 
+    // STS_SLIME_SPLIT_MONSTER_COUNT_FIX: unset/1 (default) = a large slime
+    // split grows monsterCount only to cover the two child slots (max with
+    // placeIdx+2), so a Spike Slime (L) splitting in slot 0 of the Slime Boss
+    // layout (0,1,2) leaves monsterCount 3, as the live inspector reports
+    // (overnight live play 2026-10-20 problem 62, seed 111200456 s217). Java
+    // itself keeps dead parents in its list (raw size 5 there); the alive
+    // monsters and their order are the same either way, so this only removes
+    // an always-dead empty slot 3. 0 = the legacy engine (+1 per split, capped
+    // at 4). Other values are fatal. Read only at a large slime split.
+    bool slimeSplitMonsterCountFix();
+
     struct BattleContext {
 
         // begin for debugging purposes
