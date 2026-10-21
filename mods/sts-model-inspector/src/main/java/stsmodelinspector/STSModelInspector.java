@@ -3389,6 +3389,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String combatCardRewardJson() {
+        pendingActionsRefusal=""; // never report a stale tag from an earlier projection
         com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
         Object action = AbstractDungeon.actionManager == null ? null : AbstractDungeon.actionManager.currentAction;
         List<String> ids = new ArrayList<>();
