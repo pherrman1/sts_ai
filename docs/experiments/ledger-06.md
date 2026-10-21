@@ -22086,7 +22086,7 @@ hit. Play-changing in every Byrd fight that grounds a Byrd (full damage while gr
 Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`,
 `behavior/java-reference-audit.md`.
-## §TBD — Live Runic Dome: Act 4 fights were refused; the Heart, Shield and Spear cycles are now modelled (2026-10-21)
+## §596 — Live Runic Dome: Act 4 fights were refused; the Heart, Shield and Spear cycles are now modelled (2026-10-21)
 
 **Question:** a live run that takes Runic Dome stops at its first Act 4 fight, because the mod's Dome tracker accepts
 only acts 1-3, the knowledge block is incomplete and the root is unsupported (`silver_runic_dome_incomplete_history`).
