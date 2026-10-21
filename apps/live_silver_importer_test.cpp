@@ -4311,15 +4311,16 @@ int main(int argc, char **argv) {
         // 111200388/111200389 stopped here.
         // A Headbutt that kills a Darkling leaves its half-death Regrow
         // SetMoveAction queued (live seed 111200400).
-        // A lethal Headbutt into a Byrd still queues Flight's reduction (live seed 111200421).
+        // A lethal Headbutt into a Byrd still queues Flight's reduction (live seed 111200421), also at
+        // Flight 1, where native stuns the Byrd before its death (live seed 111200460).
         // Plated Armor 1 on Donu/Deca reaches 0 and is removed (live seed 111200422).
-        for (int variant=0;variant<9;++variant) {
+        for (int variant=0;variant<10;++variant) {
             const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
                 MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
                 MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS, MonsterEncounter::THREE_BYRDS,
-                MonsterEncounter::DONU_AND_DECA}[variant];
-            const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7, shift=variant==4, louse=variant==5;
-            const bool darkling=variant==6, lethal=variant==7, plateRemoved=variant==8;
+                MonsterEncounter::DONU_AND_DECA, MonsterEncounter::THREE_BYRDS}[variant];
+            const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7 || variant==9, shift=variant==4, louse=variant==5;
+            const bool darkling=variant==6, lethal=variant==7 || variant==9, plateRemoved=variant==8, lastFlight=variant==9;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
             game.act=plateRemoved?4:mass||darkling?3:guardian||shift||louse?1:2;
             game.floorNum=plateRemoved?54:mass?38:darkling?35:guardian||shift?16:louse?5:29;
@@ -4342,8 +4343,9 @@ int main(int argc, char **argv) {
             }
             const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
             if(plateRemoved && platedBefore!=1) throw std::runtime_error("Donu/Deca fixture needs Plated Armor 1");
+            if(lastFlight) target.setStatus<MonsterStatus::FLIGHT>(1);
             const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
-            if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
+            if(byrd && flightBefore<(lastFlight?1:2)) throw std::runtime_error("Byrd fixture needs Flight above 1");
             // Flight halves Headbutt's 9 to 4 (lethal); Java FlightPower still queues its reduction because
             // calculateDamageTakenAmount halves again (2 < 3), so 3 HP is a reachable lethal hit.
             if(lethal) target.curHp=3;
@@ -4421,6 +4423,14 @@ int main(int argc, char **argv) {
             if(plateRemoved) javaTarget["powers"].push_back({{"id","Plated Armor"},{"amount",1}});
             // Java form: Curl Up stays until its queued RemoveSpecificPowerAction.
             if(louse) javaTarget["powers"].push_back({{"id","Curl Up"},{"amount",curlBefore}});
+            if(lastFlight) {
+                // Java grounds the Byrd only when the queued reduction removes
+                // Flight, so the pre-hit move is still showing.
+                const auto current=javaMoveByte("Byrd",preHitMoves[0]);
+                const auto previous=javaMoveByte("Byrd",preHitMoves[1]);
+                javaTarget["nextMove"]=current;
+                javaTarget["moveHistory"]=previous>=0?json::array({previous,current}):json::array({current});
+            }
             if(shift) {
                 // TheGuardian.damage lowers Mode Shift at the hit but queues the
                 // state change, so the offensive move is still showing.
@@ -4558,6 +4568,7 @@ int main(int argc, char **argv) {
             else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
             else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
             else if(darkling) brokenQueue[2]["move"]=3;
+            else if(lethal) brokenQueue.back()["amount"]=2;
             else if(plateRemoved) brokenQueue[1]["amount"]=2;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
                 if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;

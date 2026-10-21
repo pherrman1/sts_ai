@@ -2216,11 +2216,17 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(kindName=="MONSTER_REDUCE_FLIGHT") {
                     // Native Flight loss happens at the hit, like Plated Armor;
-                    // reaching 0 grounds (stuns) the Byrd and stays unsupported.
+                    // reaching 0 grounds (stuns) the Byrd and stays unsupported
+                    // unless the hit was lethal: native then sets the stun and
+                    // Flight 0 before the death (live seed 111200460).
                     auto &flight=monster.uniquePower0;
                     if(amount!=1 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::BYRD)
-                            || !has(sts::MonsterStatus::FLIGHT) || flight<=1)
+                            || !has(sts::MonsterStatus::FLIGHT) || flight<1 || (flight==1 && !lethalReduce))
                         return unsupported("silver_selection_pending_actions");
+                    if(flight==1) {
+                        monster.moveHistory[1]=monster.moveHistory[0];
+                        monster.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
+                    }
                     --flight;
                     continue;
                 }
