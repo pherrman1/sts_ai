@@ -1,4 +1,4 @@
-# ADR-TBD: Fast roots of playout-cap-randomized OOC MCTS stop at 1024 simulations
+# ADR-0055: Fast roots of playout-cap-randomized OOC MCTS stop at 1024 simulations
 
 Date: 2026-10-21
 Status: accepted
