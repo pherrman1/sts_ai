@@ -236,8 +236,8 @@ Action Actions::DamageRandomEnemy(int damage) {
     return makeAction(ActData_DamageRandomEnemy{damage});
 }
 
-Action Actions::ExhaustRandomCardInHand(int count) {
-    return makeAction(ActData_ExhaustRandomCardInHand{count});
+Action Actions::ExhaustRandomCardInHand(int count, bool anyNumber) {
+    return makeAction(ActData_ExhaustRandomCardInHand{count, anyNumber});
 }
 
 Action Actions::MadnessAction() {
@@ -813,6 +813,15 @@ void ActData_DamageRandomEnemy::operator()(BattleContext &bc) const {
     }
 
 void ActData_ExhaustRandomCardInHand::operator()(BattleContext &bc) const {
+        // Java ExhaustAction without anyNumber exhausts a hand of at most
+        // amount cards from the top, with no getRandomCard (live parity
+        // problem 76). Only the one-card True Grit case is reachable here.
+        if (!anyNumber && count == 1 && bc.cards.cardsInHand == 1 && trueGritSingleCardRngFix()) {
+            auto c = bc.cards.hand[0];
+            bc.cards.removeFromHandAtIdx(0);
+            bc.triggerAndMoveToExhaustPile(c);
+            return;
+        }
         for (int i = 0; i < count; ++i) {
             if (bc.cards.cardsInHand <= 0) {
                 return;

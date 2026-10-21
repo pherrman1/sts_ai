@@ -22602,3 +22602,19 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §TBD — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
+
+**Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
+22 in the game and 23 natively after True Grit with hand [True Grit, Anger] (problem 76 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's trace extract and javap of `TrueGrit` and `ExhaustAction` (`issue76/` on the share);
+`true_grit_single_card_rng_test` (Ironclad seed 111200071, JAW_WORM, no gameplay runs).
+**Result:** `TrueGrit.use` queues `ExhaustAction(1, true, false, false)`. On its first tick, `!anyNumber && hand.size() <=
+amount` exhausts the whole hand without `getRandomCard(cardRandomRng)`; only a larger hand draws. Native's
+`ExhaustRandomCardInHand` always drew, so one Anger exhaust cost one draw (reproduced: 1 draw natively, 0 in the game).
+**Interpretation:** the action now carries Java's `anyNumber` (True Grit `false`, Fiend Fire `true`) and, under
+`STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX` (default on, `=0` restores the draw), exhausts a lone card without the draw. A
+two-card hand still draws once; Fiend Fire is unchanged. Play-changing: later `cardRandomRng` draws in the combat
+shift, so sim trajectories after such a True Grit now follow the game.
+Seeds: none new (live seed 111200476 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.

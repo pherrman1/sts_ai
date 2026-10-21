@@ -81,7 +81,7 @@ namespace sts {
     X(ExhaustTopCardInHand) \
     X(ExhaustSpecificCardInHand, int,idx, std::int16_t,uniqueId) \
     X(DamageRandomEnemy, int,damage) \
-    X(ExhaustRandomCardInHand, int,count) \
+    X(ExhaustRandomCardInHand, int,count, bool,anyNumber) \
     X(MadnessAction) \
     X(RandomizeHandCost) \
     X(GainBlockRandomEnemy, int,sourceMonster, int,amount) \
@@ -286,7 +286,10 @@ namespace sts {
         static Action SpawnTorchHeads();
         static Action SpireShieldDebuff(); // only called if player has orb slots
 
-        static Action ExhaustRandomCardInHand(int count);
+        // anyNumber mirrors Java ExhaustAction's flag: when false (True Grit) and
+        // the hand holds at most count cards, they all go without a cardRandomRng
+        // draw (STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX).
+        static Action ExhaustRandomCardInHand(int count, bool anyNumber = true);
         static Action MadnessAction();
         static Action RandomizeHandCost();
         static Action UpgradeRandomCardAction(); // Warped Tongs Relic
