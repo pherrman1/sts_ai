@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live Runic Dome: the producer refused every Gremlin Leader Stab (2026-10-21)
+## §591 — Live Runic Dome: the producer refused every Gremlin Leader Stab (2026-10-21)
 
 **Question:** why did live seed 111200463 (release 9ec8a51d, Act 2 floor 24, GREMLIN_LEADER elite, Runic Dome) stop at
 s391 with `silver_runic_dome_incomplete_history` after the AI killed GremlinFat and GremlinWizard on turn 1 (problem 67
