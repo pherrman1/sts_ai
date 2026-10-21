@@ -4,7 +4,8 @@
 #
 # A campaign is a directory (normally docs/experiments/evidence/<campaign>/) holding:
 #   campaign.manifest  frozen keys, one "key value..." per line (see tools/cloud/README.md)
-#   units.txt          one unit per line (arguments for run_unit.sh); line i goes to worker (i mod workers) + 1
+#   units.txt          one unit per line (arguments for run_unit.sh); line i goes to worker (i mod workers) + 1,
+#                      or, with "schedule queue" in the manifest, to whichever worker claims it first (see README)
 #   run_unit.sh        bash run_unit.sh REPO RUN UNIT_OUT <unit args...>; exit 0 = unit done
 #
 # Worker commands (W is unpadded, 1..workers; run from a clean checkout of the run commit):
@@ -73,6 +74,10 @@ git diff --quiet HEAD -- "${CFILES[@]}" || stop "campaign files differ from HEAD
 key() { awk -v k="$1" '$1==k{$1=""; sub(/^ /,""); print; exit}' "$M"; }
 NAME=$(key name) CODE=$(key code_commit) BIN=$(key binary_sha256) NW=$(key workers) SHARE=$(key share)
 PAR=$(key parallel); PAR=${PAR:-4}
+SCHED=$(key schedule); SCHED=${SCHED:-static}
+LEASE=$(key lease_minutes); LEASE=${LEASE:-30}
+[[ "$SCHED" =~ ^(static|queue)$ ]] || stop "manifest schedule must be static or queue"
+[[ "$LEASE" =~ ^[1-9][0-9]*$ ]] || stop "manifest lease_minutes must be a positive integer"
 TARGET=$(key build_target); TARGET=${TARGET:-one_combat}
 [[ "$NAME" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || stop "manifest name must be lowercase [a-z0-9_-]"
 [[ "$NW" =~ ^[1-9][0-9]*$ ]] || stop "manifest workers must be a positive integer"
@@ -103,6 +108,43 @@ frozen_identity() {  # what must not change between setup, resume and verify
 }
 is_running() { [ -e "$RUN/lock" ] && ! flock -n "$RUN/lock" true; }
 
+# Queue schedule: units are claimed on the share instead of assigned by line number. A claim is the directory
+# $SHARE/claims/<id>.a<n> (mkdir decides between racing workers); its owner rewrites hb ("TAG EPOCH") every
+# minute while the unit runs. A claim whose heartbeat is older than lease_minutes, or that holds `failed`, may be
+# superseded by attempt n+1 (at most QMAX attempts). A finished unit is uploaded at once as
+# $SHARE/units/<id>.<TAG>.tar, so a worker that dies later loses nothing. Two workers can run one unit (a lost
+# race on a non-atomic share, or a heartbeat that stalled); verify_campaign.py then reports the duplicate.
+QMAX=4
+QDIR=$SHARE/claims UDIR=$SHARE/units
+pending_units() {  # unit lines without an uploaded tar, in units.txt order
+  local have; have=$(ls "$UDIR" 2>/dev/null | sed -n 's/\.w[0-9][0-9]*\.tar$//p' | sort -u)
+  grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" | while IFS= read -r u; do
+    grep -qxF -- "$(unit_id "$u")" <<< "$have" || printf '%s\n' "$u"
+  done
+}
+try_claim() {  # try_claim ID -> prints the claim dir; 1 = claimed by a live worker, 2 = out of attempts
+  local id=$1 n=1 c hb age
+  while [ -d "$QDIR/$id.a$n" ]; do n=$((n + 1)); done
+  if [ "$n" -gt 1 ]; then
+    c="$QDIR/$id.a$((n - 1))"
+    if [ ! -e "$c/failed" ]; then
+      hb=$(cut -d' ' -f2 "$c/hb" 2>/dev/null); [[ "$hb" =~ ^[0-9]+$ ]] || hb=$(stat -c %Y "$c" 2>/dev/null || echo 0)
+      age=$(( $(date +%s) - hb )); [ "$age" -lt $((LEASE * 60)) ] && return 1
+    fi
+    [ "$n" -gt "$QMAX" ] && return 2
+  fi
+  mkdir "$QDIR/$id.a$n" 2>/dev/null || return 1
+  echo "$TAG $(date +%s)" > "$QDIR/$id.a$n/hb"
+  echo "$QDIR/$id.a$n"
+}
+upload_unit() {  # upload_unit ID -> $UDIR/<id>.<TAG>.tar (unit dir, markers, FROZEN.txt, SETUP.txt)
+  local id=$1 t="$RUN/q/$1.$TAG.tar"
+  mkdir -p "$RUN/q" "$UDIR" || return 1
+  tar -C "$RUN" -cf "$t" "out/units/$id" "out/units/$id.done" "out/units/$id.log" FROZEN.txt SETUP.txt || return 1
+  cp "$t" "$UDIR/$id.$TAG.tar.part" && mv "$UDIR/$id.$TAG.tar.part" "$UDIR/$id.$TAG.tar" || return 1
+  cmp -s "$t" "$UDIR/$id.$TAG.tar"
+}
+
 case $CMD in
 setup)
   on_share "$REPO" && stop "checkout must not be on the project share"
@@ -131,7 +173,7 @@ setup)
   done < "$M"
   frozen_identity > "$RUN/FROZEN.txt"
   echo "source=$src $(g++ --version | head -1) host=$(cat /proc/sys/kernel/random/boot_id) nproc=$(nproc)" > "$RUN/SETUP.txt"
-  echo "setup ok: $(head -1 "$RUN/FROZEN.txt") source=$src units=$(my_units | wc -l)" ;;
+  echo "setup ok: $(head -1 "$RUN/FROZEN.txt") source=$src units=$([ "$SCHED" = queue ] && echo queue || my_units | wc -l)" ;;
 start)
   [ -f "$RUN/FROZEN.txt" ] || stop "run setup first"
   is_running && stop "already running"
@@ -142,6 +184,31 @@ run)
   frozen_identity | cmp -s - "$RUN/FROZEN.txt" || stop "checkout no longer matches $RUN/FROZEN.txt; use a fresh container"
   [ -e "$RUN/FINISHED" ] && { echo "already finished"; exit 0; }
   exec 9>"$RUN/lock"; flock -n 9 || stop "another run of this worker holds $RUN/lock"
+  if [ "$SCHED" = queue ]; then
+    mkdir -p "$OUT/units" "$QDIR" "$UDIR" || stop "cannot create $OUT/units or the share's claims/units dirs"
+    grep -v '^[[:space:]]*\(#\|$\)' "$D/units.txt" > "$OUT/units.txt"   # all units: any worker may run any of them
+    rm -f "$OUT"/units/*.failed
+    for _ in $(seq "$PAR"); do bash "$SELF" _qlane "$C" "$W" & done
+    wait
+    [ -e "$RUN/STOP" ] && { echo "stopped by request; no upload"; exit 0; }
+    left=$(pending_units | wc -l)
+    [ "$left" = 0 ] || { echo "STOP: $left units failed $QMAX times (claims/<id>.a*/failed); report them, do not rerun"; exit 3; }
+    ls "$UDIR" | sed -n "s/\.$TAG\.tar\$//p" > "$OUT/uploaded.txt"
+    python3 - "$RUN/$TAG.DONE.json" "$NAME" "$W" "$OUT/uploaded.txt" "$RUN/FROZEN.txt" <<'PY' || stop "DONE.json"
+import json, sys, datetime
+out, name, w, units, frozen = sys.argv[1:]
+ids = [l.strip() for l in open(units) if l.strip()]
+json.dump({"campaign": name, "worker": int(w), "schedule": "queue", "uploaded_unit_ids": ids, "unit_count": len(ids),
+           "frozen": open(frozen).readline().strip(),
+           "finished_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")},
+          open(out, "w"), indent=1)
+PY
+    cp "$RUN/$TAG.DONE.json" "$SHARE/$TAG.DONE.json.part" && mv "$SHARE/$TAG.DONE.json.part" "$SHARE/$TAG.DONE.json" \
+      || stop "DONE upload failed"
+    touch "$RUN/FINISHED"
+    echo "WORKER_OK $TAG queue units_uploaded=$(wc -l < "$OUT/uploaded.txt")"
+    exit 0
+  fi
   my_units > "$OUT/units.txt"; mkdir -p "$OUT/units"
   rm -f "$OUT"/units/*.failed
   xargs -d '\n' -n 1 -P "$PAR" bash "$SELF" _unit "$C" "$W" < "$OUT/units.txt"
@@ -181,6 +248,34 @@ _unit)
   if bash "$D/run_unit.sh" "$REPO" "$RUN" "$UO" $u > "$UO.log" 2>&1; then touch "$UO.done"
   else echo "rc=$?" > "$UO.failed"; fi
   exit 0 ;;
+_qlane)  # one queue lane: claim the first claimable pending unit, run it, upload it; idle-poll until none is left
+  while :; do
+    [ -e "$RUN/STOP" ] && exit 0
+    mapfile -t todo < <(pending_units)
+    [ "${#todo[@]}" -eq 0 ] && exit 0
+    ran=0 exhausted=0
+    for u in "${todo[@]}"; do
+      id=$(unit_id "$u"); UO="$OUT/units/$id"
+      case "$id" in ''|.*) continue;; esac
+      if [ -e "$UO.done" ]; then upload_unit "$id" || echo "upload of $id failed" >&2; ran=1; break; fi  # resumed worker
+      c=$(try_claim "$id"); rc=$?
+      [ "$rc" = 2 ] && exhausted=$((exhausted + 1))
+      [ "$rc" = 0 ] || continue
+      ( while sleep 60; do echo "$TAG $(date +%s)" > "$c/hb.part" && mv "$c/hb.part" "$c/hb"; done ) & hbp=$!
+      rm -rf "$UO" "$UO.log" "$UO.failed"; mkdir -p "$UO"
+      set -f
+      # shellcheck disable=SC2086
+      if bash "$D/run_unit.sh" "$REPO" "$RUN" "$UO" $u > "$UO.log" 2>&1; then touch "$UO.done"
+      else echo "rc=$?" > "$UO.failed"; fi
+      set +f
+      kill "$hbp" 2>/dev/null; wait "$hbp" 2>/dev/null
+      if [ -e "$UO.done" ] && upload_unit "$id"; then echo "$TAG $(date +%s) done" > "$c/hb"
+      else cp "$UO.failed" "$c/failed" 2>/dev/null || echo "rc=upload" > "$c/failed"; fi
+      ran=1; break
+    done
+    [ "$exhausted" -eq "${#todo[@]}" ] && exit 0   # only units that failed QMAX times are left
+    [ "$ran" = 1 ] || sleep 120   # every pending unit is claimed by a live worker: wait for it or for its lease
+  done ;;
 wait)
   lim=$(( ${4:-110} * 60 )) t=0
   while [ $t -lt "$lim" ]; do
@@ -191,6 +286,9 @@ wait)
   [ -e "$RUN/FINISHED" ] && { echo "FINISHED"; tail -1 "$RUN/run.log" 2>/dev/null; exit 0; }
   echo "still running after $((lim / 60)) min: $(ls "$OUT"/units/*.done 2>/dev/null | wc -l)/$(wc -l < "$OUT/units.txt") units" ;;
 status)
+  [ "$SCHED" = queue ] && { echo "queue: pending $(pending_units | wc -l)/$(grep -cv '^[[:space:]]*\(#\|$\)' "$D/units.txt")" \
+       "this worker done $(ls "$OUT"/units/*.done 2>/dev/null | wc -l) one_combat procs $(pgrep -x one_combat | wc -l)" \
+       "$([ -e "$RUN/FINISHED" ] && echo FINISHED)"; exit 0; }
   echo "units done $(ls "$OUT"/units/*.done 2>/dev/null | wc -l)/$(wc -l < "$OUT/units.txt" 2>/dev/null || my_units | wc -l)" \
        "failed $(ls "$OUT"/units/*.failed 2>/dev/null | wc -l) one_combat procs $(pgrep -x one_combat | wc -l)" \
        "$([ -e "$RUN/FINISHED" ] && echo FINISHED)" ;;
