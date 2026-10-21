@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live Headbutt grids refused after a lethal hit on a Byrd and after Plated Armor 1 on Donu (2026-10-20)
+## §581 — Live Headbutt grids refused after a lethal hit on a Byrd and after Plated Armor 1 on Donu (2026-10-20)
 
 **Question:** why did live runs stop at Headbutt's discard grid with `silver_selection_pending_actions` on seeds
 111200421 (floor 28), 111200430 (floor 18), 111200439 (floor 21; problems 35 and 49), 111200460 (floor 18, a
