@@ -1410,6 +1410,27 @@ class OocDriverTest(unittest.TestCase):
             self.assertIsNone(boss_completion_proceed_action(screen, {**game, **update}, candidates))
         self.assertIsNone(boss_completion_proceed_action(screen, game, candidates + candidates))
 
+    def test_heart_completion_navigation_proceeds_only_on_the_heart_floor(self):
+        # Live-canary problem 52 (seed 111200440): after the Heart kill the
+        # completed MonsterRoomBoss exposes only Proceed, then VICTORY.
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 65, "floor": 56}
+        game = {"act": 4, "floor": 56, "current_hp": 65, "ascension_level": 20}
+        candidates = build_legal_actions(screen, ["proceed"], game)
+        self.assertIsNotNone(boss_completion_proceed_action(screen, game, candidates))
+        below = {**game, "floor": 55, "ascension_level": 19}
+        self.assertIsNotNone(boss_completion_proceed_action({**screen, "floor": 55}, below, candidates))
+        for update in ({"floor": 55}, {"ascension_level": 19}, {"ascension_level": None},
+                       {"floor": 57}, {"act": 5}, {"current_hp": 0}):
+            with self.subTest(update=update):
+                floor = update.get("floor", screen["floor"])
+                self.assertIsNone(boss_completion_proceed_action({**screen, "floor": floor},
+                                                                 {**game, **update}, candidates))
+        for key, value in [("room_type", "MonsterRoomElite"), ("can_proceed", False), ("can_cancel", True)]:
+            self.assertIsNone(boss_completion_proceed_action({**screen, key: value}, game, candidates))
+
     def test_differential_boss_completion_keeps_native_boundary(self):
         screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
                   "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,

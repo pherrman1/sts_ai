@@ -1797,6 +1797,23 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
             throw std::runtime_error("OOC MCTS invalid leaf win model value");
         return value;
     }
+    if (options.heart1ValueNet) {
+        // Same record as the heart1 prior and the AZ-loop capture rows the value head was trained on.
+        one_combat::heart1::Choice choice;
+        bool encoded = false;
+        if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE) {
+            try { encoded = one_combat::heart1::buildChoice(gc, choice); }
+            catch (const std::exception &) {}
+        }
+        if (encoded) {
+            OocProfileScope predict(OocProfileBucket::LeafPredict);
+            const double logit = options.heart1ValueNet->forward(choice.record).value;
+            if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite heart1 leaf value");
+            ++continuation_.heart1ValueLeafEvaluations;
+            return 1.0 / (1.0 + std::exp(-logit));
+        }
+        ++continuation_.heart1ValueLeafFallbacks;
+    }
 #endif
     return dependencies.leafValue(gc, path);
 }
@@ -3200,6 +3217,28 @@ void configureLiveOocMcts() {
         liveOptions.rolloutStudentPath = student;
 #endif
     }
+    if (const char *weights = std::getenv("STS_OOC_MCTS_LEAF_HEART1_VALUE"); weights && *weights) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE is unavailable in the live advisor");
+#else
+        // Replaces only the native X2-B anchor; the screen leaves use it as a residual base and
+        // sibling/leaf capture records it as "x2b".
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet
+                || liveOptions.heartLeaf || liveOptions.rolloutStudent)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE requires STS_OOC_MCTS=1, STS_OOC_MCTS_LEAF_VALUE=native "
+                                     "and no other leaf model");
+        if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE excludes leaf and sibling capture");
+        auto net = std::make_shared<one_combat::heart1::Net>();
+        std::string error;
+        if (!net->load(weights, &error))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE: " + error);
+        liveOptions.heart1ValueNet = std::move(net);
+        liveOptions.heart1ValuePath = weights;
+        liveOptions.heart1ValueSha256 = fileSha256Hex(weights);
+#endif
+    }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
@@ -3428,6 +3467,7 @@ void configureLiveOocMcts() {
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
+        << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
         << (liveRootNoiseFraction > 0 ? " root_noise=" + std::to_string(liveRootNoiseFraction) + ":"
             + std::to_string(liveRootNoiseAlpha) : std::string{})
@@ -3460,6 +3500,8 @@ void configureLiveOocMcts() {
         << (liveOptions.rolloutStudent ? ",\"leafStudent\":\"" + liveOptions.rolloutStudentPath + "\"" : std::string{})
         << (liveOptions.heartLeaf ? ",\"leafHeartModel\":\"" + liveOptions.heartLeafPath + "\",\"leafHeartModelSha256\":\""
             + liveOptions.heartLeaf->manifestSha256() + "\"" : std::string{})
+        << (liveOptions.heart1ValueNet ? ",\"leafHeart1Value\":\"" + liveOptions.heart1ValuePath + "\",\"leafHeart1ValueSha256\":\""
+            + liveOptions.heart1ValueSha256 + "\"" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -4348,7 +4390,7 @@ nlohmann::json liveRootLeafTails(const GameContext &gc, const PathHistory &path,
     // The end-state hook sits on the native leaf dependency; every other leaf skips it.
     if (liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf
             || liveOptions.directLeaf || liveOptions.leafWinNet || liveOptions.heartLeaf || liveOptions.rolloutStudent
-            || !liveOptions.leafCombats)
+            || liveOptions.heart1ValueNet || !liveOptions.leafCombats)
         throw std::runtime_error("liveRootLeafTails requires the native rollout leaf (STS_OOC_MCTS_LEAF_VALUE=native)");
     static const CompactTreeNet anchor = [] {
         CompactTreeNet net;
@@ -4645,6 +4687,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.priorLeafSteps+=continuation.priorLeafSteps;
     c.heart1LeafSteps+=continuation.heart1LeafSteps; c.heart1LeafFallbacks+=continuation.heart1LeafFallbacks;
     c.studentLeafEvaluations+=continuation.studentLeafEvaluations; c.studentLeafFallbacks+=continuation.studentLeafFallbacks;
+    c.heart1ValueLeafEvaluations+=continuation.heart1ValueLeafEvaluations;
+    c.heart1ValueLeafFallbacks+=continuation.heart1ValueLeafFallbacks;
     for (auto &[reason,count] : continuation.heart1LeafReasons) c.heart1LeafReasons[reason]+=count;
     for (auto &[reason,count] : continuation.heart1PriorReasons) c.heart1PriorReasons[reason]+=count;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
@@ -4880,7 +4924,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         {"heart1_leaf_fallbacks",m.continuation.heart1LeafFallbacks},
         {"heart1_leaf_reasons",m.continuation.heart1LeafReasons},
         {"student_leaf_evaluations",m.continuation.studentLeafEvaluations},
-        {"student_leaf_fallbacks",m.continuation.studentLeafFallbacks}}.dump() << '\n';
+        {"student_leaf_fallbacks",m.continuation.studentLeafFallbacks},
+        {"heart1_value_leaf_evaluations",m.continuation.heart1ValueLeafEvaluations},
+        {"heart1_value_leaf_fallbacks",m.continuation.heart1ValueLeafFallbacks}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
