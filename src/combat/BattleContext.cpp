@@ -81,6 +81,13 @@ namespace sts {
         throw std::runtime_error("STS_DEAD_ALLY_STRENGTH_FIX must be 0 or 1");
     }
 
+    bool enrageAllMonstersFix() {
+        const char *value = std::getenv("STS_ENRAGE_ALL_MONSTERS_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_ENRAGE_ALL_MONSTERS_FIX must be 0 or 1");
+    }
+
     bool muggerDeathRngFix() {
         const char *value = std::getenv("STS_MUGGER_DEATH_RNG_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -2063,9 +2070,21 @@ void BattleContext::onUseSkillCard() {
     // ********* Enemy Powers onUseCard *********
     // todo Choke Power
 
-    auto &m = monsters.arr[0];
-    if (m.hasStatus<MS::ENRAGE>()) {
-        m.buff<MS::STRENGTH>(m.getStatus<MS::ENRAGE>());
+    // Gremlin Nob's AngerPower is the owner's own power; in Colosseum Nobs it
+    // sits in slot 1 behind the Taskmaster. Its ApplyPowerAction skips a dead
+    // owner (STS_ENRAGE_ALL_MONSTERS_FIX=0 restores the slot-0-only check).
+    if (enrageAllMonstersFix()) {
+        for (int i = 0; i < monsters.monsterCount; ++i) {
+            auto &m = monsters.arr[i];
+            if (m.hasStatus<MS::ENRAGE>() && !m.isDeadOrEscaped()) {
+                m.buff<MS::STRENGTH>(m.getStatus<MS::ENRAGE>());
+            }
+        }
+    } else {
+        auto &m = monsters.arr[0];
+        if (m.hasStatus<MS::ENRAGE>()) {
+            m.buff<MS::STRENGTH>(m.getStatus<MS::ENRAGE>());
+        }
     }
 }
 

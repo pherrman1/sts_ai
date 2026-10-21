@@ -22116,6 +22116,23 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §587 — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
+
+**Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after
+Second Wind+ with Anger 3 (problem 64b in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** `BattleContext::onUseSkillCard`, `MonsterGroup.cpp` (Colosseum Nobs layout); `ironclad_card_java_parity`
+(no gameplay seeds).
+**Result:** native applied the Skill-played Enrage only to `monsters.arr[0]`. Colosseum Nobs creates the Taskmaster in
+slot 0 and the Nob in slot 1, so the Nob never gained Strength. In Java the Nob's own `AngerPower.onUseCard` runs for
+every monster's powers. The Second Wind exhaust inference in the report is not needed.
+**Interpretation:** `STS_ENRAGE_ALL_MONSTERS_FIX` (default on, `=0` restores) checks every living monster. Play-changing
+for simulator play in that fight, unmeasured.
+Javap of the pinned JAR (`issue64-javap.md` on the share): the `UseCardAction` constructor calls every monster power's
+`onUseCard` (gate only `dontTriggerOnUseCard`), and `AngerPower.onUseCard` on a Skill queues
+`addToTop(ApplyPowerAction(owner, owner, Strength))`, which skips a dead owner (`isDeadOrEscaped`, `issue56b-javap.md`).
+**Open question:** native applies the Strength at once rather than through the queue; not observed to differ.
+Seeds: none new (live seed 111200459 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
 ## §586 — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
 
 **Question:** do the other direct ally buffs next to problem 56's block moves reach a dead ally natively?

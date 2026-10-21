@@ -124,6 +124,14 @@ namespace sts {
     // are fatal. Read only when the ally is dead.
     bool deadAllyStrengthFix();
 
+    // STS_ENRAGE_ALL_MONSTERS_FIX: unset/1 (default) = Gremlin Nob's Anger
+    // (Enrage) gains Strength on every played Skill whichever monster slot the
+    // Nob is in, as Java's per-monster AngerPower.onUseCard (live problem 64b,
+    // seed 111200459: Colosseum Nobs puts the Nob in slot 1 behind the
+    // Taskmaster, and native only checked slot 0). A dead Nob gains nothing.
+    // 0 = the legacy slot-0-only check. Other values are fatal.
+    bool enrageAllMonstersFix();
+
     // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
     // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
     // which uses aiRng; the Looter's uses MathUtils), as in the game (combat
