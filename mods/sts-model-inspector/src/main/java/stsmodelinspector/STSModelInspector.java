@@ -2815,6 +2815,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Integer amount=readIntField(action,"amount");
             if(!Boolean.FALSE.equals(readBooleanField(action,"isDone"))) return refusePending(actionIndex,"isDone");
             if("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) {++enables;continue;}
+            // RedSkull.atBattleStart: addToBot(new AbstractGameAction(){...}),
+            // which adds Strength 3 if the player is bloodied and the relic is
+            // inactive, else does nothing (problem 74; it trailed Toolbox's offer).
+            if("com.megacrit.cardcrawl.relics.RedSkull$1".equals(name)) {
+                com.megacrit.cardcrawl.relics.AbstractRelic skull=AbstractDungeon.player.getRelic("Red Skull");
+                Boolean active=readBooleanField(skull,"isActive");
+                if(skull==null || active==null)return refusePending(actionIndex,"red_skull");
+                if(active || !AbstractDungeon.player.isBloodied)continue;
+                if(out.length()>1)out.append(',');out.append(publicPendingActionJson("BUFF_PLAYER",3,"Strength"));continue;
+            }
             if("com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)
                     || "com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)) continue;
             // Vanilla decrements copy charges synchronously, then queues a
@@ -3252,7 +3262,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if(i>0)out.append(',');
             Object action=manager.actions.get(i);
             String className=action.getClass().getName();
-            out.append(className.startsWith("com.megacrit.cardcrawl.")?action.getClass().getSimpleName():className);
+            String simple=action.getClass().getSimpleName();
+            out.append(className.startsWith("com.megacrit.cardcrawl.") && !simple.isEmpty()?simple:className);
             if(className.endsWith("PowerAction"))out.append('(').append(powerActionDetail(action)).append(')');
         }
         if(manager.actions.size()>16)out.append(",...");

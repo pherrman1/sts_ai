@@ -22239,6 +22239,17 @@ Seeds: none.
 Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
 
+## §618 — Live problem 74 resolved: Red Skull's anonymous battle-start action refused Toolbox's offer (2026-10-21)
+
+**Observation.** The §604 diagnostic fired on live A20 seed 111200504 (release 010d797c, act 2 Chosen, turn 1, Red Skull and Toolbox, HP 74/85). Toolbox's offer was refused with `pendingActionsBlocker` `actions=[DrawCardAction,EnableEndTurnButtonAction,];refusal=2:unknown_action`. Index 2 has an empty simple name: it is `relics.RedSkull$1`, the anonymous action `RedSkull.atBattleStart` queues with `addToBot`. The original problem-74 blocker (seed 111200473, which owned Red Skull) also ended in an empty name after Red Mask's actions (`...,ApplyPowerAction(...),]`). So Red Mask was never the refusing action.
+
+**Cause.** The producer's public-queue projection had no case for the anonymous Red Skull action. Per the canary's javap reading, it adds Strength 3 if `!isActive && player.isBloodied`, and otherwise does nothing. It uses no RNG.
+
+**Change (producer-only mod fix, no flag).** The projection omits `RedSkull$1` when the player is not bloodied or the relic is already active. Otherwise it sends `BUFF_PLAYER Strength 3`, which the importer already supports in `toolbox_actions`. The blocker names anonymous classes by their full class name.
+
+**Knowledge impact:** `operations/live-model-inspector.md`.
+Seeds: none new (live seeds 111200473 and 111200504).
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
