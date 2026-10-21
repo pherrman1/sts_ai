@@ -845,12 +845,18 @@ namespace {
         sts::search::NativeSilverBudgetOverride budget;
         int flatSims = 10000;
         bool prior = false;
+        std::optional<double> exploration;   // "@c=X" suffix: UCB exploration X at decision and chance edges
     };
 
-    Config parseConfig(const std::string &name) {
+    Config parseConfig(const std::string &full) {
         using P = sts::search::NativeSilverBudgetOverride::Policy;
         Config c;
-        c.name = name;
+        c.name = full;
+        std::string name = full;
+        if (const auto at = full.find("@c="); at != std::string::npos) {
+            c.exploration = std::stod(full.substr(at + 3));
+            name = full.substr(0, at);
+        }
         c.budget.skipSingletonRoots = true;
         if (name == "prod") { c.budget.policy = P::LearnedStop; c.prior = true; }
         else if (name == "live") { c.budget.policy = P::Flat; }
@@ -858,6 +864,40 @@ namespace {
         else if (name.rfind("flatprior:", 0) == 0) { c.budget.policy = P::Flat; c.flatSims = std::stoi(name.substr(10)); c.prior = true; }
         else throw std::invalid_argument("unknown config " + name);
         return c;
+    }
+
+    // Diagnostic readout of Silver's tree (the search is untouched): a decision node is
+    // worth its best child among those with at least minVisits simulations, a chance node
+    // the visit-weighted mean of its outcomes, anything else (and every node below
+    // minVisits) its mean playout value.
+    double maxBackup(const SilverSearcher::Node *n, int minVisits,
+                     std::unordered_map<const SilverSearcher::Node *, double> &memo, int depth) {
+        const double mean = n->evaluationSum / std::max<std::int64_t>(1, n->simulationCount);
+        if (n->simulationCount < minVisits || depth > 200) return mean;
+        if (auto it = memo.find(n); it != memo.end()) return it->second;
+        memo[n] = mean;   // cycle guard
+        double v = mean;
+        if (n->isRandomNode) {
+            double sum = 0, w = 0;
+            for (const auto &e : n->edges) {
+                if (!e.node || e.visitCount == 0) continue;
+                sum += e.visitCount * maxBackup(e.node, minVisits, memo, depth + 1);
+                w += e.visitCount;
+            }
+            if (w > 0) v = sum / w;
+        } else {
+            double best = -1e300;
+            for (const auto &e : n->edges)
+                if (e.node && e.node->simulationCount >= minVisits)
+                    best = std::max(best, maxBackup(e.node, minVisits, memo, depth + 1));
+            if (best > -1e300) v = best;
+        }
+        memo[n] = v;
+        return v;
+    }
+    double maxBackup(const SilverSearcher::Node *n, int minVisits) {
+        std::unordered_map<const SilverSearcher::Node *, double> memo;
+        return maxBackup(n, minVisits, memo, 0);
     }
 
     double seconds(std::chrono::steady_clock::time_point since) {
@@ -946,6 +986,12 @@ int main(int argc, char **argv) {
             for (const auto &config : configs) {
                 if (!fightFailure.empty()) break;
                 sts::search::g_nativeSilverBudgetOverride = config.budget;
+                sts::search::g_nativeSilverSearchParamOverride.reset();
+                if (config.exploration) {
+                    sts::search::NativeSilverSearchParams params;
+                    params.exploration = params.explorationChance = *config.exploration;
+                    sts::search::g_nativeSilverSearchParamOverride = params;
+                }
                 if (config.prior) sts::search::g_nativeSilverRootPriorOverride.reset();
                 else sts::search::g_nativeSilverRootPriorOverride = false;
                 int searchedRoots = 0, optimalRoots = 0, unscoredRoots = 0;
@@ -983,8 +1029,10 @@ int main(int argc, char **argv) {
                             json act = {{"label", actionLabel(edges[i].action, root)}, {"q", v.v}, {"score", v.score},
                                         {"hp", v.hp}, {"win", v.win}, {"capped", v.capped},
                                         {"visits", edges[i].visitCount}};
-                            if (edges[i].node && edges[i].node->simulationCount > 0)
+                            if (edges[i].node && edges[i].node->simulationCount > 0) {
                                 act["silverQ"] = edges[i].node->evaluationSum / edges[i].node->simulationCount;
+                                for (const int k : {8, 32, 128}) act["silverMaxQ" + std::to_string(k)] = maxBackup(edges[i].node, k);
+                            }
                             acts.push_back(act);
                         }
                         for (const int k : policyTurns) for (const bool blockFirst : {false, true}) {
