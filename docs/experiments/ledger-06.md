@@ -22160,7 +22160,8 @@ so every Darkling under Runic Dome invalidated the knowledge and the run stopped
 the POWER_ID of every monster-specific Dome power (31 classes) against the whitelist and reports all mismatches.
 **Interpretation:** producer bug, fixed in the mod (one string); no flag, since the old behaviour only refused the
 history. Live Darkling fights under Runic Dome no longer stop. No engine or simulation change.
-**Open question:** the full `test.sh` (jar check) runs on the PC via the canary.
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 7463f1fd (POWER_ID check clean
+for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
 Seeds: none new (live seed 111200472 as reported).
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
