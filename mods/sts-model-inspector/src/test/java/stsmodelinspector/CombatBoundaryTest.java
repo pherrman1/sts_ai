@@ -278,6 +278,10 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.monsterSetMoveItemJson(4,5)!=null
                 || !"{\"kind\":\"MONSTER_SPLIT_SET_MOVE\",\"slot\":1}".equals(STSModelInspector.monsterSplitItemJson(1))
                 || STSModelInspector.monsterSplitItemJson(5)!=null
+                || !"{\"kind\":\"MINION_LEADER_ESCAPE\",\"slots\":[1,2]}".equals(STSModelInspector.leaderEscapeItemJson(java.util.Arrays.asList(1,2)))
+                || STSModelInspector.leaderEscapeItemJson(java.util.Arrays.asList(1,1))!=null
+                || STSModelInspector.leaderEscapeItemJson(java.util.Arrays.asList(0,5))!=null
+                || STSModelInspector.leaderEscapeItemJson(new java.util.ArrayList<Integer>())!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_ROLL_PRIVATE",0,0)!=null)
             throw new AssertionError("monster reaction pending action qualification");
         for(int count:new int[]{1,2}) {

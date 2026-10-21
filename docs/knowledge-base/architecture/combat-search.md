@@ -494,6 +494,14 @@ an intent category). Without them the state layer sees these values only as
 plain numbers. Loaders older than v2 reject the header instead of dropping the
 tables, and a v1 file with tables does not load; v1 files score as before
 (`docs/experiments/evidence/silver_prior_arch_20261014/`).
+Prior playouts take the argmax of these logits, so any rounding change in
+`predictPolicyMlp` can change play. Its float operations and their order are
+fixed; ctest `policy_mlp_exact` compares it bit for bit with the plain
+reference loops on the deployed g7f_E model. For h2 = 64 the edge layers run in
+`policyMlpEdges<64>` (local accumulators and restrict pointers), and the state
+scan finds nonzero features with SSE2. Together they are 1.27x faster than the
+plain loops with identical decisions (2026-10-21; real-combat profile in
+`/mnt/project-files/combat-sim-speed/REPORT.md`).
 `tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
 action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the

@@ -13,6 +13,9 @@ AZ-loop rows (az_targets.py convert) may carry null entries in "logits" (tokens 
 out of the policy loss) and a value target "z" (1 = the run killed the Heart); rows may carry only "z".
 --value-weight W adds W * BCE(value head logit, z); --anchor-weight A adds A * KL(--init student || student) over
 all of the row's choice tokens (a frozen copy of --init). Validation then also reports value BCE/AUC per act.
+--mono-weight M adds M * relu(sign * (v - v')) on value logits, v' the value of a copy of the row with one variable
+changed by a monotonicity rule of monotone.py (--mono-rules; one random rule and delta per row); --mono-report (implied
+by --mono-weight) scores the chosen epoch's violation rates per rule on the selection and validation folds.
 --select last keeps the last epoch instead of the best validation epoch (keeps the validation split clean for a gate);
 --select fold holds out the files with seed % --val-mod == --select-mod (default --val-mod - 2) from training and keeps
 the epoch with the lowest training objective (policy KL + weighted value BCE + weighted anchor KL) on them.
@@ -42,6 +45,9 @@ ap.add_argument("--select", choices=("best", "last", "fold"), default="best")
 ap.add_argument("--select-mod", type=int, help="--select fold: seed %% --val-mod of the selection files")
 ap.add_argument("--extra-inputs", action="store_true",
                 help="student_inputs.ExtraInputsNN: zero-initialised relic counter, act and card misc inputs")
+ap.add_argument("--mono-weight", type=float, default=0.0, help="weight of the value monotonicity hinge (monotone.py)")
+ap.add_argument("--mono-rules", default=",".join(("hp", "mhp", "gold", "potion", "curse")))
+ap.add_argument("--mono-report", action="store_true", help="report monotonicity violations of the chosen epoch")
 a = ap.parse_args()
 if a.anchor_weight and not a.init: sys.exit("--anchor-weight needs --init")
 sys.path.insert(0, a.repo); sys.path.insert(0, os.path.join(a.repo, "build"))
@@ -162,14 +168,38 @@ if a.anchor_weight:
     ref = copy.deepcopy(net).eval()
     for p in ref.parameters(): p.requires_grad_(False)
 nparam = sum(p.numel() for p in net.parameters()); print("student params", nparam, flush=True)
+mono_rules = [r for r in a.mono_rules.split(",") if r]
+if a.mono_weight or a.mono_report:
+    import monotone
+    if any(r not in monotone.RULES for r in mono_rules): sys.exit(f"--mono-rules: one of {monotone.RULES}")
+    mono_empty, mono_curses = monotone.ids(network.sts)
+    mono_g = torch.Generator(device=a.device).manual_seed(a.seed * 100019 + 7)  # off the training RNG
+
+def mono_report(dl):
+    """Per rule, with the fixed EVAL perturbations: rows, violation rate (better state strictly lower value logit;
+    and lower probability by more than 0.001) and the median better-minus-worse probability, fp32."""
+    net.eval(); gaps = collections.defaultdict(list); pg = collections.defaultdict(list)
+    with torch.no_grad():
+        for b, *_ in dl:
+            b = to_dev(b); v = outputs_of(net, b, amp=False)[1]
+            for r in mono_rules:
+                c, sgn = monotone.perturb(b, r, mono_empty, mono_curses, fixed=True)
+                vc = outputs_of(net, c, amp=False)[1]
+                gaps[r] += monotone.violations(v, vc, sgn).tolist()
+                pg[r] += monotone.violations(torch.sigmoid(v), torch.sigmoid(vc), sgn).tolist()
+    net.train()
+    return {r: {"n": len(gaps[r]), "viol": round(sum(x < 0 for x in gaps[r]) / max(len(gaps[r]), 1), 4),
+                "viol_p001": round(sum(x < -1e-3 for x in pg[r]) / max(len(pg[r]), 1), 4),
+                "median_dp": round(sorted(pg[r])[len(pg[r]) // 2], 5) if pg[r] else None} for r in mono_rules}
+
 opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
 train_dl, val_dl = loader(train, True), loader(val, False)
 sel_dl = loader(sel, False) if sel else None
 sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.epochs * len(train_dl), pct_start=0.05)
 
-def outputs_of(model, b):
+def outputs_of(model, b, amp=True):
     """(choice logits, value-head logit), fp32."""
-    with torch.autocast("cuda", dtype=torch.bfloat16, enabled=a.amp and a.device.startswith("cuda")):
+    with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp and a.amp and a.device.startswith("cuda")):
         out = model(b)
     return out[0].float(), out[1].float()
 
@@ -260,16 +290,22 @@ if a.init:
     print(f"init val KL {kl} top1 {ag}", json.dumps(per), json.dumps(value), flush=True)
     hist.append({"epoch": 0, "val_kl": kl, "val_top1": ag, "per_screen": per, "value": value})
 for ep in range(a.epochs):
-    tot = n = 0
+    tot = n = mono_tot = 0
     for b, m, t, full, z in train_dl:
         b, m, t, full, z = to_dev(b), m.to(a.device), t.to(a.device), full.to(a.device), z.to(a.device)
-        kl, bce, anc, _, _ = losses(b, m, t, full, z)
-        loss = combine(kl, bce, anc, m, z); opt.zero_grad(set_to_none=True); loss.backward()
+        kl, bce, anc, _, v = losses(b, m, t, full, z)
+        loss = combine(kl, bce, anc, m, z)
+        if a.mono_weight:
+            c, sgn = monotone.perturb_mixed(b, mono_rules, mono_empty, mono_curses, mono_g)
+            pen = monotone.penalty(v, outputs_of(net, c)[1], sgn)
+            loss = loss + a.mono_weight * pen; mono_tot += pen.item() * len(m)
+        opt.zero_grad(set_to_none=True); loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step(); sched.step()
         tot += loss.item() * len(m); n += len(m)
     (kl, ag), per, value = evaluate()
     hist.append({"epoch": ep + 1, "train_loss": tot / n, "val_kl": kl, "val_top1": ag, "value": value,
                  "sec": time.time() - t0})
+    if a.mono_weight: hist[-1]["train_mono_penalty"] = mono_tot / n; print(f"   mono penalty {mono_tot / n:.5f}", flush=True)
     print(f"ep {ep+1} train loss {tot/n:.4f} val KL {kl} top1 {ag} value {json.dumps(value.get('all'))} "
           f"{time.time()-t0:.0f}s", flush=True)
     score = kl if kl is not None else value["all"]["bce"]
@@ -282,7 +318,13 @@ for ep in range(a.epochs):
     if a.select == "last" or best is None or score < best[0]:
         best = (score, ag, per, kl, value, ep + 1); torch.save(net.state_dict(), os.path.join(a.out, "student.pt"))
 print("best per group:", json.dumps(best[2]), flush=True)
-json.dump({"args": vars(a), "wing_boots_counter": wing_boots_counter, "params": nparam, "train_rows": len(train), "val_rows": len(val),
+mono = {}
+if a.mono_weight or a.mono_report:  # the chosen epoch's weights
+    net.load_state_dict(torch.load(os.path.join(a.out, "student.pt"), map_location=a.device, weights_only=True))
+    mono = {"rules": mono_rules, "eval_deltas": monotone.EVAL, "curses": list(monotone.CURSES),
+            **({"select": mono_report(sel_dl)} if sel_dl is not None else {}), "val": mono_report(val_dl)}
+    print("monotonicity", json.dumps(mono), flush=True)
+json.dump({"monotone": mono, "args": vars(a), "wing_boots_counter": wing_boots_counter, "params": nparam, "train_rows": len(train), "val_rows": len(val),
            "select_rows": len(sel), "selected_epoch": best[5],
            "best_val_kl": best[3], "best_val_top1": best[1], "per_screen": best[2], "value": best[4], "history": hist},
           open(os.path.join(a.out, "summary.json"), "w"), indent=1)

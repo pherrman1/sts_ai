@@ -523,6 +523,8 @@ void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, lo
 std::string strategicHeader();
 
 // potionpriceprobe (research): paired-continuation resource prices.
+// fightsAhead == kPriceProbeActHorizon continues each copy until the current act's boss fight ends.
+constexpr int kPriceProbeActHorizon = -1;
 void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
                       const std::string &outFile, int statesPerRun, int fightsAhead,
                       int hpDelta, bool allStates = false, const std::string &extra = "");

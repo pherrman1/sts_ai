@@ -129,6 +129,12 @@ the shared bounded dependency to a resolved map checkpoint before `v_win` is
 evaluated. Semantic roots outside V4's screen support use uniform source
 priors; REMOVE, TRANSFORM, and non-card reward roots are not rejected merely
 because V4 cannot supply their prior.
+Shop card slots (0-4 class, 5-6 colorless) are tracked by card identity from
+the shop's first capture. A Courier restock takes the bought card's index in
+`coloredCards`/`colorlessCards`, so it inherits the slot of the card that
+previously held that index in the last captured list. Card positions are not
+used, because `ShopScreen.updateCards` re-derives them from the sliding rug every frame
+(problem 79).
 
 Each supported OOC candidate reports a semantic key/payload, physical live
 action, Q, visit count, visit share, and prior. The selected candidate is the
@@ -1394,7 +1400,7 @@ into the imported monster because native applies them at the hit. A reduction
 that would remove the power with a side effect (Shelled Parasite stun, Byrd grounding) stays unsupported;
 removing Plated Armor 1 from another monster (Donu, Deca) folds in (`STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE`). A lethal hit
 still queues the reduction; it folds into the dead monster (`STS_SILVER_LETHAL_REACTION_QUEUE`). Also unsupported is
-any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that kills the Gremlin Leader leaves a `ShoutAction` then an `EscapeAction` per surviving minion queued; the producer emits `MINION_LEADER_ESCAPE {slots}` (refused unless the shouts and escapes name the same creatures in order and those are exactly the surviving gremlins), and the advisor answers the grid with `choose 1` as a forced pass-through, since native already ended the combat at the kill (`STS_SILVER_LEADER_ESCAPE_PASS_THROUGH`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy

@@ -1,0 +1,7 @@
+w01 OK      16 units, run cc78c5e526d8, tar a412afe124fd, 2026-10-21T14:41:05Z
+w02 OK      16 units, run cc78c5e526d8, tar 8c737e9fcb64, 2026-10-21T14:21:36Z
+w03 OK      16 units, run cc78c5e526d8, tar a6bbc2a87830, 2026-10-21T14:38:07Z
+w04 OK      16 units, run cc78c5e526d8, tar 89871adba1fb, 2026-10-21T14:35:03Z
+OK: 1 2 3 4
+MISSING: -
+BAD: -

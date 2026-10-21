@@ -56,6 +56,7 @@ simulations end (§142).
 - **Native Silver rollout block check against the worst facing under Surrounded** — +2.0 HP lost [−0.2, +4.3] on 192 paired A20 Shield-and-Spear fights, 1.12× CPU; over-blocking is an inference (§528, Shield and Spear rollout facing)
 - **Native Silver tree reuse off** — −2.6 HP lost [−5.4, −0.1] pooled on the same fights but did not replicate on the second seed block (+0.5), Heart 0 pp; not adopted (§528, same entry)
 - **Native Silver rollout attack targeting under Surrounded** — keep the faced monster +2.8 HP lost [+0.3, +5.6], face the bigger intent +0.7 [−2.5, +3.8] on 192 paired A20 Shield-and-Spear fights (§530, Shield and Spear search gap)
+- **Native Silver: OOC-label difference leaf** — gen 1b's value head prices end-state differences no better than the formula (per-type potion r = 0.02 vs §510, max HP negative), and CRN paired continuations to the act end are too noisy (HP slope CI includes 0, ~14,600 core-h projected for usable prices) (§607, CRN act-end pilot)
 
 ## Native Silver leaf headroom
 
@@ -66,7 +67,8 @@ simulations end (§142).
 - **Prior playouts vs production greedy 10k (§541, 768 A20 fights, 8 workers):** priorpl2500 +2.0 [−0.7, +4.7]
   score, HP −0.4 NOT_SHOWN at 1.9x CPU per fight; priorpl10000 +3.3 [−0.6, +7.2] score, HP lost −0.70 [−1.19, −0.22]
   at 7.3x. Bosses carry most of the point estimate (+9.8 / +12.5). At most a small gain. Philipp made prior playouts the
-  default for real boss and elite fights (ADR-0050; `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy).
+  default for real boss and elite fights (ADR-0050; `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy);
+  since ADR-0056 only boss fights, for CPU (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores elites).
 
 ## Relationships
 
