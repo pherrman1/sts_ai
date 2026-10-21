@@ -304,9 +304,9 @@ def pile_settling_fix() -> bool:
 
 
 # A pile entry's cost and derived/base stats can settle a frame after the card
-# moved (problem 82: Corruption exhausts a skill showing its hand cost 0 and
-# Frail block; Snecko Eye's cost and the base_* values follow).
-_PILE_SETTLING_KEYS = ("cost", "damage", "block", "magic_number",
+# moved (problem 82: a card exhausted by its own use is first snapshotted with
+# its in-use cost 0, playability and hand stats; 36/36 transient dumps).
+_PILE_SETTLING_KEYS = ("cost", "is_playable", "damage", "block", "magic_number",
                        "base_damage", "base_block", "base_magic_number")
 
 

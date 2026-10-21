@@ -710,7 +710,9 @@ class LiveGameDriverTest(unittest.TestCase):
                  ({"id": "Shrug It Off", "uuid": "s", "cost": 0, "block": 8, "base_block": 8},
                   {"id": "Shrug It Off", "uuid": "s", "cost": 2, "block": 11}),
                  ({"id": "Defend_R", "uuid": "d", "cost": 0, "block": 3, "damage": 1},
-                  {"id": "Defend_R", "uuid": "d", "cost": 1, "block": 5}))
+                  {"id": "Defend_R", "uuid": "d", "cost": 1, "block": 5}),
+                 ({"id": "Pummel", "uuid": "p", "cost": 0, "is_playable": True, "damage": 6, "base_damage": 2},
+                  {"id": "Pummel", "uuid": "p", "cost": 1, "is_playable": False, "damage": 2}))
         for old, new in cases:
             with self.subTest(card=old["id"]):
                 before = {"exhaust_pile": [old], "current_hp": 66}
