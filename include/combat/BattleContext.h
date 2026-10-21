@@ -83,7 +83,8 @@ namespace sts {
 
     // STS_DEAD_ALLY_STRENGTH_FIX: unset/1 (default) = Donu's Circle of Power
     // and Spire Spear's Piercer skip a dead ally's Strength, as Java's queued
-    // ApplyPowerAction skips a dead target (follow-up to live problem 56).
+    // ApplyPowerAction skips a target that isDeadOrEscaped (dying, half-dead
+    // or escaping; follow-up to live problem 56).
     // Dead monsters' powers are part of Silver's node identity, so this can
     // change search. 0 = the legacy engine buffs the dead ally. Other values
     // are fatal. Read only when the ally is dead.

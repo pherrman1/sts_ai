@@ -22074,8 +22074,11 @@ Seeds: none new (live seed 111200429 as reported; unit test only).
 seeds). Found in the #742 review, not live.
 **Result:** both moves call `buff<STRENGTH>` on the ally directly, so a dead Deca or Spire Shield gained Strength. In Java
 the buffs are queued `ApplyPowerAction`s, which skip a dead target.
-**Interpretation:** `STS_DEAD_ALLY_STRENGTH_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both.
+Javap of the pinned JAR (`issue56b-javap.md` on the share): both `takeTurn` cases loop over every monster with no alive
+check and queue `ApplyPowerAction(m, this, Strength)`; `ApplyPowerAction.update` returns first when
+`target.isDeadOrEscaped()` (dying, half-dead or escaping).
+**Interpretation:** `STS_DEAD_ALLY_STRENGTH_FIX` (default on, `=0` restores) skips an ally that `isDeadOrEscaped` in both.
 Play-changing for simulator play (dead monsters' powers are in Silver's node identity), unmeasured.
-**Open question:** javap of `Donu.takeTurn`, `SpireSpear.takeTurn` and `ApplyPowerAction.update` is requested.
+**Open question:** none for these two moves; other direct ally buffs were not audited here.
 Seeds: none new (unit test only).
 **Knowledge impact:** `operations/environment-variables.md`.
