@@ -22580,3 +22580,25 @@ candidate. Other screens keep exact tool matching. Driver mapping only (no flag)
 skip confirms it.
 Seeds: none new (live seed 111200468 as reported; driver unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
+## §605 — Live Silver: Headbutt killing the Gremlin Leader refused its put-on-top choice (2026-10-21)
+
+**Question:** why did live seed 111200472 seg2 s50 (release 8447353f, Act 2 floor 30, GREMLIN_LEADER) stop with
+`silver_selection_pending_actions` and pending actions `[UseCardAction, ShoutAction, ShoutAction, EscapeAction,
+EscapeAction]` after Headbutt killed the Gremlin Leader (problem 72 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Setup:** the canary's report, its live observation and javap of `ShoutAction`/`EscapeAction`
+(`issue72-leader/` on the share); a native probe; `live_silver_importer_test` (Ironclad seed 111200071,
+GREMLIN_LEADER, no gameplay runs).
+**Result:** `GremlinLeader.die()` queues a `ShoutAction` (speech bubble only) and then an `EscapeAction` per non-dying
+minion with `addToBottom`, behind the open Headbutt grid; the escapes run after the pick. Native's `Monster::die` sees
+`MINION_LEADER` and sets the outcome to PLAYER_VICTORY at the hit, without opening a grid, so no Silver root exists.
+**Interpretation:** the producer emits `MINION_LEADER_ESCAPE {slots}` (only when the shouts and escapes name the same
+monsters in order and those are exactly the surviving gremlins beside one dying Gremlin Leader).
+`STS_SILVER_LEADER_ESCAPE_PASS_THROUGH` (default on, `=0` restores the refusal) answers the grid with `choose 1` as a
+forced pass-through: every pick ends the combat the same way (the minions escape and the combat ends).
+It refuses partial or extra slots, a living leader, a non-Headbutt grid and any
+other pending item. Changes only which live grids the advisor answers.
+**Open question:** the Java branch is checked by `CombatBoundaryTest` for its JSON helper only; the canary's next
+Gremlin Leader Headbutt kill confirms the live path.
+Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.

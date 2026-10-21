@@ -2837,6 +2837,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return refusePending(actionIndex,"slime_split");
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
+            // GremlinLeader.die (killed by Headbutt): addToBottom(ShoutAction)
+            // then addToBottom(EscapeAction) for each surviving minion behind
+            // the card; native ends the combat at the kill (problem 72).
+            if(sourceTask!=null && isActionClass(name,"ShoutAction")) {
+                int next=leaderEscapeEnd(manager.actions,actionIndex);
+                String item=next<0?null:leaderEscapeJson(manager.actions,actionIndex,next);
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
+            }
             // Darkling.damage at a half-death: setMove(4) now, then
             // addToBot(SetMoveAction(this, 4, UNKNOWN)) behind the card.
             if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
@@ -3054,6 +3063,58 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || move==null || move!=3 || slime.nextMove!=3
                 || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
         return monsterSplitItemJson(slot);
+    }
+
+    // The run [ShoutAction x k, EscapeAction x k] starting at begin, with the
+    // escapes in the shouts' creature order; returns its end or -1.
+    private static int leaderEscapeEnd(List<?> actions,int begin) {
+        int shouts=0;
+        while(begin+shouts<actions.size() && isActionClass(actions.get(begin+shouts).getClass().getName(),"ShoutAction"))++shouts;
+        if(begin+2*shouts>actions.size())return -1;
+        for(int i=0;i<shouts;++i) {
+            Object shout=actions.get(begin+i), escape=actions.get(begin+shouts+i);
+            if(!"com.megacrit.cardcrawl.actions.animations.ShoutAction".equals(shout.getClass().getName())
+                    || !"com.megacrit.cardcrawl.actions.common.EscapeAction".equals(escape.getClass().getName())
+                    || !Boolean.FALSE.equals(readBooleanField(shout,"isDone")) || !Boolean.FALSE.equals(readBooleanField(escape,"isDone")))return -1;
+            Object source=readObjectField(shout,"source");
+            if(!(source instanceof AbstractMonster) || readObjectField(shout,"target")!=source
+                    || readObjectField(escape,"source")!=source || readObjectField(escape,"target")!=source)return -1;
+        }
+        return begin+2*shouts;
+    }
+
+    private static String leaderEscapeJson(List<?> actions,int begin,int end) {
+        int leaders=0;java.util.Set<AbstractMonster> alive=java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+        for(AbstractMonster monster:AbstractDungeon.getMonsters().monsters) {
+            if("GremlinLeader".equals(monster.id)) {
+                if(!monster.isDying && !monster.isDead)return null;
+                ++leaders;
+            } else if(!monster.isDying && !monster.isDeadOrEscaped() && !monster.escaped) alive.add(monster);
+        }
+        if(leaders!=1 || alive.isEmpty())return null;
+        IdentityHashMap<AbstractMonster, Integer> slots=emittedMonsterSlots(liveEncounter);
+        java.util.List<Integer> out=new java.util.ArrayList<>();
+        java.util.Set<AbstractMonster> seen=java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+        for(int i=begin;i<begin+(end-begin)/2;++i) {
+            AbstractMonster minion=(AbstractMonster)readObjectField(actions.get(i),"source");
+            Integer slot=slots.get(minion);
+            if(!alive.contains(minion) || !seen.add(minion) || slot==null || minion.isEscaping
+                    || !java.util.Arrays.asList("GremlinWarrior","GremlinThief","GremlinFat","GremlinTsundere","GremlinWizard").contains(minion.id))return null;
+            out.add(slot);
+        }
+        if(seen.size()!=alive.size())return null;
+        return leaderEscapeItemJson(out);
+    }
+
+    static String leaderEscapeItemJson(java.util.List<Integer> slots) {
+        if(slots==null || slots.isEmpty() || slots.size()>4 || new java.util.HashSet<>(slots).size()!=slots.size())return null;
+        StringBuilder out=new StringBuilder("{\"kind\":\"MINION_LEADER_ESCAPE\",\"slots\":[");
+        for(int i=0;i<slots.size();++i) {
+            Integer slot=slots.get(i);
+            if(slot==null || slot<0 || slot>4)return null;
+            if(i>0)out.append(',');out.append(slot);
+        }
+        return out.append("]}").toString();
     }
 
     static String monsterSplitItemJson(int slot) {

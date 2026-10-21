@@ -426,6 +426,18 @@ bool centennialUsedFix() {
 // has no power for it (die() makes the other monsters escape or die), so
 // imported states lacked it and killing the leader left the fight UNDECIDED;
 // 0 = legacy import without the marker.
+// STS_SILVER_LEADER_ESCAPE_PASS_THROUGH: unset/1 (default) = a Headbutt grid
+// whose pending tail is GremlinLeader.die()'s Shout + Escape for every
+// surviving minion is passed through with the first card (the combat ends
+// after the grid whatever is picked); 0 = legacy refusal as
+// silver_selection_pending_actions (live problem 72).
+bool leaderEscapePassThrough() {
+    const char *value = std::getenv("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH must be 0 or 1");
+}
+
 bool minionLeaderFix() {
     const char *value = std::getenv("STS_IMPORTER_MINION_LEADER_FIX");
     if (!value || !*value || std::string(value) == "1") return true;
@@ -2571,6 +2583,51 @@ SilverRootImportResult importSilverRoot(const json &observation,
     if (root.value("schemaVersion", 0) == 4)
         return importSilverRootGeneric(observation, context);
     return importSilverRootLegacy(observation);
+}
+
+int minionLeaderEscapeChoice(const json &observation) {
+    if (!leaderEscapePassThrough()) return 0;
+    const auto root = observation.value("silverRoot", json::object());
+    const auto combat = observation.contains("combat") ? observation.at("combat") : root.value("combat", json::object());
+    if (!combat.is_object()) return 0;
+    const auto select = combat.value("cardSelect", json::object());
+    const auto choices = select.value("liveChoices", json::array());
+    if (select.value("task", std::string()) != "HEADBUTT" || select.value("origin", std::string()) != "GRID"
+        || select.value("continuation", std::string()) != "source_card_actions"
+        || !choices.is_array() || choices.empty()) return 0;
+    for (std::size_t i = 0; i < choices.size(); ++i)
+        if (!choices[i].is_object() || !choices[i].contains("uuid") || !choices[i].at("uuid").is_string()
+            || !choices[i].contains("choiceIndex") || choices[i].at("choiceIndex") != static_cast<int>(i) + 1) return 0;
+    const auto pending = combat.value("pendingActionQueue", json::array());
+    if (!pending.is_array() || pending.size() != 2 || !pending[0].is_object() || !pending[1].is_object()
+        || pending[0].value("kind", std::string()) != "USE_CARD"
+        || pending[1].value("kind", std::string()) != "MINION_LEADER_ESCAPE") return 0;
+    const auto slots = pending[1].value("slots", json::array());
+    if (!slots.is_array() || slots.empty()) return 0;
+    std::set<int> escaping;
+    for (const auto &slot : slots)
+        if (!slot.is_number_integer() || !escaping.insert(slot.get<int>()).second) return 0;
+    const auto monsters = combat.value("monsters", json::array());
+    if (!monsters.is_array()) return 0;
+    int leaders = 0;
+    std::set<int> alive;
+    for (std::size_t i = 0; i < monsters.size(); ++i) {
+        const auto &m = monsters[i];
+        if (!m.is_object()) return 0;
+        const int slot = m.value("slot", m.value("idx", static_cast<int>(i)));
+        const auto id = live_silver::monsterId(m.value("id", std::string()));
+        const bool gone = m.value("hp", 0) <= 0 || m.value("dead", false)
+            || m.value("escaping", m.value("escaped", false)) || m.value("halfDead", false);
+        if (id == sts::MonsterId::GREMLIN_LEADER) {
+            if (!gone) return 0;
+            ++leaders;
+        } else if (!gone) {
+            if (id != sts::MonsterId::MAD_GREMLIN && id != sts::MonsterId::SNEAKY_GREMLIN && id != sts::MonsterId::FAT_GREMLIN
+                && id != sts::MonsterId::SHIELD_GREMLIN && id != sts::MonsterId::GREMLIN_WIZARD) return 0;
+            alive.insert(slot);
+        }
+    }
+    return leaders == 1 && alive == escaping ? 1 : 0;
 }
 
 SilverRootImportResult importSilverRoot(const json &observation) {
