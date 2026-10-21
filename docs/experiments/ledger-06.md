@@ -22104,6 +22104,25 @@ hit. Play-changing in every Byrd fight that grounds a Byrd (full damage while gr
 Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`,
 `behavior/java-reference-audit.md`.
+## §596 — Live Runic Dome: Act 4 fights were refused; the Heart, Shield and Spear cycles are now modelled (2026-10-21)
+
+**Question:** a live run that takes Runic Dome stops at its first Act 4 fight, because the mod's Dome tracker accepts
+only acts 1-3, the knowledge block is incomplete and the root is unsupported (`silver_runic_dome_incomplete_history`).
+Philipp asked to model Act 4 rather than avoid it (2026-10-21).
+**Setup:** the canary's `javap` of CorruptHeart, SpireShield and SpireSpear (`engine-parity/overnight-20261019/act4-dome-javap.md`
+on the share); `RunicDomeTrackerTest` in a standalone javac harness; `live_silver_importer_test` with a native
+THE_HEART root and the captured SHIELD_AND_SPEAR fixture (no gameplay seeds).
+**Result:** each Act 4 `getMove` is a public `moveCount` cycle with one coin flip per three moves (Heart:
+Debilitate first, without advancing `moveCount`; Shield: Fortify/Bash opener; Spear: the third move), and every
+`takeTurn` ends with `RollMoveAction`. Native already plays these monsters with deterministic `setMove` plus a
+no-op roll. The tracker now accepts the three monsters in act 4 only, patches their `takeTurn`, and turns each
+determined roll into a known next move (`act4_public_cycle`); only the flips are pending hidden rolls. The importer
+accepts THE_HEART and SHIELD_AND_SPEAR rows, checks slots, recomputes the cycle from completed turns and the last
+executed move, and refuses a wrong, missing or extra proof and a wrong executed move.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_ACT4` (default on, `=0` restores the Act 4 refusal) lets the live advisor
+play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
+**Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
+Seeds: none.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22170,6 +22189,26 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §595 — Live combat parity: unplayable autoplayed cards vanished and autoplays ran in reverse natively (2026-10-20)
+
+**Question:** why did live seed 111200435 (release f2e3f48d) show the game's exhaust pile one card longer than native
+after four Havoc+ plays (problem 41), and live seed 111200436 step 503 a different discard order after Distilled
+Chaos (problem 44), in `engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's extracts (`issue41-extract.json`, `issue44-extract.json`); read-only `javap` of the pinned JAR
+on Philipp's PC (`issue41-javap.md`, `issue44-javap.md`, `issue41-javap-deadtarget.md`): `GameActionManager`
+(`getNextAction`, `addCardQueueItem`), `PlayTopCardAction`, `NewQueueCardAction`, `UseCardAction`,
+`AbstractCard.canUse/cardPlayable`, `DistilledChaosPotion.use`; `unplayable_autoplay` unit test (no gameplay seeds).
+**Result:** every Havoc'd card in problem 41 was unplayable (Clash+ with a non-attack in hand ×2, Burn, Burn+). The
+engine dropped an autoplayed card that failed `canUse`; Java gives it `dontTriggerOnUseCard` and a bottom
+`UseCardAction`, which skips all use hooks but still exhausts (Havoc, own exhaust; Strange Spoon) or discards it. Java
+appends autoplayed cards to the card queue; the engine pushed them to the front, so Distilled Chaos ran in reverse
+(game Bane, Defend, Shrug; native Shrug, Defend, Bane lost).
+**Interpretation:** `STS_UNPLAYABLE_AUTOPLAY_FIX` and `STS_AUTOPLAY_QUEUE_ORDER_FIX` (default on, `=0` restores
+each) match the game. An autoplay at an already-dying target takes the hook-free path too (Java `cardPlayable`
+checks `isDying`). Play-changing for simulator play with Havoc, Mayhem and Distilled Chaos, unmeasured.
+**Open question:** a half-dead (Darkling, Awakened One) or escaping target passes Java `canUse` and the card is used
+normally; the engine keeps its legacy behavior there.
+Seeds: none new (live seeds 111200435 and 111200436 as reported; unit test only).
 ## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
 
 **Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with

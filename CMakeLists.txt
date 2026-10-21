@@ -266,6 +266,14 @@ add_test(NAME curiosity_power_play COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
 set_tests_properties(curiosity_power_play PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(unplayable_autoplay_test tests/unplayable_autoplay_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(unplayable_autoplay_test PRIVATE include json/include)
+add_test(NAME unplayable_autoplay COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:unplayable_autoplay_test>)
+set_tests_properties(unplayable_autoplay PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(lagavulin_wake_metallicize_test tests/lagavulin_wake_metallicize_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(lagavulin_wake_metallicize_test PRIVATE include json/include)
