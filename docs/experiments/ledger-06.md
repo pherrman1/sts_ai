@@ -22281,11 +22281,11 @@ smoke with a bad config (aborted before play).
 authorization and worker count. [Offline report](evidence/az_gen1b_value_leaf_ab_20261020/OFFLINE.md).
 **Knowledge impact:** `operations/environment-variables.md` (flag), `evaluation/current-research.md` (status).
 
-## §TBD — AZ gen 1b vs student_sel as OOC prior: NOT_SHOWN on 512 paired A20 seeds, −1.0 pp Heart kills [−4.9, +3.0] at 1.04× wall (2026-10-21)
+## §589 — AZ gen 1b vs student_sel as OOC prior: NOT_SHOWN on 512 paired A20 seeds, −1.0 pp Heart kills [−4.9, +3.0] at 1.04× wall (2026-10-21)
 
 Authorization: Philipp 2026-10-20 17:50Z ("Push it. Then do 512 seeds with 32 workers A/B"). Pre-registration, unit
 script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (`PREREG.md`, `run_unit.sh`,
-`analyze.py`, `result.json`, `verify.txt`, `tars.sha256`). PREREG's "ledger §TBD on #732" means §573.
+`analyze.py`, `result.json`, `verify.txt`, `tars.sha256`). PREREG's ledger reference for #732 means §573.
 
 - **Freeze:** RUN_COMMIT `826b5dda` (main `6e62cb64` plus the campaign dir); binary sha256 `193b0000…`.
   student_sel `cf6bf7fb…`, gen1b `e6aa044c…` (data branch `claude/az-gen1-data` `65762545`); brief `d8f9dedb…`.
