@@ -22102,7 +22102,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live combat parity: an in-combat upgrade reset Blood for Blood's damage-taken reduction (2026-10-20)
+## §582 — Live combat parity: an in-combat upgrade reset Blood for Blood's damage-taken reduction (2026-10-20)
 
 **Question:** why did live seed 111200448 (release 9ec8a51d, step 8, Armaments+) leave a Blood for Blood at 2/2 in the
 game and 3/3 natively (problem 59 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
