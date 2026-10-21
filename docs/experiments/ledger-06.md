@@ -22001,6 +22001,31 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §599 — Live combat parity: Slime Boss split left native monsterCount one above the inspector's (2026-10-21)
+
+**Question:** why did live seed 111200456 (release 9ec8a51d, Slime Boss, floor 16) show `monsterCount` game 3 vs
+native 4 at the End Turn of s217, where the Spike Slime (L) split (problem 62 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)? Is it play-relevant?
+**Setup:** the canary's extract and javap (`issue62-extract.json`, `issue62-javap.md`: `SpikeSlime_L.takeTurn`,
+`SpawnMonsterAction.update`, `MonsterGroup.addMonster`); `Monster::largeSlimeSplit`; `slime_split_monster_count`
+unit test; reviewer F's 64-seed paired neutrality check (below).
+**Result:** Java never prunes or reuses slots (`SuicideAction` keeps the parent; smart positioning inserts by drawX),
+so its raw list after boss + Spike L splits is [M, L dead, M, boss dead, Acid L] (5). The inspector emits the fixed
+native layout and reports 3. Native put the children in slots 0 and 1 (the dead boss's) but did `count+1` anyway,
+leaving an always-dead empty slot 3. Alive monsters and their order match in all views; s218-s221 all MATCH; every
+native `monsterCount` loop skips dead slots and the `aliveOnly=false` random pick has no caller. The s221
+`endHpGameMinusNative` of 6 is Burning Blood.
+**Interpretation:** representational, not a play bug. `STS_SLIME_SPLIT_MONSTER_COUNT_FIX` (default on, `=0`
+restores) sets `monsterCount = max(count, placeIdx+2)`, which removes the parity diff and makes the simulated
+state equal to the imported one (state equality compares slots up to `monsterCount`). Neutral in simulated fights
+(reviewer F, scratch harness: Slime Boss, Ironclad A20 starter deck at 400 HP, Silver 1000 sims with reuse, 64 paired
+seeds 111148000-111148063 with the flag 0 vs 1: all trace digests identical, 17 seeds entered the spike-first window,
+10 ended with count 3 vs 4). Can change live advisor play: Silver reuses its tree between live decisions only on an
+exact state match, which includes `monsterCount`, so without the fix the first decision after a spike-first split
+misses the reuse and searches from scratch.
+Seeds: 111148000-111148063 (review harness, not committed); live seed 111200456 as reported.
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
 ## §597 — Live combat parity: Curiosity never gave the Awakened One Strength natively (2026-10-21)
 
 **Question:** why was the Awakened One's Strength game N+2 vs native N after every Power play (live seed 111200436,

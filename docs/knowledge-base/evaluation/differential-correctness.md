@@ -370,6 +370,23 @@ Reality upgrades the card and a full hand sends it to the discard pile.
 `STS_MAGNETISM_FIX` (default on, `=0` restores) implements this
 (`tests/magnetism_start_of_turn_test.cpp`).
 
+A run on 2026-10-20 (seed 111200456, Slime Boss, problem 62) showed
+`monsterCount` game 3 against native 4 after the Spike Slime (L) split at
+s217; every later step matched. Java never prunes or reuses monster slots:
+`SuicideAction` leaves the parent in `MonsterGroup.monsters` and each
+`SpawnMonsterAction` with smart positioning inserts at the number of monsters
+(dead ones included) left of the child's drawX, so the raw list there has 5
+entries. The inspector emits the fixed native layout (0,1,2, replaced slime
+parents dropped) and reports 3. Native put the children in slots 0 and 1 (the
+dead boss's) but still grew the count by one, leaving an always-dead empty
+slot 3. The alive monsters and their order are the same in all three views and
+every loop over `monsterCount` skips dead slots, so the difference is
+representational. `STS_SLIME_SPLIT_MONSTER_COUNT_FIX` (default on, `=0`
+restores) grows the count only to `placeIdx+2`
+(`tests/slime_split_monster_count_test.cpp`). The same step's
+`endHpGameMinusNative` of 6 at s221 is Burning Blood healing after combat,
+which Java applies before the inspector's post snapshot.
+
 Runs on 2026-10-20 (seed 111200436, problem 45; seed 111200459, problem 65)
 showed the Awakened One's Strength game N+2 against native N after every
 Power play. Native never implemented `CuriosityPower.onUseCard` (the hook in
