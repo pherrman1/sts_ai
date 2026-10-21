@@ -337,6 +337,15 @@ Reality upgrades the card and a full hand sends it to the discard pile.
 `STS_MAGNETISM_FIX` (default on, `=0` restores) implements this
 (`tests/magnetism_start_of_turn_test.cpp`).
 
+A run on 2026-10-20 (seed 111200459, Awakened One, problem 64(d)) played
+Purity as the last card in hand on Letter Opener's third skill. The game
+finished the play at once (no selection, every monster 5 HP lower); native
+opened an empty `EXHAUST_MANY` selection with Letter Opener's damage queued
+behind it. Java `ExhaustAction.update` sets `isDone` when the hand is empty
+before any screen opens; native `ExhaustMany` had no such guard.
+`STS_EXHAUST_EMPTY_HAND_FIX` (default on, `=0` restores) adds it
+(`tests/exhaust_empty_hand_test.cpp`).
+
 A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
 Panache, because the live importer refused it. Java `PanachePower.amount` is
 the cards-left countdown and the damage is a private `damage` field, which the
