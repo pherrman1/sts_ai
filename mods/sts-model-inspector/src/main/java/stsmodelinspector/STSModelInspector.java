@@ -2874,6 +2874,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return refusePending(actionIndex,"use_card");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
+            // SpireShield/SpireSpear.die(): addToBottom(RemoveSpecificPowerAction
+            // (player, player, "Surrounded")) and, if the surviving partner
+            // carries it, (partner, partner, "BackAttack") (problem 81).
+            if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(name)) {
+                String item=spireDeathRemovalJson(action);
+                if(item!=null) {if(out.length()>1)out.append(',');out.append(item);continue;}
+            }
             if("com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(name)) {
                 if(readObjectField(action,"target")!=AbstractDungeon.player || readObjectField(action,"source")!=AbstractDungeon.player
                         || readObjectField(action,"powerInstance")!=null || !"Pen Nib".equals(readStringField(action,"powerToRemove"))
@@ -2986,6 +2993,37 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return ("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)
                 || "com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name))
                 && readObjectField(action,"target") instanceof AbstractMonster;
+    }
+
+    // A Spire Shield/Spear that died (isDying/isDead) while its partner lives.
+    private static boolean spirePartnerDied(AbstractMonster survivor) {
+        boolean died=false;
+        for(AbstractMonster m:AbstractDungeon.getMonsters().monsters) {
+            if(m==survivor || !("SpireShield".equals(m.id) || "SpireSpear".equals(m.id)))continue;
+            if(m.isDying || m.isDead)died=true;
+        }
+        return died;
+    }
+
+    private static String spireDeathRemovalJson(Object action) {
+        String power=readStringField(action,"powerToRemove");
+        Object target=readObjectField(action,"target"), source=readObjectField(action,"source");
+        if(readObjectField(action,"powerInstance")!=null)return null;
+        AbstractMonster survivor=null;
+        for(AbstractMonster m:AbstractDungeon.getMonsters().monsters)
+            if(("SpireShield".equals(m.id) || "SpireSpear".equals(m.id)) && !m.isDying && !m.isDeadOrEscaped() && !m.halfDead)
+                survivor=survivor==null?m:null;
+        if(survivor==null || !spirePartnerDied(survivor))return null;
+        if("Surrounded".equals(power)) {
+            AbstractPower surrounded=AbstractDungeon.player.getPower("Surrounded");
+            if(target!=AbstractDungeon.player || source!=AbstractDungeon.player || surrounded==null
+                    || !"com.megacrit.cardcrawl.powers.SurroundedPower".equals(surrounded.getClass().getName()))return null;
+            return "{\"kind\":\"PLAYER_REMOVE_SURROUNDED\"}";
+        }
+        Integer slot=emittedMonsterSlots(liveEncounter).get(survivor);
+        if(!"BackAttack".equals(power) || target!=survivor || source!=survivor || slot==null
+                || survivor.getPower("BackAttack")==null)return null;
+        return slot<0 || slot>4?null:"{\"kind\":\"MONSTER_REMOVE_BACK_ATTACK\",\"slot\":"+slot+"}";
     }
 
     private static String monsterReactionJson(String name,Object action) {
