@@ -48,6 +48,20 @@ final class RunicDomeTracker {
     }
     static boolean latent(String id) {return "FuzzyLouseNormal".equals(id)||"FuzzyLouseDefensive".equals(id)||"Darkling".equals(id);}
     static boolean split(String id) {return "AcidSlime_L".equals(id)||"SpikeSlime_L".equals(id)||"SlimeBoss".equals(id);}
+    // Act 4: every turn ends in RollMoveAction, but only one roll per three is random
+    // (CorruptHeart after Debilitate/Buff, SpireShield at moveCount%3==0, SpireSpear at %3==2).
+    static boolean act4(String id) {return "CorruptHeart".equals(id)||"SpireShield".equals(id)||"SpireSpear".equals(id);}
+    // The publicly determined result of the roll made after `done` executions, or 0 if it is random.
+    static int act4Cycle(String id,int done,int last) {
+        if("CorruptHeart".equals(id)) {
+            if(done==0) return 3;
+            int mc=(done-1)%3; return mc==1?(last==2?1:2):mc==2?4:0;
+        }
+        int mc=done%3;
+        if("SpireShield".equals(id)) return mc==1?(last==1?2:1):mc==2?3:0;
+        if("SpireSpear".equals(id)) return mc==0?(last==1?2:1):mc==1?3:0;
+        return 0;
+    }
     static boolean remaining(String id) {return latent(id)||split(id)||Arrays.asList("BronzeAutomaton","BronzeOrb","GremlinLeader","Reptomancer","Dagger","TheCollector","TorchHead").contains(id);}
     void publicOverride(Object source,int proposed,boolean threshold) {
         int expected="Darkling".equals(id)?4:3;
@@ -69,7 +83,7 @@ final class RunicDomeTracker {
         if(latent(id)) {int lo="Darkling".equals(id)?(ascension>=2?9:7):(ascension>=2?6:5);int hi=lo+("Darkling".equals(id)?4:2);for(int n=lo;n<=hi;++n)latentDamageMask|=1<<n;}
         if("BookOfStabbing".equals(id)) publicMisc=1;
         if("TheGuardian".equals(id)) publicMisc=ascension>=19?40:ascension>=9?35:30;
-        if(monster==null || (act<1 || act>3) || (count<1 || count>5) || !monsterAllowed(id))
+        if(monster==null || (act4(id)?act!=4:(act<1 || act>3)) || (count<1 || count>5) || !monsterAllowed(id))
             invalidate("unsupported_encounter");
     }
     static boolean monsterAllowed(String id) {
@@ -78,9 +92,9 @@ final class RunicDomeTracker {
                 "Centurion","Healer","Chosen","SnakePlant","Snecko","SphericGuardian",
                 "Exploder","Repulsor","Maw","Nemesis","Orb Walker","GiantHead","Donu","Deca",
                 "Spiker","Serpent","SlaverBoss","GremlinFat","BookOfStabbing","TimeEater","GremlinThief","GremlinWarrior","GremlinWizard",
-                "GremlinTsundere","BanditBear","BanditLeader","BanditChild","Transient","WrithingMass","Champ","Byrd","Shelled Parasite","TheGuardian","Hexaghost","Lagavulin","Looter","Mugger","AwakenedOne").contains(id);
+                "GremlinTsundere","BanditBear","BanditLeader","BanditChild","Transient","WrithingMass","Champ","Byrd","Shelled Parasite","TheGuardian","Hexaghost","Lagavulin","Looter","Mugger","AwakenedOne").contains(id) || act4(id);
     }
-    private boolean dynamic() { return remaining(id) || "Byrd".equals(id) || "Shelled Parasite".equals(id) || "TheGuardian".equals(id) || "Hexaghost".equals(id) || "Lagavulin".equals(id) || "AwakenedOne".equals(id) || thief(); }
+    private boolean dynamic() { return remaining(id) || "Byrd".equals(id) || "Shelled Parasite".equals(id) || "TheGuardian".equals(id) || "Hexaghost".equals(id) || "Lagavulin".equals(id) || "AwakenedOne".equals(id) || thief() || act4(id); }
     private boolean thief() {return "Looter".equals(id) || "Mugger".equals(id);}
     void invalidate(String reason) { if(failure==null) failure=reason; }
     void beginRoll(Object source, int hp, int maxHp) {
@@ -113,6 +127,11 @@ final class RunicDomeTracker {
         inputs.put("firstHp",firstHp);inputs.put("firstMaxHp",firstMaxHp);inputs.put("firstAlive",firstAlive);
         if(occupantGeneration>0)inputs.put("rollGlobalTurn",globalTurn);
         inputs.put("aliveCount",aliveCount);inputs.put("playerConstricted",constricted);rollHistory.add(inputs);
+        if(act4(id)) {
+            if(totalRolls!=completed+1) {invalidate("act4_cycle_lifecycle");return;}
+            int known=act4Cycle(id,completed,lastExecutedMove());
+            if(known!=0) {pending=false;rollHistory.clear();knownNextMove=known;}
+        }
     }
     // A queued vanilla roll may resolve after its source has publicly died.
     // It advances lifecycle/RNG accounting but cannot affect a future occupant.
@@ -293,6 +312,8 @@ final class RunicDomeTracker {
         if("Hexaghost".equals(id)) return true;
         if("TheGuardian".equals(id)) return knownNextMove>=2 && knownNextMove<=5;
         if("Byrd".equals(id) || "Shelled Parasite".equals(id)) return knownNextMove!=4 && !("Byrd".equals(id) && knownNextMove==2);
+        if("CorruptHeart".equals(id)) return knownNextMove==1 || knownNextMove==2;
+        if("SpireShield".equals(id) || "SpireSpear".equals(id)) return knownNextMove!=2;
         return true;
     }
     private boolean legalExecuted(int move) {
@@ -346,6 +367,10 @@ final class RunicDomeTracker {
             case "Champ": return move>=1 && move<=7 && (move!=2 || (publicMisc & 3)<2) && (move!=7 || (publicMisc & 4)==0);
             case "WrithingMass": return move>=0 && move<=4 && (move!=4 || publicMisc==0);
             case "TimeEater": return move>=2 && move<=5 && (move!=5 || publicMisc==0);
+            case "CorruptHeart": case "SpireShield": case "SpireSpear": {
+                int known=act4Cycle(id,completed,lastExecutedMove());
+                return known!=0?move==known:move==1 || move==2;
+            }
             default:return false;
         }
     }
@@ -388,7 +413,7 @@ final class RunicDomeTracker {
         if(knownLifecycle(id) || dynamic()) {
             Map<String,Object> proof=null;
             if(!dead && knownNextMove!=0) {
-                proof=new LinkedHashMap<>();proof.put("kind",remaining(id)?(split(id)?(knownNextMove==3?"public_split_override":"slime_boss_public_cycle"):"Darkling".equals(id)?"darkling_public_regrow":"public_deterministic_transition_v1"):"AwakenedOne".equals(id)?"awakened_public_rebirth":thief()?"thief_public_cycle":"Lagavulin".equals(id)?(knownNextMove==4?"public_stun_override":knownNextMove==1?"lagavulin_awake_event":"lagavulin_natural_wake"):"Hexaghost".equals(id)?"hexaghost_activate":"TheGuardian".equals(id)?(knownNextMove==1?"guardian_defensive_override":"guardian_public_cycle"):dynamic()?(knownNextMove==4?"public_stun_override":"byrd_headbutt_fly"):"AcidSlime_S".equals(id)?"acid_slime_s_alternation":"public_deterministic_transition_v1");proof.put("move",knownNextMove);
+                proof=new LinkedHashMap<>();proof.put("kind",act4(id)?"act4_public_cycle":remaining(id)?(split(id)?(knownNextMove==3?"public_split_override":"slime_boss_public_cycle"):"Darkling".equals(id)?"darkling_public_regrow":"public_deterministic_transition_v1"):"AwakenedOne".equals(id)?"awakened_public_rebirth":thief()?"thief_public_cycle":"Lagavulin".equals(id)?(knownNextMove==4?"public_stun_override":knownNextMove==1?"lagavulin_awake_event":"lagavulin_natural_wake"):"Hexaghost".equals(id)?"hexaghost_activate":"TheGuardian".equals(id)?(knownNextMove==1?"guardian_defensive_override":"guardian_public_cycle"):dynamic()?(knownNextMove==4?"public_stun_override":"byrd_headbutt_fly"):"AcidSlime_S".equals(id)?"acid_slime_s_alternation":"public_deterministic_transition_v1");proof.put("move",knownNextMove);
             }
             out.put("knownNextMove",proof);
         }
@@ -398,11 +423,13 @@ final class RunicDomeTracker {
     }
 
     static boolean monsterPowerAllowed(String id, String monster) {
-        return Arrays.asList("Strength","Artifact","Weak","Weakened","Vulnerable","Block Return","Choked","Corpse Explosion",
-                "Lockon","Mark","Metallicize","Plated Armor","Poison","Regenerate","Shackled").contains(id)
+        // Vanilla POWER_IDs (RunicDomeTrackerTest checks them against the jar): Block Return, Corpse Explosion and Mark
+        // are "BlockReturnPower", "CorpseExplosionPower" and "PathToVictoryPower".
+        return Arrays.asList("Strength","Artifact","Weak","Weakened","Vulnerable","BlockReturnPower","Choked","CorpseExplosionPower",
+                "Lockon","PathToVictoryPower","Metallicize","Plated Armor","Poison","Regenerate","Shackled").contains(id)
                 || (split(monster) && "Split".equals(id))
                 || (("FuzzyLouseNormal".equals(monster)||"FuzzyLouseDefensive".equals(monster)) && "Curl Up".equals(id))
-                || ("Darkling".equals(monster) && "Regrow".equals(id))
+                || ("Darkling".equals(monster) && "Life Link".equals(id)) // RegrowPower.POWER_ID
                 || (("Dagger".equals(monster)||"TorchHead".equals(monster)||"BronzeOrb".equals(monster)||monster.startsWith("Gremlin")) && "Minion".equals(id))
                 || ("BronzeOrb".equals(monster) && "Stasis".equals(id))
                 || ("Cultist".equals(monster) && "Ritual".equals(id))
@@ -424,6 +451,8 @@ final class RunicDomeTracker {
                 || ("Byrd".equals(monster) && "Flight".equals(id))
                 || ("AwakenedOne".equals(monster) && ("Curiosity".equals(id) || "Unawakened".equals(id)))
                 || (("Looter".equals(monster) || "Mugger".equals(monster)) && "Thievery".equals(id))
-                || ("TheGuardian".equals(monster) && ("Mode Shift".equals(id) || "Sharp Hide".equals(id)));
+                || ("TheGuardian".equals(monster) && ("Mode Shift".equals(id) || "Sharp Hide".equals(id)))
+                || ("CorruptHeart".equals(monster) && ("Invincible".equals(id) || "BeatOfDeath".equals(id) || "Painful Stabs".equals(id)))
+                || (("SpireShield".equals(monster) || "SpireSpear".equals(monster)) && "BackAttack".equals(id));
     }
 }

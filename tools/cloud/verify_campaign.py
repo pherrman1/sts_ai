@@ -9,7 +9,14 @@ workers must report the same run commit. It prints one line per worker and a sum
 every worker is OK. Run it from the lead's own container: a worker's local byte compare after upload may be served
 from the share's local cache, so it is not proof of delivery. The facts come from the files, never from chat.
 
-Usage: python3 tools/cloud/verify_campaign.py CAMPAIGN_DIR [--share DIR] [--json]
+With "schedule queue" in the manifest, units are not tied to workers. Each finished unit is its own tar,
+SHARE/units/<unit id>.wWW.tar. Then every unit of units.txt needs at least one such tar that holds its .done
+marker, no .failed marker and a FROZEN.txt that matches worker WW, and all tars must name one run commit. A unit
+run by two workers is reported as a duplicate (the first tar in name order is used). The worker DONE.json files
+are listed but not required. --extract DEST unpacks the used tar of every unit into DEST (out/units/...), the
+layout the static workers' tars have, for the campaign's analysis script.
+
+Usage: python3 tools/cloud/verify_campaign.py CAMPAIGN_DIR [--share DIR] [--json] [--extract DEST]
 """
 from __future__ import annotations
 
@@ -116,11 +123,81 @@ def check_worker(share: Path, units: list[str], workers: int, w: int, d: Path, m
     return "OK", f"{len(want)} units, run {run[:12]}, tar {got[:12]}, {meta.get('finished_utc', '?')}", run
 
 
+def check_unit_tar(tar: Path, uid: str, d: Path, m: dict) -> tuple[str | None, str | None]:
+    """(run commit, error) for one queue-mode unit tar."""
+    w = re.search(r"\.w(\d+)\.tar$", tar.name)
+    try:
+        with tarfile.open(tar) as t:
+            names = set(t.getnames())
+            fz = t.extractfile("FROZEN.txt") if "FROZEN.txt" in names else None
+            frozen = fz.read().decode() if fz else ""
+    except (OSError, tarfile.TarError, UnicodeDecodeError) as e:
+        return None, f"tar unreadable: {e}"
+    if f"out/units/{uid}.done" not in names:
+        return None, "no .done marker"
+    if f"out/units/{uid}.failed" in names:
+        return None, ".failed marker"
+    stray = sorted(n for n in names if n.startswith("out/units/") and n.split("/")[2] not in (uid, f"{uid}.done", f"{uid}.log"))
+    if stray:
+        return None, f"unexpected entry {stray[0]}"
+    return check_frozen(frozen, d, m, int(w.group(1)))
+
+
+def main_queue(a, d: Path, m: dict, share: Path, units: list[str]) -> int:
+    udir = share / "units"
+    tars = sorted(udir.glob("*.tar")) if udir.is_dir() else []
+    by_unit: dict[str, list[Path]] = {}
+    for t in tars:
+        by_unit.setdefault(re.sub(r"\.w\d+\.tar$", "", t.name), []).append(t)
+    rows, runs, used = [], set(), {}
+    for u in units:
+        uid = unit_id(u)
+        cands, errs = by_unit.get(uid, []), []
+        for t in cands:
+            run, err = check_unit_tar(t, uid, d, m)
+            if err:
+                errs.append(f"{t.name}: {err}")
+            elif uid not in used:
+                used[uid] = t
+                runs.add(run)
+        if uid in used:
+            dup = len(cands) - 1
+            rows.append((uid, "OK", f"{used[uid].name}{f' (+{dup} duplicate)' if dup else ''}"))
+        else:
+            rows.append((uid, "BAD" if errs else "MISSING", "; ".join(errs) or "no tar"))
+    if len(runs) > 1:
+        rows = [(i, "BAD" if s == "OK" else s, f"units ran different run commits: {sorted(r[:12] for r in runs)}"
+                 if s == "OK" else x) for i, s, x in rows]
+    extra = sorted(set(by_unit) - {unit_id(u) for u in units})
+    done = sorted(p.name for p in share.glob("w*.DONE.json"))
+    ok = all(s == "OK" for _, s, _ in rows) and not extra
+    if a.json:
+        print(json.dumps({"units": [{"unit": i, "state": s, "detail": x} for i, s, x in rows],
+                          "extra_tars": extra, "worker_done": done, "ok": ok}, indent=1))
+    else:
+        for i, s, x in rows:
+            if s != "OK" or "duplicate" in x:
+                print(f"{i} {s:7s} {x}")
+        n = {s: sum(1 for _, t, _ in rows if t == s) for s in ("OK", "MISSING", "BAD")}
+        print(f"units OK {n['OK']} MISSING {n['MISSING']} BAD {n['BAD']} of {len(rows)}; duplicates "
+              f"{sum(1 for _, _, x in rows if 'duplicate' in x)}; tars for unknown units {len(extra)}; "
+              f"run {sorted(r[:12] for r in runs)}; worker DONE.json: {len(done)}/{m['workers']}")
+    if a.extract and ok:
+        dest = Path(a.extract)
+        for uid, t in used.items():
+            with tarfile.open(t) as tf:
+                tf.extractall(dest, members=[x for x in tf.getmembers() if x.name.startswith("out/units/")],
+                              filter="data")
+        print(f"extracted {len(used)} units to {dest}")
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("campaign")
     ap.add_argument("--share", help="override the manifest's share dir")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--extract", help="queue schedule: unpack every verified unit into this dir (only if all OK)")
     a = ap.parse_args(argv)
     d = Path(a.campaign)
     m = read_manifest(d / "campaign.manifest")
@@ -129,6 +206,8 @@ def main(argv: list[str] | None = None) -> int:
     units = unit_lines(d / "units.txt")
     if len({unit_id(u) for u in units}) != len(units):
         raise SystemExit("units.txt has two units with the same id")
+    if m.get("schedule", "static") == "queue":
+        return main_queue(a, d, m, share, units)
     checked = [(w, *check_worker(share, units, workers, w, d, m)) for w in range(1, workers + 1)]
     runs = {r for _, s, _, r in checked if s == "OK"}
     rows = []

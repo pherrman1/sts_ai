@@ -426,6 +426,18 @@ bool centennialUsedFix() {
 // has no power for it (die() makes the other monsters escape or die), so
 // imported states lacked it and killing the leader left the fight UNDECIDED;
 // 0 = legacy import without the marker.
+// STS_SILVER_LEADER_ESCAPE_PASS_THROUGH: unset/1 (default) = a Headbutt grid
+// whose pending tail is GremlinLeader.die()'s Shout + Escape for every
+// surviving minion is passed through with the first card (the combat ends
+// after the grid whatever is picked); 0 = legacy refusal as
+// silver_selection_pending_actions (live problem 72).
+bool leaderEscapePassThrough() {
+    const char *value = std::getenv("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH must be 0 or 1");
+}
+
 bool minionLeaderFix() {
     const char *value = std::getenv("STS_IMPORTER_MINION_LEADER_FIX");
     if (!value || !*value || std::string(value) == "1") return true;
@@ -463,6 +475,18 @@ bool halfDeadSetMoveQueue() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
+}
+
+// STS_SILVER_LAGAVULIN_OPEN_QUEUE: unset/1 (default) = a source-card
+// selection whose pending tail holds the ChangeStateAction("OPEN") of a
+// Lagavulin woken by the hit folds its Metallicize reduction into the
+// imported monster, as native applies it at the hit; 0 = legacy refusal as
+// silver_selection_pending_actions.
+bool lagavulinOpenQueue() {
+    const char *value = std::getenv("STS_SILVER_LAGAVULIN_OPEN_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_LAGAVULIN_OPEN_QUEUE must be 0 or 1");
 }
 
 // STS_SILVER_SLIME_SPLIT_QUEUE: unset/1 (default) = a source-card selection
@@ -842,6 +866,42 @@ bool domeReactiveFix() {
     throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX must be 0 or 1");
 }
 
+// Runic Dome history for the Act 4 fights (Corrupt Heart, Spire Shield and
+// Spear; Philipp 2026-10-21). Their every turn ends in RollMoveAction, but only
+// one roll per three-move cycle is random. =0 restores the legacy refusal of
+// Act 4 under Runic Dome (silver_runic_dome_encounter_domain).
+bool domeAct4Fix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_ACT4");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_ACT4 must be 0 or 1");
+}
+
+// The public result of the Act 4 roll made after `done` executions (Java
+// getMove), 0 if that roll is random, or -1 if it needs an unknown last move.
+int domeAct4Cycle(const std::string &id,int done,int last) {
+    if(id=="CorruptHeart") {
+        if(done==0) return 3;
+        const int mc=(done-1)%3;
+        return mc==2?4:mc==1?(last<0?-1:last==2?1:2):0;
+    }
+    const int mc=done%3;
+    if(id=="SpireShield") return mc==2?3:mc==1?(last<0?-1:last==1?2:1):0;
+    if(id=="SpireSpear") return mc==1?3:mc==0?(done==0?1:last<0?-1:last==1?2:1):0;
+    return 0;
+}
+
+// A split/summon child rolls its first move in init(), before SpawnMonsterAction
+// adds it to the group, so that roll's aliveCount can be 0 (live problem 63:
+// the first Slime Boss child sees only the dead boss). =0 restores the legacy
+// aliveCount >= 1 requirement for every row.
+bool domeNewbornAliveFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX must be 0 or 1");
+}
+
 // Audited stable-slot monsters whose next roll depends on public executed history.
 // Spot Weakness carries only its public attack predicate for the pending roll.
 // Generators and unaudited monster lifecycles remain outside this domain.
@@ -859,7 +919,9 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
     json rows=multi?found->value("monsters",json()):json::array({*found});
     if(!validInteger(*found,"epoch",1,9007199254740991LL) || !rows.is_array()
             || rows.size()!=static_cast<std::size_t>(wire.monsterCount)) return "silver_runic_dome_history_schema";
-    if((wire.act<1 || wire.act>3) || wire.monsterCount<1 || wire.monsterCount>5) return "silver_runic_dome_encounter_domain";
+    const bool act4Fight=wire.act==4 && domeAct4Fix() && ((wire.encounter==static_cast<int>(sts::MonsterEncounter::THE_HEART) && wire.monsterCount==1)
+            || (wire.encounter==static_cast<int>(sts::MonsterEncounter::SHIELD_AND_SPEAR) && wire.monsterCount==2));
+    if((!act4Fight && (wire.act<1 || wire.act>3)) || wire.monsterCount<1 || wire.monsterCount>5) return "silver_runic_dome_encounter_domain";
     for(int slot=0;slot<wire.monsterCount;++slot) {
         auto k=rows.at(slot);
         if(bound && k.is_object() && k.value("absent",false)) {
@@ -867,7 +929,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                     || wire.monsters[slot].id!=static_cast<int>(sts::MonsterId::INVALID))return "silver_runic_dome_occupant_schema";
             wire.monsters[slot].occupantGeneration=0;continue;
         }
-        int birthTurn=0,rollTurn=0,lastExecution=-1;bool unexecutedInitial=false;
+        int birthTurn=0,rollTurn=0,lastExecution=-1;bool unexecutedInitial=false,newbornRoll=false;
         if(bound) {
             if(!validInteger(k,"schemaVersion",4,4) || !validInteger(k,"historySchemaVersion",1,3)
                     || !validInteger(k,"occupantGeneration",1,1000000) || !validInteger(k,"birthGlobalTurn",0,wire.turn)
@@ -886,6 +948,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             if((kind=="initial"?(birthTurn!=0 || k.at("occupantGeneration")!=1 || k.at("birthParentSlot")!=-1 || k.at("birthParentGeneration")!=0)
                     :((kind!="split" && kind!="summon") || birthTurn<1 || k.at("birthParentSlot")==-1 || k.at("birthParentGeneration")==0))
                     || rollTurn<birthTurn || (lastExecution!=-1 && lastExecution<birthTurn))return "silver_runic_dome_occupant_schema";
+            newbornRoll=kind!="initial" && rollTurn==birthTurn && domeNewbornAliveFix();
             wire.monsters[slot].occupantGeneration=k.at("occupantGeneration").get<std::uint32_t>();
             k["schemaVersion"]=k.at("historySchemaVersion");
         }
@@ -910,7 +973,8 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         const std::set<std::string> ordinary={"Centurion","Healer","Chosen","SnakePlant","Snecko","SphericGuardian",
             "Exploder","Repulsor","Maw","Nemesis","Orb Walker","GiantHead","Donu","Deca","Spiker","Serpent","SlaverBoss",
             "GremlinFat","BookOfStabbing","TimeEater","GremlinThief","GremlinWarrior","GremlinWizard",
-            "GremlinTsundere","BanditBear","BanditLeader","BanditChild","Transient","WrithingMass","Champ","Byrd","Shelled Parasite","TheGuardian","Hexaghost","Lagavulin","Looter","Mugger","AwakenedOne","AcidSlime_L","SpikeSlime_L","SlimeBoss","BronzeAutomaton","BronzeOrb","GremlinLeader","Reptomancer","Dagger","TheCollector","TorchHead","FuzzyLouseNormal","FuzzyLouseDefensive","Darkling"};
+            "GremlinTsundere","BanditBear","BanditLeader","BanditChild","Transient","WrithingMass","Champ","Byrd","Shelled Parasite","TheGuardian","Hexaghost","Lagavulin","Looter","Mugger","AwakenedOne","AcidSlime_L","SpikeSlime_L","SlimeBoss","BronzeAutomaton","BronzeOrb","GremlinLeader","Reptomancer","Dagger","TheCollector","TorchHead","FuzzyLouseNormal","FuzzyLouseDefensive","Darkling",
+            "CorruptHeart","SpireShield","SpireSpear"};
         const bool slimeBoss=monsterId=="SlimeBoss",split=slimeBoss||monsterId=="AcidSlime_L"||monsterId=="SpikeSlime_L";
         const bool darkling=monsterId=="Darkling",lice=monsterId=="FuzzyLouseNormal"||monsterId=="FuzzyLouseDefensive",latent=darkling||lice;
         const bool automaton=monsterId=="BronzeAutomaton",orb=monsterId=="BronzeOrb",torch=monsterId=="TorchHead";
@@ -924,11 +988,14 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                     || (wire.monsterCount==2 && slot==1 && wire.monsters[0].id==static_cast<int>(sts::MonsterId::TASKMASTER)
                         && wire.encounter==static_cast<int>(sts::MonsterEncounter::COLOSSEUM_EVENT_NOBS)))))
             return "silver_runic_dome_encounter_domain";
+        const bool heart=monsterId=="CorruptHeart",act4=heart || monsterId=="SpireShield" || monsterId=="SpireSpear";
+        if(act4!=act4Fight || (act4 && slot!=(monsterId=="SpireSpear"?1:0)))
+            return "silver_runic_dome_encounter_domain";
         if(monsterId=="Healer" && (wire.monsterCount!=2 || slot!=1
                 || wire.monsters[0].id!=static_cast<int>(sts::MonsterId::CENTURION)))
             return "silver_runic_dome_encounter_domain";
         const bool reactive=monsterId=="WrithingMass",champ=monsterId=="Champ";
-        const bool byrd=monsterId=="Byrd",shelled=monsterId=="Shelled Parasite",guardian=monsterId=="TheGuardian",hex=monsterId=="Hexaghost",laga=monsterId=="Lagavulin",thief=monsterId=="Looter" || monsterId=="Mugger",awakened=monsterId=="AwakenedOne",dynamic=byrd||shelled||guardian||hex||laga||thief||awakened||remaining;
+        const bool byrd=monsterId=="Byrd",shelled=monsterId=="Shelled Parasite",guardian=monsterId=="TheGuardian",hex=monsterId=="Hexaghost",laga=monsterId=="Lagavulin",thief=monsterId=="Looter" || monsterId=="Mugger",awakened=monsterId=="AwakenedOne",dynamic=byrd||shelled||guardian||hex||laga||thief||awakened||remaining||act4;
         if(bound && rollTurn>wire.turn && !reactive)return "silver_runic_dome_occupant_schema";
         if(k.at("schemaVersion")!=(dynamic?3:reactive?2:1)) return "silver_runic_dome_history_schema";
         const int pending=k.at("pendingMoveRolls").get<int>();
@@ -952,6 +1019,8 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         } else if(k.contains("pendingDirectMoveChoice") || k.contains("directChoices")) return "silver_runic_dome_history_schema";
         const bool knownNext=!dead && !direct && ((deterministic && completed>0) || (dynamic && pending==0));
         if((dead || knownNext || direct)?pending!=0:(reactive?pending<1:pending!=1)) return "silver_runic_dome_history_gap";
+        if(act4 && !dead && knownNext!=(domeAct4Cycle(monsterId,completed,moves.empty() || !moves.back().is_number_integer()?-1:moves.back().get<int>())!=0))
+            return "silver_runic_dome_history_gap";
         if(domeWireFix()) {
             if((deterministic || dynamic) && !k.contains("knownNextMove")) k["knownNextMove"]=nullptr;
             if(dynamic && !k.contains("knownRollPredecessor")) k["knownRollPredecessor"]=nullptr;
@@ -963,7 +1032,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                 if(!proof.is_object() || proof.size()!=2 || !proof.contains("kind")
                         || !validInteger(proof,"move",1,guardian?7:hex?6:dynamic?4:3)
                         || (!dynamic && proof.at("kind")!=(smallAcid?"acid_slime_s_alternation":"public_deterministic_transition_v1"))
-                        || (dynamic && (remaining?(proof.at("kind")!=(split?(slimeBoss && proof.value("move",0)!=3?"slime_boss_public_cycle":"public_split_override"):darkling?"darkling_public_regrow":"public_deterministic_transition_v1")):awakened?proof.at("kind")!="awakened_public_rebirth":thief?proof.at("kind")!="thief_public_cycle":laga?(proof.at("kind")!="public_stun_override" && proof.at("kind")!="lagavulin_awake_event" && proof.at("kind")!="lagavulin_natural_wake"):hex?proof.at("kind")!="hexaghost_activate":guardian?(proof.at("kind")!="guardian_defensive_override" && proof.at("kind")!="guardian_public_cycle")
+                        || (dynamic && (act4?proof.at("kind")!="act4_public_cycle":remaining?(proof.at("kind")!=(split?(slimeBoss && proof.value("move",0)!=3?"slime_boss_public_cycle":"public_split_override"):darkling?"darkling_public_regrow":"public_deterministic_transition_v1")):awakened?proof.at("kind")!="awakened_public_rebirth":thief?proof.at("kind")!="thief_public_cycle":laga?(proof.at("kind")!="public_stun_override" && proof.at("kind")!="lagavulin_awake_event" && proof.at("kind")!="lagavulin_natural_wake"):hex?proof.at("kind")!="hexaghost_activate":guardian?(proof.at("kind")!="guardian_defensive_override" && proof.at("kind")!="guardian_public_cycle")
                             :(proof.at("kind")!="public_stun_override" && proof.at("kind")!="byrd_headbutt_fly"))))
                     return "silver_runic_dome_known_next_schema";
             } else if(!proof.is_null()) return "silver_runic_dome_known_next_schema";
@@ -1024,6 +1093,10 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                 else if(champ) legal=move>=1 && move<=7 && (move!=2 || (misc & 3)>0) && (move!=7 || (misc & 4)!=0);
                 else if(reactive) legal=move>=0 && move<=4 && (move!=4 || misc==1);
                 else if(timeEater) legal=move>=2 && move<=5 && (move!=5 || misc==1);
+                else if(act4) {
+                    const int known=domeAct4Cycle(monsterId,execution,i>0?moves[i-1].get<int>():-1);
+                    legal=known>0?move==known:move==1 || move==2;
+                }
             }
             if(!legal || (smallAcid && ((i>0 && moves[i-1]==move)
                     || (wire.ascension>=17 && move!=(execution%2==0?2:1)))) || (red && move==2 && misc!=1)) return "silver_runic_dome_history_gap";
@@ -1077,7 +1150,10 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             const int last=moves.empty()?0:moves.back().get<int>();int derived=1;
             if(dynamic) {
                 const auto &proof=k.at("knownNextMove");
-                if(remaining) {
+                if(act4) {
+                    derived=domeAct4Cycle(monsterId,completed,moves.empty()?-1:last);
+                    if(derived<=0) return "silver_runic_dome_known_next_schema";
+                } else if(remaining) {
                     if(split)derived=slimeBoss && k.at("knownNextMove").at("kind")=="slime_boss_public_cycle"?(last==4?2:last==2?1:4):3;
                     else if(darkling)derived=4;else if(torch)derived=1;else return "silver_runic_dome_known_next_schema";
                 } else if(awakened) {derived=3;} else if(thief) {
@@ -1168,6 +1244,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(laga) allow(sts::MonsterStatus::ASLEEP);
         if(byrd) allow(sts::MonsterStatus::FLIGHT);
         if(guardian) {allow(sts::MonsterStatus::MODE_SHIFT);allow(sts::MonsterStatus::SHARP_HIDE);}
+        if(heart) {allow(sts::MonsterStatus::BEAT_OF_DEATH);allow(sts::MonsterStatus::INVINCIBLE);allow(sts::MonsterStatus::PAINFUL_STABS);}
         if(reactive) {allow(sts::MonsterStatus::MALLEABLE);allow(sts::MonsterStatus::REACTIVE);}
         if(monsterId=="GremlinWarrior") allow(sts::MonsterStatus::ANGRY);
         if(monsterId=="Transient") {allow(sts::MonsterStatus::FADING);allow(sts::MonsterStatus::SHIFTING);}
@@ -1178,7 +1255,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         const bool queuedReroll=reactive && domeReactiveFix() && m.uniquePower1>0
             && std::any_of(wire.pendingActionQueue.begin(),wire.pendingActionQueue.end(),[](const auto &action) {
                 return action.kind==silver_bridge::PendingActionKind::REACTIVE_ROLL_MOVE;});
-        if((m.statusBits & ~allowed) || (!guardian && !queuedReroll && m.uniquePower1) || (!(m.statusBits & uniqueMask) && m.uniquePower0))
+        if((m.statusBits & ~allowed) || (!guardian && !heart && !queuedReroll && m.uniquePower1) || (!(m.statusBits & uniqueMask) && m.uniquePower0))
             return "silver_runic_dome_monster_power_domain";
         for(std::size_t i=1;i<m.smallPowers.size();++i)
             if(m.smallPowers[i] && !(allowed & (1ULL<<i))) return "silver_runic_dome_monster_power_domain";
@@ -1219,7 +1296,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(multi) {
             if(!integer("firstHp",0,999) || !integer("firstMaxHp",1,999) || k.at("firstHp")>k.at("firstMaxHp")
                     || !k.contains("firstAlive") || !k.at("firstAlive").is_boolean()
-                    || !integer("aliveCount",1,wire.monsterCount)) return "silver_runic_dome_history_schema";
+                    || !integer("aliveCount",newbornRoll?0:1,wire.monsterCount)) return "silver_runic_dome_history_schema";
             inputs.knightCurHp=k.at("firstHp").get<int>();inputs.knightMaxHp=k.at("firstMaxHp").get<int>();
             inputs.knightAlive=k.at("firstAlive").get<bool>();inputs.aliveCount=k.at("aliveCount").get<int>();
             inputs.monstersAlive=inputs.aliveCount;
@@ -2206,7 +2283,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             }
             if(kindName=="MONSTER_GAIN_BLOCK" || kindName=="REACTIVE_ROLL_MOVE" || kindName=="MONSTER_REDUCE_PLATED_ARMOR"
                     || kindName=="MONSTER_REDUCE_FLIGHT" || kindName=="MONSTER_THORNS" || kindName=="MONSTER_CURL_UP"
-                    || kindName=="GUARDIAN_DEFENSIVE_SHIFT") {
+                    || kindName=="GUARDIAN_DEFENSIVE_SHIFT" || kindName=="MONSTER_LAGAVULIN_OPEN") {
                 int slot=-1,amount=0;
                 if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>=wire.monsterCount)
                     return unsupported("silver_selection_pending_actions");
@@ -2249,6 +2326,22 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
                     action.amount=amount;action.monster=slot;
                     wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
+                if(kindName=="MONSTER_LAGAVULIN_OPEN") {
+                    // Native wakes the Lagavulin at the hit (Monster::
+                    // wakeMetallicize, the same rule in both states of
+                    // STS_LAGAVULIN_WAKE_METALLICIZE_FIX); the producer has
+                    // already set OPEN, so only the reduction is pending.
+                    // ReducePowerAction removes the power when 8 or less.
+                    auto &metallicize=monster.smallPowers[6];
+                    if(!lagavulinOpenQueue() || slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::LAGAVULIN)
+                            || has(sts::MonsterStatus::ASLEEP) || !has(sts::MonsterStatus::METALLICIZE)
+                            || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::LAGAVULIN_SLEEP)
+                            || amount<1 || amount!=metallicize)
+                        return unsupported("silver_selection_pending_actions");
+                    metallicize=sts::lagavulinWakeMetallicizeFix() && metallicize>8?metallicize-8:0;
+                    if(metallicize==0) monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::METALLICIZE));
                     continue;
                 }
                 if(kindName=="MONSTER_THORNS") {
@@ -2490,6 +2583,51 @@ SilverRootImportResult importSilverRoot(const json &observation,
     if (root.value("schemaVersion", 0) == 4)
         return importSilverRootGeneric(observation, context);
     return importSilverRootLegacy(observation);
+}
+
+int minionLeaderEscapeChoice(const json &observation) {
+    if (!leaderEscapePassThrough()) return 0;
+    const auto root = observation.value("silverRoot", json::object());
+    const auto combat = observation.contains("combat") ? observation.at("combat") : root.value("combat", json::object());
+    if (!combat.is_object()) return 0;
+    const auto select = combat.value("cardSelect", json::object());
+    const auto choices = select.value("liveChoices", json::array());
+    if (select.value("task", std::string()) != "HEADBUTT" || select.value("origin", std::string()) != "GRID"
+        || select.value("continuation", std::string()) != "source_card_actions"
+        || !choices.is_array() || choices.empty()) return 0;
+    for (std::size_t i = 0; i < choices.size(); ++i)
+        if (!choices[i].is_object() || !choices[i].contains("uuid") || !choices[i].at("uuid").is_string()
+            || !choices[i].contains("choiceIndex") || choices[i].at("choiceIndex") != static_cast<int>(i) + 1) return 0;
+    const auto pending = combat.value("pendingActionQueue", json::array());
+    if (!pending.is_array() || pending.size() != 2 || !pending[0].is_object() || !pending[1].is_object()
+        || pending[0].value("kind", std::string()) != "USE_CARD"
+        || pending[1].value("kind", std::string()) != "MINION_LEADER_ESCAPE") return 0;
+    const auto slots = pending[1].value("slots", json::array());
+    if (!slots.is_array() || slots.empty()) return 0;
+    std::set<int> escaping;
+    for (const auto &slot : slots)
+        if (!slot.is_number_integer() || !escaping.insert(slot.get<int>()).second) return 0;
+    const auto monsters = combat.value("monsters", json::array());
+    if (!monsters.is_array()) return 0;
+    int leaders = 0;
+    std::set<int> alive;
+    for (std::size_t i = 0; i < monsters.size(); ++i) {
+        const auto &m = monsters[i];
+        if (!m.is_object()) return 0;
+        const int slot = m.value("slot", m.value("idx", static_cast<int>(i)));
+        const auto id = live_silver::monsterId(m.value("id", std::string()));
+        const bool gone = m.value("hp", 0) <= 0 || m.value("dead", false)
+            || m.value("escaping", m.value("escaped", false)) || m.value("halfDead", false);
+        if (id == sts::MonsterId::GREMLIN_LEADER) {
+            if (!gone) return 0;
+            ++leaders;
+        } else if (!gone) {
+            if (id != sts::MonsterId::MAD_GREMLIN && id != sts::MonsterId::SNEAKY_GREMLIN && id != sts::MonsterId::FAT_GREMLIN
+                && id != sts::MonsterId::SHIELD_GREMLIN && id != sts::MonsterId::GREMLIN_WIZARD) return 0;
+            alive.insert(slot);
+        }
+    }
+    return leaders == 1 && alive == escaping ? 1 : 0;
 }
 
 SilverRootImportResult importSilverRoot(const json &observation) {

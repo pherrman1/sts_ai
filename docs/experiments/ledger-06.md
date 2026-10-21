@@ -22001,6 +22001,66 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §599 — Live combat parity: Slime Boss split left native monsterCount one above the inspector's (2026-10-21)
+
+**Question:** why did live seed 111200456 (release 9ec8a51d, Slime Boss, floor 16) show `monsterCount` game 3 vs
+native 4 at the End Turn of s217, where the Spike Slime (L) split (problem 62 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)? Is it play-relevant?
+**Setup:** the canary's extract and javap (`issue62-extract.json`, `issue62-javap.md`: `SpikeSlime_L.takeTurn`,
+`SpawnMonsterAction.update`, `MonsterGroup.addMonster`); `Monster::largeSlimeSplit`; `slime_split_monster_count`
+unit test; reviewer F's 64-seed paired neutrality check (below).
+**Result:** Java never prunes or reuses slots (`SuicideAction` keeps the parent; smart positioning inserts by drawX),
+so its raw list after boss + Spike L splits is [M, L dead, M, boss dead, Acid L] (5). The inspector emits the fixed
+native layout and reports 3. Native put the children in slots 0 and 1 (the dead boss's) but did `count+1` anyway,
+leaving an always-dead empty slot 3. Alive monsters and their order match in all views; s218-s221 all MATCH; every
+native `monsterCount` loop skips dead slots and the `aliveOnly=false` random pick has no caller. The s221
+`endHpGameMinusNative` of 6 is Burning Blood.
+**Interpretation:** representational, not a play bug. `STS_SLIME_SPLIT_MONSTER_COUNT_FIX` (default on, `=0`
+restores) sets `monsterCount = max(count, placeIdx+2)`, which removes the parity diff and makes the simulated
+state equal to the imported one (state equality compares slots up to `monsterCount`). Neutral in simulated fights
+(reviewer F, scratch harness: Slime Boss, Ironclad A20 starter deck at 400 HP, Silver 1000 sims with reuse, 64 paired
+seeds 111148000-111148063 with the flag 0 vs 1: all trace digests identical, 17 seeds entered the spike-first window,
+10 ended with count 3 vs 4). Can change live advisor play: Silver reuses its tree between live decisions only on an
+exact state match, which includes `monsterCount`, so without the fix the first decision after a spike-first split
+misses the reuse and searches from scratch.
+Seeds: 111148000-111148063 (review harness, not committed); live seed 111200456 as reported.
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §597 — Live combat parity: Curiosity never gave the Awakened One Strength natively (2026-10-21)
+
+**Question:** why was the Awakened One's Strength game N+2 vs native N after every Power play (live seed 111200436,
+problem 45), and exactly 2 lower for the rest of the fight in seed 111200459 seg2 (problem 65; s856 Inflame)?
+**Setup:** `ISSUES.md` #45/#65 on the share; `BattleContext::onUsePowerCard`; `curiosity_power_play` unit test (no
+gameplay seeds).
+**Result:** the native engine never implemented `CuriosityPower.onUseCard`; the hook at the end of `onUsePowerCard`
+was commented out, and nothing else reads Curiosity. Live play re-imports the game state each decision, which hid
+it in most verdicts.
+**Interpretation:** `STS_CURIOSITY_FIX` (default on, `=0` restores) queues `BuffEnemy<STRENGTH>(Curiosity)` at the
+bottom for each monster holding Curiosity on every Power use (Duplication/Echo Form/Burst copies included; unplayable
+autoplay uses skip hooks; Curiosity is already removed at the stage-1 death). Play-changing for simulated Awakened One
+fights (Silver search and rollouts now see the Strength the Powers give); unmeasured.
+**Comparability:** this changes simulated Awakened One fights (Act 3 boss), so A20 whole-run results before and after
+this merge are not comparable; compare with `STS_CURIOSITY_FIX=0` or rerun both arms on one commit.
+Seeds: none new (live seeds as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §592 — Live Runic Dome: a Slime Boss split child's birth roll with aliveCount 0 stopped the run (2026-10-21)
+
+**Question:** why did live seed 111200458 (release 9ec8a51d, Act 3 floor 38, Slime Boss event, Runic Dome) stop at s546
+with `silver_runic_dome_history_schema` (problem 63 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (row for slot 0, SpikeSlime_L, occupantGeneration 2, split from slot 0 gen 1: aliveCount 0,
+firstAlive false, firstHp 0, firstMaxHp 150); `live_silver_importer.cpp` Runic Dome row validation;
+`live_silver_importer` test (no gameplay seeds).
+**Result:** the values are real Java: the child rolls in `init()` before `SpawnMonsterAction` adds it, so the only listed
+monster is the dead boss. The importer required `aliveCount >= 1` on every row. The second child (AcidSlime_L) sees the
+first and has aliveCount 1. No split or summoned monster's move rule reads aliveCount/monstersAlive (only Centurion,
+Gremlin Leader, Reptomancer and The Collector do, and they are never spawned), so native rolls are unaffected.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX` (default on, `=0` restores) accepts aliveCount 0 only for
+the birth roll of a split/summon row (`rollGlobalTurn == birthGlobalTurn`). Unblocks live Slime Boss fights with Runic
+Dome; no play change otherwise.
+Seeds: none new (live seed 111200458 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
 ## §591 — Live Runic Dome: the producer refused every Gremlin Leader Stab (2026-10-21)
 
 **Question:** why did live seed 111200463 (release 9ec8a51d, Act 2 floor 24, GREMLIN_LEADER elite, Runic Dome) stop at
@@ -22069,6 +22129,85 @@ hit. Play-changing in every Byrd fight that grounds a Byrd (full damage while gr
 Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`,
 `behavior/java-reference-audit.md`.
+## §596 — Live Runic Dome: Act 4 fights were refused; the Heart, Shield and Spear cycles are now modelled (2026-10-21)
+
+**Question:** a live run that takes Runic Dome stops at its first Act 4 fight, because the mod's Dome tracker accepts
+only acts 1-3, the knowledge block is incomplete and the root is unsupported (`silver_runic_dome_incomplete_history`).
+Philipp asked to model Act 4 rather than avoid it (2026-10-21).
+**Setup:** the canary's `javap` of CorruptHeart, SpireShield and SpireSpear (`engine-parity/overnight-20261019/act4-dome-javap.md`
+on the share); `RunicDomeTrackerTest` in a standalone javac harness; `live_silver_importer_test` with a native
+THE_HEART root and the captured SHIELD_AND_SPEAR fixture (no gameplay seeds).
+**Result:** each Act 4 `getMove` is a public `moveCount` cycle with one coin flip per three moves (Heart:
+Debilitate first, without advancing `moveCount`; Shield: Fortify/Bash opener; Spear: the third move), and every
+`takeTurn` ends with `RollMoveAction`. Native already plays these monsters with deterministic `setMove` plus a
+no-op roll. The tracker now accepts the three monsters in act 4 only, patches their `takeTurn`, and turns each
+determined roll into a known next move (`act4_public_cycle`); only the flips are pending hidden rolls. The importer
+accepts THE_HEART and SHIELD_AND_SPEAR rows, checks slots, recomputes the cycle from completed turns and the last
+executed move, and refuses a wrong, missing or extra proof and a wrong executed move.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_ACT4` (default on, `=0` restores the Act 4 refusal) lets the live advisor
+play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
+**Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
+Seeds: none.
+## §603 — Live combat parity: purge-on-use replay copies skipped canUse (Velvet Choker let Duplication replay a sixth card) (2026-10-21)
+
+**Question:** why did live seed 111200445 (Velvet Choker, Rupture played as the sixth card under Duplication; problem
+55 in `engine-parity/overnight-20261019/ISSUES.md` on the share) show the game resolving one play (cardsPlayedThisTurn
+6, one Bird-Faced Urn heal) while native also played the Duplication copy?
+**Setup:** pinned-jar javap of `GameActionManager.getNextAction` and `UseCardAction`; `BattleContext` card-queue
+code; `purge_copy_can_use` unit test (no gameplay seeds).
+**Result:** Java computes `canPlayCard = canUse || dontTriggerOnUseCard` with no `purgeOnUse` exception, so a replay copy
+(Duplication, Double Tap, Burst, Echo Form, Necronomicon) must pass `canUse` (Choker's `canPlay`, a dying target, ...)
+and otherwise only poofs (`UseCardAction`: purgeOnUse -> `ShowCardAndPoofAction`). The engine let every purge copy
+skip `canUse`, so the sixth-card copy under Choker resolved.
+**Interpretation:** `STS_PURGE_COPY_CAN_USE_FIX` (default on, `=0` restores) applies `canUse` to copies; an unusable
+copy poofs and reaches no pile (the #733 unplayable-autoplay routing skips purge copies). Play-changing in simulation
+wherever a copy fails `canUse` (Choker at six cards, a copy aimed at a target that died); unmeasured, so A20
+whole-run results across this merge are not comparable without `=0`.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+## §600 — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
+
+**Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with
+`occupantBindingError=unsupported_monster_power_domain` (problem 73 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share; snapshots saved-111200472-seg3/-seg4 on the PC)?
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the live importer's power map (`live_silver_mapping.cpp` maps
+"Life Link" to REGROW); `RunicDomeTrackerTest`.
+**Result:** the tracker whitelisted the Darkling power as "Regrow", but Java's `RegrowPower.POWER_ID` is "Life Link",
+so every Darkling under Runic Dome invalidated the knowledge and the run stopped. The test's jar check now compares
+the POWER_ID of every monster-specific Dome power (31 classes) against the whitelist and reports all mismatches.
+**Interpretation:** producer bug, fixed in the mod (one string); no flag, since the old behaviour only refused the
+history. Live Darkling fights under Runic Dome no longer stop. No engine or simulation change.
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 7463f1fd (POWER_ID check clean
+for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
+Seeds: none new (live seed 111200472 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §602 — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
+
+**Question:** after §600 (Darkling "Life Link"), are the generic entries of the tracker's monster-power whitelist real
+Java POWER_IDs? (Reviewer E's follow-up on #763.)
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the importer's power map (`live_silver_mapping.cpp`);
+`RunicDomeTrackerTest`'s jar check, extended to the 13 generic power classes.
+**Result:** "Block Return", "Corpse Explosion" and "Mark" were display names; the jar IDs are "BlockReturnPower",
+"CorpseExplosionPower" and "PathToVictoryPower" (the importer already maps those). A monster carrying one of them
+(Talk to the Hand, Corpse Explosion or Pressure Points cards, reachable off-class) invalidated the Dome history and
+stopped the live run; it failed closed.
+**Interpretation:** producer bug, fixed in the mod (three strings); no flag. The jar check now covers every whitelist
+entry. No engine or simulation change.
+**Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
+Seeds: none.
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §604 — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
+
+**Observation.** Live A20 seed 111200473 (release eeb17782, Chosen and Byrds, floor 30, turn 1): Toolbox's battle-start `ChooseOneColorless` offer reached the advisor as `silver_card_reward_pending_actions`. The queue behind it was `[DrawCardAction(5), EnableEndTurnButtonAction, (RelicAboveCreatureAction, ApplyPowerAction Weak 1 from the player) x 2]`. The mod refused (no continuation was sent); the importer already accepts `toolbox_actions` with `DRAW` plus `DEBUFF_ALL_ENEMY`.
+
+**Analysis.** javap of the pinned jar (RedMask.atBattleStart, ApplyPowerAction, WeakPower, DrawCardAction, AbstractRoom battle start) matches every check in `publicPendingActionsJson(true)` and `allEnemyPowerBatch` on paper: Red Mask builds `WeakPower(m, 1, false)` (justApplied false), source is the player, and the opening draw is the default 3-arg DrawCardAction. Which check refused could not be decided from the snapshot. The old blocker also printed `power=` blank because `readStringField` returns "" for a missing `powerID` field.
+
+**Change (diagnostic only, no play change, no flag).** Every refusal in `publicPendingActionsJson` and `allEnemyPowerBatch` records `<queue index>:<check>`; `pendingActionsBlocker` appends it as `;refusal=...`. `powerActionDetail` now falls back to the power instance's ID. A repeat of problem 74 names the exact failing check, and the fix follows from it.
+
+**Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22135,6 +22274,60 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §598 — Live Silver: Headbutt waking a sleeping Lagavulin refused its put-on-top choice (2026-10-21)
+
+**Question:** why did live seed 111200455 (release 9ec8a51d, Act 1 floor 6, Lagavulin asleep) stop with
+`silver_selection_pending_actions` and pending actions `[UseCardAction, ChangeStateAction]` after Headbutt (problem 61
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report and `issue58-javap.md` (`Lagavulin.damage`, `Lagavulin.changeState`);
+`live_silver_importer_test` (Ironclad seed 111200071, no gameplay runs).
+**Result:** `Lagavulin.damage` sets OPEN (4) at the hit and queues `ChangeStateAction("OPEN")` behind Headbutt's
+`UseCardAction`; its `changeState` queues the Metallicize reduction, so the grid opens with Metallicize unreduced.
+Native wakes at the hit (`Monster::wakeMetallicize`), so its tail is `[USE_CARD]` with the reduction applied. The
+producer had no item for this `ChangeStateAction`.
+**Interpretation:** the producer emits `MONSTER_LAGAVULIN_OPEN` (amount = Metallicize; only for a Lagavulin with
+OPEN set, `isOutTriggered` and not yet `isOut`). `STS_SILVER_LAGAVULIN_OPEN_QUEUE` (default on, `=0` restores the
+refusal) folds it by native's wake rule in both states of `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (-8 with removal at 8 or
+less, or removal). The folded import matches the native Headbutt state (Metallicize 12 -> 4, and removal
+with the wake fix off). Changes only which live roots Silver searches. Stacked on #745.
+**Open question:** none beyond #745's (Java reduces by 8; the unit test uses Metallicize 12 to tell -8 from removal).
+Seeds: none new (live seed 111200455 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
+## §595 — Live combat parity: unplayable autoplayed cards vanished and autoplays ran in reverse natively (2026-10-20)
+
+**Question:** why did live seed 111200435 (release f2e3f48d) show the game's exhaust pile one card longer than native
+after four Havoc+ plays (problem 41), and live seed 111200436 step 503 a different discard order after Distilled
+Chaos (problem 44), in `engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's extracts (`issue41-extract.json`, `issue44-extract.json`); read-only `javap` of the pinned JAR
+on Philipp's PC (`issue41-javap.md`, `issue44-javap.md`, `issue41-javap-deadtarget.md`): `GameActionManager`
+(`getNextAction`, `addCardQueueItem`), `PlayTopCardAction`, `NewQueueCardAction`, `UseCardAction`,
+`AbstractCard.canUse/cardPlayable`, `DistilledChaosPotion.use`; `unplayable_autoplay` unit test (no gameplay seeds).
+**Result:** every Havoc'd card in problem 41 was unplayable (Clash+ with a non-attack in hand ×2, Burn, Burn+). The
+engine dropped an autoplayed card that failed `canUse`; Java gives it `dontTriggerOnUseCard` and a bottom
+`UseCardAction`, which skips all use hooks but still exhausts (Havoc, own exhaust; Strange Spoon) or discards it. Java
+appends autoplayed cards to the card queue; the engine pushed them to the front, so Distilled Chaos ran in reverse
+(game Bane, Defend, Shrug; native Shrug, Defend, Bane lost).
+**Interpretation:** `STS_UNPLAYABLE_AUTOPLAY_FIX` and `STS_AUTOPLAY_QUEUE_ORDER_FIX` (default on, `=0` restores
+each) match the game. An autoplay at an already-dying target takes the hook-free path too (Java `cardPlayable`
+checks `isDying`). Play-changing for simulator play with Havoc, Mayhem and Distilled Chaos, unmeasured.
+**Open question:** a half-dead (Darkling, Awakened One) or escaping target passes Java `canUse` and the card is used
+normally; the engine keeps its legacy behavior there.
+Seeds: none new (live seeds 111200435 and 111200436 as reported; unit test only).
+## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
+
+**Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with
+Metallicize 4 in the game but none natively (problem 58 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** read-only `javap` of the pinned JAR on Philipp's PC (`issue58-javap.md`: `Lagavulin` fields, `damage`,
+`changeState`, `takeTurn`, `usePreBattleAction`); `lagavulin_wake_metallicize` unit test (no gameplay seeds).
+**Result:** a Strike woke the sleeping Lagavulin at Metallicize 12. `Lagavulin.damage` queues
+`ChangeStateAction("OPEN")`, whose `changeState` queues `ReducePowerAction(Metallicize, 8)`; the natural wake runs the
+same `changeState`. The engine subtracted 8 on the natural wake but removed Metallicize on the damage wake.
+**Interpretation:** `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (default on, `=0` restores) subtracts 8 on the damage wake
+(removing the power when 8 or fewer remain). Play-changing for simulator play against a Lagavulin above 8
+Metallicize, unmeasured.
+Seeds: none new (live seed 111200447 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §590 — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
 
 **Question:** why did live seed 111200459 seg1 s852 (Awakened One, floor 50) show native with an open
@@ -22353,3 +22546,59 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
 - **Data:** both arms' captures (≈34k searched roots each, ≈8.4k full-budget) join gen 0's 1,664 runs as the gen-2
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
+
+## §601 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+
+**Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation and `javap` of the pinned jar (`engine-parity/overnight-20261019/issue69-joust/`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** `TheJoust$CUR_SCREEN` is HALT, EXPLANATION, PRE_JOUST, JOUST, COMPLETE; the constructor opens on HALT with the
+sole option [Continue], and HALT's button only shows the two bets (EXPLANATION, native's decision page). Both the mod's
+and the importer's `event_continue` tables listed a nonexistent `INTRO` page for The Joust, so the mod refused HALT with
+`EVENT_PHASE_UNREPRESENTABLE:The Joust:HALT`; every run that meets The Joust ended there.
+**Interpretation:** the mod replaces `INTRO` with HALT in its `event_continue` table; `STS_IMPORTER_JOUST_HALT_FIX`
+(default on, `=0` restores the refusal) qualifies exactly that page, and the advisor passes it through
+(`forced_no_search`). The importer's unreachable `INTRO` entry is dropped. PRE_JOUST (the one `miscRng` draw) and JOUST
+were already forced continues.
+**Open question:** the other `INTRO` continue entries (Face Trader, Designer, Falling, Sensory Stone, Note For
+Yourself, Bonfire, Colosseum, Lab) were not checked against `javap` here.
+Seeds: none new (live seed 111200467 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §594 — Live driver: the boss-relic Skip was unmappable (2026-10-21)
+
+**Question:** why did live seed 111200468 (Act 1 floor 17, BOSS_REWARD Black Blood / Empty Cage / Sacred Bark) stop when
+the OOC advisor skipped the boss relic (problem 71 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's failure record; `tools/live_game_driver.py` `map_ooc_action`; `tests/test_live_game_driver.py`
+(no gameplay seeds).
+**Result:** the inspector publishes the boss-relic Skip button as live action `{"kind": "cancel"}`, but MCP advertises
+that button (`can_cancel` true, `cancel_button` "skip") only as its `skip` tool, so the driver found 0 candidates. It was
+the first boss-relic skip of the overnight runs.
+**Interpretation:** on BOSS_REWARD only, and only when MCP offers no `cancel` tool, `cancel` now maps to the bare `skip`
+candidate. Other screens keep exact tool matching. Driver mapping only (no flag): before, the run stopped.
+**Open question:** the live click itself (MCP `skip` on BOSS_REWARD) is not exercised here; the canary's next boss-relic
+skip confirms it.
+Seeds: none new (live seed 111200468 as reported; driver unit tests only).
+**Knowledge impact:** `operations/live-model-inspector.md`.
+## §605 — Live Silver: Headbutt killing the Gremlin Leader refused its put-on-top choice (2026-10-21)
+
+**Question:** why did live seed 111200472 seg2 s50 (release 8447353f, Act 2 floor 30, GREMLIN_LEADER) stop with
+`silver_selection_pending_actions` and pending actions `[UseCardAction, ShoutAction, ShoutAction, EscapeAction,
+EscapeAction]` after Headbutt killed the Gremlin Leader (problem 72 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Setup:** the canary's report, its live observation and javap of `ShoutAction`/`EscapeAction`
+(`issue72-leader/` on the share); a native probe; `live_silver_importer_test` (Ironclad seed 111200071,
+GREMLIN_LEADER, no gameplay runs).
+**Result:** `GremlinLeader.die()` queues a `ShoutAction` (speech bubble only) and then an `EscapeAction` per non-dying
+minion with `addToBottom`, behind the open Headbutt grid; the escapes run after the pick. Native's `Monster::die` sees
+`MINION_LEADER` and sets the outcome to PLAYER_VICTORY at the hit, without opening a grid, so no Silver root exists.
+**Interpretation:** the producer emits `MINION_LEADER_ESCAPE {slots}` (only when the shouts and escapes name the same
+monsters in order and those are exactly the surviving gremlins beside one dying Gremlin Leader).
+`STS_SILVER_LEADER_ESCAPE_PASS_THROUGH` (default on, `=0` restores the refusal) answers the grid with `choose 1` as a
+forced pass-through: every pick ends the combat the same way (the minions escape and the combat ends).
+It refuses partial or extra slots, a living leader, a non-Headbutt grid and any
+other pending item. Changes only which live grids the advisor answers.
+**Open question:** the Java branch is checked by `CombatBoundaryTest` for its JSON helper only; the canary's next
+Gremlin Leader Headbutt kill confirms the live path.
+Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.

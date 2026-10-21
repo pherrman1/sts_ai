@@ -2422,6 +2422,10 @@ std::optional<bool> liveRealLearnedStop;   // STS_OOC_MCTS_REAL_LEARNED_STOP; un
 std::uint64_t liveSimulations = 512;
 // Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
 double liveFullBudgetFraction = 0;
+// KataGo-style fast-root cap (STS_OOC_MCTS_FAST_ROOT_CAP): with playout-cap randomization on, a
+// root that is not a full-budget root searches at most this many simulations (its early stops
+// still apply below it). Unset: 1024 (Philipp 2026-10-21); 0 restores the uncapped fast roots.
+std::uint64_t liveFastRootCap = 0;
 // Self-play exploration for AZ data runs (both opt-in, off by default):
 // STS_OOC_MCTS_ROOT_NOISE=FRACTION[:ALPHA] mixes Dirichlet noise into the root PUCT prior;
 // STS_OOC_MCTS_PLAY_SAMPLE=FLOOR[:TEMPERATURE] plays a root action sampled in proportion to
@@ -2978,7 +2982,7 @@ void configureLiveOocMcts() {
     liveCheckpointTrace.clear();
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
-    liveFullBudgetFraction = 0;
+    liveFullBudgetFraction = 0; liveFastRootCap = 0;
     liveLearnedStopNet.reset(); liveLearnedStopTau = 0;
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     liveLeafCapture.reset();
@@ -2988,6 +2992,8 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_LEAF_CAPTURE requires STS_OOC_MCTS=1");
     if (std::getenv("STS_OOC_MCTS_FULL_BUDGET_FRACTION") && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION requires STS_OOC_MCTS=1");
+    if (std::getenv("STS_OOC_MCTS_FAST_ROOT_CAP") && !liveEnabled)
+        throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP requires STS_OOC_MCTS=1");
     for (const char *key : {"STS_OOC_MCTS_ROOT_NOISE", "STS_OOC_MCTS_PLAY_SAMPLE"})
         if (std::getenv(key) && !liveEnabled) throw std::runtime_error(std::string(key) + " requires STS_OOC_MCTS=1");
     liveSibling.reset();
@@ -3077,6 +3083,16 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION must be in (0, 1]");
         liveFullBudgetFraction = x;
     }
+    if (const char *cap = std::getenv("STS_OOC_MCTS_FAST_ROOT_CAP")) {
+        const std::string value(cap);
+        if (value.empty() || value.size() > 12 || value.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP must be a non-negative integer (0 = off)");
+        liveFastRootCap = std::stoull(value);
+    } else if (liveFullBudgetFraction > 0) {
+        liveFastRootCap = 1024;
+    }
+    if (liveFastRootCap > 0 && liveFullBudgetFraction <= 0)
+        throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
     liveRootNoiseFraction = 0; liveRootNoiseAlpha = 0.3;
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
     // "A[:B]" with A and B finite; returns false on malformed text.
@@ -3469,6 +3485,7 @@ void configureLiveOocMcts() {
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
+        << (liveFastRootCap > 0 ? " fast_root_cap=" + std::to_string(liveFastRootCap) : std::string{})
         << (liveRootNoiseFraction > 0 ? " root_noise=" + std::to_string(liveRootNoiseFraction) + ":"
             + std::to_string(liveRootNoiseAlpha) : std::string{})
         << (livePlaySampleFloor >= 0 ? " play_sample=" + std::to_string(livePlaySampleFloor) + ":"
@@ -4112,6 +4129,9 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // A full-budget root drops the early stops, as the root-lock observer does,
     // but keeps the singleton shortcut: a sole action has no policy target.
     fullBudget = fullBudget && !sole;
+    // Fast roots of a playout-cap-randomized run stop at the cap at the latest.
+    const bool fastCapped = liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
+    if (fastCapped) simulations = liveFastRootCap;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
     if (liveLearnedStopNet && !fullBudget && !sole) {
         config.learnedStopSimulations = {128, 256, 512, 1024, 2048};
@@ -4333,6 +4353,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
         // Only with the option on, so rows without it keep their exact bytes.
         if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
+        if (liveFastRootCap > 0) (*policyRoot)["fastRootCap"] = liveFastRootCap;
         if (explore && liveRootNoiseFraction > 0) (*policyRoot)["rootNoise"] = {liveRootNoiseFraction, liveRootNoiseAlpha};
         if (explore && livePlaySampleFloor >= 0) {
             (*policyRoot)["searchSelectedId"] = searchSelected ? json(*searchSelected) : json(nullptr);

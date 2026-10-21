@@ -42,6 +42,12 @@ struct SilverImportContext {
 SilverRootImportResult importSilverRoot(const nlohmann::json &observation);
 SilverRootImportResult importSilverRoot(const nlohmann::json &observation,
                                         SilverImportContext &context);
+// A Headbutt grid opened by a hit that killed the Gremlin Leader: Java queues
+// the surviving minions' escapes behind the grid, so every pick ends the
+// combat the same way (native ends it at the hit). Returns the choice index
+// (1) to pass through, or 0 when the observation does not qualify
+// (STS_SILVER_LEADER_ESCAPE_PASS_THROUGH, live problem 72).
+int minionLeaderEscapeChoice(const nlohmann::json &observation);
 std::string silverActionLabel(const silver_bridge::SemanticAction &action,
                               const silver_bridge::BattleStateWire &state);
 nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
