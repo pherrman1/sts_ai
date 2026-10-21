@@ -22709,7 +22709,7 @@ today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
 [Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
 Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
 **Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
-## §TBD — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
+## §612 — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
 
 **Question:** why did live seed 111200476 parity s117 (release 0ba0e9a9, Discovery+ pick with three hits taken) show the
 new Blood for Blood at cost 1 in the game and 4 natively (problem 76; seed 111200481 s281 shows the same, 2 vs 4)?
