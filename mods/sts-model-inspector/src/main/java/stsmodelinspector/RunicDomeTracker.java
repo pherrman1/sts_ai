@@ -427,7 +427,7 @@ final class RunicDomeTracker {
                 "Lockon","Mark","Metallicize","Plated Armor","Poison","Regenerate","Shackled").contains(id)
                 || (split(monster) && "Split".equals(id))
                 || (("FuzzyLouseNormal".equals(monster)||"FuzzyLouseDefensive".equals(monster)) && "Curl Up".equals(id))
-                || ("Darkling".equals(monster) && "Regrow".equals(id))
+                || ("Darkling".equals(monster) && "Life Link".equals(id)) // RegrowPower.POWER_ID
                 || (("Dagger".equals(monster)||"TorchHead".equals(monster)||"BronzeOrb".equals(monster)||monster.startsWith("Gremlin")) && "Minion".equals(id))
                 || ("BronzeOrb".equals(monster) && "Stasis".equals(id))
                 || ("Cultist".equals(monster) && "Ritual".equals(id))

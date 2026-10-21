@@ -22148,6 +22148,22 @@ executed move, and refuses a wrong, missing or extra proof and a wrong executed 
 play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
 **Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
 Seeds: none.
+## §TBD — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
+
+**Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with
+`occupantBindingError=unsupported_monster_power_domain` (problem 73 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share; snapshots saved-111200472-seg3/-seg4 on the PC)?
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the live importer's power map (`live_silver_mapping.cpp` maps
+"Life Link" to REGROW); `RunicDomeTrackerTest`.
+**Result:** the tracker whitelisted the Darkling power as "Regrow", but Java's `RegrowPower.POWER_ID` is "Life Link",
+so every Darkling under Runic Dome invalidated the knowledge and the run stopped. The test's jar check now compares
+the POWER_ID of every monster-specific Dome power (31 classes) against the whitelist and reports all mismatches.
+**Interpretation:** producer bug, fixed in the mod (one string); no flag, since the old behaviour only refused the
+history. Live Darkling fights under Runic Dome no longer stop. No engine or simulation change.
+**Open question:** the full `test.sh` (jar check) runs on the PC via the canary.
+Seeds: none new (live seed 111200472 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
