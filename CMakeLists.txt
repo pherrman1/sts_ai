@@ -146,6 +146,14 @@ add_test(NAME exhaust_empty_hand COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(exhaust_empty_hand PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(anger_copy_cost_test tests/anger_copy_cost_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(anger_copy_cost_test PRIVATE include json/include)
+add_test(NAME anger_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:anger_copy_cost_test>)
+set_tests_properties(anger_copy_cost PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(upgrade_cost_delta_test tests/upgrade_cost_delta_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(upgrade_cost_delta_test PRIVATE include json/include)
