@@ -185,7 +185,7 @@ const std::map<Event,std::string> eventLeavePages{
 const std::map<Event,std::string> eventContinuePages{
     {Event::FACE_TRADER,"INTRO"},{Event::DESIGNER_IN_SPIRE,"INTRO"},{Event::FALLING,"INTRO"},
     {Event::SENSORY_STONE,"INTRO|ACCEPT"},{Event::NOTE_FOR_YOURSELF,"INTRO"},
-    {Event::BONFIRE_SPIRITS,"INTRO|CHOOSE"},{Event::THE_JOUST,"INTRO|PRE_JOUST|JOUST"},
+    {Event::BONFIRE_SPIRITS,"INTRO|CHOOSE"},{Event::THE_JOUST,"PRE_JOUST|JOUST"},
     {Event::COLOSSEUM,"INTRO"},{Event::LAB,"INTRO"},{Event::THE_NEST,"0"},{Event::WINDING_HALLS,"0"},
     {Event::OLD_BEGGAR,"GAVE_MONEY"},{Event::WING_STATUE,"PURGE"},
     {Event::MASKED_BANDITS,"PAID_1|PAID_2|PAID_3"},{Event::THE_SSSSSERPENT,"AGREE"},
@@ -202,6 +202,16 @@ bool importerMushroomsFightFix() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_IMPORTER_MUSHROOMS_FIGHT_FIX must be 0 or 1");
+}
+// STS_IMPORTER_JOUST_HALT_FIX: unset/1 (default) = The Joust's opening page
+// (TheJoust$CUR_SCREEN.HALT, sole [Continue]) is a forced event_continue;
+// 0 restores the old refusal (the table expected a nonexistent INTRO page;
+// live problem 69).
+bool importerJoustHaltFix() {
+    const char *value = std::getenv("STS_IMPORTER_JOUST_HALT_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_JOUST_HALT_FIX must be 0 or 1");
 }
 bool eventPage(const std::map<Event,std::string> &pages,Event e,const std::string &phase) {
     const auto it=pages.find(e);
@@ -1265,7 +1275,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                         && ((transition=="event_leave" && eventPage(eventLeavePages,g.curEvent,phase))
                             || (transition=="event_continue" && (eventPage(eventContinuePages,g.curEvent,phase)
                                 || (g.curEvent==Event::HYPNOTIZING_COLORED_MUSHROOMS && phase=="2"
-                                    && importerMushroomsFightFix()))));
+                                    && importerMushroomsFightFix())
+                                || (g.curEvent==Event::THE_JOUST && phase=="HALT" && importerJoustHaltFix()))));
                 require(neow || goop || forge || writing || library || vanilla,"unqualified mechanical event transition");
                 const auto &options=array(eventCapture,"options",1);
                 require(options.size()==1 && integer(options.at(0),"index",0,0)==0

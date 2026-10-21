@@ -22165,6 +22165,38 @@ wherever a copy fails `canUse` (Choker at six cards, a copy aimed at a target th
 whole-run results across this merge are not comparable without `=0`.
 Seeds: none new (live seed 111200445 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+## §600 — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
+
+**Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with
+`occupantBindingError=unsupported_monster_power_domain` (problem 73 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share; snapshots saved-111200472-seg3/-seg4 on the PC)?
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the live importer's power map (`live_silver_mapping.cpp` maps
+"Life Link" to REGROW); `RunicDomeTrackerTest`.
+**Result:** the tracker whitelisted the Darkling power as "Regrow", but Java's `RegrowPower.POWER_ID` is "Life Link",
+so every Darkling under Runic Dome invalidated the knowledge and the run stopped. The test's jar check now compares
+the POWER_ID of every monster-specific Dome power (31 classes) against the whitelist and reports all mismatches.
+**Interpretation:** producer bug, fixed in the mod (one string); no flag, since the old behaviour only refused the
+history. Live Darkling fights under Runic Dome no longer stop. No engine or simulation change.
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 7463f1fd (POWER_ID check clean
+for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
+Seeds: none new (live seed 111200472 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §602 — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
+
+**Question:** after §600 (Darkling "Life Link"), are the generic entries of the tracker's monster-power whitelist real
+Java POWER_IDs? (Reviewer E's follow-up on #763.)
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the importer's power map (`live_silver_mapping.cpp`);
+`RunicDomeTrackerTest`'s jar check, extended to the 13 generic power classes.
+**Result:** "Block Return", "Corpse Explosion" and "Mark" were display names; the jar IDs are "BlockReturnPower",
+"CorpseExplosionPower" and "PathToVictoryPower" (the importer already maps those). A monster carrying one of them
+(Talk to the Hand, Corpse Explosion or Pressure Points cards, reachable off-class) invalidated the Dome history and
+stopped the live run; it failed closed.
+**Interpretation:** producer bug, fixed in the mod (three strings); no flag. The jar check now covers every whitelist
+entry. No engine or simulation change.
+**Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
+Seeds: none.
+**Knowledge impact:** none beyond this entry (producer tracker detail).
 
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
@@ -22505,6 +22537,24 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
+## §601 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+
+**Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation and `javap` of the pinned jar (`engine-parity/overnight-20261019/issue69-joust/`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** `TheJoust$CUR_SCREEN` is HALT, EXPLANATION, PRE_JOUST, JOUST, COMPLETE; the constructor opens on HALT with the
+sole option [Continue], and HALT's button only shows the two bets (EXPLANATION, native's decision page). Both the mod's
+and the importer's `event_continue` tables listed a nonexistent `INTRO` page for The Joust, so the mod refused HALT with
+`EVENT_PHASE_UNREPRESENTABLE:The Joust:HALT`; every run that meets The Joust ended there.
+**Interpretation:** the mod replaces `INTRO` with HALT in its `event_continue` table; `STS_IMPORTER_JOUST_HALT_FIX`
+(default on, `=0` restores the refusal) qualifies exactly that page, and the advisor passes it through
+(`forced_no_search`). The importer's unreachable `INTRO` entry is dropped. PRE_JOUST (the one `miscRng` draw) and JOUST
+were already forced continues.
+**Open question:** the other `INTRO` continue entries (Face Trader, Designer, Falling, Sensory Stone, Note For
+Yourself, Bonfire, Colosseum, Lab) were not checked against `javap` here.
+Seeds: none new (live seed 111200467 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 ## §594 — Live driver: the boss-relic Skip was unmappable (2026-10-21)
 
 **Question:** why did live seed 111200468 (Act 1 floor 17, BOSS_REWARD Black Blood / Empty Cage / Sacred Bark) stop when
