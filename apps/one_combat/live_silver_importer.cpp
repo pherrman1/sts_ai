@@ -560,6 +560,19 @@ bool lethalReactionQueue() {
     throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_BYRD_GROUNDING_QUEUE: unset/1 (default) = a source-card
+// selection whose non-lethal hit took a living Byrd's Flight from 1 to 0
+// still carries the queued ReducePowerAction (Java grounds the Byrd only when
+// it runs); it folds into the Byrd as native applies it at the hit: Flight
+// removed, any deferred Runic Dome roll cancelled, Stunned next (live problem
+// 80); 0 = legacy refusal (silver_selection_pending_actions).
+bool byrdGroundingQueue() {
+    const char *value = std::getenv("STS_SILVER_BYRD_GROUNDING_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_BYRD_GROUNDING_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE: unset/1 (default) = a queued
 // Plated Armor reduction from 1 on a monster other than Shelled Parasite
 // (whose stun stays unsupported), e.g. Donu after Headbutt, removes the power
@@ -2231,6 +2244,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         wire.pendingCardQueueObserved = true;
     }
     bool guardianShift=false;
+    std::vector<int> groundedByrds;
     if (combat.contains("pendingActionQueue")) {
         using K=silver_bridge::PendingActionKind;
         const auto &queue=combat.at("pendingActionQueue");
@@ -2405,14 +2419,18 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(kindName=="MONSTER_REDUCE_FLIGHT") {
                     // Native Flight loss happens at the hit, like Plated Armor;
-                    // reaching 0 grounds (stuns) the Byrd and stays unsupported
-                    // unless the hit was lethal: native then sets the stun and
-                    // Flight 0 before the death (live seed 111200460).
+                    // reaching 0 grounds (stuns) the Byrd: native sets the stun
+                    // and Flight 0 at the hit, before a lethal hit's death (live
+                    // seed 111200460) and on a living Byrd (problem 80).
                     auto &flight=monster.uniquePower0;
                     if(amount!=1 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::BYRD)
-                            || !has(sts::MonsterStatus::FLIGHT) || flight<1 || (flight==1 && !lethalReduce))
+                            || !has(sts::MonsterStatus::FLIGHT) || flight<1
+                            || (flight==1 && !lethalReduce && (monster.curHp<=0 || !byrdGroundingQueue())))
                         return unsupported("silver_selection_pending_actions");
                     if(flight==1) {
+                        // Under Runic Dome the history import below rebuilds
+                        // the moves and the deferred roll; the stun follows it.
+                        if(runicDome && monster.curHp>0) groundedByrds.push_back(slot);
                         monster.moveHistory[1]=monster.moveHistory[0];
                         monster.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
                         // Native removes the grounded Byrd's Flight (STS_BYRD_GROUNDED_FLIGHT_FIX).
@@ -2621,6 +2639,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = false;
     if(runicDome) {
         if(const auto reason=importBoundedRunicDome(combat,wire); !reason.empty()) return unsupported(reason);
+        // Native Monster::damage cancels the deferred roll before the stun.
+        for(const int slot:groundedByrds) {
+            auto &m=wire.monsters[slot];
+            m.pendingMoveRolls=0; m.pendingDirectMoveChoice=0; m.pendingRollInputs={};
+            m.pendingRollInputHistory.clear(); m.pendingAttackPredicates.clear();
+            m.moveHistory[1]=m.moveHistory[0];
+            m.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
+        }
     }
     wire.isolatedSearchSeed = fnv1a(entry + ":silver-live-v2");
     wire.observedGeneration = observation.value("sequence", 0ULL);

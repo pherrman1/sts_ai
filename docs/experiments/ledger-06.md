@@ -22239,6 +22239,17 @@ Seeds: none.
 Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
 
+## §618 — Live problem 74 resolved: Red Skull's anonymous battle-start action refused Toolbox's offer (2026-10-21)
+
+**Observation.** The §604 diagnostic fired on live A20 seed 111200504 (release 010d797c, act 2 Chosen, turn 1, Red Skull and Toolbox, HP 74/85). Toolbox's offer was refused with `pendingActionsBlocker` `actions=[DrawCardAction,EnableEndTurnButtonAction,];refusal=2:unknown_action`. Index 2 has an empty simple name: it is `relics.RedSkull$1`, the anonymous action `RedSkull.atBattleStart` queues with `addToBot`. The original problem-74 blocker (seed 111200473, which owned Red Skull) also ended in an empty name after Red Mask's actions (`...,ApplyPowerAction(...),]`). So Red Mask was never the refusing action.
+
+**Cause.** The producer's public-queue projection had no case for the anonymous Red Skull action. Per the canary's javap reading, it adds Strength 3 if `!isActive && player.isBloodied`, and otherwise does nothing. It uses no RNG.
+
+**Change (producer-only mod fix, no flag).** The projection omits `RedSkull$1` when the player is not bloodied or the relic is already active. Otherwise it sends `BUFF_PLAYER Strength 3`, which the importer already supports in `toolbox_actions`. The blocker names anonymous classes by their full class name.
+
+**Knowledge impact:** `operations/live-model-inspector.md`.
+Seeds: none new (live seeds 111200473 and 111200504).
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22633,6 +22644,26 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §617 — Live advisor: Headbutt grounding a living Byrd was refused (2026-10-21)
+
+**Question:** why did live seed 111200490 (release 8aa99624) stop at Headbutt's grid with
+`silver_selection_pending_actions` after a non-lethal hit on the last Byrd at Flight 1 (problem 80 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue80-byrd/p90-observation.json` on the share, kept as
+`tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+THREE_BYRDS; no gameplay runs).
+**Result:** the importer folded a queued `MONSTER_REDUCE_FLIGHT` at Flight 1 only into a dead Byrd (§581,
+`STS_SILVER_LETHAL_REACTION_QUEUE`) and refused it for a living one. Native `Monster::damage` grounds at the
+hit: it cancels any deferred roll, sets Stunned and removes Flight. The fight had Runic Dome, so the Byrd's turn-4
+roll was still deferred in the mod's history (`pendingMoveRolls` 1).
+**Interpretation:** under `STS_SILVER_BYRD_GROUNDING_QUEUE` (default on, `=0` restores the refusal) the importer folds
+the grounding the same way: Stunned next, Flight removed (under `STS_BYRD_GROUNDED_FLIGHT_FIX`), and under Runic Dome
+the deferred roll cancelled after the history import. The importer test's Headbutt loop gains a living-Byrd variant
+with native parity before and after the pick, and the captured observation imports and searches. Play-changing only
+where the advisor used to refuse.
+Seeds: none new (live seed 111200490 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
 ## §611 — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
 
 **Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
