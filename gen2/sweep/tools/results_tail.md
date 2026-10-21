@@ -17,4 +17,5 @@ torch: `student_inputs.py score SILVERBOT student.pt records.jsonl torch.jsonl -
 | net | .bin sha256 | records | logits | max abs Δ logit | max abs Δ value | argmax mismatches |
 |---|---|---|---|---|---|---|
 | pick S_d64L2_lr1e-4_a0.3_v0.3_s0 | `fc32d8f4…` | 400 | 1,652 | 9.54e-6 | 1.31e-6 | 0 |
+| backup (value-leaf) S_d64L2_lr1e-4_a1_v1_s0 | `624951eb…` | 400 | 1,652 | 1.24e-5 | 1.88e-6 | 0 |
 | T3_distill_d64L2_lr3e-4_a0_v1_s0 | `3088ccd0…` | 400 | 1,652 | 8.58e-6 | 1.49e-6 | 0 |

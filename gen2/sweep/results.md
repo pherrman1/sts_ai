@@ -32,8 +32,10 @@ Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live pari
   policy KL 0.0999 / validation KL 0.0956 on π' (`E_T3_on_gen2`) vs 0.0554 / 0.0542 for the Stage-S pick; its value
   head is on par (selection BCE 0.552 vs 0.559). Against its own teacher targets T3 reaches KL 0.041, so the
   distillation works — the teacher is just far from π'.
-- **Candidates for a later A20 A/B: `S_d64L2_lr1e-4_a0.3_v0.3_s0` only** (no second qualifier: every other size fails
-  the plan's d64/L2 rule or is far worse). Report-only validation fold: pick KL 0.0542 / top-1 0.933 / value BCE 0.526
+- **Candidates for a later A20 A/B: `S_d64L2_lr1e-4_a0.3_v0.3_s0`** (plan rule), plus the value-leaf backup
+  **`S_d64L2_lr1e-4_a1_v1_s0`** (AZ thread 13:43Z, after the results were read; not by the plan rule): selection policy KL 0.0591 but the
+  best value head among good-KL runs (selection BCE 0.549, AUC 0.754 vs the pick's 0.559 / 0.740), for a search that uses the value
+  head at leaves. Export sha256 `624951eb…`. Report-only validation fold: pick KL 0.0542 / top-1 0.933 / value BCE 0.526
   (const 0.622, AUC 0.758); gen 1b 0.0616 / 0.926 / 0.548 (AUC 0.729); student_sel 0.1010 / 0.935 / 0.689 (no value training).
 - Caveat carried forward from PLAN: offline rank is a filter, not evidence of online strength (gen 1b improved
   validation KL 30% and was NOT_SHOWN online).
@@ -185,5 +187,6 @@ torch: `student_inputs.py score SILVERBOT student.pt records.jsonl torch.jsonl -
 | net | .bin sha256 | records | logits | max abs Δ logit | max abs Δ value | argmax mismatches |
 |---|---|---|---|---|---|---|
 | pick S_d64L2_lr1e-4_a0.3_v0.3_s0 | `fc32d8f4…` | 400 | 1,652 | 9.54e-6 | 1.31e-6 | 0 |
+| backup (value-leaf) S_d64L2_lr1e-4_a1_v1_s0 | `624951eb…` | 400 | 1,652 | 1.24e-5 | 1.88e-6 | 0 |
 | T3_distill_d64L2_lr3e-4_a0_v1_s0 | `3088ccd0…` | 400 | 1,652 | 8.58e-6 | 1.49e-6 | 0 |
 
