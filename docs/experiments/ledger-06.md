@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live combat parity: a grounded Byrd kept its Flight status natively (2026-10-20)
+## §578 — Live combat parity: a grounded Byrd kept its Flight status natively (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d, parity1 step 516, Fiend Fire) show
 `monsters[0].statusBits` 0 in the game and 1048576 natively (problem 42 in `engine-parity/overnight-20261019/ISSUES.md`
