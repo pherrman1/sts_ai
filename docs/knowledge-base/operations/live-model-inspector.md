@@ -1110,7 +1110,8 @@ Supported native fixtures cover map choices, reward take/skip and repeated
 card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
 duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
-purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
+purchase types, shop-removal entry, chest open/leave and boss relic take/skip (the live
+driver maps the producer's boss-relic `cancel` to MCP's `skip` tool, live problem 71). The existing V4
 support gate still excludes non-card reward collection, removal/other
 selectors and the final map-to-boss transition. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
@@ -1390,7 +1391,7 @@ into the imported monster because native applies them at the hit. A reduction
 that would remove the power with a side effect (Shelled Parasite stun, Byrd grounding) stays unsupported;
 removing Plated Armor 1 from another monster (Donu, Deca) folds in (`STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE`). A lethal hit
 still queues the reduction; it folds into the dead monster (`STS_SILVER_LETHAL_REACTION_QUEUE`). Also unsupported is
-any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
@@ -1401,6 +1402,21 @@ not counted the queued reroll, and native defers it under hidden intents with th
 inputs of the moment it runs, as Java's `RollMoveAction` rolls then
 (`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
 `silver_runic_dome_monster_power_domain`).
+
+Runic Dome also covers Act 4 (THE_HEART and SHIELD_AND_SPEAR). The Java moves
+there follow a public `moveCount` cycle: the Heart opens with Debilitate (a roll
+that does not advance `moveCount`), then flips Blood Shots/Echo, plays the other
+one (Echo unless it just echoed) and Buffs; the Shield flips Fortify/Bash, plays
+Bash unless it just bashed, then Smash; the Spear plays Burn Strike unless it
+just did, then Skewer, then flips Piercer/Burn Strike. The tracker accepts these
+monsters only in act 4, patches their `takeTurn`, and exports every roll the
+executed history determines as a known next move of kind `act4_public_cycle`;
+only the coin flips stay pending hidden rolls. The importer recomputes the cycle
+from `completedTurns` and the last executed move and refuses a missing, extra or
+wrong proof (`STS_IMPORTER_RUNIC_DOME_ACT4`, default on; `=0` restores the
+refusal `silver_runic_dome_encounter_domain`). No live Dome run has reached Act 4
+yet; the Java cycles come from the canary's `javap` of CorruptHeart, SpireShield
+and SpireSpear.
 
 A split- or summon-born occupant's birth roll may carry `aliveCount` 0 (live seed
 111200458 s546, problem 63): Java rolls the child's first move in `init()` before
