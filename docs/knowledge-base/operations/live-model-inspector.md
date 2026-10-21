@@ -1477,6 +1477,13 @@ first snapshotted with its in-use cost 0, playability and hand stats (all 36
 transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
 and every other field stay strict. The match only discards the decision and
 re-reads, within the same three-refresh limit.
+Inspector correlation also accepts the Awakened One rebirth window
+(`STS_LIVE_REBIRTH_CORRELATION`, default on; `=0` restores the refusal;
+problem 85, seed 111200512). MCP lists no monsters while all of them are dead
+or halfDead, so neither the hand nor the monster comparison could run. When
+both hands are empty, the MCP monster list is empty and every inspector
+monster is dead or halfDead, the snapshot counts as correlated. A stale
+snapshot that still shows a live monster keeps failing.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in

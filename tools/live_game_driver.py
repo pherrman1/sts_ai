@@ -292,6 +292,19 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
 _ABSENT = object()
 
 
+def rebirth_correlation_fix() -> bool:
+    """STS_LIVE_REBIRTH_CORRELATION: unset/1 (default) correlates an empty MCP
+    monster list and hand with an inspector combat whose hand is empty and whose
+    monsters are all dead or halfDead (problem 85, Awakened One's rebirth window);
+    0 restores the legacy refusal."""
+    value = os.environ.get("STS_LIVE_REBIRTH_CORRELATION", "1")
+    if value in ("", "1"):
+        return True
+    if value == "0":
+        return False
+    raise DriverError("STS_LIVE_REBIRTH_CORRELATION must be 0 or 1")
+
+
 def pile_settling_fix() -> bool:
     """STS_LIVE_PILE_SETTLING_REFRESH: unset/1 (default) refreshes on settling
     pile cost/stat values (problem 82); 0 restores the legacy transient."""
@@ -811,13 +824,13 @@ class InspectorSnapshot:
                 raise DriverError("inspector hand identity does not match MCP state")
             compared = bool(raw_uuids and current_uuids)
         raw_monsters, current_monsters = _list(combat.get("monsters")), _list(state.get("monsters"))
+        def active(monster: Any) -> bool:
+            item = _mapping(monster)
+            hp = item.get("current_hp", item.get("curHp", item.get("hp")))
+            return not (item.get("dead") or item.get("is_gone") or item.get("isGone")
+                        or item.get("half_dead") or item.get("halfDead")
+                        or (isinstance(hp, (int, float)) and hp <= 0))
         if raw_monsters and current_monsters:
-            def active(monster: Any) -> bool:
-                item = _mapping(monster)
-                hp = item.get("current_hp", item.get("curHp", item.get("hp")))
-                return not (item.get("dead") or item.get("is_gone") or item.get("isGone")
-                            or item.get("half_dead") or item.get("halfDead")
-                            or (isinstance(hp, (int, float)) and hp <= 0))
             def monster_key(monster: Any) -> Any:
                 item = _mapping(monster)
                 return item.get("id", item.get("name"))
@@ -829,6 +842,10 @@ class InspectorSnapshot:
             if comparable and raw_summary != current_summary:
                 raise DriverError("inspector monster identity/state does not match MCP state")
             compared = comparable
+        elif raw_monsters and not current_monsters and not raw_hand and not current_hand and rebirth_correlation_fix():
+            # MCP lists no monsters while every one is dead or halfDead (Awakened
+            # One between phases, problem 85); the inspector agrees when none is active.
+            compared = not any(active(monster) for monster in raw_monsters)
         if not any(key in state for key in ("session", "sequence", "observationHash")) and not compared:
             raise DriverError("cannot correlate inspector observation with MCP-visible state")
 
