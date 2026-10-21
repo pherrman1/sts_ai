@@ -22228,7 +22228,7 @@ Seeds: none.
 
 **Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
 
-## §TBD — Live problem 82: an exhausted card's settling cost/stats stopped the driver as a state change (2026-10-21)
+## §616 — Live problem 82: an exhausted card's settling cost/stats stopped the driver as a state change (2026-10-21)
 
 **Observation.** Live A20 seed 111200502 (release 844bd923, act 2 Shelled Parasite) was abandoned through the transient cap: three back-to-back "MCP state changed while awaiting the advisor" stops. Each time, the only difference between the decision state and the pre-click re-read was the stats of the card Corruption had just exhausted: Shockwave cost 0→3; Shrug It Off cost 0→2, block 8→11, `base_block` dropped; Defend_R cost 0→1, block 3→5, damage dropped. The player had Corruption, Snecko Eye (Confusion), Frail and Demon Form. The exhausted skill first shows its hand values and settles a frame later. The same signature is the candidate root cause of the recurring #75 transients.
 
