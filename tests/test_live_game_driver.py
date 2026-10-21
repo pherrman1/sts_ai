@@ -11,7 +11,7 @@ from tools.live_game_driver import (
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, boss_completion_proceed_action, victory_dialogue_action,
     hand_selection_transaction, grid_selection_transaction, _pile_display_only_change, _is_wheel_spin,
-    _is_combat_end_turn, _is_smoke_bomb_use,
+    _is_combat_end_turn, _is_smoke_bomb_use, _is_terminal, _terminal_outcome,
 )
 
 
@@ -1409,6 +1409,60 @@ class OocDriverTest(unittest.TestCase):
         for update in ({"act": 2}, {"act": 4}, {"current_hp": 0}, {"current_hp": 34}, {"floor": 51}):
             self.assertIsNone(boss_completion_proceed_action(screen, {**game, **update}, candidates))
         self.assertIsNone(boss_completion_proceed_action(screen, game, candidates + candidates))
+
+    def test_heart_completion_ends_in_true_victory_cutscene(self):
+        # Live-canary problem 60 (seed 111200449): after the Heart's Proceed
+        # the game sits in TrueVictoryRoom's NO_INTERACT ending cutscene and
+        # is never ready for a command; the save is already deleted.
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 11, "max_hp": 102, "floor": 56}
+        cutscene = {"screen_type": "NONE", "screen_name": "NO_INTERACT", "room_type": "TrueVictoryRoom",
+                    "room_phase": "COMPLETE", "ready_for_command": False, "in_game": True,
+                    "current_hp": 11, "floor": 57}
+        self.assertTrue(_is_terminal(cutscene))
+        self.assertEqual(_terminal_outcome(cutscene), "victory")
+        self.assertFalse(_is_terminal({**cutscene, "room_type": "VictoryRoom"}))
+        class CompletionClient(FakeClient):
+            async def call(self, tool, arguments=None):
+                if tool == "proceed":
+                    self.calls.append((tool, arguments or {})); self.states = [cutscene]
+                    return {"success": True}
+                return await super().call(tool, arguments)
+        with tempfile.TemporaryDirectory() as directory:
+            client = CompletionClient(screen, ["proceed"],
+                                      game_state={"act": 4, "floor": 56, "current_hp": 11, "ascension_level": 20})
+            reader = InspectorReader(Path(directory) / "absent")
+            async def no_policy(*args, **kwargs):
+                raise AssertionError("completed Heart navigation asked a policy")
+            reader.read_for = no_policy
+            trace = TraceWriter(Path(directory) / "trace")
+            driver = Driver(client, reader, trace, strict_silver=True, strict_ooc=True, max_steps=3)
+            asyncio.run(driver.run())
+            self.assertEqual(driver.outcome, "victory")
+            self.assertEqual([tool for tool, _ in client.calls if tool == "proceed"], ["proceed"])
+
+    def test_heart_completion_navigation_proceeds_only_on_the_heart_floor(self):
+        # Live-canary problem 52 (seed 111200440): after the Heart kill the
+        # completed MonsterRoomBoss exposes only Proceed, then VICTORY.
+        screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",
+                  "room_phase": "COMPLETE", "ready_for_command": True, "in_game": True,
+                  "is_screen_up": False, "can_cancel": False, "can_proceed": True,
+                  "current_hp": 65, "floor": 56}
+        game = {"act": 4, "floor": 56, "current_hp": 65, "ascension_level": 20}
+        candidates = build_legal_actions(screen, ["proceed"], game)
+        self.assertIsNotNone(boss_completion_proceed_action(screen, game, candidates))
+        below = {**game, "floor": 55, "ascension_level": 19}
+        self.assertIsNotNone(boss_completion_proceed_action({**screen, "floor": 55}, below, candidates))
+        for update in ({"floor": 55}, {"ascension_level": 19}, {"ascension_level": None},
+                       {"floor": 57}, {"act": 5}, {"current_hp": 0}):
+            with self.subTest(update=update):
+                floor = update.get("floor", screen["floor"])
+                self.assertIsNone(boss_completion_proceed_action({**screen, "floor": floor},
+                                                                 {**game, **update}, candidates))
+        for key, value in [("room_type", "MonsterRoomElite"), ("can_proceed", False), ("can_cancel", True)]:
+            self.assertIsNone(boss_completion_proceed_action({**screen, key: value}, game, candidates))
 
     def test_differential_boss_completion_keeps_native_boundary(self):
         screen = {"screen_type": "COMPLETE", "screen_name": "NONE", "room_type": "MonsterRoomBoss",

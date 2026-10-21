@@ -1044,7 +1044,15 @@ def _has_uninitialized_combat_intent(screen: Mapping[str, Any], game: Mapping[st
                for source in (screen, game or {}) for monster in _list(source.get("monsters")))
 
 
+def _is_true_victory_room(screen: Mapping[str, Any]) -> bool:
+    """Vanilla enters TrueVictoryRoom only after the Heart dies; its ending
+    cutscene is NO_INTERACT and never becomes ready for a command."""
+    return _text(screen.get("room_type", screen.get("roomType", ""))) == "TrueVictoryRoom"
+
+
 def _is_terminal(screen: Mapping[str, Any]) -> bool:
+    if _is_true_victory_room(screen):
+        return True
     text = " ".join(_text(screen.get(key, "")).upper() for key in
                      ("screen_type", "screenType", "room_phase", "roomPhase", "outcome", "run_state"))
     return any(marker in text for marker in ("VICTORY", "DEATH", "GAME_OVER", "GAME OVER", "RUN_COMPLETE"))
@@ -1080,12 +1088,16 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
 
 def boss_completion_proceed_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                                   candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Advance a verified Act 3 boss's empty completion surface."""
+    """Advance a verified Act 3 boss's or the Heart's empty completion surface."""
     act, floor = game.get("act", screen.get("act")), game.get("floor", screen.get("floor"))
     hp = game.get("current_hp", screen.get("current_hp"))
     ascension = game.get("ascension_level", game.get("ascension", screen.get("ascension_level")))
-    if (type(act) is not int or act != 3 or type(floor) is not int or floor not in (50, 51)
-            or (floor == 51 and (type(ascension) is not int or ascension != 20))
+    # The Heart is Act 4's fourth room after the VictoryRoom: floor 56 at A20
+    # (Act 3's second boss shifts it), floor 55 below (inferred, not seen live).
+    heart = (type(act) is int and act == 4 and type(floor) is int and type(ascension) is int
+             and 0 <= ascension <= 20 and floor == (56 if ascension == 20 else 55))
+    if (not heart and (type(act) is not int or act != 3 or type(floor) is not int or floor not in (50, 51)
+            or (floor == 51 and (type(ascension) is not int or ascension != 20)))
             or type(hp) is not int or hp <= 0
             or screen.get("screen_type") != "COMPLETE" or screen.get("screen_name") != "NONE"
             or screen.get("room_type") != "MonsterRoomBoss" or screen.get("room_phase") != "COMPLETE"
@@ -1856,6 +1868,8 @@ def _terminal_outcome(screen: Mapping[str, Any]) -> str:
     victory = _mapping(screen.get("screen_state")).get("victory")
     if type(victory) is bool:
         return "victory" if victory else "death"
+    if _is_true_victory_room(screen):
+        return "victory"
     text = " ".join(_text(screen.get(key, "")).upper() for key in
                     ("screen_type", "screenType", "screen_name", "outcome", "run_state"))
     return "victory" if "VICTORY" in text else "death" if "DEATH" in text else "run_complete"

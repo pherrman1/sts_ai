@@ -71,6 +71,30 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_ANGER_COPY_COST_FIX: unset/1 (default) = Anger's discard copy keeps
+    // the played card's cost and costForTurn, as Java makeStatEquivalentCopy
+    // does (live parity problem 43, seed 111200436: under Confusion the game's
+    // copy is 1/1, the legacy native copy 0/0). 0 = the legacy base-cost copy.
+    // Other values are fatal. Read only when Anger is played.
+    bool angerCopyCostFix();
+
+    // STS_UPGRADE_COST_DELTA_FIX: unset/1 (default) = an in-combat upgrade
+    // (Armaments, Apotheosis, ...) changes cost as Java upgradeBaseCost does:
+    // Blood for Blood takes cost-1 from its current cost (keeping a
+    // damage-taken reduction; live parity problem 59, seed 111200448), and a
+    // cost-changing upgrade keeps the card's costForTurn - cost difference.
+    // 0 = the legacy engine, which reset both costs to the upgraded base.
+    // Other values are fatal. Read on every CardInstance::upgrade.
+    bool upgradeCostDeltaFix();
+
+    // STS_BYRD_GROUNDED_FLIGHT_FIX: unset/1 (default) = the hit that takes a
+    // Byrd's Flight from 1 to 0 removes the power, as Java ReducePowerAction
+    // does (live parity problem 42, seed 111200436). The grounded Byrd takes
+    // full damage and keeps no Flight at its next start of turn. 0 = the
+    // legacy engine kept the status bit at amount 0, so damage stayed halved
+    // and applyStartOfTurnPowers reset Flight to 3/4. Other values are fatal.
+    bool byrdGroundedFlightFix();
+
     // STS_DEAD_MONSTER_BLOCK_FIX: unset/1 (default) = queued monster block
     // (Curl Up, Malleable, Guardian mode shift, block moves) does nothing once
     // the monster is dead, as in GainBlockAction.update (skips isDying or
@@ -80,6 +104,33 @@ namespace sts {
     // legacy engine adds the block. Other values are fatal. Read only when
     // the monster is dead.
     bool deadMonsterBlockFix();
+
+    // STS_DEAD_ALLY_BLOCK_FIX: unset/1 (default) = a monster move that adds
+    // block to an ally directly skips a dead ally, as the queued
+    // GainBlockAction/ApplyPowerAction do in Java (live problem 56, seed
+    // 111200445: Deca's Square of Protection gave a dead Donu 16 block).
+    // Covers Deca's Square of Protection (block and A19 Plated Armor) and
+    // Spire Shield's Fortify. Dead-monster block is part of Silver's node
+    // identity, so this can change search. 0 = the legacy engine adds them.
+    // Other values are fatal. Read only when the ally is dead.
+    bool deadAllyBlockFix();
+
+    // STS_DEAD_ALLY_STRENGTH_FIX: unset/1 (default) = Donu's Circle of Power
+    // and Spire Spear's Piercer skip a dead ally's Strength, as Java's queued
+    // ApplyPowerAction skips a target that isDeadOrEscaped (dying, half-dead
+    // or escaping; follow-up to live problem 56).
+    // Dead monsters' powers are part of Silver's node identity, so this can
+    // change search. 0 = the legacy engine buffs the dead ally. Other values
+    // are fatal. Read only when the ally is dead.
+    bool deadAllyStrengthFix();
+
+    // STS_ENRAGE_ALL_MONSTERS_FIX: unset/1 (default) = Gremlin Nob's Anger
+    // (Enrage) gains Strength on every played Skill whichever monster slot the
+    // Nob is in, as Java's per-monster AngerPower.onUseCard (live problem 64b,
+    // seed 111200459: Colosseum Nobs puts the Nob in slot 1 behind the
+    // Taskmaster, and native only checked slot 0). A dead Nob gains nothing.
+    // 0 = the legacy slot-0-only check. Other values are fatal.
+    bool enrageAllMonstersFix();
 
     // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
     // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
@@ -193,6 +244,13 @@ namespace sts {
     // 2026-10-20 problem 44). 0 = the legacy engine, which pushed it to the
     // front (reverse order). Other values are fatal. Read at each autoplay.
     bool autoplayQueueOrderFix();
+    // STS_EXHAUST_EMPTY_HAND_FIX: unset/1 (default) = ExhaustMany (Purity,
+    // Elixir) does nothing on an empty hand, as Java ExhaustAction.update
+    // ends at once when the hand is empty (overnight live play 2026-10-20
+    // problem 64(d): Purity as the last card left its selection open with
+    // Letter Opener's damage queued behind it). 0 = the legacy engine, which
+    // opened an empty CARD_SELECT. Other values are fatal.
+    bool exhaustEmptyHandFix();
 
     // STS_MAGNETISM_FIX: unset/1 (default) = Magnetism adds its random
     // colorless card(s) to the hand at the start of each turn, as in the game

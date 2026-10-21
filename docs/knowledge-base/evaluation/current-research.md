@@ -224,6 +224,24 @@ mechanism. What remains is the entry state (deck, lower max HP) from OOC play, w
 Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
 `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
 
+## AZ loop status — gen 1b as prior NOT_SHOWN (§589); student_sel stays the OOC prior
+
+Gen 1b (student_sel fine-tuned on gen 0's Gumbel π' targets and Heart-kill value, §573) replaced student_sel as OOC
+prior and rollout net inside gen 0's search stack. On 512 paired A20 seeds it killed the Heart 22.3% vs 23.2%
+(−1.0 pp [−4.9, +3.0], McNemar p 0.70) at 1.04× wall: NOT_SHOWN. Both arms captured policy rows (≈34k searched roots
+each), which with gen 0 form the gen-2 training window. Self-play exploration flags exist for gen-2 data runs
+(`STS_OOC_MCTS_ROOT_NOISE`, `STS_OOC_MCTS_PLAY_SAMPLE`, #741, off by default).
+
+## AZ gen-1b value head as the rollout3 end value (opt-in) — offline §577, A/B prepared
+
+`STS_OOC_MCTS_LEAF_HEART1_VALUE=<weights.bin>` (default unset) ends each rollout3 leaf in sigmoid(value head) of the
+given heart1-format weights instead of X2-B; rollouts and prior are unchanged. Offline on unseen §494/§503 data, gen 1b's
+head ranks sibling leaves worse than X2-B (concordance 0.547 vs 0.633 on 11,493 round-2 groups; better only on map
+parents) and predicts the run's Heart kill about as well (AUC 0.710 vs 0.694, CI includes 0; Act 1 weaker). A paired
+A20 A/B against the X2-B end value is pre-registered but not launched
+([plan](../../experiments/evidence/az_gen1b_value_leaf_ab_20261020/PREREG.md),
+[offline](../../experiments/evidence/az_gen1b_value_leaf_ab_20261020/OFFLINE.md)).
+
 ## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
 
 `STS_OOC_MCTS_LEAF_HEART_MODEL=<manifest>` (default off, issue #605) values rollout3 leaf ends
