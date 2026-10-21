@@ -170,6 +170,10 @@ Action Actions::MayhemPlayTopCard() {
     return makeAction(ActData_MayhemPlayTopCard{});
 }
 
+Action Actions::UnplayableAutoplayUseCard(const CardInstance &card, bool exhaust) {
+    return makeAction(ActData_UnplayableAutoplayUseCard{card, exhaust});
+}
+
 Action Actions::MakeTempCardInHand(CardInstance card, int amount) {
     // todo master reality when the action is created
     return makeAction(ActData_MakeTempCardInHand{card, amount});
@@ -722,6 +726,10 @@ void ActData_MayhemPlayTopCard::operator()(BattleContext &bc) const {
         // the target and only then queues PlayTopCardAction at the bottom, so
         // the card is played after the turn's draw.
         bc.addToBot( Actions::PlayTopCard(bc.monsters.getRandomMonsterIdx(bc.cardRandomRng), false) );
+    }
+
+void ActData_UnplayableAutoplayUseCard::operator()(BattleContext &bc) const {
+        bc.unplayableAutoplayUseCard(card, exhaust);
     }
 
 void ActData_MakeTempCardInHand::operator()(BattleContext &bc) const {

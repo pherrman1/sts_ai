@@ -22171,6 +22171,26 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §595 — Live combat parity: unplayable autoplayed cards vanished and autoplays ran in reverse natively (2026-10-20)
+
+**Question:** why did live seed 111200435 (release f2e3f48d) show the game's exhaust pile one card longer than native
+after four Havoc+ plays (problem 41), and live seed 111200436 step 503 a different discard order after Distilled
+Chaos (problem 44), in `engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's extracts (`issue41-extract.json`, `issue44-extract.json`); read-only `javap` of the pinned JAR
+on Philipp's PC (`issue41-javap.md`, `issue44-javap.md`, `issue41-javap-deadtarget.md`): `GameActionManager`
+(`getNextAction`, `addCardQueueItem`), `PlayTopCardAction`, `NewQueueCardAction`, `UseCardAction`,
+`AbstractCard.canUse/cardPlayable`, `DistilledChaosPotion.use`; `unplayable_autoplay` unit test (no gameplay seeds).
+**Result:** every Havoc'd card in problem 41 was unplayable (Clash+ with a non-attack in hand ×2, Burn, Burn+). The
+engine dropped an autoplayed card that failed `canUse`; Java gives it `dontTriggerOnUseCard` and a bottom
+`UseCardAction`, which skips all use hooks but still exhausts (Havoc, own exhaust; Strange Spoon) or discards it. Java
+appends autoplayed cards to the card queue; the engine pushed them to the front, so Distilled Chaos ran in reverse
+(game Bane, Defend, Shrug; native Shrug, Defend, Bane lost).
+**Interpretation:** `STS_UNPLAYABLE_AUTOPLAY_FIX` and `STS_AUTOPLAY_QUEUE_ORDER_FIX` (default on, `=0` restores
+each) match the game. An autoplay at an already-dying target takes the hook-free path too (Java `cardPlayable`
+checks `isDying`). Play-changing for simulator play with Havoc, Mayhem and Distilled Chaos, unmeasured.
+**Open question:** a half-dead (Darkling, Awakened One) or escaping target passes Java `canUse` and the card is used
+normally; the engine keeps its legacy behavior there.
+Seeds: none new (live seeds 111200435 and 111200436 as reported; unit test only).
 ## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
 
 **Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with
