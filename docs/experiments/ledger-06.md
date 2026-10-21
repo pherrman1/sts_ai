@@ -22152,6 +22152,20 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §593 — Live combat parity: a Lagavulin woken by damage lost all its Metallicize natively (2026-10-20)
+
+**Question:** why did live seed 111200447 step 129 (floor 8, release 9ec8a51d) show a woken Lagavulin with
+Metallicize 4 in the game but none natively (problem 58 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** read-only `javap` of the pinned JAR on Philipp's PC (`issue58-javap.md`: `Lagavulin` fields, `damage`,
+`changeState`, `takeTurn`, `usePreBattleAction`); `lagavulin_wake_metallicize` unit test (no gameplay seeds).
+**Result:** a Strike woke the sleeping Lagavulin at Metallicize 12. `Lagavulin.damage` queues
+`ChangeStateAction("OPEN")`, whose `changeState` queues `ReducePowerAction(Metallicize, 8)`; the natural wake runs the
+same `changeState`. The engine subtracted 8 on the natural wake but removed Metallicize on the damage wake.
+**Interpretation:** `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (default on, `=0` restores) subtracts 8 on the damage wake
+(removing the power when 8 or fewer remain). Play-changing for simulator play against a Lagavulin above 8
+Metallicize, unmeasured.
+Seeds: none new (live seed 111200447 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §590 — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
 
 **Question:** why did live seed 111200459 seg1 s852 (Awakened One, floor 50) show native with an open
