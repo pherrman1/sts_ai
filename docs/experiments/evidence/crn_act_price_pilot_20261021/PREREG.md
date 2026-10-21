@@ -29,7 +29,7 @@ model, and what would a full data campaign cost? This is a **cost and noise pilo
   (`STS_SILVER_LEARNED_STOP=1`, prior playouts on real boss/elite fights per ADR-0050; the smoke confirms whether
   continuation fights count as "real"). These are the conditions the leaf would be deployed under, and they are
   cheaper than §537's flat 10k. Silver = g7f_E root table + tree prior (ADR-0049), learned stop (ADR-0051), prior
-  playouts on real boss/elite fights (ADR-0050). Fallback if the smoke shows > 30 s per continuation: flat 2.5k
+  playouts on real boss/elite fights (ADR-0050, pinned with STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=1; frozen code predates #775). Fallback if the smoke shows > 30 s per continuation: flat 2.5k
   (§479: −0.68 fight score vs 10k). potionpriceprobe is not a whole-run mode, so learned stop is set explicitly and
   the smoke verifies it is active. (Philipp 12:57Z: no OOC MCTS.)
 - **Sampling:** `SAMPLE=all`, 12 battle-start states per source (reservoir), acts 1–3.
