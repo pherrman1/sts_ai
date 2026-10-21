@@ -22116,7 +22116,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
+## §586 — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
 
 **Question:** do the other direct ally buffs next to problem 56's block moves reach a dead ally natively?
 **Setup:** `MonsterSpecific.cpp` (Donu's Circle of Power, Spire Spear's Piercer); `monster_ai_java_parity` (no gameplay
