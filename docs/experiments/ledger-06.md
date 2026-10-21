@@ -22218,7 +22218,7 @@ Seeds: none.
 
 **Knowledge impact:** shop slot identity no longer depends on render state.
 
-## §TBD — Live problem 81: Headbutt killing Spire Shield was refused; the death's Surrounded removal is now folded (2026-10-21)
+## §613 — Live problem 81: Headbutt killing Spire Shield was refused; the death's Surrounded removal is now folded (2026-10-21)
 
 **Observation.** Live A20 seed 111200492 (release 3f2dc148, Act 4 Shield and Spear): Headbutt killed Spire Shield (slot 0). Before its put-on-top GRID could be offered, the mod refused the queue as `silver_selection_pending_actions` with `refusal=3:pen_nib_removal`. The queue was `[RelicAboveCreatureAction (Kunai), ApplyPowerAction Dexterity 1, UseCardAction, RemoveSpecificPowerAction(player, player, "Surrounded")]`. The dead Shield still listed BackAttack -1. Extract: `engine-parity/overnight-20261019/issue81/p92-observation.json` on the share.
 
