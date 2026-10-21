@@ -22082,7 +22082,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable; the True Victory cutscene timed out (2026-10-20)
+## §580 — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable; the True Victory cutscene timed out (2026-10-20)
 
 **Question:** why did live seed 111200446 (floor 10, release 9ec8a51d) stop after the advisor chose "[Stomp] Anger the
 Mushrooms" (problem 57 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
