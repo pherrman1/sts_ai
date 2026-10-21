@@ -22385,7 +22385,7 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
-## §TBD — Live driver: the boss-relic Skip was unmappable (2026-10-21)
+## §594 — Live driver: the boss-relic Skip was unmappable (2026-10-21)
 
 **Question:** why did live seed 111200468 (Act 1 floor 17, BOSS_REWARD Black Blood / Empty Cage / Sacred Bark) stop when
 the OOC advisor skipped the boss relic (problem 71 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
