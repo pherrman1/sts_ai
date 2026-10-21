@@ -22520,7 +22520,7 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
-## §600 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+## §601 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
 
 **Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
 `engine-parity/overnight-20261019/ISSUES.md` on the share)?
