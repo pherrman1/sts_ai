@@ -22602,3 +22602,19 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
+## §TBD — Silver prior playouts in real boss fights only, for CPU (ADR-TBD, 2026-10-21)
+
+**Question:** Should real elite fights keep ADR-0050's prior-argmax playouts? They are about 12% of A20 run CPU.
+**Setup:** AZ-loop profile `/mnt/project-files/az-speed-profile/REPORT.md` (seeds 111145000-003). Check seed 111145006,
+arm A of `az_gen1b_value_leaf_ab_20261020`.
+**Result:** With prior playouts, elite decisions cost about 1.12 s (about 0.15 s greedy). §541's elite subset was
++0.11 (priorpl2500) and +2.89 (priorpl10000) score. On seed 111145006, `STS_SILVER_PRIOR_PLAYOUT_ELITE=1` plays
+the same decisions as main; the default diverges at floor 6.
+**Interpretation:** Philipp decided boss rooms only (2026-10-21, no gate). The expected saving is about 10% of run
+CPU, or about 6% on top of the real-combat learned stop. `STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores ADR-0050. The
+leaf spec records `prior_playout_rooms` as `boss`.
+**Open question:** The strength effect of greedy elite playouts at run level is not measured.
+Seeds: 111145006 (from this thread's block 111145000-145999).
+**Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
+`decisions/TBD-silver-prior-playout-boss-only.md`.

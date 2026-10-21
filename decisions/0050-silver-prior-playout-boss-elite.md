@@ -1,7 +1,7 @@
 # ADR-0050: Real boss and elite fights use prior-argmax Silver playouts
 
 Date: 2026-10-18
-Status: accepted
+Status: accepted; elite rooms superseded by [ADR-TBD](TBD-silver-prior-playout-boss-only.md)
 
 ## Context
 
