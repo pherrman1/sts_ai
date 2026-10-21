@@ -1375,6 +1375,11 @@ void ActData_CodexAction::operator()(BattleContext &bc) const {
     }
 
 void ActData_ExhaustMany::operator()(BattleContext &bc) const {
+        // Java ExhaustAction ends at once on an empty hand
+        // (STS_EXHAUST_EMPTY_HAND_FIX).
+        if (bc.cards.cardsInHand == 0 && exhaustEmptyHandFix()) {
+            return;
+        }
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::EXHAUST_MANY;
         bc.cardSelectInfo.pickCount = limit;

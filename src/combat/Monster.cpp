@@ -6,6 +6,8 @@
 
 #include "game/Random.h"
 #include <stdexcept>
+#include <algorithm>
+#include <cstdlib>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
@@ -258,6 +260,17 @@ void Monster::enterGuardianDefensiveMode() {
         idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
 }
 
+void Monster::wakeMetallicize(BattleContext &bc) {
+    // Lagavulin.damage queues ChangeStateAction("OPEN"), whose changeState
+    // queues ReducePowerAction(Metallicize, 8): the wake subtracts 8, the same
+    // as the natural wake (STS_LAGAVULIN_WAKE_METALLICIZE_FIX).
+    if (lagavulinWakeMetallicizeFix() && getStatus<MS::METALLICIZE>() > 8) {
+        decrementStatus<MS::METALLICIZE>(8);
+    } else { // ReducePowerAction removes the power when the amount runs out
+        removeStatus<MS::METALLICIZE>();
+    }
+}
+
 bool Monster::isAlive() const {
     return curHp > 0;
 }
@@ -418,7 +431,13 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
             search::emitHiddenMonsterIntentMaterialized(
                 idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), latentDamageMask ? 0 : miscInfo);
         }
-        setStatus<MS::FLIGHT>(flight-1);
+        // Java ReducePowerAction removes Flight at 0 (the Byrd is grounded): no more
+        // halved damage and no start-of-turn reset (STS_BYRD_GROUNDED_FLIGHT_FIX=0 restores).
+        if (flight == 1 && byrdGroundedFlightFix()) {
+            removeStatus<MS::FLIGHT>();
+        } else {
+            setStatus<MS::FLIGHT>(flight-1);
+        }
 
     } else if (hasStatus<MS::MALLEABLE>() || hasStatus<MS::REACTIVE>()) {
         if (hasStatus<MS::MALLEABLE>()) {
@@ -442,7 +461,7 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
     } else if (hasStatus<MS::ASLEEP>()) {
         // lagavulin
         setHasStatus<MS::ASLEEP>(false);
-        removeStatus<MS::METALLICIZE>();
+        wakeMetallicize(bc);
         cancelPendingMove();
         setMove(MMID::LAGAVULIN_SLEEP);
 
@@ -504,7 +523,7 @@ void Monster::damageUnblockedHelper(BattleContext &bc, int damage) {
         if (hasStatus<MS::ASLEEP>()) {
         // lagavulin
         setHasStatus<MS::ASLEEP>(false);
-        removeStatus<MS::METALLICIZE>();
+        wakeMetallicize(bc);
         cancelPendingMove();
         setMove(MMID::LAGAVULIN_SLEEP);
     }
@@ -874,6 +893,19 @@ void Monster::setMove(MMID moveId) {
 }
 
 namespace sts {
+
+    bool shackledOverflowFix() {
+        const char *value = std::getenv("STS_SHACKLED_OVERFLOW_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SHACKLED_OVERFLOW_FIX must be 0 or 1");
+    }
+
+    std::int16_t shackledAmount(int amount) {
+        // GainStrengthPower's constructor and stackPower clamp to [-999, 999].
+        if (shackledOverflowFix()) return static_cast<std::int16_t>(std::clamp(amount, -999, 999));
+        return static_cast<std::int8_t>(amount);
+    }
 
     std::ostream& printIfHaveStatus(std::ostream &os, const Monster &m, MonsterStatus s, bool &havePrint) {
         if (!m.getStatusInternal(s)) {

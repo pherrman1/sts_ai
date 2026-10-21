@@ -1450,8 +1450,86 @@ void verifyGuardianProducerThresholds() {
     }
 }
 
+// Runic Dome Act 4 (STS_IMPORTER_RUNIC_DOME_ACT4): bound history rows for the
+// Corrupt Heart / Spire Shield and Spear cycles. `known` is the proven next move
+// (0 = one hidden random roll).
+json act4DomeRow(const json &monster,int slot,const std::string &id,int turn,const std::vector<int> &moves,int known,int firstHp,int firstMaxHp,int alive) {
+    const int completed=turn-1;
+    json executed=json::array();
+    for(std::size_t i=moves.size()>2?moves.size()-2:0;i<moves.size();++i)executed.push_back(moves[i]);
+    return {{"schemaVersion",4},{"historySchemaVersion",3},{"epoch",1},{"generation",2*completed+1},{"complete",true},
+        {"monsterId",id},{"slot",slot},{"completedTurns",completed},{"executedMoves",executed},{"pendingMoveRolls",known?0:1},
+        {"rollHp",monster["hp"]},{"rollMaxHp",monster["maxHp"]},{"publicMisc",0},{"firstHp",firstHp},{"firstMaxHp",firstMaxHp},
+        {"firstAlive",true},{"aliveCount",alive},{"pendingAttackPredicates",json::array()},{"playerConstricted",false},
+        {"occupantGeneration",1},{"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},{"birthParentGeneration",0},
+        {"lastExecutionGlobalTurn",completed==0?-1:completed},{"rollGlobalTurn",completed},{"totalRolls",completed+1},{"knownTransitions",0},
+        {"knownNextMove",known?json{{"kind","act4_public_cycle"},{"move",known}}:json(nullptr)},{"knownRollPredecessor",nullptr}};
+}
+void makeAct4Dome(json &observation,int turn,const json &rows) {
+    auto &root=observation["silverRoot"];auto &combat=root["combat"];
+    root["playerTurn"]=turn;combat["turn"]=turn;combat["runicDome"]=true;
+    combat["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+    for(auto &monster:combat["monsters"])
+        for(const char *hidden:{"nextMove","moveHistory","previousMove","intent","intentDamage","uniquePower0","uniquePower1"})monster.erase(hidden);
+    combat["runicDomeKnowledge"]={{"schemaVersion",3},{"epoch",1},{"complete",true},{"monsters",rows}};
+}
+void verifyRunicDomeAct4Heart() {
+    GameContext game(CharacterClass::IRONCLAD, 0, 0);
+    game.ascension = 20; game.act = 4; game.floorNum = 55;
+    BattleContext battle;
+    battle.init(game, MonsterEncounter::THE_HEART);
+    CombatKnowledgeState knowledge;
+    knowledge.initializeFromLiveBattle(battle);
+    auto expected = makeSilverBattleStateWire(battle, knowledge, makeSilverRunContext(game), 1);
+    normalizeFirstObservationIdentity(expected);
+    const auto base = nativeObservation(expected, "MONSTER", "THE_HEART");
+    const auto plain = one_combat::advisor::importSilverRoot(base);
+    if (!plain.ok) throw std::runtime_error("Act 4 Heart fixture import: " + plain.reason);
+    const auto heart = [&](int turn, const std::vector<int> &moves, int known) {
+        auto obs = base;
+        const auto &m = obs["silverRoot"]["combat"]["monsters"][0];
+        makeAct4Dome(obs, turn, json::array({act4DomeRow(m, 0, "CorruptHeart", turn, moves, known, m["hp"], m["maxHp"], 1)}));
+        return obs;
+    };
+    // Debilitate opener; random Blood Shots/Echo; the other one; Buff; random again.
+    struct Case { int turn; std::vector<int> moves; int known; MonsterMoveId last; };
+    for (const Case &c : {Case{1, {}, 3, MonsterMoveId::INVALID}, Case{2, {3}, 0, MonsterMoveId::CORRUPT_HEART_DEBILITATE},
+            Case{3, {3, 1}, 2, MonsterMoveId::CORRUPT_HEART_BLOOD_SHOTS}, Case{4, {3, 1, 2}, 4, MonsterMoveId::CORRUPT_HEART_ECHO},
+            Case{5, {3, 1, 2, 4}, 0, MonsterMoveId::CORRUPT_HEART_BUFF}, Case{6, {3, 1, 2, 4, 2}, 1, MonsterMoveId::CORRUPT_HEART_ECHO}}) {
+        const auto imported = one_combat::advisor::importSilverRoot(heart(c.turn, c.moves, c.known));
+        if (!imported.ok) throw std::runtime_error("Dome Heart turn " + std::to_string(c.turn) + ": " + imported.reason);
+        const auto root = battleContextFromWire(imported.wire);
+        const auto &m = root.monsters.arr[0];
+        const auto knownMove = c.known ? *one_combat::advisor::live_silver::monsterMove("CorruptHeart", c.known) : MonsterMoveId::INVALID;
+        if (!root.intentsHidden || m.pendingMoveRolls != (c.known ? 0 : 1)
+                || static_cast<MonsterMoveId>(m.moveHistory[c.known ? 1 : 0]) != c.last
+                || (c.known && static_cast<MonsterMoveId>(m.moveHistory[0]) != knownMove))
+            throw std::runtime_error("Dome Heart turn " + std::to_string(c.turn) + " cycle state");
+        if (c.turn == 2) {
+            SilverSearchSession session;
+            const auto decision = session.decide(imported.wire, 1000);
+            if (!decision.accepted) throw std::runtime_error("Dome Heart search: " + decision.failureReason);
+        }
+    }
+    // A wrong proof, a missing proof, and a random roll claimed as known all fail closed.
+    if (one_combat::advisor::importSilverRoot(heart(3, {3, 1}, 1)).reason != "silver_runic_dome_known_next_schema")
+        throw std::runtime_error("Dome Heart accepted the wrong successor");
+    if (one_combat::advisor::importSilverRoot(heart(3, {3, 1}, 0)).reason != "silver_runic_dome_history_gap")
+        throw std::runtime_error("Dome Heart accepted a hidden roll at a public cycle position");
+    if (one_combat::advisor::importSilverRoot(heart(2, {3}, 1)).ok)
+        throw std::runtime_error("Dome Heart accepted a proof for its random roll");
+    if (one_combat::advisor::importSilverRoot(heart(3, {1, 1}, 2)).ok)
+        throw std::runtime_error("Dome Heart accepted a non-Debilitate opener");
+    setenv("STS_IMPORTER_RUNIC_DOME_ACT4", "0", 1);
+    const auto legacy = one_combat::advisor::importSilverRoot(heart(1, {}, 3));
+    unsetenv("STS_IMPORTER_RUNIC_DOME_ACT4");
+    if (legacy.ok || legacy.reason != "silver_runic_dome_encounter_domain")
+        throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_ACT4=0 must restore the Act 4 refusal: " + legacy.reason);
+    std::cout << "Runic Dome Act 4 Heart cycle import passed\n";
+}
 int main(int argc, char **argv) {
     verifyGuardianProducerThresholds();
+    verifyRunicDomeAct4Heart();
     try {
         {
             // Overlay labels name the card a selection picks.
@@ -1613,6 +1691,34 @@ int main(int argc, char **argv) {
                     throw std::runtime_error(std::string("Spire Spear death Surrounded removal, flag ")+flag);
             }
             unsetenv("STS_SPIRE_SURROUNDED_DEATH_FIX");
+            // Runic Dome Act 4: Shield's opener is random, Spear's is Burn Strike; then Bash/Fortify pair and Skewer.
+            const auto spire=[&](int turn,const std::vector<int> &shield,int shieldKnown,const std::vector<int> &spear,int spearKnown) {
+                auto obs=observation;
+                const auto &ms=obs["silverRoot"]["combat"]["monsters"];
+                const int firstHp=ms[0]["hp"],firstMaxHp=ms[0]["maxHp"];
+                makeAct4Dome(obs,turn,json::array({act4DomeRow(ms[0],0,"SpireShield",turn,shield,shieldKnown,firstHp,firstMaxHp,2),
+                    act4DomeRow(ms[1],1,"SpireSpear",turn,spear,spearKnown,firstHp,firstMaxHp,2)}));
+                return obs;
+            };
+            for(const auto &[turn,shield,shieldKnown,spear,spearKnown]:std::vector<std::tuple<int,std::vector<int>,int,std::vector<int>,int>>{
+                    {1,{},0,{},1},{2,{2},1,{1},3},{3,{2,1},3,{1,3},0},{4,{2,1,3},0,{1,3,1},2}}) {
+                const auto dome=one_combat::advisor::importSilverRoot(spire(turn,shield,shieldKnown,spear,spearKnown));
+                if(!dome.ok)throw std::runtime_error("Dome Shield and Spear turn "+std::to_string(turn)+": "+dome.reason);
+                const auto domeRoot=battleContextFromWire(dome.wire);
+                if(!domeRoot.intentsHidden || domeRoot.monsters.arr[0].pendingMoveRolls!=(shieldKnown?0:1)
+                        || domeRoot.monsters.arr[1].pendingMoveRolls!=(spearKnown?0:1))
+                    throw std::runtime_error("Dome Shield and Spear turn "+std::to_string(turn)+" cycle state");
+                if(turn==1) {
+                    SilverSearchSession domeSession;
+                    const auto domeDecision=domeSession.decide(dome.wire,1000);
+                    if(!domeDecision.accepted)throw std::runtime_error("Dome Shield and Spear search: "+domeDecision.failureReason);
+                }
+            }
+            if(one_combat::advisor::importSilverRoot(spire(2,{2},2,{1},3)).ok)
+                throw std::runtime_error("Dome Shield accepted Fortify twice");
+            if(one_combat::advisor::importSilverRoot(spire(1,{},1,{},1)).ok)
+                throw std::runtime_error("Dome Shield accepted a proof for its random opener");
+            std::cout << "Runic Dome Act 4 Shield and Spear cycle import passed\n";
             std::cout << "captured Shield and Spear BackAttack import and search passed: " << path << "\n";
         }
         {
@@ -1901,6 +2007,29 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("newborn global clock: "+imported.reason);
                 row["birthGlobalTurn"]=8;
                 if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("future birth accepted");
+            }
+            {
+                // Live seed 111200458 s546 (problem 63): a split child rolls in init() before it joins the group,
+                // so the first Slime Boss child's birth roll sees only the dead boss (aliveCount 0).
+                auto obs=boundDome("SpikeSlime_L");auto &c=obs["silverRoot"]["combat"];auto &row=c["runicDomeKnowledge"]["monsters"][0];
+                obs["silverRoot"]["playerTurn"]=4;c["turn"]=4;c["monsters"][0]["maxHp"]=75;c["monsters"][0]["hp"]=75;
+                row.update({{"occupantGeneration",2},{"birthGlobalTurn",3},{"birthKind","split"},{"birthParentSlot",0},
+                    {"birthParentGeneration",1},{"rollGlobalTurn",3},{"rollHp",75},{"rollMaxHp",75},
+                    {"aliveCount",0},{"firstAlive",false},{"firstHp",0},{"firstMaxHp",150}});
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingRollInputs.aliveCount!=0
+                        || imported.wire.monsters[0].pendingRollInputs.knightAlive)
+                    throw std::runtime_error("split child birth roll with aliveCount 0: "+imported.reason);
+                setenv("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(obs);
+                unsetenv("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX");
+                if(legacy.ok || legacy.reason!="silver_runic_dome_history_schema")
+                    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX=0 must restore the legacy rejection");
+                // A later roll of the same child counts the child itself, and an initial occupant always counts itself.
+                auto later=obs;later["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["rollGlobalTurn"]=4;
+                if(one_combat::advisor::importSilverRoot(later).ok)throw std::runtime_error("later roll with aliveCount 0 accepted");
+                auto initial=boundDome("SpikeSlime_L");initial["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["aliveCount"]=0;
+                if(one_combat::advisor::importSilverRoot(initial).ok)throw std::runtime_error("initial occupant with aliveCount 0 accepted");
             }
             {
                 // Live seed 111194466 (A20 TWO_THIEVES, player turn 1): the mod stamps the combat-start roll with
@@ -3216,7 +3345,11 @@ int main(int argc, char **argv) {
                 {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"liveChoices",choices},
                 {"continuation","source_card_actions"}};
             combat["pendingActionQueue"]=json::array({json{{"kind","DRAW"},{"amount",2}}});
-            if(relicTail==1)combat["pendingActionQueue"].push_back(json{{"kind","BUFF_PLAYER"},{"power","Pen Nib"},{"amount",1},{"sourceMonster",false}});
+            if(relicTail==1) {
+                // Pen Nib armed by this card: counter 9, PenNibPower still queued (problem 54).
+                combat["relics"].push_back(json{{"id","Pen Nib"},{"counter",9},{"usedUp",false}});
+                combat["pendingActionQueue"].push_back(json{{"kind","BUFF_PLAYER"},{"power","Pen Nib"},{"amount",1},{"sourceMonster",false}});
+            }
             if(relicTail==2) {
                 combat["playerPowers"].push_back(json{{"id","Pen Nib"},{"amount",1}});
                 combat["playerPowers"].push_back(json{{"id","Weakened"},{"amount",2},{"justApplied",false}});
@@ -3230,6 +3363,16 @@ int main(int argc, char **argv) {
             one_combat::advisor::SilverImportContext context;
             const auto imported=one_combat::advisor::importSilverRoot(observation,context);
             if(!imported.ok)throw std::runtime_error("Burning Pact typed tail import: "+imported.reason);
+            if(relicTail==1) {
+                constexpr auto penNibBit=1ULL<<static_cast<int>(PlayerStatus::PEN_NIB);
+                if(imported.wire.player.statusBits0 & penNibBit)
+                    throw std::runtime_error("queued Pen Nib imported as already applied");
+                setenv("STS_IMPORTER_PEN_NIB_PENDING_FIX","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_IMPORTER_PEN_NIB_PENDING_FIX");
+                if(!legacy.ok || !(legacy.wire.player.statusBits0 & penNibBit))
+                    throw std::runtime_error("STS_IMPORTER_PEN_NIB_PENDING_FIX=0 did not restore the counter sentinel bit");
+            }
             auto selected=battleContextFromWire(json(imported.wire).get<silver_bridge::BattleStateWire>());
             if(json(wireFromSearchState(selected,searchContextFromWire(imported.wire)).pendingActionQueue)!=json(imported.wire.pendingActionQueue))
                 throw std::runtime_error("source relic tail lost typed queue through JSON/native roundtrip");
@@ -4311,18 +4454,24 @@ int main(int argc, char **argv) {
         // 111200388/111200389 stopped here.
         // A Headbutt that kills a Darkling leaves its half-death Regrow
         // SetMoveAction queued (live seed 111200400).
-        for (int variant=0;variant<7;++variant) {
+        // A lethal Headbutt into a Byrd still queues Flight's reduction (live seed 111200421), also at
+        // Flight 1, where native stuns the Byrd before its death (live seed 111200460).
+        // Plated Armor 1 on Donu/Deca reaches 0 and is removed (live seed 111200422).
+        for (int variant=0;variant<10;++variant) {
             const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
                 MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
-                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS}[variant];
-            const bool mass=variant==0, guardian=variant==2, byrd=variant==3, shift=variant==4, louse=variant==5;
-            const bool darkling=variant==6;
+                MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS, MonsterEncounter::THREE_BYRDS,
+                MonsterEncounter::DONU_AND_DECA, MonsterEncounter::THREE_BYRDS}[variant];
+            const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7 || variant==9, shift=variant==4, louse=variant==5;
+            const bool darkling=variant==6, lethal=variant==7 || variant==9, plateRemoved=variant==8, lastFlight=variant==9;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
-            game.act=mass||darkling?3:guardian||shift||louse?1:2; game.floorNum=mass?38:darkling?35:guardian||shift?16:louse?5:29;
+            game.act=plateRemoved?4:mass||darkling?3:guardian||shift||louse?1:2;
+            game.floorNum=plateRemoved?54:mass?38:darkling?35:guardian||shift?16:louse?5:29;
             BattleContext live; live.init(game, encounter);
             auto &target=live.monsters.arr[0];
             target.block=0;
             if(shift) target.setStatus<MonsterStatus::MODE_SHIFT>(1);
+            if(plateRemoved) target.buff<MonsterStatus::PLATED_ARMOR>(1);
             if(guardian) {
                 // Defensive Mode after Close Up: Sharp Hide on, Roll Attack next.
                 target.enterGuardianDefensiveMode();
@@ -4336,8 +4485,13 @@ int main(int argc, char **argv) {
                 sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
             }
             const int platedBefore=target.getStatus<MonsterStatus::PLATED_ARMOR>();
+            if(plateRemoved && platedBefore!=1) throw std::runtime_error("Donu/Deca fixture needs Plated Armor 1");
+            if(lastFlight) target.setStatus<MonsterStatus::FLIGHT>(1);
             const int flightBefore=byrd?target.getStatus<MonsterStatus::FLIGHT>():0;
-            if(byrd && flightBefore<2) throw std::runtime_error("Byrd fixture needs Flight above 1");
+            if(byrd && flightBefore<(lastFlight?1:2)) throw std::runtime_error("Byrd fixture needs Flight above 1");
+            // Flight halves Headbutt's 9 to 4 (lethal); Java FlightPower still queues its reduction because
+            // calculateDamageTakenAmount halves again (2 < 3), so 3 HP is a reachable lethal hit.
+            if(lethal) target.curHp=3;
             const int curlBefore=louse?target.getStatus<MonsterStatus::CURL_UP>():0;
             if(louse && (curlBefore<1 || target.curHp<=12)) throw std::runtime_error("louse fixture needs Curl Up and HP above 12");
             if(darkling) {
@@ -4387,7 +4541,8 @@ int main(int argc, char **argv) {
                         || nativeQueue[2].monster!=0 || !target.isHalfDead()
                         || target.moveHistory[0]!=MonsterMoveId::DARKLING_REGROW))
                     || (byrd && target.getStatus<MonsterStatus::FLIGHT>()!=flightBefore-1)
-                    || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1))
+                    || (variant==1 && target.getStatus<MonsterStatus::PLATED_ARMOR>()!=platedBefore-1)
+                    || (plateRemoved && target.hasStatus<MonsterStatus::PLATED_ARMOR>()))
                 throw std::runtime_error("native Headbutt monster-reaction queue is not the expected shape");
             auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-monster-reactions");
             setProducerV4CardObservation(observation,expected);
@@ -4407,8 +4562,23 @@ int main(int argc, char **argv) {
                 if(power.at("id")=="Flight") power["amount"]=flightBefore;
             }
             auto &javaTarget=combat["monsters"][0];
+            // Java form: Plated Armor 1 stays until its queued ReducePowerAction.
+            if(plateRemoved) javaTarget["powers"].push_back({{"id","Plated Armor"},{"amount",1}});
             // Java form: Curl Up stays until its queued RemoveSpecificPowerAction.
             if(louse) javaTarget["powers"].push_back({{"id","Curl Up"},{"amount",curlBefore}});
+            if(lastFlight) {
+                // Java form: Flight 1 stays until its queued ReducePowerAction
+                // (native removed it at the hit, STS_BYRD_GROUNDED_FLIGHT_FIX).
+                auto &powers=javaTarget["powers"];
+                if(std::none_of(powers.begin(),powers.end(),[](const json &power){return power.at("id")=="Flight";}))
+                    powers.push_back({{"id","Flight"},{"amount",1}});
+                // Java grounds the Byrd only when the queued reduction removes
+                // Flight, so the pre-hit move is still showing.
+                const auto current=javaMoveByte("Byrd",preHitMoves[0]);
+                const auto previous=javaMoveByte("Byrd",preHitMoves[1]);
+                javaTarget["nextMove"]=current;
+                javaTarget["moveHistory"]=previous>=0?json::array({previous,current}):json::array({current});
+            }
             if(shift) {
                 // TheGuardian.damage lowers Mode Shift at the hit but queues the
                 // state change, so the offensive move is still showing.
@@ -4434,6 +4604,22 @@ int main(int argc, char **argv) {
             else if(darkling) pending.push_back(json{{"kind","MONSTER_SET_MOVE"},{"move",4},{"slot",0}});
             else if(!guardian) pending.push_back(json{{"kind","MONSTER_REDUCE_PLATED_ARMOR"},{"amount",1},{"slot",0}});
             combat["pendingActionQueue"]=pending;
+            if(plateRemoved) {
+                setenv("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE=0 accepted Plated Armor removal");
+            }
+            if(lethal) {
+                if(target.curHp!=0 || !target.isDeadOrEscaped())
+                    throw std::runtime_error("lethal Byrd fixture did not kill the Byrd");
+                setenv("STS_SILVER_LETHAL_REACTION_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_LETHAL_REACTION_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE=0 accepted the dead Byrd's Flight reduction");
+            }
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
             // The wire itself settles the Guardian's shift and its 20 block.
@@ -4530,6 +4716,8 @@ int main(int argc, char **argv) {
             else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
             else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
             else if(darkling) brokenQueue[2]["move"]=3;
+            else if(lethal) brokenQueue.back()["amount"]=2;
+            else if(plateRemoved) brokenQueue[1]["amount"]=2;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
                 if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)
@@ -4545,6 +4733,213 @@ int main(int argc, char **argv) {
                 unsetenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
                 if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
                     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE=0 did not restore the refusal");
+            }
+        }
+        {
+            // Problem 61 (overnight live play 2026-10-20): Headbutt waking a
+            // sleeping Lagavulin opens its GRID with ChangeStateAction("OPEN")
+            // still queued; its Metallicize reduction is pending in Java and
+            // already applied at the hit in native. Metallicize 12 shows the
+            // reduction is -8 (#745), not a removal; 8 is removed.
+            for (const int metal : {12, 8}) for (const char *wakeFix : {"1", "0"}) {
+                setenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX",wakeFix,1);
+                const bool reduce=std::string(wakeFix)=="1";
+                GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+                game.act=1; game.floorNum=7;
+                BattleContext live; live.init(game, MonsterEncounter::LAGAVULIN);
+                auto &laga=live.monsters.arr[0];
+                laga.setStatus<MonsterStatus::METALLICIZE>(metal); laga.block=0;
+                for (int played=0;played<2;++played) {
+                    CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(930+played);
+                    live.cards.moveToHand(defend); live.player.energy=3;
+                    sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                }
+                if(!laga.hasStatus<MonsterStatus::ASLEEP>()) throw std::runtime_error("Lagavulin Headbutt fixture is not asleep");
+                CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=940;
+                live.cards.moveToHand(headbutt); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
+                        || laga.hasStatus<MonsterStatus::ASLEEP>() || laga.moveHistory[0]!=MonsterMoveId::LAGAVULIN_SLEEP
+                        || laga.getStatus<MonsterStatus::METALLICIZE>()!=(reduce && metal>8?metal-8:0)
+                        || laga.hasStatus<MonsterStatus::METALLICIZE>()!=(reduce && metal>8))
+                    throw std::runtime_error("native Headbutt did not wake the Lagavulin at the hit");
+                CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+                auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+                if(!expected.pendingActionQueueObserved || expected.pendingActionQueue.size()!=1)
+                    throw std::runtime_error("native Lagavulin Headbutt queue is not the cleanup alone");
+                auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-lagavulin-open");
+                setProducerV4CardObservation(observation,expected);
+                auto &combat=observation["silverRoot"]["combat"];
+                combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                    {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                    {"cards",json::array()},{"liveChoices",json::array()}};
+                for(const auto &card:combat["discard"])
+                    combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                        {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+                combat["pendingCardQueue"]=json::array();
+                // Java form: OPEN (4) is set, Metallicize keeps its amount until the
+                // queued ReducePowerAction runs.
+                auto &javaLaga=combat["monsters"][0];
+                javaLaga["nextMove"]=4;
+                bool sawMetallicize=false;
+                for(auto &power:javaLaga["powers"])
+                    if(power.at("id")=="Metallicize") {power["amount"]=metal;sawMetallicize=true;}
+                if(!sawMetallicize) javaLaga["powers"].push_back({{"id","Metallicize"},{"amount",metal}});
+                combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                    json{{"kind","MONSTER_LAGAVULIN_OPEN"},{"amount",metal},{"slot",0}}});
+                const auto imported=one_combat::advisor::importSilverRoot(observation);
+                if(!imported.ok) throw std::runtime_error("Lagavulin Headbutt import: "+imported.reason);
+                if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
+                    throw std::runtime_error("Lagavulin Headbutt pending queue differs from native");
+                normalizeDynamicObservationIdentity(expected);
+                const auto adoptIds=[](auto &mine,const auto &theirs) {
+                    if(mine.size()!=theirs.size()) throw std::runtime_error("Lagavulin Headbutt pile size differs");
+                    for(std::size_t i=0;i<mine.size();++i) {
+                        if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                            throw std::runtime_error("Lagavulin Headbutt pile order differs");
+                        mine[i].uniqueId=theirs[i].uniqueId;
+                    }
+                };
+                adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+                adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+                adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+                adoptIds(expected.hand,imported.wire.hand);
+                expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+                expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+                expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+                expected.cardSelect.cards=imported.wire.cardSelect.cards;
+                auto actual=battleContextFromWire(imported.wire);
+                auto reference=battleContextFromWire(expected);
+                if(!actual.equalForSearch(reference)) {
+                    const auto context=searchContextFromWire(imported.wire);
+                    std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                            json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                    throw std::runtime_error(std::string("Lagavulin Headbutt root parity failed, wake fix=")+wakeFix);
+                }
+                const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+                pick.execute(actual); pick.execute(reference);
+                if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                    throw std::runtime_error("Lagavulin Headbutt continuation parity failed");
+                // Fail closed: an amount that is not the observed Metallicize,
+                // a Lagavulin still asleep, and the flag's legacy refusal.
+                auto broken=observation;
+                broken["silverRoot"]["combat"]["pendingActionQueue"][1]["amount"]=metal+1;
+                if(one_combat::advisor::importSilverRoot(broken).ok)
+                    throw std::runtime_error("Lagavulin OPEN with a wrong Metallicize was accepted");
+                auto sleeping=observation;
+                sleeping["silverRoot"]["combat"]["monsters"][0]["nextMove"]=5;
+                if(one_combat::advisor::importSilverRoot(sleeping).ok)
+                    throw std::runtime_error("Lagavulin OPEN on a sleeping Lagavulin was accepted");
+                setenv("STS_SILVER_LAGAVULIN_OPEN_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_LAGAVULIN_OPEN_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_LAGAVULIN_OPEN_QUEUE=0 did not restore the refusal");
+            }
+            unsetenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX");
+        }
+        {
+            // Problem 68 (overnight live play 2026-10-21, seed 111200464): Headbutt
+            // taking a large slime (or Slime Boss) to half HP opens its GRID
+            // with the split's TextAboveCreatureAction and SetMoveAction(3)
+            // queued; Java has set the split move, native also wrote it as the
+            // previous move at the hit.
+            for (const auto encounter : {MonsterEncounter::LARGE_SLIME, MonsterEncounter::SLIME_BOSS}) {
+                GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+                game.act=1; game.floorNum=encounter==MonsterEncounter::SLIME_BOSS?16:8;
+                BattleContext live; live.init(game, encounter);
+                auto &slime=live.monsters.arr[0];
+                const auto split=slime.id==MonsterId::SPIKE_SLIME_L?MonsterMoveId::SPIKE_SLIME_L_SPLIT
+                    :slime.id==MonsterId::ACID_SLIME_L?MonsterMoveId::ACID_SLIME_L_SPLIT:MonsterMoveId::SLIME_BOSS_SPLIT;
+                if(slime.id!=MonsterId::SPIKE_SLIME_L && slime.id!=MonsterId::ACID_SLIME_L && slime.id!=MonsterId::SLIME_BOSS)
+                    throw std::runtime_error("slime split fixture has no large slime in slot 0");
+                slime.block=0; slime.curHp=slime.maxHp/2+5;
+                for (int played=0;played<2;++played) {
+                    CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(950+played);
+                    live.cards.moveToHand(defend); live.player.energy=3;
+                    sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                }
+                const auto preHitMove=slime.moveHistory[0];
+                CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=960;
+                live.cards.moveToHand(headbutt); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
+                        || slime.curHp>slime.maxHp/2 || slime.curHp<=0
+                        || slime.moveHistory[0]!=split || slime.moveHistory[1]!=split)
+                    throw std::runtime_error("native Headbutt did not split the slime at the hit");
+                CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+                auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+                if(!expected.pendingActionQueueObserved || expected.pendingActionQueue.size()!=1)
+                    throw std::runtime_error("native slime split Headbutt queue is not the cleanup alone");
+                auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-slime-split");
+                setProducerV4CardObservation(observation,expected);
+                auto &combat=observation["silverRoot"]["combat"];
+                combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                    {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                    {"cards",json::array()},{"liveChoices",json::array()}};
+                for(const auto &card:combat["discard"])
+                    combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                        {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+                combat["pendingCardQueue"]=json::array();
+                // Java form: setMove(3) replaced the pre-hit move, which is now
+                // the previous move until the queued SetMoveAction runs.
+                const auto idText=nativeJavaMonsterName(slime.id);
+                auto &javaSlime=combat["monsters"][0];
+                const auto previous=javaMoveByte(idText,preHitMove);
+                javaSlime["nextMove"]=3;
+                javaSlime["moveHistory"]=previous>=0?json::array({previous,3}):json::array({3});
+                combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                    json{{"kind","MONSTER_SPLIT_SET_MOVE"},{"slot",0}}});
+                const auto imported=one_combat::advisor::importSilverRoot(observation);
+                if(!imported.ok) throw std::runtime_error("slime split Headbutt import: "+imported.reason);
+                if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
+                    throw std::runtime_error("slime split Headbutt pending queue differs from native");
+                normalizeDynamicObservationIdentity(expected);
+                const auto adoptIds=[](auto &mine,const auto &theirs) {
+                    if(mine.size()!=theirs.size()) throw std::runtime_error("slime split Headbutt pile size differs");
+                    for(std::size_t i=0;i<mine.size();++i) {
+                        if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                            throw std::runtime_error("slime split Headbutt pile order differs");
+                        mine[i].uniqueId=theirs[i].uniqueId;
+                    }
+                };
+                adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+                adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+                adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+                adoptIds(expected.hand,imported.wire.hand);
+                expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+                expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+                expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+                expected.cardSelect.cards=imported.wire.cardSelect.cards;
+                auto actual=battleContextFromWire(imported.wire);
+                auto reference=battleContextFromWire(expected);
+                if(!actual.equalForSearch(reference)) {
+                    const auto context=searchContextFromWire(imported.wire);
+                    std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                            json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                    throw std::runtime_error("slime split Headbutt root parity failed");
+                }
+                const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+                pick.execute(actual); pick.execute(reference);
+                if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                    throw std::runtime_error("slime split Headbutt continuation parity failed");
+                // Fail closed: a split above half HP, a split naming an
+                // empty slot, and the flag's legacy refusal.
+                auto healthy=observation;
+                healthy["silverRoot"]["combat"]["monsters"][0]["hp"]=slime.maxHp/2+1;
+                if(one_combat::advisor::importSilverRoot(healthy).ok)
+                    throw std::runtime_error("slime split above half HP was accepted");
+                if(encounter==MonsterEncounter::LARGE_SLIME) {
+                    auto other=observation;
+                    other["silverRoot"]["combat"]["pendingActionQueue"][1]["slot"]=1;
+                    if(one_combat::advisor::importSilverRoot(other).ok)
+                        throw std::runtime_error("slime split for an empty slot was accepted");
+                }
+                setenv("STS_SILVER_SLIME_SPLIT_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_SLIME_SPLIT_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_SLIME_SPLIT_QUEUE=0 did not restore the refusal");
             }
         }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);

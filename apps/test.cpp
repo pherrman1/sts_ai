@@ -2445,6 +2445,35 @@ int testIroncladCardJavaParity() {
         }
     }
 
+    // Live parity problem 64b (seed 111200459, Colosseum Nobs): Gremlin Nob
+    // with Anger 3 sits in slot 1 behind the Taskmaster; a played Skill gave
+    // it Strength 3 in the game, 0 natively. STS_ENRAGE_ALL_MONSTERS_FIX=0
+    // keeps the legacy slot-0-only check.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_ENRAGE_ALL_MONSTERS_FIX");
+        else setenv("STS_ENRAGE_ALL_MONSTERS_FIX", "0", 1);
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10,
+                                                      MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        Monster &nob = bc.monsters.arr[1];
+        const bool layout = bc.monsters.arr[0].id == MonsterId::TASKMASTER && nob.id == MonsterId::GREMLIN_NOB;
+        nob.buff<MS::ENRAGE>(3);
+        const int before = nob.getStatus<MS::STRENGTH>();
+        bc.player.energy = 10;
+        simulatorCorrectnessPlay(bc, 0, 0);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        const int gained = nob.getStatus<MS::STRENGTH>() - before;
+        unsetenv("STS_ENRAGE_ALL_MONSTERS_FIX");
+        if (!layout || gained != (fix ? 3 : 0)) {
+            return fail(fix ? "Gremlin Nob in slot 1 did not gain Anger Strength from a Skill"
+                            : "STS_ENRAGE_ALL_MONSTERS_FIX=0 did not restore the slot-0-only check");
+        }
+    }
+
     // Disarm+ removes 3 Strength.
     {
         BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DISARM, 1), 10);
@@ -3076,7 +3105,131 @@ int testMonsterAiJavaParity() {
         if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
     }
 
+    // Live problem 56 (seed 111200445, A20): Donu died during the player's
+    // turn; Deca's Square of Protection then gave only Deca block and Plated
+    // Armor (game: Donu block 0, no powers). STS_DEAD_ALLY_BLOCK_FIX=0
+    // restores the legacy block on the dead ally.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+        else setenv("STS_DEAD_ALLY_BLOCK_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA, 20);
+        Monster &deca = bc.monsters.arr[0], &donu = bc.monsters.arr[1];
+        donu.curHp = 0;
+        deca.block = 1;
+        deca.moveHistory[0] = MMID::DECA_SQUARE_OF_PROTECTION;
+        deca.takeTurn(bc);
+        drain(bc);
+        const int donuBlock = fix ? 0 : 16, donuPlated = fix ? 0 : 3;
+        if (deca.block != 17 || deca.getStatus<MS::PLATED_ARMOR>() != 3
+                || donu.block != donuBlock || donu.getStatus<MS::PLATED_ARMOR>() != donuPlated) {
+            unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+            return fail(fix ? "Deca's Square of Protection shielded a dead Donu"
+                            : "STS_DEAD_ALLY_BLOCK_FIX=0 did not restore the legacy dead-Donu block");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+
+    // Donu's Circle of Power skips a dead Deca's Strength (ApplyPowerAction on
+    // a dead target); STS_DEAD_ALLY_STRENGTH_FIX=0 restores the legacy buff.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        else setenv("STS_DEAD_ALLY_STRENGTH_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA, 20);
+        Monster &deca = bc.monsters.arr[0], &donu = bc.monsters.arr[1];
+        deca.curHp = 0;
+        const int decaBefore = deca.getStatus<MS::STRENGTH>(), donuBefore = donu.getStatus<MS::STRENGTH>();
+        donu.moveHistory[0] = MMID::DONU_CIRCLE_OF_POWER;
+        donu.takeTurn(bc);
+        drain(bc);
+        if (donu.getStatus<MS::STRENGTH>() != donuBefore + 3
+                || deca.getStatus<MS::STRENGTH>() != decaBefore + (fix ? 0 : 3)) {
+            unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+            return fail(fix ? "Donu's Circle of Power buffed a dead Deca"
+                            : "STS_DEAD_ALLY_STRENGTH_FIX=0 did not restore the legacy dead-Deca Strength");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+
+    // Live problem 53 (seed 111200445, A20): Transient's Shifting stacked
+    // Shackled 145 under Strength -147. Java's GainStrengthPower restores the
+    // full 145 at the Transient's end of turn (Str -2), then 3 more damage
+    // shifts it to Str -5 / Shackled 3. The 8-bit field wrapped 145 to -111
+    // (Str -147 - 111 - 3 = -261, the live native value);
+    // STS_SHACKLED_OVERFLOW_FIX=0 restores that wraparound.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+        else setenv("STS_SHACKLED_OVERFLOW_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::TRANSIENT, 20);
+        Monster &transient = bc.monsters.arr[0];
+        transient.setHasStatus<MS::SHIFTING>(true);
+        transient.setStatus<MS::STRENGTH>(-2);
+        transient.damage(bc, 142);
+        transient.damage(bc, 3);
+        const int stacked = transient.getStatus<MS::SHACKLED>();
+        transient.applyEndOfTurnTriggers(bc);
+        drain(bc);
+        transient.damage(bc, 3);
+        const int strength = transient.getStatus<MS::STRENGTH>();
+        const int shackled = transient.getStatus<MS::SHACKLED>();
+        if (stacked != (fix ? 145 : -111) || strength != (fix ? -5 : -261) || shackled != 3) {
+            unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+            return fail(std::string(fix ? "Shackled 145 did not restore Transient's Strength"
+                                        : "STS_SHACKLED_OVERFLOW_FIX=0 did not restore the 8-bit wraparound")
+                        + " (stacked " + std::to_string(stacked) + ", Str " + std::to_string(strength)
+                        + ", Shackled " + std::to_string(shackled) + ")");
+        }
+        if (fix) {
+            transient.buff<MS::SHACKLED>(5000);
+            if (transient.getStatus<MS::SHACKLED>() != 999) {
+                unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+                return fail("Shackled does not clamp at Java's 999");
+            }
+        }
+    }
+    unsetenv("STS_SHACKLED_OVERFLOW_FIX");
+
     // ---- Act 4 (monsters.ending) ----
+
+    // Spire Shield's Fortify skips a dead Spear (GainBlockAction on a dying
+    // target); STS_DEAD_ALLY_BLOCK_FIX=0 restores the legacy block.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+        else setenv("STS_DEAD_ALLY_BLOCK_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 20);
+        Monster &shield = bc.monsters.arr[0], &spear = bc.monsters.arr[1];
+        spear.curHp = 0;
+        shield.block = 0;
+        spear.block = 0;
+        shield.moveHistory[0] = MMID::SPIRE_SHIELD_FORTIFY;
+        shield.takeTurn(bc);
+        drain(bc);
+        if (shield.block != 30 || spear.block != (fix ? 0 : 30)) {
+            unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+            return fail(fix ? "Spire Shield's Fortify shielded a dead Spear"
+                            : "STS_DEAD_ALLY_BLOCK_FIX=0 did not restore the legacy dead-Spear block");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+
+    // Spire Spear's Piercer skips a dead Shield's Strength (same shape).
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        else setenv("STS_DEAD_ALLY_STRENGTH_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 20);
+        Monster &shield = bc.monsters.arr[0], &spear = bc.monsters.arr[1];
+        shield.curHp = 0;
+        const int shieldBefore = shield.getStatus<MS::STRENGTH>(), spearBefore = spear.getStatus<MS::STRENGTH>();
+        spear.moveHistory[0] = MMID::SPIRE_SPEAR_PIERCER;
+        spear.takeTurn(bc);
+        drain(bc);
+        if (spear.getStatus<MS::STRENGTH>() != spearBefore + 2
+                || shield.getStatus<MS::STRENGTH>() != shieldBefore + (fix ? 0 : 2)) {
+            unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
+            return fail(fix ? "Spire Spear's Piercer buffed a dead Shield"
+                            : "STS_DEAD_ALLY_STRENGTH_FIX=0 did not restore the legacy dead-Shield Strength");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_STRENGTH_FIX");
 
     // A18 Spire Spear Burn Strike puts two Burns on top of the draw pile.
     {

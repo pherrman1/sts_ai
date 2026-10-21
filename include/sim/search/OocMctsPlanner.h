@@ -111,6 +111,13 @@ struct OocMctsConfig {
     // The search aborts only when every root action is pruned. Off keeps the
     // old whole-root abort.
     bool pruneUnsupported = false;
+    // Opt-in AlphaZero root exploration noise (STS_OOC_MCTS_ROOT_NOISE): when
+    // rootNoiseFraction > 0, PUCT at the root uses (1-f)*prior + f*Dirichlet(alpha),
+    // drawn once per search from rootNoiseSeed (not the search RNG). Reported
+    // priors stay the clean ones. 0 is off and leaves the search unchanged.
+    double rootNoiseFraction = 0;
+    double rootNoiseAlpha = 0.3;
+    std::uint64_t rootNoiseSeed = 0;
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;

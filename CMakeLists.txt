@@ -138,6 +138,38 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(exhaust_empty_hand_test tests/exhaust_empty_hand_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(exhaust_empty_hand_test PRIVATE include json/include)
+add_test(NAME exhaust_empty_hand COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:exhaust_empty_hand_test>)
+set_tests_properties(exhaust_empty_hand PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(anger_copy_cost_test tests/anger_copy_cost_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(anger_copy_cost_test PRIVATE include json/include)
+add_test(NAME anger_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:anger_copy_cost_test>)
+set_tests_properties(anger_copy_cost PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(upgrade_cost_delta_test tests/upgrade_cost_delta_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(upgrade_cost_delta_test PRIVATE include json/include)
+add_test(NAME upgrade_cost_delta COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:upgrade_cost_delta_test>)
+set_tests_properties(upgrade_cost_delta PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(byrd_grounded_flight_test tests/byrd_grounded_flight_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(byrd_grounded_flight_test PRIVATE include json/include)
+add_test(NAME byrd_grounded_flight COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:byrd_grounded_flight_test>)
+set_tests_properties(byrd_grounded_flight PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(half_dead_power_reset_test tests/half_dead_power_reset_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(half_dead_power_reset_test PRIVATE include json/include)
@@ -226,6 +258,22 @@ add_test(NAME mayhem_after_draw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guar
 set_tests_properties(mayhem_after_draw PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(slime_split_monster_count_test tests/slime_split_monster_count_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(slime_split_monster_count_test PRIVATE include json/include)
+add_test(NAME slime_split_monster_count COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:slime_split_monster_count_test>)
+set_tests_properties(slime_split_monster_count PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(curiosity_power_play_test tests/curiosity_power_play_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(curiosity_power_play_test PRIVATE include json/include)
+add_test(NAME curiosity_power_play COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:curiosity_power_play_test>)
+set_tests_properties(curiosity_power_play PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(unplayable_autoplay_test tests/unplayable_autoplay_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(unplayable_autoplay_test PRIVATE include json/include)
@@ -240,6 +288,14 @@ target_include_directories(purge_copy_can_use_test PRIVATE include json/include)
 add_test(NAME purge_copy_can_use COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:purge_copy_can_use_test>)
 set_tests_properties(purge_copy_can_use PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(lagavulin_wake_metallicize_test tests/lagavulin_wake_metallicize_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(lagavulin_wake_metallicize_test PRIVATE include json/include)
+add_test(NAME lagavulin_wake_metallicize COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:lagavulin_wake_metallicize_test>)
+set_tests_properties(lagavulin_wake_metallicize PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(magnetism_start_of_turn_test tests/magnetism_start_of_turn_test.cpp

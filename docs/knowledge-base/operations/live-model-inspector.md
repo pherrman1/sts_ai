@@ -761,7 +761,7 @@ read-only screen and choice converters. The observation contains:
 - `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
   potion capacity and five exact slots, physical deck instances with bottle
   binding, relic data, visible boss, the complete visible 15-by-7 map and edges
-  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`),
+  (Act 4: the fixed 5-by-7 map, imported as native `Map::act4Map()`, `STS_IMPORTER_ACT4_MAP_FIX`; the elite's sole `Boss!` choice, sent as option 0, is remapped to the native Heart node option 3, `STS_IMPORTER_ACT4_BOSS_MAP_FIX`),
   current/burning-elite coordinates, exact whole-run and current-act path
   counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
@@ -960,7 +960,9 @@ upgrades; Egg preview/acquisition never upgrades an already upgraded card twice.
 Direct V4 rejects unqualified pity, and differential tracing rejects Library's
 initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
 Mushrooms and Mysterious Sphere use the same counters for combat rewards. Their native leave effects match installed vanilla: Mushrooms heals
-and adds Parasite; Sphere leaves without granting gold. Event repairs also
+and adds Parasite; Sphere leaves without granting gold. Mushrooms' Stomp opens the "Ambushed!" page (`screenNum`
+2) whose sole [Fight] starts the fight; the mod marks it a vanilla `event_continue` and the importer passes it through
+(`STS_IMPORTER_MUSHROOMS_FIGHT_FIX`, live problem 57). Event repairs also
 preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
 Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
 With exact counters, MCTS keeps them at every root particle and the v_win
@@ -1107,7 +1109,8 @@ Supported native fixtures cover map choices, reward take/skip and repeated
 card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
 duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
-purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
+purchase types, shop-removal entry, chest open/leave and boss relic take/skip (the live
+driver maps the producer's boss-relic `cancel` to MCP's `skip` tool, live problem 71). The existing V4
 support gate still excludes non-card reward collection, removal/other
 selectors and the final map-to-boss transition. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
@@ -1290,9 +1293,12 @@ path recovery after save loading if the initial transition latch was empty.
 Missing or contradictory records remain unqualified.
 After the Act 3 boss dies, MCP can expose an empty `COMPLETE` surface rather
 than a reward screen. The strict driver advances its single Proceed button
-only for a living player at Act 3 floor 50 (or floor 51 with verified A20), with a completed MonsterRoomBoss,
+only for a living player at Act 3 floor 50 (or floor 51 with verified A20) or after the Heart (Act 4 floor 56 at
+verified A20, live problem 52; floor 55 below A20 is **Inference** from Act 3's single boss, not observed live), with a completed MonsterRoomBoss,
 no active overlay, no choices/cancel action, and agreeing run coordinates.
-It records `boss_completion` and waits for the following boss or actual terminal screen; it does
+It records `boss_completion` and waits for the following boss or actual terminal screen (after the Heart that is
+`TrueVictoryRoom`, whose `NO_INTERACT` ending cutscene is never command-ready; the driver treats that room as a terminal
+victory, live problem 60); it does
 not declare victory from the boss-room phase alone. Differential capture
 retains the native unsupported boundary for this UI-only transition.
 The following `Spire Heart` story in `VictoryRoom` is also mechanical: the
@@ -1381,8 +1387,10 @@ itself by shifting and queueing the 20 block behind the tail). The
 first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` queue items
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
-that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
-any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
+that would remove the power with a side effect (Shelled Parasite stun, Byrd grounding) stays unsupported;
+removing Plated Armor 1 from another monster (Donu, Deca) folds in (`STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE`). A lethal hit
+still queues the reduction; it folds into the dead monster (`STS_SILVER_LETHAL_REACTION_QUEUE`). Also unsupported is
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
@@ -1393,6 +1401,28 @@ not counted the queued reroll, and native defers it under hidden intents with th
 inputs of the moment it runs, as Java's `RollMoveAction` rolls then
 (`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
 `silver_runic_dome_monster_power_domain`).
+
+Runic Dome also covers Act 4 (THE_HEART and SHIELD_AND_SPEAR). The Java moves
+there follow a public `moveCount` cycle: the Heart opens with Debilitate (a roll
+that does not advance `moveCount`), then flips Blood Shots/Echo, plays the other
+one (Echo unless it just echoed) and Buffs; the Shield flips Fortify/Bash, plays
+Bash unless it just bashed, then Smash; the Spear plays Burn Strike unless it
+just did, then Skewer, then flips Piercer/Burn Strike. The tracker accepts these
+monsters only in act 4, patches their `takeTurn`, and exports every roll the
+executed history determines as a known next move of kind `act4_public_cycle`;
+only the coin flips stay pending hidden rolls. The importer recomputes the cycle
+from `completedTurns` and the last executed move and refuses a missing, extra or
+wrong proof (`STS_IMPORTER_RUNIC_DOME_ACT4`, default on; `=0` restores the
+refusal `silver_runic_dome_encounter_domain`). No live Dome run has reached Act 4
+yet; the Java cycles come from the canary's `javap` of CorruptHeart, SpireShield
+and SpireSpear.
+
+A split- or summon-born occupant's birth roll may carry `aliveCount` 0 (live seed
+111200458 s546, problem 63): Java rolls the child's first move in `init()` before
+`SpawnMonsterAction` adds it to the group, so the first Slime Boss child sees only the
+dead boss. The importer accepts 0 only when `rollGlobalTurn == birthGlobalTurn` on a
+non-initial row (`STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX`, default on; `=0` restores
+the refusal `silver_runic_dome_history_schema`).
 
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case

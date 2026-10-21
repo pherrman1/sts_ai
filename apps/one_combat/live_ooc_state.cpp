@@ -42,6 +42,15 @@ bool importerAct4MapFix() {
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_IMPORTER_ACT4_MAP_FIX must be 0 or 1");
 }
+// STS_IMPORTER_ACT4_BOSS_MAP_FIX: unset/1 (default) = map the live Act 4
+// "Boss!" choice to the Heart node's native option (x=3); 0 restores the
+// producer's act 1-3 option 0, which native rejects (OOC_ACTION_MAPPING).
+bool importerAct4BossMapFix() {
+    const char *value = std::getenv("STS_IMPORTER_ACT4_BOSS_MAP_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_ACT4_BOSS_MAP_FIX must be 0 or 1");
+}
 int integerValue(const J &v, int lo, int hi, const std::string &key) {
     require(v.is_number_integer(), key + " must be an integer");
     if (v.is_number_unsigned()) {
@@ -185,6 +194,15 @@ const std::map<Event,std::string> eventContinuePages{
     {Event::MINDBLOOM,"FIGHT"},{Event::SECRET_PORTAL,"ACCEPT"},
     {Event::MATCH_AND_KEEP,"INTRO|RULE_EXPLANATION"}
 };
+// STS_IMPORTER_MUSHROOMS_FIGHT_FIX: unset/1 (default) = Mushrooms' "Ambushed!"
+// page (screenNum 2 after Stomp, sole [Fight]) is a forced event_continue;
+// 0 restores the unqualified-transition refusal (live problem 57).
+bool importerMushroomsFightFix() {
+    const char *value = std::getenv("STS_IMPORTER_MUSHROOMS_FIGHT_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_MUSHROOMS_FIGHT_FIX must be 0 or 1");
+}
 bool eventPage(const std::map<Event,std::string> &pages,Event e,const std::string &phase) {
     const auto it=pages.find(e);
     return it!=pages.end() && ("|"+it->second+"|").find("|"+phase+"|")!=std::string::npos;
@@ -952,6 +970,32 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 }
             }
         }
+        // Act 4 from the elite at (3,2): MCP offers the Heart only as "Boss!"
+        // with no next_nodes, and the producer reuses the act 1-3 boss index
+        // (option 0). Native Map::act4Map reaches the boss through the elite's
+        // single edge, so its only map action is option 3. Remap exactly that
+        // sole public choice; any other shape keeps the producer's mapping.
+        if (importerAct4BossMapFix() && g.screenState==ScreenState::MAP_SCREEN && g.act==4
+                && g.curMapNodeX==3 && g.curMapNodeY==2 && g.map->getNode(3,2).edgeCount==1
+                && g.map->getNode(3,2).edges[0]==3 && g.map->getNode(3,3).room==Room::BOSS
+                && o.contains("mcpState") && o.at("mcpState").is_object()
+                && next.ooc.contains("liveChoices") && next.ooc.at("liveChoices").is_array()
+                && next.ooc.at("liveChoices").size()==1) {
+            const auto &mcp=o.at("mcpState");
+            auto &choice=next.ooc.at("liveChoices").at(0);
+            const J labels=mcp.value("choice_list",J::array());
+            const J ui=mcp.value("screen_state",J::object());
+            if (mcp.value("screen_type",std::string())=="MAP" && mcp.value("ready_for_command",false)
+                    && !mcp.value("can_proceed",true) && labels==J::array({"Boss!"})
+                    && ui.is_object() && ui.value("boss_available",false)
+                    && ui.contains("next_nodes") && ui.at("next_nodes")==J::array()
+                    && ui.contains("current_node") && ui.at("current_node").is_object()
+                    && ui.at("current_node").value("x",-1)==3 && ui.at("current_node").value("y",-1)==2
+                    && choice.is_object() && choice.value("mcpLabel",std::string())=="Boss!"
+                    && choice.contains("nativeAction")
+                    && choice.at("nativeAction")==J{{"group",0},{"index",0},{"kind","option"}})
+                choice.at("nativeAction")["index"]=3;
+        }
         if (g.screenState == ScreenState::REST_ROOM && o.contains("details")
                 && o.at("details").is_object() && o.at("details").contains("options")) {
             const auto &options = o.at("details").at("options");
@@ -1219,7 +1263,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 const bool vanilla=d.contains("eventContract") && string(d,"eventContract")=="vanilla_v1"
                         && capturedId==J(g.curEvent).get<std::string>()
                         && ((transition=="event_leave" && eventPage(eventLeavePages,g.curEvent,phase))
-                            || (transition=="event_continue" && eventPage(eventContinuePages,g.curEvent,phase)));
+                            || (transition=="event_continue" && (eventPage(eventContinuePages,g.curEvent,phase)
+                                || (g.curEvent==Event::HYPNOTIZING_COLORED_MUSHROOMS && phase=="2"
+                                    && importerMushroomsFightFix()))));
                 require(neow || goop || forge || writing || library || vanilla,"unqualified mechanical event transition");
                 const auto &options=array(eventCapture,"options",1);
                 require(options.size()==1 && integer(options.at(0),"index",0,0)==0

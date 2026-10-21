@@ -71,6 +71,30 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_ANGER_COPY_COST_FIX: unset/1 (default) = Anger's discard copy keeps
+    // the played card's cost and costForTurn, as Java makeStatEquivalentCopy
+    // does (live parity problem 43, seed 111200436: under Confusion the game's
+    // copy is 1/1, the legacy native copy 0/0). 0 = the legacy base-cost copy.
+    // Other values are fatal. Read only when Anger is played.
+    bool angerCopyCostFix();
+
+    // STS_UPGRADE_COST_DELTA_FIX: unset/1 (default) = an in-combat upgrade
+    // (Armaments, Apotheosis, ...) changes cost as Java upgradeBaseCost does:
+    // Blood for Blood takes cost-1 from its current cost (keeping a
+    // damage-taken reduction; live parity problem 59, seed 111200448), and a
+    // cost-changing upgrade keeps the card's costForTurn - cost difference.
+    // 0 = the legacy engine, which reset both costs to the upgraded base.
+    // Other values are fatal. Read on every CardInstance::upgrade.
+    bool upgradeCostDeltaFix();
+
+    // STS_BYRD_GROUNDED_FLIGHT_FIX: unset/1 (default) = the hit that takes a
+    // Byrd's Flight from 1 to 0 removes the power, as Java ReducePowerAction
+    // does (live parity problem 42, seed 111200436). The grounded Byrd takes
+    // full damage and keeps no Flight at its next start of turn. 0 = the
+    // legacy engine kept the status bit at amount 0, so damage stayed halved
+    // and applyStartOfTurnPowers reset Flight to 3/4. Other values are fatal.
+    bool byrdGroundedFlightFix();
+
     // STS_DEAD_MONSTER_BLOCK_FIX: unset/1 (default) = queued monster block
     // (Curl Up, Malleable, Guardian mode shift, block moves) does nothing once
     // the monster is dead, as in GainBlockAction.update (skips isDying or
@@ -80,6 +104,33 @@ namespace sts {
     // legacy engine adds the block. Other values are fatal. Read only when
     // the monster is dead.
     bool deadMonsterBlockFix();
+
+    // STS_DEAD_ALLY_BLOCK_FIX: unset/1 (default) = a monster move that adds
+    // block to an ally directly skips a dead ally, as the queued
+    // GainBlockAction/ApplyPowerAction do in Java (live problem 56, seed
+    // 111200445: Deca's Square of Protection gave a dead Donu 16 block).
+    // Covers Deca's Square of Protection (block and A19 Plated Armor) and
+    // Spire Shield's Fortify. Dead-monster block is part of Silver's node
+    // identity, so this can change search. 0 = the legacy engine adds them.
+    // Other values are fatal. Read only when the ally is dead.
+    bool deadAllyBlockFix();
+
+    // STS_DEAD_ALLY_STRENGTH_FIX: unset/1 (default) = Donu's Circle of Power
+    // and Spire Spear's Piercer skip a dead ally's Strength, as Java's queued
+    // ApplyPowerAction skips a target that isDeadOrEscaped (dying, half-dead
+    // or escaping; follow-up to live problem 56).
+    // Dead monsters' powers are part of Silver's node identity, so this can
+    // change search. 0 = the legacy engine buffs the dead ally. Other values
+    // are fatal. Read only when the ally is dead.
+    bool deadAllyStrengthFix();
+
+    // STS_ENRAGE_ALL_MONSTERS_FIX: unset/1 (default) = Gremlin Nob's Anger
+    // (Enrage) gains Strength on every played Skill whichever monster slot the
+    // Nob is in, as Java's per-monster AngerPower.onUseCard (live problem 64b,
+    // seed 111200459: Colosseum Nobs puts the Nob in slot 1 behind the
+    // Taskmaster, and native only checked slot 0). A dead Nob gains nothing.
+    // 0 = the legacy slot-0-only check. Other values are fatal.
+    bool enrageAllMonstersFix();
 
     // STS_MUGGER_DEATH_RNG_FIX: unset/1 (default) = a dying Mugger draws
     // aiRng.random(2) for its death sound (Mugger.die calls playDeathSfx,
@@ -193,6 +244,20 @@ namespace sts {
     // 2026-10-20 problem 44). 0 = the legacy engine, which pushed it to the
     // front (reverse order). Other values are fatal. Read at each autoplay.
     bool autoplayQueueOrderFix();
+    // STS_LAGAVULIN_WAKE_METALLICIZE_FIX: unset/1 (default) = a Lagavulin woken
+    // by HP damage loses 8 Metallicize, as in the game (Lagavulin.damage queues
+    // ChangeStateAction("OPEN"); changeState queues ReducePowerAction(
+    // Metallicize, 8)), the same as the natural wake (overnight live play
+    // 2026-10-20 problem 58: 12 -> 4). 0 = the legacy engine, which removed
+    // Metallicize. Other values are fatal. Read only at a damage wake.
+    bool lagavulinWakeMetallicizeFix();
+    // STS_EXHAUST_EMPTY_HAND_FIX: unset/1 (default) = ExhaustMany (Purity,
+    // Elixir) does nothing on an empty hand, as Java ExhaustAction.update
+    // ends at once when the hand is empty (overnight live play 2026-10-20
+    // problem 64(d): Purity as the last card left its selection open with
+    // Letter Opener's damage queued behind it). 0 = the legacy engine, which
+    // opened an empty CARD_SELECT. Other values are fatal.
+    bool exhaustEmptyHandFix();
 
     // STS_PURGE_COPY_CAN_USE_FIX: unset/1 (default) = a purge-on-use replay copy
     // (Duplication, Double Tap, Burst, Echo Form, Necronomicon) must pass canUse
@@ -210,6 +275,25 @@ namespace sts {
     // 2026-10-20 problem 39). 0 = the legacy engine, where Magnetism did
     // nothing. Other values are fatal. Read only at a Magnetism turn start.
     bool magnetismFix();
+
+    // STS_SLIME_SPLIT_MONSTER_COUNT_FIX: unset/1 (default) = a large slime
+    // split grows monsterCount only to cover the two child slots (max with
+    // placeIdx+2), so a Spike Slime (L) splitting in slot 0 of the Slime Boss
+    // layout (0,1,2) leaves monsterCount 3, as the live inspector reports
+    // (overnight live play 2026-10-20 problem 62, seed 111200456 s217). Java
+    // itself keeps dead parents in its list (raw size 5 there); the alive
+    // monsters and their order are the same either way, so this only removes
+    // an always-dead empty slot 3. 0 = the legacy engine (+1 per split, capped
+    // at 4). Other values are fatal. Read only at a large slime split.
+    bool slimeSplitMonsterCountFix();
+
+    // STS_CURIOSITY_FIX: unset/1 (default) = each Power play queues Strength
+    // equal to Curiosity at the bottom for every monster holding it, as in the
+    // game (CuriosityPower.onUseCard -> ApplyPowerAction; overnight live play
+    // 2026-10-20 problems 45 and 65: the Awakened One's Strength stayed 2 lower
+    // per Power natively). 0 = the legacy engine, where Curiosity did nothing.
+    // Other values are fatal. Read only when a Power card is used.
+    bool curiosityFix();
 
     struct BattleContext {
 

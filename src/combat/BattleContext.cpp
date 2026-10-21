@@ -32,6 +32,27 @@ namespace sts {
         throw std::runtime_error("STS_CURL_UP_LETHAL_FIX must be 0 or 1");
     }
 
+    bool angerCopyCostFix() {
+        const char *value = std::getenv("STS_ANGER_COPY_COST_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_ANGER_COPY_COST_FIX must be 0 or 1");
+    }
+
+    bool upgradeCostDeltaFix() {
+        const char *value = std::getenv("STS_UPGRADE_COST_DELTA_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_UPGRADE_COST_DELTA_FIX must be 0 or 1");
+    }
+
+    bool byrdGroundedFlightFix() {
+        const char *value = std::getenv("STS_BYRD_GROUNDED_FLIGHT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_BYRD_GROUNDED_FLIGHT_FIX must be 0 or 1");
+    }
+
     bool panacheFix() {
         const char *value = std::getenv("STS_PANACHE_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -44,6 +65,27 @@ namespace sts {
         if (!value || !*value || std::string(value) == "1") return true;
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_DEAD_MONSTER_BLOCK_FIX must be 0 or 1");
+    }
+
+    bool deadAllyBlockFix() {
+        const char *value = std::getenv("STS_DEAD_ALLY_BLOCK_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_ALLY_BLOCK_FIX must be 0 or 1");
+    }
+
+    bool deadAllyStrengthFix() {
+        const char *value = std::getenv("STS_DEAD_ALLY_STRENGTH_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_DEAD_ALLY_STRENGTH_FIX must be 0 or 1");
+    }
+
+    bool enrageAllMonstersFix() {
+        const char *value = std::getenv("STS_ENRAGE_ALL_MONSTERS_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_ENRAGE_ALL_MONSTERS_FIX must be 0 or 1");
     }
 
     bool muggerDeathRngFix() {
@@ -122,6 +164,13 @@ namespace sts {
         throw std::runtime_error("STS_HAND_UPGRADE_ALL_FIX must be 0 or 1");
     }
 
+    bool exhaustEmptyHandFix() {
+        const char *value = std::getenv("STS_EXHAUST_EMPTY_HAND_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_EXHAUST_EMPTY_HAND_FIX must be 0 or 1");
+    }
+
     bool mayhemAfterDrawFix() {
         const char *value = std::getenv("STS_MAYHEM_AFTER_DRAW_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -150,11 +199,32 @@ namespace sts {
         throw std::runtime_error("STS_PURGE_COPY_CAN_USE_FIX must be 0 or 1");
     }
 
+    bool lagavulinWakeMetallicizeFix() {
+        const char *value = std::getenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_LAGAVULIN_WAKE_METALLICIZE_FIX must be 0 or 1");
+    }
+
     bool magnetismFix() {
         const char *value = std::getenv("STS_MAGNETISM_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
         if (std::string(value) == "0") return false;
         throw std::runtime_error("STS_MAGNETISM_FIX must be 0 or 1");
+    }
+
+    bool slimeSplitMonsterCountFix() {
+        const char *value = std::getenv("STS_SLIME_SPLIT_MONSTER_COUNT_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SLIME_SPLIT_MONSTER_COUNT_FIX must be 0 or 1");
+    }
+
+    bool curiosityFix() {
+        const char *value = std::getenv("STS_CURIOSITY_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_CURIOSITY_FIX must be 0 or 1");
     }
 }
 
@@ -1241,7 +1311,16 @@ void BattleContext::useAttackCard() {
 
         case CardId::ANGER:
             addToBot( Actions::AttackEnemy(t, calculateCardDamage(c, t, up ? 8 : 6)) );
-            addToBot( Actions::MakeTempCardInDiscard( CardInstance(CardId::ANGER, up), 1) );
+            {
+                // Java Anger.use queues makeStatEquivalentCopy(), which keeps cost and costForTurn
+                // (e.g. a Confusion roll); STS_ANGER_COPY_COST_FIX=0 restores the base-cost copy.
+                CardInstance copy(CardId::ANGER, up);
+                if (angerCopyCostFix()) {
+                    copy.cost = c.cost;
+                    copy.costForTurn = c.costForTurn;
+                }
+                addToBot( Actions::MakeTempCardInDiscard(copy, 1) );
+            }
             break;
 
         case CardId::BASH:
@@ -2084,9 +2163,21 @@ void BattleContext::onUseSkillCard() {
     // ********* Enemy Powers onUseCard *********
     // todo Choke Power
 
-    auto &m = monsters.arr[0];
-    if (m.hasStatus<MS::ENRAGE>()) {
-        m.buff<MS::STRENGTH>(m.getStatus<MS::ENRAGE>());
+    // Gremlin Nob's AngerPower is the owner's own power; in Colosseum Nobs it
+    // sits in slot 1 behind the Taskmaster. Its ApplyPowerAction skips a dead
+    // owner (STS_ENRAGE_ALL_MONSTERS_FIX=0 restores the slot-0-only check).
+    if (enrageAllMonstersFix()) {
+        for (int i = 0; i < monsters.monsterCount; ++i) {
+            auto &m = monsters.arr[i];
+            if (m.hasStatus<MS::ENRAGE>() && !m.isDeadOrEscaped()) {
+                m.buff<MS::STRENGTH>(m.getStatus<MS::ENRAGE>());
+            }
+        }
+    } else {
+        auto &m = monsters.arr[0];
+        if (m.hasStatus<MS::ENRAGE>()) {
+            m.buff<MS::STRENGTH>(m.getStatus<MS::ENRAGE>());
+        }
     }
 }
 
@@ -2148,10 +2239,17 @@ void BattleContext::onUsePowerCard() {
         mummifiedHandOnUsePower();
     }
 
-//    auto &m = monsters.optionMap[2];
-//    if (m.hasStatusInternal<MS::CURIOSITY>()) {
-//        m.buff<MS::STRENGTH>(m.getStatus<MS::CURIOSITY>());
-//    }
+    // CuriosityPower.onUseCard: a Power play queues ApplyPowerAction(Strength)
+    // at the bottom for each monster holding Curiosity (the Awakened One).
+    // STS_CURIOSITY_FIX=0 restores the legacy engine, where it did nothing.
+    if (curiosityFix()) {
+        for (int i = 0; i < monsters.monsterCount; ++i) {
+            const auto &m = monsters.arr[i];
+            if (m.hasStatus<MS::CURIOSITY>()) {
+                addToBot( Actions::BuffEnemy<MS::STRENGTH>(i, m.getStatus<MS::CURIOSITY>()) );
+            }
+        }
+    }
 }
 
 void BattleContext::onUseStatusOrCurseCard() {

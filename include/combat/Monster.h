@@ -23,6 +23,14 @@ namespace sts {
 
     class BattleContext;
 
+    // STS_SHACKLED_OVERFLOW_FIX: unset/1 (default) = Shackled (Java
+    // GainStrengthPower) holds amounts up to Java's +-999 clamp; 0 restores
+    // the legacy 8-bit wraparound (live problem 53: Transient's Shifting
+    // stacked Shackled 145, stored as -111). Other values are fatal.
+    bool shackledOverflowFix();
+    // The stored Shackled amount: Java's clamp, or the legacy 8-bit value.
+    std::int16_t shackledAmount(int amount);
+
     struct DamageInfo {
         int damage = 0;
         int attackCount = 1;
@@ -60,7 +68,7 @@ namespace sts {
         std::int8_t platedArmor = 0;
         std::int8_t poison = 0;
         std::int8_t regen = 0;
-        std::int8_t shackled = 0;
+        std::int16_t shackled = 0;
         int strength = 0;
         int vulnerable = 0;
         int weak = 0;
@@ -183,6 +191,7 @@ namespace sts {
         void rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in);
         bool observeAttackPredicate(BattleContext &bc);
         void materializePendingMove(BattleContext &bc);  // evaluates deferred rolls; no-op when none
+        void wakeMetallicize(BattleContext &bc);         // Lagavulin damage wake
         void cancelPendingMove();                        // a forced move override discards them
         // The Guardian's Mode Shift trigger without its 20 block (the caller queues it).
         void enterGuardianDefensiveMode();
@@ -272,7 +281,7 @@ namespace sts {
                 return;
 
             case MonsterStatus::SHACKLED:
-                shackled = amount;
+                shackled = shackledAmount(amount);
                 return;
 
             case MonsterStatus::STRENGTH:
@@ -562,7 +571,7 @@ namespace sts {
                 return;
 
             case MonsterStatus::SHACKLED:
-                shackled += amount;
+                shackled = shackledAmount(shackled + amount);
                 setHasStatus<s>(true);
                 return;
 

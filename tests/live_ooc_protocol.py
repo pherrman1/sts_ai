@@ -193,6 +193,60 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertNotEqual(response.get("evaluators", [{}])[0].get("reason"),
                                 "MODEL_UNAVAILABLE", (defect, response))
 
+    def test_act4_elite_map_maps_boss_choice_to_native_heart_node(self):
+        # Live-canary problem 51 (seed 111200440, floor 55): after the Act 4
+        # elite, MCP offers the Heart only as "Boss!" and the producer sent
+        # the act 1-3 boss option 0; native reaches (3,3) only as option 3.
+        observation = json.loads((Path(__file__).parent / "fixtures/live_act4_heart_map.json").read_text())
+        response, = self.run_rows([observation], policy="mcts")
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search", response)
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+        response, = self.run_rows([observation], policy="mcts",
+                                  extra_env={"STS_IMPORTER_ACT4_BOSS_MAP_FIX": "0"})
+        self.assertEqual(response["code"], "OOC_ACTION_MAPPING", response)
+        for defect in range(5):
+            malformed = copy.deepcopy(observation)
+            state = malformed["ooc"]["mcpState"]
+            if defect == 0:
+                state["choice_list"] = ["Return"]
+            elif defect == 1:
+                state["screen_state"]["next_nodes"] = [dict(x=3, y=3)]
+            elif defect == 2:
+                state["screen_state"]["current_node"]["x"] = 2
+            elif defect == 3:
+                malformed["ooc"]["liveChoices"][0]["nativeAction"]["index"] = 1
+            else:
+                malformed["ooc"]["liveChoices"][0]["mcpLabel"] = "Return"
+            response, = self.run_rows([malformed], policy="mcts")
+            self.assertEqual(response.get("code"), "OOC_ACTION_MAPPING", (defect, response))
+
+    def test_mushrooms_ambush_fight_is_forced_continue(self):
+        # Live-canary problem 57 (seed 111200446, floor 10): after Stomp, the
+        # "Ambushed!" page (Mushrooms screenNum 2) offers only [Fight]. The
+        # captured producer refused it; the fixed producer marks it a vanilla
+        # event_continue, applied here to the live capture.
+        captured = json.loads((Path(__file__).parent / "fixtures/live_mushrooms_ambush.json").read_text())
+        self.assertEqual(captured["ooc"]["unsupportedReason"], "EVENT_PHASE_UNREPRESENTABLE:Mushrooms:2")
+        observation = copy.deepcopy(captured)
+        ooc = observation["ooc"]
+        del ooc["unsupportedReason"]
+        ooc["details"].update(mechanicalTransition="event_continue", eventContract="vanilla_v1")
+        response, = self.run_rows([observation], model=False, floor_model=False, policy="mcts")
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search", response)
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+        response, = self.run_rows([observation], model=False, floor_model=False, policy="mcts",
+                                  extra_env={"STS_IMPORTER_MUSHROOMS_FIGHT_FIX": "0"})
+        self.assertEqual(response["status"], "ERROR", response)
+        for phase in ("1", "3"):
+            variant = copy.deepcopy(observation)
+            variant["ooc"]["event"]["phase"] = phase
+            response, = self.run_rows([variant], model=False, floor_model=False, policy="mcts")
+            self.assertEqual(response["status"], "ERROR", (phase, response))
+
     def test_du_vu_doll_counter_must_match_master_deck_curses(self):
         # Live-canary problem 46: Java DuVuDoll's counter is the master deck's
         # CURSE-type card count, Ascender's Bane included.

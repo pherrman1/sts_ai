@@ -236,7 +236,9 @@ Sacred Bark and 20% with it, the reverse of the game.
   `ChangeStateAction` "Defensive Mode", seed 111200388 floor 16; louse Curl Up
   `ChangeStateAction` "CLOSED", `GainBlockAction` and `RemoveSpecificPowerAction`,
   seed 111200389 floor 5; Headbutt killing a Darkling to half-dead, its queued
-  Regrow `SetMoveAction`, seed 111200400 floor 35). The producer now emits them and
+  Regrow `SetMoveAction`, seed 111200400 floor 35; a lethal Headbutt into a Byrd,
+  whose Flight `ReducePowerAction` stays queued, seed 111200421 floor 28; Headbutt
+  removing Donu's last Plated Armor, seed 111200422 floor 50). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
 - The run stopped on a Discovery choice under Hex
   (`silver_card_reward_pending_actions`, seed 111200415 floor 21, Chosen and
@@ -356,6 +358,14 @@ every purge copy skip `canUse`. `STS_PURGE_COPY_CAN_USE_FIX` (default on,
 `=0` restores) applies `canUse` to copies
 (`tests/purge_copy_can_use_test.cpp`).
 
+A run on 2026-10-20 (seed 111200447, floor 8, problem 58) woke a sleeping
+Lagavulin with Metallicize 12 by a Strike: the game kept Metallicize 4, native
+removed it. The pinned-jar javap shows both wakes running
+`changeState("OPEN")`, which queues `ReducePowerAction(Metallicize, 8)`; the
+engine already subtracted 8 on the natural wake but removed the power on the
+damage wake. `STS_LAGAVULIN_WAKE_METALLICIZE_FIX` (default on, `=0`
+restores) subtracts 8 (`tests/lagavulin_wake_metallicize_test.cpp`).
+
 A run on 2026-10-20 (seed 111200429, The Guardian, problem 39) played
 Magnetism on turn 1; every later end-turn verdict had a six-card game hand
 against a five-card native hand, with cardRandomRng diverging at the same
@@ -368,6 +378,41 @@ non-healing colorless pool) once per stack immediately and queues
 Reality upgrades the card and a full hand sends it to the discard pile.
 `STS_MAGNETISM_FIX` (default on, `=0` restores) implements this
 (`tests/magnetism_start_of_turn_test.cpp`).
+
+A run on 2026-10-20 (seed 111200456, Slime Boss, problem 62) showed
+`monsterCount` game 3 against native 4 after the Spike Slime (L) split at
+s217; every later step matched. Java never prunes or reuses monster slots:
+`SuicideAction` leaves the parent in `MonsterGroup.monsters` and each
+`SpawnMonsterAction` with smart positioning inserts at the number of monsters
+(dead ones included) left of the child's drawX, so the raw list there has 5
+entries. The inspector emits the fixed native layout (0,1,2, replaced slime
+parents dropped) and reports 3. Native put the children in slots 0 and 1 (the
+dead boss's) but still grew the count by one, leaving an always-dead empty
+slot 3. The alive monsters and their order are the same in all three views and
+every loop over `monsterCount` skips dead slots, so the difference is
+representational. `STS_SLIME_SPLIT_MONSTER_COUNT_FIX` (default on, `=0`
+restores) grows the count only to `placeIdx+2`
+(`tests/slime_split_monster_count_test.cpp`). The same step's
+`endHpGameMinusNative` of 6 at s221 is Burning Blood healing after combat,
+which Java applies before the inspector's post snapshot.
+
+Runs on 2026-10-20 (seed 111200436, problem 45; seed 111200459, problem 65)
+showed the Awakened One's Strength game N+2 against native N after every
+Power play. Native never implemented `CuriosityPower.onUseCard` (the hook in
+`onUsePowerCard` was commented out). Live decisions re-import the game state,
+so the gap reset at the next import; it persisted when native carried the
+state on (#65). `STS_CURIOSITY_FIX` (default on, `=0` restores) queues
+Strength equal to Curiosity at the bottom for each monster holding it on
+every Power use, copies included (`tests/curiosity_power_play_test.cpp`).
+
+A run on 2026-10-20 (seed 111200459, Awakened One, problem 64(d)) played
+Purity as the last card in hand on Letter Opener's third skill. The game
+finished the play at once (no selection, every monster 5 HP lower); native
+opened an empty `EXHAUST_MANY` selection with Letter Opener's damage queued
+behind it. Java `ExhaustAction.update` sets `isDone` when the hand is empty
+before any screen opens; native `ExhaustMany` had no such guard.
+`STS_EXHAUST_EMPTY_HAND_FIX` (default on, `=0` restores) adds it
+(`tests/exhaust_empty_hand_test.cpp`).
 
 A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
 Panache, because the live importer refused it. Java `PanachePower.amount` is
@@ -436,6 +481,37 @@ representation-only differences that no native decision reads:
 - The move before last of Hexaghost, Taskmaster and Fat Gremlin. Java appends
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
+
+Seed 111200436 (live problem 43, four steps): under Confusion, Anger's
+discard copy cost 1/1 in the game and 0/0 natively. Java `Anger.use` queues
+`makeStatEquivalentCopy()`, which copies `cost` and `costForTurn`; native
+built a fresh base-cost Anger. `STS_ANGER_COPY_COST_FIX` (default on, `=0`
+restores) copies both costs from the played card. **Open question:**
+`makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, and no
+live trace has shown a free Anger copy yet.
+
+Seed 111200448 (live problem 59): Armaments+ upgraded a Blood for Blood whose
+cost a hit had reduced to 3. The game ended at 2/2 (Java `BloodForBlood.upgrade`
+calls `upgradeBaseCost(cost - 1)`), native at 3/3, because the generic upgrade
+path reset both costs to the upgraded base. `STS_UPGRADE_COST_DELTA_FIX`
+(default on, `=0` restores) follows Java `upgradeBaseCost` for every in-combat
+upgrade (Armaments, Apotheosis, ...): Blood for Blood keeps its reduction, and a
+cost-changing upgrade keeps the card's `costForTurn - cost` difference.
+
+Seed 111200445 (live problem 54): a Headbutt that moved Pen Nib's counter
+from 8 to 9 imported with the Pen Nib status bit already set, while native
+still held its `BuffPlayer<PEN_NIB>` behind the Headbutt grid. The importer
+turned the counter-9 sentinel into the bit even though the game's PenNibPower
+was only queued. `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0`
+restores) leaves the bit clear while a pending Pen Nib buff is queued and no
+Pen Nib power is present.
+
+Seed 111200436 (live problem 42): Fiend Fire grounded a Byrd at 1 HP, and
+native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
+20). Java `ReducePowerAction` removes the power, so the grounded Byrd takes
+full damage and gets no Flight back at its next start of turn; native still
+halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
+`STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
