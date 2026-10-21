@@ -21,6 +21,7 @@
 #include <constants/CharacterClasses.h>
 #include <constants/Relics.h>
 #include <constants/PlayerStatusEffects.h>
+#include "data_structure/small_sorted_map.h"
 
 // powers that use justApplied:
 // Vulnerable, requires isSourceMonster and actionManager turn has ended
@@ -64,7 +65,7 @@ namespace sts {
         std::uint32_t justAppliedBits = 0;
         std::uint64_t statusBits0 = 0;
         std::uint32_t statusBits1 = 0;
-        std::map<PlayerStatus, std::int16_t> statusMap;
+        SmallSortedMap<PlayerStatus, std::int16_t, static_cast<int>(PlayerStatus::THE_BOMB) + 1> statusMap;
 
         std::uint64_t relicBits0 = 0;
         std::uint64_t relicBits1 = 0;

@@ -86,10 +86,8 @@ namespace {
     // by their flag only, so statusMap keeps the old amount. 0 = the legacy
     // feature, which read that leftover amount. Other values are fatal.
     bool activePowerFeatures() {
-        const char *value = std::getenv("STS_ACTIVE_POWER_FEATURES");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_ACTIVE_POWER_FEATURES must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_ACTIVE_POWER_FEATURES");
     }
 
     int powerVal(const Player &p, PlayerStatus s, bool activeOnly) {
