@@ -22580,7 +22580,7 @@ candidate. Other screens keep exact tool matching. Driver mapping only (no flag)
 skip confirms it.
 Seeds: none new (live seed 111200468 as reported; driver unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
-## §TBD — Live Silver: Headbutt killing the Gremlin Leader refused its put-on-top choice (2026-10-21)
+## §605 — Live Silver: Headbutt killing the Gremlin Leader refused its put-on-top choice (2026-10-21)
 
 **Question:** why did live seed 111200472 seg2 s50 (release 8447353f, Act 2 floor 30, GREMLIN_LEADER) stop with
 `silver_selection_pending_actions` and pending actions `[UseCardAction, ShoutAction, ShoutAction, EscapeAction,
