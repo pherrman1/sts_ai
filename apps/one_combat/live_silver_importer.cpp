@@ -373,6 +373,19 @@ bool highRelicFix() {
     throw std::runtime_error("STS_IMPORTER_HIGH_RELIC_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_PEN_NIB_PENDING_FIX: unset/1 (default) = Pen Nib at counter 9
+// with its PenNibPower still queued (a pending BUFF_PLAYER Pen Nib, no Pen Nib
+// power yet) imports without the Pen Nib status bit, as native holds it until
+// the queued BuffPlayer runs (live parity problem 54, seed 111200445: Headbutt
+// armed Pen Nib behind its grid); 0 = legacy, where the counter sentinel set
+// the bit at once.
+bool penNibPendingFix() {
+    const char *value = std::getenv("STS_IMPORTER_PEN_NIB_PENDING_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_PEN_NIB_PENDING_FIX must be 0 or 1");
+}
+
 // STS_IMPORTER_ESCAPING_MONSTER_FIX: unset/1 (default) = a monster that Java
 // reports dead (isDeadOrEscaped) with HP left, not half dead and not yet
 // "escaping" (the escape animation is still running) is imported as escaping;
@@ -452,6 +465,18 @@ bool halfDeadSetMoveQueue() {
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_SLIME_SPLIT_QUEUE: unset/1 (default) = a source-card selection
+// whose pending tail holds a large slime's or Slime Boss's queued split
+// SetMoveAction (the hit took it to half HP) folds it into the imported
+// monster's move history, as native sets the split at the hit; 0 = legacy
+// refusal as silver_selection_pending_actions.
+bool slimeSplitQueue() {
+    const char *value = std::getenv("STS_SILVER_SLIME_SPLIT_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_SLIME_SPLIT_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a pending tail holding
 // Hex's queued Dazed (HexPower.onUseCard for a non-Attack, e.g. Discovery's
 // choice under Hex) imports it as a native MakeTempCardInDrawPile(Dazed);
@@ -484,6 +509,29 @@ bool cardRewardPublicActions() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS must be 0 or 1");
+}
+
+// STS_SILVER_LETHAL_REACTION_QUEUE: unset/1 (default) = a source-card
+// selection whose hit killed a Byrd or Shelled Parasite still carries the
+// queued Flight / Plated Armor ReducePowerAction; it folds into the dead
+// monster like a living one (native applies the loss at the hit); 0 = legacy
+// refusal (silver_selection_pending_actions).
+bool lethalReactionQueue() {
+    const char *value = std::getenv("STS_SILVER_LETHAL_REACTION_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE must be 0 or 1");
+}
+
+// STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE: unset/1 (default) = a queued
+// Plated Armor reduction from 1 on a monster other than Shelled Parasite
+// (whose stun stays unsupported), e.g. Donu after Headbutt, removes the power
+// as native does at the hit; 0 = legacy refusal (silver_selection_pending_actions).
+bool platedArmorRemovalQueue() {
+    const char *value = std::getenv("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE must be 0 or 1");
 }
 
 // STS_IMPORTER_THIEF_GOLD_FIX: unset/1 (default) = a Looter or Mugger holding
@@ -2131,6 +2179,27 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="MONSTER_SPLIT_SET_MOVE") {
+                // The split is already the current move (Java setMove at the
+                // hit); native's onHpLost also writes it as the previous move,
+                // which the queued SetMoveAction does in Java
+                // (STS_SLIME_SPLIT_RNG_FIX).
+                int slot=-1;
+                if(!sourceCard || !slimeSplitQueue() || !sts::slimeSplitRngFix() || !requiredInt(entry,"slot",slot)
+                        || slot<0 || slot>=wire.monsterCount)
+                    return unsupported("silver_selection_pending_actions");
+                auto &monster=wire.monsters[slot];
+                const auto id=static_cast<sts::MonsterId>(monster.id);
+                const auto split=id==sts::MonsterId::SPIKE_SLIME_L?sts::MonsterMoveId::SPIKE_SLIME_L_SPLIT
+                    :id==sts::MonsterId::ACID_SLIME_L?sts::MonsterMoveId::ACID_SLIME_L_SPLIT
+                    :id==sts::MonsterId::SLIME_BOSS?sts::MonsterMoveId::SLIME_BOSS_SPLIT:sts::MonsterMoveId::INVALID;
+                if(split==sts::MonsterMoveId::INVALID || monster.idx!=slot || monster.curHp<=0 || monster.halfDead
+                        || monster.isEscapingB || monster.curHp>monster.maxHp/2
+                        || monster.moveHistory[0]!=static_cast<std::int16_t>(split))
+                    return unsupported("silver_selection_pending_actions");
+                monster.moveHistory[1]=static_cast<std::int16_t>(split);
+                continue;
+            }
             if(kindName=="MONSTER_SET_MOVE") {
                 // Darkling.damage sets Regrow at the half-death and queues the
                 // same SetMoveAction behind the card; native does the same.
@@ -2154,7 +2223,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>=wire.monsterCount)
                     return unsupported("silver_selection_pending_actions");
                 auto &monster=wire.monsters[slot];
-                if(monster.idx!=slot || monster.curHp<=0 || monster.isEscapingB || monster.halfDead)
+                const bool lethalReduce=monster.curHp<=0 && lethalReactionQueue()
+                    && (kindName=="MONSTER_REDUCE_FLIGHT" || kindName=="MONSTER_REDUCE_PLATED_ARMOR");
+                if(monster.idx!=slot || (monster.curHp<=0 && !lethalReduce) || monster.isEscapingB || monster.halfDead)
                     return unsupported("silver_selection_pending_actions");
                 const auto has=[&](sts::MonsterStatus status){return (monster.statusBits & (1ULL<<static_cast<int>(status)))!=0;};
                 if(kindName=="REACTIVE_ROLL_MOVE") {
@@ -2203,19 +2274,31 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(kindName=="MONSTER_REDUCE_FLIGHT") {
                     // Native Flight loss happens at the hit, like Plated Armor;
-                    // reaching 0 grounds (stuns) the Byrd and stays unsupported.
+                    // reaching 0 grounds (stuns) the Byrd and stays unsupported
+                    // unless the hit was lethal: native then sets the stun and
+                    // Flight 0 before the death (live seed 111200460).
                     auto &flight=monster.uniquePower0;
                     if(amount!=1 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::BYRD)
-                            || !has(sts::MonsterStatus::FLIGHT) || flight<=1)
+                            || !has(sts::MonsterStatus::FLIGHT) || flight<1 || (flight==1 && !lethalReduce))
                         return unsupported("silver_selection_pending_actions");
+                    if(flight==1) {
+                        monster.moveHistory[1]=monster.moveHistory[0];
+                        monster.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
+                        // Native removes the grounded Byrd's Flight (STS_BYRD_GROUNDED_FLIGHT_FIX).
+                        if(sts::byrdGroundedFlightFix())
+                            monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::FLIGHT));
+                    }
                     --flight;
                     continue;
                 }
                 if(kindName=="MONSTER_REDUCE_PLATED_ARMOR") {
                     auto &plated=monster.smallPowers[7];
-                    if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || plated<=1)
+                    const bool removal=plated==1 && platedArmorRemovalQueue()
+                        && monster.id!=static_cast<std::int16_t>(sts::MonsterId::SHELLED_PARASITE);
+                    if(amount!=1 || !has(sts::MonsterStatus::PLATED_ARMOR) || (plated<=1 && !removal))
                         return unsupported("silver_selection_pending_actions");
                     --plated;
+                    if(removal) monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::PLATED_ARMOR));
                     continue;
                 }
                 if(amount<0 || amount>999) return unsupported("silver_selection_pending_actions");
@@ -2299,6 +2382,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         if(sourceCard && cleanups!=1)return unsupported("silver_selection_pending_actions");
         wire.pendingActionQueueObserved=true;
+        // Pen Nib's counter-9 sentinel set the status bit above; while its
+        // PenNibPower is still queued, native has not applied it yet.
+        constexpr int penNib=static_cast<int>(PlayerStatus::PEN_NIB);
+        const bool penNibPower=combat.contains("playerPowers") && std::any_of(combat.at("playerPowers").begin(),
+            combat.at("playerPowers").end(),[](const auto &power){return power.value("id",std::string())=="Pen Nib";});
+        if(penNibPendingFix() && !penNibPower && std::any_of(wire.pendingActionQueue.begin(),wire.pendingActionQueue.end(),
+                [&](const auto &action){return action.kind==K::BUFF_PLAYER && action.status==penNib;}))
+            wire.player.statusBits0&=~(1ULL<<penNib);
     }
     // An exhausted Mode Shift must come with its queued shift
     // (GUARDIAN_DEFENSIVE_SHIFT); Java resolves the shift before any other

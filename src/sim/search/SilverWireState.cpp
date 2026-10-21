@@ -527,7 +527,7 @@ namespace sts::search {
             m.platedArmor = static_cast<std::int8_t>(wm.smallPowers[7]);
             m.poison = static_cast<std::int8_t>(wm.smallPowers[8]);
             m.regen = static_cast<std::int8_t>(wm.smallPowers[9]);
-            m.shackled = static_cast<std::int8_t>(wm.smallPowers[10]);
+            m.shackled = shackledAmount(wm.smallPowers[10]);
             m.strength = wm.strength; m.vulnerable = wm.vulnerable; m.weak = wm.weak;
             m.uniquePower0 = wm.uniquePower0; m.uniquePower1 = wm.uniquePower1; m.miscInfo = wm.miscInfo;
             const auto prior = Monster::latentDamagePrior(m.id, out.ascension);
