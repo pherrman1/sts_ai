@@ -1462,6 +1462,14 @@ accepted Silver actions. The state identity itself stays strict. Changes to
 HP, energy, hand, costs, UUIDs, order, base fields or two different present
 stat values still stop before mutation. Zero/absent ambiguity remains strict,
 and differential replay does not use this refresh path.
+A pile card that settles a frame after it moved also refreshes
+(`STS_LIVE_PILE_SETTLING_REFRESH`, default on; `=0` restores the strict stop;
+problem 82). This covers a card with the same UUID and id at the same
+draw/discard/exhaust position whose `cost`, `damage`, `block`, `magic_number`
+or `base_*` values changed. Corruption exhausting a skill under Snecko Eye and
+Frail first shows its hand cost 0 and block. Upgrades, UUIDs, order, the hand
+and every other field stay strict. The match only discards the decision and
+re-reads, within the same three-refresh limit.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in
