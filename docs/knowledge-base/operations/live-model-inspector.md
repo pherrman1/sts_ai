@@ -292,6 +292,9 @@ and refuses it behind a pending energy gain (`STS_SILVER_VOID_ENERGY_QUEUE`).
 A potion's Discovery offer with Toy Ornithopter's heal queued behind it uses
 continuation `public_actions` (`STS_SILVER_CARD_REWARD_PUBLIC_ACTIONS`); an
 offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
+When the public pending-action projection itself refused, the blocker ends in
+`;refusal=<queue index>:<check>` (e.g. `3:batch_power_fields`), naming the
+first failed check (problem 74, Toolbox's offer with Red Mask's Weak queued).
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
@@ -962,7 +965,8 @@ initial page with `DIFFERENTIAL_HIDDEN_REWARD_PITY_UNREPRESENTABLE`.
 Mushrooms and Mysterious Sphere use the same counters for combat rewards. Their native leave effects match installed vanilla: Mushrooms heals
 and adds Parasite; Sphere leaves without granting gold. Mushrooms' Stomp opens the "Ambushed!" page (`screenNum`
 2) whose sole [Fight] starts the fight; the mod marks it a vanilla `event_continue` and the importer passes it through
-(`STS_IMPORTER_MUSHROOMS_FIGHT_FIX`, live problem 57). Event repairs also
+(`STS_IMPORTER_MUSHROOMS_FIGHT_FIX`, live problem 57). The Joust opens on `HALT` (sole [Continue], no `INTRO` page in
+`TheJoust$CUR_SCREEN`), also a vanilla `event_continue` (`STS_IMPORTER_JOUST_HALT_FIX`, live problem 69). Event repairs also
 preserve Designer's fee and continuation, Scrap Ooze's increasing damage,
 Mausoleum's random relic, and Golden Idol's minimum max-HP loss.
 With exact counters, MCTS keeps them at every root particle and the v_win

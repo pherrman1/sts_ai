@@ -259,6 +259,15 @@ namespace sts {
     // opened an empty CARD_SELECT. Other values are fatal.
     bool exhaustEmptyHandFix();
 
+    // STS_PURGE_COPY_CAN_USE_FIX: unset/1 (default) = a purge-on-use replay copy
+    // (Duplication, Double Tap, Burst, Echo Form, Necronomicon) must pass canUse
+    // like any queued card, as in the game (getNextAction's canPlayCard is
+    // canUse || dontTriggerOnUseCard, no purge exception), so Velvet Choker at
+    // six cards stops it and it only poofs (overnight live play 2026-10-20
+    // problem 55). 0 = the legacy engine, where purge copies skipped canUse.
+    // Other values are fatal. Read for each purge copy.
+    bool purgeCopyCanUseFix();
+
     // STS_MAGNETISM_FIX: unset/1 (default) = Magnetism adds its random
     // colorless card(s) to the hand at the start of each turn, as in the game
     // (MagnetismPower.atStartOfTurn rolls returnTrulyRandomColorlessCardInCombat
