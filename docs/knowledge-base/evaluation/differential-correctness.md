@@ -405,6 +405,14 @@ representation-only differences that no native decision reads:
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
 
+Seed 111200448 (live problem 59): Armaments+ upgraded a Blood for Blood whose
+cost a hit had reduced to 3. The game ended at 2/2 (Java `BloodForBlood.upgrade`
+calls `upgradeBaseCost(cost - 1)`), native at 3/3, because the generic upgrade
+path reset both costs to the upgraded base. `STS_UPGRADE_COST_DELTA_FIX`
+(default on, `=0` restores) follows Java `upgradeBaseCost` for every in-combat
+upgrade (Armaments, Apotheosis, ...): Blood for Blood keeps its reduction, and a
+cost-changing upgrade keeps the card's `costForTurn - cost` difference.
+
 Seed 111200445 (live problem 54): a Headbutt that moved Pen Nib's counter
 from 8 to 9 imported with the Pen Nib status bit already set, while native
 still held its `BuffPlayer<PEN_NIB>` behind the Headbutt grid. The importer
