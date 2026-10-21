@@ -22066,3 +22066,16 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
+
+**Question:** do the other direct ally buffs next to problem 56's block moves reach a dead ally natively?
+**Setup:** `MonsterSpecific.cpp` (Donu's Circle of Power, Spire Spear's Piercer); `monster_ai_java_parity` (no gameplay
+seeds). Found in the #742 review, not live.
+**Result:** both moves call `buff<STRENGTH>` on the ally directly, so a dead Deca or Spire Shield gained Strength. In Java
+the buffs are queued `ApplyPowerAction`s, which skip a dead target.
+**Interpretation:** `STS_DEAD_ALLY_STRENGTH_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both.
+Play-changing for simulator play (dead monsters' powers are in Silver's node identity), unmeasured.
+**Open question:** javap of `Donu.takeTurn`, `SpireSpear.takeTurn` and `ApplyPowerAction.update` is requested.
+Seeds: none new (unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
