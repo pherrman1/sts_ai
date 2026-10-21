@@ -500,7 +500,12 @@ public final class RunicDomeTrackerTest {
                 {"TimeWarpPower","TimeEater"},{"ShiftingPower","Transient"},{"FadingPower","Transient"},{"FlightPower","Byrd"},
                 {"CuriosityPower","AwakenedOne"},{"UnawakenedPower","AwakenedOne"},{"ThieveryPower","Looter"},{"ModeShiftPower","TheGuardian"},
                 {"SharpHidePower","TheGuardian"},{"InvinciblePower","CorruptHeart"},{"BeatOfDeathPower","CorruptHeart"},
-                {"PainfulStabsPower","CorruptHeart"},{"BackAttackPower","SpireShield"}}) {
+                {"PainfulStabsPower","CorruptHeart"},{"BackAttackPower","SpireShield"},
+                // generic powers any monster may carry (player debuffs and monster buffs)
+                {"StrengthPower","JawWorm"},{"ArtifactPower","JawWorm"},{"VulnerablePower","JawWorm"},{"BlockReturnPower","JawWorm"},
+                {"ChokePower","JawWorm"},{"CorpseExplosionPower","JawWorm"},{"LockOnPower","JawWorm"},{"MarkPower","JawWorm"},
+                {"MetallicizePower","JawWorm"},{"PlatedArmorPower","JawWorm"},{"PoisonPower","JawWorm"},{"RegenerateMonsterPower","JawWorm"},
+                {"GainStrengthPower","JawWorm"}}) {
             try {
                 String publicId=(String)pool.get("com.megacrit.cardcrawl.powers."+power[0]).getDeclaredField("POWER_ID").getConstantValue();
                 if(!RunicDomeTracker.monsterPowerAllowed(publicId,power[1])) powerIdErrors.add(power[0]+" id "+publicId+" rejected for "+power[1]);
