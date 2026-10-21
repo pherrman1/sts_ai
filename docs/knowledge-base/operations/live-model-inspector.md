@@ -129,6 +129,12 @@ the shared bounded dependency to a resolved map checkpoint before `v_win` is
 evaluated. Semantic roots outside V4's screen support use uniform source
 priors; REMOVE, TRANSFORM, and non-card reward roots are not rejected merely
 because V4 cannot supply their prior.
+Shop card slots (0-4 class, 5-6 colorless) are tracked by card identity from
+the shop's first capture. A Courier restock takes the bought card's index in
+`coloredCards`/`colorlessCards`, so it inherits the slot of the card that
+previously held that index in the last captured list. Card positions are not
+used, because `ShopScreen.updateCards` re-derives them from the sliding rug every frame
+(problem 79).
 
 Each supported OOC candidate reports a semantic key/payload, physical live
 action, Q, visit count, visit share, and prior. The selected candidate is the
@@ -1456,6 +1462,15 @@ accepted Silver actions. The state identity itself stays strict. Changes to
 HP, energy, hand, costs, UUIDs, order, base fields or two different present
 stat values still stop before mutation. Zero/absent ambiguity remains strict,
 and differential replay does not use this refresh path.
+A pile card that settles a frame after it moved also refreshes
+(`STS_LIVE_PILE_SETTLING_REFRESH`, default on; `=0` restores the strict stop;
+problem 82). This covers a card with the same UUID and id at the same
+draw/discard/exhaust position whose `cost`, `is_playable`, `damage`, `block`,
+`magic_number` or `base_*` values changed. A card exhausted by its own use is
+first snapshotted with its in-use cost 0, playability and hand stats (all 36
+transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
+and every other field stay strict. The match only discards the decision and
+re-reads, within the same three-refresh limit.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in

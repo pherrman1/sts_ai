@@ -22208,6 +22208,37 @@ Seeds: none.
 
 **Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
 
+## §610 — Live problem 79: a Courier shop restock lost its card slot after a restart into the shop (2026-10-21)
+
+**Observation.** Live A20 seed 111200487 (release 8102ebcc, act 3 shop, floor 41, The Courier owned): Metallicize was bought, The Courier restocked Juggernaut, and the next capture threw `IllegalArgumentException: shop replacement slot unrepresented` (LiveOocCapture IdentityShopSlots.index), ending the run. The retry after a restart failed the same way.
+
+**Cause.** The mod resolved a restock's slot by the card's `target_x:target_y`, cached when the shop was first captured. `ShopScreen.updateCards` re-derives card positions from the rug every frame, and the rug slides in after a game restart into the shop. A cache taken mid-slide never matches the settled position of the restock.
+
+**Change (producer-only mod fix, no flag).** Slots are tracked by identity. A restock not yet known inherits the slot of the card that held its list index in the previously captured `coloredCards`/`colorlessCards`, provided that card has left the list. This is the index `purchaseCard` sets the restock at, and it stays correct after an earlier non-Courier purchase shifted the list. Positions are no longer read. Unit test in LiveOocCaptureTest. The emitted shop state is unchanged wherever the old code worked.
+
+**Knowledge impact:** shop slot identity no longer depends on render state.
+
+## §613 — Live problem 81: Headbutt killing Spire Shield was refused; the death's Surrounded removal is now folded (2026-10-21)
+
+**Observation.** Live A20 seed 111200492 (release 3f2dc148, Act 4 Shield and Spear): Headbutt killed Spire Shield (slot 0). Before its put-on-top GRID could be offered, the mod refused the queue as `silver_selection_pending_actions` with `refusal=3:pen_nib_removal`. The queue was `[RelicAboveCreatureAction (Kunai), ApplyPowerAction Dexterity 1, UseCardAction, RemoveSpecificPowerAction(player, player, "Surrounded")]`. The dead Shield still listed BackAttack -1. Extract: `engine-parity/overnight-20261019/issue81/p92-observation.json` on the share.
+
+**Cause.** `SpireShield/SpireSpear.die()` (javap in `issue40-javap.md`) queue `RemoveSpecificPowerAction(player, player, "Surrounded")` for each living partner, plus `(partner, partner, "BackAttack")` when the partner carries the marker. The producer only knew Pen Nib's String-ID removal. In addition, the importer counted the dead Shield's leftover BackAttack marker and would have refused the facing.
+
+**Change.** Producer (no flag): with a source card pending, these removals emit `PLAYER_REMOVE_SURROUNDED` and `MONSTER_REMOVE_BACK_ATTACK` (slot), qualified by exactly one living Spire monster, a dying or dead partner, `SurroundedPower`, and the survivor as target and source. Importer, `STS_SILVER_SPIRE_DEATH_QUEUE` (default on, `=0` restores the refusals): it folds the removal into the imported player, as native removes Surrounded at the death (`STS_SPIRE_SURROUNDED_DEATH_FIX`), skips the facing derivation, and ignores BackAttack on a dead Spire monster. Unit test: native Headbutt kills Spire Shield; root and continuation parity hold against the Java-form import; the Spear's marker removal is accepted; a dead-slot removal, a removal without Surrounded, both monsters alive, and `=0` all fail closed.
+
+**Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
+
+## §616 — Live problem 82: an exhausted card's settling cost/stats stopped the driver as a state change (2026-10-21)
+
+**Observation.** Live A20 seed 111200502 (release 844bd923, act 2 Shelled Parasite) was abandoned through the transient cap: three back-to-back "MCP state changed while awaiting the advisor" stops. Each time, the only difference between the decision state and the pre-click re-read was the stats of the card Corruption had just exhausted: Shockwave cost 0→3; Shrug It Off cost 0→2, block 8→11, `base_block` dropped; Defend_R cost 0→1, block 3→5, damage dropped. The player had Corruption, Snecko Eye (Confusion), Frail and Demon Form. The exhausted skill first shows its hand values and settles a frame later. The same signature is the candidate root cause of the recurring #75 transients.
+
+**Cause.** `_pile_display_only_change` only forgave a positive cached stat appearing or disappearing on entries without `base_*`. Cost and stat value changes were treated as real state changes.
+
+**Change (driver only, `STS_LIVE_PILE_SETTLING_REFRESH`, default on, `=0` restores the stop).** A draw/discard/exhaust entry with the same UUID and id at the same position may differ in `cost`, `is_playable`, `damage`, `block`, `magic_number` and `base_*`. The canary classified all 36 transient dumps of seeds 450-519 as this signature (0 real changes): the card exhausted by its own use is snapshotted with its in-use state, not only under Corruption/Snecko. The driver then discards the unexecuted decision and re-reads, within the existing three-refresh limit. HP, hand, UUID, order, upgrades and everything else stay strict, and no click is ever authorized by the match. Unit tests: the three observed shapes refresh; HP, UUID, upgrade and hand changes still stop; `=0` stops. The driver integration test now refreshes on cost/zero/changed-value drift and keeps the legacy stop under `=0`.
+
+Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
+**Knowledge impact:** `operations/live-model-inspector.md`.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22602,6 +22633,38 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §611 — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
+
+**Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
+22 in the game and 23 natively after True Grit with hand [True Grit, Anger] (problem 76 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's trace extract and javap of `TrueGrit` and `ExhaustAction` (`issue76/` on the share);
+`true_grit_single_card_rng_test` (Ironclad seed 111200071, JAW_WORM, no gameplay runs).
+**Result:** `TrueGrit.use` queues `ExhaustAction(1, true, false, false)`. On its first tick, `!anyNumber && hand.size() <=
+amount` exhausts the whole hand without `getRandomCard(cardRandomRng)`; only a larger hand draws. Native's
+`ExhaustRandomCardInHand` always drew, so one Anger exhaust cost one draw (reproduced: 1 draw natively, 0 in the game).
+**Interpretation:** the action now carries Java's `anyNumber` (True Grit `false`, Fiend Fire `true`) and, under
+`STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX` (default on, `=0` restores the draw), exhausts a lone card without the draw. A
+two-card hand still draws once; Fiend Fire is unchanged. Play-changing: later `cardRandomRng` draws in the combat
+shift, so sim trajectories after such a True Grit now follow the game.
+Seeds: none new (live seed 111200476 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
+## §608 — Live advisor: #769's Gremlin Leader check threw on every combat without a selection (2026-10-21)
+
+**Question:** why did live seed 111200480 on ab8833a8 (main with #769, §605) get no advisor answer at its first combat
+(problem 77 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report; the #769 advisor on three live fixtures (`tests/fixtures/live_runic_dome_two_thieves_turn1.json`,
+`live_shield_spear_back_attack_turn1.json`, `live_slime_boss_split.json`); `live_silver_importer_test` (no gameplay runs).
+**Result:** `minionLeaderEscapeChoice` read `combat.value("cardSelect", {})` and then called `.value()` on it. Outside a
+selection the mod sends `"cardSelect": false`, so every such observation threw nlohmann `type_error.306` and the advisor
+answered `MALFORMED_JSON` (reproduced on all three fixtures). #769's tests only used a Headbutt grid observation.
+**Interpretation:** the check now reads every field type-checked and returns 0 (ordinary import) for any other shape;
+the fixed advisor returns OK on the three fixtures. The importer test covers 16 malformed shapes (cardSelect false or
+missing, non-object combat/root/observation, wrong-typed choices, pending items, slots, monsters and monster fields),
+and `live_advisor_protocol.py` gains a real `cardSelect=false` fixture so the advisor path is exercised. No play
+change beyond restoring the advisor; `STS_SILVER_LEADER_ESCAPE_PASS_THROUGH=0` was the interim workaround.
+Seeds: none new (live seed 111200480 as reported).
+**Knowledge impact:** `NONE — restores the behaviour §605 documents`.
 
 ## §606 — Silver prior playouts in real boss fights only, for CPU (ADR-0056, 2026-10-21)
 
@@ -22619,6 +22682,26 @@ Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
 `decisions/0056-silver-prior-playout-boss-only.md`.
 
+## §609 — OOC value head: monotonicity penalty fails the offline gate (2026-10-21)
+
+**Question:** Does a training penalty that forbids the value head from preferring the worse of two states (less HP,
+less max HP, less gold, one potion fewer, one curse more) fix gen 2's wrong-signed end-state prices without hurting
+the head?
+**Setup:** `distill.py --mono-weight M` (`tools/heart1/monotone.py`, default off): gen-2 pick recipe
+(`S_d64L2_lr1e-4_a0.3_v0.3`, same rows, folds and cache), M ∈ {0, 0.3, 1, 3} at seed 0, plus B seed 1; `prices.py` on
+the exported heads. Pre-registered plan and full tables: `evidence/value_monotone_penalty_20261021/`.
+**Result:** Selection-fold violation rates for B / 0.3 / 1 / 3: max HP +5 83.6 / 52.6 / 33.8 / 27.7 %, gold +50 47.1 /
+26.9 / 17.8 / 13.2 %, −3 HP 15.7 / 14.7 / 14.4 / 13.9 %. Policy KL 0.0554 / 0.0553 / 0.0551 / 0.0549. Value BCE 0.559 /
+0.561 / 0.569 / 0.582 (AUC 0.740 / 0.739 / 0.729 / 0.708). Only M = 0.3 is within BCE + 0.003. `prices.py`: max-HP price
+> 0 in 11 / 30 / 46 / 59 % of states, −3 HP sign right 88.6 / 90.8 / 91.2 / 91.2 %; per-HP slope 0.00128 → 0.00031.
+**Interpretation:** FAIL. The hinge is met mostly by flattening the head along HP, max HP and gold rather than by
+learning the right differences; HP errors barely move. Inference: the sinusoid-only encoding of these scalars is the
+limit, not the loss. Seeds 1–2 of M = 0.3 not run (stopped by Philipp to free the GPU); they could not reach the
+`prices.py` thresholds.
+**Open question:** a sign-agreement penalty against raw heart1 (≈10 % wrong on max HP and gold) or smooth linear
+extra inputs for HP, max HP and gold.
+Seeds: none (offline training).
+**Knowledge impact:** none (option stays default off).
 ## §607 — CRN paired continuations to the end of the act as Silver-leaf difference labels (A20, 64 sources, 4 workers): STOP, noise dominates (2026-10-21)
 
 **Question (Philipp, 2026-10-21, thread "Silver leaf from OOC value"):** score Silver leaves with an OOC-level label,
@@ -22647,3 +22730,65 @@ today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
 [Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
 Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
 **Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
+## §614 — Live combat parity: Nilry's Codex offered Blood for Blood at full cost (2026-10-21)
+
+**Question:** does Nilry's Codex, like the generators §612 fixed, give a Blood for Blood the combat's damage discount?
+**Setup:** the canary's `CodexAction` javap and live-trace scan (`engine-parity/overnight-20261019/issue784/javap.md` on
+the share); `blood_for_blood_copy_cost_test` (Ironclad seed 111200071, JAW_WORM; no gameplay runs).
+**Result:** `CodexAction.generateCardChoices()` adds `c.makeCopy()` for each of its three cards, and the pick goes to the
+draw pile as `makeStatEquivalentCopy()`, so the game's Codex Blood for Blood costs 4 minus `damagedThisCombat`. The
+canary found 7 of 31 in-combat offers at exactly that cost, Codex included (runs 466 and 487); 24 of 24 reward and shop
+offers were at base cost (the counter resets outside combat). Native `chooseCodexCard` created a plain card.
+**Interpretation:** `chooseCodexCard` now builds the card with `generatedCombatCard`, under the same
+`STS_BLOOD_FOR_BLOOD_COPY_COST_FIX` (`=0` restores full cost here too). Native Blood for Blood upgrade already matches
+`BloodForBlood.upgrade()` (`STS_UPGRADE_COST_DELTA_FIX`). Play-changing for Codex runs only.
+Seeds: none new (unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
+
+## §612 — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
+
+**Question:** why did live seed 111200476 parity s117 (release 0ba0e9a9, Discovery+ pick with three hits taken) show the
+new Blood for Blood at cost 1 in the game and 4 natively (problem 76; seed 111200481 s281 shows the same, 2 vs 4)?
+**Setup:** the canary's trace extract and javap of `BloodForBlood`, `DiscoveryAction`, `InfernalBlade`, `DeadBranch` and
+`AbstractCard.makeStatEquivalentCopy` (`issue76/` on the share); `blood_for_blood_copy_cost_test` (Ironclad seed
+111200071, JAW_WORM, no gameplay runs).
+**Result:** `BloodForBlood.makeCopy()` returns a new card with `updateCost(-player.damagedThisCombat)`. Discovery's
+offers (`generateCardChoices`), Infernal Blade and Dead Branch all call `makeCopy()`; Discovery's pick copies the offered
+card's cost via `makeStatEquivalentCopy`. Native built these cards with the base cost.
+**Interpretation:** `BattleContext::generatedCombatCard` applies the reduction for those three generators under
+`STS_BLOOD_FOR_BLOOD_COPY_COST_FIX` (default on, `=0` restores the base cost); the reduction clamps at 0 and no other
+card changes. Play-changing: generated Blood for Blood is cheaper after HP loss. The same trace's s489 draw-pile cost
+diff (game 0/0 vs native 1/1 for the deck's own Blood for Blood+ at an End Turn whose game observation precedes the
+draw) is not this path and stays open.
+Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
+
+## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
+
+Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
+#765 queue worker (09:59Z). Pre-registration and outputs: `docs/experiments/evidence/az_gen1b_value_leaf_ab_20261020/`
+(`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`, `verify.txt`, `tars.sha256`). Offline numbers: §577.
+
+- **Freeze:** RUN_COMMIT `7cd3ae69` (main `0ba0e9a9` plus the campaign dir); binary sha256 `a822b950…`. student_sel
+  `cf6bf7fb…`, gen1b `e6aa044c…`. Smoke seed 111144994 (both arms rc 0); seeds 111144990–994 were smokes.
+- **Arms:** gen 0's search stack (student_sel prior, rollout net and leaf selector, OOC MCTS 4096 sims, rollout3,
+  `GAP_STOP=0`, 25% full-budget roots, flat exact-10k Silver real combats) with the learned OOC stop OFF in both.
+  A ends every rollout3 leaf in X2-B; B adds `STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin`.
+- **Run:** seeds 111144000–111144511, 32 workers × 4 lanes, `schedule queue`. `verify_campaign.py`: 512 of 512 units
+  OK; 67 units ran twice (claim race on the share, fixed by #773 for later campaigns; identical outcomes, first tar
+  used). 1,024 of 1,024 arm runs rc 0; 512 of 512 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | act-1 deaths | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|---|
+  | A X2-B | 107 (20.9%) | 209 (40.8%) | 48 | 43.9 | 1,976, 5,649 |
+  | B gen 1b value | 123 (24.0%) | 222 (43.4%) | 50 | 44.1 | 2,105, 4,669 |
+
+  Heart kills B − A +3.1 pp [−1.0, +7.2], discordant 66 B-only / 50 A-only, exact McNemar p 0.16. Act 4 +2.5 pp
+  [−2.3, +7.3], p 0.34. Act-1 deaths +0.4 pp, p 0.89. Wall B/A 1.07 (≤ 1.10). The search's pick differed from the
+  prior's argmax at 3,043 vs 2,302 searched roots (9.0% vs 6.8%).
+- **Verdict: NOT_SHOWN** (pre-registered rule). X2-B stays the rollout3 end value; the flag stays default off.
+- **Inference:** the lean favours the value head, within a test that resolves about ±4 pp. No act-1 penalty, unlike
+  §522. The compressed value scale makes the prior weigh more at the same cpuct (fewer overrides).
+- **Knowledge impact:** `evaluation/current-research.md`.
+
