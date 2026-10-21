@@ -34,6 +34,21 @@ public final class RunicDomeTrackerTest {
             if(!expected.toString().contains("postfix(com.megacrit.cardcrawl.actions.common.SpawnMonsterAction)"))throw expected;
         } finally { spawn.detach();legacy.detach(); }
     }
+    // Plays `moves` through a bound Act-4 tracker; expected[i] is the public move proven before move i (0 = random roll).
+    private static RunicDomeTracker act4Run(String id,int[] moves,int[] expected,int hp) {
+        Object m=new Object();RunicDomeTracker t=new RunicDomeTracker(m,id,23,4,"CorruptHeart".equals(id)?1:2,20);
+        t.bind(1,0,"initial",-1,0);t.globalTurn(0);t.beginRoll(m,hp,hp,hp,hp,true,1);t.setMove(m);t.endRoll(m);
+        for(int i=0;i<moves.length;++i) {
+            Map<String,Object> row=t.snapshot(m,i+1,0,false);complete(row);
+            Object proof=row.get("knownNextMove");
+            if(expected[i]==0?(proof!=null || !row.get("pendingMoveRolls").equals(1))
+                    :(!row.get("pendingMoveRolls").equals(0) || !(proof instanceof Map) || !"act4_public_cycle".equals(((Map<?,?>)proof).get("kind"))
+                        || !Integer.valueOf(expected[i]).equals(((Map<?,?>)proof).get("move"))))
+                throw new AssertionError(id+" move "+i+" proof "+row);
+            t.globalTurn(i+1);t.execute(m,moves[i]);t.beginRoll(m,hp,hp,hp,hp,true,1);t.setMove(m);t.endRoll(m);
+        }
+        return t;
+    }
     private static void complete(Map<String,Object> snapshot) {
         if(!Boolean.TRUE.equals(snapshot.get("complete"))) throw new AssertionError(snapshot);
     }
@@ -486,6 +501,20 @@ public final class RunicDomeTrackerTest {
             remainingTracker.bind(1,0,"initial",-1,0);if(id.equals("TorchHead"))remainingTracker.constructorTackle(identity);remainingTracker.globalTurn(0);remainingTracker.beginRoll(identity,40,40);remainingTracker.setMove(identity);remainingTracker.endRoll(identity);
             Map<String,Object> row=remainingTracker.snapshot(identity,1,0,false);
             if(!Boolean.TRUE.equals(row.get("complete")) || !Integer.valueOf(4).equals(row.get("schemaVersion")))throw new AssertionError("remaining initial "+id+row);
+        }
+        // Act 4 (Runic Dome): every turn rolls, but only one roll per cycle is random (CorruptHeart/SpireShield/SpireSpear getMove).
+        act4Run("CorruptHeart",new int[]{3,1,2,4,2,1,4,1},new int[]{3,0,2,4,0,1,4,0},800);
+        act4Run("SpireShield",new int[]{2,1,3,1,2,3,1},new int[]{0,1,3,0,2,3,0},110);
+        act4Run("SpireSpear",new int[]{1,3,1,2,3,2,1,3},new int[]{1,3,0,2,3,0,1,3},160);
+        {
+            Object hm=new Object();RunicDomeTracker wrong=new RunicDomeTracker(hm,"CorruptHeart",23,4,1,20);
+            wrong.bind(1,0,"initial",-1,0);wrong.globalTurn(0);wrong.beginRoll(hm,800,800,800,800,true,1);wrong.setMove(hm);wrong.endRoll(hm);
+            wrong.globalTurn(1);wrong.execute(hm,1);
+            wrong.beginRoll(hm,800,800,800,800,true,1);wrong.setMove(hm);wrong.endRoll(hm);
+            Map<String,Object> bad=wrong.snapshot(hm,2,0,false);rejected(bad); // the first Heart move is always Debilitate
+            if(!"execution_lifecycle".equals(bad.get("reason")))throw new AssertionError("Heart opener "+bad);
+            rejected(new RunicDomeTracker(hm,"CorruptHeart",23,3,1,20).snapshot(hm,1,0,false));
+            rejected(new RunicDomeTracker(hm,"SpireSpear",23,2,2,20).snapshot(hm,1,0,false));
         }
         // Live seed 111200463 s391 (problem 67): GremlinLeader bytes are RALLY 2, ENCOURAGE 3, STAB 4; its first STAB
         // after the minions died was refused as execution_lifecycle.
