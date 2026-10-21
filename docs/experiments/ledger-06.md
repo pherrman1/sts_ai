@@ -22082,6 +22082,22 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §579 — Live combat parity: Pen Nib armed behind a Headbutt grid imported as already applied (2026-10-20)
+
+**Question:** why did live seed 111200445 (release 9ec8a51d, parity2 step 431, Headbutt → Jaw Worm) show
+`player.statusBits0` with bit 24 (`PEN_NIB`) in the game projection and not natively (problem 54 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue54-extract.json`: Pen Nib counter 8 → 9, no PenNibPower before or after the
+step); the importer's typed pending-tail test in `live_silver_importer_test` (no gameplay seeds).
+**Result:** both Java `PenNib.onUseCard` and native queue the Pen Nib buff with `addToBot` at counter 9, so at
+Headbutt's grid it is still pending in both. The importer, however, turned the counter-9 sentinel into the status bit
+at once, so the imported game state had Pen Nib applied early (bit set, buff still queued) while native had it
+only pending.
+**Interpretation:** `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0` restores) leaves the bit clear while a pending
+Pen Nib buff is queued and no Pen Nib power is present. Live-import only; native play is unchanged, and the next
+attack is doubled either way once the queue resolves.
+Seeds: none new (live seed 111200445 as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §577 — AZ gen 1b value head as an OOC leaf value: offline numbers, flag and a prepared (not launched) A/B (2026-10-20)
 
 **Question:** Philipp (2026-10-20 20:34Z): test gen 1b's value head (§573) offline first, then prepare an online
