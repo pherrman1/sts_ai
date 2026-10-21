@@ -3721,23 +3721,26 @@ int main(int argc, char **argv) {
     } else if (mode == "potionpriceprobe") {
         // Paired-continuation resource prices (research only):
         // potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN] [FIGHTS_AHEAD] [HP_DELTA] [SAMPLE] [EXTRA]
+        // FIGHTS_AHEAD: a fight count, or "act" = until the current act's boss fight ends.
         // SAMPLE: potions (states holding a potion; default) or all. EXTRA: comma list of
         // leaf:concave=K, gold:-N, maxhp:-N, ooc=heart1, addpot:NAME ("-" = none).
-        if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3] [HP_DELTA=8] [SAMPLE=potions|all] [EXTRA=-]\n"; return 2; }
+        if (argc < 7) { std::cerr << "usage: potionpriceprobe NSEEDS SEED_START SIMS ASC OUT [STATES_PER_RUN=4] [FIGHTS_AHEAD=3|act] [HP_DELTA=8] [SAMPLE=potions|all] [EXTRA=-]\n"; return 2; }
         const int nSeeds = std::stoi(argv[2]);
         const std::uint64_t seedStart = std::stoull(argv[3]);
         const int sims = std::stoi(argv[4]);
         const int asc = std::stoi(argv[5]);
         const std::string out = argv[6];
         const int statesPerRun = argc > 7 ? std::stoi(argv[7]) : 4;
-        const int fightsAhead = argc > 8 ? std::stoi(argv[8]) : 3;
+        const int fightsAhead = argc <= 8 ? 3
+            : std::string(argv[8]) == "act" ? kPriceProbeActHorizon : std::max(0, std::stoi(argv[8]));  // <= 0 is refused
         const int hpDelta = argc > 9 ? std::stoi(argv[9]) : 8;
         const std::string sample = argc > 10 ? argv[10] : "potions";
         if (sample != "potions" && sample != "all") { std::cerr << "potionpriceprobe: SAMPLE must be potions or all\n"; return 2; }
         const std::string extra = argc > 11 && std::string(argv[11]) != "-" ? argv[11] : "";
         std::cout << "potionpriceprobe seeds " << seedStart << ".." << seedStart + nSeeds - 1
                   << " sims=" << sims << " asc=" << asc << " statesPerRun=" << statesPerRun
-                  << " fightsAhead=" << fightsAhead << " hpDelta=" << hpDelta << " sample=" << sample
+                  << " fightsAhead=" << (fightsAhead == kPriceProbeActHorizon ? std::string("act") : std::to_string(fightsAhead))
+                  << " hpDelta=" << hpDelta << " sample=" << sample
                   << " extra=" << (extra.empty() ? "-" : extra) << " -> " << out << '\n';
         potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta,
                          sample == "all", extra);

@@ -7,7 +7,8 @@
 // shares the GameContext RNG, the agent seed and the OOC policy thread state
 // (common random numbers), plays the next K fights, and is valued at the
 // following battle by the process win/floor models (bootstrap), or by its
-// terminal outcome. The difference to the unchanged copy is the price of that
+// terminal outcome (FIGHTS_AHEAD=act: until the current act's boss fight ends,
+// then the same bootstrap). The difference to the unchanged copy is the price of that
 // resource under the current policy; the HP copy calibrates the units.
 //
 // Optional (SAMPLE=all, EXTRA): sample every battle-start state, add copies with
@@ -152,7 +153,8 @@ void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
         explicit Heart1Scope(bool on) { t_counterfactualHeart1 = on; }
         ~Heart1Scope() { t_counterfactualHeart1 = saved; }
     } heart1Scope(extra.oocHeart1);
-    if (nSeeds <= 0 || sims <= 0 || statesPerRun <= 0 || fightsAhead <= 0)
+    const bool actHorizon = fightsAhead == kPriceProbeActHorizon;
+    if (nSeeds <= 0 || sims <= 0 || statesPerRun <= 0 || (fightsAhead <= 0 && !actHorizon))
         throw std::runtime_error("potionpriceprobe: invalid arguments");
     std::ofstream out(outFile);
     if (!out) throw std::runtime_error("potionpriceprobe: cannot open " + outFile);
@@ -200,8 +202,8 @@ void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
                 } leafScope(variant.concaveHpK);
                 OocContinuationCost cost;
                 const OocCounterfactualResult r = finishOocCounterfactual(
-                    std::move(variant.gc), sims, contSeed, st.path, fightsAhead, true,
-                    nullptr, 0, nullptr, false, nullptr, &cost);
+                    std::move(variant.gc), sims, contSeed, st.path, actHorizon ? -1 : fightsAhead, true,
+                    nullptr, actHorizon ? st.gc.act : 0, nullptr, false, nullptr, &cost);
                 out << seed << ',' << st.battleIdx << ',' << st.gc.act << ',' << st.gc.floorNum << ','
                     << st.gc.curHp << ',' << st.gc.maxHp << ',' << st.gc.potionCount << ','
                     << st.gc.potionCapacity << ',' << heldPotions(st.gc) << ',' << variant.name << ','
