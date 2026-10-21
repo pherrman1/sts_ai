@@ -22116,7 +22116,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live combat parity: Transient's Shackled wrapped at 8 bits (2026-10-20)
+## §586 — Live combat parity: Transient's Shackled wrapped at 8 bits (2026-10-20)
 
 **Question:** why did live seed 111200445 (A20, release 9ec8a51d) show Transient's Strength game -5 vs native -261 after
 an End Turn (problem 53 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
