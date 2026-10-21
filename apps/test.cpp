@@ -3586,8 +3586,9 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
-    // #12: Choker limits ordinary/autoplay queue entries but retains the
-    // purge-on-use exception used by queued replay effects.
+    // #12: Choker limits ordinary/autoplay queue entries. Purge-on-use replay
+    // copies are limited too (Java getNextAction has no purge exception;
+    // STS_PURGE_COPY_CAN_USE_FIX, problem 55); =0 keeps the legacy exception.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::VELVET_CHOKER}, Card(CardId::HAVOC, true), 20);
         simulatorCorrectnessPlay(bc);
@@ -3601,8 +3602,10 @@ int testSimulatorCorrectnessPr9To19() {
         item.purgeOnUse = true;
         item.autoplay = true;
         replay.playCardQueueItem(item);
-        if (replay.player.cardsPlayedThisTurn != 7) {
-            return fail("#12 Choker blocked a purge-on-use replay");
+        const char *purgeFlag = std::getenv("STS_PURGE_COPY_CAN_USE_FIX");
+        const bool purgeLegacy = purgeFlag && std::string(purgeFlag) == "0";
+        if (replay.player.cardsPlayedThisTurn != (purgeLegacy ? 7 : 6)) {
+            return fail("#12 Choker purge-on-use replay count");
         }
     }
 

@@ -22148,6 +22148,23 @@ executed move, and refuses a wrong, missing or extra proof and a wrong executed 
 play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
 **Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
 Seeds: none.
+## §603 — Live combat parity: purge-on-use replay copies skipped canUse (Velvet Choker let Duplication replay a sixth card) (2026-10-21)
+
+**Question:** why did live seed 111200445 (Velvet Choker, Rupture played as the sixth card under Duplication; problem
+55 in `engine-parity/overnight-20261019/ISSUES.md` on the share) show the game resolving one play (cardsPlayedThisTurn
+6, one Bird-Faced Urn heal) while native also played the Duplication copy?
+**Setup:** pinned-jar javap of `GameActionManager.getNextAction` and `UseCardAction`; `BattleContext` card-queue
+code; `purge_copy_can_use` unit test (no gameplay seeds).
+**Result:** Java computes `canPlayCard = canUse || dontTriggerOnUseCard` with no `purgeOnUse` exception, so a replay copy
+(Duplication, Double Tap, Burst, Echo Form, Necronomicon) must pass `canUse` (Choker's `canPlay`, a dying target, ...)
+and otherwise only poofs (`UseCardAction`: purgeOnUse -> `ShowCardAndPoofAction`). The engine let every purge copy
+skip `canUse`, so the sixth-card copy under Choker resolved.
+**Interpretation:** `STS_PURGE_COPY_CAN_USE_FIX` (default on, `=0` restores) applies `canUse` to copies; an unusable
+copy poofs and reaches no pile (the #733 unplayable-autoplay routing skips purge copies). Play-changing in simulation
+wherever a copy fails `canUse` (Choker at six cards, a copy aimed at a target that died); unmeasured, so A20
+whole-run results across this merge are not comparable without `=0`.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §600 — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
 
 **Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with
@@ -22180,6 +22197,16 @@ entry. No engine or simulation change.
 **Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
 Seeds: none.
 **Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §604 — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
+
+**Observation.** Live A20 seed 111200473 (release eeb17782, Chosen and Byrds, floor 30, turn 1): Toolbox's battle-start `ChooseOneColorless` offer reached the advisor as `silver_card_reward_pending_actions`. The queue behind it was `[DrawCardAction(5), EnableEndTurnButtonAction, (RelicAboveCreatureAction, ApplyPowerAction Weak 1 from the player) x 2]`. The mod refused (no continuation was sent); the importer already accepts `toolbox_actions` with `DRAW` plus `DEBUFF_ALL_ENEMY`.
+
+**Analysis.** javap of the pinned jar (RedMask.atBattleStart, ApplyPowerAction, WeakPower, DrawCardAction, AbstractRoom battle start) matches every check in `publicPendingActionsJson(true)` and `allEnemyPowerBatch` on paper: Red Mask builds `WeakPower(m, 1, false)` (justApplied false), source is the player, and the opening draw is the default 3-arg DrawCardAction. Which check refused could not be decided from the snapshot. The old blocker also printed `power=` blank because `readStringField` returns "" for a missing `powerID` field.
+
+**Change (diagnostic only, no play change, no flag).** Every refusal in `publicPendingActionsJson` and `allEnemyPowerBatch` records `<queue index>:<check>`; `pendingActionsBlocker` appends it as `;refusal=...`. `powerActionDetail` now falls back to the power instance's ID. A repeat of problem 74 names the exact failing check, and the fix follows from it.
+
+**Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
 
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
