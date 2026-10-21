@@ -22504,6 +22504,24 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
+## §600 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+
+**Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation and `javap` of the pinned jar (`engine-parity/overnight-20261019/issue69-joust/`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** `TheJoust$CUR_SCREEN` is HALT, EXPLANATION, PRE_JOUST, JOUST, COMPLETE; the constructor opens on HALT with the
+sole option [Continue], and HALT's button only shows the two bets (EXPLANATION, native's decision page). Both the mod's
+and the importer's `event_continue` tables listed a nonexistent `INTRO` page for The Joust, so the mod refused HALT with
+`EVENT_PHASE_UNREPRESENTABLE:The Joust:HALT`; every run that meets The Joust ended there.
+**Interpretation:** the mod replaces `INTRO` with HALT in its `event_continue` table; `STS_IMPORTER_JOUST_HALT_FIX`
+(default on, `=0` restores the refusal) qualifies exactly that page, and the advisor passes it through
+(`forced_no_search`). The importer's unreachable `INTRO` entry is dropped. PRE_JOUST (the one `miscRng` draw) and JOUST
+were already forced continues.
+**Open question:** the other `INTRO` continue entries (Face Trader, Designer, Falling, Sensory Stone, Note For
+Yourself, Bonfire, Colosseum, Lab) were not checked against `javap` here.
+Seeds: none new (live seed 111200467 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 ## §594 — Live driver: the boss-relic Skip was unmappable (2026-10-21)
 
 **Question:** why did live seed 111200468 (Act 1 floor 17, BOSS_REWARD Black Blood / Empty Cage / Sacred Bark) stop when
