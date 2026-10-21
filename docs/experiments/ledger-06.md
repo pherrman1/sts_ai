@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live Runic Dome: a Slime Boss split child's birth roll with aliveCount 0 stopped the run (2026-10-21)
+## §592 — Live Runic Dome: a Slime Boss split child's birth roll with aliveCount 0 stopped the run (2026-10-21)
 
 **Question:** why did live seed 111200458 (release 9ec8a51d, Act 3 floor 38, Slime Boss event, Runic Dome) stop at s546
 with `silver_runic_dome_history_schema` (problem 63 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
