@@ -1,8 +1,10 @@
 name          az-gen1b-value-leaf-ab
-code_commit   eeb17782c8286b7afef8625113375a7cb0b55a82
-binary_sha256 a42a575adb2f4ce868ab8742eeb717a3b8a9284eb7f612d88037bbd74e76cfb6
+code_commit   0ba0e9a948be8103d107085a2eec3eb64c9f9469
+binary_sha256 a822b950efbc500119b9b59dae4b1b2c56ed00f7a33a7c280136997b7215a359
 workers       32
 share         /mnt/project-files/az-gen1b-value-leaf-ab
 parallel      4
+schedule      queue
+lease_minutes 30
 input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
 input gen1b.bin /mnt/project-files/az-gen1-ab/gen1b.bin e6aa044cea8aea6287060c1d71f3c2b327676aa4876448e0cadba2177087ddb3
