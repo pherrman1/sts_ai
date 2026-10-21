@@ -443,8 +443,8 @@ namespace {
                     if (Val hit; memo_.find(keyAtHp(*pre, h), hit)) { ++twinBounds_; ub = std::min(hit.v, ub); break; }
             }
             if (relaxedBound_ && quiet(s) && s.turn <= turnCap_) {
-                if (RxView x; rxView(s, x)) {
-                    const double r = rxPad(rxDecAt(0, x));
+                if (double r; modelDec(0, s, r)) {
+                    r = rxPad(r);
                     if (r < ub) { ++relaxedDecTighter_; ub = r; }
                 }
             }
@@ -478,11 +478,12 @@ namespace {
         // player picks every card drawn (any cards the draw could deliver) while
         // the monster keeps its exact move probabilities. A max over draws is at
         // least their expectation, so the relaxed value bounds the exact one in
-        // every state. Jaw Worm with the starter deck only: there the relaxed
-        // state between turns needs no hand, discard pile or block, only the
-        // monster's HP, Strength, Vulnerable and last two moves, the draw pile's
-        // counts, whether Ascender's Bane is exhausted and the turn, with one
-        // value per player HP. --relaxed-free-draws lets every turn draw any
+        // every state. Jaw Worm (and Two Louse, see its model below) with the
+        // starter deck only: there the relaxed state between turns needs no
+        // hand, discard pile or block, only the monster's HP, Strength,
+        // Vulnerable and last two moves, the draw pile's counts, whether
+        // Ascender's Bane is exhausted and the turn, with one value per player
+        // HP. --relaxed-free-draws (Jaw Worm only) lets every turn draw any
         // cards of the deck (no draw pile in the state: smaller and looser).
         // --relaxed-check compares the bound with every exact value and the
         // mirrored monster turn and draw with the engine's outcomes, and prunes
@@ -493,7 +494,7 @@ namespace {
         std::int64_t relaxedChecked_ = 0, relaxedGateMisses_ = 0, relaxedEndChecks_ = 0, relaxedDecChecks_ = 0;
         std::int64_t relaxedEndSlack_[7] = {}, relaxedDecSlack_[7] = {}, relaxedIntentSlack_[7] = {}, relaxedWouldCut_ = 0;
         double rxSeconds_[2] = {0, 0};
-        bool relaxedReady() const { return rxOn_; }
+        bool relaxedReady() const { return rxOn_ || lxOn_; }
         std::size_t relaxedStates() const { return rxTab_[0].index.size(); }
         // Research (--abstract-check, --abstract-only): table 1 runs the same
         // recursion with the draw's exact probabilities instead of the max, which
@@ -507,41 +508,25 @@ namespace {
         std::size_t abstractStates() const { return rxTab_[1].index.size(); }
         // A root action's value from the abstract exact recursion (false where it does not apply).
         bool abstractQ(const BattleContext &s, const SAction &a, double &out) {
-            RxView x;
-            if (a.getActionType() == search::ActionType::END_TURN) {
-                if (!quiet(s) || !rxView(s, x)) return false;
-                out = rxEndOf(1, x);
-                return true;
-            }
+            if (a.getActionType() == search::ActionType::END_TURN) return quiet(s) && modelEnd(1, s, out);
             double v = 0;
             for (const auto &o : outcomes(s, a)) {
                 if (o.state.outcome != Outcome::UNDECIDED) { v += o.p * terminal(o.state).v; continue; }
-                if (!quiet(o.state) || !rxView(o.state, x)) return false;
-                v += o.p * (o.state.turn > turnCap_ ? terminal(o.state).v : rxDecAt(1, x));
+                double d = 0;
+                if (!quiet(o.state) || !modelDec(1, o.state, d)) return false;
+                v += o.p * (o.state.turn > turnCap_ ? terminal(o.state).v : d);
             }
             out = v;
             return true;
         }
 
-        // Sets the relaxed game up for the root's fight; false where it does not apply.
+        // Sets the relaxed game up for the root's fight (Jaw Worm, or Two Louse
+        // below); false where it does not apply.
         bool relaxedInit() {
             const BattleContext &r = rootCopy_;
+            if (r.monsters.monsterCount == 2) return lxInit();
             if (r.monsters.monsterCount != 1 || r.monsters.arr[0].id != MonsterId::JAW_WORM) return false;
-            RxDeck all;
-            bool ok = true;
-            auto add = [&](const CardInstance &c) { ok = ok && rxCount(c, all); };
-            const auto &cm = r.cards;
-            for (int i = 0; i < cm.cardsInHand; ++i) add(cm.hand[i]);
-            for (const auto &c : cm.drawPile) add(c);
-            for (const auto &c : cm.discardPile) add(c);
-            for (const auto &c : cm.exhaustPile) add(c);
-            // At most one Bash keeps the play orders below exhaustive; the key packs counts in 4 bits.
-            if (!ok || all.b > 1 || all.a > 1 || all.s > 15 || all.d > 15) return false;
-            rxDeck_ = all;
-            rxH_ = r.player.curHp;
-            rxEnergy_ = r.player.energyPerTurn;
-            rxDraw_ = r.player.cardDrawPerTurn;
-            rxCardsOffset_ = r.cardsDrawn - rxDraw_ * r.turn;
+            if (!rxDeckInit(r)) return false;
             const int asc = r.ascension;
             rxAttack_[0] = asc >= 2 ? 12 : 11;   // Chomp
             rxAttack_[1] = 7;                    // Thrash
@@ -571,6 +556,7 @@ namespace {
         struct RxDeck {
             int s = 0, d = 0, b = 0, a = 0;   // Strikes, Defends, Bashes, Ascender's Banes
             int total() const { return s + d + b + a; }
+            bool operator==(const RxDeck &) const = default;
         };
         // A concrete state as the relaxed game sees it.
         struct RxView {
@@ -649,6 +635,45 @@ namespace {
             }
         }
 
+        // The deck and turn constants of the root's fight (both models).
+        bool rxDeckInit(const BattleContext &r) {
+            RxDeck all;
+            bool ok = true;
+            auto add = [&](const CardInstance &c) { ok = ok && rxCount(c, all); };
+            const auto &cm = r.cards;
+            for (int i = 0; i < cm.cardsInHand; ++i) add(cm.hand[i]);
+            for (const auto &c : cm.drawPile) add(c);
+            for (const auto &c : cm.discardPile) add(c);
+            for (const auto &c : cm.exhaustPile) add(c);
+            // At most one Bash keeps the play orders below exhaustive; the keys pack counts in 4 bits.
+            if (!ok || all.b > 1 || all.a > 1 || all.s > 15 || all.d > 15) return false;
+            rxDeck_ = all;
+            rxH_ = r.player.curHp;
+            rxEnergy_ = r.player.energyPerTurn;
+            rxDraw_ = r.player.cardDrawPerTurn;
+            rxCardsOffset_ = r.cardsDrawn - rxDraw_ * r.turn;
+            return true;
+        }
+
+        // The card part of a view: the hand and draw pile, whether Ascender's Bane
+        // is exhausted; false unless every card is a starter card of the root's deck.
+        bool rxCards(const BattleContext &s, RxDeck &hand, RxDeck &pile, bool &abGone) const {
+            const auto &cm = s.cards;
+            RxDeck rest, ex;
+            hand = pile = RxDeck{};
+            for (int i = 0; i < cm.cardsInHand; ++i) if (!rxCount(cm.hand[i], hand)) return false;
+            for (const auto &c : cm.drawPile) if (!rxCount(c, pile)) return false;
+            for (const auto &c : cm.discardPile) if (!rxCount(c, rest)) return false;
+            for (const auto &c : cm.exhaustPile) if (!rxCount(c, ex)) return false;
+            if (ex.s || ex.d || ex.b) return false;
+            for (const auto &c : cm.stasisCards) if (c.id != CardId::INVALID) return false;
+            if (hand.s + pile.s + rest.s != rxDeck_.s || hand.d + pile.d + rest.d != rxDeck_.d
+                || hand.b + pile.b + rest.b != rxDeck_.b || hand.a + pile.a + rest.a + ex.a != rxDeck_.a)
+                return false;
+            abGone = ex.a > 0;
+            return true;
+        }
+
         // The relaxed view of `s`, or false where the relaxed game does not model it.
         bool rxView(const BattleContext &s, RxView &x) const {
             if (!rxOn_ || s.outcome != Outcome::UNDECIDED || s.monsters.monsterCount != 1) return false;
@@ -665,20 +690,8 @@ namespace {
             x.mv0 = rxMove(m.moveHistory[0]); x.mv1 = rxMove(m.moveHistory[1]);
             if (x.mv0 < 0 || x.mv0 == RX_NONE || x.mv1 < 0) return false;
             x.h = p.curHp; x.pblock = p.block; x.e = p.energy; x.t = s.turn;
-            const auto &cm = s.cards;
-            RxDeck hand, pile, rest, ex;
-            for (int i = 0; i < cm.cardsInHand; ++i) if (!rxCount(cm.hand[i], hand)) return false;
-            for (const auto &c : cm.drawPile) if (!rxCount(c, pile)) return false;
-            for (const auto &c : cm.discardPile) if (!rxCount(c, rest)) return false;
-            for (const auto &c : cm.exhaustPile) if (!rxCount(c, ex)) return false;
-            if (ex.s || ex.d || ex.b) return false;
-            for (const auto &c : cm.stasisCards) if (c.id != CardId::INVALID) return false;
-            if (hand.s + pile.s + rest.s != rxDeck_.s || hand.d + pile.d + rest.d != rxDeck_.d
-                || hand.b + pile.b + rest.b != rxDeck_.b || hand.a + pile.a + rest.a + ex.a != rxDeck_.a)
-                return false;
             if (x.m > 255 || x.str > 255 || x.vuln > 15) return false;
-            x.hand = hand; x.pile = pile; x.abGone = ex.a > 0;
-            return true;
+            return rxCards(s, x.hand, x.pile, x.abGone);
         }
 
         std::uint64_t rxKey(int m, int str, int vuln, int mv0, int mv1, const RxDeck &pile, bool abGone, int t) const {
@@ -879,14 +892,14 @@ namespace {
         }
         // --relaxed-check: the bound against an exact value.
         void rxCheck(const BattleContext &s, double exact, bool end) {
-            RxView x;
-            if (!rxView(s, x) || s.turn > turnCap_) { ++relaxedGateMisses_; return; }
-            const double ub = rxPad(end ? rxEndOf(0, x) : rxDecAt(0, x));
+            double r = 0;
+            if (s.turn > turnCap_ || !(end ? modelEnd(0, s, r) : modelDec(0, s, r))) { ++relaxedGateMisses_; return; }
+            const double ub = rxPad(r);
             ++(end ? relaxedEndChecks_ : relaxedDecChecks_);
             if (ub < exact - 1e-9) {
                 if (++relaxedViolations_ <= 10)
                     std::cerr << "relaxed bound violated (" << (end ? "end" : "decision") << "): bound " << ub << " exact "
-                              << exact << " turn " << s.turn << " hp " << x.h << " monster " << x.m << '\n';
+                              << exact << " turn " << s.turn << " hp " << s.player.curHp << " monsters " << monsterHps(s) << '\n';
                 return;
             }
             ++(end ? relaxedEndSlack_ : relaxedDecSlack_)[slackBucket(ub - exact)];
@@ -894,15 +907,20 @@ namespace {
 
         // --abstract-check: the abstract exact recursion against an exact value of the search.
         void abstractCompare(const BattleContext &s, double exact, bool end) {
-            RxView x;
-            if (!rxView(s, x) || s.turn > turnCap_) { ++relaxedGateMisses_; return; }
-            const double a = end ? rxEndOf(1, x) : rxDecAt(1, x);
+            double a = 0;
+            if (s.turn > turnCap_ || !(end ? modelEnd(1, s, a) : modelDec(1, s, a))) { ++relaxedGateMisses_; return; }
             ++abstractChecks_;
             const double diff = std::abs(a - exact);
             abstractMaxDiff_ = std::max(abstractMaxDiff_, diff);
             if (diff > 1e-9 * (1 + std::abs(exact)) && ++abstractMismatches_ <= 10)
                 std::cerr << "abstract value differs (" << (end ? "end" : "decision") << "): abstract " << a << " exact " << exact
-                          << " turn " << s.turn << " hp " << x.h << " monster " << x.m << '\n';
+                          << " turn " << s.turn << " hp " << s.player.curHp << " monsters " << monsterHps(s) << '\n';
+        }
+        static std::string monsterHps(const BattleContext &s) {
+            std::string out;
+            for (int i = 0; i < s.monsters.monsterCount; ++i)
+                out += (i ? "/" : "") + std::to_string(s.monsters.arr[i].curHp);
+            return out;
         }
 
         // --relaxed-check: the engine's outcomes of ending the turn at `s` against
@@ -967,6 +985,427 @@ namespace {
             if (hp > 0)
                 for (int k = 0; k < 3; ++k)
                     if (std::abs(pMove[k] - rxRoll_[x.mv0][x.mv1][k]) > 1e-9) bad("move probabilities");
+        }
+
+        // The active model's value of the decision state `s` (the rest of its turn
+        // played from its hand) or of ending the turn at `s`, in table `mode` (0 the
+        // relaxed game, 1 the exact recursion); false where no model applies.
+        bool modelDec(int mode, const BattleContext &s, double &v) {
+            if (RxView x; rxView(s, x)) { v = rxDecAt(mode, x); return true; }
+            if (LxView x; lxView(s, x)) { v = lxDecAt(mode, x); return true; }
+            return false;
+        }
+        bool modelEnd(int mode, const BattleContext &s, double &v) {
+            if (RxView x; rxView(s, x)) { v = rxEndOf(mode, x); return true; }
+            if (LxView x; lxView(s, x)) { v = lxEndOf(mode, x); return true; }
+            return false;
+        }
+        void modelMirror(const BattleContext &s, const SAction &endTurn) {
+            if (rxOn_) rxMirror(s, endTurn);
+            else if (lxOn_) lxMirror(s, endTurn);
+        }
+
+        // ---- Two Louse model ---------------------------------------------------
+        // The Jaw Worm recursion for the starter deck against two lice
+        // (MonsterSpecific.cpp): Bite for the louse's rolled damage plus Strength;
+        // Red Louse's Grow (+4 Strength at A17, else +3); Green Louse's Spit Web
+        // (Weak 2 on the player). Curl Up gives its block once, on the first hit
+        // that gets through without killing (Monster::attackedUnblockedHelper).
+        // Between turns: per louse its HP (0 once dead, every other field then 0),
+        // Strength, Vulnerable, whether Curl Up is unused, its intent and last
+        // move; the player's Weak; the draw pile's counts, Bane exhausted, the
+        // turn; one value per player HP. The lice have no block then (Curl Up's
+        // block falls off when the monsters' turn starts) and no Weak is pending
+        // as just applied (that clears at the end of the round).
+        enum { LX_BITE = 0, LX_SPECIAL = 1, LX_NONE = 2 };
+        struct LxLouse {
+            int hp = 0, str = 0, vuln = 0, block = 0, mv0 = 0, mv1 = 0;
+            bool curl = false;
+            bool operator==(const LxLouse &) const = default;
+        };
+        using LxLice = std::array<LxLouse, 2>;
+        struct LxView {
+            LxLice l;
+            int h = 0, pblock = 0, e = 0, t = 0, weak = 0;
+            RxDeck hand, pile;
+            bool abGone = false;
+        };
+        bool lxOn_ = false, lxAsc17_ = true;
+        bool lxRed_[2] = {false, false};
+        int lxBite_[2] = {0, 0}, lxCurl_[2] = {0, 0}, lxGrow_ = 4;
+
+        bool lxInit() {
+            const BattleContext &r = rootCopy_;
+            for (int i = 0; i < 2; ++i) {
+                const auto &m = r.monsters.arr[i];
+                if (m.id != MonsterId::RED_LOUSE && m.id != MonsterId::GREEN_LOUSE) return false;
+                lxRed_[i] = m.id == MonsterId::RED_LOUSE;
+                lxBite_[i] = m.miscInfo;
+                lxCurl_[i] = m.hasStatus<MonsterStatus::CURL_UP>() ? m.getStatus<MonsterStatus::CURL_UP>() : 0;
+            }
+            if (!rxDeckInit(r)) return false;
+            lxAsc17_ = r.ascension >= 17;
+            lxGrow_ = lxAsc17_ ? 4 : 3;
+            lxOn_ = true;
+            LxView x;
+            lxOn_ = lxView(r, x);
+            return lxOn_;
+        }
+
+        static int lxMove(MonsterMoveId id) {
+            switch (id) {
+                case MonsterMoveId::RED_LOUSE_BITE: case MonsterMoveId::GREEN_LOUSE_BITE: return LX_BITE;
+                case MonsterMoveId::RED_LOUSE_GROW: case MonsterMoveId::GREEN_LOUSE_SPIT_WEB: return LX_SPECIAL;
+                case MonsterMoveId::INVALID: return LX_NONE;
+                default: return -1;
+            }
+        }
+
+        // The Two Louse view of `s`, or false where the model does not apply.
+        bool lxView(const BattleContext &s, LxView &x) const {
+            if (!lxOn_ || s.outcome != Outcome::UNDECIDED || s.monsters.monsterCount != 2) return false;
+            const std::uint64_t allowed = 1ULL << static_cast<int>(MonsterStatus::CURL_UP)
+                | 1ULL << static_cast<int>(MonsterStatus::VULNERABLE) | 1ULL << static_cast<int>(MonsterStatus::STRENGTH);
+            int alive = 0;
+            for (int i = 0; i < 2; ++i) {
+                const auto &m = s.monsters.arr[i];
+                auto &l = x.l[i];
+                l = LxLouse{};
+                if (m.id != (lxRed_[i] ? MonsterId::RED_LOUSE : MonsterId::GREEN_LOUSE)) return false;
+                if (!m.isAlive()) continue;
+                ++alive;
+                if (m.weak || m.artifact || m.strength < 0 || m.block < 0 || m.latentDamageMask || (m.statusBits & ~allowed)
+                    || m.wasJustApplied<MonsterStatus::VULNERABLE>() || m.miscInfo != lxBite_[i])
+                    return false;
+                l.hp = m.curHp; l.str = m.strength; l.vuln = m.vulnerable; l.block = m.block;
+                l.curl = m.hasStatus<MonsterStatus::CURL_UP>();
+                if (l.curl && m.getStatus<MonsterStatus::CURL_UP>() != lxCurl_[i]) return false;
+                l.mv0 = lxMove(m.moveHistory[0]); l.mv1 = lxMove(m.moveHistory[1]);
+                if (l.mv0 < 0 || l.mv0 == LX_NONE || l.mv1 < 0 || l.hp > 31 || l.str > 63 || l.vuln > 7) return false;
+            }
+            if (alive == 0 || s.monsters.monstersAlive != alive) return false;
+            // Weak is the only status; a worn-off one leaves its map entry behind (Player::decrementStatus).
+            const auto &p = s.player;
+            const bool weak = p.hasStatus<PlayerStatus::WEAK>();
+            x.weak = weak ? p.getStatus<PlayerStatus::WEAK>() : 0;
+            const int statuses = __builtin_popcountll(p.statusBits0) + __builtin_popcountll(p.statusBits1);
+            bool onlyWeak = true;
+            for (const auto &entry : p.statusMap) onlyWeak = onlyWeak && entry.first == PlayerStatus::WEAK;
+            if (p.strength || p.dexterity || p.justAppliedBits || statuses != (weak ? 1 : 0) || !onlyWeak
+                || (weak && x.weak <= 0) || x.weak > 15 || p.energy < 0
+                || p.energyPerTurn != rxEnergy_ || p.cardDrawPerTurn != rxDraw_ || p.curHp > rxH_ || p.curHp <= 0)
+                return false;
+            if (s.cardsDrawn - rxDraw_ * s.turn != rxCardsOffset_ || s.turn < 0 || s.turn > 200) return false;
+            x.h = p.curHp; x.pblock = p.block; x.e = p.energy; x.t = s.turn;
+            return rxCards(s, x.hand, x.pile, x.abGone);
+        }
+
+        std::uint64_t lxKey(const LxLice &l, int weak, const RxDeck &pile, bool abGone, int t) const {
+            using U = std::uint64_t;
+            U k = 0;
+            for (int i = 0; i < 2; ++i) {
+                const auto &x = l[i];
+                if (x.hp < 0 || x.hp > 31 || x.str < 0 || x.str > 63 || x.vuln < 0 || x.vuln > 7 || x.block)
+                    throw std::runtime_error("Two Louse model: state out of range");
+                k |= (U(x.hp) | U(x.str) << 5 | U(x.vuln) << 11 | U(x.curl ? 1 : 0) << 14 | U(x.mv0) << 15 | U(x.mv1) << 16)
+                    << (18 * i);
+            }
+            if (weak < 0 || weak > 15 || t < 0 || t > 255 || pile.b > 1 || pile.a > 1)
+                throw std::runtime_error("Two Louse model: state out of range");
+            return k | U(weak) << 36 | U(pile.s) << 40 | U(pile.d) << 44 | U(pile.b) << 48 | U(pile.a) << 49
+                | U(abGone ? 1 : 0) << 50 | U(t) << 51;
+        }
+
+        // Silver's (or the HP objective's) value of a death in the monster turn of
+        // turn t (death) or of the turn-cap leaf at turn t, at lice HP m0, m1.
+        double lxLeaf(int m0, int m1, int t, bool death) {
+            if (hpObjective_) return 0;
+            const std::uint64_t k = static_cast<std::uint64_t>(m0) << 40 | static_cast<std::uint64_t>(m1) << 32
+                | static_cast<std::uint64_t>(t) << 1 | (death ? 1 : 0);
+            if (auto it = rxLeafCache_.find(k); it != rxLeafCache_.end()) return it->second;
+            BattleContext w = rootCopy_;
+            w.outcome = death ? Outcome::PLAYER_LOSS : Outcome::UNDECIDED;
+            w.player.curHp = death ? 0 : 1;
+            w.turn = t;
+            w.cardsDrawn = rxCardsOffset_ + rxDraw_ * t;
+            w.energyWasted = 0;
+            w.monsters.arr[0].curHp = m0;
+            w.monsters.arr[1].curHp = m1;
+            w.monsters.monstersAlive = (m0 > 0 ? 1 : 0) + (m1 > 0 ? 1 : 0);
+            const double v = scorer_.scoreEndState(w);
+            rxLeafCache_.emplace(k, v);
+            return v;
+        }
+
+        // A card's damage as BattleContext::calculateCardDamage computes it here:
+        // x0.75 while the player is Weak, x1.5 against Vulnerable, in floats, rounded down.
+        static int lxDamage(int base, bool weak, bool vuln) {
+            float d = static_cast<float>(base);
+            if (weak) d *= .75f;
+            if (vuln) d *= 1.5f;
+            return std::max(0, static_cast<int>(d));
+        }
+        // An attack on louse i: its block first; damage that gets through and does
+        // not kill curls it up (its Curl Up block after the card); a dead louse is zeroed.
+        void lxHit(LxLouse &l, int i, int dmg) const {
+            const int through = dmg - l.block;
+            l.block = std::max(0, l.block - dmg);
+            if (through <= 0) return;
+            if (l.curl && through < l.hp) { l.block += lxCurl_[i]; l.curl = false; }
+            l.hp -= through;
+            if (l.hp <= 0) l = LxLouse{};
+        }
+
+        // Every play of a hand with `e` energy: any sequence of the hand's Strikes
+        // and Bash the energy pays for, each at a living louse (Strike 6, Bash 8
+        // then Vulnerable 2), then as many Defends as the energy left pays for
+        // (block only ever saves HP). Calls win() if a play kills both lice, and
+        // end(lice, d) once per distinct state of the lice after the attacks, with
+        // the most Defends d any play reaching it leaves energy for.
+        template <typename Win, typename End>
+        void lxPlays(const LxLice &start, const RxDeck &hand, int e, bool weak, Win win, End end) const {
+            std::vector<std::pair<LxLice, int>> seen;
+            bool won = false;
+            auto rec = [&](auto &&self, const LxLice &cur, int s, int b, int en) -> void {
+                if (cur[0].hp == 0 && cur[1].hp == 0) { won = true; return; }
+                LxLice key = cur;
+                for (auto &l : key) l.block = 0;   // the lice's block falls off before it matters again
+                const int d = std::min(hand.d, en);
+                bool found = false;
+                for (auto &[k, dd] : seen)
+                    if (k == key) { dd = std::max(dd, d); found = true; break; }
+                if (!found) seen.emplace_back(key, d);
+                for (int i = 0; i < 2; ++i) {
+                    if (cur[i].hp == 0) continue;
+                    if (s > 0 && en >= 1) {
+                        LxLice n = cur;
+                        lxHit(n[i], i, lxDamage(6, weak, n[i].vuln > 0));
+                        self(self, n, s - 1, b, en - 1);
+                    }
+                    if (b > 0 && en >= 2) {
+                        LxLice n = cur;
+                        lxHit(n[i], i, lxDamage(8, weak, n[i].vuln > 0));
+                        if (n[i].hp > 0) n[i].vuln += 2;
+                        self(self, n, s, b - 1, en - 2);
+                    }
+                }
+            };
+            rec(rec, start, hand.s, hand.b, e);
+            if (won) win();
+            for (const auto &[k, d] : seen) end(k, d);
+        }
+
+        // The chance that a louse's next move is its special one (Grow / Spit Web)
+        // after the move `last` with `before` before it: roll 0..99, below 25 the
+        // special unless it was last (and, below A17, also before), else Bite
+        // unless Bite was both last and before.
+        double lxSpecialP(int last, int before) const {
+            double p = 0;
+            if (!(last == LX_SPECIAL && (lxAsc17_ || before == LX_SPECIAL))) p += 0.25;
+            if (last == LX_BITE && before == LX_BITE) p += 0.75;
+            return p;
+        }
+        // The lice's turn after the player's: returns the Bites' damage (the
+        // player's block not yet taken off) and sets the state at the start of
+        // the next turn before the new moves (Grow's Strength, Spit Web's Weak,
+        // one Vulnerable off, and one Weak off unless Spit Web gave it to a player
+        // without Weak this round, Player::debuff), with each louse's chance of a
+        // special next move.
+        int lxMonsterTurn(const LxLice &l, int weak, LxLice &next, int &weak2, double (&pSp)[2]) const {
+            int dmg = 0, spits = 0;
+            next = l;
+            for (int i = 0; i < 2; ++i) {
+                auto &n = next[i];
+                pSp[i] = 0;
+                if (n.hp == 0) continue;
+                n.block = 0;
+                if (n.mv0 == LX_BITE) dmg += lxBite_[i] + n.str;
+                else if (lxRed_[i]) n.str += lxGrow_;
+                else ++spits;
+                n.vuln = std::max(0, n.vuln - 1);
+                pSp[i] = lxSpecialP(n.mv0, n.mv1);
+                n.mv1 = n.mv0;
+            }
+            weak2 = spits ? (weak == 0 ? 2 * spits : weak + 2 * spits - 1) : std::max(0, weak - 1);
+            return dmg;
+        }
+        // Each joint next move of the living lice, with its probability.
+        template <typename F>
+        void lxRolls(const LxLice &next, const double (&pSp)[2], F f) const {
+            for (int a = 0; a < (next[0].hp ? 2 : 1); ++a) {
+                const double pa = next[0].hp ? (a ? pSp[0] : 1 - pSp[0]) : 1.0;
+                if (pa <= 0) continue;
+                for (int b = 0; b < (next[1].hp ? 2 : 1); ++b) {
+                    const double pb = next[1].hp ? (b ? pSp[1] : 1 - pSp[1]) : 1.0;
+                    if (pb <= 0) continue;
+                    LxLice n = next;
+                    if (n[0].hp) n[0].mv0 = a ? LX_SPECIAL : LX_BITE;
+                    if (n[1].hp) n[1].mv0 = b ? LX_SPECIAL : LX_BITE;
+                    f(n, pa * pb);
+                }
+            }
+        }
+
+        // The value per player HP of the start of turn t (before its draw), as rxStart.
+        std::size_t lxStart(int mode, const LxLice &l, int weak, const RxDeck &pile, bool abGone, int t) {
+            const std::uint64_t key = lxKey(l, weak, pile, abGone, t);
+            if (std::size_t off; rxTab_[mode].index.find(key, off)) return off;
+            const auto t0 = rxDepth_ == 0 ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+            ++rxDepth_;
+            std::vector<double> value(rxH_ + 1, mode == 0 ? -1e300 : 0.0), best(rxH_ + 1);
+            if (t > turnCap_) {
+                std::fill(value.begin(), value.end(), lxLeaf(l[0].hp, l[1].hp, t, false));
+            } else {
+                rxHands(pile, abGone, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                    const bool gone = abGone || hand.a > 0;
+                    std::fill(best.begin(), best.end(), -1e300);
+                    lxPlays(l, hand, rxEnergy_, weak > 0,
+                            [&] { for (int h = 1; h <= rxH_; ++h) best[h] = std::max(best[h], rxWin(h, t)); },
+                            [&](const LxLice &post, int maxD) {
+                                LxLice next;
+                                int weak2 = 0;
+                                double pSp[2];
+                                const int loss = std::max(0, lxMonsterTurn(post, weak, next, weak2, pSp) - 5 * maxD);
+                                const auto g = lxAfter(mode, next, pSp, weak2, left, gone, t);
+                                const double death = lxLeaf(post[0].hp, post[1].hp, t, true);
+                                for (int h = 1; h <= rxH_; ++h)
+                                    best[h] = std::max(best[h], h - loss <= 0 ? death : g[h - loss]);
+                            });
+                    for (int h = 1; h <= rxH_; ++h) value[h] = mode == 0 ? std::max(value[h], best[h]) : value[h] + p * best[h];
+                });
+            }
+            --rxDepth_;
+            auto &tab = rxTab_[mode];
+            const std::size_t off = tab.pool.size();
+            tab.pool.insert(tab.pool.end(), value.begin(), value.end());
+            tab.index.emplace(key, off);
+            if (rxDepth_ == 0) rxSeconds_[mode] += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            return off;
+        }
+
+        // After the lice's turn of turn t: the expected start value per player HP of
+        // turn t+1 over their new moves (the cap leaf past the turn cap).
+        std::vector<double> lxAfter(int mode, const LxLice &next, const double (&pSp)[2], int weak2, const RxDeck &pile,
+                                    bool abGone, int t) {
+            std::vector<double> g(rxH_ + 1, 0);
+            if (t + 1 > turnCap_) {
+                std::fill(g.begin(), g.end(), lxLeaf(next[0].hp, next[1].hp, t + 1, false));
+                return g;
+            }
+            lxRolls(next, pSp, [&](const LxLice &n, double p) {
+                const std::size_t off = lxStart(mode, n, weak2, pile, abGone, t + 1);
+                const auto &pool = rxTab_[mode].pool;
+                for (int h = 1; h <= rxH_; ++h) g[h] += p * pool[off + h];
+            });
+            return g;
+        }
+
+        // The value of ending the turn now (at player block pblock), at HP h.
+        double lxEndAt(int mode, const LxLice &l, int weak, const RxDeck &pile, bool abGone, int t, int pblock, int h) {
+            LxLice next;
+            int weak2 = 0;
+            double pSp[2];
+            const int hp = h - std::max(0, lxMonsterTurn(l, weak, next, weak2, pSp) - pblock);
+            if (hp <= 0) return lxLeaf(l[0].hp, l[1].hp, t, true);
+            if (t + 1 > turnCap_) return lxLeaf(l[0].hp, l[1].hp, t + 1, false);
+            double v = 0;
+            lxRolls(next, pSp, [&](const LxLice &n, double p) {
+                const std::size_t off = lxStart(mode, n, weak2, pile, abGone, t + 1);
+                v += p * rxTab_[mode].pool[off + hp];
+            });
+            return v;
+        }
+
+        // The value of a decision state (the rest of its turn played from its
+        // hand), and of an end-of-turn state.
+        double lxDecAt(int mode, const LxView &x) {
+            double best = -1e300;
+            const bool gone = x.abGone || x.hand.a > 0;
+            lxPlays(x.l, x.hand, x.e, x.weak > 0, [&] { best = std::max(best, rxWin(x.h, x.t)); },
+                    [&](const LxLice &post, int maxD) {
+                        best = std::max(best, lxEndAt(mode, post, x.weak, x.pile, gone, x.t, x.pblock + 5 * maxD, x.h));
+                    });
+            return best;
+        }
+        double lxEndOf(int mode, const LxView &x) {
+            return lxEndAt(mode, x.l, x.weak, x.pile, x.abGone || x.hand.a > 0, x.t, x.pblock, x.h);
+        }
+
+        // --relaxed-check: the engine's outcomes of ending the turn at `s` against
+        // the model's lice turn, leaves and draw.
+        void lxMirror(const BattleContext &s, const SAction &endTurn) {
+            LxView x;
+            if (!lxView(s, x)) { ++relaxedGateMisses_; return; }
+            ++relaxedChecked_;
+            LxLice next;
+            int weak2 = 0;
+            double pSp[2];
+            const int hp = x.h - std::max(0, lxMonsterTurn(x.l, x.weak, next, weak2, pSp) - x.pblock);
+            const bool gone = x.abGone || x.hand.a > 0;
+            auto bad = [&](const char *what) {
+                if (++relaxedMirror_ <= 10)
+                    std::cerr << "Two Louse mirror mismatch: " << what << " (turn " << s.turn << " hp " << x.h << " lice "
+                              << x.l[0].hp << "/" << x.l[1].hp << " moves " << x.l[0].mv0 << "/" << x.l[1].mv0 << " weak "
+                              << x.weak << ")\n";
+            };
+            double pMove[2][2] = {};
+            for (const auto &o : outcomes(s, endTurn)) {
+                const BattleContext &n = o.state;
+                if (hp <= 0) {
+                    if (n.outcome != Outcome::PLAYER_LOSS) bad("expected a death");
+                    else if (std::abs(terminal(n).v - lxLeaf(x.l[0].hp, x.l[1].hp, s.turn, true)) > 1e-9) bad("death leaf");
+                    continue;
+                }
+                if (n.outcome != Outcome::UNDECIDED || !quiet(n)) { bad("expected a quiet undecided state"); continue; }
+                if (n.turn != s.turn + 1 || n.player.curHp != hp || n.player.block != 0 || n.player.energy != rxEnergy_) {
+                    bad("player at the turn start");
+                    continue;
+                }
+                LxView y;
+                if (!lxView(n, y)) { bad("next state outside the model"); continue; }
+                bool same = y.weak == weak2 && y.abGone == gone;
+                for (int i = 0; i < 2; ++i) {
+                    const auto &a = y.l[i], &b = next[i];
+                    same = same && a.hp == b.hp && a.str == b.str && a.vuln == b.vuln && a.block == 0 && a.curl == b.curl
+                        && a.mv1 == b.mv1;
+                }
+                if (!same) {
+                    if (relaxedMirror_ < 10)
+                        for (int i = 0; i < 2; ++i)
+                            std::cerr << "  louse " << i << " engine: hp " << y.l[i].hp << " str " << y.l[i].str << " vuln "
+                                      << y.l[i].vuln << " block " << y.l[i].block << " curl " << y.l[i].curl << " last "
+                                      << y.l[i].mv1 << "; model: hp " << next[i].hp << " str " << next[i].str << " vuln "
+                                      << next[i].vuln << " curl " << next[i].curl << " last " << next[i].mv1 << " (weak engine "
+                                      << y.weak << " model " << weak2 << ")\n";
+                    bad("lice turn");
+                    continue;
+                }
+                const int r0 = y.l[0].hp ? y.l[0].mv0 : 0, r1 = y.l[1].hp ? y.l[1].mv0 : 0;
+                pMove[r0][r1] += o.p;
+                // The drawn hand and the pile it leaves must be a draw the model
+                // offers, with the engine's probability (both move rolls times draw).
+                double pDraw = -1;
+                rxHands(x.pile, gone, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                    if (hand == y.hand && left == y.pile) pDraw = p;
+                });
+                const double pRoll = (y.l[0].hp ? (r0 ? pSp[0] : 1 - pSp[0]) : 1.0) * (y.l[1].hp ? (r1 ? pSp[1] : 1 - pSp[1]) : 1.0);
+                if (pDraw < 0) bad("draw");
+                else if (std::abs(o.p - pRoll * pDraw) > 1e-9) bad("draw probability");
+                if (n.turn > turnCap_) {
+                    if (std::abs(terminal(n).v - lxLeaf(y.l[0].hp, y.l[1].hp, n.turn, false)) > 1e-9) bad("cap leaf");
+                } else {
+                    // The start value maxes over hands: at least this hand's value.
+                    const std::size_t off = lxStart(0, y.l, weak2, x.pile, gone, n.turn);
+                    if (lxDecAt(0, y) > rxTab_[0].pool[off + hp] + 1e-9) bad("start value below a drawn hand");
+                }
+            }
+            if (hp > 0)
+                for (int a = 0; a < 2; ++a)
+                    for (int b = 0; b < 2; ++b) {
+                        const double pa = next[0].hp ? (a ? pSp[0] : 1 - pSp[0]) : (a ? 0.0 : 1.0);
+                        const double pb = next[1].hp ? (b ? pSp[1] : 1 - pSp[1]) : (b ? 0.0 : 1.0);
+                        if (std::abs(pMove[a][b] - pa * pb) > 1e-9) bad("move probabilities");
+                    }
         }
     private:
         Key twinKey(const KeyBuilder &pre, int hp, std::uint64_t tag) const {
@@ -1404,11 +1843,11 @@ namespace {
                 return bound(hit.v);
             }
             if (intentCheck_) checkIntentBound(s, endTurn);
-            if (relaxedCheck_) rxMirror(s, endTurn);
+            if (relaxedCheck_) modelMirror(s, endTurn);
             // Research (--relaxed-check): end-of-turn states the relaxed bound would refute before any replay.
             const bool rxWould = relaxedCheck_ && alpha > kNoAlpha && [&] {
-                RxView x;
-                return rxView(s, x) && rxPad(rxEndOf(0, x)) <= alpha;
+                double r = 0;
+                return modelEnd(0, s, r) && rxPad(r) <= alpha;
             }();
             if (intentBound_ && alpha > kNoAlpha) {
                 if (const double ub = intentUpperBound(s); ub <= alpha) {
@@ -1420,8 +1859,8 @@ namespace {
                 }
             }
             if (relaxedBound_ && alpha > kNoAlpha) {
-                if (RxView x; rxView(s, x)) {
-                    if (const double ub = rxPad(rxEndOf(0, x)); ub <= alpha) {
+                if (double r; modelEnd(0, s, r)) {
+                    if (const double ub = rxPad(r); ub <= alpha) {
                         ++cutoffs_;
                         ++relaxedCutoffs_;
                         noteState(s, 1);
@@ -1579,8 +2018,8 @@ namespace {
                 }
                 if (relaxedOrder_) {
                     for (std::size_t i : survivors) {
-                        RxView x;
-                        hk[i] = rxView(cands[i].st, x) ? rxEndOf(0, x) : 1e300;
+                        double r = 0;
+                        hk[i] = modelEnd(0, cands[i].st, r) ? r : 1e300;
                     }
                     std::stable_sort(survivors.begin(), survivors.end(), [&](std::size_t x, std::size_t y) { return hk[x] > hk[y]; });
                 }
