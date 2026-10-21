@@ -22116,6 +22116,24 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §585 — Live combat parity: Deca's Square of Protection shielded a dead Donu (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show `monsters[1].block` game 0 vs native 16 at the
+End Turn after Donu died (problem 56 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue56-extract.json`: Deca intent DEFEND_BUFF, Donu dead with hp 0 and no powers);
+`MonsterSpecific.cpp`; `monster_ai_java_parity` (no gameplay seeds).
+**Result:** native resolves Deca's Square of Protection and Spire Shield's Fortify by adding block (and Deca's A19 Plated
+Armor) to the ally directly, outside the queued `MonsterGainBlock` that `STS_DEAD_MONSTER_BLOCK_FIX` gates, so a dead
+ally gained it. The game shows Deca 1 -> 20 (16 plus Plated Armor 4 → 7 at end of turn) and dead Donu block 0 with no
+powers, as Java's per-monster `GainBlockAction`/`ApplyPowerAction` skip a dying target.
+**Interpretation:** `STS_DEAD_ALLY_BLOCK_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both moves.
+Play-changing for simulator play (dead-monster block is in Silver's node identity), unmeasured.
+Javap of the pinned JAR (`issue56-javap.md` on the share) confirms both call sites: `Deca.takeTurn` case 2 and
+`SpireShield.takeTurn` case 2 loop over every monster with no alive check and queue `GainBlockAction` (Deca also
+`ApplyPowerAction` Plated Armor at A19+); only `GainBlockAction.update` skips a dying or dead target.
+**Open question:** Spire Shield's Fortify is confirmed by javap, not by a live observation.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
 ## §583 — Live Silver: Headbutt splitting a large slime refused its put-on-top choice (2026-10-21)
 
 **Question:** why did live seed 111200464 seg1 s307 (release 9ec8a51d, Act 1 floor 16, Slime Boss fight after the boss
