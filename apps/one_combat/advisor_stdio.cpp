@@ -921,6 +921,20 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         evaluator["selectedLiveAction"] = {{"kind", "proceed"}};
         return evaluator;
     }
+    if (const int choice = one_combat::advisor::minionLeaderEscapeChoice(request.observation)) {
+        if (const char *flag = std::getenv("STS_DIFFERENTIAL_TRACE"); flag && std::string(flag) == "1")
+            return unsupported("DIFFERENTIAL_COMBAT_LEADER_ESCAPE_UNREPRESENTABLE");
+        // Headbutt killed the Gremlin Leader: Java escapes the surviving
+        // minions after the grid, so every pick ends the combat alike;
+        // native already ended it at the hit (live problem 72).
+        evaluator["status"] = "OK";
+        evaluator["mode"] = "native_pass_through";
+        evaluator["valueSemantics"] = "forced_no_search";
+        evaluator["simulations"] = 0;
+        evaluator["selectedLabel"] = "leader dead: minions escape after the grid";
+        evaluator["selectedLiveAction"] = {{"kind", "choose"}, {"choiceIndex", choice}};
+        return evaluator;
+    }
     const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
     if (!imported.ok) return unsupported(imported.reason,
         !session || sessionIdentity != request.session || combatEntryIdentity != entryIdentity);

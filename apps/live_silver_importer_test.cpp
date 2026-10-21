@@ -4942,6 +4942,74 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("STS_SILVER_SLIME_SPLIT_QUEUE=0 did not restore the refusal");
             }
         }
+        {
+            // Problem 72 (overnight live play 2026-10-21, seed 111200472): Headbutt
+            // killing the Gremlin Leader opens its GRID with GremlinLeader.die()'s
+            // Shout and EscapeAction for every surviving minion queued; native's
+            // MINION_LEADER ends the combat at the hit, so the grid is passed
+            // through (every pick ends the combat alike).
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=2; game.floorNum=30;
+            BattleContext live; live.init(game, MonsterEncounter::GREMLIN_LEADER);
+            auto &leader=live.monsters.arr[3];
+            if(leader.id!=MonsterId::GREMLIN_LEADER) throw std::runtime_error("Gremlin Leader fixture has no leader in slot 3");
+            leader.block=0; leader.curHp=leader.maxHp;
+            for (int played=0;played<2;++played) {
+                CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(970+played);
+                live.cards.moveToHand(defend); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            }
+            CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=980;
+            live.cards.moveToHand(headbutt); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,3).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT)
+                throw std::runtime_error("Gremlin Leader Headbutt fixture did not open the grid");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+            auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-leader-death");
+            setProducerV4CardObservation(observation,expected);
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"cards",json::array()},{"liveChoices",json::array()}};
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingCardQueue"]=json::array();
+            // Java form: the Leader is dying; both minions still stand and
+            // escape once the grid resolves.
+            std::vector<int> minions;
+            for(auto &m:combat["monsters"]) {
+                const int slot=m.value("slot",m.value("idx",-1));
+                if(slot==3) {m["hp"]=0;m["dead"]=true;}
+                else if(m.value("hp",0)>0 && !m.value("dead",false)) minions.push_back(slot);
+            }
+            if(minions.size()!=2) throw std::runtime_error("Gremlin Leader fixture needs two minions");
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                json{{"kind","MINION_LEADER_ESCAPE"},{"slots",minions}}});
+            if(one_combat::advisor::importSilverRoot(observation).ok)
+                throw std::runtime_error("Gremlin Leader death grid imported as a searchable root");
+            if(one_combat::advisor::minionLeaderEscapeChoice(observation)!=1)
+                throw std::runtime_error("Gremlin Leader death grid was not passed through");
+            // Fail closed: a minion left out, a slot that is not alive, the
+            // Leader still alive, another queued action, and the flag at 0.
+            auto partial=observation;
+            partial["silverRoot"]["combat"]["pendingActionQueue"][1]["slots"]=json::array({minions[0]});
+            auto extra=observation;
+            extra["silverRoot"]["combat"]["pendingActionQueue"][1]["slots"]=json::array({minions[0],minions[1],3});
+            auto alive=observation;
+            for(auto &m:alive["silverRoot"]["combat"]["monsters"])
+                if(m.value("slot",m.value("idx",-1))==3) {m["hp"]=10;m["dead"]=false;}
+            auto more=observation;
+            more["silverRoot"]["combat"]["pendingActionQueue"].push_back(json{{"kind","GAIN_ENERGY"},{"amount",1}});
+            for(const auto *broken:{&partial,&extra,&alive,&more})
+                if(one_combat::advisor::minionLeaderEscapeChoice(*broken)!=0)
+                    throw std::runtime_error("unqualified Gremlin Leader death grid was passed through");
+            setenv("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH","0",1);
+            const int legacy=one_combat::advisor::minionLeaderEscapeChoice(observation);
+            unsetenv("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH");
+            if(legacy!=0) throw std::runtime_error("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH=0 did not restore the refusal");
+        }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");
         const auto v4ContinuationImported = one_combat::advisor::importSilverRoot(v4Continuation);
