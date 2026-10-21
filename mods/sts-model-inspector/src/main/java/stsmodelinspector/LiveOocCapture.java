@@ -1317,6 +1317,7 @@ final class LiveOocCapture {
             if (idx < 0 || idx > 6) throw new IllegalArgumentException("shop card slot lost");
             cards.set(idx, card(c)); prices[idx] = c.price;
         }
+        slots.commit();
         for (Object item : relicItems) {
             StoreRelic r = (StoreRelic)item; int idx = ((Number)field(r, "slot")).intValue();
             if (!r.isPurchased) { relics.set(idx, r.relic.relicId); prices[7 + idx] = r.price; }
@@ -1357,30 +1358,49 @@ final class LiveOocCapture {
     // delimit this read-only slot cache. It contains no hidden offers.
     private static Object slotPlayer, slotNode;
     private static final java.util.IdentityHashMap<AbstractCard,Integer> cardSlots = new java.util.IdentityHashMap<>();
-    private static final Map<String,Integer> positionSlots = new LinkedHashMap<>();
+    // The lists as last captured: a Courier replacement takes the bought card's
+    // list index, so it inherits the slot of that index's previous occupant.
+    // Positions are not used: ShopScreen.updateCards re-derives target_y from
+    // the sliding rug every frame (problem 79).
+    private static final List<AbstractCard> lastColored = new ArrayList<>(), lastColorless = new ArrayList<>();
     private static final class IdentityShopSlots {
+        private final ShopScreen shop;
         IdentityShopSlots(ShopScreen shop) {
+            this.shop = shop;
             if (slotPlayer != AbstractDungeon.player || slotNode != AbstractDungeon.currMapNode) {
-                cardSlots.clear(); positionSlots.clear();
+                cardSlots.clear();
                 slotPlayer = AbstractDungeon.player; slotNode = AbstractDungeon.currMapNode;
                 if (shop.coloredCards.size() != 5 || shop.colorlessCards.size() != 2)
                     throw new IllegalArgumentException("resumed shop has no exact slot history");
-                for (int i = 0; i < 5; ++i) remember(shop.coloredCards.get(i), i);
-                for (int i = 0; i < 2; ++i) remember(shop.colorlessCards.get(i), i + 5);
+                for (int i = 0; i < 5; ++i) cardSlots.put(shop.coloredCards.get(i), i);
+                for (int i = 0; i < 2; ++i) cardSlots.put(shop.colorlessCards.get(i), i + 5);
+                commit();
             }
-        }
-        private static String position(AbstractCard c) { return c.target_x + ":" + c.target_y; }
-        private static void remember(AbstractCard c, int index) {
-            cardSlots.put(c, index); positionSlots.put(position(c), index);
         }
         int index(AbstractCard c) {
             Integer known = cardSlots.get(c);
-            if (known != null) return known;
-            // Courier replacement occupies the original physical offer slot.
-            known = positionSlots.get(position(c));
+            if (known == null) known = replacementSlot(shop.coloredCards, lastColored, cardSlots, c);
+            if (known == null) known = replacementSlot(shop.colorlessCards, lastColorless, cardSlots, c);
             if (known == null) throw new IllegalArgumentException("shop replacement slot unrepresented");
-            remember(c, known); return known;
+            cardSlots.put(c, known); return known;
         }
+        void commit() {
+            lastColored.clear(); lastColored.addAll(shop.coloredCards);
+            lastColorless.clear(); lastColorless.addAll(shop.colorlessCards);
+        }
+    }
+    // ShopScreen.purchaseCard with The Courier set()s the replacement at the
+    // bought card's index; that card has left the list and owns the slot.
+    static Integer replacementSlot(List<?> current, List<?> previous, Map<?,Integer> slots, Object card) {
+        int i = indexOfIdentity(current, card);
+        if (i < 0 || i >= previous.size()) return null;
+        Object prior = previous.get(i);
+        if (prior == null || prior == card || indexOfIdentity(current, prior) >= 0) return null;
+        return slots.get(prior);
+    }
+    private static int indexOfIdentity(List<?> list, Object item) {
+        for (int i = 0; i < list.size(); ++i) if (list.get(i) == item) return i;
+        return -1;
     }
 
     private static Map<String,Object> add(List<Map<String,Object>> out, List<?> labels, int choiceIndex,
