@@ -22116,7 +22116,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
+## §587 — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
 
 **Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after
 Second Wind+ with Anger 3 (problem 64b in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
