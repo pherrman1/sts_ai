@@ -2029,6 +2029,10 @@ with the search and its chain.
   null and masked; token-less candidates (potion discard, gold) drop out. Every supported state gives a Heart-kill
   value target `z`. `fit-sigma` fits B on a fold's full-budget checkpoints. distill.py trains these with
   `--value-weight` (value-head BCE), `--anchor-weight` (KL to the frozen `--init`) and `--select last|fold`.
+- Self-play exploration (off by default; data runs only): `STS_OOC_MCTS_ROOT_NOISE` mixes Dirichlet noise into
+  the root PUCT prior and `STS_OOC_MCTS_PLAY_SAMPLE` plays a visit-proportional root action on early floors. Without
+  them the played move is always the most-visited action, so self-play games follow the search's preferred line.
+  Captured priors stay clean, so the converter is unchanged. Both draw from salted hashes of the search seed.
 - Student input extension (Philipp 2026-10-17, value-model audit blind spots):
   records carry `obs.deck.misc` (card `misc` in deck order: Ritual Dagger
   damage, Genetic Algorithm block) and `obs.act`; heart1 itself ignores them

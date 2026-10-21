@@ -85,6 +85,15 @@ consulted the row also has:
   `root.fullBudget`: `true` when this root was sampled to run the full budget
   with no early stop (the clean policy targets), `false` otherwise (singletons
   are always `false`). The key is absent when the option is unset.
+- With the self-play exploration options set (off by default), `root.rootNoise`
+  (`[fraction, alpha]`, `STS_OOC_MCTS_ROOT_NOISE`) and `root.searchSelectedId` /
+  `root.playSampled` (`STS_OOC_MCTS_PLAY_SAMPLE`). `selectedId` and the row's
+  `selectedKey` are then the played action; `searchSelectedId` is the
+  most-visited one. Reported `prior`s stay the clean net priors (noise only
+  enters PUCT), so the `az_targets.py` policy targets are unchanged; under root
+  noise the visit counts are noisier but the Gumbel targets read Q. `fit-sigma`
+  labels each root with `searchSelectedId` when present, so sampled plays do not
+  bias the β fit.
 
 Checkpoints only read root statistics; the singleton bypass and every early
 stop are kept, so capture does not change play. A same-seed `off`/`on`/`policy`
