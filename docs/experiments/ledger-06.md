@@ -22824,7 +22824,7 @@ Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 worke
 - **Knowledge impact:** `evaluation/current-research.md`.
 
 
-## §TBD — Gumbel sequential halving at OOC full-budget roots: offline target quality (116 A20 roots): SH beats PUCT against a uniform reference, play A/B pending (2026-10-21)
+## §619 — Gumbel sequential halving at OOC full-budget roots: offline target quality (116 A20 roots): SH beats PUCT against a uniform reference, play A/B pending (2026-10-21)
 
 **Question (Philipp, 2026-10-21 15:04Z):** full-budget OOC roots are ~59% of run CPU. Does a Gumbel AlphaZero root
 with sequential halving (SH) give better root choices and targets than PUCT at matched or lower budget?
