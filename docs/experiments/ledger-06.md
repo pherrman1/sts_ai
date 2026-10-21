@@ -22262,6 +22262,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
+## §TBD — Live problem 84: a pending GainEnergyAction was exported with amount 0 (2026-10-21)
+
+**Question:** Why did seed 111200510 at steps 749 and 922 show player energy game 3 vs native 2 (and 7 vs 6) after Headbutt's put-on-top choice?
+
+**Evidence:** In both cases Nunchaku's 10th attack was a Headbutt. Its `GainEnergyAction(1)` was queued behind the put-on-top grid. The projection exported `GAIN_ENERGY` with the inherited `AbstractGameAction.amount`, but `GainEnergyAction(int)` calls `setValues(p,p,0)` and keeps the gain in `private int energyGain`. So the importer folded a +0 gain, and Silver planned with one energy too few.
+
+**Change:** A producer-only fix in `STSModelInspector.publicPendingActionsJson`. `GAIN_ENERGY` now reads `energyGain` reflectively and refuses (`gain_energy_amount`) when it is missing or outside 0-99. There is no native change and no flag: the old output was always wrong.
+
+**Interpretation:** Every projected pending energy gain (Nunchaku, and any other public `GainEnergyAction` behind a selection) now reaches the importer with its real amount.
+
+**Status:** Draft PR; PC `test.sh` requested from the canary.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
