@@ -22132,6 +22132,8 @@ in one turn, unmeasured.
 **Open question:** the `BattleContextBinary` format still writes Shackled as one byte (lossy above 127); no format
 bump here.
 Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+
 ## §587 — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
 
 **Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after
