@@ -22709,6 +22709,21 @@ today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
 [Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
 Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
 **Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
+## §TBD — Live combat parity: Nilry's Codex offered Blood for Blood at full cost (2026-10-21)
+
+**Question:** does Nilry's Codex, like the generators §612 fixed, give a Blood for Blood the combat's damage discount?
+**Setup:** the canary's `CodexAction` javap and live-trace scan (`engine-parity/overnight-20261019/issue784/javap.md` on
+the share); `blood_for_blood_copy_cost_test` (Ironclad seed 111200071, JAW_WORM; no gameplay runs).
+**Result:** `CodexAction.generateCardChoices()` adds `c.makeCopy()` for each of its three cards, and the pick goes to the
+draw pile as `makeStatEquivalentCopy()`, so the game's Codex Blood for Blood costs 4 minus `damagedThisCombat`. The
+canary found 7 of 31 in-combat offers at exactly that cost, Codex included (runs 466 and 487); 24 of 24 reward and shop
+offers were at base cost (the counter resets outside combat). Native `chooseCodexCard` created a plain card.
+**Interpretation:** `chooseCodexCard` now builds the card with `generatedCombatCard`, under the same
+`STS_BLOOD_FOR_BLOOD_COPY_COST_FIX` (`=0` restores full cost here too). Native Blood for Blood upgrade already matches
+`BloodForBlood.upgrade()` (`STS_UPGRADE_COST_DELTA_FIX`). Play-changing for Codex runs only.
+Seeds: none new (unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
+
 ## §612 — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
 
 **Question:** why did live seed 111200476 parity s117 (release 0ba0e9a9, Discovery+ pick with three hits taken) show the

@@ -3364,7 +3364,8 @@ void BattleContext::chooseCodexCard(CardId id) {
     for (int amount : cardSelectInfo.blocksAfter) addToBot(Actions::GainBlock(amount));
     cardSelectInfo.blocksAfter.clear();
     if (id == CardId::INVALID) return;
-    CardInstance c(id);
+    // CodexAction offers makeCopy() cards and shuffles in a stat-equivalent copy.
+    CardInstance c = generatedCombatCard(id);
     c.uniqueId = static_cast<std::int16_t>(cards.nextUniqueCardId++);
     cards.notifyAddCardToCombat(c);
     cards.shuffleIntoDrawPile(cardRandomRng, c);
