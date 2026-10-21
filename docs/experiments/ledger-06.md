@@ -22148,6 +22148,66 @@ executed move, and refuses a wrong, missing or extra proof and a wrong executed 
 play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
 **Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
 Seeds: none.
+## §603 — Live combat parity: purge-on-use replay copies skipped canUse (Velvet Choker let Duplication replay a sixth card) (2026-10-21)
+
+**Question:** why did live seed 111200445 (Velvet Choker, Rupture played as the sixth card under Duplication; problem
+55 in `engine-parity/overnight-20261019/ISSUES.md` on the share) show the game resolving one play (cardsPlayedThisTurn
+6, one Bird-Faced Urn heal) while native also played the Duplication copy?
+**Setup:** pinned-jar javap of `GameActionManager.getNextAction` and `UseCardAction`; `BattleContext` card-queue
+code; `purge_copy_can_use` unit test (no gameplay seeds).
+**Result:** Java computes `canPlayCard = canUse || dontTriggerOnUseCard` with no `purgeOnUse` exception, so a replay copy
+(Duplication, Double Tap, Burst, Echo Form, Necronomicon) must pass `canUse` (Choker's `canPlay`, a dying target, ...)
+and otherwise only poofs (`UseCardAction`: purgeOnUse -> `ShowCardAndPoofAction`). The engine let every purge copy
+skip `canUse`, so the sixth-card copy under Choker resolved.
+**Interpretation:** `STS_PURGE_COPY_CAN_USE_FIX` (default on, `=0` restores) applies `canUse` to copies; an unusable
+copy poofs and reaches no pile (the #733 unplayable-autoplay routing skips purge copies). Play-changing in simulation
+wherever a copy fails `canUse` (Choker at six cards, a copy aimed at a target that died); unmeasured, so A20
+whole-run results across this merge are not comparable without `=0`.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+## §600 — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
+
+**Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with
+`occupantBindingError=unsupported_monster_power_domain` (problem 73 in `engine-parity/overnight-20261019/ISSUES.md`
+on the share; snapshots saved-111200472-seg3/-seg4 on the PC)?
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the live importer's power map (`live_silver_mapping.cpp` maps
+"Life Link" to REGROW); `RunicDomeTrackerTest`.
+**Result:** the tracker whitelisted the Darkling power as "Regrow", but Java's `RegrowPower.POWER_ID` is "Life Link",
+so every Darkling under Runic Dome invalidated the knowledge and the run stopped. The test's jar check now compares
+the POWER_ID of every monster-specific Dome power (31 classes) against the whitelist and reports all mismatches.
+**Interpretation:** producer bug, fixed in the mod (one string); no flag, since the old behaviour only refused the
+history. Live Darkling fights under Runic Dome no longer stop. No engine or simulation change.
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 7463f1fd (POWER_ID check clean
+for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
+Seeds: none new (live seed 111200472 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §602 — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
+
+**Question:** after §600 (Darkling "Life Link"), are the generic entries of the tracker's monster-power whitelist real
+Java POWER_IDs? (Reviewer E's follow-up on #763.)
+**Setup:** `RunicDomeTracker.monsterPowerAllowed`; the importer's power map (`live_silver_mapping.cpp`);
+`RunicDomeTrackerTest`'s jar check, extended to the 13 generic power classes.
+**Result:** "Block Return", "Corpse Explosion" and "Mark" were display names; the jar IDs are "BlockReturnPower",
+"CorpseExplosionPower" and "PathToVictoryPower" (the importer already maps those). A monster carrying one of them
+(Talk to the Hand, Corpse Explosion or Pressure Points cards, reachable off-class) invalidated the Dome history and
+stopped the live run; it failed closed.
+**Interpretation:** producer bug, fixed in the mod (three strings); no flag. The jar check now covers every whitelist
+entry. No engine or simulation change.
+**Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
+Seeds: none.
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §604 — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
+
+**Observation.** Live A20 seed 111200473 (release eeb17782, Chosen and Byrds, floor 30, turn 1): Toolbox's battle-start `ChooseOneColorless` offer reached the advisor as `silver_card_reward_pending_actions`. The queue behind it was `[DrawCardAction(5), EnableEndTurnButtonAction, (RelicAboveCreatureAction, ApplyPowerAction Weak 1 from the player) x 2]`. The mod refused (no continuation was sent); the importer already accepts `toolbox_actions` with `DRAW` plus `DEBUFF_ALL_ENEMY`.
+
+**Analysis.** javap of the pinned jar (RedMask.atBattleStart, ApplyPowerAction, WeakPower, DrawCardAction, AbstractRoom battle start) matches every check in `publicPendingActionsJson(true)` and `allEnemyPowerBatch` on paper: Red Mask builds `WeakPower(m, 1, false)` (justApplied false), source is the player, and the opening draw is the default 3-arg DrawCardAction. Which check refused could not be decided from the snapshot. The old blocker also printed `power=` blank because `readStringField` returns "" for a missing `powerID` field.
+
+**Change (diagnostic only, no play change, no flag).** Every refusal in `publicPendingActionsJson` and `allEnemyPowerBatch` records `<queue index>:<check>`; `pendingActionsBlocker` appends it as `;refusal=...`. `powerActionDetail` now falls back to the power instance's ID. A repeat of problem 74 names the exact failing check, and the fix follows from it.
+
+**Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22487,6 +22547,24 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
+## §601 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+
+**Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation and `javap` of the pinned jar (`engine-parity/overnight-20261019/issue69-joust/`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** `TheJoust$CUR_SCREEN` is HALT, EXPLANATION, PRE_JOUST, JOUST, COMPLETE; the constructor opens on HALT with the
+sole option [Continue], and HALT's button only shows the two bets (EXPLANATION, native's decision page). Both the mod's
+and the importer's `event_continue` tables listed a nonexistent `INTRO` page for The Joust, so the mod refused HALT with
+`EVENT_PHASE_UNREPRESENTABLE:The Joust:HALT`; every run that meets The Joust ended there.
+**Interpretation:** the mod replaces `INTRO` with HALT in its `event_continue` table; `STS_IMPORTER_JOUST_HALT_FIX`
+(default on, `=0` restores the refusal) qualifies exactly that page, and the advisor passes it through
+(`forced_no_search`). The importer's unreachable `INTRO` entry is dropped. PRE_JOUST (the one `miscRng` draw) and JOUST
+were already forced continues.
+**Open question:** the other `INTRO` continue entries (Face Trader, Designer, Falling, Sensory Stone, Note For
+Yourself, Bonfire, Colosseum, Lab) were not checked against `javap` here.
+Seeds: none new (live seed 111200467 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 ## §594 — Live driver: the boss-relic Skip was unmappable (2026-10-21)
 
 **Question:** why did live seed 111200468 (Act 1 floor 17, BOSS_REWARD Black Blood / Empty Cage / Sacred Bark) stop when

@@ -282,6 +282,14 @@ add_test(NAME unplayable_autoplay COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gu
 set_tests_properties(unplayable_autoplay PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(purge_copy_can_use_test tests/purge_copy_can_use_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(purge_copy_can_use_test PRIVATE include json/include)
+add_test(NAME purge_copy_can_use COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:purge_copy_can_use_test>)
+set_tests_properties(purge_copy_can_use PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(lagavulin_wake_metallicize_test tests/lagavulin_wake_metallicize_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(lagavulin_wake_metallicize_test PRIVATE include json/include)

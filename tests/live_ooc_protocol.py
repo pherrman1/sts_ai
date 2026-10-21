@@ -247,6 +247,34 @@ class LiveOocProtocol(unittest.TestCase):
             response, = self.run_rows([variant], model=False, floor_model=False, policy="mcts")
             self.assertEqual(response["status"], "ERROR", (phase, response))
 
+    def test_joust_halt_continue_is_forced(self):
+        # Live-canary problem 69 (seed 111200467, Act 2 floor 27): TheJoust$CUR_SCREEN
+        # opens on HALT with the sole [Continue]; there is no INTRO page. The
+        # producer refused it (EVENT_PHASE_UNREPRESENTABLE:The Joust:HALT); the
+        # fixed producer marks it a vanilla event_continue.
+        def joust(phase, options=1):
+            observation = copy.deepcopy(self.fixtures["neow"])
+            ooc = observation["ooc"]
+            ooc["details"].update(event="The Joust", eventContract="vanilla_v1",
+                                  mechanicalTransition="event_continue")
+            ooc["event"] = dict(id="The Joust", phase=phase,
+                                options=[dict(index=i, disabled=False) for i in range(options)])
+            ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=i, group=0),
+                                       liveAction=dict(kind="choose", choiceIndex=i + 1))
+                                  for i in range(options)]
+            return observation
+        response, = self.run_rows([joust("HALT")], model=False)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["valueSemantics"], "forced_no_search")
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="choose", choiceIndex=1))
+        response, = self.run_rows([joust("HALT")], model=False,
+                                  extra_env={"STS_IMPORTER_JOUST_HALT_FIX": "0"})
+        self.assertEqual(response["status"], "ERROR", response)
+        for observation in (joust("INTRO"), joust("EXPLANATION"), joust("HALT", options=2)):
+            response, = self.run_rows([observation], model=False)
+            self.assertEqual(response["status"], "ERROR", (observation["ooc"]["event"], response))
+
     def test_du_vu_doll_counter_must_match_master_deck_curses(self):
         # Live-canary problem 46: Java DuVuDoll's counter is the master deck's
         # CURSE-type card count, Ascender's Bane included.

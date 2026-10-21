@@ -423,11 +423,13 @@ final class RunicDomeTracker {
     }
 
     static boolean monsterPowerAllowed(String id, String monster) {
-        return Arrays.asList("Strength","Artifact","Weak","Weakened","Vulnerable","Block Return","Choked","Corpse Explosion",
-                "Lockon","Mark","Metallicize","Plated Armor","Poison","Regenerate","Shackled").contains(id)
+        // Vanilla POWER_IDs (RunicDomeTrackerTest checks them against the jar): Block Return, Corpse Explosion and Mark
+        // are "BlockReturnPower", "CorpseExplosionPower" and "PathToVictoryPower".
+        return Arrays.asList("Strength","Artifact","Weak","Weakened","Vulnerable","BlockReturnPower","Choked","CorpseExplosionPower",
+                "Lockon","PathToVictoryPower","Metallicize","Plated Armor","Poison","Regenerate","Shackled").contains(id)
                 || (split(monster) && "Split".equals(id))
                 || (("FuzzyLouseNormal".equals(monster)||"FuzzyLouseDefensive".equals(monster)) && "Curl Up".equals(id))
-                || ("Darkling".equals(monster) && "Regrow".equals(id))
+                || ("Darkling".equals(monster) && "Life Link".equals(id)) // RegrowPower.POWER_ID
                 || (("Dagger".equals(monster)||"TorchHead".equals(monster)||"BronzeOrb".equals(monster)||monster.startsWith("Gremlin")) && "Minion".equals(id))
                 || ("BronzeOrb".equals(monster) && "Stasis".equals(id))
                 || ("Cultist".equals(monster) && "Ritual".equals(id))
