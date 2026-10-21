@@ -22633,7 +22633,7 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
-## §TBD — Live advisor: Headbutt grounding a living Byrd was refused (2026-10-21)
+## §617 — Live advisor: Headbutt grounding a living Byrd was refused (2026-10-21)
 
 **Question:** why did live seed 111200490 (release 8aa99624) stop at Headbutt's grid with
 `silver_selection_pending_actions` after a non-lethal hit on the last Byrd at Flight 1 (problem 80 in
