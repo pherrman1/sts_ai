@@ -22208,6 +22208,16 @@ Seeds: none.
 
 **Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
 
+## §610 — Live problem 79: a Courier shop restock lost its card slot after a restart into the shop (2026-10-21)
+
+**Observation.** Live A20 seed 111200487 (release 8102ebcc, act 3 shop, floor 41, The Courier owned): Metallicize was bought, The Courier restocked Juggernaut, and the next capture threw `IllegalArgumentException: shop replacement slot unrepresented` (LiveOocCapture IdentityShopSlots.index), ending the run. The retry after a restart failed the same way.
+
+**Cause.** The mod resolved a restock's slot by the card's `target_x:target_y`, cached when the shop was first captured. `ShopScreen.updateCards` re-derives card positions from the rug every frame, and the rug slides in after a game restart into the shop. A cache taken mid-slide never matches the settled position of the restock.
+
+**Change (producer-only mod fix, no flag).** Slots are tracked by identity. A restock not yet known inherits the slot of the card that held its list index in the previously captured `coloredCards`/`colorlessCards`, provided that card has left the list. This is the index `purchaseCard` sets the restock at, and it stays correct after an earlier non-Courier purchase shifted the list. Positions are no longer read. Unit test in LiveOocCaptureTest. The emitted shop state is unchanged wherever the old code worked.
+
+**Knowledge impact:** shop slot identity no longer depends on render state.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

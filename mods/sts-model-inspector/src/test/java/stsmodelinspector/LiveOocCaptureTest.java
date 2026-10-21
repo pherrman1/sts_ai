@@ -138,6 +138,19 @@ public final class LiveOocCaptureTest {
                     || !Integer.valueOf(1).equals(((Map<?,?>)choices.get(0).get("nativeAction")).get("index"))))
                 throw new AssertionError("shop potion physical choice index shifted");
         }
+        // Problem 79: a Courier replacement inherits the bought card's slot by
+        // list index, also after an earlier non-Courier purchase shifted the list.
+        Object a=new Object(),b=new Object(),c=new Object(),d=new Object(),e=new Object(),x=new Object(),y=new Object();
+        Map<Object,Integer> shopSlots=new java.util.IdentityHashMap<>();
+        shopSlots.put(a,0);shopSlots.put(b,1);shopSlots.put(c,2);shopSlots.put(d,3);shopSlots.put(e,4);
+        if(!Integer.valueOf(1).equals(LiveOocCapture.replacementSlot(java.util.Arrays.asList(a,x,c,d,e),
+                java.util.Arrays.asList(a,b,c,d,e),shopSlots,x)))throw new AssertionError("Courier replacement slot");
+        if(!Integer.valueOf(2).equals(LiveOocCapture.replacementSlot(java.util.Arrays.asList(b,y,d,e),
+                java.util.Arrays.asList(b,c,d,e),shopSlots,y)))throw new AssertionError("Courier slot after a removal");
+        if(LiveOocCapture.replacementSlot(java.util.Arrays.asList(a,b,c,d,e),java.util.Arrays.asList(a,b,c,d,e),shopSlots,x)!=null
+                || LiveOocCapture.replacementSlot(java.util.Arrays.asList(x,a,c,d,e),java.util.Arrays.asList(a,b,c,d,e),shopSlots,x)!=null
+                || LiveOocCapture.replacementSlot(java.util.Arrays.asList(a,c,d,e,x),java.util.Arrays.asList(a,c,d,e),shopSlots,x)!=null)
+            throw new AssertionError("unrepresented shop replacement accepted");
         java.util.List<Object> libraryCards=new java.util.ArrayList<>();
         java.util.List<String> libraryLabels=new java.util.ArrayList<>();
         for(int i=0;i<20;++i) {
