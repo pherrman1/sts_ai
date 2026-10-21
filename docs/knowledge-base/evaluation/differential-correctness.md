@@ -236,7 +236,9 @@ Sacred Bark and 20% with it, the reverse of the game.
   `ChangeStateAction` "Defensive Mode", seed 111200388 floor 16; louse Curl Up
   `ChangeStateAction` "CLOSED", `GainBlockAction` and `RemoveSpecificPowerAction`,
   seed 111200389 floor 5; Headbutt killing a Darkling to half-dead, its queued
-  Regrow `SetMoveAction`, seed 111200400 floor 35). The producer now emits them and
+  Regrow `SetMoveAction`, seed 111200400 floor 35; a lethal Headbutt into a Byrd,
+  whose Flight `ReducePowerAction` stays queued, seed 111200421 floor 28; Headbutt
+  removing Donu's last Plated Armor, seed 111200422 floor 50). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
 - The run stopped on a Discovery choice under Hex
   (`silver_card_reward_pending_actions`, seed 111200415 floor 21, Chosen and
@@ -410,6 +412,22 @@ built a fresh base-cost Anger. `STS_ANGER_COPY_COST_FIX` (default on, `=0`
 restores) copies both costs from the played card. **Open question:**
 `makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, and no
 live trace has shown a free Anger copy yet.
+
+Seed 111200448 (live problem 59): Armaments+ upgraded a Blood for Blood whose
+cost a hit had reduced to 3. The game ended at 2/2 (Java `BloodForBlood.upgrade`
+calls `upgradeBaseCost(cost - 1)`), native at 3/3, because the generic upgrade
+path reset both costs to the upgraded base. `STS_UPGRADE_COST_DELTA_FIX`
+(default on, `=0` restores) follows Java `upgradeBaseCost` for every in-combat
+upgrade (Armaments, Apotheosis, ...): Blood for Blood keeps its reduction, and a
+cost-changing upgrade keeps the card's `costForTurn - cost` difference.
+
+Seed 111200445 (live problem 54): a Headbutt that moved Pen Nib's counter
+from 8 to 9 imported with the Pen Nib status bit already set, while native
+still held its `BuffPlayer<PEN_NIB>` behind the Headbutt grid. The importer
+turned the counter-9 sentinel into the bit even though the game's PenNibPower
+was only queued. `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0`
+restores) leaves the bit clear while a pending Pen Nib buff is queued and no
+Pen Nib power is present.
 
 Seed 111200436 (live problem 42): Fiend Fire grounded a Byrd at 1 HP, and
 native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit

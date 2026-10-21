@@ -39,6 +39,13 @@ namespace sts {
         throw std::runtime_error("STS_ANGER_COPY_COST_FIX must be 0 or 1");
     }
 
+    bool upgradeCostDeltaFix() {
+        const char *value = std::getenv("STS_UPGRADE_COST_DELTA_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_UPGRADE_COST_DELTA_FIX must be 0 or 1");
+    }
+
     bool byrdGroundedFlightFix() {
         const char *value = std::getenv("STS_BYRD_GROUNDED_FLIGHT_FIX");
         if (!value || !*value || std::string(value) == "1") return true;

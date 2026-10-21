@@ -65,6 +65,8 @@ final class LiveEventCapture {
         phases(CONTINUES,"FAIL","DeadAdventurer");
         phases(CONTINUES,"PRE_COMBAT","MysteriousSphere");
         phases(CONTINUES,"FIGHT","MindBloom");
+        // Stomp sets screenNum 2: the "Ambushed!" page whose sole [Fight] enters the Mushroom fight.
+        phases(CONTINUES,"2","Mushrooms");
         phases(CONTINUES,"ACCEPT","SecretPortal");
         phases(CONTINUES,"INTRO|RULE_EXPLANATION","GremlinMatchGame");
     }

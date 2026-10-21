@@ -146,6 +146,14 @@ add_test(NAME anger_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(anger_copy_cost PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(upgrade_cost_delta_test tests/upgrade_cost_delta_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(upgrade_cost_delta_test PRIVATE include json/include)
+add_test(NAME upgrade_cost_delta COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:upgrade_cost_delta_test>)
+set_tests_properties(upgrade_cost_delta PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(byrd_grounded_flight_test tests/byrd_grounded_flight_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(byrd_grounded_flight_test PRIVATE include json/include)

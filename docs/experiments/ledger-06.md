@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §579 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
+## §583 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d) show Anger cost diffs in the discard and draw piles at
 four steps (parity1 s77/s355, parity2 s57, parity3 s2; problem 43 in `engine-parity/overnight-20261019/ISSUES.md` on
@@ -22015,6 +22015,26 @@ Play-changing under Confusion (Snecko), unmeasured.
 **Open question:** `makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, unverified against the JAR
 and not seen live.
 Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
+## §581 — Live Headbutt grids refused after a lethal hit on a Byrd and after Plated Armor 1 on Donu (2026-10-20)
+
+**Question:** why did live runs stop at Headbutt's discard grid with `silver_selection_pending_actions` on seeds
+111200421 (floor 28), 111200430 (floor 18), 111200439 (floor 21; problems 35 and 49), 111200460 (floor 18, a
+lethal hit on a Flight 1 Byrd) and 111200422 (floor 50, problem 36) in `engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's failure snapshots and extracts (`issue49-extract.json`: a 7 HP Flight 3 Byrd hit for exactly
+7); the native-vs-Java parity loop in `live_silver_importer_test` (Headbutt variants 7, 8 and 9; no gameplay seeds).
+**Result:** a lethal hit still queues `FlightPower`'s (or `PlatedArmorPower`'s) `ReducePowerAction`, because
+`onAttacked`/`wasHPLost` run before `die()` and `FlightPower` tests `calculateDamageTakenAmount` (which halves again)
+against HP. The producer and importer refused a dead target. Plated Armor 1 queues the reduction that removes the
+power, which the importer refused for every monster because of Shelled Parasite's stun. Native applies both at the hit.
+**Interpretation:** `STS_SILVER_LETHAL_REACTION_QUEUE` and `STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE` (default on, `=0`
+restores the refusal) fold both into the native state. On a lethal hit at Flight 1, native stuns the Byrd and
+sets Flight 0 before the death, and the fold does the same. Grounding a living Byrd and Shelled Parasite's stun stay
+unsupported.
+Live-import support only; native play is unchanged. `pendingActionsBlocker` now names queued power actions, so the
+unexplained problem 37 (seed 111200425) will show its source.
+Seeds: none new (live seeds as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`,
+`evaluation/differential-correctness.md`.
 ## §578 — Live combat parity: a grounded Byrd kept its Flight status natively (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d, parity1 step 516, Fiend Fire) show
@@ -22096,6 +22116,55 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §582 — Live combat parity: an in-combat upgrade reset Blood for Blood's damage-taken reduction (2026-10-20)
+
+**Question:** why did live seed 111200448 (release 9ec8a51d, step 8, Armaments+) leave a Blood for Blood at 2/2 in the
+game and 3/3 natively (problem 59 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (cost 3 before the upgrade: base 4, one hit this combat); `upgrade_cost_delta_test`
+(no gameplay seeds).
+**Result:** `CardInstance::upgrade` applied Blood for Blood's `upgradeBaseCost(cost - 1)` and then, because the
+upgraded base cost differs, its generic branch set `cost = costForTurn = 3`. Java has no generic branch: each card's
+`upgrade` calls `upgradeBaseCost`, which keeps `costForTurn - cost`. The same reset hit every cost-changing upgrade of a
+card with a turn-cost modification, and a fully reduced (0-cost) Blood for Blood upgraded to 3.
+**Interpretation:** `STS_UPGRADE_COST_DELTA_FIX` (default on, `=0` restores) follows Java `upgradeBaseCost` for all
+in-combat upgrades (Armaments, Apotheosis, other hand/pile upgrades). Play-changing, unmeasured; unmodified cards
+upgrade as before.
+Seeds: none new (live seed 111200448 as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+## §580 — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable; the True Victory cutscene timed out (2026-10-20)
+
+**Question:** why did live seed 111200446 (floor 10, release 9ec8a51d) stop after the advisor chose "[Stomp] Anger the
+Mushrooms" (problem 57 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue57-observation.json`, now `tests/fixtures/live_mushrooms_ambush.json`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** Stomp sets Mushrooms' `screenNum` to 2, the "Ambushed!" page whose sole option [Fight] starts the fight. The
+mod's event tables qualified only the decision page 0 and the leave page 1, so it refused page 2 with
+`EVENT_PHASE_UNREPRESENTABLE:Mushrooms:2`; it recurs whenever Stomp is picked.
+**Interpretation:** the mod adds page 2 to its `event_continue` table; `STS_IMPORTER_MUSHROOMS_FIGHT_FIX` (default on,
+`=0` restores the refusal) qualifies exactly that page, and the advisor passes it through (`forced_no_search`). The live
+capture with the fixed producer's two fields reproduces the pass-through.
+Same PR, live problem 60 (seed 111200449, the first fully autonomous live A20 win): after the Heart's Proceed the game
+sits in `TrueVictoryRoom` (`NO_INTERACT`, never `ready_for_command`) and the driver timed out, so the win was logged as
+abandoned. The driver now treats `TrueVictoryRoom` as a terminal victory (UI only, no flag).
+**Open question:** the following Mushroom fight and its reward (Odd Mushroom) are not exercised here.
+Seeds: none new (live seed 111200446 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §579 — Live combat parity: Pen Nib armed behind a Headbutt grid imported as already applied (2026-10-20)
+
+**Question:** why did live seed 111200445 (release 9ec8a51d, parity2 step 431, Headbutt → Jaw Worm) show
+`player.statusBits0` with bit 24 (`PEN_NIB`) in the game projection and not natively (problem 54 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue54-extract.json`: Pen Nib counter 8 → 9, no PenNibPower before or after the
+step); the importer's typed pending-tail test in `live_silver_importer_test` (no gameplay seeds).
+**Result:** both Java `PenNib.onUseCard` and native queue the Pen Nib buff with `addToBot` at counter 9, so at
+Headbutt's grid it is still pending in both. The importer, however, turned the counter-9 sentinel into the status bit
+at once, so the imported game state had Pen Nib applied early (bit set, buff still queued) while native had it
+only pending.
+**Interpretation:** `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0` restores) leaves the bit clear while a pending
+Pen Nib buff is queued and no Pen Nib power is present. Live-import only; native play is unchanged, and the next
+attack is doubled either way once the queue resolves.
+Seeds: none new (live seed 111200445 as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §577 — AZ gen 1b value head as an OOC leaf value: offline numbers, flag and a prepared (not launched) A/B (2026-10-20)
 
 **Question:** Philipp (2026-10-20 20:34Z): test gen 1b's value head (§573) offline first, then prepare an online
