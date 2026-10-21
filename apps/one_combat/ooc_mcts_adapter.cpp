@@ -4129,8 +4129,9 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // A full-budget root drops the early stops, as the root-lock observer does,
     // but keeps the singleton shortcut: a sole action has no policy target.
     fullBudget = fullBudget && !sole;
-    // Fast roots of a playout-cap-randomized run stop at the cap at the latest.
-    const bool fastCapped = liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
+    // Fast roots of a playout-cap-randomized run (the real policy step) stop at the cap at the latest;
+    // offline decision scoring keeps the whole budget.
+    const bool fastCapped = explore && liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
     if (fastCapped) simulations = liveFastRootCap;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
     if (liveLearnedStopNet && !fullBudget && !sole) {
