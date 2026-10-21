@@ -2197,17 +2197,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     // wakeMetallicize, the same rule in both states of
                     // STS_LAGAVULIN_WAKE_METALLICIZE_FIX); the producer has
                     // already set OPEN, so only the reduction is pending.
-                    // Java removes a power reduced to 0 or below; a
-                    // Metallicize under 8 stays unsupported.
+                    // ReducePowerAction removes the power when 8 or less.
                     auto &metallicize=monster.smallPowers[6];
                     if(!lagavulinOpenQueue() || slot!=0 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::LAGAVULIN)
                             || has(sts::MonsterStatus::ASLEEP) || !has(sts::MonsterStatus::METALLICIZE)
                             || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::LAGAVULIN_SLEEP)
                             || amount<1 || amount!=metallicize)
                         return unsupported("silver_selection_pending_actions");
-                    const bool reduce=sts::lagavulinWakeMetallicizeFix();
-                    if(reduce && metallicize<8) return unsupported("silver_selection_pending_actions");
-                    metallicize=reduce?metallicize-8:0;
+                    metallicize=sts::lagavulinWakeMetallicizeFix() && metallicize>8?metallicize-8:0;
                     if(metallicize==0) monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::METALLICIZE));
                     continue;
                 }

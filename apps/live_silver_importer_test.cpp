@@ -4552,15 +4552,15 @@ int main(int argc, char **argv) {
             // sleeping Lagavulin opens its GRID with ChangeStateAction("OPEN")
             // still queued; its Metallicize reduction is pending in Java and
             // already applied at the hit in native. Metallicize 12 shows the
-            // reduction is -8 (#745), not a removal.
-            for (const char *wakeFix : {"1", "0"}) {
+            // reduction is -8 (#745), not a removal; 8 is removed.
+            for (const int metal : {12, 8}) for (const char *wakeFix : {"1", "0"}) {
                 setenv("STS_LAGAVULIN_WAKE_METALLICIZE_FIX",wakeFix,1);
                 const bool reduce=std::string(wakeFix)=="1";
                 GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
                 game.act=1; game.floorNum=7;
                 BattleContext live; live.init(game, MonsterEncounter::LAGAVULIN);
                 auto &laga=live.monsters.arr[0];
-                laga.setStatus<MonsterStatus::METALLICIZE>(12); laga.block=0;
+                laga.setStatus<MonsterStatus::METALLICIZE>(metal); laga.block=0;
                 for (int played=0;played<2;++played) {
                     CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(930+played);
                     live.cards.moveToHand(defend); live.player.energy=3;
@@ -4572,8 +4572,8 @@ int main(int argc, char **argv) {
                 sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
                 if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
                         || laga.hasStatus<MonsterStatus::ASLEEP>() || laga.moveHistory[0]!=MonsterMoveId::LAGAVULIN_SLEEP
-                        || laga.getStatus<MonsterStatus::METALLICIZE>()!=(reduce?4:0)
-                        || laga.hasStatus<MonsterStatus::METALLICIZE>()!=reduce)
+                        || laga.getStatus<MonsterStatus::METALLICIZE>()!=(reduce && metal>8?metal-8:0)
+                        || laga.hasStatus<MonsterStatus::METALLICIZE>()!=(reduce && metal>8))
                     throw std::runtime_error("native Headbutt did not wake the Lagavulin at the hit");
                 CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
                 auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
@@ -4589,16 +4589,16 @@ int main(int argc, char **argv) {
                     combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
                         {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
                 combat["pendingCardQueue"]=json::array();
-                // Java form: OPEN (4) is set, Metallicize keeps 12 until the
+                // Java form: OPEN (4) is set, Metallicize keeps its amount until the
                 // queued ReducePowerAction runs.
                 auto &javaLaga=combat["monsters"][0];
                 javaLaga["nextMove"]=4;
                 bool sawMetallicize=false;
                 for(auto &power:javaLaga["powers"])
-                    if(power.at("id")=="Metallicize") {power["amount"]=12;sawMetallicize=true;}
-                if(!sawMetallicize) javaLaga["powers"].push_back({{"id","Metallicize"},{"amount",12}});
+                    if(power.at("id")=="Metallicize") {power["amount"]=metal;sawMetallicize=true;}
+                if(!sawMetallicize) javaLaga["powers"].push_back({{"id","Metallicize"},{"amount",metal}});
                 combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
-                    json{{"kind","MONSTER_LAGAVULIN_OPEN"},{"amount",12},{"slot",0}}});
+                    json{{"kind","MONSTER_LAGAVULIN_OPEN"},{"amount",metal},{"slot",0}}});
                 const auto imported=one_combat::advisor::importSilverRoot(observation);
                 if(!imported.ok) throw std::runtime_error("Lagavulin Headbutt import: "+imported.reason);
                 if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
@@ -4635,7 +4635,7 @@ int main(int argc, char **argv) {
                 // Fail closed: an amount that is not the observed Metallicize,
                 // a Lagavulin still asleep, and the flag's legacy refusal.
                 auto broken=observation;
-                broken["silverRoot"]["combat"]["pendingActionQueue"][1]["amount"]=8;
+                broken["silverRoot"]["combat"]["pendingActionQueue"][1]["amount"]=metal+1;
                 if(one_combat::advisor::importSilverRoot(broken).ok)
                     throw std::runtime_error("Lagavulin OPEN with a wrong Metallicize was accepted");
                 auto sleeping=observation;
