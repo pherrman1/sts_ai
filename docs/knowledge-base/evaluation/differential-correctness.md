@@ -236,7 +236,9 @@ Sacred Bark and 20% with it, the reverse of the game.
   `ChangeStateAction` "Defensive Mode", seed 111200388 floor 16; louse Curl Up
   `ChangeStateAction` "CLOSED", `GainBlockAction` and `RemoveSpecificPowerAction`,
   seed 111200389 floor 5; Headbutt killing a Darkling to half-dead, its queued
-  Regrow `SetMoveAction`, seed 111200400 floor 35). The producer now emits them and
+  Regrow `SetMoveAction`, seed 111200400 floor 35; a lethal Headbutt into a Byrd,
+  whose Flight `ReducePowerAction` stays queued, seed 111200421 floor 28; Headbutt
+  removing Donu's last Plated Armor, seed 111200422 floor 50). The producer now emits them and
   the importer imports them; see live-model-inspector.md.
 - The run stopped on a Discovery choice under Hex
   (`silver_card_reward_pending_actions`, seed 111200415 floor 21, Chosen and
@@ -352,6 +354,15 @@ restores) grows the count only to `placeIdx+2`
 `endHpGameMinusNative` of 6 at s221 is Burning Blood healing after combat,
 which Java applies before the inspector's post snapshot.
 
+A run on 2026-10-20 (seed 111200459, Awakened One, problem 64(d)) played
+Purity as the last card in hand on Letter Opener's third skill. The game
+finished the play at once (no selection, every monster 5 HP lower); native
+opened an empty `EXHAUST_MANY` selection with Letter Opener's damage queued
+behind it. Java `ExhaustAction.update` sets `isDone` when the hand is empty
+before any screen opens; native `ExhaustMany` had no such guard.
+`STS_EXHAUST_EMPTY_HAND_FIX` (default on, `=0` restores) adds it
+(`tests/exhaust_empty_hand_test.cpp`).
+
 A run on 2026-10-19 (seed 111194463, Act 3) stopped when the bot played
 Panache, because the live importer refused it. Java `PanachePower.amount` is
 the cards-left countdown and the damage is a private `damage` field, which the
@@ -419,6 +430,37 @@ representation-only differences that no native decision reads:
 - The move before last of Hexaghost, Taskmaster and Fat Gremlin. Java appends
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
+
+Seed 111200436 (live problem 43, four steps): under Confusion, Anger's
+discard copy cost 1/1 in the game and 0/0 natively. Java `Anger.use` queues
+`makeStatEquivalentCopy()`, which copies `cost` and `costForTurn`; native
+built a fresh base-cost Anger. `STS_ANGER_COPY_COST_FIX` (default on, `=0`
+restores) copies both costs from the played card. **Open question:**
+`makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, and no
+live trace has shown a free Anger copy yet.
+
+Seed 111200448 (live problem 59): Armaments+ upgraded a Blood for Blood whose
+cost a hit had reduced to 3. The game ended at 2/2 (Java `BloodForBlood.upgrade`
+calls `upgradeBaseCost(cost - 1)`), native at 3/3, because the generic upgrade
+path reset both costs to the upgraded base. `STS_UPGRADE_COST_DELTA_FIX`
+(default on, `=0` restores) follows Java `upgradeBaseCost` for every in-combat
+upgrade (Armaments, Apotheosis, ...): Blood for Blood keeps its reduction, and a
+cost-changing upgrade keeps the card's `costForTurn - cost` difference.
+
+Seed 111200445 (live problem 54): a Headbutt that moved Pen Nib's counter
+from 8 to 9 imported with the Pen Nib status bit already set, while native
+still held its `BuffPlayer<PEN_NIB>` behind the Headbutt grid. The importer
+turned the counter-9 sentinel into the bit even though the game's PenNibPower
+was only queued. `STS_IMPORTER_PEN_NIB_PENDING_FIX` (default on, `=0`
+restores) leaves the bit clear while a pending Pen Nib buff is queued and no
+Pen Nib power is present.
+
+Seed 111200436 (live problem 42): Fiend Fire grounded a Byrd at 1 HP, and
+native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
+20). Java `ReducePowerAction` removes the power, so the grounded Byrd takes
+full damage and gets no Flight back at its next start of turn; native still
+halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
+`STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).

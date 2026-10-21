@@ -1679,8 +1679,12 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             break;
 
         case MMID::DONU_CIRCLE_OF_POWER:
-            bc.monsters.arr[0].buff<MS::STRENGTH>(3); // shouldn't matter if deca is dead
+        {
+            // ApplyPowerAction skips a dead Deca (STS_DEAD_ALLY_STRENGTH_FIX=0 restores).
+            auto &deca = bc.monsters.arr[0];
+            if (!(deca.isDeadOrEscaped() && deadAllyStrengthFix())) deca.buff<MS::STRENGTH>(3);
             buff<MS::STRENGTH>(3);
+        }
             setMove(MonsterMoveId::DONU_BEAM);
             bc.addToBot(Actions::NoOpRollMove());
             break;
@@ -1695,11 +1699,14 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
         case MMID::DECA_SQUARE_OF_PROTECTION: {
             auto &deca = *this;
             auto &donu = bc.monsters.arr[1];
+            // Java queues block and Plated Armor per monster; both actions
+            // skip a dying target (STS_DEAD_ALLY_BLOCK_FIX=0 restores).
+            const bool donuGains = !(donu.isDying() && !donu.isHalfDead() && deadAllyBlockFix());
             deca.addBlock(16);
-            donu.addBlock(16);
+            if (donuGains) donu.addBlock(16);
             if (asc19) {
                 deca.buff<MS::PLATED_ARMOR>(3);
-                donu.buff<MS::PLATED_ARMOR>(3);
+                if (donuGains) donu.buff<MS::PLATED_ARMOR>(3);
             }
             setMove(MonsterMoveId::DECA_BEAM);
             bc.addToBot(Actions::NoOpRollMove());
@@ -1784,7 +1791,9 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::SPIRE_SHIELD_FORTIFY: // 2
             addBlock(30);
-            bc.monsters.arr[1].addBlock(30);
+            // GainBlockAction skips a dead Spear (STS_DEAD_ALLY_BLOCK_FIX=0 restores).
+            if (!(bc.monsters.arr[1].isDying() && !bc.monsters.arr[1].isHalfDead() && deadAllyBlockFix()))
+                bc.monsters.arr[1].addBlock(30);
             if (lastMoveBefore(MonsterMoveId::SPIRE_SHIELD_SMASH) || lastMoveBefore(MonsterMoveId::INVALID)) {
                 setMove(MonsterMoveId::SPIRE_SHIELD_BASH);
             } else {
@@ -1819,7 +1828,9 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 
         case MMID::SPIRE_SPEAR_PIERCER: // 2
             buff<MS::STRENGTH>(2);
-            bc.monsters.arr[0].buff<MS::STRENGTH>(2);
+            // ApplyPowerAction skips a dead Shield (STS_DEAD_ALLY_STRENGTH_FIX=0 restores).
+            if (!(bc.monsters.arr[0].isDeadOrEscaped() && deadAllyStrengthFix()))
+                bc.monsters.arr[0].buff<MS::STRENGTH>(2);
             if (lastMoveBefore(MonsterMoveId::SPIRE_SPEAR_SKEWER)) {
                 setMove(MonsterMoveId::SPIRE_SPEAR_BURN_STRIKE);
             } else {

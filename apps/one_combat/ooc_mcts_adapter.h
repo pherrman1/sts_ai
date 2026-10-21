@@ -37,12 +37,15 @@ struct OocContinuationMetrics {
     std::map<std::string, std::uint64_t> heart1LeafReasons;
     // STS_OOC_MCTS_LEAF_STUDENT: leaves valued by the §494 student, and those that kept their rollout.
     std::uint64_t studentLeafEvaluations = 0, studentLeafFallbacks = 0;
+    // STS_OOC_MCTS_LEAF_HEART1_VALUE: leaf values from the heart1 value head, and those that kept X2-B.
+    std::uint64_t heart1ValueLeafEvaluations = 0, heart1ValueLeafFallbacks = 0;
 };
 class ScreenLeafNet;
 class ScreenLeafGbm;
 class RolloutStudent;
 struct CompactTreeNet;
 class HeartLeafModel;
+namespace heart1 { class Net; }
 // Learned OOC stop (STS_OOC_MCTS_LEARNED_STOP): features in tools/ooc_learned_stop.py order, model loader,
 // and the ooclearnedstoptest parity command.
 std::vector<float> oocLearnedStopFeatures(std::uint64_t simulations,
@@ -131,6 +134,12 @@ struct OocAdapterOptions {
     // prediction on their X2-B anchor instead of a rollout; others keep the rollout.
     std::shared_ptr<const RolloutStudent> rolloutStudent;
     std::string rolloutStudentPath;
+    // Research option (default unset, STS_OOC_MCTS_LEAF_HEART1_VALUE=<weights.bin>): the X2-B evaluation at
+    // the end of a leaf rollout (and at any other native anchor) becomes sigmoid(value head) of these
+    // heart1-format weights (e.g. AZ gen 1b) wherever heart1 encodes the state; elsewhere it stays X2-B.
+    // Rollouts, their policy and the tree prior are unchanged.
+    std::shared_ptr<const heart1::Net> heart1ValueNet;
+    std::string heart1ValuePath, heart1ValueSha256;
     // Optional per-decision thread CPU allowance; checked between simulations.
     // Zero preserves the simulation-bounded search. Never includes real combat.
     double cpuBudgetSeconds = 0;
@@ -376,7 +385,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHi
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
     OocContinuationMetrics * = nullptr,
     std::optional<OocGameContextModel::Candidate> *selected = nullptr,
-    nlohmann::json *rootActions = nullptr, bool fullBudget = false);
+    nlohmann::json *rootActions = nullptr, bool fullBudget = false, bool explore = false);
 // Research (issue #605 Heart leaf targets): `repeats` leaf evaluations of the
 // snapshot root under the live configuration, each from a fresh stream seeded
 // by (salt, r). `atEnd` receives every rollout endpoint that the leaf model
