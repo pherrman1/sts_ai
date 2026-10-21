@@ -1,0 +1,2 @@
+export sha256 cd9a049a3b35da9327bbe42a509b6b8e61f4354d7b13a4845b88e04875eae5e7
+VD_T1_alpha1_v1 records 400 logits 1652 max|dlogit| 1.1e-05 max|dvalue| 1.43e-06 argmax mismatches 0

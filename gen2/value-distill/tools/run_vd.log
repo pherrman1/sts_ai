@@ -3,3 +3,5 @@
 2026-10-21T15:45:05Z labeled raw heart1
 2026-10-21T16:03:08Z run VD_T1_alpha1_v0.3 EXIT 0
 2026-10-21T16:21:44Z run VD_T1_alpha0.5_v0.3 EXIT 0
+nohup: failed to run command './run_vd2.sh': Permission denied
+2026-10-21T16:51:45Z run VD_T1_alpha1_v1 EXIT 0
