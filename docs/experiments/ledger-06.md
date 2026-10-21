@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live combat parity: Curiosity never gave the Awakened One Strength natively (2026-10-21)
+## §597 — Live combat parity: Curiosity never gave the Awakened One Strength natively (2026-10-21)
 
 **Question:** why was the Awakened One's Strength game N+2 vs native N after every Power play (live seed 111200436,
 problem 45), and exactly 2 lower for the rest of the fight in seed 111200459 seg2 (problem 65; s856 Inflame)?
