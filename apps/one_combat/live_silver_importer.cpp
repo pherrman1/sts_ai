@@ -842,6 +842,17 @@ bool domeReactiveFix() {
     throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX must be 0 or 1");
 }
 
+// A split/summon child rolls its first move in init(), before SpawnMonsterAction
+// adds it to the group, so that roll's aliveCount can be 0 (live problem 63:
+// the first Slime Boss child sees only the dead boss). =0 restores the legacy
+// aliveCount >= 1 requirement for every row.
+bool domeNewbornAliveFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX must be 0 or 1");
+}
+
 // Audited stable-slot monsters whose next roll depends on public executed history.
 // Spot Weakness carries only its public attack predicate for the pending roll.
 // Generators and unaudited monster lifecycles remain outside this domain.
@@ -867,7 +878,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                     || wire.monsters[slot].id!=static_cast<int>(sts::MonsterId::INVALID))return "silver_runic_dome_occupant_schema";
             wire.monsters[slot].occupantGeneration=0;continue;
         }
-        int birthTurn=0,rollTurn=0,lastExecution=-1;bool unexecutedInitial=false;
+        int birthTurn=0,rollTurn=0,lastExecution=-1;bool unexecutedInitial=false,newbornRoll=false;
         if(bound) {
             if(!validInteger(k,"schemaVersion",4,4) || !validInteger(k,"historySchemaVersion",1,3)
                     || !validInteger(k,"occupantGeneration",1,1000000) || !validInteger(k,"birthGlobalTurn",0,wire.turn)
@@ -886,6 +897,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             if((kind=="initial"?(birthTurn!=0 || k.at("occupantGeneration")!=1 || k.at("birthParentSlot")!=-1 || k.at("birthParentGeneration")!=0)
                     :((kind!="split" && kind!="summon") || birthTurn<1 || k.at("birthParentSlot")==-1 || k.at("birthParentGeneration")==0))
                     || rollTurn<birthTurn || (lastExecution!=-1 && lastExecution<birthTurn))return "silver_runic_dome_occupant_schema";
+            newbornRoll=kind!="initial" && rollTurn==birthTurn && domeNewbornAliveFix();
             wire.monsters[slot].occupantGeneration=k.at("occupantGeneration").get<std::uint32_t>();
             k["schemaVersion"]=k.at("historySchemaVersion");
         }
@@ -1219,7 +1231,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(multi) {
             if(!integer("firstHp",0,999) || !integer("firstMaxHp",1,999) || k.at("firstHp")>k.at("firstMaxHp")
                     || !k.contains("firstAlive") || !k.at("firstAlive").is_boolean()
-                    || !integer("aliveCount",1,wire.monsterCount)) return "silver_runic_dome_history_schema";
+                    || !integer("aliveCount",newbornRoll?0:1,wire.monsterCount)) return "silver_runic_dome_history_schema";
             inputs.knightCurHp=k.at("firstHp").get<int>();inputs.knightMaxHp=k.at("firstMaxHp").get<int>();
             inputs.knightAlive=k.at("firstAlive").get<bool>();inputs.aliveCount=k.at("aliveCount").get<int>();
             inputs.monstersAlive=inputs.aliveCount;
