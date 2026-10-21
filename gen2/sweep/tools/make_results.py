@@ -36,7 +36,10 @@ out += ["## Architectures (random init, anchor weight 0, at the best grid point 
         table(sorted(glob.glob(f"{R}/sweep/A_*"))), ""]
 out += ["## Seed reruns of the pick and the 40-epoch cap check\n",
         table(sorted(glob.glob(f"{R}/sweep/S_d64L2_lr1e-4_a0.3_v0.3_*")), key=lambda i: i["name"]), ""]
-out += ["## Stage T\n", table(sorted(glob.glob(f"{R}/sweep/T*")) + sorted(glob.glob(f"{R}/sweep/E_*")), key=lambda i: i["name"]), ""]
+out += ["## Stage T (T1 teacher scored on π' directly; T3's own run targets teacher logits, so its π' numbers are E_T3_on_gen2)\n",
+        table(sorted(glob.glob(f"{R}/sweep/T*")) + [f"{R}/sweep/E_T3_on_gen2"], key=lambda i: i["name"]), ""]
+out += ["## Reference, reported last and never used to choose (lr-0 single-epoch passes = the net unchanged, same folds)\n",
+        table([f"{R}/sweep/E_student_sel", f"{R}/sweep/E_gen1b", f"{R}/sweep/S_d64L2_lr1e-4_a0.3_v0.3_s0"], key=lambda i: i["name"]), ""]
 out += ["## Side test: full data (no value subsample), pack + val-at-end — stopped after 7 points by decision\n", table(sorted(glob.glob(f"{R}/sweep_full/*"))), ""]
 out += ["## Side test: value subsample (K per run per epoch), recipe lr 3e-4 / a1 / v1\n", table(sorted(glob.glob(f"{R}/ktest/K_*")) + [f"{R}/sweep_nopack/S_d64L2_lr3e-4_a1_v1_s0"], key=lambda i: i["name"]), ""]
 def curve(p):

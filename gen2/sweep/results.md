@@ -1,4 +1,4 @@
-# AZ gen 2 offline prior sweep — results (INTERIM: Stage T distillation T3 still running)
+# AZ gen 2 offline prior sweep — results
 
 Plan: `docs/experiments/evidence/az_gen2_prior_sweep_20261021/PLAN.md` on `claude/project-thread-3e3pyf` @ `41e3a2ac`.
 Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live parity canary's game), 2026-10-21.
@@ -14,7 +14,7 @@ Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live pari
   --pack --val-at-end --value-k 32 --threads 1 --workers 4 --cache`, torch seed 0, `STS_OOC_HEART1_WING_BOOTS_COUNTER=1`.
   Exact per-run args in each `runs/<group>/<name>/train.log`; drivers in `tools/`.
 
-## Answer so far
+## Answer
 - **Stage S pick (plan rule: lowest selection policy KL with selection value BCE < const): `S_d64L2_lr1e-4_a0.3_v0.3`** —
   selection policy KL 0.0554, validation KL 0.0542, top-1 0.933, selection value BCE 0.559 vs const 0.642.
   Seeds 1/2: 0.0553 / 0.0550 (spread ±0.0002). Export sha256 (s0) `fc32d8f4…`.
@@ -23,9 +23,18 @@ Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live pari
   1e-3 0.0745/0.0870; value weight 0.3 0.0554/0.0663, 1 0.0591/0.0724; anchor 0 0.0568/0.0735, 0.3 0.0554/0.0692,
   1 0.0558/0.0665, 3 0.0606/0.0684.
 - Larger students from random init are far behind (d128/L2 0.191, d96/L2 0.225, d64/L3 0.239): too few policy rows.
+- Value subsample vs full data: at the hot gen-1b recipe K=32 helps a lot (0.0618 vs 0.0713–0.0733), but at the winning
+  lr 1e-4 / v0.3 the 7-point full-data side table is as good (a1/v0.3 0.0548, a0.3/v0.3 0.0553): K=32 does not change the pick.
 - 40-epoch cap does not help (0.0567 at a 40-epoch OneCycle, stopped at epoch 15) → 20-epoch cap kept.
 - heart1 fine-tune (T1) fits π' much worse than the student (selection KL 0.118), best value head of the day
-  (selection BCE 0.546, AUC 0.768). Teacher-route student T3: pending.
+  (selection BCE 0.546, AUC 0.768).
+- **Teacher route loses.** T3 (d64/L2 from student_sel distilled on the fine-tuned teacher's logits + z) scores selection
+  policy KL 0.0999 / validation KL 0.0956 on π' (`E_T3_on_gen2`) vs 0.0554 / 0.0542 for the Stage-S pick; its value
+  head is on par (selection BCE 0.552 vs 0.559). Against its own teacher targets T3 reaches KL 0.041, so the
+  distillation works — the teacher is just far from π'.
+- **Candidates for a later A20 A/B: `S_d64L2_lr1e-4_a0.3_v0.3_s0` only** (no second qualifier: every other size fails
+  the plan's d64/L2 rule or is far worse). Report-only validation fold: pick KL 0.0542 / top-1 0.933 / value BCE 0.526
+  (const 0.622, AUC 0.758); gen 1b 0.0616 / 0.926 / 0.548 (AUC 0.729); student_sel 0.1010 / 0.935 / 0.689 (no value training).
 - Caveat carried forward from PLAN: offline rank is a filter, not evidence of online strength (gen 1b improved
   validation KL 30% and was NOT_SHOWN online).
 
@@ -46,8 +55,11 @@ Run on Philipp's PC (RTX 3060 Ti 8 GB, shared with the desktop and the live pari
 8. Stage T: one heart1 fine-tune at lr 1e-4 only (lr 3e-4 dropped, AZ thread 07:20Z); heart1 trained untrimmed with zero-init
    `--extra-inputs`; uncached (`--compact`) with the same K=32 sampling (uncached path checked identical to the cached one).
    T3 (all rows carry teacher logits, so K has no effect) is scored on Stage S's π' folds by one lr-0 epoch (`E_T3_on_gen2`).
-9. bs 1024 (+lr ×2) was benchmarked only: OOM unpacked (≈3.5 GB of GPU free), no speedup packed.
-10. Not done here: native-forward parity of the exported students (needs the one_combat build; gen 1 did it on the cloud binary)
+9. T3 data: the student_sel distillation set (128 files on this PC) was labeled too (2,630,411 rows in all), but it was
+   captured before #638 (`wing_boots_counter` 0) while gen2 rows carry 1; `distill.py` refuses mixed sets and old records
+   cannot be re-encoded, so T3 trains on the gen2 states only (all 465k rows carry teacher logits; z where present).
+10. bs 1024 (+lr ×2) was benchmarked only: OOM unpacked (≈3.5 GB of GPU free), no speedup packed.
+11. Not done here: native-forward parity of the exported students (needs the one_combat build; gen 1 did it on the cloud binary)
     and the ≤1.10× native-cost microbench (no non-d64/L2 size qualifies anyway).
 
 Columns: "sel" = selection fold (seed % 8 == 6), "val" = validation fold (seed % 8 == 7, report only). Objective =
@@ -99,11 +111,21 @@ policy KL + value weight × value BCE + anchor weight × anchor KL (so objective
 | S_d64L2_lr1e-4_a0.3_v0.3_s1 | 17 / 20 | 0.2265 | 0.0553 | 0.5583 / 0.6420 / 0.740 | 0.0543 | 0.9337 | 0.5252 / 0.6216 / 0.758 | 0.552·0.559·0.614 / 0.497·0.606·0.788 / 0.519·0.676·0.819 / 0.525·0.679·0.804 | 0.0126 / 0.0125 | 7.5 |
 | S_d64L2_lr1e-4_a0.3_v0.3_s2 | 14 / 17 | 0.2259 | 0.0550 | 0.5574 / 0.6420 / 0.737 | 0.0538 | 0.9339 | 0.5277 / 0.6216 / 0.753 | 0.550·0.559·0.616 / 0.501·0.606·0.782 / 0.526·0.676·0.813 / 0.529·0.679·0.802 | 0.0122 / 0.0122 | 6.4 |
 
-## Stage T
+## Stage T (T1 teacher scored on π' directly; T3's own run targets teacher logits, so its π' numbers are E_T3_on_gen2)
 
 | run | chosen / run ep | sel objective | sel policy KL | sel value BCE / const / AUC | val KL to π' | val top-1 | val value BCE / const / AUC | val BCE·const·AUC per act (1 / 2 / 3 / 4) | anchor KL sel / val | wall min |
 |---|---|---|---|---|---|---|---|---|---|---|
+| E_T3_on_gen2 | 1 / 1 | 0.6524 | 0.1000 | 0.5524 / 0.6420 / 0.741 | 0.0956 | 0.9121 | 0.5256 / 0.6216 / 0.759 | 0.551·0.559·0.598 / 0.501·0.606·0.790 / 0.512·0.676·0.822 / 0.560·0.679·0.792 | 0.0352 / 0.0370 | 0.5 |
 | T1_heart1_lr1e-4_a1_v1_bs256_s0 | 1 / 4 | 0.6995 | 0.1178 | 0.5462 / 0.6420 / 0.768 | 0.1085 | 0.9021 | 0.5015 / 0.6216 / 0.786 | 0.540·0.559·0.637 / 0.468·0.606·0.813 / 0.483·0.676·0.858 / 0.506·0.679·0.857 | 0.0355 / 0.0355 | 11.0 |
+| T3_distill_d64L2_lr3e-4_a0_v1_s0 | 1 / 4 | 0.5934 | 0.0410 | 0.5524 / 0.6420 / 0.741 | 0.0412 | 0.9405 | 0.5256 / 0.6216 / 0.759 | 0.551·0.559·0.598 / 0.501·0.606·0.790 / 0.512·0.676·0.822 / 0.560·0.679·0.792 | 0.0352 / 0.0370 | 9.5 |
+
+## Reference, reported last and never used to choose (lr-0 single-epoch passes = the net unchanged, same folds)
+
+| run | chosen / run ep | sel objective | sel policy KL | sel value BCE / const / AUC | val KL to π' | val top-1 | val value BCE / const / AUC | val BCE·const·AUC per act (1 / 2 / 3 / 4) | anchor KL sel / val | wall min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| E_gen1b | 1 / 1 | 0.6323 | 0.0654 | 0.5669 / 0.6420 / 0.725 | 0.0616 | 0.9256 | 0.5479 / 0.6216 / 0.729 | 0.550·0.559·0.592 / 0.531·0.606·0.756 / 0.566·0.676·0.777 / 0.560·0.679·0.794 | 0.0145 / 0.0149 | 0.5 |
+| E_student_sel | 1 / 1 | 0.7924 | 0.1031 | 0.6893 / 0.6420 / 0.415 | 0.1010 | 0.9354 | 0.6885 / 0.6216 / 0.394 | 0.688·0.559·0.484 / 0.687·0.606·0.441 / 0.690·0.676·0.435 / 0.698·0.679·0.515 | 0.0000 / 0.0000 | 0.5 |
+| S_d64L2_lr1e-4_a0.3_v0.3_s0 | 17 / 20 | 0.2269 | 0.0554 | 0.5590 / 0.6420 / 0.740 | 0.0542 | 0.9333 | 0.5255 / 0.6216 / 0.758 | 0.554·0.559·0.615 / 0.497·0.606·0.788 / 0.519·0.676·0.819 / 0.525·0.679·0.804 | 0.0125 / 0.0125 | 7.6 |
 
 ## Side test: full data (no value subsample), pack + val-at-end — stopped after 7 points by decision
 
@@ -150,4 +172,8 @@ Per-epoch selection-fold policy KL / value BCE (const 0.642):
   bench_c_valend); seed reruns of the pick differ by ±0.0002.
 - Wall times of runs that shared the GPU (ktest K_* runs ran alongside grid points) are inflated.
 - bench_b_bs1024 (unpacked bs 1024) hit CUDA OOM and has no summary.
+- Weights: d64 students (`student.pt` + native export `student.bin`, `--n-heads 4 --trim-map`) in `weights/`, sha256 in
+  `weights/SHA256SUMS`. Not pushed (24 MB each): the T1 teacher, kept on the PC at
+  `~/h1distill/gen2/sweep/T1_heart1_lr1e-4_a1_v1_bs256_s0/student.pt` (sha256 `610b509b…`; export `--n-heads 8`, untrimmed,
+  sha256 `d42b1c99…` at `~/h1distill/gen2/export/T1_heart1.bin`), and the teacher-labeled rows (`~/h1distill/gen2/teacher_rows`, 2,816 files).
 

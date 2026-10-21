@@ -37,7 +37,7 @@ if [ ! -f teacher_rows.done ]; then
     ~/h1distill/silverbot-84ab3ea $G/$T1/student.pt teacher_rows --bs 32 --amp \
     --data $(cat gen2_files.txt orig_files.txt) > label.log 2>&1 && touch teacher_rows.done || { log "labeling failed"; exit 1; }
 fi
-ls teacher_rows/*.gz > teacher_files.txt
+ls $PWD/teacher_rows/az-*.gz > teacher_files.txt  # gen2 only: the student_sel set has wing_boots_counter 0
 # Stage T3: d64/L2 student from student_sel on teacher logits + z
 T3=T3_distill_d64L2_lr3e-4_a0_v1_s0
 grep -q "^EXIT 0" $G/$T3/train.log 2>/dev/null || ./runT.sh $T3 teacher_files.txt --dim 64 --layers 2 --mult 4 --heads 4 --trim-map \
