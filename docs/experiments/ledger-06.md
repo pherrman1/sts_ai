@@ -22082,7 +22082,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live combat parity: Pen Nib armed behind a Headbutt grid imported as already applied (2026-10-20)
+## §579 — Live combat parity: Pen Nib armed behind a Headbutt grid imported as already applied (2026-10-20)
 
 **Question:** why did live seed 111200445 (release 9ec8a51d, parity2 step 431, Headbutt → Jaw Worm) show
 `player.statusBits0` with bit 24 (`PEN_NIB`) in the game projection and not natively (problem 54 in
