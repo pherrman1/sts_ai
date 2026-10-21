@@ -737,6 +737,13 @@ void ActData_MakeTempCardInHand::operator()(BattleContext &bc) const {
             CardInstance c(card);
             c.uniqueId = bc.cards.nextUniqueCardId++;
             bc.cards.notifyAddCardToCombat(c);
+            if (bc.player.hasStatus<PS::CORRUPTION>() && bc.cards.cardsInHand < CardManager::MAX_HAND_SIZE
+                    && corruptionHandCostFix()) {
+                // ShowCardAndAddToHandEffect: addToHand, onCardDrawOrDiscard, then setCostForTurn(-9).
+                bc.cards.moveToHand(c);
+                bc.corruptionHandCostPass();
+                continue;
+            }
             bc.moveToHandHelper(c);
         }
     }

@@ -490,6 +490,18 @@ restores) copies both costs from the played card. **Open question:**
 `makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, and no
 live trace has shown a free Anger copy yet.
 
+Seed 111200508 (live problem 83, 73 verdicts): under Snecko Eye and
+Corruption, skills made in hand by Dead Branch cost 0/0 in the game and
+base/0 natively. Java `ShowCardAndAddToHandEffect` adds the card, then calls
+`AbstractPlayer.onCardDrawOrDiscard`, whose Corruption loop runs
+`modifyCostForCombat(-9)` on every hand SKILL with `costForTurn != 0` (this
+zeroes `cost` for the rest of the combat), and only then its own
+`setCostForTurn(-9)`. Native zeroed only `costForTurn`.
+`STS_CORRUPTION_HAND_COST_FIX` (default on, `=0` restores) runs the pass for
+`MakeTempCardInHand` and Discovery-style choices. **Open:** Java also runs the
+pass after every `draw()` and discard, which matters only for a hand skill with
+`costForTurn != 0` under Corruption (none seen live; Exhume sets it to 0 too).
+
 Seed 111200448 (live problem 59): Armaments+ upgraded a Blood for Blood whose
 cost a hit had reduced to 3. The game ended at 2/2 (Java `BloodForBlood.upgrade`
 calls `upgradeBaseCost(cost - 1)`), native at 3/3, because the generic upgrade

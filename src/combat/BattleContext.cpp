@@ -171,6 +171,13 @@ namespace sts {
         return cachedFixFlag(cache, "STS_PILE_COST_RESET_FIX");
     }
 
+    bool corruptionHandCostFix() {
+        const char *value = std::getenv("STS_CORRUPTION_HAND_COST_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_CORRUPTION_HAND_COST_FIX must be 0 or 1");
+    }
+
     bool handUpgradeAllFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_HAND_UPGRADE_ALL_FIX");
@@ -2939,6 +2946,15 @@ void BattleContext::moveToHandHelper(CardInstance c) {
     }
 }
 
+void BattleContext::corruptionHandCostPass() {
+    for (int i = 0; i < cards.cardsInHand; ++i) {
+        auto &c = cards.hand[i];
+        if (c.getType() == CardType::SKILL && c.costForTurn != 0) {
+            c.modifyCostForCombat(-9);
+        }
+    }
+}
+
 void BattleContext::exhaustSpecificCardInHand(int idx, std::int16_t uniqueId) {
 
     int foundIdx = -1;
@@ -3425,6 +3441,11 @@ void BattleContext::chooseDiscoveryCard(CardId id) {
 
     for (int i = 0; i < discoveryAmount; ++i) {
         if (cards.cardsInHand + 1 <= CardManager::MAX_HAND_SIZE) {
+            if (player.hasStatus<PS::CORRUPTION>() && corruptionHandCostFix()) {
+                cards.createTempCardInHand(c);
+                corruptionHandCostPass();
+                continue;
+            }
             if (player.hasStatus<PS::CORRUPTION>() && c.getType() == CardType::SKILL) {
                 c.setCostForTurn(-9);
             }
