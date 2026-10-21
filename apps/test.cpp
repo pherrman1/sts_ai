@@ -2445,6 +2445,35 @@ int testIroncladCardJavaParity() {
         }
     }
 
+    // Live parity problem 64b (seed 111200459, Colosseum Nobs): Gremlin Nob
+    // with Anger 3 sits in slot 1 behind the Taskmaster; a played Skill gave
+    // it Strength 3 in the game, 0 natively. STS_ENRAGE_ALL_MONSTERS_FIX=0
+    // keeps the legacy slot-0-only check.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_ENRAGE_ALL_MONSTERS_FIX");
+        else setenv("STS_ENRAGE_ALL_MONSTERS_FIX", "0", 1);
+        BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10,
+                                                      MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        Monster &nob = bc.monsters.arr[1];
+        const bool layout = bc.monsters.arr[0].id == MonsterId::TASKMASTER && nob.id == MonsterId::GREMLIN_NOB;
+        nob.buff<MS::ENRAGE>(3);
+        const int before = nob.getStatus<MS::STRENGTH>();
+        bc.player.energy = 10;
+        simulatorCorrectnessPlay(bc, 0, 0);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        const int gained = nob.getStatus<MS::STRENGTH>() - before;
+        unsetenv("STS_ENRAGE_ALL_MONSTERS_FIX");
+        if (!layout || gained != (fix ? 3 : 0)) {
+            return fail(fix ? "Gremlin Nob in slot 1 did not gain Anger Strength from a Skill"
+                            : "STS_ENRAGE_ALL_MONSTERS_FIX=0 did not restore the slot-0-only check");
+        }
+    }
+
     // Disarm+ removes 3 Strength.
     {
         BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DISARM, 1), 10);
