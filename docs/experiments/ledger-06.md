@@ -22165,7 +22165,7 @@ for all 31 powers). The generic whitelist is not jar-checked yet (follow-up).
 Seeds: none new (live seed 111200472 as reported).
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
-## §602 — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
+## §TBD — Live Runic Dome: three generic whitelist entries used display names, not POWER_IDs (2026-10-21)
 
 **Question:** after §600 (Darkling "Life Link"), are the generic entries of the tracker's monster-power whitelist real
 Java POWER_IDs? (Reviewer E's follow-up on #763.)
@@ -22177,9 +22177,19 @@ Java POWER_IDs? (Reviewer E's follow-up on #763.)
 stopped the live run; it failed closed.
 **Interpretation:** producer bug, fixed in the mod (three strings); no flag. The jar check now covers every whitelist
 entry. No engine or simulation change.
-**Open question:** none; the canary ran the full `test.sh` on the PC at a678f516 (all 45 Dome power pairs match the jar).
+**Open question:** the full `test.sh` (jar check) runs on the PC via the canary.
 Seeds: none.
 **Knowledge impact:** none beyond this entry (producer tracker detail).
+
+## §TBD — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
+
+**Observation.** Live A20 seed 111200473 (release eeb17782, Chosen and Byrds, floor 30, turn 1): Toolbox's battle-start `ChooseOneColorless` offer reached the advisor as `silver_card_reward_pending_actions`. The queue behind it was `[DrawCardAction(5), EnableEndTurnButtonAction, (RelicAboveCreatureAction, ApplyPowerAction Weak 1 from the player) x 2]`. The mod refused (no continuation was sent); the importer already accepts `toolbox_actions` with `DRAW` plus `DEBUFF_ALL_ENEMY`.
+
+**Analysis.** javap of the pinned jar (RedMask.atBattleStart, ApplyPowerAction, WeakPower, DrawCardAction, AbstractRoom battle start) matches every check in `publicPendingActionsJson(true)` and `allEnemyPowerBatch` on paper: Red Mask builds `WeakPower(m, 1, false)` (justApplied false), source is the player, and the opening draw is the default 3-arg DrawCardAction. Which check refused could not be decided from the snapshot. The old blocker also printed `power=` blank because `readStringField` returns "" for a missing `powerID` field.
+
+**Change (diagnostic only, no play change, no flag).** Every refusal in `publicPendingActionsJson` and `allEnemyPowerBatch` records `<queue index>:<check>`; `pendingActionsBlocker` appends it as `;refusal=...`. `powerActionDetail` now falls back to the power instance's ID. A repeat of problem 74 names the exact failing check, and the fix follows from it.
+
+**Knowledge impact:** none yet; the toolbox_actions + Red Mask path remains unconfirmed live.
 
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
@@ -22520,7 +22530,7 @@ script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (
   window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
 - **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).
 
-## §601 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
+## §600 — Live OOC: The Joust's opening HALT page was unrepresentable (2026-10-21)
 
 **Question:** why did live seed 111200467 (Act 2 floor 27, release cf770372) stop at The Joust's first page (problem 69 in
 `engine-parity/overnight-20261019/ISSUES.md` on the share)?

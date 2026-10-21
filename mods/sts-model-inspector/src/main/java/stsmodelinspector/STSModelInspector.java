@@ -2753,24 +2753,38 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + (power == null ? "" : ",\"power\":\"" + power + "\",\"sourceMonster\":false") + "}";
     }
 
+    // Diagnostic only: the queue index and check that last refused a public
+    // pending-action queue (problem 74); pendingActionsBlocker reports it.
+    static String pendingActionsRefusal="";
+
+    private static String refusePending(int index,String check) {
+        pendingActionsRefusal=index+":"+check;
+        return null;
+    }
+
+    private static int refuseBatch(int index,String check) {
+        pendingActionsRefusal=index+":"+check;
+        return -1;
+    }
+
     private static int allEnemyPowerBatch(List<?> actions,int first,String power,int amount) {
         String relic="Vulnerable".equals(power)?"Bag of Marbles":"Weakened".equals(power)?"Red Mask":"Poison".equals(power)?"TwistedFunnel":"";
         String className="Vulnerable".equals(power)?"VulnerablePower":"Weakened".equals(power)?"WeakPower":"PoisonPower";
         if(relic.isEmpty() || !hasRelic(relic) || publicPendingActionJson("DEBUFF_ALL_ENEMY",amount,power)==null
-                || AbstractDungeon.getMonsters()==null || AbstractDungeon.getMonsters().monsters.isEmpty()) return -1;
+                || AbstractDungeon.getMonsters()==null || AbstractDungeon.getMonsters().monsters.isEmpty()) return refuseBatch(first,"batch_relic_or_monsters");
         int index=first;
         for(AbstractMonster target:AbstractDungeon.getMonsters().monsters) {
             while(index<actions.size() && "com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(actions.get(index).getClass().getName()))++index;
-            if(index>=actions.size())return -1;
+            if(index>=actions.size())return refuseBatch(index,"batch_short_queue");
             Object action=actions.get(index++), value=readObjectField(action,"powerToApply");
             if(!"com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(action.getClass().getName())
                     || !Boolean.FALSE.equals(readBooleanField(action,"isDone"))
                     || readObjectField(action,"target")!=target || readObjectField(action,"source")!=AbstractDungeon.player
                     || !(value instanceof AbstractPower) || !value.getClass().getName().equals("com.megacrit.cardcrawl.powers."+className)
-                    || !Integer.valueOf(amount).equals(readIntField(action,"amount")))return -1;
+                    || !Integer.valueOf(amount).equals(readIntField(action,"amount")))return refuseBatch(index-1,"batch_action_fields");
             AbstractPower applied=(AbstractPower)value;
             if(applied.owner!=target || !power.equals(applied.ID) || applied.amount!=amount
-                    || (!"Poison".equals(power) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied"))))return -1;
+                    || (!"Poison".equals(power) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied"))))return refuseBatch(index-1,"batch_power_fields");
         }
         return index;
     }
@@ -2789,16 +2803,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static String publicPendingActionsJson(boolean opening,String sourceTask) {
         com.megacrit.cardcrawl.actions.GameActionManager manager=AbstractDungeon.actionManager;
+        pendingActionsRefusal="";
         if(manager==null || !playerSelectionTurn(manager.turnHasEnded, AbstractDungeon.player.endTurnQueued, AbstractDungeon.player.isEndingTurn)
                 || !manager.preTurnActions.isEmpty() || !manager.monsterQueue.isEmpty()
                 || (sourceTask==null && (!manager.cardQueue.isEmpty() || !AbstractDungeon.player.limbo.isEmpty()))
-                || manager.actions.size()>128) return null;
+                || manager.actions.size()>128) return refusePending(-1,"gate");
         StringBuilder out=new StringBuilder("["); int draws=0,enables=0,cleanups=0;
         for(int actionIndex=0;actionIndex<manager.actions.size();++actionIndex) {
             Object action=manager.actions.get(actionIndex);
             String name=action.getClass().getName(), kind=null, power=null;
             Integer amount=readIntField(action,"amount");
-            if(!Boolean.FALSE.equals(readBooleanField(action,"isDone"))) return null;
+            if(!Boolean.FALSE.equals(readBooleanField(action,"isDone"))) return refusePending(actionIndex,"isDone");
             if("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) {++enables;continue;}
             if("com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)
                     || "com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)) continue;
@@ -2811,7 +2826,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // settles the shift itself (Mode Shift <= 0).
             if(sourceTask!=null && isActionClass(name,"VFXAction")) {
                 String item=actionIndex+2==manager.actions.size()?guardianShiftJson(manager.actions.get(actionIndex+1)):null;
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"guardian_shift");
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
             // SpikeSlime_L/AcidSlime_L/SlimeBoss.damage at half HP: setMove(3)
@@ -2819,14 +2834,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // SetMoveAction(this, 3, UNKNOWN)) behind the card (problem 68).
             if(sourceTask!=null && isActionClass(name,"TextAboveCreatureAction")) {
                 String item=actionIndex+1<manager.actions.size()?slimeSplitJson(manager.actions.get(actionIndex+1)):null;
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"slime_split");
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
             // Darkling.damage at a half-death: setMove(4) now, then
             // addToBot(SetMoveAction(this, 4, UNKNOWN)) behind the card.
             if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
                 String item=halfDeadSetMoveJson(action);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"half_dead_set_move");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
             // Lagavulin.damage waking it: setMove(4 OPEN) now, then
@@ -2834,31 +2849,31 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // queues the Metallicize reduction (problem 61).
             if(sourceTask!=null && isActionClass(name,"ChangeStateAction") && "OPEN".equals(readStringField(action,"stateName"))) {
                 String item=lagavulinOpenJson(action);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"lagavulin_open");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
             // CurlUpPower.onAttacked: ChangeStateAction("CLOSED") (animation
             // only), GainBlockAction, RemoveSpecificPowerAction("Curl Up").
             if(sourceTask!=null && isActionClass(name,"ChangeStateAction")) {
                 String item=curlUpJson(manager.actions,actionIndex);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"curl_up");
                 if(out.length()>1)out.append(',');out.append(item);actionIndex+=2;continue;
             }
             if("com.megacrit.cardcrawl.actions.utility.UseCardAction".equals(name)) {
-                if(sourceTask==null || ++cleanups!=1)return null;
+                if(sourceTask==null || ++cleanups!=1)return refusePending(actionIndex,"use_card_count");
                 String item=pendingUseCardJson(action,sourceTask);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"use_card");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
             if("com.megacrit.cardcrawl.actions.common.RemoveSpecificPowerAction".equals(name)) {
                 if(readObjectField(action,"target")!=AbstractDungeon.player || readObjectField(action,"source")!=AbstractDungeon.player
                         || readObjectField(action,"powerInstance")!=null || !"Pen Nib".equals(readStringField(action,"powerToRemove"))
-                        || !hasRelic("Pen Nib"))return null;
+                        || !hasRelic("Pen Nib"))return refusePending(actionIndex,"pen_nib_removal");
                 AbstractPower nib=AbstractDungeon.player.getPower("Pen Nib");
-                if(nib==null || !"com.megacrit.cardcrawl.powers.PenNibPower".equals(nib.getClass().getName()))return null;
+                if(nib==null || !"com.megacrit.cardcrawl.powers.PenNibPower".equals(nib.getClass().getName()))return refusePending(actionIndex,"pen_nib_power");
                 kind="REMOVE_PEN_NIB";
             } else if("com.megacrit.cardcrawl.actions.unique.RemoveDebuffsAction".equals(name)) {
-                if(readObjectField(action,"c")!=AbstractDungeon.player || !hasRelic("OrangePellets"))return null;
+                if(readObjectField(action,"c")!=AbstractDungeon.player || !hasRelic("OrangePellets"))return refusePending(actionIndex,"orange_pellets");
                 kind="REMOVE_PLAYER_DEBUFFS";
             } else if("com.megacrit.cardcrawl.actions.unique.LoseEnergyAction".equals(name)) {
                 // VoidCard.triggerWhenDrawn queues addToBot(LoseEnergyAction(1)),
@@ -2869,21 +2884,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             } else if("com.megacrit.cardcrawl.actions.common.DrawCardAction".equals(name)) {
                 if(!Boolean.FALSE.equals(readBooleanField(action,"shuffleCheck"))
                         || !Boolean.TRUE.equals(readBooleanField(action,"clearDrawHistory"))
-                        || readObjectField(action,"followUpAction")!=null) return null;
+                        || readObjectField(action,"followUpAction")!=null) return refusePending(actionIndex,"draw_fields");
                 kind="DRAW";if(amount!=null && amount>0)++draws;
             } else if(sourceTask!=null && monsterReactionAction(name,action)) {
                 String item=monsterReactionJson(name,action);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"monster_reaction");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             } else if("com.megacrit.cardcrawl.actions.common.GainBlockAction".equals(name)) {
-                if(readObjectField(action,"target")!=AbstractDungeon.player) return null;
+                if(readObjectField(action,"target")!=AbstractDungeon.player) return refusePending(actionIndex,"gain_block_target");
                 kind="GAIN_BLOCK";
             } else if("com.megacrit.cardcrawl.actions.common.HealAction".equals(name)) {
                 // Toy Ornithopter queues its potion heal behind the potion's
                 // own actions (Gambler's Brew's GamblingChipAction). Native
                 // queues the same victory-surviving heal in drinkPotion.
                 if(!hasRelic("Toy Ornithopter") || readObjectField(action,"target")!=AbstractDungeon.player
-                        || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return null;
+                        || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return refusePending(actionIndex,"heal");
                 kind="HEAL_PLAYER";
             } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
             else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
@@ -2893,18 +2908,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(!(values instanceof int[]) || (readObjectField(action,"source")!=null && readObjectField(action,"source")!=AbstractDungeon.player)
                         || !Boolean.TRUE.equals(readBooleanField(action,"firstFrame"))
                         || !Boolean.FALSE.equals(readBooleanField(action,"utilizeBaseDamage"))
-                        || !"THORNS".equals(String.valueOf(readObjectField(action,"damageType")))) return null;
+                        || !"THORNS".equals(String.valueOf(readObjectField(action,"damageType")))) return refusePending(actionIndex,"damage_all_fields");
                 int[] damage=(int[])values;
-                if(damage.length!=AbstractDungeon.getMonsters().monsters.size() || damage.length==0) return null;
-                amount=damage[0];for(int value:damage) if(value!=amount) return null;
+                if(damage.length!=AbstractDungeon.getMonsters().monsters.size() || damage.length==0) return refusePending(actionIndex,"damage_all_size");
+                amount=damage[0];for(int value:damage) if(value!=amount) return refusePending(actionIndex,"damage_all_uneven");
                 kind="DAMAGE_ALL";
             } else if("com.megacrit.cardcrawl.actions.common.DamageRandomEnemyAction".equals(name)) {
                 Object info=readObjectField(action,"info");
-                if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type")))) return null;
+                if(info==null || !"THORNS".equals(String.valueOf(readObjectField(info,"type")))) return refusePending(actionIndex,"damage_random_type");
                 Object owner=readObjectField(info,"owner");
-                if(owner!=null && owner!=AbstractDungeon.player) return null;
+                if(owner!=null && owner!=AbstractDungeon.player) return refusePending(actionIndex,"damage_random_owner");
                 amount=readIntField(info,"output");
-                if(amount==null || !amount.equals(readIntField(info,"base"))) return null;
+                if(amount==null || !amount.equals(readIntField(info,"base"))) return refusePending(actionIndex,"damage_random_amount");
                 kind="DAMAGE_RANDOM";
             } else if("com.megacrit.cardcrawl.actions.common.MakeTempCardInDrawPileAction".equals(name)) {
                 Object value=readObjectField(action,"cardToMake");
@@ -2917,38 +2932,38 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         && amount!=null && amount==hex.amount;
                 if((!wound && !dazed) || !(value instanceof AbstractCard)
                         || !Boolean.TRUE.equals(readBooleanField(action,"randomSpot"))
-                        || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return null;
+                        || !Boolean.FALSE.equals(readBooleanField(action,"toBottom")))return refusePending(actionIndex,"shuffle_card_fields");
                 AbstractCard card=(AbstractCard)value;
                 if(card.upgraded || card.timesUpgraded!=0 || card.misc!=0 || card.cost!=-2
-                        || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return null;
+                        || card.costForTurn!=-2 || card.freeToPlayOnce || card.retain) return refusePending(actionIndex,"shuffle_card_state");
                 kind=wound?"SHUFFLE_WOUNDS":"SHUFFLE_DAZED";
             } else if("com.megacrit.cardcrawl.actions.common.ApplyPowerAction".equals(name)) {
                 Object value=readObjectField(action,"powerToApply");
-                if(!(value instanceof AbstractPower)) return null;
+                if(!(value instanceof AbstractPower)) return refusePending(actionIndex,"power_value");
                 AbstractPower applied=(AbstractPower)value;
                 if(readObjectField(action,"target") instanceof AbstractMonster) {
                     int next=allEnemyPowerBatch(manager.actions,actionIndex,applied.ID,applied.amount);
-                    if(next<0)return null;
+                    if(next<0)return null; // allEnemyPowerBatch recorded the refusal
                     String item=publicPendingActionJson("DEBUFF_ALL_ENEMY",applied.amount,applied.ID);
                     if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
                 }
-                if(readObjectField(action,"target")!=AbstractDungeon.player)return null;
+                if(readObjectField(action,"target")!=AbstractDungeon.player)return refusePending(actionIndex,"power_target");
                 if(applied.owner!=AbstractDungeon.player || amount==null || amount!=applied.amount
                         || !java.util.Arrays.asList("StrengthPower","DexterityPower","ArtifactPower","BufferPower","PlatedArmorPower",
                             "ThornsPower","VigorPower","IntangiblePlayerPower","LoseStrengthPower","WeakPower","PenNibPower")
                             .contains(applied.getClass().getSimpleName())
-                        || !applied.getClass().getName().equals("com.megacrit.cardcrawl.powers."+applied.getClass().getSimpleName())) return null;
-                if("Pen Nib".equals(applied.ID) && !hasRelic("Pen Nib"))return null;
-                if("Weakened".equals(applied.ID) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied")))return null;
+                        || !applied.getClass().getName().equals("com.megacrit.cardcrawl.powers."+applied.getClass().getSimpleName())) return refusePending(actionIndex,"player_power_class");
+                if("Pen Nib".equals(applied.ID) && !hasRelic("Pen Nib"))return refusePending(actionIndex,"pen_nib_relic");
+                if("Weakened".equals(applied.ID) && !Boolean.FALSE.equals(readBooleanField(applied,"justApplied")))return refusePending(actionIndex,"weak_just_applied");
                 power=applied.ID;kind=applied.type==AbstractPower.PowerType.DEBUFF?"DEBUFF_PLAYER":"BUFF_PLAYER";
             }
             Object source=readObjectField(action,"source");
-            if(source!=null && source!=AbstractDungeon.player) return null;
+            if(source!=null && source!=AbstractDungeon.player) return refusePending(actionIndex,"source");
             String item=publicPendingActionJson(kind,amount,power);
-            if(item==null)return null;
+            if(item==null)return refusePending(actionIndex,"unknown_action");
             if(out.length()>1)out.append(',');out.append(item);
         }
-        if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return null;
+        if((opening && (draws==0 || enables!=1)) || (sourceTask!=null && cleanups!=1))return refusePending(-1,"opening");
         return out.append(']').toString();
     }
 
@@ -3142,7 +3157,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if(className.endsWith("PowerAction"))out.append('(').append(powerActionDetail(action)).append(')');
         }
         if(manager.actions.size()>16)out.append(",...");
-        return out.append(']').toString();
+        out.append(']');
+        if(!pendingActionsRefusal.isEmpty())out.append(";refusal=").append(pendingActionsRefusal);
+        return out.toString();
     }
 
     // Diagnostic only: which power a queued power action names, and for whom.
@@ -3150,6 +3167,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Object power=readObjectField(action,"powerInstance"), toApply=readObjectField(action,"powerToApply");
         Object target=readObjectField(action,"target"), source=readObjectField(action,"source");
         String id=readStringField(action,"powerID");
+        if(id.isEmpty())id=null;
         if(id==null && power instanceof AbstractPower)id=((AbstractPower)power).ID;
         if(id==null && toApply instanceof AbstractPower)id=((AbstractPower)toApply).ID;
         return "power="+id+" amount="+readIntField(action,"amount")+" target="+creatureLabel(target)+" source="+creatureLabel(source);
