@@ -22250,7 +22250,7 @@ Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-5
 **Knowledge impact:** `operations/live-model-inspector.md`.
 Seeds: none new (live seeds 111200473 and 111200504).
 
-## §TBD — Live problem 83: Corruption's hand pass zeroes a generated skill's cost for the combat (2026-10-21)
+## §620 — Live problem 83: Corruption's hand pass zeroes a generated skill's cost for the combat (2026-10-21)
 
 **Question:** Why did seed 111200508 (A20 Heart kill, Snecko Eye + Corruption + Dead Branch) show 88 `hand[].cost` mismatches (game 0, native base cost) with `costForTurn` agreeing?
 
