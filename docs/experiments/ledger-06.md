@@ -22078,6 +22078,9 @@ slot 0 and the Nob in slot 1, so the Nob never gained Strength. In Java the Nob'
 every monster's powers. The Second Wind exhaust inference in the report is not needed.
 **Interpretation:** `STS_ENRAGE_ALL_MONSTERS_FIX` (default on, `=0` restores) checks every living monster. Play-changing
 for simulator play in that fight, unmeasured.
-**Open question:** javap of `AngerPower` and the `UseCardAction` monster-power loop is requested.
+Javap of the pinned JAR (`issue64-javap.md` on the share): the `UseCardAction` constructor calls every monster power's
+`onUseCard` (gate only `dontTriggerOnUseCard`), and `AngerPower.onUseCard` on a Skill queues
+`addToTop(ApplyPowerAction(owner, owner, Strength))`, which skips a dead owner (`isDeadOrEscaped`, `issue56b-javap.md`).
+**Open question:** native applies the Strength at once rather than through the queue; not observed to differ.
 Seeds: none new (live seed 111200459 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`.
