@@ -523,6 +523,19 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual((silver[2]["status"], silver[2]["simulations"]), ("OK", 10000), silver[2])
         self.assertIn("selectedLiveAction", silver[2])
 
+    def test_live_combat_fixture_without_selection_is_searched(self):
+        # Live problem 77: the mod sends cardSelect=false outside a selection;
+        # the Gremlin Leader pass-through check threw on it in every combat.
+        observation = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                  "fixtures", "live_runic_dome_two_thieves_turn1.json")))
+        self.assertIs(observation["silverRoot"]["combat"]["cardSelect"], False)
+        wire = {"protocol": "sts_model_inspector_v1", "kind": "observation", "session": "no-selection",
+                "sequence": 1, "observationHash": "no-selection", "observation": observation}
+        result, = self.run_advisor([json.dumps(wire)], self.model)
+        self.assertEqual(result.get("kind"), "analysis", result)
+        silver = next(row for row in result["evaluators"] if row["id"] == "silver_player_decision_v2")
+        self.assertEqual(silver["status"], "OK", silver)
+
     def test_silver_rankings_include_physical_live_actions(self):
         observation = self.silver_observation()
         wires = []

@@ -5002,7 +5002,23 @@ int main(int argc, char **argv) {
                 if(m.value("slot",m.value("idx",-1))==3) {m["hp"]=10;m["dead"]=false;}
             auto more=observation;
             more["silverRoot"]["combat"]["pendingActionQueue"].push_back(json{{"kind","GAIN_ENERGY"},{"amount",1}});
-            for(const auto *broken:{&partial,&extra,&alive,&more})
+            // Malformed shapes fall through without throwing (live problem 77:
+            // outside a selection the mod sends cardSelect as false).
+            auto selectFalse=observation; selectFalse["silverRoot"]["combat"]["cardSelect"]=false;
+            auto selectMissing=observation; selectMissing["silverRoot"]["combat"].erase("cardSelect");
+            auto choicesFalse=observation; choicesFalse["silverRoot"]["combat"]["cardSelect"]["liveChoices"]=false;
+            auto taskNull=observation; taskNull["silverRoot"]["combat"]["cardSelect"]["task"]=nullptr;
+            auto pendingFalse=observation; pendingFalse["silverRoot"]["combat"]["pendingActionQueue"]=false;
+            auto pendingItemFalse=observation; pendingItemFalse["silverRoot"]["combat"]["pendingActionQueue"][1]=false;
+            auto slotsNull=observation; slotsNull["silverRoot"]["combat"]["pendingActionQueue"][1]["slots"]=nullptr;
+            auto monstersFalse=observation; monstersFalse["silverRoot"]["combat"]["monsters"]=false;
+            auto hpText=observation;
+            for(auto &m:hpText["silverRoot"]["combat"]["monsters"]) {m["hp"]="x";m["dead"]="no";m["slot"]="a";}
+            auto combatFalse=observation; combatFalse["silverRoot"]["combat"]=false;
+            auto rootFalse=observation; rootFalse["silverRoot"]=false;
+            json notObject=false;
+            for(const auto *broken:{&partial,&extra,&alive,&more,&selectFalse,&selectMissing,&choicesFalse,&taskNull,
+                    &pendingFalse,&pendingItemFalse,&slotsNull,&monstersFalse,&hpText,&combatFalse,&rootFalse,&notObject})
                 if(one_combat::advisor::minionLeaderEscapeChoice(*broken)!=0)
                     throw std::runtime_error("unqualified Gremlin Leader death grid was passed through");
             setenv("STS_SILVER_LEADER_ESCAPE_PASS_THROUGH","0",1);

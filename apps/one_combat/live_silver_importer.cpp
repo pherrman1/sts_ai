@@ -2587,37 +2587,59 @@ SilverRootImportResult importSilverRoot(const json &observation,
 
 int minionLeaderEscapeChoice(const json &observation) {
     if (!leaderEscapePassThrough()) return 0;
-    const auto root = observation.value("silverRoot", json::object());
-    const auto combat = observation.contains("combat") ? observation.at("combat") : root.value("combat", json::object());
+    // Every field is read type-checked: outside this one grid the mod sends
+    // cardSelect as false, and any other shape must fall through to the
+    // ordinary import (live problem 77).
+    static const json missing;
+    const auto field = [](const json &value, const char *key) -> const json & {
+        if (!value.is_object()) return missing;
+        const auto it = value.find(key);
+        return it == value.end() ? missing : *it;
+    };
+    const auto text = [&](const json &value, const char *key) {
+        const auto &v = field(value, key);
+        return v.is_string() ? v.get<std::string>() : std::string();
+    };
+    const auto flag = [&](const json &value, const char *key) {
+        const auto &v = field(value, key);
+        return v.is_boolean() && v.get<bool>();
+    };
+    const auto &combat = field(observation, "combat").is_object()
+        ? field(observation, "combat") : field(field(observation, "silverRoot"), "combat");
     if (!combat.is_object()) return 0;
-    const auto select = combat.value("cardSelect", json::object());
-    const auto choices = select.value("liveChoices", json::array());
-    if (select.value("task", std::string()) != "HEADBUTT" || select.value("origin", std::string()) != "GRID"
-        || select.value("continuation", std::string()) != "source_card_actions"
+    const auto &select = field(combat, "cardSelect");
+    const auto &choices = field(select, "liveChoices");
+    if (text(select, "task") != "HEADBUTT" || text(select, "origin") != "GRID"
+        || text(select, "continuation") != "source_card_actions"
         || !choices.is_array() || choices.empty()) return 0;
-    for (std::size_t i = 0; i < choices.size(); ++i)
-        if (!choices[i].is_object() || !choices[i].contains("uuid") || !choices[i].at("uuid").is_string()
-            || !choices[i].contains("choiceIndex") || choices[i].at("choiceIndex") != static_cast<int>(i) + 1) return 0;
-    const auto pending = combat.value("pendingActionQueue", json::array());
-    if (!pending.is_array() || pending.size() != 2 || !pending[0].is_object() || !pending[1].is_object()
-        || pending[0].value("kind", std::string()) != "USE_CARD"
-        || pending[1].value("kind", std::string()) != "MINION_LEADER_ESCAPE") return 0;
-    const auto slots = pending[1].value("slots", json::array());
+    for (std::size_t i = 0; i < choices.size(); ++i) {
+        const auto &index = field(choices[i], "choiceIndex");
+        if (!field(choices[i], "uuid").is_string() || !index.is_number_integer()
+            || index.get<long long>() != static_cast<long long>(i) + 1) return 0;
+    }
+    const auto &pending = field(combat, "pendingActionQueue");
+    if (!pending.is_array() || pending.size() != 2
+        || text(pending[0], "kind") != "USE_CARD" || text(pending[1], "kind") != "MINION_LEADER_ESCAPE") return 0;
+    const auto &slots = field(pending[1], "slots");
     if (!slots.is_array() || slots.empty()) return 0;
-    std::set<int> escaping;
+    std::set<long long> escaping;
     for (const auto &slot : slots)
-        if (!slot.is_number_integer() || !escaping.insert(slot.get<int>()).second) return 0;
-    const auto monsters = combat.value("monsters", json::array());
+        if (!slot.is_number_integer() || !escaping.insert(slot.get<long long>()).second) return 0;
+    const auto &monsters = field(combat, "monsters");
     if (!monsters.is_array()) return 0;
     int leaders = 0;
-    std::set<int> alive;
+    std::set<long long> alive;
     for (std::size_t i = 0; i < monsters.size(); ++i) {
         const auto &m = monsters[i];
         if (!m.is_object()) return 0;
-        const int slot = m.value("slot", m.value("idx", static_cast<int>(i)));
-        const auto id = live_silver::monsterId(m.value("id", std::string()));
-        const bool gone = m.value("hp", 0) <= 0 || m.value("dead", false)
-            || m.value("escaping", m.value("escaped", false)) || m.value("halfDead", false);
+        const auto &slotField = field(m, "slot");
+        const auto &idxField = field(m, "idx");
+        const long long slot = slotField.is_number_integer() ? slotField.get<long long>()
+            : idxField.is_number_integer() ? idxField.get<long long>() : static_cast<long long>(i);
+        const auto id = live_silver::monsterId(text(m, "id"));
+        const auto &hp = field(m, "hp");
+        const bool gone = !hp.is_number() || hp.get<double>() <= 0 || flag(m, "dead")
+            || flag(m, "escaping") || flag(m, "escaped") || flag(m, "halfDead");
         if (id == sts::MonsterId::GREMLIN_LEADER) {
             if (!gone) return 0;
             ++leaders;

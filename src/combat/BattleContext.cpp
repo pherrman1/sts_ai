@@ -126,6 +126,17 @@ namespace sts {
         throw std::runtime_error("STS_BLOOD_FOR_BLOOD_COPY_COST_FIX must be 0 or 1");
     }
 
+    // STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX: unset or 1 = unupgraded True Grit
+    // exhausts a lone hand card without a cardRandomRng draw, as Java's
+    // ExhaustAction(1, true, false, false) does (live parity problem 76).
+    // 0 = the legacy draw; other values are fatal.
+    bool trueGritSingleCardRngFix() {
+        const char *value = std::getenv("STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX must be 0 or 1");
+    }
+
     bool slimeSplitRngFix() {
         const char *value = std::getenv("STS_SLIME_SPLIT_RNG_FIX");
         if (!value || !*value || std::string(value) == "1") return true;
@@ -1844,7 +1855,7 @@ void BattleContext::useSkillCard() {
             if (up) {
                 addToBot( Actions::ChooseExhaustOne() );
             } else {
-                addToBot( Actions::ExhaustRandomCardInHand(1) );
+                addToBot( Actions::ExhaustRandomCardInHand(1, false) );
             }
             break;
 

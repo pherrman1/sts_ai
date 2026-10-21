@@ -157,6 +157,11 @@ namespace sts {
     // minus the times the player lost HP this combat, as Java's makeCopy does
     // (live parity problem 76). 0 = the legacy base cost. Other values are fatal.
     bool bloodForBloodCopyCostFix();
+    // STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX: unset/1 (default) = unupgraded True
+    // Grit exhausts a lone hand card without a cardRandomRng draw, as Java's
+    // ExhaustAction does (live parity problem 76). 0 = the legacy draw.
+    // Other values are fatal.
+    bool trueGritSingleCardRngFix();
 
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
