@@ -22751,3 +22751,33 @@ diff (game 0/0 vs native 1/1 for the deck's own Blood for Blood+ at an End Turn 
 draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
+
+## §TBD — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
+
+Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
+#765 queue worker (09:59Z). Pre-registration and outputs: `docs/experiments/evidence/az_gen1b_value_leaf_ab_20261020/`
+(`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`, `verify.txt`, `tars.sha256`). Offline numbers: §577.
+
+- **Freeze:** RUN_COMMIT `7cd3ae69` (main `0ba0e9a9` plus the campaign dir); binary sha256 `a822b950…`. student_sel
+  `cf6bf7fb…`, gen1b `e6aa044c…`. Smoke seed 111144994 (both arms rc 0); seeds 111144990–994 were smokes.
+- **Arms:** gen 0's search stack (student_sel prior, rollout net and leaf selector, OOC MCTS 4096 sims, rollout3,
+  `GAP_STOP=0`, 25% full-budget roots, flat exact-10k Silver real combats) with the learned OOC stop OFF in both.
+  A ends every rollout3 leaf in X2-B; B adds `STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin`.
+- **Run:** seeds 111144000–111144511, 32 workers × 4 lanes, `schedule queue`. `verify_campaign.py`: 512 of 512 units
+  OK; 67 units ran twice (claim race on the share, fixed by #773 for later campaigns; identical outcomes, first tar
+  used). 1,024 of 1,024 arm runs rc 0; 512 of 512 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | act-1 deaths | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|---|
+  | A X2-B | 107 (20.9%) | 209 (40.8%) | 48 | 43.9 | 1,976, 5,649 |
+  | B gen 1b value | 123 (24.0%) | 222 (43.4%) | 50 | 44.1 | 2,105, 4,669 |
+
+  Heart kills B − A +3.1 pp [−1.0, +7.2], discordant 66 B-only / 50 A-only, exact McNemar p 0.16. Act 4 +2.5 pp
+  [−2.3, +7.3], p 0.34. Act-1 deaths +0.4 pp, p 0.89. Wall B/A 1.07 (≤ 1.10). The search's pick differed from the
+  prior's argmax at 3,043 vs 2,302 searched roots (9.0% vs 6.8%).
+- **Verdict: NOT_SHOWN** (pre-registered rule). X2-B stays the rollout3 end value; the flag stays default off.
+- **Inference:** the lean favours the value head, within a test that resolves about ±4 pp. No act-1 penalty, unlike
+  §522. The compressed value scale makes the prior weigh more at the same cpuct (fewer overrides).
+- **Knowledge impact:** `evaluation/current-research.md`.
+

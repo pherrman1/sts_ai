@@ -1,4 +1,4 @@
-# Gen-1b value head as the rollout3 end-state value: paired A20 A/B (pre-registration, NOT LAUNCHED)
+# Gen-1b value head as the rollout3 end-state value: paired A20 A/B (pre-registration; ran 2026-10-21, see RESULT.md)
 
 Philipp, 2026-10-20 20:34Z: "we should somehow test the value head. Open a new thread, that should give me offline
 numbers first, then prepare an online comparison by replacing X2-B with the gen1b value head, but keeping rollout3".
@@ -41,8 +41,8 @@ often at A20?
 ## Seeds, budget
 - 512 fresh paired A20 seeds 111144000–111144511 (reserved for this thread: 111144000–111144999; smokes use
   111144990–999; 111144990–991 were used by the code smoke in `smoke/`). Gen 1b never trained on them.
-- 32 workers × 4 parallel, 16 units each (worker count is Philipp's choice; units split as unit i → worker i mod W + 1).
-  A unit is one seed, both arms in sequence, 7 h timeout per arm.
+- 32 workers × 4 parallel (worker count is Philipp's choice). Freeze: `schedule queue` (#765), so each unit goes to
+  whichever worker claims it; a unit is one seed, both arms in sequence, 7 h timeout per arm.
 - Expected cost: the gen-1b A/B arm took about 1,967 s per run with the learned stop, which cut OOC CPU to about
   0.53× of the exact visit lock (§564); OOC MCTS is ~97% of run CPU. Without it, about 3,700 s per run, so
   2 × 512 × 3,700 s ≈ 1,050 core-h, about 8 h on 32 workers × 4 (estimate, not measured).
