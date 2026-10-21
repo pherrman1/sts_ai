@@ -4606,6 +4606,110 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE=0 did not restore the refusal");
             }
         }
+        {
+            // Problem 68 (overnight live play 2026-10-21, seed 111200464): Headbutt
+            // taking a large slime (or Slime Boss) to half HP opens its GRID
+            // with the split's TextAboveCreatureAction and SetMoveAction(3)
+            // queued; Java has set the split move, native also wrote it as the
+            // previous move at the hit.
+            for (const auto encounter : {MonsterEncounter::LARGE_SLIME, MonsterEncounter::SLIME_BOSS}) {
+                GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+                game.act=1; game.floorNum=encounter==MonsterEncounter::SLIME_BOSS?16:8;
+                BattleContext live; live.init(game, encounter);
+                auto &slime=live.monsters.arr[0];
+                const auto split=slime.id==MonsterId::SPIKE_SLIME_L?MonsterMoveId::SPIKE_SLIME_L_SPLIT
+                    :slime.id==MonsterId::ACID_SLIME_L?MonsterMoveId::ACID_SLIME_L_SPLIT:MonsterMoveId::SLIME_BOSS_SPLIT;
+                if(slime.id!=MonsterId::SPIKE_SLIME_L && slime.id!=MonsterId::ACID_SLIME_L && slime.id!=MonsterId::SLIME_BOSS)
+                    throw std::runtime_error("slime split fixture has no large slime in slot 0");
+                slime.block=0; slime.curHp=slime.maxHp/2+5;
+                for (int played=0;played<2;++played) {
+                    CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(950+played);
+                    live.cards.moveToHand(defend); live.player.energy=3;
+                    sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                }
+                const auto preHitMove=slime.moveHistory[0];
+                CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=960;
+                live.cards.moveToHand(headbutt); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
+                        || slime.curHp>slime.maxHp/2 || slime.curHp<=0
+                        || slime.moveHistory[0]!=split || slime.moveHistory[1]!=split)
+                    throw std::runtime_error("native Headbutt did not split the slime at the hit");
+                CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+                auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71519u);
+                if(!expected.pendingActionQueueObserved || expected.pendingActionQueue.size()!=1)
+                    throw std::runtime_error("native slime split Headbutt queue is not the cleanup alone");
+                auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-slime-split");
+                setProducerV4CardObservation(observation,expected);
+                auto &combat=observation["silverRoot"]["combat"];
+                combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                    {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                    {"cards",json::array()},{"liveChoices",json::array()}};
+                for(const auto &card:combat["discard"])
+                    combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                        {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+                combat["pendingCardQueue"]=json::array();
+                // Java form: setMove(3) replaced the pre-hit move, which is now
+                // the previous move until the queued SetMoveAction runs.
+                const auto idText=nativeJavaMonsterName(slime.id);
+                auto &javaSlime=combat["monsters"][0];
+                const auto previous=javaMoveByte(idText,preHitMove);
+                javaSlime["nextMove"]=3;
+                javaSlime["moveHistory"]=previous>=0?json::array({previous,3}):json::array({3});
+                combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                    json{{"kind","MONSTER_SPLIT_SET_MOVE"},{"slot",0}}});
+                const auto imported=one_combat::advisor::importSilverRoot(observation);
+                if(!imported.ok) throw std::runtime_error("slime split Headbutt import: "+imported.reason);
+                if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
+                    throw std::runtime_error("slime split Headbutt pending queue differs from native");
+                normalizeDynamicObservationIdentity(expected);
+                const auto adoptIds=[](auto &mine,const auto &theirs) {
+                    if(mine.size()!=theirs.size()) throw std::runtime_error("slime split Headbutt pile size differs");
+                    for(std::size_t i=0;i<mine.size();++i) {
+                        if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                            throw std::runtime_error("slime split Headbutt pile order differs");
+                        mine[i].uniqueId=theirs[i].uniqueId;
+                    }
+                };
+                adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+                adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+                adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+                adoptIds(expected.hand,imported.wire.hand);
+                expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+                expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+                expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+                expected.cardSelect.cards=imported.wire.cardSelect.cards;
+                auto actual=battleContextFromWire(imported.wire);
+                auto reference=battleContextFromWire(expected);
+                if(!actual.equalForSearch(reference)) {
+                    const auto context=searchContextFromWire(imported.wire);
+                    std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                            json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                    throw std::runtime_error("slime split Headbutt root parity failed");
+                }
+                const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+                pick.execute(actual); pick.execute(reference);
+                if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                    throw std::runtime_error("slime split Headbutt continuation parity failed");
+                // Fail closed: a split above half HP, a split naming an
+                // empty slot, and the flag's legacy refusal.
+                auto healthy=observation;
+                healthy["silverRoot"]["combat"]["monsters"][0]["hp"]=slime.maxHp/2+1;
+                if(one_combat::advisor::importSilverRoot(healthy).ok)
+                    throw std::runtime_error("slime split above half HP was accepted");
+                if(encounter==MonsterEncounter::LARGE_SLIME) {
+                    auto other=observation;
+                    other["silverRoot"]["combat"]["pendingActionQueue"][1]["slot"]=1;
+                    if(one_combat::advisor::importSilverRoot(other).ok)
+                        throw std::runtime_error("slime split for an empty slot was accepted");
+                }
+                setenv("STS_SILVER_SLIME_SPLIT_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_SLIME_SPLIT_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_SLIME_SPLIT_QUEUE=0 did not restore the refusal");
+            }
+        }
         const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
         const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");
         const auto v4ContinuationImported = one_combat::advisor::importSilverRoot(v4Continuation);
