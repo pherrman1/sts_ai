@@ -15,3 +15,9 @@ nohup: failed to run command './run_vd2.sh': Permission denied
 2026-10-21T17:49:40Z VD2 DONE
 2026-10-21T19:53:41Z start v0.5
 2026-10-21T20:23:17Z run VDF_T1_alpha1_v0.5 EXIT 0
+2026-10-21T20:25:56Z probed VDF_T1_alpha1_v0.5
+2026-10-21T20:25:56Z VD3 DONE
+2026-10-21T20:26:18Z start h1raw
+2026-10-21T20:41:09Z run VDF_H1raw_alpha1_v1 EXIT 0
+2026-10-21T20:43:49Z probed VDF_H1raw_alpha1_v1
+2026-10-21T20:43:49Z VD4 DONE
