@@ -1109,7 +1109,8 @@ Supported native fixtures cover map choices, reward take/skip and repeated
 card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
 duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
-purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
+purchase types, shop-removal entry, chest open/leave and boss relic take/skip (the live
+driver maps the producer's boss-relic `cancel` to MCP's `skip` tool, live problem 71). The existing V4
 support gate still excludes non-card reward collection, removal/other
 selectors and the final map-to-boss transition. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
