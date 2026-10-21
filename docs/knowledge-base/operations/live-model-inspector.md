@@ -1383,7 +1383,7 @@ first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` q
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
 that would remove the power (Shelled Parasite stun, Byrd grounding) stays unsupported, as do
-any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy

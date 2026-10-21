@@ -22066,3 +22066,25 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Live Silver: Headbutt splitting a large slime refused its put-on-top choice (2026-10-21)
+
+**Question:** why did live seed 111200464 seg1 s307 (release 9ec8a51d, Act 1 floor 16, Slime Boss fight after the boss
+split) stop with `silver_selection_pending_actions` and pending actions `[UseCardAction, TextAboveCreatureAction,
+SetMoveAction]` after Headbutt+ took a Spike Slime (L) from 38 to 29 of 64 HP (problem 68 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report; `Monster::onHpLost`; `live_silver_importer_test` (Ironclad seed 111200071,
+LARGE_SLIME and SLIME_BOSS, no gameplay runs).
+**Result:** the large slimes' and Slime Boss's `damage()` at half HP sets the split move (3) and queues
+`TextAboveCreatureAction` and `SetMoveAction(3, UNKNOWN)` behind Headbutt's `UseCardAction`. Native sets the split at
+the hit and, under `STS_SLIME_SPLIT_RNG_FIX`, also writes it as the previous move (the queued SetMoveAction's second
+history entry), so its tail is `[USE_CARD]`. The producer had no item for this pair.
+**Interpretation:** the producer emits `MONSTER_SPLIT_SET_MOVE {slot}` (only for a living, slotted large slime or
+Slime Boss with nextMove 3 and a queued SetMoveAction(3, UNKNOWN)). `STS_SILVER_SLIME_SPLIT_QUEUE` (default on, `=0`
+restores the refusal) writes the split as the previous move; it refuses when `STS_SLIME_SPLIT_RNG_FIX=0` (native then
+keeps an older move there) or the slime is above half HP. The folded import matches the native Headbutt state for
+both encounters. Changes only which live roots Silver searches.
+**Open question:** the producer reads `SetMoveAction` fields (`monster`, `theNextMove`, `theNextIntent`) as for
+Darkling; `TextAboveCreatureAction` itself is not inspected.
+Seeds: none new (live seed 111200464 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
