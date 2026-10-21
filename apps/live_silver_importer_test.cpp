@@ -3216,7 +3216,11 @@ int main(int argc, char **argv) {
                 {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"liveChoices",choices},
                 {"continuation","source_card_actions"}};
             combat["pendingActionQueue"]=json::array({json{{"kind","DRAW"},{"amount",2}}});
-            if(relicTail==1)combat["pendingActionQueue"].push_back(json{{"kind","BUFF_PLAYER"},{"power","Pen Nib"},{"amount",1},{"sourceMonster",false}});
+            if(relicTail==1) {
+                // Pen Nib armed by this card: counter 9, PenNibPower still queued (problem 54).
+                combat["relics"].push_back(json{{"id","Pen Nib"},{"counter",9},{"usedUp",false}});
+                combat["pendingActionQueue"].push_back(json{{"kind","BUFF_PLAYER"},{"power","Pen Nib"},{"amount",1},{"sourceMonster",false}});
+            }
             if(relicTail==2) {
                 combat["playerPowers"].push_back(json{{"id","Pen Nib"},{"amount",1}});
                 combat["playerPowers"].push_back(json{{"id","Weakened"},{"amount",2},{"justApplied",false}});
@@ -3230,6 +3234,16 @@ int main(int argc, char **argv) {
             one_combat::advisor::SilverImportContext context;
             const auto imported=one_combat::advisor::importSilverRoot(observation,context);
             if(!imported.ok)throw std::runtime_error("Burning Pact typed tail import: "+imported.reason);
+            if(relicTail==1) {
+                constexpr auto penNibBit=1ULL<<static_cast<int>(PlayerStatus::PEN_NIB);
+                if(imported.wire.player.statusBits0 & penNibBit)
+                    throw std::runtime_error("queued Pen Nib imported as already applied");
+                setenv("STS_IMPORTER_PEN_NIB_PENDING_FIX","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_IMPORTER_PEN_NIB_PENDING_FIX");
+                if(!legacy.ok || !(legacy.wire.player.statusBits0 & penNibBit))
+                    throw std::runtime_error("STS_IMPORTER_PEN_NIB_PENDING_FIX=0 did not restore the counter sentinel bit");
+            }
             auto selected=battleContextFromWire(json(imported.wire).get<silver_bridge::BattleStateWire>());
             if(json(wireFromSearchState(selected,searchContextFromWire(imported.wire)).pendingActionQueue)!=json(imported.wire.pendingActionQueue))
                 throw std::runtime_error("source relic tail lost typed queue through JSON/native roundtrip");
