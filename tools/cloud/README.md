@@ -25,6 +25,8 @@ binary_sha256 <64-char sha256>          # of build/linux-gcc-release/one_combat 
 workers       8                         # the worker count Philipp authorized; unit line i goes to worker i%workers+1
 share         /mnt/project-files/<dir>  # where wWW.tar and wWW.DONE.json are uploaded
 parallel      4                         # units run at once per worker (default 4)
+schedule      queue                     # optional, default static; see "Queue schedule" below
+lease_minutes 30                        # queue only: a claim without heartbeat for this long may be taken over
 input studentc.bin /mnt/project-files/student-c-488/studentc.bin <sha256>   # copied into RUN, hash-checked
 ```
 
@@ -76,6 +78,49 @@ missing, extra or failed units). It also checks the tar's `FROZEN.txt` against t
 binary and against the lead's copies of the campaign files, and checks that all workers ran the same commit. It
 prints `OK:`, `MISSING:` and `BAD:` worker lists, and exits 0 only when every worker is OK. Use those lists,
 not the workers' chat, to decide which threads to release and which to relaunch.
+
+## Queue schedule (opt-in)
+
+With `schedule static` (the default, and every campaign frozen before this option) unit line i belongs to worker
+i % workers + 1. One slow or stalled worker then holds up the whole campaign: in the gen-1b A/B one worker sat
+idle 6.8 h waiting for a resume, and the campaign took 11.1 h instead of about 4 h.
+
+With `schedule queue` every lane of every worker takes the first unit in `units.txt` order that is neither
+uploaded nor claimed, so the units spread over whatever workers are alive:
+
+- **Claim:** `mkdir SHARE/claims/<id>.a<n>` decides between racing workers. While the unit runs, its owner
+  rewrites `hb` (`wWW EPOCH`) every minute. A claim whose heartbeat is older than `lease_minutes`, or that holds
+  `failed`, may be taken over as attempt n+1, at most 4 attempts per unit.
+- **Upload:** a finished unit goes to the share at once as `SHARE/units/<id>.wWW.tar` (unit dir, `.done`,
+  `.log`, `FROZEN.txt`, `SETUP.txt`). A worker that dies later loses nothing, and a restarted worker uploads
+  units it finished locally but had not uploaded.
+- **End:** a worker finishes when no unit is left without an upload. Until then idle lanes poll every 2 min and
+  take over expired claims, so they also cover a worker that stalls near the end. It then writes
+  `wWW.DONE.json` (the unit ids it uploaded) and prints `WORKER_OK wWW queue units_uploaded=N`. A unit that
+  failed 4 times makes `run` stop with the unit count; report it, do not rerun.
+- **Timeouts:** `run_unit.sh` keeps its own per-unit timeouts (e.g. `timeout 7h` per arm, rc 124 in the unit's
+  record). The heartbeat runs for the whole unit, so a long unit on a live worker is never taken over; the lease
+  only matters once a worker or its container is gone. Pick `lease_minutes` well above the heartbeat interval
+  (1 min) and clock skew; 30 is the default.
+- **Duplicates:** if the share's `mkdir` is not atomic across containers, or a live worker's heartbeat stalls
+  past the lease, two workers can run the same unit. Units are seed-deterministic, so both results are valid;
+  the verifier uses the first tar in name order and reports the duplicate.
+
+The worker brief and commands are the same in both modes. The worker count is still Philipp's choice; it sets
+the valid W values and the FROZEN identity, not the unit split. The share holds one tar per unit plus one
+claim dir per attempt (about 2 files per unit).
+
+Verify and unpack a queue campaign:
+
+```
+python3 tools/cloud/verify_campaign.py docs/experiments/evidence/<campaign> --extract $HOME/<campaign>-units
+```
+
+It checks that every unit has a tar with its `.done` marker, no `.failed` marker, and a `FROZEN.txt` matching
+the manifest, the lead's campaign files and the worker named in the tar name, and that all tars name one run
+commit. Worker `DONE.json` files are listed, not required. `--extract` (only when every unit is OK) unpacks
+`out/units/...` in the layout of a static worker tar, for the campaign's analysis script. Release workers when
+every unit is OK.
 
 ## Reviewers: base binaries
 
