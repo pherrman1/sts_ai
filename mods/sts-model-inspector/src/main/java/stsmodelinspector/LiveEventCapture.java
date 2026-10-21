@@ -51,14 +51,15 @@ final class LiveEventCapture {
         phases(LEAVES,"ESCAPE|SUCCESS","DeadAdventurer");
         phases(LEAVES,"LEAVE","GremlinWheelGame");
         phases(LEAVES,"COMPLETE","GremlinMatchGame");
-        phases(CONTINUES,"INTRO","FaceTrader","Designer","Falling","SensoryStone","NoteForYourself","Bonfire","TheJoust","Colosseum","Lab");
+        phases(CONTINUES,"INTRO","FaceTrader","Designer","Falling","SensoryStone","NoteForYourself","Bonfire","Colosseum","Lab");
         phases(CONTINUES,"0","Nest","WindingHalls");
         phases(CONTINUES,"GAVE_MONEY","Beggar");
         phases(CONTINUES,"PURGE","GoldenWing");
         phases(CONTINUES,"PAID_1|PAID_2|PAID_3","MaskedBandits");
         phases(CONTINUES,"AGREE","Sssserpent");
         phases(CONTINUES,"INTRO_1","KnowingSkull");
-        phases(CONTINUES,"PRE_JOUST|JOUST","TheJoust");
+        // TheJoust$CUR_SCREEN has no INTRO: the ctor opens on HALT with the sole [Continue].
+        phases(CONTINUES,"HALT|PRE_JOUST|JOUST","TheJoust");
         phases(CONTINUES,"ACCEPT","SensoryStone");
         phases(CONTINUES,"INTRO|CHOOSE","Bonfire");
         phases(CONTINUES,"INTRO|COMPLETE|SPIN_READY","GremlinWheelGame");
