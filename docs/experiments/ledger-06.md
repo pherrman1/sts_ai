@@ -22198,7 +22198,7 @@ entry. No engine or simulation change.
 Seeds: none.
 **Knowledge impact:** none beyond this entry (producer tracker detail).
 
-## §TBD — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
+## §604 — Live problem 74: Toolbox's colorless offer with Red Mask's Weak queued is refused by the mod; refusal diagnostic added (2026-10-21)
 
 **Observation.** Live A20 seed 111200473 (release eeb17782, Chosen and Byrds, floor 30, turn 1): Toolbox's battle-start `ChooseOneColorless` offer reached the advisor as `silver_card_reward_pending_actions`. The queue behind it was `[DrawCardAction(5), EnableEndTurnButtonAction, (RelicAboveCreatureAction, ApplyPowerAction Weak 1 from the player) x 2]`. The mod refused (no continuation was sent); the importer already accepts `toolbox_actions` with `DRAW` plus `DEBUFF_ALL_ENEMY`.
 
