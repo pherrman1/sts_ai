@@ -115,6 +115,17 @@ namespace sts {
         throw std::runtime_error("STS_MUMMIFIED_HAND_PLAYED_CARD_FIX must be 0 or 1");
     }
 
+    // STS_BLOOD_FOR_BLOOD_COPY_COST_FIX: unset or 1 = a generated Blood for
+    // Blood gets BloodForBlood.makeCopy()'s updateCost(-damagedThisCombat)
+    // (javap, live parity problem 76). 0 = the legacy base cost of 4; other
+    // values are fatal.
+    bool bloodForBloodCopyCostFix() {
+        const char *value = std::getenv("STS_BLOOD_FOR_BLOOD_COPY_COST_FIX");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_BLOOD_FOR_BLOOD_COPY_COST_FIX must be 0 or 1");
+    }
+
     // STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX: unset or 1 = unupgraded True Grit
     // exhausts a lone hand card without a cardRandomRng draw, as Java's
     // ExhaustAction(1, true, false, false) does (live parity problem 76).
@@ -3238,7 +3249,7 @@ void BattleContext::triggerAndMoveToExhaustPile(CardInstance c) {
 
     if (player.hasRelic<R::DEAD_BRANCH>()){
         CardId id = getTrulyRandomCardInCombat(cardRandomRng, player.cc);
-        addToBot(Actions::MakeTempCardInHand(id));
+        addToBot(Actions::MakeTempCardInHand(generatedCombatCard(id)));
     }
 
     if (player.hasStatus<PS::DARK_EMBRACE>()) {
@@ -3420,6 +3431,14 @@ void BattleContext::chooseDiscardToHandCard(int discardIdx, bool forZeroCost) {
     moveToHandHelper(c);
 }
 
+CardInstance BattleContext::generatedCombatCard(CardId id) const {
+    CardInstance c(id);
+    if (id == CardId::BLOOD_FOR_BLOOD && player.timesDamagedThisCombat > 0 && bloodForBloodCopyCostFix()) {
+        c.updateCost(-player.timesDamagedThisCombat);
+    }
+    return c;
+}
+
 void BattleContext::chooseDiscoveryCard(CardId id) {
     const auto discoveryAmount = cardSelectInfo.data0;
     const int drawAfter = cardSelectInfo.drawAfter;
@@ -3427,7 +3446,7 @@ void BattleContext::chooseDiscoveryCard(CardId id) {
     if (drawAfter > 0) addToBot(Actions::DrawCards(drawAfter));
     for (int amount : cardSelectInfo.drawsAfter) addToBot(Actions::DrawCards(amount));
     cardSelectInfo.drawsAfter.clear();
-    CardInstance c(id);
+    CardInstance c = generatedCombatCard(id);
     if (cardSelectInfo.setCostToZero) c.setCostForTurn(0);
 
     for (int i = 0; i < discoveryAmount; ++i) {

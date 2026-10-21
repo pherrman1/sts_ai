@@ -22719,3 +22719,20 @@ today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
 [Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
 Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
 **Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
+## §612 — Live combat parity: a generated Blood for Blood ignored the HP lost this combat (2026-10-21)
+
+**Question:** why did live seed 111200476 parity s117 (release 0ba0e9a9, Discovery+ pick with three hits taken) show the
+new Blood for Blood at cost 1 in the game and 4 natively (problem 76; seed 111200481 s281 shows the same, 2 vs 4)?
+**Setup:** the canary's trace extract and javap of `BloodForBlood`, `DiscoveryAction`, `InfernalBlade`, `DeadBranch` and
+`AbstractCard.makeStatEquivalentCopy` (`issue76/` on the share); `blood_for_blood_copy_cost_test` (Ironclad seed
+111200071, JAW_WORM, no gameplay runs).
+**Result:** `BloodForBlood.makeCopy()` returns a new card with `updateCost(-player.damagedThisCombat)`. Discovery's
+offers (`generateCardChoices`), Infernal Blade and Dead Branch all call `makeCopy()`; Discovery's pick copies the offered
+card's cost via `makeStatEquivalentCopy`. Native built these cards with the base cost.
+**Interpretation:** `BattleContext::generatedCombatCard` applies the reduction for those three generators under
+`STS_BLOOD_FOR_BLOOD_COPY_COST_FIX` (default on, `=0` restores the base cost); the reduction clamps at 0 and no other
+card changes. Play-changing: generated Blood for Blood is cheaper after HP loss. The same trace's s489 draw-pile cost
+diff (game 0/0 vs native 1/1 for the deck's own Blood for Blood+ at an End Turn whose game observation precedes the
+draw) is not this path and stays open.
+Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`.
