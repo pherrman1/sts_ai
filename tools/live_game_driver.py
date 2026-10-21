@@ -633,7 +633,7 @@ def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalActio
     return matches[0]
 
 
-def map_ooc_action(selected: Any, candidates: Sequence[LegalAction]) -> LegalAction:
+def map_ooc_action(selected: Any, candidates: Sequence[LegalAction], screen_type: str = "") -> LegalAction:
     """Resolve one structured provider hint; labels are never action identities."""
     if not isinstance(selected, Mapping):
         raise IntegrationFailure("OOC response has no structured selectedLiveAction")
@@ -661,6 +661,10 @@ def map_ooc_action(selected: Any, candidates: Sequence[LegalAction]) -> LegalAct
                    and all(_mapping(a.semantic.get("choice")).get(key) == selected[key] for key in ("x", "y"))]
     else:
         matches = [a for a in candidates if a.mcp_tool == kind and not a.mcp_arguments]
+        # The inspector publishes the boss-relic Skip button as "cancel"; MCP
+        # advertises that same button only as its "skip" tool (problem 71).
+        if kind == "cancel" and not matches and screen_type == "BOSS_REWARD":
+            matches = [a for a in candidates if a.mcp_tool == "skip" and not a.mcp_arguments]
     if len(matches) != 1:
         raise IntegrationFailure(f"OOC action mapping expected exactly one candidate, got {len(matches)} for {selected!r}",
                                  matches=[a.trace() for a in matches])
@@ -1044,7 +1048,15 @@ def _has_uninitialized_combat_intent(screen: Mapping[str, Any], game: Mapping[st
                for source in (screen, game or {}) for monster in _list(source.get("monsters")))
 
 
+def _is_true_victory_room(screen: Mapping[str, Any]) -> bool:
+    """Vanilla enters TrueVictoryRoom only after the Heart dies; its ending
+    cutscene is NO_INTERACT and never becomes ready for a command."""
+    return _text(screen.get("room_type", screen.get("roomType", ""))) == "TrueVictoryRoom"
+
+
 def _is_terminal(screen: Mapping[str, Any]) -> bool:
+    if _is_true_victory_room(screen):
+        return True
     text = " ".join(_text(screen.get(key, "")).upper() for key in
                      ("screen_type", "screenType", "room_phase", "roomPhase", "outcome", "run_state"))
     return any(marker in text for marker in ("VICTORY", "DEATH", "GAME_OVER", "GAME OVER", "RUN_COMPLETE"))
@@ -1647,7 +1659,8 @@ class Driver:
                     elif combat and _mapping(selected).get("kind") == "grid_card_select":
                         action = grid_selection_transaction(selected, _mapping(snapshot.raw.get("observation")), screen)
                     else:
-                        action = (map_silver_action if combat else map_ooc_action)(selected, candidates)
+                        action = (map_silver_action(selected, candidates) if combat else
+                                  map_ooc_action(selected, candidates, _text(screen.get("screen_type"))))
                 except IntegrationFailure as error:
                     self.counters["mapping_failures"] += 1
                     row.update({"mapping_candidates": error.matches, "mapping_match_count": len(error.matches)})
@@ -1860,6 +1873,8 @@ def _terminal_outcome(screen: Mapping[str, Any]) -> str:
     victory = _mapping(screen.get("screen_state")).get("victory")
     if type(victory) is bool:
         return "victory" if victory else "death"
+    if _is_true_victory_room(screen):
+        return "victory"
     text = " ".join(_text(screen.get(key, "")).upper() for key in
                     ("screen_type", "screenType", "screen_name", "outcome", "run_state"))
     return "victory" if "VICTORY" in text else "death" if "DEATH" in text else "run_complete"

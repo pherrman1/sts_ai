@@ -1797,6 +1797,23 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
             throw std::runtime_error("OOC MCTS invalid leaf win model value");
         return value;
     }
+    if (options.heart1ValueNet) {
+        // Same record as the heart1 prior and the AZ-loop capture rows the value head was trained on.
+        one_combat::heart1::Choice choice;
+        bool encoded = false;
+        if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE) {
+            try { encoded = one_combat::heart1::buildChoice(gc, choice); }
+            catch (const std::exception &) {}
+        }
+        if (encoded) {
+            OocProfileScope predict(OocProfileBucket::LeafPredict);
+            const double logit = options.heart1ValueNet->forward(choice.record).value;
+            if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite heart1 leaf value");
+            ++continuation_.heart1ValueLeafEvaluations;
+            return 1.0 / (1.0 + std::exp(-logit));
+        }
+        ++continuation_.heart1ValueLeafFallbacks;
+    }
 #endif
     return dependencies.leafValue(gc, path);
 }
@@ -2405,6 +2422,13 @@ std::optional<bool> liveRealLearnedStop;   // STS_OOC_MCTS_REAL_LEARNED_STOP; un
 std::uint64_t liveSimulations = 512;
 // Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
 double liveFullBudgetFraction = 0;
+// Self-play exploration for AZ data runs (both opt-in, off by default):
+// STS_OOC_MCTS_ROOT_NOISE=FRACTION[:ALPHA] mixes Dirichlet noise into the root PUCT prior;
+// STS_OOC_MCTS_PLAY_SAMPLE=FLOOR[:TEMPERATURE] plays a root action sampled in proportion to
+// visits^(1/T) at decisions on floors <= FLOOR instead of the most-visited one.
+double liveRootNoiseFraction = 0, liveRootNoiseAlpha = 0.3;
+int livePlaySampleFloor = -1;
+double livePlaySampleTemperature = 1;
 // Learned stop (STS_OOC_MCTS_LEARNED_STOP=PATH:TAU, research, opt-in): a logistic CompactTreeNet of
 // P(the root visit leader is the full search's choice), checked at 128..2048 simulations; stop at >= TAU.
 std::shared_ptr<const CompactTreeNet> liveLearnedStopNet;
@@ -2964,6 +2988,8 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_LEAF_CAPTURE requires STS_OOC_MCTS=1");
     if (std::getenv("STS_OOC_MCTS_FULL_BUDGET_FRACTION") && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION requires STS_OOC_MCTS=1");
+    for (const char *key : {"STS_OOC_MCTS_ROOT_NOISE", "STS_OOC_MCTS_PLAY_SAMPLE"})
+        if (std::getenv(key) && !liveEnabled) throw std::runtime_error(std::string(key) + " requires STS_OOC_MCTS=1");
     liveSibling.reset();
     if (const char *path = std::getenv("STS_OOC_SIBLING_CAPTURE")) {
         if (!liveEnabled || !*path) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE requires STS_OOC_MCTS=1 and a path");
@@ -3050,6 +3076,37 @@ void configureLiveOocMcts() {
         if (value.empty() || end != value.c_str() + value.size() || !(x > 0 && x <= 1))
             throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION must be in (0, 1]");
         liveFullBudgetFraction = x;
+    }
+    liveRootNoiseFraction = 0; liveRootNoiseAlpha = 0.3;
+    livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
+    // "A[:B]" with A and B finite; returns false on malformed text.
+    const auto parsePair = [](const std::string &text, double &a, double &b) {
+        const auto colon = text.find(':');
+        const auto number = [](const std::string &t, double &x) {
+            char *end = nullptr;
+            x = t.empty() ? 0 : std::strtod(t.c_str(), &end);
+            return !t.empty() && end == t.c_str() + t.size() && std::isfinite(x);
+        };
+        if (!number(text.substr(0, colon), a)) return false;
+        return colon == std::string::npos || number(text.substr(colon + 1), b);
+    };
+    if (const char *noise = std::getenv("STS_OOC_MCTS_ROOT_NOISE")) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_ROOT_NOISE is unavailable in the live advisor");
+#endif
+        if (!parsePair(noise, liveRootNoiseFraction, liveRootNoiseAlpha)
+                || !(liveRootNoiseFraction > 0 && liveRootNoiseFraction <= 1) || !(liveRootNoiseAlpha > 0))
+            throw std::runtime_error("STS_OOC_MCTS_ROOT_NOISE must be FRACTION[:ALPHA] with FRACTION in (0, 1], ALPHA > 0");
+    }
+    if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_PLAY_SAMPLE is unavailable in the live advisor");
+#endif
+        double floor = -1;
+        if (!parsePair(sample, floor, livePlaySampleTemperature) || floor < 0 || floor != std::floor(floor) || floor > 100
+                || !(livePlaySampleTemperature > 0))
+            throw std::runtime_error("STS_OOC_MCTS_PLAY_SAMPLE must be FLOOR[:TEMPERATURE] with integer FLOOR >= 0, TEMPERATURE > 0");
+        livePlaySampleFloor = int(floor);
     }
     liveConfig = {}; liveOptions = {true};
     liveOptions.sampleNoncombat = true;
@@ -3158,6 +3215,28 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_LEAF_STUDENT excludes leaf and sibling capture");
         liveOptions.rolloutStudent = std::make_shared<const RolloutStudent>(student);
         liveOptions.rolloutStudentPath = student;
+#endif
+    }
+    if (const char *weights = std::getenv("STS_OOC_MCTS_LEAF_HEART1_VALUE"); weights && *weights) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE is unavailable in the live advisor");
+#else
+        // Replaces only the native X2-B anchor; the screen leaves use it as a residual base and
+        // sibling/leaf capture records it as "x2b".
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet
+                || liveOptions.heartLeaf || liveOptions.rolloutStudent)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE requires STS_OOC_MCTS=1, STS_OOC_MCTS_LEAF_VALUE=native "
+                                     "and no other leaf model");
+        if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE excludes leaf and sibling capture");
+        auto net = std::make_shared<one_combat::heart1::Net>();
+        std::string error;
+        if (!net->load(weights, &error))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE: " + error);
+        liveOptions.heart1ValueNet = std::move(net);
+        liveOptions.heart1ValuePath = weights;
+        liveOptions.heart1ValueSha256 = fileSha256Hex(weights);
 #endif
     }
     if (liveConfig.stopAt512VisitGap20
@@ -3388,7 +3467,12 @@ void configureLiveOocMcts() {
         << (liveOptions.leafWinNet ? " leaf_win_model=" + liveOptions.leafWinPath : std::string{})
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
+        << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
+        << (liveRootNoiseFraction > 0 ? " root_noise=" + std::to_string(liveRootNoiseFraction) + ":"
+            + std::to_string(liveRootNoiseAlpha) : std::string{})
+        << (livePlaySampleFloor >= 0 ? " play_sample=" + std::to_string(livePlaySampleFloor) + ":"
+            + std::to_string(livePlaySampleTemperature) : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -3416,6 +3500,8 @@ void configureLiveOocMcts() {
         << (liveOptions.rolloutStudent ? ",\"leafStudent\":\"" + liveOptions.rolloutStudentPath + "\"" : std::string{})
         << (liveOptions.heartLeaf ? ",\"leafHeartModel\":\"" + liveOptions.heartLeafPath + "\",\"leafHeartModelSha256\":\""
             + liveOptions.heartLeaf->manifestSha256() + "\"" : std::string{})
+        << (liveOptions.heart1ValueNet ? ",\"leafHeart1Value\":\"" + liveOptions.heart1ValuePath + "\",\"leafHeart1ValueSha256\":\""
+            + liveOptions.heart1ValueSha256 + "\"" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -3939,7 +4025,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected,
-    nlohmann::json *rootActions, bool fullBudget) {
+    nlohmann::json *rootActions, bool fullBudget, bool explore) {
     nlohmann::json *const policyRoot = std::exchange(t_policyTargetRoot, nullptr);
     const double cpuStart = liveOptions.cpuBudgetSeconds > 0 ? threadCpuSeconds() : 0;
     ImaginedScope scope;
@@ -3974,6 +4060,11 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         config.budgetExhausted = [deadline] { return threadCpuSeconds() >= deadline; };
     }
     config.seed = oocMctsSearchSeed(seed, index);
+    if (explore && liveRootNoiseFraction > 0) {
+        config.rootNoiseFraction = liveRootNoiseFraction;
+        config.rootNoiseAlpha = liveRootNoiseAlpha;
+        config.rootNoiseSeed = splitMix64(config.seed ^ 0x524f4f544e4f4953ULL);   // "ROOTNOIS"
+    }
     auto options = liveOptions;
     auto capture = liveLeafCapture ? liveLeafCapture->begin(seed, index, config.seed,
         simulations, options.leafCombats) : nullptr;
@@ -4067,6 +4158,31 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
         return searchWithSoleRootShortcut(model, config, sole, simulations);
     }();
+    // STS_OOC_MCTS_PLAY_SAMPLE: replace the most-visited action by a visit-proportional draw from a salted
+    // hash of the search seed (no game or search RNG stream). Pruned and unvisited actions never play.
+    const auto searchSelected = result.selectedAction;
+    if (explore && livePlaySampleFloor >= 0 && gc.floorNum <= livePlaySampleFloor && !sole && !result.aborted
+            && result.selectedAction) {
+        std::vector<double> weights;
+        double total = 0;
+        for (const auto &a : result.rootActions) {
+            const double w = a.pruned || !a.visits ? 0.0
+                : std::pow(double(a.visits) / double(result.metrics.simulations ? result.metrics.simulations : 1),
+                           1.0 / livePlaySampleTemperature);
+            weights.push_back(w);
+            total += w;
+        }
+        if (total > 0 && std::isfinite(total)) {
+            const double u = double(splitMix64(config.seed ^ 0x504c415953414d50ULL) >> 11) * 0x1p-53 * total;   // "PLAYSAMP"
+            double acc = 0;
+            for (std::size_t i = 0; i < weights.size(); ++i) {
+                if (!weights[i]) continue;
+                acc += weights[i];
+                result.selectedAction = result.rootActions[i].id;
+                if (u < acc) break;
+            }
+        }
+    }
     if (leafReplayMode) {
         auto report = result.aborted ? replayReport("INVALID", "decision0_search_aborted")
             : replayReport("NOT_REACHED", "decision0_search_finished_before_scheduled_leaf");
@@ -4217,6 +4333,11 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
         // Only with the option on, so rows without it keep their exact bytes.
         if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
+        if (explore && liveRootNoiseFraction > 0) (*policyRoot)["rootNoise"] = {liveRootNoiseFraction, liveRootNoiseAlpha};
+        if (explore && livePlaySampleFloor >= 0) {
+            (*policyRoot)["searchSelectedId"] = searchSelected ? json(*searchSelected) : json(nullptr);
+            (*policyRoot)["playSampled"] = searchSelected != result.selectedAction;
+        }
         if (m.prunedActions) policyRoot->update({{"unsupportedSimulations", m.unsupportedSimulations},
             {"prunedActions", m.prunedActions}, {"prunedReasons", m.prunedReasons}});
     }
@@ -4233,7 +4354,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         const auto &m = result.metrics;
         const bool completed = !result.aborted && m.simulations == simulations;
         if (completed && result.hypotheticalLockedAction
-            && result.hypotheticalLockedAction != result.selectedAction)
+            && result.hypotheticalLockedAction != searchSelected)
             throw std::runtime_error("OOC hypothetical lock disagrees with full-budget winner");
         const nlohmann::json row = {
             {"seed",seed},{"decisionIndex",index},{"floor",gc.floorNum},{"screen",int(gc.screenState)},
@@ -4269,7 +4390,7 @@ nlohmann::json liveRootLeafTails(const GameContext &gc, const PathHistory &path,
     // The end-state hook sits on the native leaf dependency; every other leaf skips it.
     if (liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf
             || liveOptions.directLeaf || liveOptions.leafWinNet || liveOptions.heartLeaf || liveOptions.rolloutStudent
-            || !liveOptions.leafCombats)
+            || liveOptions.heart1ValueNet || !liveOptions.leafCombats)
         throw std::runtime_error("liveRootLeafTails requires the native rollout leaf (STS_OOC_MCTS_LEAF_VALUE=native)");
     static const CompactTreeNet anchor = [] {
         CompactTreeNet net;
@@ -4444,7 +4565,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         try {
             return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSamplerFor(gc),
                 samples, &continuation, &selected, rootRow.is_null() ? nullptr : &rootActions,
-                liveFullBudgetFraction > 0 && oocMctsFullBudgetRoot(seed, index, liveFullBudgetFraction));
+                liveFullBudgetFraction > 0 && oocMctsFullBudgetRoot(seed, index, liveFullBudgetFraction), true);
         } catch (const std::exception &error) {
             if (leafStabilityMode) failStability(error.what());
             if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", error.what())};
@@ -4566,6 +4687,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.priorLeafSteps+=continuation.priorLeafSteps;
     c.heart1LeafSteps+=continuation.heart1LeafSteps; c.heart1LeafFallbacks+=continuation.heart1LeafFallbacks;
     c.studentLeafEvaluations+=continuation.studentLeafEvaluations; c.studentLeafFallbacks+=continuation.studentLeafFallbacks;
+    c.heart1ValueLeafEvaluations+=continuation.heart1ValueLeafEvaluations;
+    c.heart1ValueLeafFallbacks+=continuation.heart1ValueLeafFallbacks;
     for (auto &[reason,count] : continuation.heart1LeafReasons) c.heart1LeafReasons[reason]+=count;
     for (auto &[reason,count] : continuation.heart1PriorReasons) c.heart1PriorReasons[reason]+=count;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
@@ -4801,7 +4924,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         {"heart1_leaf_fallbacks",m.continuation.heart1LeafFallbacks},
         {"heart1_leaf_reasons",m.continuation.heart1LeafReasons},
         {"student_leaf_evaluations",m.continuation.studentLeafEvaluations},
-        {"student_leaf_fallbacks",m.continuation.studentLeafFallbacks}}.dump() << '\n';
+        {"student_leaf_fallbacks",m.continuation.studentLeafFallbacks},
+        {"heart1_value_leaf_evaluations",m.continuation.heart1ValueLeafEvaluations},
+        {"heart1_value_leaf_fallbacks",m.continuation.heart1ValueLeafFallbacks}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
@@ -7766,6 +7891,32 @@ void oocMctsAdapterSelfTest() {
         && full.selectedAction==stopped.selectedAction
         && test::oocStateFingerprint(live)==before,
         "full-budget root disables the early stop the default search takes");
+    {   // Exploration options: deterministic per (run seed, decision), clean reported priors, legal plays.
+        liveRootNoiseFraction=.25; liveRootNoiseAlpha=.3;
+        std::uint64_t n1=0, n2=0;
+        const auto noised=selectOocMctsAction(live,livePath,42,7,128,lethal,n1,nullptr,nullptr,nullptr,false,true);
+        const auto noisedAgain=selectOocMctsAction(live,livePath,42,7,128,lethal,n2,nullptr,nullptr,nullptr,false,true);
+        liveRootNoiseFraction=0;
+        bool same=noised.rootActions.size()==first.rootActions.size()
+            && noised.selectedAction==noisedAgain.selectedAction && n1==n2, moved=false;
+        for (std::size_t i=0;same && i<noised.rootActions.size();++i) {
+            same=noised.rootActions[i].prior==first.rootActions[i].prior
+                && noised.rootActions[i].visits==noisedAgain.rootActions[i].visits;
+            moved=moved || noised.rootActions[i].visits!=first.rootActions[i].visits;
+        }
+        require(same && moved && test::oocStateFingerprint(live)==before,
+            "root noise: deterministic, reported priors stay clean, visits change");
+        livePlaySampleFloor=100; livePlaySampleTemperature=1;
+        std::uint64_t s1=0, s2=0;
+        const auto sampled=selectOocMctsAction(live,livePath,42,7,128,lethal,s1,nullptr,nullptr,nullptr,false,true);
+        const auto sampledAgain=selectOocMctsAction(live,livePath,42,7,128,lethal,s2,nullptr,nullptr,nullptr,false,true);
+        livePlaySampleFloor=-1;
+        const auto played=std::find_if(sampled.rootActions.begin(),sampled.rootActions.end(),
+            [&](const auto &a) { return sampled.selectedAction && a.id==*sampled.selectedAction; });
+        require(sampled.selectedAction==sampledAgain.selectedAction && played!=sampled.rootActions.end()
+            && played->visits>0 && !played->pruned && test::oocStateFingerprint(live)==before,
+            "play sampling: deterministic, plays a visited unpruned root action");
+    }
     auto liveExpected=detachedCopy(live);
     const auto liveCandidates=v4CandidateActions(liveExpected);
     const auto selected=std::find_if(liveCandidates.begin(),liveCandidates.end(),

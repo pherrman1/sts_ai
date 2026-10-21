@@ -276,6 +276,8 @@ public final class CombatBoundaryTest {
                 || !"{\"kind\":\"MONSTER_SET_MOVE\",\"move\":4,\"slot\":2}".equals(STSModelInspector.monsterSetMoveItemJson(4,2))
                 || STSModelInspector.monsterSetMoveItemJson(3,0)!=null
                 || STSModelInspector.monsterSetMoveItemJson(4,5)!=null
+                || !"{\"kind\":\"MONSTER_SPLIT_SET_MOVE\",\"slot\":1}".equals(STSModelInspector.monsterSplitItemJson(1))
+                || STSModelInspector.monsterSplitItemJson(5)!=null
                 || STSModelInspector.monsterReactionItemJson("MONSTER_ROLL_PRIVATE",0,0)!=null)
             throw new AssertionError("monster reaction pending action qualification");
         for(int count:new int[]{1,2}) {
