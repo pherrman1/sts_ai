@@ -2,7 +2,7 @@
 # usage: run_unit.sh REPO RUN UNIT_OUT SEED -- one gen-1b value-leaf A/B seed, both arms in sequence; always exits 0
 # (per-arm rc in the .done lines). PREREG.md has the full config and its provenance.
 #   A  heartoutcomegen policy capture with student_sel as the OOC prior and rollout net; rollout3 ends in X2-B
-#      (gen 0's search arm, = arm A of az_gen1_ab_20261020).
+#      (arm A of az_gen1_ab_20261020 with the learned OOC stop off).
 #   B  the same, but rollout3 ends in sigmoid(gen1b value head) (STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin).
 #      Nothing else differs. 7 h timeout per arm (rc 124).
 # Both arms: OOC MCTS 4096 sims, learned OOC stop OFF (Philipp 2026-10-21), exact visit lock only, 25% full-budget roots, real-combat CTM rows; flat exact-10k

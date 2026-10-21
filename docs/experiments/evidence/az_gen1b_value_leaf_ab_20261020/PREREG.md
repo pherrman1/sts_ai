@@ -10,7 +10,7 @@ In the gen-0 search stack, does ending each rollout3 leaf in gen 1b's value head
 often at A20?
 
 ## Arms (`run_unit.sh` is the source of truth)
-- **A (control):** gen 0's search arm, identical to arm A of `../az_gen1_ab_20261020` (`STS_OOC_HEART1=student_sel.bin`
+- **A (control):** gen 0's search arm (arm A of `../az_gen1_ab_20261020`) with the learned OOC stop off (`STS_OOC_HEART1=student_sel.bin`
   `cf6bf7fb…`). Every rollout3 leaf, and every other native anchor evaluation, ends in X2-B.
 - **B:** A plus `STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin` (`e6aa044c…`, data branch `claude/az-gen1-data` 65762545).
   Where X2-B would value a state, B uses sigmoid(gen 1b value logit) on the same heart1 record the prior and the
