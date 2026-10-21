@@ -16,6 +16,7 @@ public final class LiveEventCaptureTest {
     static class Lab { String screen="INTRO"; }
     static class Bonfire { String screen="CHOOSE"; }
     static class Ghosts extends Base { int hpLoss=40; }
+    static class Mushrooms extends Base {}
     static class Unknown { String screen="COMPLETE"; }
     static Map<String,Object> obj(Object...pairs) {Map<String,Object> m=new LinkedHashMap<>();for(int i=0;i<pairs.length;i+=2)m.put((String)pairs[i],pairs[i+1]);return m;}
     @SuppressWarnings("unchecked") static Map<String,Object> map(Object v){return (Map<String,Object>)v;}
@@ -66,6 +67,10 @@ public final class LiveEventCaptureTest {
         out=capture(new DeadAdventurer(),0,1);check(map(out.get("details")).get("phase").equals(2)
                 &&Boolean.TRUE.equals(map(out.get("details")).get("earnedGold"))&&!out.toString().contains("MUST_NOT_CAPTURE"),"adventurer public history/hidden rewards");
         for(Object event:Arrays.asList(new Lab(),new Bonfire()))check("event_continue".equals(map(capture(event,0).get("details")).get("mechanicalTransition")),"forced offer opening");
+        Mushrooms mushrooms=new Mushrooms();mushrooms.screenNum=2;out=capture(mushrooms,0);
+        check("event_continue".equals(map(out.get("details")).get("mechanicalTransition"))&&!out.containsKey("unsupportedReason"),"Mushrooms ambush Fight not forced");
+        mushrooms.screenNum=1;check("event_leave".equals(map(capture(mushrooms,0).get("details")).get("mechanicalTransition")),"Mushrooms leave page changed");
+        mushrooms.screenNum=3;check(capture(mushrooms,0).containsKey("unsupportedReason"),"unknown Mushrooms page accepted");
         check(capture(new Unknown(),0).containsKey("unsupportedReason"),"unknown class accepted as leave");
         for(String owner:Arrays.asList("DrugDealer","DesignerTransform"))check("transform".equals(LiveOocCapture.selectorType(false,false,false,Arrays.asList(owner),false,false).get("type")),"unflagged transform owner");
         check("remove".equals(LiveOocCapture.selectorType(false,false,false,Arrays.asList("NoteForYourself"),false,false).get("type")),"Note selector owner");
