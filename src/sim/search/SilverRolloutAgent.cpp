@@ -337,7 +337,6 @@ constexpr std::array<CardId,13>  defensiveCards = {
     }
 
     // Silver's rollout-policy constants at their production defaults.
-    constexpr int kBlockOffset = 4;
     constexpr int kAoeMin = 2;
 
     int cardPriority(const CardInstance &c) {
@@ -574,7 +573,7 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
     }
 
     const int incomingDamage = getIncomingDamage(bc);
-    if (bc.player.block > (incomingDamage - act - kBlockOffset)) {
+    if (bc.player.block > (incomingDamage - act - blockRule.blockOffset)) {
         fixed_list<int,10> offensiveCards;
         for (auto handIdx : nonZeroCostCards) {
             const auto &c = bc.cards.hand[handIdx];
@@ -594,7 +593,8 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
         }
     }
 
-    if (blockFirst && bc.player.block < incomingDamage && !attacksCouldKill(bc, playableCardsIdxs)) {
+    if (blockRule.blockFirstMargin >= 0 && incomingDamage - bc.player.block > blockRule.blockFirstMargin
+            && !(blockRule.blockLethalCheck && attacksCouldKill(bc, playableCardsIdxs))) {
         fixed_list<int,10> defensive;
         for (auto handIdx : playableCardsIdxs) {
             if (isDefensiveCard.test(static_cast<int>(bc.cards.hand[handIdx].getId()))) defensive.push_back(handIdx);

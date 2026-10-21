@@ -703,7 +703,11 @@ const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutC
         if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_PRIOR"); raw && *raw)
             c.prior = std::string(raw) == "1";
         if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_BLOCK_FIRST"); raw && *raw)
-            c.blockFirst = std::string(raw) == "1";
+            c.blockRule.blockFirstMargin = std::atoi(raw);
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_BLOCK_OFFSET"); raw && *raw)
+            c.blockRule.blockOffset = std::atoi(raw);
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_BLOCK_LETHAL"); raw && *raw)
+            c.blockRule.blockLethalCheck = std::string(raw) != "0";
         return c;
     }();
     return config;
@@ -723,7 +727,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     }
     rolloutAgent.playTable = rolloutConfig.cardTable;
     rolloutAgent.zeroCostSkillTurnCap = rolloutConfig.zeroCostCap;
-    rolloutAgent.blockFirst = rolloutConfig.blockFirst;
+    rolloutAgent.blockRule = rolloutConfig.blockRule;
     const int uniform = rolloutConfig.uniform;
     const int playouts = uniform > 0 ? uniform : rolloutConfig.perLeaf;
     double value = 0;

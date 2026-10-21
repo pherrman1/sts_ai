@@ -380,7 +380,7 @@ namespace {
             policyFromTurn_ = fromTurn;
             policy_ = sts::search::SilverRolloutAgent(false, 0, live.searchContext().act);
             policy_.zeroCostSkillTurnCap = live.rolloutConfig.zeroCostCap;
-            policy_.blockFirst = live.rolloutConfig.blockFirst;
+            policy_.blockRule = live.rolloutConfig.blockRule;
             if (live.rolloutConfig.cardTable) {
                 policyTable_.assign(live.rolloutConfig.cardTable, live.rolloutConfig.cardTable + 372 * 2);
                 policy_.playTable = policyTable_.data();
@@ -925,7 +925,11 @@ int main(int argc, char **argv) {
         int turnCap = 8;
         std::vector<int> policyTurns;   // --policy-turns: k = optimal turns before the rollout policy takes over
         int policyTurnCap = 30;
-        bool policyBlockFirst = false;   // --policy-block-first: also evaluate the block-first playout (polB<k>)
+        // Playout variants evaluated by --policy-turns: "pol" is the production block rule;
+        // --policy-block-first adds "polB" (margin 0); --policy-grid M:K:L,... adds "gM_K_L"
+        // (margin M, offset K, lethal check L; M = -1 keeps block-first off).
+        using BlockRule = sts::search::SilverRolloutAgent::BlockRule;
+        std::vector<std::pair<std::string, BlockRule>> policyVariants{{"pol", BlockRule{}}};
         for (int i = 4; i < argc; ++i) {
             const std::string arg = argv[i];
             auto value = [&]() -> std::string {
@@ -951,7 +955,21 @@ int main(int argc, char **argv) {
                 std::stringstream list(value());
                 for (std::string item; std::getline(list, item, ',');) policyTurns.push_back(std::stoi(item));
             } else if (arg == "--policy-turn-cap") policyTurnCap = std::stoi(value());
-            else if (arg == "--policy-block-first") policyBlockFirst = true;
+            else if (arg == "--policy-block-first") policyVariants.push_back({"polB", BlockRule{0, true, 4}});
+            else if (arg == "--policy-grid") {
+                std::stringstream list(value());
+                for (std::string item; std::getline(list, item, ',');) {
+                    BlockRule r;
+                    char c1 = 0, c2 = 0;
+                    int l = 1;
+                    std::stringstream one(item);
+                    if (!(one >> r.blockFirstMargin >> c1 >> r.blockOffset >> c2 >> l) || c1 != ':' || c2 != ':')
+                        throw std::invalid_argument("--policy-grid entries are M:K:L");
+                    r.blockLethalCheck = l != 0;
+                    policyVariants.push_back({"g" + std::to_string(r.blockFirstMargin) + "_" + std::to_string(r.blockOffset)
+                                              + "_" + std::to_string(l), r});
+                }
+            }
             else throw std::invalid_argument("unknown option " + arg);
         }
         if (configs.empty()) configs = {parseConfig("prod"), parseConfig("live"),
@@ -1035,13 +1053,13 @@ int main(int argc, char **argv) {
                             }
                             acts.push_back(act);
                         }
-                        for (const int k : policyTurns) for (const bool blockFirst : {false, true}) {
-                            if (blockFirst && !policyBlockFirst) continue;
+                        for (const int k : policyTurns) for (std::size_t variant = 0; variant < policyVariants.size(); ++variant) {
+                            const auto &[variantName, rule] = policyVariants[variant];
                             const int from = root.turn + k;
                             std::vector<int> table;
                             if (searcher.rolloutConfig.cardTable)
                                 table.assign(searcher.rolloutConfig.cardTable, searcher.rolloutConfig.cardTable + 372 * 2);
-                            table.push_back(blockFirst ? 1 : 0);   // part of the solver key only
+                            table.push_back(static_cast<int>(variant));   // part of the solver key only
                             // A per-root rollout table (prod) changes the policy at every root: keep
                             // only solvers whose table is the current one, or memory grows per root.
                             for (auto it = policySolvers.begin(); it != policySolvers.end();)
@@ -1053,11 +1071,11 @@ int main(int argc, char **argv) {
                                                                    !canonicalOff && canonicalDrawsSafe(root), !keepEnergyWaste);
                                 ps->turnCap_ = policyTurnCap;
                                 ps->setPolicy(from, searcher);
-                                ps->policy_.blockFirst = blockFirst;
+                                ps->policy_.blockRule = rule;
                             }
                             for (std::size_t i = 0; i < edges.size(); ++i) {
                                 const Val v = ps->q(root, edges[i].action);
-                                const std::string tag = (blockFirst ? "polB" : "pol") + std::to_string(k);
+                                const std::string tag = variantName + std::to_string(k);
                                 acts[i][tag] = v.v;
                                 acts[i][tag + "Hp"] = v.hp;
                                 acts[i][tag + "Win"] = v.win;

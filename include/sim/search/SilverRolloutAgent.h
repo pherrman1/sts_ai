@@ -26,10 +26,19 @@ namespace sts::search {
         // #544: cards played this turn after which zero-cost non-attacks lose
         // first priority; 0 = no cap.
         int zeroCostSkillTurnCap = 50;
-        // Research (STS_SILVER_ROLLOUT_BLOCK_FIRST=1, default off): while incoming damage
-        // exceeds block and the hand's affordable attacks cannot kill a lone monster, play
-        // the best-priority defensive card before anything else.
-        bool blockFirst = false;
+        // Research block rule (default = production). blockFirstMargin >= 0
+        // (STS_SILVER_ROLLOUT_BLOCK_FIRST=M): while incoming damage exceeds block by more than
+        // M and (with blockLethalCheck) the hand's affordable attacks cannot kill a lone
+        // monster, play the best-priority defensive card before anything else. blockOffset
+        // (STS_SILVER_ROLLOUT_BLOCK_OFFSET, production 4): defensive cards are dropped once
+        // block > incoming - act - blockOffset.
+        struct BlockRule {
+            int blockFirstMargin = -1;
+            bool blockLethalCheck = true;
+            int blockOffset = 4;
+            bool operator==(const BlockRule &) const = default;
+        };
+        BlockRule blockRule;
 
         static const int *loadPlayTable(const std::string &path);
 
