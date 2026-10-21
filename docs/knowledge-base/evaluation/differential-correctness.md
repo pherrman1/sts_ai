@@ -405,6 +405,14 @@ representation-only differences that no native decision reads:
   a move on every `setMove` (Hexaghost sets Inferno twice), while native skips
   the roll of a single-move monster.
 
+Seed 111200436 (live problem 43, four steps): under Confusion, Anger's
+discard copy cost 1/1 in the game and 0/0 natively. Java `Anger.use` queues
+`makeStatEquivalentCopy()`, which copies `cost` and `costForTurn`; native
+built a fresh base-cost Anger. `STS_ANGER_COPY_COST_FIX` (default on, `=0`
+restores) copies both costs from the played card. **Open question:**
+`makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, and no
+live trace has shown a free Anger copy yet.
+
 Seed 111200448 (live problem 59): Armaments+ upgraded a Blood for Blood whose
 cost a hit had reduced to 3. The game ended at 2/2 (Java `BloodForBlood.upgrade`
 calls `upgradeBaseCost(cost - 1)`), native at 3/3, because the generic upgrade

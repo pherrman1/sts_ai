@@ -71,6 +71,13 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_ANGER_COPY_COST_FIX: unset/1 (default) = Anger's discard copy keeps
+    // the played card's cost and costForTurn, as Java makeStatEquivalentCopy
+    // does (live parity problem 43, seed 111200436: under Confusion the game's
+    // copy is 1/1, the legacy native copy 0/0). 0 = the legacy base-cost copy.
+    // Other values are fatal. Read only when Anger is played.
+    bool angerCopyCostFix();
+
     // STS_UPGRADE_COST_DELTA_FIX: unset/1 (default) = an in-combat upgrade
     // (Armaments, Apotheosis, ...) changes cost as Java upgradeBaseCost does:
     // Blood for Blood takes cost-1 from its current cost (keeping a

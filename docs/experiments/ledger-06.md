@@ -22001,6 +22001,20 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §584 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
+
+**Question:** why did live seed 111200436 (release f2e3f48d) show Anger cost diffs in the discard and draw piles at
+four steps (parity1 s77/s355, parity2 s57, parity3 s2; problem 43 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Setup:** the canary's extract (`issue43-extract.json`: a Confusion-rolled 1/1 Anger played, game discard with two
+1/1 Angers, native copy 0/0); `anger_copy_cost_test` (no gameplay seeds).
+**Result:** Java `Anger.use` queues `MakeTempCardInDiscardAction(makeStatEquivalentCopy())`, which copies `cost` and
+`costForTurn`; native built a fresh base-cost Anger. The played Anger matched in every instance.
+**Interpretation:** `STS_ANGER_COPY_COST_FIX` (default on, `=0` restores) copies both costs from the played card.
+Play-changing under Confusion (Snecko), unmeasured.
+**Open question:** `makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, unverified against the JAR
+and not seen live.
+Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
 ## §581 — Live Headbutt grids refused after a lethal hit on a Byrd and after Plated Armor 1 on Donu (2026-10-20)
 
 **Question:** why did live runs stop at Headbutt's discard grid with `silver_selection_pending_actions` on seeds
