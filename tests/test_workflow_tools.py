@@ -319,5 +319,59 @@ class CloudWorkerTest(unittest.TestCase):
         self.assertFalse((self.share / "w01.tar").exists())
 
 
+class CloudQueueTest(unittest.TestCase):
+    """Queue schedule claims: several workers and lanes race for the same units (no game seeds run).
+
+    CW_TEST_SHARE=/mnt/project-files/<scratch dir> runs the share-backed cases against that directory."""
+
+    def setUp(self):
+        CloudWorkerTest.setUp(self)
+        base = os.environ.get("CW_TEST_SHARE")
+        if base:
+            self.share = Path(base) / f"cwq-{os.getpid()}-{self._testMethodName}"
+        m = self.r.path / self.c / "campaign.manifest"
+        text = m.read_text().replace("workers 2", "workers 3")
+        text = "\n".join(l if not l.startswith("share ") else f"share {self.share}" for l in text.splitlines())
+        m.write_text(text + "\nschedule queue\nclaim_settle_seconds 2\n")
+        (self.r.path / self.c / "units.txt").write_text("".join(f"{s} a\n" for s in range(200, 212)))
+        (self.r.path / self.c / "run_unit.sh").write_text(
+            'repo=$1 run=$2 out=$3; shift 3\necho "$*" >> "$CW_TEST_LOG"\nsleep 1\n"$run/one_combat" "$@" > "$out/result.txt"\n')
+        self.r.commit("queue campaign")
+        self.log = self.tmp / "ran.log"
+        self.env = {**self.env, "CW_TEST_LOG": str(self.log)}
+
+    def tearDown(self):
+        if os.environ.get("CW_TEST_SHARE"):
+            shutil.rmtree(self.share, ignore_errors=True)
+        self.r.tmp.cleanup()
+
+    def test_split_share_claim_has_one_winner(self):
+        # Every claimer "wins" the mkdir, as on a share whose containers see each other's dirs late.
+        env = {**self.env, "CW_TEST_SPLIT_SHARE": "1"}
+        for rnd, mine in enumerate([["0"] * 6, ["0", "0", "1", "0", "0", "0"]]):
+            uid = f"20{rnd}_a"
+            procs = [subprocess.Popen(self.w + ["_claim", self.c, str(i % 3 + 1), uid, m], cwd=self.r.path, env=env,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                     for i, m in enumerate(mine)]
+            rcs = [p.wait() for p in procs]
+            self.assertEqual(rcs.count(0), 1, rcs)
+            cands = list((self.share / "claims" / f"{uid}.a1").glob("cand.*"))
+            self.assertEqual(len(cands), 6)
+            if "1" in mine:
+                self.assertEqual(rcs[mine.index("1")], 0)  # the static owner never waits and always wins
+
+    def test_concurrent_workers_run_each_unit_once(self):
+        for w in ("1", "2", "3"):
+            run(self.w + ["setup", self.c, w], self.r.path, self.env)
+        procs = [subprocess.Popen(self.w + ["run", self.c, w], cwd=self.r.path, env=self.env,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for w in ("1", "2", "3")]
+        outs = [p.communicate()[0] for p in procs]
+        self.assertEqual([p.returncode for p in procs], [0, 0, 0], outs)
+        ran = self.log.read_text().splitlines()
+        self.assertEqual(sorted(ran), sorted(f"{s} a" for s in range(200, 212)))
+        verify = [sys.executable, str(ROOT / "tools/cloud/verify_campaign.py"), self.c, "--json"]
+        run(verify, self.r.path)
+
+
 if __name__ == "__main__":
     unittest.main()
