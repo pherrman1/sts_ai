@@ -379,6 +379,7 @@ namespace {
         // Expected value of `a` at `s` over its exact outcomes; with alpha, stops
         // as soon as the outcomes left cannot lift the expectation above alpha.
         Val expand(const BattleContext &s, const SAction &a, double alpha) {
+            const auto replays0 = replays_;
             auto outs = outcomes(s, a);
             double mass = 0;
             for (const auto &o : outs) mass += o.p;
@@ -391,7 +392,12 @@ namespace {
                     ub[i] = upperBound(outs[i].state, outs[i].hasPre ? &outs[i].pre : nullptr);
                     rest += outs[i].p * ub[i];
                 }
-                if (rest <= alpha) { ++cutoffs_; return bound(rest); }
+                if (rest <= alpha) {
+                    ++cutoffs_;
+                    // Research: replays spent on end-of-turn states refuted before any outcome is solved.
+                    if (a.getActionType() == search::ActionType::END_TURN) { ++endFirstCuts_; endFirstCutReplays_ += replays_ - replays0; }
+                    return bound(rest);
+                }
             }
             Val total;
             double acc = 0;
@@ -454,6 +460,14 @@ namespace {
         double eps_ = 0;
         std::int64_t interpolations_ = 0, endTwinCutoffs_ = 0, lipschitzTighter_ = 0;
         std::int64_t interpNoLo_ = 0, interpNoHi_ = 0, slopeHist_[7] = {};
+        // Research (--intent-bound): ending the turn costs at least the monsters'
+        // visible attack less the player's block before the next decision (the
+        // gated fights have no end-of-turn block, thorns or damage reduction), so
+        // the formula bound at that HP on the next turn bounds an end-of-turn
+        // state before its outcomes are replayed. --intent-check replays them
+        // anyway and counts outcomes whose bound is above it.
+        bool intentBound_ = false, intentCheck_ = false;
+        std::int64_t intentCutoffs_ = 0, intentViolations_ = 0, endFirstCuts_ = 0, endFirstCutReplays_ = 0;
     private:
         Key twinKey(const KeyBuilder &pre, int hp, std::uint64_t tag) const {
             Key k = keyAtHp(pre, hp);
@@ -506,25 +520,47 @@ namespace {
             return true;
         }
 
-        double formulaBound(const BattleContext &s) {
-            if (hpObjective_) return s.player.curHp;
+        double formulaBound(const BattleContext &s) { return formulaBoundAt(s, s.player.curHp, s.turn); }
+
+        // formulaBound() of `s` with its HP and turn replaced (HP <= 0: dead).
+        double formulaBoundAt(const BattleContext &s, int hp, int turn) {
+            if (hpObjective_) return std::max(hp, 0);
+            const auto &ew = scorer_.evalWeights;
+            const int turnsLeft = std::max(0, turnCap_ + 1 - turn) + 1;
+            const double loss = ew.monsterDamageWeight
+                + ew.drawWeight * (s.cardsDrawn + 20.0 * turnsLeft)
+                + ew.turnSurvivalWeight * std::max(turn, turnCap_ + 1);
+            if (hp <= 0) return loss;
             // The win score depends on nothing that changes within these fights
             // but HP and turn: cache it by those (a state copy per call was the
             // solver's largest cost).
-            const std::uint64_t wk = (static_cast<std::uint64_t>(s.player.curHp) << 32) | static_cast<std::uint32_t>(s.turn);
+            const std::uint64_t wk = (static_cast<std::uint64_t>(hp) << 32) | static_cast<std::uint32_t>(turn);
             auto it = winScoreCache_.find(wk);
             if (it == winScoreCache_.end()) {
                 BattleContext w = s;
+                w.player.curHp = hp;
+                w.turn = turn;
                 w.outcome = Outcome::PLAYER_VICTORY;
                 it = winScoreCache_.emplace(wk, scorer_.scoreEndState(w)).first;
             }
-            const double win = it->second;
-            const auto &ew = scorer_.evalWeights;
-            const int turnsLeft = std::max(0, turnCap_ + 1 - s.turn) + 1;
-            const double loss = ew.monsterDamageWeight
-                + ew.drawWeight * (s.cardsDrawn + 20.0 * turnsLeft)
-                + ew.turnSurvivalWeight * std::max(s.turn, turnCap_ + 1);
-            return std::max(win, loss);
+            return std::max(it->second, loss);
+        }
+
+        // Research (--intent-bound): see intentBound_.
+        double intentUpperBound(const BattleContext &s) {
+            int incoming = 0;
+            for (int m = 0; m < s.monsters.monsterCount; ++m)
+                if (s.monsters.arr[m].isAlive()) incoming += s.monsters.arr[m].publicIncomingDamage(s);
+            return formulaBoundAt(s, s.player.curHp - std::max(0, incoming - s.player.block), s.turn + 1);
+        }
+
+        void checkIntentBound(const BattleContext &s, const SAction &endTurn) {
+            const double ub = intentUpperBound(s);
+            for (const auto &o : outcomes(s, endTurn)) {
+                const BattleContext &n = o.state;
+                const double v = n.outcome != Outcome::UNDECIDED || n.turn > turnCap_ ? terminal(n).v : formulaBound(n);
+                if (v > ub + 1e-9 || (n.outcome == Outcome::UNDECIDED && n.turn != s.turn + 1)) ++intentViolations_;
+            }
         }
 
     public:
@@ -864,6 +900,16 @@ namespace {
                 ++oracleBounds_;
                 ++cutoffs_;
                 return bound(hit.v);
+            }
+            if (intentCheck_) checkIntentBound(s, endTurn);
+            if (intentBound_ && alpha > kNoAlpha) {
+                if (const double ub = intentUpperBound(s); ub <= alpha) {
+                    ++cutoffs_;
+                    ++intentCutoffs_;
+                    noteState(s, 1);
+                    remember(key, bound(ub));
+                    return bound(ub);
+                }
             }
             const Val v = expand(s, endTurn, alpha);
             noteState(s, 1);
@@ -1205,7 +1251,7 @@ int main(int argc, char **argv) {
         bool orderDiag = false;
         int orderHeuristic = -1, oracleCap = -1;
         bool twinOrder = false;
-        bool lipschitz = false, interpolate = false, endTwin = false;
+        bool lipschitz = false, interpolate = false, endTwin = false, intentBound = false, intentCheck = false;
         double epsilon = 0;
         int turnCap = 8;
         for (int i = 4; i < argc; ++i) {
@@ -1243,6 +1289,8 @@ int main(int argc, char **argv) {
             else if (arg == "--lipschitz") lipschitz = true;
             else if (arg == "--interpolate") interpolate = true;
             else if (arg == "--end-twin") endTwin = true;
+            else if (arg == "--intent-bound") intentBound = true;
+            else if (arg == "--intent-check") intentCheck = true;
             else if (arg == "--epsilon") epsilon = std::stod(value());
             else throw std::invalid_argument("unknown option " + arg);
         }
@@ -1310,6 +1358,8 @@ int main(int argc, char **argv) {
                             solver->lipschitz_ = lipschitz && solver->bounds_;
                             solver->interpolate_ = interpolate && solver->bounds_;
                             solver->endTwin_ = (endTwin || lipschitz) && solver->bounds_;
+                            solver->intentBound_ = intentBound && solver->bounds_;
+                            solver->intentCheck_ = intentCheck && solver->bounds_;
                         }
                         const auto t0 = std::chrono::steady_clock::now();
                         const auto &edges = searcher.rootNode().edges;
@@ -1430,6 +1480,13 @@ int main(int argc, char **argv) {
                                 {"hashMoveHits", solver ? solver->hashMoveHits_ : 0},
                                 {"interpolations", solver ? solver->interpolations_ : 0},
                                 {"endTwinCutoffs", solver ? solver->endTwinCutoffs_ : 0},
+                                {"intentCutoffs", solver ? solver->intentCutoffs_ : 0},
+                                {"intentViolations", solver ? solver->intentViolations_ : 0},
+                                {"endCalls", solver ? solver->endCalls_ : 0},
+                                {"endReplays", solver ? solver->endReplays_ : 0},
+                                {"endFirstCuts", solver ? solver->endFirstCuts_ : 0},
+                                {"endFirstCutReplays", solver ? solver->endFirstCutReplays_ : 0},
+                                {"replays", solver ? solver->replays() : 0},
                                 {"lipschitzTighter", solver ? solver->lipschitzTighter_ : 0},
                                 {"interpNoLo", solver ? solver->interpNoLo_ : 0},
                                 {"interpNoHi", solver ? solver->interpNoHi_ : 0},
