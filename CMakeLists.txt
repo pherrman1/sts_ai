@@ -146,6 +146,14 @@ add_test(NAME anger_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(anger_copy_cost PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(byrd_grounded_flight_test tests/byrd_grounded_flight_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(byrd_grounded_flight_test PRIVATE include json/include)
+add_test(NAME byrd_grounded_flight COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:byrd_grounded_flight_test>)
+set_tests_properties(byrd_grounded_flight PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(half_dead_power_reset_test tests/half_dead_power_reset_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(half_dead_power_reset_test PRIVATE include json/include)
