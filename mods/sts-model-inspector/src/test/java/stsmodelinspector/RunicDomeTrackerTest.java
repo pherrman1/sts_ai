@@ -516,6 +516,20 @@ public final class RunicDomeTrackerTest {
             rejected(new RunicDomeTracker(hm,"CorruptHeart",23,3,1,20).snapshot(hm,1,0,false));
             rejected(new RunicDomeTracker(hm,"SpireSpear",23,2,2,20).snapshot(hm,1,0,false));
         }
+        // Live seed 111200463 s391 (problem 67): GremlinLeader bytes are RALLY 2, ENCOURAGE 3, STAB 4; its first STAB
+        // after the minions died was refused as execution_lifecycle.
+        for(int move:new int[]{2,3,4}) {
+            Object leader=new Object();RunicDomeTracker leaderTracker=new RunicDomeTracker(leader,"GremlinLeader",17,2,4,20);
+            leaderTracker.bind(1,0,"initial",-1,0);leaderTracker.globalTurn(0);leaderTracker.beginRoll(leader,140,140);leaderTracker.setMove(leader);leaderTracker.endRoll(leader);
+            leaderTracker.globalTurn(1);leaderTracker.execute(leader,move);
+            leaderTracker.beginRoll(leader,140,140,140,140,true,1);leaderTracker.setMove(leader);leaderTracker.endRoll(leader);
+            Map<String,Object> leaderRow=leaderTracker.snapshot(leader,2,3,false);
+            if(!Boolean.TRUE.equals(leaderRow.get("complete")))throw new AssertionError("GremlinLeader executed move "+move+" "+leaderRow);
+        }
+        Object badLeader=new Object();RunicDomeTracker badLeaderTracker=new RunicDomeTracker(badLeader,"GremlinLeader",17,2,4,20);
+        badLeaderTracker.bind(1,0,"initial",-1,0);badLeaderTracker.globalTurn(0);badLeaderTracker.beginRoll(badLeader,140,140);badLeaderTracker.setMove(badLeader);badLeaderTracker.endRoll(badLeader);
+        badLeaderTracker.globalTurn(1);badLeaderTracker.execute(badLeader,1);
+        if(Boolean.TRUE.equals(badLeaderTracker.snapshot(badLeader,2,3,false).get("complete")))throw new AssertionError("GremlinLeader has no move byte 1");
         Object torchIdentity=new Object();RunicDomeTracker torchTracker=new RunicDomeTracker(torchIdentity,"TorchHead",17,2,3,0);
         torchTracker.bind(1,1,"summon",2,1);torchTracker.constructorTackle(torchIdentity);torchTracker.globalTurn(1);
         torchTracker.beginRoll(torchIdentity,40,40);torchTracker.setMove(torchIdentity);torchTracker.endRoll(torchIdentity);

@@ -22001,6 +22001,25 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §591 — Live Runic Dome: the producer refused every Gremlin Leader Stab (2026-10-21)
+
+**Question:** why did live seed 111200463 (release 9ec8a51d, Act 2 floor 24, GREMLIN_LEADER elite, Runic Dome) stop at
+s391 with `silver_runic_dome_incomplete_history` after the AI killed GremlinFat and GremlinWizard on turn 1 (problem 67
+in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (slot-3 GremlinLeader row `{complete:false, reason:"execution_lifecycle"}`);
+`RunicDomeTracker.execute`/`legalExecuted`; the live move mapping `live_silver_mapping.cpp` (GremlinLeader RALLY 2,
+ENCOURAGE 3, STAB 4, as in `MonsterSpecific.cpp`); a scratch harness compiling `RunicDomeTracker.java` alone with the
+new `RunicDomeTrackerTest` case.
+**Result:** `legalExecuted` allowed GremlinLeader moves 1-3, so the first executed STAB (4) failed
+`execution_lifecycle`. With the old tracker the new test case fails at move 4 with exactly that reason; with the fix
+2, 3 and 4 complete and 1 is refused. The other bound-occupant families (Automaton, Orb, Reptomancer, Dagger, Collector,
+Torch Head) match the live mapping.
+**Interpretation:** producer bug, fixed in the mod (`move>=2 && move<=4`); no flag, since the old behaviour only refused
+the history. Live Gremlin Leader fights under Runic Dome no longer stop on a Stab. No engine or simulation change.
+**Open question:** none for the tracker; the canary ran the full `test.sh` on the PC at 091b8a52 (EXIT=0).
+Seeds: none new (live seed 111200463 as reported).
+**Knowledge impact:** none beyond this entry (producer tracker detail).
+
 ## §584 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d) show Anger cost diffs in the discard and draw piles at
@@ -22135,6 +22154,24 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §590 — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
+
+**Question:** why did live seed 111200459 seg1 s852 (Awakened One, floor 50) show native with an open
+`EXHAUST_MANY` selection (pickCount 3, any number) and a queued 5 damage to all, while the game had finished the
+play with every monster 5 HP lower (problem 64(d) in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue64-extract.json`) and read-only `javap` (`issue64d-javap.md`:
+`ExhaustAction.update`, `PanachePower`, Letter Opener, `UseCardAction` constructor); `exhaust_empty_hand_test`
+(Ironclad seed 111200071, no gameplay runs).
+**Result:** Purity was the only card in hand and Letter Opener's counter was 2. Java queues Purity's
+`ExhaustAction`, then Letter Opener's `DamageAllEnemiesAction(5)`, then `UseCardAction`; `ExhaustAction.update` ends
+at once on an empty hand (bytecode 12-30), so the damage resolves with the play. Native `ExhaustMany` always opened
+`CARD_SELECT`, leaving the damage behind it. Panache was not active at s852 (played at s860).
+**Interpretation:** `STS_EXHAUST_EMPTY_HAND_FIX` (default on, `=0` restores) makes `ExhaustMany` a no-op on an empty
+hand (Purity, Elixir). Play-changing for simulator play only by removing an empty selection step; unmeasured.
+**Open question:** other hand selections (e.g. Gambling Chip's `GAMBLE`) were not checked against Java for the same
+guard.
+Seeds: none new (live seed 111200459 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 ## §588 — Live combat parity: Transient's Shackled wrapped at 8 bits (2026-10-20)
 
 **Question:** why did live seed 111200445 (A20, release 9ec8a51d) show Transient's Strength game -5 vs native -261 after
@@ -22299,3 +22336,39 @@ smoke with a bad config (aborted before play).
 0's search arm vs the same plus the flag, Heart-kill McNemar with the matched-CPU rule. Not launched; needs Philipp's
 authorization and worker count. [Offline report](evidence/az_gen1b_value_leaf_ab_20261020/OFFLINE.md).
 **Knowledge impact:** `operations/environment-variables.md` (flag), `evaluation/current-research.md` (status).
+
+## §589 — AZ gen 1b vs student_sel as OOC prior: NOT_SHOWN on 512 paired A20 seeds, −1.0 pp Heart kills [−4.9, +3.0] at 1.04× wall (2026-10-21)
+
+Authorization: Philipp 2026-10-20 17:50Z ("Push it. Then do 512 seeds with 32 workers A/B"). Pre-registration, unit
+script, analyzer and outputs: `docs/experiments/evidence/az_gen1_ab_20261020/` (`PREREG.md`, `run_unit.sh`,
+`analyze.py`, `result.json`, `verify.txt`, `tars.sha256`). PREREG's ledger reference for #732 means §573.
+
+- **Freeze:** RUN_COMMIT `826b5dda` (main `6e62cb64` plus the campaign dir); binary sha256 `193b0000…`.
+  student_sel `cf6bf7fb…`, gen1b `e6aa044c…` (data branch `claude/az-gen1-data` `65762545`); brief `d8f9dedb…`.
+  Smoke seeds 111200453–454: 4/4 arm runs rc 0, B loaded gen1b.
+- **Arms** (differ only in `STS_OOC_HEART1`): gen 0's search arm (§569) with A = student_sel, B = gen 1b as OOC prior,
+  rollout net and leaf selector. OOC MCTS 4096 sims, learned OOC stop 0.99, `GAP_STOP=0`, 25% full-budget roots, real
+  combats flat exact-10k Silver (`STS_OOC_MCTS_REAL_LEARNED_STOP=0`). The value head of gen 1b is not read by the
+  search. Main's parity fixes since gen 0 apply to both arms.
+- **Run:** seeds 111142376–111142887, 32 workers × 16 units (one unit = one seed, both arms, same container).
+  `verify_campaign.py` OK 1–32 plus a per-unit check (one `.done`, header and outcome row per arm; no duplicates after
+  container restarts of W2, W13, W19, W28–W30). 1,024 of 1,024 arm runs rc 0; 512 of 512 seeds valid.
+- **Result** (`result.json`):
+
+  | arm | Heart kills | reached Act 4 | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|
+  | A student_sel | 119 (23.2%) | 238 (46.5%) | 44.25 | 1,453, 3,306 |
+  | B gen 1b | 114 (22.3%) | 239 (46.7%) | 44.72 | 1,514, 3,711 |
+
+  Heart kills B − A −1.0 pp [−4.9, +3.0], discordant 51 B-only / 56 A-only, McNemar p 0.70. Act 4 +0.2 pp
+  [−4.4, +4.8], p 1.0. Wall B/A 1.04 (matched). Searched roots A 33,985 / B 34,292 (full-budget 8,469 / 8,431, none
+  aborted); the search's pick differed from the prior's argmax at 2,918 vs 3,465 roots.
+- **Verdict: NOT_SHOWN** (pre-registered rule). student_sel stays the OOC prior. The test resolves about ±4 pp.
+- **Descriptive:** arm A replays gen 0's search arm on newer code and fresh seeds: 23.2% here vs 25.8% in §569
+  (different seeds; the per-arm 95% half-width at 512 seeds is ≈3.7 pp), and 1,453 vs 1,967 s/run.
+- **Inference:** gen 1b's offline gain (validation KL to π' 0.087→0.061) did not show up as Heart kills at this
+  resolution. The search overrode gen 1b's argmax more often than student_sel's (3,465 vs 2,918 roots), so the
+  fine-tuned prior is less decisive, with no measurable effect on kills.
+- **Data:** both arms' captures (≈34k searched roots each, ≈8.4k full-budget) join gen 0's 1,664 runs as the gen-2
+  window (≈2,700 runs). The 512 seeds become training seeds; the gen-2 A/B needs fresh seeds.
+- **Knowledge impact:** `evaluation/current-research.md` (AZ loop status).

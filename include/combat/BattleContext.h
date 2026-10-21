@@ -225,6 +225,14 @@ namespace sts {
     // card. Other values are fatal. Read only at a Mayhem turn start.
     bool mayhemAfterDrawFix();
 
+    // STS_EXHAUST_EMPTY_HAND_FIX: unset/1 (default) = ExhaustMany (Purity,
+    // Elixir) does nothing on an empty hand, as Java ExhaustAction.update
+    // ends at once when the hand is empty (overnight live play 2026-10-20
+    // problem 64(d): Purity as the last card left its selection open with
+    // Letter Opener's damage queued behind it). 0 = the legacy engine, which
+    // opened an empty CARD_SELECT. Other values are fatal.
+    bool exhaustEmptyHandFix();
+
     // STS_MAGNETISM_FIX: unset/1 (default) = Magnetism adds its random
     // colorless card(s) to the hand at the start of each turn, as in the game
     // (MagnetismPower.atStartOfTurn rolls returnTrulyRandomColorlessCardInCombat
