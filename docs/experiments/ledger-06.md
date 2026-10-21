@@ -22148,7 +22148,7 @@ executed move, and refuses a wrong, missing or extra proof and a wrong executed 
 play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
 **Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
 Seeds: none.
-## §TBD — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
+## §600 — Live Runic Dome: the producer refused every Darkling (its Regrow power is "Life Link") (2026-10-21)
 
 **Question:** why was live seed 111200472 abandoned at Act 3 floor 37 (THREE_DARKLINGS, Runic Dome) with
 `occupantBindingError=unsupported_monster_power_domain` (problem 73 in `engine-parity/overnight-20261019/ISSUES.md`
