@@ -113,6 +113,8 @@ namespace sts::search {
         std::string rolloutRootTable;
         // ADR-0050 boss/elite prior playouts are on (option on and the root prior applies to all fights).
         bool priorPlayoutBossElite;
+        // Elite rooms are included (STS_SILVER_PRIOR_PLAYOUT_ELITE=1; ADR-TBD makes boss rooms only the default).
+        bool priorPlayoutElite;
     };
     NativeSilverLeafSettings nativeSilverLeafSettings();
     bool nativeSilverLearnedStopEnabled();
