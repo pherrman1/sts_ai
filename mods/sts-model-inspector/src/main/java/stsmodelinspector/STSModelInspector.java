@@ -2814,6 +2814,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return null;
                 if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
             }
+            // SpikeSlime_L/AcidSlime_L/SlimeBoss.damage at half HP: setMove(3)
+            // now, then addToBot(TextAboveCreatureAction) and addToBot(
+            // SetMoveAction(this, 3, UNKNOWN)) behind the card (problem 68).
+            if(sourceTask!=null && isActionClass(name,"TextAboveCreatureAction")) {
+                String item=actionIndex+1<manager.actions.size()?slimeSplitJson(manager.actions.get(actionIndex+1)):null;
+                if(item==null)return null;
+                if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
+            }
             // Darkling.damage at a half-death: setMove(4) now, then
             // addToBot(SetMoveAction(this, 4, UNKNOWN)) behind the card.
             if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
@@ -2966,7 +2974,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(!(value instanceof AbstractMonster))return null;
         AbstractMonster monster=(AbstractMonster)value;
         Integer slot=emittedMonsterSlots(liveEncounter).get(monster);
-        if(slot==null || monster.isDying || monster.isDeadOrEscaped() || monster.halfDead
+        // A lethal hit still queues Flight's / Plated Armor's ReducePowerAction
+        // (onAttacked / wasHPLost run before die()); the monster is dying, not escaping.
+        boolean lethalReduce="com.megacrit.cardcrawl.actions.common.ReducePowerAction".equals(name)
+                && monster.isDying && monster.currentHealth<=0 && !monster.halfDead && !monster.escaped && !monster.isEscaping;
+        if(slot==null || ((monster.isDying || monster.isDeadOrEscaped()) && !lethalReduce) || monster.halfDead
                 || (!roll && readObjectField(action,"source")!=monster))return null;
         Integer amount=readIntField(action,"amount");
         if(roll) {
@@ -3005,6 +3017,24 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || move==null || move!=4 || darkling.nextMove!=4
                 || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
         return monsterSetMoveItemJson(move,slot);
+    }
+
+    private static String slimeSplitJson(Object action) {
+        if(action==null || !"com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(action.getClass().getName())
+                || !Boolean.FALSE.equals(readBooleanField(action,"isDone")))return null;
+        Object value=readObjectField(action,"monster");
+        if(!(value instanceof AbstractMonster))return null;
+        AbstractMonster slime=(AbstractMonster)value;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(slime), move=readIntField(action,"theNextMove");
+        if((!"SpikeSlime_L".equals(slime.id) && !"AcidSlime_L".equals(slime.id) && !"SlimeBoss".equals(slime.id))
+                || slot==null || slime.isDying || slime.isDeadOrEscaped() || slime.halfDead
+                || move==null || move!=3 || slime.nextMove!=3
+                || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
+        return monsterSplitItemJson(slot);
+    }
+
+    static String monsterSplitItemJson(int slot) {
+        return slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SPLIT_SET_MOVE\",\"slot\":"+slot+"}" : null;
     }
 
     static String monsterSetMoveItemJson(int move,int slot) {
@@ -3080,10 +3110,30 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append("actions=[");
         for(int i=0;i<manager.actions.size() && i<16;++i) {
             if(i>0)out.append(',');
-            out.append(manager.actions.get(i).getClass().getSimpleName());
+            Object action=manager.actions.get(i);
+            String className=action.getClass().getName();
+            out.append(className.startsWith("com.megacrit.cardcrawl.")?action.getClass().getSimpleName():className);
+            if(className.endsWith("PowerAction"))out.append('(').append(powerActionDetail(action)).append(')');
         }
         if(manager.actions.size()>16)out.append(",...");
         return out.append(']').toString();
+    }
+
+    // Diagnostic only: which power a queued power action names, and for whom.
+    private static String powerActionDetail(Object action) {
+        Object power=readObjectField(action,"powerInstance"), toApply=readObjectField(action,"powerToApply");
+        Object target=readObjectField(action,"target"), source=readObjectField(action,"source");
+        String id=readStringField(action,"powerID");
+        if(id==null && power instanceof AbstractPower)id=((AbstractPower)power).ID;
+        if(id==null && toApply instanceof AbstractPower)id=((AbstractPower)toApply).ID;
+        return "power="+id+" amount="+readIntField(action,"amount")+" target="+creatureLabel(target)+" source="+creatureLabel(source);
+    }
+
+    private static String creatureLabel(Object creature) {
+        if(creature==null)return "null";
+        if(creature==AbstractDungeon.player)return "player";
+        if(creature instanceof AbstractMonster)return ((AbstractMonster)creature).id;
+        return creature.getClass().getSimpleName();
     }
 
     static String pendingActionsRejection() {
