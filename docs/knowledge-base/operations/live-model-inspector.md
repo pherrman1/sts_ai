@@ -301,6 +301,10 @@ offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
 When the public pending-action projection itself refused, the blocker ends in
 `;refusal=<queue index>:<check>` (e.g. `3:batch_power_fields`), naming the
 first failed check (problem 74, Toolbox's offer with Red Mask's Weak queued).
+Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
+unless the player is bloodied and the relic inactive. The projection omits the
+no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
+names anonymous classes by their full class name.
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
