@@ -56,7 +56,7 @@ student_sel at A20?
 | 1,024 | ±2.8 pp | ~4.0 pp |
 | 2,048 | ±2.0 pp | ~2.8 pp |
 
-## Analysis (`analyze.py`, unchanged from gen 1b's except the docstring)
+## Analysis (`analyze.py`: gen 1b's statistics unchanged; reads the queue layout via `sources()` from the value-leaf analyzer, 1a14afc9)
 - **Valid seed:** both arms rc 0, footer `complete` and `integrityPassed`, and all four banner checks pass. Invalid
   seeds are reported, not replaced.
 - **Primary:** Heart kills, B − A, paired: difference with 95% CI and exact McNemar p.
