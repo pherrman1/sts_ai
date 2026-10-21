@@ -3076,6 +3076,30 @@ int testMonsterAiJavaParity() {
         if (bc.monsters.arr[0].block != 6) return fail("Jaw Worm Horde block is not 6 at A0");
     }
 
+    // Live problem 56 (seed 111200445, A20): Donu died during the player's
+    // turn; Deca's Square of Protection then gave only Deca block and Plated
+    // Armor (game: Donu block 0, no powers). STS_DEAD_ALLY_BLOCK_FIX=0
+    // restores the legacy block on the dead ally.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+        else setenv("STS_DEAD_ALLY_BLOCK_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::DONU_AND_DECA, 20);
+        Monster &deca = bc.monsters.arr[0], &donu = bc.monsters.arr[1];
+        donu.curHp = 0;
+        deca.block = 1;
+        deca.moveHistory[0] = MMID::DECA_SQUARE_OF_PROTECTION;
+        deca.takeTurn(bc);
+        drain(bc);
+        const int donuBlock = fix ? 0 : 16, donuPlated = fix ? 0 : 3;
+        if (deca.block != 17 || deca.getStatus<MS::PLATED_ARMOR>() != 3
+                || donu.block != donuBlock || donu.getStatus<MS::PLATED_ARMOR>() != donuPlated) {
+            unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+            return fail(fix ? "Deca's Square of Protection shielded a dead Donu"
+                            : "STS_DEAD_ALLY_BLOCK_FIX=0 did not restore the legacy dead-Donu block");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+
     // Live problem 53 (seed 111200445, A20): Transient's Shifting stacked
     // Shackled 145 under Strength -147. Java's GainStrengthPower restores the
     // full 145 at the Transient's end of turn (Str -2), then 3 more damage
@@ -3115,6 +3139,27 @@ int testMonsterAiJavaParity() {
     unsetenv("STS_SHACKLED_OVERFLOW_FIX");
 
     // ---- Act 4 (monsters.ending) ----
+
+    // Spire Shield's Fortify skips a dead Spear (GainBlockAction on a dying
+    // target); STS_DEAD_ALLY_BLOCK_FIX=0 restores the legacy block.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+        else setenv("STS_DEAD_ALLY_BLOCK_FIX", "0", 1);
+        BattleContext bc = battle(MonsterEncounter::SHIELD_AND_SPEAR, 20);
+        Monster &shield = bc.monsters.arr[0], &spear = bc.monsters.arr[1];
+        spear.curHp = 0;
+        shield.block = 0;
+        spear.block = 0;
+        shield.moveHistory[0] = MMID::SPIRE_SHIELD_FORTIFY;
+        shield.takeTurn(bc);
+        drain(bc);
+        if (shield.block != 30 || spear.block != (fix ? 0 : 30)) {
+            unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
+            return fail(fix ? "Spire Shield's Fortify shielded a dead Spear"
+                            : "STS_DEAD_ALLY_BLOCK_FIX=0 did not restore the legacy dead-Spear block");
+        }
+    }
+    unsetenv("STS_DEAD_ALLY_BLOCK_FIX");
 
     // A18 Spire Spear Burn Strike puts two Burns on top of the draw pile.
     {
