@@ -404,6 +404,32 @@ constexpr std::array<CardId,13>  defensiveCards = {
         return dmg >= bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
     }
 
+    // Block-first rollouts: whether the affordable attacks in hand (cheapest first, each at
+    // its base damage against the lowest-HP monster) could kill the only living monster.
+    bool attacksCouldKill(const BattleContext &bc, const fixed_list<int,10> &playable) {
+        if (bc.monsters.monstersAlive != 1) return false;
+        int tgt = -1;
+        for (int i = 0; i < bc.monsters.monsterCount; ++i)
+            if (bc.monsters.arr[i].isTargetable()) { tgt = i; break; }
+        if (tgt < 0) return false;
+        std::vector<std::pair<int,int>> attacks;   // (cost, damage)
+        for (auto handIdx : playable) {
+            const auto &c = bc.cards.hand[handIdx];
+            if (c.getType() != CardType::ATTACK) continue;
+            const int base = getBaseDamage(c.getId(), c.isUpgraded());
+            if (base <= 0) continue;
+            attacks.emplace_back(std::max(0, static_cast<int>(c.costForTurn)), bc.calculateCardDamage(c, tgt, base));
+        }
+        std::sort(attacks.begin(), attacks.end());
+        int energy = bc.player.energy, damage = 0;
+        for (const auto &[cost, dmg] : attacks) {
+            if (cost > energy) break;
+            energy -= cost;
+            damage += dmg;
+        }
+        return damage >= bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
+    }
+
     // playTable (research): learned play priority per card id * 2 + upgraded, lower plays first;
     // nullptr keeps the cardPlayPriorities order.
     int getBestCardToPlay(const BattleContext &bc, const fixed_list<int,10> &handIdxs, bool randomize,
@@ -565,6 +591,19 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
             }
         } else {
             nonZeroCostCards = offensiveCards;
+        }
+    }
+
+    if (blockFirst && bc.player.block < incomingDamage && !attacksCouldKill(bc, playableCardsIdxs)) {
+        fixed_list<int,10> defensive;
+        for (auto handIdx : playableCardsIdxs) {
+            if (isDefensiveCard.test(static_cast<int>(bc.cards.hand[handIdx].getId()))) defensive.push_back(handIdx);
+        }
+        if (!defensive.empty()) {
+            const int idx = getBestCardToPlay(bc, defensive, randomize, rng, playTable);
+            const auto &c = bc.cards.hand[idx];
+            if (!c.requiresTarget()) return Action(ActionType::CARD, idx);
+            return Action(ActionType::CARD, idx, getHighHpMonster(bc, randomize, rng));
         }
     }
 

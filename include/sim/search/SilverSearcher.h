@@ -221,6 +221,8 @@ namespace sts::search {
             // PLAYER_NORMAL step plays the rolloutPrior argmax over card plays and END_TURN
             // (no potions); card selects stay greedy. Needs rolloutPrior.
             bool prior = false;
+            // Research (STS_SILVER_ROLLOUT_BLOCK_FIRST=1): SilverRolloutAgent::blockFirst.
+            bool blockFirst = false;
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();

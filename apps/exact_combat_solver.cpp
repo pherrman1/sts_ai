@@ -63,6 +63,7 @@
 #include "sim/search/Action.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/ScumSearchAgent2.h"
+#include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverSearcher.h"
 
 #ifndef STS_EXACT_CHANCE
@@ -367,6 +368,24 @@ namespace {
         // upper bound of upperBound(). Exact for the reported values; needs the
         // same safety conditions as dominance plus no potions.
         bool bounds_ = false;
+        // Policy evaluation (--policy-turns): from this game turn on, every decision
+        // follows Silver's greedy rollout policy (policy_, deterministic tie-breaks)
+        // instead of the max, so the value is the exact expectation of "optimal play
+        // before turn policyFromTurn_, Silver's playout from there". Needs prune_ and
+        // bounds_ off (they assume an optimal continuation).
+        int policyFromTurn_ = 1 << 30;
+        sts::search::SilverRolloutAgent policy_;
+        std::vector<int> policyTable_;
+        void setPolicy(int fromTurn, const sts::search::SilverSearcher &live) {
+            policyFromTurn_ = fromTurn;
+            policy_ = sts::search::SilverRolloutAgent(false, 0, live.searchContext().act);
+            policy_.zeroCostSkillTurnCap = live.rolloutConfig.zeroCostCap;
+            policy_.blockFirst = live.rolloutConfig.blockFirst;
+            if (live.rolloutConfig.cardTable) {
+                policyTable_.assign(live.rolloutConfig.cardTable, live.rolloutConfig.cardTable + 372 * 2);
+                policy_.playTable = policyTable_.data();
+            }
+        }
         std::int64_t candidates_ = 0, dominated_ = 0, chanceTurns_ = 0, cutoffs_ = 0;
 
     private:
@@ -565,7 +584,12 @@ namespace {
                 inProgress_[key] = 1;
             }
             Val best;
-            if (!prune_ || !memoize || !turnValue(s, alpha, best)) {
+            if (s.turn >= policyFromTurn_ && (s.inputState == InputState::PLAYER_NORMAL
+                    || s.inputState == InputState::CARD_SELECT)) {
+                const SAction a = s.inputState == InputState::PLAYER_NORMAL ? policy_.chooseBattleCardPlay(s)
+                                                                            : policy_.chooseBattleCardSelect(s);
+                best = expand(s, a, kNoAlpha);
+            } else if (!prune_ || !memoize || !turnValue(s, alpha, best)) {
                 const auto acts = actions(s);
                 if (acts.empty()) {
                     best = terminal(s);
@@ -859,6 +883,9 @@ int main(int argc, char **argv) {
         std::int64_t maxStates = 60'000'000;
         bool hpObjective = false, verify = false, canonicalOff = false, keepEnergyWaste = false, noDominance = false, noBounds = false;
         int turnCap = 8;
+        std::vector<int> policyTurns;   // --policy-turns: k = optimal turns before the rollout policy takes over
+        int policyTurnCap = 30;
+        bool policyBlockFirst = false;   // --policy-block-first: also evaluate the block-first playout (polB<k>)
         for (int i = 4; i < argc; ++i) {
             const std::string arg = argv[i];
             auto value = [&]() -> std::string {
@@ -880,6 +907,11 @@ int main(int argc, char **argv) {
             else if (arg == "--no-bounds") noBounds = true;
             else if (arg == "--keep-energy-waste") keepEnergyWaste = true;
             else if (arg == "--turn-cap") turnCap = std::stoi(value());
+            else if (arg == "--policy-turns") {
+                std::stringstream list(value());
+                for (std::string item; std::getline(list, item, ',');) policyTurns.push_back(std::stoi(item));
+            } else if (arg == "--policy-turn-cap") policyTurnCap = std::stoi(value());
+            else if (arg == "--policy-block-first") policyBlockFirst = true;
             else throw std::invalid_argument("unknown option " + arg);
         }
         if (configs.empty()) configs = {parseConfig("prod"), parseConfig("live"),
@@ -903,6 +935,8 @@ int main(int argc, char **argv) {
             // One exact solve per fight, built at the first searched root and
             // shared by every config: each config's decisions are looked up in it.
             std::unique_ptr<ExactSolver> solver;
+            // Policy-evaluation solvers by (absolute switch turn, rollout card table).
+            std::map<std::pair<int, std::vector<int>>, std::unique_ptr<ExactSolver>> policySolvers;
             std::string fightFailure;
             double solveSeconds = 0;
             // A solve that outgrows --max-states is dropped and retried from the
@@ -946,9 +980,41 @@ int main(int argc, char **argv) {
                             qs.push_back(v);
                             if (v.v > best) { best = v.v; bestIdx = static_cast<int>(i); }
                             if (edges[i].action == chosen) chosenIdx = static_cast<int>(i);
-                            acts.push_back({{"label", actionLabel(edges[i].action, root)}, {"q", v.v}, {"score", v.score},
-                                            {"hp", v.hp}, {"win", v.win}, {"capped", v.capped},
-                                            {"visits", edges[i].visitCount}});
+                            json act = {{"label", actionLabel(edges[i].action, root)}, {"q", v.v}, {"score", v.score},
+                                        {"hp", v.hp}, {"win", v.win}, {"capped", v.capped},
+                                        {"visits", edges[i].visitCount}};
+                            if (edges[i].node && edges[i].node->simulationCount > 0)
+                                act["silverQ"] = edges[i].node->evaluationSum / edges[i].node->simulationCount;
+                            acts.push_back(act);
+                        }
+                        for (const int k : policyTurns) for (const bool blockFirst : {false, true}) {
+                            if (blockFirst && !policyBlockFirst) continue;
+                            const int from = root.turn + k;
+                            std::vector<int> table;
+                            if (searcher.rolloutConfig.cardTable)
+                                table.assign(searcher.rolloutConfig.cardTable, searcher.rolloutConfig.cardTable + 372 * 2);
+                            table.push_back(blockFirst ? 1 : 0);   // part of the solver key only
+                            // A per-root rollout table (prod) changes the policy at every root: keep
+                            // only solvers whose table is the current one, or memory grows per root.
+                            for (auto it = policySolvers.begin(); it != policySolvers.end();)
+                                it = std::equal(table.begin(), table.end() - 1, it->first.second.begin(),
+                                                it->first.second.end() - 1) ? std::next(it) : policySolvers.erase(it);
+                            auto &ps = policySolvers[{from, table}];
+                            if (!ps) {
+                                ps = std::make_unique<ExactSolver>(root, searcher, hpObjective, maxStates, false,
+                                                                   !canonicalOff && canonicalDrawsSafe(root), !keepEnergyWaste);
+                                ps->turnCap_ = policyTurnCap;
+                                ps->setPolicy(from, searcher);
+                                ps->policy_.blockFirst = blockFirst;
+                            }
+                            for (std::size_t i = 0; i < edges.size(); ++i) {
+                                const Val v = ps->q(root, edges[i].action);
+                                const std::string tag = (blockFirst ? "polB" : "pol") + std::to_string(k);
+                                acts[i][tag] = v.v;
+                                acts[i][tag + "Hp"] = v.hp;
+                                acts[i][tag + "Win"] = v.win;
+                                acts[i][tag + "Capped"] = v.capped;
+                            }
                         }
                         solveSeconds += seconds(t0);
                         if (chosenIdx < 0) throw std::runtime_error("Silver's chosen action is not a root edge");

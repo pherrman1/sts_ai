@@ -26,6 +26,10 @@ namespace sts::search {
         // #544: cards played this turn after which zero-cost non-attacks lose
         // first priority; 0 = no cap.
         int zeroCostSkillTurnCap = 50;
+        // Research (STS_SILVER_ROLLOUT_BLOCK_FIRST=1, default off): while incoming damage
+        // exceeds block and the hand's affordable attacks cannot kill a lone monster, play
+        // the best-priority defensive card before anything else.
+        bool blockFirst = false;
 
         static const int *loadPlayTable(const std::string &path);
 
