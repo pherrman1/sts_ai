@@ -22001,7 +22001,7 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
-## §TBD — Live combat parity: Slime Boss split left native monsterCount one above the inspector's (2026-10-21)
+## §593 — Live combat parity: Slime Boss split left native monsterCount one above the inspector's (2026-10-21)
 
 **Question:** why did live seed 111200456 (release 9ec8a51d, Slime Boss, floor 16) show `monsterCount` game 3 vs
 native 4 at the End Turn of s217, where the Spike Slime (L) split (problem 62 in
