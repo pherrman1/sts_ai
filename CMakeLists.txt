@@ -138,6 +138,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(exhaust_empty_hand_test tests/exhaust_empty_hand_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(exhaust_empty_hand_test PRIVATE include json/include)
+add_test(NAME exhaust_empty_hand COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:exhaust_empty_hand_test>)
+set_tests_properties(exhaust_empty_hand PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(half_dead_power_reset_test tests/half_dead_power_reset_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(half_dead_power_reset_test PRIVATE include json/include)

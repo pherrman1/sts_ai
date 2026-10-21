@@ -22066,3 +22066,22 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §TBD — Live combat parity: Purity on an empty hand opened an empty exhaust selection natively (2026-10-21)
+
+**Question:** why did live seed 111200459 seg1 s852 (Awakened One, floor 50) show native with an open
+`EXHAUST_MANY` selection (pickCount 3, any number) and a queued 5 damage to all, while the game had finished the
+play with every monster 5 HP lower (problem 64(d) in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue64-extract.json`) and read-only `javap` (`issue64d-javap.md`:
+`ExhaustAction.update`, `PanachePower`, Letter Opener, `UseCardAction` constructor); `exhaust_empty_hand_test`
+(Ironclad seed 111200071, no gameplay runs).
+**Result:** Purity was the only card in hand and Letter Opener's counter was 2. Java queues Purity's
+`ExhaustAction`, then Letter Opener's `DamageAllEnemiesAction(5)`, then `UseCardAction`; `ExhaustAction.update` ends
+at once on an empty hand (bytecode 12-30), so the damage resolves with the play. Native `ExhaustMany` always opened
+`CARD_SELECT`, leaving the damage behind it. Panache was not active at s852 (played at s860).
+**Interpretation:** `STS_EXHAUST_EMPTY_HAND_FIX` (default on, `=0` restores) makes `ExhaustMany` a no-op on an empty
+hand (Purity, Elixir). Play-changing for simulator play only by removing an empty selection step; unmeasured.
+**Open question:** other hand selections (e.g. Gambling Chip's `GAMBLE`) were not checked against Java for the same
+guard.
+Seeds: none new (live seed 111200459 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
