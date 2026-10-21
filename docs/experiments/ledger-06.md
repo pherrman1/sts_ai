@@ -22016,6 +22016,25 @@ hit. Play-changing in every Byrd fight that grounds a Byrd (full damage while gr
 Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`,
 `behavior/java-reference-audit.md`.
+## §TBD — Live Runic Dome: Act 4 fights were refused; the Heart, Shield and Spear cycles are now modelled (2026-10-21)
+
+**Question:** a live run that takes Runic Dome stops at its first Act 4 fight, because the mod's Dome tracker accepts
+only acts 1-3, the knowledge block is incomplete and the root is unsupported (`silver_runic_dome_incomplete_history`).
+Philipp asked to model Act 4 rather than avoid it (2026-10-21).
+**Setup:** the canary's `javap` of CorruptHeart, SpireShield and SpireSpear (`engine-parity/overnight-20261019/act4-dome-javap.md`
+on the share); `RunicDomeTrackerTest` in a standalone javac harness; `live_silver_importer_test` with a native
+THE_HEART root and the captured SHIELD_AND_SPEAR fixture (no gameplay seeds).
+**Result:** each Act 4 `getMove` is a public `moveCount` cycle with one coin flip per three moves (Heart:
+Debilitate first, without advancing `moveCount`; Shield: Fortify/Bash opener; Spear: the third move), and every
+`takeTurn` ends with `RollMoveAction`. Native already plays these monsters with deterministic `setMove` plus a
+no-op roll. The tracker now accepts the three monsters in act 4 only, patches their `takeTurn`, and turns each
+determined roll into a known next move (`act4_public_cycle`); only the flips are pending hidden rolls. The importer
+accepts THE_HEART and SHIELD_AND_SPEAR rows, checks slots, recomputes the cycle from completed turns and the last
+executed move, and refuses a wrong, missing or extra proof and a wrong executed move.
+**Interpretation:** `STS_IMPORTER_RUNIC_DOME_ACT4` (default on, `=0` restores the Act 4 refusal) lets the live advisor
+play Act 4 under Runic Dome. Heart turns 1-6 and Shield/Spear turns 1-4 import and search (1,000 simulations).
+**Open question:** not yet exercised live; the mod's `test.sh` needs the game JAR (run on the PC).
+Seeds: none.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

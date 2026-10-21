@@ -1450,8 +1450,86 @@ void verifyGuardianProducerThresholds() {
     }
 }
 
+// Runic Dome Act 4 (STS_IMPORTER_RUNIC_DOME_ACT4): bound history rows for the
+// Corrupt Heart / Spire Shield and Spear cycles. `known` is the proven next move
+// (0 = one hidden random roll).
+json act4DomeRow(const json &monster,int slot,const std::string &id,int turn,const std::vector<int> &moves,int known,int firstHp,int firstMaxHp,int alive) {
+    const int completed=turn-1;
+    json executed=json::array();
+    for(std::size_t i=moves.size()>2?moves.size()-2:0;i<moves.size();++i)executed.push_back(moves[i]);
+    return {{"schemaVersion",4},{"historySchemaVersion",3},{"epoch",1},{"generation",2*completed+1},{"complete",true},
+        {"monsterId",id},{"slot",slot},{"completedTurns",completed},{"executedMoves",executed},{"pendingMoveRolls",known?0:1},
+        {"rollHp",monster["hp"]},{"rollMaxHp",monster["maxHp"]},{"publicMisc",0},{"firstHp",firstHp},{"firstMaxHp",firstMaxHp},
+        {"firstAlive",true},{"aliveCount",alive},{"pendingAttackPredicates",json::array()},{"playerConstricted",false},
+        {"occupantGeneration",1},{"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},{"birthParentGeneration",0},
+        {"lastExecutionGlobalTurn",completed==0?-1:completed},{"rollGlobalTurn",completed},{"totalRolls",completed+1},{"knownTransitions",0},
+        {"knownNextMove",known?json{{"kind","act4_public_cycle"},{"move",known}}:json(nullptr)},{"knownRollPredecessor",nullptr}};
+}
+void makeAct4Dome(json &observation,int turn,const json &rows) {
+    auto &root=observation["silverRoot"];auto &combat=root["combat"];
+    root["playerTurn"]=turn;combat["turn"]=turn;combat["runicDome"]=true;
+    combat["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+    for(auto &monster:combat["monsters"])
+        for(const char *hidden:{"nextMove","moveHistory","previousMove","intent","intentDamage","uniquePower0","uniquePower1"})monster.erase(hidden);
+    combat["runicDomeKnowledge"]={{"schemaVersion",3},{"epoch",1},{"complete",true},{"monsters",rows}};
+}
+void verifyRunicDomeAct4Heart() {
+    GameContext game(CharacterClass::IRONCLAD, 0, 0);
+    game.ascension = 20; game.act = 4; game.floorNum = 55;
+    BattleContext battle;
+    battle.init(game, MonsterEncounter::THE_HEART);
+    CombatKnowledgeState knowledge;
+    knowledge.initializeFromLiveBattle(battle);
+    auto expected = makeSilverBattleStateWire(battle, knowledge, makeSilverRunContext(game), 1);
+    normalizeFirstObservationIdentity(expected);
+    const auto base = nativeObservation(expected, "MONSTER", "THE_HEART");
+    const auto plain = one_combat::advisor::importSilverRoot(base);
+    if (!plain.ok) throw std::runtime_error("Act 4 Heart fixture import: " + plain.reason);
+    const auto heart = [&](int turn, const std::vector<int> &moves, int known) {
+        auto obs = base;
+        const auto &m = obs["silverRoot"]["combat"]["monsters"][0];
+        makeAct4Dome(obs, turn, json::array({act4DomeRow(m, 0, "CorruptHeart", turn, moves, known, m["hp"], m["maxHp"], 1)}));
+        return obs;
+    };
+    // Debilitate opener; random Blood Shots/Echo; the other one; Buff; random again.
+    struct Case { int turn; std::vector<int> moves; int known; MonsterMoveId last; };
+    for (const Case &c : {Case{1, {}, 3, MonsterMoveId::INVALID}, Case{2, {3}, 0, MonsterMoveId::CORRUPT_HEART_DEBILITATE},
+            Case{3, {3, 1}, 2, MonsterMoveId::CORRUPT_HEART_BLOOD_SHOTS}, Case{4, {3, 1, 2}, 4, MonsterMoveId::CORRUPT_HEART_ECHO},
+            Case{5, {3, 1, 2, 4}, 0, MonsterMoveId::CORRUPT_HEART_BUFF}, Case{6, {3, 1, 2, 4, 2}, 1, MonsterMoveId::CORRUPT_HEART_ECHO}}) {
+        const auto imported = one_combat::advisor::importSilverRoot(heart(c.turn, c.moves, c.known));
+        if (!imported.ok) throw std::runtime_error("Dome Heart turn " + std::to_string(c.turn) + ": " + imported.reason);
+        const auto root = battleContextFromWire(imported.wire);
+        const auto &m = root.monsters.arr[0];
+        const auto knownMove = c.known ? *one_combat::advisor::live_silver::monsterMove("CorruptHeart", c.known) : MonsterMoveId::INVALID;
+        if (!root.intentsHidden || m.pendingMoveRolls != (c.known ? 0 : 1)
+                || static_cast<MonsterMoveId>(m.moveHistory[c.known ? 1 : 0]) != c.last
+                || (c.known && static_cast<MonsterMoveId>(m.moveHistory[0]) != knownMove))
+            throw std::runtime_error("Dome Heart turn " + std::to_string(c.turn) + " cycle state");
+        if (c.turn == 2) {
+            SilverSearchSession session;
+            const auto decision = session.decide(imported.wire, 1000);
+            if (!decision.accepted) throw std::runtime_error("Dome Heart search: " + decision.failureReason);
+        }
+    }
+    // A wrong proof, a missing proof, and a random roll claimed as known all fail closed.
+    if (one_combat::advisor::importSilverRoot(heart(3, {3, 1}, 1)).reason != "silver_runic_dome_known_next_schema")
+        throw std::runtime_error("Dome Heart accepted the wrong successor");
+    if (one_combat::advisor::importSilverRoot(heart(3, {3, 1}, 0)).reason != "silver_runic_dome_history_gap")
+        throw std::runtime_error("Dome Heart accepted a hidden roll at a public cycle position");
+    if (one_combat::advisor::importSilverRoot(heart(2, {3}, 1)).ok)
+        throw std::runtime_error("Dome Heart accepted a proof for its random roll");
+    if (one_combat::advisor::importSilverRoot(heart(3, {1, 1}, 2)).ok)
+        throw std::runtime_error("Dome Heart accepted a non-Debilitate opener");
+    setenv("STS_IMPORTER_RUNIC_DOME_ACT4", "0", 1);
+    const auto legacy = one_combat::advisor::importSilverRoot(heart(1, {}, 3));
+    unsetenv("STS_IMPORTER_RUNIC_DOME_ACT4");
+    if (legacy.ok || legacy.reason != "silver_runic_dome_encounter_domain")
+        throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_ACT4=0 must restore the Act 4 refusal: " + legacy.reason);
+    std::cout << "Runic Dome Act 4 Heart cycle import passed\n";
+}
 int main(int argc, char **argv) {
     verifyGuardianProducerThresholds();
+    verifyRunicDomeAct4Heart();
     try {
         {
             // Overlay labels name the card a selection picks.
@@ -1613,6 +1691,34 @@ int main(int argc, char **argv) {
                     throw std::runtime_error(std::string("Spire Spear death Surrounded removal, flag ")+flag);
             }
             unsetenv("STS_SPIRE_SURROUNDED_DEATH_FIX");
+            // Runic Dome Act 4: Shield's opener is random, Spear's is Burn Strike; then Bash/Fortify pair and Skewer.
+            const auto spire=[&](int turn,const std::vector<int> &shield,int shieldKnown,const std::vector<int> &spear,int spearKnown) {
+                auto obs=observation;
+                const auto &ms=obs["silverRoot"]["combat"]["monsters"];
+                const int firstHp=ms[0]["hp"],firstMaxHp=ms[0]["maxHp"];
+                makeAct4Dome(obs,turn,json::array({act4DomeRow(ms[0],0,"SpireShield",turn,shield,shieldKnown,firstHp,firstMaxHp,2),
+                    act4DomeRow(ms[1],1,"SpireSpear",turn,spear,spearKnown,firstHp,firstMaxHp,2)}));
+                return obs;
+            };
+            for(const auto &[turn,shield,shieldKnown,spear,spearKnown]:std::vector<std::tuple<int,std::vector<int>,int,std::vector<int>,int>>{
+                    {1,{},0,{},1},{2,{2},1,{1},3},{3,{2,1},3,{1,3},0},{4,{2,1,3},0,{1,3,1},2}}) {
+                const auto dome=one_combat::advisor::importSilverRoot(spire(turn,shield,shieldKnown,spear,spearKnown));
+                if(!dome.ok)throw std::runtime_error("Dome Shield and Spear turn "+std::to_string(turn)+": "+dome.reason);
+                const auto domeRoot=battleContextFromWire(dome.wire);
+                if(!domeRoot.intentsHidden || domeRoot.monsters.arr[0].pendingMoveRolls!=(shieldKnown?0:1)
+                        || domeRoot.monsters.arr[1].pendingMoveRolls!=(spearKnown?0:1))
+                    throw std::runtime_error("Dome Shield and Spear turn "+std::to_string(turn)+" cycle state");
+                if(turn==1) {
+                    SilverSearchSession domeSession;
+                    const auto domeDecision=domeSession.decide(dome.wire,1000);
+                    if(!domeDecision.accepted)throw std::runtime_error("Dome Shield and Spear search: "+domeDecision.failureReason);
+                }
+            }
+            if(one_combat::advisor::importSilverRoot(spire(2,{2},2,{1},3)).ok)
+                throw std::runtime_error("Dome Shield accepted Fortify twice");
+            if(one_combat::advisor::importSilverRoot(spire(1,{},1,{},1)).ok)
+                throw std::runtime_error("Dome Shield accepted a proof for its random opener");
+            std::cout << "Runic Dome Act 4 Shield and Spear cycle import passed\n";
             std::cout << "captured Shield and Spear BackAttack import and search passed: " << path << "\n";
         }
         {

@@ -1395,6 +1395,21 @@ inputs of the moment it runs, as Java's `RollMoveAction` rolls then
 (`STS_IMPORTER_RUNIC_DOME_REACTIVE_FIX`, default on; `=0` restores the refusal
 `silver_runic_dome_monster_power_domain`).
 
+Runic Dome also covers Act 4 (THE_HEART and SHIELD_AND_SPEAR). The Java moves
+there follow a public `moveCount` cycle: the Heart opens with Debilitate (a roll
+that does not advance `moveCount`), then flips Blood Shots/Echo, plays the other
+one (Echo unless it just echoed) and Buffs; the Shield flips Fortify/Bash, plays
+Bash unless it just bashed, then Smash; the Spear plays Burn Strike unless it
+just did, then Skewer, then flips Piercer/Burn Strike. The tracker accepts these
+monsters only in act 4, patches their `takeTurn`, and exports every roll the
+executed history determines as a known next move of kind `act4_public_cycle`;
+only the coin flips stay pending hidden rolls. The importer recomputes the cycle
+from `completedTurns` and the last executed move and refuses a missing, extra or
+wrong proof (`STS_IMPORTER_RUNIC_DOME_ACT4`, default on; `=0` restores the
+refusal `silver_runic_dome_encounter_domain`). No live Dome run has reached Act 4
+yet; the Java cycles come from the canary's `javap` of CorruptHeart, SpireShield
+and SpireSpear.
+
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case
 where only one card fits in hand. The driver clicks the ordered physical UUID
