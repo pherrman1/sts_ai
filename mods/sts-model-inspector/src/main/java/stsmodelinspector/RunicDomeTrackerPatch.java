@@ -6,6 +6,7 @@ import com.megacrit.cardcrawl.monsters.MonsterGroup;
 import com.megacrit.cardcrawl.monsters.exordium.*;
 import com.megacrit.cardcrawl.monsters.city.*;
 import com.megacrit.cardcrawl.monsters.beyond.*;
+import com.megacrit.cardcrawl.monsters.ending.*;
 
 /** Hooks precede initial RNG and publish only actually executing audited moves. */
 public final class RunicDomeTrackerPatch {
@@ -166,6 +167,19 @@ public final class RunicDomeTrackerPatch {
     @SpirePatch(clz=TimeEater.class,method="takeTurn")
     public static class TimeEaterTurn {
         @SpirePrefixPatch public static void prefix(TimeEater __instance) { RunicDomeCapture.execute(__instance); }
+    }
+    // Act 4: each takeTurn executes its public move, then queues RollMoveAction.
+    @SpirePatch(clz=CorruptHeart.class,method="takeTurn")
+    public static class CorruptHeartTurn {
+        @SpirePrefixPatch public static void prefix(CorruptHeart __instance) { RunicDomeCapture.execute(__instance); }
+    }
+    @SpirePatch(clz=SpireShield.class,method="takeTurn")
+    public static class SpireShieldTurn {
+        @SpirePrefixPatch public static void prefix(SpireShield __instance) { RunicDomeCapture.execute(__instance); }
+    }
+    @SpirePatch(clz=SpireSpear.class,method="takeTurn")
+    public static class SpireSpearTurn {
+        @SpirePrefixPatch public static void prefix(SpireSpear __instance) { RunicDomeCapture.execute(__instance); }
     }
     public static void finishPublicOverride(AbstractMonster monster) { RunicDomeCapture.finishKnownOverride(monster); }
     private static void instrumentKnownOverride(javassist.CtBehavior method,int expectedSites) throws javassist.CannotCompileException {

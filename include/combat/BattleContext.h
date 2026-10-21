@@ -225,6 +225,25 @@ namespace sts {
     // card. Other values are fatal. Read only at a Mayhem turn start.
     bool mayhemAfterDrawFix();
 
+    // STS_UNPLAYABLE_AUTOPLAY_FIX: unset/1 (default) = an autoplayed card
+    // (Havoc, Mayhem) that fails canUse (Burn, Clash with a non-attack in
+    // hand, Velvet Choker) is still routed like a played card, as in the game
+    // (GameActionManager.getNextAction sets dontTriggerOnUseCard and queues
+    // UseCardAction at the bottom: no use/onUseCard/onAfterUseCard hooks, but
+    // Havoc's exhaust, Strange Spoon and the discard move still apply;
+    // overnight live play 2026-10-20 problem 41). 0 = the legacy engine, where
+    // the card vanished. Other values are fatal. Read only when an autoplayed
+    // card cannot be played.
+    bool unplayableAutoplayFix();
+
+    // STS_AUTOPLAY_QUEUE_ORDER_FIX: unset/1 (default) = a card autoplayed from
+    // the draw pile (Havoc, Mayhem, Distilled Chaos) joins the BACK of the card
+    // queue, as in the game (PlayTopCardAction queues NewQueueCardAction(card,
+    // target, false, true), whose addCardQueueItem(item, false) appends), so a
+    // multi-card Distilled Chaos plays the top card first (overnight live play
+    // 2026-10-20 problem 44). 0 = the legacy engine, which pushed it to the
+    // front (reverse order). Other values are fatal. Read at each autoplay.
+    bool autoplayQueueOrderFix();
     // STS_LAGAVULIN_WAKE_METALLICIZE_FIX: unset/1 (default) = a Lagavulin woken
     // by HP damage loses 8 Metallicize, as in the game (Lagavulin.damage queues
     // ChangeStateAction("OPEN"); changeState queues ReducePowerAction(
@@ -247,6 +266,14 @@ namespace sts {
     // 2026-10-20 problem 39). 0 = the legacy engine, where Magnetism did
     // nothing. Other values are fatal. Read only at a Magnetism turn start.
     bool magnetismFix();
+
+    // STS_CURIOSITY_FIX: unset/1 (default) = each Power play queues Strength
+    // equal to Curiosity at the bottom for every monster holding it, as in the
+    // game (CuriosityPower.onUseCard -> ApplyPowerAction; overnight live play
+    // 2026-10-20 problems 45 and 65: the Awakened One's Strength stayed 2 lower
+    // per Power natively). 0 = the legacy engine, where Curiosity did nothing.
+    // Other values are fatal. Read only when a Power card is used.
+    bool curiosityFix();
 
     struct BattleContext {
 
@@ -416,6 +443,7 @@ namespace sts {
         void onManualDiscard(const CardInstance &c);
         void onShuffle();
         void triggerAndMoveToExhaustPile(CardInstance c);
+        void unplayableAutoplayUseCard(CardInstance c, bool exhaust);
         void mummifiedHandOnUsePower();
 
         // card select screens
