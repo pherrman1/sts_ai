@@ -3186,6 +3186,10 @@ void BattleContext::addPurgeCardToCardQueue(const CardQueueItem &item) {
 }
 
 void BattleContext::noOpRollMove() {
+#ifdef STS_EXACT_CHANCE
+    // Exact enumeration: the value is never read, so it is not a chance event.
+    if (exact::g_chanceScript) { ++aiRng.counter; return; }
+#endif
     aiRng.random(99);
 }
 

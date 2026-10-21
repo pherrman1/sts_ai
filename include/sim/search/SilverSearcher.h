@@ -296,6 +296,9 @@ namespace sts::search {
         // One SilverRolloutAgent playout of `state` to combat end, scored like a
         // search leaf (research diagnostics; the graph is untouched).
         [[nodiscard]] double rolloutValue(BattleContext state) { return rolloutToEnd(state, 0); }
+        // The actions a decision node for `state` would get (research tooling,
+        // exact_combat_solver; the graph is untouched).
+        [[nodiscard]] std::vector<Action> enumerateActions(const BattleContext &state);
 
     private:
         SilverSearchContext context;

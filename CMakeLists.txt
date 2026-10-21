@@ -1433,3 +1433,15 @@ foreach(t IN LISTS STS_ML_PYTHON_TESTS)
         set_property(TEST ${t} APPEND PROPERTY LABELS needs-ml-python)
     endif()
 endforeach()
+
+# Research tooling: exact expectimax baseline for native Silver on small
+# combats. Its own copy of the engine is compiled with STS_EXACT_CHANCE (exact
+# chance enumeration hooks, include/game/ExactChance.h); no other target sees
+# the define. Not built by default.
+add_library(sts_core_exact_objects OBJECT EXCLUDE_FROM_ALL ${sts_lightspeed_SOURCES})
+target_include_directories(sts_core_exact_objects PUBLIC include json/include)
+target_compile_definitions(sts_core_exact_objects PUBLIC STS_EXACT_CHANCE)
+add_executable(exact_combat_solver EXCLUDE_FROM_ALL apps/exact_combat_solver.cpp $<TARGET_OBJECTS:sts_core_exact_objects>)
+target_include_directories(exact_combat_solver PRIVATE include json/include)
+target_compile_definitions(exact_combat_solver PRIVATE STS_EXACT_CHANCE)
+link_ctm_crypto(exact_combat_solver)

@@ -158,6 +158,11 @@ namespace sts {
         // top is left.
         CardInstance drawTop(Random &rng) {
             CardInstance c;
+#ifdef STS_EXACT_CHANCE
+            const int batchRemaining = exact::g_drawBatchRemaining;
+            const bool batchFresh = exact::g_drawBatchFresh;
+            if (exact::g_drawBatchRemaining > 0) --exact::g_drawBatchRemaining;
+#endif
             if (concrete || knownTopCount > 0) {
                 c = cards.back();
                 cards.pop_back();
@@ -165,8 +170,25 @@ namespace sts {
                     --knownTopCount;
                 }
             } else if (unknownCount() > 0) {
+#ifdef STS_EXACT_CHANCE
+                // Exact enumeration (research tooling): choose among classes of
+                // equivalent cards instead of physical positions.
+                int idx;
+                if (exact::g_chanceScript && unknownCount() > 1) {
+                    std::uint64_t keys[128];
+                    const int n = unknownCount();
+                    if (n > 128) exact::unsupportedDraw("draw pile above 128 cards");
+                    for (int i = 0; i < n; ++i) keys[i] = cards[knownBottomCount + i].exactChanceClassKey();
+                    ++rng.counter;
+                    idx = knownBottomCount + exact::g_chanceScript->chooseDraw(this, keys, n, batchRemaining, batchFresh);
+                    exact::g_drawBatchFresh = false;
+                } else {
+                    idx = knownBottomCount + (unknownCount() == 1 ? 0 : rng.random(unknownCount() - 1));
+                }
+#else
                 const int idx = knownBottomCount
                         + (unknownCount() == 1 ? 0 : rng.random(unknownCount() - 1));
+#endif
                 c = cards[idx];
                 cards.erase(cards.begin() + idx);
             } else {

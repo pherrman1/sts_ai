@@ -56,6 +56,20 @@ namespace sts {
         [[nodiscard]] bool isXCost() const;
         [[nodiscard]] bool isBloodCard() const;
         [[nodiscard]] bool usesSpecialData() const;
+#ifdef STS_EXACT_CHANCE
+        // Research tooling (exact_combat_solver): equal for copies that are
+        // equivalent for search (every field but uniqueId, unless special data
+        // matters).
+        [[nodiscard]] std::uint64_t exactChanceClassKey() const {
+            std::uint64_t k = static_cast<std::uint64_t>(static_cast<int>(id));
+            k = k * 1000003u + static_cast<std::uint16_t>(specialData);
+            k = k * 1000003u + static_cast<std::uint8_t>(cost);
+            k = k * 1000003u + static_cast<std::uint8_t>(costForTurn);
+            k = k * 1000003u + (upgraded ? 1u : 0u) + (freeToPlayOnce ? 2u : 0u) + (retain ? 4u : 0u);
+            if (usesSpecialData()) k = k * 1000003u + static_cast<std::uint16_t>(uniqueId) + 1u;
+            return k;
+        }
+#endif
 
         // *****  *****
         void upgradeBaseCost(int newBaseCost); // Blood for Blood when upgraded
