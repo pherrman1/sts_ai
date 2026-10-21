@@ -22618,3 +22618,30 @@ leaf spec records `prior_playout_rooms` as `boss`.
 Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
 `decisions/0056-silver-prior-playout-boss-only.md`.
+
+## §TBD — CRN paired continuations to the end of the act as Silver-leaf difference labels (A20, 64 sources, 4 workers): STOP, noise dominates (2026-10-21)
+
+**Question (Philipp, 2026-10-21, thread "Silver leaf from OOC value"):** score Silver leaves with an OOC-level label,
+possibly through a net trained on differences of outcomes within one fight. Offline, gen 1b's value head failed as a
+difference teacher. On 2,916 post-combat states: per-type potion prices r = 0.02 with §510, Fairy 13 vs 44 HP,
+max HP priced negative, 1–3 HP sign wrong in 11–24% of states (`/mnt/project-files/silver-leaf-eval/ooc-label-leaf/
+DESIGN.md`). The cleaner label is common-random-number (CRN) paired continuations. 12:45Z "write a small pre
+registration for a cost estimate"; 13:44Z "Let's do 4 workers".
+**Design:** [PREREG](evidence/crn_act_price_pilot_20261021/PREREG.md), light pre-launch review PASS (reviewer C).
+New research horizon `potionpriceprobe … FIGHTS_AHEAD=act`: each copy plays until the current act's boss fight ends,
+then the A20 floor model (`altFloor`) values it. Copies: base, HP −12, gold −50, max HP −5, each held potion removed.
+student_sel OOC argmax, OOC MCTS off, keys off, production Silver (learned stop, g7f_E, ADR-0050 prior playouts pinned
+by `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=1`). Seeds 111146000–111146063, RUN_COMMIT `cc78c5e5` (code `56950107`,
+binary `9829d475…`). Pre-registered rule: GO only if the HP slope CI excludes 0 and a ±3 HP-eq per-act potion price
+projects to ≤ 800 core-h.
+**Result: STOP.** 64/64 units rc 0, 4 tars verified, 668 states. HP slope 0.054 floors/HP [−0.031, +0.134] (§537,
+3 fights: 0.066 [0.046, 0.086]). Paired-Δ SD for −12 HP 7.3 floors vs 4.8 at 3 fights, mean Δ −0.65 vs −0.79. Gold −50
+and max HP −5 copies end ahead of base on average. Non-Fairy potion 9.2 HP-eq [−6.1, +41.0]. Projected campaign
+≈ 14,600 core-h. Cost 9.5 s CPU per continuation.
+**Interpretation:** past the next few fights the paired copies diverge, and noise grows faster than the signal.
+**Inference:** CRN difference labels are affordable only at short horizons, whose prices did not transfer to whole
+runs (§537 → §542). So neither gen 1b nor CRN continuations give a usable difference label for a learned Silver leaf
+today; #335 stays parked until a value head passes the DESIGN.md teacher gate.
+[Result](evidence/crn_act_price_pilot_20261021/RESULT.md), [result.json](evidence/crn_act_price_pilot_20261021/result.json).
+Raw: `/mnt/project-files/silver-leaf-eval/crn-act-pilot/`. Seeds 111146000–063 and smokes 111146900–903 used.
+**Knowledge impact:** rejected line in `research/combat-search/leaf-evaluation.md`.
