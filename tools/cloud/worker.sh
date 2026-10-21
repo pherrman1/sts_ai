@@ -79,7 +79,14 @@ LEASE=$(key lease_minutes); LEASE=${LEASE:-30}
 [[ "$SCHED" =~ ^(static|queue)$ ]] || stop "manifest schedule must be static or queue"
 [[ "$LEASE" =~ ^[1-9][0-9]*$ ]] || stop "manifest lease_minutes must be a positive integer"
 TARGET=$(key build_target); TARGET=${TARGET:-one_combat}
-PRESET=$(key configure_preset); PRESET=${PRESET:-linux-gcc-release}
+# Without the key, the preset is the one tools/cloud/default_configure_preset names at code_commit, so a
+# changed default only reaches campaigns frozen after it; commits without that file use linux-gcc-release.
+PRESET=$(key configure_preset)
+if [ -z "$PRESET" ]; then
+  git cat-file -e "$CODE^{commit}" 2>/dev/null || stop "code_commit $CODE is not in this checkout (fetch it)"
+  PRESET=$(git show "$CODE:tools/cloud/default_configure_preset" 2>/dev/null | head -1)
+fi
+PRESET=${PRESET:-linux-gcc-release}
 [[ "$PRESET" =~ ^(linux-gcc-release|linux-gcc-release-x86-64-v3)$ ]] \
   || stop "manifest configure_preset must be linux-gcc-release or linux-gcc-release-x86-64-v3"
 if [ "$PRESET" = linux-gcc-release-x86-64-v3 ]; then
