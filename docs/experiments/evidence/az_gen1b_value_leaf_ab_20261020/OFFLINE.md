@@ -1,4 +1,4 @@
-# Gen-1b value head as an OOC leaf value: offline numbers (ledger §TBD)
+# Gen-1b value head as an OOC leaf value: offline numbers (ledger §577)
 
 **Gen 1b's value head ranks sibling leaves better than student_sel's untrained head but clearly worse than X2-B
 and than one rollout3. It predicts the run's Heart kill slightly better than X2-B (AUC +0.016, CI includes 0), except in

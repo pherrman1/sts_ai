@@ -3,7 +3,7 @@
 Philipp, 2026-10-20 20:34Z: "we should somehow test the value head. Open a new thread, that should give me offline
 numbers first, then prepare an online comparison by replacing X2-B with the gen1b value head, but keeping rollout3".
 This file prepares that comparison. A launch needs Philipp's typed authorization and a worker count, a frozen
-RUN_COMMIT and an independent pre-launch review. The offline numbers are in `OFFLINE.md` (ledger §TBD).
+RUN_COMMIT and an independent pre-launch review. The offline numbers are in `OFFLINE.md` (ledger §577).
 
 ## Question
 In the gen-0 search stack, does ending each rollout3 leaf in gen 1b's value head instead of X2-B kill the Heart more
