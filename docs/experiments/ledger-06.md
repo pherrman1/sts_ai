@@ -22152,7 +22152,7 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
-## §TBD — Live combat parity: unplayable autoplayed cards vanished and autoplays ran in reverse natively (2026-10-20)
+## §595 — Live combat parity: unplayable autoplayed cards vanished and autoplays ran in reverse natively (2026-10-20)
 
 **Question:** why did live seed 111200435 (release f2e3f48d) show the game's exhaust pile one card longer than native
 after four Havoc+ plays (problem 41), and live seed 111200436 step 503 a different discard order after Distilled
