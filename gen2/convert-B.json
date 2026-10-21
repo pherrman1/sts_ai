@@ -1,0 +1,10 @@
+{
+ "policy": 8294,
+ "value": 80607,
+ "dropped_mass": 66.70960982758834,
+ "short": 137,
+ "runs": 512,
+ "beta": 2.371373705661655,
+ "visit_scaled": false,
+ "c_visit": 50.0
+}
