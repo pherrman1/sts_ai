@@ -1109,7 +1109,8 @@ Supported native fixtures cover map choices, reward take/skip and repeated
 card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
 duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
-purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
+purchase types, shop-removal entry, chest open/leave and boss relic take/skip (the live
+driver maps the producer's boss-relic `cancel` to MCP's `skip` tool, live problem 71). The existing V4
 support gate still excludes non-card reward collection, removal/other
 selectors and the final map-to-boss transition. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
@@ -1415,6 +1416,13 @@ wrong proof (`STS_IMPORTER_RUNIC_DOME_ACT4`, default on; `=0` restores the
 refusal `silver_runic_dome_encounter_domain`). No live Dome run has reached Act 4
 yet; the Java cycles come from the canary's `javap` of CorruptHeart, SpireShield
 and SpireSpear.
+
+A split- or summon-born occupant's birth roll may carry `aliveCount` 0 (live seed
+111200458 s546, problem 63): Java rolls the child's first move in `init()` before
+`SpawnMonsterAction` adds it to the group, so the first Slime Boss child sees only the
+dead boss. The importer accepts 0 only when `rollGlobalTurn == birthGlobalTurn` on a
+non-initial row (`STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX`, default on; `=0` restores
+the refusal `silver_runic_dome_history_schema`).
 
 Liquid Memories qualifies its exact owning action and one- or two-card count.
 The two-card native decision preserves selection order, including the case

@@ -2009,6 +2009,29 @@ int main(int argc, char **argv) {
                 if(one_combat::advisor::importSilverRoot(obs).ok)throw std::runtime_error("future birth accepted");
             }
             {
+                // Live seed 111200458 s546 (problem 63): a split child rolls in init() before it joins the group,
+                // so the first Slime Boss child's birth roll sees only the dead boss (aliveCount 0).
+                auto obs=boundDome("SpikeSlime_L");auto &c=obs["silverRoot"]["combat"];auto &row=c["runicDomeKnowledge"]["monsters"][0];
+                obs["silverRoot"]["playerTurn"]=4;c["turn"]=4;c["monsters"][0]["maxHp"]=75;c["monsters"][0]["hp"]=75;
+                row.update({{"occupantGeneration",2},{"birthGlobalTurn",3},{"birthKind","split"},{"birthParentSlot",0},
+                    {"birthParentGeneration",1},{"rollGlobalTurn",3},{"rollHp",75},{"rollMaxHp",75},
+                    {"aliveCount",0},{"firstAlive",false},{"firstHp",0},{"firstMaxHp",150}});
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok || imported.wire.monsters[0].pendingRollInputs.aliveCount!=0
+                        || imported.wire.monsters[0].pendingRollInputs.knightAlive)
+                    throw std::runtime_error("split child birth roll with aliveCount 0: "+imported.reason);
+                setenv("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(obs);
+                unsetenv("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX");
+                if(legacy.ok || legacy.reason!="silver_runic_dome_history_schema")
+                    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_NEWBORN_ALIVE_FIX=0 must restore the legacy rejection");
+                // A later roll of the same child counts the child itself, and an initial occupant always counts itself.
+                auto later=obs;later["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["rollGlobalTurn"]=4;
+                if(one_combat::advisor::importSilverRoot(later).ok)throw std::runtime_error("later roll with aliveCount 0 accepted");
+                auto initial=boundDome("SpikeSlime_L");initial["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["aliveCount"]=0;
+                if(one_combat::advisor::importSilverRoot(initial).ok)throw std::runtime_error("initial occupant with aliveCount 0 accepted");
+            }
+            {
                 // Live seed 111194466 (A20 TWO_THIEVES, player turn 1): the mod stamps the combat-start roll with
                 // the game's turn counter (1), not the native combat-start turn 0.
                 auto obs=groupDome({"Looter","Mugger"},{{},{}});auto &c=obs["silverRoot"]["combat"];
