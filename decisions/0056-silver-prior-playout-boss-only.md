@@ -1,4 +1,4 @@
-# ADR-TBD: Prior-argmax Silver playouts in real boss fights only
+# ADR-0056: Prior-argmax Silver playouts in real boss fights only
 
 Date: 2026-10-21
 Status: accepted

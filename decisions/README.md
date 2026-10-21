@@ -28,7 +28,7 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-silver-prior-playout-boss-only.md) limits ADR-0050's prior playouts to real boss fights
+- [ADR-0056](0056-silver-prior-playout-boss-only.md) limits ADR-0050's prior playouts to real boss fights
   (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores elite rooms; not gated).
 - [ADR-0055](0055-ooc-fast-root-cap.md) caps the fast (non-full-budget) roots of playout-cap-randomized OOC MCTS at
   1024 simulations (`STS_OOC_MCTS_FAST_ROOT_CAP=0` restores uncapped fast roots; no gate, Philipp's call).

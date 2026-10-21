@@ -22603,7 +22603,7 @@ Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 
-## §TBD — Silver prior playouts in real boss fights only, for CPU (ADR-TBD, 2026-10-21)
+## §606 — Silver prior playouts in real boss fights only, for CPU (ADR-0056, 2026-10-21)
 
 **Question:** Should real elite fights keep ADR-0050's prior-argmax playouts? They are about 12% of A20 run CPU.
 **Setup:** AZ-loop profile `/mnt/project-files/az-speed-profile/REPORT.md` (seeds 111145000-003). Check seed 111145006,
@@ -22617,4 +22617,4 @@ leaf spec records `prior_playout_rooms` as `boss`.
 **Open question:** The strength effect of greedy elite playouts at run level is not measured.
 Seeds: 111145006 (from this thread's block 111145000-145999).
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`,
-`decisions/TBD-silver-prior-playout-boss-only.md`.
+`decisions/0056-silver-prior-playout-boss-only.md`.

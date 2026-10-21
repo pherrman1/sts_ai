@@ -67,7 +67,7 @@ simulations end (§142).
   score, HP −0.4 NOT_SHOWN at 1.9x CPU per fight; priorpl10000 +3.3 [−0.6, +7.2] score, HP lost −0.70 [−1.19, −0.22]
   at 7.3x. Bosses carry most of the point estimate (+9.8 / +12.5). At most a small gain. Philipp made prior playouts the
   default for real boss and elite fights (ADR-0050; `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy);
-  since ADR-TBD only boss fights, for CPU (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores elites).
+  since ADR-0056 only boss fights, for CPU (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores elites).
 
 ## Relationships
 

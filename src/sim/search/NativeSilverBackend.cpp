@@ -81,7 +81,7 @@ namespace sts::search {
             // ADR-0050: real boss and elite fights use prior-argmax playouts (RolloutConfig::prior)
             // when the root prior is on (STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE; =0 restores greedy).
             bool priorPlayoutBossElite = true;
-            // ADR-TBD: elite rooms are left out unless STS_SILVER_PRIOR_PLAYOUT_ELITE=1 (ADR-0050's rooms).
+            // ADR-0056: elite rooms are left out unless STS_SILVER_PRIOR_PLAYOUT_ELITE=1 (ADR-0050's rooms).
             bool priorPlayoutElite = false;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
@@ -597,7 +597,7 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
-                // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-TBD)
+                // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
                 // of whole-run fights play prior playouts. A rollout, root-prior or prior-net override
                 // (research arms, source runs, imagined OOC fights) keeps its own setting, as the
                 // whole-run tree prior above does.
