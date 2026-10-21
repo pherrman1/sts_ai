@@ -22066,3 +22066,30 @@ Play- and RNG-changing for simulator play with Magnetism, unmeasured.
 turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+
+## §577 — AZ gen 1b value head as an OOC leaf value: offline numbers, flag and a prepared (not launched) A/B (2026-10-20)
+
+**Question:** Philipp (2026-10-20 20:34Z): test gen 1b's value head (§573) offline first, then prepare an online
+comparison that replaces X2-B with it while keeping rollout3.
+**Offline (zero seeds, no fits), on data gen 1b never saw:** §494 TRAIN+VALIDATION sibling groups (777) and §503
+round-2 TRAIN+VALIDATION (1,408 sources, 330,386 depth-1 sibling leaves with 64 rollout3 repeats, 11,493 groups, observed
+Heart kills; CONFIRM not opened). `tools/heart1/value_leaf_check.py`, source bootstrap 2,000.
+- Sibling concordance against 64-rollout means: gen 1b 0.541 / 0.547 (§494 / round 2) vs X2-B 0.601 / 0.633, one
+  rollout3 0.565 / 0.590, student_sel's untrained head 0.514 / 0.521. Gen 1b − X2-B −0.060 [−0.091, −0.029] and −0.086
+  [−0.093, −0.077]. Gen 1b leads only on map parents (round 2 0.602 vs 0.573); act 1 0.530 vs 0.659.
+- Round-2 leaves vs the source's Heart kill: AUC gen 1b 0.710 vs X2-B 0.694, +0.016 [−0.003, +0.036]; act 1 0.575 vs
+  0.582, acts 2–3 0.742 / 0.740 vs 0.710 / 0.727. Mean value 0.30 (base rate 0.18; X2-B 0.79); BCE 0.471 vs constant
+  0.475.
+**Interpretation (Inference):** like the §498/§501 outcome heads (§502), a head trained on run labels orders states
+across runs about as well as X2-B but does not order one-step alternatives. The online arm values rollout3 end states,
+where state ranking matters more; Act 1 and the lower value scale are the stated risks (§522: a P(Heart) rollout3 end
+value had 114 vs 69 act-1 deaths).
+**Implementation:** `STS_OOC_MCTS_LEAF_HEART1_VALUE=<weights.bin>` (default unset) replaces every native X2-B anchor
+evaluation with sigmoid(value logit) on the state's heart1 record; unencodable states keep X2-B (counted). Smoke, seed
+111144991, 256 sims, student_sel prior: 5,260 value-head leaves, 0 fallbacks; root Q mean 0.24 vs 0.69; same actions
+and outcome (both arms followed the prior at every searched root); wall 135 vs 132 s. Seed 111144990 was consumed by a
+smoke with a bad config (aborted before play).
+**Prepared A/B:** `evidence/az_gen1b_value_leaf_ab_20261020/PREREG.md`: 512 paired A20 seeds 111144000–111144511, gen
+0's search arm vs the same plus the flag, Heart-kill McNemar with the matched-CPU rule. Not launched; needs Philipp's
+authorization and worker count. [Offline report](evidence/az_gen1b_value_leaf_ab_20261020/OFFLINE.md).
+**Knowledge impact:** `operations/environment-variables.md` (flag), `evaluation/current-research.md` (status).
