@@ -152,6 +152,12 @@ namespace sts {
     // (live parity problem 48). 0 = the legacy pick. Other values are fatal.
     bool mummifiedHandPlayedCardFix();
 
+    // STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX: unset/1 (default) = unupgraded True
+    // Grit exhausts a lone hand card without a cardRandomRng draw, as Java's
+    // ExhaustAction does (live parity problem 76). 0 = the legacy draw.
+    // Other values are fatal.
+    bool trueGritSingleCardRngFix();
+
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
     // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from

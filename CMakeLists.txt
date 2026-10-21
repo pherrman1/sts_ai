@@ -146,6 +146,14 @@ add_test(NAME exhaust_empty_hand COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(exhaust_empty_hand PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(true_grit_single_card_rng_test tests/true_grit_single_card_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(true_grit_single_card_rng_test PRIVATE include json/include)
+add_test(NAME true_grit_single_card_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:true_grit_single_card_rng_test>)
+set_tests_properties(true_grit_single_card_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(anger_copy_cost_test tests/anger_copy_cost_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(anger_copy_cost_test PRIVATE include json/include)
