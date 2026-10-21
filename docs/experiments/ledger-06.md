@@ -22001,6 +22001,40 @@ the played Metallicize); the fixed replay matches the game at both steps.
 Seeds: none new (live seed 111200438 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `behavior/java-reference-audit.md`.
 
+## §584 — Live combat parity: Anger's copy took the base cost under Confusion (2026-10-20)
+
+**Question:** why did live seed 111200436 (release f2e3f48d) show Anger cost diffs in the discard and draw piles at
+four steps (parity1 s77/s355, parity2 s57, parity3 s2; problem 43 in `engine-parity/overnight-20261019/ISSUES.md` on
+the share)?
+**Setup:** the canary's extract (`issue43-extract.json`: a Confusion-rolled 1/1 Anger played, game discard with two
+1/1 Angers, native copy 0/0); `anger_copy_cost_test` (no gameplay seeds).
+**Result:** Java `Anger.use` queues `MakeTempCardInDiscardAction(makeStatEquivalentCopy())`, which copies `cost` and
+`costForTurn`; native built a fresh base-cost Anger. The played Anger matched in every instance.
+**Interpretation:** `STS_ANGER_COPY_COST_FIX` (default on, `=0` restores) copies both costs from the played card.
+Play-changing under Confusion (Snecko), unmeasured.
+**Open question:** `makeStatEquivalentCopy` also copies `freeToPlayOnce`; native does not, unverified against the JAR
+and not seen live.
+Seeds: none new (live seed 111200436 as reported; unit test seed 111200071).
+## §581 — Live Headbutt grids refused after a lethal hit on a Byrd and after Plated Armor 1 on Donu (2026-10-20)
+
+**Question:** why did live runs stop at Headbutt's discard grid with `silver_selection_pending_actions` on seeds
+111200421 (floor 28), 111200430 (floor 18), 111200439 (floor 21; problems 35 and 49), 111200460 (floor 18, a
+lethal hit on a Flight 1 Byrd) and 111200422 (floor 50, problem 36) in `engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's failure snapshots and extracts (`issue49-extract.json`: a 7 HP Flight 3 Byrd hit for exactly
+7); the native-vs-Java parity loop in `live_silver_importer_test` (Headbutt variants 7, 8 and 9; no gameplay seeds).
+**Result:** a lethal hit still queues `FlightPower`'s (or `PlatedArmorPower`'s) `ReducePowerAction`, because
+`onAttacked`/`wasHPLost` run before `die()` and `FlightPower` tests `calculateDamageTakenAmount` (which halves again)
+against HP. The producer and importer refused a dead target. Plated Armor 1 queues the reduction that removes the
+power, which the importer refused for every monster because of Shelled Parasite's stun. Native applies both at the hit.
+**Interpretation:** `STS_SILVER_LETHAL_REACTION_QUEUE` and `STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE` (default on, `=0`
+restores the refusal) fold both into the native state. On a lethal hit at Flight 1, native stuns the Byrd and
+sets Flight 0 before the death, and the fold does the same. Grounding a living Byrd and Shelled Parasite's stun stay
+unsupported.
+Live-import support only; native play is unchanged. `pendingActionsBlocker` now names queued power actions, so the
+unexplained problem 37 (seed 111200425) will show its source.
+Seeds: none new (live seeds as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`,
+`evaluation/differential-correctness.md`.
 ## §578 — Live combat parity: a grounded Byrd kept its Flight status natively (2026-10-20)
 
 **Question:** why did live seed 111200436 (release f2e3f48d, parity1 step 516, Fiend Fire) show
@@ -22101,6 +22135,128 @@ turn, card before the draw) agrees.
 Seeds: none new (live seed 111200429 as reported; unit test only).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
 
+## §588 — Live combat parity: Transient's Shackled wrapped at 8 bits (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show Transient's Strength game -5 vs native -261 after
+an End Turn (problem 53 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue53-extract.json`: before the step Str -147, Shackled 145, 142 damage taken this
+turn; after it Str -5, Shackled 3); read-only `javap` of the pinned JAR (`issue53-javap.md`: `ShiftingPower`,
+`GainStrengthPower`, `Transient.usePreBattleAction`); `monster_ai_java_parity` (no gameplay seeds).
+**Result:** Java's `GainStrengthPower` (ID Shackled) restores its full amount at the owner's end of turn and clamps
+to [-999, 999]. Native restores at the same point, but `Monster::shackled` was `std::int8_t`, so 145 was stored as -111:
+-147 - 111 = -258, then 3 more damage gives -261, exactly the live native value. The replay reproduces both values.
+**Interpretation:** `STS_SHACKLED_OVERFLOW_FIX` (default on, `=0` restores the wraparound) widens the field to 16 bits
+with Java's clamp, also on the Silver wire import. Play-changing for simulator play and the live advisor once a Transient takes over 127 damage
+in one turn, unmeasured.
+**Open question:** the `BattleContextBinary` format still writes Shackled as one byte (lossy above 127); no format
+bump here.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+
+## §587 — Live combat parity: Gremlin Nob's Anger never fired in Colosseum Nobs (2026-10-21)
+
+**Question:** why did live seed 111200459 (s454, Colosseum Nobs) show Gremlin Nob's Strength game 3 vs native 0 after
+Second Wind+ with Anger 3 (problem 64b in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** `BattleContext::onUseSkillCard`, `MonsterGroup.cpp` (Colosseum Nobs layout); `ironclad_card_java_parity`
+(no gameplay seeds).
+**Result:** native applied the Skill-played Enrage only to `monsters.arr[0]`. Colosseum Nobs creates the Taskmaster in
+slot 0 and the Nob in slot 1, so the Nob never gained Strength. In Java the Nob's own `AngerPower.onUseCard` runs for
+every monster's powers. The Second Wind exhaust inference in the report is not needed.
+**Interpretation:** `STS_ENRAGE_ALL_MONSTERS_FIX` (default on, `=0` restores) checks every living monster. Play-changing
+for simulator play in that fight, unmeasured.
+Javap of the pinned JAR (`issue64-javap.md` on the share): the `UseCardAction` constructor calls every monster power's
+`onUseCard` (gate only `dontTriggerOnUseCard`), and `AngerPower.onUseCard` on a Skill queues
+`addToTop(ApplyPowerAction(owner, owner, Strength))`, which skips a dead owner (`isDeadOrEscaped`, `issue56b-javap.md`).
+**Open question:** native applies the Strength at once rather than through the queue; not observed to differ.
+Seeds: none new (live seed 111200459 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+## §586 — Simulator parity: Donu and Spire Spear buffed a dead ally's Strength (2026-10-21)
+
+**Question:** do the other direct ally buffs next to problem 56's block moves reach a dead ally natively?
+**Setup:** `MonsterSpecific.cpp` (Donu's Circle of Power, Spire Spear's Piercer); `monster_ai_java_parity` (no gameplay
+seeds). Found in the #742 review, not live.
+**Result:** both moves call `buff<STRENGTH>` on the ally directly, so a dead Deca or Spire Shield gained Strength. In Java
+the buffs are queued `ApplyPowerAction`s, which skip a dead target.
+Javap of the pinned JAR (`issue56b-javap.md` on the share): both `takeTurn` cases loop over every monster with no alive
+check and queue `ApplyPowerAction(m, this, Strength)`; `ApplyPowerAction.update` returns first when
+`target.isDeadOrEscaped()` (dying, half-dead or escaping).
+**Interpretation:** `STS_DEAD_ALLY_STRENGTH_FIX` (default on, `=0` restores) skips an ally that `isDeadOrEscaped` in both.
+Play-changing for simulator play (dead monsters' powers are in Silver's node identity), unmeasured.
+**Open question:** none for these two moves; other direct ally buffs were not audited here.
+Seeds: none new (unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+## §585 — Live combat parity: Deca's Square of Protection shielded a dead Donu (2026-10-20)
+
+**Question:** why did live seed 111200445 (A20, release 9ec8a51d) show `monsters[1].block` game 0 vs native 16 at the
+End Turn after Donu died (problem 56 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's extract (`issue56-extract.json`: Deca intent DEFEND_BUFF, Donu dead with hp 0 and no powers);
+`MonsterSpecific.cpp`; `monster_ai_java_parity` (no gameplay seeds).
+**Result:** native resolves Deca's Square of Protection and Spire Shield's Fortify by adding block (and Deca's A19 Plated
+Armor) to the ally directly, outside the queued `MonsterGainBlock` that `STS_DEAD_MONSTER_BLOCK_FIX` gates, so a dead
+ally gained it. The game shows Deca 1 -> 20 (16 plus Plated Armor 4 → 7 at end of turn) and dead Donu block 0 with no
+powers, as Java's per-monster `GainBlockAction`/`ApplyPowerAction` skip a dying target.
+**Interpretation:** `STS_DEAD_ALLY_BLOCK_FIX` (default on, `=0` restores) skips a dead, non-half-dead ally in both moves.
+Play-changing for simulator play (dead-monster block is in Silver's node identity), unmeasured.
+Javap of the pinned JAR (`issue56-javap.md` on the share) confirms both call sites: `Deca.takeTurn` case 2 and
+`SpireShield.takeTurn` case 2 loop over every monster with no alive check and queue `GainBlockAction` (Deca also
+`ApplyPowerAction` Plated Armor at A19+); only `GainBlockAction.update` skips a dying or dead target.
+**Open question:** Spire Shield's Fortify is confirmed by javap, not by a live observation.
+Seeds: none new (live seed 111200445 as reported; unit test only).
+**Knowledge impact:** `operations/environment-variables.md`.
+## §583 — Live Silver: Headbutt splitting a large slime refused its put-on-top choice (2026-10-21)
+
+**Question:** why did live seed 111200464 seg1 s307 (release 9ec8a51d, Act 1 floor 16, Slime Boss fight after the boss
+split) stop with `silver_selection_pending_actions` and pending actions `[UseCardAction, TextAboveCreatureAction,
+SetMoveAction]` after Headbutt+ took a Spike Slime (L) from 38 to 29 of 64 HP (problem 68 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report; `Monster::onHpLost`; `live_silver_importer_test` (Ironclad seed 111200071,
+LARGE_SLIME and SLIME_BOSS, no gameplay runs).
+**Result:** the large slimes' and Slime Boss's `damage()` at half HP sets the split move (3) and queues
+`TextAboveCreatureAction` and `SetMoveAction(3, UNKNOWN)` behind Headbutt's `UseCardAction`. Native sets the split at
+the hit and, under `STS_SLIME_SPLIT_RNG_FIX`, also writes it as the previous move (the queued SetMoveAction's second
+history entry), so its tail is `[USE_CARD]`. The producer had no item for this pair.
+**Interpretation:** the producer emits `MONSTER_SPLIT_SET_MOVE {slot}` (only for a living, slotted large slime or
+Slime Boss with nextMove 3 and a queued SetMoveAction(3, UNKNOWN)). `STS_SILVER_SLIME_SPLIT_QUEUE` (default on, `=0`
+restores the refusal) writes the split as the previous move; it refuses when `STS_SLIME_SPLIT_RNG_FIX=0` (native then
+keeps an older move there) or the slime is above half HP. The folded import matches the native Headbutt state for
+both encounters. Changes only which live roots Silver searches.
+**Open question:** the producer reads `SetMoveAction` fields (`monster`, `theNextMove`, `theNextIntent`) as for
+Darkling; `TextAboveCreatureAction` itself is not inspected.
+Seeds: none new (live seed 111200464 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §582 — Live combat parity: an in-combat upgrade reset Blood for Blood's damage-taken reduction (2026-10-20)
+
+**Question:** why did live seed 111200448 (release 9ec8a51d, step 8, Armaments+) leave a Blood for Blood at 2/2 in the
+game and 3/3 natively (problem 59 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's report (cost 3 before the upgrade: base 4, one hit this combat); `upgrade_cost_delta_test`
+(no gameplay seeds).
+**Result:** `CardInstance::upgrade` applied Blood for Blood's `upgradeBaseCost(cost - 1)` and then, because the
+upgraded base cost differs, its generic branch set `cost = costForTurn = 3`. Java has no generic branch: each card's
+`upgrade` calls `upgradeBaseCost`, which keeps `costForTurn - cost`. The same reset hit every cost-changing upgrade of a
+card with a turn-cost modification, and a fully reduced (0-cost) Blood for Blood upgraded to 3.
+**Interpretation:** `STS_UPGRADE_COST_DELTA_FIX` (default on, `=0` restores) follows Java `upgradeBaseCost` for all
+in-combat upgrades (Armaments, Apotheosis, other hand/pile upgrades). Play-changing, unmeasured; unmodified cards
+upgrade as before.
+Seeds: none new (live seed 111200448 as reported).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/differential-correctness.md`.
+## §580 — Live OOC: Mushrooms' "Ambushed!" Fight page was unrepresentable; the True Victory cutscene timed out (2026-10-20)
+
+**Question:** why did live seed 111200446 (floor 10, release 9ec8a51d) stop after the advisor chose "[Stomp] Anger the
+Mushrooms" (problem 57 in `engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue57-observation.json`, now `tests/fixtures/live_mushrooms_ambush.json`);
+`LiveEventCapture`, `live_ooc_state.cpp`; `live_ooc_protocol`, `LiveEventCaptureTest` (no gameplay seeds).
+**Result:** Stomp sets Mushrooms' `screenNum` to 2, the "Ambushed!" page whose sole option [Fight] starts the fight. The
+mod's event tables qualified only the decision page 0 and the leave page 1, so it refused page 2 with
+`EVENT_PHASE_UNREPRESENTABLE:Mushrooms:2`; it recurs whenever Stomp is picked.
+**Interpretation:** the mod adds page 2 to its `event_continue` table; `STS_IMPORTER_MUSHROOMS_FIGHT_FIX` (default on,
+`=0` restores the refusal) qualifies exactly that page, and the advisor passes it through (`forced_no_search`). The live
+capture with the fixed producer's two fields reproduces the pass-through.
+Same PR, live problem 60 (seed 111200449, the first fully autonomous live A20 win): after the Heart's Proceed the game
+sits in `TrueVictoryRoom` (`NO_INTERACT`, never `ready_for_command`) and the driver timed out, so the win was logged as
+abandoned. The driver now treats `TrueVictoryRoom` as a terminal victory (UI only, no flag).
+**Open question:** the following Mushroom fight and its reward (Odd Mushroom) are not exercised here.
+Seeds: none new (live seed 111200446 as reported; protocol and mod unit tests only).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 ## §579 — Live combat parity: Pen Nib armed behind a Headbutt grid imported as already applied (2026-10-20)
 
 **Question:** why did live seed 111200445 (release 9ec8a51d, parity2 step 431, Headbutt → Jaw Worm) show
