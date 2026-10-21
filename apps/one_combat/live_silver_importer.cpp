@@ -2239,6 +2239,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     if(flight==1) {
                         monster.moveHistory[1]=monster.moveHistory[0];
                         monster.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
+                        // Native removes the grounded Byrd's Flight (STS_BYRD_GROUNDED_FLIGHT_FIX).
+                        if(sts::byrdGroundedFlightFix())
+                            monster.statusBits&=~(1ULL<<static_cast<int>(sts::MonsterStatus::FLIGHT));
                     }
                     --flight;
                     continue;

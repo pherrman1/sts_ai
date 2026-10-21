@@ -4438,6 +4438,11 @@ int main(int argc, char **argv) {
             // Java form: Curl Up stays until its queued RemoveSpecificPowerAction.
             if(louse) javaTarget["powers"].push_back({{"id","Curl Up"},{"amount",curlBefore}});
             if(lastFlight) {
+                // Java form: Flight 1 stays until its queued ReducePowerAction
+                // (native removed it at the hit, STS_BYRD_GROUNDED_FLIGHT_FIX).
+                auto &powers=javaTarget["powers"];
+                if(std::none_of(powers.begin(),powers.end(),[](const json &power){return power.at("id")=="Flight";}))
+                    powers.push_back({{"id","Flight"},{"amount",1}});
                 // Java grounds the Byrd only when the queued reduction removes
                 // Flight, so the pre-hit move is still showing.
                 const auto current=javaMoveByte("Byrd",preHitMoves[0]);
