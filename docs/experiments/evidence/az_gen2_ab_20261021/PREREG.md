@@ -40,7 +40,8 @@ student_sel at A20?
   to both arms equally.
 
 ## Seeds, budget
-- 1,024 fresh paired A20 seeds, 111148064–111149087. Gen 2 never trained on them: its rows came from
+- 1,024 fresh paired A20 seeds, 111142888–111143911 (reserved by the coordinator 2026-10-21 16:24Z; the first draft's block 111148064–111149087 clashed with
+  another thread's seeds). Gen 2 never trained on them: its rows came from
   111140712–111142887.
 - 4 parallel per worker; a unit is one seed, both arms in sequence, with a 7 h timeout per arm.
 - Expected cost: gen 1b's arms averaged ~1,480 s per run on flat 10k. The two speed changes are estimated at about
