@@ -1868,6 +1868,7 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         {"screen", int(gc.screenState)}, {"act", gc.act}, {"floor", gc.floorNum},
         {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
         {"outcome", int(gc.outcome)}, {"boundary", isLeafBoundary(id)}};
+    if (capture.commonSeeds) row["commonSeeds"] = true;
     const auto policyBefore = captureOocPolicyThreadState();
     const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats);
     try { row["extra"] = forkLeafReplay([&] {
@@ -1894,7 +1895,9 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             auto &list = out[name] = nlohmann::json::array();
             for (unsigned r = 0; r < count; ++r) {
                 restoreOocPolicyThreadState(policyBefore);
-                std::seed_seq seq{capture.searchSeed, capture.decisionIndex, ordinal, kind, std::uint64_t(r)};
+                // seed_seq keeps the low 32 bits of each value; ordinals stay far below this marker.
+                const std::uint64_t leafKey = capture.commonSeeds ? 0xFFFFFFFFull : ordinal;
+                std::seed_seq seq{capture.searchSeed, capture.decisionIndex, leafKey, kind, std::uint64_t(r)};
                 std::mt19937_64 stream(seq);
                 bool ended = false;
                 sts::search::OocEndpoint end;
@@ -2477,6 +2480,7 @@ struct LiveSiblingCapture {
     std::shared_ptr<std::ofstream> out;
     std::uint64_t every = 4, maxLeaves = 256;
     unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
+    bool commonSeeds = false;
 };
 std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
@@ -3035,6 +3039,7 @@ void configureLiveOocMcts() {
         sibling.longRepeats = unsigned(knob("STS_OOC_SIBLING_LONG", 0, 0, 16));
         sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
         sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
+        sibling.commonSeeds = knob("STS_OOC_SIBLING_COMMON_SEEDS", 0, 0, 1) == 1;
         sibling.out = std::make_shared<std::ofstream>(path, std::ios::app);
         if (!*sibling.out) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE cannot open output");
         // Load heart1 in the parent: forked children must not each reload it.
@@ -4168,6 +4173,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         sibling->runSeed = seed; sibling->decisionIndex = index; sibling->searchSeed = config.seed;
         sibling->repeats = liveSibling->repeats; sibling->longRepeats = liveSibling->longRepeats;
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
+        sibling->commonSeeds = liveSibling->commonSeeds;
         options.siblingCapture = std::move(sibling);
     }
     if (!options.priorTracePath.empty()) {

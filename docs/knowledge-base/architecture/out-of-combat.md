@@ -824,7 +824,9 @@ most `STS_OOC_SIBLING_MAX_LEAVES` per root, in evaluation order) writes its
 parent state id, action, the search's own leaf value and extras computed in a
 forked child of the untouched pre-evaluation process: `_REPEATS` repeat leaf
 rollouts and `_LONG` `LEAF_COMBATS=5` rollouts on fresh `seed_seq` streams
-(policy thread state restored before each), X2-B at the leaf (`anchorValue`)
+(policy thread state restored before each; per leaf, or with
+`STS_OOC_SIBLING_COMMON_SEEDS=1` one stream per repeat shared by all leaves of
+the root, i.e. common random numbers), X2-B at the leaf (`anchorValue`)
 and, with `STS_OOC_HEART1`, heart1's value head and input record
 (`heart1::leafAnnotation`). Siblings are leaves sharing a parent; the parent
 link is kept only while capture is on. The forked child needs a single-threaded
