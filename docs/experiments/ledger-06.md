@@ -23161,7 +23161,7 @@ Authorization: Philipp 2026-10-21 19:08Z ("Kk. Then let's go on 32 workers"). Pr
   run wall 773-777 s vs ~1,480 s in §589, from the 2026-10-21 speed defaults.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD — Max backup + block-first playouts vs production Silver at A20 fight level: NOT_SHOWN, HP WORSE vs CPU-matched, bosses worse (2026-10-22)
+## §638 — Max backup + block-first playouts vs production Silver at A20 fight level: NOT_SHOWN, HP WORSE vs CPU-matched, bosses worse (2026-10-22)
 
 **Question:** do the §624 flags (`STS_SILVER_MAX_BACKUP=4` + `STS_SILVER_ROLLOUT_BLOCK_FIRST=3`), which halved
 exact first-fight regret, improve real A20 fights?
