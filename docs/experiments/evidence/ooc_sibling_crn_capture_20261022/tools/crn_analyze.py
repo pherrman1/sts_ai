@@ -17,16 +17,20 @@ values v[a, r] can be differenced directly.
 - noise: split-half agreement of the action order (repeats 0..h-1 vs 16..16+h-1; round 2: 0..h-1 vs 32..32+h-1), per
   root, then per source, then over sources; the ceiling of the §577 concordance for a perfect evaluator, with
   p(pair order wrong) = Phi(-|d| / se(d)) and se(d)^2 = var_r(v[i, r] - v[j, r]) / R (common seeds) or
-  se_i^2 + se_j^2 (round 2's independent streams); ceilingHidden adds sigma_h^2 (1/k_i + 1/k_j), the hidden-state
-  variance of two action means over k_i, k_j rows with independent hidden states (same_state_stats). Siblings of a
-  deterministic action share the root's hidden state, so this overstates their noise: ceilingHidden is a lower bound.
-  pairSe2 is the mean stream variance of a sibling difference, pairIndependentSe2 the same with independent streams.
+  se_i^2 + se_j^2 (round 2's independent streams). Two ceilings add a hidden-state term for rows with independent
+  hidden states, from hiddenVarSets of same_state_stats (rows with the same action and public record; sameX2b repeats
+  it for #812's equal-X2-B sets, with the share that hold one record): ceilingHiddenProp adds c (se_i^2 + se_j^2)
+  with independent streams' se, where c = sigma_h^2 / a row's stream variance (#812's f^2 - 1), and
+  ceilingHiddenConst adds sigma_h^2 (1/k_i + 1/k_j) for actions over k_i, k_j rows. Siblings of a deterministic action
+  share the root's hidden state, so both overstate their noise. pairSe2 is the mean stream variance of a sibling
+  difference, pairIndependentSe2 the same with independent streams.
 - score: each head's sigmoid(value) on the records, the blend sigmoid((1 - w) logit X2-B + w logit head) for NAME@w,
   §577 concordance and regret (outcome_head_sibling_check.group_metrics), paired source bootstrap against X2-B; on
   VALIDATION also by the root's screen. r0 is the row's own value, the search's single leaf evaluation.
 """
 import glob
 import gzip
+import hashlib
 import json
 import math
 import os
@@ -125,9 +129,10 @@ def agreement(a, b):
     return float(np.mean(ag))
 
 
-def noise_stats(mats, seeds, common, half, hidden_var):
+def noise_stats(mats, seeds, common, half, hidden):
     """split-half curve and ceilings, per source mean of per-root values, then over sources. mats: (actions x repeats
-    matrix, rows per action) per group."""
+    matrix, rows per action) per group; hidden: (c, sigma_h^2) for ceilingHiddenProp and ceilingHiddenConst."""
+    c, s2h = hidden
     per = defaultdict(lambda: defaultdict(list))
     n = mats[0][0].shape[1] if mats else 0
     for (m, k), seed in zip(mats, seeds):
@@ -136,7 +141,7 @@ def noise_stats(mats, seeds, common, half, hidden_var):
             if 2 * h <= n:
                 src[f'splitHalf{h}'].append(agreement(m[:, :h].mean(1), m[:, half:half + h].mean(1)))
         t = m.mean(1)
-        pf, ph, se2, ind2 = [], [], [], []
+        pf, pp, pc, se2, ind2 = [], [], [], [], []
         for i in range(len(t)):
             for j in range(i):
                 d = abs(t[i] - t[j])
@@ -145,12 +150,11 @@ def noise_stats(mats, seeds, common, half, hidden_var):
                 ind2.append((m[i].var(ddof=1) + m[j].var(ddof=1)) / n)
                 s2 = np.var(m[i] - m[j], ddof=1) / n if common else ind2[-1]
                 se2.append(s2)
-                pf.append(Phi(-d / math.sqrt(s2)) if s2 > 0 else 0.0)
-                h2 = s2 + hidden_var * (1 / k[i] + 1 / k[j])
-                ph.append(Phi(-d / math.sqrt(h2)) if h2 > 0 else 0.0)
+                for p, v in ((pf, s2), (pp, s2 + c * ind2[-1]), (pc, s2 + s2h * (1 / k[i] + 1 / k[j]))):
+                    p.append(Phi(-d / math.sqrt(v)) if v > 0 else 0.0)
         if pf:
-            src['ceiling'].append(float(np.mean([1 - p for p in pf])))
-            src['ceilingHidden'].append(float(np.mean([1 - p for p in ph])))
+            for key, p in (('ceiling', pf), ('ceilingHiddenProp', pp), ('ceilingHiddenConst', pc)):
+                src[key].append(float(np.mean([1 - q for q in p])))
             src['pairSe2'].append(float(np.mean(se2)))
             src['pairIndependentSe2'].append(float(np.mean(ind2)))
     agg = defaultdict(list)
@@ -160,34 +164,67 @@ def noise_stats(mats, seeds, common, half, hidden_var):
     return {k: {'mean': float(np.mean(v)), 'sources': len(v)} for k, v in sorted(agg.items())}
 
 
-def same_state_stats(sets):
-    """Rows of one root with the same action and X2-B value have the same public state (#812 sr_noise.py), so their
-    scatter is hidden state. sets: rows x repeats matrices. f = sqrt(between-row variance of the targets / predicted
-    variance of a mean, sd^2 / n) as in #812. Over row pairs, d = v_k - v_l per repeat: E[dbar^2] = 2 sigma_h^2 +
-    E[var(d) / n] for independent and common streams alike, so hiddenVar = (E[dbar^2] - E[var(d) / n]) / 2. With
-    common seeds a pair of identical hidden states has d = 0 in every repeat (identicalFraction, per set)."""
-    obs, pred, ident, dbar2, dvar = [], [], [], [], []
+SIZES = ((2, 2), (3, 4), (5, 8), (9, None))
+
+
+def same_state_stats(sets, seeds):
+    """Rows of one root with the same action and the same public record differ only in hidden state, so their scatter
+    is hidden state (#812 sr_noise.py grouped by equal X2-B values instead; most of those sets differ publicly, mostly
+    in gold, HP, the boss or the cards offered, which X2-B partly ignores). sets: rows x repeats matrices; seeds: their
+    sources.
+    f = sqrt(between-row variance of the targets / predicted variance of a mean, sd^2 / n) as in #812, each set counted
+    once. Over row pairs, d = v_k - v_l per repeat: E[dbar^2] = 2 sigma_h^2 + E[var(d) / n] for independent and common
+    streams alike. hiddenVar = (E[dbar^2] - E[var(d) / n]) / 2 weights every pair equally, so large sets dominate it;
+    hiddenVarSets counts each set once, like f, with a 95 % source-bootstrap interval, and rowStreamVar is a row's
+    sd^2 / n, counted the same way. With common seeds a pair of identical hidden states has d = 0 in every repeat
+    (identicalFraction, per set)."""
+    if not sets:
+        return {'sets': 0}
+    obs, pred, ident, dbar2, dvar, hid, rvar = [], [], [], [], [], [], []
     for m in sets:
-        n, t = m.shape[1], m.mean(1)
+        n, t, terms = m.shape[1], m.mean(1), []
         obs.append(t.var(ddof=1))
         pred.append(float(np.mean(m.var(1) / n)))
         ident.append(float(all(np.array_equal(m[0], x) for x in m[1:])))
+        rvar.append(float(np.mean(m.var(1, ddof=1) / n)))
         for k in range(len(m)):
             for l in range(k):
                 d = m[k] - m[l]
                 dbar2.append(d.mean() ** 2)
                 dvar.append(d.var(ddof=1) / n)
-    if not sets:
-        return {'sets': 0}
-    return {'sets': len(sets), 'pairs': len(dbar2), 'identicalFraction': float(np.mean(ident)),
+                terms.append((dbar2[-1] - dvar[-1]) / 2)
+        hid.append(float(np.mean(terms)))
+    hid, ident, size = np.array(hid), np.array(ident), np.array([len(m) for m in sets])
+    by_seed = defaultdict(list)
+    for i, seed in enumerate(seeds):
+        by_seed[seed].append(i)
+    keys, rng = list(by_seed.values()), np.random.default_rng(0)
+    boot = [hid[np.concatenate([keys[j] for j in rng.integers(len(keys), size=len(keys))])].mean() for _ in range(1000)]
+    by_size = {}
+    for lo, hi in SIZES:
+        sel = (size >= lo) & (size <= (hi or size.max()))
+        if sel.any():
+            by_size[f'{lo}-{hi}' if hi else f'{lo}+'] = {'sets': int(sel.sum()),
+                                                         'identicalFraction': float(ident[sel].mean()),
+                                                         'hiddenVarSets': float(hid[sel].mean())}
+    return {'sets': len(sets), 'pairs': len(dbar2), 'identicalFraction': float(ident.mean()),
             'f': math.sqrt(np.mean(obs) / np.mean(pred)), 'hiddenVar': float((np.mean(dbar2) - np.mean(dvar)) / 2),
-            'meanDbar2': float(np.mean(dbar2)), 'meanStreamVar': float(np.mean(dvar))}
+            'hiddenVarSets': float(hid.mean()), 'hiddenVarSetsCi': [float(x) for x in np.percentile(boot, [2.5, 97.5])],
+            'rowStreamVar': float(np.mean(rvar)), 'bySize': by_size, 'meanDbar2': float(np.mean(dbar2)),
+            'meanStreamVar': float(np.mean(dvar))}
+
+
+def hidden_terms(ss):
+    """(c, sigma_h^2) for noise_stats from same_state_stats' hiddenVarSets; a negative estimate counts as 0."""
+    h = max(ss.get('hiddenVarSets', 0.0), 0.0)
+    return (h / ss['rowStreamVar'] if h else 0.0), h
 
 
 def round2_validation(r2):
     """Round-2 VALIDATION groups as action x 64-repeat matrices (value_leaf_check.load_round2's acceptance), and its
-    same-public-state row sets."""
-    mats, seeds, sets = [], [], []
+    same-public-record and same-X2-B row sets with their sources."""
+    mats, seeds, sets, sets_x2b, same_rec = [], [], [], [], []
+    set_seeds, x2b_seeds = [], []
     for path in sorted(glob.glob(f'{r2}/validation/seed-*.sib.jsonl')):
         seed = int(path.split('seed-')[-1].split('.')[0])
         last = json.loads(open(path.replace('.sib.jsonl', '.states.jsonl')).readlines()[-1])
@@ -201,48 +238,88 @@ def round2_validation(r2):
                     or e.get('recordSchema') != 'heart1-public-record-v2'):
                 bad.add(group)
                 continue
-            roots[group][raw['action']].append((float(e['x2b']), [float(v['value']) for v in reps]))
+            rec = hashlib.md5(json.dumps(e['record'], sort_keys=True).encode()).hexdigest()
+            roots[group][raw['action']].append((rec, float(e['x2b']), [float(v['value']) for v in reps]))
         for group, acts in roots.items():
             if group not in bad and len(acts) >= 2:
-                mats.append((np.array([np.mean([v for _, v in rs], axis=0) for rs in acts.values()]),
+                mats.append((np.array([np.mean([v for _, _, v in rs], axis=0) for rs in acts.values()]),
                              [len(rs) for rs in acts.values()]))
                 seeds.append(seed)
-                sets += state_sets(acts.values())
-    return mats, seeds, sets
+                new = state_sets([[(h, v) for h, _, v in rs] for rs in acts.values()])
+                new_x2b = state_sets([[(x, v) for _, x, v in rs] for rs in acts.values()])
+                sets += new
+                sets_x2b += new_x2b
+                set_seeds += [seed] * len(new)
+                x2b_seeds += [seed] * len(new_x2b)
+                same_rec += one_record([[(x, h) for h, x, _ in rs] for rs in acts.values()])
+    return mats, seeds, (sets, set_seeds), (sets_x2b, x2b_seeds), same_rec
 
 
 def state_sets(actions):
-    """same-public-state row sets (>= 2 rows) of one root; actions: lists of (x2b, repeats)."""
+    """row sets (>= 2 rows) of one root with the same action and key; actions: lists of (key, repeats)."""
     out = []
     for rs in actions:
         same = defaultdict(list)
-        for x2b, v in rs:
-            same[x2b].append(v)
+        for key, v in rs:
+            same[key].append(v)
         out += [np.array(v) for v in same.values() if len(v) >= 2]
     return out
 
 
+def one_record(actions):
+    """per same-X2-B row set (>= 2 rows) of one root, whether all its rows share one public record; actions: lists of
+    (x2b, record hash)."""
+    out = []
+    for rs in actions:
+        recs, n = defaultdict(set), defaultdict(int)
+        for x2b, h in rs:
+            recs[x2b].add(h)
+            n[x2b] += 1
+        out += [len(recs[k]) == 1 for k in recs if n[k] >= 2]
+    return out
+
+
+def record_hashes(out_dir):
+    """md5 of each records.jsonl line, in rows.jsonl's order; all records come from one serializer, so equal public
+    records give equal lines."""
+    return [hashlib.md5(line).hexdigest() for line in open(Path(out_dir) / 'records.jsonl', 'rb')]
+
+
 def noise_cmd(out_dir, r2, out):
     rows = load_rows(out_dir)
+    hashes = record_hashes(out_dir)
+    if len(hashes) != len(rows):
+        raise ValueError('records.jsonl and rows.jsonl differ in length')
     groups = groups_of(rows)
     res = {}
     for split in ('validation', 'train'):
         gs = [g for g in groups if rows[g[0]]['split'] == split]
-        sets = []
+        sets, sets_x2b, same_rec, set_seeds, x2b_seeds = [], [], [], [], []
         for g in gs:
-            acts = defaultdict(list)
+            acts, acts_x2b, acts_rec = defaultdict(list), defaultdict(list), defaultdict(list)
             for i in g:
-                acts[rows[i]['action']].append((rows[i]['x2b'], rows[i]['repeats']))
-            sets += state_sets(acts.values())
-        ss = same_state_stats(sets)
+                acts[rows[i]['action']].append((hashes[i], rows[i]['repeats']))
+                acts_x2b[rows[i]['action']].append((rows[i]['x2b'], rows[i]['repeats']))
+                acts_rec[rows[i]['action']].append((rows[i]['x2b'], hashes[i]))
+            new, new_x2b = state_sets(acts.values()), state_sets(acts_x2b.values())
+            sets += new
+            sets_x2b += new_x2b
+            set_seeds += [rows[g[0]]['seed']] * len(new)
+            x2b_seeds += [rows[g[0]]['seed']] * len(new_x2b)
+            same_rec += one_record(acts_rec.values())
+        ss = same_state_stats(sets, set_seeds)
         res[split] = {'groups': len(gs), 'sources': len({rows[g[0]]['seed'] for g in gs}), 'sameState': ss,
+                      'sameX2b': {**same_state_stats(sets_x2b, x2b_seeds),
+                                  'oneRecordFraction': float(np.mean(same_rec))},
                       **noise_stats([action_matrix(rows, g) for g in gs], [rows[g[0]]['seed'] for g in gs], True,
-                                    R // 2, max(ss.get('hiddenVar', 0.0), 0.0))}
+                                    R // 2, hidden_terms(ss))}
     if r2 and r2 != '-':
-        mats, seeds, sets = round2_validation(r2)
-        ss = same_state_stats(sets)
+        mats, seeds, (sets, set_seeds), (sets_x2b, x2b_seeds), same_rec = round2_validation(r2)
+        ss = same_state_stats(sets, set_seeds)
         res['round2Validation'] = {'groups': len(mats), 'sources': len(set(seeds)), 'sameState': ss,
-                                   **noise_stats(mats, seeds, False, 32, max(ss.get('hiddenVar', 0.0), 0.0))}
+                                   'sameX2b': {**same_state_stats(sets_x2b, x2b_seeds),
+                                               'oneRecordFraction': float(np.mean(same_rec))},
+                                   **noise_stats(mats, seeds, False, 32, hidden_terms(ss))}
     Path(out).write_text(json.dumps(res, indent=1) + '\n')
     for k, v in res.items():
         print(k, {m: (round(x['mean'], 4) if 'mean' in x else x) if isinstance(x, dict) else x for m, x in v.items()})

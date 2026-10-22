@@ -60,12 +60,16 @@ VALIDATION, with round-2 VALIDATION for comparison ([results/noise.json](results
 | 32 vs 32 | – | 0.682 |
 | stream variance of a sibling difference (full label) | 0.00107 | 0.00116 |
 | the same with independent streams | 0.00299 | 0.00116 |
-| ceiling, stream noise only | 0.873 | 0.849 |
-| same-public-state row sets | 8,311 | 4,458 |
-| sets whose rows roll out identically | 8.6 % | 0.2 % |
-| f, #812's inflation | 0.90 | 1.37 |
-| hidden-state variance σ_h² per row | 0.00152 | 0.00150 |
-| ceiling with hidden-state noise (a lower bound) | 0.687 | 0.727 |
+| same-public-state row sets (same action and public record) | 2,195 | 1,342 |
+| sets whose rows roll out identically | 69 % | 0.1 % |
+| hidden-state variance σ_h² per row, each set counted once [95 % CI] | 0.00005 [0.000002, 0.00011] | 0.00022 [0.00007, 0.00042] |
+| the same, each row pair counted once | −0.00003 | 0.00001 |
+| a row's stream variance, each set counted once | 0.0024 | 0.0010 |
+| ceiling: stream noise only | 0.873 | 0.849 |
+| ceiling with a hidden term on every row: proportional (#812's model), constant | 0.829, 0.799 | 0.837, 0.802 |
+| #812's sets (same action and X2-B value) | 8,311 | 4,458 |
+| share of them holding one public record | 9 % | 19 % |
+| f, #812's inflation, on those sets | 0.90 | 1.37 |
 
 Definitions:
 - **Split-half agreement** compares the sibling order from two disjoint sets of repeats. It is taken per root, then
@@ -74,9 +78,16 @@ Definitions:
   Φ(−|d| / se(d)).
   - With common seeds, se(d)² = var_r(v_i − v_j) / R.
   - With independent streams, se(d)² = se_i² + se_j².
-- **Same-public-state sets** are rows of one root with the same action and X2-B value (#812's definition).
+  - The hidden term treats every row's hidden state as independent. It is either proportional to the stream variance,
+    c(se_i² + se_j²) with independent streams' se and c = σ_h² / a row's stream variance (#812's f² − 1), or constant,
+    σ_h²(1/k_i + 1/k_j), where k_i and k_j are the actions' row counts. Both use σ_h² with each set counted once.
+  - Siblings of a deterministic action share the root's hidden state, so the hidden term overstates their noise.
+  - All ceilings use the observed gaps, which noise inflates, so they lean optimistic.
+- **Same-public-state sets** are rows of one root with the same action and an identical public record (the heart1
+  record the head sees). Their rows differ only in hidden state.
 - **σ_h²** comes from row pairs in those sets: E[d̄²] = 2σ_h² + E[var_r(d) / R], whatever the streams are.
-- **Ceiling with hidden-state noise** adds σ_h²(1/k_i + 1/k_j), where k_i and k_j are the actions' row counts.
+  - Counting each set once matches #812's f. The interval is a source bootstrap.
+  - Counting each pair once lets the large sets dominate, and most of them roll out identically.
 
 Findings:
 - **Common seeds work as designed.**
@@ -84,18 +95,29 @@ Findings:
     0.36 on one seed). So 32 common-seed repeats are worth about 89 independent ones.
   - At equal repeats per half, the split-half agreement is 0.05–0.08 above round 2's.
   - 16 vs 16 (0.718) beats round 2's 32 vs 32 (0.682). The PREREG expectation holds.
-- **Hidden state may now be the larger part of the noise.**
-  - Rows with the same public state now share their streams, yet only 8.6 % of these sets roll out identically. 72 %
-    of the sets come from map choices.
-  - Their spread gives σ_h² ≈ 0.0015 per row on both rounds' VALIDATION (0.0012 on this round's TRAIN). It is a
-    property of the states, not of the streams. It is pair-weighted, so the large map-choice sets dominate it.
-  - Per row, that is larger than the stream variance of a full common-seed sibling difference (0.0011), and more
-    repeats cannot remove it.
-  - How much of it reaches a sibling difference is bounded, not measured. It is about none for children of a
-    deterministic action, which share the root's hidden state.
-  - If every row had its own hidden state, the ceiling would fall to 0.69. So the true ceiling lies between about 0.69
-    and 0.87.
-  - Both ceilings use the observed gaps, which noise inflates, so they lean optimistic.
+- **Hidden state is small, but not zero.**
+  - Rows with the same public record now share their streams, and 69 % of these sets roll out identically.
+  - Counting each set once, σ_h² is 0.00005 per row (TRAIN: 0.00009 [0.00004, 0.00015]). That is 2–4 % of a row's
+    stream variance. Sets of 2–4 rows carry nearly all of it.
+  - Counting each pair once, it is about 0, because the large sets mostly roll out identically.
+  - Round 2 gives 0.00022 [0.00007, 0.00042]. Its interval overlaps this round's.
+  - If siblings' hidden states were independent, hidden state would add 6 % (TRAIN: 12 %) to the stream variance of
+    a common-seed sibling difference (#812's model).
+- **The ceiling is 0.80–0.87.**
+  - Stream noise alone gives 0.873.
+  - A hidden term on every row lowers it to 0.829 (#812's model) or 0.799 (constant), on TRAIN to 0.820 or 0.787.
+  - It matters more than its share suggests, because common seeds leave close pairs with a tiny SE.
+  - The hidden term overstates the noise of deterministic siblings, so the truth lies in between.
+- **Correction to §641's noise model.**
+  - #812 (`sr_noise.py`) took rows with the same action and X2-B value as one public state. Only 9 % of those sets
+    (round 2: 19 %) hold one public record.
+  - The rest differ mostly in gold, HP, the boss or the cards offered. X2-B partly ignores these, but the head sees
+    them.
+  - Their spread (round 2's f: 1.37 with this tool, 1.40 in §641) is a real difference between chance outcomes, not
+    label noise: the head and the label average over the same children.
+  - With identical records, round 2's f is 1.12, and #812's ceiling is 0.84 instead of about 0.81.
+  - An earlier draft of this README (`586ed461`, `4ed352e6`) used #812's sets and called σ_h² ≈ 0.0015 hidden state.
+    That was wrong.
 - **The two rounds' ceilings are not strictly comparable.** This round captures every root with up to 64 leaves, so
   its groups hold more close pairs than round 2's.
 
@@ -132,8 +154,7 @@ head saw any of these seeds. Blend weights are the round-2 TRAIN-holdout choices
 - **By the root's screen (VALIDATION; SR_w1 seed 0 blend at w 0.05 − X2-B).**
   - The blend gains on rewards, +0.042 [+0.034, +0.051] (2,374 groups); on rest sites, +0.034 [+0.025, +0.046] (538);
     on shops, +0.026 [+0.012, +0.042] (601); and on events, +0.019 [−0.000, +0.040] (502).
-  - It is level on map choices, +0.007 [−0.006, +0.021] (1,364 groups). X2-B is weakest there (0.602), and 72 % of
-    the hidden-state sets are there.
+  - It is level on map choices, +0.007 [−0.006, +0.021] (1,364 groups). X2-B is weakest there (0.602).
   - It is slightly behind on boss relics and card selects (−0.008 each; 139 and 62 groups).
   - The head alone loses most on boss relics (−0.130) and card selects (−0.136), as on round 2.
 - **PREREG expectations.**
@@ -144,10 +165,8 @@ head saw any of these seeds. Blend weights are the round-2 TRAIN-holdout choices
 ## Interpretation
 - **Common seeds deliver cleaner sibling differences.** 32 common-seed repeats carry about as much stream noise as 89
   independent ones.
-- **Hidden state may now limit the labels.** Rows with the same public state still disagree, as much as in round 2.
-  - Per row, that spread exceeds the remaining stream noise.
-  - Its share of the sibling-label noise is bounded, not measured.
-  - So more repeats may help little.
+- **Most of the remaining label noise is stream noise.** Hidden state would add at most about 6–12 % to it. So more
+  repeats, especially on close pairs, would still sharpen the labels.
 - **The blend's gain replicates; the head alone does not.**
   - On 320 new sources the blend beats X2-B for all three seeds, on both splits (+0.018 to +0.027, every CI above 0).
     That is smaller than round 2's +0.032 to +0.040.
@@ -156,21 +175,34 @@ head saw any of these seeds. Blend weights are the round-2 TRAIN-holdout choices
   - §641's "at X2-B's level" was the optimistic end: on these sources the head ranks slightly below X2-B.
 - **Why the head alone falls behind is not tested.** The heads were fitted to round 2's labels, which used every 8th
   root and independent streams. The new data has every root. As in §641, the targets end in X2-B, which favours it.
-- **There may be little room left.** The best blend (0.690) already sits at the hidden-state bound of the ceiling
-  (0.687). The true ceiling is higher, but how much higher is unknown.
+- **There is room left.** X2-B (0.664) and the best blend (0.690) are well below the ceiling (0.80–0.87).
 
 ## Decision and next steps
 - **No default change.** The leaf stays X2-B. The blend (SR_w1 seed 0, w 0.05–0.15) stays the online candidate; the
   head alone is not a leaf replacement.
-- **Philipp decides the next step:**
-  - Retrain the sibling-ranking loss on the new TRAIN labels (15,129 groups), alone and together with round-2 TRAIN.
-    - Epochs would be selected on value plus ranking (§641's lesson).
-    - The gate would be this VALIDATION: X2-B 0.664, current best blend 0.690.
-    - Training is a GPU step with its own plan and go, about 40 min per arm.
-  - Or run the parked online A/B of the blend.
-- **For future labels:** only labels that average over hidden states could reduce the hidden-state noise, for example
-  by redrawing the hidden RNG state in each repeat. That would be a capture change and is not part of this plan.
+- **Next:** Philipp chose to retrain the sibling-ranking loss on the new TRAIN labels ("go gpu", 2026-10-22 17:50Z).
+  - The plan is `gen2/value-sr-crn/PLAN.md` on `claude/az-gen2-data` (`a8ab7da`), written before the run.
+  - It has two arms on the SR_w1 recipe: the new TRAIN groups alone (15,129), and together with round-2 TRAIN.
+  - The gate is this VALIDATION: X2-B 0.664, SR_w1 0.645, best blend 0.690.
+  - The online A/B of the blend stays parked until then.
 - No game seeds beyond 111144512–111144831 were used.
+
+## Lessons for future label captures
+1. **Turn common seeds on for every sibling capture.** Rankings are differences. 32 common-seed repeats are worth
+   about 89 independent ones, so the same label quality costs about a third of the rollouts.
+2. **Identify duplicate states by the full public record, not by X2-B.** Equal X2-B values mostly hide public
+   differences (only 9 % share a record). Under common seeds, 69 % of same-record sets roll out identically. Rolling
+   each record out once, weighted by its count, would save budget for more roots at a small cost in hidden-state
+   averaging.
+3. **Spend repeats where the order is close.** The split-half curve flattens (0.689 at 8 vs 8, 0.718 at 16 vs 16).
+   Clear pairs need few repeats, and close pairs need many.
+4. **Fix the noise model before the run, including how sets are weighted, and test it on a small sample.** The
+   definition error above would have shown at once in a record comparison. The weighting moves σ_h² from about 0 to
+   0.00005.
+5. **Let some labels not end in X2-B**, for example rollouts to the end of the run. Targets that end in X2-B favour
+   X2-B in every comparison.
+6. **Capture with the deployed encoding.** This round used the Wing Boots counter; round 2 had to drop those groups.
+7. **Cover map choices.** They are the weakest screen for every evaluator (X2-B 0.602; the blend gains nothing there).
 
 ## Reproduce
 ```

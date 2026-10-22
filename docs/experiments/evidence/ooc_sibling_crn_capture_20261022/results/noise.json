@@ -3,20 +3,90 @@
   "groups": 5587,
   "sources": 80,
   "sameState": {
+   "sets": 2195,
+   "pairs": 244850,
+   "identicalFraction": 0.6856492027334852,
+   "f": 0.37696727004318165,
+   "hiddenVar": -3.136464811900426e-05,
+   "hiddenVarSets": 5.0639731972943284e-05,
+   "hiddenVarSetsCi": [
+    1.83749953564942e-06,
+    0.00011341567514309047
+   ],
+   "rowStreamVar": 0.002376128089680745,
+   "bySize": {
+    "2-2": {
+     "sets": 1221,
+     "identicalFraction": 0.6093366093366094,
+     "hiddenVarSets": 5.673096295268664e-05
+    },
+    "3-4": {
+     "sets": 336,
+     "identicalFraction": 0.5982142857142857,
+     "hiddenVarSets": 0.0001759657817763422
+    },
+    "5-8": {
+     "sets": 202,
+     "identicalFraction": 0.7970297029702971,
+     "hiddenVarSets": -2.003602287048435e-05
+    },
+    "9+": {
+     "sets": 436,
+     "identicalFraction": 0.9151376146788991,
+     "hiddenVarSets": -3.0255780141360097e-05
+    }
+   },
+   "meanDbar2": 0.00013191794871902628,
+   "meanStreamVar": 0.0001946472449570348
+  },
+  "sameX2b": {
    "sets": 8311,
    "pairs": 1300231,
    "identicalFraction": 0.08554927204909156,
    "f": 0.8980890742819752,
    "hiddenVar": 0.0015243150160818228,
+   "hiddenVarSets": 0.0006717919958624918,
+   "hiddenVarSetsCi": [
+    0.0005670371886920578,
+    0.0007857763116375892
+   ],
+   "rowStreamVar": 0.0014876432683135308,
+   "bySize": {
+    "2-2": {
+     "sets": 3521,
+     "identicalFraction": 0.0724226072138597,
+     "hiddenVarSets": 0.0005032203962920202
+    },
+    "3-4": {
+     "sets": 1862,
+     "identicalFraction": 0.0644468313641246,
+     "hiddenVarSets": 0.0005799593412475159
+    },
+    "5-8": {
+     "sets": 1030,
+     "identicalFraction": 0.070873786407767,
+     "hiddenVarSets": 0.0004917685679360003
+    },
+    "9+": {
+     "sets": 1898,
+     "identicalFraction": 0.13856691253951528,
+     "hiddenVarSets": 0.001172296282345633
+    }
+   },
    "meanDbar2": 0.004438024324248002,
-   "meanStreamVar": 0.0013893942920843567
+   "meanStreamVar": 0.0013893942920843567,
+   "oneRecordFraction": 0.09216700758031525
   },
   "ceiling": {
    "mean": 0.8728702680627393,
    "sources": 80
   },
-  "ceilingHidden": {
-   "mean": 0.6869289909368834,
+  "ceilingHiddenConst": {
+   "mean": 0.7990114458047994,
+   "sources": 80
+  },
+  "ceilingHiddenProp": {
+   "mean": 0.828789188583206,
    "sources": 80
   },
   "pairIndependentSe2": {
@@ -52,20 +122,90 @@
   "groups": 15129,
   "sources": 240,
   "sameState": {
+   "sets": 6449,
+   "pairs": 679706,
+   "identicalFraction": 0.6723523026825865,
+   "f": 0.4089944362991945,
+   "hiddenVar": 9.581158503665713e-06,
+   "hiddenVarSets": 9.108936916979488e-05,
+   "hiddenVarSetsCi": [
+    3.806083680934707e-05,
+    0.00015025148302770215
+   ],
+   "rowStreamVar": 0.0020494902409729505,
+   "bySize": {
+    "2-2": {
+     "sets": 3432,
+     "identicalFraction": 0.6185897435897436,
+     "hiddenVarSets": 8.479020435741698e-05
+    },
+    "3-4": {
+     "sets": 1207,
+     "identicalFraction": 0.5575807787903894,
+     "hiddenVarSets": 0.0002125474096928637
+    },
+    "5-8": {
+     "sets": 630,
+     "identicalFraction": 0.7634920634920634,
+     "hiddenVarSets": 3.853655556565246e-06
+    },
+    "9+": {
+     "sets": 1180,
+     "identicalFraction": 0.8974576271186441,
+     "hiddenVarSets": 3.174816434019452e-05
+    }
+   },
+   "meanDbar2": 0.00013711404179874833,
+   "meanStreamVar": 0.0001179517247914169
+  },
+  "sameX2b": {
    "sets": 23185,
    "pairs": 3435529,
    "identicalFraction": 0.09048954065128316,
    "f": 0.9229071707612255,
    "hiddenVar": 0.0011973798464805726,
+   "hiddenVarSets": 0.000658320489011179,
+   "hiddenVarSetsCi": [
+    0.0005878133008440216,
+    0.0007388660621914405
+   ],
+   "rowStreamVar": 0.0013698022392567828,
+   "bySize": {
+    "2-2": {
+     "sets": 9704,
+     "identicalFraction": 0.08017312448474856,
+     "hiddenVarSets": 0.0005903331995696788
+    },
+    "3-4": {
+     "sets": 5338,
+     "identicalFraction": 0.07418508804795804,
+     "hiddenVarSets": 0.0005848739536450543
+    },
+    "5-8": {
+     "sets": 2973,
+     "identicalFraction": 0.07568113017154389,
+     "hiddenVarSets": 0.0005060115085234139
+    },
+    "9+": {
+     "sets": 5170,
+     "identicalFraction": 0.13520309477756287,
+     "hiddenVarSets": 0.0009493496691881264
+    }
+   },
    "meanDbar2": 0.0036650502996526456,
-   "meanStreamVar": 0.0012702906066915003
+   "meanStreamVar": 0.0012702906066915003,
+   "oneRecordFraction": 0.09411257278412767
   },
   "ceiling": {
    "mean": 0.8727555883889809,
    "sources": 240
   },
-  "ceilingHidden": {
-   "mean": 0.6983858531223527,
+  "ceilingHiddenConst": {
+   "mean": 0.7871068344293697,
+   "sources": 240
+  },
+  "ceilingHiddenProp": {
+   "mean": 0.8203330398949308,
    "sources": 240
   },
   "pairIndependentSe2": {
@@ -101,20 +241,90 @@
   "groups": 2559,
   "sources": 320,
   "sameState": {
+   "sets": 1342,
+   "pairs": 69027,
+   "identicalFraction": 0.0014903129657228018,
+   "f": 1.1151231891181779,
+   "hiddenVar": 1.3409101245322706e-05,
+   "hiddenVarSets": 0.00021829854810830903,
+   "hiddenVarSetsCi": [
+    7.493225618899055e-05,
+    0.0004195549278863677
+   ],
+   "rowStreamVar": 0.0009796335761810208,
+   "bySize": {
+    "2-2": {
+     "sets": 536,
+     "identicalFraction": 0.0018656716417910447,
+     "hiddenVarSets": 6.612051872887859e-05
+    },
+    "3-4": {
+     "sets": 330,
+     "identicalFraction": 0.0,
+     "hiddenVarSets": 0.0006625490727057758
+    },
+    "5-8": {
+     "sets": 280,
+     "identicalFraction": 0.0,
+     "hiddenVarSets": 9.893297940507937e-05
+    },
+    "9+": {
+     "sets": 196,
+     "identicalFraction": 0.00510204081632653,
+     "hiddenVarSets": 5.7008292328283664e-05
+    }
+   },
+   "meanDbar2": 0.0022545627326685017,
+   "meanStreamVar": 0.0022277445301778563
+  },
+  "sameX2b": {
    "sets": 4458,
    "pairs": 551660,
    "identicalFraction": 0.002018842530282638,
    "f": 1.3691722696845483,
    "hiddenVar": 0.001504801905991517,
+   "hiddenVarSets": 0.0006161415250408181,
+   "hiddenVarSetsCi": [
+    0.0005031353444037977,
+    0.0007249420903103391
+   ],
+   "rowStreamVar": 0.0007274586472192799,
+   "bySize": {
+    "2-2": {
+     "sets": 1731,
+     "identicalFraction": 0.0034662045060658577,
+     "hiddenVarSets": 0.00046970153631914393
+    },
+    "3-4": {
+     "sets": 1096,
+     "identicalFraction": 0.0009124087591240876,
+     "hiddenVarSets": 0.0005717168023505657
+    },
+    "5-8": {
+     "sets": 779,
+     "identicalFraction": 0.0012836970474967907,
+     "hiddenVarSets": 0.0003390408263375793
+    },
+    "9+": {
+     "sets": 852,
+     "identicalFraction": 0.0011737089201877935,
+     "hiddenVarSets": 0.0012241680048947585
+    }
+   },
    "meanDbar2": 0.004191765791241808,
-   "meanStreamVar": 0.0011821619792587738
+   "meanStreamVar": 0.0011821619792587738,
+   "oneRecordFraction": 0.1917900403768506
   },
   "ceiling": {
    "mean": 0.8484852775725991,
    "sources": 320
   },
-  "ceilingHidden": {
-   "mean": 0.7272387749368884,
+  "ceilingHiddenConst": {
+   "mean": 0.801498728620724,
+   "sources": 320
+  },
+  "ceilingHiddenProp": {
+   "mean": 0.8365102983013243,
    "sources": 320
   },
   "pairIndependentSe2": {

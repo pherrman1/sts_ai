@@ -345,15 +345,17 @@ Offline only, on round-2 sibling groups (§503; targets are 64-rollout3 means, s
   - The weight costs monotonicity (gold +50 is valued higher in only 65–84 % of cases over the seeds, vs 94 %; max
     HP +5 in 42–54 %, vs 67 %) and calibration (leaf BCE against the run's Heart kill 0.47–0.50, about a constant's
     0.475 or worse).
-- **Label noise:** it caps a perfect evaluator near 0.81 on round 2.
+- **Label noise:** a perfect evaluator would reach about 0.84 on round 2 (#812's model). §TBD corrects §641's 0.81,
+  whose inflation counted rows with equal X2-B values as one public state; most of them differ publicly.
 - **Common-seed recapture (§TBD, 320 new A20 sources):**
   - With `STS_OOC_SIBLING_COMMON_SEEDS` (§639, default off), 32 repeats carry as little stream noise in sibling
-    differences as about 89 independent ones. Hidden state may now be the larger noise term (bounded, not
-    measured).
+    differences as about 89 independent ones. Hidden state is small (2–4 % of a row's stream variance); the ceiling
+    is 0.80–0.87.
   - On its VALIDATION, X2-B ranks siblings at 0.664. The SR_w1 head alone is below it (0.645, −0.019
     [−0.031, −0.008]). Its blend still gains +0.026 [+0.020, +0.032] (+0.018 to +0.026 over the three seeds).
-- **Status:** X2-B stays the leaf. The blend, not the head alone, is the online candidate. A retrain on the new labels
-  or an online test of the blend needs Philipp's go
+  - The evidence README lists lessons for future label captures.
+- **Status:** X2-B stays the leaf. The blend, not the head alone, is the online candidate. A retrain of the ranking
+  loss on the new labels runs on Philipp's GPU ("go gpu", 2026-10-22). An online test of the blend needs his go
   ([evidence](../../experiments/evidence/value_sibling_rank_20261022/README.md),
   [recapture](../../experiments/evidence/ooc_sibling_crn_capture_20261022/README.md)).
 

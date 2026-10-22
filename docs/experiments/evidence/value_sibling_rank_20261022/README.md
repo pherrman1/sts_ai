@@ -89,6 +89,12 @@ SR_w1_s1 and SR_w1_s2 (`run_sr.sh seeds`, `--seed 1` and `--seed 2`) were traine
   - Rows of one action with the same X2-B value (the same public state) scatter 1.40× more than the rollout SE
     predicts. Hidden state differs between those captures.
   - With that inflation, a perfect evaluator would score about 0.81 on VALIDATION.
+  - **Correction (§TBD):** most of those rows are not one public state.
+    - Only 19 % of the round-2 VALIDATION sets with equal X2-B values hold one public record. The rest differ in
+      gold, HP, the boss or the cards offered.
+    - With identical records, the inflation is 1.12 and the ceiling is 0.84
+      ([recapture README](../ooc_sibling_crn_capture_20261022/README.md)).
+    - The noise-corrected numbers below still use the old inflation.
 - **Noise-corrected concordance** (Σ(agree − p) / Σ(1 − 2p), where p = P(label order wrong)):
 
   | evaluator | X2-B | M0.3 | SR_w0.3 | SR_w1 | blend SR_w1 (w 0.15) |
