@@ -411,22 +411,28 @@ constexpr std::array<CardId,13>  defensiveCards = {
         for (int i = 0; i < bc.monsters.monsterCount; ++i)
             if (bc.monsters.arr[i].isTargetable()) { tgt = i; break; }
         if (tgt < 0) return false;
-        std::vector<std::pair<int,int>> attacks;   // (cost, damage)
+        const int needed = bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
+        std::pair<int,int> attacks[10];   // (cost, damage), insertion-sorted by cost
+        int n = 0, total = 0;
         for (auto handIdx : playable) {
             const auto &c = bc.cards.hand[handIdx];
             if (c.getType() != CardType::ATTACK) continue;
             const int base = getBaseDamage(c.getId(), c.isUpgraded());
             if (base <= 0) continue;
-            attacks.emplace_back(std::max(0, static_cast<int>(c.costForTurn)), bc.calculateCardDamage(c, tgt, base));
+            std::pair<int,int> a{std::max(0, static_cast<int>(c.costForTurn)), bc.calculateCardDamage(c, tgt, base)};
+            total += a.second;
+            int k = n++;
+            while (k > 0 && attacks[k - 1] > a) { attacks[k] = attacks[k - 1]; --k; }
+            attacks[k] = a;
         }
-        std::sort(attacks.begin(), attacks.end());
+        if (total < needed) return false;
         int energy = bc.player.energy, damage = 0;
-        for (const auto &[cost, dmg] : attacks) {
-            if (cost > energy) break;
-            energy -= cost;
-            damage += dmg;
+        for (int k = 0; k < n; ++k) {
+            if (attacks[k].first > energy) break;
+            energy -= attacks[k].first;
+            damage += attacks[k].second;
         }
-        return damage >= bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
+        return damage >= needed;
     }
 
     // playTable (research): learned play priority per card id * 2 + upgraded, lower plays first;
