@@ -57,6 +57,79 @@ the alpha zero loop"). The loop and its target form are fixed by
   from ADR-0039 keep values; see
   [out-of-combat.md](../architecture/out-of-combat.md) (potion pickup).
 
+## AlphaZero-style OOC loop: generation schedule and search re-tuning (plan)
+
+Agreed with Philipp 2026-10-21 13:39Z ("Yes write these things into the plan"). This applies from gen 3. The gen-2
+paired A/B (`../../experiments/evidence/az_gen2_ab_20261021/PREREG.md`) runs as planned first: gen 1b showed no
+online gain (§589), so one real gain should be seen before generations run without a per-generation test.
+
+### Generations: every game is training data, a full test only every third generation
+- **Why not gate each generation.** A realistic gain per generation is about 1 pp. A paired A20 A/B detects about
+  4 pp at 1,024 seeds and 2.8 pp at 2,048 (80% power; from gen 1b's A/B, where 20.9% of seeds were discordant). A
+  per-generation gate would mostly read NOT_SHOWN and still cost as much as the generation. AlphaZero itself dropped
+  AlphaGo Zero's per-generation evaluation gate. AlphaGo Zero's gate had used 400 games at 55%.
+- **Each generation's self-play is a paired block.** About 1,000–1,500 fresh seeds per generation. Each seed is
+  played by the newest net and by the last tested net, with the same exploration settings in both arms
+  (`STS_OOC_MCTS_ROOT_NOISE`, `STS_OOC_MCTS_PLAY_SAMPLE`, #741). Both arms' rows train the next generation; gen 2
+  already trained on both arms of gen 1b's A/B. Seed folds stay as in gen 2: validation `seed % 8 == 7`, selection
+  `== 6`, with both arms of a seed in the same fold.
+- **Free signals per block.** Each block reports:
+  - the paired Heart-kill difference;
+  - floor reached, a lower-variance secondary: every run contributes, not only the ~21% discordant seeds.
+  Within one block these only catch a collapse. A block whose newest arm is clearly worse (McNemar p < 0.05) stops
+  the loop for a look.
+- **Every third generation, a real test.** Pool the paired evidence of the blocks since the last tested net, or run
+  one dedicated paired A/B of the newest net against the last tested net, pre-registered with its seed count. Its
+  games are training data too.
+- **Each new A/B needs a fresh seed block.** Once a seed's games are training data, that seed never judges a later
+  net.
+- **The offline gate stays per generation** and costs minutes:
+  - selection-fold KL(π' ‖ net) below the previous net's;
+  - value BCE below the constant guess;
+  - native parity of the export.
+- **Risk accepted.** Up to two generations of compute can go to a net that is no better, as happened with gen 1b.
+  The per-block collapse check and the third-generation test bound that.
+
+### Search settings: re-tune them on a schedule, separately from the net
+The OOC search was tuned against student_sel and the X2-B leaf. Several of its parts depend on the net and can go
+stale as the net changes.
+- **Depends on the prior's shape** (student_sel today: median top prior 0.993, prior argmax executed 90.5%):
+  - cpuct and prior temperature;
+  - progressive widening (`WIDEN_K`, `WIDEN_ALPHA`);
+  - root selection, visits vs Q (Q lost twice under student_sel, §414, §532).
+- **Depends on the value scale:**
+  - the learned OOC stop, which was trained on X2-B's scale. It must be retrained when the leaf or the root
+    temperature changes; it refuses a temperature other than 1.
+  - Q-based root selection, once a learned value replaces X2-B as the leaf.
+  - The value-leaf A/B (gen-1b value head as the rollout3 end value) is the first test of that switch.
+- **Depends mostly on the game:**
+  - rollout depth (`LEAF_COMBATS`);
+  - the Silver budgets of imagined fights.
+  - Re-check these only when combat models change.
+- **Drift monitors, read every generation from the capture rows:**
+  - the fraction of searched roots where the search's move differs from the prior's argmax;
+  - the early-stop rate and the mean sims at stop;
+  - root visit entropy and Q spread;
+  - prior top-1 against π' on the selection fold.
+  The thresholds are set when the gen-3 block is frozen. A monitor that crosses its threshold queues the dependent
+  settings for re-tuning.
+- **Re-tuning happens at the third-generation checkpoint, with the net fixed.**
+  1. **Offline screen first.** Take a few thousand stored root states and run one high-budget reference search per
+     state (≥ 4× the deployed sims). Score each candidate setting by how close its root distribution and chosen move
+     come to the reference, per unit of CPU. CPU only, no games.
+  2. **Then online, at most one or two survivors**, as a third arm in the next paired block: same net, new setting.
+     Its games stay training data.
+  3. **Order by expected effect:** leaf evaluation, then cpuct/temperature, the stop rule, widening, and rollout depth.
+- **Never test a search change and a net change in the same arm.** A search change also changes the training targets
+  (π' and z). That is expected in an AlphaZero loop, but the A/B must still be able to attribute a gain.
+- **Data-generation config vs deploy config.** Data generation wants good targets: exploration on, full budget on
+  recorded roots. Only full-budget roots become policy rows today (8.4k of 8.5k per arm in gen 1b's A/B), so the
+  1024 fast-root cap does not touch targets. Deployment wants strength per CPU: greedy, early stop, cap. Gates are
+  read on the deploy config.
+- **Search provenance belongs in every capture row.** The `.env` per run already records the full config, and rows
+  carry `root.fullBudget` and `root.fastRootCap`. A config hash per row would let training mix or down-weight rows
+  from older search configs. This is not built yet.
+
 ## Observed Heart-outcome supervision (§497)
 
 The recovered native Claude delivery has passed independent import/seal review:
@@ -224,7 +297,16 @@ mechanism. What remains is the entry state (deck, lower max HP) from OOC play, w
 Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
 `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
 
-## AZ loop status — gen 1b as prior NOT_SHOWN (§589); student_sel stays the OOC prior
+## AZ loop status — gen 2 as prior NOT_SHOWN (§621, 2026-10-22); student_sel stays the OOC prior
+
+Gen 2 (student_sel fine-tuned on all 2,688 runs of gen 0 and both gen-1b A/B arms, offline selection KL 0.0554 vs
+student_sel 0.103) vs student_sel on 1,024 paired A20 seeds: Heart kills 21.5% vs 20.9% (+0.6 pp [−2.2, +3.3], p 0.73)
+at 1.01× wall, below the +1.0 pp extension trigger. Both arms' rows join the gen-3 window. Runs averaged ~775 s (half of
+gen 1b's) with the 2026-10-21 speed defaults. Offline value-head work (teacher distillation, search-value targets,
+monotonicity) moved to the "Value head research" thread; the gen-3 exploration block is drafted in
+`docs/experiments/evidence/az_gen3_explore_20261022/PLAN.md` (root noise + early-floor play sampling, #741 flags).
+
+### Earlier: gen 1b as prior NOT_SHOWN (§589)
 
 Gen 1b (student_sel fine-tuned on gen 0's Gumbel π' targets and Heart-kill value, §573) replaced student_sel as OOC
 prior and rollout net inside gen 0's search stack. On 512 paired A20 seeds it killed the Heart 22.3% vs 23.2%

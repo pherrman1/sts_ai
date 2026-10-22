@@ -22806,6 +22806,34 @@ draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
 
+## §623 — Exact expectimax vs native Silver on A20 first fights: Silver is near-optimal (2026-10-21)
+
+**Question:** does native Silver, at the configs we run, play the early A20 combats suboptimally compared with an exact
+solve of the same objective?
+**Setup:** `exact_combat_solver` (new, research tooling, built only with `-DSTS_EXACT_CHANCE`). It does exact
+expectimax over Silver's information-set root state. Draws, monster rolls and other RNG calls are enumerated exactly
+with their probabilities. Silver's `scoreEndState` is the objective, with the energy-waste term dropped, and the turn
+cap is 8. Each fight is solved once at its first searched root; every searched decision of every config is then scored.
+End-of-turn dominance pruning and Star1 alpha pruning are exact only where the value is monotone (`monotone()`, turn
+cap ≤ 8). Against the unpruned solve they give max |ΔQ| 5e-7 on Cultist and 6e-14 on Two Louse. The fights are the A20
+Ironclad first Act-1 encounter, starter deck, no Neow bonus, seeds 111147000-111147009. The configs are: prod
+(learned stop, g7f_E root+tree prior), live (flat 10k, no prior; the advisor's search emulated in the sim), flat 2.5k
+and flat 10k with the prior.
+**Result:** Silver won all 10 fights in every config, and the optimum's win probability was never higher. Agreement
+with the optimal action over 90 decisions: prod 98.9%, flat-prior 10k 98.9%, live 97.8%, flat-prior 2.5k 97.8%. Regret
+per fight is 0.23 / 0.23 / 0.33 / 0.33 Silver points, and HP lost per fight is 0.28 / 0.28 / 0.38 / 0.38. Two
+decisions were wrong; every other decision lost less than 0.01:
+- Jaw Worm 111147001, game turn 2, 1 energy: all configs played Strike (Q* 116.68) over Defend (118.98). That is about
+  2.8 HP, with visits 1.6-2.2:1 for Strike at every budget.
+- Cultist 111147000, game turn 3: live and 2.5k only, Strike over Defend, 1 HP.
+Small Slimes 111147005 and 008 exceeded 80M states from turn 1 and were solved from turn 2 (3 turn-1 roots each
+unscored).
+**Interpretation:** these first fights show no systematic suboptimal play at any budget. The one repeatable mistake is
+budget-independent, which points to a leaf or rollout bias. The sample is small, and later fights are out of reach of
+full enumeration.
+[Result](evidence/exact_combat_baseline_20261021/RESULT.md), rows `evidence/exact_combat_baseline_20261021/rows.jsonl`.
+Raw: `/mnt/project-files/exact-combat-baseline/`. Seeds 111147000-111147009 used.
+**Knowledge impact:** none yet. The Jaw Worm bias is a follow-up for the leaf-evaluation investigation.
 ## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
 
 Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
@@ -22882,3 +22910,55 @@ was trained on mean-backup trees. The pre-registered A20 A/B
 111149400–463) needs Philipp's go. Flags stay default off.
 Report: `/mnt/project-files/silver-rollout-bias/REPORT.md`. Seeds used 111149100–147, 111149150–389, replays of
 111147001 and 111149600–699.
+## §622 — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
+
+**Question:** can the value head learn raw heart1's clean HP / max HP / gold slopes (handoff from the gen-2 thread:
+distilling heart1's absolute values did not transfer them, §609's hinge flattened the head) without losing the
+T1-teacher accuracy (VDF_T1 v0.5, sel BCE 0.542)?
+**Setup:** [PLAN](evidence/value_cf_distill_20261022/PLAN.md) (gate pre-registered). New loss on value-logit
+*differences*: per batch one rule (hp, mhp, gold, round robin) with random deltas on 64 rows, target = 1.3587 × raw
+heart1's delta, loss Σ(Δs − Δt)² / ΣΔt², fp32 without TF32. Weights 0.3 / 1 / 3, a control, and the #777 hinge at 0.3
+on the same recipe; seed 0; GPU on Philipp's PC; `prices.py` and the §577 sibling tool in the cloud.
+**Result:** sel BCE control / 0.3 / 1 / 3 / hinge 0.542 / 0.571 / 0.596 / 0.618 / 0.5365 (AUC 0.766 / 0.730 / 0.709 /
+0.682 / 0.770). CF sign agreement with heart1 rises from 67 / 30 / 72 % (hp / mhp / gold) to 85-91 %; max-HP price
+> 0 from 19 % to 92-96 %; −3 HP sign right 81 → 89-90 % (REWARDS states). Round-2 sibling
+concordance 0.549 → 0.548-0.558 (X2-B 0.633). The hinge: max-HP price > 0 67 %, HP monotone 89 % vs 52 %, sibling
+0.553, outcome AUC 0.764.
+**Interpretation:** FAIL (BCE ≤ 0.545 and KL ≤ 0.0600 missed by every CF weight; −3 HP ≥ 95 % likely out of
+reach with heart1 as the teacher, which is wrong-signed in 19 % of selection-fold states). Inference: correct end-state slopes are not why the head ranks siblings poorly (+0.009 at best). Unlike
+§609 on z targets, the hinge on T1 targets costs no BCE (one seed). Options stay off.
+[Result](evidence/value_cf_distill_20261022/RESULT.md). Runs and weights: data branch `claude/az-gen2-data`
+`02f2c60d`, `gen2/value-cf/`.
+Seeds: none (offline training).
+**Knowledge impact:** none (default-off training options; no play change).
+
+## §621 — AZ gen 2 (prior fine-tuned on gen 0 + gen-1b A/B self-play) vs student_sel: NOT_SHOWN on 1,024 paired A20 seeds, +0.6 pp Heart kills [−2.2, +3.3] at 1.01× wall (2026-10-22)
+
+Authorization: Philipp 2026-10-21 19:08Z ("Kk. Then let's go on 32 workers"). Pre-registration and outputs:
+`docs/experiments/evidence/az_gen2_ab_20261021/` (`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`,
+`verify.txt`, `tars.sha256`, `smoke/SMOKE.md`). Training: `docs/experiments/evidence/az_gen2_prior_sweep_20261021/`.
+
+- **Candidate:** gen 2 = student_sel fine-tuned on all 2,688 runs of gen 0 and both gen-1b A/B arms (Gumbel π' targets +
+  Heart-kill z, d64/L2, lr 1e-4, anchor 0.3, value weight 0.3, 32 value rows/run/epoch), export `fc32d8f4…`. Offline
+  selection-fold policy KL 0.0554 vs gen 1b 0.0654 and student_sel 0.103.
+- **Freeze:** RUN_COMMIT `712d4def` (main `844bd923` plus the campaign dir); v3 binary `23a09099…`. Smoke 111149992–993
+  (all rc 0); 111149990–991 were pre-freeze smokes.
+- **Arms:** gen 0's search stack with the 2026-10-21 defaults (learned Silver stop in real combats, fast-root cap 1024,
+  boss-only prior playouts set explicitly, X2-B rollout3 end value since §615 was NOT_SHOWN). A uses student_sel as OOC
+  prior and rollout net, B gen 2; nothing else differs.
+- **Run:** seeds 111142888–111143911, 32 workers × 4 lanes, `schedule queue` (with #773). 1,024 of 1,024 units OK, no
+  duplicates; 1,024 of 1,024 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|
+  | A student_sel | 214 (20.9%) | 399 (39.0%) | 43.15 | 773, 2,554 |
+  | B gen 2 | 220 (21.5%) | 408 (39.8%) | 43.08 | 777, 2,739 |
+
+  Heart kills B − A +0.6 pp [−2.2, +3.3], discordant 107 / 101, exact McNemar p 0.73. Act 4 +0.9 pp [−2.1, +3.9],
+  p 0.61. Wall B/A 1.006. Search overrides of the prior's argmax 7.9% (B) vs 6.6% (A) of searched roots.
+- **Verdict: NOT_SHOWN** (pre-registered rule). Below the +1.0 pp trigger, so the pre-registered extension does not run.
+  student_sel stays the OOC prior.
+- **Inference:** a much better offline fit to the search's targets did not show up as Heart kills within ±2.8 pp. Mean
+  run wall 773-777 s vs ~1,480 s in §589, from the 2026-10-21 speed defaults.
+- **Knowledge impact:** `evaluation/current-research.md`.
