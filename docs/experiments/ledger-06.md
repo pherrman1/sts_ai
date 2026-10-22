@@ -22857,7 +22857,7 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
-## §TBD — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
+## §622 — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
 
 **Question:** can the value head learn raw heart1's clean HP / max HP / gold slopes (handoff from the gen-2 thread:
 distilling heart1's absolute values did not transfer them, §609's hinge flattened the head) without losing the
