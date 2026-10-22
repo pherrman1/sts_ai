@@ -53,4 +53,8 @@ for name, lab in (("flip_g3", "gen 3 vs student_sel"), ("flip_g2", "gen 2 vs stu
           f"mean dq new-minus-sel {st.mean(x['dq'] for x in xs):+.4f} (new higher at {sum(x['dq'] > 0 for x in xs)/len(xs):.0%}) | "
           f"mean dp {st.mean(x['dp'] for x in xs):+.4f} | search played new {pl.count('new')}, sel {pl.count('sel')}, other {pl.count('other')} | "
           f"median visits new {st.median(x['n_new'] for x in xs):.0f}, sel {st.median(x['n_sel'] for x in xs):.0f}")
+    for pl in ("new", "sel", "other"):
+        ys = [x for x in xs if x["played"] == pl]
+        if ys: print(f"  search played {pl}: {len(ys)} | mean dq new-minus-sel {st.mean(y['dq'] for y in ys):+.4f} "
+                     f"(new higher at {sum(y['dq'] > 0 for y in ys)/len(ys):.0%}) | mean dp {st.mean(y['dp'] for y in ys):+.4f}")
 json.dump(res, open(D + "/margins.json", "w"))

@@ -1,5 +1,14 @@
 runs 526 of 526; searched non-singleton roots per run 64.7, full-budget 16.3
 all 8424 roots: q gap between the two best visited candidates: median 0.0111 (p25 0.0039, p75 0.0247)
 gen 3 vs student_sel: 273 roots (3.24%) | |dq| median 0.0152 p75 0.0401 | mean dq new-minus-sel +0.0138 (new higher at 62%) | mean dp +0.0087 | search played new 120, sel 126, other 27 | median visits new 1693, sel 1781
+  search played new: 120 | mean dq new-minus-sel +0.0493 (new higher at 99%) | mean dp +0.0286
+  search played sel: 126 | mean dq new-minus-sel -0.0231 (new higher at 29%) | mean dp -0.0111
+  search played other: 27 | mean dq new-minus-sel +0.0279 (new higher at 52%) | mean dp +0.0126
 gen 2 vs student_sel: 299 roots (3.55%) | |dq| median 0.0152 p75 0.0409 | mean dq new-minus-sel +0.0112 (new higher at 60%) | mean dp +0.0058 | search played new 125, sel 147, other 27 | median visits new 1668, sel 1853
+  search played new: 125 | mean dq new-minus-sel +0.0517 (new higher at 98%) | mean dp +0.0266
+  search played sel: 147 | mean dq new-minus-sel -0.0240 (new higher at 29%) | mean dp -0.0121
+  search played other: 27 | mean dq new-minus-sel +0.0153 (new higher at 48%) | mean dp +0.0073
 pi' vs student_sel: 509 roots (6.04%) | |dq| median 0.0207 p75 0.0406 | mean dq new-minus-sel +0.0355 (new higher at 99%) | mean dp +0.0212 | search played new 310, sel 174, other 25 | median visits new 2002, sel 1476
+  search played new: 310 | mean dq new-minus-sel +0.0497 (new higher at 100%) | mean dp +0.0275
+  search played sel: 174 | mean dq new-minus-sel +0.0113 (new higher at 99%) | mean dp +0.0106
+  search played other: 25 | mean dq new-minus-sel +0.0271 (new higher at 96%) | mean dp +0.0180
