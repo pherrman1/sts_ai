@@ -1,6 +1,6 @@
 name          silver-maxbackup-ab
 code_commit   c4dcb43c1c8fe418fda8b678f9cde3c7e3b96132
-binary_sha256 TBD
+binary_sha256 5d840679ccc27b6cb2fa2f16a8af38590935eaee2d08dc791753827cd58a0189
 workers       32
 share         /mnt/project-files/silver-maxbackup-ab
 parallel      4
