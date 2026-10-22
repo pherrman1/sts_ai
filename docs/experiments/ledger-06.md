@@ -23204,7 +23204,7 @@ seed, 256 simulations.
 **Decision:** the option stays default off. Proposed use is a new sibling capture for value-head ranking labels
 (needs seeds, workers and Philipp's go). Seed used: 111144997.
 
-## §TBD — OOC value head: a sibling-ranking loss makes the head rank leaf siblings at X2-B's level (0.644 vs 0.633) and its X2-B blend better (+0.032 to +0.040 over three seeds); auxiliary heads do not help (offline, exploratory) (2026-10-22)
+## §641 — OOC value head: a sibling-ranking loss makes the head rank leaf siblings at X2-B's level (0.644 vs 0.633) and its X2-B blend better (+0.032 to +0.040 over three seeds); auxiliary heads do not help (offline, exploratory) (2026-10-22)
 
 **Question:** every value head so far ranks round-2 VALIDATION siblings at about 0.55, against X2-B's 0.633 (§577,
 §622, §636). Can a training loss on sibling order fix that? Philipp chose more offline research before any play test
