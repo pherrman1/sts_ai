@@ -11,7 +11,7 @@
 # STS_SILVER_LEARNED_STOP=1 + STS_SILVER_EXACT_ROOT_BUDGETS=1), g7f_E rollout root table + root/tree prior, flexible
 # keys, Wing Boots counter on, engine fixes explicit.
 set -uo pipefail
-REPO=$1 RUN=$2 OUT=$3 SEED=$4
+REPO=$1 RUN=$2 OUT=$3 SEED=$4 bad=0
 for f in student_sel.bin; do [ -s "$RUN/$f" ] || { echo "missing $RUN/$f" >&2; exit 2; }; done
 mkdir -p "$OUT"
 COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
@@ -52,15 +52,20 @@ if [ "$rc" = 0 ]; then
   grep -q "ctm-act4-survival\] model=" "$b.log" "$b.err" || rc=96
   grep -qF "[heart1] loaded $RUN/student_sel.bin " "$b.log" "$b.err" || rc=95
   grep -q "fast_root_cap=1024" "$b.log" "$b.err" || rc=94
-  # Every capture row must carry common seeds and 32 repeats. A run with no searched root has no rows.
+  # Every capture row must carry common seeds (config check, rc 93). Rows whose forked capture failed (no 32
+  # repeats, e.g. a capture timeout) are counted as badRows; the analysis drops their roots. A run with no searched
+  # root has no rows.
   if [ -s "$b.sib.jsonl" ]; then
-    python3 -I -c 'import json,sys
+    bad=$(python3 -I -c 'import json,sys
+n = 0
 for line in open(sys.argv[1]):
     r = json.loads(line)
-    if r.get("commonSeeds") is not True or len(r["extra"]["repeats"]) != 32: sys.exit(1)' "$b.sib.jsonl" || rc=93
+    if r.get("commonSeeds") is not True: sys.exit(1)
+    n += len(r.get("extra", {}).get("repeats", [])) != 32
+print(n)' "$b.sib.jsonl") || rc=93
   fi
 fi
 rows=0; [ -f "$b.sib.jsonl" ] && rows=$(wc -l < "$b.sib.jsonl")
-echo "tag=S-$SEED rc=$rc start=$start wall=$(( $(date +%s)-t0 )) sibRows=$rows" > "$b.done"
+echo "tag=S-$SEED rc=$rc start=$start wall=$(( $(date +%s)-t0 )) sibRows=$rows badRows=${bad:-0}" > "$b.done"
 gzip -9 -f "$OUT"/*.jsonl 2>/dev/null
 exit 0

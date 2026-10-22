@@ -32,8 +32,10 @@ at 15:34Z. It still needs the independent pre-launch review.
 - **Outputs per source (unit):** `S-<seed>.jsonl.gz` (policy rows; the last row is the outcome),
   `S-<seed>.sib.jsonl.gz`, `S-<seed>.ctm.jsonl.gz`, and the env, log, err and `.done` files (rc, wall, capture rows).
 - **Valid source:** rc 0 and an outcome row with `complete` and `integrityPassed`.
-  - rc 0 includes the banner checks (learned OOC stop, Act-4 CTM model, the heart1 net, fast-root cap 1024).
-  - It also requires every capture row to carry `"commonSeeds": true` and 32 repeats.
+  - rc 0 includes the banner checks (learned OOC stop, Act-4 CTM model, the heart1 net, fast-root cap 1024) and
+    requires every capture row to carry `"commonSeeds": true`.
+  - A capture row whose forked evaluation failed (no 32 repeats, e.g. a capture timeout) is counted in the `.done`
+    line (`badRows`). The analysis drops its whole root, as round 2 did with incomplete rows.
   - Invalid sources are reported, not replaced.
 - **Campaign:** `tools/cloud/worker.sh` with `schedule queue`, 4 lanes per worker and a 7 h timeout per source.
 
