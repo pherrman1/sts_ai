@@ -22262,7 +22262,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
-## §TBD — Live problem 91: Runic Dome lost Awakened One's roll after Rebirth (2026-10-22)
+## §629 — Live problem 91: Runic Dome lost Awakened One's roll after Rebirth (2026-10-22)
 
 **Question:** Why did seed 111200541 seg 2 (Awakened One with Runic Dome) refuse with `silver_runic_dome_incomplete_history` after a normal phase-1 death and Rebirth?
 
