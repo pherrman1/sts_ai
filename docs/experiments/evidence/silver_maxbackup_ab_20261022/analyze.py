@@ -38,6 +38,7 @@ DESCRIPTIVE = [("fix10000", "base10000"), ("fix10000", "base12000"), ("base12000
 # CPU-ratio contrasts (x / y): per simulation and per fight.
 CPU_RATIOS = [("fix10000", "base10000"), ("base12000", "base10000"), ("fix10000", "base12000")]
 METRICS = ("score", "win", "hpLoss")
+CPU_MATCH_MAX = 1.10
 
 
 def score(row):
@@ -216,7 +217,14 @@ def main():
                 v[1] += work[(sid, x)][1] if den else 1; v[3] += work[(sid, y)][1] if den else 1
             m, lo, hi = boot_ratio(per_seed)
             result["cpuRatios"][f"{x}/{y}/{kind}"] = {"ratio": m, "ci95": [lo, hi]}
+    # Pre-registered CPU match: the fix10000 - base12000 labels count only if the per-fight CPU ratio
+    # fix10000/base12000 (point estimate) is <= CPU_MATCH_MAX; otherwise they read NOT_MATCHED.
+    matched = result["cpuRatios"]["fix10000/base12000/perFight"]["ratio"] <= CPU_MATCH_MAX
+    result["cpuMatched"] = matched
     for y in ("base10000", "base12000"):
+        if y == "base12000" and not matched:
+            result["labels"][f"fix10000-{y}/score"] = result["labels"][f"fix10000-{y}/hpLoss"] = "NOT_MATCHED"
+            continue
         c = result["contrasts"][f"fix10000-{y}/all/score"]["ci95"]
         result["labels"][f"fix10000-{y}/score"] = "BETTER" if c[0] > 0 else "WORSE" if c[1] < 0 else "NOT_SHOWN"
         c = result["contrasts"][f"fix10000-{y}/all/hpLoss"]["ci95"]
@@ -225,7 +233,7 @@ def main():
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "truncatedRows", "shards",
-                                             "roomClasses", "act4Fights", "labels", "cpuRatios", "escapes",
+                                             "roomClasses", "act4Fights", "labels", "cpuMatched", "cpuRatios", "escapes",
                                              "excludedFightsByRootReason", "invalidArmRowsByReason",
                                              "escapeReplicatesAllFights")}))
     for a, v in result["arms"].items():

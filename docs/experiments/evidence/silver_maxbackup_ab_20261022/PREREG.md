@@ -57,8 +57,13 @@ Act-4 fights.
 - Score: BETTER if the CI lower bound > 0, WORSE if the upper bound < 0, else NOT_SHOWN.
 - HP lost: BETTER if the CI upper bound < 0, WORSE if the lower bound > 0, else NOT_SHOWN.
 
-**Secondary label: `fix10000 − base12000`**, same rule (the CPU-matched comparison). `base12000 − base10000` and
-the subsets are descriptive.
+**Secondary label: `fix10000 − base12000`**, same rule (the CPU-matched comparison), **only if the arms are
+CPU-matched**: the per-fight CPU ratio fix10000/base12000 (point estimate of the seed-pooled ratio in
+`cpuRatios`) must be ≤ 1.10. Otherwise both secondary labels read NOT_MATCHED and support no claim. The 1.20x
+smoke ratio rests on 6 fights; the REPORT's +30-50% per simulation came from the exact benchmarks, where the
+learned stop also ran longer and per-root exact scoring was included. This harness uses flat exact budgets.
+`base12000` covers a fix/base10000 ratio up to about 1.32. `base12000 − base10000` and the subsets are
+descriptive.
 
 No default change in this PR. A default proposal goes to Philipp with these numbers. The learned stop
 (ADR-0051/0054) was trained on mean-backup trees and is not part of this A/B. If the candidate wins, the stop

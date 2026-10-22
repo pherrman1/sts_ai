@@ -22858,7 +22858,6 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
-
 ## §TBD — Silver attack-over-block bias vs exact solves: max backup + block-first playout halve first-fight regret; fight-level A20 A/B pre-registered (2026-10-22)
 
 **Question (Philipp, 2026-10-21 19:12Z):** why does Silver play Strike over Defend on Jaw Worm turn 2 (seed
@@ -22867,7 +22866,8 @@ Seeds 111145010–017 used (010 reused from the speed profile).
 every root Silver searches. New opt-in flags, default off and bit-identical when off:
 `STS_SILVER_MAX_BACKUP=m` (a decision node's selection value is its best child with at least m simulations, a
 chance node's the visit-weighted mean of its outcomes) and `STS_SILVER_ROLLOUT_BLOCK_FIRST=<margin>` (+ `_BLOCK_OFFSET`,
-`_BLOCK_LETHAL=0`): the playout plays its best defensive card first while incoming damage exceeds block by more than
+`_BLOCK_LETHAL=0`; one_combat's ADR-0022 env allowlist refuses all four, so they act only through the
+`maxbackup` armset or in `exact_combat_solver`): the playout plays its best defensive card first while incoming damage exceeds block by more than
 the margin and its affordable attacks cannot kill a lone monster. The margin was fit by exact policy evaluation on
 111149120–143; m on Jaw Worm 111149150–249.
 **Result:** paired regret per fight (Silver points, ±1 SE), both flags (m = 4, margin 3) vs today:
