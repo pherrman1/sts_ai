@@ -348,7 +348,8 @@ Offline only, on round-2 sibling groups (§503; targets are 64-rollout3 means, s
 - **Label noise:** it caps a perfect evaluator near 0.81 on round 2.
 - **Common-seed recapture (§TBD, 320 new A20 sources):**
   - With `STS_OOC_SIBLING_COMMON_SEEDS` (§639, default off), 32 repeats carry as little stream noise in sibling
-    differences as about 89 independent ones. Hidden state is now the larger noise term.
+    differences as about 89 independent ones. Hidden state may now be the larger noise term (bounded, not
+    measured).
   - On its VALIDATION, X2-B ranks siblings at 0.664. The SR_w1 head alone is below it (0.645, −0.019
     [−0.031, −0.008]). Its blend still gains +0.026 [+0.020, +0.032] (+0.018 to +0.026 over the three seeds).
 - **Status:** X2-B stays the leaf. The blend, not the head alone, is the online candidate. A retrain on the new labels

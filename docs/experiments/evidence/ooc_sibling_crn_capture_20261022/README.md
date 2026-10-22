@@ -84,14 +84,18 @@ Findings:
     0.36 on one seed). So 32 common-seed repeats are worth about 89 independent ones.
   - At equal repeats per half, the split-half agreement is 0.05–0.08 above round 2's.
   - 16 vs 16 (0.718) beats round 2's 32 vs 32 (0.682). The PREREG expectation holds.
-- **Hidden state is now the larger part of the noise.**
+- **Hidden state may now be the larger part of the noise.**
   - Rows with the same public state now share their streams, yet only 8.6 % of these sets roll out identically. 72 %
     of the sets come from map choices.
-  - Their spread gives σ_h² ≈ 0.0015 per row in both rounds. It is a property of the states, not of the streams.
-  - That is larger than the stream variance of a full common-seed sibling difference (0.0011), and more repeats cannot
-    remove it.
-  - If every row had its own hidden state, the ceiling would fall to 0.69. Children of a deterministic action share
-    the root's hidden state, so the true ceiling lies between about 0.69 and 0.87.
+  - Their spread gives σ_h² ≈ 0.0015 per row on both rounds' VALIDATION (0.0012 on this round's TRAIN). It is a
+    property of the states, not of the streams. It is pair-weighted, so the large map-choice sets dominate it.
+  - Per row, that is larger than the stream variance of a full common-seed sibling difference (0.0011), and more
+    repeats cannot remove it.
+  - How much of it reaches a sibling difference is bounded, not measured. It is about none for children of a
+    deterministic action, which share the root's hidden state.
+  - If every row had its own hidden state, the ceiling would fall to 0.69. So the true ceiling lies between about 0.69
+    and 0.87.
+  - Both ceilings use the observed gaps, which noise inflates, so they lean optimistic.
 - **The two rounds' ceilings are not strictly comparable.** This round captures every root with up to 64 leaves, so
   its groups hold more close pairs than round 2's.
 
@@ -140,8 +144,10 @@ head saw any of these seeds. Blend weights are the round-2 TRAIN-holdout choices
 ## Interpretation
 - **Common seeds deliver cleaner sibling differences.** 32 common-seed repeats carry about as much stream noise as 89
   independent ones.
-- **Hidden state now limits the labels.** Rows with the same public state still disagree. Their spread is the same as
-  in round 2 and larger than the remaining stream noise, so more repeats would not help much.
+- **Hidden state may now limit the labels.** Rows with the same public state still disagree, as much as in round 2.
+  - Per row, that spread exceeds the remaining stream noise.
+  - Its share of the sibling-label noise is bounded, not measured.
+  - So more repeats may help little.
 - **The blend's gain replicates; the head alone does not.**
   - On 320 new sources the blend beats X2-B for all three seeds, on both splits (+0.018 to +0.027, every CI above 0).
     That is smaller than round 2's +0.032 to +0.040.

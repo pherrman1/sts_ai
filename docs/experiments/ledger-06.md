@@ -23312,9 +23312,10 @@ pre-launch review PASS).
     about 89 independent ones.
 - **Hidden state:**
   - Rows with the same public state share their streams, but only 8.6 % of these sets roll out identically.
-  - Their spread (σ_h² ≈ 0.0015 per row, the same in round 2) exceeds the remaining stream noise of a sibling
-    difference (0.0011).
-  - The ceiling lies between 0.69 (hidden-state bound) and 0.87 (stream noise only).
+  - Their spread is σ_h² ≈ 0.0015 per row, the same in round 2 (0.0012 on TRAIN). Per row, that exceeds the
+    remaining stream noise of a sibling difference (0.0011).
+  - How much of it reaches sibling labels is bounded, not measured.
+  - The ceiling lies between 0.69 (hidden-state bound) and 0.87 (stream noise only); both lean optimistic.
 - **Heads (VALIDATION; no head was trained on these seeds):**
 
 | evaluator | VALIDATION | − X2-B [95 % CI] | round 2 |
@@ -23332,7 +23333,9 @@ pre-launch review PASS).
 - **By screen:** the blend gains on rewards, rest sites and shops. It is level on map choices, where X2-B is weakest
   (0.602).
 **Interpretation:**
-- Common seeds do what §639 promised. Hidden state is now the larger noise term, so more repeats would help little.
+- Common seeds do what §639 promised.
+- Hidden state may now be the larger noise term: the per-row σ_h² exceeds the remaining stream noise, but its share of
+  the sibling-label noise is bounded, not measured. So more repeats may help little.
 - The blend's gain over X2-B replicates on new sources with cleaner labels, though it is smaller than on round 2.
 - The head alone does not keep up. X2-B gains 0.031 on the new data and SR_w1 gains nothing, so §641's "at X2-B's
   level" was the optimistic end.
