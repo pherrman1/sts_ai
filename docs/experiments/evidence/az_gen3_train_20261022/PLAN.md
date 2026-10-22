@@ -45,12 +45,12 @@ lr 1e-4, anchor 0.3, value weight 0.3, `--value-k 32`, bs 256, 20 epochs, patien
 ## Choice
 - Rule (as gen 2): lowest selection-fold policy KL among runs whose selection value BCE is below the constant BCE.
   It must also beat both gen-2 references on the selection fold, else gen 3 reports NO_CANDIDATE.
-- Report: selection and validation KL / top-1 per screen, value BCE / AUC per act, KL on exploration vs greedy
-  selection files, anchor KL to student_sel, epochs, wall.
+- Report: selection and validation KL / top-1 per screen, value BCE / AUC per act, anchor KL to student_sel, epochs, wall.
 - Then native parity of the pick's export (torch vs native forward on recorded states, as gen 2) on the PC.
 - Caveat carried forward: gen 1b and gen 2 each improved offline KL and were NOT_SHOWN online (§589, §621). Offline
   rank is a filter, not evidence of strength.
 
 ## Execution
 Philipp's GPU via Remote Control in the gen-2 scratch worktree; the live parity canary's checkout and the game install
-are not touched. Rows and results travel on the never-merged data branch `claude/az-gen2-data` under `gen3/`.
+are not touched. Rows and results travel on the never-merged data branch `claude/az-gen2-data` under `gen3/`;
+the driver is `gen3/tools/run_g3.sh` there (calibration `calibrate_g3.py`, rule `pick.py`, table `summarize_g3.py`).
