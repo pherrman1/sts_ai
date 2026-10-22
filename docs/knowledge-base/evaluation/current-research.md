@@ -337,13 +337,14 @@ Offline only, on round-2 sibling groups (§503; targets are 64-rollout3 means, s
 - **Blend flag:** `STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT=w` (§636, default off) blends w·logit(head) into X2-B's logit
   at rollout3 ends.
 - **Sibling-ranking loss:** a RankNet loss over round-2 TRAIN sibling groups, added to the M0.3 recipe.
-  - At weight 1 the head alone reaches 0.644, 0.645 and 0.618 over three seeds (mean 0.636). The third seed was stopped
-    early by the value-only selection.
+  - At weight 1 the head alone reaches 0.644, 0.645 and 0.618 over three seeds (mean 0.636): level with X2-B, not
+    above it (the CI includes 0). The third seed was stopped early by the value-only selection.
   - Its blend is +0.032 to +0.040 over X2-B for every seed (seed 0: 0.673, +0.040 [+0.030, +0.049]).
-  - Weights 0.1 and 0.3 reach 0.586 and 0.613.
+  - Weights 0.1 and 0.3 reach 0.586 (just above the 0.585 bar) and 0.613.
   - Auxiliary outcome heads give no ranking gain.
-  - The weight costs monotonicity (gold +50 is valued higher in only 65–84 % of cases over the seeds, vs 94 %) and
-    calibration (leaf BCE against the run's Heart kill 0.47–0.50, about a constant's 0.475 or worse).
+  - The weight costs monotonicity (gold +50 is valued higher in only 65–84 % of cases over the seeds, vs 94 %; max
+    HP +5 in 42–54 %, vs 67 %) and calibration (leaf BCE against the run's Heart kill 0.47–0.50, about a constant's
+    0.475 or worse).
 - **Label noise:** it caps a perfect evaluator near 0.81. `STS_OOC_SIBLING_COMMON_SEEDS` (§639, default off) gives
   cleaner sibling differences for a new capture.
 - **Status:** X2-B stays the leaf. An online test of the blend and of the head alone needs Philipp's go

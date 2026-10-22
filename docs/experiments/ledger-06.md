@@ -23225,21 +23225,23 @@ M0.3 recipe (§622) with one change, on Philipp's GPU:
 |---|---|---|---|---|---|---|
 | M0.3 (control) | 0.555 | −0.078 | – | +0.011 [+0.001, +0.021] | 0.5365 | – |
 | AUX0.3 | 0.557 | −0.076 | +0.002 [−0.003, +0.006] | +0.014 | 0.5398 | FAIL |
-| SR_w0.1 | 0.586 | −0.048 | +0.030 [+0.019, +0.041] | +0.024 [+0.016, +0.032] | 0.5362 | PARTIAL |
+| SR_w0.1 | 0.586 | −0.048 | +0.030 [+0.019, +0.041] | +0.024 [+0.016, +0.032] | 0.5362 | PARTIAL (by 0.0006) |
 | SR_w0.3 | 0.613 | −0.020 [−0.036, −0.002] | +0.058 | +0.033 [+0.023, +0.044] | 0.5363 | PARTIAL |
 | SR_w1 | 0.644 | +0.011 [−0.004, +0.026] | +0.088 [+0.075, +0.102] | +0.040 [+0.030, +0.049] | 0.5466 | PASS |
 
 - SR_w1 seeds 1 and 2 score 0.645 and 0.618 (mean 0.636), with blends of +0.032 and +0.032. Seed 2 was stopped at
   epoch 4 by the value-only selection while its holdout ranking was still rising.
-- The SR weight costs monotonicity (gold+50 > 0: 94 % for M0.3 vs 65–84 % for SR_w1) and outcome calibration (SR_w1's
-  leaf BCE against the run's Heart kill is 0.47–0.50 vs M0.3's 0.43; a constant scores 0.475). The bars hold.
+- The SR weight costs monotonicity (gold+50 > 0: 94 % for M0.3 vs 65–84 % for SR_w1; maxHP+5 > 0: 67 % vs 42–54 %)
+  and outcome calibration (SR_w1's leaf BCE against the run's Heart kill is 0.47–0.50 vs M0.3's 0.43; a constant
+  scores 0.475). The bars hold.
 - Exploratory:
   - The SR_w1 blend gains on every screen except the boss relic, most in Act 1 (+0.055).
   - The head alone beats X2-B on rewards and shops but loses on events and boss relics.
   - Noise-corrected concordance keeps the order.
 **Interpretation:** a ranking loss transfers to sources it never saw, and the auxiliary heads do not help. The targets
-end in X2-B, which favours it, so matching X2-B is a real gain. The online meaning is open: §615's head ranked
-siblings at only 0.547 offline and still leaned +3.1 pp as the rollout3 end value.
+end in X2-B, which favours it, so matching X2-B is a real gain. The PASS is a point estimate: the CI against X2-B
+includes 0 and seed 2 alone would be PARTIAL, so the head ranks at X2-B's level, not above it. The online meaning is
+open: §615's head ranked siblings at only 0.547 offline and still leaned +3.1 pp as the rollout3 end value.
 **Decision:** no default change. SR_w1 (seed 0, `146a4512…` on `claude/az-gen2-data`) is the leaf candidate. Next is
 an online test (blend and head alone vs X2-B), or a new capture with common seeds (§639) for cleaner labels; Philipp
 decides. A later recipe should select epochs on a combined value and ranking objective. No game seeds were used.

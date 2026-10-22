@@ -50,7 +50,7 @@ Can the value head learn to rank one decision's children the way their rollout3 
 | X2-B | – | 0.642 | **0.633** | – | – | 0.601 | – | 0.683 / – | – | reference |
 | M0.3 (control) | 0.5365 / 0.770 | 0.554 | 0.555 | −0.078 | – | 0.563 | 0.15, 0.644, +0.011 [+0.001, +0.021] | 0.700 / 0.429 | 89.4 % | – |
 | AUX0.3 | 0.5398 / 0.767 | 0.550 | 0.557 | −0.076 | +0.002 [−0.003, +0.006] | 0.563 | 0.10, 0.648, +0.014 [+0.006, +0.023] | 0.697 / 0.427 | 88.8 % | FAIL |
-| SR_w0.1 | 0.5362 / 0.771 | 0.588 | 0.586 | −0.048 [−0.063, −0.031] | +0.030 [+0.019, +0.041] | 0.588 | 0.10, 0.657, +0.024 [+0.016, +0.032] | 0.698 / 0.431 | 91.5 % | PARTIAL |
+| SR_w0.1 | 0.5362 / 0.771 | 0.588 | 0.586 | −0.048 [−0.063, −0.031] | +0.030 [+0.019, +0.041] | 0.588 | 0.10, 0.657, +0.024 [+0.016, +0.032] | 0.698 / 0.431 | 91.5 % | PARTIAL (0.5856, by 0.0006) |
 | SR_w0.3 | 0.5363 / 0.772 | 0.618 | 0.613 | −0.020 [−0.036, −0.002] | +0.058 [+0.044, +0.072] | 0.606 | 0.15, 0.666, +0.033 [+0.023, +0.044] | 0.693 / 0.442 | 92.0 % | PARTIAL |
 | SR_w1 | 0.5466 / 0.763 | 0.649 | **0.644** | +0.011 [−0.004, +0.026] | +0.088 [+0.075, +0.102] | 0.634 | 0.05, **0.673**, +0.040 [+0.030, +0.049] | 0.672 / 0.501 | 88.1 % | **PASS** |
 
@@ -119,13 +119,15 @@ SR_w1_s1 and SR_w1_s2 (`run_sr.sh seeds`, `--seed 1` and `--seed 2`) were traine
   - VALIDATION concordance rises with the SR weight: 0.586, 0.613 and 0.644 for w 0.1, 0.3 and 1.
   - At weight 1 the head alone matches X2-B on X2-B's home metric: two of three seeds reach 0.644–0.645, and the mean
     is 0.636. The targets end in X2-B, which favours it.
+  - The PASS is a point estimate. The CI against X2-B includes 0, and seed 2 alone would be PARTIAL, so the head ranks
+    at X2-B's level, not above it.
   - Its blend beats X2-B by 0.032–0.040 for every seed.
 - **Auxiliary heads do not help ranking.** AUX0.3 is within ±0.006 of M0.3. This is the second try, after VT_aux0.3.
 - **The SR weight has a cost.**
   - SR_w1's selection BCE rises from 0.5365 to 0.543–0.547 over the three seeds, still under the 0.552 bar.
   - Its outcome BCE on VALIDATION leaves is 0.467–0.501 over the seeds, near or above a constant's 0.475 (M0.3 0.429).
-  - Monotonicity weakens: gold+50 > 0 drops from 94 % to 65–84 % over the seeds. Seed 0's selection-fold violations
-    rise to hp 0.21 and gold 0.18, against 0.13 and 0.08 at w 0.1.
+  - Monotonicity weakens: gold+50 > 0 drops from 94 % to 65–84 % over the seeds, and maxHP+5 > 0 from 67 % to
+    42–54 %. Seed 0's selection-fold violations rise to hp 0.21 and gold 0.18, against 0.13 and 0.08 at w 0.1.
   - A head used alone at rollout ends would therefore value levels worse. The blend uses the head only at 5–25 %.
 - **Context:** online, gen 1b's head ranked siblings at only 0.547 but leaned +3.1 pp in Heart kills as the rollout3
   end value (§615, NOT_SHOWN). The offline sibling metric is a proxy for the online value.
