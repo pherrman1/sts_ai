@@ -348,6 +348,13 @@ snapshot is serialized with a default `Gson`, which omits null members such as
 an unexecuted initial occupant as global turn 0 and a missing nullable member as
 null (`STS_IMPORTER_RUNIC_DOME_WIRE_FIX`, default on; `=0` restores the strict
 reading, which refused every first-turn Dome root).
+Awakened One's Rebirth turn queues `ChangeStateAction("REBIRTH")`, whose heal
+lands behind takeTurn's `RollMoveAction`. So the roll right after Rebirth sees
+HP 0 of 320. The tracker accepts that one roll (Awakened One, `publicMisc` 1,
+last executed move 3), and the importer accepts its `rollHp` 0
+(`STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL`, default on; `=0` restores the
+refusal). Phase two's first move, Dark Echo, does not depend on HP. Problem 91
+(seed 111200541) refused with `silver_runic_dome_incomplete_history`.
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
