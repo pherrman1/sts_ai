@@ -22857,3 +22857,28 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
+
+
+## §TBD — Silver attack-over-block bias vs exact solves: max backup + block-first playout halve first-fight regret; fight-level A20 A/B pre-registered (2026-10-22)
+
+**Question (Philipp, 2026-10-21 19:12Z):** why does Silver play Strike over Defend on Jaw Worm turn 2 (seed
+111147001, regret 2.29 points), and is it a systematic leaf or rollout bias he also sees in live play?
+**Design:** exact expectimax from the exact-combat tools (#794 and the research branch's abstract solvers) scores
+every root Silver searches. New opt-in flags, default off and bit-identical when off:
+`STS_SILVER_MAX_BACKUP=m` (a decision node's selection value is its best child with at least m simulations, a
+chance node's the visit-weighted mean of its outcomes) and `STS_SILVER_ROLLOUT_BLOCK_FIRST=<margin>` (+ `_BLOCK_OFFSET`,
+`_BLOCK_LETHAL=0`): the playout plays its best defensive card first while incoming damage exceeds block by more than
+the margin and its affordable attacks cannot kill a lone monster. The margin was fit by exact policy evaluation on
+111149120–143; m on Jaw Worm 111149150–249.
+**Result:** paired regret per fight (Silver points, ±1 SE), both flags (m = 4, margin 3) vs today:
+Jaw Worm fresh 111149250–349 prod 1.57 → 0.74 (−0.83 ± 0.15), live 1.54 → 0.67 (−0.86 ± 0.14); Two Louse
+111149600–699 prod 0.35 → 0.12, live 0.44 → 0.12; Cultist 111149350–369 6 → 0 wrong decisions. Each flag alone
+helps less; higher exploration c is worse. CPU about +20% per simulation (A20 smoke 1.20x).
+**Interpretation:** two causes. The greedy playout never blocks because it is hit, and mean backups undervalue the
+less-visited, longer line (Defend's mean 5–10 points below exact). More simulations do not fix it.
+**Inference:** only starter-deck first fights are measured. Whole-run fight score is untested, and the learned stop
+was trained on mean-backup trees. The pre-registered A20 A/B
+([PREREG](evidence/silver_maxbackup_ab_20261022/PREREG.md), arms base10000 / base12000 / fix10000, sources
+111149400–463) needs Philipp's go. Flags stay default off.
+Report: `/mnt/project-files/silver-rollout-bias/REPORT.md`. Seeds used 111149100–147, 111149150–389, replays of
+111147001 and 111149600–699.
