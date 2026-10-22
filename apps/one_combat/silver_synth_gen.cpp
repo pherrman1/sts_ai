@@ -16,6 +16,8 @@
 // with the STS_SILVER_ROOT_PRIOR policy model as tree prior at nodes with
 // TREE_MIN_VISITS simulations; ROOT_BONUS 0 drops the bonus at the root, whose
 // visit shares are the label (untried root edges still go in prior order).
+// Every fight row also carries `score`, Silver's own terminal evaluation of the
+// fight's end (the value label for a leaf value head).
 //
 // silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
 // /mnt/project-files/silver-prior-fight-specific/): the run plays every other
@@ -170,11 +172,18 @@ struct FightRecorder {
     std::ostringstream *out = nullptr;
     search::SilverLeafSamples leaves;
     long long roots = 0, leafRows = 0, secondTeachers = 0, continuationRoots = 0;
+    // Scores the fight's end with Silver's own terminal evaluation, referenced to the fight's first
+    // searched root (its gold and max-HP terms): the label a leaf value must share with the tree.
+    std::unique_ptr<search::SilverSearcher> scorer;
 
     void observe(const search::NativeSilverRootView &view) {
         const auto &searcher = view.searcher;
         const auto &state = searcher.rootSearchState();
         const auto &context = searcher.searchContext();
+        if (!scorer) {
+            scorer = std::make_unique<search::SilverSearcher>(state, context);
+            scorer->evalWeights = searcher.evalWeights;
+        }
         const std::uint64_t rootKey = key(seed, fightIdx, view.decision);
         const bool multi = searcher.rootNode().edges.size() > 1;
         nlohmann::json row = {
@@ -302,6 +311,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
         const int preHp = gc.curHp, preMaxHp = gc.maxHp;
         const long long rootsBefore = recorder.roots;
         recorder.leaves.samples.clear();
+        recorder.scorer.reset();
         search::g_nativeSilverLeafSamples = recorder.lean ? nullptr : &recorder.leaves;
         search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) { recorder.observe(view); };
         agent.playoutBattle(gc, bc);
@@ -316,7 +326,9 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
             {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
             {"preHp", preHp}, {"preMaxHp", preMaxHp}, {"perturbation", perturbation},
             {"valid", valid}, {"won", bc.outcome == Outcome::PLAYER_VICTORY},
-            {"endHp", bc.player.curHp}, {"turns", bc.turn}, {"roots", recorder.roots - rootsBefore}}.dump() << '\n';
+            {"endHp", bc.player.curHp}, {"turns", bc.turn}, {"roots", recorder.roots - rootsBefore},
+            {"score", decided && recorder.scorer ? nlohmann::json(recorder.scorer->scoreEndState(bc))
+                                                 : nlohmann::json(nullptr)}}.dump() << '\n';
         ++result.fights;
         if (!valid) ++result.invalidFights;
         return valid;
