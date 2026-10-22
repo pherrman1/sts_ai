@@ -22262,7 +22262,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
-## §TBD — Live problem 85: the Awakened One rebirth window could not be correlated (2026-10-21)
+## §626 — Live problem 85: the Awakened One rebirth window could not be correlated (2026-10-21)
 
 **Question:** Why did seed 111200512 (seg1 s831, act 3 floor 50) stop with "no fresh inspector response for current state: cannot correlate inspector observation with MCP-visible state" right after Uppercut+ killed Awakened One's first form?
 
