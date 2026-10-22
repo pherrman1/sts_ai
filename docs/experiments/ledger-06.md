@@ -22262,7 +22262,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
-## §TBD — Live problem 87: a skipped boss relic offer re-published the boss chest reveal (2026-10-22)
+## §628 — Live problem 87: a skipped boss relic offer re-published the boss chest reveal (2026-10-22)
 
 **Question:** Why did seed 111200537 get stuck at the act-1 boss chest after the OOC skipped the boss relic?
 
