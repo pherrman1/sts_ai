@@ -22943,7 +22943,7 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
-## §TBD — Live advisor: Headbutt killing a Bronze Orb holding Stasis, and a half-dead Darkling's Regrow, were refused (2026-10-22)
+## §630 — Live advisor: Headbutt killing a Bronze Orb holding Stasis, and a half-dead Darkling's Regrow, were refused (2026-10-22)
 
 **Question:** why did overnight live seed 111200539 stop at Headbutt's grid with `silver_selection_pending_actions`
 after Headbutt+ killed the Bronze Orb holding Dark Embrace (problem 88: `refusal=1:unknown_action`), and after
