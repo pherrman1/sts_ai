@@ -22319,7 +22319,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; PC `test.sh` requested from the canary.
 
-## §TBD — Live problem 92: the shop-removal confirm screen re-searched and removed a different card (2026-10-22)
+## §632 — Live problem 92: the shop-removal confirm screen re-searched and removed a different card (2026-10-22)
 
 **Question:** Why did the live AI choose "remove Strike" at shops but then remove a different card, usually a better one (Philipp's report; 88 of 95 overnight removals)?
 
