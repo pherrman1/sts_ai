@@ -1810,6 +1810,12 @@ double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory
             const double logit = options.heart1ValueNet->forward(choice.record).value;
             if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite heart1 leaf value");
             ++continuation_.heart1ValueLeafEvaluations;
+            if (options.heart1ValueWeight < 1) {
+                predict.stop();   // X2-B profiles itself
+                const double w = options.heart1ValueWeight;
+                const double x2b = std::clamp(dependencies.leafValue(gc, path), 1e-7, 1 - 1e-7);
+                return 1.0 / (1.0 + std::exp(-((1 - w) * std::log(x2b / (1 - x2b)) + w * logit)));
+            }
             return 1.0 / (1.0 + std::exp(-logit));
         }
         ++continuation_.heart1ValueLeafFallbacks;
@@ -3298,6 +3304,16 @@ void configureLiveOocMcts() {
         liveOptions.heart1ValueSha256 = fileSha256Hex(weights);
 #endif
     }
+    if (const char *weight = std::getenv("STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT")) {
+        const std::string value(weight);
+        char *end = nullptr;
+        const double w = value.empty() ? 0 : std::strtod(value.c_str(), &end);
+        if (value.empty() || end != value.c_str() + value.size() || !(w > 0 && w <= 1))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT must be in (0, 1]");
+        if (!liveOptions.heart1ValueNet)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT requires STS_OOC_MCTS_LEAF_HEART1_VALUE");
+        liveOptions.heart1ValueWeight = w;
+    }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
@@ -3527,6 +3543,7 @@ void configureLiveOocMcts() {
         << (liveOptions.rolloutStudent ? " leaf_student=" + liveOptions.rolloutStudentPath : std::string{})
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
+        << (liveOptions.heart1ValueWeight < 1 ? " leaf_heart1_value_weight=" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
         << (liveFastRootCap > 0 ? " fast_root_cap=" + std::to_string(liveFastRootCap) : std::string{})
         << (liveFullRootSims > 0 ? " full_root_sims=" + std::to_string(liveFullRootSims) : std::string{})
@@ -3566,6 +3583,7 @@ void configureLiveOocMcts() {
             + liveOptions.heartLeaf->manifestSha256() + "\"" : std::string{})
         << (liveOptions.heart1ValueNet ? ",\"leafHeart1Value\":\"" + liveOptions.heart1ValuePath + "\",\"leafHeart1ValueSha256\":\""
             + liveOptions.heart1ValueSha256 + "\"" : std::string{})
+        << (liveOptions.heart1ValueWeight < 1 ? ",\"leafHeart1ValueWeight\":" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }

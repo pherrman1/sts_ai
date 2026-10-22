@@ -22330,6 +22330,39 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: shop/event removals, transforms and upgrades now carry out the card the source decision chose, as the simulator does (it has no confirm screen). It also saves one 512-simulation search per selector.
 
 **Status:** Draft PR.
+## §633 — Live problem 93: Cultist Mask's battle-start caw refused Toolbox's offer (2026-10-22)
+
+**Question:** Why was seed 111200551 abandoned at the act 2 Slavers elite, where Toolbox's combat-start colorless offer was refused with `silver_card_reward_pending_actions` and `refusal=9:unknown_action`?
+
+**Evidence:** The queue behind the offer was `DrawCardAction`, `EnableEndTurnButtonAction`, Red Mask's `RelicAboveCreatureAction` and three Weakened `ApplyPowerAction`s, then `SFXAction` and `TalkAction`. Those last two come from `CultistMask.atBattleStart`: a cultist sound and a player speech bubble, with no game state. The public pending-action projection (§618) had no case for them, so it refused at the `SFXAction`.
+
+**Change:** A producer-only fix in `STSModelInspector.publicPendingActionsJson`. An `SFXAction` whose key starts with `VO_CULTIST`, immediately followed by a not-done `TalkAction` from the player while Cultist Mask is owned, is omitted as a pair. Any other pending `SFXAction` refuses with `cultist_mask`. There is no native change and no flag: the omitted actions change no state.
+
+**Interpretation:** Toolbox (and any other projected offer) with Cultist Mask no longer abandons the fight.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §634 — Live problem 92 follow-up: the retained confirm answer failed the driver's MCTS validator (2026-10-22)
+
+**Question:** Why was seed 111200553, the first live run on c4dcb43c (§632), abandoned at its first single-card selector confirm (an event transform of Defend)?
+
+**Evidence:** The advisor answered as §632 intended (`selector_preview_retained`), but its sole candidate carried `visits` 0 with `visitShare` 1.0. For `mcts_ctm` the driver's `ooc_evaluator` requires total visits > 0 unless the sole-legal-action no-search contract applies, so it stopped with "OOC MCTS root visits/shares do not form a complete root distribution". §632's protocol test checked the advisor answer but not the driver's validation of it.
+
+**Change:** The retained confirm reports one visit on its sole candidate, as retained compound targets already do. `test_selector_preview_confirms_the_retained_grid_pick` now also validates the advisor response with the driver's `InspectorSnapshot.ooc_evaluator`; it reproduced the live error before the fix and passes after it (64 protocol tests OK).
+
+**Interpretation:** No decision changes; the §632 retained confirm now reaches the game.
+
+**Status:** Draft PR.
+## §637 — Live problem 95: an event removal plan was dropped at a Continue page (2026-10-22)
+
+**Question:** Why did seed 111200559 (main f1badc29) remove Corruption after choosing Offer Gold's removal of a Strike?
+
+**Evidence:** Step 225 chose Offer Gold with `compoundPlan` remove, target Strike, PENDING. Step 226 answered the sole [Continue] as `native_pass_through`, and that answer cleared the pending plan. Step 227's grid therefore ran a fresh selector search, which picked Corruption, and step 228 removed it. Seed 554's Pray removal has the same shape.
+
+**Change:** `STS_LIVE_PASS_THROUGH_KEEPS_PLAN` (default on, `=0` restores). The mechanical `event_continue` pass-through, and a sole-legal-action pass-through on an event screen, leave the pending plan in place; every other answer still drops it, and the session/sequence binding and the selector's exact-target check are unchanged. A pending plan that meets a selector of another type (e.g. a Living Wall removal plan then an upgrade grid) is dropped and the grid searches afresh, as with `=0`, instead of answering `COMPOUND_TARGET_UNAVAILABLE`. Test: `test_compound_plan_survives_an_event_continue_page` under the live `mcts` policy: source, Continue page or sole-choice event, matching grid applies the retained target; a grid of another type searches afresh; `=0` reproduces the drop; every executed answer passes the driver's `ooc_evaluator`. 65 protocol tests OK.
+
+**Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22954,6 +22987,32 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
+## §635 — Gumbel sequential-halving root at OOC full-budget roots, paired A20 A/B (511 seeds): WORSE, Heart kills 9.4% vs 20.7% (2026-10-22)
+
+**Question (Philipp, 2026-10-21 21:07Z "Jo mach den gepaarten a/b mit 32 wirken nach gen2"):** does the offline
+win of §619 carry over to play? Gumbel SH with M = 16 at 2048 simulations had beaten PUCT@4096 against a uniform
+leaf-Q reference.
+**Design:** [PREREG](evidence/az_gumbel_root_ab_20261021/PREREG.md), pre-launch review PASS (C). A is the gen-2 A/B
+arm A config (student_sel, PUCT, full roots 4096). B adds `STS_OOC_MCTS_GUMBEL_ROOT=16` and
+`STS_OOC_MCTS_FULL_ROOT_SIMS=2048` (#791) on full-budget roots only. Seeds 111153152–663, RUN_COMMIT `3baca749`
+(code main `b0a8f596`, v3 binary `be70a1c1…`), 32 workers on the queue schedule.
+**Result: WORSE.** 511 valid pairs; unit 111153366 used up its queue attempts and is reported missing.
+
+| | A (PUCT 4096) | B (Gumbel SH 2048) | B − A |
+|---|---|---|---|
+| Heart kills | 106 (20.7%) | 48 (9.4%) | −11.4 pp [−14.8, −7.9], McNemar p = 2.6e-10 |
+| Reached Act 4 | 39.3% | 26.8% | −12.5 pp [−17.2, −7.9] |
+| Wall | | | 0.60× |
+| Played action ≠ prior argmax | 6.5% of searched roots | 17.3% of searched roots | |
+
+**Interpretation:** B overrides student_sel's prior much more often, and the overrides lose: deaths move from Act 4
+into Acts 2–3. Root selection that follows leaf Q (rollout3 + X2-B) is worse than the prior. This is the third loss
+for Q-based root selection, after §414 and §560.
+**Inference:** offline agreement with a leaf-Q reference (§619) is not a valid gate for root-selection changes. The
+flag stays default off. A Gumbel-style root needs a value signal that beats the prior, or must keep the prior
+dominant, and either needs a play A/B.
+[Result](evidence/az_gumbel_root_ab_20261021/RESULT.md), [result.json](evidence/az_gumbel_root_ab_20261021/result.json).
+Raw: `/mnt/project-files/az-gumbel-root-ab/units/`. Seeds 111153152–663 and smokes 111145018–019 used.
 ## §631 — Live advisor: Headbutt killing Awakened One's first form was refused (2026-10-22)
 
 **Question:** why did overnight live seed 111200541 seg 1 stop with `silver_selection_pending_actions` after Headbutt+
@@ -23022,6 +23081,33 @@ was trained on mean-backup trees. The pre-registered A20 A/B
 111149400–463) needs Philipp's go. Flags stay default off.
 Report: `/mnt/project-files/silver-rollout-bias/REPORT.md`. Seeds used 111149100–147, 111149150–389, replays of
 111147001 and 111149600–699.
+## §636 — OOC value head: the §622 hinge holds over three seeds, and a 15 % logit blend with X2-B ranks leaf siblings better than X2-B alone (offline, exploratory) (2026-10-22)
+
+**Question:** (1) is §622's hinge result (M0.3: best selection BCE, monotone prices) more than one seed? (2) the head
+alone ranks rollout siblings worse than X2-B (0.55 vs 0.633, §577 and §622); does a mix of the two rank them better?
+Authorization for the GPU runs: Philipp 2026-10-22 06:48Z ("Merge 799 and go for gpu").
+**Setup:** M0.3 (`--mono-weight 0.3`) seeds 1 and 2 and a control seed 1 on the §622 recipe, GPU on Philipp's PC;
+`prices.py` (2,916 round-2 REWARDS states) and the §577 sibling/outcome tool. Blend v = sigmoid((1 − w) logit(X2-B) +
+w logit(head)) on the §577 data with the tool's aggregation (w = 0 reproduces X2-B), w picked on round-2 TRAIN per head,
+reported on round-2 VALIDATION and §494 with a 2,000-sample source bootstrap.
+**Result:** M0.3 vs control (seed means): sel BCE 0.539 vs 0.542, val BCE 0.510 vs 0.513; HP monotone 89 % on every
+seed vs 52-55 %, max HP +5 priced > 0 51-67 % vs 18-19 %, −3 HP sign right 89-90 % vs 81-82 %; round-2 sibling
+concordance 0.551-0.554 vs 0.549, outcome AUC 0.758-0.764 vs 0.758-0.761. Blend, w 0.15 picked for all three heads:
+round-2 VALIDATION concordance − X2-B +0.011 [+0.001, +0.021] (M0.3 s0), +0.012 [+0.002, +0.021] (s1), +0.010
+[−0.000, +0.020] (control); §494 +0.011 to +0.015, regret −0.0005 to −0.0006 (CIs include 0); Heart-kill AUC on
+VALIDATION 0.698-0.699 vs 0.683, on all round-2 sources 0.715-0.716 vs 0.694 (CIs exclude 0); mean leaf 0.73 vs 0.79.
+Act-1 sibling concordance 0.669 vs X2-B 0.663 (head alone 0.537).
+**Interpretation:** the hinge's monotonicity gain holds on 3 / 3 seeds; its BCE gain is small. Inference: the head adds
+run-level information X2-B lacks, a small weight keeps X2-B's act-1 ranking, and the head's training barely matters
+for the blend (control ≈ M0.3). Exploratory: w was not pre-registered, the sibling target ends in X2-B, the online leaf
+is a rollout3 end state that these data do not score, and the learned OOC stop was trained on X2-B's scale.
+`STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT` (default off; [smoke](evidence/value_leaf_blend_20261022/SMOKE.md): unset
+reproduces main's decisions exactly) makes the blend testable in an A20 A/B, which needs a pre-registration and
+Philipp's go. [Offline report](evidence/value_leaf_blend_20261022/OFFLINE.md); weights on data
+branch `claude/az-gen2-data` `c3bd827a`, `gen2/value-cf/`.
+Seeds: none (offline scoring of stored states and training on stored rows).
+**Knowledge impact:** none yet (default-off option; no play change).
+
 ## §622 — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
 
 **Question:** can the value head learn raw heart1's clean HP / max HP / gold slopes (handoff from the gen-2 thread:

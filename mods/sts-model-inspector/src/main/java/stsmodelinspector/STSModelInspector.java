@@ -2827,6 +2827,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             }
             if("com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)
                     || "com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)) continue;
+            // CultistMask.atBattleStart: addToBot(SFXAction("VO_CULTIST_1A")) then
+            // addToBot(TalkAction(true, DESCRIPTIONS[1], 1.0F, 2.0F)), a sound and
+            // a speech bubble with no game state (problem 93; it trailed Toolbox's offer).
+            if(isActionClass(name,"SFXAction")) {
+                if(actionIndex+1>=manager.actions.size() || !cultistMaskCaw(action,manager.actions.get(actionIndex+1)))
+                    return refusePending(actionIndex,"cultist_mask");
+                ++actionIndex;continue;
+            }
             // Vanilla decrements copy charges synchronously, then queues a
             // removal with no onRemove override. The zero charge and its
             // visual removal are jointly omitted from the native projection.
@@ -3104,6 +3112,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(!"Plated Armor".equals(powerId)
                 || plated==null || !"com.megacrit.cardcrawl.powers.PlatedArmorPower".equals(plated.getClass().getName()))return null;
         return monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",amount,slot);
+    }
+
+    private static boolean cultistMaskCaw(Object sfx,Object talk) {
+        String key=readStringField(sfx,"key");
+        return hasRelic("CultistMask") && key!=null && key.startsWith("VO_CULTIST")
+                && Boolean.FALSE.equals(readBooleanField(talk,"isDone"))
+                && "com.megacrit.cardcrawl.actions.animations.TalkAction".equals(talk.getClass().getName())
+                && readObjectField(talk,"source")==AbstractDungeon.player;
     }
 
     private static boolean isActionClass(String name,String simpleName) {

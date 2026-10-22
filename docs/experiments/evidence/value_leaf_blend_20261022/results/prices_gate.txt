@@ -1,0 +1,5 @@
+CF_base  maxHP+5>0  19.2%  -3HP sign  80.9%  gold+50>0  82.2%  (pos-slope states 2575)
+CF_base_s1 maxHP+5>0  18.0%  -3HP sign  81.6%  gold+50>0  81.3%  (pos-slope states 2608)
+M0.3     maxHP+5>0  67.3%  -3HP sign  89.4%  gold+50>0  94.0%  (pos-slope states 2776)
+M0.3_s1  maxHP+5>0  60.9%  -3HP sign  89.6%  gold+50>0  93.4%  (pos-slope states 2768)
+M0.3_s2  maxHP+5>0  50.8%  -3HP sign  89.2%  gold+50>0  92.2%  (pos-slope states 2756)

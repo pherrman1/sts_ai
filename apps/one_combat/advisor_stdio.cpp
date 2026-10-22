@@ -58,6 +58,11 @@ std::uint64_t stableHash(const std::string &value) {
 // instead of searching again (problem 92); 0 restores the fresh search.
 bool g_selectorPreviewRetain = true;
 
+// STS_LIVE_PASS_THROUGH_KEEPS_PLAN: unset/1 (default) = a sole-choice event
+// Continue between a compound source and its selector keeps the pending plan
+// (problem 95); 0 restores dropping it.
+bool g_passThroughKeepsPlan = true;
+
 // The deck card the previous OOC answer picked on a single-card selector grid.
 struct SelectorPick {
     bool active = false;
@@ -298,7 +303,10 @@ json oocResponse(const one_combat::advisor::Request &request,
                 const bool retained=g_selectorPreviewRetain && lastPick.active && lastPick.session==request.session
                     && request.sequence>lastPick.sequence && lastPick.deckIdx==state.selectorPreviewDeckIndex
                     && lastPick.selectScreenType==static_cast<int>(state.projected.info.selectScreenType);
-                double q=0.0;int visits=0;bool confirm=true;
+                // One visit on the sole candidate keeps the root distribution
+                // complete for the driver's MCTS validator, as retained
+                // compound targets do.
+                double q=0.0;int visits=1;bool confirm=true;
                 if(!retained) {
                     if(std::string(policy.name())=="mcts_ctm" && !state.mctsRoot.supported)
                         throw std::runtime_error(state.mctsRoot.reason);
@@ -413,7 +421,10 @@ json oocResponse(const one_combat::advisor::Request &request,
             const auto transition = state.ooc.at("details").at("mechanicalTransition").get<std::string>();
             const bool reveal = transition == "boss_chest_reveal";
             const std::string key = (reveal ? "ooc-live:v1:reveal:" : "ooc-live:v1:mechanical:") + transition;
-            pending = PendingCompoundPlan{};
+            // An event's Continue page can sit between its removal option and
+            // the grid (Offer Gold, Pray; problem 95); the plan outlives it.
+            if (!(g_passThroughKeepsPlan && state.mechanicalEventTransition && transition == "event_continue"))
+                pending = PendingCompoundPlan{};
             evaluator["status"] = "OK";
             evaluator["mode"] = "native_pass_through";
             evaluator["valueSemantics"] = reveal ? "public_reveal_no_search" : "forced_no_search";
@@ -597,6 +608,11 @@ json oocResponse(const one_combat::advisor::Request &request,
         json appliedTarget;
         if (pending.active && pending.session != request.session) pending = PendingCompoundPlan{};
         if (pending.active && request.sequence <= pending.sequence) pending = PendingCompoundPlan{};
+        // A plan kept across a Continue page applies only to its own selector
+        // type; any other selector searches afresh, as when the plan is dropped.
+        if (g_passThroughKeepsPlan && pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT
+                && pending.selectorType != static_cast<int>(state.projected.info.selectScreenType))
+            pending = PendingCompoundPlan{};
         if (pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT) {
             const auto scoreStarted = std::chrono::steady_clock::now();
             decision = retainedCompoundDecision(state, pending);
@@ -605,6 +621,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             appliedPending = decision.supported;
             appliedTarget = pending.card;
         } else {
+            const auto heldPlan = pending;
             if (pending.active) pending = PendingCompoundPlan{};
             policy.setSearchSeed(stableHash(state.projected.screenState==sts::ScreenState::CARD_SELECT
                 ? differential::canonicalOocState(state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"
@@ -614,6 +631,9 @@ json oocResponse(const one_combat::advisor::Request &request,
                                     state.mctsRoot.currentActEventVisits);
             evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - scoreStarted).count();
+            if (g_passThroughKeepsPlan && heldPlan.active && decision.supported && decision.trivialRootBypass
+                    && state.projected.screenState == sts::ScreenState::EVENT_SCREEN)
+                pending = heldPlan;
         }
         // Qualified candidate identities remain checkable without model weights.
         // A missing model must not turn corrupt live mappings into fallback.
@@ -1094,6 +1114,13 @@ int main() {
         }
         g_collectKeys = std::string(raw) == "1";
     } else g_collectKeys = true;
+    if (const char *raw = std::getenv("STS_LIVE_PASS_THROUGH_KEEPS_PLAN")) {
+        if (std::string(raw) != "" && std::string(raw) != "0" && std::string(raw) != "1") {
+            std::cerr << "STS_LIVE_PASS_THROUGH_KEEPS_PLAN must be 0 or 1\n";
+            return 2;
+        }
+        g_passThroughKeepsPlan = std::string(raw) != "0";
+    }
     if (const char *raw = std::getenv("STS_LIVE_SELECTOR_PREVIEW_RETAIN")) {
         if (std::string(raw) != "" && std::string(raw) != "0" && std::string(raw) != "1") {
             std::cerr << "STS_LIVE_SELECTOR_PREVIEW_RETAIN must be 0 or 1\n";
