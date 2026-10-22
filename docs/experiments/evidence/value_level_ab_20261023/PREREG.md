@@ -61,7 +61,8 @@ act-3 survivor gaps about 1.6×, so the stop may fire earlier in act 3. The blen
 stop's behaviour is reported (fast-root simulations and learned-stop share by act and arm), not corrected.
 
 ## Seeds, workers, cost
-- Seeds 111330000–111331023 (1,024, fresh; unused in the repo). Smokes 111339990–111339993.
+- Seeds 111340000–111341023 (1,024, fresh; unused in the repo; the coordinator moved the block on 2026-10-22
+  because 111330000–111331023 belongs to the exact-research rerun). Smokes 111349990–111349993.
 - 32 workers × 4 lanes, `schedule queue`, 7 h timeout per arm.
 - About 4 × 1,024 × 780 s ≈ 890 core-h, about 7 h of wall on 128 lanes.
 
@@ -86,5 +87,5 @@ stage-2 decision metric (built after launch, blind to these outcomes).
 
 ## Before launch
 1. Freeze: RUN_COMMIT, code commit, binary sha256 in `campaign.manifest` and the brief.
-2. Smoke on the frozen binary: seeds 111339990–993, every arm rc 0, banners as required.
+2. Smoke on the frozen binary: seeds 111349990–993, every arm rc 0, banners as required.
 3. Independent pre-launch review.
