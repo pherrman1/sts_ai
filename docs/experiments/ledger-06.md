@@ -22857,3 +22857,24 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
+## §TBD — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
+
+**Question:** can the value head learn raw heart1's clean HP / max HP / gold slopes (handoff from the gen-2 thread:
+distilling heart1's absolute values did not transfer them, §609's hinge flattened the head) without losing the
+T1-teacher accuracy (VDF_T1 v0.5, sel BCE 0.542)?
+**Setup:** [PLAN](evidence/value_cf_distill_20261022/PLAN.md) (gate pre-registered). New loss on value-logit
+*differences*: per batch one rule (hp, mhp, gold, round robin) with random deltas on 64 rows, target = 1.3587 × raw
+heart1's delta, loss Σ(Δs − Δt)² / ΣΔt², fp32 without TF32. Weights 0.3 / 1 / 3, a control, and the #777 hinge at 0.3
+on the same recipe; seed 0; GPU on Philipp's PC; `prices.py` and the §577 sibling tool in the cloud.
+**Result:** sel BCE control / 0.3 / 1 / 3 / hinge 0.542 / 0.571 / 0.596 / 0.618 / 0.5365 (AUC 0.766 / 0.730 / 0.709 /
+0.682 / 0.770). CF sign agreement with heart1 rises from 67 / 30 / 72 % (hp / mhp / gold) to 85-91 %; max-HP price
+> 0 from 19 % to 92-96 %; −3 HP sign right 81 → 89-90 % (heart1 itself is wrong in 19 %). Round-2 sibling
+concordance 0.549 → 0.548-0.558 (X2-B 0.633). The hinge: max-HP price > 0 67 %, HP monotone 89 % vs 52 %, sibling
+0.553, outcome AUC 0.764.
+**Interpretation:** FAIL (BCE ≤ 0.545 missed by every CF weight; −3 HP ≥ 95 % unreachable with heart1 as the
+teacher). Inference: correct end-state slopes are not why the head ranks siblings poorly (+0.009 at best). Unlike
+§609 on z targets, the hinge on T1 targets costs no BCE (one seed). Options stay off.
+[Result](evidence/value_cf_distill_20261022/RESULT.md). Runs and weights: data branch `claude/az-gen2-data`
+`02f2c60d`, `gen2/value-cf/`.
+Seeds: none (offline training).
+**Knowledge impact:** none (default-off training options; no play change).
