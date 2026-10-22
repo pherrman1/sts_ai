@@ -409,6 +409,18 @@ bool backAttackFix() {
     throw std::runtime_error("STS_IMPORTER_BACK_ATTACK_FIX must be 0 or 1");
 }
 
+// STS_SILVER_STASIS_RETURN_QUEUE: unset/1 (default) = a Bronze Orb killed by
+// a source card queues StasisPower.onDeath's MakeTempCardInHandAction behind
+// it; native returnStasisCard puts the card in hand at the death, so the
+// importer folds it into the hand (the producer's STASIS_RETURN, problem 88);
+// 0 = legacy refusal (silver_unmapped_stasis).
+bool stasisReturnQueue() {
+    const char *value = std::getenv("STS_SILVER_STASIS_RETURN_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_STASIS_RETURN_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_SPIRE_DEATH_QUEUE: unset/1 (default) = a Spire Shield/Spear that
 // died to a source card queues RemoveSpecificPowerAction(player, "Surrounded")
 // (and the survivor's "BackAttack") behind it (SpireShield/SpireSpear.die());
@@ -1530,6 +1542,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
     }
     if (stasis.size() > wire.stasisCards.size()) return unsupported("silver_unmapped_stasis");
+    // Stasis returns still queued behind a source card (STASIS_RETURN).
+    std::array<bool, 2> stasisReturnPending {}, stasisReturnFolded {};
+    if (stasisReturnQueue() && combat.contains("pendingActionQueue") && combat.at("pendingActionQueue").is_array())
+        for (const auto &entry : combat.at("pendingActionQueue")) {
+            if (!entry.is_object() || entry.value("kind", std::string()) != "STASIS_RETURN") continue;
+            const auto slot = entry.find("slot");
+            if (slot == entry.end() || !slot->is_number_integer() || *slot < 0 || *slot > 1
+                || stasisReturnPending[slot->get<int>()]) return unsupported("silver_selection_pending_actions");
+            stasisReturnPending[slot->get<int>()] = true;
+        }
     if (!stasis.empty()) {
         std::array<CardRecord, 2> orderedStasis;
         std::array<bool, 2> seenStasis {};
@@ -1561,6 +1583,35 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     || orb.value("slot", orb.value("idx", static_cast<int>(m))) != slot * 2) continue;
                 orbDead = orb.value("dead", false)
                     || (orb.value("hp", 1) <= 0 && !orb.value("halfDead", false));
+            }
+            if (orbDead && stasisReturnPending[slot]) {
+                // StasisPower.onDeath with fewer than 10 cards in hand queued
+                // MakeTempCardInHandAction(card, false, true); native
+                // returnStasisCard already moved it to hand. Under Corruption
+                // that runs the onCardDrawOrDiscard pass over the hand's
+                // Skills (STS_CORRUPTION_HAND_COST_FIX; legacy: the returned
+                // Skill's costForTurn only).
+                if (returnedElsewhere(stasis[i].uuid) || hand.size() >= 10) return unsupported("silver_unmapped_stasis");
+                const json playerPowers = combat.value("playerPowers", json::array());
+                const bool corruption = playerPowers.is_array() && std::any_of(playerPowers.begin(), playerPowers.end(),
+                    [](const json &power) { return power.is_object() && power.value("id", std::string()) == "Corruption"; });
+                const auto skill = [](const CardRecord &card) {
+                    return sts::CardInstance(static_cast<sts::CardId>(card.wire.id)).getType() == sts::CardType::SKILL;
+                };
+                hand.push_back(std::move(stasis[i]));
+                if (corruption && sts::corruptionHandCostFix()) {
+                    for (auto &card : hand) {
+                        if (!skill(card) || card.wire.costForTurn == 0) continue;
+                        // CardInstance::modifyCostForCombat(-9)
+                        auto &w = card.wire;
+                        if (w.costForTurn > 0) { w.costForTurn = 0; w.cost = 0; }
+                        else if (w.cost >= 0) { w.cost = 0; w.costForTurn = 0; }
+                    }
+                } else if (corruption && hand.back().wire.costForTurn >= 0 && skill(hand.back())) {
+                    hand.back().wire.costForTurn = 0;
+                }
+                stasisReturnFolded[slot] = true;
+                continue;
             }
             if (orbDead) {
                 if (!returnedElsewhere(stasis[i].uuid)) return unsupported("silver_unmapped_stasis");
@@ -2296,6 +2347,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="STASIS_RETURN") {
+                // Folded into the hand with the stasis slots above.
+                int slot=-1;
+                if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>1 || !stasisReturnFolded[slot])
+                    return unsupported("silver_selection_pending_actions");
+                continue;
+            }
             if(kindName=="PLAYER_REMOVE_SURROUNDED" || kindName=="MONSTER_REMOVE_BACK_ATTACK") {
                 // SpireShield/SpireSpear.die() queue these behind the killing
                 // card; native removes Surrounded at the death itself.

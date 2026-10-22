@@ -278,6 +278,9 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.monsterSetMoveItemJson(4,5)!=null
                 || !"{\"kind\":\"MONSTER_SPLIT_SET_MOVE\",\"slot\":1}".equals(STSModelInspector.monsterSplitItemJson(1))
                 || STSModelInspector.monsterSplitItemJson(5)!=null
+                || !"{\"kind\":\"STASIS_RETURN\",\"slot\":1}".equals(STSModelInspector.stasisReturnItemJson(1))
+                || STSModelInspector.stasisReturnItemJson(2)!=null
+                || STSModelInspector.stasisReturnItemJson(null)!=null
                 || !"{\"kind\":\"MINION_LEADER_ESCAPE\",\"slots\":[1,2]}".equals(STSModelInspector.leaderEscapeItemJson(java.util.Arrays.asList(1,2)))
                 || STSModelInspector.leaderEscapeItemJson(java.util.Arrays.asList(1,1))!=null
                 || STSModelInspector.leaderEscapeItemJson(java.util.Arrays.asList(0,5))!=null
