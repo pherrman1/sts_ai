@@ -4783,6 +4783,135 @@ int main(int argc, char **argv) {
             }
         }
         {
+            // Problem 90 (live seed 111200541): Headbutt kills Awakened One's
+            // first form. AwakenedOne.damage sets Rebirth (3) and queues a
+            // ShoutAction and the same SetMoveAction(3) behind the grid; native
+            // die() sets Rebirth and queues SetMonsterMove(Rebirth).
+            GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+            game.act=3; game.floorNum=50;
+            BattleContext live; live.init(game, MonsterEncounter::AWAKENED_ONE);
+            auto &boss=live.monsters.arr[2];
+            if(boss.id!=MonsterId::AWAKENED_ONE) throw std::runtime_error("Awakened One fixture slot changed");
+            for (int played=0;played<2;++played) {
+                CardInstance defend(CardId::DEFEND_RED); defend.uniqueId=static_cast<std::int16_t>(970+played);
+                live.cards.moveToHand(defend); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+            }
+            boss.block=0; boss.curHp=3;
+            CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=972;
+            live.cards.moveToHand(headbutt); live.player.energy=3;
+            sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,2).execute(live);
+            if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
+                    || !boss.isHalfDead() || boss.curHp!=0 || boss.moveHistory[0]!=MonsterMoveId::AWAKENED_ONE_REBIRTH)
+                throw std::runtime_error("Awakened One Headbutt fixture did not half-kill the first form into the grid");
+            CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+            auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71590u);
+            if(!expected.pendingActionQueueObserved || expected.pendingActionQueue.size()!=2
+                    || expected.pendingActionQueue[1].kind!=silver_bridge::PendingActionKind::MONSTER_SET_MOVE
+                    || expected.pendingActionQueue[1].monster!=2
+                    || expected.pendingActionQueue[1].amount!=static_cast<int>(MonsterMoveId::AWAKENED_ONE_REBIRTH))
+                throw std::runtime_error("native Awakened One Headbutt queue is not [USE_CARD, MONSTER_SET_MOVE]");
+            auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-awakened-rebirth");
+            setProducerV4CardObservation(observation,expected);
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"cards",json::array()},{"liveChoices",json::array()}};
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingCardQueue"]=json::array();
+            // Java order: UseCardAction, then the ShoutAction + SetMoveAction pair.
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                json{{"kind","MONSTER_SET_MOVE"},{"move",3},{"slot",2}}});
+            setenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE");
+            if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                throw std::runtime_error("STS_SILVER_AWAKENED_REBIRTH_QUEUE=0 did not restore the refusal: "+legacy.reason);
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(!imported.ok) throw std::runtime_error("Awakened One Headbutt import: "+imported.reason);
+            if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
+                throw std::runtime_error("Awakened One Headbutt pending queue differs from native");
+            normalizeDynamicObservationIdentity(expected);
+            const auto adoptIds=[](auto &mine,const auto &theirs) {
+                if(mine.size()!=theirs.size()) throw std::runtime_error("Awakened One Headbutt pile size differs");
+                for(std::size_t i=0;i<mine.size();++i) {
+                    if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                        throw std::runtime_error("Awakened One Headbutt pile order differs");
+                    mine[i].uniqueId=theirs[i].uniqueId;
+                }
+            };
+            adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+            adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+            adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+            adoptIds(expected.hand,imported.wire.hand);
+            expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+            expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+            expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+            expected.cardSelect.cards=imported.wire.cardSelect.cards;
+            auto actual=battleContextFromWire(imported.wire);
+            auto reference=battleContextFromWire(expected);
+            if(!actual.equalForSearch(reference)) {
+                const auto context=searchContextFromWire(imported.wire);
+                std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                        json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                throw std::runtime_error("Awakened One Headbutt root parity failed");
+            }
+            const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+            pick.execute(actual); pick.execute(reference);
+            if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference)
+                    || !actual.monsters.arr[2].isHalfDead()
+                    || actual.monsters.arr[2].moveHistory[0]!=MonsterMoveId::AWAKENED_ONE_REBIRTH
+                    || actual.monsters.arr[2].moveHistory[1]!=MonsterMoveId::AWAKENED_ONE_REBIRTH)
+                throw std::runtime_error("Awakened One Headbutt continuation parity failed");
+            // Fail closed: Rebirth for a slot that is not the half-dead first form.
+            auto broken=observation;
+            broken["silverRoot"]["combat"]["pendingActionQueue"][1]["slot"]=0;
+            if(one_combat::advisor::importSilverRoot(broken).ok)
+                throw std::runtime_error("Rebirth SetMove for a Cultist was accepted");
+            // The same grid under Runic Dome: the tracker's row from before the
+            // duplicate setter reports one known transition (problem 90).
+            auto dome=observation;auto &dc=dome["silverRoot"]["combat"];
+            dc["runicDome"]=true;dc["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+            json rows=json::array();
+            const int firstHp=dc["monsters"][0]["hp"].get<int>(),firstMaxHp=dc["monsters"][0]["maxHp"].get<int>();
+            for(int i=0;i<3;++i) {
+                auto &m=dc["monsters"][i];m.erase("nextMove");m.erase("moveHistory");
+                const int maxHp=m["maxHp"].get<int>();
+                rows.push_back({{"schemaVersion",1},{"epoch",1},{"generation",1},{"complete",true},
+                    {"monsterId",m["id"]},{"slot",i},{"completedTurns",0},{"executedMoves",json::array()},
+                    {"pendingMoveRolls",1},{"rollHp",maxHp},{"rollMaxHp",maxHp},{"publicMisc",0},{"firstHp",firstHp},
+                    {"firstMaxHp",firstMaxHp},{"firstAlive",true},{"aliveCount",3},{"pendingAttackPredicates",json::array()}});
+            }
+            auto &k=rows[2];k["schemaVersion"]=3;k["totalRolls"]=1;k["knownTransitions"]=1;k["generation"]=2;
+            k["pendingMoveRolls"]=0;k["knownRollPredecessor"]=nullptr;
+            k["knownNextMove"]=json{{"kind","awakened_public_rebirth"},{"move",3}};
+            dc["runicDomeKnowledge"]={{"schemaVersion",2},{"epoch",1},{"complete",true},{"monsters",rows}};
+            const auto domeImported=one_combat::advisor::importSilverRoot(dome);
+            if(!domeImported.ok) throw std::runtime_error("Runic Dome Awakened One Headbutt import: "+domeImported.reason);
+            auto domeRoot=battleContextFromWire(domeImported.wire);
+            if(json(domeImported.wire.pendingActionQueue)!=json(expected.pendingActionQueue)
+                    || !domeRoot.monsters.arr[2].isHalfDead()
+                    || domeRoot.monsters.arr[2].moveHistory[0]!=MonsterMoveId::AWAKENED_ONE_REBIRTH)
+                throw std::runtime_error("Runic Dome Awakened One Headbutt lost the pending Rebirth");
+            pick.execute(domeRoot);
+            if(domeRoot.inputState!=InputState::PLAYER_NORMAL
+                    || domeRoot.monsters.arr[2].moveHistory[0]!=MonsterMoveId::AWAKENED_ONE_REBIRTH
+                    || domeRoot.monsters.arr[2].moveHistory[1]!=MonsterMoveId::AWAKENED_ONE_REBIRTH)
+                throw std::runtime_error("Runic Dome Awakened One Headbutt continuation lost Rebirth");
+            auto claimed=dome;claimed["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][2]["knownTransitions"]=2;
+            if(one_combat::advisor::importSilverRoot(claimed).ok)
+                throw std::runtime_error("Runic Dome Rebirth window with a claimed duplicate was accepted");
+            auto unqueued=dome;unqueued["silverRoot"]["combat"]["pendingActionQueue"].erase(1);
+            if(one_combat::advisor::importSilverRoot(unqueued).ok)
+                throw std::runtime_error("Runic Dome Rebirth window without the queued setter was accepted");
+            setenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE","0",1);
+            const auto domeLegacy=one_combat::advisor::importSilverRoot(dome);
+            unsetenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE");
+            if(domeLegacy.ok) throw std::runtime_error("STS_SILVER_AWAKENED_REBIRTH_QUEUE=0 accepted the Dome window");
+        }
+        {
             // Problem 61 (overnight live play 2026-10-20): Headbutt waking a
             // sleeping Lagavulin opens its GRID with ChangeStateAction("OPEN")
             // still queued; its Metallicize reduction is pending in Java and

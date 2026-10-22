@@ -2850,10 +2850,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // GremlinLeader.die (killed by Headbutt): addToBottom(ShoutAction)
             // then addToBottom(EscapeAction) for each surviving minion behind
             // the card; native ends the combat at the kill (problem 72).
+            // AwakenedOne.damage at the first-form death: setMove(3) now, then
+            // addToBottom(ShoutAction) and addToBottom(SetMoveAction(this, 3,
+            // UNKNOWN)) behind the card (problem 90).
+            if(sourceTask!=null && isActionClass(name,"ShoutAction") && awakenedRebirthShout(action)) {
+                String item=actionIndex+1<manager.actions.size()?awakenedRebirthJson(action,manager.actions.get(actionIndex+1)):null;
+                if(item==null)return refusePending(actionIndex,"awakened_rebirth");
+                if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
+            }
             if(sourceTask!=null && isActionClass(name,"ShoutAction")) {
                 int next=leaderEscapeEnd(manager.actions,actionIndex);
                 String item=next<0?null:leaderEscapeJson(manager.actions,actionIndex,next);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"leader_escape");
                 if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
             }
             // Darkling.damage at a half-death: setMove(4) now, then
@@ -3097,6 +3105,33 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || move==null || move!=4 || darkling.nextMove!=4
                 || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
         return monsterSetMoveItemJson(move,slot);
+    }
+
+    private static boolean awakenedRebirthShout(Object shout) {
+        Object source=readObjectField(shout,"source");
+        return source instanceof AbstractMonster && "AwakenedOne".equals(((AbstractMonster)source).id);
+    }
+
+    // The first-form death's [ShoutAction, SetMoveAction(3, UNKNOWN)] pair.
+    // halfDead makes isDeadOrEscaped() true, so only isDying/escape are checked.
+    private static String awakenedRebirthJson(Object shout,Object action) {
+        if(!"com.megacrit.cardcrawl.actions.animations.ShoutAction".equals(shout.getClass().getName())
+                || action==null || !"com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(action.getClass().getName())
+                || !Boolean.FALSE.equals(readBooleanField(shout,"isDone")) || !Boolean.FALSE.equals(readBooleanField(action,"isDone")))return null;
+        Object source=readObjectField(shout,"source"), value=readObjectField(action,"monster");
+        if(!(source instanceof AbstractMonster) || readObjectField(shout,"target")!=source || value!=source)return null;
+        AbstractMonster awakened=(AbstractMonster)source;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(awakened), move=readIntField(action,"theNextMove");
+        Boolean form1=readBooleanField(awakened,"form1");
+        if(slot==null || !awakened.halfDead || awakened.isDying || awakened.isEscaping || awakened.escaped
+                || awakened.currentHealth>0 || !Boolean.FALSE.equals(form1)
+                || move==null || move!=3 || awakened.nextMove!=3
+                || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
+        return awakenedRebirthItemJson(slot);
+    }
+
+    static String awakenedRebirthItemJson(Integer slot) {
+        return slot!=null && slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SET_MOVE\",\"move\":3,\"slot\":"+slot+"}" : null;
     }
 
     private static String slimeSplitJson(Object action) {

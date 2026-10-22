@@ -22857,3 +22857,24 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
+
+## §TBD — Live advisor: Headbutt killing Awakened One's first form was refused (2026-10-22)
+
+**Question:** why did overnight live seed 111200541 seg 1 stop with `silver_selection_pending_actions` after Headbutt+
+killed Awakened One's first form (`actions=[UseCardAction,ShoutAction,SetMoveAction]`, no refusal tag; problem 90 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue90/p90-observation.json` on the share) and `AwakenedOne` javap
+(`issue91/javap.md`); `live_silver_importer_test` (Ironclad seed 111200071, AWAKENED_ONE; no gameplay runs).
+**Result:** `AwakenedOne.damage` at the first-form death sets Rebirth (3), `addToTop(ClearCardQueueAction)`, then
+`addToBottom(ShoutAction)` and `addToBottom(SetMoveAction(this, 3, UNKNOWN))`. The producer's `ShoutAction` branch only
+knew the Gremlin Leader's escape run and returned without a refusal tag. Native `Monster::die` sets Rebirth, clears the
+card queue and queues `SetMonsterMove(Rebirth)` alike, but the wire conversion only accepted the Darkling's Regrow.
+The fight had Runic Dome, and the tracker reported the AwakenedOne row as `roll_unsettled` while the duplicate setter was
+queued.
+**Interpretation:** the producer emits `MONSTER_SET_MOVE {move:3, slot}` for the pair. Under
+`STS_SILVER_AWAKENED_REBIRTH_QUEUE` (default on, `=0` restores the refusal) the importer imports it as native
+`SetMonsterMove(Rebirth)`. The tracker reports the window as complete with one known transition; the importer accepts
+that row only with the queued item. The importer test gains the Headbutt kill with native parity before and after the
+pick, and the Runic Dome form, with fail-closed cases. Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200541 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.

@@ -490,6 +490,18 @@ bool halfDeadSetMoveQueue() {
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_AWAKENED_REBIRTH_QUEUE: unset/1 (default) = a source-card
+// selection whose pending tail holds Awakened One's first-form death
+// SetMoveAction(3) (Headbutt killing it, problem 90) imports it as a native
+// SetMonsterMove(Rebirth), and under Runic Dome accepts the row from before
+// that duplicate setter; 0 = legacy refusal as silver_selection_pending_actions.
+bool awakenedRebirthQueue() {
+    const char *value = std::getenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_AWAKENED_REBIRTH_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_LAGAVULIN_OPEN_QUEUE: unset/1 (default) = a source-card
 // selection whose pending tail holds the ChangeStateAction("OPEN") of a
 // Lagavulin woken by the hit folds its Metallicize reduction into the
@@ -1136,8 +1148,15 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                     || (wire.monsterCount!=1 && (wire.monsterCount!=3 || slot!=2
                         || wire.monsters[0].id!=static_cast<int>(sts::MonsterId::CULTIST)
                         || wire.monsters[1].id!=static_cast<int>(sts::MonsterId::CULTIST)))) return "silver_runic_dome_encounter_domain";
+            // Under a source card's grid the duplicate Rebirth setter is still
+            // queued (problem 90): one known transition, with the pending item.
+            const auto queue=combat.find("pendingActionQueue");
+            const bool rebirthWindow=m.halfDead && queue!=combat.end() && queue->is_array() && awakenedRebirthQueue()
+                && std::any_of(queue->begin(),queue->end(),[&](const json &item) {
+                    return item.is_object() && item.value("kind","")=="MONSTER_SET_MOVE"
+                        && item.value("move",-1)==3 && item.value("slot",-1)==slot;});
             if((m.halfDead && (misc!=0 || m.curHp>0 || !knownNext))
-                    || (knownNext && !m.halfDead) || k.at("knownTransitions")!=((misc || m.halfDead)?2:0)) return "silver_runic_dome_history_gap";
+                    || (knownNext && !m.halfDead) || k.at("knownTransitions")!=((misc || m.halfDead)?(rebirthWindow?1:2):0)) return "silver_runic_dome_history_gap";
             if(!misc && std::any_of(moves.begin(),moves.end(),[](const json &v){return v!=1 && v!=2;})) return "silver_runic_dome_history_gap";
         }
         if(laga) {
@@ -2333,10 +2352,26 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 // Darkling.damage sets Regrow at the half-death and queues the
                 // same SetMoveAction behind the card; native does the same.
                 int slot=-1,move=-1;
-                if(!sourceCard || !halfDeadSetMoveQueue() || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"move",move)
-                        || slot<0 || slot>=wire.monsterCount || move!=4)
+                if(!sourceCard || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"move",move)
+                        || slot<0 || slot>=wire.monsterCount)
                     return unsupported("silver_selection_pending_actions");
                 const auto &monster=wire.monsters[slot];
+                // AwakenedOne.damage at the first-form death likewise sets
+                // Rebirth and queues the same SetMoveAction(3) (problem 90).
+                if(move==3) {
+                    if(!awakenedRebirthQueue() || monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::AWAKENED_ONE)
+                            || !monster.halfDead || monster.curHp>0 || monster.miscInfo!=0
+                            // Under Runic Dome the history import below derives
+                            // Rebirth and requires this item for its row.
+                            || (!runicDome && monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::AWAKENED_ONE_REBIRTH)))
+                        return unsupported("silver_selection_pending_actions");
+                    silver_bridge::PendingActionWire action;action.kind=K::MONSTER_SET_MOVE;
+                    action.amount=static_cast<int>(sts::MonsterMoveId::AWAKENED_ONE_REBIRTH);action.monster=slot;
+                    wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
+                if(!halfDeadSetMoveQueue() || move!=4)
+                    return unsupported("silver_selection_pending_actions");
                 if(monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::DARKLING) || !monster.halfDead
                         || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::DARKLING_REGROW))
                     return unsupported("silver_selection_pending_actions");

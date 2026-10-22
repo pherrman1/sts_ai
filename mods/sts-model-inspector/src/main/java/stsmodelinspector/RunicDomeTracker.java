@@ -383,7 +383,12 @@ final class RunicDomeTracker {
             if(executed.get(i)!=((slot+completed-executed.size()+i)%2==0?3:4)) invalidate("history_gap");
         Map<String,Object> out=new LinkedHashMap<>();
         out.put("schemaVersion",dynamic()?3:"WrithingMass".equals(id)?2:1); out.put("epoch",epoch); out.put("generation",generation);
-        boolean complete=failure==null && !inRoll && !knownTurn && !hiddenSetterScope && !rebirthDuplicatePending && !publicDuplicatePending && pendingThefts==0 && (pending || (pendingDirect && hiddenSetterSeen) || knownNextMove!=0 || dead);
+        // Between the first-form death and its queued duplicate SetMoveAction(3)
+        // (a source card's grid, problem 90) Rebirth is already the known next
+        // move; the row reports one known transition and the producer emits the
+        // duplicate as a pending MONSTER_SET_MOVE.
+        boolean rebirthWindow=rebirthDuplicatePending && knownNextMove==3 && !inRoll && !knownTurn;
+        boolean complete=failure==null && !inRoll && !knownTurn && !hiddenSetterScope && (!rebirthDuplicatePending || rebirthWindow) && !publicDuplicatePending && pendingThefts==0 && (pending || (pendingDirect && hiddenSetterSeen) || knownNextMove!=0 || dead);
         out.put("complete",complete);
         if(!complete) { out.put("reason",failure==null?"roll_unsettled":failure); return out; }
         if(occupantGeneration>0) {
