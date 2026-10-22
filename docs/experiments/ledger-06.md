@@ -23393,3 +23393,46 @@ values matter for online play). Plan and outputs: `docs/experiments/evidence/az_
   the evaluation (leaf values) changes. Future prior candidates report their departures from the current prior, the
   overlap with earlier candidates, and the search's verdict at those roots, not KL alone. No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §TBD — Sibling-ranking loss on the common-seed labels: both arms FAIL (head alone 0.640 and 0.649, SR_w1 0.645, X2-B 0.664); the ranking-selected epoch of SR_crn_r2 reaches X2-B's level (0.660) and its blend beats SR_w1's by +0.014 (offline, exploratory, 2026-10-22)
+
+**Question:** SR_w1 (§641) ranks the common-seed VALIDATION siblings below X2-B (0.645 vs 0.664, §644). Does the same
+recipe do better when it learns from the recapture's cleaner labels? Philipp typed "go gpu" (2026-10-22 17:50Z).
+**Design:** pre-registered ([PLAN.md](evidence/value_sr_crn_20261022/PLAN.md), data branch `a8ab7da`).
+- Arms on SR_w1's recipe (seed 0). Only the ranking data change:
+  - SR_crn: the recapture's TRAIN groups (15,129);
+  - SR_crn_r2: those plus round-2 TRAIN (23,587).
+- Groups with source seed % 8 == 6 are held out. Selection is unchanged (fold objective, patience 3). The epoch with
+  the best holdout ranking is exported too, as exploratory.
+- Gate: the head alone on the common-seed VALIDATION, with the bars met (selection-fold BCE ≤ 0.552, −3 HP sign
+  ≥ 85 %). PASS at ≥ X2-B; IMPROVED above SR_w1 with the paired CI above 0; FAIL otherwise.
+- Trained on Philipp's GPU (18:03–19:31Z), evaluated in the cloud.
+**Result** ([README](evidence/value_sr_crn_20261022/README.md)):
+
+| head | selection-fold BCE | VALIDATION | − SR_w1 [95 % CI] | blend | blend − SR_w1's blend | round 2 |
+|---|---|---|---|---|---|---|
+| SR_w1 (control) | 0.547 | 0.645 | – | 0.689 | – | 0.644 |
+| SR_crn | 0.556 (bar missed) | 0.640 | −0.005 [−0.012, +0.002] | 0.688 | −0.001 | 0.610 |
+| SR_crn_r2 | 0.543 | 0.649 | +0.004 [−0.002, +0.010] | 0.690 | +0.001 | 0.639 |
+| SR_crn epoch 8 (exploratory) | 0.587 | 0.650 | +0.005 [−0.001, +0.013] | 0.692 | +0.003 | 0.624 |
+| SR_crn_r2 epoch 11 (exploratory) | 0.557 | 0.660 | +0.015 [+0.009, +0.022] | 0.703 | +0.014 [+0.009, +0.019] | 0.648 |
+
+- X2-B scores 0.664 on the common-seed VALIDATION and 0.633 on round 2. Blend weights were chosen on the TRAIN holdout.
+- Gate: SR_crn FAIL (level with SR_w1; BCE bar missed). SR_crn_r2 FAIL (the CI includes 0).
+- The value objective stopped both runs while the holdout ranking still rose. It was 0.644 at SR_crn's selected
+  epoch 5 and 0.657 at epoch 8; 0.646 at SR_crn_r2's selected epoch 8 and 0.656 at epoch 11.
+- Monotonicity is better than SR_w1's (gold +50 valued higher in 83–87 % of cases, against 65 %). −3 HP sign is
+  86–90 %. Outcome AUC on round 2 is 0.671–0.675 for every head.
+**Interpretation:**
+- Cleaner and more labels did not lift the selected heads. They are level with SR_w1, so label noise was not what
+  held the head back.
+- Selection on value stops training while ranking still improves. The ranking-selected epochs gain +0.010 and +0.011
+  on VALIDATION, which no choice read. This sharpens §641's lesson (select on value and ranking).
+- SR_crn_r2's epoch 11 is the best evaluator so far: alone at X2-B's level, and its blend is 0.703 (+0.039 over X2-B).
+  It is one seed, its epoch was chosen after the run, and its BCE is just over the bar.
+- Training only on common-seed labels loses on round 2 (0.610). Mixing in round 2's labels removes that loss.
+**Decision:** no default change. The leaf stays X2-B, and SR_w1's blend stays the online candidate.
+- Next, if Philipp agrees: confirm the ranking-selected recipe with seeds 1–2 under a new plan (about 2 h GPU). If it
+  replicates, epoch 11's blend replaces SR_w1's as the online candidate.
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
