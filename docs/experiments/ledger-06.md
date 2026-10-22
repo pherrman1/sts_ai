@@ -22262,6 +22262,15 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
+## §628 — Live problem 87: a skipped boss relic offer re-published the boss chest reveal (2026-10-22)
+
+**Question:** Why did seed 111200537 get stuck at the act-1 boss chest after the OOC skipped the boss relic?
+
+**Evidence:** Skipping leaves `BossChest.isOpen` false, so `LiveOocCapture.captureBossChestReveal` published `mechanicalTransition=boss_chest_reveal` again. The advisor passes "Open boss chest" through with prior 1.0, so the run looped open -> skip -> open until the cycle guard abandoned the step. Proceed was the correct play.
+
+**Change:** A producer-only fix (no flag). `boss()` records the room whose boss relic offer it captured. `treasure()` publishes `captureSkippedBossChest` for an unopened BossChest in that same room when MCP can proceed. That is the completed room's Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor's existing opened-chest pass-through returns. Test: `test_skipped_boss_chest_is_native_proceed_passthrough` (`tests/live_ooc_protocol.py`, 63 OK).
+
+**Interpretation:** The skip decision of the boss relic screen is final, as in a human's play. Reopening would only show the same three relics again.
 ## §626 — Live problem 85: the Awakened One rebirth window could not be correlated (2026-10-21)
 
 **Question:** Why did seed 111200512 (seg1 s831, act 3 floor 50) stop with "no fresh inspector response for current state: cannot correlate inspector observation with MCP-visible state" right after Uppercut+ killed Awakened One's first form?

@@ -1107,8 +1107,13 @@ final class LiveOocCapture {
             return object("type", "other");
         return object("type", upgrade ? "upgrade" : purge ? "remove" : transform ? "transform" : "other");
     }
+    // The room whose boss relic offer was captured (problem 87). Skipping the
+    // offer leaves BossChest.isOpen false, so the chest would be "revealed" again.
+    static Object bossOfferRoom;
+
     private static void boss(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels) {
         out.put("screen", "boss_relic");
+        bossOfferRoom = AbstractDungeon.getCurrRoom();
         List<String> relics = new ArrayList<>();
         for (int i = 0; i < AbstractDungeon.bossRelicScreen.relics.size(); ++i) {
             relics.add(AbstractDungeon.bossRelicScreen.relics.get(i).relicId); add(cs, labels, i, "option", i, 0);
@@ -1128,10 +1133,25 @@ final class LiveOocCapture {
             captureOpenedTreasure(out, cs,
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         } else {
+            if (captureSkippedBossChest(out, cs, chest.getClass().getSimpleName(),
+                    bossOfferRoom != null && bossOfferRoom == AbstractDungeon.getCurrRoom())) return;
             if (captureBossChestReveal(out, cs, labels, chest.getClass().getSimpleName(), AbstractDungeon.actNum)) return;
             captureUnopenedTreasure(out, cs, labels, chest.getClass().getSimpleName(),
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         }
+    }
+    static boolean captureSkippedBossChest(Map<String,Object> out, List<Map<String,Object>> choices,
+            String chestType, boolean offerSeen) {
+        // After the boss relic offer was skipped, vanilla keeps the chest
+        // clickable (isOpen stays false). Reopening only shows the same offer
+        // again, so the skip is final: publish the completed room's Proceed,
+        // as for an opened chest (seed 111200537 looped open -> skip -> open).
+        if (!"BossChest".equals(chestType) || !offerSeen
+                || !Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed"))) return false;
+        out.put("details", object("chestType", "BossChest", "opened", true, "bossRewardSkipped", true));
+        captureOpenedTreasure(out, choices, true);
+        out.remove("unsupportedReason");
+        return true;
     }
     static boolean captureBossChestReveal(Map<String,Object> out, List<Map<String,Object>> choices,
             List<?> labels, String chestType, int act) {

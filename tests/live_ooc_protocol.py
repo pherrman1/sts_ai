@@ -828,6 +828,21 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(evaluator["mode"], "native_pass_through")
         self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
 
+    def test_skipped_boss_chest_is_native_proceed_passthrough(self):
+        # Problem 87 (seed 111200537): after a skipped boss relic offer the
+        # capture publishes the completed room's Proceed, not another reveal.
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "treasure"
+        ooc["details"] = {"chestType": "BossChest", "opened": True, "bossRewardSkipped": True}
+        ooc["liveChoices"] = [{"liveAction": {"kind": "proceed"},
+                               "nativeAction": {"kind": "option", "index": 1, "group": 0}}]
+        response, = self.run_rows([observation], policy="v4")
+        evaluator = response["evaluators"][0]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["mode"], "native_pass_through")
+        self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
+
     def test_unopened_treasure_samples_contents_from_public_size(self):
         observation = copy.deepcopy(self.fixtures["treasure_open_leave"])
         observation["ooc"]["details"].update(chestType="MediumChest", chestSize=1)
