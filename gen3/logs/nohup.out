@@ -1,0 +1,13 @@
+2026-10-22T14:32:21Z calibrated: rows 5760 noev 5760 {"root_v": {"a": -1.6115816831588745, "b": 0.5970583558082581, "n": 58158}, "nstep_v": {"a": -1.533726692199707, "b": 0.5810431838035583, "n": 606077}}
+2026-10-22T15:01:27Z run G3_z EXIT 0
+2026-10-22T15:35:15Z run G3_nstep EXIT 0
+2026-10-22T16:00:29Z run G3_nstep_noEv EXIT 0
+2026-10-22T16:08:30Z run REF_student_sel EXIT 0
+2026-10-22T16:16:28Z run REF_gen2_pick EXIT 0
+2026-10-22T16:24:24Z run REF_gen2_VT_nstep EXIT 0
+2026-10-22T16:24:24Z pick G3_nstep_noEv
+2026-10-22T16:49:40Z run G3_nstep_noEv_s1 EXIT 0
+2026-10-22T17:21:20Z run G3_nstep_noEv_s2 EXIT 0
+export sha256 d5780dee99c1d4c100b57cf7d8250ffe82022940fc14b6b3964966723339238a
+G3_nstep_noEv records 400 logits 1652 max|dlogit| 1.1e-05 max|dvalue| 7.15e-07 argmax mismatches 0
+2026-10-22T17:21:26Z G3 DONE
