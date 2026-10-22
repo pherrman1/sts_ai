@@ -608,6 +608,11 @@ json oocResponse(const one_combat::advisor::Request &request,
         json appliedTarget;
         if (pending.active && pending.session != request.session) pending = PendingCompoundPlan{};
         if (pending.active && request.sequence <= pending.sequence) pending = PendingCompoundPlan{};
+        // A plan kept across a Continue page applies only to its own selector
+        // type; any other selector searches afresh, as when the plan is dropped.
+        if (g_passThroughKeepsPlan && pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT
+                && pending.selectorType != static_cast<int>(state.projected.info.selectScreenType))
+            pending = PendingCompoundPlan{};
         if (pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT) {
             const auto scoreStarted = std::chrono::steady_clock::now();
             decision = retainedCompoundDecision(state, pending);
