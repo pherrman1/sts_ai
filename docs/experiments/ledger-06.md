@@ -22262,6 +22262,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
+## §TBD — Live problem 87: a skipped boss relic offer re-published the boss chest reveal (2026-10-22)
+
+**Question:** Why did seed 111200537 get stuck at the act-1 boss chest after the OOC skipped the boss relic?
+
+**Evidence:** Skipping leaves `BossChest.isOpen` false, so `LiveOocCapture.captureBossChestReveal` published `mechanicalTransition=boss_chest_reveal` again. The advisor passes "Open boss chest" through with prior 1.0, so the run looped open -> skip -> open until the cycle guard abandoned the step. Proceed was the correct play.
+
+**Change:** A producer-only fix (no flag). `boss()` records the room whose boss relic offer it captured. `treasure()` publishes `captureSkippedBossChest` for an unopened BossChest in that same room when MCP can proceed. That is the completed room's Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor's existing opened-chest pass-through returns. Test: `test_skipped_boss_chest_is_native_proceed_passthrough` (`tests/live_ooc_protocol.py`, 63 OK).
+
+**Interpretation:** The skip decision of the boss relic screen is final, as in a human's play. Reopening would only show the same three relics again.
+
+**Status:** Draft PR; PC `test.sh` requested from the canary.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

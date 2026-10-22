@@ -1221,6 +1221,13 @@ must be available in MCP. A verified unopened BossChest uses an explicit
 public-reveal action: Open reveals the offers while retaining the later Skip
 decision. This is an informational policy step, not a claim that Proceed is
 unavailable. Unknown chest classes remain unsupported.
+After the boss relic offer was skipped, vanilla keeps `BossChest.isOpen`
+false and the chest clickable. The capture remembers the room whose offer it
+published and treats the skip as final. It publishes the completed room's
+Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor passes
+through like an opened chest. Before this fix the reveal was published again
+and looped open -> skip -> open until the cycle guard abandoned the step
+(problem 87, seed 111200537).
 Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
 tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
 claiming an exact hidden chest state.
