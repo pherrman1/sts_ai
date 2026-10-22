@@ -322,6 +322,36 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([observation], policy="v4", differential=True)
         self.assertEqual(response["evaluators"][0]["reason"], "DIFFERENTIAL_SELECTOR_PREVIEW_UNREPRESENTABLE")
 
+    def test_selector_preview_confirms_the_retained_grid_pick(self):
+        # Problem 92: the confirm screen re-searched near-tied cards and
+        # cancelled most shop removals the grid click had just picked.
+        grid = self.fixtures["remove_selector"]
+        preview_template = self.fixtures["selector_preview_4"]
+        self.assertEqual(grid["ooc"]["details"]["cards"], preview_template["ooc"]["details"]["cards"])
+        first, = self.run_rows([grid], policy="mcts")
+        choice = first["evaluators"][0]["selectedLiveAction"]
+        self.assertEqual(choice["kind"], "choose", first)
+        picked = grid["ooc"]["details"]["cards"][choice["choiceIndex"] - 1]["deckIndex"]
+        def preview(deck_index):
+            row = copy.deepcopy(preview_template)
+            row["ooc"]["details"]["previewDeckIndex"] = deck_index
+            return row
+        other = next(card["deckIndex"] for card in grid["ooc"]["details"]["cards"] if card["deckIndex"] != picked)
+        _, retained = self.run_rows([grid, preview(picked)], policy="mcts")
+        evaluator = retained["evaluators"][0]
+        self.assertEqual(evaluator["mode"], "selector_preview_retained", retained)
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="proceed"))
+        # The live driver must accept the answer it executes (seed 111200553).
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from tools.live_game_driver import InspectorSnapshot
+        snapshot = InspectorSnapshot({}, "ooc-protocol", 2, "fixture-1", {}, retained)
+        self.assertEqual(snapshot.ooc_evaluator(evaluator["policy"])["selectedLiveAction"], dict(kind="proceed"))
+        _, searched = self.run_rows([grid, preview(other)], policy="mcts")
+        self.assertEqual(searched["evaluators"][0]["mode"], "selector_preview_policy", searched)
+        _, legacy = self.run_rows([grid, preview(picked)], policy="mcts",
+                                  extra_env={"STS_LIVE_SELECTOR_PREVIEW_RETAIN": "0"})
+        self.assertEqual(legacy["evaluators"][0]["mode"], "selector_preview_policy", legacy)
+
     def test_searing_blow_upgrades_remain_supported(self):
         response, = self.run_rows([self.fixtures["upgraded_searing_blow"]],
                                   policy="v4")

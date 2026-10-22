@@ -377,7 +377,11 @@ public final class RunicDomeTrackerTest {
             awake.beginRoll(monster,300,300);awake.endRoll(monster);
             for(int i=0;i<deathTurn;++i) {awake.execute(monster,i==0?1:2);awake.beginRoll(monster,200,300);awake.endRoll(monster);}
             awake.beginRebirth(monster,3);awake.setMove(monster);awake.endKnownTurn(monster);
-            if(Boolean.TRUE.equals(awake.snapshot(monster,deathTurn+1,2,false).get("complete"))) throw new AssertionError("missing duplicate rebirth callback accepted");
+            // The window before the queued duplicate (a source card's grid,
+            // problem 90): complete with one known transition; the importer
+            // accepts it only with the pending MONSTER_SET_MOVE.
+            Map<String,Object> window=awake.snapshot(monster,deathTurn+1,2,false);complete(window);
+            if(!window.get("knownTransitions").equals(1)) throw new AssertionError("rebirth window claimed the duplicate");
             awake.knownOverride(monster,3);awake.setMove(monster);awake.endKnownTurn(monster);
             complete(awake.snapshot(monster,deathTurn+1,2,false));
             awake.execute(monster,3);awake.beginRoll(monster,300,300);awake.endRoll(monster);

@@ -22319,6 +22319,39 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; PC `test.sh` requested from the canary.
 
+## §632 — Live problem 92: the shop-removal confirm screen re-searched and removed a different card (2026-10-22)
+
+**Question:** Why did the live AI choose "remove Strike" at shops but then remove a different card, usually a better one (Philipp's report; 88 of 95 overnight removals)?
+
+**Evidence:** The shop answer records a pending compound plan, and the grid click correctly picks the planned Strike. The single-card selector then shows its confirm screen. There `advisor_stdio.cpp` cleared the plan and ran a fresh 512-simulation search over the whole deck (about 28 near-tied cards), confirming only if its argmax was the previewed card; otherwise it cancelled and the next grid answer removed the fresh pick. Retained-target outcomes overnight: remove 106 cancel / 13 proceed, transform 12 / 1, upgrade 14 / 427.
+
+**Change:** `STS_LIVE_SELECTOR_PREVIEW_RETAIN` (default on, `=0` restores). The advisor remembers the deck card its previous OOC answer picked on a single-card selector grid (a retained plan or a selector search), bound to session, sequence and selector type. When the next answer is that selector's confirm screen for the same card, it confirms without searching (`mode` `selector_preview_retained`). Any other preview keeps the fresh search. Test: `test_selector_preview_confirms_the_retained_grid_pick` in `tests/live_ooc_protocol.py`.
+
+**Interpretation:** Live play-changing: shop/event removals, transforms and upgrades now carry out the card the source decision chose, as the simulator does (it has no confirm screen). It also saves one 512-simulation search per selector.
+
+**Status:** Draft PR.
+## §633 — Live problem 93: Cultist Mask's battle-start caw refused Toolbox's offer (2026-10-22)
+
+**Question:** Why was seed 111200551 abandoned at the act 2 Slavers elite, where Toolbox's combat-start colorless offer was refused with `silver_card_reward_pending_actions` and `refusal=9:unknown_action`?
+
+**Evidence:** The queue behind the offer was `DrawCardAction`, `EnableEndTurnButtonAction`, Red Mask's `RelicAboveCreatureAction` and three Weakened `ApplyPowerAction`s, then `SFXAction` and `TalkAction`. Those last two come from `CultistMask.atBattleStart`: a cultist sound and a player speech bubble, with no game state. The public pending-action projection (§618) had no case for them, so it refused at the `SFXAction`.
+
+**Change:** A producer-only fix in `STSModelInspector.publicPendingActionsJson`. An `SFXAction` whose key starts with `VO_CULTIST`, immediately followed by a not-done `TalkAction` from the player while Cultist Mask is owned, is omitted as a pair. Any other pending `SFXAction` refuses with `cultist_mask`. There is no native change and no flag: the omitted actions change no state.
+
+**Interpretation:** Toolbox (and any other projected offer) with Cultist Mask no longer abandons the fight.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §634 — Live problem 92 follow-up: the retained confirm answer failed the driver's MCTS validator (2026-10-22)
+
+**Question:** Why was seed 111200553, the first live run on c4dcb43c (§632), abandoned at its first single-card selector confirm (an event transform of Defend)?
+
+**Evidence:** The advisor answered as §632 intended (`selector_preview_retained`), but its sole candidate carried `visits` 0 with `visitShare` 1.0. For `mcts_ctm` the driver's `ooc_evaluator` requires total visits > 0 unless the sole-legal-action no-search contract applies, so it stopped with "OOC MCTS root visits/shares do not form a complete root distribution". §632's protocol test checked the advisor answer but not the driver's validation of it.
+
+**Change:** The retained confirm reports one visit on its sole candidate, as retained compound targets already do. `test_selector_preview_confirms_the_retained_grid_pick` now also validates the advisor response with the driver's `InspectorSnapshot.ooc_evaluator`; it reproduced the live error before the fix and passes after it (64 protocol tests OK).
+
+**Interpretation:** No decision changes; the §632 retained confirm now reaches the game.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22969,6 +23002,50 @@ flag stays default off. A Gumbel-style root needs a value signal that beats the 
 dominant, and either needs a play A/B.
 [Result](evidence/az_gumbel_root_ab_20261021/RESULT.md), [result.json](evidence/az_gumbel_root_ab_20261021/result.json).
 Raw: `/mnt/project-files/az-gumbel-root-ab/units/`. Seeds 111153152–663 and smokes 111145018–019 used.
+## §631 — Live advisor: Headbutt killing Awakened One's first form was refused (2026-10-22)
+
+**Question:** why did overnight live seed 111200541 seg 1 stop with `silver_selection_pending_actions` after Headbutt+
+killed Awakened One's first form (`actions=[UseCardAction,ShoutAction,SetMoveAction]`, no refusal tag; problem 90 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue90/p90-observation.json` on the share) and `AwakenedOne` javap
+(`issue91/javap.md`); `live_silver_importer_test` (Ironclad seed 111200071, AWAKENED_ONE; no gameplay runs).
+**Result:** `AwakenedOne.damage` at the first-form death sets Rebirth (3), `addToTop(ClearCardQueueAction)`, then
+`addToBottom(ShoutAction)` and `addToBottom(SetMoveAction(this, 3, UNKNOWN))`. The producer's `ShoutAction` branch only
+knew the Gremlin Leader's escape run and returned without a refusal tag. Native `Monster::die` sets Rebirth, clears the
+card queue and queues `SetMonsterMove(Rebirth)` alike, but the wire conversion only accepted the Darkling's Regrow.
+The fight had Runic Dome, and the tracker reported the AwakenedOne row as `roll_unsettled` while the duplicate setter was
+queued.
+**Interpretation:** the producer emits `MONSTER_SET_MOVE {move:3, slot}` for the pair. Under
+`STS_SILVER_AWAKENED_REBIRTH_QUEUE` (default on, `=0` restores the refusal) the importer imports it as native
+`SetMonsterMove(Rebirth)`. The tracker reports the window as complete with one known transition; the importer accepts
+that row only with the queued item. The importer test gains the Headbutt kill with native parity before and after the
+pick, and the Runic Dome form, with fail-closed cases. Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200541 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §630 — Live advisor: Headbutt killing a Bronze Orb holding Stasis, and a half-dead Darkling's Regrow, were refused (2026-10-22)
+
+**Question:** why did overnight live seed 111200539 stop at Headbutt's grid with `silver_selection_pending_actions`
+after Headbutt+ killed the Bronze Orb holding Dark Embrace (problem 88: `refusal=1:unknown_action`), and after
+Headbutt took a Darkling to half-dead (problem 89, seg 2: `refusal=1:half_dead_set_move`), in
+`engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's observation, field dump and javap (`issue88-89/` on the share; the p88 observation kept as
+`tests/fixtures/live_automaton_stasis_headbutt_return.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+AUTOMATON; no gameplay runs).
+**Result:** problem 88: `StasisPower.onDeath` queues `MakeTempCardInHandAction(card, false, true)` (hand under 10;
+otherwise `MakeTempCardInDiscardAction`) behind the grid, which the producer did not know. Native `returnStasisCard`
+moves the card at the death. Under Corruption, native zeroed only `costForTurn`, while Java's add-to-hand runs the
+`onCardDrawOrDiscard` pass (`STS_CORRUPTION_HAND_COST_FIX`, problem 83). Problem 89: the producer's check used
+`isDeadOrEscaped()`, which is true for every half-dead monster (`AbstractCreature` checks `halfDead`; javap), so the
+existing `MONSTER_SET_MOVE` fold was never reached.
+**Interpretation:** the producer now emits `STASIS_RETURN {slot}` only for the dead orb whose Stasis card has that uuid,
+and checks `isDying`/`isEscaping`/`escaped` for the Darkling. Under `STS_SILVER_STASIS_RETURN_QUEUE` (default on, `=0`
+restores the `silver_unmapped_stasis` refusal) the importer moves the card to hand as native does; a full hand stays
+refused. Native's Stasis return under Corruption now runs the hand cost pass (under `STS_CORRUPTION_HAND_COST_FIX`).
+The importer test gains a Headbutt-kills-orb case with and without Corruption, with native parity before and after the
+pick, and the captured observation imports and searches. Play-changing only where the advisor used to refuse, plus
+generated-skill costs after a Stasis return under Corruption.
+Seeds: none new (live seed 111200539 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 ## §624 — Silver attack-over-block bias vs exact solves: max backup + block-first playout halve first-fight regret; fight-level A20 A/B pre-registered (2026-10-22)
 
 **Question (Philipp, 2026-10-21 19:12Z):** why does Silver play Strike over Defend on Jaw Worm turn 2 (seed
