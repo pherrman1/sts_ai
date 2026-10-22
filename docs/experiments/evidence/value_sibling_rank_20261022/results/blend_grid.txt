@@ -1,0 +1,4 @@
+SR_w1 w0.01: hold 0.6539 val 0.6551 w0.02: hold 0.6611 val 0.6638 w0.03: hold 0.6677 val 0.6652 w0.04: hold 0.6667 val 0.6707 w0.05: hold 0.6702 val 0.6726 w0.075: hold 0.6633 val 0.6734 w0.1: hold 0.6642 val 0.6749 w0.15: hold 0.6638 val 0.6693 w0.2: hold 0.6640 val 0.6687
+  chosen on holdout w=0.05: val 0.6726, val - x2b +0.0395 [+0.0303, +0.0489]
+SR_w0.3 w0.01: hold 0.6443 val 0.6463 w0.02: hold 0.6462 val 0.6518 w0.03: hold 0.6492 val 0.6541 w0.04: hold 0.6531 val 0.6580 w0.05: hold 0.6534 val 0.6611 w0.075: hold 0.6589 val 0.6637 w0.1: hold 0.6591 val 0.6673 w0.15: hold 0.6603 val 0.6661 w0.2: hold 0.6586 val 0.6642
+  chosen on holdout w=0.15: val 0.6661, val - x2b +0.0330 [+0.0228, +0.0440]

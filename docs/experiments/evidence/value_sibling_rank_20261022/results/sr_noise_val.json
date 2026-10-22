@@ -1,0 +1,121 @@
+{
+ "inflation_f": 1.396737392591752,
+ "validation": {
+  "M0.3:conc": {
+   "mean": 0.5553711543469049,
+   "sources": 320
+  },
+  "M0.3:conc1se": {
+   "mean": 0.5885884646632809,
+   "sources": 320
+  },
+  "M0.3:conc2se": {
+   "mean": 0.6132802491705993,
+   "sources": 319
+  },
+  "M0.3@0.15:conc": {
+   "mean": 0.6442664443855582,
+   "sources": 320
+  },
+  "M0.3@0.15:conc1se": {
+   "mean": 0.7325617258623068,
+   "sources": 320
+  },
+  "M0.3@0.15:conc2se": {
+   "mean": 0.8376892569000768,
+   "sources": 319
+  },
+  "SR_w0.3:conc": {
+   "mean": 0.6134337527272663,
+   "sources": 320
+  },
+  "SR_w0.3:conc1se": {
+   "mean": 0.6785871537456651,
+   "sources": 320
+  },
+  "SR_w0.3:conc2se": {
+   "mean": 0.7384394231131917,
+   "sources": 319
+  },
+  "SR_w0.3@0.15:conc": {
+   "mean": 0.6660893155506695,
+   "sources": 320
+  },
+  "SR_w0.3@0.15:conc1se": {
+   "mean": 0.7610030292856121,
+   "sources": 320
+  },
+  "SR_w0.3@0.15:conc2se": {
+   "mean": 0.8616383515173708,
+   "sources": 319
+  },
+  "SR_w1:conc": {
+   "mean": 0.6437562593601894,
+   "sources": 320
+  },
+  "SR_w1:conc1se": {
+   "mean": 0.7316318778908298,
+   "sources": 320
+  },
+  "SR_w1:conc2se": {
+   "mean": 0.8102905109753981,
+   "sources": 319
+  },
+  "SR_w1@0.15:conc": {
+   "mean": 0.6692785172757713,
+   "sources": 320
+  },
+  "SR_w1@0.15:conc1se": {
+   "mean": 0.7719538917976038,
+   "sources": 320
+  },
+  "SR_w1@0.15:conc2se": {
+   "mean": 0.8689131460170402,
+   "sources": 319
+  },
+  "ceiling": {
+   "mean": 0.808260317121327,
+   "sources": 320
+  },
+  "x2b:conc": {
+   "mean": 0.6330601971322313,
+   "sources": 320
+  },
+  "x2b:conc1se": {
+   "mean": 0.7165759236389653,
+   "sources": 320
+  },
+  "x2b:conc2se": {
+   "mean": 0.8105803525788797,
+   "sources": 319
+  },
+  "x2b:corrected": {
+   "mean": 0.7101426092205422,
+   "sources": 320
+  },
+  "M0.3:corrected": {
+   "mean": 0.6015308556046605,
+   "sources": 320
+  },
+  "SR_w0.3:corrected": {
+   "mean": 0.6714198547857011,
+   "sources": 320
+  },
+  "SR_w1:corrected": {
+   "mean": 0.7198130799105916,
+   "sources": 320
+  },
+  "M0.3@0.15:corrected": {
+   "mean": 0.7329450639596221,
+   "sources": 320
+  },
+  "SR_w0.3@0.15:corrected": {
+   "mean": 0.7557920715720984,
+   "sources": 320
+  },
+  "SR_w1@0.15:corrected": {
+   "mean": 0.7641769847911231,
+   "sources": 320
+  }
+ }
+}
