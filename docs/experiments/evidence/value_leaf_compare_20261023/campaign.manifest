@@ -1,0 +1,13 @@
+name          value-leaf-compare
+code_commit   c9b4094363476889082b80be2934d4948ce64c08
+binary_sha256 unset
+workers       32
+share         /mnt/project-files/value-leaf-compare
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input sr_w1.bin /mnt/project-files/value-level-ab/sr_w1.bin 146a4512dda1213e16a9849158676bb7ff902fbb4136553d6c71ec6495a32ec4
+input gen1b.bin /mnt/project-files/value-leaf-compare/gen1b.bin e6aa044cea8aea6287060c1d71f3c2b327676aa4876448e0cadba2177087ddb3
+input student494.bin /mnt/project-files/rollout-student-494/student494.bin 653db96ef1de23cbb6498fa1673de525708cc68ab2edaeca56516ec60557f4d9
