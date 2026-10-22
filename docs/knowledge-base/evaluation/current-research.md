@@ -305,6 +305,9 @@ at 1.01× wall, below the +1.0 pp extension trigger. Both arms' rows join the ge
 gen 1b's) with the 2026-10-21 speed defaults. Offline value-head work (teacher distillation, search-value targets,
 monotonicity) moved to the "Value head research" thread; the gen-3 exploration block is drafted in
 `docs/experiments/evidence/az_gen3_explore_20261022/PLAN.md` (root noise + early-floor play sampling, #741 flags).
+The exploration block ran 2026-10-22 (§640, 1,024 A20 runs, student_sel): 15.7% Heart kills vs 20.9% greedy, the
+played move left the most-visited one at 22.7% of floor-0..6 roots, root noise doubled prior overrides (13.0% vs 6.6%).
+Gen-3 training should keep its policy rows and down-weight its value rows.
 
 ### Earlier: gen 1b as prior NOT_SHOWN (§589)
 

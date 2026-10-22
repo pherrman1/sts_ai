@@ -23243,3 +23243,22 @@ siblings at only 0.547 offline and still leaned +3.1 pp as the rollout3 end valu
 **Decision:** no default change. SR_w1 (seed 0, `146a4512…` on `claude/az-gen2-data`) is the leaf candidate. Next is
 an online test (blend and head alone vs X2-B), or a new capture with common seeds (§639) for cleaner labels; Philipp
 decides. A later recipe should select epochs on a combined value and ranking objective. No game seeds were used.
+## §640 — AZ gen-3 exploration self-play block (root noise 0.25:0.3 + visit-sampled play on floors 0-6): 1,024 A20 runs, 15.7% Heart kills vs 20.9% greedy (descriptive, 2026-10-22)
+
+Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and outputs:
+`docs/experiments/evidence/az_gen3_explore_20261022/` (`PLAN.md`, `PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`,
+`result.json`, `verify.txt`, `tars.sha256`).
+
+- **Purpose:** training data for gen 3; no gate. First AZ self-play with exploration (#741 switches).
+- **Config:** gen-2 A/B arm A (student_sel prior, X2-B leaf, 2026-10-21 speed defaults) on main `165b5060`, plus
+  `STS_OOC_MCTS_ROOT_NOISE=0.25:0.3` and `STS_OOC_MCTS_PLAY_SAMPLE=6:1`. RUN_COMMIT `0a56caae`, v3 binary `eb314334…`.
+  Seeds 111300000–111301023; smokes 111301990–991.
+- **Run:** 32 workers, queue schedule; 1,024 of 1,024 units OK, no duplicates; all runs valid.
+- **Result:** Heart kills 161 (15.7%) vs 20.9% in the greedy gen-2 arm A (other seeds, unpaired, ±3.3 pp); Act 4 31.6% vs
+  39.0%. Floors 0-6: played action ≠ most-visited at 22.7% of searched roots, root Q lower than greedy's at 61% of those
+  (mean −0.017). Prior overrides 13.0% vs 6.6% (noise acts at every root). The learned OOC stop still fires before the
+  1024 cap but later: fast roots average 534 vs ~415 completed sims, 24% vs 42% stop at the first check (≤ 128); mean
+  wall unchanged (778 vs 773 s).
+- **Inference:** exploration costs ~5 pp Heart kills in the generating runs; the rows add ~16k full-budget policy targets
+  off the greedy path. Value labels from these runs are pessimistic for early states.
+- **Knowledge impact:** `evaluation/current-research.md`.
