@@ -376,6 +376,10 @@ namespace sts::search {
         [[nodiscard]] double evaluateEndState(const BattleContext &bc) const;
     };
 
+    // Research hook (exact_combat_solver --leaf-oracle; empty = production): when set and it
+    // returns true for an undecided leaf, the value it writes replaces the leaf's playout.
+    extern thread_local std::function<bool(SilverSearcher &, BattleContext &, double &)> g_silverLeafOverride;
+
 }
 
 #endif //STS_LIGHTSPEED_SILVERSEARCHER_H

@@ -20,6 +20,8 @@
 
 using namespace sts;
 
+thread_local std::function<bool(search::SilverSearcher &, BattleContext &, double &)> search::g_silverLeafOverride;
+
 namespace {
 
     // A decision node stores the public posterior, not the first particle that
@@ -769,7 +771,9 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     const int uniform = rolloutConfig.uniform;
     const int playouts = uniform > 0 ? uniform : rolloutConfig.perLeaf;
     double value = 0;
-    if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
+    if (bc.outcome == Outcome::UNDECIDED && g_silverLeafOverride && g_silverLeafOverride(*this, bc, value)) {
+        // research: the hook's value stands in for the playout
+    } else if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
         value = playoutToEnd(bc, treeDepth, uniform > 0);
     } else {
         // Research: average `playouts` independent playouts from this leaf.

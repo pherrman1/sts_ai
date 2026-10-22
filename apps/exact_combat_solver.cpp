@@ -397,6 +397,27 @@ namespace {
                 policy_.playTable = policyTable_.data();
             }
         }
+        // Research (--policy-then-exact): from this game turn on, a state's value is
+        // exactSource_'s abstract exact value instead of play, so the value becomes
+        // "optimal play before policyFromTurn_, Silver's playout until this turn starts,
+        // the exact value from there" (a perfect turn-start leaf behind one greedy turn).
+        int exactFromTurn_ = 1 << 30;
+        ExactSolver *exactSource_ = nullptr;
+        // The abstract exact value of a decision state (false where the model does not apply).
+        bool abstractValue(const BattleContext &s, double &out) {
+            if (s.turn > turnCap_) { out = terminal(s).v; return true; }
+            return quiet(s) && modelDec(1, s, out);
+        }
+        // Research (--leaf-oracles M@S): a fixed N(0, leafNoise_^2) error per state, drawn from the
+        // state's key, so it repeats on every visit as a value net's error would.
+        double leafNoise_ = 0;
+        double noiseAt(const BattleContext &s) const {
+            if (leafNoise_ == 0) return 0;
+            const Key k = stateKey(s);
+            const double u1 = static_cast<double>(splitmix(k.a) >> 11) * 0x1.0p-53 + 0x1.0p-54;
+            const double u2 = static_cast<double>(splitmix(k.b ^ 0x5EED5EED5EED5EEDULL) >> 11) * 0x1.0p-53;
+            return leafNoise_ * std::sqrt(-2.0 * std::log(u1)) * std::cos(6.283185307179586 * u2);
+        }
         std::int64_t candidates_ = 0, dominated_ = 0, chanceTurns_ = 0, cutoffs_ = 0;
 
     private:
@@ -541,6 +562,32 @@ namespace {
                 double d = 0;
                 if (!quiet(o.state) || !modelDec(1, o.state, d)) return false;
                 v += o.p * (o.state.turn > turnCap_ ? terminal(o.state).v : d);
+            }
+            out = v;
+            return true;
+        }
+        // Research (--policy-this-turn): a root action's value when Silver's playout
+        // policy (policy_, see setPolicy) plays the rest of the root's turn and the
+        // abstract exact value takes over where the policy ends the turn: what a perfect
+        // start-of-turn leaf would give after a greedy finish of the turn (false where
+        // the model does not apply).
+        bool turnPolicyQ(const BattleContext &s, const SAction &a, double &out) {
+            if (a.getActionType() == search::ActionType::END_TURN) {
+                if (!abstractQ(s, a, out)) return false;
+                out += noiseAt(s);   // --leaf-oracle turn: the error of an afterstate net
+                return true;
+            }
+            double v = 0;
+            for (const auto &o : outcomes(s, a)) {
+                if (o.state.outcome != Outcome::UNDECIDED) { v += o.p * terminal(o.state).v; continue; }
+                if (o.state.turn != s.turn) return false;
+                SAction next;
+                if (o.state.inputState == InputState::PLAYER_NORMAL) next = policy_.chooseBattleCardPlay(o.state);
+                else if (o.state.inputState == InputState::CARD_SELECT) next = policy_.chooseBattleCardSelect(o.state);
+                else return false;
+                double d = 0;
+                if (!turnPolicyQ(o.state, next, d)) return false;
+                v += o.p * d;
             }
             out = v;
             return true;
@@ -2396,6 +2443,13 @@ namespace {
 
         Val solve(const BattleContext &s, double alpha = kNoAlpha, const KeyBuilder *knownPre = nullptr) {
             if (s.outcome != Outcome::UNDECIDED) return terminal(s);
+            if (s.turn >= exactFromTurn_) {
+                Val v;
+                if (!exactSource_ || !exactSource_->abstractValue(s, v.v))
+                    throw std::runtime_error("--policy-then-exact: a state outside the abstract model");
+                v.score = v.hp = v.win = v.capped = -1;   // not tracked by the recursion
+                return v;
+            }
             if (s.turn > turnCap_) {
                 // Horizon: an undecided fight past the cap scores like a loss leaf
                 // (Silver's unresolved-playout evaluation); `capped` reports how
@@ -2867,6 +2921,7 @@ namespace {
         int flatSims = 10000;
         bool prior = false;
         std::optional<double> exploration;   // "@c=X" suffix: UCB exploration X at decision and chance edges
+        std::optional<int> maxBackup;        // "@mb=K" suffix: STS_SILVER_MAX_BACKUP=K for this config
     };
 
     Config parseConfig(const std::string &full) {
@@ -2874,9 +2929,13 @@ namespace {
         Config c;
         c.name = full;
         std::string name = full;
-        if (const auto at = full.find("@c="); at != std::string::npos) {
-            c.exploration = std::stod(full.substr(at + 3));
-            name = full.substr(0, at);
+        if (const auto at = name.find("@mb="); at != std::string::npos) {
+            c.maxBackup = std::stoi(name.substr(at + 4));
+            name = name.substr(0, at);
+        }
+        if (const auto at = name.find("@c="); at != std::string::npos) {
+            c.exploration = std::stod(name.substr(at + 3));
+            name = name.substr(0, at);
         }
         c.budget.skipSingletonRoots = true;
         if (name == "prod") { c.budget.policy = P::LearnedStop; c.prior = true; }
@@ -3229,6 +3288,19 @@ int main(int argc, char **argv) {
         int turnCap = 8;
         std::vector<int> policyTurns;   // --policy-turns: k = optimal turns before the rollout policy takes over
         int policyTurnCap = 30;
+        bool policyThisTurn = false;    // --policy-this-turn: the rollout policy for the root's turn, then exact
+        bool policyThenExact = false;   // --policy-then-exact: each --policy-turns k also as "<variant>kT":
+                                        // the rollout policy for one turn only, then the exact value
+        // --leaf-oracles M,M,...: every config plays each fight once per mode, its own search valuing
+        // the leaves with the abstract exact model of the fight instead of the playout (rows and
+        // summaries carry the mode as "leafOracle"). none = the playout; exact = V*(leaf) (a perfect
+        // value net, no playout); turn = the rollout policy to the end of the leaf's turn, then the
+        // exact value of ending it (a perfect afterstate net behind a greedy finish of the turn);
+        // turnstart = turn, but a leaf where no card has been played this turn gets V*(leaf);
+        // blend:L = L * V* + (1 - L) * playout. A suffix @S adds a fixed N(0, S^2) error per valued
+        // state (ExactSolver::noiseAt). Leaves the model cannot value keep their playout (counted).
+        struct LeafModeSpec { std::string tag, mode; double noise = 0, blend = 0.5; };
+        std::vector<LeafModeSpec> leafModes;
         // Playout variants evaluated by --policy-turns: "pol" is the production block rule;
         // --policy-block-first adds "polB" (margin 0); --policy-grid M:K:L,... adds "gM_K_L"
         // (margin M, offset K, lethal check L; M = -1 keeps block-first off).
@@ -3282,6 +3354,22 @@ int main(int argc, char **argv) {
                 std::stringstream list(value());
                 for (std::string item; std::getline(list, item, ',');) policyTurns.push_back(std::stoi(item));
             } else if (arg == "--policy-turn-cap") policyTurnCap = std::stoi(value());
+            else if (arg == "--policy-this-turn") policyThisTurn = true;
+            else if (arg == "--policy-then-exact") policyThenExact = true;
+            else if (arg == "--leaf-oracles") {
+                std::stringstream list(value());
+                for (std::string item; std::getline(list, item, ',');) {
+                    LeafModeSpec m{item, item};
+                    if (const auto at = m.mode.find('@'); at != std::string::npos) {
+                        m.noise = std::stod(m.mode.substr(at + 1));
+                        m.mode.resize(at);
+                    }
+                    if (m.mode.rfind("blend:", 0) == 0) { m.blend = std::stod(m.mode.substr(6)); m.mode = "blend"; }
+                    if (m.mode != "none" && m.mode != "exact" && m.mode != "turn" && m.mode != "turnstart" && m.mode != "blend")
+                        throw std::invalid_argument("--leaf-oracles items are none|exact|turn|turnstart|blend:L, optionally @S");
+                    leafModes.push_back(m);
+                }
+            }
             else if (arg == "--policy-block-first") policyVariants.push_back({"polB", BlockRule{0, true, 4}});
             else if (arg == "--policy-grid") {
                 std::stringstream list(value());
@@ -3330,9 +3418,56 @@ int main(int argc, char **argv) {
             // first root of a later turn: roots up to this turn stay unscored.
             int unsolvableThroughTurn = -1;
             json infeasibleSolves = json::array();
-            for (const auto &config : configs) {
+            // Research (--leaf-oracles): Silver's own leaves valued by the abstract exact model of
+            // this fight, built from the fight's first searched root and shared by every mode.
+            std::unique_ptr<ExactSolver> leafOracle;
+            bool leafOracleReady = false, inLeafPlayout = false;
+            std::int64_t leafCalls = 0, leafFallbacks = 0;
+            const LeafModeSpec *leaf = nullptr;   // the mode of the fight being played
+            if (!leafModes.empty()) {
+                sts::search::g_silverLeafOverride = [&](SilverSearcher &searcher, BattleContext &state, double &value) {
+                    if (!leaf || leaf->mode == "none" || inLeafPlayout) return false;   // the playout (also the blend's own)
+                    if (!leafOracle) {
+                        const BattleContext &r = searcher.rootSearchState();
+                        leafOracle = std::make_unique<ExactSolver>(r, searcher, hpObjective, maxStates, false,
+                                                                   !canonicalOff && canonicalDrawsSafe(r), !keepEnergyWaste);
+                        leafOracle->turnCap_ = turnCap;
+                        leafOracleReady = leafOracle->relaxedInit();
+                    }
+                    ++leafCalls;
+                    leafOracle->leafNoise_ = leaf->noise;
+                    double v = 0;
+                    bool ok = false;
+                    const bool playable = state.inputState == InputState::PLAYER_NORMAL
+                        || state.inputState == InputState::CARD_SELECT;
+                    if (leafOracleReady && playable && (leaf->mode == "turn"
+                            || (leaf->mode == "turnstart" && state.player.cardsPlayedThisTurn > 0))) {
+                        // The rollout policy to the end of the leaf's turn, then the exact value of ending it.
+                        leafOracle->setPolicy(1 << 30, searcher);
+                        const SAction next = state.inputState == InputState::PLAYER_NORMAL
+                            ? leafOracle->policy_.chooseBattleCardPlay(state) : leafOracle->policy_.chooseBattleCardSelect(state);
+                        ok = leafOracle->turnPolicyQ(state, next, v);
+                    } else if (leafOracleReady) {
+                        ok = leafOracle->abstractValue(state, v);
+                        if (ok) v += leafOracle->noiseAt(state);
+                    }
+                    if (!ok) { ++leafFallbacks; return false; }
+                    if (leaf->mode == "blend") {
+                        inLeafPlayout = true;
+                        const double p = searcher.rolloutValue(state);
+                        inLeafPlayout = false;
+                        v = leaf->blend * v + (1 - leaf->blend) * p;
+                    }
+                    value = v;
+                    return true;
+                };
+            }
+            const std::vector<LeafModeSpec> modes = leafModes.empty() ? std::vector<LeafModeSpec>{LeafModeSpec{}} : leafModes;
+            for (const auto &config : configs) for (const auto &mode : modes) {
                 if (!fightFailure.empty()) break;
+                leaf = &mode;
                 sts::search::g_nativeSilverBudgetOverride = config.budget;
+                sts::search::g_nativeSilverMaxBackupOverride = config.maxBackup;
                 sts::search::g_nativeSilverSearchParamOverride.reset();
                 if (config.exploration) {
                     sts::search::NativeSilverSearchParams params;
@@ -3427,13 +3562,16 @@ int main(int argc, char **argv) {
                             }
                             acts.push_back(act);
                         }
-                        for (const int k : policyTurns) for (std::size_t variant = 0; variant < policyVariants.size(); ++variant) {
+                        for (const int k : policyTurns) for (std::size_t variant = 0; variant < policyVariants.size(); ++variant)
+                        for (const bool exactTail : {false, true}) {
+                            if (exactTail && !policyThenExact) continue;
+                            if (exactTail && !solver->relaxedReady()) throw std::runtime_error("--policy-then-exact: this fight is not modelled");
                             const auto &[variantName, rule] = policyVariants[variant];
                             const int from = root.turn + k;
                             std::vector<int> table;
                             if (searcher.rolloutConfig.cardTable)
                                 table.assign(searcher.rolloutConfig.cardTable, searcher.rolloutConfig.cardTable + 372 * 2);
-                            table.push_back(static_cast<int>(variant));   // part of the solver key only
+                            table.push_back(static_cast<int>(variant) + (exactTail ? 1000 : 0));   // part of the solver key only
                             // A per-root rollout table (prod) changes the policy at every root: keep
                             // only solvers whose table is the current one, or memory grows per root.
                             for (auto it = policySolvers.begin(); it != policySolvers.end();)
@@ -3446,14 +3584,31 @@ int main(int argc, char **argv) {
                                 ps->turnCap_ = policyTurnCap;
                                 ps->setPolicy(from, searcher);
                                 ps->policy_.blockRule = rule;
+                                if (exactTail) {
+                                    ps->exactFromTurn_ = from + 1;
+                                    ps->exactSource_ = solver.get();
+                                }
                             }
                             for (std::size_t i = 0; i < edges.size(); ++i) {
                                 const Val v = ps->q(root, edges[i].action);
-                                const std::string tag = variantName + std::to_string(k);
+                                const std::string tag = variantName + std::to_string(k) + (exactTail ? "T" : "");
                                 acts[i][tag] = v.v;
                                 acts[i][tag + "Hp"] = v.hp;
                                 acts[i][tag + "Win"] = v.win;
                                 acts[i][tag + "Capped"] = v.capped;
+                            }
+                        }
+                        // "<variant>T": the variant's playout policy for the rest of the root's turn, then the
+                        // abstract exact value (the headroom of a perfect turn-start leaf behind a greedy turn).
+                        if (policyThisTurn) {
+                            if (!solver->relaxedReady()) throw std::runtime_error("--policy-this-turn: this fight is not modelled");
+                            for (const auto &[variantName, rule] : policyVariants) {
+                                solver->setPolicy(1 << 30, searcher);   // this root's card table; the solver itself stays optimal
+                                solver->policy_.blockRule = rule;
+                                for (std::size_t i = 0; i < edges.size(); ++i) {
+                                    double v = 0;
+                                    acts[i][variantName + "T"] = solver->turnPolicyQ(root, edges[i].action, v) ? json(v) : json(nullptr);
+                                }
                             }
                         }
                         solveSeconds += seconds(t0);
@@ -3466,6 +3621,7 @@ int main(int argc, char **argv) {
                                     {"regret", best - qs[chosenIdx].v}, {"optimal", qs[chosenIdx].v >= best - 1e-9},
                                     {"states", solver->states()}};
                         if (verify) row["verifiedHits"] = solver->verifiedHits();
+                        if (!leafModes.empty()) row["leafOracle"] = mode.tag;
                         if (!qAbstract.empty()) {
                             row["qAbstract"] = qAbstract;
                             row["abstractRootSeconds"] = abstractRootSeconds;
@@ -3601,10 +3757,17 @@ int main(int argc, char **argv) {
                     summary["decisionStatesByTurn"] = bt;
                 }
                 if (!fightFailure.empty()) summary["failure"] = fightFailure;
+                if (!leafModes.empty()) {
+                    summary["leafOracle"] = mode.tag;
+                    summary["leafOracleCalls"] = leafCalls;
+                    summary["leafOracleFallbacks"] = leafFallbacks;
+                    leafCalls = leafFallbacks = 0;
+                }
                 out << summary.dump() << '\n';
                 out.flush();
                 std::cerr << summary.dump() << '\n';
             }
+            sts::search::g_silverLeafOverride = nullptr;
         }
         return 0;
     } catch (const std::exception &e) {
