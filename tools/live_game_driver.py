@@ -289,9 +289,35 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+_ABSENT = object()
+
+
+def pile_settling_fix() -> bool:
+    """STS_LIVE_PILE_SETTLING_REFRESH: unset/1 (default) refreshes on settling
+    pile cost/stat values (problem 82); 0 restores the legacy transient."""
+    value = os.environ.get("STS_LIVE_PILE_SETTLING_REFRESH", "1")
+    if value in ("", "1"):
+        return True
+    if value == "0":
+        return False
+    raise DriverError("STS_LIVE_PILE_SETTLING_REFRESH must be 0 or 1")
+
+
+# A pile entry's cost and derived/base stats can settle a frame after the card
+# moved (problem 82: a card exhausted by its own use is first snapshotted with
+# its in-use cost 0, playability and hand stats; 36/36 transient dumps).
+_PILE_SETTLING_KEYS = ("cost", "is_playable", "damage", "block", "magic_number",
+                       "base_damage", "base_block", "base_magic_number")
+
+
 def _pile_display_only_change(screen: Mapping[str, Any], game: Mapping[str, Any],
                               current_screen: Mapping[str, Any], current_game: Mapping[str, Any]) -> bool:
-    """Classify a cached positive stat appearing/disappearing; never authorize a click."""
+    """Classify settling pile display values; never authorize a click.
+
+    Only the same card (uuid and id) in the same pile position qualifies: a
+    cached positive stat appearing/disappearing, or its cost and stat values
+    settling. A match only discards the decision and re-reads the state.
+    """
     if not (_is_combat(screen) and _is_combat(current_screen)
             and screen.get("screen_type") == current_screen.get("screen_type") == "NONE"):
         return False
@@ -306,6 +332,14 @@ def _pile_display_only_change(screen: Mapping[str, Any], game: Mapping[str, Any]
                 continue
             for old, new in zip(a, b):
                 if not (isinstance(old, dict) and isinstance(new, dict)):
+                    continue
+                if (pile_settling_fix() and old.get("uuid") is not None
+                        and old.get("uuid") == new.get("uuid") and old.get("id") == new.get("id")):
+                    for key in _PILE_SETTLING_KEYS:
+                        if old.get(key, _ABSENT) != new.get(key, _ABSENT):
+                            old.pop(key, None)
+                            new.pop(key, None)
+                            changed = True
                     continue
                 for stat in ("damage", "block", "magic_number"):
                     if (stat in old) == (stat in new) or "base_" + stat in old or "base_" + stat in new:

@@ -22228,6 +22228,40 @@ Seeds: none.
 
 **Knowledge impact:** `operations/environment-variables.md`. Comparability: imports that were previously refused, no simulator change.
 
+## §616 — Live problem 82: an exhausted card's settling cost/stats stopped the driver as a state change (2026-10-21)
+
+**Observation.** Live A20 seed 111200502 (release 844bd923, act 2 Shelled Parasite) was abandoned through the transient cap: three back-to-back "MCP state changed while awaiting the advisor" stops. Each time, the only difference between the decision state and the pre-click re-read was the stats of the card Corruption had just exhausted: Shockwave cost 0→3; Shrug It Off cost 0→2, block 8→11, `base_block` dropped; Defend_R cost 0→1, block 3→5, damage dropped. The player had Corruption, Snecko Eye (Confusion), Frail and Demon Form. The exhausted skill first shows its hand values and settles a frame later. The same signature is the candidate root cause of the recurring #75 transients.
+
+**Cause.** `_pile_display_only_change` only forgave a positive cached stat appearing or disappearing on entries without `base_*`. Cost and stat value changes were treated as real state changes.
+
+**Change (driver only, `STS_LIVE_PILE_SETTLING_REFRESH`, default on, `=0` restores the stop).** A draw/discard/exhaust entry with the same UUID and id at the same position may differ in `cost`, `is_playable`, `damage`, `block`, `magic_number` and `base_*`. The canary classified all 36 transient dumps of seeds 450-519 as this signature (0 real changes): the card exhausted by its own use is snapshotted with its in-use state, not only under Corruption/Snecko. The driver then discards the unexecuted decision and re-reads, within the existing three-refresh limit. HP, hand, UUID, order, upgrades and everything else stay strict, and no click is ever authorized by the match. Unit tests: the three observed shapes refresh; HP, UUID, upgrade and hand changes still stop; `=0` stops. The driver integration test now refreshes on cost/zero/changed-value drift and keeps the legacy stop under `=0`.
+
+Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
+**Knowledge impact:** `operations/live-model-inspector.md`.
+
+## §618 — Live problem 74 resolved: Red Skull's anonymous battle-start action refused Toolbox's offer (2026-10-21)
+
+**Observation.** The §604 diagnostic fired on live A20 seed 111200504 (release 010d797c, act 2 Chosen, turn 1, Red Skull and Toolbox, HP 74/85). Toolbox's offer was refused with `pendingActionsBlocker` `actions=[DrawCardAction,EnableEndTurnButtonAction,];refusal=2:unknown_action`. Index 2 has an empty simple name: it is `relics.RedSkull$1`, the anonymous action `RedSkull.atBattleStart` queues with `addToBot`. The original problem-74 blocker (seed 111200473, which owned Red Skull) also ended in an empty name after Red Mask's actions (`...,ApplyPowerAction(...),]`). So Red Mask was never the refusing action.
+
+**Cause.** The producer's public-queue projection had no case for the anonymous Red Skull action. Per the canary's javap reading, it adds Strength 3 if `!isActive && player.isBloodied`, and otherwise does nothing. It uses no RNG.
+
+**Change (producer-only mod fix, no flag).** The projection omits `RedSkull$1` when the player is not bloodied or the relic is already active. Otherwise it sends `BUFF_PLAYER Strength 3`, which the importer already supports in `toolbox_actions`. The blocker names anonymous classes by their full class name.
+
+**Knowledge impact:** `operations/live-model-inspector.md`.
+Seeds: none new (live seeds 111200473 and 111200504).
+
+## §620 — Live problem 83: Corruption's hand pass zeroes a generated skill's cost for the combat (2026-10-21)
+
+**Question:** Why did seed 111200508 (A20 Heart kill, Snecko Eye + Corruption + Dead Branch) show 88 `hand[].cost` mismatches (game 0, native base cost) with `costForTurn` agreeing?
+
+**Evidence:** The canary's extract (issue83/p83-verdicts.json) shows every mismatched card was a SKILL newly made in hand while Corruption was active. In step 856, Fiend Fire's exhausts fed Dead Branch, and the five skills among the ten new cards mismatched; Entrench in step 494 was likewise new. The javap (issue83/javap3-root-cause.md, desktop jar cfad868a) shows the mechanism. `ShowCardAndAddToHandEffect` first runs `hand.addToHand`, then `player.onCardDrawOrDiscard()`, then its own `if Corruption && SKILL: setCostForTurn(-9)`. `AbstractPlayer.onCardDrawOrDiscard` runs `modifyCostForCombat(-9)` on every SKILL in hand with `costForTurn != 0`. The fresh card still has `costForTurn` = base, so `cost` becomes 0 for the combat. Native `moveToHandHelper` ran only `setCostForTurn(-9)`. Confusion then rerolls against the zero cost, so the cost shows up once the card is drawn again.
+
+**Change:** `STS_CORRUPTION_HAND_COST_FIX` (default on, `=0` restores) adds `BattleContext::corruptionHandCostPass` and `CardInstance::modifyCostForCombat`. `ActData_MakeTempCardInHand` (when the card fits in hand) and `chooseDiscoveryCard` add the card first and then run the pass. No RNG draw changes. Test: `tests/corruption_hand_cost_test.cpp` (Entrench 0/0 vs legacy 2/0; Double Tap 0/0 vs 1/0; attacks and no-Corruption unchanged).
+
+**Interpretation:** This is a play-changing engine fix for Corruption decks: generated skills that Snecko later rerolls start from 0. Not done: Java also runs the pass after each `draw()` and discard. That only matters for a hand skill with `costForTurn != 0` under Corruption, which is not seen live (Exhume and Liquid Memories set it to 0).
+
+**Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22622,6 +22656,26 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §617 — Live advisor: Headbutt grounding a living Byrd was refused (2026-10-21)
+
+**Question:** why did live seed 111200490 (release 8aa99624) stop at Headbutt's grid with
+`silver_selection_pending_actions` after a non-lethal hit on the last Byrd at Flight 1 (problem 80 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue80-byrd/p90-observation.json` on the share, kept as
+`tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+THREE_BYRDS; no gameplay runs).
+**Result:** the importer folded a queued `MONSTER_REDUCE_FLIGHT` at Flight 1 only into a dead Byrd (§581,
+`STS_SILVER_LETHAL_REACTION_QUEUE`) and refused it for a living one. Native `Monster::damage` grounds at the
+hit: it cancels any deferred roll, sets Stunned and removes Flight. The fight had Runic Dome, so the Byrd's turn-4
+roll was still deferred in the mod's history (`pendingMoveRolls` 1).
+**Interpretation:** under `STS_SILVER_BYRD_GROUNDING_QUEUE` (default on, `=0` restores the refusal) the importer folds
+the grounding the same way: Stunned next, Flight removed (under `STS_BYRD_GROUNDED_FLIGHT_FIX`), and under Runic Dome
+the deferred roll cancelled after the history import. The importer test's Headbutt loop gains a living-Byrd variant
+with native parity before and after the pick, and the captured observation imports and searches. Play-changing only
+where the advisor used to refuse.
+Seeds: none new (live seed 111200490 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
 ## §611 — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
 
 **Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
@@ -22751,3 +22805,55 @@ diff (game 0/0 vs native 1/1 for the deck's own Blood for Blood+ at an End Turn 
 draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
+
+## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
+
+Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
+#765 queue worker (09:59Z). Pre-registration and outputs: `docs/experiments/evidence/az_gen1b_value_leaf_ab_20261020/`
+(`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`, `verify.txt`, `tars.sha256`). Offline numbers: §577.
+
+- **Freeze:** RUN_COMMIT `7cd3ae69` (main `0ba0e9a9` plus the campaign dir); binary sha256 `a822b950…`. student_sel
+  `cf6bf7fb…`, gen1b `e6aa044c…`. Smoke seed 111144994 (both arms rc 0); seeds 111144990–994 were smokes.
+- **Arms:** gen 0's search stack (student_sel prior, rollout net and leaf selector, OOC MCTS 4096 sims, rollout3,
+  `GAP_STOP=0`, 25% full-budget roots, flat exact-10k Silver real combats) with the learned OOC stop OFF in both.
+  A ends every rollout3 leaf in X2-B; B adds `STS_OOC_MCTS_LEAF_HEART1_VALUE=gen1b.bin`.
+- **Run:** seeds 111144000–111144511, 32 workers × 4 lanes, `schedule queue`. `verify_campaign.py`: 512 of 512 units
+  OK; 67 units ran twice (claim race on the share, fixed by #773 for later campaigns; identical outcomes, first tar
+  used). 1,024 of 1,024 arm runs rc 0; 512 of 512 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | act-1 deaths | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|---|
+  | A X2-B | 107 (20.9%) | 209 (40.8%) | 48 | 43.9 | 1,976, 5,649 |
+  | B gen 1b value | 123 (24.0%) | 222 (43.4%) | 50 | 44.1 | 2,105, 4,669 |
+
+  Heart kills B − A +3.1 pp [−1.0, +7.2], discordant 66 B-only / 50 A-only, exact McNemar p 0.16. Act 4 +2.5 pp
+  [−2.3, +7.3], p 0.34. Act-1 deaths +0.4 pp, p 0.89. Wall B/A 1.07 (≤ 1.10). The search's pick differed from the
+  prior's argmax at 3,043 vs 2,302 searched roots (9.0% vs 6.8%).
+- **Verdict: NOT_SHOWN** (pre-registered rule). X2-B stays the rollout3 end value; the flag stays default off.
+- **Inference:** the lean favours the value head, within a test that resolves about ±4 pp. No act-1 penalty, unlike
+  §522. The compressed value scale makes the prior weigh more at the same cpuct (fewer overrides).
+- **Knowledge impact:** `evaluation/current-research.md`.
+
+
+## §619 — Gumbel sequential halving at OOC full-budget roots: offline target quality (116 A20 roots): SH beats PUCT against a uniform reference, play A/B pending (2026-10-21)
+
+**Question (Philipp, 2026-10-21 15:04Z):** full-budget OOC roots are ~59% of run CPU. Does a Gumbel AlphaZero root
+with sequential halving (SH) give better root choices and targets than PUCT at matched or lower budget?
+**Design:** new opt-in `STS_OOC_MCTS_GUMBEL_ROOT=M[:SCALE]` (full-budget roots only, default off, byte-identical) and
+research `STS_OOC_MCTS_ROOT_COMPARE`. At each full root it runs a uniform 8192-sim reference (even split over all
+root actions, own seed) and SH with M = 4/16 at 512/1024/2048. PUCT@k is the main 4096 search's checkpoint.
+Combined-stack A20 config, seeds 111145010–017 (014–017 cut short by a container restart), 116 full roots.
+**Result:** paired regret in reference Q (×1e-3, SH − PUCT, matched sims): M16@2048 −6.91 [−10.33, −3.83],
+M16@1024 −4.92 [−8.37, −1.75], M16@512 −4.40 [−7.43, −1.50]. Every SH cell is below 0, and M16@2048 also beats
+PUCT@4096 (−6.30) at half the root CPU. Agreement with the reference's best action: M16@2048 0.69, PUCT@4096 0.44,
+prior argmax 0.41. Target KL(π'_ref‖π'): M16@2048 0.030 vs PUCT@2048 0.091 (paired −0.062 [−0.112, −0.021]) and
+PUCT@4096 0.060. At 512/1024 KL shows no difference. Flag-off identity run and compare-mode non-intrusion are
+byte-identical on seed 111145010.
+**Interpretation:** PUCT at 4096 barely leaves student_sel's ~0.99 prior. SH explores the sampled candidates and plays
+by Q.
+**Inference:** offline only. The reference shares the leaf evaluator (rollout3 + X2-B), and Q-based root selection lost
+twice in play (§414, §560). So this does not show more Heart kills; a paired A20 play A/B (GUMBEL_ROOT=16, full roots
+2048, vs current) must decide. The flag stays default off.
+[Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
+Seeds 111145010–017 used (010 reused from the speed profile).

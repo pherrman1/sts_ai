@@ -54,6 +54,73 @@ struct Search {
     std::optional<OocEndpoint> endpoint;
     std::map<OocActionId, OocValueDistribution> actionValues;
     std::map<OocActionId, OocHpDistribution> actionHp;
+    // Gumbel root (config.gumbelRootActions > 0): the root's sampled candidates, their
+    // g + log prior, and the sequential-halving schedule over `gumbelBudget` simulations.
+    std::vector<ChanceNode *> gumbelRemaining;
+    std::map<const ChanceNode *, double> gumbelLogit;
+    std::uint64_t gumbelBudget = 0, gumbelTarget = 0;
+    std::uint32_t gumbelPhases = 0, gumbelPhasesLeft = 0;
+    // sigma(Q) on the root Q min-max normalised over the visited live actions, as mctx does.
+    double gumbelSigma(const DecisionNode &node, const ChanceNode &action) const {
+        std::uint64_t most = 0;
+        double lo = std::numeric_limits<double>::infinity(), hi = -lo;
+        for (const auto &a : node.actions) {
+            most = std::max(most, a.visits);
+            if (a.visits && !a.pruned) { lo = std::min(lo, a.q()); hi = std::max(hi, a.q()); }
+        }
+        const double q = action.visits && hi > lo ? (action.q() - lo) / (hi - lo) : 0;
+        return (config.gumbelCVisit + double(most)) * config.gumbelCScale * q;
+    }
+    double gumbelScore(const DecisionNode &node, const ChanceNode &action) const {
+        return gumbelLogit.at(&action) + gumbelSigma(node, action);
+    }
+    void gumbelStep(std::size_t candidates) {
+        gumbelTarget += std::max<std::uint64_t>(1, gumbelBudget / (std::uint64_t(gumbelPhases) * candidates));
+    }
+    void initGumbelRoot(DecisionNode &node) {
+        std::mt19937_64 gumbelRng(config.gumbelSeed);
+        std::extreme_value_distribution<double> gumbel(0.0, 1.0);
+        std::vector<std::pair<double, ChanceNode *>> ranked;
+        for (auto &action : node.actions) {
+            const double g = config.gumbelScale * gumbel(gumbelRng);   // one draw per action, in ID order
+            if (action.action.prior <= 0) continue;
+            gumbelLogit[&action] = g + std::log(action.action.prior);
+            ranked.push_back({gumbelLogit[&action], &action});
+        }
+        std::stable_sort(ranked.begin(), ranked.end(), [](const auto &a, const auto &b) { return a.first > b.first; });
+        const auto k = std::min<std::size_t>(config.gumbelRootActions, ranked.size());
+        for (std::size_t i = 0; i < k; ++i) gumbelRemaining.push_back(ranked[i].second);
+        gumbelPhases = k > 1 && !config.gumbelUniform ? static_cast<std::uint32_t>(std::ceil(std::log2(double(k)))) : 1;
+        gumbelPhasesLeft = gumbelPhases;
+        if (k) gumbelStep(k);
+    }
+    // The next root action under sequential halving, or nullptr when no live candidate is left
+    // (the caller then falls back to PUCT over the live actions).
+    ChanceNode *gumbelChoice(DecisionNode &node) {
+        auto live = [&] {
+            gumbelRemaining.erase(std::remove_if(gumbelRemaining.begin(), gumbelRemaining.end(),
+                [](const ChanceNode *a) { return a->pruned; }), gumbelRemaining.end());
+            return !gumbelRemaining.empty();
+        };
+        if (!live()) return nullptr;
+        for (int guard = 0; guard < 64; ++guard) {
+            ChanceNode *pick = nullptr;
+            for (auto *a : gumbelRemaining)
+                if (a->visits < gumbelTarget && (!pick || a->visits < pick->visits)) pick = a;
+            if (pick) return pick;
+            if (gumbelRemaining.size() > 1 && gumbelPhasesLeft > 1) {
+                std::stable_sort(gumbelRemaining.begin(), gumbelRemaining.end(), [&](const ChanceNode *a, const ChanceNode *b) {
+                    return gumbelScore(node, *a) > gumbelScore(node, *b);
+                });
+                gumbelRemaining.resize((gumbelRemaining.size() + 1) / 2);
+                --gumbelPhasesLeft;
+                gumbelStep(gumbelRemaining.size());
+            } else {
+                ++gumbelTarget;   // schedule spent: round-robin over the remaining candidates
+            }
+        }
+        return gumbelRemaining.front();
+    }
     bool rootWinnerLocked(const DecisionNode &node, std::uint64_t remaining) const {
         const ChanceNode *only = nullptr;
         std::size_t live = 0;
@@ -168,15 +235,17 @@ struct Search {
         if (!node.expanded) {
             expand(node);
             if (root && config.rootNoiseFraction > 0) addRootNoise(node);
+            if (root && config.gumbelRootActions > 0) initGumbelRoot(node);
             // Root expands before action selection; new downstream leaves stop.
             if (!root) {
                 return leaf(node.state);
             }
         }
         ChanceNode *chosen = nullptr;
+        if (root && config.gumbelRootActions > 0) chosen = gumbelChoice(node);
         // A prior is not an action filter: visit each action once before PUCT.
         // Actions are sorted by ID, so equal-prior ties retain the lowest ID.
-        for (auto &action : node.actions) {
+        if (!chosen) for (auto &action : node.actions) {
             if (!action.pruned && !action.visits && (!chosen || action.searchPrior > chosen->searchPrior))
                 chosen = &action;
         }
@@ -290,7 +359,10 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     for (std::uint64_t n = 1; n <= cachedVisits; ++n)
         search.wideningLimits.push_back(chanceWideningLimit(n));
     DecisionNode node(root);
-    const bool mayStopLocked = !config.observeRootLock && !config.selectByMeanQ
+    search.gumbelBudget = simulations;
+    // Sequential halving spends its whole schedule: no visit-based early stop at a Gumbel root.
+    const bool gumbelRoot = config.gumbelRootActions > 0;
+    const bool mayStopLocked = !config.observeRootLock && !config.selectByMeanQ && !gumbelRoot
         && (config.allowUnqualifiedRootStop || model.searchGuaranteedNonAborting());
     std::chrono::steady_clock::time_point lockTime;
     search.metrics.decisionNodes = 1;
@@ -337,14 +409,14 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                 search.metrics.savedSimulations = remaining;
                 break;
             }
-            if (remaining && config.stopAt512VisitGap20 && !config.observeRootLock
+            if (remaining && !gumbelRoot && config.stopAt512VisitGap20 && !config.observeRootLock
                 && !config.selectByMeanQ && search.metrics.simulations == 512
                 && search.rootVisitGapAtLeast20(node)) {
                 search.metrics.earlyStopVisitGap20 = true;
                 search.metrics.savedSimulations = remaining;
                 break;
             }
-            if (remaining && config.gapStopFraction > 0 && !config.observeRootLock && !config.selectByMeanQ
+            if (remaining && !gumbelRoot && config.gapStopFraction > 0 && !config.observeRootLock && !config.selectByMeanQ
                 && std::find(config.gapStopSimulations.begin(), config.gapStopSimulations.end(),
                        search.metrics.simulations) != config.gapStopSimulations.end()
                 && search.rootVisitGapAtLeast(node, config.gapStopFraction, search.metrics.simulations)) {
@@ -352,7 +424,7 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                 search.metrics.savedSimulations = remaining;
                 break;
             }
-            if (remaining && config.learnedStop && !config.observeRootLock && !config.selectByMeanQ
+            if (remaining && !gumbelRoot && config.learnedStop && !config.observeRootLock && !config.selectByMeanQ
                 && std::find(config.learnedStopSimulations.begin(), config.learnedStopSimulations.end(),
                        search.metrics.simulations) != config.learnedStopSimulations.end()) {
                 std::vector<OocRootActionStats> stats;
@@ -393,6 +465,14 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
             ? action.q() > best->q() || (action.q() == best->q() && action.visits > best->visits)
             : action.visits > best->visits || (action.visits == best->visits && action.q() > best->q()));
         if (better) best = &action;
+    }
+    if (config.gumbelRootActions > 0) {
+        // Gumbel root: the best remaining candidate by g + log prior + sigma(Q), not the most visited.
+        const ChanceNode *gumbelBest = nullptr;
+        for (const auto *a : search.gumbelRemaining)
+            if (!a->pruned && a->visits && (!gumbelBest || search.gumbelScore(node, *a) > search.gumbelScore(node, *gumbelBest)))
+                gumbelBest = a;
+        if (gumbelBest) best = gumbelBest;
     }
     if (best) result.selectedAction = best->action.id;
     if (config.captureTree) {

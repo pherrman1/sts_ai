@@ -1644,6 +1644,40 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("captured Runic Dome Writhing Mass reroll was not deferred after the selection");
             std::cout << "captured Runic Dome Writhing Mass Headbutt import and search passed: " << path << "\n";
         }
+        // Overnight live seed 111200490, problem 80: under Runic Dome, Headbutt's GRID after a non-lethal hit took
+        // the last Byrd from Flight 1 to 0. Java still queues the reduction (and the grounding behind it); the
+        // Byrd's turn-4 roll is deferred. Native grounds at the hit: Flight removed, roll cancelled, Stunned next.
+        {
+            const std::string path=argc>7?argv[7]:"tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Runic Dome Byrd grounding fixture: "+path);
+            json observation; input >> observation;
+            setenv("STS_SILVER_BYRD_GROUNDING_QUEUE","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_SILVER_BYRD_GROUNDING_QUEUE");
+            if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                throw std::runtime_error("captured Runic Dome Byrd grounding legacy refusal changed: "+legacy.reason);
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Runic Dome Byrd grounding import: "+imported.reason);
+            const auto &byrd=imported.wire.monsters[2];
+            if(byrd.curHp!=8 || byrd.pendingMoveRolls!=0 || !byrd.pendingAttackPredicates.empty()
+                    || byrd.moveHistory[0]!=static_cast<std::int16_t>(MonsterMoveId::BYRD_STUNNED)
+                    || (byrd.statusBits & (1ULL<<static_cast<int>(MonsterStatus::FLIGHT))) || byrd.uniquePower0!=0
+                    || imported.wire.pendingActionQueue.size()!=1
+                    || imported.wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::USE_CARD)
+                throw std::runtime_error("captured Runic Dome Byrd was not grounded like native");
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Runic Dome Byrd grounding search: "+decision.failureReason);
+            auto root=battleContextFromWire(imported.wire);
+            sts::search::Action(sts::search::ActionType::SINGLE_CARD_SELECT,0).execute(root);
+            const auto &grounded=root.monsters.arr[2];
+            if(root.inputState!=InputState::PLAYER_NORMAL || grounded.moveHistory[0]!=MonsterMoveId::BYRD_STUNNED
+                    || grounded.pendingMoveRolls!=0 || grounded.hasStatus<MonsterStatus::FLIGHT>())
+                throw std::runtime_error("captured Runic Dome Byrd grounding did not survive the selection");
+            std::cout << "captured Runic Dome Byrd grounding import and search passed: " << path << "\n";
+        }
         // Live seed 111200433, problem 40: the first Act 4 elite (SHIELD_AND_SPEAR turn 1). Spire Shield carries
         // Java's BackAttack marker: the Surrounded player faces Spire Spear (slot 1).
         {
@@ -4457,13 +4491,15 @@ int main(int argc, char **argv) {
         // A lethal Headbutt into a Byrd still queues Flight's reduction (live seed 111200421), also at
         // Flight 1, where native stuns the Byrd before its death (live seed 111200460).
         // Plated Armor 1 on Donu/Deca reaches 0 and is removed (live seed 111200422).
-        for (int variant=0;variant<10;++variant) {
+        // A non-lethal Headbutt at Flight 1 grounds a living Byrd (live problem 80).
+        for (int variant=0;variant<11;++variant) {
             const auto encounter=std::array{MonsterEncounter::WRITHING_MASS, MonsterEncounter::SHELL_PARASITE,
                 MonsterEncounter::THE_GUARDIAN, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THE_GUARDIAN,
                 MonsterEncounter::TWO_LOUSE, MonsterEncounter::THREE_DARKLINGS, MonsterEncounter::THREE_BYRDS,
-                MonsterEncounter::DONU_AND_DECA, MonsterEncounter::THREE_BYRDS}[variant];
-            const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7 || variant==9, shift=variant==4, louse=variant==5;
-            const bool darkling=variant==6, lethal=variant==7 || variant==9, plateRemoved=variant==8, lastFlight=variant==9;
+                MonsterEncounter::DONU_AND_DECA, MonsterEncounter::THREE_BYRDS, MonsterEncounter::THREE_BYRDS}[variant];
+            const bool mass=variant==0, guardian=variant==2, byrd=variant==3 || variant==7 || variant==9 || variant==10, shift=variant==4, louse=variant==5;
+            const bool darkling=variant==6, lethal=variant==7 || variant==9, plateRemoved=variant==8, lastFlight=variant==9 || variant==10;
+            const bool grounded=variant==10;
             GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
             game.act=plateRemoved?4:mass||darkling?3:guardian||shift||louse?1:2;
             game.floorNum=plateRemoved?54:mass?38:darkling?35:guardian||shift?16:louse?5:29;
@@ -4620,6 +4656,15 @@ int main(int argc, char **argv) {
                 if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
                     throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE=0 accepted the dead Byrd's Flight reduction");
             }
+            if(grounded) {
+                if(target.curHp<=0 || target.hasStatus<MonsterStatus::FLIGHT>() || target.moveHistory[0]!=MonsterMoveId::BYRD_STUNNED)
+                    throw std::runtime_error("living Byrd fixture was not grounded at the hit");
+                setenv("STS_SILVER_BYRD_GROUNDING_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_BYRD_GROUNDING_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_BYRD_GROUNDING_QUEUE=0 accepted the living Byrd's grounding");
+            }
             const auto imported=one_combat::advisor::importSilverRoot(observation);
             if(!imported.ok) throw std::runtime_error("Headbutt monster-reaction import: "+imported.reason);
             // The wire itself settles the Guardian's shift and its 20 block.
@@ -4716,10 +4761,12 @@ int main(int argc, char **argv) {
             else if(shift) std::swap(brokenQueue[0],brokenQueue[1]);
             else if(louse) brokenQueue[1]["amount"]=curlBefore+1;
             else if(darkling) brokenQueue[2]["move"]=3;
-            else if(lethal) brokenQueue.back()["amount"]=2;
+            // Flight 1 on a living Byrd is now its grounding (problem 80);
+            // a two-step reduction is not representable.
+            else if(byrd) brokenQueue.back()["amount"]=2;
             else if(plateRemoved) brokenQueue[1]["amount"]=2;
             else for(auto &power:broken["silverRoot"]["combat"]["monsters"][0]["powers"])
-                if(power.at("id")==(byrd?"Flight":"Plated Armor")) power["amount"]=1;
+                if(power.at("id")=="Plated Armor") power["amount"]=1;
             if(one_combat::advisor::importSilverRoot(broken).ok)
                 throw std::runtime_error("unrepresentable Headbutt monster reaction was accepted");
             if(darkling) {

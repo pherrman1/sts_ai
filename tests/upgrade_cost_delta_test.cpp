@@ -56,11 +56,11 @@ static void check(bool fixed) {
 
 int main() {
     try {
-        unsetenv("STS_UPGRADE_COST_DELTA_FIX");
+        unsetenv("STS_UPGRADE_COST_DELTA_FIX"); sts::refreshEngineFlags();
         check(true);
-        setenv("STS_UPGRADE_COST_DELTA_FIX", "1", 1);
+        setenv("STS_UPGRADE_COST_DELTA_FIX", "1", 1); sts::refreshEngineFlags();
         check(true);
-        setenv("STS_UPGRADE_COST_DELTA_FIX", "0", 1);
+        setenv("STS_UPGRADE_COST_DELTA_FIX", "0", 1); sts::refreshEngineFlags();
         check(false);
         std::cout << "upgrade_cost_delta: OK\n";
         return 0;

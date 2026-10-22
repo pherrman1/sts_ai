@@ -305,14 +305,16 @@ prior and rollout net inside gen 0's search stack. On 512 paired A20 seeds it ki
 each), which with gen 0 form the gen-2 training window. Self-play exploration flags exist for gen-2 data runs
 (`STS_OOC_MCTS_ROOT_NOISE`, `STS_OOC_MCTS_PLAY_SAMPLE`, #741, off by default).
 
-## AZ gen-1b value head as the rollout3 end value (opt-in) — offline §577, A/B prepared
+## AZ gen-1b value head as the rollout3 end value (opt-in) — §615 A/B NOT_SHOWN, +3.1 pp lean
 
 `STS_OOC_MCTS_LEAF_HEART1_VALUE=<weights.bin>` (default unset) ends each rollout3 leaf in sigmoid(value head) of the
 given heart1-format weights instead of X2-B; rollouts and prior are unchanged. Offline on unseen §494/§503 data, gen 1b's
 head ranks sibling leaves worse than X2-B (concordance 0.547 vs 0.633 on 11,493 round-2 groups; better only on map
-parents) and predicts the run's Heart kill about as well (AUC 0.710 vs 0.694, CI includes 0; Act 1 weaker). A paired
-A20 A/B against the X2-B end value is pre-registered but not launched
-([plan](../../experiments/evidence/az_gen1b_value_leaf_ab_20261020/PREREG.md),
+parents) and predicts the run's Heart kill about as well (AUC 0.710 vs 0.694, CI includes 0; Act 1 weaker) (§577).
+Online, in gen 0's search stack with the learned OOC stop off, 512 paired A20 seeds: Heart kills 24.0% vs 20.9%
+(+3.1 pp [−1.0, +7.2], McNemar p 0.16) at 1.07× wall: NOT_SHOWN. No act-1 penalty (9.8% vs 9.4%), unlike §522. X2-B
+stays the leaf value. The search overrode the prior less often with the value leaf (2,302 vs 3,043 roots), consistent
+with its compressed Q scale ([result](../../experiments/evidence/az_gen1b_value_leaf_ab_20261020/RESULT.md),
 [offline](../../experiments/evidence/az_gen1b_value_leaf_ab_20261020/OFFLINE.md)).
 
 ## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
