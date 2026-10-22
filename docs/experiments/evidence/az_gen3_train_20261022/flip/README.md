@@ -3,7 +3,7 @@
 Inputs: validation-fold (seed % 8 == 7) runs of the gen-3 window. The policy rows come from the data branch
 `claude/az-gen2-data` (`gen2/rows`, plus `gen3/rows_new` converted by `../tools/convert_vtargets.py`). The raw
 captures are:
-- gen 0 tars: `/home/user/az-gen0-data/gen0` (data branch `claude/az-gen1-data`);
+- gen 0 tars: data branch `claude/az-gen0-data` `54033d1` (`gen0/`);
 - gen-1b A/B tars: data branch `gen2/raw-gen1b-ab`;
 - gen-2 A/B and exploration unit tars: share `az-gen2-ab/units`, `az-gen3-explore/units`.
 
