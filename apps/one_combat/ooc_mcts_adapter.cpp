@@ -4552,6 +4552,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         explicit DecisionLogScope(OocDecisionLog *log) { t_decisionLog = log; }
         ~DecisionLogScope() { t_decisionLog = nullptr; }
     };
+#ifndef STS_LIVE_ADVISOR
+    // The leaf compare's side searches start from the thread's OOC policy state as the real search found it.
+    const auto policyBeforeSearch = liveLeafCompare ? std::optional(captureOocPolicyThreadState()) : std::nullopt;
+#endif
     auto result = [&] {
         DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
         return searchWithSoleRootShortcut(model, config, sole, simulations);
@@ -4615,7 +4619,11 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         };
         std::vector<sts::search::OocActionId> picks{*result.selectedAction};
         nlohmann::json arms = nlohmann::json::object();
+        // Thread-local policy state (the Match and Keep cache among it) is not part of the model: every arm starts
+        // from the state the real search started from, and the real run continues from the state it left.
+        const auto policyAfterSearch = captureOocPolicyThreadState();
         for (const auto &arm : liveLeafCompare->arms) {
+            restoreOocPolicyThreadState(*policyBeforeSearch);
             const double t0 = threadCpuSeconds();
             try {
                 OocGameContextModel armModel(gc, path, compareSampler, leafCompareOptions(liveOptions, arm));
@@ -4633,6 +4641,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
                 arms[arm.name] = {{"error", e.what()}, {"cpuSeconds", threadCpuSeconds() - t0}};
             }
         }
+        restoreOocPolicyThreadState(policyAfterSearch);
         nlohmann::json candidates = nlohmann::json::array();
         for (const auto &a : result.rootActions)
             candidates.push_back({{"id", a.id}, {"prior", a.prior}, {"label", candidateLabel(gc, model.candidate(0, a.id))}});
