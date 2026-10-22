@@ -66,6 +66,7 @@
 #include "game/ExactChance.h"
 #include "game/GameContext.h"
 #include "sim/search/Action.h"
+#include "sim/search/CombatValueNet.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverRolloutAgent.h"
@@ -2915,6 +2916,50 @@ namespace {
 
 namespace {
 
+    // Research (--leaf-heads): a value head on the frozen trunk of a combat_policy_mlp prior. Silver points
+    // = scale * (w2 . relu(W1 ((relu(trunk base) - mu) * invSd) + b1) + b2) + offset; tools in the leaf-value
+    // research folder export g7f_E's own value head and the probe head to this text format.
+    struct LeafHead {
+        int in = 0, hidden = 0;
+        std::vector<float> mu, invSd, w1, b1, w2;
+        float b2 = 0;
+        double scale = 1, offset = 0;
+
+        static LeafHead load(const std::string &path) {
+            std::ifstream f(path);
+            LeafHead h;
+            std::string tok;
+            auto vec = [&](const char *want, std::vector<float> &v, std::size_t n) {
+                if (!(f >> tok) || tok != want) throw std::runtime_error(path + ": expected " + want);
+                v.resize(n);
+                for (float &x : v) f >> x;
+            };
+            if (!(f >> tok) || tok != "silver_value_head_v1") throw std::runtime_error(path + ": not a silver_value_head_v1");
+            f >> tok >> h.in >> tok >> h.hidden;
+            vec("mu", h.mu, h.in);
+            vec("inv_sd", h.invSd, h.in);
+            vec("w1", h.w1, static_cast<std::size_t>(h.hidden) * h.in);
+            vec("b1", h.b1, h.hidden);
+            vec("w2", h.w2, h.hidden);
+            std::vector<float> one;
+            vec("b2", one, 1);
+            h.b2 = one[0];
+            f >> tok >> h.scale >> tok >> h.offset;
+            if (!f) throw std::runtime_error(path + ": truncated");
+            return h;
+        }
+        double value(const std::vector<float> &trunk) const {   // trunk = relu(base), `in` values
+            double y = b2;
+            for (int i = 0; i < hidden; ++i) {
+                double a = b1[i];
+                const float *w = &w1[static_cast<std::size_t>(i) * in];
+                for (int j = 0; j < in; ++j) a += w[j] * ((trunk[j] - mu[j]) * invSd[j]);
+                if (a > 0) y += w2[i] * a;
+            }
+            return scale * y + offset;
+        }
+    };
+
     struct Config {
         std::string name;
         sts::search::NativeSilverBudgetOverride budget;
@@ -3299,8 +3344,18 @@ int main(int argc, char **argv) {
         // turnstart = turn, but a leaf where no card has been played this turn gets V*(leaf);
         // blend:L = L * V* + (1 - L) * playout. A suffix @S adds a fixed N(0, S^2) error per valued
         // state (ExactSolver::noiseAt). Leaves the model cannot value keep their playout (counted).
-        struct LeafModeSpec { std::string tag, mode; double noise = 0, blend = 0.5; };
+        // head:NAME = the --leaf-heads value head NAME instead of the playout; hblend:NAME:L = L * head
+        // + (1 - L) * playout.
+        struct LeafModeSpec { std::string tag, mode, head; double noise = 0, blend = 0.5; };
         std::vector<LeafModeSpec> leafModes;
+        // --leaf-heads NAME=PATH,...: value heads on the trunk of --leaf-trunk (default g7f_E);
+        // --leaf-head-dump PATH writes the first 300 head-valued leaves (state block, trunk, value).
+        std::map<std::string, LeafHead> leafHeads;
+        std::string leafTrunkPath = "models/combat_policy_mlp_g7f_E.txt", leafHeadDump;
+        // --leaf-label-dump PATH: every --leaf-label-every-th leaf of an "exact" mode (no @S) is written with its
+        // state block and V* (training labels for a value head on these fights).
+        std::string leafLabelDump;
+        int leafLabelEvery = 40;
         // Playout variants evaluated by --policy-turns: "pol" is the production block rule;
         // --policy-block-first adds "polB" (margin 0); --policy-grid M:K:L,... adds "gM_K_L"
         // (margin M, offset K, lethal check L; M = -1 keeps block-first off).
@@ -3365,11 +3420,33 @@ int main(int argc, char **argv) {
                         m.mode.resize(at);
                     }
                     if (m.mode.rfind("blend:", 0) == 0) { m.blend = std::stod(m.mode.substr(6)); m.mode = "blend"; }
-                    if (m.mode != "none" && m.mode != "exact" && m.mode != "turn" && m.mode != "turnstart" && m.mode != "blend")
-                        throw std::invalid_argument("--leaf-oracles items are none|exact|turn|turnstart|blend:L, optionally @S");
+                    else if (m.mode.rfind("head:", 0) == 0) { m.head = m.mode.substr(5); m.mode = "head"; }
+                    else if (m.mode.rfind("hblend:", 0) == 0) {
+                        const auto colon = m.mode.find(':', 7);
+                        if (colon == std::string::npos) throw std::invalid_argument("--leaf-oracles hblend:NAME:L");
+                        m.head = m.mode.substr(7, colon - 7);
+                        m.blend = std::stod(m.mode.substr(colon + 1));
+                        m.mode = "hblend";
+                    }
+                    if (m.mode != "none" && m.mode != "exact" && m.mode != "turn" && m.mode != "turnstart" && m.mode != "blend"
+                            && m.mode != "head" && m.mode != "hblend")
+                        throw std::invalid_argument("--leaf-oracles items are none|exact|turn|turnstart|blend:L|head:NAME|hblend:NAME:L, optionally @S");
+                    if (!m.head.empty() && m.noise != 0) throw std::invalid_argument("--leaf-oracles: no @S on a head");
                     leafModes.push_back(m);
                 }
             }
+            else if (arg == "--leaf-heads") {
+                std::stringstream list(value());
+                for (std::string item; std::getline(list, item, ',');) {
+                    const auto eq = item.find('=');
+                    if (eq == std::string::npos) throw std::invalid_argument("--leaf-heads items are NAME=PATH");
+                    leafHeads[item.substr(0, eq)] = LeafHead::load(item.substr(eq + 1));
+                }
+            }
+            else if (arg == "--leaf-trunk") leafTrunkPath = value();
+            else if (arg == "--leaf-label-dump") leafLabelDump = value();
+            else if (arg == "--leaf-label-every") leafLabelEvery = std::stoi(value());
+            else if (arg == "--leaf-head-dump") leafHeadDump = value();
             else if (arg == "--policy-block-first") policyVariants.push_back({"polB", BlockRule{0, true, 4}});
             else if (arg == "--policy-grid") {
                 std::stringstream list(value());
@@ -3389,6 +3466,30 @@ int main(int argc, char **argv) {
         }
         if (configs.empty()) configs = {parseConfig("prod"), parseConfig("live"),
                                         parseConfig("flatprior:2500"), parseConfig("flatprior:10000")};
+        sts::search::CombatValueNet leafTrunk;
+        for (const auto &m : leafModes)
+            if (!m.head.empty() && !leafHeads.count(m.head))
+                throw std::invalid_argument("--leaf-oracles: no --leaf-heads entry " + m.head);
+        if (!leafHeads.empty()) {
+            if (!leafTrunk.load(leafTrunkPath) || !leafTrunk.isPolicyMlp)
+                throw std::runtime_error("--leaf-trunk: cannot load a combat_policy_mlp model from " + leafTrunkPath);
+            for (const auto &[name, h] : leafHeads)
+                if (h.in != leafTrunk.pmH1) throw std::invalid_argument("--leaf-heads " + name + ": input width is not the trunk's h1");
+        }
+        std::ofstream leafDump, labelDump;
+        int leafDumped = 0;
+        std::int64_t labelCalls = 0;
+        if (!leafHeadDump.empty()) leafDump.open(leafHeadDump);
+        if (!leafLabelDump.empty()) labelDump.open(leafLabelDump);
+        // A head's value of a state; feat and base keep the state block and relu(trunk base).
+        std::vector<float> feat, base;
+        auto headValue = [&](const BattleContext &state, const LeafHead &h) {
+            feat.assign(sts::search::combatFeatureCount(), 0.f);
+            sts::search::combatExtractFeatures(state, feat.data());
+            leafTrunk.policyMlpBase(feat.data(), base);
+            for (float &x : base) x = std::max(x, 0.f);
+            return h.value(base);
+        };
         const std::string objective = std::string(hpObjective ? "hp" : "silver") + (keepEnergyWaste ? "" : "-noew");
         if ((lipschitz || interpolate) && !hpObjective)
             throw std::invalid_argument("--lipschitz and --interpolate need --objective hp (Silver's value is not Lipschitz in HP)");
@@ -3424,9 +3525,32 @@ int main(int argc, char **argv) {
             bool leafOracleReady = false, inLeafPlayout = false;
             std::int64_t leafCalls = 0, leafFallbacks = 0;
             const LeafModeSpec *leaf = nullptr;   // the mode of the fight being played
+            const Config *leafConfig = nullptr;   // and its config (--leaf-label-dump rows)
             if (!leafModes.empty()) {
                 sts::search::g_silverLeafOverride = [&](SilverSearcher &searcher, BattleContext &state, double &value) {
                     if (!leaf || leaf->mode == "none" || inLeafPlayout) return false;   // the playout (also the blend's own)
+                    if (!leaf->head.empty()) {
+                        ++leafCalls;
+                        double v = headValue(state, leafHeads.at(leaf->head));
+                        if (leafDump.is_open() && leafDumped < 300) {
+                            json d = {{"head", leaf->head}, {"value", v}, {"turn", state.turn},
+                                      {"curHp", state.player.curHp}, {"trunk", base}};
+                            json nz = json::array();
+                            for (int i = 0; i < static_cast<int>(feat.size()); ++i)
+                                if (feat[i] != 0.f) nz.push_back({i, feat[i]});
+                            d["state"] = nz;
+                            leafDump << d.dump() << '\n';
+                            ++leafDumped;
+                        }
+                        if (leaf->mode == "hblend") {
+                            inLeafPlayout = true;
+                            const double p = searcher.rolloutValue(state);
+                            inLeafPlayout = false;
+                            v = leaf->blend * v + (1 - leaf->blend) * p;
+                        }
+                        value = v;
+                        return true;
+                    }
                     if (!leafOracle) {
                         const BattleContext &r = searcher.rootSearchState();
                         leafOracle = std::make_unique<ExactSolver>(r, searcher, hpObjective, maxStates, false,
@@ -3449,6 +3573,19 @@ int main(int argc, char **argv) {
                         ok = leafOracle->turnPolicyQ(state, next, v);
                     } else if (leafOracleReady) {
                         ok = leafOracle->abstractValue(state, v);
+                        if (ok && labelDump.is_open() && leaf->mode == "exact" && leaf->noise == 0
+                                && ++labelCalls % leafLabelEvery == 0) {
+                            std::vector<float> x(sts::search::combatFeatureCount(), 0.f);
+                            sts::search::combatExtractFeatures(state, x.data());
+                            json nz = json::array();
+                            for (int i = 0; i < static_cast<int>(x.size()); ++i)
+                                if (x[i] != 0.f) nz.push_back({i, x[i]});
+                            labelDump << json{{"seed", seed}, {"encounter", encounterName},
+                                              {"config", leafConfig ? leafConfig->name : ""}, {"turn", state.turn},
+                                              {"played", state.player.cardsPlayedThisTurn},
+                                              {"input", static_cast<int>(state.inputState)}, {"v", v},
+                                              {"state", nz}}.dump() << '\n';
+                        }
                         if (ok) v += leafOracle->noiseAt(state);
                     }
                     if (!ok) { ++leafFallbacks; return false; }
@@ -3466,6 +3603,7 @@ int main(int argc, char **argv) {
             for (const auto &config : configs) for (const auto &mode : modes) {
                 if (!fightFailure.empty()) break;
                 leaf = &mode;
+                leafConfig = &config;
                 sts::search::g_nativeSilverBudgetOverride = config.budget;
                 sts::search::g_nativeSilverMaxBackupOverride = config.maxBackup;
                 sts::search::g_nativeSilverSearchParamOverride.reset();
@@ -3622,6 +3760,7 @@ int main(int argc, char **argv) {
                                     {"states", solver->states()}};
                         if (verify) row["verifiedHits"] = solver->verifiedHits();
                         if (!leafModes.empty()) row["leafOracle"] = mode.tag;
+                        if (!mode.head.empty()) row["headRoot"] = headValue(root, leafHeads.at(mode.head));   // vs max q: the head's level error
                         if (!qAbstract.empty()) {
                             row["qAbstract"] = qAbstract;
                             row["abstractRootSeconds"] = abstractRootSeconds;
