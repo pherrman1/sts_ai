@@ -597,6 +597,8 @@ namespace sts::search {
                 }
                 searcher->rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                searcher->maxBackupMinVisits = g_nativeSilverMaxBackupOverride.value_or(
+                    SilverSearcher::envMaxBackupMinVisits());
                 // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
                 // of whole-run fights play prior playouts. A rollout, root-prior or prior-net override
                 // (research arms, source runs, imagined OOC fights) keeps its own setting, as the
@@ -1247,6 +1249,7 @@ namespace sts::search {
 
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
+    thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;

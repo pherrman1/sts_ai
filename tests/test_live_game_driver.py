@@ -741,6 +741,48 @@ class LiveGameDriverTest(unittest.TestCase):
                                        "monsters": [{"id": 7, "curHp": 20}],
                                        "screen_monsters": [{"name": "Cultist", "current_hp": 20}]})
 
+    def test_ooc_correlation_prefers_game_state_run_stats(self):
+        import os
+        from unittest import mock
+        from tools.live_game_driver import ooc_inspector_state, validate_ooc_current
+        # Seed 111200523 Transmogrifier: Ceramic Fish +9 gold, get_screen kept 229.
+        screen = {"screen_type": "EVENT", "gold": 229, "choice_list": ["pray", "leave"]}
+        game_state = {"screen_type": "EVENT", "gold": 238, "floor": 30, "choice_list": ["pray", "leave"]}
+        observation = {"boundary": "ooc", "ooc": {"schemaVersion": 1, "screen": "event",
+                       "publicState": {"gold": 238, "floor": 30}, "liveChoices": [], "mcpState": game_state}}
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("STS_LIVE_OOC_GAME_STATE_STATS", None)
+            validate_ooc_current(observation, ooc_inspector_state(game_state, screen))
+            with self.assertRaisesRegex(DriverError, "inspector OOC gold does not match"):
+                validate_ooc_current({**observation, "ooc": {**observation["ooc"], "publicState": {"gold": 229, "floor": 30}}},
+                                     ooc_inspector_state(game_state, screen))
+        with mock.patch.dict(os.environ, {"STS_LIVE_OOC_GAME_STATE_STATS": "0"}):
+            self.assertEqual(ooc_inspector_state(game_state, screen)["gold"], 229)
+            with self.assertRaisesRegex(DriverError, "inspector OOC gold does not match"):
+                validate_ooc_current(observation, ooc_inspector_state(game_state, screen))
+
+    def test_inspector_correlates_the_awakened_one_rebirth_window(self):
+        import os
+        from unittest import mock
+        def snapshot(directory: str, monsters: list[dict]) -> InspectorSnapshot:
+            path = Path(directory) / "latest.json"
+            path.write_text(json.dumps({"session": "s", "sequence": 1, "observationHash": "h",
+                                        "observation": {"boundary": "combat", "combat": {"hand": [], "monsters": monsters}},
+                                        "response": {"ready": True, "session": "s", "sequence": 1,
+                                                      "observationHash": "h", "advisor": {"evaluators": []}}}))
+            return InspectorSnapshot.load(path)
+        rebirth = [{"id": "AwakenedOne", "hp": 0, "halfDead": True},
+                   {"id": "Cultist", "hp": 0, "dead": True}, {"id": "Cultist", "hp": 0, "dead": True}]
+        mcp = {"hand": [], "monsters": []}
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot(directory, rebirth).validate_current(mcp)
+            stale = snapshot(directory, [{"id": "AwakenedOne", "hp": 12}, *rebirth[1:]])
+            with self.assertRaisesRegex(DriverError, "cannot correlate"):
+                stale.validate_current(mcp)
+            with mock.patch.dict(os.environ, {"STS_LIVE_REBIRTH_CORRELATION": "0"}):
+                with self.assertRaisesRegex(DriverError, "cannot correlate"):
+                    snapshot(directory, rebirth).validate_current(mcp)
+
     def test_transient_ready_state_waits_for_advance(self):
         with tempfile.TemporaryDirectory() as directory:
             states = [

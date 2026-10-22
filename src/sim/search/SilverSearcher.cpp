@@ -287,6 +287,8 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
         n->randomnessBase = 0;
         n->stochasticAction = Action{};
         n->prior.clear();
+        n->backedValue = 0;
+        n->hasBackedValue = false;
         return n;
     }
     allNodes.push_back(std::make_unique<Node>());
@@ -567,6 +569,42 @@ void search::SilverSearcher::updateFromPlayout(const std::vector<Node *> &stack,
         ++(*it)->simulationCount;
         (*it)->evaluationSum += evaluation;
     }
+    if (maxBackupMinVisits <= 0) return;
+    for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
+        Node &n = **it;
+        if (n.isRandomNode) {
+            double sum = 0, weight = 0;
+            for (const auto &e : n.edges) {
+                if (e.node == nullptr || e.visitCount == 0 || e.node->simulationCount == 0) continue;
+                sum += e.visitCount * selectionValue(*e.node);
+                weight += e.visitCount;
+            }
+            n.hasBackedValue = weight > 0;
+            if (n.hasBackedValue) n.backedValue = sum / weight;
+        } else {
+            double best = -std::numeric_limits<double>::infinity();
+            for (const auto &e : n.edges) {
+                if (e.node != nullptr && e.node->simulationCount >= maxBackupMinVisits)
+                    best = std::max(best, selectionValue(*e.node));
+            }
+            n.hasBackedValue = best > -std::numeric_limits<double>::infinity();
+            if (n.hasBackedValue) n.backedValue = best;
+        }
+    }
+}
+
+double search::SilverSearcher::selectionValue(const Node &node) const {
+    if (maxBackupMinVisits > 0 && node.hasBackedValue && node.simulationCount >= maxBackupMinVisits)
+        return node.backedValue;
+    return node.evaluationSum / node.simulationCount;
+}
+
+int search::SilverSearcher::envMaxBackupMinVisits() {
+    static const int value = [] {
+        const char *raw = std::getenv("STS_SILVER_MAX_BACKUP");
+        return raw && *raw ? std::max(0, std::atoi(raw)) : 0;
+    }();
+    return value;
 }
 
 double search::SilverSearcher::evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits) const {
@@ -575,7 +613,7 @@ double search::SilverSearcher::evaluateEdge(const Node &parent, int edgeIdx, dou
         return std::numeric_limits<double>::infinity();
     }
     // Value from the (possibly shared) child; exploration from this edge's own visits.
-    const double quality = edge.node->evaluationSum / edge.node->simulationCount;
+    const double quality = selectionValue(*edge.node);
     const double exploration = edge.node->isRandomNode ? explorationParameterChance : explorationParameter;
     const double value = quality + exploration * std::sqrt(logParentVisits / (edge.visitCount + 1));
     if (rootPriorWeight != 0 && rootPriorBonus && &parent == root && edgeIdx < static_cast<int>(rootPrior.size())) {
@@ -702,6 +740,12 @@ const search::SilverSearcher::RolloutConfig &search::SilverSearcher::envRolloutC
             c.actionCap = std::max(0, std::atoi(raw));
         if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_PRIOR"); raw && *raw)
             c.prior = std::string(raw) == "1";
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_BLOCK_FIRST"); raw && *raw)
+            c.blockRule.blockFirstMargin = std::atoi(raw);
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_BLOCK_OFFSET"); raw && *raw)
+            c.blockRule.blockOffset = std::atoi(raw);
+        if (const char *raw = std::getenv("STS_SILVER_ROLLOUT_BLOCK_LETHAL"); raw && *raw)
+            c.blockRule.blockLethalCheck = std::string(raw) != "0";
         return c;
     }();
     return config;
@@ -721,6 +765,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     }
     rolloutAgent.playTable = rolloutConfig.cardTable;
     rolloutAgent.zeroCostSkillTurnCap = rolloutConfig.zeroCostCap;
+    rolloutAgent.blockRule = rolloutConfig.blockRule;
     const int uniform = rolloutConfig.uniform;
     const int playouts = uniform > 0 ? uniform : rolloutConfig.perLeaf;
     double value = 0;
@@ -1134,6 +1179,15 @@ search::Action search::SilverSearcher::translateAction(const Action &action, con
         default:
             return action;
     }
+}
+
+std::vector<search::Action> search::SilverSearcher::enumerateActions(const BattleContext &state) {
+    Node node;
+    enumerateActionsForNode(node, state);
+    std::vector<Action> actions;
+    actions.reserve(node.edges.size());
+    for (const auto &edge : node.edges) actions.push_back(edge.action);
+    return actions;
 }
 
 std::size_t search::SilverSearcher::prepareRootActions() {

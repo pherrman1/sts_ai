@@ -2935,8 +2935,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(!hasRelic("Toy Ornithopter") || readObjectField(action,"target")!=AbstractDungeon.player
                         || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return refusePending(actionIndex,"heal");
                 kind="HEAL_PLAYER";
-            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
-            else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
+            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) {
+                // GainEnergyAction(int) calls setValues(p,p,0) and keeps the gain in
+                // private energyGain; the inherited amount is always 0 (problem 84).
+                amount=readIntField(action,"energyGain");
+                if(amount==null || amount<0 || amount>99) return refusePending(actionIndex,"gain_energy_amount");
+                kind="GAIN_ENERGY";
+            } else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
             else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
             else if("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
                 Object values=readObjectField(action,"damage");

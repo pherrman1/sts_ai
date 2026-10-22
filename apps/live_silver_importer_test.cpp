@@ -2501,6 +2501,28 @@ int main(int argc, char **argv) {
                         || (phase>1 && boss.moveHistory[0]!=MMID::AWAKENED_ONE_SLUDGE && boss.moveHistory[0]!=MMID::AWAKENED_ONE_TACKLE))
                     throw std::runtime_error("Awakened public second-form semantics lost");
             }
+            {   // Live problem 91 (seed 111200541): the roll right after Rebirth sees HP 0
+                // (changeState queues the heal behind takeTurn's RollMoveAction).
+                const int completed=3;
+                auto obs=groupDome({"Cultist","Cultist","AwakenedOne"},{{1,1},{1,1},{2,3}});
+                obs["silverRoot"]["act"]=3;obs["silverRoot"]["encounter"]="AWAKENED_ONE";obs["silverRoot"]["playerTurn"]=completed+1;
+                auto &c=obs["silverRoot"]["combat"];c["turn"]=completed+1;
+                for(auto &row:c["runicDomeKnowledge"]["monsters"]) {row["completedTurns"]=completed;row["generation"]=2*completed+1;}
+                auto &m=c["monsters"][2];m["hp"]=320;m["maxHp"]=320;m["halfDead"]=false;
+                auto &k=c["runicDomeKnowledge"]["monsters"][2];k["schemaVersion"]=3;k["totalRolls"]=completed+1;k["knownTransitions"]=2;
+                k["generation"]=2*completed+3;k["publicMisc"]=1;k["rollHp"]=0;k["rollMaxHp"]=320;
+                k["pendingMoveRolls"]=1;k["knownRollPredecessor"]=nullptr;k["knownNextMove"]=nullptr;
+                unsetenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome Awakened post-Rebirth roll at HP 0: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);auto &boss=bc.monsters.arr[2];boss.materializePendingMove(bc);
+                if(boss.moveHistory[0]!=MMID::AWAKENED_ONE_DARK_ECHO) throw std::runtime_error("post-Rebirth roll must be Dark Echo");
+                auto earlier=obs;earlier["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][2]["executedMoves"]=json::array({3,5});
+                if(one_combat::advisor::importSilverRoot(earlier).ok) throw std::runtime_error("HP-0 roll accepted after a later move");
+                setenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL","0",1);
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("=0 must refuse the HP-0 rebirth roll");
+                unsetenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
+            }
             // Ordinary Act 2/3 lifecycles: no queued byte is supplied. Import
             // exactly public execution history, then compare deferred sampling
             // to the native transition from those same public roll-time inputs.

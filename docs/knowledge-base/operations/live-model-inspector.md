@@ -305,6 +305,11 @@ Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
 unless the player is bloodied and the relic inactive. The projection omits the
 no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
 names anonymous classes by their full class name.
+`GAIN_ENERGY` reads its amount from `GainEnergyAction.energyGain`: the
+`GainEnergyAction(int)` constructor calls `setValues(p,p,0)`, so the inherited
+`amount` is always 0. A missing or out-of-range (0-99) gain refuses with check
+`gain_energy_amount` (problem 84, seed 111200510: Nunchaku's GainEnergyAction(1)
+behind Headbutt's put-on-top choice was exported as 0, so energy was 1 short).
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
@@ -343,6 +348,13 @@ snapshot is serialized with a default `Gson`, which omits null members such as
 an unexecuted initial occupant as global turn 0 and a missing nullable member as
 null (`STS_IMPORTER_RUNIC_DOME_WIRE_FIX`, default on; `=0` restores the strict
 reading, which refused every first-turn Dome root).
+Awakened One's Rebirth turn queues `ChangeStateAction("REBIRTH")`, whose heal
+lands behind takeTurn's `RollMoveAction`. So the roll right after Rebirth sees
+HP 0 of 320. The tracker accepts that one roll (Awakened One, `publicMisc` 1,
+last executed move 3), and the importer accepts its `rollHp` 0
+(`STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL`, default on; `=0` restores the
+refusal). Phase two's first move, Dark Echo, does not depend on HP. Problem 91
+(seed 111200541) refused with `silver_runic_dome_incomplete_history`.
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
@@ -1221,6 +1233,13 @@ must be available in MCP. A verified unopened BossChest uses an explicit
 public-reveal action: Open reveals the offers while retaining the later Skip
 decision. This is an informational policy step, not a claim that Proceed is
 unavailable. Unknown chest classes remain unsupported.
+After the boss relic offer was skipped, vanilla keeps `BossChest.isOpen`
+false and the chest clickable. The capture remembers the room whose offer it
+published and treats the skip as final. It publishes the completed room's
+Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor passes
+through like an opened chest. Before this fix the reveal was published again
+and looped open -> skip -> open until the cycle guard abandoned the step
+(problem 87, seed 111200537).
 Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
 tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
 claiming an exact hidden chest state.
@@ -1477,6 +1496,19 @@ first snapshotted with its in-use cost 0, playability and hand stats (all 36
 transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
 and every other field stay strict. The match only discards the decision and
 re-reads, within the same three-refresh limit.
+OOC correlation takes act, floor, HP, max HP and gold from MCP `game_state`
+when get_screen's copy differs (`STS_LIVE_OOC_GAME_STATE_STATS`, default on;
+`=0` restores the screen-first merge; problem 86, seed 111200523). After
+Ceramic Fish's +9 gold at the Transmogrifier, get_screen kept 229 for the
+whole wait, while game_state, the inspector's `publicState` and its captured
+`mcpState` all said 238.
+Inspector correlation also accepts the Awakened One rebirth window
+(`STS_LIVE_REBIRTH_CORRELATION`, default on; `=0` restores the refusal;
+problem 85, seed 111200512). MCP lists no monsters while all of them are dead
+or halfDead, so neither the hand nor the monster comparison could run. When
+both hands are empty, the MCP monster list is empty and every inspector
+monster is dead or halfDead, the snapshot counts as correlated. A stale
+snapshot that still shows a live monster keeps failing.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in
