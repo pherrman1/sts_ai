@@ -22857,3 +22857,28 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
+
+## §TBD — Live advisor: Headbutt killing a Bronze Orb holding Stasis, and a half-dead Darkling's Regrow, were refused (2026-10-22)
+
+**Question:** why did overnight live seed 111200539 stop at Headbutt's grid with `silver_selection_pending_actions`
+after Headbutt+ killed the Bronze Orb holding Dark Embrace (problem 88: `refusal=1:unknown_action`), and after
+Headbutt took a Darkling to half-dead (problem 89, seg 2: `refusal=1:half_dead_set_move`), in
+`engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's observation, field dump and javap (`issue88-89/` on the share; the p88 observation kept as
+`tests/fixtures/live_automaton_stasis_headbutt_return.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+AUTOMATON; no gameplay runs).
+**Result:** problem 88: `StasisPower.onDeath` queues `MakeTempCardInHandAction(card, false, true)` (hand under 10;
+otherwise `MakeTempCardInDiscardAction`) behind the grid, which the producer did not know. Native `returnStasisCard`
+moves the card at the death. Under Corruption, native zeroed only `costForTurn`, while Java's add-to-hand runs the
+`onCardDrawOrDiscard` pass (`STS_CORRUPTION_HAND_COST_FIX`, problem 83). Problem 89: the producer's check used
+`isDeadOrEscaped()`, which is true for every half-dead monster (`AbstractCreature` checks `halfDead`; javap), so the
+existing `MONSTER_SET_MOVE` fold was never reached.
+**Interpretation:** the producer now emits `STASIS_RETURN {slot}` only for the dead orb whose Stasis card has that uuid,
+and checks `isDying`/`isEscaping`/`escaped` for the Darkling. Under `STS_SILVER_STASIS_RETURN_QUEUE` (default on, `=0`
+restores the `silver_unmapped_stasis` refusal) the importer moves the card to hand as native does; a full hand stays
+refused. Native's Stasis return under Corruption now runs the hand cost pass (under `STS_CORRUPTION_HAND_COST_FIX`).
+The importer test gains a Headbutt-kills-orb case with and without Corruption, with native parity before and after the
+pick, and the captured observation imports and searches. Play-changing only where the advisor used to refuse, plus
+generated-skill costs after a Stasis return under Corruption.
+Seeds: none new (live seed 111200539 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.

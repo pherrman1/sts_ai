@@ -3578,7 +3578,16 @@ void Monster::returnStasisCard(BattleContext &bc) {
 #endif
 
     bc.cards.notifyAddCardToCombat(stasisCard);
-    bc.moveToHandHelper(stasisCard);
+    // StasisPower.onDeath queues MakeTempCardInHandAction: under Corruption
+    // the game runs the same onCardDrawOrDiscard pass as any card made in hand
+    // (STS_CORRUPTION_HAND_COST_FIX, problem 88).
+    if (bc.player.hasStatus<PS::CORRUPTION>() && bc.cards.cardsInHand < CardManager::MAX_HAND_SIZE
+            && corruptionHandCostFix()) {
+        bc.cards.moveToHand(stasisCard);
+        bc.corruptionHandCostPass();
+    } else {
+        bc.moveToHandHelper(stasisCard);
+    }
     stasisCard = {CardId::INVALID};
 }
 
