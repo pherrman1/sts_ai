@@ -23217,7 +23217,9 @@ Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and output
 - **Run:** 32 workers, queue schedule; 1,024 of 1,024 units OK, no duplicates; all runs valid.
 - **Result:** Heart kills 161 (15.7%) vs 20.9% in the greedy gen-2 arm A (other seeds, unpaired, ±3.3 pp); Act 4 31.6% vs
   39.0%. Floors 0-6: played action ≠ most-visited at 22.7% of searched roots, root Q lower than greedy's at 61% of those
-  (mean −0.017). Prior overrides 13.0% vs 6.6% (noise acts at every root). Learned OOC stop unaffected.
+  (mean −0.017). Prior overrides 13.0% vs 6.6% (noise acts at every root). The learned OOC stop still fires before the
+  1024 cap but later: fast roots average 534 vs ~415 completed sims, 24% vs 42% stop at the first check (≤ 128); mean
+  wall unchanged (778 vs 773 s).
 - **Inference:** exploration costs ~5 pp Heart kills in the generating runs; the rows add ~16k full-budget policy targets
   off the greedy path. Value labels from these runs are pessimistic for early states.
 - **Knowledge impact:** `evaluation/current-research.md`.
