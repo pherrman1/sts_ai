@@ -67,4 +67,8 @@ runs in the gen-2 A/B): about 750 roots and 130 s per natural run and twice the 
 5. Descriptive: on fold 4, head value, Silver's root value and the actual score by act, room and turn (the act-4
    gap table of the leaf doc for every act).
 
+Scripts (committed before the data arrived): `pack_a20.py` (step 2), `train_head_a20.py` (steps 3 and 5),
+`run_oracle_a20.sh` and `analyze_oracle.py` (step 4; the playout, exact and capacity-test rows it pairs with are the
+leaf-value oracle runs of 2026-10-22 on the same solver binary, exact_combat_solver_ct sha256 26806283...).
+
 Later and separate: prior and value trained together on this data plus the g7f pack (gen 8, GPU).
