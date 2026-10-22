@@ -150,7 +150,10 @@ the advisor's previous answer picked on that grid, with no new search
 (`STS_LIVE_SELECTOR_PREVIEW_RETAIN`, default on; `=0` restores the fresh
 confirm search; problem 92). Overnight, the fresh search over
 near-tied cards cancelled 106 of 119 retained removals and removed a different
-card (often a better one) instead of the planned Strike.
+card (often a better one) instead of the planned Strike. A sole-choice event
+Continue between the source option and its selector (Offer Gold, Pray) keeps
+the pending plan (`STS_LIVE_PASS_THROUGH_KEEPS_PLAN`, default on; `=0` restores
+dropping it; problem 95).
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible

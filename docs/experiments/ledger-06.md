@@ -22352,6 +22352,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** No decision changes; the §632 retained confirm now reaches the game.
 
 **Status:** Draft PR.
+## §TBD — Live problem 95: an event removal plan was dropped at a Continue page (2026-10-22)
+
+**Question:** Why did seed 111200559 (main f1badc29) remove Corruption after choosing Offer Gold's removal of a Strike?
+
+**Evidence:** Step 225 chose Offer Gold with `compoundPlan` remove, target Strike, PENDING. Step 226 answered the sole [Continue] as `native_pass_through`, and that answer cleared the pending plan. Step 227's grid therefore ran a fresh selector search, which picked Corruption, and step 228 removed it. Seed 554's Pray removal has the same shape.
+
+**Change:** `STS_LIVE_PASS_THROUGH_KEEPS_PLAN` (default on, `=0` restores). The mechanical `event_continue` pass-through, and a sole-legal-action pass-through on an event screen, leave the pending plan in place; every other answer still drops it, and the session/sequence binding and the selector's exact-target check are unchanged. Test: `test_compound_plan_survives_an_event_continue_page` (source, Continue, grid: the grid applies the retained target, both executed answers pass the driver's `ooc_evaluator`, and `=0` reproduces the drop); 65 protocol tests OK.
+
+**Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

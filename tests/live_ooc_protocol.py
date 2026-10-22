@@ -643,6 +643,32 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(chosen["visits"], max(c["visits"]
                                                 for c in retained_eval["candidateSummaries"]))
 
+    def test_compound_plan_survives_an_event_continue_page(self):
+        # Problem 95 (seed 111200559): Offer Gold's removal plan was dropped at
+        # the sole [Continue] page before the grid, which then searched afresh.
+        selector = self.fixtures["upgrade_duplicate_physical_cards"]
+        continue_page = copy.deepcopy(self.fixtures["neow"])
+        ooc = continue_page["ooc"]
+        ooc["details"].update(event="Designer", eventContract="vanilla_v1", mechanicalTransition="event_continue")
+        ooc["event"] = dict(id="Designer", phase="INTRO", options=[dict(index=0, disabled=False)])
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=0, group=0),
+                                   liveAction=dict(kind="choose", choiceIndex=1))]
+        rows = [self.fixtures["event_living_wall"], continue_page, selector]
+        source, passed, retained = self.run_rows(rows, policy="v4")
+        self.assertEqual(source["evaluators"][0]["compoundPlan"]["status"], "PENDING", source)
+        self.assertEqual(passed["evaluators"][0]["mode"], "native_pass_through", passed)
+        self.assertEqual(retained["evaluators"][0]["compoundPlan"]["selectionMode"], "retained_compound_target", retained)
+        # The live driver must accept both answers it executes.
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from tools.live_game_driver import InspectorSnapshot
+        for sequence, response in ((2, passed), (3, retained)):
+            evaluator = response["evaluators"][0]
+            snapshot = InspectorSnapshot({}, "ooc-protocol", sequence, f"fixture-{sequence - 1}", {}, response)
+            self.assertEqual(snapshot.ooc_evaluator(evaluator["policy"])["selectedLiveAction"],
+                             evaluator["selectedLiveAction"])
+        _, _, legacy = self.run_rows(rows, policy="v4", extra_env={"STS_LIVE_PASS_THROUGH_KEEPS_PLAN": "0"})
+        self.assertNotIn("compoundPlan", legacy["evaluators"][0], legacy)
+
     def test_semantic_only_roots_use_uniform_prior_and_checkpoint_leaf(self):
         rows = self.run_rows([self.fixtures["remove_selector"]])
         for response in rows:
