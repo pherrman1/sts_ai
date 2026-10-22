@@ -1,0 +1,6 @@
+# Heads scored here: native exports (student.bin) on the data branch claude/az-gen2-data, as in #812 (§641).
+ee8337a2a4dd73a42bbd51dcd07799eb9ea139a7ce2559735b4dae9eb168ca59  gen2/value-cf/weights/M0.3/student.bin
+5a724bbd0754ffc7d62cd55842cd3505fa195e308be53e263c66dc6466cdc617  gen2/value-sr/weights/SR_w0.3/student.bin
+146a4512dda1213e16a9849158676bb7ff902fbb4136553d6c71ec6495a32ec4  gen2/value-sr/weights/SR_w1/student.bin
+e55f05bf9f58622787892acd14ee364a053758f5403e2e2fcda20c71130d82e4  gen2/value-sr/weights/SR_w1_s1/student.bin
+7d758384681c9820a557f00bdfb0ab5746ccb431b4955852eaa830095491ef10  gen2/value-sr/weights/SR_w1_s2/student.bin

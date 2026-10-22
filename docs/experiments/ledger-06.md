@@ -23291,3 +23291,52 @@ about 0.4 HP in hallway fights) and §530 (the entry
 state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
 to pay for.
 **Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
+
+## §TBD — Common-seed sibling recapture (320 A20 sources): cleaner sibling labels; the SR_w1 blend still beats X2-B (+0.018 to +0.026) but the head alone ranks below it (−0.019 to −0.035) (offline, 2026-10-22)
+
+**Question:** round-2 sibling labels (§503; 64 independent rollout3 repeats per child) cap a perfect evaluator near
+0.81 (§641). Does a recapture with common seeds (§639) give cleaner labels, and how do the existing heads rank the new
+siblings? Philipp chose the recapture (2026-10-22 14:51Z) and authorized it with 32 workers (15:34Z).
+**Design:** pre-registered ([PREREG.md](evidence/ooc_sibling_crn_capture_20261022/PREREG.md), RUN_COMMIT `9fad3f60`,
+pre-launch review PASS).
+- Play is gen-2 A/B arm A (§621). The sibling capture adds every searched root at depth 1, with at most 64 leaves and
+  32 common-seed repeats. Code `90eb9f07`.
+- Seeds 111144512–111144831 (320 sources). VALIDATION is seed % 4 == 3 (80 sources); TRAIN is the other 240.
+- 32 cloud workers, 120 core-h.
+**Result** ([README](evidence/ooc_sibling_crn_capture_20261022/README.md)):
+- **Integrity:** 320/320 units verified, and every source returned rc 0. 578,987 rows, with no bad rows. VALIDATION
+  has 5,587 groups.
+- **Label noise (VALIDATION):**
+  - Split-half agreement at 16 vs 16 repeats is 0.718, against round 2's 0.653 (0.682 at 32 vs 32).
+  - The stream variance of a sibling difference is 0.36 of independent streams, so 32 common-seed repeats are worth
+    about 89 independent ones.
+- **Hidden state:**
+  - Rows with the same public state share their streams, but only 8.6 % of these sets roll out identically.
+  - Their spread (σ_h² ≈ 0.0015 per row, the same in round 2) exceeds the remaining stream noise of a sibling
+    difference (0.0011).
+  - The ceiling lies between 0.69 (hidden-state bound) and 0.87 (stream noise only).
+- **Heads (VALIDATION; no head was trained on these seeds):**
+
+| evaluator | VALIDATION | − X2-B [95 % CI] | round 2 |
+|---|---|---|---|
+| X2-B | 0.664 | – | 0.633 |
+| M0.3 | 0.585 | −0.079 [−0.093, −0.065] | 0.555 |
+| SR_w0.3 | 0.628 | −0.036 [−0.048, −0.026] | 0.613 |
+| SR_w1 seed 0 | 0.645 | −0.019 [−0.031, −0.008] | 0.644 |
+| SR_w1 seeds 1, 2 | 0.644, 0.629 | −0.020, −0.035 | 0.645, 0.618 |
+| SR_w1 seed 0 blend, w 0.05 | 0.690 | +0.026 [+0.020, +0.032] | 0.673 |
+| SR_w1 seeds 1, 2 blends, w 0.25, 0.10 | 0.683, 0.682 | +0.019, +0.018 | 0.665, 0.665 |
+
+- **TRAIN (240 sources, also unseen):** SR_w1 seed 0 is at −0.007 [−0.014, +0.002], and the blends at +0.020 to
+  +0.027.
+- **By screen:** the blend gains on rewards, rest sites and shops. It is level on map choices, where X2-B is weakest
+  (0.602).
+**Interpretation:**
+- Common seeds do what §639 promised. Hidden state is now the larger noise term, so more repeats would help little.
+- The blend's gain over X2-B replicates on new sources with cleaner labels, though it is smaller than on round 2.
+- The head alone does not keep up. X2-B gains 0.031 on the new data and SR_w1 gains nothing, so §641's "at X2-B's
+  level" was the optimistic end.
+- The best blend (0.690) already sits at the hidden-state bound.
+**Decision:** no default change. The blend stays the online candidate; the head alone is not a leaf replacement.
+Philipp chooses the next step: retrain the ranking loss on the new TRAIN labels (a GPU step with its own plan and go),
+or run the parked online A/B. Seeds 111144512–111144831 used (smoke: 111144900).

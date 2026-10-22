@@ -1,0 +1,153 @@
+{
+ "validation": {
+  "groups": 5587,
+  "sources": 80,
+  "sameState": {
+   "sets": 8311,
+   "pairs": 1300231,
+   "identicalFraction": 0.08554927204909156,
+   "f": 0.8980890742819752,
+   "hiddenVar": 0.0015243150160818228,
+   "meanDbar2": 0.004438024324248002,
+   "meanStreamVar": 0.0013893942920843567
+  },
+  "ceiling": {
+   "mean": 0.8728702680627393,
+   "sources": 80
+  },
+  "ceilingHidden": {
+   "mean": 0.6869289909368834,
+   "sources": 80
+  },
+  "pairIndependentSe2": {
+   "mean": 0.0029936417871585857,
+   "sources": 80
+  },
+  "pairSe2": {
+   "mean": 0.001072844789128846,
+   "sources": 80
+  },
+  "splitHalf1": {
+   "mean": 0.609916759345863,
+   "sources": 80
+  },
+  "splitHalf16": {
+   "mean": 0.7181019738105677,
+   "sources": 80
+  },
+  "splitHalf2": {
+   "mean": 0.6411348804607495,
+   "sources": 80
+  },
+  "splitHalf4": {
+   "mean": 0.6700958910722055,
+   "sources": 80
+  },
+  "splitHalf8": {
+   "mean": 0.6892276349819951,
+   "sources": 80
+  }
+ },
+ "train": {
+  "groups": 15129,
+  "sources": 240,
+  "sameState": {
+   "sets": 23185,
+   "pairs": 3435529,
+   "identicalFraction": 0.09048954065128316,
+   "f": 0.9229071707612255,
+   "hiddenVar": 0.0011973798464805726,
+   "meanDbar2": 0.0036650502996526456,
+   "meanStreamVar": 0.0012702906066915003
+  },
+  "ceiling": {
+   "mean": 0.8727555883889809,
+   "sources": 240
+  },
+  "ceilingHidden": {
+   "mean": 0.6983858531223527,
+   "sources": 240
+  },
+  "pairIndependentSe2": {
+   "mean": 0.002791369673599211,
+   "sources": 240
+  },
+  "pairSe2": {
+   "mean": 0.0010231838209394215,
+   "sources": 240
+  },
+  "splitHalf1": {
+   "mean": 0.6109978038507874,
+   "sources": 240
+  },
+  "splitHalf16": {
+   "mean": 0.717663536728723,
+   "sources": 240
+  },
+  "splitHalf2": {
+   "mean": 0.6413000135748829,
+   "sources": 240
+  },
+  "splitHalf4": {
+   "mean": 0.664283659105036,
+   "sources": 240
+  },
+  "splitHalf8": {
+   "mean": 0.6916556419794001,
+   "sources": 240
+  }
+ },
+ "round2Validation": {
+  "groups": 2559,
+  "sources": 320,
+  "sameState": {
+   "sets": 4458,
+   "pairs": 551660,
+   "identicalFraction": 0.002018842530282638,
+   "f": 1.3691722696845483,
+   "hiddenVar": 0.001504801905991517,
+   "meanDbar2": 0.004191765791241808,
+   "meanStreamVar": 0.0011821619792587738
+  },
+  "ceiling": {
+   "mean": 0.8484852775725991,
+   "sources": 320
+  },
+  "ceilingHidden": {
+   "mean": 0.7272387749368884,
+   "sources": 320
+  },
+  "pairIndependentSe2": {
+   "mean": 0.0011613673669996932,
+   "sources": 320
+  },
+  "pairSe2": {
+   "mean": 0.0011613673669996932,
+   "sources": 320
+  },
+  "splitHalf1": {
+   "mean": 0.5583385622270777,
+   "sources": 320
+  },
+  "splitHalf16": {
+   "mean": 0.6526079205938774,
+   "sources": 320
+  },
+  "splitHalf2": {
+   "mean": 0.5593894376063456,
+   "sources": 320
+  },
+  "splitHalf32": {
+   "mean": 0.6815680726130262,
+   "sources": 320
+  },
+  "splitHalf4": {
+   "mean": 0.5959724099942096,
+   "sources": 320
+  },
+  "splitHalf8": {
+   "mean": 0.6271011756060275,
+   "sources": 320
+  }
+ }
+}
