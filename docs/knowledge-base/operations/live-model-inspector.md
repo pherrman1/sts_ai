@@ -145,7 +145,12 @@ executing a choice. A selected smith, peace-pipe, shop-removal, or supported
 event transaction records a session/sequence-bound pending compound plan; the
 next matching selector must resolve the same physical card identity before a
 selector action is emitted. Missing, ambiguous, stale, or interrupted plans
-fail closed.
+fail closed. The single-card selector's confirm screen then confirms the card
+the advisor's previous answer picked on that grid, with no new search
+(`STS_LIVE_SELECTOR_PREVIEW_RETAIN`, default on; `=0` restores the fresh
+confirm search; problem 92). Overnight, the fresh search over
+near-tied cards cancelled 106 of 119 retained removals and removed a different
+card (often a better one) instead of the planned Strike.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
