@@ -22943,7 +22943,7 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
-## §TBD — Live advisor: Headbutt killing Awakened One's first form was refused (2026-10-22)
+## §631 — Live advisor: Headbutt killing Awakened One's first form was refused (2026-10-22)
 
 **Question:** why did overnight live seed 111200541 seg 1 stop with `silver_selection_pending_actions` after Headbutt+
 killed Awakened One's first form (`actions=[UseCardAction,ShoutAction,SetMoveAction]`, no refusal tag; problem 90 in
