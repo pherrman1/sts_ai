@@ -23291,7 +23291,7 @@ about 0.4 HP in hallway fights) and §530 (the entry
 state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
 to pay for.
 **Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
-## §TBD — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but trained priors change the top choice at only ~3% of decisions, all near-ties under the search; no A/B candidate (offline, NEGATIVE, 2026-10-22)
+## §TBD — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but it changes only ~3% of top choices, mostly the ones gen 2 already changed; no A/B candidate (offline, NEGATIVE, 2026-10-22)
 
 Authorization: Philipp 2026-10-22 14:16Z ("merge 811 and then go"); flip check after his 17:27Z question (which offline
 values matter for online play). Plan and outputs: `docs/experiments/evidence/az_gen3_train_20261022/` (`PLAN.md`,
@@ -23307,16 +23307,27 @@ values matter for online play). Plan and outputs: `docs/experiments/evidence/az_
 - **Result (offline):** pick (plan rule) = n-step without exploration values: selection KL 0.0506 (seeds 1, 2: 0.0506,
   0.0509) vs gen-2 n-step 0.0525, gen-2 pick 0.0547, student_sel 0.1052; z arm 0.0521, n-step arm 0.0512. Validation
   top-1 vs π′ flat at 0.933–0.935 for every net. Export `d5780dee…`, native parity 0 argmax mismatches on 400 records.
-- **Decision-flip check:** on 8,424 validation roots searched with student_sel, the gen-3 net's top choice differs from
-  student_sel's at 3.24% (gen 2: 3.55%); at those flips π′ matches student_sel 132 times and gen 3 120 (neither 21).
-  On 1,995 validation roots searched with the gen-2 prior the trained nets win instead (gen 3 40 vs student_sel 16).
-  π′ sides with the prior that guided its search, so the flips are near-ties it cannot referee. Gen 3 predicts 120 of
-  the 509 roots where the search overrode student_sel, and moves about as many that student_sel had right.
-- **Inference:** the KL gain is mostly confidence in moves the prior already picks. A trained prior changes about 3% of
-  decisions, all close calls under the current search, which fits gen 1b and gen 2 being NOT_SHOWN (§589, §621) and
-  predicts the same for gen 3 at an A/B's resolution (about ±2.7 pp). Play changes where the search's verdict changes,
-  which needs better evaluation (leaf values) or more search rather than a prior closer to π′.
+- **Decision-flip check** (validation-fold roots searched with student_sel, matched to the raw captures):
+  - How often the top choice changes: gen 3's top choice differs from student_sel's at 3.24% of 8,424 full-budget
+    roots and 3.48% of 25,150 fast roots. Gen 2 differs at 3.55% / 3.61%; gen 3 and gen 2 differ at 2.1%.
+  - Overlap with gen 2: gen 2 picks the same move at 72% of gen 3's departures (fast roots 70%).
+  - How close the departures are: both moves are well searched (median visits ~1,700 each at full budget, ~510 at fast
+    roots). Root q separates them by a median of 0.015 (fast roots 0.020), against 0.011 between the two best moves
+    at all roots, so they are not near-ties.
+  - What the search already does: it plays gen 3's move at 120 of the 273 full-budget departures, where its q prefers
+    that move. It keeps student_sel's move at 126, where its q prefers student_sel's (calibrated −1.1 pp; fast roots
+    −0.6 pp).
+  - π′ is biased toward the prior that guided its search (it carries that prior's log-ratio), so π′ agreement cannot
+    referee: student_sel 132 vs gen 3 120 on student_sel-searched roots, but gen 3 40 vs student_sel 16 on
+    gen-2-searched roots.
+- **Inference:**
+  - The KL gain is mostly confidence in moves student_sel already picks.
+  - A trained prior changes ~3% of top choices, and the search already plays about half of them. The rest are where
+    the search's own q prefers student_sel's move, so any gain there depends on the evaluation being wrong, not on the
+    prior.
+  - Gen 3 repeats most of gen 2's departures, and gen 2 was NOT_SHOWN (§621), so a gen-3 A/B would most likely be
+    NOT_SHOWN again at about ±2.7 pp.
 - **Recommendation (Philipp decides):** no gen-3 A/B; student_sel stays the prior; prior-only AZ generations wait until
-  a better leaf changes the search's verdicts. Future prior candidates report flip rate against an independent referee,
-  not KL alone. No game seeds were used.
+  the evaluation (leaf values) changes. Future prior candidates report their departures from the current prior, the
+  overlap with earlier candidates, and the search's verdict at those roots, not KL alone. No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.

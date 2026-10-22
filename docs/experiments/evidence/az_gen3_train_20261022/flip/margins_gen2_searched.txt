@@ -1,0 +1,5 @@
+runs 127 of 127; searched non-singleton roots per run 64.2, full-budget 16.0
+all 1995 roots: q gap between the two best visited candidates: median 0.0115 (p25 0.0041, p75 0.0257)
+gen 3 vs student_sel: 63 roots (3.16%) | |dq| median 0.0145 p75 0.0421 | mean dq new-minus-sel +0.0296 (new higher at 67%) | mean dp +0.0176 | search played new 43, sel 12, other 8 | median visits new 2271, sel 985
+gen 2 vs student_sel: 70 roots (3.51%) | |dq| median 0.0147 p75 0.0458 | mean dq new-minus-sel +0.0217 (new higher at 60%) | mean dp +0.0124 | search played new 45, sel 15, other 10 | median visits new 2130, sel 1036
+pi' vs student_sel: 161 roots (8.07%) | |dq| median 0.0148 p75 0.0442 | mean dq new-minus-sel +0.0346 (new higher at 96%) | mean dp +0.0234 | search played new 106, sel 50, other 5 | median visits new 2138, sel 1439

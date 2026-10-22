@@ -309,9 +309,10 @@ The exploration block ran 2026-10-22 (§640, 1,024 A20 runs, student_sel): 15.7%
 played move left the most-visited one at 22.7% of floor-0..6 roots, root noise doubled prior overrides (13.0% vs 6.6%).
 Gen-3 training should keep its policy rows and down-weight its value rows.
 Gen-3 prior training (§TBD, offline, 2026-10-22) on all 5,760 AZ runs beat both gen-2 nets in selection KL (0.0506 vs
-0.0525 / 0.0547), but the trained priors change the top choice at only ~3% of validation roots, and at those the search's
-π′ sides with whichever prior guided it: near-ties. No A/B recommended; prior-only generations wait for a leaf that
-changes the search's verdicts ([result](../../experiments/evidence/az_gen3_train_20261022/RESULT.md)).
+0.0525 / 0.0547). But it changes student_sel's top choice at only ~3% of validation roots, and 70% of those are the same
+moves gen 2 picks (gen 2 was NOT_SHOWN). The search already plays about half of those moves; at the rest its own q
+prefers student_sel's move. No A/B recommended; prior-only generations wait for an evaluation (leaf) change
+([result](../../experiments/evidence/az_gen3_train_20261022/RESULT.md)).
 
 ### Earlier: gen 1b as prior NOT_SHOWN (§589)
 

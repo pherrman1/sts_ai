@@ -1,0 +1,6 @@
+searched with student_sel (gen 0, gen-1b A, gen-2 A, exploration): 528 runs, fast roots with >= 2 mapped candidates 25150 (47.6 per run, median completed sims 512)
+  gen 3 vs student_sel: 875 flips (3.48%) | |dq| median 0.0197 | mean dq new-minus-sel +0.0254 (new higher at 65%) | mean dp +0.0135 | search played new 367, sel 397, other 111 | mean dp where it played sel -0.0059 | median visits new 510, sel 511
+  gen 2 vs student_sel: 909 flips (3.61%) | |dq| median 0.0187 | mean dq new-minus-sel +0.0174 (new higher at 61%) | mean dp +0.0090 | search played new 340, sel 449, other 120 | mean dp where it played sel -0.0098 | median visits new 503, sel 513
+searched with the gen-2 prior (gen-2 B): 128 runs, fast roots with >= 2 mapped candidates 6061 (47.4 per run, median completed sims 512)
+  gen 3 vs student_sel: 203 flips (3.35%) | |dq| median 0.0218 | mean dq new-minus-sel +0.0179 (new higher at 64%) | mean dp +0.0094 | search played new 142, sel 43, other 18 | mean dp where it played sel -0.0358 | median visits new 485, sel 235
+  gen 2 vs student_sel: 217 flips (3.58%) | |dq| median 0.0195 | mean dq new-minus-sel +0.0051 (new higher at 57%) | mean dp +0.0022 | search played new 152, sel 46, other 19 | mean dp where it played sel -0.0471 | median visits new 492, sel 247
