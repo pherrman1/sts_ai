@@ -118,6 +118,12 @@ struct OocAdapterOptions {
     std::shared_ptr<const HeartLeafModel> heartLeaf;
     std::string heartLeafPath;
     unsigned leafCombats = 0;
+    // Referee rollouts (STS_OOC_SIBLING_REFEREE, STS_OOC_MCTS_LEAF_COMPARE_REFEREE; set only in a forked child): rollouts
+    // ignore leafCombats and play on to the end of the game, so they score only deaths (0) and Heart kills (1).
+    bool refereeRollout = false;
+    // STS_OOC_REFEREE_ACT_END=a1,a2,a3,a4:b (research): a referee rollout also notes its act-end value, the calibrated
+    // X2-B sigma(a_act + b * logit X2-B) at the first map state past the root's act; the rollout plays on.
+    std::vector<double> refereeActEndCalibration;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
     // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
@@ -193,6 +199,9 @@ struct OocSiblingLeafCapture {
     std::function<nlohmann::json(const GameContext &)> annotate;
     std::uint64_t runSeed = 0, decisionIndex = 0, searchSeed = 0;
     unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
+    // Research option (default 0, STS_OOC_SIBLING_REFEREE=n): n referee rollouts per leaf, played to the end of the
+    // game (no X2-B at the end), seeded like the repeats (common across a root's leaves with commonSeeds).
+    unsigned refereeRepeats = 0;
     std::uint64_t maxLeaves = 256, captured = 0;
     // Research option (default off, STS_OOC_SIBLING_COMMON_SEEDS=1): repeat r of every leaf of
     // the root uses the same stream (common random numbers), so sibling differences lose most of
@@ -275,6 +284,8 @@ private:
     std::uint64_t combatSamples_ = 0;
     std::uint64_t leafCalls_ = 0, leafObservationCount_ = 0;
     std::string observationError_;
+    // The act-end value the current referee rollout noted (refereeActEndCalibration), if it got that far.
+    std::optional<double> refereeActEnd_;
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
@@ -339,6 +350,10 @@ public:
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
     std::optional<std::uint64_t> outcomeEquivalenceKey(sts::search::OocStateId) const override;
     std::optional<sts::search::OocEndpoint> endpoint(sts::search::OocStateId) const override;
+    // Value-head plan stage 2 (STS_OOC_MCTS_LEAF_COMPARE): n referee rollouts (to the end of the game, no X2-B) from
+    // each root action, with stream r shared by the actions (common random numbers). Runs in a forked child, so the
+    // model is unchanged.
+    nlohmann::json refereeRootActions(const std::vector<sts::search::OocActionId> &, unsigned n, std::uint64_t seed);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);

@@ -1877,7 +1877,7 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         {"outcome", int(gc.outcome)}, {"boundary", isLeafBoundary(id)}};
     if (capture.commonSeeds) row["commonSeeds"] = true;
     const auto policyBefore = captureOocPolicyThreadState();
-    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats);
+    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats;
     try { row["extra"] = forkLeafReplay([&] {
         nlohmann::json out = nlohmann::json::object();
         const auto anchorStart = std::clock();
@@ -1908,9 +1908,13 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
                 std::mt19937_64 stream(seq);
                 bool ended = false;
                 sts::search::OocEndpoint end;
+                refereeActEnd_.reset();
                 try {
                     const double value = evaluateLeafUnobserved(id, stream, ended, end);
                     list.push_back({{"value", value}, {"terminal", ended}, {"endFloor", end.floor}});
+                    // A rollout that ends before the act does is its own act-end value.
+                    if (options.refereeRollout && !options.refereeActEndCalibration.empty())
+                        list.back()["actEnd"] = refereeActEnd_.value_or(value);
                 } catch (const std::exception &e) { list.push_back({{"error", e.what()}}); }
             }
         };
@@ -1927,10 +1931,48 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             options.leafCombats = 5;  // child process only
             evaluations("long5", capture.longRepeats, 2);
         }
+        if (capture.refereeRepeats) {
+            options.refereeRollout = true;  // child process only: play to the end of the game
+            const auto refereeStart = std::clock();
+            evaluations("referee", capture.refereeRepeats, 3);
+            out["refereeCpuSeconds"] = double(std::clock() - refereeStart) / CLOCKS_PER_SEC;
+        }
         return out;
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { row["extraError"] = e.what(); }
     return row;
+}
+nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::search::OocActionId> &actions,
+        unsigned n, std::uint64_t seed) {
+    const auto policyBefore = captureOocPolicyThreadState();
+    const unsigned seconds = 60 + 30 * unsigned(actions.size()) * n;
+    try { return forkLeafReplay([&] {
+        options.refereeRollout = true;  // child process only
+        options.siblingCapture.reset();
+        options.leafObserver = {};
+        options.priorTracePath.clear();
+        nlohmann::json out = {{"n", n}, {"actions", nlohmann::json::object()}};
+        const auto start = std::clock();
+        for (const auto action : actions) {
+            auto &list = out["actions"][std::to_string(action)] = nlohmann::json::array();
+            for (unsigned r = 0; r < n; ++r) {
+                restoreOocPolicyThreadState(policyBefore);
+                std::seed_seq seq{seed, std::uint64_t(r), std::uint64_t(4)};
+                std::mt19937_64 stream(seq);
+                refereeActEnd_.reset();
+                try {
+                    const auto child = sampleSuccessor(0, action, stream);
+                    const auto e = evaluateLeafWithOutcome(child, stream);
+                    list.push_back({{"value", e.value}, {"terminal", e.terminal},
+                                    {"endFloor", e.endpoint ? e.endpoint->floor : -1}});
+                    if (!options.refereeActEndCalibration.empty()) list.back()["actEnd"] = refereeActEnd_.value_or(e.value);
+                } catch (const std::exception &failure) { list.push_back({{"error", failure.what()}}); }
+            }
+        }
+        out["cpuSeconds"] = double(std::clock() - start) / CLOCKS_PER_SEC;
+        return out;
+    }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
+    catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
 }
 #endif
 double OocGameContextModel::evaluateLeafObserved(sts::search::OocStateId id,
@@ -2202,7 +2244,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
     // A boss rollout spans up to a whole act of decisions. Its target is the
     // next boss after the searched decision, so a leaf the tree already played
     // past that boss scores 1 instead of rolling on to a later boss.
-    const int maxSteps = options.bossRollout ? 8192 : options.leafCombats ? 1024 : 256;
+    // A referee rollout plays the rest of the game.
+    const int maxSteps = options.bossRollout ? 8192 : options.refereeRollout ? 16384 : options.leafCombats ? 1024 : 256;
     const int targetBosses = bossesCleared(state(0)) + 1;
     unsigned additionalCombats = 0;
     const auto checkpoint = [&]() -> std::optional<double> {
@@ -2212,6 +2255,12 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             terminal = true;
             return sts::search::runGoalVictory(child.gc, options.collectKeys, dependencies.stopAfterAct()) ? 1 : 0;
         }
+        if (options.refereeRollout && !options.refereeActEndCalibration.empty() && !refereeActEnd_
+                && child.gc.screenState == sts::ScreenState::MAP_SCREEN && child.gc.act > state(0).act) {
+            const auto &cal = options.refereeActEndCalibration;
+            const double z = std::clamp(dependencies.leafValue(child.gc, child.path), 1e-7, 1 - 1e-7);
+            refereeActEnd_ = 1.0 / (1.0 + std::exp(-(cal[std::clamp(child.gc.act, 1, 4) - 1] + cal[4] * std::log(z / (1 - z)))));
+        }
         if (options.bossRollout)
             return bossesCleared(child.gc) >= targetBosses ? std::optional<double>(1.0) : std::nullopt;
         if (options.screenLeaf && child.gc.screenState != sts::ScreenState::BATTLE
@@ -2220,7 +2269,8 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         // Direct probe: value the first non-combat state without a playout.
         if (((options.directLeaf || options.screenLeaf) && child.gc.screenState != sts::ScreenState::BATTLE)
                 || (child.gc.screenState == sts::ScreenState::MAP_SCREEN
-                && (additionalCombats >= options.leafCombats || options.stopAtMapCheckpoint))) {
+                && ((!options.refereeRollout && additionalCombats >= options.leafCombats)
+                    || options.stopAtMapCheckpoint))) {
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);
@@ -2460,6 +2510,30 @@ double liveGumbelRootScale = 1;
 // 512/1024/2048 on the same model with their own seeds, and append one JSONL row per root. The played
 // action and the run are unchanged.
 std::string liveRootComparePath;
+// STS_OOC_MCTS_LEAF_COMPARE=PATH (research, value-head plan stage 2): at every searched root, after the real search,
+// the same search (seed, budget, stops) runs once per STS_OOC_MCTS_LEAF_COMPARE_ARMS leaf on a fresh model, then
+// STS_OOC_MCTS_LEAF_COMPARE_REFEREE referee rollouts run from the played action and from every arm's differing pick.
+// One JSONL row per root; the played action and the run are unchanged.
+struct LiveLeafCompareArm {
+    std::string name;
+    std::vector<double> calibration;
+    std::shared_ptr<const one_combat::heart1::Net> heart1Value;
+    std::string heart1ValuePath, heart1ValueSha256;
+    double heart1Weight = 1;
+    std::shared_ptr<const RolloutStudent> student;
+    std::string studentPath;
+    std::shared_ptr<const HeartLeafModel> heartLeaf;
+    std::string heartLeafPath;
+    // Nonzero: the arm searches with seed splitMix64(seed ^ seedSalt). With no leaf change it is the null arm, which
+    // measures the flips that search noise alone produces.
+    std::uint64_t seedSalt = 0;
+};
+struct LiveLeafCompare {
+    std::string path;
+    std::vector<LiveLeafCompareArm> arms;
+    unsigned referee = 16;
+};
+std::optional<LiveLeafCompare> liveLeafCompare;
 int livePlaySampleFloor = -1;
 double livePlaySampleTemperature = 1;
 // Learned stop (STS_OOC_MCTS_LEARNED_STOP=PATH:TAU, research, opt-in): a logistic CompactTreeNet of
@@ -2486,7 +2560,7 @@ std::unique_ptr<OocLeafCaptureSink> liveLeafCapture;
 struct LiveSiblingCapture {
     std::shared_ptr<std::ofstream> out;
     std::uint64_t every = 4, maxLeaves = 256;
-    unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
+    unsigned repeats = 1, longRepeats = 0, refereeRepeats = 0, maxDepth = 2;
     bool commonSeeds = false;
 };
 std::optional<LiveSiblingCapture> liveSibling;
@@ -2757,6 +2831,114 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3 && x != 5) invalid(); opts.leafCombats = x; }
     else invalid();
 }
+// "a1,a2,a3,a4:b" with finite values and b > 0 (STS_OOC_MCTS_LEAF_CALIBRATION and the compare arms).
+std::optional<std::vector<double>> parseLeafCalibration(const std::string &value) {
+    const auto colon = value.find(':');
+    std::vector<double> numbers;
+    bool ok = colon != std::string::npos;
+    const std::string list = ok ? value.substr(0, colon) + "," + value.substr(colon + 1) : std::string{};
+    for (std::size_t pos = 0; ok && pos <= list.size();) {
+        const auto comma = std::min(list.find(',', pos), list.size());
+        const std::string item = list.substr(pos, comma - pos);
+        char *end = nullptr;
+        const double x = item.empty() ? 0 : std::strtod(item.c_str(), &end);
+        ok = !item.empty() && end == item.c_str() + item.size() && std::isfinite(x);
+        numbers.push_back(x);
+        pos = comma + 1;
+    }
+    if (!ok || numbers.size() != 5 || !(numbers[4] > 0)) return std::nullopt;
+    return numbers;
+}
+#ifndef STS_LIVE_ADVISOR
+// STS_OOC_MCTS_LEAF_COMPARE_ARMS: "NAME@key=value;key=value|NAME@...", 1 to 8 arms. Keys: calibration
+// (a1,a2,a3,a4:b), heart1_value (heart1 weights), heart1_weight (0, 1], student (§494 student weights),
+// heart_model (Heart leaf manifest), seed_salt (1..2^63; a different search seed). An arm has one leaf model or a
+// calibration (the calibration combines only with heart1_value, as in the live options), or only a seed salt.
+std::vector<LiveLeafCompareArm> parseLeafCompareArms(const std::string &spec) {
+    const auto fail = [](const std::string &why) { return std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE_ARMS: " + why); };
+    std::vector<LiveLeafCompareArm> arms;
+    for (std::size_t pos = 0; pos <= spec.size();) {
+        const auto bar = std::min(spec.find('|', pos), spec.size());
+        const std::string item = spec.substr(pos, bar - pos);
+        pos = bar + 1;
+        const auto at = item.find('@');
+        if (at == std::string::npos || at == 0 || at + 1 == item.size()) throw fail("arm '" + item + "' must be NAME@key=value");
+        LiveLeafCompareArm arm;
+        arm.name = item.substr(0, at);
+        if (arm.name.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_") != std::string::npos)
+            throw fail("arm name '" + arm.name + "' must be [A-Za-z0-9_]");
+        for (const auto &other : arms) if (other.name == arm.name) throw fail("duplicate arm " + arm.name);
+        bool weightSet = false;
+        for (std::size_t kp = at + 1; kp <= item.size();) {
+            const auto semi = std::min(item.find(';', kp), item.size());
+            const std::string kv = item.substr(kp, semi - kp);
+            kp = semi + 1;
+            const auto eq = kv.find('=');
+            if (eq == std::string::npos || eq == 0 || eq + 1 == kv.size()) throw fail("item '" + kv + "' must be key=value");
+            const std::string key = kv.substr(0, eq), value = kv.substr(eq + 1);
+            if (key == "calibration") {
+                const auto parsed = parseLeafCalibration(value);
+                if (!parsed || !arm.calibration.empty()) throw fail("calibration '" + value + "' must be a1,a2,a3,a4:b, once");
+                arm.calibration = *parsed;
+            } else if (key == "heart1_value") {
+                if (arm.heart1Value) throw fail("duplicate heart1_value");
+                auto net = std::make_shared<one_combat::heart1::Net>();
+                std::string error;
+                if (!net->load(value, &error)) throw fail("heart1_value " + value + ": " + error);
+                arm.heart1Value = std::move(net);
+                arm.heart1ValuePath = value;
+                arm.heart1ValueSha256 = fileSha256Hex(value);
+            } else if (key == "heart1_weight") {
+                char *end = nullptr;
+                const double w = std::strtod(value.c_str(), &end);
+                if (weightSet || end != value.c_str() + value.size() || !(w > 0 && w <= 1))
+                    throw fail("heart1_weight '" + value + "' must be in (0, 1], once");
+                arm.heart1Weight = w;
+                weightSet = true;
+            } else if (key == "student") {
+                if (arm.student) throw fail("duplicate student");
+                arm.student = std::make_shared<const RolloutStudent>(value);
+                arm.studentPath = value;
+            } else if (key == "heart_model") {
+                if (arm.heartLeaf) throw fail("duplicate heart_model");
+                arm.heartLeaf = std::make_shared<const HeartLeafModel>(value);
+                arm.heartLeafPath = value;
+            } else if (key == "seed_salt") {
+                if (arm.seedSalt || value.size() > 19 || value.find_first_not_of("0123456789") != std::string::npos
+                        || std::stoull(value) == 0 || std::stoull(value) > (std::uint64_t(1) << 63))
+                    throw fail("seed_salt '" + value + "' must be 1..2^63, once");
+                arm.seedSalt = std::stoull(value);
+            } else throw fail("unknown key '" + key + "'");
+            if (semi == item.size()) break;
+        }
+        const int models = int(bool(arm.heart1Value)) + int(bool(arm.student)) + int(bool(arm.heartLeaf));
+        if (models > 1 || (models == 0 && arm.calibration.empty() && !arm.seedSalt) || (weightSet && !arm.heart1Value)
+                || (!arm.calibration.empty() && (arm.student || arm.heartLeaf)))
+            throw fail("arm " + arm.name + " needs one leaf model, a calibration (with heart1_value at most) or a seed salt");
+        arms.push_back(std::move(arm));
+        if (bar == spec.size()) break;
+    }
+    if (arms.empty() || arms.size() > 8) throw fail("needs 1 to 8 arms");
+    return arms;
+}
+// The run's own options with one arm's leaf in place of the plain X2-B leaf; no prior trace.
+OocAdapterOptions leafCompareOptions(const OocAdapterOptions &base, const LiveLeafCompareArm &arm) {
+    auto o = base;
+    o.priorTracePath.clear();
+    o.siblingCapture.reset();
+    o.leafObserver = {};
+    o.leafCalibration = arm.calibration;
+    o.heart1ValueNet = arm.heart1Value;
+    o.heart1ValuePath = arm.heart1ValuePath;
+    o.heart1ValueSha256 = arm.heart1ValueSha256;
+    o.heart1ValueWeight = arm.heart1Weight;
+    o.rolloutStudent = arm.student;
+    o.rolloutStudentPath = arm.studentPath;
+    o.heartLeaf = arm.heartLeaf;
+    o.heartLeafPath = arm.heartLeafPath;
+    return o;
+}
+#endif
 std::string leafCalibrationText(const std::vector<double> &values, const char *slopeSeparator) {
     std::ostringstream out;
     out << std::setprecision(17);
@@ -3050,6 +3232,7 @@ void configureLiveOocMcts() {
         sibling.every = knob("STS_OOC_SIBLING_EVERY", 4, 1, 1000);
         sibling.repeats = unsigned(knob("STS_OOC_SIBLING_REPEATS", 1, 0, 256));
         sibling.longRepeats = unsigned(knob("STS_OOC_SIBLING_LONG", 0, 0, 16));
+        sibling.refereeRepeats = unsigned(knob("STS_OOC_SIBLING_REFEREE", 0, 0, 256));
         sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
         sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
         sibling.commonSeeds = knob("STS_OOC_SIBLING_COMMON_SEEDS", 0, 0, 1) == 1;
@@ -3344,23 +3527,62 @@ void configureLiveOocMcts() {
                                      "and no leaf model other than STS_OOC_MCTS_LEAF_HEART1_VALUE");
         if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
             throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION excludes leaf and sibling capture");
-        const std::string value(raw);
-        const auto colon = value.find(':');
-        std::vector<double> numbers;
-        bool ok = colon != std::string::npos;
-        const std::string list = ok ? value.substr(0, colon) + "," + value.substr(colon + 1) : std::string{};
-        for (std::size_t pos = 0; ok && pos <= list.size();) {
-            const auto comma = std::min(list.find(',', pos), list.size());
-            const std::string item = list.substr(pos, comma - pos);
-            char *end = nullptr;
-            const double x = item.empty() ? 0 : std::strtod(item.c_str(), &end);
-            ok = !item.empty() && end == item.c_str() + item.size() && std::isfinite(x);
-            numbers.push_back(x);
-            pos = comma + 1;
-        }
-        if (!ok || numbers.size() != 5 || !(numbers[4] > 0))
+        auto numbers = parseLeafCalibration(raw);
+        if (!numbers)
             throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION must be a1,a2,a3,a4:b with finite values and b > 0");
-        liveOptions.leafCalibration = std::move(numbers);
+        liveOptions.leafCalibration = std::move(*numbers);
+#endif
+    }
+    // Referee rollouts must end only in a death or a Heart kill: plain checkpoint rollouts, no early leaf.
+    if (liveSibling && liveSibling->refereeRepeats
+            && (!liveOptions.checkpointLeaves || liveOptions.directLeaf || liveOptions.screenLeaf || liveOptions.bossLeaf
+                || liveOptions.bossRollout || liveOptions.constantLeaf || liveOptions.stopAtMapCheckpoint
+                || liveOptions.rolloutStudent))
+        throw std::runtime_error("STS_OOC_SIBLING_REFEREE requires checkpoint rollouts without a direct, screen, boss, "
+                                 "constant or student leaf");
+    if (const char *path = std::getenv("STS_OOC_MCTS_LEAF_COMPARE"); path && *path) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE is unavailable in the live advisor");
+#else
+        // The incumbent is the plain native X2-B leaf with checkpoint rollouts; captures and the root compare would
+        // also see the extra searches.
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet
+                || liveOptions.heartLeaf || liveOptions.rolloutStudent || liveOptions.heart1ValueNet
+                || !liveOptions.leafCalibration.empty() || !liveOptions.checkpointLeaves || liveOptions.directLeaf
+                || liveOptions.screenLeaf || liveOptions.bossLeaf || liveOptions.bossRollout || liveOptions.constantLeaf
+                || liveOptions.stopAtMapCheckpoint)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE requires STS_OOC_MCTS=1 and the plain native leaf");
+        if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") || !liveRootComparePath.empty())
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE excludes leaf and sibling capture and the root compare");
+        const char *arms = std::getenv("STS_OOC_MCTS_LEAF_COMPARE_ARMS");
+        if (!arms || !*arms) throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE requires STS_OOC_MCTS_LEAF_COMPARE_ARMS");
+        LiveLeafCompare compare;
+        compare.path = path;
+        compare.arms = parseLeafCompareArms(arms);
+        if (const char *raw = std::getenv("STS_OOC_MCTS_LEAF_COMPARE_REFEREE")) {
+            const std::string value(raw);
+            if (value.empty() || value.size() > 3 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoul(value) > 256)
+                throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE_REFEREE must be 0..256");
+            compare.referee = unsigned(std::stoul(value));
+        }
+        if (!std::ofstream(path, std::ios::app)) throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE cannot open output");
+        liveLeafCompare = std::move(compare);
+#endif
+    } else if (std::getenv("STS_OOC_MCTS_LEAF_COMPARE_ARMS") || std::getenv("STS_OOC_MCTS_LEAF_COMPARE_REFEREE"))
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE_ARMS and _REFEREE require STS_OOC_MCTS_LEAF_COMPARE");
+    if (const char *raw = std::getenv("STS_OOC_REFEREE_ACT_END")) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_REFEREE_ACT_END is unavailable in the live advisor");
+#else
+        // The act-end value reads the native X2-B (the leaf-value dependency) whatever the run's own leaf.
+        if (!(liveSibling && liveSibling->refereeRepeats) && !(liveLeafCompare && liveLeafCompare->referee))
+            throw std::runtime_error("STS_OOC_REFEREE_ACT_END requires STS_OOC_SIBLING_REFEREE or "
+                                     "STS_OOC_MCTS_LEAF_COMPARE_REFEREE above 0");
+        const auto numbers = parseLeafCalibration(raw);
+        if (!numbers) throw std::runtime_error("STS_OOC_REFEREE_ACT_END must be a1,a2,a3,a4:b with b > 0");
+        liveOptions.refereeActEndCalibration = *numbers;
 #endif
     }
     if (liveConfig.stopAt512VisitGap20
@@ -3602,6 +3824,13 @@ void configureLiveOocMcts() {
         << (liveGumbelRootActions ? " gumbel_root=" + std::to_string(liveGumbelRootActions) + ":"
             + std::to_string(liveGumbelRootScale) : std::string{})
         << (!liveRootComparePath.empty() ? " root_compare=1" : "")
+        << (liveLeafCompare ? " leaf_compare=" + liveLeafCompare->path + " leaf_compare_arms=" + [] {
+                std::string names;
+                for (const auto &arm : liveLeafCompare->arms) names += (names.empty() ? "" : ",") + arm.name;
+                return names;
+            }() + " leaf_compare_referee=" + std::to_string(liveLeafCompare->referee) : std::string{})
+        << (!liveOptions.refereeActEndCalibration.empty() ? " referee_act_end="
+            + leafCalibrationText(liveOptions.refereeActEndCalibration, ":") : std::string{})
         << (livePlaySampleFloor >= 0 ? " play_sample=" + std::to_string(livePlaySampleFloor) + ":"
             + std::to_string(livePlaySampleTemperature) : std::string{})
         << "]\n";
@@ -3635,6 +3864,23 @@ void configureLiveOocMcts() {
             + liveOptions.heart1ValueSha256 + "\"" : std::string{})
         << (liveOptions.heart1ValueWeight < 1 ? ",\"leafHeart1ValueWeight\":" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
         << (!liveOptions.leafCalibration.empty() ? ",\"leafCalibration\":[" + leafCalibrationText(liveOptions.leafCalibration, ",") + "]" : std::string{})
+        << (liveLeafCompare ? ",\"leafCompare\":" + [] {
+                nlohmann::json arms = nlohmann::json::array();
+                for (const auto &arm : liveLeafCompare->arms) {
+                    nlohmann::json a = {{"name", arm.name}};
+                    if (!arm.calibration.empty()) a["calibration"] = arm.calibration;
+                    if (arm.heart1Value) a["heart1Value"] = {{"path", arm.heart1ValuePath}, {"sha256", arm.heart1ValueSha256},
+                                                             {"weight", arm.heart1Weight}};
+                    if (arm.student) a["student"] = arm.studentPath;
+                    if (arm.heartLeaf) a["heartModel"] = {{"path", arm.heartLeafPath}, {"sha256", arm.heartLeaf->manifestSha256()}};
+                    if (arm.seedSalt) a["seedSalt"] = arm.seedSalt;
+                    arms.push_back(std::move(a));
+                }
+                return nlohmann::json{{"path", liveLeafCompare->path}, {"arms", arms},
+                                      {"referee", liveLeafCompare->referee}}.dump();
+            }() : std::string{})
+        << (!liveOptions.refereeActEndCalibration.empty() ? ",\"refereeActEnd\":["
+            + leafCalibrationText(liveOptions.refereeActEndCalibration, ",") + "]" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -4218,6 +4464,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             sibling->annotate = [](const GameContext &leaf) { return one_combat::heart1::leafAnnotation(leaf); };
         sibling->runSeed = seed; sibling->decisionIndex = index; sibling->searchSeed = config.seed;
         sibling->repeats = liveSibling->repeats; sibling->longRepeats = liveSibling->longRepeats;
+        sibling->refereeRepeats = liveSibling->refereeRepeats;
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
         sibling->commonSeeds = liveSibling->commonSeeds;
         options.siblingCapture = std::move(sibling);
@@ -4227,6 +4474,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         options.priorTraceDecisionIndex = index;
         options.priorTraceSearchSeed = config.seed;
     }
+    const auto compareSampler = liveLeafCompare ? sampler : std::shared_ptr<const CombatTransitionSampler>{};
     OocGameContextModel model(gc, path, std::move(sampler), std::move(options));
     samples = 0;
     if (selected) selected->reset();
@@ -4354,6 +4602,53 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         if (!out || !(out << row.dump() << '\n'))
             throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE write failed");
     }
+#ifndef STS_LIVE_ADVISOR
+    if (liveLeafCompare && explore && !sole && !result.aborted && result.selectedAction && !result.rootActions.empty()) {
+        // Research only (value-head plan stage 2): each arm's leaf on a fresh model with this root's config, seed and
+        // budget, then referee rollouts from the played action and from every differing pick.
+        const auto stats = [](const sts::search::OocMctsResult &r) {
+            nlohmann::json actions = nlohmann::json::array();
+            for (const auto &a : r.rootActions) actions.push_back({a.id, a.visits, a.q, a.pruned});
+            return nlohmann::json{{"simulations", r.metrics.simulations}, {"aborted", r.aborted},
+                {"selectedId", r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr)},
+                {"actions", actions}};
+        };
+        std::vector<sts::search::OocActionId> picks{*result.selectedAction};
+        nlohmann::json arms = nlohmann::json::object();
+        for (const auto &arm : liveLeafCompare->arms) {
+            const double t0 = threadCpuSeconds();
+            try {
+                OocGameContextModel armModel(gc, path, compareSampler, leafCompareOptions(liveOptions, arm));
+                auto armConfig = config;
+                if (arm.seedSalt) armConfig.seed = splitMix64(config.seed ^ arm.seedSalt);
+                const auto r = searchWithSoleRootShortcut(armModel, armConfig, sole, simulations);
+                auto row = stats(r);
+                row["cpuSeconds"] = threadCpuSeconds() - t0;
+                arms[arm.name] = std::move(row);
+                if (!r.aborted && r.selectedAction
+                        && std::find(picks.begin(), picks.end(), *r.selectedAction) == picks.end())
+                    picks.push_back(*r.selectedAction);
+            } catch (const std::exception &e) {
+                // An arm's leaf that fails here leaves the real run alone; the row says so.
+                arms[arm.name] = {{"error", e.what()}, {"cpuSeconds", threadCpuSeconds() - t0}};
+            }
+        }
+        nlohmann::json candidates = nlohmann::json::array();
+        for (const auto &a : result.rootActions)
+            candidates.push_back({{"id", a.id}, {"prior", a.prior}, {"label", candidateLabel(gc, model.candidate(0, a.id))}});
+        nlohmann::json row = {{"schema", 1}, {"seed", seed}, {"decisionIndex", index}, {"act", gc.act},
+            {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"searchSeed", config.seed},
+            {"fullBudget", fullBudget}, {"budget", simulations}, {"candidates", candidates}, {"main", stats(result)},
+            {"arms", arms}};
+        if (liveLeafCompare->referee)
+            row["referee"] = model.refereeRootActions(picks, liveLeafCompare->referee,
+                                                      splitMix64(config.seed ^ 0x5245464c45414631ULL));   // "REFLEAF1"
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveLeafCompare->path, std::ios::app);
+        if (!out || !(out << row.dump() << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_COMPARE write failed");
+    }
+#endif
     // STS_OOC_MCTS_PLAY_SAMPLE: replace the most-visited action by a visit-proportional draw from a salted
     // hash of the search seed (no game or search RNG stream). Pruned and unvisited actions never play.
     const auto searchSelected = result.selectedAction;
@@ -7322,6 +7617,93 @@ void oocMctsAdapterSelfTest() {
         require(throwing.evaluateLeaf(0,throwingRng) == .5 && throwingRng == projectionRng
             && throwingSampler->calls == horizon && throwing.observationError() == "observer sentinel",
             "observer exception is retained without changing the leaf or planner RNG");
+    }
+    {
+        // STS_OOC_SIBLING_REFEREE: a referee rollout ignores the combat horizon and never reads a leaf value
+        // (constantLeaf would return 0.5). A sampled death ends it at 0; with every combat won it plays past five
+        // combats to a terminal.
+        struct DeathSampler final : CombatTransitionSampler {
+            mutable unsigned calls = 0;
+            CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override { return {true,"supported"}; }
+            CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+                ++calls;
+                return {CombatRuntimeSample::Outcome::DEATH,captureCombatTransitionState(g)};
+            }
+        };
+        auto refereeRoot = detachedCopy(gc);
+        for (auto &row : refereeRoot.map->nodes) for (auto &node : row) node.room = Room::MONSTER;
+        OocAdapterOptions opts{true}; opts.leafCombats = 3; opts.constantLeaf = true; opts.uniformLeafPolicy = true;
+        opts.refereeRollout = true;
+        auto dying = std::make_shared<DeathSampler>();
+        OocGameContextModel dies(refereeRoot,path,dying,opts);
+        std::mt19937_64 refereeRng(77);
+        const auto death = dies.evaluateLeafWithOutcome(0,refereeRng);
+        require(death.value == 0 && death.terminal && dying->calls == 1, "referee rollout ends at a death with 0");
+        auto winning = std::make_shared<HorizonSampler>();
+        OocGameContextModel wins(refereeRoot,path,winning,opts);
+        const auto won = wins.evaluateLeafWithOutcome(0,refereeRng);
+        std::cout<<"referee_rollout combats="<<winning->calls<<" value="<<won.value<<" terminal="<<won.terminal
+                 <<" floor="<<(won.endpoint ? won.endpoint->floor : -1)<<'\n';
+        require(won.terminal && (won.value == 0 || won.value == 1) && winning->calls > 5,
+            "referee rollout plays past the combat horizon to a terminal");
+        // STS_OOC_MCTS_LEAF_COMPARE: the arms parser, and the root referee (forked, so the model keeps its states and
+        // the parent's sampler is never called; a plain model's horizon and constant leaf are ignored).
+        const auto compareArms = parseLeafCompareArms(
+            "M0@calibration=-2.5,-2.9,-3.6,-3.7:1.05|flat_1@calibration=0,0,0,0:1|null@seed_salt=7");
+        require(compareArms.size() == 3 && compareArms[0].name == "M0" && compareArms[0].calibration.size() == 5
+            && compareArms[1].name == "flat_1" && compareArms[1].calibration[4] == 1 && !compareArms[0].heart1Value
+            && !compareArms[0].student && !compareArms[0].heartLeaf && compareArms[0].heart1Weight == 1
+            && !compareArms[0].seedSalt && compareArms[2].seedSalt == 7 && compareArms[2].calibration.empty(),
+            "leaf compare arms parse");
+        const auto compareOptions = leafCompareOptions(opts, compareArms[0]);
+        require(compareOptions.leafCalibration == compareArms[0].calibration && !compareOptions.heart1ValueNet
+            && compareOptions.priorTracePath.empty() && !compareOptions.siblingCapture, "leaf compare arm options");
+        for (const std::string bad : {"", "M0", "@calibration=0,0,0,0:1", "M0@", "M0@calibration=0,0,0:1",
+                "M0@calibration=0,0,0,0:0", "M0@heart1_weight=0.5", "M0@foo=1", "M-0@calibration=0,0,0,0:1",
+                "A@calibration=0,0,0,0:1|A@calibration=0,0,0,0:1", "A@calibration=0,0,0,0:1;calibration=0,0,0,0:1",
+                "A@calibration=0,0,0,0:1|", "A@calibration=0,0,0,0:1;heart1_weight=1", "A@seed_salt=0", "A@seed_salt=x",
+                "A@seed_salt=1;seed_salt=2"})
+            rejects([&] { (void)parseLeafCompareArms(bad); });
+        OocAdapterOptions plain{true}; plain.leafCombats = 3; plain.constantLeaf = true; plain.uniformLeafPolicy = true;
+        auto rootDeaths = std::make_shared<DeathSampler>();
+        OocGameContextModel deathRoot(refereeRoot,path,rootDeaths,plain);
+        const auto rootActions = deathRoot.legalActions(0);
+        require(rootActions.size() >= 2, "referee fixture root has two actions");
+        const auto storedBefore = deathRoot.storedStates();
+        const auto refereed = deathRoot.refereeRootActions({rootActions[0].id, rootActions[1].id}, 2, 99);
+        require(refereed.at("n") == 2 && refereed.at("actions").size() == 2 && deathRoot.storedStates() == storedBefore
+            && rootDeaths->calls == 0, "root referee runs in a forked child");
+        for (const auto &entry : refereed.at("actions").items())
+            for (const auto &e : entry.value())
+                require(e.at("value") == 0 && e.at("terminal") == true, "root referee ends at the sampled death");
+        auto rootWins = std::make_shared<HorizonSampler>();
+        OocGameContextModel winRoot(refereeRoot,path,rootWins,plain);
+        const auto wonRoot = winRoot.refereeRootActions({winRoot.legalActions(0)[0].id}, 1, 99);
+        for (const auto &entry : wonRoot.at("actions").items())
+            for (const auto &e : entry.value())
+                require(e.at("terminal") == true && (e.at("value") == 0 || e.at("value") == 1)
+                    && !e.contains("actEnd"), "root referee ignores the horizon and the constant leaf");
+        // STS_OOC_REFEREE_ACT_END: with intercepts of +-30 the act-end value is about 1 or 0 whatever the rollout's own
+        // end; it reads X2-B at the act end and leaves the rollout (same streams, same values) unchanged.
+        const auto actEndValues = [&](double intercept) {
+            auto o = plain; o.refereeActEndCalibration = {intercept, intercept, intercept, intercept, 1};
+            OocGameContextModel m(refereeRoot,path,std::make_shared<HorizonSampler>(),o);
+            return m.refereeRootActions({m.legalActions(0)[0].id}, 2, 99).at("actions");
+        };
+        const auto high = actEndValues(30), low = actEndValues(-30);
+        const auto &plainEntries = wonRoot.at("actions").begin().value();
+        const auto &highEntries = high.begin().value(), &lowEntries = low.begin().value();
+        require(highEntries.size() == 2 && lowEntries.size() == 2 && highEntries[0].at("value") == plainEntries[0].at("value")
+            && highEntries[0].at("endFloor") == plainEntries[0].at("endFloor")
+            && highEntries[1].at("value") == lowEntries[1].at("value"), "referee act-end note leaves the rollout unchanged");
+        for (unsigned r = 0; r < 2; ++r)
+            require(highEntries[r].at("actEnd").get<double>() > 0.999 && lowEntries[r].at("actEnd").get<double>() < 0.001,
+                "referee act-end value is the calibrated X2-B at the act end");
+        auto deathCal = plain; deathCal.refereeActEndCalibration = {30, 30, 30, 30, 1};
+        OocGameContextModel deathActEnd(refereeRoot,path,std::make_shared<DeathSampler>(),deathCal);
+        for (const auto &entry : deathActEnd.refereeRootActions({rootActions[0].id}, 2, 99).at("actions").items())
+            for (const auto &e : entry.value())
+                require(e.at("value") == 0 && e.at("actEnd") == 0, "a death before the act end is the act-end value");
     }
     {
         // Observe RNG after every transition/evaluation without changing the
