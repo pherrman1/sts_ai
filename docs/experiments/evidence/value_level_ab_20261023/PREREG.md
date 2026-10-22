@@ -58,7 +58,7 @@ playouts, keys on, CTM rows on.
 **Learned OOC stop: on in all arms.** Its features are root Q differences only (`oocLearnedStopFeatures`). M0 keeps
 survivor gaps in acts 1–2 within about 0.88× and shrinks death-driven gaps, so the stop may fire later there; it grows
 act-3 survivor gaps about 1.6×, so the stop may fire earlier in act 3. The blend at w 0.1 barely moves the gaps. The
-stop's behaviour is reported (fast-root simulations and stop share by act and arm), not corrected.
+stop's behaviour is reported (fast-root simulations and learned-stop share by act and arm), not corrected.
 
 ## Seeds, workers, cost
 - Seeds 111330000–111331023 (1,024, fresh; unused in the repo). Smokes 111339990–111339993.
@@ -75,7 +75,7 @@ stop's behaviour is reported (fast-root simulations and stop share by act and ar
   (act 1 named, given §522); mean floor.
 - **Guard:** mean wall per arm over A's. A default proposal needs ≤ 1.10.
 - **Descriptive:** searched, full-budget and aborted roots; picks off the prior's argmax; fast-root completed
-  simulations and stop share by act.
+  simulations, learned-stop and root-lock shares by act.
 - Power: from §621 (208 of 1,024 seeds discordant) a simple effect resolves about ±2.8 pp; a main effect averages
   two, about ±2.0–2.2 pp.
 

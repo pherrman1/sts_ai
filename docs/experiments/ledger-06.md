@@ -23436,3 +23436,47 @@ recipe do better when it learns from the recapture's cleaner labels? Philipp typ
   replicates, epoch 11's blend replaces SR_w1's as the online candidate.
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §TBD — Value-head plan, stage 0: relative to its calibrated Heart value, the X2-B leaf over-prices a death 3.3× (act 1) to 7.7× (act 3); a per-act calibrated leaf (M0) would change 7.0% of root picks, three quarters toward the riskier sibling (offline, 2026-10-22)
+
+**Question:** A rollout3 leaf scores a death 0, a Heart kill 1 and a surviving end X2-B, whose level is far above the
+Heart rate. How much does that over-price a death, and would a calibrated leaf change the search's picks? Stage 0 of
+the [value-head research plan](https://claude.ai/artifact/MoLmbWb4QXdLTEsDVYgt4a); Philipp: "lets go with the plan"
+(2026-10-22 21:44Z).
+**Design:** offline on §644's common-seed capture (320 A20 sources of gen-2 A/B arm A play, 70 Heart kills, 20,679
+searched roots, 32 repeats per sibling). Tools [`stage0.py`](evidence/value_death_price_20261023/tools/stage0.py)
+and [`calib_check.py`](evidence/value_death_price_20261023/tools/calib_check.py).
+- Calibration: per searched root, X2-B of the executed action's child against the run's Heart kill;
+  logit p = a_act + b · logit x.
+- Death price in X2-B units at the surviving rollout ends: x̄(1 − x̄) / (b(1 − p̄)).
+- Flips: a PUCT proxy with fixed Q from the 32 repeats per child, the root's priors and its completed simulations.
+  It reproduces the played action at 91% of roots and ignores the deeper tree and the stop.
+**Result** ([README](evidence/value_death_price_20261023/README.md)):
+- Calibration: a = (−2.538, −2.923, −3.652, −3.633), b = 1.054 [0.81, 1.29]; separate slopes per act 0.90 / 0.97 /
+  1.22 / 1.10. Fit on 240 TRAIN sources, predicted − observed on the 80 VALIDATION sources is −0.002, +0.051, +0.070,
+  +0.081 in acts 1–4 (every CI includes 0).
+- Level at decision roots: X2-B 0.75 / 0.80 / 0.91 / 0.96 against Heart rates 0.22 / 0.27 / 0.38 / 0.58.
+- Death over-pricing: 3.3× [2.5, 4.1], 4.0× [3.0, 5.0] and 7.7× [5.5, 9.8] in acts 1–3 (the 10-17 audit had 2.6×,
+  3.1×, 5.8×). Rollouts also die more often than the real runs over the same horizon (real / rollout 0.59, 0.85,
+  0.62, 0.80 in acts 1–4).
+- The prior's top action is below 0.95 at 36% of searched roots; the search overrode the prior at 6.9%.
+
+| leaf change | best-by-mean flips | PUCT flips | to the riskier sibling | mean Δ rollout death share |
+|---|---|---|---|---|
+| M0′, death worth 0.52 / 0.58 / 0.77 (k = 1) | 13.0% | 5.1% | 97% | +0.10 |
+| M0′, death worth 0.30 / 0.39 / 0.66 (k = 2) | 7.1% | 3.6% | 96% | +0.09 |
+| M0, calibrated leaf | 17.4% | 7.0% (full-budget roots 13.5%) | 74% | +0.075 |
+
+- Predicted Heart kills per run from M0's PUCT flips: +1.8 pp if its calibration holds between siblings (act 1 −0.9,
+  act 2 +1.6, act 3 +1.0); −6.1 pp if today's implied death price were right.
+- M0′ (the plan doc's shortcut: survivors keep X2-B, a death is worth a per-act constant) breaks at act borders. A
+  rollout that dies at the act-3 boss would score 0.77, above the ≈ 0.54 average of rollouts that reach act 4
+  (deaths there stay 0, kills 1).
+**Interpretation:**
+- Flips are frequent, so the plan's early exit (flips rare → the level is not the lever) does not apply.
+- The two predictions have opposite signs. Which death price is right can only be settled in play.
+- M0′ is unusable as written. M0 puts every leaf in one unit, Heart probability.
+**Decision:** no default change. `STS_OOC_MCTS_LEAF_CALIBRATION` is a new research option (default unset). The 2×2 A/B
+of M0 × the SR_w1 blend is pre-registered in [value_level_ab_20261023](evidence/value_level_ab_20261023/PREREG.md).
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.

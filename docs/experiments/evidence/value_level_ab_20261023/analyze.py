@@ -5,8 +5,8 @@ Arms: A (X2-B leaf), M (calibrated leaf, M0), S (SR_w1 blend), MS (both). PREREG
   secondary  main effect of the blend ((S + MS) - (A + M)) / 2; interaction (MS - S) - (M - A); simple effects
              M - A, S - A, MS - A (paired, exact McNemar); reached Act 4; deaths by act; mean floor
   guard      mean wall per arm against A (<= 1.10)
-  descriptive  searched / full-budget / aborted roots, picks off the prior's argmax, completed simulations and
-             learned-stop rate at fast roots, by act."""
+  descriptive  searched / full-budget / aborted roots, picks off the prior's argmax, completed simulations,
+             learned-stop and root-lock shares at fast roots, by act."""
 import glob
 import gzip
 import json
@@ -44,9 +44,12 @@ def arm_record(read, a, s):
         return None, rc
     d = {'foot': foot, 'wall': int(re.search(r'wall=(\d+)', done).group(1)), 'decisions': 0, 'searched': 0,
          'fullBudget': 0, 'aborted': 0, 'changed': 0,
-         'fastByAct': defaultdict(lambda: [0, 0, 0])}  # act -> [fast roots, completed sims, learned/early stops]
+         'fastByAct': defaultdict(lambda: [0, 0, 0, 0])}  # act -> [fast roots, completed sims, learned, lock stops]
+    act_of = {}  # state index -> act (decision records carry only stateIndex)
     for x in lines[1:-1]:
         r = json.loads(x)
+        if r.get('type') == 'state':
+            act_of[r.get('index')] = r.get('act')
         if r.get('type') != 'decision':
             continue
         d['decisions'] += 1
@@ -60,10 +63,15 @@ def arm_record(read, a, s):
         if c and root.get('selectedId') != max(c, key=lambda y: y['prior'])['id']:
             d['changed'] += 1
         if not root.get('fullBudget') and not root.get('aborted'):
-            f = d['fastByAct'][r.get('act')]
+            # A fast root that saved simulations stopped by the root lock (earlyStopLock; the gap and CPU-budget
+            # stops are off here) or else by the learned stop, which the record does not flag itself.
+            f = d['fastByAct'][act_of.get(r.get('stateIndex'))]
+            lock = bool(root.get('earlyStopLock') or root.get('earlyStopGap20') or root.get('earlyStopBudget'))
+            saved = root.get('savedSimulations', 0) > 0
             f[0] += 1
             f[1] += root.get('completedSimulations', 0)
-            f[2] += root.get('completedSimulations', 0) < root.get('requestedSimulations', 0)
+            f[2] += saved and not lock
+            f[3] += saved and lock
     return d, rc
 
 
@@ -145,17 +153,18 @@ def main():
     search = {}
     for a in ARMS:
         tot = defaultdict(int)
-        fast = defaultdict(lambda: [0, 0, 0])
+        fast = defaultdict(lambda: [0, 0, 0, 0])
         for s in seeds:
             d = valid[s][a]
             for k in ('decisions', 'searched', 'fullBudget', 'aborted', 'changed'):
                 tot[k] += d[k]
             for act, f in d['fastByAct'].items():
-                for i in range(3):
+                for i in range(4):
                     fast[act][i] += f[i]
         tot['changedShare'] = tot['changed'] / max(tot['searched'], 1)
-        tot['fastByAct'] = {act: {'roots': f[0], 'meanSims': f[1] / max(f[0], 1), 'stopShare': f[2] / max(f[0], 1)}
-                            for act, f in sorted(fast.items())}
+        tot['fastByAct'] = {act: {'roots': f[0], 'meanSims': f[1] / max(f[0], 1),
+                                  'learnedStopShare': f[2] / max(f[0], 1), 'lockStopShare': f[3] / max(f[0], 1)}
+                            for act, f in sorted(fast.items(), key=lambda kv: str(kv[0]))}
         search[a] = dict(tot)
     out['search'] = search
     p = out['heart']['mainM0']
