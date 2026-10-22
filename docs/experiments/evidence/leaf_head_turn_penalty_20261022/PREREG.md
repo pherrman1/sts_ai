@@ -57,3 +57,17 @@ head:a20prod and hblend:a20prod:0.5, descriptive.
 
 Scripts: `run_tp.sh`, `select_tp.py`; the analysis is `../silver_leaf_a20_data_20261022/analyze_oracle.py` with
 `SEEDS=LO:HI`.
+
+## Tuning result and an added readout (2026-10-22 22:15Z, before any confirmation fight ran)
+
+`select_tp.py` on the tuning grid (150 fights x 11 modes x 2 configs, no failures; `tuning/`): **hblend:a20:0.5/1**, pooled paired change
+−0.253 in prod and −0.253 in prod@mb=4, every encounter below 0 in both configs (worst −0.086). The head alone at
+P = 0 was +2.60 and +17.83 (one prod@mb=4 Two Louse fight ran 118 turns); P = 1 and 2 brought it to +0.01 to +0.18.
+
+Philipp (22:08Z) asked whether the stall is damage-neutral. The solver's value has a turn cap (8): a fight still
+running past turn 8 scores like a loss leaf, so a stall that costs no HP counts as a loss in the regret. Added as a
+descriptive readout, not a gate: `outcome_tp.py`, the played fights' own outcome paired against the playout by seed
+(a won fight scores end HP − 0.4 x turns, Silver's win score without the terms equal across modes here; no cap). On
+the tuning fights the head alone is +0.50 ± 0.27 per fight in prod and −1.45 ± 0.75 in prod@mb=4 (the 118-turn fight
+ended at 8 HP), the selected mode +0.47 ± 0.21 and +0.56 ± 0.21 (`tuning/outcome.txt`). The confirmation reports it
+for every mode next to the gate; the gate is unchanged.
