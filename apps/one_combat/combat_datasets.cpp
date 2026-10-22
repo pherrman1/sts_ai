@@ -6078,16 +6078,20 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         // STS_CTMSILVER_SWEEP_SIMS vs head<b>, whose undecided leaves blend the value head STS_CTMSILVER_LEAF_HEAD
         // (with _TRUNK, _BLEND and _TURN_PENALTY, read as STS_SILVER_LEAF_HEAD's) with the playout, for every budget
         // in STS_CTMSILVER_HEAD_SIMS (default: the sweep budgets). Both arms use the root prior, the tree prior
-        // (K = 8) and the ADR-0046 root table; both run under a rollout override, so neither plays ADR-0050 boss
-        // prior playouts. Imagined-fight Silver fallbacks and STS_SILVER_LEAF_HEAD must be off.
+        // (K = 8) and the ADR-0046 root table under a rollout override that plays production's prior playouts in
+        // boss rooms (ADR-0050/0056), so the source run must play them too. Imagined-fight Silver fallbacks and
+        // STS_SILVER_LEAF_HEAD must be off.
         const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
         const auto &envRollout = search::SilverSearcher::envRolloutConfig();
         if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != search::kSilverRolloutCardTableG6
                 || envRollout.prior || !(envRollout.blockRule == search::SilverRolloutAgent::BlockRule{})
                 || search::SilverSearcher::envMaxBackupMinVisits() != 0 || env("STS_SILVER_ROLLOUT_ROOT_TABLE") == "0"
-                || !search::nativeSilverLeafSettings().leafHead.empty())
+                || !search::nativeSilverLeafSettings().leafHead.empty()
+                || !search::nativeSilverLeafSettings().priorPlayoutBossElite
+                || search::nativeSilverLeafSettings().priorPlayoutElite)
             throw std::runtime_error("ctm vs silver: leafhead requires the production search (STS_SILVER_ROLLOUT_*, "
-                                     "STS_SILVER_MAX_BACKUP and STS_SILVER_LEAF_HEAD unset, root table on)");
+                                     "STS_SILVER_MAX_BACKUP and STS_SILVER_LEAF_HEAD unset, root table on, boss-only "
+                                     "prior playouts)");
         for (const char *name : {"STS_OOC_MCTS_ACT4_SILVER_SIMS", "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS",
                                  "STS_OOC_MCTS_COMBAT_RESOLVER"})
             if (const std::string v = env(name); !v.empty() && v != "0")
@@ -6497,8 +6501,12 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         if (arm.name != "control") leafScope.emplace(arm.finalFightLeaf);
                         std::optional<RolloutScope> rolloutScope;
                         if ((armSet == "rollout479" || armSet == "uniformpl" || armSet == "priorpl"
-                                    || armSet == "maxbackup" || armSet == "leafhead") && arm.name != "control")
-                            rolloutScope.emplace(arm.rollout);
+                                    || armSet == "maxbackup" || armSet == "leafhead") && arm.name != "control") {
+                            auto rollout = arm.rollout;
+                            // leafhead: production's boss prior playouts (ADR-0050, boss rooms only by ADR-0056).
+                            if (armSet == "leafhead" && entry.roomClass == "BOSS") rollout.prior = true;
+                            rolloutScope.emplace(rollout);
+                        }
                         MaxBackupScope maxBackupScope(arm.maxBackup);
                         std::optional<LeafHeadScope> leafHeadScope;
                         if (arm.leafHead)
