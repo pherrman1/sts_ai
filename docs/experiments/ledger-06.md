@@ -22868,11 +22868,11 @@ heart1's delta, loss Σ(Δs − Δt)² / ΣΔt², fp32 without TF32. Weights 0.3
 on the same recipe; seed 0; GPU on Philipp's PC; `prices.py` and the §577 sibling tool in the cloud.
 **Result:** sel BCE control / 0.3 / 1 / 3 / hinge 0.542 / 0.571 / 0.596 / 0.618 / 0.5365 (AUC 0.766 / 0.730 / 0.709 /
 0.682 / 0.770). CF sign agreement with heart1 rises from 67 / 30 / 72 % (hp / mhp / gold) to 85-91 %; max-HP price
-> 0 from 19 % to 92-96 %; −3 HP sign right 81 → 89-90 % (heart1 itself is wrong in 19 %). Round-2 sibling
+> 0 from 19 % to 92-96 %; −3 HP sign right 81 → 89-90 % (REWARDS states). Round-2 sibling
 concordance 0.549 → 0.548-0.558 (X2-B 0.633). The hinge: max-HP price > 0 67 %, HP monotone 89 % vs 52 %, sibling
 0.553, outcome AUC 0.764.
-**Interpretation:** FAIL (BCE ≤ 0.545 missed by every CF weight; −3 HP ≥ 95 % unreachable with heart1 as the
-teacher). Inference: correct end-state slopes are not why the head ranks siblings poorly (+0.009 at best). Unlike
+**Interpretation:** FAIL (BCE ≤ 0.545 and KL ≤ 0.0600 missed by every CF weight; −3 HP ≥ 95 % likely out of
+reach with heart1 as the teacher, which is wrong-signed in 19 % of selection-fold states). Inference: correct end-state slopes are not why the head ranks siblings poorly (+0.009 at best). Unlike
 §609 on z targets, the hinge on T1 targets costs no BCE (one seed). Options stay off.
 [Result](evidence/value_cf_distill_20261022/RESULT.md). Runs and weights: data branch `claude/az-gen2-data`
 `02f2c60d`, `gen2/value-cf/`.

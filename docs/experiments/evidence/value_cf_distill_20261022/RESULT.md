@@ -3,7 +3,7 @@
 Pre-registered plan: [PLAN.md](PLAN.md). All runs: VDF_T1 v0.5 recipe (d64/L2 from student_sel, lr 1e-4, anchor 0.3,
 value weight 0.5, value target = T1 teacher value, no K), seed 0, `STS_ACTIVE_POWER_FEATURES` not involved (OOC net).
 Code: gen-2 sweep `distill.py` (data branch `claude/az-gen2-data` `gen2/value-targets/tools/distill.py`) +
-[tools/distill.py.patch](tools/distill.py.patch) (sha256 844541f6…), `monotone.py` from main (#777). Runs, weights and
+[tools/distill.py.patch](tools/distill.py.patch) (patched distill.py sha256 844541f6…), `monotone.py` from main (#777). Runs, weights and
 native exports: data branch `02f2c60d`, `gen2/value-cf/`. GPU: Philipp's PC; offline checks in the cloud with
 `one_combat` `193b0000…` (the §577 binary).
 
@@ -41,8 +41,9 @@ loss the student's deltas were 4-6x heart1's (mean −3 HP: −0.036 vs −0.010
 
 ## Verdict
 **FAIL** (pre-registered gate): every CF weight fixes the slopes (sign agreement ≥ 85 %, max-HP price > 0 in ≥ 92 %)
-but costs 0.029-0.076 selection BCE (bar: ≤ 0.545). The −3 HP ≥ 95 % bar is also missed, and is above raw heart1
-itself (19 % wrong), so a heart1-delta teacher cannot reach it.
+but costs 0.029-0.076 selection BCE (bar: ≤ 0.545) and also misses KL ≤ 0.0600 (0.0602 / 0.0604 / 0.0640). The
+−3 HP ≥ 95 % bar is also missed. Raw heart1 itself is wrong-signed on −3 HP in 19 % of selection-fold states (a
+different population from the 2,916 REWARDS states), so a heart1-delta teacher is unlikely to reach it.
 
 Inference:
 - At d64/L2 with the sinusoid-only scalar encoding, matching heart1's small HP/gold deltas competes with fitting the
