@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # usage: run_unit.sh REPO RUN UNIT_OUT S SEED -- one guarded A20 ctmsilvergen source (armset maxbackup, R = 2):
-# base10000 and base12000 (production Silver) vs fix10000 (STS_SILVER_MAX_BACKUP=4 + block-first playout margin 3),
+# base10000, base12000 and base15000 (production Silver) vs fix10000 (STS_SILVER_MAX_BACKUP=4 + block-first playout margin 3),
 # the §541 harness (../silver_prior_playout_ab_20261018/run_unit.sh with the g7f_E prior). No OOC MCTS, so no
 # imagined fights; the armset also refuses the imagined-fight Silver options. Always exits 0 (rc is in .done).
 set -uo pipefail
@@ -18,7 +18,7 @@ E=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(gi
   STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 STS_OOC_STRATEGIC_TREASURE=1
   STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_REST_WIN=0
   STS_COLLECT_KEYS=0 STS_STOP_AFTER_ACT=3 "STS_OOC_HEART1=$RUN/studentc.bin"
-  STS_CTMSILVER_ARMSET=maxbackup STS_CTMSILVER_SWEEP_SIMS=10000,12000 STS_CTMSILVER_FIX_SIMS=10000
+  STS_CTMSILVER_ARMSET=maxbackup STS_CTMSILVER_SWEEP_SIMS=10000,12000,15000 STS_CTMSILVER_FIX_SIMS=10000
   STS_CTMSILVER_HALLWAY_EVERY=3)
 printf '%s\n' "${E[@]}" | grep '^STS_' > "$base.env"
 cd "$REPO" || exit 2

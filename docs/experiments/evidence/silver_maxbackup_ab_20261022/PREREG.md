@@ -34,16 +34,18 @@ asks whether the gain carries over to whole A20 runs (later decks, elites, bosse
 - **Arms.** All use the root prior and the tree prior (K = 8) under a rollout override, so none plays the ADR-0050
   boss prior playouts.
   - `base10000`: production search (mean backups, production playout), 10,000 simulations.
-  - `base12000`: the same at 12,000. It is the CPU-matched control: in the smoke (source 111149380, 6 fights,
-    R = 2) `fix10000` used 1.20x the CPU of `base10000` (15.97 vs 13.40 µs per simulation).
+  - `base12000` and `base15000`: the same at 12,000 and 15,000, the CPU-matched controls. The extra cost of the
+    candidate comes from its behavior (longer block-first playouts, longer fights; CPU check below), so it varies
+    by fight: 1.18x per fight on sources 111149390-393, 1.73x on the frozen smoke 111149381 (7 fights; 2.1x on
+    The Guardian). base15000 was added after that smoke, before launch.
   - `fix10000`: max backup m = 4 + block-first playout (margin 3, lethal check, offset 4), 10,000.
 - **Env.**
-  - `STS_CTMSILVER_ARMSET=maxbackup`, `STS_CTMSILVER_SWEEP_SIMS=10000,12000`, `STS_CTMSILVER_FIX_SIMS=10000`,
+  - `STS_CTMSILVER_ARMSET=maxbackup`, `STS_CTMSILVER_SWEEP_SIMS=10000,12000,15000`, `STS_CTMSILVER_FIX_SIMS=10000`,
     `STS_CTMSILVER_HALLWAY_EVERY=3`.
   - Otherwise as `../silver_prior_playout_ab_20261018/run_unit.sh`, with g7f_E instead of g6_E.
 - **Campaign.** 64 units (one source seed each), `campaign.manifest`: 32 workers (Philipp), 4 lanes each,
   `schedule queue`, code commit c4dcb43c (main), v3 preset. Cost: in the CPU check below, one source with five
-  arms took 4-21 min on one core, so a three-arm unit takes about 3-15 min; the campaign is bounded by the
+  arms took 4-21 min on one core, so a unit (four arms plus the control) takes about 4-25 min; the campaign is bounded by the
   slowest unit (**estimate**, under 1 h).
 - **CPU check (2026-10-22, before launch; sources 111149390-393, reused 391-392 for a code check).** With split
   arms (max backup only, block-first only), fix10000 used 1.18x the CPU of base10000 per fight: 1.12x per
@@ -61,13 +63,10 @@ Act-4 fights.
 - Score: BETTER if the CI lower bound > 0, WORSE if the upper bound < 0, else NOT_SHOWN.
 - HP lost: BETTER if the CI upper bound < 0, WORSE if the lower bound > 0, else NOT_SHOWN.
 
-**Secondary label: `fix10000 − base12000`**, same rule (the CPU-matched comparison), **only if the arms are
-CPU-matched**: the per-fight CPU ratio fix10000/base12000 (point estimate of the seed-pooled ratio in
-`cpuRatios`) must be ≤ 1.10. Otherwise both secondary labels read NOT_MATCHED and support no claim. The 1.20x
-smoke ratio rests on 6 fights; the REPORT's +30-50% per simulation came from the exact benchmarks, where the
-learned stop also ran longer and per-root exact scoring was included. This harness uses flat exact budgets.
-`base12000` covers a fix/base10000 ratio up to about 1.32. `base12000 − base10000` and the subsets are
-descriptive.
+**Secondary label: `fix10000 − matched`**, same rule (the CPU-matched comparison). `matched` is the smaller of
+`base12000` and `base15000` whose per-fight CPU ratio fix10000/base (point estimate of the seed-pooled ratio in
+`cpuRatios`) is ≤ 1.10, chosen by CPU alone. If neither is, both secondary labels read NOT_MATCHED and support
+no claim. The other base contrasts and the subsets are descriptive.
 
 No default change. A default proposal goes to Philipp with these numbers. The learned stop
 (ADR-0051/0054) was trained on mean-backup trees and is not part of this A/B. If the candidate wins, the stop

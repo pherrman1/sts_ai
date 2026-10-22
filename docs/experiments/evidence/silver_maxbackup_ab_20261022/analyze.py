@@ -29,14 +29,16 @@ import sys
 from collections import defaultdict
 
 R = 2
-ARMS = ["base10000", "base12000", "fix10000"]
+ARMS = ["base10000", "base12000", "base15000", "fix10000"]
 # Pre-registered labels: (x, y, positive label, negative label); all fights, score.
 LABELED = []   # the headroom label is computed separately (HEADROOM_BAR below)
-DESCRIPTIVE = [("fix10000", "base10000"), ("fix10000", "base12000"), ("base12000", "base10000")]
-# Pre-registered (PREREG.md): labels on fix10000 - base10000 (primary) and fix10000 - base12000 (CPU-matched),
+DESCRIPTIVE = [("fix10000", "base10000"), ("fix10000", "base12000"), ("fix10000", "base15000"),
+               ("base12000", "base10000"), ("base15000", "base10000")]
+# Pre-registered (PREREG.md): labels on fix10000 - base10000 (primary) and fix10000 - matched (CPU-matched),
 # all fights, score and HP lost.
 # CPU-ratio contrasts (x / y): per simulation and per fight.
-CPU_RATIOS = [("fix10000", "base10000"), ("base12000", "base10000"), ("fix10000", "base12000")]
+CPU_RATIOS = [("fix10000", "base10000"), ("base12000", "base10000"), ("base15000", "base10000"),
+              ("fix10000", "base12000"), ("fix10000", "base15000")]
 METRICS = ("score", "win", "hpLoss")
 CPU_MATCH_MAX = 1.10
 
@@ -217,23 +219,25 @@ def main():
                 v[1] += work[(sid, x)][1] if den else 1; v[3] += work[(sid, y)][1] if den else 1
             m, lo, hi = boot_ratio(per_seed)
             result["cpuRatios"][f"{x}/{y}/{kind}"] = {"ratio": m, "ci95": [lo, hi]}
-    # Pre-registered CPU match: the fix10000 - base12000 labels count only if the per-fight CPU ratio
-    # fix10000/base12000 (point estimate) is <= CPU_MATCH_MAX; otherwise they read NOT_MATCHED.
-    matched = result["cpuRatios"]["fix10000/base12000/perFight"]["ratio"] <= CPU_MATCH_MAX
-    result["cpuMatched"] = matched
-    for y in ("base10000", "base12000"):
-        if y == "base12000" and not matched:
-            result["labels"][f"fix10000-{y}/score"] = result["labels"][f"fix10000-{y}/hpLoss"] = "NOT_MATCHED"
+    # Pre-registered CPU match: the matched control is the smaller of base12000 and base15000 whose per-fight CPU
+    # ratio fix10000/base (point estimate) is <= CPU_MATCH_MAX. The "matched" labels compare fix10000 with it;
+    # with neither matched they read NOT_MATCHED.
+    matchedArm = next((y for y in ("base12000", "base15000")
+                       if result["cpuRatios"][f"fix10000/{y}/perFight"]["ratio"] <= CPU_MATCH_MAX), None)
+    result["cpuMatchedArm"] = matchedArm
+    for key, y in (("base10000", "base10000"), ("matched", matchedArm)):
+        if y is None:
+            result["labels"][f"fix10000-{key}/score"] = result["labels"][f"fix10000-{key}/hpLoss"] = "NOT_MATCHED"
             continue
         c = result["contrasts"][f"fix10000-{y}/all/score"]["ci95"]
-        result["labels"][f"fix10000-{y}/score"] = "BETTER" if c[0] > 0 else "WORSE" if c[1] < 0 else "NOT_SHOWN"
+        result["labels"][f"fix10000-{key}/score"] = "BETTER" if c[0] > 0 else "WORSE" if c[1] < 0 else "NOT_SHOWN"
         c = result["contrasts"][f"fix10000-{y}/all/hpLoss"]["ci95"]
-        result["labels"][f"fix10000-{y}/hpLoss"] = "BETTER" if c[1] < 0 else "WORSE" if c[0] > 0 else "NOT_SHOWN"
+        result["labels"][f"fix10000-{key}/hpLoss"] = "BETTER" if c[1] < 0 else "WORSE" if c[0] > 0 else "NOT_SHOWN"
     result["act4Fights"] = sum(1 for st, _ in fights.values() if st["act"] == "4")
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps({k: result[k] for k in ("validFights", "sourceSeeds", "excluded", "truncatedRows", "shards",
-                                             "roomClasses", "act4Fights", "labels", "cpuMatched", "cpuRatios", "escapes",
+                                             "roomClasses", "act4Fights", "labels", "cpuMatchedArm", "cpuRatios", "escapes",
                                              "excludedFightsByRootReason", "invalidArmRowsByReason",
                                              "escapeReplicatesAllFights")}))
     for a, v in result["arms"].items():
