@@ -1,7 +1,7 @@
-# A/B: max backup + block-first playouts vs production Silver (A20, fight level) — DRAFT
+# A/B: max backup + block-first playouts vs production Silver (A20, fight level)
 
-Status: **draft, not authorized.** Written before any result of this A/B. Needs Philipp's typed go, a worker count
-and a pre-launch review. Thread "Silver leaf and rollout bias". Ledger §TBD. Seeds: 111149400–111149463 (64 sources)
+Status: **authorized** by Philipp, 2026-10-22 08:05Z ("do 32 workers"), after a CPU check he asked for first
+(below). Written before any result of this A/B. Needs a pre-launch review. Thread "Silver leaf and rollout bias". Ledger §624. Seeds: 111149400–111149463 (64 sources)
 from this thread's block 111149100–111149599; smokes 111149380–111149389.
 
 ## Background
@@ -41,11 +41,15 @@ asks whether the gain carries over to whole A20 runs (later decks, elites, bosse
   - `STS_CTMSILVER_ARMSET=maxbackup`, `STS_CTMSILVER_SWEEP_SIMS=10000,12000`, `STS_CTMSILVER_FIX_SIMS=10000`,
     `STS_CTMSILVER_HALLWAY_EVERY=3`.
   - Otherwise as `../silver_prior_playout_ab_20261018/run_unit.sh`, with g7f_E instead of g6_E.
-- **Campaign.** 64 units (one source seed each), 4 units at once per worker (`tools/cloud/worker.sh`). The worker
-  count is Philipp's call (§541 used 8). Cost: the smoke source died
-  at the Act 1 boss (6 fights, 2 min for two arms). A typical source has about 30-40 replayed fights, so a unit
-  with three arms takes roughly 20-40 min on one core. 64 units on 8 workers x 4 is about 1-1.5 h wall
-  (**estimate**, from §541's similar harness).
+- **Campaign.** 64 units (one source seed each), `campaign.manifest`: 32 workers (Philipp), 4 lanes each,
+  `schedule queue`, code commit c4dcb43c (main), v3 preset. Cost: in the CPU check below, one source with five
+  arms took 4-21 min on one core, so a three-arm unit takes about 3-15 min; the campaign is bounded by the
+  slowest unit (**estimate**, under 1 h).
+- **CPU check (2026-10-22, before launch; sources 111149390-393, reused 391-392 for a code check).** With split
+  arms (max backup only, block-first only), fix10000 used 1.18x the CPU of base10000 per fight: 1.12x per
+  simulation and 1.05x more decisions. A gdb profile shows the max-backup bookkeeping costs no measurable time
+  (search self-time 50 vs 52 of 150 samples); the extra cost comes from the new behavior (block-first playouts
+  about 8% longer, longer fights). A bit-identical speed-up of the backup pass gave no gain and was dropped.
 
 ## Analysis and decision rule
 
@@ -65,6 +69,6 @@ learned stop also ran longer and per-root exact scoring was included. This harne
 `base12000` covers a fix/base10000 ratio up to about 1.32. `base12000 − base10000` and the subsets are
 descriptive.
 
-No default change in this PR. A default proposal goes to Philipp with these numbers. The learned stop
+No default change. A default proposal goes to Philipp with these numbers. The learned stop
 (ADR-0051/0054) was trained on mean-backup trees and is not part of this A/B. If the candidate wins, the stop
 needs its own check before any default.

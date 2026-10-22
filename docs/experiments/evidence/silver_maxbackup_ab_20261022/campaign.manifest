@@ -1,0 +1,9 @@
+name          silver-maxbackup-ab
+code_commit   c4dcb43c1c8fe418fda8b678f9cde3c7e3b96132
+binary_sha256 TBD
+workers       32
+share         /mnt/project-files/silver-maxbackup-ab
+parallel      4
+schedule      queue
+lease_minutes 30
+input studentc.bin /mnt/project-files/rollout-student-494/studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
