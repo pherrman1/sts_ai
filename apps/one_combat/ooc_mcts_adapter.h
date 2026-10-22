@@ -143,6 +143,11 @@ struct OocAdapterOptions {
     // STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT=w in (0, 1) (default 1 = the head alone): the anchor becomes
     // sigmoid((1 - w) logit(X2-B) + w logit(head)) where heart1 encodes the state.
     double heart1ValueWeight = 1;
+    // Research option (default unset, STS_OOC_MCTS_LEAF_CALIBRATION=a1,a2,a3,a4:b, value-head plan M0): the native
+    // leaf anchor x (X2-B or its heart1 blend) at a tree leaf or rollout end in act k becomes
+    // sigmoid(a_k + b logit x), so it speaks calibrated Heart probability like a death (0) and a Heart kill (1).
+    // Holds a1..a4, b; empty is off.
+    std::vector<double> leafCalibration;
     // Optional per-decision thread CPU allowance; checked between simulations.
     // Zero preserves the simulation-bounded search. Never includes real combat.
     double cpuBudgetSeconds = 0;
@@ -281,6 +286,8 @@ private:
     std::optional<double> screenLeafValue(const GameContext &, const PathHistory &);
     // v_win anchor: the screen GBM's pinned X2-B when present, else the global v_win.
     double anchorValue(const GameContext &, const PathHistory &) const;
+    // anchorValue under STS_OOC_MCTS_LEAF_CALIBRATION; the native leaf and rollout ends use it.
+    double leafAnchorValue(const GameContext &, const PathHistory &) const;
     double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                             sts::search::OocEndpoint &endpoint);
     double evaluateLeafObserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,

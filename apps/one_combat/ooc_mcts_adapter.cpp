@@ -1610,7 +1610,7 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     if (options.checkpointLeaves && options.constantLeaf) return 0.5;
     if (options.bossLeaf) return bossLeafValue(state(id));
     OocProfileScope inference(OocProfileBucket::LeafValue);
-    return anchorValue(state(id), states.at(id).path);
+    return leafAnchorValue(state(id), states.at(id).path);
 }
 std::optional<std::uint64_t> OocGameContextModel::outcomeEquivalenceKey(sts::search::OocStateId id) const {
     // Without sampled futures a successor's concrete RNG is its future.
@@ -1779,6 +1779,13 @@ std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc
     }
     return options.screenLeafNet->predictFromRich(rich, contents, keys);
 #endif
+}
+double OocGameContextModel::leafAnchorValue(const GameContext &gc, const PathHistory &path) const {
+    const double x = anchorValue(gc, path);
+    if (options.leafCalibration.empty()) return x;
+    const auto &c = options.leafCalibration;
+    const double z = std::clamp(x, 1e-7, 1 - 1e-7);
+    return 1.0 / (1.0 + std::exp(-(c[std::clamp(gc.act, 1, 4) - 1] + c[4] * std::log(z / (1 - z)))));
 }
 double OocGameContextModel::anchorValue(const GameContext &gc, const PathHistory &path) const {
 #ifndef STS_LIVE_ADVISOR
@@ -2183,7 +2190,7 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             return sts::search::runGoalVictory(child.gc, options.collectKeys, dependencies.stopAfterAct()) ? 1 : 0;
         }
         return options.bossLeaf ? bossLeafValue(child.gc)
-            : anchorValue(child.gc, child.path);
+            : leafAnchorValue(child.gc, child.path);
     }
 #ifndef STS_LIVE_ADVISOR
     ImaginedScope scope;
@@ -2217,7 +2224,7 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);
-            return anchorValue(child.gc, child.path);
+            return leafAnchorValue(child.gc, child.path);
         }
         return std::nullopt;
     };
@@ -2749,6 +2756,12 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else if (key == "STS_OOC_MCTS_MAX_DEPTH") { const auto x = integer(); if (!x || x > 512) invalid(); config.maxDepth = x; }
     else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3 && x != 5) invalid(); opts.leafCombats = x; }
     else invalid();
+}
+std::string leafCalibrationText(const std::vector<double> &values, const char *slopeSeparator) {
+    std::ostringstream out;
+    out << std::setprecision(17);
+    for (std::size_t i = 0; i < values.size(); ++i) out << (!i ? "" : i + 1 == values.size() ? slopeSeparator : ",") << values[i];
+    return out.str();
 }
 std::string gapStopText(const sts::search::OocMctsConfig &config) {
     std::ostringstream out;
@@ -3319,6 +3332,37 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT requires STS_OOC_MCTS_LEAF_HEART1_VALUE");
         liveOptions.heart1ValueWeight = w;
     }
+    if (const char *raw = std::getenv("STS_OOC_MCTS_LEAF_CALIBRATION"); raw && *raw) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION is unavailable in the live advisor");
+#else
+        // "a1,a2,a3,a4:b" (value-head plan M0). Captures record the raw anchor as "x2b", so they stay off.
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (!liveEnabled || !leafMode || std::string(leafMode) != "native" || liveOptions.leafWinNet
+                || liveOptions.heartLeaf || liveOptions.rolloutStudent)
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION requires STS_OOC_MCTS=1, STS_OOC_MCTS_LEAF_VALUE=native "
+                                     "and no leaf model other than STS_OOC_MCTS_LEAF_HEART1_VALUE");
+        if (std::getenv("STS_OOC_SIBLING_CAPTURE") || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE"))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION excludes leaf and sibling capture");
+        const std::string value(raw);
+        const auto colon = value.find(':');
+        std::vector<double> numbers;
+        bool ok = colon != std::string::npos;
+        const std::string list = ok ? value.substr(0, colon) + "," + value.substr(colon + 1) : std::string{};
+        for (std::size_t pos = 0; ok && pos <= list.size();) {
+            const auto comma = std::min(list.find(',', pos), list.size());
+            const std::string item = list.substr(pos, comma - pos);
+            char *end = nullptr;
+            const double x = item.empty() ? 0 : std::strtod(item.c_str(), &end);
+            ok = !item.empty() && end == item.c_str() + item.size() && std::isfinite(x);
+            numbers.push_back(x);
+            pos = comma + 1;
+        }
+        if (!ok || numbers.size() != 5 || !(numbers[4] > 0))
+            throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION must be a1,a2,a3,a4:b with finite values and b > 0");
+        liveOptions.leafCalibration = std::move(numbers);
+#endif
+    }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
         throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
@@ -3549,6 +3593,7 @@ void configureLiveOocMcts() {
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveOptions.heart1ValueWeight < 1 ? " leaf_heart1_value_weight=" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
+        << (!liveOptions.leafCalibration.empty() ? " leaf_calibration=" + leafCalibrationText(liveOptions.leafCalibration, ":") : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
         << (liveFastRootCap > 0 ? " fast_root_cap=" + std::to_string(liveFastRootCap) : std::string{})
         << (liveFullRootSims > 0 ? " full_root_sims=" + std::to_string(liveFullRootSims) : std::string{})
@@ -3589,6 +3634,7 @@ void configureLiveOocMcts() {
         << (liveOptions.heart1ValueNet ? ",\"leafHeart1Value\":\"" + liveOptions.heart1ValuePath + "\",\"leafHeart1ValueSha256\":\""
             + liveOptions.heart1ValueSha256 + "\"" : std::string{})
         << (liveOptions.heart1ValueWeight < 1 ? ",\"leafHeart1ValueWeight\":" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
+        << (!liveOptions.leafCalibration.empty() ? ",\"leafCalibration\":[" + leafCalibrationText(liveOptions.leafCalibration, ",") + "]" : std::string{})
         << "}\n";
     std::cout.precision(precision);
 }
@@ -6687,6 +6733,24 @@ void oocMctsAdapterSelfTest() {
         require(terminal.terminalValue(0)==(outcome==GameOutcome::PLAYER_VICTORY?1.:0.),"exact terminal value");
         auto tr=OocMctsPlanner().search(terminal,0,3);
         require(tr.metrics.leafEvaluations==0 && tr.rootActions.empty(),"terminal precedence");
+    }
+    {
+        // STS_OOC_MCTS_LEAF_CALIBRATION (M0): a native leaf becomes sigmoid(a_act + b logit x); terminals keep 0 and 1.
+        OocAdapterOptions opts; opts.leafCalibration={-2.5,-2.9,-3.6,-3.7,1.05};
+        for (int act : {1,2,3,4}) {
+            auto probe=detachedCopy(gc); probe.act=act;
+            const PathHistory *savedPath=t_curPath; t_curPath=&path;
+            OocGameContextModel raw(probe,path), calibrated(probe,path,{},opts);
+            const double x=raw.leafValue(0);
+            const double expected=1/(1+std::exp(-(opts.leafCalibration[act-1]+1.05*std::log(x/(1-x)))));
+            require(x>0 && x<1 && std::abs(calibrated.leafValue(0)-expected)<1e-12,"leaf calibration by act");
+            t_curPath=savedPath;
+        }
+        for(auto outcome : {GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {
+            auto terminalState=detachedCopy(battle); terminalState.outcome=outcome; terminalState.act=4;
+            OocGameContextModel terminal(terminalState,path,{},opts);
+            require(terminal.terminalValue(0)==(outcome==GameOutcome::PLAYER_VICTORY?1.:0.),"calibration keeps terminal values");
+        }
     }
     for (const bool keys : {false, true}) {
         auto act3 = detachedCopy(gc); act3.outcome = GameOutcome::PLAYER_VICTORY; act3.act = 3;
