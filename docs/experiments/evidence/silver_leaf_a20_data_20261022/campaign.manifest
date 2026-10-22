@@ -1,6 +1,6 @@
 name          silver-leaf-a20
 code_commit   4b7ab9acb30ad3d4f9d1bcace73eb049c30b22bf
-binary_sha256 TBD
+binary_sha256 7916b9eb0487aa39bf076ce69a75584a0bfbb73d9688834b224df3cada31eb5d
 configure_preset linux-gcc-release-x86-64-v3
 workers       8
 share         /mnt/project-files/silver-leaf-a20/campaign
