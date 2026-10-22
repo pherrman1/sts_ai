@@ -1,0 +1,2 @@
+units OK 1024 MISSING 0 BAD 0 of 1024; duplicates 0; tars for unknown units 0; run ['0a56caaee6b7']; worker DONE.json: 32/32
+extracted 1024 units to /home/user/gen3-extract

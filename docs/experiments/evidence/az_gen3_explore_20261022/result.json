@@ -1,0 +1,29 @@
+{
+ "seeds": 1024,
+ "valid": 1024,
+ "invalid": [],
+ "heart_kills": 161,
+ "heart_pct": 15.72265625,
+ "act4": 324,
+ "act4_pct": 31.640625,
+ "mean_floor": 41.3564453125,
+ "wall_s": {
+  "mean": 778.2763671875,
+  "max": 3733
+ },
+ "decisions": 140821,
+ "searched_roots": 63472,
+ "full_budget_roots": 16087,
+ "prior_overrides_pct": 12.96477186791026,
+ "fast_root_stopped_below_cap_pct": 99.89237100348211,
+ "early_floors": {
+  "searched_roots": 11457,
+  "sample_eligible": 11457,
+  "played_not_greedy": 2601,
+  "played_not_greedy_pct": 22.70227808326787,
+  "q_better": 1011,
+  "q_worse": 1590,
+  "mean_q_delta": -0.016647293538121163
+ },
+ "distinct_floor0_6_trajectories": 1024
+}

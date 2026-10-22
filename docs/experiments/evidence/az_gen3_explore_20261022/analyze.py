@@ -32,7 +32,7 @@ for t, m in sources(sys.argv[1]):
             if fl <= 6: path.append(str(r.get('selectedKey')))
             if not root or root.get('singleton') or root.get('aborted'): continue
             c['searched'] += 1; full = bool(root.get('fullBudget')); c['fullBudget'] += full
-            if not full: c['fast_roots'] += 1; c['fast_saved'] += bool(root.get('savedSimulations'))
+            if not full: c['fast_roots'] += 1; c['fast_saved'] += root.get('completedSimulations', 0) < 1024  # stopped below the cap
             cand = root.get('candidates', [])
             if cand and root.get('selectedId') != max(cand, key=lambda x: x['prior'])['id']: c['overrides'] += 1
             if fl <= 6:
@@ -54,7 +54,7 @@ out = dict(seeds=c['seeds'], valid=c['valid'], invalid=c['invalid'],
            wall_s=dict(mean=statistics.mean(c['wall']) if c['wall'] else 0, max=max(c['wall'], default=0)),
            decisions=c['decisions'], searched_roots=c['searched'], full_budget_roots=c['fullBudget'],
            prior_overrides_pct=100 * c['overrides'] / max(c['searched'], 1),
-           fast_root_early_stop_pct=100 * c['fast_saved'] / max(c['fast_roots'], 1),
+           fast_root_stopped_below_cap_pct=100 * c['fast_saved'] / max(c['fast_roots'], 1),
            early_floors=dict(searched_roots=c['early_floor_searched'], sample_eligible=c['sampled_roots'],
                              played_not_greedy=c['sampled_changed'],
                              played_not_greedy_pct=100 * c['sampled_changed'] / max(c['sampled_roots'], 1),
