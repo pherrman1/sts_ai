@@ -23194,11 +23194,11 @@ seed 111144997 with the #806 quick-smoke setup and sibling capture every 4th roo
 runs: main, branch with the flag off, branch with it on.
 **Result:**
 - Flag off: rows and play match main, CPU-time fields aside.
-- Flag on: play is unchanged and the per-leaf means are not shifted (+0.0033, SE 0.0021).
+- Flag on: play is unchanged and the per-leaf means are not shifted (+0.0033, SE 0.0037 with roots as clusters).
 - Variance of the paired difference over var(v_i) + var(v_j), across 3,287 sibling pairs on 18 roots:
   - per-leaf seeds: 1.006;
   - common seeds: 0.363 pooled (0.436 without the 165 pairs whose repeat vectors are identical), median pair 0.869.
-- The noisy half of the pairs carries the gain (pooled 0.25–0.40). Low-variance pairs gain 5–10 %.
+- The noisy half of the pairs carries the gain (pooled 0.25–0.40). Low-variance pairs gain 3–11 %.
 **Interpretation:** for sibling differences, pooled over pairs, common seeds are worth about 2.8× the repeats. One
 seed, 256 simulations.
 **Decision:** the option stays default off. Proposed use is a new sibling capture for value-head ranking labels

@@ -6,4 +6,4 @@ c-off vs c-on: policy JSONL non-header lines 422 / 422, identical: True; trace a
 c-main vs c-off: policy JSONL non-header lines 422 / 422, identical: True; trace actions identical: True
 per-leaf seeds (off): roots 18, sibling pairs 3287 (identical repeat vectors 0); var(paired diff) / (var_i + var_j): pooled 1.006 (excl. identical 1.006), median pair 1.005; by quartile of var_i + var_j (pooled / median): 0.999 / 0.999, 0.994 / 0.996, 0.988 / 1.006, 1.009 / 1.014
 common seeds (on): roots 18, sibling pairs 3287 (identical repeat vectors 165); var(paired diff) / (var_i + var_j): pooled 0.363 (excl. identical 0.436), median pair 0.869; by quartile of var_i + var_j (pooled / median): 0.889 / 0.941, 0.923 / 0.972, 0.249 / 0.823, 0.402 / 0.176
-per-leaf mean target, on - off: +0.0033 (SE 0.0021) over 403 leaves; mean SD of a leaf's repeats off 0.129 on 0.131
+per-leaf mean target, on - off: +0.0033 over 403 leaves (SE 0.0037 with the 18 roots as clusters; 0.0021 if the leaves were independent); mean SD of a leaf's repeats off 0.129 on 0.131

@@ -9,6 +9,7 @@ usage: crn_check.py OUTDIR MAIN_TAG OFF_TAG ON_TAG
   seeds the ratio should drop well below 1; with per-leaf seeds it stays near 1.
 """
 import json, sys
+from collections import defaultdict
 import numpy as np
 
 out, main_tag, off_tag, on_tag = sys.argv[1:5]
@@ -100,10 +101,19 @@ def noise(rs, label):
 
 off_res, off_leaves = noise(off, 'per-leaf seeds (off)')
 on_res, on_leaves = noise(on, 'common seeds (on)')
-d = np.array([on_leaves[k].mean() - off_leaves[k].mean() for k in off_leaves])
-bias = {'leaves': len(d), 'meanOnMinusOff': float(d.mean()), 'se': float(d.std(ddof=1) / np.sqrt(len(d))),
+keys = list(off_leaves)
+d = np.array([on_leaves[k].mean() - off_leaves[k].mean() for k in keys])
+# With common seeds the leaves of one root share streams, so their differences are correlated: seRoots treats roots
+# (decisions; depth-1 leaves of a decision share its root) as clusters. se treats the leaves as independent.
+by_root = defaultdict(float)
+for k, x in zip(keys, d):
+    by_root[k[1]] += x - d.mean()
+g = len(by_root)
+bias = {'leaves': len(d), 'roots': g, 'meanOnMinusOff': float(d.mean()), 'se': float(d.std(ddof=1) / np.sqrt(len(d))),
+        'seRoots': float(np.sqrt(g / (g - 1) * sum(v * v for v in by_root.values())) / len(d)),
         'meanRepeatSdOff': float(np.mean([v.std() for v in off_leaves.values()])),
         'meanRepeatSdOn': float(np.mean([v.std() for v in on_leaves.values()]))}
-print(f"per-leaf mean target, on - off: {bias['meanOnMinusOff']:+.4f} (SE {bias['se']:.4f}) over {bias['leaves']} leaves; "
+print(f"per-leaf mean target, on - off: {bias['meanOnMinusOff']:+.4f} over {bias['leaves']} leaves (SE {bias['seRoots']:.4f} "
+      f"with the {g} roots as clusters; {bias['se']:.4f} if the leaves were independent); "
       f"mean SD of a leaf's repeats off {bias['meanRepeatSdOff']:.3f} on {bias['meanRepeatSdOn']:.3f}")
 json.dump({'identityMainOff': same, 'off': off_res, 'on': on_res, 'leafMeans': bias}, open(f'{out}/crn_check.json', 'w'), indent=1)

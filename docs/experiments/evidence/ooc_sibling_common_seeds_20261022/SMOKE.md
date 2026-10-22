@@ -29,8 +29,9 @@ the #806 quick smoke (§621 arm A, `STS_OOC_MCTS_SIMS=256`, `STS_OOC_MCTS_LEARNE
 - **Flag on:**
   - All 403 c-on rows carry `"commonSeeds": true`; no c-off row does.
   - The leaves and their order match c-off, so play is unchanged.
-  - Per-leaf means are not shifted: on − off is +0.0033 (SE 0.0021) over 403 leaves. The mean SD of a leaf's 32
-    repeats is 0.129 off and 0.131 on.
+  - Per-leaf means are not shifted: on − off is +0.0033 over 403 leaves, SE 0.0037 with the 18 roots as clusters
+    (the leaves of one root share streams; 0.0021 if they were independent). The mean SD of a leaf's 32 repeats is
+    0.129 off and 0.131 on.
 - **Noise of sibling differences:**
   - Data: 18 captured roots, 3,287 pairs of root children with different actions.
   - Measure: the variance over repeats of the paired difference v_i^r − v_j^r, divided by var(v_i) + var(v_j).
@@ -45,7 +46,10 @@ the #806 quick smoke (§621 arm A, `STS_OOC_MCTS_SIMS=256`, `STS_OOC_MCTS_LEARNE
 - **Reading:**
   - Pooled, common seeds are worth about 2.8× the repeats for sibling differences.
   - The gain sits in the noisy pairs (top half by variance), which carry most of the label noise. Low-variance
-    pairs gain 5–10 %.
+    pairs gain 3–11 % (lowest two quartiles: pooled 0.889 and 0.923, median 0.941 and 0.972).
+  - For training: within a root, common seeds add a shared noise component that acts like a per-root offset.
+    Ranking and difference losses gain from it. Absolute (calibration) targets do not, because the per-leaf SD is
+    unchanged, and a pooled regression would see correlated errors within each root.
   - Probably (not measured) the streams desynchronise once sibling states consume different numbers of draws.
   - One seed, 256 simulations; a capture at the round-2 settings would measure it again.
 

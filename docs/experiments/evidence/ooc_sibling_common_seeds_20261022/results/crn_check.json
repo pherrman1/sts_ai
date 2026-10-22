@@ -64,8 +64,10 @@
  },
  "leafMeans": {
   "leaves": 403,
+  "roots": 18,
   "meanOnMinusOff": 0.003328764094371377,
   "se": 0.0020573808574484496,
+  "seRoots": 0.003711187103771685,
   "meanRepeatSdOff": 0.12898123209455847,
   "meanRepeatSdOn": 0.13087946953476445
  }
