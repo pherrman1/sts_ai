@@ -22857,3 +22857,30 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
+
+## §TBD — Gumbel sequential-halving root at OOC full-budget roots, paired A20 A/B (511 seeds): WORSE, Heart kills 9.4% vs 20.7% (2026-10-22)
+
+**Question (Philipp, 2026-10-21 21:07Z "Jo mach den gepaarten a/b mit 32 wirken nach gen2"):** does the offline
+win of §619 carry over to play? Gumbel SH with M = 16 at 2048 simulations had beaten PUCT@4096 against a uniform
+leaf-Q reference.
+**Design:** [PREREG](evidence/az_gumbel_root_ab_20261021/PREREG.md), pre-launch review PASS (C). A is the gen-2 A/B
+arm A config (student_sel, PUCT, full roots 4096). B adds `STS_OOC_MCTS_GUMBEL_ROOT=16` and
+`STS_OOC_MCTS_FULL_ROOT_SIMS=2048` (#791) on full-budget roots only. Seeds 111153152–663, RUN_COMMIT `3baca749`
+(code main `b0a8f596`, v3 binary `be70a1c1…`), 32 workers on the queue schedule.
+**Result: WORSE.** 511 valid pairs; unit 111153366 used up its queue attempts and is reported missing.
+
+| | A (PUCT 4096) | B (Gumbel SH 2048) | B − A |
+|---|---|---|---|
+| Heart kills | 106 (20.7%) | 48 (9.4%) | −11.4 pp [−14.8, −7.9], McNemar p = 2.6e-10 |
+| Reached Act 4 | 39.3% | 26.8% | −12.5 pp [−17.2, −7.9] |
+| Wall | | | 0.60× |
+| Played action ≠ prior argmax | 6.5% of searched roots | 17.3% of searched roots | |
+
+**Interpretation:** B overrides student_sel's prior much more often, and the overrides lose: deaths move from Act 4
+into Acts 2–3. Root selection that follows leaf Q (rollout3 + X2-B) is worse than the prior. This is the third loss
+for Q-based root selection, after §414 and §560.
+**Inference:** offline agreement with a leaf-Q reference (§619) is not a valid gate for root-selection changes. The
+flag stays default off. A Gumbel-style root needs a value signal that beats the prior, or must keep the prior
+dominant, and either needs a play A/B.
+[Result](evidence/az_gumbel_root_ab_20261021/RESULT.md), [result.json](evidence/az_gumbel_root_ab_20261021/result.json).
+Raw: `/mnt/project-files/az-gumbel-root-ab/units/`. Seeds 111153152–663 and smokes 111145018–019 used.
