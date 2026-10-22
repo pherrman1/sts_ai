@@ -22806,7 +22806,7 @@ draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
 
-## §TBD — Exact expectimax vs native Silver on A20 first fights: Silver is near-optimal (2026-10-21)
+## §623 — Exact expectimax vs native Silver on A20 first fights: Silver is near-optimal (2026-10-21)
 
 **Question:** does native Silver, at the configs we run, play the early A20 combats suboptimally compared with an exact
 solve of the same objective?
