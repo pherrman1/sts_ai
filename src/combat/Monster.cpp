@@ -6,6 +6,8 @@
 
 #include "game/Random.h"
 #include <stdexcept>
+#include <map>
+#include <vector>
 #include <algorithm>
 #include <cstdlib>
 #include "combat/BattleContext.h"
@@ -776,6 +778,61 @@ void Monster::rollMove(BattleContext &bc) {
 
 void Monster::rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in) {
     auto miscInfoCopy = latentDamageMask ? miscInfo : in.miscInfo;
+
+#ifdef STS_EXACT_CHANCE
+    if (auto *outer = exact::g_chanceScript) {
+        // Exact enumeration (research tooling): one choice among the distinct
+        // (move, miscInfo) results of the uniform 0..99 roll, with any draws
+        // inside getMoveForRoll enumerated exactly. Monsters whose roll reads
+        // only its inputs, move history and ascension are cached.
+        struct Dist { std::vector<std::pair<MMID, int>> results; std::vector<double> weights; };
+        thread_local std::map<std::vector<int>, Dist> cache;
+        const bool cacheable = id == MonsterId::CULTIST || id == MonsterId::JAW_WORM || id == MonsterId::RED_LOUSE
+            || id == MonsterId::GREEN_LOUSE || id == MonsterId::ACID_SLIME_S || id == MonsterId::ACID_SLIME_M
+            || id == MonsterId::SPIKE_SLIME_S || id == MonsterId::SPIKE_SLIME_M;
+        const std::vector<int> key = {static_cast<int>(id), static_cast<int>(moveHistory[0]), static_cast<int>(moveHistory[1]),
+            miscInfoCopy, bc.ascension, in.curHp, in.maxHp, in.knightCurHp, in.knightMaxHp, in.monsterTurnNumber,
+            in.miscInfo, in.aliveCount, in.monstersAlive, in.knightAlive, in.playerConstricted, in.asleep, in.halfDead};
+        const Dist *dist = nullptr;
+        Dist computed;
+        if (auto it = cache.find(key); cacheable && it != cache.end()) {
+            dist = &it->second;
+        } else {
+            exact::ChanceScript inner;
+            exact::g_chanceScript = &inner;
+            try {
+                for (int roll = 0; roll < 100; ++roll) {
+                    std::vector<std::vector<int>> stack{{}};
+                    while (!stack.empty()) {
+                        auto prefix = std::move(stack.back());
+                        stack.pop_back();
+                        inner.reset(prefix);
+                        int misc = miscInfoCopy;
+                        const auto move = getMoveForRoll(bc, in, misc, roll);
+                        inner.untried(stack);
+                        std::size_t r = 0;
+                        while (r < computed.results.size()
+                               && !(computed.results[r].first == move && computed.results[r].second == misc)) ++r;
+                        if (r == computed.results.size()) { computed.results.emplace_back(move, misc); computed.weights.push_back(0); }
+                        computed.weights[r] += inner.prob / 100.0;
+                    }
+                }
+            } catch (...) {
+                exact::g_chanceScript = outer;
+                throw;
+            }
+            exact::g_chanceScript = outer;
+            dist = cacheable ? &cache.emplace(key, std::move(computed)).first->second : &computed;
+        }
+        ++bc.aiRng.counter;
+        const int k = dist->results.size() == 1 ? 0
+            : outer->choose(dist->weights.data(), static_cast<int>(dist->weights.size()));
+        miscInfo = dist->results[k].second;
+        search::CombatKnowledgeMoveRollScope rollScope;
+        setMove(dist->results[k].first);
+        return;
+    }
+#endif
 
     const auto move = getMoveForRoll(bc, in, miscInfoCopy, bc.aiRng.random(99));
 
