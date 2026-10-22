@@ -18,8 +18,11 @@ namespace sts::search {
     struct CombatValueNet;
 
     struct SilverValueHead {
+        static constexpr int kMaxWidth = 1024;   // largest `in` and `hidden` load() accepts
         int in = 0, hidden = 0;
-        std::vector<float> mu, invSd, w1, b1, w2;
+        // w1t is W1 transposed (in x hidden), so the forward vectorizes over the hidden units while every unit
+        // still sums its inputs in order (the same values as the row-major sum).
+        std::vector<float> mu, invSd, w1t, b1, w2;
         float b2 = 0;
         double scale = 1, offset = 0;
 

@@ -19,9 +19,16 @@ search::SilverValueHead search::SilverValueHead::load(const std::string &path) {
     };
     if (!(f >> tok) || tok != "silver_value_head_v1") throw std::runtime_error(path + ": not a silver_value_head_v1");
     f >> tok >> h.in >> tok >> h.hidden;
+    if (!f || h.in < 1 || h.in > kMaxWidth || h.hidden < 1 || h.hidden > kMaxWidth)
+        throw std::runtime_error(path + ": bad head shape");
     vec("mu", h.mu, h.in);
     vec("inv_sd", h.invSd, h.in);
-    vec("w1", h.w1, static_cast<std::size_t>(h.hidden) * h.in);
+    std::vector<float> w1;   // row-major (hidden x in) in the file
+    vec("w1", w1, static_cast<std::size_t>(h.hidden) * h.in);
+    h.w1t.resize(w1.size());
+    for (int i = 0; i < h.hidden; ++i)
+        for (int j = 0; j < h.in; ++j)
+            h.w1t[static_cast<std::size_t>(j) * h.hidden + i] = w1[static_cast<std::size_t>(i) * h.in + j];
     vec("b1", h.b1, h.hidden);
     vec("w2", h.w2, h.hidden);
     std::vector<float> one;
@@ -33,13 +40,18 @@ search::SilverValueHead search::SilverValueHead::load(const std::string &path) {
 }
 
 double search::SilverValueHead::value(const std::vector<float> &trunk) const {
-    double y = b2;
-    for (int i = 0; i < hidden; ++i) {
-        double a = b1[i];
-        const float *w = &w1[static_cast<std::size_t>(i) * in];
-        for (int j = 0; j < in; ++j) a += w[j] * ((trunk[j] - mu[j]) * invSd[j]);
-        if (a > 0) y += w2[i] * a;
+    float x[kMaxWidth];
+    double a[kMaxWidth];
+    for (int j = 0; j < in; ++j) x[j] = (trunk[j] - mu[j]) * invSd[j];
+    for (int i = 0; i < hidden; ++i) a[i] = b1[i];
+    for (int j = 0; j < in; ++j) {
+        const float xj = x[j];
+        const float *w = &w1t[static_cast<std::size_t>(j) * hidden];
+        for (int i = 0; i < hidden; ++i) a[i] += static_cast<double>(w[i] * xj);
     }
+    double y = b2;
+    for (int i = 0; i < hidden; ++i)
+        if (a[i] > 0) y += w2[i] * a[i];
     return scale * y + offset;
 }
 
