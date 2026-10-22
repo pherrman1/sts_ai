@@ -310,6 +310,9 @@ Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
 unless the player is bloodied and the relic inactive. The projection omits the
 no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
 names anonymous classes by their full class name.
+Cultist Mask's battle-start caw (`SFXAction` "VO_CULTIST_*" followed by the
+player's `TalkAction`) is cosmetic and omitted as a pair; any other pending
+`SFXAction` refuses with `cultist_mask` (problem 93, seed 111200551).
 `GAIN_ENERGY` reads its amount from `GainEnergyAction.energyGain`: the
 `GainEnergyAction(int)` constructor calls `setValues(p,p,0)`, so the inherited
 `amount` is always 0. A missing or out-of-range (0-99) gain refuses with check
