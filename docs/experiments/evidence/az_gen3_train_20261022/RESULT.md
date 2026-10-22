@@ -23,3 +23,27 @@ branch `claude/az-gen2-data` @ `9866689b` under `gen3/` (`results.md`, `runs/*/s
 - **Inference:** the gain over the gen-2 pick is 7% in selection KL, much smaller than gen 2's gain over student_sel
   (48%), which was NOT_SHOWN online (§621). Top-1 is flat at 0.933-0.935 for every trained net. Offline rank stays a
   filter, not evidence of strength; only a paired A20 A/B against student_sel can show it.
+
+## Addendum: does a new prior change decisions? (Philipp 17:27Z: which offline values matter online)
+Native forward (`one_combat heart1score`, cloud build) of student_sel (`cf6bf7fb`), gen-2 pick (`fc32d8f4`) and the
+gen-3 pick (`d5780dee`) on every validation-fold (seed % 8 == 7) policy row; "right" = matches the argmax of π′.
+Scripts and full per-source / per-screen tables in `flip/` (`build.py` collects the rows, `analyze.py` scores them).
+
+| roots | n | net | top choice ≠ student_sel's | at those flips: new net matches π′ / student_sel matches π′ / neither |
+|---|---|---|---|---|
+| searched with student_sel (gen 0, gen-1b A, gen-2 A, exploration) | 8,424 | gen 2 | 3.55% | 123 / 156 / 20 |
+| | | gen 3 | 3.24% | 120 / 132 / 21 |
+| searched with the gen-2 prior (gen-2 B) | 1,995 | gen 2 | 3.51% | 45 / 15 / 10 |
+| | | gen 3 | 3.16% | 40 / 16 / 7 |
+
+- Top-1 vs π′ on the student_sel-searched roots: student_sel 0.940, gen 2 0.936, gen 3 0.938. The search overrides
+  student_sel's top choice at 6.0% of them; gen 3 predicts 120 of those 509 overrides but moves 132 roots that
+  student_sel had right.
+- π′ sides with whichever prior guided the search that produced it (student_sel-searched: student_sel wins the flips;
+  gen-2-searched: the trained nets win 3:1). So the flips are close calls the search itself does not settle, and π′
+  cannot referee them.
+- **Inference:** a trained prior changes the top choice at about 3% of decisions, and those are near-ties under the
+  current search. That fits gen 1b and gen 2 being NOT_SHOWN (§589, §621) and predicts the same for gen 3 at the
+  A/B's resolution (about ±2.7 pp). Selection KL falls mainly because the nets grow more confident in moves student_sel
+  already picks, which does not change play. Moves change only where the search's verdict changes, which needs better
+  evaluation (leaf values) or more search, not a prior closer to π′.
