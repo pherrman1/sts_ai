@@ -22330,6 +22330,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: shop/event removals, transforms and upgrades now carry out the card the source decision chose, as the simulator does (it has no confirm screen). It also saves one 512-simulation search per selector.
 
 **Status:** Draft PR.
+## §633 — Live problem 93: Cultist Mask's battle-start caw refused Toolbox's offer (2026-10-22)
+
+**Question:** Why was seed 111200551 abandoned at the act 2 Slavers elite, where Toolbox's combat-start colorless offer was refused with `silver_card_reward_pending_actions` and `refusal=9:unknown_action`?
+
+**Evidence:** The queue behind the offer was `DrawCardAction`, `EnableEndTurnButtonAction`, Red Mask's `RelicAboveCreatureAction` and three Weakened `ApplyPowerAction`s, then `SFXAction` and `TalkAction`. Those last two come from `CultistMask.atBattleStart`: a cultist sound and a player speech bubble, with no game state. The public pending-action projection (§618) had no case for them, so it refused at the `SFXAction`.
+
+**Change:** A producer-only fix in `STSModelInspector.publicPendingActionsJson`. An `SFXAction` whose key starts with `VO_CULTIST`, immediately followed by a not-done `TalkAction` from the player while Cultist Mask is owned, is omitted as a pair. Any other pending `SFXAction` refuses with `cultist_mask`. There is no native change and no flag: the omitted actions change no state.
+
+**Interpretation:** Toolbox (and any other projected offer) with Cultist Mask no longer abandons the fight.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
