@@ -23291,7 +23291,7 @@ about 0.4 HP in hallway fights) and §530 (the entry
 state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
 to pay for.
 **Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
-## §TBD — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but it changes only ~3% of top choices, mostly the ones gen 2 already changed; no A/B candidate (offline, NEGATIVE, 2026-10-22)
+## §643 — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but it changes only ~3% of top choices, mostly the ones gen 2 already changed; no A/B candidate (offline, NEGATIVE, 2026-10-22)
 
 Authorization: Philipp 2026-10-22 14:16Z ("merge 811 and then go"); flip check after his 17:27Z question (which offline
 values matter for online play). Plan and outputs: `docs/experiments/evidence/az_gen3_train_20261022/` (`PLAN.md`,
