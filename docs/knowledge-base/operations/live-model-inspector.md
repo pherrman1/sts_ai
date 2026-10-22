@@ -305,6 +305,11 @@ Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
 unless the player is bloodied and the relic inactive. The projection omits the
 no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
 names anonymous classes by their full class name.
+`GAIN_ENERGY` reads its amount from `GainEnergyAction.energyGain`: the
+`GainEnergyAction(int)` constructor calls `setValues(p,p,0)`, so the inherited
+`amount` is always 0. A missing or out-of-range (0-99) gain refuses with check
+`gain_energy_amount` (problem 84, seed 111200510: Nunchaku's GainEnergyAction(1)
+behind Headbutt's put-on-top choice was exported as 0, so energy was 1 short).
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
