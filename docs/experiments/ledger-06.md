@@ -23182,3 +23182,24 @@ benchmarks never covered.
 production Silver from 12k or 15k simulations over 10k here.
 [Result](evidence/silver_maxbackup_ab_20261022/RESULT.md). Seeds used 111149381–382 (smokes), 111149390–393 (CPU
 check), 111149400–463.
+
+## §639 — Sibling capture with common random numbers: the variance of sibling differences drops to 0.36 pooled (one A20 seed) (2026-10-22)
+
+**Question:** the §577 sibling labels are noisy. In round 2 the median best-minus-second gap is 0.016, and the
+64-repeat target of one public state scatters by about 0.025. Does seeding repeat r of every leaf of a root
+identically (common random numbers) make sibling differences cleaner?
+**Design:** new opt-in `STS_OOC_SIBLING_COMMON_SEEDS=1` (default off). It replaces the leaf ordinal in the repeats'
+`seed_seq`, and rows then carry `"commonSeeds": true`. [Smoke](evidence/ooc_sibling_common_seeds_20261022/SMOKE.md):
+seed 111144997 with the #806 quick-smoke setup and sibling capture every 4th root (32 repeats, root children). Three
+runs: main, branch with the flag off, branch with it on.
+**Result:**
+- Flag off: rows and play match main, CPU-time fields aside.
+- Flag on: play is unchanged and the per-leaf means are not shifted (+0.0033, SE 0.0037 with roots as clusters).
+- Variance of the paired difference over var(v_i) + var(v_j), across 3,287 sibling pairs on 18 roots:
+  - per-leaf seeds: 1.006;
+  - common seeds: 0.363 pooled (0.436 without the 165 pairs whose repeat vectors are identical), median pair 0.869.
+- The noisy half of the pairs carries the gain (pooled 0.25–0.40). Low-variance pairs gain 3–11 %.
+**Interpretation:** for sibling differences, pooled over pairs, common seeds are worth about 2.8× the repeats. One
+seed, 256 simulations.
+**Decision:** the option stays default off. Proposed use is a new sibling capture for value-head ranking labels
+(needs seeds, workers and Philipp's go). Seed used: 111144997.

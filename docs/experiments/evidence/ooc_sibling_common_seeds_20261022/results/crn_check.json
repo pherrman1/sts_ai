@@ -1,0 +1,74 @@
+{
+ "identityMainOff": true,
+ "off": {
+  "roots": 18,
+  "leaves": 403,
+  "pairs": 3287,
+  "identicalPairs": 0,
+  "pooledRatio": 1.0063888899671205,
+  "pooledRatioExclIdentical": 1.0063888899671205,
+  "medianPairRatio": 1.0051752609788607,
+  "byIndependentVarianceQuartile": [
+   {
+    "pairs": 822,
+    "pooledRatio": 0.998845988738342,
+    "medianPairRatio": 0.9990396974125872
+   },
+   {
+    "pairs": 822,
+    "pooledRatio": 0.9937823200396257,
+    "medianPairRatio": 0.9963088901953683
+   },
+   {
+    "pairs": 839,
+    "pooledRatio": 0.987827613597805,
+    "medianPairRatio": 1.0057485262100085
+   },
+   {
+    "pairs": 804,
+    "pooledRatio": 1.008878563893704,
+    "medianPairRatio": 1.0136986301369864
+   }
+  ]
+ },
+ "on": {
+  "roots": 18,
+  "leaves": 403,
+  "pairs": 3287,
+  "identicalPairs": 165,
+  "pooledRatio": 0.36278486755160466,
+  "pooledRatioExclIdentical": 0.4359721664632163,
+  "medianPairRatio": 0.8691543458493469,
+  "byIndependentVarianceQuartile": [
+   {
+    "pairs": 822,
+    "pooledRatio": 0.8894221435184382,
+    "medianPairRatio": 0.941319894118748
+   },
+   {
+    "pairs": 824,
+    "pooledRatio": 0.9225811585265378,
+    "medianPairRatio": 0.9720052480164056
+   },
+   {
+    "pairs": 970,
+    "pooledRatio": 0.2485478247202844,
+    "medianPairRatio": 0.8231779234298804
+   },
+   {
+    "pairs": 671,
+    "pooledRatio": 0.4021506730084855,
+    "medianPairRatio": 0.17575757575757575
+   }
+  ]
+ },
+ "leafMeans": {
+  "leaves": 403,
+  "roots": 18,
+  "meanOnMinusOff": 0.003328764094371377,
+  "se": 0.0020573808574484496,
+  "seRoots": 0.003711187103771685,
+  "meanRepeatSdOff": 0.12898123209455847,
+  "meanRepeatSdOn": 0.13087946953476445
+ }
+}
