@@ -420,6 +420,43 @@ bool installRunForcedRelic(GameContext &gc, RelicId relic) {
     return true;
 }
 
+void beginRealOocChainRun(bool shopV) {
+    t_oocStrategicTraceRows.clear();
+    t_oocStrategicTraceDecision = 0;
+    t_shopV = shopV;
+    one_combat::resetPathPolicyState();
+    t_actFightProbeDecisionIdx = 0;
+    t_tokCheckPending = g_oocStrategicTokCheck;
+}
+
+const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
+                             const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
+                             one_combat::LiveOocMctsMetrics &mctsMetrics) {
+    if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+        key->execute(gc);
+        return "heart_key";
+    }
+    if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled() && one_combat::heart1::policyStep(gc))
+        return "heart1";
+    if (const auto chest = treasureChestRuleAction(gc)) {
+        chest->execute(gc);
+        return "chest_rule";
+    }
+    if (const auto relic = rewardRelicRuleAction(gc)) {
+        relic->execute(gc);
+        return "relic_rule";
+    }
+    if (one_combat::liveOocMctsTreeRules() && oocTreeRuleStep(gc)) return "tree_rule";
+    if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
+                               one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr))
+        return "match_and_keep";
+    if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
+    if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) return "mcts";
+    if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) return "heart1_fallback";
+    runFullRunOocPolicyStep(gc, agent, restV, shopV);
+    return "chain";
+}
+
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
 // map/rewards/events/campfires/shops via the ordered OOC policy chain).
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
@@ -452,9 +489,6 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                                      " or STS_OOC_SIBLING_CAPTURE");
     }
     vDisconnect();
-    t_oocStrategicTraceRows.clear();
-    t_oocStrategicTraceDecision = 0;
-    t_shopV = shopV;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -466,10 +500,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         trainingRunStart();
         one_combat::beginE2cRun(seed, path);
     }
-    one_combat::resetPathPolicyState();
-    t_actFightProbeDecisionIdx = 0;
+    beginRealOocChainRun(shopV);
     t_curPath = &path;
-    t_tokCheckPending = g_oocStrategicTokCheck;
     one_combat::LiveOocMctsMetrics mctsMetrics;
     std::uint64_t oocDecisionIndex = 0;
     bool clearedStopActBoss = false;
@@ -564,27 +596,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 if (!masked) keyMaskAllowedX.clear();
             }
             const int keyMaskFloor = gc.floorNum;
-            if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
-                key->execute(gc); traceBy = "heart_key";
-            } else if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled()
-                    && one_combat::heart1::policyStep(gc)) {
-                traceBy = "heart1";
-            } else if (const auto chest = treasureChestRuleAction(gc)) {
-                chest->execute(gc); traceBy = "chest_rule";
-            } else if (const auto relic = rewardRelicRuleAction(gc)) {
-                relic->execute(gc); traceBy = "relic_rule";
-            } else if (one_combat::liveOocMctsTreeRules() && oocTreeRuleStep(gc)) {
-                traceBy = "tree_rule";
-            } else if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
-                    one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr)) {
-                traceBy = "match_and_keep";
-            } else {
-                if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
-                if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) traceBy = "mcts";
-                else if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc))
-                    traceBy = "heart1_fallback";
-                else runFullRunOocPolicyStep(gc, agent, restV, shopV);
-            }
+            traceBy = realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
             if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
                     && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
                 std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
