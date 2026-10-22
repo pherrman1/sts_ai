@@ -22341,7 +22341,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Toolbox (and any other projected offer) with Cultist Mask no longer abandons the fight.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
-## §TBD — Live problem 92 follow-up: the retained confirm answer failed the driver's MCTS validator (2026-10-22)
+## §634 — Live problem 92 follow-up: the retained confirm answer failed the driver's MCTS validator (2026-10-22)
 
 **Question:** Why was seed 111200553, the first live run on c4dcb43c (§632), abandoned at its first single-card selector confirm (an event transform of Defend)?
 
