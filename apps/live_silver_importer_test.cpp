@@ -4833,7 +4833,12 @@ int main(int argc, char **argv) {
                 resolveMonsterTransition(live,1);
                 live.monsters.arr[0].moveHistory[0]=MonsterMoveId::BRONZE_ORB_STASIS;
                 resolveMonsterTransition(live,0);
-                const auto stolen=live.cards.stasisCards[0];
+                if(live.cards.stasisCards[0].id==CardId::INVALID)
+                    throw std::runtime_error("Stasis Headbutt fixture: the orb holds no card");
+                // A stolen Skill, so the Corruption pass applies to the returned card too.
+                CardInstance stolenSkill(CardId::DEFEND_RED); stolenSkill.uniqueId=990;
+                live.cards.stasisCards[0]=stolenSkill;
+                const auto stolen=stolenSkill;
                 if(stolen.id==CardId::INVALID || !live.monsters.arr[0].hasStatus<MonsterStatus::STASIS>())
                     throw std::runtime_error("Stasis Headbutt fixture: the orb holds no card");
                 if(corruption) live.player.setHasStatus<PlayerStatus::CORRUPTION>(true);
@@ -4845,6 +4850,9 @@ int main(int argc, char **argv) {
                     sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,2).execute(live);
                 }
                 CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=960;
+                // Java's hand keeps its pre-death costs until the queued
+                // MakeTempCardInHandAction runs the Corruption pass.
+                const std::vector<CardInstance> preDeathHand(live.cards.hand.begin(),live.cards.hand.begin()+live.cards.cardsInHand);
                 live.cards.moveToHand(headbutt); live.player.energy=3;
                 sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
                 if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
@@ -4874,6 +4882,16 @@ int main(int argc, char **argv) {
                 hand.erase(hand.size()-1);
                 javaCard["cost"]=stolen.cost; javaCard["costForTurn"]=stolen.costForTurn;
                 javaCard["slot"]=0;
+                if(hand.size()!=preDeathHand.size()) throw std::runtime_error("Stasis Headbutt pre-death hand size differs");
+                bool passChangedHand=false;
+                for(std::size_t i=0;i<hand.size();++i) {
+                    const auto &card=preDeathHand[i];
+                    if(card.getType()!=CardType::SKILL && hand[i].at("costForTurn")!=card.costForTurn)
+                        throw std::runtime_error("Stasis Headbutt pre-death hand order differs");
+                    passChangedHand|=hand[i].at("costForTurn")!=card.costForTurn || hand[i].at("cost")!=card.cost;
+                    hand[i]["cost"]=card.cost; hand[i]["costForTurn"]=card.costForTurn;
+                }
+                if(corruption!=passChangedHand) throw std::runtime_error("Stasis Headbutt fixture: the Corruption pass did not change a hand Skill");
                 combat["stasis"]=json::array({javaCard});
                 combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
                     json{{"kind","STASIS_RETURN"},{"slot",0}}});
