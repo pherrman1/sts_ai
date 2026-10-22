@@ -1,0 +1,12 @@
+# Native exports (student.bin) on the data branch claude/az-gen2-data; commit = the push that added the run.
+ee8337a2a4dd73a42bbd51dcd07799eb9ea139a7ce2559735b4dae9eb168ca59  gen2/value-cf/weights/M0.3/student.bin     (control, 02f2c60)
+b242194a20af7648e5eae4fb81b4b3ec924630fae4cfbc02276e6410d8610441  gen2/value-sr/weights/SR_w0.1/student.bin  (8676e69)
+5a724bbd0754ffc7d62cd55842cd3505fa195e308be53e263c66dc6466cdc617  gen2/value-sr/weights/SR_w0.3/student.bin  (f5e53d6)
+146a4512dda1213e16a9849158676bb7ff902fbb4136553d6c71ec6495a32ec4  gen2/value-sr/weights/SR_w1/student.bin    (3f0676b)
+caa21de93c892eb76dba0dc27d816cae9280007c6f248d39673e66def205865e  gen2/value-sr/weights/AUX0.3/student.bin   (6a5b23d)
+e55f05bf9f58622787892acd14ee364a053758f5403e2e2fcda20c71130d82e4  gen2/value-sr/weights/SR_w1_s1/student.bin (6132469)
+7d758384681c9820a557f00bdfb0ab5746ccb431b4955852eaa830095491ef10  gen2/value-sr/weights/SR_w1_s2/student.bin (41d4a4d)
+# Inputs
+b1933cc411b168e683ba11474f82528477fd4dde8aae07e3935924d126493567  gen2/value-sr/data/r2_train_groups.jsonl.gz
+1443c2050af432a9759ac7765b54af5540446a401eaf4961d4676b28eda0ed2d  gen2/value-sr/tools/distill.py
+1e565ce538851acaa6a28a0719805be4b91bcca74267c205251e352f1abd08ee  gen2/value-sr/PLAN.md (= PLAN.md here)

@@ -1,0 +1,9 @@
+same-state sets 20024: observed between-row var 0.001356, predicted 0.000695, f = 1.397
+validation: 2559 groups; ceiling (perfect evaluator, all pairs) 0.8083
+  x2b            conc 0.6331  |dt|>=1SE 0.7166 (320 src)  >=2SE 0.8106 (319 src)  corrected 0.7101
+  M0.3           conc 0.5554  |dt|>=1SE 0.5886 (320 src)  >=2SE 0.6133 (319 src)  corrected 0.6015
+  SR_w0.3        conc 0.6134  |dt|>=1SE 0.6786 (320 src)  >=2SE 0.7384 (319 src)  corrected 0.6714
+  SR_w1          conc 0.6438  |dt|>=1SE 0.7316 (320 src)  >=2SE 0.8103 (319 src)  corrected 0.7198
+  M0.3@0.15      conc 0.6443  |dt|>=1SE 0.7326 (320 src)  >=2SE 0.8377 (319 src)  corrected 0.7329
+  SR_w0.3@0.15   conc 0.6661  |dt|>=1SE 0.7610 (320 src)  >=2SE 0.8616 (319 src)  corrected 0.7558
+  SR_w1@0.15     conc 0.6693  |dt|>=1SE 0.7720 (320 src)  >=2SE 0.8689 (319 src)  corrected 0.7642

@@ -23204,6 +23204,47 @@ seed, 256 simulations.
 **Decision:** the option stays default off. Proposed use is a new sibling capture for value-head ranking labels
 (needs seeds, workers and Philipp's go). Seed used: 111144997.
 
+## §641 — OOC value head: a sibling-ranking loss makes the head rank leaf siblings at X2-B's level (0.644 vs 0.633) and its X2-B blend better (+0.032 to +0.040 over three seeds); auxiliary heads do not help (offline, exploratory) (2026-10-22)
+
+**Question:** every value head so far ranks round-2 VALIDATION siblings at about 0.55, against X2-B's 0.633 (§577,
+§622, §636). Can a training loss on sibling order fix that? Philipp chose more offline research before any play test
+(2026-10-22 09:51Z) and asked about auxiliary targets.
+**Design:** plan written before any run ([PLAN.md](evidence/value_sibling_rank_20261022/PLAN.md)). All arms use the
+M0.3 recipe (§622) with one change, on Philipp's GPU:
+- SR_w0.1, SR_w0.3, SR_w1: a RankNet loss with weight w over round-2 TRAIN sibling groups (8,458 groups from
+  1,088 sources; targets are 64-rollout3 means). The pairs are weighted by the target gap. Holdout sources
+  (seed % 8 == 6) are never trained on.
+- AUX0.3: training-only heads for the next boss, Act 4 and final floor.
+- The gate is the head alone on round-2 VALIDATION (320 sources): PASS ≥ 0.633, PARTIAL ≥ 0.585. It also needs the
+  bars selection BCE ≤ 0.552 and "−3 HP sign" ≥ 85 %.
+- A PASS arm gets seeds 1–2.
+- The blend sigmoid((1 − w)·logit X2-B + w·logit head) is secondary, with w chosen on the TRAIN holdout.
+**Result** ([README](evidence/value_sibling_rank_20261022/README.md)):
+
+| arm | VALIDATION | − X2-B | − M0.3 | blend − X2-B | sel BCE | verdict |
+|---|---|---|---|---|---|---|
+| M0.3 (control) | 0.555 | −0.078 | – | +0.011 [+0.001, +0.021] | 0.5365 | – |
+| AUX0.3 | 0.557 | −0.076 | +0.002 [−0.003, +0.006] | +0.014 | 0.5398 | FAIL |
+| SR_w0.1 | 0.586 | −0.048 | +0.030 [+0.019, +0.041] | +0.024 [+0.016, +0.032] | 0.5362 | PARTIAL (by 0.0006) |
+| SR_w0.3 | 0.613 | −0.020 [−0.036, −0.002] | +0.058 | +0.033 [+0.023, +0.044] | 0.5363 | PARTIAL |
+| SR_w1 | 0.644 | +0.011 [−0.004, +0.026] | +0.088 [+0.075, +0.102] | +0.040 [+0.030, +0.049] | 0.5466 | PASS |
+
+- SR_w1 seeds 1 and 2 score 0.645 and 0.618 (mean 0.636), with blends of +0.032 and +0.032. Seed 2 was stopped at
+  epoch 4 by the value-only selection while its holdout ranking was still rising.
+- The SR weight costs monotonicity (gold+50 > 0: 94 % for M0.3 vs 65–84 % for SR_w1; maxHP+5 > 0: 67 % vs 42–54 %)
+  and outcome calibration (SR_w1's leaf BCE against the run's Heart kill is 0.47–0.50 vs M0.3's 0.43; a constant
+  scores 0.475). The bars hold.
+- Exploratory:
+  - The SR_w1 blend gains on every screen except the boss relic, most in Act 1 (+0.055).
+  - The head alone beats X2-B on rewards and shops but loses on events and boss relics.
+  - Noise-corrected concordance keeps the order.
+**Interpretation:** a ranking loss transfers to sources it never saw, and the auxiliary heads do not help. The targets
+end in X2-B, which favours it, so matching X2-B is a real gain. The PASS is a point estimate: the CI against X2-B
+includes 0 and seed 2 alone would be PARTIAL, so the head ranks at X2-B's level, not above it. The online meaning is
+open: §615's head ranked siblings at only 0.547 offline and still leaned +3.1 pp as the rollout3 end value.
+**Decision:** no default change. SR_w1 (seed 0, `146a4512…` on `claude/az-gen2-data`) is the leaf candidate. Next is
+an online test (blend and head alone vs X2-B), or a new capture with common seeds (§639) for cleaner labels; Philipp
+decides. A later recipe should select epochs on a combined value and ranking objective. No game seeds were used.
 ## §640 — AZ gen-3 exploration self-play block (root noise 0.25:0.3 + visit-sampled play on floors 0-6): 1,024 A20 runs, 15.7% Heart kills vs 20.9% greedy (descriptive, 2026-10-22)
 
 Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and outputs:
@@ -23223,3 +23264,30 @@ Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and output
 - **Inference:** exploration costs ~5 pp Heart kills in the generating runs; the rows add ~16k full-budget policy targets
   off the greedy path. Value labels from these runs are pessimistic for early states.
 - **Knowledge impact:** `evaluation/current-research.md`.
+## §642 — Shield and Spear: prior playouts in the elite room do not cut HP lost (−0.3 HP [−3.3, +2.8]) at 6.4x CPU (NOT_SHOWN, 2026-10-22)
+
+**Question:** since ADR-0056 (#775) elite rooms use greedy root-table playouts and only the Heart keeps prior
+playouts. Shield and Spear is the biggest HP sink before the Heart (about 32 HP per fight, §530). Would prior playouts
+there (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1`, ADR-0050's rooms) save HP? Started in the exact-combat research thread after
+Philipp's 14:53Z question (prior rollouts everywhere vs leaf research); analysed in its own thread.
+**Setup** ([evidence](evidence/shield_spear_prior_playouts_20261022/README.md)): `one_combat act4replay` on the 32
+recorded A20 Shield and Spear entry states of the loss audit F1, 4 copies each, seeds 111149768–111149895 (both arms on
+the same battle and planner seeds, paired per state and copy). Flat 10k exact sims with the §528 env (learned stop
+off), g7f_E root prior weight 400, tree prior K = 8, g7f_E rollout root table. Binary from `f8831b48`
+(claude/project-thread-kgjoid, main `165b5060` merged in). Research run, no prereg; nothing changes play.
+**Result** (128 paired fights per arm, HP lost incl. full HP on death, per-state bootstrap 95% CI):
+
+| arm | HP lost | wins | turns | CPU/fight |
+|---|---|---|---|---|
+| greedy playouts (default) | 32.77 | 117 | 4.27 | 8.0 s |
+| prior playouts | 32.46 | 119 | 4.43 | 51.5 s |
+
+- Prior − greedy: **−0.30 HP [−3.28, +2.77]**, fight SE 1.76; CPU 6.41x.
+- In the 113 fights both arms win, HP lost is 26.73 vs 26.72. Wins differ in 10 pairs (greedy only 4, prior only 6).
+- Potions used are equal (0.73 vs 0.74). The fight noise is large: the SD over the 4 copies of one state is 18.7 HP.
+**Interpretation:** at this sample the effect is at most about 3 HP per fight either way, and the point estimate is
+zero, so the playout policy is not what makes Shield and Spear expensive. This fits §541 (prior playouts saved only
+about 0.4 HP in hallway fights) and §530 (the entry
+state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
+to pay for.
+**Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.

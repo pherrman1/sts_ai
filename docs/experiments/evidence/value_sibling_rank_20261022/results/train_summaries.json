@@ -1,0 +1,954 @@
+{
+ "M0.3": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuecf/runs/M0.3",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 0,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.0,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 11,
+  "epochsRun": 14,
+  "wallSec": 2162.0862114429474,
+  "select": {
+   "kl": 0.05961396803936179,
+   "objective": 0.3321539680393618,
+   "value": {
+    "n": 57873,
+    "bce": 0.5365,
+    "const_bce": 0.642,
+    "auc": 0.7704008221671764,
+    "mean_p": 0.2796,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.5074,
+   "const_bce": 0.6216,
+   "auc": 0.7799250693166038,
+   "mean_p": 0.2828,
+   "mean_z": 0.3132
+  },
+  "siblingRank": null,
+  "srHoldoutPerEpoch": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.1534,
+    "viol_p001": 0.1074,
+    "median_dp": 0.00412
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.2677,
+    "viol_p001": 0.1999,
+    "median_dp": 0.00334
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.0624,
+    "viol_p001": 0.0452,
+    "median_dp": 0.01133
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.018,
+    "viol_p001": 0.0135,
+    "median_dp": 0.02352
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0,
+    "viol_p001": 0.0,
+    "median_dp": 0.02627
+   }
+  }
+ },
+ "SR_w0.1": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuesr/runs/SR_w0.1",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 0,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.0,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "sr_data": "/home/philippherrmann/h1distill/gen2/valuesr/data/r2_train_groups.jsonl.gz",
+   "sr_weight": 0.1,
+   "sr_groups": 16,
+   "sr_per_action": 2,
+   "sr_holdout": 6,
+   "sr_workers": 3,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 9,
+  "epochsRun": 12,
+  "wallSec": 2583.9704456329346,
+  "select": {
+   "kl": 0.058334931414794594,
+   "objective": 0.33072493141479464,
+   "value": {
+    "n": 57873,
+    "bce": 0.5362,
+    "const_bce": 0.642,
+    "auc": 0.7713075091452729,
+    "mean_p": 0.2781,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.5081,
+   "const_bce": 0.6216,
+   "auc": 0.7790997752115133,
+   "mean_p": 0.2809,
+   "mean_z": 0.3132
+  },
+  "siblingRank": {
+   "holdout": {
+    "groups": 1004,
+    "sources": 136,
+    "concordance": 0.5703
+   },
+   "train_first1000": {
+    "groups": 1000,
+    "sources": 127,
+    "concordance": 0.5879
+   }
+  },
+  "srHoldoutPerEpoch": [
+   0.5133,
+   0.5068,
+   0.5202,
+   0.5323,
+   0.5545,
+   0.5615,
+   0.5644,
+   0.5702,
+   0.5706,
+   0.5703,
+   0.5708,
+   0.5742,
+   0.5747
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.1339,
+    "viol_p001": 0.0971,
+    "median_dp": 0.00507
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.2606,
+    "viol_p001": 0.1934,
+    "median_dp": 0.00366
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.0764,
+    "viol_p001": 0.0559,
+    "median_dp": 0.01131
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0248,
+    "viol_p001": 0.0185,
+    "median_dp": 0.02674
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0,
+    "viol_p001": 0.0,
+    "median_dp": 0.02797
+   }
+  }
+ },
+ "SR_w0.3": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuesr/runs/SR_w0.3",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 0,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.0,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "sr_data": "/home/philippherrmann/h1distill/gen2/valuesr/data/r2_train_groups.jsonl.gz",
+   "sr_weight": 0.3,
+   "sr_groups": 16,
+   "sr_per_action": 2,
+   "sr_holdout": 6,
+   "sr_workers": 3,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 8,
+  "epochsRun": 11,
+  "wallSec": 2453.810603618622,
+  "select": {
+   "kl": 0.0578027933561569,
+   "objective": 0.3306627933561569,
+   "value": {
+    "n": 57873,
+    "bce": 0.5363,
+    "const_bce": 0.642,
+    "auc": 0.7717745541015922,
+    "mean_p": 0.2768,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.5104,
+   "const_bce": 0.6216,
+   "auc": 0.7762195757363017,
+   "mean_p": 0.2805,
+   "mean_z": 0.3132
+  },
+  "siblingRank": {
+   "holdout": {
+    "groups": 1004,
+    "sources": 136,
+    "concordance": 0.6095
+   },
+   "train_first1000": {
+    "groups": 1000,
+    "sources": 127,
+    "concordance": 0.6259
+   }
+  },
+  "srHoldoutPerEpoch": [
+   0.5133,
+   0.5001,
+   0.5315,
+   0.5626,
+   0.5727,
+   0.5903,
+   0.5974,
+   0.6034,
+   0.6095,
+   0.6189,
+   0.6261,
+   0.6264
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.156,
+    "viol_p001": 0.1179,
+    "median_dp": 0.00566
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.3113,
+    "viol_p001": 0.248,
+    "median_dp": 0.00303
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.1045,
+    "viol_p001": 0.0808,
+    "median_dp": 0.01147
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0357,
+    "viol_p001": 0.0305,
+    "median_dp": 0.03128
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0,
+    "viol_p001": 0.0,
+    "median_dp": 0.0282
+   }
+  }
+ },
+ "SR_w1": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuesr/runs/SR_w1",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 0,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.0,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "sr_data": "/home/philippherrmann/h1distill/gen2/valuesr/data/r2_train_groups.jsonl.gz",
+   "sr_weight": 1.0,
+   "sr_groups": 16,
+   "sr_per_action": 2,
+   "sr_holdout": 6,
+   "sr_workers": 3,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 7,
+  "epochsRun": 10,
+  "wallSec": 2304.919114589691,
+  "select": {
+   "kl": 0.06035856393696857,
+   "objective": 0.3391185639369686,
+   "value": {
+    "n": 57873,
+    "bce": 0.5466,
+    "const_bce": 0.642,
+    "auc": 0.7630448770517289,
+    "mean_p": 0.2919,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.5207,
+   "const_bce": 0.6216,
+   "auc": 0.7661398395572951,
+   "mean_p": 0.2945,
+   "mean_z": 0.3132
+  },
+  "siblingRank": {
+   "holdout": {
+    "groups": 1004,
+    "sources": 136,
+    "concordance": 0.6533
+   },
+   "train_first1000": {
+    "groups": 1000,
+    "sources": 127,
+    "concordance": 0.6593
+   }
+  },
+  "srHoldoutPerEpoch": [
+   0.5133,
+   0.5154,
+   0.5798,
+   0.5915,
+   0.6232,
+   0.6347,
+   0.645,
+   0.6533,
+   0.6555,
+   0.662,
+   0.6683
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.2138,
+    "viol_p001": 0.1755,
+    "median_dp": 0.00659
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.2763,
+    "viol_p001": 0.2317,
+    "median_dp": 0.00497
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.1765,
+    "viol_p001": 0.1502,
+    "median_dp": 0.01263
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0579,
+    "viol_p001": 0.051,
+    "median_dp": 0.03405
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0062,
+    "viol_p001": 0.0051,
+    "median_dp": 0.02237
+   }
+  }
+ },
+ "SR_w1_s1": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuesr/runs/SR_w1_s1",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 1,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.0,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "sr_data": "/home/philippherrmann/h1distill/gen2/valuesr/data/r2_train_groups.jsonl.gz",
+   "sr_weight": 1.0,
+   "sr_groups": 16,
+   "sr_per_action": 2,
+   "sr_holdout": 6,
+   "sr_workers": 3,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 6,
+  "epochsRun": 9,
+  "wallSec": 2361.9110312461853,
+  "select": {
+   "kl": 0.06020622778476179,
+   "objective": 0.3390962277847618,
+   "value": {
+    "n": 57873,
+    "bce": 0.5474,
+    "const_bce": 0.642,
+    "auc": 0.7628688473563543,
+    "mean_p": 0.292,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.5217,
+   "const_bce": 0.6216,
+   "auc": 0.7667843582173983,
+   "mean_p": 0.2961,
+   "mean_z": 0.3132
+  },
+  "siblingRank": {
+   "holdout": {
+    "groups": 1004,
+    "sources": 136,
+    "concordance": 0.6531
+   },
+   "train_first1000": {
+    "groups": 1000,
+    "sources": 127,
+    "concordance": 0.657
+   }
+  },
+  "srHoldoutPerEpoch": [
+   0.5133,
+   0.5157,
+   0.5787,
+   0.5856,
+   0.6204,
+   0.6345,
+   0.6531,
+   0.6537,
+   0.6622,
+   0.6575
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.1791,
+    "viol_p001": 0.1446,
+    "median_dp": 0.00705
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.3536,
+    "viol_p001": 0.2967,
+    "median_dp": 0.00272
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.2139,
+    "viol_p001": 0.1823,
+    "median_dp": 0.0096
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0277,
+    "viol_p001": 0.0236,
+    "median_dp": 0.03938
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0064,
+    "viol_p001": 0.0051,
+    "median_dp": 0.02075
+   }
+  }
+ },
+ "SR_w1_s2": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuesr/runs/SR_w1_s2",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 2,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.0,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "sr_data": "/home/philippherrmann/h1distill/gen2/valuesr/data/r2_train_groups.jsonl.gz",
+   "sr_weight": 1.0,
+   "sr_groups": 16,
+   "sr_per_action": 2,
+   "sr_holdout": 6,
+   "sr_workers": 3,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 4,
+  "epochsRun": 7,
+  "wallSec": 1946.9784784317017,
+  "select": {
+   "kl": 0.06038347222965055,
+   "objective": 0.33723347222965055,
+   "value": {
+    "n": 57873,
+    "bce": 0.5432,
+    "const_bce": 0.642,
+    "auc": 0.7615439957400514,
+    "mean_p": 0.2981,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.522,
+   "const_bce": 0.6216,
+   "auc": 0.7632377781102886,
+   "mean_p": 0.2982,
+   "mean_z": 0.3132
+  },
+  "siblingRank": {
+   "holdout": {
+    "groups": 1004,
+    "sources": 136,
+    "concordance": 0.6253
+   },
+   "train_first1000": {
+    "groups": 1000,
+    "sources": 127,
+    "concordance": 0.6311
+   }
+  },
+  "srHoldoutPerEpoch": [
+   0.5133,
+   0.5221,
+   0.5787,
+   0.5922,
+   0.6253,
+   0.6374,
+   0.6414,
+   0.6446
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.1974,
+    "viol_p001": 0.1656,
+    "median_dp": 0.00731
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.4585,
+    "viol_p001": 0.4022,
+    "median_dp": 0.00072
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.1915,
+    "viol_p001": 0.1632,
+    "median_dp": 0.01016
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0362,
+    "viol_p001": 0.032,
+    "median_dp": 0.0384
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0013,
+    "viol_p001": 0.0009,
+    "median_dp": 0.02162
+   }
+  }
+ },
+ "AUX0.3": {
+  "args": {
+   "repo": "/home/philippherrmann/h1distill/silverbot-84ab3ea",
+   "out": "/home/philippherrmann/h1distill/gen2/valuesr/runs/AUX0.3",
+   "dim": 64,
+   "layers": 2,
+   "mult": 4,
+   "heads": 4,
+   "trim_map": true,
+   "epochs": 20,
+   "bs": 256,
+   "lr": 0.0001,
+   "wd": 0.01,
+   "threads": 1,
+   "workers": 4,
+   "max_train": 0,
+   "device": "cuda",
+   "seed": 0,
+   "val_mod": 8,
+   "amp": true,
+   "init": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt",
+   "select_repeat": 1,
+   "compact": true,
+   "value_weight": 0.5,
+   "anchor_weight": 0.3,
+   "anchor_ref": null,
+   "anchor_ref_heads": 4,
+   "select": "fold",
+   "select_mod": null,
+   "cache": null,
+   "patience": 3,
+   "value_k": 0,
+   "val_at_end": true,
+   "pack": true,
+   "stop_after": 0,
+   "value_teacher_alpha": 1.0,
+   "value_target_field": "teacher_v",
+   "aux_weight": 0.3,
+   "cf_teacher": "/home/philippherrmann/h1distill/gen2/heart1/heart1.pt",
+   "cf_heads": 8,
+   "cf_weight": 0.0,
+   "cf_rules": "hp,mhp,gold",
+   "cf_slope": 1.3586671352386475,
+   "cf_rows": 64,
+   "cf_report": true,
+   "mono_weight": 0.3,
+   "mono_rules": "hp,mhp,gold,potion,curse",
+   "mono_report": true,
+   "extra_inputs": true,
+   "sr_data": "/home/philippherrmann/h1distill/gen2/valuesr/data/r2_train_groups.jsonl.gz",
+   "sr_weight": 0.0,
+   "sr_groups": 16,
+   "sr_per_action": 2,
+   "sr_holdout": 6,
+   "sr_workers": 3,
+   "dataFiles": 2688
+  },
+  "selectedEpoch": 8,
+  "epochsRun": 11,
+  "wallSec": 2029.7593505382538,
+  "select": {
+   "kl": 0.05825795611718268,
+   "objective": 0.3324479561171827,
+   "value": {
+    "n": 57873,
+    "bce": 0.5398,
+    "const_bce": 0.642,
+    "auc": 0.7670616424052988,
+    "mean_p": 0.2787,
+    "mean_z": 0.3414
+   }
+  },
+  "validationValue": {
+   "n": 56882,
+   "bce": 0.5113,
+   "const_bce": 0.6216,
+   "auc": 0.7761971821227345,
+   "mean_p": 0.2808,
+   "mean_z": 0.3132
+  },
+  "siblingRank": {
+   "holdout": {
+    "groups": 1004,
+    "sources": 136,
+    "concordance": 0.5398
+   },
+   "train_first1000": {
+    "groups": 1000,
+    "sources": 127,
+    "concordance": 0.5728
+   }
+  },
+  "srHoldoutPerEpoch": [
+   0.5133,
+   0.5038,
+   0.5055,
+   0.5167,
+   0.5287,
+   0.5365,
+   0.5371,
+   0.5411,
+   0.5398,
+   0.5396,
+   0.544,
+   0.5461
+  ],
+  "monotoneSelect": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.1639,
+    "viol_p001": 0.1169,
+    "median_dp": 0.00388
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.2944,
+    "viol_p001": 0.225,
+    "median_dp": 0.00297
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.0764,
+    "viol_p001": 0.0565,
+    "median_dp": 0.01063
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0242,
+    "viol_p001": 0.0181,
+    "median_dp": 0.02252
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0,
+    "viol_p001": 0.0,
+    "median_dp": 0.02553
+   }
+  }
+ }
+}
