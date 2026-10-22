@@ -23394,7 +23394,7 @@ values matter for online play). Plan and outputs: `docs/experiments/evidence/az_
   overlap with earlier candidates, and the search's verdict at those roots, not KL alone. No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD — Sibling-ranking loss on the common-seed labels: both arms FAIL (head alone 0.640 and 0.649, SR_w1 0.645, X2-B 0.664); the ranking-selected epoch of SR_crn_r2 reaches X2-B's level (0.660) and its blend beats SR_w1's by +0.014 (offline, exploratory, 2026-10-22)
+## §645 — Sibling-ranking loss on the common-seed labels: both arms FAIL (head alone 0.640 and 0.649, SR_w1 0.645, X2-B 0.664); the ranking-selected epoch of SR_crn_r2 reaches X2-B's level (0.660) and its blend beats SR_w1's by +0.014 (offline, exploratory, 2026-10-22)
 
 **Question:** SR_w1 (§641) ranks the common-seed VALIDATION siblings below X2-B (0.645 vs 0.664, §644). Does the same
 recipe do better when it learns from the recapture's cleaner labels? Philipp typed "go gpu" (2026-10-22 17:50Z).
