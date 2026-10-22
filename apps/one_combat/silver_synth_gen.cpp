@@ -27,6 +27,14 @@
 // the policy chain), so the recorded fights follow the production run
 // distribution. It requires live OOC MCTS off; fights play as before.
 //
+// silverazgen's search overrides hold for every fight of the run, and under
+// them Silver also leaves out the ADR-0050/0056 boss prior playouts that
+// whole-run fights get from the same prior (the manifest's silverLeaf says so).
+// STS_AZGEN_PRODUCTION_COMBAT=1 installs no override: every fight plays the
+// whole-run production Silver (the root prior with its bonus, the tree prior
+// from STS_SILVER_TREE_PRIOR_MIN_VISITS, boss prior playouts). It requires
+// ROOT_BONUS 1 and TREE_MIN_VISITS equal to that whole-run tree prior.
+//
 // silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
 // /mnt/project-files/silver-prior-fight-specific/): the run plays every other
 // fight unrecorded at OTHER_SIMS with the same prior, and at the first fight of
@@ -69,6 +77,17 @@ bool productionOoc() {
     if (std::string(v) != "1") throw std::runtime_error("STS_AZGEN_PRODUCTION_OOC must be 0 or 1");
     if (one_combat::liveOocMctsEnabled())
         throw std::runtime_error("STS_AZGEN_PRODUCTION_OOC=1 requires live OOC MCTS off (STS_OOC_MCTS=0)");
+    return true;
+}
+
+// STS_AZGEN_PRODUCTION_COMBAT: unset or 0 = the self-play search overrides; 1 = whole-run production Silver.
+bool productionCombat() {
+    const char *v = std::getenv("STS_AZGEN_PRODUCTION_COMBAT");
+    if (!v || !*v || std::string(v) == "0") return false;
+    if (std::string(v) != "1") throw std::runtime_error("STS_AZGEN_PRODUCTION_COMBAT must be 0 or 1");
+    if (const char *scope = std::getenv("STS_SILVER_ROOT_PRIOR_SCOPE"); scope && std::string(scope) == "override")
+        throw std::runtime_error("STS_AZGEN_PRODUCTION_COMBAT=1 requires the root prior in whole-run fights"
+                                 " (STS_SILVER_ROOT_PRIOR_SCOPE=all)");
     return true;
 }
 
@@ -276,6 +295,7 @@ struct SeedResult {
 struct AzPrior {
     int treeMinVisits = 0;
     bool rootBonus = true;
+    bool production = false;  // STS_AZGEN_PRODUCTION_COMBAT: no search override
 };
 
 // silverazfocusgen: record only `target`, then end the run.
@@ -318,7 +338,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
             search::g_nativeSilverRootPriorBonusOff = false;
         }
     } hooks;
-    if (az) {
+    if (az && !az->production) {
         // Every fight of the run (recorded or not) plays the self-play search.
         search::g_nativeSilverRootPriorOverride = true;
         search::g_nativeSilverTreePriorOverride = az->treeMinVisits;
@@ -549,6 +569,10 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("silverazgen: reuse cap differs from the frozen 32k");
     const bool chainOoc = productionOoc();
+    const bool prodCombat = productionCombat();
+    if (prodCombat && (rootBonus != 1 || treeMinVisits != search::nativeSilverTreePriorMinVisits()))
+        throw std::runtime_error("silverazgen: STS_AZGEN_PRODUCTION_COMBAT=1 requires ROOT_BONUS 1 and TREE_MIN_VISITS"
+                                 " equal to STS_SILVER_TREE_PRIOR_MIN_VISITS");
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
     if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
@@ -562,8 +586,11 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (!rows) throw std::runtime_error("silverazgen: cannot open " + rowsPath);
     const std::string priorSha = fileSha256(priorPath);
     const std::string teacherId = "silver-az-" + std::to_string(sims) + "-k" + std::to_string(treeMinVisits)
-        + "-rb" + std::to_string(rootBonus) + "-" + priorSha.substr(0, 8);
-    const AzPrior az{treeMinVisits, rootBonus == 1};
+        + "-rb" + std::to_string(rootBonus) + (prodCombat ? "-prod" : "") + "-" + priorSha.substr(0, 8);
+    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat};
+    // Under the self-play overrides Silver plays no prior playouts (NativeSilverBackend skips them).
+    nlohmann::json silverLeaf = effectiveSilverLeafSpecification();
+    if (!prodCombat && silverLeaf.contains("prior_playout_rooms")) silverLeaf["prior_playout_rooms"] = "none";
     long long roots = 0, fights = 0, invalidFights = 0;
     int completed = 0;
     nlohmann::json seeds = nlohmann::json::array();
@@ -588,12 +615,13 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         {"schemaVersion", "silver_az_v1"}, {"variant", variant}, {"teacherId", teacherId},
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
-        {"silverLeaf", effectiveSilverLeafSpecification()},
+        {"silverLeaf", silverLeaf},
         {"prior", {{"path", priorPath}, {"sha256", priorSha}, {"model", prior.description()},
                    {"weight", search::nativeSilverRootPriorWeight()}, {"treeMinVisits", treeMinVisits},
                    {"rootBonus", rootBonus == 1}}},
         {"environment", environment}, {"oocPolicy", effectiveOocPolicySpecification()},
         {"oocPlay", chainOoc ? "production_chain" : "generator_rules"},
+        {"combat", prodCombat ? "production" : "selfplay_overrides"},
         {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}, {"ascension", asc}}},
         {"simulationsPerDecision", sims},
         {"focus", focus ? nlohmann::json{{"encounter", monsterEncounterEnumNames[static_cast<int>(focus->target)]},
