@@ -1,0 +1,11 @@
+rows with >=2 options 1995 length mismatches 0
+ALL: n 1995 | top1 vs pi: sel 0.919 g2 0.934 g3 0.931 | g3!=sel 3.158% (g3 right 40, sel right 16) | g2!=sel 3.509% | overrides (pi!=sel) 8.07%: g3 gets 40/161, g2 gets 45/161
+src gen2_B: n 1995 | top1 vs pi: sel 0.919 g2 0.934 g3 0.931 | g3!=sel 3.158% (g3 right 40, sel right 16) | g2!=sel 3.509% | overrides (pi!=sel) 8.07%: g3 gets 40/161, g2 gets 45/161
+screen boss_relic: n 53 | top1 vs pi: sel 1.000 g2 0.981 g3 1.000 | g3!=sel 0.000% (g3 right 0, sel right 0) | g2!=sel 1.887% | overrides (pi!=sel) 0.00%: g3 gets 0/0, g2 gets 0/0
+screen card_select: n 26 | top1 vs pi: sel 0.308 g2 0.385 g3 0.385 | g3!=sel 34.615% (g3 right 2, sel right 0) | g2!=sel 46.154% | overrides (pi!=sel) 69.23%: g3 gets 2/18, g2 gets 3/18
+screen event: n 181 | top1 vs pi: sel 0.939 g2 0.956 g3 0.956 | g3!=sel 1.657% (g3 right 3, sel right 0) | g2!=sel 1.657% | overrides (pi!=sel) 6.08%: g3 gets 3/11, g2 gets 3/11
+screen map: n 491 | top1 vs pi: sel 0.831 g2 0.847 g3 0.855 | g3!=sel 3.666% (g3 right 15, sel right 3) | g2!=sel 4.277% | overrides (pi!=sel) 16.90%: g3 gets 15/83, g2 gets 14/83
+screen rest: n 190 | top1 vs pi: sel 0.984 g2 0.989 g3 0.989 | g3!=sel 1.579% (g3 right 2, sel right 1) | g2!=sel 1.579% | overrides (pi!=sel) 1.58%: g3 gets 2/3, g2 gets 2/3
+screen rewards: n 817 | top1 vs pi: sel 0.967 g2 0.976 g3 0.968 | g3!=sel 1.836% (g3 right 8, sel right 7) | g2!=sel 1.591% | overrides (pi!=sel) 3.30%: g3 gets 8/27, g2 gets 10/27
+screen shop: n 233 | top1 vs pi: sel 0.918 g2 0.961 g3 0.940 | g3!=sel 6.438% (g3 right 10, sel right 5) | g2!=sel 7.296% | overrides (pi!=sel) 8.15%: g3 gets 10/19, g2 gets 13/19
+screen treasure: n 4 | top1 vs pi: sel 1.000 g2 1.000 g3 1.000 | g3!=sel 0.000% (g3 right 0, sel right 0) | g2!=sel 0.000% | overrides (pi!=sel) 0.00%: g3 gets 0/0, g2 gets 0/0

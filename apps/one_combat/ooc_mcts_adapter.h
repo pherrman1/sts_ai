@@ -189,6 +189,10 @@ struct OocSiblingLeafCapture {
     std::uint64_t runSeed = 0, decisionIndex = 0, searchSeed = 0;
     unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
     std::uint64_t maxLeaves = 256, captured = 0;
+    // Research option (default off, STS_OOC_SIBLING_COMMON_SEEDS=1): repeat r of every leaf of
+    // the root uses the same stream (common random numbers), so sibling differences lose most of
+    // the rollout noise. Off: each leaf's repeats have their own streams (seeded with its ordinal).
+    bool commonSeeds = false;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable

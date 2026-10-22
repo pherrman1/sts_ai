@@ -1,0 +1,12 @@
+SR_w1 bin 146a4512dda1213e
+SR_w1 sel ep 7 / 10 sel KL 0.0604 bce 0.5466 auc 0.763 val bce 0.5207 SR {"holdout": {"groups": 1004, "sources": 136, "concordance": 0.6533}, "train_first1000": {"groups": 1000, "sources": 127, "concordance": 0.6593}} holdout/epoch [0.5133, 0.5154, 0.5798, 0.5915, 0.6232, 0.6347, 0.645, 0.6533, 0.6555, 0.662, 0.6683]
+M0.3     maxHP+5>0  67.3%  -3HP sign  89.4%  gold+50>0  94.0%  (pos-slope states 2776)
+SR_w1    maxHP+5>0  54.0%  -3HP sign  88.1%  gold+50>0  65.4%  (pos-slope states 2784)
+groups VALIDATION 2559 TRAIN holdout 1078 TRAIN rest 7856 s494 777
+x2b        val 0.6331 hold 0.6423 rest 0.6314 s494 0.6008
+M0.3       val 0.5554 hold 0.5544 rest 0.5527 s494 0.5628 | val-x2b -0.0777 [-0.0943, -0.0602] | AUC val 0.700 (x2b 0.683) | blend w0.15: val 0.6443 s494 0.6152 val-x2b +0.0112 [+0.0013, +0.0207]
+SR_w1      val 0.6438 hold 0.6491 rest 0.6617 s494 0.6338 | val-x2b +0.0107 [-0.0045, +0.0265] val-M0.3 +0.0884 [+0.0747, +0.1024] | AUC val 0.672 (x2b 0.683) | blend w0.05: val 0.6726 s494 0.6315 val-x2b +0.0395 [+0.0303, +0.0489]
+
+real	13m5.237s
+user	12m43.264s
+sys	0m9.662s

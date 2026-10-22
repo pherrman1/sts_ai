@@ -1,0 +1,2 @@
+full-budget roots: n 8424 | gen 3 != student_sel 273 (3.24%), of which gen 2 picks the same move 196 (72%) | gen 2 != student_sel 299 | gen 3 != gen 2 175 (2.08%)
+fast roots: n 25150 | gen 3 != student_sel 875 (3.48%), of which gen 2 picks the same move 611 (70%) | gen 2 != student_sel 909 | gen 3 != gen 2 541 (2.15%)

@@ -23182,3 +23182,214 @@ benchmarks never covered.
 production Silver from 12k or 15k simulations over 10k here.
 [Result](evidence/silver_maxbackup_ab_20261022/RESULT.md). Seeds used 111149381–382 (smokes), 111149390–393 (CPU
 check), 111149400–463.
+
+## §639 — Sibling capture with common random numbers: the variance of sibling differences drops to 0.36 pooled (one A20 seed) (2026-10-22)
+
+**Question:** the §577 sibling labels are noisy. In round 2 the median best-minus-second gap is 0.016, and the
+64-repeat target of one public state scatters by about 0.025. Does seeding repeat r of every leaf of a root
+identically (common random numbers) make sibling differences cleaner?
+**Design:** new opt-in `STS_OOC_SIBLING_COMMON_SEEDS=1` (default off). It replaces the leaf ordinal in the repeats'
+`seed_seq`, and rows then carry `"commonSeeds": true`. [Smoke](evidence/ooc_sibling_common_seeds_20261022/SMOKE.md):
+seed 111144997 with the #806 quick-smoke setup and sibling capture every 4th root (32 repeats, root children). Three
+runs: main, branch with the flag off, branch with it on.
+**Result:**
+- Flag off: rows and play match main, CPU-time fields aside.
+- Flag on: play is unchanged and the per-leaf means are not shifted (+0.0033, SE 0.0037 with roots as clusters).
+- Variance of the paired difference over var(v_i) + var(v_j), across 3,287 sibling pairs on 18 roots:
+  - per-leaf seeds: 1.006;
+  - common seeds: 0.363 pooled (0.436 without the 165 pairs whose repeat vectors are identical), median pair 0.869.
+- The noisy half of the pairs carries the gain (pooled 0.25–0.40). Low-variance pairs gain 3–11 %.
+**Interpretation:** for sibling differences, pooled over pairs, common seeds are worth about 2.8× the repeats. One
+seed, 256 simulations.
+**Decision:** the option stays default off. Proposed use is a new sibling capture for value-head ranking labels
+(needs seeds, workers and Philipp's go). Seed used: 111144997.
+
+## §641 — OOC value head: a sibling-ranking loss makes the head rank leaf siblings at X2-B's level (0.644 vs 0.633) and its X2-B blend better (+0.032 to +0.040 over three seeds); auxiliary heads do not help (offline, exploratory) (2026-10-22)
+
+**Question:** every value head so far ranks round-2 VALIDATION siblings at about 0.55, against X2-B's 0.633 (§577,
+§622, §636). Can a training loss on sibling order fix that? Philipp chose more offline research before any play test
+(2026-10-22 09:51Z) and asked about auxiliary targets.
+**Design:** plan written before any run ([PLAN.md](evidence/value_sibling_rank_20261022/PLAN.md)). All arms use the
+M0.3 recipe (§622) with one change, on Philipp's GPU:
+- SR_w0.1, SR_w0.3, SR_w1: a RankNet loss with weight w over round-2 TRAIN sibling groups (8,458 groups from
+  1,088 sources; targets are 64-rollout3 means). The pairs are weighted by the target gap. Holdout sources
+  (seed % 8 == 6) are never trained on.
+- AUX0.3: training-only heads for the next boss, Act 4 and final floor.
+- The gate is the head alone on round-2 VALIDATION (320 sources): PASS ≥ 0.633, PARTIAL ≥ 0.585. It also needs the
+  bars selection BCE ≤ 0.552 and "−3 HP sign" ≥ 85 %.
+- A PASS arm gets seeds 1–2.
+- The blend sigmoid((1 − w)·logit X2-B + w·logit head) is secondary, with w chosen on the TRAIN holdout.
+**Result** ([README](evidence/value_sibling_rank_20261022/README.md)):
+
+| arm | VALIDATION | − X2-B | − M0.3 | blend − X2-B | sel BCE | verdict |
+|---|---|---|---|---|---|---|
+| M0.3 (control) | 0.555 | −0.078 | – | +0.011 [+0.001, +0.021] | 0.5365 | – |
+| AUX0.3 | 0.557 | −0.076 | +0.002 [−0.003, +0.006] | +0.014 | 0.5398 | FAIL |
+| SR_w0.1 | 0.586 | −0.048 | +0.030 [+0.019, +0.041] | +0.024 [+0.016, +0.032] | 0.5362 | PARTIAL (by 0.0006) |
+| SR_w0.3 | 0.613 | −0.020 [−0.036, −0.002] | +0.058 | +0.033 [+0.023, +0.044] | 0.5363 | PARTIAL |
+| SR_w1 | 0.644 | +0.011 [−0.004, +0.026] | +0.088 [+0.075, +0.102] | +0.040 [+0.030, +0.049] | 0.5466 | PASS |
+
+- SR_w1 seeds 1 and 2 score 0.645 and 0.618 (mean 0.636), with blends of +0.032 and +0.032. Seed 2 was stopped at
+  epoch 4 by the value-only selection while its holdout ranking was still rising.
+- The SR weight costs monotonicity (gold+50 > 0: 94 % for M0.3 vs 65–84 % for SR_w1; maxHP+5 > 0: 67 % vs 42–54 %)
+  and outcome calibration (SR_w1's leaf BCE against the run's Heart kill is 0.47–0.50 vs M0.3's 0.43; a constant
+  scores 0.475). The bars hold.
+- Exploratory:
+  - The SR_w1 blend gains on every screen except the boss relic, most in Act 1 (+0.055).
+  - The head alone beats X2-B on rewards and shops but loses on events and boss relics.
+  - Noise-corrected concordance keeps the order.
+**Interpretation:** a ranking loss transfers to sources it never saw, and the auxiliary heads do not help. The targets
+end in X2-B, which favours it, so matching X2-B is a real gain. The PASS is a point estimate: the CI against X2-B
+includes 0 and seed 2 alone would be PARTIAL, so the head ranks at X2-B's level, not above it. The online meaning is
+open: §615's head ranked siblings at only 0.547 offline and still leaned +3.1 pp as the rollout3 end value.
+**Decision:** no default change. SR_w1 (seed 0, `146a4512…` on `claude/az-gen2-data`) is the leaf candidate. Next is
+an online test (blend and head alone vs X2-B), or a new capture with common seeds (§639) for cleaner labels; Philipp
+decides. A later recipe should select epochs on a combined value and ranking objective. No game seeds were used.
+## §640 — AZ gen-3 exploration self-play block (root noise 0.25:0.3 + visit-sampled play on floors 0-6): 1,024 A20 runs, 15.7% Heart kills vs 20.9% greedy (descriptive, 2026-10-22)
+
+Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and outputs:
+`docs/experiments/evidence/az_gen3_explore_20261022/` (`PLAN.md`, `PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`,
+`result.json`, `verify.txt`, `tars.sha256`).
+
+- **Purpose:** training data for gen 3; no gate. First AZ self-play with exploration (#741 switches).
+- **Config:** gen-2 A/B arm A (student_sel prior, X2-B leaf, 2026-10-21 speed defaults) on main `165b5060`, plus
+  `STS_OOC_MCTS_ROOT_NOISE=0.25:0.3` and `STS_OOC_MCTS_PLAY_SAMPLE=6:1`. RUN_COMMIT `0a56caae`, v3 binary `eb314334…`.
+  Seeds 111300000–111301023; smokes 111301990–991.
+- **Run:** 32 workers, queue schedule; 1,024 of 1,024 units OK, no duplicates; all runs valid.
+- **Result:** Heart kills 161 (15.7%) vs 20.9% in the greedy gen-2 arm A (other seeds, unpaired, ±3.3 pp); Act 4 31.6% vs
+  39.0%. Floors 0-6: played action ≠ most-visited at 22.7% of searched roots, root Q lower than greedy's at 61% of those
+  (mean −0.017). Prior overrides 13.0% vs 6.6% (noise acts at every root). The learned OOC stop still fires before the
+  1024 cap but later: fast roots average 534 vs ~415 completed sims, 24% vs 42% stop at the first check (≤ 128); mean
+  wall unchanged (778 vs 773 s).
+- **Inference:** exploration costs ~5 pp Heart kills in the generating runs; the rows add ~16k full-budget policy targets
+  off the greedy path. Value labels from these runs are pessimistic for early states.
+- **Knowledge impact:** `evaluation/current-research.md`.
+## §642 — Shield and Spear: prior playouts in the elite room do not cut HP lost (−0.3 HP [−3.3, +2.8]) at 6.4x CPU (NOT_SHOWN, 2026-10-22)
+
+**Question:** since ADR-0056 (#775) elite rooms use greedy root-table playouts and only the Heart keeps prior
+playouts. Shield and Spear is the biggest HP sink before the Heart (about 32 HP per fight, §530). Would prior playouts
+there (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1`, ADR-0050's rooms) save HP? Started in the exact-combat research thread after
+Philipp's 14:53Z question (prior rollouts everywhere vs leaf research); analysed in its own thread.
+**Setup** ([evidence](evidence/shield_spear_prior_playouts_20261022/README.md)): `one_combat act4replay` on the 32
+recorded A20 Shield and Spear entry states of the loss audit F1, 4 copies each, seeds 111149768–111149895 (both arms on
+the same battle and planner seeds, paired per state and copy). Flat 10k exact sims with the §528 env (learned stop
+off), g7f_E root prior weight 400, tree prior K = 8, g7f_E rollout root table. Binary from `f8831b48`
+(claude/project-thread-kgjoid, main `165b5060` merged in). Research run, no prereg; nothing changes play.
+**Result** (128 paired fights per arm, HP lost incl. full HP on death, per-state bootstrap 95% CI):
+
+| arm | HP lost | wins | turns | CPU/fight |
+|---|---|---|---|---|
+| greedy playouts (default) | 32.77 | 117 | 4.27 | 8.0 s |
+| prior playouts | 32.46 | 119 | 4.43 | 51.5 s |
+
+- Prior − greedy: **−0.30 HP [−3.28, +2.77]**, fight SE 1.76; CPU 6.41x.
+- In the 113 fights both arms win, HP lost is 26.73 vs 26.72. Wins differ in 10 pairs (greedy only 4, prior only 6).
+- Potions used are equal (0.73 vs 0.74). The fight noise is large: the SD over the 4 copies of one state is 18.7 HP.
+**Interpretation:** at this sample the effect is at most about 3 HP per fight either way, and the point estimate is
+zero, so the playout policy is not what makes Shield and Spear expensive. This fits §541 (prior playouts saved only
+about 0.4 HP in hallway fights) and §530 (the entry
+state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
+to pay for.
+**Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
+
+## §644 — Common-seed sibling recapture (320 A20 sources): cleaner sibling labels; the SR_w1 blend still beats X2-B (+0.018 to +0.026) but the head alone ranks below it (−0.019 to −0.035) (offline, 2026-10-22)
+
+**Question:** round-2 sibling labels (§503; 64 independent rollout3 repeats per child) are noisy (§641). Does a
+recapture with common seeds (§639) give cleaner labels, and how do the existing heads rank the new siblings? Philipp
+chose the recapture (2026-10-22 14:51Z) and authorized it with 32 workers (15:34Z).
+**Design:** pre-registered ([PREREG.md](evidence/ooc_sibling_crn_capture_20261022/PREREG.md), RUN_COMMIT `9fad3f60`,
+pre-launch review PASS).
+- Play is gen-2 A/B arm A (§621). The sibling capture adds every searched root at depth 1, with at most 64 leaves and
+  32 common-seed repeats. Code `90eb9f07`.
+- Seeds 111144512–111144831 (320 sources). VALIDATION is seed % 4 == 3 (80 sources); TRAIN is the other 240.
+- 32 cloud workers, 120 core-h.
+**Result** ([README](evidence/ooc_sibling_crn_capture_20261022/README.md)):
+- **Integrity:** 320/320 units verified, and every source returned rc 0. 578,987 rows, with no bad rows. VALIDATION
+  has 5,587 groups.
+- **Label noise (VALIDATION):**
+  - Split-half agreement at 16 vs 16 repeats is 0.718, against round 2's 0.653 (0.682 at 32 vs 32).
+  - The stream variance of a sibling difference is 0.36 of independent streams, so 32 common-seed repeats are worth
+    about 89 independent ones.
+- **Hidden state is small, but not zero:**
+  - Rows of one root with the same action and the same public record share their streams, and 69 % of these sets roll
+    out identically.
+  - Counting each set once, the hidden-state variance is 0.00005 per row (TRAIN 0.00009; round 2 0.00022 [0.00007,
+    0.00042]), 2–4 % of a row's stream variance. Counting each row pair once, it is about 0.
+  - With independent hidden states it would add 6–12 % to the stream variance of a sibling difference.
+- **Ceiling:** 0.873 with stream noise only (round 2: 0.849). A hidden term on every row lowers it to 0.80–0.83. That
+  term overstates the noise of deterministic siblings, so the truth lies in between. All ceilings lean optimistic.
+- **Correction to §641:**
+  - §641's noise model (`sr_noise.py`) treated rows with the same action and X2-B value as one public state. Only 9 %
+    of those sets (round 2: 19 %) hold one public record.
+  - The rest differ in gold, HP, the boss or the cards offered. That is not label noise for the concordance, since the
+    head and the label average over the same children.
+  - With identical records, round 2's inflation is 1.12, not 1.40, and #812's ceiling is 0.84, not about 0.81.
+- **Heads (VALIDATION; no head was trained on these seeds):**
+
+| evaluator | VALIDATION | − X2-B [95 % CI] | round 2 |
+|---|---|---|---|
+| X2-B | 0.664 | – | 0.633 |
+| M0.3 | 0.585 | −0.079 [−0.093, −0.065] | 0.555 |
+| SR_w0.3 | 0.628 | −0.036 [−0.048, −0.026] | 0.613 |
+| SR_w1 seed 0 | 0.645 | −0.019 [−0.031, −0.008] | 0.644 |
+| SR_w1 seeds 1, 2 | 0.644, 0.629 | −0.020, −0.035 | 0.645, 0.618 |
+| SR_w1 seed 0 blend, w 0.05 | 0.690 | +0.026 [+0.020, +0.032] | 0.673 |
+| SR_w1 seeds 1, 2 blends, w 0.25, 0.10 | 0.683, 0.682 | +0.019, +0.018 | 0.665, 0.665 |
+
+- **TRAIN (240 sources, also unseen):** SR_w1 seed 0 is at −0.007 [−0.014, +0.002], and the blends at +0.020 to
+  +0.027.
+- **By screen:** the blend gains on rewards, rest sites and shops. It is level on map choices, where X2-B is weakest
+  (0.602).
+**Interpretation:**
+- Common seeds do what §639 promised. Most of the remaining label noise is stream noise, not hidden state.
+- The blend's gain over X2-B replicates on new sources with cleaner labels, though it is smaller than on round 2.
+- The head alone does not keep up. X2-B gains 0.031 on the new data and SR_w1 gains nothing, so §641's "at X2-B's
+  level" was the optimistic end.
+- X2-B (0.664) and the best blend (0.690) are well below the ceiling (0.80–0.87), so there is room left.
+**Decision:** no default change. The blend stays the online candidate; the head alone is not a leaf replacement.
+- Philipp chose to retrain the ranking loss on the new TRAIN labels ("go gpu", 17:50Z). The plan is
+  `gen2/value-sr-crn/PLAN.md` on `claude/az-gen2-data`.
+- Lessons for future label captures are in the README: common seeds on, duplicates by the full public record,
+  adaptive repeats, a noise model (with its weighting) tested before the run, some labels that do not end in X2-B,
+  and coverage of map choices.
+- Seeds 111144512–111144831 used (smoke: 111144900).
+## §643 — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but it changes only ~3% of top choices, mostly the ones gen 2 already changed; no A/B candidate (offline, NEGATIVE, 2026-10-22)
+
+Authorization: Philipp 2026-10-22 14:16Z ("merge 811 and then go"); flip check after his 17:27Z question (which offline
+values matter for online play). Plan and outputs: `docs/experiments/evidence/az_gen3_train_20261022/` (`PLAN.md`,
+`RESULT.md`, `flip/`, `tools/`); rows, runs, weights and parity on the data branch `claude/az-gen2-data` `9866689b`
+(`gen3/`).
+
+- **Question:** does fine-tuning the OOC prior on the whole AZ window (gen 0, gen-1b A/B, gen-2 A/B, gen-3 exploration
+  §640) give a candidate worth a paired A20 A/B against student_sel?
+- **Setup:** student_sel fine-tuned with the gen-2 pick recipe (d64/L2, lr 1e-4, anchor 0.3, value weight 0.3,
+  `--value-k 32`) in three arms: value target z; calibrated n-step search value (slope 0.58 on non-exploration training
+  folds); n-step with the exploration runs' value rows removed. Folds by run seed (selection % 8 == 6, validation
+  % 8 == 7); gen-2 pick, gen-2 n-step net and student_sel scored on the same folds. Philipp's GPU, 14:33–17:21Z.
+- **Result (offline):** pick (plan rule) = n-step without exploration values: selection KL 0.0506 (seeds 1, 2: 0.0506,
+  0.0509) vs gen-2 n-step 0.0525, gen-2 pick 0.0547, student_sel 0.1052; z arm 0.0521, n-step arm 0.0512. Validation
+  top-1 vs π′ flat at 0.933–0.935 for every net. Export `d5780dee…`, native parity 0 argmax mismatches on 400 records.
+- **Decision-flip check** (validation-fold roots searched with student_sel, matched to the raw captures):
+  - How often the top choice changes: gen 3's top choice differs from student_sel's at 3.24% of 8,424 full-budget
+    roots and 3.48% of 25,150 fast roots. Gen 2 differs at 3.55% / 3.61%; gen 3 and gen 2 differ at 2.1%.
+  - Overlap with gen 2: gen 2 picks the same move at 72% of gen 3's departures (fast roots 70%).
+  - How close the departures are: both moves are well searched (median visits ~1,700 each at full budget, ~510 at fast
+    roots). Root q separates them by a median of 0.015 (fast roots 0.020), against 0.011 between the two best moves
+    at all roots, so they are not near-ties.
+  - What the search already does: it plays gen 3's move at 120 of the 273 full-budget departures, where its q prefers
+    that move. It keeps student_sel's move at 126, where its q prefers student_sel's (calibrated −1.1 pp; fast roots
+    −0.6 pp).
+  - π′ is biased toward the prior that guided its search (it carries that prior's log-ratio), so π′ agreement cannot
+    referee: student_sel 132 vs gen 3 120 on student_sel-searched roots, but gen 3 40 vs student_sel 16 on
+    gen-2-searched roots.
+- **Inference:**
+  - The KL gain is mostly confidence in moves student_sel already picks.
+  - A trained prior changes ~3% of top choices, and the search already plays about half of them. The rest are where
+    the search's own q prefers student_sel's move, so any gain there depends on the evaluation being wrong, not on the
+    prior.
+  - Gen 3 repeats most of gen 2's departures, and gen 2 was NOT_SHOWN (§621), so a gen-3 A/B would most likely be
+    NOT_SHOWN again at about ±2.7 pp.
+- **Recommendation (Philipp decides):** no gen-3 A/B; student_sel stays the prior; prior-only AZ generations wait until
+  the evaluation (leaf values) changes. Future prior candidates report their departures from the current prior, the
+  overlap with earlier candidates, and the search's verdict at those roots, not KL alone. No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.

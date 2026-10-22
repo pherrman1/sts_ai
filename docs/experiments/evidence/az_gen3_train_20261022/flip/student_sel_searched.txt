@@ -1,0 +1,14 @@
+rows with >=2 options 8424 length mismatches 0
+ALL: n 8424 | top1 vs pi: sel 0.940 g2 0.936 g3 0.938 | g3!=sel 3.241% (g3 right 120, sel right 132) | g2!=sel 3.549% | overrides (pi!=sel) 6.04%: g3 gets 120/509, g2 gets 123/509
+src explore: n 2001 | top1 vs pi: sel 0.932 g2 0.927 g3 0.930 | g3!=sel 3.248% (g3 right 28, sel right 31) | g2!=sel 3.548% | overrides (pi!=sel) 6.85%: g3 gets 28/137, g2 gets 27/137
+src gen0: n 3369 | top1 vs pi: sel 0.946 g2 0.941 g3 0.945 | g3!=sel 2.820% (g3 right 43, sel right 45) | g2!=sel 3.384% | overrides (pi!=sel) 5.40%: g3 gets 43/182, g2 gets 44/182
+src gen1b_A: n 1043 | top1 vs pi: sel 0.935 g2 0.933 g3 0.924 | g3!=sel 4.602% (g3 right 17, sel right 28) | g2!=sel 3.835% | overrides (pi!=sel) 6.52%: g3 gets 17/68, g2 gets 18/68
+src gen2_A: n 2011 | top1 vs pi: sel 0.939 g2 0.938 g3 0.941 | g3!=sel 3.232% (g3 right 32, sel right 28) | g2!=sel 3.680% | overrides (pi!=sel) 6.07%: g3 gets 32/122, g2 gets 34/122
+screen boss_relic: n 205 | top1 vs pi: sel 0.961 g2 0.966 g3 0.961 | g3!=sel 1.951% (g3 right 2, sel right 2) | g2!=sel 3.415% | overrides (pi!=sel) 3.90%: g3 gets 2/8, g2 gets 4/8
+screen card_select: n 98 | top1 vs pi: sel 0.265 g2 0.255 g3 0.245 | g3!=sel 28.571% (g3 right 4, sel right 6) | g2!=sel 25.510% | overrides (pi!=sel) 73.47%: g3 gets 4/72, g2 gets 3/72
+screen event: n 756 | top1 vs pi: sel 0.967 g2 0.979 g3 0.974 | g3!=sel 1.455% (g3 right 8, sel right 3) | g2!=sel 1.720% | overrides (pi!=sel) 3.31%: g3 gets 8/25, g2 gets 11/25
+screen map: n 2064 | top1 vs pi: sel 0.875 g2 0.879 g3 0.882 | g3!=sel 4.893% (g3 right 58, sel right 42) | g2!=sel 5.087% | overrides (pi!=sel) 12.55%: g3 gets 58/259, g2 gets 57/259
+screen rest: n 803 | top1 vs pi: sel 0.985 g2 0.985 g3 0.986 | g3!=sel 1.619% (g3 right 7, sel right 6) | g2!=sel 1.993% | overrides (pi!=sel) 1.49%: g3 gets 7/12, g2 gets 8/12
+screen rewards: n 3547 | top1 vs pi: sel 0.971 g2 0.963 g3 0.967 | g3!=sel 2.340% (g3 right 33, sel right 48) | g2!=sel 2.594% | overrides (pi!=sel) 2.90%: g3 gets 33/103, g2 gets 31/103
+screen shop: n 936 | top1 vs pi: sel 0.968 g2 0.943 g3 0.950 | g3!=sel 3.526% (g3 right 8, sel right 25) | g2!=sel 4.380% | overrides (pi!=sel) 3.21%: g3 gets 8/30, g2 gets 9/30
+screen treasure: n 15 | top1 vs pi: sel 1.000 g2 1.000 g3 1.000 | g3!=sel 0.000% (g3 right 0, sel right 0) | g2!=sel 0.000% | overrides (pi!=sel) 0.00%: g3 gets 0/0, g2 gets 0/0
