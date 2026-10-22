@@ -52,3 +52,4 @@ pure gen-1b head as rollout3 end value (§615) showed no act-1 penalty, so this 
 - Prices: `prices.py build/analyze` (`/mnt/project-files/silver-leaf-eval/ooc-label-leaf/prices.py`, 2,916 round-2
   REWARDS states) + [tools/prices_gate.py](tools/prices_gate.py); outputs in `results/`.
 - No gameplay seeds; exploratory (w was not pre-registered; chosen on round-2 TRAIN before looking at VALIDATION per head).
+- Code option for an online test: `STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT` (default off), smoke in [SMOKE.md](SMOKE.md).

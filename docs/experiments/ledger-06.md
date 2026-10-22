@@ -23090,8 +23090,9 @@ Act-1 sibling concordance 0.669 vs X2-B 0.663 (head alone 0.537).
 run-level information X2-B lacks, a small weight keeps X2-B's act-1 ranking, and the head's training barely matters
 for the blend (control ≈ M0.3). Exploratory: w was not pre-registered, the sibling target ends in X2-B, the online leaf
 is a rollout3 end state that these data do not score, and the learned OOC stop was trained on X2-B's scale.
-`STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT` (default off) makes the blend testable in an A20 A/B, which needs a
-pre-registration and Philipp's go. [Offline report](evidence/value_leaf_blend_20261022/OFFLINE.md); weights on data
+`STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT` (default off; [smoke](evidence/value_leaf_blend_20261022/SMOKE.md): unset
+reproduces main's decisions exactly) makes the blend testable in an A20 A/B, which needs a pre-registration and
+Philipp's go. [Offline report](evidence/value_leaf_blend_20261022/OFFLINE.md); weights on data
 branch `claude/az-gen2-data` `c3bd827a`, `gen2/value-cf/`.
 Seeds: none (offline scoring of stored states and training on stored rows).
 **Knowledge impact:** none yet (default-off option; no play change).
