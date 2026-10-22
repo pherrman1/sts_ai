@@ -1,5 +1,5 @@
 name          value-leaf-compare
-code_commit   c9b4094363476889082b80be2934d4948ce64c08
+code_commit   3147901228c3e489665d2350c636c7f68fd749bd
 binary_sha256 unset
 workers       32
 share         /mnt/project-files/value-leaf-compare

@@ -24,7 +24,7 @@ workers if you want to, just do it, i allow it." The coordinator launches the wo
 ## Background
 - **Stage 0** (§TBD in PR #817): X2-B over-prices a death 3.3× (act 1) to 7.7× (act 3) relative to the calibrated
   Heart value; rollouts die more often than the real runs over the same horizon (real / rollout 0.59–0.85).
-- **Pilot** (seed 111349994, this code, 7 arms, n 16; see "Pilot" below): about 42 ms of CPU per full-game referee
+- **Pilot** (seed 111349994, 7 arms, n 16; see "Pilot and smoke" below): about 40 ms of CPU per full-game referee
   rollout; R_full looked far below real play (one Heart kill in the first 32 rollouts from floor 0). That is why
   R_act rides along.
 - **Why not concordance:** concordance with rollout3 labels pointed the wrong way in both A20 leaf tests that have
@@ -48,9 +48,11 @@ workers if you want to, just do it, i allow it." The coordinator launches the wo
   | NULL | no leaf change, search seed salted (`seed_salt=7`) | noise control |
 - **Referee:** n = 64 rollouts from the played action and from every differing pick at every searched root
   (singleton roots excluded), rollout i of every action sharing one random stream; R_act noted on the same rollouts.
-- **Play is unchanged** by construction (side searches on fresh models, referee in a forked child). Checked before
-  launch: the decision sequence with and without the compare is identical on act 1 of a smoke seed, and with no new
-  flag the binary plays act 1 like the frozen stage-3 binary.
+- **Play is unchanged** by construction: side searches run on fresh models, each from the thread's OOC policy state
+  as the real search found it, and the real run gets back the state the real search left; the referee runs in a
+  forked child. Checked before launch on smoke seed 111369991 (full games; heartoutcomegen runs only full games):
+  the decision sequence of the compare game equals the same binary's game without the compare, and that equals the
+  frozen stage-3 binary's arm-A game.
 - One unit is one seed (one game). The stage-3 A/B's own games cannot carry this (their binary is frozen).
 
 ## Definitions (`analyze_compare.py`)
@@ -95,11 +97,21 @@ Flip rates per arm and act; arm search CPU per root; referee CPU per rollout; me
 predictions (seed parity); errored, non-terminal and missing rollouts; arm errors; the level table for both
 referees; R_full against R_act predictions side by side.
 
+## Not in this campaign
+- **Headroom** (the plan's replay with the referee itself as the leaf). With the pilot's paired variance
+  (v ≈ 0.18 for R_full), a headroom summed over the roughly 70 searched roots of a game has a standard error of
+  several pp at 256 games, too wide for the plan's "below about 2 pp" rule, and the referee-leaf searches would
+  double the cost. It gets its own design once this campaign has measured v for both referees.
+- **Re-scoring the existing heads** (plan stage 1): G1B and S are the existing heads; the replay scores them where
+  they change a pick, which is the score the metric needs.
+
 ## Seeds, workers, cost
 - Seeds 111360000–111360255 (256 games, assigned by the coordinator 2026-10-22 23:14Z; unused in the repo).
   Smokes 111369990–111369999. The pilot used 111349994–111349995 (from the stage-3 smoke range).
 - 32 workers × 4 lanes, `schedule queue`, 8 h timeout per unit (rc 124).
-- Cost from the pilot: (pending).
+- Cost (pilot and smoke): the seven side searches take about 40 s of CPU per searched root (110–250 s at a
+  full-budget root), a referee rollout about 37 ms (2.4 s per action at n = 64). With 50–90 searched roots per game
+  that is about 1 core-hour per game, about 260 core-hours in all, about 3 h of wall on 32 workers.
 
 ## Before launch
 1. Freeze: RUN_COMMIT, code commit, binary sha256 in `campaign.manifest` and the brief.

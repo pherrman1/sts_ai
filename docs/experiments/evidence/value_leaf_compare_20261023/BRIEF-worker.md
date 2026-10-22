@@ -21,4 +21,5 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with rc=124, and the run continues.
 If the container restarts, run steps 1-3 again (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect about __WALL__ of wall per worker (one game per unit with seven side searches per decision, about __UNIT__ each).
+Expect about 3 h of wall per worker (one game per unit with seven side searches per decision, about 1 h each, up to
+  about 2.5 h for a long game).
