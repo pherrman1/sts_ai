@@ -297,7 +297,7 @@ mechanism. What remains is the entry state (deck, lower max HP) from OOC play, w
 Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
 `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
 
-## AZ loop status — gen 2 as prior NOT_SHOWN (§TBD, 2026-10-22); student_sel stays the OOC prior
+## AZ loop status — gen 2 as prior NOT_SHOWN (§621, 2026-10-22); student_sel stays the OOC prior
 
 Gen 2 (student_sel fine-tuned on all 2,688 runs of gen 0 and both gen-1b A/B arms, offline selection KL 0.0554 vs
 student_sel 0.103) vs student_sel on 1,024 paired A20 seeds: Heart kills 21.5% vs 20.9% (+0.6 pp [−2.2, +3.3], p 0.73)

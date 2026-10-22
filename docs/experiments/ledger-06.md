@@ -22858,7 +22858,7 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
-## §TBD — AZ gen 2 (prior fine-tuned on gen 0 + gen-1b A/B self-play) vs student_sel: NOT_SHOWN on 1,024 paired A20 seeds, +0.6 pp Heart kills [−2.2, +3.3] at 1.01× wall (2026-10-22)
+## §621 — AZ gen 2 (prior fine-tuned on gen 0 + gen-1b A/B self-play) vs student_sel: NOT_SHOWN on 1,024 paired A20 seeds, +0.6 pp Heart kills [−2.2, +3.3] at 1.01× wall (2026-10-22)
 
 Authorization: Philipp 2026-10-21 19:08Z ("Kk. Then let's go on 32 workers"). Pre-registration and outputs:
 `docs/experiments/evidence/az_gen2_ab_20261021/` (`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`,
