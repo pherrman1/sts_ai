@@ -52,6 +52,7 @@ namespace sts::exact {
             recWeights_.clear();
             batchPile_ = nullptr;
             lastWasDraw_ = false;
+            picks_ = 0;
         }
 
         // After a run: the prefixes of the outcomes this run did not take.
@@ -207,6 +208,8 @@ namespace sts::exact {
         int batchDrawnN_[kMaxClasses]{};
         int batchDrawnCount_ = 0;
         bool lastWasDraw_ = false;
+        static constexpr std::size_t kMaxPicks = 100000;
+        std::size_t picks_ = 0;
 
         int drawnOf(std::uint64_t key) const {
             for (int i = 0; i < batchDrawnCount_; ++i) if (batchDrawnKey_[i] == key) return batchDrawnN_[i];
@@ -214,6 +217,9 @@ namespace sts::exact {
         }
 
         int pick(const double *weights, int n) {
+            // A run answers every new draw with its first value, so an engine loop that redraws until it gets
+            // another value never ends; fail closed instead of growing the record until memory runs out.
+            if (++picks_ > kMaxPicks) throw std::runtime_error("exact chance: runaway redraw loop");
             if (pos_ < prefix_.size()) {
                 const int k = prefix_[pos_++];
                 if (k >= n) throw std::runtime_error("exact chance: replay diverged");
