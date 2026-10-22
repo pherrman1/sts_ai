@@ -1,0 +1,11 @@
+name          value-level-ab
+code_commit   ee43726f10214082b890fa82fb1100435d20e87a
+binary_sha256 56b29bf8e598a398a44a5eed689140e71b3a8ee93c6cf53dce3d45fef62a7620
+workers       32
+share         /mnt/project-files/value-level-ab
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input sr_w1.bin /mnt/project-files/value-level-ab/sr_w1.bin 146a4512dda1213e16a9849158676bb7ff902fbb4136553d6c71ec6495a32ec4
