@@ -17,6 +17,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -28,6 +29,7 @@
 #include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverUselessAction.h"
+#include "sim/search/SilverValueHead.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
 
@@ -83,6 +85,10 @@ namespace sts::search {
             bool priorPlayoutBossElite = true;
             // ADR-0056: elite rooms are left out unless STS_SILVER_PRIOR_PLAYOUT_ELITE=1 (ADR-0050's rooms).
             bool priorPlayoutElite = false;
+            // STS_SILVER_LEAF_HEAD (default off): whole-run fights value undecided leaves with this value head
+            // on the trunk of STS_SILVER_LEAF_HEAD_TRUNK, blended with the playout (SilverSearcher::LeafHead).
+            std::string leafHeadPath, leafHeadTrunkPath;
+            double leafHeadBlend = 0.5, leafHeadTurnPenalty = 1;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -90,6 +96,8 @@ namespace sts::search {
         };
         Options g_options;
         CombatValueNet g_rootPriorNet;
+        SilverValueHead g_leafHead;
+        CombatValueNet g_leafHeadTrunk;
         CombatValueNet g_rolloutRootTableNet;
         std::mutex g_rolloutRootTableMutex;
         std::string g_rolloutRootTableLoadedPath;
@@ -608,6 +616,15 @@ namespace sts::search {
                         && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
                         && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE && g_options.priorPlayoutElite)))
                     searcher->rolloutConfig.prior = true;
+                // STS_SILVER_LEAF_HEAD: whole-run fights, as the prior playouts above; a research
+                // override (leafhead armset) sets its own.
+                searcher->leafHead = {};
+                if (g_nativeSilverLeafHeadOverride)
+                    searcher->leafHead = *g_nativeSilverLeafHeadOverride;
+                else if (!g_options.leafHeadPath.empty() && !g_nativeSilverRolloutOverride
+                        && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride)
+                    searcher->leafHead = {&g_leafHead, &g_leafHeadTrunk, g_options.leafHeadBlend,
+                                          g_options.leafHeadTurnPenalty};
                 searcher->rolloutPrior = nullptr;
                 if (searcher->rolloutConfig.prior) {
                     // Research: prior playouts score with the root-prior model (or the arm's override).
@@ -977,6 +994,15 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_ELITE must be 0 or 1");
             g_options.priorPlayoutElite = value == "1";
         }
+        // STS_SILVER_LEAF_HEAD (default off; nativeSilverLeafHeadFromEnv).
+        if (const auto leaf = nativeSilverLeafHeadFromEnv("STS_SILVER_LEAF_HEAD", g_leafHead, g_leafHeadTrunk)) {
+            g_options.leafHeadPath = leaf->path;
+            g_options.leafHeadTrunkPath = leaf->trunkPath;
+            g_options.leafHeadBlend = leaf->blend;
+            g_options.leafHeadTurnPenalty = leaf->turnPenalty;
+            std::cerr << "[silver] leaf head: " << leaf->path << " on " << leaf->trunkPath << " blend " << leaf->blend
+                      << " turn penalty " << leaf->turnPenalty << "\n";
+        }
         if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
             char *end = nullptr;
             const long value = std::strtol(raw, &end, 10);
@@ -1215,6 +1241,39 @@ namespace sts::search {
         "gap_share_delta", "top_share_delta", "q_gap_delta", "entropy_delta",
     };
 
+    std::optional<NativeSilverLeafHeadEnv> nativeSilverLeafHeadFromEnv(const std::string &prefix, SilverValueHead &head,
+                                                                      CombatValueNet &trunk) {
+        const auto get = [&](const char *suffix) {
+            const char *raw = std::getenv((prefix + suffix).c_str());
+            return std::string(raw ? raw : "");
+        };
+        const std::string path = get("");
+        if (path.empty() || path == "0") {
+            for (const char *suffix : {"_TRUNK", "_BLEND", "_TURN_PENALTY"})
+                if (!get(suffix).empty()) throw std::runtime_error(prefix + suffix + " requires " + prefix);
+            return std::nullopt;
+        }
+        NativeSilverLeafHeadEnv out{path, get("_TRUNK")};
+        if (out.trunkPath.empty()) out.trunkPath = "models/combat_policy_mlp_g7f_E.txt";
+        trunk = CombatValueNet{};
+        if (!trunk.load(out.trunkPath) || !trunk.isPolicyMlp)
+            throw std::runtime_error(prefix + "_TRUNK: cannot load a combat_policy_mlp model from " + out.trunkPath);
+        head = SilverValueHead::load(path);
+        if (head.in != trunk.pmH1) throw std::runtime_error(prefix + ": the head's input width is not the trunk's");
+        for (const auto &[suffix, target, lo, hi] : {std::tuple<const char *, double *, double, double>{
+                    "_BLEND", &out.blend, 0, 1}, {"_TURN_PENALTY", &out.turnPenalty, 0, 100}}) {
+            const std::string raw = get(suffix);
+            if (raw.empty()) continue;
+            char *end = nullptr;
+            *target = std::strtod(raw.c_str(), &end);
+            if (end == raw.c_str() || *end != '\0' || !std::isfinite(*target) || *target < lo || *target > hi
+                    || (target == &out.blend && *target == 0))
+                throw std::runtime_error(prefix + suffix + " must be a number in "
+                                         + (target == &out.blend ? "(0, 1]" : "[0, 100]"));
+        }
+        return out;
+    }
+
     NativeSilverLeafSettings nativeSilverLeafSettings() {
         const auto &rollout = SilverSearcher::envRolloutConfig();
         const char *table = !rollout.cardTable ? "hand_written"
@@ -1224,7 +1283,8 @@ namespace sts::search {
                 table, rollout.uniform, rollout.perLeaf, rollout.zeroCostCap, rollout.actionCap,
                 g_options.rolloutRootTablePath,
                 g_options.priorPlayoutBossElite && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly,
-                g_options.priorPlayoutElite};
+                g_options.priorPlayoutElite, g_options.leafHeadPath, g_options.leafHeadTrunkPath,
+                g_options.leafHeadBlend, g_options.leafHeadTurnPenalty};
     }
 
     bool nativeSilverLearnedStopEnabled() {
@@ -1250,6 +1310,7 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
     thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;

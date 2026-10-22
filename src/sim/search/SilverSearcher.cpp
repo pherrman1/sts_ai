@@ -17,6 +17,7 @@
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/SearchRng.h"
 #include "sim/search/SearchStateHash.h"
+#include "sim/search/SilverValueHead.h"
 
 using namespace sts;
 
@@ -773,16 +774,28 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     double value = 0;
     if (bc.outcome == Outcome::UNDECIDED && g_silverLeafOverride && g_silverLeafOverride(*this, bc, value)) {
         // research: the hook's value stands in for the playout
-    } else if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
-        value = playoutToEnd(bc, treeDepth, uniform > 0);
     } else {
-        // Research: average `playouts` independent playouts from this leaf.
-        const BattleContext start = bc;
-        for (int i = 0; i < playouts; ++i) {
-            BattleContext run = start;
-            value += playoutToEnd(run, treeDepth, uniform > 0);
+        // LeafHead: the head reads the leaf before its playout plays it out.
+        const bool head = leafHead.head && bc.outcome == Outcome::UNDECIDED;
+        double headValue = 0;
+        if (head) {
+            headValue = leafHead.head->value(bc, *leafHead.trunk, leafHeadFeat, leafHeadBase)
+                - leafHead.turnPenalty * std::max(0, bc.turn - rootSearchState().turn);
         }
-        value /= playouts;
+        if (head && leafHead.blend >= 1) {
+            // the head alone
+        } else if (playouts <= 1 || bc.outcome != Outcome::UNDECIDED) {
+            value = playoutToEnd(bc, treeDepth, uniform > 0);
+        } else {
+            // Research: average `playouts` independent playouts from this leaf.
+            const BattleContext start = bc;
+            for (int i = 0; i < playouts; ++i) {
+                BattleContext run = start;
+                value += playoutToEnd(run, treeDepth, uniform > 0);
+            }
+            value /= playouts;
+        }
+        if (head) value = leafHead.blend * headValue + (1 - leafHead.blend) * value;
     }
     if (leafSample >= 0) leafSamples->samples[leafSample].value = value;
     return value;

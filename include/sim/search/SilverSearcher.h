@@ -16,6 +16,9 @@
 
 namespace sts::search {
 
+    struct CombatValueNet;
+    struct SilverValueHead;
+
     // Run context the evaluation needs but a BattleContext does not carry.
     struct SilverSearchContext {
         int act = 1;
@@ -262,6 +265,15 @@ namespace sts::search {
         static int envMaxBackupMinVisits();
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
+        // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
+        // blend * (head - turnPenalty * turns beyond the root) + (1 - blend) * its playout. The turn
+        // penalty keeps a head that runs high on unfinished fights from preferring a stall to a win.
+        struct LeafHead {
+            const SilverValueHead *head = nullptr;
+            const CombatValueNet *trunk = nullptr;
+            double blend = 0.5, turnPenalty = 1;
+        };
+        LeafHead leafHead;
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -333,6 +345,7 @@ namespace sts::search {
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
+        std::vector<float> leafHeadFeat, leafHeadBase;   // LeafHead scratch
 
         struct WideningSchedule {
             double c = 0;

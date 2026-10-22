@@ -14,6 +14,7 @@
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverRolloutCardTable.h"
+#include "sim/search/SilverValueHead.h"
 #include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
 #include "one_combat/silver_synth_keys.h"
@@ -77,6 +78,11 @@ nlohmann::json effectiveSilverLeafSpecification() {
         spec["rollout_root_table"] = {{"path", leaf.rolloutRootTable}, {"sha256", fileSha256(leaf.rolloutRootTable)}};
     // Recorded only when on (ADR-0050 default with a root prior), so earlier specifications match.
     if (leaf.priorPlayoutBossElite) spec["prior_playout_rooms"] = leaf.priorPlayoutElite ? "boss,elite" : "boss";
+    // Recorded only when on (STS_SILVER_LEAF_HEAD, default off).
+    if (!leaf.leafHead.empty())
+        spec["leaf_head"] = {{"path", leaf.leafHead}, {"sha256", fileSha256(leaf.leafHead)},
+                             {"trunk", {{"path", leaf.leafHeadTrunk}, {"sha256", fileSha256(leaf.leafHeadTrunk)}}},
+                             {"blend", leaf.leafHeadBlend}, {"turn_penalty", leaf.leafHeadTurnPenalty}};
     return spec;
 }
 
@@ -5308,7 +5314,8 @@ struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int
                       search::SilverSearcher::RolloutConfig rollout = {}; std::string cardTable;
                       std::string rootTableModel;
                       std::optional<search::NativeSilverSearchParams> params;
-                      int maxBackup = 0; };   // maxbackup armset: SilverSearcher::maxBackupMinVisits
+                      int maxBackup = 0;      // maxbackup armset: SilverSearcher::maxBackupMinVisits
+                      bool leafHead = false; };  // leafhead armset: this arm's leaves use the armset's head
 struct RolloutScope {
     explicit RolloutScope(const search::SilverSearcher::RolloutConfig &config) {
         search::g_nativeSilverRolloutOverride = config;
@@ -5319,6 +5326,11 @@ struct RolloutScope {
 struct MaxBackupScope {
     explicit MaxBackupScope(int m) { search::g_nativeSilverMaxBackupOverride = m; }
     ~MaxBackupScope() { search::g_nativeSilverMaxBackupOverride.reset(); }
+};
+// leafhead armset: this arm's leaf head.
+struct LeafHeadScope {
+    explicit LeafHeadScope(const search::SilverSearcher::LeafHead &h) { search::g_nativeSilverLeafHeadOverride = h; }
+    ~LeafHeadScope() { search::g_nativeSilverLeafHeadOverride.reset(); }
 };
 // widen518: this arm's Silver search constants (chance widening per category).
 struct SearchParamsScope {
@@ -5676,15 +5688,15 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
     if (teacherLarge && replicates != 16)
         throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
-    // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl and
-    // priorpl armsets (§476/§479/§519/§518/§523) and teacher_a20; every other armset is A0.
+    // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl,
+    // priorpl, maxbackup and leafhead armsets (§476/§479/§519/§518/§523) and teacher_a20; every other armset is A0.
     const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479" || armSet == "roottable"
             || armSet == "widen518" || armSet == "rootregret"
-            || armSet == "uniformpl" || armSet == "priorpl" || armSet == "maxbackup";
+            || armSet == "uniformpl" || armSet == "priorpl" || armSet == "maxbackup" || armSet == "leafhead";
     if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
-                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl, priorpl "
-                                 "or maxbackup)");
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl, priorpl, "
+                                 "maxbackup or leafhead)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5748,13 +5760,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
             && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479"
             && armSet != "roottable" && armSet != "widen518" && armSet != "rootregret"
-            && armSet != "uniformpl" && armSet != "priorpl" && armSet != "maxbackup" && !teacherA20)
+            && armSet != "uniformpl" && armSet != "priorpl" && armSet != "maxbackup" && armSet != "leafhead"
+            && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
                                  "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable, widen518, rootregret, "
-                                 "uniformpl, priorpl, maxbackup or teacher_a20");
+                                 "uniformpl, priorpl, maxbackup, leafhead or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
+    // leafhead armset: the head arms' value head, its trunk and their settings.
+    search::SilverValueHead leafHead;
+    search::CombatValueNet leafHeadTrunk;
+    search::NativeSilverLeafHeadEnv leafHeadEnv;
     int hallwayEvery = 1;
     std::vector<int> sweepSims;
     if (sweepArmSet) {
@@ -6056,6 +6073,56 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             arms.back().rollout.blockRule = {3, true, 4};
             arms.back().maxBackup = 4;
         }
+    } else if (armSet == "leafhead") {
+        // Leaf-value research (../leaf_head_turn_penalty_20261022): base<b> (production search) for every budget in
+        // STS_CTMSILVER_SWEEP_SIMS vs head<b>, whose undecided leaves blend the value head STS_CTMSILVER_LEAF_HEAD
+        // (with _TRUNK, _BLEND and _TURN_PENALTY, read as STS_SILVER_LEAF_HEAD's) with the playout, for every budget
+        // in STS_CTMSILVER_HEAD_SIMS (default: the sweep budgets). Both arms use the root prior, the tree prior
+        // (K = 8) and the ADR-0046 root table; both run under a rollout override, so neither plays ADR-0050 boss
+        // prior playouts. Imagined-fight Silver fallbacks and STS_SILVER_LEAF_HEAD must be off.
+        const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+        const auto &envRollout = search::SilverSearcher::envRolloutConfig();
+        if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != search::kSilverRolloutCardTableG6
+                || envRollout.prior || !(envRollout.blockRule == search::SilverRolloutAgent::BlockRule{})
+                || search::SilverSearcher::envMaxBackupMinVisits() != 0 || env("STS_SILVER_ROLLOUT_ROOT_TABLE") == "0"
+                || !search::nativeSilverLeafSettings().leafHead.empty())
+            throw std::runtime_error("ctm vs silver: leafhead requires the production search (STS_SILVER_ROLLOUT_*, "
+                                     "STS_SILVER_MAX_BACKUP and STS_SILVER_LEAF_HEAD unset, root table on)");
+        for (const char *name : {"STS_OOC_MCTS_ACT4_SILVER_SIMS", "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS",
+                                 "STS_OOC_MCTS_COMBAT_RESOLVER"})
+            if (const std::string v = env(name); !v.empty() && v != "0")
+                throw std::runtime_error(std::string("ctm vs silver: leafhead requires ") + name + " unset or 0");
+        const auto loaded = search::nativeSilverLeafHeadFromEnv("STS_CTMSILVER_LEAF_HEAD", leafHead, leafHeadTrunk);
+        if (!loaded) throw std::runtime_error("ctm vs silver: leafhead requires STS_CTMSILVER_LEAF_HEAD");
+        leafHeadEnv = *loaded;
+        const auto budgets = [&](const char *name) {
+            std::vector<int> out;
+            std::stringstream list(env(name));
+            for (std::string item; std::getline(list, item, ',');) {
+                char *end = nullptr;
+                const long b = std::strtol(item.c_str(), &end, 10);
+                if (item.empty() || *end != '\0' || b < 1 || b > 100000
+                        || std::find(out.begin(), out.end(), static_cast<int>(b)) != out.end())
+                    throw std::runtime_error(std::string("ctm vs silver: ") + name
+                                             + " must list distinct budgets 1..100000");
+                out.push_back(static_cast<int>(b));
+            }
+            return out;
+        };
+        sweepSims = budgets("STS_CTMSILVER_SWEEP_SIMS");
+        if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: leafhead requires STS_CTMSILVER_SWEEP_SIMS");
+        std::vector<int> headSims = budgets("STS_CTMSILVER_HEAD_SIMS");
+        if (headSims.empty()) headSims = sweepSims;
+        arms = {{"control", sims, false, false, 1}};
+        for (const int b : sweepSims) {
+            arms.push_back({"base" + std::to_string(b), b, true, true, replicates, 8});
+            arms.back().rollout = envRollout;
+        }
+        for (const int b : headSims) {
+            arms.push_back({"head" + std::to_string(b), b, true, true, replicates, 8});
+            arms.back().rollout = envRollout;
+            arms.back().leafHead = true;
+        }
     } else if (teacherA20) {
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR");
         if (mlp.empty() || search::nativeSilverRootPriorWeight() != 400.0)
@@ -6207,6 +6274,12 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             armSpec[i]["blockRule"] = {{"blockFirstMargin", r.blockFirstMargin},
                                        {"blockLethalCheck", r.blockLethalCheck}, {"blockOffset", r.blockOffset}};
         }
+    if (armSet == "leafhead")
+        for (std::size_t i = 0; i < arms.size(); ++i)
+            armSpec[i]["leafHead"] = !arms[i].leafHead ? nlohmann::json(nullptr) : nlohmann::json{
+                {"path", leafHeadEnv.path}, {"sha256", fileSha256(leafHeadEnv.path)},
+                {"trunk", leafHeadEnv.trunkPath}, {"trunkSha256", fileSha256(leafHeadEnv.trunkPath)},
+                {"blend", leafHeadEnv.blend}, {"turnPenalty", leafHeadEnv.turnPenalty}};
     for (std::size_t i = 0; i < arms.size(); ++i)
         if (const auto &p = arms[i].params)
             armSpec[i]["searchParams"] = {{"exploration", p->exploration}, {"explorationChance", p->explorationChance},
@@ -6424,9 +6497,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         if (arm.name != "control") leafScope.emplace(arm.finalFightLeaf);
                         std::optional<RolloutScope> rolloutScope;
                         if ((armSet == "rollout479" || armSet == "uniformpl" || armSet == "priorpl"
-                                    || armSet == "maxbackup") && arm.name != "control")
+                                    || armSet == "maxbackup" || armSet == "leafhead") && arm.name != "control")
                             rolloutScope.emplace(arm.rollout);
                         MaxBackupScope maxBackupScope(arm.maxBackup);
+                        std::optional<LeafHeadScope> leafHeadScope;
+                        if (arm.leafHead)
+                            leafHeadScope.emplace(search::SilverSearcher::LeafHead{
+                                &leafHead, &leafHeadTrunk, leafHeadEnv.blend, leafHeadEnv.turnPenalty});
                         RolloutRootTableScope rootTableScope(arm.rootTableModel.empty() ? nullptr
                                                              : priorNets.at(arm.rootTableModel).get());
                         std::optional<SearchParamsScope> paramsScope;

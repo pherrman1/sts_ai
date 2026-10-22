@@ -71,6 +71,7 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverValueHead.h"
 
 #ifndef STS_EXACT_CHANCE
 #error "exact_combat_solver must be compiled with -DSTS_EXACT_CHANCE"
@@ -2916,49 +2917,9 @@ namespace {
 
 namespace {
 
-    // Research (--leaf-heads): a value head on the frozen trunk of a combat_policy_mlp prior. Silver points
-    // = scale * (w2 . relu(W1 ((relu(trunk base) - mu) * invSd) + b1) + b2) + offset; tools in the leaf-value
-    // research folder export g7f_E's own value head and the probe head to this text format.
-    struct LeafHead {
-        int in = 0, hidden = 0;
-        std::vector<float> mu, invSd, w1, b1, w2;
-        float b2 = 0;
-        double scale = 1, offset = 0;
-
-        static LeafHead load(const std::string &path) {
-            std::ifstream f(path);
-            LeafHead h;
-            std::string tok;
-            auto vec = [&](const char *want, std::vector<float> &v, std::size_t n) {
-                if (!(f >> tok) || tok != want) throw std::runtime_error(path + ": expected " + want);
-                v.resize(n);
-                for (float &x : v) f >> x;
-            };
-            if (!(f >> tok) || tok != "silver_value_head_v1") throw std::runtime_error(path + ": not a silver_value_head_v1");
-            f >> tok >> h.in >> tok >> h.hidden;
-            vec("mu", h.mu, h.in);
-            vec("inv_sd", h.invSd, h.in);
-            vec("w1", h.w1, static_cast<std::size_t>(h.hidden) * h.in);
-            vec("b1", h.b1, h.hidden);
-            vec("w2", h.w2, h.hidden);
-            std::vector<float> one;
-            vec("b2", one, 1);
-            h.b2 = one[0];
-            f >> tok >> h.scale >> tok >> h.offset;
-            if (!f) throw std::runtime_error(path + ": truncated");
-            return h;
-        }
-        double value(const std::vector<float> &trunk) const {   // trunk = relu(base), `in` values
-            double y = b2;
-            for (int i = 0; i < hidden; ++i) {
-                double a = b1[i];
-                const float *w = &w1[static_cast<std::size_t>(i) * in];
-                for (int j = 0; j < in; ++j) a += w[j] * ((trunk[j] - mu[j]) * invSd[j]);
-                if (a > 0) y += w2[i] * a;
-            }
-            return scale * y + offset;
-        }
-    };
+    // Research (--leaf-heads): a value head on the frozen trunk of a combat_policy_mlp prior (SilverValueHead.h);
+    // tools in the leaf-value research folder export g7f_E's own value head and the probe head to its text format.
+    using LeafHead = sts::search::SilverValueHead;
 
     struct Config {
         std::string name;
@@ -3491,13 +3452,7 @@ int main(int argc, char **argv) {
         if (!leafLabelDump.empty()) labelDump.open(leafLabelDump);
         // A head's value of a state; feat and base keep the state block and relu(trunk base).
         std::vector<float> feat, base;
-        auto headValue = [&](const BattleContext &state, const LeafHead &h) {
-            feat.assign(sts::search::combatFeatureCount(), 0.f);
-            sts::search::combatExtractFeatures(state, feat.data());
-            leafTrunk.policyMlpBase(feat.data(), base);
-            for (float &x : base) x = std::max(x, 0.f);
-            return h.value(base);
-        };
+        auto headValue = [&](const BattleContext &state, const LeafHead &h) { return h.value(state, leafTrunk, feat, base); };
         const std::string objective = std::string(hpObjective ? "hp" : "silver") + (keepEnergyWaste ? "" : "-noew");
         if ((lipschitz || interpolate) && !hpObjective)
             throw std::invalid_argument("--lipschitz and --interpolate need --objective hp (Silver's value is not Lipschitz in HP)");
