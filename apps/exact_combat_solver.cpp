@@ -478,13 +478,14 @@ namespace {
         // player picks every card drawn (any cards the draw could deliver) while
         // the monster keeps its exact move probabilities. A max over draws is at
         // least their expectation, so the relaxed value bounds the exact one in
-        // every state. Jaw Worm (and Two Louse, see its model below) with the
-        // starter deck only: there the relaxed state between turns needs no
-        // hand, discard pile or block, only the monster's HP, Strength,
-        // Vulnerable and last two moves, the draw pile's counts, whether
-        // Ascender's Bane is exhausted and the turn, with one value per player
-        // HP. --relaxed-free-draws (Jaw Worm only) lets every turn draw any
-        // cards of the deck (no draw pile in the state: smaller and looser).
+        // every state. Jaw Worm and the Cultist (and Two Louse and Small Slimes,
+        // see their models below) with the starter deck only: there the relaxed
+        // state between turns needs no hand, discard pile or block, only the
+        // monster's HP, Strength, Vulnerable and last two moves, the draw pile's
+        // counts, whether Ascender's Bane is exhausted and the turn, with one
+        // value per player HP. --relaxed-free-draws (Jaw Worm and the Cultist
+        // only) lets every turn draw any cards of the deck (no draw pile in the
+        // state: smaller and looser).
         // --relaxed-check compares the bound with every exact value and the
         // mirrored monster turn and draw with the engine's outcomes, and prunes
         // nothing with it.
@@ -494,7 +495,7 @@ namespace {
         std::int64_t relaxedChecked_ = 0, relaxedGateMisses_ = 0, relaxedEndChecks_ = 0, relaxedDecChecks_ = 0;
         std::int64_t relaxedEndSlack_[7] = {}, relaxedDecSlack_[7] = {}, relaxedIntentSlack_[7] = {}, relaxedWouldCut_ = 0;
         double rxSeconds_[2] = {0, 0};
-        bool relaxedReady() const { return rxOn_ || lxOn_; }
+        bool relaxedReady() const { return rxOn_ || lxOn_ || sxOn_; }
         std::size_t relaxedStates() const { return rxTab_[0].index.size(); }
         // Research (--abstract-check, --abstract-only): table 1 runs the same
         // recursion with the draw's exact probabilities instead of the max, which
@@ -520,18 +521,37 @@ namespace {
             return true;
         }
 
-        // Sets the relaxed game up for the root's fight (Jaw Worm, or Two Louse
-        // below); false where it does not apply.
+        // Sets the relaxed game up for the root's fight (Jaw Worm or the Cultist;
+        // Two Louse and Small Slimes below); false where it does not apply.
         bool relaxedInit() {
             const BattleContext &r = rootCopy_;
-            if (r.monsters.monsterCount == 2) return lxInit();
-            if (r.monsters.monsterCount != 1 || r.monsters.arr[0].id != MonsterId::JAW_WORM) return false;
+            if (r.monsters.monsterCount == 2) return lxInit() || sxInit();
+            if (r.monsters.monsterCount != 1) return false;
+            rxMonster_ = r.monsters.arr[0].id;
+            if (rxMonster_ != MonsterId::JAW_WORM && rxMonster_ != MonsterId::CULTIST) return false;
             if (!rxDeckInit(r)) return false;
             const int asc = r.ascension;
-            rxAttack_[0] = asc >= 2 ? 12 : 11;   // Chomp
-            rxAttack_[1] = 7;                    // Thrash
+            if (rxMonster_ == MonsterId::CULTIST) {
+                // MonsterSpecific.cpp, CULTIST: Incantation first (Ritual, which skips the
+                // end of the round it is applied in, Monster::applyEndOfRoundPowers),
+                // then Dark Strike for 6 every turn, each round ending with Ritual's Strength.
+                rxRitual_ = asc >= 17 ? 5 : asc >= 2 ? 4 : 3;
+                rxAttack_[RX_CHOMP] = 6; rxAttack_[RX_THRASH] = -1; rxAttack_[RX_BELLOW] = -1;
+                rxStrGain_[RX_CHOMP] = rxRitual_; rxStrGain_[RX_THRASH] = 0; rxStrGain_[RX_BELLOW] = 0;
+                std::fill(std::begin(rxBlock_), std::end(rxBlock_), 0);
+                for (int last = 0; last < 3; ++last)
+                    for (int before = 0; before < 4; ++before)
+                        for (int n = 0; n < 3; ++n) rxRoll_[last][before][n] = n == RX_CHOMP ? 1 : 0;
+                rxOn_ = true;
+                RxView x;
+                rxOn_ = rxView(r, x);
+                return rxOn_;
+            }
+            rxAttack_[RX_CHOMP] = asc >= 2 ? 12 : 11;
+            rxAttack_[RX_THRASH] = 7;
+            rxAttack_[RX_BELLOW] = -1;
+            rxStrGain_[RX_CHOMP] = 0; rxStrGain_[RX_THRASH] = 0; rxStrGain_[RX_BELLOW] = asc >= 17 ? 5 : asc >= 2 ? 4 : 3;
             rxBlock_[0] = 0; rxBlock_[1] = 5; rxBlock_[2] = asc >= 17 ? 9 : 6; rxBlock_[3] = 0;
-            rxBellowStr_ = asc >= 17 ? 5 : asc >= 2 ? 4 : 3;
             // The move roll (MonsterSpecific.cpp, JAW_WORM): 0..99 uniform with the
             // engine's float coin flips, after the move `last` with `before` before it.
             using exact::ChanceScript;
@@ -552,10 +572,12 @@ namespace {
         }
     private:
         // ---- relaxed game (--relaxed-bound) -----------------------------------
+        // The single monster's moves: Jaw Worm's; the Cultist's Dark Strike and
+        // Incantation take the Chomp and Bellow slots (an attack, a move without one).
         enum { RX_CHOMP = 0, RX_THRASH = 1, RX_BELLOW = 2, RX_NONE = 3 };
         struct RxDeck {
-            int s = 0, d = 0, b = 0, a = 0;   // Strikes, Defends, Bashes, Ascender's Banes
-            int total() const { return s + d + b + a; }
+            int s = 0, d = 0, b = 0, a = 0, x = 0;   // Strikes, Defends, Bashes, Ascender's Banes, Slimed
+            int total() const { return s + d + b + a + x; }
             bool operator==(const RxDeck &) const = default;
         };
         // A concrete state as the relaxed game sees it.
@@ -565,9 +587,12 @@ namespace {
             bool abGone = false;   // Ascender's Bane exhausted
         };
         bool rxOn_ = false;
-        RxDeck rxDeck_;
-        int rxH_ = 0, rxEnergy_ = 3, rxDraw_ = 5, rxCardsOffset_ = 0, rxBellowStr_ = 5;
-        int rxAttack_[2] = {}, rxBlock_[4] = {};
+        MonsterId rxMonster_ = MonsterId::JAW_WORM;
+        RxDeck rxDeck_;   // the root's deck without Slimed cards
+        int rxH_ = 0, rxEnergy_ = 3, rxDraw_ = 5, rxCardsOffset_ = 0, rxRitual_ = 0;
+        // Per move: its attack's base damage (-1: none), the Strength the monster
+        // has gained by the next turn, the block it starts the next turn with.
+        int rxAttack_[3] = {}, rxStrGain_[3] = {}, rxBlock_[4] = {};
         double rxRoll_[3][4][3] = {};
         int rxDepth_ = 0;
         // Open addressing, power-of-two table: every bound query looks up start states.
@@ -613,8 +638,8 @@ namespace {
         std::unordered_map<std::uint64_t, double> rxLeafCache_;
         std::vector<std::vector<double>> rxWinRows_;                // per turn, the win score per HP
 
-        // The damage of the monster's move: Chomp and Thrash attack (base + Strength); Bellow does not.
-        int rxHit(int mv, int str) const { return mv == RX_BELLOW ? 0 : rxAttack_[mv] + str; }
+        // The damage of the monster's move: base + Strength for an attack (Chomp, Thrash, Dark Strike).
+        int rxHit(int mv, int str) const { return rxAttack_[mv] < 0 ? 0 : rxAttack_[mv] + str; }
         static bool rxCount(const CardInstance &c, RxDeck &d) {
             if (c.upgraded || c.freeToPlayOnce) return false;
             switch (c.id) {
@@ -622,21 +647,24 @@ namespace {
                 case CardId::DEFEND_RED: if (c.costForTurn != 1) return false; ++d.d; return true;
                 case CardId::BASH: if (c.costForTurn != 2) return false; ++d.b; return true;
                 case CardId::ASCENDERS_BANE: ++d.a; return true;
+                case CardId::SLIMED: if (c.costForTurn != 1) return false; ++d.x; return true;
                 default: return false;
             }
         }
         static int rxMove(MonsterMoveId id) {
             switch (id) {
-                case MonsterMoveId::JAW_WORM_CHOMP: return RX_CHOMP;
+                case MonsterMoveId::JAW_WORM_CHOMP: case MonsterMoveId::CULTIST_DARK_STRIKE: return RX_CHOMP;
                 case MonsterMoveId::JAW_WORM_THRASH: return RX_THRASH;
-                case MonsterMoveId::JAW_WORM_BELLOW: return RX_BELLOW;
+                case MonsterMoveId::JAW_WORM_BELLOW: case MonsterMoveId::CULTIST_INCANTATION: return RX_BELLOW;
                 case MonsterMoveId::INVALID: return RX_NONE;
                 default: return -1;
             }
         }
 
-        // The deck and turn constants of the root's fight (both models).
-        bool rxDeckInit(const BattleContext &r) {
+        // The deck and turn constants of the root's fight (every model). Slimed
+        // cards are not part of the fixed deck: the Small Slimes model counts the
+        // ones left in its state (`slimed`), the other models refuse them.
+        bool rxDeckInit(const BattleContext &r, bool slimed = false) {
             RxDeck all;
             bool ok = true;
             auto add = [&](const CardInstance &c) { ok = ok && rxCount(c, all); };
@@ -646,7 +674,8 @@ namespace {
             for (const auto &c : cm.discardPile) add(c);
             for (const auto &c : cm.exhaustPile) add(c);
             // At most one Bash keeps the play orders below exhaustive; the keys pack counts in 4 bits.
-            if (!ok || all.b > 1 || all.a > 1 || all.s > 15 || all.d > 15) return false;
+            if (!ok || all.b > 1 || all.a > 1 || all.s > 15 || all.d > 15 || (all.x && !slimed)) return false;
+            all.x = 0;
             rxDeck_ = all;
             rxH_ = r.player.curHp;
             rxEnergy_ = r.player.energyPerTurn;
@@ -656,8 +685,9 @@ namespace {
         }
 
         // The card part of a view: the hand and draw pile, whether Ascender's Bane
-        // is exhausted; false unless every card is a starter card of the root's deck.
-        bool rxCards(const BattleContext &s, RxDeck &hand, RxDeck &pile, bool &abGone) const {
+        // is exhausted; false unless every card is a starter card of the root's deck
+        // or, where `slimed` is given (it gets their count), a Slimed not exhausted.
+        bool rxCards(const BattleContext &s, RxDeck &hand, RxDeck &pile, bool &abGone, int *slimed = nullptr) const {
             const auto &cm = s.cards;
             RxDeck rest, ex;
             hand = pile = RxDeck{};
@@ -666,11 +696,13 @@ namespace {
             for (const auto &c : cm.discardPile) if (!rxCount(c, rest)) return false;
             for (const auto &c : cm.exhaustPile) if (!rxCount(c, ex)) return false;
             if (ex.s || ex.d || ex.b) return false;
+            if (!slimed && (hand.x || pile.x || rest.x || ex.x)) return false;
             for (const auto &c : cm.stasisCards) if (c.id != CardId::INVALID) return false;
             if (hand.s + pile.s + rest.s != rxDeck_.s || hand.d + pile.d + rest.d != rxDeck_.d
                 || hand.b + pile.b + rest.b != rxDeck_.b || hand.a + pile.a + rest.a + ex.a != rxDeck_.a)
                 return false;
             abGone = ex.a > 0;
+            if (slimed) *slimed = hand.x + pile.x + rest.x;
             return true;
         }
 
@@ -678,9 +710,16 @@ namespace {
         bool rxView(const BattleContext &s, RxView &x) const {
             if (!rxOn_ || s.outcome != Outcome::UNDECIDED || s.monsters.monsterCount != 1) return false;
             const auto &m = s.monsters.arr[0];
-            if (m.id != MonsterId::JAW_WORM || !m.isAlive() || m.weak || m.artifact || m.strength < 0 || m.block < 0
+            if (m.id != rxMonster_ || !m.isAlive() || m.weak || m.artifact || m.strength < 0 || m.block < 0
                 || m.wasJustApplied<MonsterStatus::VULNERABLE>())
                 return false;
+            if (rxMonster_ == MonsterId::CULTIST) {
+                // Vulnerable and Ritual only; Ritual from Incantation on, none before.
+                const std::uint64_t allowed = 1ULL << static_cast<int>(MonsterStatus::RITUAL)
+                    | 1ULL << static_cast<int>(MonsterStatus::VULNERABLE);
+                const int ritual = m.hasStatus<MonsterStatus::RITUAL>() ? m.getStatus<MonsterStatus::RITUAL>() : 0;
+                if ((m.statusBits & ~allowed) || ritual != (rxMove(m.moveHistory[1]) == RX_NONE ? 0 : rxRitual_)) return false;
+            }
             const auto &p = s.player;
             if (p.strength || p.dexterity || p.statusBits0 || p.statusBits1 || !p.statusMap.empty() || p.energy < 0
                 || p.energyPerTurn != rxEnergy_ || p.cardDrawPerTurn != rxDraw_ || p.curHp > rxH_ || p.curHp <= 0)
@@ -761,14 +800,16 @@ namespace {
         // Every hand the turn's draw could deliver from draw pile `pile`, with the
         // draw pile it leaves and its probability: the whole pile first when it
         // holds fewer cards than the draw, then the rest from the discard pile
-        // (every card not drawn and not exhausted) shuffled; each multiset of the
-        // cards drawn from a pile is hypergeometric. With free draws: any cards
-        // of the deck (probabilities meaningless, the pile left empty).
+        // (every card not drawn and not exhausted, `slimed` Slimed among them
+        // and the pile) shuffled; each multiset of the cards drawn from a pile is
+        // hypergeometric. With free draws: any cards of the deck (probabilities
+        // meaningless, the pile left empty).
         template <typename F>
-        void rxHands(const RxDeck &pile, bool abGone, bool freeDraws, F f) const {
+        void rxHands(const RxDeck &pile, bool abGone, int slimed, bool freeDraws, F f) const {
             using exact::ChanceScript;
             RxDeck avail = rxDeck_;
             if (abGone) avail.a = 0;
+            avail.x = slimed;
             RxDeck from = pile, base;
             int need = rxDraw_;
             if (freeDraws) {
@@ -776,21 +817,24 @@ namespace {
                 need = std::min(rxDraw_, avail.total());
             } else if (pile.total() < rxDraw_) {
                 base = pile;
-                from = {avail.s - pile.s, avail.d - pile.d, avail.b - pile.b, avail.a - pile.a};
+                from = {avail.s - pile.s, avail.d - pile.d, avail.b - pile.b, avail.a - pile.a, avail.x - pile.x};
                 need = std::min(rxDraw_ - pile.total(), from.total());
             }
             const double ways = ChanceScript::binom(from.total(), need);
             for (int s = 0; s <= std::min(from.s, need); ++s)
                 for (int d = 0; d <= std::min(from.d, need - s); ++d)
-                    for (int b = 0; b <= std::min(from.b, need - s - d); ++b) {
-                        const int a = need - s - d - b;
-                        if (a > from.a) continue;
-                        const RxDeck hand{base.s + s, base.d + d, base.b + b, base.a + a};
-                        const RxDeck left = freeDraws ? RxDeck{} : RxDeck{from.s - s, from.d - d, from.b - b, from.a - a};
-                        const double p = ChanceScript::binom(from.s, s) * ChanceScript::binom(from.d, d)
-                            * ChanceScript::binom(from.b, b) * ChanceScript::binom(from.a, a) / ways;
-                        f(hand, left, p);
-                    }
+                    for (int b = 0; b <= std::min(from.b, need - s - d); ++b)
+                        for (int x = 0; x <= std::min(from.x, need - s - d - b); ++x) {
+                            const int a = need - s - d - b - x;
+                            if (a > from.a) continue;
+                            const RxDeck hand{base.s + s, base.d + d, base.b + b, base.a + a, base.x + x};
+                            const RxDeck left = freeDraws ? RxDeck{}
+                                                          : RxDeck{from.s - s, from.d - d, from.b - b, from.a - a, from.x - x};
+                            const double p = ChanceScript::binom(from.s, s) * ChanceScript::binom(from.d, d)
+                                * ChanceScript::binom(from.b, b) * ChanceScript::binom(from.a, a)
+                                * ChanceScript::binom(from.x, x) / ways;
+                            f(hand, left, p);
+                        }
         }
 
         // The value per player HP of the start of turn t (before its draw): in
@@ -807,7 +851,7 @@ namespace {
             if (t > turnCap_) {
                 std::fill(value.begin(), value.end(), rxLeaf(m, t, false));
             } else {
-                rxHands(keyPile, abGone, freeDraws, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                rxHands(keyPile, abGone, 0, freeDraws, [&](const RxDeck &hand, const RxDeck &left, double p) {
                     const bool gone = abGone || hand.a > 0;
                     std::fill(best.begin(), best.end(), -1e300);
                     rxPlays(m, rxBlock_[mv1], vuln, hand, rxEnergy_,
@@ -842,7 +886,7 @@ namespace {
                 std::fill(g.begin(), g.end(), rxLeaf(m, t + 1, false));
                 return g;
             }
-            const int str2 = str + (mv0 == RX_BELLOW ? rxBellowStr_ : 0), v2 = std::max(0, vuln - 1);
+            const int str2 = str + rxStrGain_[mv0], v2 = std::max(0, vuln - 1);
             for (int n = 0; n < 3; ++n) {
                 const double p = rxRoll_[mv0][mv1][n];
                 if (p <= 0) continue;
@@ -858,7 +902,7 @@ namespace {
             const int hp = h - std::max(0, rxHit(mv0, str) - pblock);
             if (hp <= 0) return rxLeaf(m, t, true);
             if (t + 1 > turnCap_) return rxLeaf(m, t + 1, false);
-            const int str2 = str + (mv0 == RX_BELLOW ? rxBellowStr_ : 0), v2 = std::max(0, vuln - 1);
+            const int str2 = str + rxStrGain_[mv0], v2 = std::max(0, vuln - 1);
             double v = 0;
             for (int n = 0; n < 3; ++n) {
                 const double p = rxRoll_[mv0][mv1][n];
@@ -931,7 +975,7 @@ namespace {
             ++relaxedChecked_;
             const int hp = x.h - std::max(0, rxHit(x.mv0, x.str) - x.pblock);
             const bool gone = x.abGone || x.hand.a > 0;
-            const int str2 = x.str + (x.mv0 == RX_BELLOW ? rxBellowStr_ : 0), v2 = std::max(0, x.vuln - 1);
+            const int str2 = x.str + rxStrGain_[x.mv0], v2 = std::max(0, x.vuln - 1);
             auto bad = [&](const char *what) {
                 if (++relaxedMirror_ <= 10)
                     std::cerr << "relaxed mirror mismatch: " << what << " (turn " << s.turn << " hp " << x.h << " monster "
@@ -967,7 +1011,7 @@ namespace {
                 // offers, with the engine's probability (move roll times draw).
                 double pDraw = -1;
                 const RxDeck before = x.pile;
-                rxHands(before, gone, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                rxHands(before, gone, 0, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
                     if (hand.s == y.hand.s && hand.d == y.hand.d && hand.b == y.hand.b && hand.a == y.hand.a
                         && left.s == y.pile.s && left.d == y.pile.d && left.b == y.pile.b && left.a == y.pile.a)
                         pDraw = p;
@@ -993,16 +1037,19 @@ namespace {
         bool modelDec(int mode, const BattleContext &s, double &v) {
             if (RxView x; rxView(s, x)) { v = rxDecAt(mode, x); return true; }
             if (LxView x; lxView(s, x)) { v = lxDecAt(mode, x); return true; }
+            if (SxView x; sxView(s, x)) { v = sxDecAt(mode, x); return true; }
             return false;
         }
         bool modelEnd(int mode, const BattleContext &s, double &v) {
             if (RxView x; rxView(s, x)) { v = rxEndOf(mode, x); return true; }
             if (LxView x; lxView(s, x)) { v = lxEndOf(mode, x); return true; }
+            if (SxView x; sxView(s, x)) { v = sxEndOf(mode, x); return true; }
             return false;
         }
         void modelMirror(const BattleContext &s, const SAction &endTurn) {
             if (rxOn_) rxMirror(s, endTurn);
             else if (lxOn_) lxMirror(s, endTurn);
+            else if (sxOn_) sxMirror(s, endTurn);
         }
 
         // ---- Two Louse model ---------------------------------------------------
@@ -1256,7 +1303,7 @@ namespace {
             if (t > turnCap_) {
                 std::fill(value.begin(), value.end(), lxLeaf(l[0].hp, l[1].hp, t, false));
             } else {
-                rxHands(pile, abGone, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                rxHands(pile, abGone, 0, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
                     const bool gone = abGone || hand.a > 0;
                     std::fill(best.begin(), best.end(), -1e300);
                     lxPlays(l, hand, rxEnergy_, weak > 0,
@@ -1385,7 +1432,7 @@ namespace {
                 // The drawn hand and the pile it leaves must be a draw the model
                 // offers, with the engine's probability (both move rolls times draw).
                 double pDraw = -1;
-                rxHands(x.pile, gone, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                rxHands(x.pile, gone, 0, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
                     if (hand == y.hand && left == y.pile) pDraw = p;
                 });
                 const double pRoll = (y.l[0].hp ? (r0 ? pSp[0] : 1 - pSp[0]) : 1.0) * (y.l[1].hp ? (r1 ? pSp[1] : 1 - pSp[1]) : 1.0);
@@ -1404,6 +1451,403 @@ namespace {
                     for (int b = 0; b < 2; ++b) {
                         const double pa = next[0].hp ? (a ? pSp[0] : 1 - pSp[0]) : (a ? 0.0 : 1.0);
                         const double pb = next[1].hp ? (b ? pSp[1] : 1 - pSp[1]) : (b ? 0.0 : 1.0);
+                        if (std::abs(pMove[a][b] - pa * pb) > 1e-9) bad("move probabilities");
+                    }
+        }
+
+        // ---- Small Slimes model ------------------------------------------------
+        // The same recursion for the starter deck against Small Slimes at A17+
+        // (MonsterGroup.cpp: Spike Slime (S) with Acid Slime (M), or Acid Slime (S)
+        // with Spike Slime (M); MonsterSpecific.cpp): Acid Slime (S) alternates Lick
+        // (Weak 1) and Tackle 4; Spike Slime (S) Tackles for 6 every turn; Acid
+        // Slime (M) rolls Corrosive Spit (8, and a Slimed into the discard pile),
+        // Tackle 12 and Lick (Weak 1); Spike Slime (M) rolls Flame Tackle (10, and a
+        // Slimed) and Lick (Frail 1). No block, Strength or split. A Slimed costs 1
+        // and exhausts; Frail makes a Defend 3 block (BattleContext::calculateCardBlock).
+        // Between turns: per slime its HP (0 once dead, every other field then 0),
+        // Vulnerable, intent and last move; the player's Weak and Frail; the draw
+        // pile's counts (Slimed included), the Slimed cards not exhausted, Bane
+        // exhausted, the turn; one value per player HP.
+        enum { SX_NONE = 3 };
+        struct SxSlime {
+            int hp = 0, vuln = 0, mv0 = 0, mv1 = 0;
+            bool operator==(const SxSlime &) const = default;
+        };
+        using SxSlimes = std::array<SxSlime, 2>;
+        struct SxView {
+            SxSlimes l;
+            int h = 0, pblock = 0, e = 0, t = 0, weak = 0, frail = 0, slimed = 0;
+            RxDeck hand, pile;
+            bool abGone = false;
+        };
+        bool sxOn_ = false;
+        MonsterId sxKind_[2] = {MonsterId::INVALID, MonsterId::INVALID};
+        // Per slime and move: its damage, the Slimed it adds, the Weak and Frail it
+        // gives; and its next move's chances after the move `last` with `before` before it.
+        int sxDmg_[2][3] = {}, sxAdd_[2][3] = {}, sxWeak_[2][3] = {}, sxFrail_[2][3] = {};
+        double sxRoll_[2][3][4][3] = {};
+
+        bool sxInit() {
+            const BattleContext &r = rootCopy_;
+            if (r.ascension < 17) return false;
+            using exact::ChanceScript;
+            // randomBoolean() is a fair coin; randomBoolean(f) the engine's float flip.
+            const double coin = 0.5, b05 = ChanceScript::booleanProbability(0.5f), b04 = ChanceScript::booleanProbability(0.4f);
+            for (int i = 0; i < 2; ++i) {
+                sxKind_[i] = r.monsters.arr[i].id;
+                auto &roll = sxRoll_[i];
+                switch (sxKind_[i]) {
+                    case MonsterId::ACID_SLIME_S:   // 0 Tackle, 1 Lick; each sets the other
+                        sxDmg_[i][0] = 4; sxWeak_[i][1] = 1;
+                        for (int before = 0; before < 4; ++before) { roll[0][before][1] = 1; roll[1][before][0] = 1; }
+                        break;
+                    case MonsterId::SPIKE_SLIME_S:  // 0 Tackle, every turn
+                        sxDmg_[i][0] = 6;
+                        for (int before = 0; before < 4; ++before) roll[0][before][0] = 1;
+                        break;
+                    case MonsterId::ACID_SLIME_M:   // 0 Corrosive Spit, 1 Tackle, 2 Lick; roll 0..99
+                        sxDmg_[i][0] = 8; sxAdd_[i][0] = 1; sxDmg_[i][1] = 12; sxWeak_[i][2] = 1;
+                        for (int last = 0; last < 3; ++last)
+                            for (int before = 0; before < 4; ++before) {
+                                double *p = roll[last][before];
+                                if (last == 0 && before == 0) { p[1] += 0.4 * coin; p[2] += 0.4 * (1 - coin); } else p[0] += 0.4;
+                                if (last == 1 && before == 1) { p[0] += 0.4 * b05; p[2] += 0.4 * (1 - b05); } else p[1] += 0.4;
+                                if (last == 2) { p[0] += 0.2 * b04; p[1] += 0.2 * (1 - b04); } else p[2] += 0.2;
+                            }
+                        break;
+                    case MonsterId::SPIKE_SLIME_M:  // 0 Flame Tackle, 1 Lick; roll 0..99
+                        sxDmg_[i][0] = 10; sxAdd_[i][0] = 1; sxFrail_[i][1] = 1;
+                        for (int last = 0; last < 2; ++last)
+                            for (int before = 0; before < 4; ++before) {
+                                double *p = roll[last][before];
+                                if (last == 0 && before == 0) p[1] += 0.3; else p[0] += 0.3;
+                                if (last == 1) p[0] += 0.7; else p[1] += 0.7;
+                            }
+                        break;
+                    default: return false;
+                }
+            }
+            if (!rxDeckInit(r, true)) return false;
+            sxOn_ = true;
+            SxView x;
+            sxOn_ = sxView(r, x);
+            return sxOn_;
+        }
+
+        static int sxMove(MonsterMoveId id) {
+            switch (id) {
+                case MonsterMoveId::ACID_SLIME_S_TACKLE: case MonsterMoveId::SPIKE_SLIME_S_TACKLE:
+                case MonsterMoveId::ACID_SLIME_M_CORROSIVE_SPIT: case MonsterMoveId::SPIKE_SLIME_M_FLAME_TACKLE: return 0;
+                case MonsterMoveId::ACID_SLIME_S_LICK: case MonsterMoveId::ACID_SLIME_M_TACKLE:
+                case MonsterMoveId::SPIKE_SLIME_M_LICK: return 1;
+                case MonsterMoveId::ACID_SLIME_M_LICK: return 2;
+                case MonsterMoveId::INVALID: return SX_NONE;
+                default: return -1;
+            }
+        }
+
+        // The Small Slimes view of `s`, or false where the model does not apply.
+        bool sxView(const BattleContext &s, SxView &x) const {
+            if (!sxOn_ || s.outcome != Outcome::UNDECIDED || s.monsters.monsterCount != 2) return false;
+            const std::uint64_t allowed = 1ULL << static_cast<int>(MonsterStatus::VULNERABLE);
+            int alive = 0;
+            for (int i = 0; i < 2; ++i) {
+                const auto &m = s.monsters.arr[i];
+                auto &l = x.l[i];
+                l = SxSlime{};
+                if (m.id != sxKind_[i]) return false;
+                if (!m.isAlive()) continue;
+                ++alive;
+                if (m.weak || m.artifact || m.strength || m.block || m.latentDamageMask || (m.statusBits & ~allowed))
+                    return false;
+                l.hp = m.curHp; l.vuln = m.vulnerable;
+                l.mv0 = sxMove(m.moveHistory[0]); l.mv1 = sxMove(m.moveHistory[1]);
+                if (l.mv0 < 0 || l.mv0 == SX_NONE || l.mv1 < 0 || l.hp > 63 || l.vuln > 15) return false;
+            }
+            if (alive == 0 || s.monsters.monstersAlive != alive) return false;
+            // Weak and Frail are the only statuses; a worn-off one leaves its map entry behind (Player::decrementStatus).
+            const auto &p = s.player;
+            const bool weak = p.hasStatus<PlayerStatus::WEAK>(), frail = p.hasStatus<PlayerStatus::FRAIL>();
+            x.weak = weak ? p.getStatus<PlayerStatus::WEAK>() : 0;
+            x.frail = frail ? p.getStatus<PlayerStatus::FRAIL>() : 0;
+            const int statuses = __builtin_popcountll(p.statusBits0) + __builtin_popcountll(p.statusBits1);
+            bool known = true;
+            for (const auto &entry : p.statusMap)
+                known = known && (entry.first == PlayerStatus::WEAK || entry.first == PlayerStatus::FRAIL);
+            if (p.strength || p.dexterity || p.justAppliedBits || statuses != (weak ? 1 : 0) + (frail ? 1 : 0) || !known
+                || (weak && x.weak <= 0) || (frail && x.frail <= 0) || x.weak > 3 || x.frail > 3 || p.energy < 0
+                || p.energyPerTurn != rxEnergy_ || p.cardDrawPerTurn != rxDraw_ || p.curHp > rxH_ || p.curHp <= 0)
+                return false;
+            if (s.cardsDrawn - rxDraw_ * s.turn != rxCardsOffset_ || s.turn < 0 || s.turn > 200) return false;
+            x.h = p.curHp; x.pblock = p.block; x.e = p.energy; x.t = s.turn;
+            return rxCards(s, x.hand, x.pile, x.abGone, &x.slimed) && x.slimed <= 15;
+        }
+
+        std::uint64_t sxKey(const SxSlimes &l, int weak, int frail, int slimed, const RxDeck &pile, bool abGone, int t) const {
+            using U = std::uint64_t;
+            U k = 0;
+            for (int i = 0; i < 2; ++i) {
+                const auto &x = l[i];
+                if (x.hp < 0 || x.hp > 63 || x.vuln < 0 || x.vuln > 15)
+                    throw std::runtime_error("Small Slimes model: state out of range");
+                k |= (U(x.hp) | U(x.vuln) << 6 | U(x.mv0) << 10 | U(x.mv1) << 12) << (14 * i);
+            }
+            if (weak < 0 || weak > 3 || frail < 0 || frail > 3 || slimed < 0 || slimed > 15 || pile.x > 15 || pile.b > 1
+                || pile.a > 1 || t < 0 || t > 255)
+                throw std::runtime_error("Small Slimes model: state out of range");
+            return k | U(weak) << 28 | U(frail) << 30 | U(pile.s) << 32 | U(pile.d) << 36 | U(pile.b) << 40 | U(pile.a) << 41
+                | U(pile.x) << 42 | U(slimed) << 46 | U(abGone ? 1 : 0) << 50 | U(t) << 51;
+        }
+
+        // Every play of a hand with `e` energy: any sequence of the hand's Strikes
+        // and Bash the energy pays for, each at a living slime (as lxPlays, the
+        // slimes without block). Calls win() if a play kills both slimes, and
+        // end(slimes, e') once per distinct state of the slimes after the attacks,
+        // with the most energy e' any play reaching it leaves for Slimed and Defends.
+        template <typename Win, typename End>
+        void sxPlays(const SxSlimes &start, const RxDeck &hand, int e, bool weak, Win win, End end) const {
+            std::vector<std::pair<SxSlimes, int>> seen;
+            bool won = false;
+            auto hit = [](SxSlime &l, int dmg) { l.hp -= dmg; if (l.hp <= 0) l = SxSlime{}; };
+            auto rec = [&](auto &&self, const SxSlimes &cur, int s, int b, int en) -> void {
+                if (cur[0].hp == 0 && cur[1].hp == 0) { won = true; return; }
+                bool found = false;
+                for (auto &[k, ee] : seen)
+                    if (k == cur) { ee = std::max(ee, en); found = true; break; }
+                if (!found) seen.emplace_back(cur, en);
+                for (int i = 0; i < 2; ++i) {
+                    if (cur[i].hp == 0) continue;
+                    if (s > 0 && en >= 1) {
+                        SxSlimes n = cur;
+                        hit(n[i], lxDamage(6, weak, n[i].vuln > 0));
+                        self(self, n, s - 1, b, en - 1);
+                    }
+                    if (b > 0 && en >= 2) {
+                        SxSlimes n = cur;
+                        hit(n[i], lxDamage(8, weak, n[i].vuln > 0));
+                        if (n[i].hp > 0) n[i].vuln += 2;
+                        self(self, n, s, b - 1, en - 2);
+                    }
+                }
+            };
+            rec(rec, start, hand.s, hand.b, e);
+            if (won) win();
+            for (const auto &[k, en] : seen) end(k, en);
+        }
+
+        // The slimes' turn after the player's: returns the attacks' damage (the
+        // player's block not yet taken off) and sets the state at the start of the
+        // next turn before the new moves (one Vulnerable off; the Licks' Weak and
+        // Frail, one of each off unless a Lick gave it to a player without it this
+        // round, Player::debuff), the Slimed cards the attacks put into the discard
+        // pile, and each slime's next-move chances.
+        int sxMonsterTurn(const SxSlimes &l, int weak, int frail, SxSlimes &next, int &weak2, int &frail2, int &added,
+                          double (&pN)[2][3]) const {
+            int dmg = 0, wk = 0, fr = 0;
+            added = 0;
+            next = l;
+            for (int i = 0; i < 2; ++i) {
+                auto &n = next[i];
+                for (int k = 0; k < 3; ++k) pN[i][k] = 0;
+                if (n.hp == 0) continue;
+                dmg += sxDmg_[i][n.mv0];
+                added += sxAdd_[i][n.mv0];
+                wk += sxWeak_[i][n.mv0];
+                fr += sxFrail_[i][n.mv0];
+                n.vuln = std::max(0, n.vuln - 1);
+                for (int k = 0; k < 3; ++k) pN[i][k] = sxRoll_[i][n.mv0][n.mv1][k];
+                n.mv1 = n.mv0;
+            }
+            weak2 = wk ? (weak == 0 ? wk : weak + wk - 1) : std::max(0, weak - 1);
+            frail2 = fr ? (frail == 0 ? fr : frail + fr - 1) : std::max(0, frail - 1);
+            return dmg;
+        }
+        // Each joint next move of the living slimes, with its probability.
+        template <typename F>
+        void sxRolls(const SxSlimes &next, const double (&pN)[2][3], F f) const {
+            for (int a = 0; a < 3; ++a) {
+                const double pa = next[0].hp ? pN[0][a] : (a ? 0.0 : 1.0);
+                if (pa <= 0) continue;
+                for (int b = 0; b < 3; ++b) {
+                    const double pb = next[1].hp ? pN[1][b] : (b ? 0.0 : 1.0);
+                    if (pb <= 0) continue;
+                    SxSlimes n = next;
+                    if (n[0].hp) n[0].mv0 = a;
+                    if (n[1].hp) n[1].mv0 = b;
+                    f(n, pa * pb);
+                }
+            }
+        }
+
+        // The value per player HP of the start of turn t (before its draw), as
+        // rxStart; `slimed` Slimed cards are in the draw and discard piles.
+        std::size_t sxStart(int mode, const SxSlimes &l, int weak, int frail, int slimed, const RxDeck &pile, bool abGone, int t) {
+            const std::uint64_t key = sxKey(l, weak, frail, slimed, pile, abGone, t);
+            if (std::size_t off; rxTab_[mode].index.find(key, off)) return off;
+            const auto t0 = rxDepth_ == 0 ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+            ++rxDepth_;
+            std::vector<double> value(rxH_ + 1, mode == 0 ? -1e300 : 0.0), best(rxH_ + 1);
+            if (t > turnCap_) {
+                std::fill(value.begin(), value.end(), lxLeaf(l[0].hp, l[1].hp, t, false));
+            } else {
+                const int per = frail > 0 ? 3 : 5;   // a Defend's block
+                rxHands(pile, abGone, slimed, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                    const bool gone = abGone || hand.a > 0;
+                    std::fill(best.begin(), best.end(), -1e300);
+                    sxPlays(l, hand, rxEnergy_, weak > 0,
+                            [&] { for (int h = 1; h <= rxH_; ++h) best[h] = std::max(best[h], rxWin(h, t)); },
+                            [&](const SxSlimes &post, int en) {
+                                SxSlimes next;
+                                int weak2 = 0, frail2 = 0, added = 0;
+                                double pN[2][3];
+                                const int dmg = sxMonsterTurn(post, weak, frail, next, weak2, frail2, added, pN);
+                                const double death = lxLeaf(post[0].hp, post[1].hp, t, true);
+                                // nx Slimed played, then as many Defends as the energy left pays for.
+                                for (int nx = 0; nx <= std::min(hand.x, en); ++nx) {
+                                    const int loss = std::max(0, dmg - per * std::min(hand.d, en - nx));
+                                    const auto g = sxAfter(mode, next, pN, weak2, frail2, slimed - nx + added, left, gone, t);
+                                    for (int h = 1; h <= rxH_; ++h)
+                                        best[h] = std::max(best[h], h - loss <= 0 ? death : g[h - loss]);
+                                }
+                            });
+                    for (int h = 1; h <= rxH_; ++h) value[h] = mode == 0 ? std::max(value[h], best[h]) : value[h] + p * best[h];
+                });
+            }
+            --rxDepth_;
+            auto &tab = rxTab_[mode];
+            const std::size_t off = tab.pool.size();
+            tab.pool.insert(tab.pool.end(), value.begin(), value.end());
+            tab.index.emplace(key, off);
+            if (rxDepth_ == 0) rxSeconds_[mode] += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            return off;
+        }
+
+        // After the slimes' turn of turn t: the expected start value per player HP
+        // of turn t+1 over their new moves (the cap leaf past the turn cap).
+        std::vector<double> sxAfter(int mode, const SxSlimes &next, const double (&pN)[2][3], int weak2, int frail2,
+                                    int slimed, const RxDeck &pile, bool abGone, int t) {
+            std::vector<double> g(rxH_ + 1, 0);
+            if (t + 1 > turnCap_) {
+                std::fill(g.begin(), g.end(), lxLeaf(next[0].hp, next[1].hp, t + 1, false));
+                return g;
+            }
+            sxRolls(next, pN, [&](const SxSlimes &n, double p) {
+                const std::size_t off = sxStart(mode, n, weak2, frail2, slimed, pile, abGone, t + 1);
+                const auto &pool = rxTab_[mode].pool;
+                for (int h = 1; h <= rxH_; ++h) g[h] += p * pool[off + h];
+            });
+            return g;
+        }
+
+        // The value of ending the turn now (at player block pblock, `slimed`
+        // Slimed not exhausted), at HP h.
+        double sxEndAt(int mode, const SxSlimes &l, int weak, int frail, int slimed, const RxDeck &pile, bool abGone, int t,
+                       int pblock, int h) {
+            SxSlimes next;
+            int weak2 = 0, frail2 = 0, added = 0;
+            double pN[2][3];
+            const int hp = h - std::max(0, sxMonsterTurn(l, weak, frail, next, weak2, frail2, added, pN) - pblock);
+            if (hp <= 0) return lxLeaf(l[0].hp, l[1].hp, t, true);
+            if (t + 1 > turnCap_) return lxLeaf(l[0].hp, l[1].hp, t + 1, false);
+            double v = 0;
+            sxRolls(next, pN, [&](const SxSlimes &n, double p) {
+                const std::size_t off = sxStart(mode, n, weak2, frail2, slimed + added, pile, abGone, t + 1);
+                v += p * rxTab_[mode].pool[off + hp];
+            });
+            return v;
+        }
+
+        // The value of a decision state (the rest of its turn played from its
+        // hand), and of an end-of-turn state.
+        double sxDecAt(int mode, const SxView &x) {
+            double best = -1e300;
+            const bool gone = x.abGone || x.hand.a > 0;
+            const int per = x.frail > 0 ? 3 : 5;
+            sxPlays(x.l, x.hand, x.e, x.weak > 0, [&] { best = std::max(best, rxWin(x.h, x.t)); },
+                    [&](const SxSlimes &post, int en) {
+                        for (int nx = 0; nx <= std::min(x.hand.x, en); ++nx)
+                            best = std::max(best, sxEndAt(mode, post, x.weak, x.frail, x.slimed - nx, x.pile, gone, x.t,
+                                                          x.pblock + per * std::min(x.hand.d, en - nx), x.h));
+                    });
+            return best;
+        }
+        double sxEndOf(int mode, const SxView &x) {
+            return sxEndAt(mode, x.l, x.weak, x.frail, x.slimed, x.pile, x.abGone || x.hand.a > 0, x.t, x.pblock, x.h);
+        }
+
+        // --relaxed-check: the engine's outcomes of ending the turn at `s` against
+        // the model's slimes turn, leaves and draw.
+        void sxMirror(const BattleContext &s, const SAction &endTurn) {
+            SxView x;
+            if (!sxView(s, x)) { ++relaxedGateMisses_; return; }
+            ++relaxedChecked_;
+            SxSlimes next;
+            int weak2 = 0, frail2 = 0, added = 0;
+            double pN[2][3];
+            const int hp = x.h - std::max(0, sxMonsterTurn(x.l, x.weak, x.frail, next, weak2, frail2, added, pN) - x.pblock);
+            const bool gone = x.abGone || x.hand.a > 0;
+            const int slimed2 = x.slimed + added;
+            auto bad = [&](const char *what) {
+                if (++relaxedMirror_ <= 10)
+                    std::cerr << "Small Slimes mirror mismatch: " << what << " (turn " << s.turn << " hp " << x.h << " slimes "
+                              << x.l[0].hp << "/" << x.l[1].hp << " moves " << x.l[0].mv0 << "/" << x.l[1].mv0 << " weak "
+                              << x.weak << " frail " << x.frail << " slimed " << x.slimed << ")\n";
+            };
+            double pMove[3][3] = {};
+            for (const auto &o : outcomes(s, endTurn)) {
+                const BattleContext &n = o.state;
+                if (hp <= 0) {
+                    if (n.outcome != Outcome::PLAYER_LOSS) bad("expected a death");
+                    else if (std::abs(terminal(n).v - lxLeaf(x.l[0].hp, x.l[1].hp, s.turn, true)) > 1e-9) bad("death leaf");
+                    continue;
+                }
+                if (n.outcome != Outcome::UNDECIDED || !quiet(n)) { bad("expected a quiet undecided state"); continue; }
+                if (n.turn != s.turn + 1 || n.player.curHp != hp || n.player.block != 0 || n.player.energy != rxEnergy_) {
+                    bad("player at the turn start");
+                    continue;
+                }
+                SxView y;
+                if (!sxView(n, y)) { bad("next state outside the model"); continue; }
+                bool same = y.weak == weak2 && y.frail == frail2 && y.slimed == slimed2 && y.abGone == gone;
+                for (int i = 0; i < 2; ++i) {
+                    const auto &a = y.l[i], &b = next[i];
+                    same = same && a.hp == b.hp && a.vuln == b.vuln && a.mv1 == b.mv1;
+                }
+                if (!same) {
+                    if (relaxedMirror_ < 10)
+                        for (int i = 0; i < 2; ++i)
+                            std::cerr << "  slime " << i << " engine: hp " << y.l[i].hp << " vuln " << y.l[i].vuln << " last "
+                                      << y.l[i].mv1 << "; model: hp " << next[i].hp << " vuln " << next[i].vuln << " last "
+                                      << next[i].mv1 << " (weak engine " << y.weak << " model " << weak2 << ", frail engine "
+                                      << y.frail << " model " << frail2 << ", slimed engine " << y.slimed << " model "
+                                      << slimed2 << ")\n";
+                    bad("slimes turn");
+                    continue;
+                }
+                const int r0 = y.l[0].hp ? y.l[0].mv0 : 0, r1 = y.l[1].hp ? y.l[1].mv0 : 0;
+                pMove[r0][r1] += o.p;
+                // The drawn hand and the pile it leaves must be a draw the model
+                // offers, with the engine's probability (both move rolls times draw).
+                double pDraw = -1;
+                rxHands(x.pile, gone, slimed2, false, [&](const RxDeck &hand, const RxDeck &left, double p) {
+                    if (hand == y.hand && left == y.pile) pDraw = p;
+                });
+                const double pRoll = (y.l[0].hp ? pN[0][r0] : 1.0) * (y.l[1].hp ? pN[1][r1] : 1.0);
+                if (pDraw < 0) bad("draw");
+                else if (std::abs(o.p - pRoll * pDraw) > 1e-9) bad("draw probability");
+                if (n.turn > turnCap_) {
+                    if (std::abs(terminal(n).v - lxLeaf(y.l[0].hp, y.l[1].hp, n.turn, false)) > 1e-9) bad("cap leaf");
+                } else {
+                    // The start value maxes over hands: at least this hand's value.
+                    const std::size_t off = sxStart(0, y.l, weak2, frail2, slimed2, x.pile, gone, n.turn);
+                    if (sxDecAt(0, y) > rxTab_[0].pool[off + hp] + 1e-9) bad("start value below a drawn hand");
+                }
+            }
+            if (hp > 0)
+                for (int a = 0; a < 3; ++a)
+                    for (int b = 0; b < 3; ++b) {
+                        const double pa = next[0].hp ? pN[0][a] : (a ? 0.0 : 1.0);
+                        const double pb = next[1].hp ? pN[1][b] : (b ? 0.0 : 1.0);
                         if (std::abs(pMove[a][b] - pa * pb) > 1e-9) bad("move probabilities");
                     }
         }
