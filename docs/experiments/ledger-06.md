@@ -23292,7 +23292,7 @@ state, not search, explains about half the excess). At 6.4x CPU per fight even t
 to pay for.
 **Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
 
-## §TBD — Common-seed sibling recapture (320 A20 sources): cleaner sibling labels; the SR_w1 blend still beats X2-B (+0.018 to +0.026) but the head alone ranks below it (−0.019 to −0.035) (offline, 2026-10-22)
+## §644 — Common-seed sibling recapture (320 A20 sources): cleaner sibling labels; the SR_w1 blend still beats X2-B (+0.018 to +0.026) but the head alone ranks below it (−0.019 to −0.035) (offline, 2026-10-22)
 
 **Question:** round-2 sibling labels (§503; 64 independent rollout3 repeats per child) are noisy (§641). Does a
 recapture with common seeds (§639) give cleaner labels, and how do the existing heads rank the new siblings? Philipp
