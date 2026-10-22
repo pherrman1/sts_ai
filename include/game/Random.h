@@ -8,6 +8,16 @@
 #include <cstdint>
 #include <utility>
 
+#include "game/ExactChance.h"
+
+#ifdef STS_EXACT_CHANCE
+#define STS_EXACT_HOOK(expr) if (::sts::exact::g_chanceScript) { ++counter; return (expr); }
+#define STS_EXACT_REFUSE(what) if (::sts::exact::g_chanceScript) ::sts::exact::unsupportedDraw(what);
+#else
+#define STS_EXACT_HOOK(expr)
+#define STS_EXACT_REFUSE(what)
+#endif
+
 namespace java {
 
     class Random {
@@ -86,6 +96,7 @@ namespace sts {
         }
 
         std::uint64_t nextLong() {
+            STS_EXACT_REFUSE("raw nextLong")
             std::uint64_t s1 = seed0;
             std::uint64_t s0 = seed1;
             seed0 = s0;
@@ -127,6 +138,7 @@ namespace sts {
         }
 
         bool randomBoolean(float chance) {
+            STS_EXACT_HOOK(::sts::exact::g_chanceScript->chooseBoolean(chance))
             ++counter;
             return nextFloat() < chance;
         }
@@ -157,11 +169,13 @@ namespace sts {
         }
 
         std::int32_t random(std::int32_t range) {
+            STS_EXACT_HOOK(::sts::exact::g_chanceScript->chooseUniform(range + 1))
             ++counter;
             return nextInt(range + 1);
         }
 
         std::int32_t random(std::int32_t start, std::int32_t end) {
+            STS_EXACT_HOOK(start + ::sts::exact::g_chanceScript->chooseUniform(end - start + 1))
             ++counter;
             return start + nextInt(end - start + 1);
         }
@@ -199,6 +213,7 @@ namespace sts {
         }
 
         bool randomBoolean() {
+            STS_EXACT_HOOK(::sts::exact::g_chanceScript->chooseUniform(2) == 1)
             ++counter;
             return nextBoolean();
         }

@@ -78,6 +78,12 @@ check_seed_counts() {
           exit 1
         fi
       fi
+    elif [ "$exe" = "exact_combat_solver" ]; then
+      local seeds="${argv[$((i + 1))]:-}"
+      if ! [[ "$seeds" =~ ^[0-9]+$ ]] || ! [[ "$seeds" =~ [1-9] ]]; then
+        echo "SEED_GUARD: $exe requires a positive integer seed count" >&2
+        exit 1
+      fi
     elif [ "$exe" = "python" ] || [ "$exe" = "python3" ]; then
       local script="${argv[$((i + 1))]:-}"
       local script_name
