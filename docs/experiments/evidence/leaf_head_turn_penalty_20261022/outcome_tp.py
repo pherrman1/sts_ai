@@ -34,8 +34,8 @@ for cfg in sorted({k[0] for k in fights}):
             if not pairs:
                 continue
             se = st.stdev(d) / len(d) ** 0.5 if len(d) > 1 else float("nan")
+            hp, hp0 = (st.mean(x[i]["endHp"] for x in pairs) for i in (0, 1))
+            tu, tu0 = (st.mean(x[i]["turns"] for x in pairs) for i in (0, 1))
             print(f"  {mode:18} {enc:10} {len(pairs):4} fights  score vs none {st.mean(d) if d else float('nan'):+7.2f}"
-                  f" ±{se:.2f}  end HP {st.mean(a['endHp'] for a, _ in pairs):5.1f}"
-                  f" (none {st.mean(b['endHp'] for _, b in pairs):5.1f})  turns {st.mean(a['turns'] for a, _ in pairs):5.1f}"
-                  f" (none {st.mean(b['turns'] for _, b in pairs):4.1f}, max {max(a['turns'] for a, _ in pairs)})"
-                  f"  not won in both {len(pairs) - len(d)}")
+                  f" ±{se:.2f}  end HP {hp:5.1f} (none {hp0:5.1f})  turns {tu:5.1f}"
+                  f" (none {tu0:4.1f}, max {max(a['turns'] for a, _ in pairs)})  not won in both {len(pairs) - len(d)}")

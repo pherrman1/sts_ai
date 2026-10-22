@@ -60,9 +60,10 @@ Scripts: `run_tp.sh`, `select_tp.py`; the analysis is `../silver_leaf_a20_data_2
 
 ## Tuning result and an added readout (2026-10-22 22:15Z, before any confirmation fight ran)
 
-`select_tp.py` on the tuning grid (150 fights x 11 modes x 2 configs, no failures; `tuning/`): **hblend:a20:0.5/1**, pooled paired change
-−0.253 in prod and −0.253 in prod@mb=4, every encounter below 0 in both configs (worst −0.086). The head alone at
-P = 0 was +2.60 and +17.83 (one prod@mb=4 Two Louse fight ran 118 turns); P = 1 and 2 brought it to +0.01 to +0.18.
+`select_tp.py` on the tuning grid (150 fights x 11 modes x 2 configs, no failures; `tuning/`):
+**hblend:a20:0.5/1**, pooled paired change −0.253 in prod and −0.253 in prod@mb=4, every encounter below 0 in both
+configs (worst −0.086). The head alone at P = 0 was +2.60 and +17.83 (one prod@mb=4 Two Louse fight ran 118 turns);
+P = 1 and 2 brought it to +0.01 to +0.18.
 
 Philipp (22:08Z) asked whether the stall is damage-neutral. The solver's value has a turn cap (8): a fight still
 running past turn 8 scores like a loss leaf, so a stall that costs no HP counts as a loss in the regret. Added as a
