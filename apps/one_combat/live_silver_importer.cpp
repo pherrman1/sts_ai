@@ -903,6 +903,18 @@ bool domeAct4Fix() {
     throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_ACT4 must be 0 or 1");
 }
 
+// STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL: unset/1 (default) accepts Awakened One's
+// pending roll made right after its Rebirth executed with rollHp 0: the REBIRTH
+// changeState queues the heal behind takeTurn's RollMoveAction, and phase two's
+// first move (Dark Echo) does not depend on HP (live problem 91, seed 111200541).
+// =0 restores the refusal (silver_runic_dome_history_gap).
+bool domeRebirthRollFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL must be 0 or 1");
+}
+
 // The public result of the Act 4 roll made after `done` executions (Java
 // getMove), 0 if that roll is random, or -1 if it needs an unknown last move.
 int domeAct4Cycle(const std::string &id,int done,int last) {
@@ -1153,7 +1165,9 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(darkling && ((knownNext && (!m.halfDead || m.curHp!=0))
                 || (!knownNext && m.halfDead && (moves.empty() || moves.back()!=4 || k.at("rollHp")!=0))))return "silver_runic_dome_history_gap";
         if(split && knownNext && k.at("knownNextMove").at("move")==3 && m.curHp*2>m.maxHp)return "silver_runic_dome_history_gap";
-        if(k.at("rollHp")==0 && !(darkling && m.halfDead))return "silver_runic_dome_history_gap";
+        const bool rebirthRoll=awakened && misc==1 && !m.halfDead && pending==1 && !moves.empty() && moves.back()==3
+                && domeRebirthRollFix();
+        if(k.at("rollHp")==0 && !(darkling && m.halfDead) && !rebirthRoll)return "silver_runic_dome_history_gap";
         if(hex && (completed==0?misc!=0:misc<1 || misc>834)) return "silver_runic_dome_history_gap";
         if(guardian && (misc<(wire.ascension>=19?40:wire.ascension>=9?35:30)
                 || (misc-(wire.ascension>=19?40:wire.ascension>=9?35:30))%10 || misc>(wire.ascension>=19?40:wire.ascension>=9?35:30)+10*completed))

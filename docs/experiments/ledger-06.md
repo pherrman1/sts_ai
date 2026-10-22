@@ -22273,6 +22273,29 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** A driver-only fix. It removes a stop that cost seed 523. A genuinely stale inspector snapshot (wrong gold against game_state) still fails.
 
 **Status:** Draft PR.
+## §629 — Live problem 91: Runic Dome lost Awakened One's roll after Rebirth (2026-10-22)
+
+**Question:** Why did seed 111200541 seg 2 (Awakened One with Runic Dome) refuse with `silver_runic_dome_incomplete_history` after a normal phase-1 death and Rebirth?
+
+**Evidence:** The AwakenedOne dome row was `{complete:false, generation:18, reason:"roll_lifecycle"}`, while the Cultist rows were complete. The REBIRTH takeTurn queues `ChangeStateAction("REBIRTH")`, and its `changeState` sets maxHealth 320 and queues the heal with `addToBottom`, behind takeTurn's `RollMoveAction`. So the roll right after Rebirth runs at HP 0, and `RunicDomeTracker.beginRoll` rejected `hp<=0`. The importer also refused any `rollHp` 0 outside a half-dead Darkling. The native engine instead heals inside REBIRTH and then rolls Dark Echo, which does not depend on HP.
+
+**Change:**
+- Tracker (producer, no flag): `beginRoll` accepts HP 0 for Awakened One only when `publicMisc` is 1 and the last executed move is 3 (Rebirth).
+- Importer: `STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL` (default on, `=0` restores) accepts `rollHp` 0 for that pending roll (not half-dead, one pending roll).
+- Tests: `RunicDomeTrackerTest` covers the post-Rebirth HP-0 roll and refuses a first-form HP-0 roll. `live_silver_importer_test` imports it, materializes Dark Echo, refuses it after a later move, and refuses it with `=0`.
+
+**Interpretation:** Under Runic Dome, Silver keeps playing phase two of Awakened One instead of refusing.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §628 — Live problem 87: a skipped boss relic offer re-published the boss chest reveal (2026-10-22)
+
+**Question:** Why did seed 111200537 get stuck at the act-1 boss chest after the OOC skipped the boss relic?
+
+**Evidence:** Skipping leaves `BossChest.isOpen` false, so `LiveOocCapture.captureBossChestReveal` published `mechanicalTransition=boss_chest_reveal` again. The advisor passes "Open boss chest" through with prior 1.0, so the run looped open -> skip -> open until the cycle guard abandoned the step. Proceed was the correct play.
+
+**Change:** A producer-only fix (no flag). `boss()` records the room whose boss relic offer it captured. `treasure()` publishes `captureSkippedBossChest` for an unopened BossChest in that same room when MCP can proceed. That is the completed room's Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor's existing opened-chest pass-through returns. Test: `test_skipped_boss_chest_is_native_proceed_passthrough` (`tests/live_ooc_protocol.py`, 63 OK).
+
+**Interpretation:** The skip decision of the boss relic screen is final, as in a human's play. Reopening would only show the same three relics again.
 ## §626 — Live problem 85: the Awakened One rebirth window could not be correlated (2026-10-21)
 
 **Question:** Why did seed 111200512 (seg1 s831, act 3 floor 50) stop with "no fresh inspector response for current state: cannot correlate inspector observation with MCP-visible state" right after Uppercut+ killed Awakened One's first form?
