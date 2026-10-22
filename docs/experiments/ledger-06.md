@@ -22262,7 +22262,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
-## §TBD — Live problem 86: the OOC correlation trusted get_screen's stale gold (2026-10-22)
+## §627 — Live problem 86: the OOC correlation trusted get_screen's stale gold (2026-10-22)
 
 **Question:** Why did seed 111200523 stop at the Transmogrifier with "inspector OOC gold does not match MCP state"?
 
