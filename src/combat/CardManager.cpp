@@ -437,9 +437,15 @@ void CardManager::draw(BattleContext &bc, int amount) {
 
 #ifdef STS_EXACT_CHANCE
     // Research tooling: tell the exact-chance draw hook how many draws this call makes.
-    exact::g_drawBatchRemaining = amount;
+    // Their order cannot matter unless the hand fills up (the overflow is discarded)
+    // or Confused draws a cost per card in between; then the count stays 0 (no
+    // canonical order).
+    exact::g_drawBatchRemaining = cardsInHand + amount <= 10 && !bc.player.hasStatus<PS::CONFUSED>() ? amount : 0;
     exact::g_drawBatchFresh = true;
-    struct BatchEnd { ~BatchEnd() { exact::g_drawBatchRemaining = 0; exact::g_drawBatchFresh = false; } } batchEnd;
+    exact::g_drawBatchActive = true;
+    struct BatchEnd {
+        ~BatchEnd() { exact::g_drawBatchRemaining = 0; exact::g_drawBatchFresh = false; exact::g_drawBatchActive = false; }
+    } batchEnd;
 #endif
     for (int i = 0; i < amount; i++) {
         auto c = popFromDrawPile(bc.shuffleRng);

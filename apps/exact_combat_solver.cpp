@@ -39,6 +39,10 @@
 //   --no-bounds        no alpha pruning; by default (same fights, no potions) chance and decision
 //                      nodes stop once an upper bound shows they cannot beat a sibling; every
 //                      reported value stays exact
+//
+// exact_combat_solver roots IN.jsonl OUT.jsonl [options] (research, see rootsMain): Silver's
+// recorded roots of the last turns of real A20 elite and boss fights (one_combat
+// endgamerootgen), each solved through a short horizon with proven bounds on every action.
 
 #include <algorithm>
 #include <chrono>
@@ -57,6 +61,7 @@
 #include <nlohmann/json.hpp>
 
 #include "combat/BattleContext.h"
+#include "combat/BattleContextBinary.h"
 #include "constants/MonsterEncounters.h"
 #include "game/ExactChance.h"
 #include "game/GameContext.h"
@@ -443,6 +448,7 @@ namespace {
         // or cap leaf is bounded term by term.
         double upperBound(const BattleContext &s, const KeyBuilder *pre = nullptr) {
             if (s.outcome != Outcome::UNDECIDED) return terminal(s).v;
+            if (general_) return generalUpperBound(s);
             // Research (--oracle-pass): the values of a previous full solve as
             // upper bounds, to measure what perfect bounds would save.
             if (oracle_ && oracleBoundsOn_ && quiet(s)) {
@@ -1992,6 +1998,180 @@ namespace {
         }
         std::int64_t twinBounds_ = 0;
 
+        // ---- endgame roots (exact_combat_solver roots) -----------------------
+        // Research: values of recorded Silver roots of real elite and boss fights
+        // (one_combat endgamerootgen) through turnCap_ only. general_: every bound
+        // is generalUpperBound (no starter-fight assumption), and a fight still
+        // undecided past the cap is worth capUpper_ ? generalUpperBound : 0, the
+        // floor of both objectives used there, so one pass with each brackets the
+        // true value of every action.
+        bool general_ = false, capUpper_ = false, winObjective_ = false, dropCardsDrawn_ = false;
+        // surviveObjective_: 1 for a win or a fight still undecided past the cap, 0 for a loss
+        // (the same in both passes: the probability of surviving the horizon under best play).
+        bool collapseCapDraws_ = false, collapseCapAll_ = false, surviveObjective_ = false;
+        std::string collapseRefused_;   // why some horizon end turn kept its chance events (roots report)
+        std::chrono::steady_clock::time_point deadline_ = std::chrono::steady_clock::time_point::max();
+
+        // What the player can still reach in this fight from `s`: the most HP, max HP and
+        // gold, and whether potions can be gained (Entropic Brew, Alchemize). HP rises only
+        // through the engine's heal sources: their total is bounded here per source (Feed and
+        // Darkstone Periapt with the max HP they add, a Blood or Regen Potion, Fruit Juice,
+        // Bandage Up per copy, Toy Ornithopter per potion, Bird-Faced Urn per power, Regen,
+        // Magic Flower's 1.5x; a revive by Fairy or Lizard Tail restarts from its HP), and a
+        // source without such a bound (Reaper, Bite, Exhume, random cards) allows the max HP.
+        // Feed and Hand of Greed pay once per monster that can still die, a split slime
+        // counting its splits.
+        struct Ceilings { int hp = 0, maxHp = 0, gold = 0; bool potionGain = false; };
+        Ceilings ceilings(const BattleContext &s) const {
+            const auto &p = s.player;
+            const bool bark = p.hasRelic<RelicId::SACRED_BARK>();
+            int feeds = 0, bandages = 0, powers = 0, potions = 0, bloods = 0, regens = 0, juice = 0, revivePct = 0;
+            bool greed = false, unbounded = false, potionGain = false, dualWield = false;
+            // A card played twice (Duplication, Echo Form, Burst) heals twice.
+            bool doubler = p.hasStatus<PlayerStatus::DUPLICATION>() || p.hasStatus<PlayerStatus::ECHO_FORM>()
+                || p.hasStatus<PlayerStatus::BURST>();
+            auto card = [&](const CardInstance &c, bool exhausted) {
+                switch (c.id) {
+                    case CardId::REAPER: case CardId::BITE: case CardId::EXHUME: unbounded = true; break;
+                    case CardId::FEED: ++feeds; break;
+                    case CardId::BANDAGE_UP: bandages += exhausted ? 0 : 1; break;
+                    case CardId::HAND_OF_GREED: greed = true; break;
+                    case CardId::DUAL_WIELD: dualWield = true; break;
+                    case CardId::ECHO_FORM: case CardId::BURST: doubler = true; break;
+                    case CardId::ALCHEMIZE: potionGain = true; break;
+                    case CardId::INFERNAL_BLADE: case CardId::JACK_OF_ALL_TRADES: case CardId::DISCOVERY:
+                    case CardId::TRANSMUTATION: case CardId::CHRYSALIS: case CardId::METAMORPHOSIS:
+                    case CardId::MAGNETISM: case CardId::WHITE_NOISE:
+                        unbounded = greed = true; ++feeds; break;
+                    default: break;
+                }
+                if (!exhausted && c.getType() == CardType::POWER) ++powers;
+            };
+            const auto &cm = s.cards;
+            for (int i = 0; i < cm.cardsInHand; ++i) card(cm.hand[i], false);
+            for (const auto &c : cm.drawPile) card(c, false);
+            for (const auto &c : cm.discardPile) card(c, false);
+            for (const auto &c : cm.exhaustPile) card(c, true);
+            for (const auto &c : cm.stasisCards) card(c, false);
+            for (int i = 0; i < s.potionCapacity; ++i) {
+                switch (s.potions[i]) {
+                    case Potion::EMPTY_POTION_SLOT: continue;
+                    case Potion::BLOOD_POTION: ++bloods; break;
+                    case Potion::REGEN_POTION: ++regens; break;
+                    case Potion::FAIRY_POTION: revivePct = std::max(revivePct, bark ? 60 : 30); break;
+                    case Potion::FRUIT_JUICE: juice += bark ? 10 : 5; break;
+                    case Potion::DUPLICATION_POTION: doubler = true; break;
+                    case Potion::ENTROPIC_BREW: potionGain = unbounded = greed = true; ++feeds; break;
+                    case Potion::ATTACK_POTION: case Potion::SKILL_POTION: case Potion::POWER_POTION:
+                    case Potion::COLORLESS_POTION: unbounded = greed = true; ++feeds; break;
+                    default: break;
+                }
+                ++potions;
+            }
+            if (p.hasRelic<RelicId::LIZARD_TAIL>()) revivePct = std::max(revivePct, 50);
+            if (p.hasStatus<PlayerStatus::MAGNETISM>()) unbounded = greed = true;
+            // Copies of a power (Dual Wield) heal through the Urn without a bound here; so do
+            // Bandage Ups played twice.
+            if ((dualWield && p.hasRelic<RelicId::BIRD_FACED_URN>()) || (doubler && bandages > 0)) unbounded = true;
+            int kills = 0;
+            bool unimplanted = false;
+            for (int i = 0; i < s.monsters.monsterCount; ++i) {
+                const auto &m = s.monsters.arr[i];
+                if (!m.isAlive() || m.hasStatus<MonsterStatus::MINION>()) continue;
+                kills += m.id == MonsterId::SLIME_BOSS ? 7
+                    : (m.id == MonsterId::ACID_SLIME_L || m.id == MonsterId::SPIKE_SLIME_L) ? 3 : 1;
+                if (m.id == MonsterId::WRITHING_MASS && !m.miscInfo) unimplanted = true;
+            }
+            const int periapt = p.hasRelic<RelicId::DARKSTONE_PERIAPT>() && unimplanted ? 6 : 0;
+            Ceilings c;
+            c.maxHp = p.maxHp + 4 * feeds * kills + juice + periapt;
+            if (unbounded) {
+                c.hp = c.maxHp;
+            } else {
+                const int regen = p.getStatus<PlayerStatus::REGEN>();
+                const int perRegenPotion = bark ? 55 : 15;   // Regen 5 (10): 5 + 4 + ... + 1
+                double heal = 4.0 * feeds * kills + juice + periapt + 6.0 * bandages + regen * (regen + 1) / 2.0
+                    + bloods * (c.maxHp * (bark ? 40 : 20) / 100) + regens * perRegenPotion;
+                if (p.hasRelic<RelicId::TOY_ORNITHOPTER>()) heal += 5.0 * potions;
+                if (p.hasRelic<RelicId::BIRD_FACED_URN>()) heal += 4.0 * powers;   // twice for Echo Form or Duplication
+                if (greed && p.hasRelic<RelicId::BLOODY_IDOL>()) heal += 5.0 * kills;   // 5 per gold gain
+                if (p.hasRelic<RelicId::MAGIC_FLOWER>()) heal *= 1.5;
+                const int from = std::max(p.curHp, c.maxHp * revivePct / 100);
+                c.hp = static_cast<int>(std::min<double>(c.maxHp, from + std::ceil(heal)));
+            }
+            c.gold = p.gold + (greed ? 25 * kills : 0);
+            c.potionGain = potionGain;
+            return c;
+        }
+
+        // An upper bound on the value of `s` under any play, for any state of these
+        // objectives: the HP ceiling (hp), or Silver's victory score now (no win comes
+        // earlier) at the ceilings, potions as held (they are only used up) and no
+        // escape; a loss is worth 0 in both.
+        double generalUpperBound(const BattleContext &s) {
+            if (s.outcome != Outcome::UNDECIDED) return terminal(s).v;
+            if (surviveObjective_) return 1.0;
+            const Ceilings c = ceilings(s);
+            if (hpObjective_) return std::max(0, c.hp);
+            if (c.potionGain) throw std::runtime_error("exact solver: potions can be gained (Entropic Brew, Alchemize)");
+            KeyBuilder k;
+            k.add(c.hp); k.add(c.maxHp); k.add(c.gold); k.add(s.turn); k.add(s.potionCapacity);
+            for (int i = 0; i < s.potionCapacity; ++i) k.add(static_cast<int>(s.potions[i]));
+            k.add(s.player.relicBits0); k.add(s.player.relicBits1); k.add(static_cast<std::uint64_t>(s.miscBits.to_ullong()));
+            for (int i = 0; i < s.monsters.monsterCount; ++i) {
+                const auto &m = s.monsters.arr[i];
+                k.add(static_cast<int>(m.id)); k.add(m.curHp > 0 ? 1 : 0); k.add(static_cast<int>(m.moveHistory[0])); k.add(m.miscInfo);
+            }
+            const Key key = k.key();
+            if (auto it = boundCache_.find(key); it != boundCache_.end()) return it->second;
+            BattleContext w = s;
+            w.outcome = Outcome::PLAYER_VICTORY;
+            w.smokeBombUsed = false;
+            w.player.maxHp = c.maxHp;
+            w.player.gold = static_cast<decltype(w.player.gold)>(c.gold);
+            double best = 0;
+            // Meat on the Bone heals 12 at or below half HP: the score can peak there.
+            for (const int hp : {c.hp, std::min(c.hp, c.maxHp / 2)}) {
+                w.player.curHp = std::max(1, hp);
+                best = std::max(best, scorer_.scoreEndState(w));
+            }
+            boundCache_.emplace(key, best);
+            return best;
+        }
+        std::unordered_map<Key, double, KeyHash> boundCache_;
+        std::size_t memoSize() const { return memo_.size(); }
+
+        // Research (roots --explain): the best line from `s` under this pass's values, following
+        // the most likely outcome of each chance step, one line per step on `os`.
+        std::vector<Outcome1> outcomesOf(const BattleContext &s, const SAction &a) {
+            auto outs = outcomes(s, a);
+            std::sort(outs.begin(), outs.end(), [](const Outcome1 &x, const Outcome1 &y) { return x.p > y.p; });
+            return outs;
+        }
+        void explain(const BattleContext &s, std::ostream &os, int depth = 0) {
+            if (depth > 40 || s.outcome != Outcome::UNDECIDED || s.turn > turnCap_) {
+                os << "    end: outcome " << static_cast<int>(s.outcome) << " turn " << s.turn << " hp " << s.player.curHp
+                   << " value " << solve(s).v << '\n';
+                return;
+            }
+            const auto acts = actions(s);
+            int best = -1;
+            double bestV = -1e300;
+            for (std::size_t i = 0; i < acts.size(); ++i) {
+                const double v = q(s, acts[i]).v;
+                if (v > bestV) { bestV = v; best = static_cast<int>(i); }
+            }
+            if (best < 0) { os << "    no actions\n"; return; }
+            auto outs = outcomes(s, acts[best]);
+            std::sort(outs.begin(), outs.end(), [](const Outcome1 &a, const Outcome1 &b) { return a.p > b.p; });
+            os << "    t" << s.turn << " hp " << s.player.curHp << " blk " << s.player.block << " e " << s.player.energy
+               << " | ";
+            acts[best].printDesc(os, s);
+            os << " = " << bestV << " (" << outs.size() << " outcomes, top p "
+               << outs[0].p << ")\n";
+            explain(outs[0].state, os, depth + 1);
+        }
+
         // ---- research statistics (--stats) ----------------------------------
         // Per memoized state: its key without player HP, and its "exogenous"
         // key (also without player block and every monster's HP, block,
@@ -2184,7 +2364,8 @@ namespace {
             v.score = scorer_.scoreEndState(s);
             v.win = s.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
             v.hp = v.win ? s.player.curHp : 0;
-            v.v = hpObjective_ ? v.hp : v.score;
+            v.v = hpObjective_ ? v.hp : surviveObjective_ ? v.win
+                : winObjective_ ? (v.win ? std::max(0.0, v.score) : 0.0) : v.score;
             return v;
         }
 
@@ -2220,6 +2401,12 @@ namespace {
                 // (Silver's unresolved-playout evaluation); `capped` reports how
                 // much probability reaches it.
                 Val v = terminal(s);
+                if (general_) {
+                    // Roots mode: the floor of the objective (lower pass) or the general upper bound.
+                    v.v = v.score = surviveObjective_ ? 1.0 : capUpper_ ? generalUpperBound(s) : 0.0;
+                    v.hp = capUpper_ ? ceilings(s).hp : 0;
+                    v.win = capUpper_ && !surviveObjective_ ? 1 : 0;
+                }
                 v.capped = 1;
                 return v;
             }
@@ -2532,6 +2719,29 @@ namespace {
             std::unordered_map<Key, std::size_t, KeyHash> index;
             std::vector<std::vector<int>> stack{{}};
             const bool endTurn = a.getActionType() == search::ActionType::END_TURN;
+            // Roots mode: ending the cap turn leads only to horizon leaves (or terminals decided
+            // before the draw), valued without the hand, so its draw is not enumerated; Fire
+            // Breathing deals damage per drawn status or curse, so it keeps the draw exact.
+            script_.collapseBatchDraws = collapseCapDraws_ && endTurn && s.turn == turnCap_
+                && !s.player.hasStatus<PS::FIRE_BREATHING>();
+            // The same leaves see no other chance result either (next intents, summoned minions'
+            // kinds and HP) unless one can damage a monster or the player: Juggernaut and Mayhem
+            // hit at random, Fire Breathing hits per drawn card, Runic Dome hides intents, and a
+            // Writhing Mass roll sets the Parasite flag of the victory score.
+            if (collapseCapAll_ && endTurn && s.turn == turnCap_) {
+                const char *refused = s.player.hasStatus<PS::FIRE_BREATHING>() ? "Fire Breathing"
+                    : s.player.hasStatus<PS::JUGGERNAUT>() ? "Juggernaut" : s.player.hasStatus<PS::MAYHEM>() ? "Mayhem"
+                    : s.player.hasRelic<RelicId::RUNIC_DOME>() ? "Runic Dome"
+                    : std::any_of(s.monsters.arr.begin(), s.monsters.arr.begin() + s.monsters.monsterCount,
+                                  [](const Monster &m) { return m.id == MonsterId::WRITHING_MASS; }) ? "Writhing Mass" : nullptr;
+                script_.collapseAll = refused == nullptr;
+                if (refused && collapseRefused_.empty()) std::cerr << "  horizon end turn kept its chance events: " << refused << '\n';
+                if (refused) collapseRefused_ = refused;
+            }
+            struct CollapseOff {
+                exact::ChanceScript &c;
+                ~CollapseOff() { c.collapseBatchDraws = false; c.collapseAll = false; }
+            } collapseOff{script_};
             const auto replaysBefore = replays_;
             std::int64_t dead = 0;
             struct Report {
@@ -2548,6 +2758,8 @@ namespace {
                 BattleContext next = s;
                 script_.reset(prefix);
                 exact::g_chanceScript = &script_;
+                if ((replays_ & 4095) == 0 && std::chrono::steady_clock::now() > deadline_)
+                    throw Infeasible("time limit");
                 if (++replays_ % 1000000 == 0)
                 {
                     std::cerr << "  replays=" << replays_ << " states=" << memo_.size() << " turn=" << s.turn
@@ -2567,6 +2779,7 @@ namespace {
                 // Silver's loss score subtracts 1.75 per wasted energy; dropping the
                 // counter removes that term and keeps it out of the state key.
                 if (dropEnergyWaste_) next.energyWasted = 0;
+                if (dropCardsDrawn_) next.cardsDrawn = 0;
                 const double p = script_.prob;
                 if (endTurn && endCalls_ == 0 && std::getenv("STS_EXACT_DEBUG")) {
                     std::cerr << "run prefix=";
@@ -2712,10 +2925,285 @@ namespace {
         return std::chrono::duration<double>(std::chrono::steady_clock::now() - since).count();
     }
 
+    // ---- roots: Silver roots of real elite and boss fights (one_combat endgamerootgen) ----
+
+    // The recorder's snapshot back into the search root (as its round-trip check does).
+    BattleContext restoreRoot(const json &j) {
+        const std::string hex = j.at("state");
+        std::vector<std::uint8_t> bytes(hex.size() / 2);
+        for (std::size_t i = 0; i < bytes.size(); ++i)
+            bytes[i] = static_cast<std::uint8_t>(std::stoi(hex.substr(2 * i, 2), nullptr, 16));
+        BattleContext bc = deserializeBattleContext(bytes.data(), bytes.size());
+        const auto &x = j.at("extras");
+        bc.energyWasted = x.at("energyWasted"); bc.cardsDrawn = x.at("cardsDrawn");
+        bc.miscBits = std::bitset<32>(x.at("miscBits").get<unsigned long>());
+        bc.smokeBombUsed = x.at("smokeBombUsed"); bc.monsterTurnIdx = x.at("monsterTurnIdx");
+        bc.endTurnQueued = x.at("endTurnQueued"); bc.turnHasEnded = x.at("turnHasEnded");
+        bc.skipMonsterTurn = x.at("skipMonsterTurn"); bc.intentsHidden = x.at("intentsHidden");
+        bc.haveUsedDiscoveryAction = x.at("haveUsedDiscoveryAction");
+        if (!j.at("drawConcrete").get<bool>()) {
+            const std::vector<CardInstance> all(bc.cards.drawPile.begin(), bc.cards.drawPile.end());
+            const int bottom = j.at("drawKnownBottom"), top = j.at("drawKnownTop");
+            bc.cards.drawPile.assignInformationState(
+                std::vector<CardInstance>(all.begin(), all.begin() + bottom),
+                std::vector<CardInstance>(all.begin() + bottom, all.end() - top),
+                std::vector<CardInstance>(all.end() - top, all.end()));
+        }
+        if (bc.turn != j.at("turn").get<int>() || bc.player.curHp != j.at("hp").get<int>()
+                || bc.cards.cardsInHand != j.at("handSize").get<int>())
+            throw std::runtime_error("roots: the snapshot does not decode to the recorded root");
+        return bc;
+    }
+
+    sts::search::SilverSearchContext contextOf(const json &c) {
+        sts::search::SilverSearchContext x;
+        x.act = c.at("act"); x.actBossRoom = c.at("actBossRoom"); x.omamoriCharged = c.at("omamoriCharged");
+        x.eliteRewards = c.at("eliteRewards"); x.finalBossBinary = c.at("finalBossBinary");
+        x.finalFightLeaf = c.at("finalFightLeaf"); x.actHealFollows = c.at("actHealFollows");
+        x.noLossPotionCredit = c.at("noLossPotionCredit"); x.relicHealLeaf = c.at("relicHealLeaf");
+        x.escapeForfeitsRun = c.at("escapeForfeitsRun");
+        return x;
+    }
+
+    void weightsOf(const json &w, sts::search::SilverEvalWeights &x) {
+        x.winBonus = w.at("winBonus"); x.potionWeight = w.at("potionWeight");
+        x.victoryTurnPenalty = w.at("victoryTurnPenalty"); x.monsterDamageWeight = w.at("monsterDamageWeight");
+        x.aliveWeight = w.at("aliveWeight"); x.energyWasteWeight = w.at("energyWasteWeight");
+        x.drawWeight = w.at("drawWeight"); x.turnSurvivalWeight = w.at("turnSurvivalWeight");
+        x.goldWeight = w.at("goldWeight"); x.maxHpWeight = w.at("maxHpWeight"); x.parasitePenalty = w.at("parasitePenalty");
+        x.escapePenalty = w.at("escapePenalty"); x.eliteEscapePenalty = w.at("eliteEscapePenalty");
+        x.potionTypeWeightsOn = w.at("potionTypeWeightsOn");
+        const auto types = w.at("potionTypeWeights").get<std::vector<double>>();
+        for (std::size_t i = 0; i < types.size() && i < x.potionTypeWeights.size(); ++i) x.potionTypeWeights[i] = types[i];
+        x.concaveHpK = w.at("concaveHpK");
+    }
+
+    // exact_combat_solver roots IN.jsonl OUT.jsonl [options]: every recorded root of the
+    // selected turns (--to-end: turns before the fight's last turn, default 0,1) solved through
+    // --horizon more turns (default 0: the root's own turn) under --objective win (Silver's
+    // victory score, 0 for a loss; the default) or hp (end HP, 0 for a loss). Two passes per
+    // root: a fight still undecided past the horizon is worth 0 (the lower pass) or the
+    // general upper bound (the upper pass), so each action gets a proven interval [lo, hi]
+    // of its value under optimal play. --objective survive is exact in one pass: the
+    // probability of a win or of still being alive past the horizon (lo = hi). Ending the
+    // horizon's last turn enumerates no chance event its leaves cannot see (--collapse all,
+    // the default; draws: only its draws; none). One JSON line per root.
+    int rootsMain(int argc, char **argv) {
+        if (argc < 4) {
+            std::cerr << "usage: exact_combat_solver roots IN.jsonl OUT.jsonl [--horizon H] [--to-end 0,1]"
+                         " [--objective win|hp|survive] [--rooms ELITE,BOSS] [--max-states N] [--time-limit S] [--skip N]"
+                         " [--take N] [--verify-memo] [--no-canonical-draws] [--collapse all|draws|none] [--no-bounds]"
+                         " [--policy-lower P] [--explain INDEX]\n";
+            return 2;
+        }
+        std::ifstream in(argv[2]);
+        if (!in) throw std::runtime_error(std::string("cannot open ") + argv[2]);
+        std::ofstream out(argv[3], std::ios::app);
+        if (!out) throw std::runtime_error(std::string("cannot open ") + argv[3]);
+        int horizon = 0, policyLower = 0;
+        std::vector<int> toEnd{0, 1};
+        std::vector<std::string> rooms{"ELITE", "BOSS"};
+        bool hpObjective = false, surviveObjective = false, verify = false, canonicalOff = false, boundsOff = false;
+        std::string collapse = "all";
+        std::int64_t maxStates = 12'000'000, skip = 0, take = -1, explainIndex = -1;
+        double timeLimit = 600;
+        for (int i = 4; i < argc; ++i) {
+            const std::string arg = argv[i];
+            auto value = [&]() -> std::string {
+                if (i + 1 >= argc) throw std::invalid_argument(arg + " needs a value");
+                return argv[++i];
+            };
+            if (arg == "--horizon") horizon = std::stoi(value());
+            else if (arg == "--to-end") {
+                toEnd.clear();
+                std::stringstream list(value());
+                for (std::string item; std::getline(list, item, ',');) toEnd.push_back(std::stoi(item));
+            } else if (arg == "--rooms") {
+                rooms.clear();
+                std::stringstream list(value());
+                for (std::string item; std::getline(list, item, ',');) rooms.push_back(item);
+            } else if (arg == "--objective") {
+                const auto v = value();
+                if (v != "win" && v != "hp" && v != "survive") throw std::invalid_argument("--objective win|hp|survive");
+                hpObjective = v == "hp";
+                surviveObjective = v == "survive";
+            } else if (arg == "--max-states") maxStates = std::stoll(value());
+            else if (arg == "--time-limit") timeLimit = std::stod(value());
+            else if (arg == "--skip") skip = std::stoll(value());
+            else if (arg == "--take") take = std::stoll(value());
+            else if (arg == "--verify-memo") verify = true;
+            else if (arg == "--no-canonical-draws") canonicalOff = true;
+            else if (arg == "--collapse") {
+                collapse = value();
+                if (collapse != "all" && collapse != "draws" && collapse != "none")
+                    throw std::invalid_argument("--collapse all|draws|none");
+            } else if (arg == "--no-collapse") collapse = "none";
+            else if (arg == "--no-bounds") boundsOff = true;
+            else if (arg == "--explain") explainIndex = std::stoll(value());
+            else if (arg == "--policy-lower") policyLower = std::stoi(value());
+            else throw std::invalid_argument("unknown option " + arg);
+        }
+        if (surviveObjective && policyLower > 0) throw std::invalid_argument("--objective survive is exact: no --policy-lower");
+        sts::search::installNativeSilverBackend();
+        std::int64_t eligible = 0, solved = 0;
+        for (std::string line; std::getline(in, line);) {
+            if (line.empty()) continue;
+            const json j = json::parse(line);
+            if (j.contains("summary")) continue;
+            if (std::find(toEnd.begin(), toEnd.end(), j.at("turnsToEnd").get<int>()) == toEnd.end()) continue;
+            if (std::find(rooms.begin(), rooms.end(), j.at("room").get<std::string>()) == rooms.end()) continue;
+            if (j.at("skipped").get<bool>() || j.at("edges").size() < 2) continue;
+            const std::int64_t index = eligible++;
+            if (index < skip || (take >= 0 && index >= skip + take)) continue;
+            json row = {{"index", index}};
+            for (const char *k : {"seed", "fight", "floor", "act", "room", "encounter", "decision", "turn", "endTurn",
+                                  "turnsToEnd", "won", "endHp", "hp", "maxHp", "block", "energy", "handSize",
+                                  "monstersAlive", "simulations", "inheritedVisits", "chosen", "chosenLabel"})
+                row[k] = j.at(k);
+            row["horizon"] = horizon;
+            row["policyLower"] = policyLower;
+            row["objective"] = hpObjective ? "hp" : surviveObjective ? "survive" : "win";
+            row["collapse"] = collapse;
+            const auto t0 = std::chrono::steady_clock::now();
+            try {
+                if (!j.value("roundTrip", false) || j.at("inputState").get<int>() != static_cast<int>(InputState::PLAYER_NORMAL))
+                    throw std::runtime_error("unsupported: not a restorable quiet player decision");
+                const BattleContext root = restoreRoot(j);
+                if (!quiet(root)) throw std::runtime_error("unsupported: not a quiet player decision");
+                SilverSearcher live(root, contextOf(j.at("context")));
+                weightsOf(j.at("weights"), live.evalWeights);
+                // Silver's playout policy of this root (its card table, block rule), for --policy-lower.
+                std::vector<int> cardTable;
+                if (j.contains("rollout")) {
+                    const auto &r = j.at("rollout");
+                    if (!r.at("cardTable").is_null()) {
+                        cardTable = r.at("cardTable").get<std::vector<int>>();
+                        live.rolloutConfig.cardTable = cardTable.data();
+                    }
+                    live.rolloutConfig.zeroCostCap = r.at("zeroCostCap");
+                    live.rolloutConfig.blockRule = {r.at("blockFirstMargin").get<int>(), r.at("blockLethalCheck").get<bool>(),
+                                                    r.at("blockOffset").get<int>()};
+                }
+                if (!hpObjective && live.evalWeights.concaveHpK != 0)
+                    throw std::runtime_error("unsupported: concave HP leaf (the potion term is not monotone)");
+                if (!hpObjective && live.evalWeights.potionTypeWeightsOn)
+                    for (const double w : live.evalWeights.potionTypeWeights)
+                        if (w < 0) throw std::runtime_error("unsupported: negative potion weight");
+                std::map<std::uint32_t, json> edges;
+                for (const auto &e : j.at("edges")) edges[e.at(0).get<std::uint32_t>()] = e;
+                json acts = json::array();
+                std::vector<double> lo, hi;
+                int chosenIdx = -1;
+                for (int pass = 0; pass < (surviveObjective ? 1 : 2); ++pass) {
+                    const auto tp = std::chrono::steady_clock::now();
+                    ExactSolver solver(root, live, hpObjective, maxStates, verify, !canonicalOff, true);
+                    solver.general_ = true;
+                    solver.capUpper_ = pass == 1;
+                    solver.winObjective_ = !hpObjective && !surviveObjective;
+                    solver.surviveObjective_ = surviveObjective;
+                    solver.dropCardsDrawn_ = true;
+                    solver.collapseCapDraws_ = collapse != "none";
+                    solver.collapseCapAll_ = collapse == "all";
+                    solver.bounds_ = !boundsOff;
+                    solver.turnCap_ = root.turn + horizon;
+                    if (pass == 0 && policyLower > 0) {
+                        // A lower bound needs only some play: after the horizon, Silver's playout
+                        // policy for policyLower more turns (exactly in expectation), then 0.
+                        solver.setPolicy(root.turn + horizon + 1, live);
+                        solver.turnCap_ += policyLower;
+                    }
+                    solver.deadline_ = tp + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                        std::chrono::duration<double>(timeLimit));
+                    const auto actions = solver.actions(root);
+                    if (actions.size() != edges.size()) row["edgeMismatch"] = true;
+                    if (pass == 0) {
+                        const auto c = solver.ceilings(root);
+                        row["ceilHp"] = c.hp; row["ceilMaxHp"] = c.maxHp; row["ceilGold"] = c.gold;
+                    }
+                    for (std::size_t i = 0; i < actions.size(); ++i) {
+                        const Val v = solver.q(root, actions[i]);
+                        if (!v.exact) throw std::runtime_error("roots: a root value came back as a bound");
+                        if (pass == 0) {
+                            json act = {{"label", actionLabel(actions[i], root)}, {"bits", actions[i].bits}, {"lo", v.v},
+                                        {"loWin", v.win}, {"loCapped", v.capped}};
+                            if (auto it = edges.find(actions[i].bits); it != edges.end()) {
+                                act["visits"] = it->second.at(1);
+                                act["silverQ"] = it->second.at(2);
+                            }
+                            if (actions[i].bits == j.at("chosen").get<std::uint32_t>()) chosenIdx = static_cast<int>(i);
+                            if (surviveObjective) { act["hi"] = v.v; hi.push_back(v.v); }
+                            if (actions[i].getActionType() != search::ActionType::END_TURN) {
+                                // What the action does by itself (its most likely outcome): block gained,
+                                // monster HP and block removed, player HP change.
+                                const auto outs = solver.outcomesOf(root, actions[i]);
+                                if (!outs.empty()) {
+                                    auto pool = [](const BattleContext &b) {
+                                        int t = 0;
+                                        for (int m = 0; m < b.monsters.monsterCount; ++m)
+                                            if (b.monsters.arr[m].isAlive()) t += b.monsters.arr[m].curHp + b.monsters.arr[m].block;
+                                        return t;
+                                    };
+                                    const auto &n = outs[0].state;
+                                    act["dBlock"] = n.player.block - root.player.block;
+                                    act["dDmg"] = pool(root) - pool(n);
+                                    act["dHp"] = n.player.curHp - root.player.curHp;
+                                }
+                            }
+                            acts.push_back(act);
+                            lo.push_back(v.v);
+                        } else {
+                            acts[i]["hi"] = v.v;
+                            acts[i]["hiCapped"] = v.capped;
+                            hi.push_back(v.v);
+                        }
+                    }
+                    if (index == explainIndex) {
+                        std::cerr << "root " << index << (pass == 0 ? " lower" : " upper") << " pass, best line:\n";
+                        solver.explain(root, std::cerr);
+                        std::cerr << "  Silver's line:\n";
+                        for (const auto &a : actions)
+                            if (a.bits == j.at("chosen").get<std::uint32_t>()) {
+                                auto outs = solver.outcomesOf(root, a);
+                                std::cerr << "    " << actionLabel(a, root) << " (" << outs.size() << " outcomes)\n";
+                                solver.explain(outs[0].state, std::cerr, 1);
+                            }
+                    }
+                    const std::string tag = pass == 0 ? "lower" : "upper";
+                    if (!solver.collapseRefused_.empty()) row["collapseRefused"] = solver.collapseRefused_;
+                    row[tag + "States"] = solver.memoSize();
+                    row[tag + "Replays"] = solver.replays();
+                    row[tag + "Seconds"] = seconds(tp);
+                }
+                row["actions"] = acts;
+                row["chosenIdx"] = chosenIdx;
+                if (chosenIdx < 0) throw std::runtime_error("roots: Silver's action is not among the solver's actions");
+                const double bestLo = *std::max_element(lo.begin(), lo.end());
+                const double bestHi = *std::max_element(hi.begin(), hi.end());
+                row["bestLo"] = bestLo;
+                row["bestHi"] = bestHi;
+                row["regretLo"] = std::max(0.0, bestLo - hi[chosenIdx]);
+                row["regretHi"] = std::max(0.0, bestHi - lo[chosenIdx]);
+                row["status"] = "ok";
+                ++solved;
+            } catch (const Infeasible &e) {
+                row["status"] = std::string("infeasible: ") + e.what();
+            } catch (const std::exception &e) {
+                row["status"] = std::string(e.what()).rfind("unsupported", 0) == 0 ? e.what()
+                                                                                    : std::string("unsupported: ") + e.what();
+            }
+            row["seconds"] = seconds(t0);
+            out << row.dump() << '\n';
+            out.flush();
+        }
+        std::cerr << "roots: " << solved << " solved of " << eligible << " eligible\n";
+        return 0;
+    }
+
 }
 
 int main(int argc, char **argv) {
     try {
+        if (argc > 1 && std::string(argv[1]) == "roots") return rootsMain(argc, argv);
         if (argc < 4) {
             std::cerr << "usage: exact_combat_solver COUNT START_SEED OUT.jsonl [--configs a,b,...] [--encounter NAME]"
                          " [--max-states N] [--objective silver|hp] [--keep-energy-waste] [--verify-memo]"

@@ -180,7 +180,8 @@ namespace sts {
                     if (n > 128) exact::unsupportedDraw("draw pile above 128 cards");
                     for (int i = 0; i < n; ++i) keys[i] = cards[knownBottomCount + i].exactChanceClassKey();
                     ++rng.counter;
-                    idx = knownBottomCount + exact::g_chanceScript->chooseDraw(this, keys, n, batchRemaining, batchFresh);
+                    idx = knownBottomCount + exact::g_chanceScript->chooseDraw(this, keys, n, batchRemaining, batchFresh,
+                                                                               exact::g_drawBatchActive);
                     exact::g_drawBatchFresh = false;
                 } else {
                     idx = knownBottomCount + (unknownCount() == 1 ? 0 : rng.random(unknownCount() - 1));

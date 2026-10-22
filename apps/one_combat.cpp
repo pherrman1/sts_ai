@@ -4350,6 +4350,18 @@ int main(int argc, char **argv) {
             std::cerr << error.what() << '\n';
             return 2;
         }
+    } else if (mode == "endgamerootgen") {
+        if (argc != 7 && argc != 8) {
+            std::cerr << "usage: one_combat endgamerootgen N_SEEDS SIMS ASC SEED_OFFSET OUT.jsonl [KEEP=2]\n";
+            return 2;
+        }
+        try {
+            endgameRootGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), std::stoll(argv[5]), argv[6],
+                           argc == 8 ? std::stoi(argv[7]) : 2);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
     } else if (mode == "ctmsilvergen") {
         if (argc != 8) {
             std::cerr << "usage: one_combat ctmsilvergen N_SEEDS ASC OUT_PREFIX SEED_OFFSET TEACHER.json REPLICATES\n";

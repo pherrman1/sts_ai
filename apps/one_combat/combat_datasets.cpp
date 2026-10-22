@@ -11,6 +11,7 @@
 #include "screen_leaf_s0.h"
 #include "one_combat/ooc_native_fallback.h"
 #include "run_driver.h"
+#include "combat/BattleContextBinary.h"
 #include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/RunGoal.h"
@@ -8275,4 +8276,179 @@ void counterfactualSurrogateAuditGen(int nSeeds,int sims,int asc,const std::stri
     trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("counterfactual surrogate audit: cannot open output");f<<"sourceSeed,decisionIdx,actionIdx,actionBits,action,chosen,screen,decisionAct,decisionFloor,battleAct,battleFloor,battleEncounter,roomClass,teacherId,valid,quarantineReason,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac\n";long long rows=0;int completed=0;
     for(int s=0;s<nSeeds;++s){const auto r=runCounterfactualSurrogateAuditSeed(seedOffset+s,sims,asc,teacher);rows+=std::count(r.begin(),r.end(),'\n');if(!r.empty())++completed;f<<r;f.flush();}
     std::cout<<"ooccfaudit teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"ooccfaudit",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
+}
+
+// ---- endgamerootgen (research: the exact endgame study, exact_combat_solver --roots) ----
+// Plays whole runs as bestbench does (runFullRunOOC with the process's OOC and
+// Silver settings) and writes, for every elite and boss fight, each Silver root
+// of the fight's last KEEP + 1 turns as one JSON line: the search root as a
+// binary snapshot (the draw pile flattened in its information-set order,
+// drawKnownBottom/drawKnownTop give the known regions back), the fields the
+// snapshot leaves out, Silver's search context and evaluation weights, its root
+// edges and its choice. Observation only: the runs are unchanged.
+namespace {
+
+    std::string endgameHex(const std::vector<std::uint8_t> &bytes) {
+        static const char *digits = "0123456789abcdef";
+        std::string s;
+        s.reserve(bytes.size() * 2);
+        for (auto b : bytes) { s += digits[b >> 4]; s += digits[b & 15]; }
+        return s;
+    }
+
+    nlohmann::json endgameRootState(const BattleContext &root) {
+        BattleContext flat = root;
+        const auto &pile = root.cards.drawPile;
+        if (!pile.isConcrete()) flat.cards.drawPile.assignConcrete(std::vector<CardInstance>(pile.begin(), pile.end()));
+        return {{"state", endgameHex(serializeBattleContext(flat))}, {"drawConcrete", pile.isConcrete()},
+                {"drawKnownBottom", pile.knownBottom()}, {"drawKnownTop", pile.knownTop()},
+                {"extras", {{"energyWasted", root.energyWasted}, {"cardsDrawn", root.cardsDrawn},
+                            {"miscBits", root.miscBits.to_ulong()}, {"smokeBombUsed", root.smokeBombUsed},
+                            {"monsterTurnIdx", root.monsterTurnIdx}, {"endTurnQueued", root.endTurnQueued},
+                            {"turnHasEnded", root.turnHasEnded}, {"skipMonsterTurn", root.skipMonsterTurn},
+                            {"intentsHidden", root.intentsHidden},
+                            {"haveUsedDiscoveryAction", root.haveUsedDiscoveryAction}}}};
+    }
+
+    // Inverse of endgameRootState (exact_combat_solver.cpp has the same decoder).
+    BattleContext endgameRootRestore(const nlohmann::json &j) {
+        const std::string hex = j.at("state");
+        std::vector<std::uint8_t> bytes(hex.size() / 2);
+        for (std::size_t i = 0; i < bytes.size(); ++i) bytes[i] = static_cast<std::uint8_t>(std::stoi(hex.substr(2 * i, 2), nullptr, 16));
+        BattleContext bc = deserializeBattleContext(bytes.data(), bytes.size());
+        const auto &x = j.at("extras");
+        bc.energyWasted = x.at("energyWasted"); bc.cardsDrawn = x.at("cardsDrawn");
+        bc.miscBits = std::bitset<32>(x.at("miscBits").get<unsigned long>());
+        bc.smokeBombUsed = x.at("smokeBombUsed"); bc.monsterTurnIdx = x.at("monsterTurnIdx");
+        bc.endTurnQueued = x.at("endTurnQueued"); bc.turnHasEnded = x.at("turnHasEnded");
+        bc.skipMonsterTurn = x.at("skipMonsterTurn"); bc.intentsHidden = x.at("intentsHidden");
+        bc.haveUsedDiscoveryAction = x.at("haveUsedDiscoveryAction");
+        if (!j.at("drawConcrete").get<bool>()) {
+            const std::vector<CardInstance> all(bc.cards.drawPile.begin(), bc.cards.drawPile.end());
+            const int bottom = j.at("drawKnownBottom"), top = j.at("drawKnownTop");
+            bc.cards.drawPile.assignInformationState(
+                std::vector<CardInstance>(all.begin(), all.begin() + bottom),
+                std::vector<CardInstance>(all.begin() + bottom, all.end() - top),
+                std::vector<CardInstance>(all.end() - top, all.end()));
+        }
+        return bc;
+    }
+
+    std::string endgameActionLabel(const search::Action &a, const BattleContext &bc) {
+        std::ostringstream os;
+        a.printDesc(os, bc);
+        return os.str();
+    }
+
+    nlohmann::json endgameRootRow(const search::NativeSilverRootView &view) {
+        const auto &s = view.searcher;
+        const BattleContext &root = s.rootSearchState();
+        nlohmann::json edges = nlohmann::json::array();
+        for (const auto &e : s.rootNode().edges) {
+            const bool hasQ = e.node && e.node->simulationCount > 0;
+            edges.push_back({e.action.bits, e.visitCount,
+                             hasQ ? nlohmann::json(e.node->evaluationSum / e.node->simulationCount) : nlohmann::json(nullptr),
+                             endgameActionLabel(e.action, root)});
+        }
+        const auto best = s.bestAction();
+        const auto &c = s.searchContext();
+        const auto &w = s.evalWeights;
+        nlohmann::json row = {
+            {"decision", view.decision}, {"turn", root.turn}, {"hp", root.player.curHp}, {"maxHp", root.player.maxHp},
+            {"block", root.player.block}, {"energy", root.player.energy}, {"handSize", root.cards.cardsInHand},
+            {"monstersAlive", root.monsters.monstersAlive}, {"inputState", static_cast<int>(root.inputState)},
+            {"skipped", view.skipped}, {"simulations", view.simulations}, {"inheritedVisits", view.inheritedVisits},
+            {"chosen", best.bits}, {"chosenLabel", endgameActionLabel(best, root)}, {"edges", edges},
+            {"context", {{"act", c.act}, {"actBossRoom", c.actBossRoom}, {"omamoriCharged", c.omamoriCharged},
+                         {"eliteRewards", c.eliteRewards}, {"finalBossBinary", c.finalBossBinary},
+                         {"finalFightLeaf", c.finalFightLeaf}, {"actHealFollows", c.actHealFollows},
+                         {"noLossPotionCredit", c.noLossPotionCredit}, {"relicHealLeaf", c.relicHealLeaf},
+                         {"escapeForfeitsRun", c.escapeForfeitsRun}}},
+            {"weights", {{"winBonus", w.winBonus}, {"potionWeight", w.potionWeight},
+                         {"victoryTurnPenalty", w.victoryTurnPenalty}, {"monsterDamageWeight", w.monsterDamageWeight},
+                         {"aliveWeight", w.aliveWeight}, {"energyWasteWeight", w.energyWasteWeight},
+                         {"drawWeight", w.drawWeight}, {"turnSurvivalWeight", w.turnSurvivalWeight},
+                         {"goldWeight", w.goldWeight}, {"maxHpWeight", w.maxHpWeight},
+                         {"parasitePenalty", w.parasitePenalty}, {"escapePenalty", w.escapePenalty},
+                         {"eliteEscapePenalty", w.eliteEscapePenalty}, {"potionTypeWeightsOn", w.potionTypeWeightsOn},
+                         {"potionTypeWeights", std::vector<double>(w.potionTypeWeights.begin(), w.potionTypeWeights.end())},
+                         {"concaveHpK", w.concaveHpK}}},
+            {"rollout", {{"cardTable", s.rolloutConfig.cardTable
+                              ? nlohmann::json(std::vector<int>(s.rolloutConfig.cardTable, s.rolloutConfig.cardTable + 372 * 2))
+                              : nlohmann::json(nullptr)},
+                         {"zeroCostCap", s.rolloutConfig.zeroCostCap}, {"actionCap", s.rolloutConfig.actionCap},
+                         {"uniform", s.rolloutConfig.uniform}, {"perLeaf", s.rolloutConfig.perLeaf},
+                         {"prior", s.rolloutConfig.prior},
+                         {"blockFirstMargin", s.rolloutConfig.blockRule.blockFirstMargin},
+                         {"blockLethalCheck", s.rolloutConfig.blockRule.blockLethalCheck},
+                         {"blockOffset", s.rolloutConfig.blockRule.blockOffset}}}};
+        try {
+            row.update(endgameRootState(root));
+            const BattleContext back = endgameRootRestore(row);
+            row["roundTrip"] = back.equalForSearch(root) && back.energyWasted == root.energyWasted
+                && back.cardsDrawn == root.cardsDrawn;
+        } catch (const std::exception &e) {
+            row["stateError"] = e.what();
+        }
+        return row;
+    }
+
+}
+
+void endgameRootGen(int nSeeds, int sims, int asc, long long seedOffset, const std::string &outPath, int keepTurns) {
+    std::ofstream out(outPath, std::ios::app);
+    if (!out) throw std::runtime_error("endgamerootgen: cannot open " + outPath);
+    long long written = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+:written)
+    for (int i = 0; i < nSeeds; ++i) {
+        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset) + static_cast<std::uint64_t>(i);
+        struct Pending { int floor; MonsterEncounter encounter; int turn; nlohmann::json row; };
+        std::vector<Pending> pending;
+        int fight = 0;
+        long long seedRows = 0;
+        search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) {
+            if (view.gc.curRoom != Room::ELITE && view.gc.curRoom != Room::BOSS) return;
+            pending.push_back({view.live.floorNum, view.live.encounter, view.live.turn, endgameRootRow(view)});
+        };
+        t_realCombatObserver = [&](const GameContext &pre, const BattleContext &ended, int,
+                                   const std::optional<one_combat::CombatTransitionRecord> &) {
+            ++fight;
+            std::string lines;
+            if (pre.curRoom == Room::ELITE || pre.curRoom == Room::BOSS) {
+                for (auto &p : pending) {
+                    const int toEnd = ended.turn - p.turn;
+                    if (p.floor != pre.floorNum || p.encounter != ended.encounter || toEnd < 0 || toEnd > keepTurns) continue;
+                    p.row["seed"] = seed; p.row["fight"] = fight; p.row["floor"] = pre.floorNum; p.row["act"] = pre.act;
+                    p.row["room"] = pre.curRoom == Room::BOSS ? "BOSS" : "ELITE";
+                    p.row["encounter"] = monsterEncounterEnumNames[static_cast<int>(ended.encounter)];
+                    p.row["endTurn"] = ended.turn; p.row["turnsToEnd"] = toEnd;
+                    p.row["won"] = ended.outcome == Outcome::PLAYER_VICTORY; p.row["endHp"] = ended.player.curHp;
+                    lines += p.row.dump() + '\n';
+                    ++seedRows;
+                }
+            }
+            pending.clear();
+            if (!lines.empty()) {
+                #pragma omp critical(endgame_root_out)
+                { out << lines; out.flush(); }
+            }
+        };
+        const auto t0 = std::chrono::steady_clock::now();
+        nlohmann::json summary = {{"summary", true}, {"seed", seed}};
+        try {
+            const RunResult r = runFullRunOOC(seed, sims, asc, deployedRestV(), true);
+            summary.update({{"won", r.won}, {"floor", r.floor}, {"act", r.act}, {"hpEnd", r.hpEnd},
+                            {"fightsLost", r.fightsLost}});
+        } catch (const std::exception &e) {
+            summary["error"] = e.what();
+        }
+        search::g_nativeSilverRootObserver = nullptr;
+        t_realCombatObserver = nullptr;
+        summary["rows"] = seedRows;
+        summary["sec"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        written += seedRows;
+        #pragma omp critical(endgame_root_out)
+        { out << summary.dump() << '\n'; out.flush(); }
+    }
+    std::cout << "endgamerootgen: " << written << " roots -> " << outPath << '\n';
 }

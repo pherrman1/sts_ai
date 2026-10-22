@@ -32,6 +32,14 @@ namespace sts::exact {
         // matter): consecutive draws from one pile choose non-decreasing card
         // classes, weighted so that every multiset keeps its total probability.
         bool canonicalDraws = false;
+        // Research (exact_combat_solver --roots): every draw of a CardManager::draw
+        // batch takes its first class with probability 1. Only for replays whose
+        // outcomes are valued without looking at the drawn cards.
+        bool collapseBatchDraws = false;
+        // Research (exact_combat_solver roots): every chance event takes its first
+        // possible outcome with probability 1 and records no sibling. Only for replays
+        // whose outcomes are valued without looking at any chance result.
+        bool collapseAll = false;
 
         double prob = 1.0;
 
@@ -103,7 +111,7 @@ namespace sts::exact {
         // step chooses the next class of that subset's sorted class sequence with
         // its exact conditional probability, so every multiset is reached once with
         // its full probability and no order is enumerated.
-        int chooseDraw(const void *pile, const std::uint64_t *keys, int n, int remaining, bool fresh) {
+        int chooseDraw(const void *pile, const std::uint64_t *keys, int n, int remaining, bool fresh, bool inBatch = false) {
             if (n > kMaxClasses) throw std::runtime_error("exact chance: draw pile too large");
             int classCount = 0;
             for (int i = 0; i < n; ++i) {
@@ -111,6 +119,12 @@ namespace sts::exact {
                 while (c < classCount && classes_[c] != keys[i]) ++c;
                 if (c == classCount) { classes_[c] = keys[i]; counts_[c] = 0; first_[c] = i; ++classCount; }
                 ++counts_[c];
+            }
+            if ((collapseBatchDraws && inBatch) || collapseAll) {
+                for (int c = 0; c < classCount; ++c) weights_[c] = c == 0 ? 1.0 : 0.0;
+                lastWasDraw_ = false;
+                batchPile_ = nullptr;
+                return first_[pick(weights_, classCount)];
             }
             const bool canonical = canonicalDraws && remaining > 0;
             const bool continuing = canonical && !fresh && lastWasDraw_ && pile == batchPile_ && n == batchUnknownAfter_;
@@ -208,6 +222,10 @@ namespace sts::exact {
             }
             int k = 0;
             while (k < n && weights[k] <= 0) ++k;
+            if (collapseAll) {
+                if (k == n) prob = 0;
+                return k == n ? 0 : k;
+            }
             if (k == n) {
                 // A canonical-order dead end: this run has probability 0. Finish it
                 // harmlessly; the caller drops it and still tries its siblings.
@@ -228,6 +246,8 @@ namespace sts::exact {
     // whether that call has made no script draw yet.
     inline thread_local int g_drawBatchRemaining = 0;
     inline thread_local bool g_drawBatchFresh = false;
+    // Inside a CardManager::draw call (also when its draws are not canonical).
+    inline thread_local bool g_drawBatchActive = false;
 
     [[noreturn]] inline void unsupportedDraw(const char *what) {
         throw std::runtime_error(std::string("exact chance: unsupported random draw: ") + what);
