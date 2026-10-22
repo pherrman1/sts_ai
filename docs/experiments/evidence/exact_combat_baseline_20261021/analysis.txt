@@ -1,0 +1,52 @@
+== config=flatprior:10000 objective=silver-noew
+fights 10: solved 10, infeasible 0, failed 0; Silver won 10
+roots with >1 action: 90; agreement 98.9% [96.7, 100.0]
+regret per root: mean 0.025 [0.000, 0.075]; > 1: 1, > 5: 0
+regret per fight (sum over its roots = V*(start) - V(Silver) in expectation): mean 0.229, max 2.292
+end-HP loss vs the optimum's action per root: mean 0.031 [0.000, 0.092]; per fight 0.282
+win-probability loss per fight: 0.000 pp
+by game turn (1-based): t1 n=21 agree 100% regret 0.000; t2 n=27 agree 96% regret 0.085; t3 n=25 agree 100% regret 0.000; t4 n=17 agree 100% regret 0.000
+by encounter: CULTIST n=39 agree 100% regret 0.000; JAW_WORM n=11 agree 91% regret 0.208; SMALL_SLIMES n=34 agree 100% regret 0.000; TWO_LOUSE n=6 agree 100% regret 0.000
+  seed 111147001 JAW_WORM game turn 2 hp 66 energy 1: Silver '{ use card (1) (Strike,2,1,1) -> (0) JAW_WORM }' q=116.68 (visits 12375) vs best '{ use card (0) (Defend,9,1,1) }' q=118.98 (visits 5631); regret 2.29, HP 58.7 vs 61.5
+  seed 111147002 SMALL_SLIMES game turn 1 hp 68 energy 3: Silver '{ use card (1) (Strike,5,1,1) -> (0) ACID_SLIME_S }' q=118.18 (visits 8599) vs best '{ use card (0) (Defend,9,1,1) }' q=118.18 (visits 1033); regret 0.00, HP 60.2 vs 60.2
+  seed 111147002 SMALL_SLIMES game turn 1 hp 68 energy 2: Silver '{ use card (1) (Strike,2,1,1) -> (0) ACID_SLIME_S }' q=118.18 (visits 13112) vs best '{ use card (0) (Defend,9,1,1) }' q=118.18 (visits 4800); regret 0.00, HP 60.2 vs 60.2
+
+== config=flatprior:2500 objective=silver-noew
+fights 10: solved 10, infeasible 0, failed 0; Silver won 10
+roots with >1 action: 90; agreement 97.8% [94.9, 100.0]
+regret per root: mean 0.037 [0.000, 0.088]; > 1: 1, > 5: 0
+regret per fight (sum over its roots = V*(start) - V(Silver) in expectation): mean 0.329, max 2.292
+end-HP loss vs the optimum's action per root: mean 0.042 [0.000, 0.104]; per fight 0.382
+win-probability loss per fight: 0.000 pp
+by game turn (1-based): t1 n=21 agree 100% regret 0.000; t2 n=27 agree 96% regret 0.085; t3 n=25 agree 96% regret 0.040; t4 n=17 agree 100% regret 0.000
+by encounter: CULTIST n=39 agree 97% regret 0.026; JAW_WORM n=11 agree 91% regret 0.208; SMALL_SLIMES n=34 agree 100% regret 0.000; TWO_LOUSE n=6 agree 100% regret 0.000
+  seed 111147001 JAW_WORM game turn 2 hp 66 energy 1: Silver '{ use card (1) (Strike,2,1,1) -> (0) JAW_WORM }' q=116.68 (visits 2592) vs best '{ use card (0) (Defend,9,1,1) }' q=118.98 (visits 1592); regret 2.29, HP 58.7 vs 61.5
+  seed 111147000 CULTIST game turn 3 hp 67 energy 2: Silver '{ use card (1) (Strike,4,1,1) -> (0) CULTIST }' q=123.80 (visits 2320) vs best '{ use card (0) (Defend,7,1,1) }' q=124.80 (visits 1979); regret 1.00, HP 66.0 vs 67.0
+  seed 111147002 SMALL_SLIMES game turn 1 hp 68 energy 3: Silver '{ use card (1) (Strike,5,1,1) -> (0) ACID_SLIME_S }' q=118.18 (visits 1999) vs best '{ use card (0) (Defend,9,1,1) }' q=118.18 (visits 205); regret 0.00, HP 60.2 vs 60.2
+
+== config=live objective=silver-noew
+fights 10: solved 10, infeasible 0, failed 0; Silver won 10
+roots with >1 action: 90; agreement 97.8% [94.9, 100.0]
+regret per root: mean 0.037 [0.000, 0.088]; > 1: 1, > 5: 0
+regret per fight (sum over its roots = V*(start) - V(Silver) in expectation): mean 0.329, max 2.292
+end-HP loss vs the optimum's action per root: mean 0.042 [0.000, 0.104]; per fight 0.382
+win-probability loss per fight: 0.000 pp
+by game turn (1-based): t1 n=21 agree 100% regret 0.000; t2 n=27 agree 96% regret 0.085; t3 n=25 agree 96% regret 0.040; t4 n=17 agree 100% regret 0.000
+by encounter: CULTIST n=39 agree 97% regret 0.026; JAW_WORM n=11 agree 91% regret 0.208; SMALL_SLIMES n=34 agree 100% regret 0.000; TWO_LOUSE n=6 agree 100% regret 0.000
+  seed 111147001 JAW_WORM game turn 2 hp 66 energy 1: Silver '{ use card (1) (Strike,2,1,1) -> (0) JAW_WORM }' q=116.68 (visits 11522) vs best '{ use card (0) (Defend,9,1,1) }' q=118.98 (visits 5888); regret 2.29, HP 58.7 vs 61.5
+  seed 111147000 CULTIST game turn 3 hp 67 energy 3: Silver '{ use card (2) (Strike,4,1,1) -> (0) CULTIST }' q=123.80 (visits 10094) vs best '{ use card (0) (Defend,6,1,1) }' q=124.80 (visits 174); regret 1.00, HP 66.0 vs 67.0
+  seed 111147002 SMALL_SLIMES game turn 1 hp 68 energy 3: Silver '{ use card (1) (Strike,5,1,1) -> (0) ACID_SLIME_S }' q=118.18 (visits 8666) vs best '{ use card (0) (Defend,9,1,1) }' q=118.18 (visits 1082); regret 0.00, HP 60.2 vs 60.2
+
+== config=prod objective=silver-noew
+fights 10: solved 10, infeasible 0, failed 0; Silver won 10
+roots with >1 action: 90; agreement 98.9% [96.7, 100.0]
+regret per root: mean 0.025 [0.000, 0.075]; > 1: 1, > 5: 0
+regret per fight (sum over its roots = V*(start) - V(Silver) in expectation): mean 0.229, max 2.292
+end-HP loss vs the optimum's action per root: mean 0.031 [-0.000, 0.092]; per fight 0.282
+win-probability loss per fight: 0.000 pp
+by game turn (1-based): t1 n=21 agree 100% regret 0.000; t2 n=27 agree 96% regret 0.085; t3 n=25 agree 100% regret 0.000; t4 n=17 agree 100% regret 0.000
+by encounter: CULTIST n=39 agree 100% regret 0.000; JAW_WORM n=11 agree 91% regret 0.208; SMALL_SLIMES n=34 agree 100% regret 0.000; TWO_LOUSE n=6 agree 100% regret 0.000
+  seed 111147001 JAW_WORM game turn 2 hp 66 energy 1: Silver '{ use card (1) (Strike,2,1,1) -> (0) JAW_WORM }' q=116.68 (visits 4296) vs best '{ use card (0) (Defend,9,1,1) }' q=118.98 (visits 2330); regret 2.29, HP 58.7 vs 61.5
+  seed 111147002 SMALL_SLIMES game turn 1 hp 68 energy 3: Silver '{ use card (1) (Strike,5,1,1) -> (0) ACID_SLIME_S }' q=118.18 (visits 1529) vs best '{ use card (0) (Defend,9,1,1) }' q=118.18 (visits 196); regret 0.00, HP 60.2 vs 60.2
+  seed 111147002 SMALL_SLIMES game turn 1 hp 68 energy 2: Silver '{ use card (1) (Strike,2,1,1) -> (0) ACID_SLIME_S }' q=118.18 (visits 3937) vs best '{ use card (0) (Defend,9,1,1) }' q=118.18 (visits 1121); regret 0.00, HP 60.2 vs 60.2
+

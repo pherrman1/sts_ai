@@ -337,7 +337,6 @@ constexpr std::array<CardId,13>  defensiveCards = {
     }
 
     // Silver's rollout-policy constants at their production defaults.
-    constexpr int kBlockOffset = 4;
     constexpr int kAoeMin = 2;
 
     int cardPriority(const CardInstance &c) {
@@ -402,6 +401,38 @@ constexpr std::array<CardId,13>  defensiveCards = {
         }
         const int dmg = bc.calculateCardDamage(feed, tgt, feed.isUpgraded() ? 12 : 10);
         return dmg >= bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
+    }
+
+    // Block-first rollouts: whether the affordable attacks in hand (cheapest first, each at
+    // its base damage against the lowest-HP monster) could kill the only living monster.
+    bool attacksCouldKill(const BattleContext &bc, const fixed_list<int,10> &playable) {
+        if (bc.monsters.monstersAlive != 1) return false;
+        int tgt = -1;
+        for (int i = 0; i < bc.monsters.monsterCount; ++i)
+            if (bc.monsters.arr[i].isTargetable()) { tgt = i; break; }
+        if (tgt < 0) return false;
+        const int needed = bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
+        std::pair<int,int> attacks[10];   // (cost, damage), insertion-sorted by cost
+        int n = 0, total = 0;
+        for (auto handIdx : playable) {
+            const auto &c = bc.cards.hand[handIdx];
+            if (c.getType() != CardType::ATTACK) continue;
+            const int base = getBaseDamage(c.getId(), c.isUpgraded());
+            if (base <= 0) continue;
+            std::pair<int,int> a{std::max(0, static_cast<int>(c.costForTurn)), bc.calculateCardDamage(c, tgt, base)};
+            total += a.second;
+            int k = n++;
+            while (k > 0 && attacks[k - 1] > a) { attacks[k] = attacks[k - 1]; --k; }
+            attacks[k] = a;
+        }
+        if (total < needed) return false;
+        int energy = bc.player.energy, damage = 0;
+        for (int k = 0; k < n; ++k) {
+            if (attacks[k].first > energy) break;
+            energy -= attacks[k].first;
+            damage += attacks[k].second;
+        }
+        return damage >= needed;
     }
 
     // playTable (research): learned play priority per card id * 2 + upgraded, lower plays first;
@@ -548,7 +579,7 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
     }
 
     const int incomingDamage = getIncomingDamage(bc);
-    if (bc.player.block > (incomingDamage - act - kBlockOffset)) {
+    if (bc.player.block > (incomingDamage - act - blockRule.blockOffset)) {
         fixed_list<int,10> offensiveCards;
         for (auto handIdx : nonZeroCostCards) {
             const auto &c = bc.cards.hand[handIdx];
@@ -565,6 +596,20 @@ search::Action search::SilverRolloutAgent::chooseBattleCardPlay(const BattleCont
             }
         } else {
             nonZeroCostCards = offensiveCards;
+        }
+    }
+
+    if (blockRule.blockFirstMargin >= 0 && incomingDamage - bc.player.block > blockRule.blockFirstMargin
+            && !(blockRule.blockLethalCheck && attacksCouldKill(bc, playableCardsIdxs))) {
+        fixed_list<int,10> defensive;
+        for (auto handIdx : playableCardsIdxs) {
+            if (isDefensiveCard.test(static_cast<int>(bc.cards.hand[handIdx].getId()))) defensive.push_back(handIdx);
+        }
+        if (!defensive.empty()) {
+            const int idx = getBestCardToPlay(bc, defensive, randomize, rng, playTable);
+            const auto &c = bc.cards.hand[idx];
+            if (!c.requiresTarget()) return Action(ActionType::CARD, idx);
+            return Action(ActionType::CARD, idx, getHighHpMonster(bc, randomize, rng));
         }
     }
 
