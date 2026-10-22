@@ -342,8 +342,8 @@ Offline only, on round-2 sibling groups (§503; targets are 64-rollout3 means, s
   - Its blend is +0.032 to +0.040 over X2-B for every seed (seed 0: 0.673, +0.040 [+0.030, +0.049]).
   - Weights 0.1 and 0.3 reach 0.586 and 0.613.
   - Auxiliary outcome heads give no ranking gain.
-  - The weight costs monotonicity (gold +50 is valued higher only 65 % of the time, vs 94 %) and calibration (leaf BCE
-    vs the run's Heart kill 0.50, worse than a constant).
+  - The weight costs monotonicity (gold +50 is valued higher in only 65–84 % of cases over the seeds, vs 94 %) and
+    calibration (leaf BCE against the run's Heart kill 0.47–0.50, about a constant's 0.475 or worse).
 - **Label noise:** it caps a perfect evaluator near 0.81. `STS_OOC_SIBLING_COMMON_SEEDS` (§639, default off) gives
   cleaner sibling differences for a new capture.
 - **Status:** X2-B stays the leaf. An online test of the blend and of the head alone needs Philipp's go

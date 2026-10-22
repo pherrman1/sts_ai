@@ -122,11 +122,11 @@ SR_w1_s1 and SR_w1_s2 (`run_sr.sh seeds`, `--seed 1` and `--seed 2`) were traine
   - Its blend beats X2-B by 0.032–0.040 for every seed.
 - **Auxiliary heads do not help ranking.** AUX0.3 is within ±0.006 of M0.3. This is the second try, after VT_aux0.3.
 - **The SR weight has a cost.**
-  - SR_w1's selection BCE rises from 0.5365 to 0.5466, which is still under the 0.552 bar.
-  - Its outcome BCE on VALIDATION leaves (0.501) is worse than a constant's (0.475).
-  - Monotonicity weakens: gold+50 > 0 drops from 94 % to 65 %. Selection-fold violations rise to hp 0.21 and gold 0.18,
-    against 0.13 and 0.08 at w 0.1.
-  - A head used alone at rollout ends would therefore value levels worse. The blend uses the head only at 5–15 %.
+  - SR_w1's selection BCE rises from 0.5365 to 0.543–0.547 over the three seeds, still under the 0.552 bar.
+  - Its outcome BCE on VALIDATION leaves is 0.467–0.501 over the seeds, near or above a constant's 0.475 (M0.3 0.429).
+  - Monotonicity weakens: gold+50 > 0 drops from 94 % to 65–84 % over the seeds. Seed 0's selection-fold violations
+    rise to hp 0.21 and gold 0.18, against 0.13 and 0.08 at w 0.1.
+  - A head used alone at rollout ends would therefore value levels worse. The blend uses the head only at 5–25 %.
 - **Context:** online, gen 1b's head ranked siblings at only 0.547 but leaned +3.1 pp in Heart kills as the rollout3
   end value (§615, NOT_SHOWN). The offline sibling metric is a proxy for the online value.
 
