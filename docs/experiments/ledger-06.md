@@ -22352,7 +22352,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** No decision changes; the §632 retained confirm now reaches the game.
 
 **Status:** Draft PR.
-## §TBD — Live problem 95: an event removal plan was dropped at a Continue page (2026-10-22)
+## §637 — Live problem 95: an event removal plan was dropped at a Continue page (2026-10-22)
 
 **Question:** Why did seed 111200559 (main f1badc29) remove Corruption after choosing Offer Gold's removal of a Strike?
 
