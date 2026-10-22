@@ -409,6 +409,19 @@ bool backAttackFix() {
     throw std::runtime_error("STS_IMPORTER_BACK_ATTACK_FIX must be 0 or 1");
 }
 
+// STS_SILVER_SPIRE_DEATH_QUEUE: unset/1 (default) = a Spire Shield/Spear that
+// died to a source card queues RemoveSpecificPowerAction(player, "Surrounded")
+// (and the survivor's "BackAttack") behind it (SpireShield/SpireSpear.die());
+// native removes Surrounded at the death, so the importer folds both, and a
+// dead Spire monster's leftover BackAttack marker is ignored (problem 81);
+// 0 = legacy refusals (silver_selection_pending_actions / silver_back_attack_facing).
+bool spireDeathQueue() {
+    const char *value = std::getenv("STS_SILVER_SPIRE_DEATH_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_SPIRE_DEATH_QUEUE must be 0 or 1");
+}
+
 // STS_IMPORTER_CENTENNIAL_USED_FIX: unset/1 (default) = Centennial Puzzle
 // needs the producer's usedThisCombat and gets no relic bit once it fired, as
 // native clears the bit on its first HP loss; 0 = legacy, the bit stays set and
@@ -545,6 +558,19 @@ bool lethalReactionQueue() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE must be 0 or 1");
+}
+
+// STS_SILVER_BYRD_GROUNDING_QUEUE: unset/1 (default) = a source-card
+// selection whose non-lethal hit took a living Byrd's Flight from 1 to 0
+// still carries the queued ReducePowerAction (Java grounds the Byrd only when
+// it runs); it folds into the Byrd as native applies it at the hit: Flight
+// removed, any deferred Runic Dome roll cancelled, Stunned next (live problem
+// 80); 0 = legacy refusal (silver_selection_pending_actions).
+bool byrdGroundingQueue() {
+    const char *value = std::getenv("STS_SILVER_BYRD_GROUNDING_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_BYRD_GROUNDING_QUEUE must be 0 or 1");
 }
 
 // STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE: unset/1 (default) = a queued
@@ -1919,6 +1945,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if (powerId == "BackAttack" && backAttackFix()) {
                     // A marker without hooks; native derives it from facing.
+                    // A dead monster never attacks; Java leaves its marker.
+                    if ((m.curHp <= 0 || item.value("dead", false)) && spireDeathQueue()
+                        && (*id == sts::MonsterId::SPIRE_SHIELD || *id == sts::MonsterId::SPIRE_SPEAR)
+                        && power.value("amount", 0) == -1)
+                        continue;
                     if ((*id != sts::MonsterId::SPIRE_SHIELD && *id != sts::MonsterId::SPIRE_SPEAR)
                         || power.value("amount", 0) != -1 || backAttackSlot >= 0)
                         return unsupported("silver_unmapped_monster_power");
@@ -1963,7 +1994,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         if ((*id == sts::MonsterId::LOOTER || *id == sts::MonsterId::MUGGER) && m.miscInfo > 0 && thiefGoldFix())
             wire.miscBits |= 1U;
     }
-    if (backAttackFix()) {
+    // A pending Spire death removes Surrounded (folded below), so facing no
+    // longer affects damage.
+    bool spireDeathPending = false;
+    if (spireDeathQueue() && combat.contains("pendingActionQueue") && combat.at("pendingActionQueue").is_array())
+        for (const auto &entry : combat.at("pendingActionQueue"))
+            if (entry.is_object() && entry.value("kind", std::string()) == "PLAYER_REMOVE_SURROUNDED") spireDeathPending = true;
+    if (backAttackFix() && !spireDeathPending) {
         // Java applyBackAttack: with Surrounded, the monster behind the player
         // deals 1.5x. Native's equivalent is "not lastTargetedMonster", so
         // the player faces the alive Spire monster without the marker. The
@@ -2207,6 +2244,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         wire.pendingCardQueueObserved = true;
     }
     bool guardianShift=false;
+    std::vector<int> groundedByrds;
     if (combat.contains("pendingActionQueue")) {
         using K=silver_bridge::PendingActionKind;
         const auto &queue=combat.at("pendingActionQueue");
@@ -2244,6 +2282,32 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="PLAYER_REMOVE_SURROUNDED" || kindName=="MONSTER_REMOVE_BACK_ATTACK") {
+                // SpireShield/SpireSpear.die() queue these behind the killing
+                // card; native removes Surrounded at the death itself.
+                int survivor=-1,dead=0;
+                for(int slot=0;slot<wire.monsterCount;++slot) {
+                    const auto &monster=wire.monsters[slot];
+                    if(monster.id!=static_cast<std::int16_t>(sts::MonsterId::SPIRE_SHIELD)
+                            && monster.id!=static_cast<std::int16_t>(sts::MonsterId::SPIRE_SPEAR)) continue;
+                    if(monster.curHp>0 && !monster.isEscapingB && !monster.halfDead) survivor=survivor<0?slot:-2;
+                    else ++dead;
+                }
+                const auto surroundedBit=1ULL<<static_cast<int>(PlayerStatus::SURROUNDED);
+                if(!sourceCard || !spireDeathPending || !sts::spireSurroundedDeathFix() || survivor<0 || dead!=1)
+                    return unsupported("silver_selection_pending_actions");
+                if(kindName=="PLAYER_REMOVE_SURROUNDED") {
+                    if(!(p.statusBits0 & surroundedBit)) return unsupported("silver_selection_pending_actions");
+                    p.statusBits0 &= ~surroundedBit;
+                } else {
+                    // Java queues it after the Surrounded removal; the marker
+                    // has no native state once Surrounded is gone.
+                    int slot=-1;
+                    if(!requiredInt(entry,"slot",slot) || slot!=survivor || backAttackSlot!=survivor
+                            || (p.statusBits0 & surroundedBit)) return unsupported("silver_selection_pending_actions");
+                }
+                continue;
+            }
             if(kindName=="MONSTER_SPLIT_SET_MOVE") {
                 // The split is already the current move (Java setMove at the
                 // hit); native's onHpLost also writes it as the previous move,
@@ -2355,14 +2419,18 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(kindName=="MONSTER_REDUCE_FLIGHT") {
                     // Native Flight loss happens at the hit, like Plated Armor;
-                    // reaching 0 grounds (stuns) the Byrd and stays unsupported
-                    // unless the hit was lethal: native then sets the stun and
-                    // Flight 0 before the death (live seed 111200460).
+                    // reaching 0 grounds (stuns) the Byrd: native sets the stun
+                    // and Flight 0 at the hit, before a lethal hit's death (live
+                    // seed 111200460) and on a living Byrd (problem 80).
                     auto &flight=monster.uniquePower0;
                     if(amount!=1 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::BYRD)
-                            || !has(sts::MonsterStatus::FLIGHT) || flight<1 || (flight==1 && !lethalReduce))
+                            || !has(sts::MonsterStatus::FLIGHT) || flight<1
+                            || (flight==1 && !lethalReduce && (monster.curHp<=0 || !byrdGroundingQueue())))
                         return unsupported("silver_selection_pending_actions");
                     if(flight==1) {
+                        // Under Runic Dome the history import below rebuilds
+                        // the moves and the deferred roll; the stun follows it.
+                        if(runicDome && monster.curHp>0) groundedByrds.push_back(slot);
                         monster.moveHistory[1]=monster.moveHistory[0];
                         monster.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
                         // Native removes the grounded Byrd's Flight (STS_BYRD_GROUNDED_FLIGHT_FIX).
@@ -2571,6 +2639,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = false;
     if(runicDome) {
         if(const auto reason=importBoundedRunicDome(combat,wire); !reason.empty()) return unsupported(reason);
+        // Native Monster::damage cancels the deferred roll before the stun.
+        for(const int slot:groundedByrds) {
+            auto &m=wire.monsters[slot];
+            m.pendingMoveRolls=0; m.pendingDirectMoveChoice=0; m.pendingRollInputs={};
+            m.pendingRollInputHistory.clear(); m.pendingAttackPredicates.clear();
+            m.moveHistory[1]=m.moveHistory[0];
+            m.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
+        }
     }
     wire.isolatedSearchSeed = fnv1a(entry + ":silver-live-v2");
     wire.observedGeneration = observation.value("sequence", 0ULL);
@@ -2587,37 +2663,59 @@ SilverRootImportResult importSilverRoot(const json &observation,
 
 int minionLeaderEscapeChoice(const json &observation) {
     if (!leaderEscapePassThrough()) return 0;
-    const auto root = observation.value("silverRoot", json::object());
-    const auto combat = observation.contains("combat") ? observation.at("combat") : root.value("combat", json::object());
+    // Every field is read type-checked: outside this one grid the mod sends
+    // cardSelect as false, and any other shape must fall through to the
+    // ordinary import (live problem 77).
+    static const json missing;
+    const auto field = [](const json &value, const char *key) -> const json & {
+        if (!value.is_object()) return missing;
+        const auto it = value.find(key);
+        return it == value.end() ? missing : *it;
+    };
+    const auto text = [&](const json &value, const char *key) {
+        const auto &v = field(value, key);
+        return v.is_string() ? v.get<std::string>() : std::string();
+    };
+    const auto flag = [&](const json &value, const char *key) {
+        const auto &v = field(value, key);
+        return v.is_boolean() && v.get<bool>();
+    };
+    const auto &combat = field(observation, "combat").is_object()
+        ? field(observation, "combat") : field(field(observation, "silverRoot"), "combat");
     if (!combat.is_object()) return 0;
-    const auto select = combat.value("cardSelect", json::object());
-    const auto choices = select.value("liveChoices", json::array());
-    if (select.value("task", std::string()) != "HEADBUTT" || select.value("origin", std::string()) != "GRID"
-        || select.value("continuation", std::string()) != "source_card_actions"
+    const auto &select = field(combat, "cardSelect");
+    const auto &choices = field(select, "liveChoices");
+    if (text(select, "task") != "HEADBUTT" || text(select, "origin") != "GRID"
+        || text(select, "continuation") != "source_card_actions"
         || !choices.is_array() || choices.empty()) return 0;
-    for (std::size_t i = 0; i < choices.size(); ++i)
-        if (!choices[i].is_object() || !choices[i].contains("uuid") || !choices[i].at("uuid").is_string()
-            || !choices[i].contains("choiceIndex") || choices[i].at("choiceIndex") != static_cast<int>(i) + 1) return 0;
-    const auto pending = combat.value("pendingActionQueue", json::array());
-    if (!pending.is_array() || pending.size() != 2 || !pending[0].is_object() || !pending[1].is_object()
-        || pending[0].value("kind", std::string()) != "USE_CARD"
-        || pending[1].value("kind", std::string()) != "MINION_LEADER_ESCAPE") return 0;
-    const auto slots = pending[1].value("slots", json::array());
+    for (std::size_t i = 0; i < choices.size(); ++i) {
+        const auto &index = field(choices[i], "choiceIndex");
+        if (!field(choices[i], "uuid").is_string() || !index.is_number_integer()
+            || index.get<long long>() != static_cast<long long>(i) + 1) return 0;
+    }
+    const auto &pending = field(combat, "pendingActionQueue");
+    if (!pending.is_array() || pending.size() != 2
+        || text(pending[0], "kind") != "USE_CARD" || text(pending[1], "kind") != "MINION_LEADER_ESCAPE") return 0;
+    const auto &slots = field(pending[1], "slots");
     if (!slots.is_array() || slots.empty()) return 0;
-    std::set<int> escaping;
+    std::set<long long> escaping;
     for (const auto &slot : slots)
-        if (!slot.is_number_integer() || !escaping.insert(slot.get<int>()).second) return 0;
-    const auto monsters = combat.value("monsters", json::array());
+        if (!slot.is_number_integer() || !escaping.insert(slot.get<long long>()).second) return 0;
+    const auto &monsters = field(combat, "monsters");
     if (!monsters.is_array()) return 0;
     int leaders = 0;
-    std::set<int> alive;
+    std::set<long long> alive;
     for (std::size_t i = 0; i < monsters.size(); ++i) {
         const auto &m = monsters[i];
         if (!m.is_object()) return 0;
-        const int slot = m.value("slot", m.value("idx", static_cast<int>(i)));
-        const auto id = live_silver::monsterId(m.value("id", std::string()));
-        const bool gone = m.value("hp", 0) <= 0 || m.value("dead", false)
-            || m.value("escaping", m.value("escaped", false)) || m.value("halfDead", false);
+        const auto &slotField = field(m, "slot");
+        const auto &idxField = field(m, "idx");
+        const long long slot = slotField.is_number_integer() ? slotField.get<long long>()
+            : idxField.is_number_integer() ? idxField.get<long long>() : static_cast<long long>(i);
+        const auto id = live_silver::monsterId(text(m, "id"));
+        const auto &hp = field(m, "hp");
+        const bool gone = !hp.is_number() || hp.get<double>() <= 0 || flag(m, "dead")
+            || flag(m, "escaping") || flag(m, "escaped") || flag(m, "halfDead");
         if (id == sts::MonsterId::GREMLIN_LEADER) {
             if (!gone) return 0;
             ++leaders;

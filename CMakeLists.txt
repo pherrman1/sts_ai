@@ -98,6 +98,14 @@ target_include_directories(run_goal_test PRIVATE include json/include)
 add_test(NAME run_goal COMMAND $<TARGET_FILE:run_goal_test>)
 set_tests_properties(run_goal PROPERTIES LABELS "core;smoke")
 
+# predictPolicyMlp stays bit-identical to the plain reference loops (Silver
+# prior playouts take its argmax).
+add_executable(policy_mlp_exact_test tests/policy_mlp_exact_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(policy_mlp_exact_test PRIVATE include json/include)
+add_test(NAME policy_mlp_exact COMMAND $<TARGET_FILE:policy_mlp_exact_test>
+         ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
+set_tests_properties(policy_mlp_exact PROPERTIES LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)
@@ -146,12 +154,36 @@ add_test(NAME exhaust_empty_hand COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(exhaust_empty_hand PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(blood_for_blood_copy_cost_test tests/blood_for_blood_copy_cost_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(blood_for_blood_copy_cost_test PRIVATE include json/include)
+add_test(NAME blood_for_blood_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:blood_for_blood_copy_cost_test>)
+set_tests_properties(blood_for_blood_copy_cost PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(true_grit_single_card_rng_test tests/true_grit_single_card_rng_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(true_grit_single_card_rng_test PRIVATE include json/include)
+add_test(NAME true_grit_single_card_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:true_grit_single_card_rng_test>)
+set_tests_properties(true_grit_single_card_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(anger_copy_cost_test tests/anger_copy_cost_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(anger_copy_cost_test PRIVATE include json/include)
 add_test(NAME anger_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:anger_copy_cost_test>)
 set_tests_properties(anger_copy_cost PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(corruption_hand_cost_test tests/corruption_hand_cost_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(corruption_hand_cost_test PRIVATE include json/include)
+add_test(NAME corruption_hand_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:corruption_hand_cost_test>)
+set_tests_properties(corruption_hand_cost PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(upgrade_cost_delta_test tests/upgrade_cost_delta_test.cpp
@@ -632,7 +664,8 @@ add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_two_thieves_turn1.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_three_byrds_turn1.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_shield_spear_back_attack_turn1.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_shield_spear_back_attack_turn1.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json)
 
 add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
     apps/one_combat/combat_transition.cpp

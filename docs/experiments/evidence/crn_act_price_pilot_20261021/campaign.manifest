@@ -1,0 +1,7 @@
+name          crn-act-price-pilot
+code_commit   56950107a09258615221ce317590ff14d17c4c85
+binary_sha256 9829d475dd3071c44aac9ea5177d7cc52d6f54573b69f1895aa0b99669799fea
+workers       4
+share         /mnt/project-files/silver-leaf-eval/crn-act-pilot
+parallel      4
+input student_sel.bin /mnt/project-files/a20-winrate-check/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

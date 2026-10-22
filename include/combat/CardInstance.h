@@ -77,6 +77,7 @@ namespace sts {
 //        void modifyCostForCombat(int amount);
 
         void setCostForCombat(int cost);
+        void modifyCostForCombat(int amount); // AbstractCard.modifyCostForCombat
         void setCostForTurn(int newCost);
         void setUniqueId(int uniqueId);
         void upgrade();

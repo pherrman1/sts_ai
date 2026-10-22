@@ -129,6 +129,12 @@ the shared bounded dependency to a resolved map checkpoint before `v_win` is
 evaluated. Semantic roots outside V4's screen support use uniform source
 priors; REMOVE, TRANSFORM, and non-card reward roots are not rejected merely
 because V4 cannot supply their prior.
+Shop card slots (0-4 class, 5-6 colorless) are tracked by card identity from
+the shop's first capture. A Courier restock takes the bought card's index in
+`coloredCards`/`colorlessCards`, so it inherits the slot of the card that
+previously held that index in the last captured list. Card positions are not
+used, because `ShopScreen.updateCards` re-derives them from the sliding rug every frame
+(problem 79).
 
 Each supported OOC candidate reports a semantic key/payload, physical live
 action, Q, visit count, visit share, and prior. The selected candidate is the
@@ -295,6 +301,10 @@ offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
 When the public pending-action projection itself refused, the blocker ends in
 `;refusal=<queue index>:<check>` (e.g. `3:batch_power_fields`), naming the
 first failed check (problem 74, Toolbox's offer with Red Mask's Weak queued).
+Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
+unless the player is bloodied and the relic inactive. The projection omits the
+no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
+names anonymous classes by their full class name.
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
@@ -1391,7 +1401,9 @@ itself by shifting and queueing the 20 block behind the tail). The
 first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` queue items
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
-that would remove the power with a side effect (Shelled Parasite stun, Byrd grounding) stays unsupported;
+that would remove the power with a side effect (Shelled Parasite stun) stays unsupported; a living Byrd's
+grounding at Flight 1 folds in as native applies it at the hit (Flight removed, a deferred Runic Dome roll cancelled,
+Stunned next; `STS_SILVER_BYRD_GROUNDING_QUEUE`);
 removing Plated Armor 1 from another monster (Donu, Deca) folds in (`STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE`). A lethal hit
 still queues the reduction; it folds into the dead monster (`STS_SILVER_LETHAL_REACTION_QUEUE`). Also unsupported is
 any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that kills the Gremlin Leader leaves a `ShoutAction` then an `EscapeAction` per surviving minion queued; the producer emits `MINION_LEADER_ESCAPE {slots}` (refused unless the shouts and escapes name the same creatures in order and those are exactly the surviving gremlins), and the advisor answers the grid with `choose 1` as a forced pass-through, since native already ended the combat at the kill (`STS_SILVER_LEADER_ESCAPE_PASS_THROUGH`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
@@ -1456,6 +1468,15 @@ accepted Silver actions. The state identity itself stays strict. Changes to
 HP, energy, hand, costs, UUIDs, order, base fields or two different present
 stat values still stop before mutation. Zero/absent ambiguity remains strict,
 and differential replay does not use this refresh path.
+A pile card that settles a frame after it moved also refreshes
+(`STS_LIVE_PILE_SETTLING_REFRESH`, default on; `=0` restores the strict stop;
+problem 82). This covers a card with the same UUID and id at the same
+draw/discard/exhaust position whose `cost`, `is_playable`, `damage`, `block`,
+`magic_number` or `base_*` values changed. A card exhausted by its own use is
+first snapshotted with its in-use cost 0, playability and hand stats (all 36
+transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
+and every other field stay strict. The match only discards the decision and
+re-reads, within the same three-refresh limit.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in

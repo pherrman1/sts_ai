@@ -5,6 +5,7 @@
 #ifndef STS_LIGHTSPEED_BATTLECONTEXT_H
 #define STS_LIGHTSPEED_BATTLECONTEXT_H
 
+#include <cstdint>
 #include <vector>
 #include <array>
 #include <functional>
@@ -54,6 +55,17 @@ namespace sts {
     extern thread_local std::function<void(const BattleContext &, GameContext &)> g_onBattleExitRaw;
 
     extern thread_local BattleContext *g_debug_bc;
+
+    // Engine fix flags (the *Fix() switches below and STS_ACTIVE_POWER_FEATURES)
+    // are read from the environment once per epoch per thread. BattleContext::init
+    // and search::battleContextFromWire call refreshEngineFlags(), so a flag set
+    // before a combat starts takes effect in that combat. Code that changes a flag
+    // with setenv at any other point (tests) must call refreshEngineFlags() itself.
+    struct CachedFixFlag { std::uint32_t epoch = 0; bool value = false; };
+    // Unset, empty or 1 = true, 0 = false, anything else throws "NAME must be 0 or 1".
+    bool cachedFixFlag(CachedFixFlag &cache, const char *name);
+    std::uint32_t engineFlagEpoch();
+    void refreshEngineFlags();
 
     // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff or buff on a dead,
     // half-dead or escaped monster does nothing, as in the game
@@ -152,6 +164,17 @@ namespace sts {
     // (live parity problem 48). 0 = the legacy pick. Other values are fatal.
     bool mummifiedHandPlayedCardFix();
 
+    // STS_BLOOD_FOR_BLOOD_COPY_COST_FIX: unset/1 (default) = a Blood for Blood
+    // generated in combat (Discovery, Infernal Blade, Dead Branch, Nilry's Codex) starts at 4
+    // minus the times the player lost HP this combat, as Java's makeCopy does
+    // (live parity problem 76). 0 = the legacy base cost. Other values are fatal.
+    bool bloodForBloodCopyCostFix();
+    // STS_TRUE_GRIT_SINGLE_CARD_RNG_FIX: unset/1 (default) = unupgraded True
+    // Grit exhausts a lone hand card without a cardRandomRng draw, as Java's
+    // ExhaustAction does (live parity problem 76). 0 = the legacy draw.
+    // Other values are fatal.
+    bool trueGritSingleCardRngFix();
+
     // STS_SLIME_SPLIT_RNG_FIX: unset/1 (default) = a large slime's split draws
     // aiRng for the two spawned medium slimes' first moves (SpawnMonsterAction
     // -> init -> rollMove) and, for Spike Slime (L) only, one more roll from
@@ -207,6 +230,18 @@ namespace sts {
     // engine, which kept the turn cost until the end of turn. Other values are
     // fatal. Read only when a moved card's costForTurn differs from its cost.
     bool pileCostResetFix();
+
+    // STS_CORRUPTION_HAND_COST_FIX: unset/1 (default) = a card made in hand
+    // (MakeTempCardInHand: Dead Branch etc.; Discovery-style choices) under
+    // Corruption runs the game's AbstractPlayer.onCardDrawOrDiscard pass first:
+    // every SKILL in hand with costForTurn != 0 gets modifyCostForCombat(-9),
+    // so a generated skill ends at cost 0 / costForTurn 0 for the rest of the
+    // combat (ShowCardAndAddToHandEffect calls the pass before its own
+    // setCostForTurn(-9); live parity problem 83, seed 111200508: Dead Branch
+    // skills game 0/0, native base/0). 0 = the legacy engine, which zeroed only
+    // costForTurn. Other values are fatal. Read only when a card is made in
+    // hand while the player has Corruption.
+    bool corruptionHandCostFix();
 
     // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
     // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
@@ -442,6 +477,7 @@ namespace sts {
         void playTopCardInDrawPile(int monsterTargetIdx, bool exhausts);
 
         void moveToHandHelper(CardInstance c);
+        void corruptionHandCostPass(); // AbstractPlayer.onCardDrawOrDiscard's Corruption loop
         void exhaustSpecificCardInHand(int idx, std::int16_t uniqueId);
         void restoreRetainedCards(int count);
         void exhaustTopCardInHand();
@@ -475,6 +511,10 @@ namespace sts {
         void chooseCodexCard(CardId id);
         void chooseDiscardToHandCard(int discardIdx, bool forZeroCost);
         void chooseDiscoveryCard(CardId id);
+        // A card Java creates with makeCopy() in combat (Discovery choices,
+        // Infernal Blade, Dead Branch, Nilry's Codex): BloodForBlood.makeCopy() applies
+        // updateCost(-damagedThisCombat) (STS_BLOOD_FOR_BLOOD_COPY_COST_FIX).
+        CardInstance generatedCombatCard(CardId id) const;
         void chooseDualWieldCard(int handIdx);
         void chooseExhaustOneCard(int handIdx);
         void chooseExhumeCard(int exhaustIdx);

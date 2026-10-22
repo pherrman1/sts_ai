@@ -12,7 +12,9 @@
 #include "sim/search/Action.h"
 #include "sim/search/ExpertKnowledge.h"
 
+#include <cstdint>
 #include <cstdlib>
+#include <emmintrin.h>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -77,16 +79,15 @@ namespace {
     constexpr int kEncounterIdx = 1;                        // "encounter" in kBaseNames
     constexpr int kMonDmgOff    = 4;                        // "mKIntent" = incoming damage (0 if not attacking)
     constexpr int kPolicyMlpEmbRows = 128;                  // policy-MLP embedding table rows
+    constexpr int kPolicyMlpMaxH1 = 512;                    // policyMlpEdges stack buffer
 
     // STS_ACTIVE_POWER_FEATURES: unset or 1 = a power whose flag is off reads
     // 0. The engine clears some powers (Vigor, Flame Barrier, removed debuffs)
     // by their flag only, so statusMap keeps the old amount. 0 = the legacy
     // feature, which read that leftover amount. Other values are fatal.
     bool activePowerFeatures() {
-        const char *value = std::getenv("STS_ACTIVE_POWER_FEATURES");
-        if (!value || !*value || std::string(value) == "1") return true;
-        if (std::string(value) == "0") return false;
-        throw std::runtime_error("STS_ACTIVE_POWER_FEATURES must be 0 or 1");
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_ACTIVE_POWER_FEATURES");
     }
 
     int powerVal(const Player &p, PlayerStatus s, bool activeOnly) {
@@ -1315,6 +1316,80 @@ double CombatValueNet::predictQuantileEV(const float *canonFeatures) const {
     return sum / (double)nQuantiles;
 }
 
+namespace {
+
+// Ascending indices of the features that are not +-0 (`v == 0.f` skips both
+// signed zeros; the SSE2 not-equal test treats them the same way and keeps NaN).
+int nonzeroFeatureIndices(const float *x, int n, std::uint16_t *out) {
+    int c = 0, i = 0;
+    const __m128 zero = _mm_setzero_ps();
+    for (; i + 4 <= n; i += 4) {
+        int m = _mm_movemask_ps(_mm_cmpneq_ps(_mm_loadu_ps(x + i), zero));
+        while (m) {
+            out[c++] = static_cast<std::uint16_t>(i + __builtin_ctz(m));
+            m &= m - 1;
+        }
+    }
+    for (; i < n; ++i)
+        if (x[i] != 0.f) out[c++] = static_cast<std::uint16_t>(i);
+    return c;
+}
+
+// Per-edge layers of predictPolicyMlp for a compile-time second-layer width.
+// Same float operations in the same order as the generic loop; restrict
+// pointers and a local accumulator array let the compiler keep the H2 sums in
+// registers instead of reloading a vector it must assume aliases the weights.
+// Adding -0.0f leaves every float unchanged, so the output sum equals skipping.
+template <int H2>
+void policyMlpEdges(const CombatValueNet &net, const float *__restrict base, const float *stateFeatures,
+                    const float *actionBlocks, const int *targetSlots, int n, double *out) {
+    const int H1 = net.pmH1;
+    const float *__restrict actionW = net.pmActionW.data();
+    const float *__restrict cardW = net.pmCard.data();
+    const float *__restrict targetW = net.pmTargetW.data();
+    const float *__restrict w2t = net.pmW2T.data();
+    const float *__restrict b2 = net.pmB2.data();
+    const float *__restrict w3 = net.pmW3.data();
+    alignas(64) float h[kPolicyMlpMaxH1];
+    for (int e = 0; e < n; ++e) {
+        const float *a = actionBlocks + (std::size_t)e * kNumAction;
+        for (int j = 0; j < H1; ++j) h[j] = base[j];
+        for (int k = 0; k < kNumAction; ++k) {
+            const float v = a[k];
+            if (v == 0.f) continue;
+            const float *__restrict w = actionW + (std::size_t)k * H1;
+            for (int j = 0; j < H1; ++j) h[j] += v * w[j];
+        }
+        int card = (int)a[4] + 1;   // aCardId; -1 (no card) -> row 0
+        if (card < 0 || card > kNumCards) card = 0;
+        const float *__restrict c = cardW + (std::size_t)card * H1;
+        for (int j = 0; j < H1; ++j) h[j] += c[j];
+        const int slot = targetSlots ? targetSlots[e] : -1;
+        if (slot >= 0 && slot < kNumMonSlots) {
+            const float *t = stateFeatures + kMonOff + slot * kMonFeats;
+            for (int k = 0; k < kMonFeats; ++k) {
+                const float v = t[k];
+                if (v == 0.f) continue;
+                const float *__restrict w = targetW + (std::size_t)k * H1;
+                for (int j = 0; j < H1; ++j) h[j] += v * w[j];
+            }
+        }
+        alignas(64) float z[H2];
+        for (int i = 0; i < H2; ++i) z[i] = b2[i];
+        for (int j = 0; j < H1; ++j) {
+            const float v = h[j];
+            if (v <= 0.f) continue;   // ReLU
+            const float *__restrict w = w2t + (std::size_t)j * H2;
+            for (int i = 0; i < H2; ++i) z[i] += v * w[i];
+        }
+        float o = net.pmB3;
+        for (int i = 0; i < H2; ++i) o += z[i] > 0.f ? w3[i] * z[i] : -0.0f;
+        out[e] = o;
+    }
+}
+
+}
+
 void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
                                       const int *targetSlots, int n, double *out) const {
     if (n <= 0) return;
@@ -1350,12 +1425,22 @@ void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *a
     }
     h.resize(H1);
     z.resize(H2);
-    // Sparse state layer, once per node (about 40 nonzeros of 1,766).
-    for (int i = 0; i < kStateCount; ++i) {
-        const float v = stateFeatures[i];
-        if (v == 0.f) continue;
-        const float *w = &pmStateW[(std::size_t)i * H1];
-        for (int j = 0; j < H1; ++j) base[j] += v * w[j];
+    // Sparse state layer, once per node (about 60 nonzeros of 1,766), in
+    // ascending feature order.
+    {
+        std::uint16_t nonzero[kStateCount];
+        const int count = nonzeroFeatureIndices(stateFeatures, kStateCount, nonzero);
+        float *__restrict acc = base.data();
+        const float *__restrict stateW = pmStateW.data();
+        for (int t = 0; t < count; ++t) {
+            const float v = stateFeatures[nonzero[t]];
+            const float *__restrict w = stateW + (std::size_t)nonzero[t] * H1;
+            for (int j = 0; j < H1; ++j) acc[j] += v * w[j];
+        }
+    }
+    if (H2 == 64 && H1 <= kPolicyMlpMaxH1) {
+        policyMlpEdges<64>(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
+        return;
     }
     for (int e = 0; e < n; ++e) {
         const float *a = actionBlocks + (std::size_t)e * kNumAction;

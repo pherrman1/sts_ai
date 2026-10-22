@@ -2422,11 +2422,28 @@ std::optional<bool> liveRealLearnedStop;   // STS_OOC_MCTS_REAL_LEARNED_STOP; un
 std::uint64_t liveSimulations = 512;
 // Playout-cap randomization (STS_OOC_MCTS_FULL_BUDGET_FRACTION); 0 is off.
 double liveFullBudgetFraction = 0;
+// KataGo-style fast-root cap (STS_OOC_MCTS_FAST_ROOT_CAP): with playout-cap randomization on, a
+// root that is not a full-budget root searches at most this many simulations (its early stops
+// still apply below it). Unset: 1024 (Philipp 2026-10-21); 0 restores the uncapped fast roots.
+std::uint64_t liveFastRootCap = 0;
+// STS_OOC_MCTS_FULL_ROOT_SIMS (opt-in, off by default): a full-budget root of a playout-cap-randomized run
+// searches exactly this many simulations instead of STS_OOC_MCTS_SIMS (offline scoring keeps the whole budget).
+std::uint64_t liveFullRootSims = 0;
 // Self-play exploration for AZ data runs (both opt-in, off by default):
 // STS_OOC_MCTS_ROOT_NOISE=FRACTION[:ALPHA] mixes Dirichlet noise into the root PUCT prior;
 // STS_OOC_MCTS_PLAY_SAMPLE=FLOOR[:TEMPERATURE] plays a root action sampled in proportion to
 // visits^(1/T) at decisions on floors <= FLOOR instead of the most-visited one.
 double liveRootNoiseFraction = 0, liveRootNoiseAlpha = 0.3;
+// STS_OOC_MCTS_GUMBEL_ROOT=M[:SCALE] (opt-in, off by default): full-budget roots of a
+// playout-cap-randomized run search with a Gumbel sequential-halving root over M sampled actions
+// (OocMctsConfig::gumbelRootActions) instead of PUCT; fast roots stay PUCT.
+std::uint32_t liveGumbelRootActions = 0;
+double liveGumbelRootScale = 1;
+// STS_OOC_MCTS_ROOT_COMPARE=PATH (research): at each full-budget root, after the real search, run an
+// 8192-simulation reference split evenly over every root action and Gumbel roots (M = 4 and 16) at
+// 512/1024/2048 on the same model with their own seeds, and append one JSONL row per root. The played
+// action and the run are unchanged.
+std::string liveRootComparePath;
 int livePlaySampleFloor = -1;
 double livePlaySampleTemperature = 1;
 // Learned stop (STS_OOC_MCTS_LEARNED_STOP=PATH:TAU, research, opt-in): a logistic CompactTreeNet of
@@ -2978,7 +2995,7 @@ void configureLiveOocMcts() {
     liveCheckpointTrace.clear();
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
-    liveFullBudgetFraction = 0;
+    liveFullBudgetFraction = 0; liveFastRootCap = 0; liveFullRootSims = 0;
     liveLearnedStopNet.reset(); liveLearnedStopTau = 0;
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     liveLeafCapture.reset();
@@ -2988,6 +3005,8 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_LEAF_CAPTURE requires STS_OOC_MCTS=1");
     if (std::getenv("STS_OOC_MCTS_FULL_BUDGET_FRACTION") && !liveEnabled)
         throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION requires STS_OOC_MCTS=1");
+    if (std::getenv("STS_OOC_MCTS_FAST_ROOT_CAP") && !liveEnabled)
+        throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP requires STS_OOC_MCTS=1");
     for (const char *key : {"STS_OOC_MCTS_ROOT_NOISE", "STS_OOC_MCTS_PLAY_SAMPLE"})
         if (std::getenv(key) && !liveEnabled) throw std::runtime_error(std::string(key) + " requires STS_OOC_MCTS=1");
     liveSibling.reset();
@@ -3077,8 +3096,27 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_FULL_BUDGET_FRACTION must be in (0, 1]");
         liveFullBudgetFraction = x;
     }
+    if (const char *cap = std::getenv("STS_OOC_MCTS_FAST_ROOT_CAP")) {
+        const std::string value(cap);
+        if (value.empty() || value.size() > 12 || value.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP must be a non-negative integer (0 = off)");
+        liveFastRootCap = std::stoull(value);
+    } else if (liveFullBudgetFraction > 0) {
+        liveFastRootCap = 1024;
+    }
+    if (liveFastRootCap > 0 && liveFullBudgetFraction <= 0)
+        throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+    if (const char *full = std::getenv("STS_OOC_MCTS_FULL_ROOT_SIMS"); full && *full) {
+        const std::string value(full);
+        if (value.size() > 12 || value.find_first_not_of("0123456789") != std::string::npos || std::stoull(value) == 0)
+            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS must be a positive integer");
+        if (liveFullBudgetFraction <= 0)
+            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+        liveFullRootSims = std::stoull(value);
+    }
     liveRootNoiseFraction = 0; liveRootNoiseAlpha = 0.3;
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
+    liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveRootComparePath.clear();
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3097,6 +3135,27 @@ void configureLiveOocMcts() {
         if (!parsePair(noise, liveRootNoiseFraction, liveRootNoiseAlpha)
                 || !(liveRootNoiseFraction > 0 && liveRootNoiseFraction <= 1) || !(liveRootNoiseAlpha > 0))
             throw std::runtime_error("STS_OOC_MCTS_ROOT_NOISE must be FRACTION[:ALPHA] with FRACTION in (0, 1], ALPHA > 0");
+    }
+    if (const char *gumbel = std::getenv("STS_OOC_MCTS_GUMBEL_ROOT"); gumbel && *gumbel) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_GUMBEL_ROOT is unavailable in the live advisor");
+#endif
+        double m = 0;
+        if (!parsePair(gumbel, m, liveGumbelRootScale) || m < 2 || m > 64 || m != std::floor(m) || !(liveGumbelRootScale >= 0))
+            throw std::runtime_error("STS_OOC_MCTS_GUMBEL_ROOT must be M[:SCALE] with integer M in [2, 64], SCALE >= 0");
+        if (liveFullBudgetFraction <= 0)
+            throw std::runtime_error("STS_OOC_MCTS_GUMBEL_ROOT requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+        liveGumbelRootActions = std::uint32_t(m);
+    }
+    if (const char *compare = std::getenv("STS_OOC_MCTS_ROOT_COMPARE"); compare && *compare) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE is unavailable in the live advisor");
+#endif
+        if (liveFullBudgetFraction <= 0)
+            throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+        liveRootComparePath = compare;
+        std::ofstream out(liveRootComparePath, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE cannot open output");
     }
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
 #ifdef STS_LIVE_ADVISOR
@@ -3469,8 +3528,13 @@ void configureLiveOocMcts() {
         << (liveOptions.heartLeaf ? " leaf_heart_model=" + liveOptions.heartLeafPath : std::string{})
         << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
+        << (liveFastRootCap > 0 ? " fast_root_cap=" + std::to_string(liveFastRootCap) : std::string{})
+        << (liveFullRootSims > 0 ? " full_root_sims=" + std::to_string(liveFullRootSims) : std::string{})
         << (liveRootNoiseFraction > 0 ? " root_noise=" + std::to_string(liveRootNoiseFraction) + ":"
             + std::to_string(liveRootNoiseAlpha) : std::string{})
+        << (liveGumbelRootActions ? " gumbel_root=" + std::to_string(liveGumbelRootActions) + ":"
+            + std::to_string(liveGumbelRootScale) : std::string{})
+        << (!liveRootComparePath.empty() ? " root_compare=1" : "")
         << (livePlaySampleFloor >= 0 ? " play_sample=" + std::to_string(livePlaySampleFloor) + ":"
             + std::to_string(livePlaySampleTemperature) : std::string{})
         << "]\n";
@@ -4112,7 +4176,23 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // A full-budget root drops the early stops, as the root-lock observer does,
     // but keeps the singleton shortcut: a sole action has no policy target.
     fullBudget = fullBudget && !sole;
+    // Fast roots of a playout-cap-randomized run (the real policy step) stop at the cap at the latest;
+    // offline decision scoring keeps the whole budget.
+    const bool fastCapped = explore && liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
+    if (fastCapped) simulations = liveFastRootCap;
+    if (explore && fullBudget && liveFullRootSims > 0) simulations = liveFullRootSims;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
+    // Gumbel root and Dirichlet noise are two exploration schemes: the Gumbel draw replaces the noise.
+    const auto gumbelConfig = [](sts::search::OocMctsConfig &c, std::uint32_t m, double scale) {
+        c.gumbelRootActions = m;
+        c.gumbelScale = scale;
+        c.gumbelSeed = splitMix64(c.seed ^ 0x47554d42454c5254ULL);   // "GUMBELRT"
+        c.rootNoiseFraction = 0;
+    };
+    if (explore && fullBudget && liveGumbelRootActions) gumbelConfig(config, liveGumbelRootActions, liveGumbelRootScale);
+    const bool rootCompare = explore && fullBudget && !liveRootComparePath.empty();
+    if (rootCompare && (capture || options.siblingCapture))
+        throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE cannot run with leaf or sibling capture");
     if (liveLearnedStopNet && !fullBudget && !sole) {
         config.learnedStopSimulations = {128, 256, 512, 1024, 2048};
         config.learnedStop = [net = liveLearnedStopNet, tau = liveLearnedStopTau, act = gc.act, floor = gc.floorNum,
@@ -4130,7 +4210,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         }
     }
     // Checkpoints only read root statistics; the singleton shortcut stays.
-    if (policyRoot && !sole && config.rootCheckpointSimulations.empty())
+    if ((policyRoot || rootCompare) && !sole && config.rootCheckpointSimulations.empty())
         for (const std::uint64_t checkpoint : {128, 256, 512, 1024, 2048, 4096})
             if (checkpoint <= simulations) config.rootCheckpointSimulations.push_back(checkpoint);
     nlohmann::json reuseRow;
@@ -4158,6 +4238,52 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
         return searchWithSoleRootShortcut(model, config, sole, simulations);
     }();
+    if (rootCompare && !result.aborted && !result.rootActions.empty()) {
+        // Research only: extra searches on the same model after the real one, with their own seeds.
+        const auto stats = [](const sts::search::OocMctsResult &r) {
+            nlohmann::json actions = nlohmann::json::array();
+            for (const auto &a : r.rootActions)
+                actions.push_back({a.id, a.visits, a.q, a.pruned});
+            return nlohmann::json{{"simulations", r.metrics.simulations}, {"aborted", r.aborted},
+                {"selectedId", r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr)},
+                {"actions", actions}};
+        };
+        const auto rerun = [&](std::uint64_t salt, std::uint32_t gumbel, std::uint64_t sims, bool uniform = false) {
+            auto c = liveConfig;
+            c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+            c.seed = splitMix64(config.seed ^ salt);
+            if (gumbel) gumbelConfig(c, gumbel, uniform ? 0.0 : liveGumbelRootScale > 0 ? liveGumbelRootScale : 1);
+            c.gumbelUniform = uniform;
+            const double t0 = threadCpuSeconds();
+            auto row = stats(sts::search::OocMctsPlanner(c).search(model, 0, sims));
+            row["cpuSeconds"] = threadCpuSeconds() - t0;
+            return row;
+        };
+        nlohmann::json candidates = nlohmann::json::array();
+        for (const auto &a : result.rootActions)
+            candidates.push_back({{"id", a.id}, {"prior", a.prior}, {"label", candidateLabel(gc, model.candidate(0, a.id))}});
+        nlohmann::json checkpoints = nlohmann::json::array();
+        for (const auto &cp : result.rootCheckpoints) {
+            nlohmann::json actions = nlohmann::json::array();
+            for (const auto &a : cp.actions) actions.push_back({a.id, a.visits, a.q, a.pruned});
+            checkpoints.push_back({{"simulations", cp.simulations}, {"actions", actions}});
+        }
+        nlohmann::json gumbelRows = nlohmann::json::object();
+        for (const std::uint32_t m : {4u, 16u})
+            for (const std::uint64_t sims : {512u, 1024u, 2048u})
+                gumbelRows[std::to_string(m) + "@" + std::to_string(sims)] = rerun(0x534830ULL + m * 7919 + sims, m, sims);
+        const nlohmann::json row = {{"schema", 1}, {"seed", seed}, {"decisionIndex", index}, {"act", gc.act},
+            {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"searchSeed", config.seed},
+            {"candidates", candidates}, {"main", stats(result)}, {"mainGumbel", config.gumbelRootActions},
+            {"checkpoints", checkpoints},
+            // Method-neutral reference: 8192 simulations split evenly over every root action (PUCT below).
+            {"reference", rerun(0x5245464552454e43ULL, 64, 8192, true)},   // "REFERENC"
+            {"gumbel", gumbelRows}};
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveRootComparePath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE write failed");
+    }
     // STS_OOC_MCTS_PLAY_SAMPLE: replace the most-visited action by a visit-proportional draw from a salted
     // hash of the search seed (no game or search RNG stream). Pruned and unvisited actions never play.
     const auto searchSelected = result.selectedAction;
@@ -4328,12 +4454,16 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             {"singleton", sole.has_value()}, {"aborted", result.aborted}, {"abortReason", result.abortReason},
             {"earlyStopLock", m.earlyStopLockedRoot}, {"earlyStopGap20", m.earlyStopVisitGap20},
             {"earlyStopBudget", m.earlyStopBudget}, {"savedSimulations", m.savedSimulations},
-            {"selectionRule", config.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
+            {"selectionRule", config.gumbelRootActions ? "gumbel_sh" : config.selectByMeanQ ? "q_visits_id" : "visits_q_id"},
             {"selectedId", result.selectedAction ? json(*result.selectedAction) : json(nullptr)},
             {"candidates", actionsJson(result.rootActions)}, {"checkpoints", checkpoints}};
         // Only with the option on, so rows without it keep their exact bytes.
         if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
-        if (explore && liveRootNoiseFraction > 0) (*policyRoot)["rootNoise"] = {liveRootNoiseFraction, liveRootNoiseAlpha};
+        if (liveFastRootCap > 0) (*policyRoot)["fastRootCap"] = liveFastRootCap;
+        if (liveFullRootSims > 0) (*policyRoot)["fullRootSims"] = liveFullRootSims;
+        if (explore && liveRootNoiseFraction > 0 && !config.gumbelRootActions)
+            (*policyRoot)["rootNoise"] = {liveRootNoiseFraction, liveRootNoiseAlpha};
+        if (config.gumbelRootActions) (*policyRoot)["gumbelRoot"] = {config.gumbelRootActions, config.gumbelScale};
         if (explore && livePlaySampleFloor >= 0) {
             (*policyRoot)["searchSelectedId"] = searchSelected ? json(*searchSelected) : json(nullptr);
             (*policyRoot)["playSampled"] = searchSelected != result.selectedAction;

@@ -440,6 +440,7 @@ namespace sts::search {
     }
 
     BattleContext battleContextFromWire(const BattleStateWire &in) {
+        refreshEngineFlags();   // an imported combat starts here, like BattleContext::init
         if ((in.version != BattleStateWire::kVersion && !(in.version == 2 && !in.intentsHidden)) || !in.valid) {
             throw std::invalid_argument("invalid or incompatible Silver state wire");
         }

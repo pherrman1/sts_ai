@@ -21,12 +21,17 @@ run_unit.sh         bash run_unit.sh REPO RUN UNIT_OUT <unit args...>   (exit 0 
 ```
 name          potion-weights            # lowercase [a-z0-9_-]; local dir is $HOME/cw-<name>-wWW
 code_commit   <40-char sha>             # build inputs (apps src include extern cmake models ...) must equal it
-binary_sha256 <64-char sha256>          # of build/linux-gcc-release/one_combat at code_commit
+binary_sha256 <64-char sha256>          # of build/<configure_preset>/one_combat at code_commit
+configure_preset linux-gcc-release-x86-64-v3   # optional; the v3 build is 10-20% faster, same decisions on
+                                        # fixed seeds, needs an AVX2 CPU. Default: the preset named by
+                                        # tools/cloud/default_configure_preset at code_commit (v3 since
+                                        # that file was added; linux-gcc-release for older code_commits)
 workers       8                         # the worker count Philipp authorized; unit line i goes to worker i%workers+1
 share         /mnt/project-files/<dir>  # where wWW.tar and wWW.DONE.json are uploaded
 parallel      4                         # units run at once per worker (default 4)
 schedule      queue                     # optional, default static; see "Queue schedule" below
 lease_minutes 30                        # queue only: a claim without heartbeat for this long may be taken over
+claim_settle_seconds 900                # queue only: how long a non-owner claimer waits before its owner check
 input studentc.bin /mnt/project-files/student-c-488/studentc.bin <sha256>   # copied into RUN, hash-checked
 ```
 
@@ -41,7 +46,8 @@ Everything the analysis needs must be written under the unit output dir. The wor
    [agent workflow](../../docs/knowledge-base/operations/agent-context-and-workflow.md#frozen-runs).
 2. Commit the campaign dir. Set `code_commit` and, after one build, `binary_sha256`.
 3. `bash tools/cloud/worker.sh publish-binary <campaign>` builds at `code_commit`, checks the hash and uploads
-   the binary to `/mnt/project-files/bin-cache/one_combat-<sha256>` (plus `commit-<sha>.sha256`). Workers
+   the binary to `/mnt/project-files/bin-cache/one_combat-<sha256>` (plus `commit-<sha>.sha256`, or
+   `commit-<sha>.<configure_preset>.sha256` for a non-default `configure_preset`). Workers
    then copy it instead of building, which saves 4-9 min per worker. A worker that finds no cached binary,
    or one with the wrong hash, falls back to a local build and the same hash check.
 4. The pre-launch reviewer does an independent clean build and checks it against `binary_sha256`. That
@@ -85,12 +91,20 @@ With `schedule static` (the default, and every campaign frozen before this optio
 i % workers + 1. One slow or stalled worker then holds up the whole campaign: in the gen-1b A/B one worker sat
 idle 6.8 h waiting for a resume, and the campaign took 11.1 h instead of about 4 h.
 
-With `schedule queue` every lane of every worker takes the first unit in `units.txt` order that is neither
-uploaded nor claimed, so the units spread over whatever workers are alive:
+With `schedule queue` every lane of every worker takes the first pending unit (neither uploaded nor claimed): first
+its static units (line i -> worker i % workers + 1) in order, then other workers' units from the end of
+`units.txt`. The units spread over whatever workers are alive, and workers rarely compete for one unit:
 
-- **Claim:** `mkdir SHARE/claims/<id>.a<n>` decides between racing workers. While the unit runs, its owner
-  rewrites `hb` (`wWW EPOCH`) every minute. A claim whose heartbeat is older than `lease_minutes`, or that holds
-  `failed`, may be taken over as attempt n+1, at most 4 attempts per unit.
+- **Claim:** a claim is the dir `SHARE/claims/<id>.a<n>`. The share's `mkdir` is atomic only within one container;
+  other containers see a new dir late; in the value-leaf A/B up to 4 workers ran one unit, 34 of the first 143 tars. So every
+  claimer also writes `cand.<KEY>.wWW.<pid>` into the dir. The static owner's first attempt has KEY 0 and starts
+  at once. Any other claimer (stealing another worker's unit, or taking over an expired claim) uses KEY = epoch,
+  waits `claim_settle_seconds` (default 900), and runs the unit only if its candidate sorts first. While the unit
+  runs, its owner rewrites `hb` (`wWW EPOCH`) every minute. A claim whose heartbeat is older than
+  `lease_minutes`, or that holds `failed`, may be taken over as attempt n+1, at most 4 attempts per unit.
+  Lanes start 3 s apart. The settle time is long because other containers can miss a claim for minutes: in the
+  value-leaf A/B (old code), copies of one unit finished up to about 10 min apart. Waiting only costs stealing
+  lanes, which run near the end.
 - **Upload:** a finished unit goes to the share at once as `SHARE/units/<id>.wWW.tar` (unit dir, `.done`,
   `.log`, `FROZEN.txt`, `SETUP.txt`). A worker that dies later loses nothing, and a restarted worker uploads
   units it finished locally but had not uploaded.
@@ -102,8 +116,8 @@ uploaded nor claimed, so the units spread over whatever workers are alive:
   record). The heartbeat runs for the whole unit, so a long unit on a live worker is never taken over; the lease
   only matters once a worker or its container is gone. Pick `lease_minutes` well above the heartbeat interval
   (1 min) and clock skew; 30 is the default.
-- **Duplicates:** if the share's `mkdir` is not atomic across containers, or a live worker's heartbeat stalls
-  past the lease, two workers can run the same unit. Units are seed-deterministic, so both results are valid;
+- **Duplicates:** if a candidate file stays invisible to another container for longer than the settle time, or a
+  live worker's heartbeat stalls past the lease, two workers can still run the same unit. Units are seed-deterministic, so both results are valid;
   the verifier uses the first tar in name order and reports the duplicate.
 
 The worker brief and commands are the same in both modes. The worker count is still Philipp's choice; it sets
@@ -126,5 +140,6 @@ every unit is OK.
 
 `bash tools/cloud/worker.sh cache-get <sha256> $HOME/base/one_combat` fetches a binary someone already
 published, for example the base side of a default-off identity check. `cat
-/mnt/project-files/bin-cache/commit-<sha>.sha256` gives the sha256 for a commit. The PR side is still built
-fresh.
+/mnt/project-files/bin-cache/commit-<sha>.sha256` gives the sha256 of the default-preset (`linux-gcc-release`)
+binary for a commit; a v3 campaign binary has its own `commit-<sha>.linux-gcc-release-x86-64-v3.sha256` and
+never replaces that pointer. The PR side is still built fresh.
