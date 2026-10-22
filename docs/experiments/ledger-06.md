@@ -22262,7 +22262,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
-## §TBD — Live problem 84: a pending GainEnergyAction was exported with amount 0 (2026-10-21)
+## §625 — Live problem 84: a pending GainEnergyAction was exported with amount 0 (2026-10-21)
 
 **Question:** Why did seed 111200510 at steps 749 and 922 show player energy game 3 vs native 2 (and 7 vs 6) after Headbutt's put-on-top choice?
 
