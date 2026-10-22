@@ -117,6 +117,16 @@ void CardInstance::updateCost(int amount) {
     }
 }
 
+void CardInstance::modifyCostForCombat(int amount) {
+    if (costForTurn > 0) {
+        costForTurn = static_cast<int8_t>(std::max(0, costForTurn + amount));
+        cost = costForTurn;
+    } else if (cost >= 0) {
+        cost = static_cast<int8_t>(std::max(0, cost + amount));
+        costForTurn = 0;
+    }
+}
+
 void CardInstance::setCostForCombat(int newCost) {
     // todo should this set costForTurn to newCost? this isn't used exactly like this in game
     cost = static_cast<int8_t>(newCost);
